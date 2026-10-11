@@ -10,7 +10,7 @@ namespace Obsidian.API.Noise;
 public sealed class ImprovedNoise
 {
     /// <summary>Vanilla declares this as a float; the widened value (1.0000000116860974E-7) is what it uses.</summary>
-    private const double ShiftUpEpsilon = 1.0E-7f;
+    internal const double ShiftUpEpsilon = 1.0E-7f;
 
     private readonly byte[] p = new byte[256];
 
@@ -19,6 +19,9 @@ public sealed class ImprovedNoise
     public double Yo { get; }
 
     public double Zo { get; }
+
+    /// <summary>The permutation table, for <see cref="ImprovedNoiseLanes"/>.</summary>
+    internal byte[] Permutation => this.p;
 
     /// <summary>Creates a noise, consuming 3 doubles and 256 bounded ints from <paramref name="random"/>.</summary>
     public ImprovedNoise(IRandomSource random)
@@ -50,21 +53,33 @@ public sealed class ImprovedNoise
         var shiftedX = x + this.Xo;
         var shiftedY = y + this.Yo;
         var shiftedZ = z + this.Zo;
-        var cellX = Mth.Floor(shiftedX);
-        var cellY = Mth.Floor(shiftedY);
-        var cellZ = Mth.Floor(shiftedZ);
-        var localX = shiftedX - cellX;
-        var localY = shiftedY - cellY;
-        var localZ = shiftedZ - cellZ;
+        var floorX = FloorSaturated(shiftedX);
+        var floorY = FloorSaturated(shiftedY);
+        var floorZ = FloorSaturated(shiftedZ);
+        var localX = shiftedX - floorX;
+        var localY = shiftedY - floorY;
+        var localZ = shiftedZ - floorZ;
 
         var yShift = 0.0;
         if (yScale != 0.0)
         {
             var clampedY = yMax >= 0.0 && yMax < localY ? yMax : localY;
-            yShift = Mth.Floor(clampedY / yScale + ShiftUpEpsilon) * yScale;
+            yShift = FloorSaturated(clampedY / yScale + ShiftUpEpsilon) * yScale;
         }
 
-        return this.SampleAndLerp(cellX, cellY, cellZ, localX, localY - yShift, localZ, localY);
+        // The floors are ints already, so the conversions don't need to saturate.
+        return this.SampleAndLerp(double.ConvertToIntegerNative<int>(floorX), double.ConvertToIntegerNative<int>(floorY),
+            double.ConvertToIntegerNative<int>(floorZ), localX, localY - yShift, localZ, localY);
+    }
+
+    /// <summary>
+    /// <see cref="Mth.Floor"/> as a double. Wrapped coordinates are far inside the int range, where flooring in floating
+    /// point gives the same value in fewer instructions; Mth.Floor still handles the rest, which it saturates.
+    /// </summary>
+    private static double FloorSaturated(double value)
+    {
+        var floor = Math.Floor(value);
+        return Math.Abs(floor) <= int.MaxValue ? floor : Mth.Floor(value);
     }
 
     /// <summary>

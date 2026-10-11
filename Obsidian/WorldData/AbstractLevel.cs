@@ -1033,6 +1033,14 @@ public abstract partial class AbstractLevel : ILevel
         stopwatch.Start();
         Log.Generating(this.Logger, startChunks, this.Name);
 
+        // Most of the work is staged across every core first, without the lock waits of completing chunks one by one, so the
+        // jobs below only complete the chunks.
+        if (this.Generator is MojangGenerator mojang)
+        {
+            await mojang.PrepareAreaAsync(centerX - pregenerationRange, centerZ - pregenerationRange,
+                centerX + pregenerationRange, centerZ + pregenerationRange, cancellationToken);
+        }
+
         // A window of jobs in queue order: a new job starts as soon as one finishes.
         var jobs = new List<Task>(startChunks);
         var completedChunks = 0;
@@ -1063,7 +1071,8 @@ public abstract partial class AbstractLevel : ILevel
                 }
             }
 
-            if (completedChunks / 1024 > flushedThousands)
+            // The flush after the loop saves the last chunks.
+            if (completedChunks / 1024 > flushedThousands && !this.ChunksToGen.IsEmpty)
             {
                 flushedThousands = completedChunks / 1024;
                 await this.FlushRegionsAsync();

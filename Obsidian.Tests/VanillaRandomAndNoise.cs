@@ -1,5 +1,7 @@
 using Obsidian.API.Noise;
 using Obsidian.API.World.Generator.RandomSources;
+using System;
+using System.Runtime.Intrinsics;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -181,6 +183,41 @@ public class VanillaRandomAndNoise
         // NormalNoise.createLegacyNetherBiome(new LegacyRandomSource(1L), new NoiseParameters(-7, 1.0, 1.0))
         var legacy = NormalNoise.CreateLegacyNetherBiome(new LegacyRandomSource(1L), -7, [1.0, 1.0]);
         Assert.Equal(0.14082137008359874, legacy.GetValue(12.3, -45.6, 789.0));
+    }
+
+    [Fact(DisplayName = "Noises sampled in lanes give the scalar bits")]
+    public void NoiseLanesMatchScalar()
+    {
+        if (!ImprovedNoiseLanes.IsSupported)
+            return;
+
+        // Zero amplitudes and wide octave ranges, and blended noise's smearing, at positions near and far.
+        var normal = NormalNoise.Create(new XoroshiroRandomSource(3L), -9, [1.0, 0.0, 0.5, 2.0, 1.0, 0.0, 0.25]);
+        var blended = BlendedNoise.CreateUnseeded(0.25, 0.125, 80.0, 160.0, 8.0).WithNewRandom(new XoroshiroRandomSource(4L));
+        var positions = new Random(3);
+        Span<double> x = stackalloc double[4], y = stackalloc double[4], z = stackalloc double[4];
+
+        for (var i = 0; i < 5_000; i++)
+        {
+            var range = i % 4 == 0 ? 30_000_000 : 2_000;
+            for (var lane = 0; lane < 4; lane++)
+            {
+                x[lane] = positions.Next(-range, range);
+                y[lane] = positions.Next(-64, 320);
+                z[lane] = positions.Next(-range, range);
+            }
+
+            var normals = normal.GetValue(Vector256.Create<double>(x), Vector256.Create<double>(y) * 0.37, Vector256.Create<double>(z));
+            var blends = blended.Compute(Vector256.Create<double>(x), Vector256.Create<double>(y), Vector256.Create<double>(z));
+
+            for (var lane = 0; lane < 4; lane++)
+            {
+                Assert.Equal(BitConverter.DoubleToInt64Bits(normal.GetValue(x[lane], y[lane] * 0.37, z[lane])),
+                    BitConverter.DoubleToInt64Bits(normals[lane]));
+                Assert.Equal(BitConverter.DoubleToInt64Bits(blended.Compute((int)x[lane], (int)y[lane], (int)z[lane])),
+                    BitConverter.DoubleToInt64Bits(blends[lane]));
+            }
+        }
     }
 
     [Fact(DisplayName = "SimplexNoise matches vanilla")]

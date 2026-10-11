@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- Times the Mojang generator's stages and checks its output against recorded hashes; see Program.cs for usage. -->
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<RootNamespace>WorldgenBench</RootNamespace>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<EnablePreviewFeatures>true</EnablePreviewFeatures>
+		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Like Obsidian.ConsoleApp, so timings reflect the server's tiering. -->
+		<RuntimeHostConfigurationOption Include="System.Runtime.TieredCompilation.CallCountingDelayMs" Value="0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Obsidian\Obsidian.csproj" />
+	</ItemGroup>
+</Project>
