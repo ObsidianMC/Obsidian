@@ -688,6 +688,9 @@ public sealed partial class Client : IClient
             EventResult result;
             try
             {
+                // The player's ticks stop first, so the leave saves them as the last tick left them.
+                await player.StopTickingAsync();
+
                 result = await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this.Server, DateTimeOffset.Now));
             }
             catch (Exception ex)

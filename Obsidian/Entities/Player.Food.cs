@@ -114,7 +114,9 @@ public partial class Player
         }
     }
 
-    public override async ValueTask TickAsync()
+    public override ValueTask TickAsync() => this.RunTickAsync(this.TickPlayerAsync);
+
+    private async ValueTask TickPlayerAsync()
     {
         if (damageCooldown > 0) damageCooldown--;
         if (HurtTime > 0) HurtTime--;

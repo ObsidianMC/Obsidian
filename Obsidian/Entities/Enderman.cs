@@ -167,10 +167,8 @@ public sealed partial class Enderman : PathfinderMob
     {
         DropItem(ItemsRegistry.EnderPearl, Random.Next(2));
 
-        // Only vanilla blocks drop back as their item.
-        if (CarriedBlock is { } carried
-            && !BlocksRegistry.TryGetPluginBlock(carried.GetHashCode(), out _)
-            && BlocksRegistry.TryGetItem(carried, out var item))
+        // The carried block drops as its item, a plugin block's too if it has one.
+        if (CarriedBlock is { } carried && BlocksRegistry.TryGetItem(carried, out var item))
         {
             DropItem(item, 1);
         }

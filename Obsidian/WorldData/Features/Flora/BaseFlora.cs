@@ -10,8 +10,6 @@ public abstract class BaseFlora(GenHelper helper, IChunk chunk, IBlock? flora = 
 
     protected IChunk Chunk { get; } = chunk;
 
-    protected IBlock FloraKind { get; set; } = flora ?? BlocksRegistry.RedTulip;
-
     protected int Height { get; set; } = 1;
 
     // Block ids.

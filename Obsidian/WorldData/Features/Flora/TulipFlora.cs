@@ -2,17 +2,16 @@
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class TulipFlora : BaseFlora
+/// <summary>
+/// A patch of tulips of one colour, picked at random.
+/// </summary>
+public class TulipFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, RandomTulip())
 {
-    public TulipFlora(GenHelper helper, IChunk chunk) : base(helper, chunk)
+    private static IBlock RandomTulip() => Random.Shared.Next(4) switch
     {
-        int tulipType = Random.Shared.Next(3);
-        this.FloraKind = tulipType switch
-        {
-            0 => BlocksRegistry.OrangeTulip,
-            1 => BlocksRegistry.PinkTulip,
-            2 => BlocksRegistry.RedTulip,
-            _ => BlocksRegistry.WhiteTulip
-        };
-    }
+        0 => BlocksRegistry.OrangeTulip,
+        1 => BlocksRegistry.PinkTulip,
+        2 => BlocksRegistry.RedTulip,
+        _ => BlocksRegistry.WhiteTulip
+    };
 }
