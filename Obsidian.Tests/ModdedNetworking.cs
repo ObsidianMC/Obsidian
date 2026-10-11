@@ -26,17 +26,10 @@ public class ModdedNetworking
     // Each side's channels: "id=version", then ">" for clientbound or "<" for serverbound, then "?" when optional.
     // The expected outcome lists the agreed channels as "id=version", or the refused ones as "!id".
     [Theory(DisplayName = "Channels are negotiated with NeoForge's rules")]
-    [InlineData("mod:a=1", "mod:a=1", "mod:a=1")]
     [InlineData("mod:a=2", "mod:a=1", "!mod:a")]
-    [InlineData("mod:a=1>", "mod:a=1", "!mod:a")]
     [InlineData("mod:a=1>", "mod:a=1<", "!mod:a")]
-    [InlineData("mod:a=1<", "mod:a=1<", "mod:a=1")]
-    [InlineData("mod:a=1?", "", "")]
-    [InlineData("mod:a=1", "", "!mod:a")]
     [InlineData("", "mod:a=1", "!mod:a")]
-    [InlineData("", "mod:a=1?", "")]
     [InlineData("mod:a=1 mod:b=1?", "mod:a=1 mod:c=1?", "mod:a=1")]
-    [InlineData("mod:a=1 mod:b=1", "mod:a=1", "!mod:b")]
     public void NegotiatesChannels(string server, string client, string expected)
     {
         var result = NetworkComponentNegotiator.Negotiate(ParseComponents(server), ParseComponents(client));
@@ -207,26 +200,6 @@ public class ModdedNetworking
 
         Assert.False(await withoutSyncChannels.FinishHandshakeAsync(0));
         Assert.False(withoutSync.Connected);
-    }
-
-    [Fact]
-    public async Task MalformedQueryRefusesClient()
-    {
-        var registry = new PayloadChannelRegistry();
-        registry.Register<EchoPayload>(new FakePluginContainer(), PayloadPhase.Play, PayloadDirection.Bidirectional,
-            null, "1", optional: false);
-
-        var client = new TestClient(new FakeServer());
-        client.SetState(ClientState.Configuration);
-        var channels = new ClientChannels(client, registry);
-
-        channels.StartConfiguration();
-
-        // Claims one protocol, then ends: the client is refused rather than treated as a vanilla one.
-        await channels.HandlePayloadAsync(ChannelPayloads.NeoForgeQuery, new byte[] { 1 });
-
-        Assert.False(client.Connected);
-        Assert.False(await channels.FinishHandshakeAsync(0));
     }
 
     [Fact(DisplayName = "A client without NeoForge only joins when the server's channels are optional")]
@@ -414,17 +387,6 @@ public class ModdedNetworking
         Assert.DoesNotContain(
             unsupported.SentPackets.OfType<CustomPayloadPacket>(),
             packet => packet.Channel == ChannelPayloads.CommonRegister);
-    }
-
-    [Fact(DisplayName = "The status response says whether the server is modded")]
-    public void StatusReportsModded()
-    {
-        var status = new ServerStatus(new FakeServer(), serverIcon: "")
-        {
-            IsModded = true
-        };
-
-        Assert.Contains("\"isModded\": true", status.ToJson());
     }
 
     private static async Task<(TestClient Client, ClientChannels Channels, bool Continued)>

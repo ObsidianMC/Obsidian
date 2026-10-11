@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace Obsidian.Tests.Utilities;
@@ -29,51 +28,6 @@ internal static class PluginArchives
         }
 
         return stream.ToArray();
-    }
-
-    /// <summary>
-    /// Writes a version 1 archive with the header metadata Obsidian.MSBuild writes and stored (uncompressed) files.
-    /// </summary>
-    public static byte[] Legacy(string id, string version, string assembly, IReadOnlyDictionary<string, byte[]> files)
-    {
-        using var data = new MemoryStream();
-
-        using (var writer = new BinaryWriter(data, Encoding.UTF8, leaveOpen: true))
-        {
-            writer.Write(assembly);
-            writer.Write(version);
-            writer.Write(id);
-            writer.Write(id);
-            writer.Write("Tester");
-            writer.Write("A test plugin");
-            writer.Write("https://example.com");
-            writer.Write(0);
-
-            writer.Write(files.Count);
-            foreach (var (name, contents) in files)
-            {
-                writer.Write(name);
-                writer.Write(contents.Length);
-                writer.Write(contents.Length);
-            }
-
-            foreach (var (_, contents) in files)
-                writer.Write(contents);
-        }
-
-        using var archive = new MemoryStream();
-
-        using (var writer = new BinaryWriter(archive, Encoding.UTF8, leaveOpen: true))
-        {
-            writer.Write("OBBY"u8);
-            writer.Write("1.0");
-            writer.Write(SHA384.HashData(data.ToArray()));
-            writer.Write(false);
-            writer.Write((int)data.Length);
-            writer.Write(data.ToArray());
-        }
-
-        return archive.ToArray();
     }
 
     public static byte[] Metadata(string id, string version, string assembly, string dependencies = "[]") =>
