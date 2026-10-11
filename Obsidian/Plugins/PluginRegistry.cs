@@ -132,6 +132,15 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         return block;
     }
 
+    public IPluginRegistry AddToTag(string registry, string tag, params IEnumerable<string> entries)
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        container.TagFiles.Add(PluginTags.FromEntries(registry, tag, $"{container.Info.Id} (code)", entries));
+
+        return this;
+    }
+
     private static Item RegisterItem(PluginContainer container, string identifier, ItemProperties properties)
     {
         CheckIdentifier(container, identifier);

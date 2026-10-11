@@ -396,6 +396,8 @@ public sealed partial class PluginManager : IAsyncDisposable
             this.plugins = this.plugins.Add(container);
 
             container.Plugin.ConfigureRegistry(this.pluginRegistry);
+            container.TagFiles.InsertRange(0, this.ReadTagFiles(archive));
+            this.ApplyTags();
             container.Loaded = true;
 
             await container.Plugin.OnLoadedAsync(this.server);
@@ -470,6 +472,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             this.commandHandler.UnregisterArgumentParsers(pluginContainer.LoadContext);
 
         this.plugins = this.plugins.Remove(pluginContainer);
+        this.ApplyTags();
 
         var dependents = this.releases
             .Where(pair => pair.Key.Dependencies.Contains(pluginContainer))
@@ -548,6 +551,32 @@ public sealed partial class PluginManager : IAsyncDisposable
         loadContext.Unload();
     }
 
+    // A plugin's tag files, from its data folder like a data pack's. A malformed file is left out, like vanilla leaves
+    // out a data pack's.
+    private List<TagFile> ReadTagFiles(PluginArchive archive)
+    {
+        var files = new List<TagFile>();
+
+        foreach (var (path, registry, identifier) in PluginTags.FindFiles(archive.Paths))
+        {
+            try
+            {
+                var data = archive.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
+                files.Add(PluginTags.Parse(registry, identifier, $"{archive.Info.Id}/{path}", data));
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.TagFileFailed(this.logger, ex, path, archive.Source);
+            }
+        }
+
+        return files;
+    }
+
+    // The tags hold vanilla's entries and the loaded plugins' tag files, in load order.
+    private void ApplyTags() =>
+        PluginTags.Apply(this.plugins.SelectMany(plugin => plugin.TagFiles), this.logger);
+
     // Players see the commands of the plugins that are loaded now. Startup doesn't need this: nobody has joined yet.
     private void OnPluginsChanged()
     {
@@ -601,6 +630,9 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     private static partial class Log
     {
+        [LoggerMessage(Level = LogLevel.Error, Message = "Left out tag file {Path} of plugin {Source}")]
+        public static partial void TagFileFailed(ILogger logger, Exception exception, string path, string source);
+
         [LoggerMessage(Level = LogLevel.Information,
             Message = "Loaded plugin {PluginName} {Version} in {ElapsedMilliseconds}ms")]
         public static partial void Loaded(ILogger logger, string pluginName, Version version, long elapsedMilliseconds);

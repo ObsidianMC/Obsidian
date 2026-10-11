@@ -42,7 +42,7 @@ public sealed partial class Server
             if (registration.QuickAction) quickActions.Add(id);
             if (registration.PauseScreen) pauseScreen.Add(id);
         }
-        var tags = TagsRegistry.Categories.ToDictionary(x => x.Key, x => x.Value);
+        var tags = TagsRegistry.GetCategories();
         var dialogTags = tags.GetValueOrDefault("dialog") ?? [];
         tags["dialog"] = [.. dialogTags.Where(x => x.Name is not ("quick_actions" or "pause_screen_additions")),
             MergeTag("quick_actions", quickActions), MergeTag("pause_screen_additions", pauseScreen)];

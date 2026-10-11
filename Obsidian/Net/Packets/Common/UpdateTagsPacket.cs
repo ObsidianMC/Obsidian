@@ -22,16 +22,19 @@ public partial record class UpdateTagsPacket
 
             foreach (var tag in tags)
             {
-                // Tags in a subfolder of their registry (type item/enchantable) go by their path in it (enchantable/armor).
+                // Tags in a subfolder of their registry (type item/enchantable) go by their path in it
+                // (enchantable/armor), and vanilla's without their namespace.
                 var folderStart = tag.Type.IndexOf('/');
-                var name = folderStart < 0 ? tag.Name : $"{tag.Type[(folderStart + 1)..]}/{tag.Name}";
+                var path = folderStart < 0 ? tag.Name : $"{tag.Type[(folderStart + 1)..]}/{tag.Name}";
+                var name = tag.Namespace == "minecraft" ? path : $"{tag.Namespace}:{path}";
 
                 writer.WriteString(name);
-                writer.WriteVarInt(tag.Count);
-                for (int i = 0; i < tag.Entries.Length; i++)
-                {
-                    writer.WriteVarInt(tag.Entries[i]);
-                }
+                // Read once: plugins loading or unloading replace a tag's entries meanwhile.
+                var entries = tag.Entries;
+
+                writer.WriteVarInt(entries.Length);
+                foreach (var entry in entries)
+                    writer.WriteVarInt(entry);
             }
         }
     }

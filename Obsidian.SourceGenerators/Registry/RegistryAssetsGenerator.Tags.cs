@@ -12,7 +12,7 @@ public partial class RegistryAssetsGenerator
         builder.Line();
         builder.Namespace("Obsidian.API.Registries");
         builder.Line();
-        builder.Type("public static class TagsRegistry");
+        builder.Type("public static partial class TagsRegistry");
 
         var tags = assets.Tags.GroupBy(tag => tag.Type.GetActualType()).ToDictionary(x => x.Key, x => x.ToImmutableList());
         var skip = new List<string>();

@@ -16,7 +16,7 @@ contain `..`.
 | `<Assembly>.pdb`, `<Assembly>.deps.json` | Optional. Symbols, and the dependency manifest that lists the libraries to load. |
 | `*.dll`, `*.pdb` | Libraries the plugin uses, as `dotnet publish` puts them beside the main assembly. |
 | `assets/<namespace>/...` | Optional. Client resources (textures, models, translations), laid out like a resource pack. |
-| `data/<namespace>/...` | Optional. Server data (biomes, dimension types, tags, ...), laid out like a data pack. |
+| `data/<namespace>/...` | Optional. Server data laid out like a data pack; block and item tags are read so far. |
 
 Entries may be stored or deflated. Obsidian reads the file into memory once and decompresses each file when it is
 first needed, so the file on disk can be replaced while the plugin runs, which reloads it.

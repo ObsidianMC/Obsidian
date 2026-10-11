@@ -60,6 +60,11 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     /// </summary>
     internal ImmutableArray<Type> ExportedSingletons { get; private set; } = [];
 
+    /// <summary>
+    /// The plugin's tag files and the tag entries it added in code, merged with vanilla's tags while it's loaded.
+    /// </summary>
+    internal List<TagFile> TagFiles { get; } = [];
+
     public bool Loaded { get; internal set; }
 
     internal void Initialize()
