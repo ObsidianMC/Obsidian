@@ -13,11 +13,6 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public Item Holder { get; }
 
-    /// <summary>
-    /// The vanilla material of the stack's item, or null for an item a plugin registered.
-    /// </summary>
-    public Material? Type => this.Holder.Type;
-
     // A marker component: the item is unbreakable when it has one.
     public bool Unbreakable => this.ContainsKey(DataComponentType.Unbreakable);
     public int MaxStackSize => this.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxStackSize)?.Value ?? this.Holder.MaxStackSize;

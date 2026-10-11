@@ -38,7 +38,6 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
             GenerateItems(assets, context);
             GenerateBlockIdConstants(assets, context);
             GenerateCodecs(assets, context);
-            GenerateMaterials(assets, context);
             GenerateSounds(assets, context);
             GenerateEnum(output.files.GetJsonFromArray("enums"), context);
         }

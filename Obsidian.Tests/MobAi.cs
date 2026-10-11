@@ -51,7 +51,7 @@ public sealed class MobAi
         var reader = new Obsidian.Net.NetworkBuffer(buffer.AsSpan(0, buffer.Size).ToArray());
         var restored = reader.ReadItemStack();
         Assert.NotNull(restored);
-        Assert.Equal(item.Type, restored.Type);
+        Assert.Same(item.Holder, restored.Holder);
         Assert.Equal(item.Count, restored.Count);
         Assert.Equal(item.TotalComponents, restored.TotalComponents);
         Assert.Equal(0, restored.GetComponent<Obsidian.API.Inventory.DataComponents.SimpleDataComponent<int>>(DataComponentType.RepairCost).Value);

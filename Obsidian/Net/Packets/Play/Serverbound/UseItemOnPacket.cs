@@ -286,7 +286,7 @@ public partial class UseItemOnPacket
                 break;
         }
 
-        if (block.IsGravityAffected() && block.Material is Material falling)
+        if (block.IsGravityAffected() && !BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out _))
         {
             if (await player.Level.GetBlockAsync(position + Vector.Down) is IBlock below &&
                 below.IsFreeForFallingBlock())
@@ -296,7 +296,7 @@ public partial class UseItemOnPacket
                 {
                     SequenceID = Sequence
                 });
-                player.Level.SpawnFallingBlock(position, falling);
+                player.Level.SpawnFallingBlock(position, BlocksRegistry.GetDefault(block.RegistryId));
                 return;
             }
         }

@@ -98,7 +98,6 @@ public partial class NetworkBuffer
         public List<DataComponentType> ComponentsToRemove { get; } = [];
         public int Count { get; set; } = count;
         public Item Holder { get; } = holder;
-        public Material? Type => this.Holder.Type;
 
         public bool Compare(ItemStack other)
         {

@@ -26,7 +26,7 @@ public static partial class ItemsRegistry
     // in no particular order, but all before the static constructor.
     static ItemsRegistry()
     {
-        var vanilla = Items.Values.OrderBy(item => item.Id).ToArray();
+        var vanilla = vanillaItems.OrderBy(item => item.Id).ToArray();
 
         VanillaCount = vanilla.Length;
         table = new ItemTable(vanilla);
@@ -68,8 +68,6 @@ public static partial class ItemsRegistry
         return item is not null;
     }
 
-    public static Item Get(Material mat) => Items.GetValueOrDefault(mat) ?? Air;
-
     public static Item Get(string unlocalizedName) => TryGet(unlocalizedName, out var item) ? item : Air;
 
     /// <summary>
@@ -98,7 +96,7 @@ public static partial class ItemsRegistry
             if (table.ById.Length > short.MaxValue)
                 throw new InvalidOperationException("No item ids are left.");
 
-            var item = new Item(table.ById.Length, unlocalizedName, type: null);
+            var item = new Item(table.ById.Length, unlocalizedName);
             table = new ItemTable([.. table.ById, item]);
 
             return item;
@@ -151,12 +149,8 @@ public static partial class ItemsRegistry
             byId.ToFrozenDictionary(item => item.UnlocalizedName, StringComparer.OrdinalIgnoreCase);
     }
 
-    public static bool TryGet(Material mat, [NotNullWhen(true)] out Item? item) => Items.TryGetValue(mat, out item);
-
     public static ItemStack Get(string unlocalizedName, short count, params List<DataComponent> components) =>
         new(Get(unlocalizedName), count, components);
-
-    public static ItemStack GetSingleItem(Material mat, params List<DataComponent> components) => new(Get(mat), 1, components);
 
     /// <summary>
     /// A stack of one <paramref name="item"/>.

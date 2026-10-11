@@ -860,9 +860,6 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
-    public IEntity SpawnFallingBlock(VectorD position, Material mat) =>
-        SpawnFallingBlock(position, BlocksRegistry.Get(mat));
-
     /// <summary>
     /// Spawns a falling block entity of the given block state, centered on the block at the position.
     /// </summary>

@@ -11,19 +11,12 @@ public interface IBlock
 
     public IBlockState State { get; }
 
-    /// <summary>
-    /// The vanilla material naming the block, or null for a block a plugin registered.
-    /// </summary>
-    public Material? Material { get; }
-
     public bool IsLiquid => this.RegistryId is BlockIds.Water or BlockIds.Lava;
 
     public bool IsAir => this.RegistryId is BlockIds.Air or BlockIds.CaveAir or BlockIds.VoidAir;
 
     [Obsolete]
     public bool IsTransparent => this.IsLiquid || IsAir;
-
-    public bool Is(Material material) => this.Material == material;
 
     /// <summary>
     /// Whether the block is the one with the given id, like <see cref="BlockIds.Stone"/>.

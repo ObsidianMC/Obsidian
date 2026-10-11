@@ -14,22 +14,16 @@ namespace Obsidian.API.Inventory;
 /// </remarks>
 public sealed class Item : INetworkSerializable<Item>
 {
-    internal Item(int id, string unlocalizedName, Material? type)
+    internal Item(int id, string unlocalizedName)
     {
         this.Id = (short)id;
         this.UnlocalizedName = unlocalizedName;
-        this.Type = type;
     }
 
     /// <summary>
     /// The item's identifier, like <c>minecraft:diamond</c>.
     /// </summary>
     public string UnlocalizedName { get; }
-
-    /// <summary>
-    /// The vanilla material naming the item, or null for an item a plugin registered.
-    /// </summary>
-    public Material? Type { get; }
 
     /// <summary>
     /// The item's network id. Vanilla's come first, in vanilla's order; plugins' follow, in the order they were first
@@ -54,7 +48,7 @@ public sealed class Item : INetworkSerializable<Item>
     public int Enchantable { get; internal set; }
 
     /// <summary>
-    /// The plugin block the item places, or null. Vanilla's items place blocks by their <see cref="Type"/>.
+    /// The plugin block the item places, or null. Vanilla's items place the block with their identifier.
     /// </summary>
     public BlockType? Block { get; internal set; }
 

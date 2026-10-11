@@ -29,19 +29,16 @@ public partial class RegistryAssetsGenerator
                 defaults.Add($"Enchantable = {item.Enchantable}");
 
             var initializer = defaults.Count == 0 ? string.Empty : $" {{ {string.Join(", ", defaults)} }}";
-            builder.Line($"public static Item {name} {{ get; }} = new Item({item.Id}, \"{item.Tag}\", Material.{name}){initializer};");
+            builder.Line($"public static Item {name} {{ get; }} = new Item({item.Id}, \"{item.Tag}\"){initializer};");
         }
 
-        builder.Statement("internal static FrozenDictionary<Material, Item> Items = new Dictionary<Material, Item>()");
+        builder.Line();
+        builder.Statement("private static readonly Item[] vanillaItems =");
 
         foreach (Item item in assets.Items)
-        {
-            var name = item.Name;
+            builder.Line($"{item.Name},");
 
-            builder.Line($"{{ Material.{name}, {name} }},");
-        }
-
-        builder.EndScope(".ToFrozenDictionary()", semicolon: true);
+        builder.EndScope(semicolon: true);
 
         builder.EndScope();
 

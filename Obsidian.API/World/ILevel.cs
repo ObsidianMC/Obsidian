@@ -101,7 +101,7 @@ public interface ILevel : IAsyncDisposable
         VectorD motion = default,
         IEntity? owner = null);
     public IEntity SpawnEntity(IEntity entity);
-    public IEntity SpawnFallingBlock(VectorD position, Material mat);
+    public IEntity SpawnFallingBlock(VectorD position, IBlock block);
     public void SpawnExperienceOrbs(VectorD position, short count);
     public IEnumerable<IPlayer> PlayersInRange(Vector location);
     public Task DoWorldTickAsync();

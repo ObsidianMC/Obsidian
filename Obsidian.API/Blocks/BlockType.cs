@@ -290,8 +290,6 @@ internal readonly struct PluginBlock(BlockType type, int stateId) : IBlock, IEqu
 
     public IBlockState State => new PluginBlockState(stateId);
 
-    public Material? Material => null;
-
     public bool Equals(PluginBlock other) => other.GetHashCode() == stateId;
 
     public override bool Equals(object? obj) => obj is PluginBlock other && this.Equals(other);

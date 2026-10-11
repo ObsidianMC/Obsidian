@@ -40,10 +40,11 @@ client. This document describes the design and tracks its progress. The archive 
      channel's payloads should change its id.
 2. **Content registries** (in progress)
    - Done for items: `Item` is a registered item type (one instance per item, keyed by identifier) rather than a
-     `Material`-keyed struct. Plugins register items in their namespace with `IPluginRegistry.RegisterItem`, with an
-     `IItemBehavior` for using them. An item keeps its instance and id across reloads; only its behaviour is replaced.
-     Once a plugin registered items, vanilla clients are refused, NeoForge clients are sent the item registry with
-     NeoForge's registry sync and Fabric clients with Fabric API's, before vanilla's registries. A plugin's items
+     struct keyed by the old `Material` enum. Plugins register items in their namespace with
+     `IPluginRegistry.RegisterItem`, with an `IItemBehavior` for using them. An item keeps its instance and id across
+     reloads; only its behaviour is replaced. Once a plugin registered items, vanilla clients are refused, NeoForge
+     clients are sent the item registry with NeoForge's registry sync and Fabric clients with Fabric API's, before
+     vanilla's registries. A plugin's items
      stay registered, and synced, until the server stops, even if the plugin unloads for good: stacks of them can
      still be anywhere, so clients need the mod until then.
    - Done for blocks: plugins register blocks with `IPluginRegistry.RegisterBlock`, with state properties, simple
@@ -51,8 +52,7 @@ client. This document describes the design and tracks its progress. The archive 
      item that places them. Their states get ids after vanilla's, numbered like vanilla numbers a block's states, and
      the block registry is synced to NeoForge and Fabric clients, which number states the same way. Physics, light
      and shapes come from a vanilla template block (stone, glass or cobweb). Vanilla blocks keep their generated
-     types; `IBlock.Material` is null for plugins' blocks. Saved worlds store blocks by name, so a plugin block loads
-     as air once its plugin is gone.
+     types. Saved worlds store blocks by name, so a plugin block loads as air once its plugin is gone.
    - Done for block, item and entity type tags: like a NeoForge or Fabric mod's data pack, a plugin's
      `data/<namespace>/tags/<registry>/<path>.json` files (`values` with `#` tag references and optional entries,
      `replace`, and NeoForge's `remove`) are merged with vanilla's tags in load order, and again when plugins load or
@@ -73,7 +73,13 @@ client. This document describes the design and tracks its progress. The archive 
      vanilla's reconfiguration: the player leaves the world (saved), the channel handshake and registry sync run
      again, and they join again; a client that can't have the new content is refused, like when joining. Other
      clients get the merged tags in play, like vanilla's `/reload` sends them.
-   - Next: moving `Material` call sites to items and blocks until `Material` can go.
+   - Done: `Material`, one closed enum naming both blocks and items, is gone. Items are named by their instances
+     (`ItemsRegistry.Diamond`) and blocks by their states (`IBlock`), like vanilla's `Items.DIAMOND` and
+     `Blocks.STONE`, so plugins' items and blocks are the same kind of thing as vanilla's. Generated `ItemIds` and
+     `BlockIds` constants (vanilla's ids) let vanilla code keep matching items and blocks in switches and patterns
+     (`stack.Holder.Id is ItemIds.Bucket`, `block.Is(BlockIds.Stone)`). A block item places the block with its
+     identifier, or a plugin item's block.
+   - Next: Phase 3.
 3. **Data-driven content and world generation**: loading a mod's `data/` folder like a data pack (biomes, dimension
    types, damage types, tags, worldgen features), letting mods register codec types for data-driven objects (feature,
    density function and biome source types), and reload-safe world generators.

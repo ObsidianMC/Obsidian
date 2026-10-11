@@ -10,8 +10,6 @@ internal static partial class BlocksRegistry
     // array lookups.
     private static readonly IBlock[] defaultBlocks;
     private static readonly IBlock[] stateBlocks;
-    private static readonly IBlock?[] materialBlocks;
-    private static readonly Material[] registryMaterials;
 
     [SuppressMessage("Performance", "CA1810", Justification = "Reads the generated tables (Names, StateToNumeric) of other parts of this class, and the order of initializers across parts is unspecified.")]
     static BlocksRegistry()
@@ -22,16 +20,6 @@ internal static partial class BlocksRegistry
             resourceIdToName.TryAdd(ResourceIds[i], Names[i]);
             defaultBlocks[i] = CreateDefault(i);
             defaultBlockCache.TryAdd(Names[i], defaultBlocks[i]);
-        }
-
-        registryMaterials = [.. defaultBlocks.Select(block => block.Material!.Value)];
-
-        // Materials name items too, so only some have a block.
-        materialBlocks = new IBlock?[Enum.GetValues<Material>().Max(material => (int)material) + 1];
-        for (int i = 0; i < Names.Length; i++)
-        {
-            if (Enum.TryParse<Material>(Names[i], out var material))
-                materialBlocks[(int)material] = defaultBlocks[i];
         }
 
         // Blocks without properties have one state, which is their default block.
@@ -79,10 +67,6 @@ internal static partial class BlocksRegistry
             ?? throw new ArgumentOutOfRangeException(nameof(blockId), blockId, "There's no block with this id.");
     }
 
-    /// <summary>The material of the block a state belongs to, or null for a plugin's block.</summary>
-    public static Material? MaterialOf(int stateId) =>
-        (uint)stateId < (uint)StateToNumeric.Length ? registryMaterials[StateToNumeric[stateId]] : null;
-
     public static string? GetBlockName(string resourceId) => resourceIdToName.GetValueOrDefault(resourceId);
 
     /// <summary>
@@ -102,15 +86,5 @@ internal static partial class BlocksRegistry
         return TryGetPluginBlock(resourceId, out var type)
             ? type.DefaultState
             : throw new InvalidOperationException($"{resourceId} is not a valid block.");
-    }
-
-    public static IBlock Get(Material material, IBlockState? state = null)
-    {
-        if (state is not null)
-            return Get(state.Id);
-
-        return (uint)material < (uint)materialBlocks.Length && materialBlocks[(int)material] is IBlock block
-            ? block
-            : throw new InvalidOperationException($"{material} is not a valid block.");
     }
 }

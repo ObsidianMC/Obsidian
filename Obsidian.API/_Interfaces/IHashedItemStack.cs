@@ -11,7 +11,5 @@ public interface IHashedItemStack
 
     public Item Holder { get; }
 
-    public Material? Type { get; }
-
     public bool Compare(ItemStack other);
 }
