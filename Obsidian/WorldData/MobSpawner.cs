@@ -194,7 +194,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             var feet = terrain.GetBlock(new Vector(x, y, z));
             var floor = terrain.GetBlock(new Vector(x, y - 1, z));
             if (feet == null || floor == null || !terrain.IsFree(mob.Dimension.CreateBBFromPosition(position)) ||
-                (IsAquatic(type) ? feet.Material != Material.Water :
+                (IsAquatic(type) ? !feet.Is(BlockIds.Water) :
                     feet.IsLiquid || type is not EntityType.Ghast and not EntityType.Bat && (floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0)))
                 continue;
             var sky = candidateChunk.GetLightLevel(x, y, z, LightType.Sky);
@@ -203,7 +203,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             {
                 if ((type switch
                     {
-                        EntityType.Mooshroom => floor.Material != Material.Mycelium,
+                        EntityType.Mooshroom => !floor.Is(BlockIds.Mycelium),
                         EntityType.Wolf => !TagsRegistry.Block.WolvesSpawnableOn.Entries.Contains(floor.RegistryId),
                         EntityType.Goat => !TagsRegistry.Block.GoatsSpawnableOn.Entries.Contains(floor.RegistryId),
                         EntityType.Rabbit => !TagsRegistry.Block.RabbitsSpawnableOn.Entries.Contains(floor.RegistryId),
@@ -212,16 +212,17 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                             : !TagsRegistry.Block.AnimalsSpawnableOn.Entries.Contains(floor.RegistryId),
                         EntityType.Frog => !TagsRegistry.Block.FrogsSpawnableOn.Entries.Contains(floor.RegistryId),
                         EntityType.Parrot => !TagsRegistry.Block.ParrotsSpawnableOn.Entries.Contains(floor.RegistryId),
-                        EntityType.Camel => floor.Material != Material.Sand,
-                        EntityType.Ocelot => floor.Material != Material.GrassBlock && !TagsRegistry.Block.Leaves.Entries.Contains(floor.RegistryId),
-                        _ => floor.Material != Material.GrassBlock
+                        EntityType.Camel => !floor.Is(BlockIds.Sand),
+                        EntityType.Ocelot => !floor.Is(BlockIds.GrassBlock)
+                            && !TagsRegistry.Block.Leaves.Entries.Contains(floor.RegistryId),
+                        _ => !floor.Is(BlockIds.GrassBlock)
                     }) ||
                     Math.Max(block, Math.Max(0, sky - (!generation && level.DayTime is >= 12000 and < 23000 ? 11 : 0))) <= 8)
                     continue;
             }
             else if (IsAquatic(type))
             {
-                if (terrain.GetBlock(new Vector(x, y + 1, z))?.Material != Material.Water)
+                if (terrain.GetBlock(new Vector(x, y + 1, z))?.RegistryId != BlockIds.Water)
                     continue;
                 if (type == EntityType.Drowned && (block != 0 || sky > random.Next(32) ||
                     Math.Max(block, Math.Max(0, sky - (level.DayTime is >= 12000 and < 23000 ? 11 : 0))) > random.Next(8)))
@@ -229,7 +230,9 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 if (type is EntityType.Squid or EntityType.Dolphin && (y <= seaLevel - 24 || y >= seaLevel - 1) ||
                     type == EntityType.GlowSquid && (y >= seaLevel - 33 || Math.Max(block, sky) > 0))
                     continue;
-                if (type == EntityType.Axolotl && !Enumerable.Range(1, 5).Any(depth => terrain.GetBlock(new Vector(x, y - depth, z))?.Material == Material.Clay))
+                if (type == EntityType.Axolotl
+                    && !Enumerable.Range(1, 5).Any(depth =>
+                        terrain.GetBlock(new Vector(x, y - depth, z))?.RegistryId == BlockIds.Clay))
                     continue;
             }
             else if (type == EntityType.Bat)

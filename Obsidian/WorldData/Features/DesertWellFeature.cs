@@ -9,15 +9,15 @@ public sealed class DesertWellFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:desert_well";
 
-    private static IBlock Sand => field ??= BlocksRegistry.Get(Material.Sand);
+    private static IBlock Sand => field ??= BlocksRegistry.Sand;
 
-    private static IBlock SandstoneSlab => field ??= BlocksRegistry.Get(Material.SandstoneSlab);
+    private static IBlock SandstoneSlab => field ??= BlocksRegistry.SandstoneSlab;
 
-    private static IBlock Sandstone => field ??= BlocksRegistry.Get(Material.Sandstone);
+    private static IBlock Sandstone => field ??= BlocksRegistry.Sandstone;
 
-    private static IBlock Water => field ??= BlocksRegistry.Get(Material.Water);
+    private static IBlock Water => field ??= BlocksRegistry.Water;
 
-    private static IBlock SuspiciousSand => field ??= BlocksRegistry.Get(Material.SuspiciousSand);
+    private static IBlock SuspiciousSand => field ??= BlocksRegistry.SuspiciousSand;
 
     public override bool Place(FeatureContext context)
     {
@@ -29,7 +29,7 @@ public sealed class DesertWellFeature : ConfiguredFeatureBase
         while (level.GetBlock(origin).IsAir && origin.Y > level.MinY + 2)
             origin += Vector.Down;
 
-        if (level.GetBlock(origin).Material != Material.Sand)
+        if (level.GetBlock(origin).RegistryId != BlockIds.Sand)
             return false;
 
         for (var dx = -2; dx <= 2; dx++)

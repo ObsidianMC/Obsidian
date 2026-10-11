@@ -97,7 +97,7 @@ public sealed class FossilFeature : ConfiguredFeatureBase
         foreach (var corner in box.Corners())
         {
             var block = level.GetBlock(corner);
-            if (block.IsAir || block.Material is Material.Lava or Material.Water)
+            if (block.IsAir || block.RegistryId is BlockIds.Lava or BlockIds.Water)
                 empty++;
         }
 

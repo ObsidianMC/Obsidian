@@ -19,13 +19,13 @@ public static class NetherFortressPieces
     private const string ChestLoot = "minecraft:chests/nether_bridge";
 
     private static readonly IBlock air = BlocksRegistry.Air;
-    private static readonly IBlock bricks = BlocksRegistry.Get(Material.NetherBricks);
-    private static readonly IBlock fence = BlocksRegistry.Get(Material.NetherBrickFence);
+    private static readonly IBlock bricks = BlocksRegistry.NetherBricks;
+    private static readonly IBlock fence = BlocksRegistry.NetherBrickFence;
     private static readonly IBlock nsFence = Fence("north", "south");
     private static readonly IBlock weFence = Fence("west", "east");
     private static readonly IBlock nseFence = Fence("north", "south", "east");
     private static readonly IBlock nswFence = Fence("north", "south", "west");
-    private static readonly IBlock stairs = BlocksRegistry.Get(Material.NetherBrickStairs);
+    private static readonly IBlock stairs = BlocksRegistry.NetherBrickStairs;
 
     private static readonly PieceWeight[] bridgePieceWeights =
     [
@@ -712,7 +712,7 @@ public static class NetherFortressPieces
             this.Place(context, bricks, 6, 0, 6);
 
             // Placing the lava schedules its tick, which vanilla schedules a second time here.
-            this.Place(context, BlocksRegistry.Get(Material.Lava), 6, 5, 6);
+            this.Place(context, BlocksRegistry.Lava, 6, 5, 6);
         }
     }
 
@@ -978,8 +978,8 @@ public static class NetherFortressPieces
             this.Place(context, eastStairs, 8, 5, 9);
             this.Place(context, eastStairs, 8, 5, 10);
 
-            var soulSand = BlocksRegistry.Get(Material.SoulSand);
-            var netherWart = BlocksRegistry.Get(Material.NetherWart);
+            var soulSand = BlocksRegistry.SoulSand;
+            var netherWart = BlocksRegistry.NetherWart;
             this.Fill(context, 3, 4, 4, 4, 4, 8, soulSand);
             this.Fill(context, 8, 4, 4, 9, 4, 8, soulSand);
             this.Fill(context, 3, 5, 4, 4, 5, 8, netherWart);
@@ -1058,7 +1058,7 @@ public static class NetherFortressPieces
                 if (context.Box.IsInside(position))
                 {
                     this.hasPlacedSpawner = true;
-                    context.Level.SetBlock(position, BlocksRegistry.Get(Material.Spawner));
+                    context.Level.SetBlock(position, BlocksRegistry.Spawner);
                     FeatureHelpers.SetSpawnerEntity(context.Level, position, () => "minecraft:blaze");
                 }
             }

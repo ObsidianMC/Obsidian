@@ -23,7 +23,7 @@ public sealed class BasaltColumnsFeature : ConfiguredFeatureBase
     /// </summary>
     public required IIntProvider Reach { get; init; }
 
-    private static IBlock Basalt => field ??= BlocksRegistry.Get(Material.Basalt);
+    private static IBlock Basalt => field ??= BlocksRegistry.Basalt;
 
     public override bool Place(FeatureContext context)
     {
@@ -76,7 +76,7 @@ public sealed class BasaltColumnsFeature : ConfiguredFeatureBase
                 }
                 else
                 {
-                    if (level.GetBlock(cursor).Material != Material.Basalt)
+                    if (level.GetBlock(cursor).RegistryId != BlockIds.Basalt)
                         break;
 
                     cursor += Vector.Up;
@@ -133,10 +133,11 @@ public sealed class BasaltColumnsFeature : ConfiguredFeatureBase
     private static bool IsAirOrLavaOcean(IWorldGenLevel level, int seaLevel, Vector position)
     {
         var state = level.GetBlock(position);
-        return state.IsAir || state.Material == Material.Lava && position.Y <= seaLevel;
+        return state.IsAir || state.Is(BlockIds.Lava) && position.Y <= seaLevel;
     }
 
-    private static bool CannotPlaceOn(IBlock block) => block.Material is Material.Lava or Material.Bedrock or Material.MagmaBlock
-        or Material.SoulSand or Material.NetherBricks or Material.NetherBrickFence or Material.NetherBrickStairs or Material.NetherWart
-        or Material.Chest or Material.Spawner;
+    private static bool CannotPlaceOn(IBlock block) =>
+        block.RegistryId is BlockIds.Lava or BlockIds.Bedrock or BlockIds.MagmaBlock or BlockIds.SoulSand
+            or BlockIds.NetherBricks or BlockIds.NetherBrickFence or BlockIds.NetherBrickStairs or BlockIds.NetherWart
+            or BlockIds.Chest or BlockIds.Spawner;
 }

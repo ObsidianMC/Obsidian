@@ -14,12 +14,12 @@ public sealed class JigsawReplacementProcessor : StructureProcessor
     public override StructureBlockInfo? ProcessBlock(IWorldGenLevel level, Vector origin, Vector pivot, StructureBlockInfo original,
         StructureBlockInfo current, StructurePlaceSettings settings)
     {
-        if (current.Block.Material != Material.Jigsaw || current.Nbt is null)
+        if (!current.Block.Is(BlockIds.Jigsaw) || current.Nbt is null)
             return current;
 
         var finalState = current.Nbt.TryGetTag<NbtTag<string>>("final_state", out var tag) ? tag.Value! : "minecraft:air";
         var block = BlockStateParser.TryParse(finalState);
-        if (block is null || block.Material == Material.StructureVoid)
+        if (block is null || block.Is(BlockIds.StructureVoid))
             return null;
 
         return new StructureBlockInfo(current.Position, block, null);

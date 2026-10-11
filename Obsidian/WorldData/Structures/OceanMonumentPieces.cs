@@ -25,11 +25,11 @@ public static class OceanMonumentPieces
     private static readonly int[] stepY = [-1, 1, 0, 0, 0, 0];
     private static readonly int[] stepZ = [0, 0, -1, 1, 0, 0];
 
-    private static readonly IBlock baseGray = BlocksRegistry.Get(Material.Prismarine);
-    private static readonly IBlock baseLight = BlocksRegistry.Get(Material.PrismarineBricks);
-    private static readonly IBlock baseBlack = BlocksRegistry.Get(Material.DarkPrismarine);
-    private static readonly IBlock lamp = BlocksRegistry.Get(Material.SeaLantern);
-    private static readonly IBlock water = BlocksRegistry.Get(Material.Water);
+    private static readonly IBlock baseGray = BlocksRegistry.Prismarine;
+    private static readonly IBlock baseLight = BlocksRegistry.PrismarineBricks;
+    private static readonly IBlock baseBlack = BlocksRegistry.DarkPrismarine;
+    private static readonly IBlock lamp = BlocksRegistry.SeaLantern;
+    private static readonly IBlock water = BlocksRegistry.Water;
 
     private static readonly int sourceRoomIndex = GetRoomIndex(2, 0, 0);
     private static readonly int topConnectIndex = GetRoomIndex(2, 2, 0);
@@ -228,7 +228,8 @@ public static class OceanMonumentPieces
                     {
                         // Vanilla also checks for water before placing air, which the kept blocks already rule out.
                         var block = this.GetBlock(level, x, y, z, context.Box);
-                        if (block.Material is Material.Ice or Material.PackedIce or Material.BlueIce or Material.Water)
+                        if (block.RegistryId is BlockIds.Ice or BlockIds.PackedIce
+                            or BlockIds.BlueIce or BlockIds.Water)
                             continue;
 
                         this.PlaceBlock(level, this.GetWorldY(y) >= level.SeaLevel ? BlocksRegistry.Air : water, x, y, z, context.Box);
@@ -892,7 +893,7 @@ public static class OceanMonumentPieces
             }
 
             this.Fill(context, 6, 3, 6, 9, 6, 9, baseBlack);
-            this.Fill(context, 7, 4, 7, 8, 5, 8, BlocksRegistry.Get(Material.GoldBlock));
+            this.Fill(context, 7, 4, 7, 8, 5, 8, BlocksRegistry.GoldBlock);
 
             for (var y = 3; y <= 6; y += 3)
             {
@@ -1670,7 +1671,7 @@ public static class OceanMonumentPieces
             if (this.Room.Connections[Up] is null)
                 this.GenerateBoxOnFillOnly(context, 1, 4, 1, 6, 4, 6, baseGray);
 
-            var wetSponge = BlocksRegistry.Get(Material.WetSponge);
+            var wetSponge = BlocksRegistry.WetSponge;
             for (var x = 1; x <= 6; x++)
             {
                 for (var z = 1; z <= 6; z++)

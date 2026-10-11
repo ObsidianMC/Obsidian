@@ -74,7 +74,7 @@ internal sealed class MapStorage(string folderPath)
         for (var slot = 0; slot < inventory.Size; slot++)
         {
             var stack = inventory.GetItem(slot);
-            var mapId = stack is not null && stack.Type == Material.FilledMap ? GetMapId(stack) : null;
+            var mapId = stack is not null && stack.Is(ItemsRegistry.FilledMap) ? GetMapId(stack) : null;
             if (mapId is null)
                 continue;
 

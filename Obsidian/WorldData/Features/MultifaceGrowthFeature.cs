@@ -112,5 +112,5 @@ public sealed class MultifaceGrowthFeature : ConfiguredFeatureBase
         return [.. directions];
     }
 
-    private static bool IsAirOrWater(IBlock block) => block.IsAir || block.Material == Material.Water;
+    private static bool IsAirOrWater(IBlock block) => block.IsAir || block.Is(BlockIds.Water);
 }

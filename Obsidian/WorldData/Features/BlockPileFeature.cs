@@ -47,6 +47,6 @@ public sealed class BlockPileFeature : ConfiguredFeatureBase
     private static bool MayPlaceOn(IWorldGenLevel level, Vector position, IRandomSource random)
     {
         var below = level.GetBlock(position + Vector.Down);
-        return below.Material == Material.DirtPath ? random.NextBoolean() : below.IsFaceSturdy(BlockFace.Up);
+        return below.Is(BlockIds.DirtPath) ? random.NextBoolean() : below.IsFaceSturdy(BlockFace.Up);
     }
 }

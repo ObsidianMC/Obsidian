@@ -20,7 +20,7 @@ public abstract class CoralFeatureBase : ConfiguredFeatureBase
 
     private static IBlock[] WallCorals => field ??= Resolve(TagsRegistry.Block.WallCorals);
 
-    private static IBlock SeaPickle => field ??= BlocksRegistry.Get(Material.SeaPickle);
+    private static IBlock SeaPickle => field ??= BlocksRegistry.SeaPickle;
 
     public sealed override bool Place(FeatureContext context)
     {
@@ -44,7 +44,7 @@ public abstract class CoralFeatureBase : ConfiguredFeatureBase
     {
         var above = position + Vector.Up;
         var existing = level.GetBlock(position);
-        if (existing.Material != Material.Water && !coralsTag.Contains(existing) || level.GetBlock(above).Material != Material.Water)
+        if (!existing.Is(BlockIds.Water) && !coralsTag.Contains(existing) || !level.GetBlock(above).Is(BlockIds.Water))
             return false;
 
         level.SetBlock(position, coral);
@@ -60,7 +60,7 @@ public abstract class CoralFeatureBase : ConfiguredFeatureBase
                 continue;
 
             var side = position.Offset(face);
-            if (level.GetBlock(side).Material != Material.Water)
+            if (level.GetBlock(side).RegistryId != BlockIds.Water)
                 continue;
 
             var fan = WallCorals[random.NextInt(WallCorals.Length)];
@@ -73,5 +73,5 @@ public abstract class CoralFeatureBase : ConfiguredFeatureBase
         return true;
     }
 
-    private static IBlock[] Resolve(Tag tag) => [.. tag.Entries.Select(id => BlocksRegistry.Get((Material)id))];
+    private static IBlock[] Resolve(Tag tag) => [.. tag.Entries.Select(BlocksRegistry.GetDefault)];
 }

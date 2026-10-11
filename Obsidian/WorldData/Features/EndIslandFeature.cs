@@ -10,7 +10,7 @@ public sealed class EndIslandFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:end_island";
 
-    private static IBlock EndStone => field ??= BlocksRegistry.Get(Material.EndStone);
+    private static IBlock EndStone => field ??= BlocksRegistry.EndStone;
 
     public override bool Place(FeatureContext context)
     {

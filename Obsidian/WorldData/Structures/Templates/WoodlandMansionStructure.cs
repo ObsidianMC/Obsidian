@@ -10,7 +10,7 @@ namespace Obsidian.WorldData.Structures.Templates;
 [StructureType("minecraft:woodland_mansion")]
 public sealed class WoodlandMansionStructure : Structure
 {
-    private static readonly IBlock cobblestone = BlocksRegistry.Get(Material.Cobblestone);
+    private static readonly IBlock cobblestone = BlocksRegistry.Cobblestone;
 
     internal override StructureStub? FindGenerationPoint(StructureGenerationContext context)
     {
@@ -75,7 +75,7 @@ public sealed class WoodlandMansionPiece : TemplateStructurePiece
         if (metadata.StartsWith("Chest", StringComparison.Ordinal))
         {
             var rotation = this.PlaceSettings.Rotation;
-            var chest = BlocksRegistry.Get(Material.Chest);
+            var chest = BlocksRegistry.Chest;
             BlockFace? facing = metadata switch
             {
                 "ChestWest" => BlockFace.West,

@@ -35,7 +35,7 @@ public sealed class DripstoneClusterFeature : ConfiguredFeatureBase
 
     private static readonly BlockSet baseStoneOverworld = new("#minecraft:base_stone_overworld");
 
-    private static IBlock Water => field ??= BlocksRegistry.Get(Material.Water);
+    private static IBlock Water => field ??= BlocksRegistry.Water;
 
     public override bool Place(FeatureContext context)
     {
@@ -88,7 +88,7 @@ public sealed class DripstoneClusterFeature : ConfiguredFeatureBase
 
         var stalactiteRoll = random.NextDouble() < chance;
         int stalactiteHeight;
-        if (ceiling is not null && stalactiteRoll && level.GetBlock(position.AtY(ceiling.Value)).Material != Material.Lava)
+        if (ceiling is not null && stalactiteRoll && !level.GetBlock(position.AtY(ceiling.Value)).Is(BlockIds.Lava))
         {
             var thickness = this.DripstoneBlockLayerThickness.Sample(random);
             ReplaceBlocksWithDripstoneBlocks(level, position.AtY(ceiling.Value), thickness, BlockFace.Up);
@@ -102,7 +102,9 @@ public sealed class DripstoneClusterFeature : ConfiguredFeatureBase
 
         var stalagmiteRoll = random.NextDouble() < chance;
         int stalagmiteHeight;
-        if (poolFloor is not null && stalagmiteRoll && level.GetBlock(position.AtY(poolFloor.Value)).Material != Material.Lava)
+        if (poolFloor is not null
+            && stalagmiteRoll
+            && !level.GetBlock(position.AtY(poolFloor.Value)).Is(BlockIds.Lava))
         {
             var thickness = this.DripstoneBlockLayerThickness.Sample(random);
             ReplaceBlocksWithDripstoneBlocks(level, position.AtY(poolFloor.Value), thickness, BlockFace.Down);
@@ -156,7 +158,7 @@ public sealed class DripstoneClusterFeature : ConfiguredFeatureBase
     private static bool CanPlacePool(IWorldGenLevel level, Vector position)
     {
         var state = level.GetBlock(position);
-        if (state.Material is Material.Water or Material.DripstoneBlock or Material.PointedDripstone)
+        if (state.RegistryId is BlockIds.Water or BlockIds.DripstoneBlock or BlockIds.PointedDripstone)
             return false;
 
         if (FeatureHelpers.IsWaterFluid(level.GetBlock(position + Vector.Up)))

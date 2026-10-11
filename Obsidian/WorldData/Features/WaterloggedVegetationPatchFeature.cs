@@ -11,7 +11,7 @@ public sealed class WaterloggedVegetationPatchFeature : VegetationPatchFeatureBa
 {
     public override string Type => "minecraft:waterlogged_vegetation_patch";
 
-    private static IBlock Water => field ??= BlocksRegistry.Get(Material.Water);
+    private static IBlock Water => field ??= BlocksRegistry.Water;
 
     protected override List<Vector> PlaceGroundPatch(IWorldGenLevel level, IRandomSource random, Vector origin, int radiusX, int radiusZ)
     {

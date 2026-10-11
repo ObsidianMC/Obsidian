@@ -18,13 +18,13 @@ internal sealed class LevelPortals(AbstractLevel level)
             var checkedBlocks = new HashSet<Vector>();
             while (this.neighborChanges.TryDequeue(out var changed))
             {
-                if ((await level.GetBlockAsync(changed))?.Material is Material.Fire or Material.SoulFire)
+                if ((await level.GetBlockAsync(changed))?.RegistryId is BlockIds.Fire or BlockIds.SoulFire)
                     await this.TryIgniteCoreAsync(changed);
                 foreach (var direction in Vector.AllDirections)
                 {
                     var position = changed + direction;
                     var block = await level.GetBlockAsync(position);
-                    if (block?.Material != Material.NetherPortal)
+                    if (block?.RegistryId != BlockIds.NetherPortal)
                         continue;
                     var axis = block.GetProperty("axis") ?? "x";
                     // Vanilla ignores changes normal to the portal plane.
@@ -82,7 +82,7 @@ internal sealed class LevelPortals(AbstractLevel level)
         try
         {
             var frame = await level.GetBlockAsync(position);
-            if (frame?.Material != Material.EndPortalFrame || frame.GetProperty("eye") != "false")
+            if (frame?.RegistryId != BlockIds.EndPortalFrame || frame.GetProperty("eye") != "false")
                 return false;
             await level.SetBlockAsync(position, frame.WithProperty("eye", true), true);
             level.BroadcastLevelEvent(1503, position, 0);
@@ -94,7 +94,7 @@ internal sealed class LevelPortals(AbstractLevel level)
                     continue;
                 for (var x = 0; x < 3; x++)
                     for (var z = 0; z < 3; z++)
-                        await level.SetBlockAsync(origin + new Vector(x, 0, z), BlocksRegistry.Get(Material.EndPortal), true);
+                        await level.SetBlockAsync(origin + new Vector(x, 0, z), BlocksRegistry.EndPortal, true);
                 level.BroadcastLevelEvent(1038, origin + new Vector(1, 0, 1), 0);
                 break;
             }
@@ -209,20 +209,21 @@ internal sealed class LevelPortals(AbstractLevel level)
                 for (var x = 0; x < 2; x++)
                     for (var y = -1; y < 3; y++)
                         await level.SetBlockAsync(origin + step * x + normal * side + Vector.Up * y,
-                            y < 0 ? BlocksRegistry.Get(Material.Obsidian) : BlocksRegistry.Air);
+                            y < 0 ? BlocksRegistry.ObsidianBlock : BlocksRegistry.Air);
         }
         var frame = new NetherPortalShape(best.Value, axis, 2, 3, 6);
         for (var x = -1; x < 3; x++)
             for (var y = -1; y < 4; y++)
                 if (x is -1 or 2 || y is -1 or 3)
-                    await level.SetBlockAsync(frame.Origin + step * x + Vector.Up * y, BlocksRegistry.Get(Material.Obsidian), true);
+                    await level.SetBlockAsync(
+                        frame.Origin + step * x + Vector.Up * y, BlocksRegistry.ObsidianBlock, true);
         await this.FillAsync(frame);
         return frame;
     }
 
     private async Task FillAsync(NetherPortalShape frame)
     {
-        var portal = BlocksRegistry.Get(Material.NetherPortal).WithProperty("axis", frame.Axis);
+        var portal = BlocksRegistry.NetherPortal.WithProperty("axis", frame.Axis);
         foreach (var position in frame.Interior())
             await level.SetBlockAsync(position, portal);
     }
@@ -258,12 +259,12 @@ internal sealed class LevelPortals(AbstractLevel level)
                 continue;
             var palette = section.BlockStateContainer.Palette;
             if (palette.BitCount <= 8 && !Enumerable.Range(0, palette.Count)
-                .Any(index => palette.GetValueFromIndex(index)?.Material == Material.NetherPortal))
+                .Any(index => palette.GetValueFromIndex(index)?.RegistryId == BlockIds.NetherPortal))
                 continue;
             for (var y = 0; y < 16; y++)
                 for (var z = 0; z < 16; z++)
                     for (var x = 0; x < 16; x++)
-                        if (section.GetBlock(x, y, z).Material == Material.NetherPortal)
+                        if (section.GetBlock(x, y, z).RegistryId == BlockIds.NetherPortal)
                             yield return new Vector((chunk.X << 4) + x, chunk.MinY + sectionIndex * 16 + y, (chunk.Z << 4) + z);
         }
     }
@@ -271,7 +272,8 @@ internal sealed class LevelPortals(AbstractLevel level)
     internal static async ValueTask<NetherPortalShape> RectangleAsync(Func<Vector, ValueTask<IBlock?>> read, Vector position, string axis)
     {
         var step = axis == "x" ? new Vector(1, 0, 0) : new Vector(0, 0, 1);
-        async ValueTask<bool> Matches(Vector p) => (await read(p)) is { Material: Material.NetherPortal } block && block.GetProperty("axis") == axis;
+        async ValueTask<bool> Matches(Vector p) =>
+            (await read(p)) is { RegistryId: BlockIds.NetherPortal } block && block.GetProperty("axis") == axis;
         for (var i = 0; i < 20 && await Matches(position + Vector.Down); i++)
             position += Vector.Down;
         for (var i = 0; i < 20 && await Matches(position - step); i++)

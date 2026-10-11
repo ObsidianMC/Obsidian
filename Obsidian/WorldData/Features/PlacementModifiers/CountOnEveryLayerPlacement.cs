@@ -55,7 +55,7 @@ public sealed class CountOnEveryLayerPlacement : PlacementModifierBase
         {
             var below = level.GetBlock(new Vector(x, y - 1, z));
 
-            if (!IsEmpty(below) && IsEmpty(above) && below.Material != Material.Bedrock)
+            if (!IsEmpty(below) && IsEmpty(above) && !below.Is(BlockIds.Bedrock))
             {
                 if (layer == targetLayer)
                     return y;
@@ -69,5 +69,5 @@ public sealed class CountOnEveryLayerPlacement : PlacementModifierBase
         return int.MaxValue;
     }
 
-    private static bool IsEmpty(IBlock block) => block.IsAir || block.Material is Material.Water or Material.Lava;
+    private static bool IsEmpty(IBlock block) => block.IsAir || block.RegistryId is BlockIds.Water or BlockIds.Lava;
 }

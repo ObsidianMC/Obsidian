@@ -33,7 +33,7 @@ public abstract partial class AbstractLevel
         var delta = entity.Position - oldPosition;
         var distance = Math.Sqrt(delta.X * delta.X + delta.Z * delta.Z);
         if (distance <= 0.00001 || distance > 8 || entity is Warden or Allay) return;
-        var water = GameEventBlock((Vector)entity.Position.Floor())?.Material == Material.Water;
+        var water = GameEventBlock((Vector)entity.Position.Floor())?.RegistryId == BlockIds.Water;
         if (!grounded && !water) return;
         var total = stepDistances.AddOrUpdate(entity.Uuid, distance, (_, accumulated) => accumulated + distance);
         if (total < 0.6) return;
@@ -65,16 +65,20 @@ public abstract partial class AbstractLevel
             if (pending.ArrivalAt > gameEventTick) continue;
             blockVibrations.Remove(point);
             var block = GameEventBlock(point);
-            if (block?.Material is Material.SculkSensor or Material.CalibratedSculkSensor)
+            if (block?.RegistryId is BlockIds.SculkSensor or BlockIds.CalibratedSculkSensor)
             {
                 if (block.GetProperty("sculk_sensor_phase") != "inactive") continue;
-                await SetBlockAsync(point, block.WithProperty("sculk_sensor_phase", "active").WithProperty("power", Math.Max(1, 15 - (int)(pending.Distance / (block.Material == Material.CalibratedSculkSensor ? 16 : 8) * 15))), true);
+                var sensorRange = block.Is(BlockIds.CalibratedSculkSensor) ? 16 : 8;
+                var sensorPower = Math.Max(1, 15 - (int)(pending.Distance / sensorRange * 15));
+                var activeSensor = block.WithProperty("sculk_sensor_phase", "active")
+                    .WithProperty("power", sensorPower);
+                await SetBlockAsync(point, activeSensor, true);
                 if (GetLoadedChunk(point.X >> 4, point.Z >> 4)?.GetBlockEntity(point.X, point.Y, point.Z) is DataBlockEntity sensor)
                     sensor.Set("last_vibration_frequency", GameEventFrequency(pending.Event.Kind));
                 activeSculk[point] = 30;
                 EmitGameEvent(MobGameEvent.SculkSensorClick, (VectorD)point + new VectorD(0.5, 0.5, 0.5), pending.Event.Source, pending.Event.Owner);
             }
-            else if (block?.Material == Material.SculkShrieker)
+            else if (block?.RegistryId == BlockIds.SculkShrieker)
                 await ShriekAsync(point, pending.Event.Owner ?? pending.Event.Source);
         }
         foreach (var (point, ticks) in activeSculk.ToArray())
@@ -83,12 +87,12 @@ public abstract partial class AbstractLevel
             if (ticks > 1) { activeSculk[point] = ticks - 1; continue; }
             activeSculk.Remove(point);
             var block = GameEventBlock(point);
-            if (block?.Material == Material.SculkShrieker)
+            if (block?.RegistryId == BlockIds.SculkShrieker)
             {
                 await SetBlockAsync(point, block.WithProperty("shrieking", false), true);
                 if (shriekerSummons.Remove(point)) TrySummonWarden(point);
             }
-            else if (block?.Material is Material.SculkSensor or Material.CalibratedSculkSensor)
+            else if (block?.RegistryId is BlockIds.SculkSensor or BlockIds.CalibratedSculkSensor)
             {
                 var cooling = block.GetProperty("sculk_sensor_phase") == "active";
                 await SetBlockAsync(point, block.WithProperty("sculk_sensor_phase", cooling ? "cooldown" : "inactive").WithProperty("power", 0), true);
@@ -106,8 +110,11 @@ public abstract partial class AbstractLevel
             if (vibration.Kind is MobGameEvent.Step or MobGameEvent.Land && vibration.Source is IPlayer)
             {
                 var feet = (Vector)vibration.Position.Floor();
-                if (GameEventBlock(feet)?.Material == Material.SculkShrieker) await ShriekAsync(feet, vibration.Source);
-                if (GameEventBlock(feet - new Vector(0, 1, 0))?.Material == Material.SculkShrieker) await ShriekAsync(feet - new Vector(0, 1, 0), vibration.Source);
+                if (GameEventBlock(feet)?.RegistryId == BlockIds.SculkShrieker)
+                    await ShriekAsync(feet, vibration.Source);
+
+                if (GameEventBlock(feet - new Vector(0, 1, 0))?.RegistryId == BlockIds.SculkShrieker)
+                    await ShriekAsync(feet - new Vector(0, 1, 0), vibration.Source);
             }
             if (!ValidVibration(vibration)) continue;
             foreach (var listener in GetNonPlayerEntitiesInRange(vibration.Position, 16))
@@ -125,8 +132,8 @@ public abstract partial class AbstractLevel
             foreach (var point in NearbySculk(origin, 16))
             {
                 var block = GameEventBlock(point)!;
-                var shrieker = block.Material == Material.SculkShrieker;
-                var radius = block.Material == Material.CalibratedSculkSensor ? 16 : 8;
+                var shrieker = block.Is(BlockIds.SculkShrieker);
+                var radius = block.Is(BlockIds.CalibratedSculkSensor) ? 16 : 8;
                 if (shrieker && vibration.Kind != MobGameEvent.SculkSensorClick || !shrieker && vibration.Kind == MobGameEvent.SculkSensorClick) continue;
                 if (shrieker && vibration.Source is not IPlayer && vibration.Owner is not IPlayer) continue;
                 if (activeSculk.ContainsKey(point) || (shrieker ? block.GetProperty("shrieking") == "true" : block.GetProperty("sculk_sensor_phase") != "inactive")) continue;
@@ -226,7 +233,7 @@ public abstract partial class AbstractLevel
     {
         if (source is not IPlayer player || player.GameMode == GameMode.Spectator || activeSculk.ContainsKey(point)) return;
         var block = GameEventBlock(point);
-        if (block?.Material != Material.SculkShrieker || block.GetProperty("shrieking") == "true") return;
+        if (block?.RegistryId != BlockIds.SculkShrieker || block.GetProperty("shrieking") == "true") return;
         await SetBlockAsync(point, block.WithProperty("shrieking", true), true);
         activeSculk[point] = 90;
         PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new LevelEventPacket(3007, point, 0));

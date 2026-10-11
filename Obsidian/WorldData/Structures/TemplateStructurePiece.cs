@@ -70,7 +70,7 @@ public abstract class TemplateStructurePiece : StructurePiece
         if (!this.Template.PlaceInWorld(level, templatePosition, context.Pivot, settings, context.Random))
             return;
 
-        foreach (var marker in this.Template.FilterBlocks(templatePosition, settings, Material.StructureBlock))
+        foreach (var marker in this.Template.FilterBlocks(templatePosition, settings, BlockIds.StructureBlock))
         {
             if (marker.Nbt is not null && marker.Nbt.TryGetTag<NbtTag<string>>("mode", out var mode) && mode.Value == "DATA")
             {
@@ -79,7 +79,7 @@ public abstract class TemplateStructurePiece : StructurePiece
             }
         }
 
-        foreach (var jigsaw in this.Template.FilterBlocks(templatePosition, settings, Material.Jigsaw))
+        foreach (var jigsaw in this.Template.FilterBlocks(templatePosition, settings, BlockIds.Jigsaw))
         {
             if (jigsaw.Nbt is null)
                 continue;

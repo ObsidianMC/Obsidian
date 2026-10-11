@@ -210,7 +210,7 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
         var chunk = context.Chunk;
         var block = chunk.GetBlock(localX, y, localZ);
 
-        if (block.Material is Material.GrassBlock or Material.Mycelium)
+        if (block.RegistryId is BlockIds.GrassBlock or BlockIds.Mycelium)
             surfaceReached = true;
 
         if (!configuration.CanReplace(block))
@@ -228,7 +228,7 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
         if (carved.IsLiquid && context.Aquifer.ShouldScheduleFluidUpdate)
             context.FluidUpdates?.Add(new Vector(x, y, z));
 
-        if (!surfaceReached || y - 1 < context.MinY || chunk.GetBlock(localX, y - 1, localZ).Material != Material.Dirt)
+        if (!surfaceReached || y - 1 < context.MinY || !chunk.GetBlock(localX, y - 1, localZ).Is(BlockIds.Dirt))
             return;
 
         if (context.TopMaterial(x, y - 1, z, carved.IsLiquid) is IBlock topMaterial)

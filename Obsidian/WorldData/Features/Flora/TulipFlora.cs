@@ -7,12 +7,12 @@ public class TulipFlora : BaseFlora
     public TulipFlora(GenHelper helper, IChunk chunk) : base(helper, chunk)
     {
         int tulipType = Random.Shared.Next(3);
-        this.FloraMat = tulipType switch
+        this.FloraKind = tulipType switch
         {
-            0 => Material.OrangeTulip,
-            1 => Material.PinkTulip,
-            2 => Material.RedTulip,
-            _ => Material.WhiteTulip
+            0 => BlocksRegistry.OrangeTulip,
+            1 => BlocksRegistry.PinkTulip,
+            2 => BlocksRegistry.RedTulip,
+            _ => BlocksRegistry.WhiteTulip
         };
     }
 }

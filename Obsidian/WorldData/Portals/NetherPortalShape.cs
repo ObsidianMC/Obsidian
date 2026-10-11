@@ -36,18 +36,18 @@ internal readonly record struct NetherPortalShape(Vector Origin, string Axis, in
             var row = origin + Vector.Up * y;
             var top = true;
             for (var x = 0; x < width; x++)
-                top &= (await read(row + step * x))?.Material == Material.Obsidian;
+                top &= (await read(row + step * x))?.RegistryId == BlockIds.Obsidian;
             if (top)
                 return y >= 3 ? new(origin, axis, width, y, portals) : null;
-            if (y == MaxSize || (await read(row - step))?.Material != Material.Obsidian ||
-                (await read(row + step * width))?.Material != Material.Obsidian)
+            if (y == MaxSize || (await read(row - step))?.RegistryId != BlockIds.Obsidian ||
+                (await read(row + step * width))?.RegistryId != BlockIds.Obsidian)
                 return null;
             for (var x = 0; x < width; x++)
             {
                 var block = await read(row + step * x);
                 if (!IsInterior(block))
                     return null;
-                if (block!.Material == Material.NetherPortal)
+                if (block!.Is(BlockIds.NetherPortal))
                     portals++;
             }
         }
@@ -61,13 +61,13 @@ internal readonly record struct NetherPortalShape(Vector Origin, string Axis, in
             var position = origin + step * distance;
             var block = await read(position);
             if (!IsInterior(block))
-                return block?.Material == Material.Obsidian ? distance : 0;
-            if ((await read(position + Vector.Down))?.Material != Material.Obsidian)
+                return block?.RegistryId == BlockIds.Obsidian ? distance : 0;
+            if ((await read(position + Vector.Down))?.RegistryId != BlockIds.Obsidian)
                 return 0;
         }
         return 0;
     }
 
     private static bool IsInterior(IBlock? block) => block is not null &&
-        (block.IsAir || block.Material is Material.Fire or Material.SoulFire or Material.NetherPortal);
+        (block.IsAir || block.RegistryId is BlockIds.Fire or BlockIds.SoulFire or BlockIds.NetherPortal);
 }

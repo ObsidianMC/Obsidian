@@ -51,15 +51,15 @@ public static class StrongholdPieces
 {
     private const int MaxDepth = 50;
 
-    private static readonly IBlock stoneBricks = BlocksRegistry.Get(Material.StoneBricks);
-    private static readonly IBlock caveAir = BlocksRegistry.Get(Material.CaveAir);
-    private static readonly IBlock smoothStoneSlab = BlocksRegistry.Get(Material.SmoothStoneSlab);
-    private static readonly IBlock stoneBrickSlab = BlocksRegistry.Get(Material.StoneBrickSlab);
-    private static readonly IBlock oakPlanks = BlocksRegistry.Get(Material.OakPlanks);
-    private static readonly IBlock bookshelf = BlocksRegistry.Get(Material.Bookshelf);
-    private static readonly IBlock cobblestone = BlocksRegistry.Get(Material.Cobblestone);
-    private static readonly IBlock lava = BlocksRegistry.Get(Material.Lava);
-    private static readonly IBlock wallTorch = BlocksRegistry.Get(Material.WallTorch);
+    private static readonly IBlock stoneBricks = BlocksRegistry.StoneBricks;
+    private static readonly IBlock caveAir = BlocksRegistry.CaveAir;
+    private static readonly IBlock smoothStoneSlab = BlocksRegistry.SmoothStoneSlab;
+    private static readonly IBlock stoneBrickSlab = BlocksRegistry.StoneBrickSlab;
+    private static readonly IBlock oakPlanks = BlocksRegistry.OakPlanks;
+    private static readonly IBlock bookshelf = BlocksRegistry.Bookshelf;
+    private static readonly IBlock cobblestone = BlocksRegistry.Cobblestone;
+    private static readonly IBlock lava = BlocksRegistry.Lava;
+    private static readonly IBlock wallTorch = BlocksRegistry.WallTorch;
 
     internal enum PieceKind
     {
@@ -179,9 +179,8 @@ public static class StrongholdPieces
         return piece;
     }
 
-    private static IBlock Connected(Material material, params string[] sides)
+    private static IBlock Connected(IBlock block, params string[] sides)
     {
-        var block = BlocksRegistry.Get(material);
         foreach (var side in sides)
             block = block.WithProperty(side, true);
 
@@ -211,9 +210,9 @@ public static class StrongholdPieces
     /// </remarks>
     private sealed class SmoothStoneSelector : StructurePiece.BlockSelector
     {
-        private static readonly IBlock cracked = BlocksRegistry.Get(Material.CrackedStoneBricks);
-        private static readonly IBlock mossy = BlocksRegistry.Get(Material.MossyStoneBricks);
-        private static readonly IBlock infested = BlocksRegistry.Get(Material.InfestedStoneBricks);
+        private static readonly IBlock cracked = BlocksRegistry.CrackedStoneBricks;
+        private static readonly IBlock mossy = BlocksRegistry.MossyStoneBricks;
+        private static readonly IBlock infested = BlocksRegistry.InfestedStoneBricks;
 
         public override void Next(IRandomSource random, int x, int y, int z, bool isEdge)
         {
@@ -275,26 +274,29 @@ public static class StrongholdPieces
                     break;
                 case SmallDoorType.WoodDoor:
                     this.PlaceDoorFrame(level, box, x, y, z);
-                    this.PlaceBlock(level, BlocksRegistry.Get(Material.OakDoor), x + 1, y, z, box);
-                    this.PlaceBlock(level, BlocksRegistry.Get(Material.OakDoor).WithProperty("half", "upper"), x + 1, y + 1, z, box);
+                    this.PlaceBlock(level, BlocksRegistry.OakDoor, x + 1, y, z, box);
+                    this.PlaceBlock(level, BlocksRegistry.OakDoor.WithProperty("half", "upper"), x + 1, y + 1, z, box);
                     break;
                 case SmallDoorType.Grates:
                     this.PlaceBlock(level, caveAir, x + 1, y, z, box);
                     this.PlaceBlock(level, caveAir, x + 1, y + 1, z, box);
-                    this.PlaceBlock(level, Connected(Material.IronBars, "west"), x, y, z, box);
-                    this.PlaceBlock(level, Connected(Material.IronBars, "west"), x, y + 1, z, box);
-                    this.PlaceBlock(level, Connected(Material.IronBars, "east", "west"), x, y + 2, z, box);
-                    this.PlaceBlock(level, Connected(Material.IronBars, "east", "west"), x + 1, y + 2, z, box);
-                    this.PlaceBlock(level, Connected(Material.IronBars, "east", "west"), x + 2, y + 2, z, box);
-                    this.PlaceBlock(level, Connected(Material.IronBars, "east"), x + 2, y + 1, z, box);
-                    this.PlaceBlock(level, Connected(Material.IronBars, "east"), x + 2, y, z, box);
+                    this.PlaceBlock(level, Connected(BlocksRegistry.IronBars, "west"), x, y, z, box);
+                    this.PlaceBlock(level, Connected(BlocksRegistry.IronBars, "west"), x, y + 1, z, box);
+                    this.PlaceBlock(level, Connected(BlocksRegistry.IronBars, "east", "west"), x, y + 2, z, box);
+                    this.PlaceBlock(level, Connected(BlocksRegistry.IronBars, "east", "west"), x + 1, y + 2, z, box);
+                    this.PlaceBlock(level, Connected(BlocksRegistry.IronBars, "east", "west"), x + 2, y + 2, z, box);
+                    this.PlaceBlock(level, Connected(BlocksRegistry.IronBars, "east"), x + 2, y + 1, z, box);
+                    this.PlaceBlock(level, Connected(BlocksRegistry.IronBars, "east"), x + 2, y, z, box);
                     break;
                 case SmallDoorType.IronDoor:
                     this.PlaceDoorFrame(level, box, x, y, z);
-                    this.PlaceBlock(level, BlocksRegistry.Get(Material.IronDoor), x + 1, y, z, box);
-                    this.PlaceBlock(level, BlocksRegistry.Get(Material.IronDoor).WithProperty("half", "upper"), x + 1, y + 1, z, box);
-                    this.PlaceBlock(level, BlocksRegistry.Get(Material.StoneButton).WithProperty("facing", "north"), x + 2, y + 1, z + 1, box);
-                    this.PlaceBlock(level, BlocksRegistry.Get(Material.StoneButton).WithProperty("facing", "south"), x + 2, y + 1, z - 1, box);
+                    this.PlaceBlock(level, BlocksRegistry.IronDoor, x + 1, y, z, box);
+                    this.PlaceBlock(
+                        level, BlocksRegistry.IronDoor.WithProperty("half", "upper"), x + 1, y + 1, z, box);
+                    this.PlaceBlock(
+                        level, BlocksRegistry.StoneButton.WithProperty("facing", "north"), x + 2, y + 1, z + 1, box);
+                    this.PlaceBlock(
+                        level, BlocksRegistry.StoneButton.WithProperty("facing", "south"), x + 2, y + 1, z - 1, box);
                     break;
             }
         }
@@ -702,7 +704,7 @@ public static class StrongholdPieces
             var height = this.isTall ? 11 : 6;
             this.GenerateBox(level, box, 0, 0, 0, 13, height - 1, 14, true, random, smoothStoneSelector);
             this.GenerateSmallDoor(level, box, this.EntryDoor, 4, 1, 0);
-            var cobweb = BlocksRegistry.Get(Material.Cobweb);
+            var cobweb = BlocksRegistry.Cobweb;
             this.GenerateMaybeBox(level, box, random, 0.07f, 2, 1, 1, 11, 4, 13, cobweb, cobweb, false, false);
 
             for (var z = 1; z <= 13; z++)
@@ -753,45 +755,45 @@ public static class StrongholdPieces
             this.PlaceBlock(level, oakPlanks, 8, 5, 11, box);
             this.PlaceBlock(level, oakPlanks, 9, 5, 10, box);
 
-            var westEast = Connected(Material.OakFence, "west", "east");
-            var northSouth = Connected(Material.OakFence, "north", "south");
+            var westEast = Connected(BlocksRegistry.OakFence, "west", "east");
+            var northSouth = Connected(BlocksRegistry.OakFence, "north", "south");
             this.GenerateBox(level, box, 3, 6, 3, 3, 6, 11, northSouth, northSouth, false);
             this.GenerateBox(level, box, 10, 6, 3, 10, 6, 9, northSouth, northSouth, false);
             this.GenerateBox(level, box, 4, 6, 2, 9, 6, 2, westEast, westEast, false);
             this.GenerateBox(level, box, 4, 6, 12, 7, 6, 12, westEast, westEast, false);
-            this.PlaceBlock(level, Connected(Material.OakFence, "north", "east"), 3, 6, 2, box);
-            this.PlaceBlock(level, Connected(Material.OakFence, "south", "east"), 3, 6, 12, box);
-            this.PlaceBlock(level, Connected(Material.OakFence, "north", "west"), 10, 6, 2, box);
+            this.PlaceBlock(level, Connected(BlocksRegistry.OakFence, "north", "east"), 3, 6, 2, box);
+            this.PlaceBlock(level, Connected(BlocksRegistry.OakFence, "south", "east"), 3, 6, 12, box);
+            this.PlaceBlock(level, Connected(BlocksRegistry.OakFence, "north", "west"), 10, 6, 2, box);
 
             for (var i = 0; i <= 2; i++)
             {
-                this.PlaceBlock(level, Connected(Material.OakFence, "south", "west"), 8 + i, 6, 12 - i, box);
+                this.PlaceBlock(level, Connected(BlocksRegistry.OakFence, "south", "west"), 8 + i, 6, 12 - i, box);
                 if (i != 2)
-                    this.PlaceBlock(level, Connected(Material.OakFence, "north", "east"), 8 + i, 6, 11 - i, box);
+                    this.PlaceBlock(level, Connected(BlocksRegistry.OakFence, "north", "east"), 8 + i, 6, 11 - i, box);
             }
 
-            var ladder = BlocksRegistry.Get(Material.Ladder).WithProperty("facing", "south");
+            var ladder = BlocksRegistry.Ladder.WithProperty("facing", "south");
             for (var y = 1; y <= 7; y++)
                 this.PlaceBlock(level, ladder, 10, y, 13, box);
 
             // The chandelier.
-            var east = Connected(Material.OakFence, "east");
-            var west = Connected(Material.OakFence, "west");
+            var east = Connected(BlocksRegistry.OakFence, "east");
+            var west = Connected(BlocksRegistry.OakFence, "west");
             this.PlaceBlock(level, east, 6, 9, 7, box);
             this.PlaceBlock(level, west, 7, 9, 7, box);
             this.PlaceBlock(level, east, 6, 8, 7, box);
             this.PlaceBlock(level, west, 7, 8, 7, box);
-            var allSides = Connected(Material.OakFence, "north", "south", "west", "east");
+            var allSides = Connected(BlocksRegistry.OakFence, "north", "south", "west", "east");
             this.PlaceBlock(level, allSides, 6, 7, 7, box);
             this.PlaceBlock(level, allSides, 7, 7, 7, box);
             this.PlaceBlock(level, east, 5, 7, 7, box);
             this.PlaceBlock(level, west, 8, 7, 7, box);
-            this.PlaceBlock(level, Connected(Material.OakFence, "east", "north"), 6, 7, 6, box);
-            this.PlaceBlock(level, Connected(Material.OakFence, "east", "south"), 6, 7, 8, box);
-            this.PlaceBlock(level, Connected(Material.OakFence, "west", "north"), 7, 7, 6, box);
-            this.PlaceBlock(level, Connected(Material.OakFence, "west", "south"), 7, 7, 8, box);
+            this.PlaceBlock(level, Connected(BlocksRegistry.OakFence, "east", "north"), 6, 7, 6, box);
+            this.PlaceBlock(level, Connected(BlocksRegistry.OakFence, "east", "south"), 6, 7, 8, box);
+            this.PlaceBlock(level, Connected(BlocksRegistry.OakFence, "west", "north"), 7, 7, 6, box);
+            this.PlaceBlock(level, Connected(BlocksRegistry.OakFence, "west", "south"), 7, 7, 8, box);
 
-            var torch = BlocksRegistry.Get(Material.Torch);
+            var torch = BlocksRegistry.Torch;
             this.PlaceBlock(level, torch, 5, 8, 7, box);
             this.PlaceBlock(level, torch, 8, 8, 7, box);
             this.PlaceBlock(level, torch, 6, 8, 6, box);
@@ -856,8 +858,8 @@ public static class StrongholdPieces
             this.GenerateBox(level, box, 3, 1, 8, 7, 1, 12, false, random, smoothStoneSelector);
             this.GenerateBox(level, box, 4, 1, 9, 6, 1, 11, lava, lava, false);
 
-            var northSouthBars = Connected(Material.IronBars, "north", "south");
-            var westEastBars = Connected(Material.IronBars, "west", "east");
+            var northSouthBars = Connected(BlocksRegistry.IronBars, "north", "south");
+            var westEastBars = Connected(BlocksRegistry.IronBars, "west", "east");
             for (var z = 3; z < 14; z += 2)
             {
                 this.GenerateBox(level, box, 0, 3, z, 0, 4, z, northSouthBars, northSouthBars, false);
@@ -867,7 +869,7 @@ public static class StrongholdPieces
             for (var x = 2; x < 9; x += 2)
                 this.GenerateBox(level, box, x, 3, 15, x, 4, 15, westEastBars, westEastBars, false);
 
-            var stairs = BlocksRegistry.Get(Material.StoneBrickStairs).WithProperty("facing", "north");
+            var stairs = BlocksRegistry.StoneBrickStairs.WithProperty("facing", "north");
             this.GenerateBox(level, box, 4, 1, 5, 6, 1, 7, false, random, smoothStoneSelector);
             this.GenerateBox(level, box, 4, 2, 6, 6, 2, 7, false, random, smoothStoneSelector);
             this.GenerateBox(level, box, 4, 3, 7, 6, 3, 7, false, random, smoothStoneSelector);
@@ -887,7 +889,7 @@ public static class StrongholdPieces
                 allEyes &= eyes[i];
             }
 
-            var frame = BlocksRegistry.Get(Material.EndPortalFrame);
+            var frame = BlocksRegistry.EndPortalFrame;
             IBlock Frame(string facing, int eye) => frame.WithProperty("facing", facing).WithProperty("eye", eyes[eye]);
             this.PlaceBlock(level, Frame("north", 0), 4, 3, 8, box);
             this.PlaceBlock(level, Frame("north", 1), 5, 3, 8, box);
@@ -903,7 +905,7 @@ public static class StrongholdPieces
             this.PlaceBlock(level, Frame("west", 11), 7, 3, 11, box);
             if (allEyes)
             {
-                var portal = BlocksRegistry.Get(Material.EndPortal);
+                var portal = BlocksRegistry.EndPortal;
                 for (var z = 9; z <= 11; z++)
                 {
                     for (var x = 4; x <= 6; x++)
@@ -918,7 +920,7 @@ public static class StrongholdPieces
             if (box.IsInside(position))
             {
                 this.hasPlacedSpawner = true;
-                level.SetBlock(position, BlocksRegistry.Get(Material.Spawner));
+                level.SetBlock(position, BlocksRegistry.Spawner);
                 FeatureHelpers.SetSpawnerEntity(level, position, () => "minecraft:silverfish");
             }
         }
@@ -959,12 +961,12 @@ public static class StrongholdPieces
             this.GenerateBox(level, box, 4, 1, 7, 4, 3, 7, false, random, smoothStoneSelector);
             this.GenerateBox(level, box, 4, 1, 9, 4, 3, 9, false, random, smoothStoneSelector);
 
-            var northSouth = Connected(Material.IronBars, "north", "south");
-            var westEast = Connected(Material.IronBars, "west", "east");
+            var northSouth = Connected(BlocksRegistry.IronBars, "north", "south");
+            var westEast = Connected(BlocksRegistry.IronBars, "west", "east");
             for (var y = 1; y <= 3; y++)
             {
                 this.PlaceBlock(level, northSouth, 4, y, 4, box);
-                this.PlaceBlock(level, Connected(Material.IronBars, "north", "south", "east"), 4, y, 5, box);
+                this.PlaceBlock(level, Connected(BlocksRegistry.IronBars, "north", "south", "east"), 4, y, 5, box);
                 this.PlaceBlock(level, northSouth, 4, y, 6, box);
                 this.PlaceBlock(level, westEast, 5, y, 5, box);
                 this.PlaceBlock(level, westEast, 6, y, 5, box);
@@ -973,7 +975,7 @@ public static class StrongholdPieces
 
             this.PlaceBlock(level, northSouth, 4, 3, 2, box);
             this.PlaceBlock(level, northSouth, 4, 3, 8, box);
-            var doorBottom = BlocksRegistry.Get(Material.IronDoor).WithProperty("facing", "west");
+            var doorBottom = BlocksRegistry.IronDoor.WithProperty("facing", "west");
             var doorTop = doorBottom.WithProperty("half", "upper");
             this.PlaceBlock(level, doorBottom, 4, 1, 2, box);
             this.PlaceBlock(level, doorTop, 4, 2, 2, box);
@@ -1054,7 +1056,7 @@ public static class StrongholdPieces
                     this.PlaceBlock(level, stoneBricks, 5, 1, 5, box);
                     this.PlaceBlock(level, stoneBricks, 5, 2, 5, box);
                     this.PlaceBlock(level, stoneBricks, 5, 3, 5, box);
-                    this.PlaceBlock(level, BlocksRegistry.Get(Material.Water), 5, 4, 5, box);
+                    this.PlaceBlock(level, BlocksRegistry.Water, 5, 4, 5, box);
                     break;
                 case 2:
                     this.PlaceStoreroom(level, box, random);
@@ -1110,7 +1112,7 @@ public static class StrongholdPieces
                 this.PlaceBlock(level, oakPlanks, 8, 3, z, box);
             }
 
-            var ladder = BlocksRegistry.Get(Material.Ladder).WithProperty("facing", "west");
+            var ladder = BlocksRegistry.Ladder.WithProperty("facing", "west");
             this.PlaceBlock(level, ladder, 9, 1, 3, box);
             this.PlaceBlock(level, ladder, 9, 2, 3, box);
             this.PlaceBlock(level, ladder, 9, 3, 3, box);
@@ -1316,7 +1318,7 @@ public static class StrongholdPieces
             this.GenerateBox(level, box, 0, 0, 0, 4, 10, 7, true, context.Random, smoothStoneSelector);
             this.GenerateSmallDoor(level, box, this.EntryDoor, 1, 7, 0);
             this.GenerateSmallDoor(level, box, SmallDoorType.Opening, 1, 1, 7);
-            var stairs = BlocksRegistry.Get(Material.CobblestoneStairs).WithProperty("facing", "south");
+            var stairs = BlocksRegistry.CobblestoneStairs.WithProperty("facing", "south");
 
             for (var i = 0; i < 6; i++)
             {

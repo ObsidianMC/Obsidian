@@ -8,7 +8,7 @@ public sealed class BlueIceFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:blue_ice";
 
-    private static IBlock BlueIce => field ??= BlocksRegistry.Get(Material.BlueIce);
+    private static IBlock BlueIce => field ??= BlocksRegistry.BlueIce;
 
     public override bool Place(FeatureContext context)
     {
@@ -18,13 +18,13 @@ public sealed class BlueIceFeature : ConfiguredFeatureBase
         if (!level.EnsureCanWrite(origin) || origin.Y > level.SeaLevel - 1)
             return false;
 
-        if (level.GetBlock(origin).Material != Material.Water && level.GetBlock(origin + Vector.Down).Material != Material.Water)
+        if (!level.GetBlock(origin).Is(BlockIds.Water) && !level.GetBlock(origin + Vector.Down).Is(BlockIds.Water))
             return false;
 
         var touchesPackedIce = false;
         foreach (var face in FeatureHelpers.Directions)
         {
-            if (face != BlockFace.Down && level.GetBlock(origin.Offset(face)).Material == Material.PackedIce)
+            if (face != BlockFace.Down && level.GetBlock(origin.Offset(face)).RegistryId == BlockIds.PackedIce)
             {
                 touchesPackedIce = true;
                 break;
@@ -49,12 +49,12 @@ public sealed class BlueIceFeature : ConfiguredFeatureBase
             var position = origin + new Vector(random.NextInt(spread) - random.NextInt(spread), dy,
                 random.NextInt(spread) - random.NextInt(spread));
             var existing = level.GetBlock(position);
-            if (!existing.IsAir && existing.Material is not (Material.Water or Material.PackedIce or Material.Ice))
+            if (!existing.IsAir && existing.RegistryId is not (BlockIds.Water or BlockIds.PackedIce or BlockIds.Ice))
                 continue;
 
             foreach (var face in FeatureHelpers.Directions)
             {
-                if (level.GetBlock(position.Offset(face)).Material == Material.BlueIce)
+                if (level.GetBlock(position.Offset(face)).RegistryId == BlockIds.BlueIce)
                 {
                     level.SetBlock(position, BlueIce);
                     break;
