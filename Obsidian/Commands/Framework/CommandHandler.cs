@@ -383,6 +383,11 @@ public sealed class CommandHandler : ICommandHandler
     private async Task<SuggestionGroup?> SuggestArgumentAsync(
         Command command, IExecutor<CommandContext> overload, List<(int Start, string Value)> words, CommandContext ctx)
     {
+        // The plugin's parsers, checks and provider run as part of a call into it, like the command itself.
+        using var call = TryEnter(command, out var refused);
+        if (refused)
+            return null;
+
         // Parsers, checks and the provider see the command's plugin, as when it runs.
         ctx.Plugin = command.PluginContainer?.Plugin;
 
@@ -410,7 +415,10 @@ public sealed class CommandHandler : ICommandHandler
         var typed = string.Join(' ', words[index..].Select(word => word.Value));
         var isWord = parameters[index].GetCustomAttribute<RemainingAttribute>() is null;
 
-        return new SuggestionGroup(words[index].Start, typed, isWord, await provider.GetSuggestionsAsync(ctx));
+        // Read now, while the plugin can't unload: a lazy sequence would run its code later.
+        var suggestions = (await provider.GetSuggestionsAsync(ctx)).ToList();
+
+        return new SuggestionGroup(words[index].Start, typed, isWord, suggestions);
     }
 
     /// <summary>
@@ -449,6 +457,11 @@ public sealed class CommandHandler : ICommandHandler
     /// </summary>
     private static async Task<bool> CanSuggestNameAsync(Command command, Command[] commands, CommandContext ctx)
     {
+        // The checks are the plugin's code, run as part of a call into it.
+        using var call = TryEnter(command, out var refused);
+        if (refused)
+            return false;
+
         if (!await CanUseAsync(command, ctx))
             return false;
 
@@ -516,22 +529,27 @@ public sealed class CommandHandler : ICommandHandler
             return;
         }
 
-        // Unloading the command's plugin waits for it to finish, and refuses it once started.
-        var plugin = cmd.PluginContainer as PluginContainer;
-        if (plugin is not null && !plugin.TryEnter())
+        using var call = TryEnter(cmd, out var refused);
+        if (refused)
         {
             await ctx.Sender.SendMessageAsync("This command's plugin is reloading; try again.");
             return;
         }
 
-        try
-        {
-            ctx.Plugin = cmd.PluginContainer?.Plugin;
-            await cmd.ExecuteAsync(ctx, args);
-        }
-        finally
-        {
-            plugin?.Exit();
-        }
+        ctx.Plugin = cmd.PluginContainer?.Plugin;
+        await cmd.ExecuteAsync(ctx, args);
+    }
+
+    /// <summary>
+    /// Starts a call into a command's plugin, which releasing the plugin waits for.
+    /// </summary>
+    /// <param name="refused">Whether the plugin is unloading, so the command mustn't run.</param>
+    /// <returns>The call to end, or null for a command of the server or a refused one.</returns>
+    private static PluginCall? TryEnter(Command command, out bool refused)
+    {
+        var call = (command.PluginContainer as PluginContainer)?.TryEnter();
+        refused = command.PluginContainer is PluginContainer && call is null;
+
+        return call;
     }
 }

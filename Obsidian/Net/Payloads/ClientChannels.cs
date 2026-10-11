@@ -200,19 +200,13 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
             Phase = protocol == NetworkProtocol.Configuration ? PayloadPhase.Configuration : PayloadPhase.Play
         };
 
-        // Unloading the channel's plugin waits for running handlers, and refuses new ones.
+        // Releasing the channel's plugin waits for running handlers, and unloading refuses new ones.
         var plugin = registration.Owner as PluginContainer;
-        if (plugin is not null && !plugin.TryEnter())
+        using var call = plugin?.TryEnter();
+        if (plugin is not null && call is null)
             return;
 
-        try
-        {
-            await registration.Handler(payloadReader, context);
-        }
-        finally
-        {
-            plugin?.Exit();
-        }
+        await registration.Handler(payloadReader, context);
     }
 
     // A client gets one query, during the handshake; a malformed one disconnects it.

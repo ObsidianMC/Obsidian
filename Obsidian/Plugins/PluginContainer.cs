@@ -22,10 +22,6 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     private PluginServiceProvider? ownServices;
     private PluginServiceProvider? scope;
 
-    // The plugins the current async flow is calling into, so that a plugin unloading itself from one of its own
-    // handlers (a reload command, say) doesn't wait for that handler.
-    private static readonly AsyncLocal<ImmutableList<PluginContainer>?> currentCalls = new();
-
     // Calls into the plugin that are running (see TryEnter), and whether it is unloading, which refuses new ones.
     private int activeCalls;
     private volatile bool closing;
@@ -92,24 +88,6 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
                 .Distinct()
         ];
 
-        // The plugin's services are built with the server's available to their constructors too. The plugin's own
-        // provider can't fall back to another, so they are created through one that does.
-        for (var i = registeredFrom; i < services.Count; i++)
-        {
-            var descriptor = services[i];
-            if (descriptor.ImplementationType is not Type implementation
-                || descriptor.IsKeyedService
-                || implementation.IsGenericTypeDefinition)
-                continue;
-
-            services[i] = ServiceDescriptor.Describe(
-                descriptor.ServiceType,
-                provider => ActivatorUtilities.CreateInstance(
-                    new PluginServiceProvider(provider, serverProvider),
-                    implementation),
-                descriptor.Lifetime);
-        }
-
         var provider = services.BuildServiceProvider(validateScopes: true);
 
         this.ownServices = new PluginServiceProvider(provider, serverProvider, provider);
@@ -118,54 +96,35 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     }
 
     /// <summary>
-    /// Starts a call into the plugin, e.g. running one of its event handlers, which unloading waits for.
+    /// Starts a call into the plugin, e.g. running one of its event handlers, which releasing the plugin waits for.
     /// </summary>
-    /// <returns>Whether the call may go ahead; it may not once the plugin is unloading. Then don't call
-    /// <see cref="Exit"/>.</returns>
-    internal bool TryEnter()
+    /// <returns>The call, to dispose when it ends, or null once the plugin is unloading: then don't call it.</returns>
+    internal PluginCall? TryEnter()
     {
         Interlocked.Increment(ref this.activeCalls);
 
-        if (this.closing)
-        {
-            Interlocked.Decrement(ref this.activeCalls);
-            return false;
-        }
+        if (!this.closing)
+            return PluginCall.Start(this);
 
-        currentCalls.Value = (currentCalls.Value ?? []).Add(this);
-        return true;
-    }
-
-    /// <summary>
-    /// Ends a call started with <see cref="TryEnter"/>, on the same async flow.
-    /// </summary>
-    internal void Exit()
-    {
-        currentCalls.Value = currentCalls.Value?.Remove(this);
         Interlocked.Decrement(ref this.activeCalls);
+        return null;
     }
 
+    // Ends a call started with TryEnter; PluginCall.Dispose calls it.
+    internal void Exit() => Interlocked.Decrement(ref this.activeCalls);
+
     /// <summary>
-    /// Refuses new calls into the plugin and waits for the running ones to end, for at most <paramref name="timeout"/>
-    /// (or <see cref="Timeout.InfiniteTimeSpan"/>). Calls the caller itself is inside of don't count.
+    /// Refuses new calls into the plugin.
     /// </summary>
-    /// <returns>Whether every call ended in time.</returns>
-    internal async Task<bool> CloseAsync(TimeSpan timeout)
+    internal void Close() => this.closing = true;
+
+    /// <summary>
+    /// Waits until no call into the plugin runs.
+    /// </summary>
+    internal async Task WaitForCallsAsync()
     {
-        this.closing = true;
-
-        var own = currentCalls.Value?.Count(call => call == this) ?? 0;
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-
-        while (Volatile.Read(ref this.activeCalls) > own)
-        {
-            if (timeout != Timeout.InfiniteTimeSpan && stopwatch.Elapsed >= timeout)
-                return false;
-
+        while (Volatile.Read(ref this.activeCalls) > 0)
             await Task.Delay(10);
-        }
-
-        return true;
     }
 
     /// <summary>

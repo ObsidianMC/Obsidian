@@ -68,7 +68,9 @@ Plugins load in dependency order; among plugins that are free to load, by id. Th
 loaded apply to plugins that arrive later too: a plugin another one declares incompatible doesn't load. A plugin that
 can't load yet (say, its required dependency is missing) waits, and is tried again whenever plugins load or unload.
 
-A plugin's services can use the singletons registered by the plugins it depends on, and the server's services.
+The services a plugin registers can take, in their constructors, its other services, the singletons registered by
+the plugins it depends on, `IServer`, the server configuration and loggers. Its `[Inject]` properties can also get the
+server's other services.
 
 ## Signing
 
@@ -85,9 +87,11 @@ archives signed by one of them load.
 Changing a plugin's file reloads the plugin; deleting it unloads it. The plugins that depend on it reload, or wait,
 with it, since they use its types. Unloading removes everything the plugin registered (commands, event handlers,
 services, payload channels, argument parsers), so its assemblies, which load into a collectible load context, can be
-freed. Unloading waits (up to five seconds) for the plugin's running event and payload handlers to finish. A plugin
-must not leave references to its own types with the server or other plugins outside what it registered, or it can't
-unload, and it can't load or unload plugins from its own load, ready or unloading callbacks.
+freed. Unloading stops new calls into the plugin (its event and payload handlers, commands and command suggestions),
+and the plugin is released (its unloading callback runs, and its services are disposed) once the running ones end,
+after the plugins that depend on it. A plugin may reload itself from one of its own commands. It must not leave
+references to its own types with the server or other plugins outside what it registered, or it can't unload, and it
+can't load or unload plugins from its own load, ready or unloading callbacks.
 
 ## Version 1
 

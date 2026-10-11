@@ -145,10 +145,11 @@ public sealed partial class EventDispatcher : IEventDispatcher
         // Handlers with the lowest priority run first.
         foreach (var registration in events.Registrations)
         {
-            // The snapshot can hold handlers of a plugin that started unloading; those are skipped, and unloading
-            // waits for the ones that already run.
+            // The snapshot can hold handlers of a plugin that started unloading; those are skipped, and releasing the
+            // plugin waits for the ones that already run.
             var plugin = registration.Plugin as PluginContainer;
-            if (plugin is not null && !plugin.TryEnter())
+            using var call = plugin?.TryEnter();
+            if (plugin is not null && call is null)
                 continue;
 
             try
@@ -164,10 +165,6 @@ public sealed partial class EventDispatcher : IEventDispatcher
                 Log.HandlerFailed(this.logger, ex, eventType.Name);
 
                 return EventResult.Failed;
-            }
-            finally
-            {
-                plugin?.Exit();
             }
         }
 

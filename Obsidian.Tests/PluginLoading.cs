@@ -171,6 +171,32 @@ public sealed class PluginLoading : IDisposable
         Assert.Empty(manager.Plugins);
     }
 
+    [Fact]
+    public async Task UnloadFromItsOwnCall_ReleasesOnceTheCallEnds()
+    {
+        var (manager, _, _) = this.CreateManager();
+        var path = Path.Join(this.folder, "probe.obby");
+
+        await File.WriteAllBytesAsync(path, ProbeArchive("1.0.0"));
+        var container = (await manager.LoadPluginAsync(path))!;
+
+        // Like a plugin's command unloading the plugin: the unload can't wait for the call it runs in.
+        var call = container.TryEnter()!;
+        var unloading = manager.UnloadPluginAsync(container);
+
+        Assert.Same(unloading, await Task.WhenAny(unloading, Task.Delay(TimeSpan.FromSeconds(2))));
+        Assert.Empty(manager.Plugins);
+        Assert.Null(container.TryEnter());
+        Assert.NotNull(container.Plugin);
+
+        call.Dispose();
+
+        for (var i = 0; container.Plugin is not null && i < 100; i++)
+            await Task.Delay(20);
+
+        Assert.Null(container.Plugin);
+    }
+
     // Kept out of the test method so that no local keeps the first load alive.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task<WeakReference> LoadAndTrackAsync(PluginManager manager, string path)

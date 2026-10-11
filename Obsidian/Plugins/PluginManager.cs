@@ -34,7 +34,7 @@ namespace Obsidian.Plugins;
 /// </remarks>
 public sealed partial class PluginManager : IAsyncDisposable
 {
-    // How long unloading waits for a plugin's running event and payload handlers to finish.
+    // How long unloading, and stopping, wait for plugins' running handlers to finish before going on without them.
     private static readonly TimeSpan drainTimeout = TimeSpan.FromSeconds(5);
 
     // Set while a change runs on this async flow, to catch a plugin changing plugins from its own lifecycle callback,
@@ -54,6 +54,9 @@ public sealed partial class PluginManager : IAsyncDisposable
     // Loading and unloading change the plugin list and what is registered, so they happen one at a time.
     private readonly SemaphoreSlim changes = new(1, 1);
     private readonly List<RSAParameters> acceptedKeys = [];
+
+    // Unloaded plugins waiting for their running calls to end before they are released (see UnloadAsync).
+    private readonly ConcurrentDictionary<PluginContainer, Task> releases = new();
 
     private ImmutableArray<PluginContainer> plugins = [];
     private ImmutableArray<PluginArchive> stagedPlugins = [];
@@ -218,6 +221,11 @@ public sealed partial class PluginManager : IAsyncDisposable
             await this.UnloadAllAsync();
             this.disposed = true;
         });
+
+        // Released plugins finish their unloading callbacks before the server stops, unless their calls hang.
+        var pending = Task.WhenAll(this.releases.Values);
+        if (await Task.WhenAny(pending, Task.Delay(drainTimeout)) != pending)
+            Log.ReleasesTimedOut(this.logger, this.releases.Count);
     }
 
     /// <summary>
@@ -442,10 +450,16 @@ public sealed partial class PluginManager : IAsyncDisposable
         return unloading;
     }
 
+    /// <summary>
+    /// Unregisters everything a plugin registered and removes it, then releases it once its running calls end.
+    /// </summary>
+    /// <remarks>
+    /// A plugin is released after the plugins that depend on it, which may still use its services. Unloading waits for
+    /// the release for a while, but not when it runs inside a call into a plugin (a plugin's command reloading it, say),
+    /// which the release may be waiting for.
+    /// </remarks>
     private async Task UnloadAsync(PluginContainer pluginContainer)
     {
-        var name = pluginContainer.Info.Name;
-
         this.commandHandler.UnregisterPluginCommands(pluginContainer);
         this.eventDispatcher.UnregisterPluginEvents(pluginContainer);
 
@@ -456,22 +470,32 @@ public sealed partial class PluginManager : IAsyncDisposable
             this.commandHandler.UnregisterArgumentParsers(pluginContainer.LoadContext);
 
         this.plugins = this.plugins.Remove(pluginContainer);
+        pluginContainer.Close();
 
-        // Handlers that started before they were unregistered finish before the plugin's services go. If they take too
-        // long, the plugin is released once they're done, without holding up the rest of the change.
-        if (await pluginContainer.CloseAsync(drainTimeout))
+        var dependents = this.releases
+            .Where(pair => pair.Key.Dependencies.Contains(pluginContainer))
+            .Select(pair => pair.Value)
+            .ToArray();
+
+        var release = this.ReleaseWhenIdleAsync(pluginContainer, dependents);
+        if (!release.IsCompleted)
         {
-            await this.ReleaseAsync(pluginContainer);
-            return;
+            this.releases[pluginContainer] = release;
+            _ = release.ContinueWith(_ => this.releases.TryRemove(pluginContainer, out _), TaskScheduler.Default);
         }
 
-        Log.DrainTimedOut(this.logger, name, drainTimeout.TotalSeconds);
+        if (PluginCall.InsideAny)
+            return;
 
-        _ = Task.Run(async () =>
-        {
-            await pluginContainer.CloseAsync(Timeout.InfiniteTimeSpan);
-            await this.ReleaseAsync(pluginContainer);
-        });
+        if (await Task.WhenAny(release, Task.Delay(drainTimeout)) != release)
+            Log.DrainTimedOut(this.logger, pluginContainer.Info.Name, drainTimeout.TotalSeconds);
+    }
+
+    private async Task ReleaseWhenIdleAsync(PluginContainer pluginContainer, Task[] dependents)
+    {
+        await Task.WhenAll(dependents);
+        await pluginContainer.WaitForCallsAsync();
+        await this.ReleaseAsync(pluginContainer);
     }
 
     /// <summary>
@@ -550,6 +574,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             builder.AddConfiguration(this.configuration);
         });
 
+        services.AddSingleton(this.server);
         services.AddSingleton(this.serverProvider.GetRequiredService<IOptionsMonitor<ServerConfiguration>>());
 
         // Added as instances, which the dependent's provider doesn't dispose: they belong to the dependency.
@@ -621,8 +646,12 @@ public sealed partial class PluginManager : IAsyncDisposable
         public static partial void Untrusted(ILogger logger, string path);
 
         [LoggerMessage(Level = LogLevel.Warning,
-            Message = "Plugin {PluginName} unloads once its handlers finish; they still ran after {Seconds}s")]
+            Message = "Plugin {PluginName} is released once its handlers finish; they still ran after {Seconds}s")]
         public static partial void DrainTimedOut(ILogger logger, string pluginName, double seconds);
+
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "Stopping with {Count} plugins not released: their handlers still run")]
+        public static partial void ReleasesTimedOut(ILogger logger, int count);
 
         [LoggerMessage(Level = LogLevel.Information,
             Message = "Unloaded plugin {PluginName} in {ElapsedMilliseconds}ms")]
