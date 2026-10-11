@@ -19,7 +19,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -85,11 +84,8 @@ public sealed class PluginLoading : IDisposable
     }
 
     [Fact]
-    public void ZipArchive_ReadsMetadataFilesAndSignature()
+    public void ZipArchive_ReadsMetadataAndFiles()
     {
-        using var key = RSA.Create(2048);
-        using var otherKey = RSA.Create(2048);
-
         var files = new Dictionary<string, byte[]>
         {
             [PluginMetadata.FileName] = PluginArchives.Metadata("ruby", "1.2.0-beta", "Ruby",
@@ -97,11 +93,9 @@ public sealed class PluginLoading : IDisposable
             ["Ruby.dll"] = [1, 2, 3],
             ["assets/ruby/lang/en_us.json"] = Encoding.UTF8.GetBytes("{}")
         };
-        var data = PluginArchives.Zip(files, key);
 
-        var archive = PluginArchive.Open("ruby.obby", data, [key.ExportParameters(false)]);
+        var archive = PluginArchive.Open("ruby.obby", PluginArchives.Zip(files));
 
-        Assert.True(archive.ValidSignature);
         Assert.Equal("ruby", archive.Info.Id);
         Assert.Equal("ruby display", archive.Info.Name);
         Assert.Equal(new Version(1, 2, 0, 0), archive.Info.Version);
@@ -110,13 +104,9 @@ public sealed class PluginLoading : IDisposable
         Assert.Equal("{}", Encoding.UTF8.GetString(archive.Read("assets/ruby/lang/en_us.json")!));
         Assert.Null(archive.Read("missing.txt"));
 
-        Assert.False(PluginArchive.Open("ruby.obby", data, [otherKey.ExportParameters(false)]).ValidSignature);
-
-        // Changing a file after signing invalidates the signature.
-        files["Ruby.dll"] = [9];
-        files[ZipPluginArchive.SignatureFileName] = archive.Read(ZipPluginArchive.SignatureFileName)!;
-        var tampered = PluginArchives.Zip(files);
-        Assert.False(PluginArchive.Open("ruby.obby", tampered, [key.ExportParameters(false)]).ValidSignature);
+        // Asset and data paths are used to find files on disk too, so none may leave the archive.
+        files["assets/../../evil.txt"] = [1];
+        Assert.Throws<InvalidDataException>(() => PluginArchive.Open("ruby.obby", PluginArchives.Zip(files)));
     }
 
     [Fact]
@@ -124,15 +114,14 @@ public sealed class PluginLoading : IDisposable
     {
         var files = new Dictionary<string, byte[]> { ["Old.dll"] = [4, 5, 6] };
 
-        var legacy = PluginArchive.Open("old.obby", PluginArchives.Legacy("old", "1.0.0", "Old", files), []);
+        var legacy = PluginArchive.Open("old.obby", PluginArchives.Legacy("old", "1.0.0", "Old", files));
 
         Assert.Equal("old", legacy.Info.Id);
         Assert.Equal("Old", legacy.Info.AssemblyName);
         Assert.Equal([4, 5, 6], legacy.Read("Old.dll"));
-        Assert.False(legacy.ValidSignature);
 
         files[PluginMetadata.FileName] = PluginArchives.Metadata("renamed", "2.0.0", "Old");
-        var withMetadata = PluginArchive.Open("old.obby", PluginArchives.Legacy("old", "1.0.0", "Old", files), []);
+        var withMetadata = PluginArchive.Open("old.obby", PluginArchives.Legacy("old", "1.0.0", "Old", files));
 
         Assert.Equal("renamed", withMetadata.Info.Id);
         Assert.Equal(new Version(2, 0, 0, 0), withMetadata.Info.Version);

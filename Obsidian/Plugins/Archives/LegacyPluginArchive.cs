@@ -7,8 +7,9 @@ using System.Security.Cryptography;
 namespace Obsidian.Plugins.Archives;
 
 /// <summary>
-/// A version 1 plugin archive, as packed by Obsidian.MSBuild: an <c>OBBY</c> header, a SHA-384 hash and optional
-/// signature, the plugin's metadata, then a table of files that are each deflated or stored. Its file names are flat.
+/// A version 1 plugin archive, as packed by older Obsidian.MSBuild versions: an <c>OBBY</c> header, a SHA-384 hash and
+/// an optional signature (which Obsidian no longer checks), the plugin's metadata, then a table of files that are each
+/// deflated or stored. Its file names are flat.
 /// </summary>
 /// <remarks>
 /// If the archive contains <c>obsidian.mod.json</c> (the packer packs every file of the publish folder), its metadata
@@ -28,7 +29,7 @@ internal sealed class LegacyPluginArchive : PluginArchive
 
     public static bool IsLegacy(ReadOnlySpan<byte> data) => data.StartsWith("OBBY"u8);
 
-    public static LegacyPluginArchive Open(string source, byte[] data, IReadOnlyList<RSAParameters> acceptedKeys)
+    public static LegacyPluginArchive Open(string source, byte[] data)
     {
         using var reader = new BinaryReader(new MemoryStream(data, writable: false));
 
@@ -36,9 +37,13 @@ internal sealed class LegacyPluginArchive : PluginArchive
 
         var apiVersion = reader.ReadString();
         var hash = reader.ReadBytes(SHA384.HashSizeInBytes);
-        var signature = reader.ReadBoolean() ? reader.ReadBytes(reader.ReadInt32()) : null;
 
-        // The data length the packer writes isn't needed: the hash covers everything from here to the end.
+        // Plugins aren't signed anymore; a signature is skipped.
+        if (reader.ReadBoolean())
+            reader.ReadBytes(reader.ReadInt32());
+
+        // The data length the packer writes isn't needed: the hash, which still catches a damaged file, covers
+        // everything from here to the end.
         reader.ReadInt32();
 
         var dataStart = (int)reader.BaseStream.Position;
@@ -56,8 +61,7 @@ internal sealed class LegacyPluginArchive : PluginArchive
         return new LegacyPluginArchive(entries)
         {
             Source = source,
-            Info = info,
-            ValidSignature = VerifySignature(hash, signature, acceptedKeys)
+            Info = info
         };
     }
 

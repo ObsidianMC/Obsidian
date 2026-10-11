@@ -60,7 +60,6 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     /// </summary>
     internal ImmutableArray<Type> ExportedSingletons { get; private set; } = [];
 
-    public bool ValidSignature => this.Archive.ValidSignature;
     public bool Loaded { get; internal set; }
 
     internal void Initialize()

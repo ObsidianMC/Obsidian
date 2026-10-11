@@ -17,7 +17,6 @@ contain `..`.
 | `*.dll`, `*.pdb` | Libraries the plugin uses, as `dotnet publish` puts them beside the main assembly. |
 | `assets/<namespace>/...` | Optional. Client resources (textures, models, translations), laid out like a resource pack. |
 | `data/<namespace>/...` | Optional. Server data (biomes, dimension types, tags, ...), laid out like a data pack. |
-| `obsidian.sig` | Optional. The archive's signature, see [Signing](#signing). |
 
 Entries may be stored or deflated. Obsidian reads the file into memory once and decompresses each file when it is
 first needed, so the file on disk can be replaced while the plugin runs, which reloads it.
@@ -72,16 +71,6 @@ The services a plugin registers can take, in their constructors, its other servi
 the plugins it depends on, `IServer`, the server configuration and loggers. Its `[Inject]` properties can also get the
 server's other services.
 
-## Signing
-
-`obsidian.sig` holds an RSA signature (PKCS #1 v1.5 padding, SHA-384) of the archive's digest: SHA-384 over every
-file except `obsidian.sig`, in ordinal order of their paths, each contributing its UTF-8 path, a zero byte and the
-SHA-384 hash of its contents. The digest depends only on the files, not on how the ZIP file stores them, so an archive
-can be re-zipped without breaking its signature.
-
-A server trusts the public keys in its `accepted_keys/` folder (PEM files). With `AllowUntrustedPlugins` off, only
-archives signed by one of them load.
-
 ## Reloading
 
 Changing a plugin's file reloads the plugin; deleting it unloads it. The plugins that depend on it reload, or wait,
@@ -89,16 +78,20 @@ with it, since they use its types. Unloading removes everything the plugin regis
 services, payload channels, argument parsers), so its assemblies, which load into a collectible load context, can be
 freed. Unloading stops new calls into the plugin (its event and payload handlers, commands and command suggestions),
 and the plugin is released (its unloading callback runs, and its services are disposed) once the running ones end,
-after the plugins that depend on it. A plugin may reload itself from one of its own commands. Content a plugin
-registered, like its items, keeps its identity and ids while the server runs: reloading the plugin gives the same items
-their new behaviour, and unloading it leaves them registered, without behaviour, until the server stops. It must not leave
-references to its own types with the server or other plugins outside what it registered, or it can't unload, and it
-can't load or unload plugins from its own load, ready or unloading callbacks.
+after the plugins that depend on it. A plugin may reload itself from one of its own commands.
+
+Content a plugin registered, like its items, keeps its identity and ids while the server runs: reloading the plugin
+gives the same items their new behaviour, and unloading it leaves them registered, without behaviour, until the server
+stops.
+
+A plugin must not leave references to its own types with the server or other plugins outside what it registered, or it
+can't unload, and it can't load or unload plugins from its own load, ready or unloading callbacks.
 
 ## Version 1
 
-Version 1 archives begin with `OBBY`, then the API version, a SHA-384 hash of everything after the header, an optional
-signature of that hash, and the plugin's metadata (assembly, version, name, id, authors, description, project URL and
-dependencies with an id, version range and required flag), followed by a table of flat file names and their stored
-(deflated or plain) contents. If one of the files is `obsidian.mod.json`, its metadata replaces the header's, which
-gives version 1 plugins the dependency types, ordering and side above.
+Version 1 archives begin with `OBBY`, then the API version, a SHA-384 hash of everything after the header (checked, to
+catch damaged files), an optional signature of that hash (ignored: plugins aren't signed), and the plugin's metadata
+(assembly, version, name, id, authors, description, project URL and dependencies with an id, version range and
+required flag), followed by a table of flat file names and their stored (deflated or plain) contents. If one of the
+files is `obsidian.mod.json`, its metadata replaces the header's, which gives version 1 plugins the dependency types,
+ordering and side above.

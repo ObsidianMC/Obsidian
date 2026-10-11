@@ -1,4 +1,3 @@
-using Obsidian.Plugins.Archives;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,9 +13,9 @@ namespace Obsidian.Tests.Utilities;
 internal static class PluginArchives
 {
     /// <summary>
-    /// Writes a version 2 archive: a ZIP file of the given files, signed with <paramref name="key"/> if given.
+    /// Writes a version 2 archive: a ZIP file of the given files.
     /// </summary>
-    public static byte[] Zip(IReadOnlyDictionary<string, byte[]> files, RSA? key = null)
+    public static byte[] Zip(IReadOnlyDictionary<string, byte[]> files)
     {
         using var stream = new MemoryStream();
 
@@ -27,21 +26,6 @@ internal static class PluginArchives
                 using var entry = zip.CreateEntry(path).Open();
                 entry.Write(contents);
             }
-        }
-
-        if (key is null)
-            return stream.ToArray();
-
-        byte[] digest;
-        using (var unsigned = new ZipArchive(new MemoryStream(stream.ToArray()), ZipArchiveMode.Read))
-            digest = ZipPluginArchive.ComputeDigest(unsigned.Entries);
-
-        var signature = key.SignData(digest, HashAlgorithmName.SHA384, RSASignaturePadding.Pkcs1);
-
-        using (var zip = new ZipArchive(stream, ZipArchiveMode.Update, leaveOpen: true))
-        {
-            using var entry = zip.CreateEntry(ZipPluginArchive.SignatureFileName).Open();
-            entry.Write(signature);
         }
 
         return stream.ToArray();

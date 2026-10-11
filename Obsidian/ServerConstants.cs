@@ -53,7 +53,6 @@ public static class ServerConstants
     public static string WorldsPath => Path.Combine(RootPath, "worlds");
     public static string PersistentDataPath => Path.Combine(RootPath, "persistentdata");
     public static string PermissionPath => Path.Combine(RootPath, "permissions");
-    public static string AcceptedKeysPath => Path.Combine(RootPath, "accepted_keys");
     public static string PluginsPath => Path.Combine(RootPath, "plugins");
     public static string UserCacheFile => Path.Combine(RootPath, "usercache.json");
 

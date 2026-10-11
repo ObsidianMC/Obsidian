@@ -1,19 +1,15 @@
 using System.IO;
 using System.IO.Compression;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace Obsidian.Plugins.Archives;
 
 /// <summary>
 /// A version 2 plugin archive: a ZIP file with <c>obsidian.mod.json</c> at its root, the plugin's assemblies beside it,
-/// optional <c>assets/</c> and <c>data/</c> folders, and an optional <c>obsidian.sig</c> signature.
+/// and optional <c>assets/</c> and <c>data/</c> folders.
 /// See docs/plugin-archives.md for the format.
 /// </summary>
 internal sealed class ZipPluginArchive : PluginArchive
 {
-    public const string SignatureFileName = "obsidian.sig";
-
     private readonly ZipArchive zip;
     private readonly Dictionary<string, ZipArchiveEntry> entries;
 
@@ -27,7 +23,7 @@ internal sealed class ZipPluginArchive : PluginArchive
 
     public static bool IsZip(ReadOnlySpan<byte> data) => data.StartsWith("PK\x03\x04"u8);
 
-    public static ZipPluginArchive Open(string source, byte[] data, IReadOnlyList<RSAParameters> acceptedKeys)
+    public static ZipPluginArchive Open(string source, byte[] data)
     {
         var zip = new ZipArchive(new MemoryStream(data, writable: false), ZipArchiveMode.Read);
 
@@ -39,18 +35,10 @@ internal sealed class ZipPluginArchive : PluginArchive
                 ? PluginMetadata.Parse(ReadEntry(metadataEntry))
                 : throw new InvalidDataException($"The archive has no {PluginMetadata.FileName}.");
 
-            var signature = entries.TryGetValue(SignatureFileName, out var signatureEntry)
-                ? ReadEntry(signatureEntry)
-                : null;
-
-            var validSignature = signature is not null
-                && VerifySignature(ComputeDigest(entries.Values), signature, acceptedKeys);
-
             return new ZipPluginArchive(zip, entries)
             {
                 Source = source,
-                Info = metadata.ToPluginInfo(),
-                ValidSignature = validSignature
+                Info = metadata.ToPluginInfo()
             };
         }
         catch
@@ -70,28 +58,6 @@ internal sealed class ZipPluginArchive : PluginArchive
         {
             return ReadEntry(entry);
         }
-    }
-
-    /// <summary>
-    /// The digest an archive's signature signs: SHA-384 over every file except the signature, in ordinal order of
-    /// their paths, each contributing its UTF-8 path, a zero byte and the SHA-384 hash of its contents. It depends only
-    /// on the files, not on how the ZIP file stores them.
-    /// </summary>
-    internal static byte[] ComputeDigest(IEnumerable<ZipArchiveEntry> entries)
-    {
-        using var digest = IncrementalHash.CreateHash(HashAlgorithmName.SHA384);
-
-        foreach (var entry in entries.OrderBy(entry => entry.FullName, StringComparer.Ordinal))
-        {
-            if (entry.FullName == SignatureFileName)
-                continue;
-
-            digest.AppendData(Encoding.UTF8.GetBytes(entry.FullName));
-            digest.AppendData([0]);
-            digest.AppendData(SHA384.HashData(ReadEntry(entry)));
-        }
-
-        return digest.GetHashAndReset();
     }
 
     private static Dictionary<string, ZipArchiveEntry> ReadEntries(ZipArchive zip)

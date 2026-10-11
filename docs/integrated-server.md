@@ -22,7 +22,7 @@ list. The process exits with code 0 after a graceful stop and 1 after a crash (s
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `Paths:Root` | working directory | Root of every server-side path: `config/`, `logs/`, `persistentdata/`, `permissions/`, `plugins/`, `accepted_keys/`, `usercache.json`. Without `Integrated:WorldPath`, also `worlds/`. |
+| `Paths:Root` | working directory | Root of every server-side path: `config/`, `logs/`, `persistentdata/`, `permissions/`, `plugins/`, `usercache.json`. Without `Integrated:WorldPath`, also `worlds/`. |
 | `Paths:Cache` | `<root>/cache` | Vanilla data extracted from Mojang's server jar (structure templates), downloaded once. Point every world's server at one shared folder. Two servers extracting into an empty cache at the same time can race, so start one first. |
 | `Paths:Logs` | `<root>/logs` | Log files, one per start. |
 | `Integrated:Enabled` | `false` | Runs as an integrated server. |

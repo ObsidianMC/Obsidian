@@ -12,7 +12,6 @@ using Obsidian.Services;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Threading;
 
 namespace Obsidian.Plugins;
@@ -53,7 +52,6 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     // Loading and unloading change the plugin list and what is registered, so they happen one at a time.
     private readonly SemaphoreSlim changes = new(1, 1);
-    private readonly List<RSAParameters> acceptedKeys = [];
 
     // Unloaded plugins waiting for their running calls to end before they are released (see UnloadAsync).
     private readonly ConcurrentDictionary<PluginContainer, Task> releases = new();
@@ -62,8 +60,6 @@ public sealed partial class PluginManager : IAsyncDisposable
     private ImmutableArray<PluginArchive> stagedPlugins = [];
     private bool serverReady;
     private bool disposed;
-
-    public ImmutableArray<RSAParameters> AcceptedKeys => [.. this.acceptedKeys];
 
     /// <summary>
     /// The loaded plugins, in load order.
@@ -112,8 +108,6 @@ public sealed partial class PluginManager : IAsyncDisposable
     {
         try
         {
-            await this.LoadAcceptedKeysAsync();
-
             await this.RunChangeAsync(async () =>
             {
                 var archives = new List<PluginArchive>();
@@ -593,36 +587,14 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     private async Task<PluginArchive?> TryOpenAsync(string path)
     {
-        PluginArchive archive;
         try
         {
-            archive = await PluginArchive.OpenAsync(path, this.acceptedKeys);
+            return await PluginArchive.OpenAsync(path);
         }
         catch (Exception ex)
         {
             Log.LoadFailed(this.logger, ex, path);
             return null;
-        }
-
-        if (!archive.ValidSignature && !this.server.Configuration.AllowUntrustedPlugins)
-        {
-            Log.Untrusted(this.logger, path);
-            return null;
-        }
-
-        return archive;
-    }
-
-    private async Task LoadAcceptedKeysAsync()
-    {
-        this.acceptedKeys.Clear();
-
-        foreach (var keyFile in Directory.GetFiles(ServerConstants.AcceptedKeysPath))
-        {
-            using var rsa = RSA.Create();
-            rsa.ImportFromPem(await File.ReadAllTextAsync(keyFile));
-
-            this.acceptedKeys.Add(rsa.ExportParameters(false));
         }
     }
 
@@ -644,10 +616,6 @@ public sealed partial class PluginManager : IAsyncDisposable
         [LoggerMessage(Level = LogLevel.Debug,
             Message = "Skipping plugin {PluginName}: it only runs on the {Side} side")]
         public static partial void WrongSide(ILogger logger, string pluginName, PluginSide side);
-
-        [LoggerMessage(Level = LogLevel.Warning,
-            Message = "Skipping plugin {Path}: no accepted key signed it, and untrusted plugins aren't allowed")]
-        public static partial void Untrusted(ILogger logger, string path);
 
         [LoggerMessage(Level = LogLevel.Warning,
             Message = "Plugin {PluginName} is released once its handlers finish; they still ran after {Seconds}s")]
