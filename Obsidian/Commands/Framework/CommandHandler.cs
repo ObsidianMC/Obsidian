@@ -483,6 +483,11 @@ public sealed class CommandHandler : ICommandHandler
     /// </summary>
     private static async Task<bool> CanUseAsync(Command command, CommandContext ctx)
     {
+        // The checks are the plugin's code, run as part of a call into it.
+        using var call = TryEnter(command, out var refused);
+        if (refused)
+            return false;
+
         ctx.Plugin = command.PluginContainer?.Plugin;
 
         if (!command.AllowedIssuers.HasFlag(ctx.Sender.Issuer))
