@@ -1026,7 +1026,7 @@ public abstract partial class AbstractLevel : ILevel
         if (this.Generator is MojangGenerator mojang)
         {
             await mojang.PrepareAreaAsync(centerX - pregenerationRange, centerZ - pregenerationRange,
-                centerX + pregenerationRange, centerZ + pregenerationRange);
+                centerX + pregenerationRange, centerZ + pregenerationRange, cancellationToken);
         }
 
         // A window of jobs in queue order: a new job starts as soon as one finishes.

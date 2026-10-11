@@ -209,23 +209,24 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// class of a 3 by 3 colouring of chunk positions: chunks of a wave are 3 apart, so the areas they lock never overlap.
     /// Completing chunks one by one in order instead keeps most concurrent jobs waiting on their neighbors' locks. Light
     /// doesn't depend on the order chunks are lit in, and decorations meeting at borders already ran in any order.
+    /// Cancelling stops new chunks from starting; steps already running finish.
     /// </remarks>
-    internal async Task PrepareAreaAsync(int minX, int minZ, int maxX, int maxZ)
+    internal async Task PrepareAreaAsync(int minX, int minZ, int maxX, int maxZ, CancellationToken cancellationToken = default)
     {
         // Completing a chunk decorates its neighbors, and decorating a chunk carves its neighbors.
-        await Parallel.ForEachAsync(Area(minX - 2, minZ - 2, maxX + 2, maxZ + 2),
+        await Parallel.ForEachAsync(Area(minX - 2, minZ - 2, maxX + 2, maxZ + 2), cancellationToken,
             async (position, _) => await this.CarveAsync(position.X, position.Z));
 
         await InWavesAsync(Area(minX - 1, minZ - 1, maxX + 1, maxZ + 1), position => this.DecorateAsync(position.X, position.Z));
         await InWavesAsync(Area(minX, minZ, maxX, maxZ), async position => await this.FinishBlocksAsync(await this.GetChunkAsync(position.X, position.Z)));
         await InWavesAsync(Area(minX, minZ, maxX, maxZ), async position => await this.LightAsync(await this.GetChunkAsync(position.X, position.Z)));
 
-        static async Task InWavesAsync(IEnumerable<(int X, int Z)> positions, Func<(int X, int Z), Task> step)
+        async Task InWavesAsync(IEnumerable<(int X, int Z)> positions, Func<(int X, int Z), Task> step)
         {
             var all = positions.ToList();
             for (var wave = 0; wave < 9; wave++)
             {
-                await Parallel.ForEachAsync(all.Where(position => Mod3(position.X) * 3 + Mod3(position.Z) == wave),
+                await Parallel.ForEachAsync(all.Where(position => Mod3(position.X) * 3 + Mod3(position.Z) == wave), cancellationToken,
                     async (position, _) => await step(position));
             }
         }
