@@ -9,11 +9,14 @@ public interface IBlock
 
     public IBlockState State { get; }
 
-    public Material Material { get; }
+    /// <summary>
+    /// The vanilla material naming the block, or null for a block a plugin registered.
+    /// </summary>
+    public Material? Material { get; }
 
-    public bool IsLiquid => this.Material is Material.Water or Material.Lava;
+    public bool IsLiquid => this.Material is API.Material.Water or API.Material.Lava;
 
-    public bool IsAir => this.Material is Material.Air or Material.CaveAir or Material.VoidAir;
+    public bool IsAir => this.Material is API.Material.Air or API.Material.CaveAir or API.Material.VoidAir;
 
     [Obsolete]
     public bool IsTransparent => this.IsLiquid || IsAir;

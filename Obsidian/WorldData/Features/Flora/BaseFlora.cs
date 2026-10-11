@@ -79,7 +79,8 @@ public abstract class BaseFlora(GenHelper helper, IChunk chunk, Material mat = M
     /// <param name="loc">The position above the surface block.</param>
     /// <returns>Whether surface is compatible.</returns>
     protected virtual async Task<bool> GetValidSurfaceAsync(Vector loc) =>
-        await GenHelper.GetBlockAsync(loc + Vector.Down, Chunk) is IBlock b && GrowsOn.Contains(b.Material);
+        await GenHelper.GetBlockAsync(loc + Vector.Down, Chunk) is { Material: Material surface }
+            && GrowsOn.Contains(surface);
 
     /// <summary>
     /// Check free space above grow location.
@@ -91,7 +92,8 @@ public abstract class BaseFlora(GenHelper helper, IChunk chunk, Material mat = M
         int freeSpace = 0;
         for (int y = 0; y < Height; y++)
         {
-            if (await GenHelper.GetBlockAsync(loc + (0, y, 0), Chunk) is IBlock above && GrowsIn.Contains(above.Material))
+            if (await GenHelper.GetBlockAsync(loc + (0, y, 0), Chunk) is { Material: Material above }
+                && GrowsIn.Contains(above))
             {
                 freeSpace++;
             }

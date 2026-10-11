@@ -107,8 +107,15 @@ public sealed partial class Villager : AgeableMob
                 var point = origin + new Vector(x, y, z);
                 if (Terrain.GetBlock(point) is not { } block) continue;
                 if (Home == null && TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId) && block.GetProperty("part") == "head") points.Add((point, 0, true));
-                else if (!IsBaby && JobSite == null && VillagerProfession != 11 && Workstations.TryGetValue(block.Material, out var candidateProfession) &&
-                    (VillagerProfession == 0 || VillagerProfession == candidateProfession)) points.Add((point, candidateProfession, false));
+                else if (!IsBaby
+                    && JobSite == null
+                    && VillagerProfession != 11
+                    && block.Material is Material workstation
+                    && Workstations.TryGetValue(workstation, out var candidateProfession)
+                    && (VillagerProfession == 0 || VillagerProfession == candidateProfession))
+                {
+                    points.Add((point, candidateProfession, false));
+                }
             }
             foreach (var point in points.OrderBy(point => ((VectorD)point.Position - Position).MagnitudeSquared()))
             {

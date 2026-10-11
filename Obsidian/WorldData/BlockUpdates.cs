@@ -13,11 +13,11 @@ internal static class BlockUpdates
     /// <returns>Whether caller should block update neighbors</returns>
     internal static async Task<bool> HandleFallingBlock(IBlockUpdate blockUpdate)
     {
-        if (blockUpdate.Block is null) { return false; }
+        // Only vanilla's blocks fall.
+        if (blockUpdate.Block?.Material is not Material material) { return false; }
 
         var world = blockUpdate.Level;
         var position = blockUpdate.Position;
-        var material = blockUpdate.Block.Material;
         if (await world.GetBlockAsync(position + Vector.Down) is IBlock below &&
             below.IsFreeForFallingBlock())
         {

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
+using Obsidian.API.Blocks;
 using Obsidian.API.Configuration;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
@@ -11,6 +12,7 @@ using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
 using Obsidian.Plugins;
 using Obsidian.Plugins.Archives;
+using Obsidian.Registries;
 using Obsidian.Services;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
@@ -134,7 +136,7 @@ public sealed class PluginLoading : IDisposable
         var path = Path.Join(this.folder, "probe.obby");
 
         await File.WriteAllBytesAsync(path, ProbeArchive("1.0.0"));
-        var (unloaded, gem) = await LoadAndTrackAsync(manager, path);
+        var (unloaded, gem, ore) = await LoadAndTrackAsync(manager, path);
 
         await File.WriteAllBytesAsync(path, ProbeArchive("1.1.0"));
         var reloaded = await manager.LoadPluginAsync(path);
@@ -155,6 +157,22 @@ public sealed class PluginLoading : IDisposable
             Hand = InteractionHand.MainHand
         };
         Assert.True(await ItemBehaviors.UseAsync(context));
+
+        // So does its block, whose item places it.
+        Assert.True(BlocksRegistry.TryGetPluginBlock("probe:ore", out var reloadedOre));
+        Assert.Same(ore, reloadedOre);
+        Assert.Same(reloaded, ore.Owner);
+        Assert.Same(ore, ore.Item?.Block);
+
+        var blockContext = new BlockUseContext
+        {
+            Player = null!,
+            Position = Vector.Zero,
+            Block = ore.DefaultState,
+            Face = BlockFace.Up,
+            Hand = InteractionHand.MainHand
+        };
+        Assert.True(await BlockBehaviors.UseAsync(blockContext));
 
         // Only the reloaded plugin's handler runs: unloading removed the old one.
         AppContext.SetData(ProbePlugin.CallsKey, 0);
@@ -179,6 +197,10 @@ public sealed class PluginLoading : IDisposable
         Assert.Null(gem.Behavior);
         Assert.Same(gem, ItemsRegistry.Get(gem.Id));
         Assert.False(await ItemBehaviors.UseAsync(context));
+
+        Assert.Null(ore.Owner);
+        Assert.True(ore.Is(BlocksRegistry.Get(ore.DefaultState.GetHashCode())));
+        Assert.False(await BlockBehaviors.UseAsync(blockContext));
     }
 
     [Fact]
@@ -227,7 +249,8 @@ public sealed class PluginLoading : IDisposable
 
     // Kept out of the test method so that no local keeps the first load alive.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task<(WeakReference LoadContext, Item Gem)> LoadAndTrackAsync(PluginManager manager,
+    private static async Task<(WeakReference LoadContext, Item Gem, BlockType Ore)> LoadAndTrackAsync(
+        PluginManager manager,
         string path)
     {
         var container = await manager.LoadPluginAsync(path);
@@ -236,8 +259,9 @@ public sealed class PluginLoading : IDisposable
         Assert.True(container.LoadContext.IsCollectible);
         Assert.True(ItemsRegistry.TryGet("probe:gem", out var gem));
         Assert.True(gem.Id >= ItemsRegistry.VanillaCount);
+        Assert.True(BlocksRegistry.TryGetPluginBlock("probe:ore", out var ore));
 
-        return (new WeakReference(container.LoadContext), gem);
+        return (new WeakReference(container.LoadContext), gem, ore);
     }
 
     private (PluginManager Manager, EventDispatcher Dispatcher, FakeServer Server) CreateManager()
@@ -320,6 +344,17 @@ public sealed class ProbePlugin : PluginBase
             MaxStackSize = 16,
             Behavior = new GemBehavior()
         });
+
+        pluginRegistry.RegisterBlock("probe:ore", new BlockProperties
+        {
+            StateProperties = [StateProperty.Bool("lit")],
+            Behavior = new OreBehavior()
+        });
+    }
+
+    private sealed class OreBehavior : IBlockBehavior
+    {
+        public ValueTask<bool> UseAsync(BlockUseContext context) => ValueTask.FromResult(true);
     }
 
     private sealed class GemBehavior : IItemBehavior

@@ -36,7 +36,7 @@ public partial class BlocksGenerator
             builder.Line($"public int DefaultId => {block.DefaultId};");
             builder.Line($"public int RegistryId => {block.RegistryId};");
 
-            builder.Line($"public Material Material => Material.{block.Name};");
+            builder.Line($"public Material? Material => API.Material.{block.Name};");
 
             builder.Line("public IBlockState State { get; init; }");
 

@@ -39,7 +39,8 @@ internal interface IAquifer
 /// </summary>
 internal readonly record struct FluidStatus(int FluidLevel, IBlock FluidType)
 {
-    private readonly Material fluidMaterial = FluidType.Material;
+    // Water, lava or air: vanilla blocks, which always have a material.
+    private readonly Material fluidMaterial = FluidType.Material ?? Material.Air;
 
     public IBlock At(int y) => y < this.FluidLevel ? this.FluidType : BlocksRegistry.Air;
 

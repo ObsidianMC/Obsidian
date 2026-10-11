@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using System.Reflection;
 using System.Text.Json;
 
@@ -255,7 +256,38 @@ internal static class BlockPhysics
     public static int Flags(int stateId)
     {
         var flags = Tables.Flags;
-        return (uint)stateId < (uint)flags.Length ? flags[stateId] : 0;
+
+        if ((uint)stateId < (uint)flags.Length)
+            return flags[stateId];
+
+        return BlocksRegistry.TryGetPluginBlock(stateId, out var type) ? PluginFlags(type) : 0;
+    }
+
+    // The flags a plugin block keeps from its template state: its shape's, not those that come from what the vanilla
+    // block is (air, being replaceable, fluids, a block entity, light emission).
+    private const int TemplateFlags = 1 << 1 | 1 << 2 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 0b111111 << 11
+        | 1 << 28 | 1 << 29 | 1 << 30 | 1 << 31;
+
+    // A plugin block's flags: its template state's (see BlocksRegistry.TemplateStateOf), with its own light emission.
+    private static int PluginFlags(BlockType type)
+    {
+        var settings = type.Settings;
+        var flags = Tables.Flags[BlocksRegistry.TemplateStateOf(type)] & TemplateFlags;
+
+        // Cobweb, the template without collision, is still solid in vanilla's legacy sense; the block isn't.
+        if (!settings.HasCollision)
+            flags &= ~(1 << 1 | 1 << 2);
+
+        return flags | Math.Clamp(settings.LightEmission, 0, 15) << 17;
+    }
+
+    // The vanilla state whose shapes describe a state: itself, a plugin block's template, or air for an unknown id.
+    private static int ShapeState(int stateId)
+    {
+        if ((uint)stateId < (uint)Tables.Flags.Length)
+            return stateId;
+
+        return BlocksRegistry.TryGetPluginBlock(stateId, out var type) ? BlocksRegistry.TemplateStateOf(type) : 0;
     }
 
     /// <summary>Whether a state has a physics flag (see <see cref="Flags(int)"/>).</summary>
@@ -273,22 +305,30 @@ internal static class BlockPhysics
     {
         var flags = data.Value.FluidFlags;
         var id = block.GetHashCode();
-        return (uint)id < (uint)flags.Length ? flags[id] : 0;
+
+        if ((uint)id < (uint)flags.Length)
+            return flags[id];
+
+        // A plugin block's collision shape is its template's, but it holds no fluid.
+        const int shapeFlags = 0b11 | unchecked((int)0xFFFF0000);
+        return flags[ShapeState(id)] & shapeFlags;
     }
 
     private static int Flags(IBlock block) => Flags(block.GetHashCode());
 
     /// <summary>Vanilla state shapes captured with empty collision context, in block-local coordinates.</summary>
     public static IReadOnlyList<double[]> ShapeBoxes(int state, bool visual = false) =>
-        data.Value.ShapeBoxes[(visual ? data.Value.VisualShapes : data.Value.CollisionShapes)[state]];
+        data.Value.ShapeBoxes[(visual ? data.Value.VisualShapes : data.Value.CollisionShapes)[ShapeState(state)]];
     /// <summary>Vanilla's selection/picking shape, distinct from the camera's visual shape.</summary>
-    public static IReadOnlyList<double[]> OutlineBoxes(int state) => data.Value.ShapeBoxes[data.Value.OutlineShapes[state]];
-    public static bool Suffocates(int state) => data.Value.Suffocating[state];
+    public static IReadOnlyList<double[]> OutlineBoxes(int state) =>
+        data.Value.ShapeBoxes[data.Value.OutlineShapes[ShapeState(state)]];
+
+    public static bool Suffocates(int state) => data.Value.Suffocating[ShapeState(state)];
 
     /// <summary>Moves shapes captured at the origin to a state's position-dependent offset (flowers, bamboo, etc.).</summary>
     public static (double X, double Y, double Z) ShapeOffset(int state, int x, int z)
     {
-        var offset = data.Value.ShapeOffsets[state];
+        var offset = data.Value.ShapeOffsets[ShapeState(state)];
         if (offset.Length == 0)
             return default;
 
@@ -300,8 +340,21 @@ internal static class BlockPhysics
         var dy = offset[1] == 0 ? 0 : ((float)((seed >> 4) & 15) / 15f - 1.0) * offset[4];
         return (dx - offset[0], dy - offset[1], dz - offset[2]);
     }
-    public static float MiningHardness(int state) => data.Value.Hardness[state];
-    public static bool RequiresCorrectTool(int state) => data.Value.RequiresTool[state];
+    public static float MiningHardness(int state)
+    {
+        if ((uint)state < (uint)Tables.Flags.Length)
+            return data.Value.Hardness[state];
+
+        return BlocksRegistry.TryGetPluginBlock(state, out var type) ? type.Settings.Hardness : 0;
+    }
+
+    public static bool RequiresCorrectTool(int state)
+    {
+        if ((uint)state < (uint)Tables.Flags.Length)
+            return data.Value.RequiresTool[state];
+
+        return BlocksRegistry.TryGetPluginBlock(state, out var type) && type.Settings.RequiresCorrectTool;
+    }
 
     private static PhysicsData Load()
     {

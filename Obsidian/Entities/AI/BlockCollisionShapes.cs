@@ -10,9 +10,16 @@ internal static class BlockCollisionShapes
 
     public static IReadOnlyList<BoundingBox> Get(IBlock block) => Get(block.State?.Id ?? block.DefaultId);
 
-    public static IReadOnlyList<BoundingBox> Get(int stateId) => shapes.TryGetValue(stateId, out var shape)
-        ? shape
-        : throw new InvalidDataException($"No collision shape for block state {stateId}.");
+    public static IReadOnlyList<BoundingBox> Get(int stateId)
+    {
+        // A plugin's block collides like its template state.
+        if (BlocksRegistry.TryGetPluginBlock(stateId, out var type))
+            stateId = BlocksRegistry.TemplateStateOf(type);
+
+        return shapes.TryGetValue(stateId, out var shape)
+            ? shape
+            : throw new InvalidDataException($"No collision shape for block state {stateId}.");
+    }
 
     private static Dictionary<int, BoundingBox[]> Load()
     {

@@ -464,6 +464,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             concreteServer.PayloadChannels.UnregisterPluginPayloads(pluginContainer);
 
         ItemsRegistry.ReleasePlugin(pluginContainer);
+        BlocksRegistry.ReleasePlugin(pluginContainer);
 
         if (pluginContainer.LoadContext is not null)
             this.commandHandler.UnregisterArgumentParsers(pluginContainer.LoadContext);

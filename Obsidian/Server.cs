@@ -85,18 +85,33 @@ public sealed partial class Server : IServer
 
     /// <summary>
     /// The registries plugins added to, which clients must agree with the server on: vanilla clients can't join while
-    /// there are any, and NeoForge clients are sent them.
+    /// there are any, and NeoForge and Fabric clients are sent them. Clients number block states from the block
+    /// registry's order, so syncing it gives plugins' block states the same ids as on the server.
     /// </summary>
     internal IReadOnlyList<Net.Payloads.SyncedRegistry> GetModdedRegistries()
     {
-        if (!ItemsRegistry.HasPluginItems)
-            return [];
+        var registries = new List<Net.Payloads.SyncedRegistry>();
 
-        var items = ItemsRegistry.All
-            .Select(item => ((int)item.Id, item.UnlocalizedName))
-            .ToArray();
+        if (BlocksRegistry.PluginBlocks.Count > 0)
+        {
+            var blocks = BlocksRegistry.ResourceIds
+                .Select((identifier, id) => (id, identifier))
+                .Concat(BlocksRegistry.PluginBlocks.Select(type => (type.Id, type.Identifier)))
+                .ToArray();
 
-        return [new Net.Payloads.SyncedRegistry("minecraft:item", items)];
+            registries.Add(new Net.Payloads.SyncedRegistry("minecraft:block", blocks));
+        }
+
+        if (ItemsRegistry.HasPluginItems)
+        {
+            var items = ItemsRegistry.All
+                .Select(item => ((int)item.Id, item.UnlocalizedName))
+                .ToArray();
+
+            registries.Add(new Net.Payloads.SyncedRegistry("minecraft:item", items));
+        }
+
+        return registries;
     }
 
     public ICommandHandler CommandHandler { get; }

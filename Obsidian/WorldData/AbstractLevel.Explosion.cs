@@ -41,7 +41,9 @@ public abstract partial class AbstractLevel
                     break;
                 if (!block.IsAir)
                 {
-                    var resistance = blastResistance[block.UnlocalizedName];
+                    var resistance = BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out var pluginBlock)
+                        ? pluginBlock.Settings.ExplosionResistance
+                        : blastResistance[block.UnlocalizedName];
                     if (source is WitherSkull { Invulnerable: true } && !TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId))
                         resistance = Math.Min(resistance, 0.8f);
                     strength -= (resistance + 0.3f) * 0.3f;
@@ -93,7 +95,7 @@ public abstract partial class AbstractLevel
             await SetBlockAsync(position, BlocksRegistry.Air, true);
             if (!LevelData.GetBooleanRule("mob_explosion_drop_decay") || random.NextSingle() <= 1 / radius)
             {
-                if (ItemsRegistry.TryGet(block.Material, out var holder))
+                if (BlocksRegistry.TryGetItem(block, out var holder))
                 {
                     var item = new Obsidian.API.Inventory.ItemStack(holder, 1);
                     SpawnEntity(new ItemEntity { Level = this, EntityId = Server.GetNextEntityId(), Position = (VectorD)position + 0.5f, Item = item });

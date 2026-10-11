@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Obsidian.API.Plugins;
 using Obsidian.API.Registries;
 
@@ -51,6 +52,11 @@ public sealed class Item : INetworkSerializable<Item>
     /// item can't be enchanted.
     /// </summary>
     public int Enchantable { get; internal set; }
+
+    /// <summary>
+    /// The plugin block the item places, or null. Vanilla's items place blocks by their <see cref="Type"/>.
+    /// </summary>
+    public BlockType? Block { get; internal set; }
 
     // What the item does when used, run by the server as a call into its plugin (so not handed out: a caller holding it
     // could run it while the plugin unloads).

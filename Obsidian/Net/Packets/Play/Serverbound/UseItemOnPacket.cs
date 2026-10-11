@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Obsidian.API.Events;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.API.Inventory;
@@ -104,7 +105,26 @@ public partial class UseItemOnPacket
 
         if (await TryUseMusicBlockAsync(player, handSlot, bucket, b)) return;
 
-        if (interactableBlocks.Contains(b.Material) && !player.Sneaking)
+        // Like vanilla's, a plugin's block reacts to being used before the item does, unless the player sneaks.
+        if (!player.Sneaking && Plugins.ItemBehaviors.CanUseItems(player))
+        {
+            var usedBlock = await Plugins.BlockBehaviors.UseAsync(new BlockUseContext
+            {
+                Player = player,
+                Position = position,
+                Block = b,
+                Face = this.Face,
+                Hand = this.Hand
+            });
+
+            if (usedBlock)
+            {
+                player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+                return;
+            }
+        }
+
+        if (b.Material is Material interactable && interactableBlocks.Contains(interactable) && !player.Sneaking)
         {
             await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)
             {
@@ -188,29 +208,40 @@ public partial class UseItemOnPacket
         if (player is Obsidian.Entities.Player eatingPlayer)
             eatingPlayer.StartEating(Hand);
 
-        switch (itemType)
-        {
-            case Material.WaterBucket:
-                itemType = Material.Water;
-                break;
-            case Material.LavaBucket:
-                itemType = Material.Lava;
-                break;
-            case Material.Air or null:
-                // Only vanilla items place blocks for now; a plugin's item does what its behaviour does.
-                return;
-            default:
-                break;
-        }
-
         IBlock block;
-        try
+        if (currentItem?.Holder.Block is BlockType pluginBlock)
         {
-            block = BlocksRegistry.Get(itemType.Value);
+            // A plugin's block item places its block, for players that may use items.
+            if (currentItem.Count <= 0 || !Plugins.ItemBehaviors.CanUseItems(player))
+                return;
+
+            block = pluginBlock.DefaultState;
         }
-        catch //item is not a block so just return
+        else
         {
-            return;
+            switch (itemType)
+            {
+                case Material.WaterBucket:
+                    itemType = Material.Water;
+                    break;
+                case Material.LavaBucket:
+                    itemType = Material.Lava;
+                    break;
+                case Material.Air or null:
+                    // A plugin's item without a block does what its behaviour does.
+                    return;
+                default:
+                    break;
+            }
+
+            try
+            {
+                block = BlocksRegistry.Get(itemType.Value);
+            }
+            catch //item is not a block so just return
+            {
+                return;
+            }
         }
 
         if (player.GameMode != GameMode.Creative)
@@ -252,7 +283,7 @@ public partial class UseItemOnPacket
                 break;
         }
 
-        if (block.IsGravityAffected())
+        if (block.IsGravityAffected() && block.Material is Material falling)
         {
             if (await player.Level.GetBlockAsync(position + Vector.Down) is IBlock below &&
                 below.IsFreeForFallingBlock())
@@ -262,7 +293,7 @@ public partial class UseItemOnPacket
                 {
                     SequenceID = Sequence
                 });
-                player.Level.SpawnFallingBlock(position, block.Material);
+                player.Level.SpawnFallingBlock(position, falling);
                 return;
             }
         }

@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Events;
+﻿using Obsidian.API.Blocks;
+using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Networking;
 
@@ -52,6 +53,24 @@ public interface IPluginRegistry
     /// </remarks>
     /// <exception cref="ArgumentException">The identifier isn't in the plugin's namespace, or isn't valid.</exception>
     public Item RegisterItem(string identifier, ItemProperties? properties = null);
+
+    /// <summary>
+    /// Registers a block, like a NeoForge mod's block: its identifier is in the plugin's namespace, it gets the next
+    /// free block id and its states the next free state ids, and unless <see cref="BlockProperties.Item"/> is null an
+    /// item with the same identifier that places it. Registering it again, e.g. when the plugin reloads, gives back the
+    /// same block with the new properties and behaviour; its state properties can't change until the server restarts.
+    /// </summary>
+    /// <param name="identifier">The block's identifier, like <c>myplugin:ruby_block</c>.</param>
+    /// <param name="properties">The block's properties and behaviour; the defaults if null.</param>
+    /// <returns>The block, to get its states from.</returns>
+    /// <remarks>
+    /// Like a plugin's items, its blocks need NeoForge or Fabric clients with a matching mod, and stay registered until
+    /// the server stops. A world saved with them loads them as air once the plugin is gone.
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// The identifier isn't in the plugin's namespace or isn't valid, or the block's state properties changed.
+    /// </exception>
+    public BlockType RegisterBlock(string identifier, BlockProperties? properties = null);
 }
 
 

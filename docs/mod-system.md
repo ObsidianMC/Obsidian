@@ -46,8 +46,15 @@ client. This document describes the design and tracks its progress. The archive 
      NeoForge's registry sync and Fabric clients with Fabric API's, before vanilla's registries. A plugin's items
      stay registered, and synced, until the server stops, even if the plugin unloads for good: stacks of them can
      still be anywhere, so clients need the mod until then.
-   - Next: blocks (with their states) and entity types the same way; moving `Material` call sites to items and blocks
-     until `Material` can go; reconfiguring connected players when a reload changes the registered content.
+   - Done for blocks: plugins register blocks with `IPluginRegistry.RegisterBlock`, with state properties, simple
+     physics (collision, opacity, hardness, light emission), an `IBlockBehavior` for using them and, by default, an
+     item that places them. Their states get ids after vanilla's, numbered like vanilla numbers a block's states, and
+     the block registry is synced to NeoForge and Fabric clients, which number states the same way. Physics, light
+     and shapes come from a vanilla template block (stone, glass or cobweb). Vanilla blocks keep their generated
+     types; `IBlock.Material` is null for plugins' blocks. Saved worlds store blocks by name, so a plugin block loads
+     as air once its plugin is gone.
+   - Next: entity types the same way; moving `Material` call sites to items and blocks until `Material` can go;
+     reconfiguring connected players when a reload changes the registered content.
 3. **Data-driven content and world generation**: loading a mod's `data/` folder like a data pack (biomes, dimension
    types, damage types, tags, worldgen features), letting mods register codec types for data-driven objects (feature,
    density function and biome source types), and reload-safe world generators.

@@ -166,7 +166,7 @@ public sealed partial class Enderman : PathfinderMob
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         DropItem(Material.EnderPearl, Random.Next(2));
-        if (CarriedBlock is { } block) DropItem(block.Material, 1);
+        if (CarriedBlock is { Material: Material carried }) DropItem(carried, 1);
         return default;
     }
     public override void Write(INetStreamWriter writer)

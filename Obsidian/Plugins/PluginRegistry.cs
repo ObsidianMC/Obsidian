@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Events;
+﻿using Obsidian.API.Blocks;
+using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Networking;
 using Obsidian.API.Plugins;
@@ -97,6 +98,57 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
     {
         var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
 
+        return RegisterItem(container, identifier, properties ?? new ItemProperties());
+    }
+
+    public BlockType RegisterBlock(string identifier, BlockProperties? properties = null)
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        CheckIdentifier(container, identifier);
+
+        properties ??= new BlockProperties();
+        ArgumentOutOfRangeException.ThrowIfNegative(properties.LightEmission, nameof(properties));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(properties.LightEmission, 15, nameof(properties));
+
+        var block = BlocksRegistry.Register(identifier, properties);
+
+        if (!BlocksRegistry.TryBind(block, properties, container, () => container.IsClosing))
+            throw new InvalidOperationException($"{container.Info.Name} is unloading.");
+
+        if (properties.Item is ItemProperties itemProperties)
+        {
+            var item = RegisterItem(container, identifier, itemProperties);
+            item.Block = block;
+            block.Item = item;
+        }
+        else if (block.Item is Item previous)
+        {
+            // Reloaded without its item: the item stays registered for stacks of it, but no longer places the block.
+            previous.Block = null;
+            block.Item = null;
+        }
+
+        return block;
+    }
+
+    private static Item RegisterItem(PluginContainer container, string identifier, ItemProperties properties)
+    {
+        CheckIdentifier(container, identifier);
+
+        ArgumentOutOfRangeException.ThrowIfLessThan(properties.MaxStackSize, 1, nameof(properties));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(properties.MaxStackSize, 99, nameof(properties));
+
+        var item = ItemsRegistry.Register(identifier);
+
+        if (!ItemsRegistry.TryBind(item, properties, container, () => container.IsClosing))
+            throw new InvalidOperationException($"{container.Info.Name} is unloading.");
+
+        return item;
+    }
+
+    private static void CheckIdentifier(PluginContainer container, string identifier)
+    {
         // Like a NeoForge mod's, a plugin's content is in its own namespace, so plugins can't take each other's.
         if (!identifier.StartsWith($"{container.Info.Id}:", StringComparison.Ordinal))
             throw new ArgumentException($"{identifier} isn't in the plugin's namespace, {container.Info.Id}.");
@@ -107,17 +159,6 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
             || !container.Info.Id.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c is '_' or '-' or '.')
             || !path.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c is '_' or '-' or '.' or '/'))
             throw new ArgumentException($"{identifier} isn't a valid identifier.");
-
-        properties ??= new ItemProperties();
-        ArgumentOutOfRangeException.ThrowIfLessThan(properties.MaxStackSize, 1, nameof(properties));
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(properties.MaxStackSize, 99, nameof(properties));
-
-        var item = ItemsRegistry.Register(identifier);
-
-        if (!ItemsRegistry.TryBind(item, properties, container, () => container.IsClosing))
-            throw new InvalidOperationException($"{container.Info.Name} is unloading.");
-
-        return item;
     }
 
     public IPluginRegistry RegisterCommandArgumentHandler<T>(BaseArgumentParser<T> parser) 

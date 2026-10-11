@@ -1,3 +1,4 @@
+using Obsidian.API.Inventory;
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -43,7 +44,7 @@ public partial class MainEventHandler
             DestroyStage = -1
         }, player.EntityId);
 
-        var droppedMaterial = block.Material;
+        var dropped = block;
         if (block.UnlocalizedName.StartsWith("minecraft:infested_", StringComparison.Ordinal))
         {
             if (player.GameMode == GameMode.Creative)
@@ -59,12 +60,13 @@ public partial class MainEventHandler
                 return;
             }
             if (Obsidian.WorldData.Structures.BlockStateParser.TryParse(block.UnlocalizedName.Replace("infested_", "", StringComparison.Ordinal)) is { } normal)
-                droppedMaterial = normal.Material;
+                dropped = normal;
         }
-        var droppedItem = ItemsRegistry.GetSingleItem(droppedMaterial);
 
-        if (droppedItem.Type == Material.Air)
+        if (!BlocksRegistry.TryGetItem(dropped, out var droppedHolder))
             return;
+
+        var droppedItem = new ItemStack(droppedHolder, 1);
 
         var item = new ItemEntity
         {
