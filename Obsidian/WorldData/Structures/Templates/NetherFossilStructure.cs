@@ -26,7 +26,7 @@ public sealed class NetherFossilStructure : Structure
         {
             var block = column.GetBlock(y);
             var below = column.GetBlock(--y);
-            if (block.IsAir && (below.Material == Material.SoulSand || below.IsFaceSturdy(BlockFace.Up)))
+            if (block.IsAir && (below.Is(BlockIds.SoulSand) || below.IsFaceSturdy(BlockFace.Up)))
                 break;
         }
 
@@ -87,7 +87,7 @@ public sealed class NetherFossilPiece : TemplateStructurePiece
         var z = templateBox.MinZ + random.NextInt(templateBox.ZSpan);
         var position = new Vector(x, templateBox.MinY, z);
         if (level.GetBlock(position).IsAir && box.IsInside(position))
-            level.SetBlock(position, BlocksRegistry.Get(Material.DriedGhast).Rotate(StructureRotationExtensions.Random(random)));
+            level.SetBlock(position, BlocksRegistry.DriedGhast.Rotate(StructureRotationExtensions.Random(random)));
     }
 
     private static StructurePlaceSettings MakeSettings(StructureRotation rotation)

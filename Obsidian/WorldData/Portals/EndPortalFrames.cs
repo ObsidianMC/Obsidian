@@ -19,7 +19,7 @@ internal static class EndPortalFrames
         foreach (var (position, facing) in Ring(origin))
         {
             var block = await read(position);
-            if (block?.Material != Material.EndPortalFrame || block.GetProperty("eye") != "true" ||
+            if (block?.RegistryId != BlockIds.EndPortalFrame || block.GetProperty("eye") != "true" ||
                 block.GetProperty("facing") != facing)
                 return false;
         }

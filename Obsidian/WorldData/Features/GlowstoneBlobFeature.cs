@@ -9,7 +9,7 @@ public sealed class GlowstoneBlobFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:glowstone_blob";
 
-    private static IBlock Glowstone => field ??= BlocksRegistry.Get(Material.Glowstone);
+    private static IBlock Glowstone => field ??= BlocksRegistry.Glowstone;
 
     public override bool Place(FeatureContext context)
     {
@@ -20,7 +20,7 @@ public sealed class GlowstoneBlobFeature : ConfiguredFeatureBase
             return false;
 
         var ceiling = level.GetBlock(origin + Vector.Up);
-        if (ceiling.Material is not (Material.Netherrack or Material.Basalt or Material.Blackstone))
+        if (ceiling.RegistryId is not (BlockIds.Netherrack or BlockIds.Basalt or BlockIds.Blackstone))
             return false;
 
         level.SetBlock(origin, Glowstone);
@@ -35,7 +35,7 @@ public sealed class GlowstoneBlobFeature : ConfiguredFeatureBase
             var neighbors = 0;
             foreach (var face in FeatureHelpers.Directions)
             {
-                if (level.GetBlock(position.Offset(face)).Material == Material.Glowstone)
+                if (level.GetBlock(position.Offset(face)).RegistryId == BlockIds.Glowstone)
                     neighbors++;
 
                 if (neighbors > 1)

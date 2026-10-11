@@ -19,9 +19,9 @@ public sealed class TwistingVinesFeature : ConfiguredFeatureBase
 
     public required int MaxHeight { get; init; }
 
-    private static IBlock TwistingVines => field ??= BlocksRegistry.Get(Material.TwistingVines);
+    private static IBlock TwistingVines => field ??= BlocksRegistry.TwistingVines;
 
-    private static IBlock TwistingVinesPlant => field ??= BlocksRegistry.Get(Material.TwistingVinesPlant);
+    private static IBlock TwistingVinesPlant => field ??= BlocksRegistry.TwistingVinesPlant;
 
     public override bool Place(FeatureContext context)
     {
@@ -99,6 +99,6 @@ public sealed class TwistingVinesFeature : ConfiguredFeatureBase
             return true;
 
         var below = level.GetBlock(position + Vector.Down);
-        return below.Material is not (Material.Netherrack or Material.WarpedNylium or Material.WarpedWartBlock);
+        return below.RegistryId is not (BlockIds.Netherrack or BlockIds.WarpedNylium or BlockIds.WarpedWartBlock);
     }
 }

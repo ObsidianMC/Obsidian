@@ -2,27 +2,30 @@
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public abstract class BaseFlora(GenHelper helper, IChunk chunk, Material mat = Material.RedTulip)
+/// <param name="flora">The plant to place; red tulips if not given.</param>
+public abstract class BaseFlora(GenHelper helper, IChunk chunk, IBlock? flora = null)
 {
-    protected IBlock FloraBlock { get; } = BlocksRegistry.Get(mat);
+    protected IBlock FloraBlock { get; } = flora ?? BlocksRegistry.RedTulip;
     protected GenHelper GenHelper { get; } = helper;
 
     protected IChunk Chunk { get; } = chunk;
 
-    protected Material FloraMat { get; set; } = mat;
+    protected IBlock FloraKind { get; set; } = flora ?? BlocksRegistry.RedTulip;
 
     protected int Height { get; set; } = 1;
 
-    protected List<Material> GrowsIn { get; set; } =
+    // Block ids.
+    protected List<int> GrowsIn { get; set; } =
     [
-        Material.Air
+        BlockIds.Air
     ];
 
-    protected List<Material> GrowsOn { get; set; } =
+    // Block ids.
+    protected List<int> GrowsOn { get; set; } =
     [
-        Material.GrassBlock,
-        Material.Dirt,
-        Material.Podzol
+        BlockIds.GrassBlock,
+        BlockIds.Dirt,
+        BlockIds.Podzol
     ];
 
     /// <summary>
@@ -79,8 +82,8 @@ public abstract class BaseFlora(GenHelper helper, IChunk chunk, Material mat = M
     /// <param name="loc">The position above the surface block.</param>
     /// <returns>Whether surface is compatible.</returns>
     protected virtual async Task<bool> GetValidSurfaceAsync(Vector loc) =>
-        await GenHelper.GetBlockAsync(loc + Vector.Down, Chunk) is { Material: Material surface }
-            && GrowsOn.Contains(surface);
+        await GenHelper.GetBlockAsync(loc + Vector.Down, Chunk) is IBlock surface
+            && GrowsOn.Contains(surface.RegistryId);
 
     /// <summary>
     /// Check free space above grow location.
@@ -92,8 +95,8 @@ public abstract class BaseFlora(GenHelper helper, IChunk chunk, Material mat = M
         int freeSpace = 0;
         for (int y = 0; y < Height; y++)
         {
-            if (await GenHelper.GetBlockAsync(loc + (0, y, 0), Chunk) is { Material: Material above }
-                && GrowsIn.Contains(above))
+            if (await GenHelper.GetBlockAsync(loc + (0, y, 0), Chunk) is IBlock above
+                && GrowsIn.Contains(above.RegistryId))
             {
                 freeSpace++;
             }

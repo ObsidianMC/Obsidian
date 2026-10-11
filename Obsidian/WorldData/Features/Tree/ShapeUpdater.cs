@@ -161,7 +161,7 @@ internal static class ShapeUpdater
         if ((side != "none") == IsWireConnected(state, property) && !IsWireCross(state))
             return state.WithProperty(property, side);
 
-        var cross = BlocksRegistry.Get(Material.RedstoneWire).WithProperty("power", state.GetProperty("power"));
+        var cross = BlocksRegistry.RedstoneWire.WithProperty("power", state.GetProperty("power"));
         foreach (var face in wireDirections)
             cross = cross.WithProperty(face.PropertyName(), "side");
 
@@ -176,7 +176,7 @@ internal static class ShapeUpdater
     {
         var wasDot = IsWireDot(state);
         var canClimb = !level.GetBlock(position + Vector.Up).IsRedstoneConductor();
-        state = BlocksRegistry.Get(Material.RedstoneWire).WithProperty("power", state.GetProperty("power"));
+        state = BlocksRegistry.RedstoneWire.WithProperty("power", state.GetProperty("power"));
         foreach (var face in wireDirections)
             state = state.WithProperty(face.PropertyName(), GetWireConnectingSide(level, position, face, canClimb));
 
@@ -231,19 +231,20 @@ internal static class ShapeUpdater
     /// </summary>
     private static bool WireConnectsTo(IBlock block, BlockFace? direction)
     {
-        if (block.Material == Material.RedstoneWire)
+        if (block.Is(BlockIds.RedstoneWire))
             return true;
 
-        if (block.Material == Material.Repeater)
+        if (block.Is(BlockIds.Repeater))
             return direction is not null && SameAxis(FeatureHelpers.ParseFace(block.GetProperty("facing")), direction.Value);
 
-        if (block.Material == Material.Observer)
+        if (block.Is(BlockIds.Observer))
             return direction is not null && FeatureHelpers.ParseFace(block.GetProperty("facing")) == direction.Value;
 
         return block.IsSignalSource() && direction is not null;
     }
 
-    private static bool CanWireSurviveOn(IBlock below) => below.IsFaceSturdy(BlockFace.Up) || below.Material == Material.Hopper;
+    private static bool CanWireSurviveOn(IBlock below) =>
+        below.IsFaceSturdy(BlockFace.Up) || below.Is(BlockIds.Hopper);
 
     private static bool IsWireConnected(IBlock wire, string side) => wire.GetProperty(side) != "none";
 
@@ -323,7 +324,8 @@ internal static class ShapeUpdater
             if (state.IsFluidSource() || neighbor.IsFluidSource())
                 level.ScheduleFluidTick(position);
         }
-        else if (state.GetProperty("waterlogged") == "true" || state.Material is Material.Seagrass or Material.Kelp or Material.BubbleColumn)
+        else if (state.GetProperty("waterlogged") == "true"
+            || state.RegistryId is BlockIds.Seagrass or BlockIds.Kelp or BlockIds.BubbleColumn)
         {
             level.ScheduleFluidTick(position);
         }
@@ -466,10 +468,10 @@ internal static class ShapeUpdater
     }
 
     private static bool IsStemFruit(IBlock stem, IBlock neighbor) =>
-        neighbor.Material == (stem.Material == Material.AttachedMelonStem ? Material.Melon : Material.Pumpkin);
+        neighbor.RegistryId == (stem.Is(BlockIds.AttachedMelonStem) ? BlockIds.Melon : BlockIds.Pumpkin);
 
     private static string StemFor(IBlock attached) =>
-        attached.Material == Material.AttachedMelonStem ? "minecraft:melon_stem" : "minecraft:pumpkin_stem";
+        attached.Is(BlockIds.AttachedMelonStem) ? "minecraft:melon_stem" : "minecraft:pumpkin_stem";
 
     /// <summary>
     /// Vanilla <c>FaceAttachedHorizontalDirectionalBlock.updateShape</c> (levers, buttons): drops without a sturdy face to

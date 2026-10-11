@@ -110,7 +110,7 @@ public sealed class IslandGenerator : ILevelGenerator
                 for (int by = 20; by < 200; by++)
                 {
                     var pos = new Vector(bx, by, bz);
-                    var isHanging = chunk.GetBlock(pos).Is(Material.Stone) && chunk.GetBlock(pos + Vector.Down).IsAir;
+                    var isHanging = chunk.GetBlock(pos).Is(BlockIds.Stone) && chunk.GetBlock(pos + Vector.Down).IsAir;
                     if (isHanging && r!.Next(0, 5) == 0)
                     {
                         IBlock b = hangingBlocks[r!.Next(0, 4)];

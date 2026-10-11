@@ -35,8 +35,8 @@ internal sealed class MultifaceSpreader
     // Info of each block state, indexed by state id and computed on first use; 0 until then.
     private static readonly int[] infos = new int[BlocksRegistry.StateToNumeric.Length];
 
-    private static readonly int glowLichenId = BlocksRegistry.Get(Material.GlowLichen).RegistryId;
-    private static readonly int sculkVeinId = BlocksRegistry.Get(Material.SculkVein).RegistryId;
+    private static readonly int glowLichenId = BlocksRegistry.GlowLichen.RegistryId;
+    private static readonly int sculkVeinId = BlocksRegistry.SculkVein.RegistryId;
 
     private readonly IBlock block;
     private readonly SpreadType[] spreadTypes;
@@ -55,23 +55,23 @@ internal sealed class MultifaceSpreader
 
     public static readonly SpreadType[] DefaultSpreadOrder = [SpreadType.SamePosition, SpreadType.SamePlane, SpreadType.WrapAround];
 
-    public static MultifaceSpreader GlowLichen => field ??= new(BlocksRegistry.Get(Material.GlowLichen), DefaultSpreadOrder, false);
+    public static MultifaceSpreader GlowLichen => field ??= new(BlocksRegistry.GlowLichen, DefaultSpreadOrder, false);
 
     /// <summary>
     /// Sculk vein's main spreader (<c>SculkVeinBlock.getSpreader()</c>).
     /// </summary>
-    public static MultifaceSpreader SculkVein => field ??= new(BlocksRegistry.Get(Material.SculkVein), DefaultSpreadOrder, true);
+    public static MultifaceSpreader SculkVein => field ??= new(BlocksRegistry.SculkVein, DefaultSpreadOrder, true);
 
     /// <summary>
     /// Sculk vein's same-position spreader (<c>SculkVeinBlock.getSameSpaceSpreader()</c>).
     /// </summary>
     public static MultifaceSpreader SculkVeinSameSpace =>
-        field ??= new(BlocksRegistry.Get(Material.SculkVein), [SpreadType.SamePosition], true);
+        field ??= new(BlocksRegistry.SculkVein, [SpreadType.SamePosition], true);
 
     /// <summary>
     /// The spreader of a multiface block type (glow lichen or sculk vein).
     /// </summary>
-    public static MultifaceSpreader For(IBlock block) => block.Material == Material.SculkVein ? SculkVein : GlowLichen;
+    public static MultifaceSpreader For(IBlock block) => block.Is(BlockIds.SculkVein) ? SculkVein : GlowLichen;
 
     public IBlock Block => this.block;
 
@@ -298,7 +298,7 @@ internal sealed class MultifaceSpreader
         if (state.IsCollisionShapeFullBlock())
             info |= FullCollisionBit;
 
-        if (state.Material is Material.Sculk or Material.SculkCatalyst or Material.MovingPiston)
+        if (state.RegistryId is BlockIds.Sculk or BlockIds.SculkCatalyst or BlockIds.MovingPiston)
             info |= BlocksVeinsBit;
 
         var fluid = state.GetFluid();
@@ -308,7 +308,7 @@ internal sealed class MultifaceSpreader
         if (state.CanBeReplaced())
             info |= ReplaceableBit;
 
-        if (state.IsAir || state.Material == Material.Water && state.IsFluidSource())
+        if (state.IsAir || state.Is(BlockIds.Water) && state.IsFluidSource())
             info |= DefaultReplaceableBit;
 
         if (fluid == FluidKind.Water)

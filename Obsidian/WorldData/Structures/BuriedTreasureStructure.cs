@@ -21,8 +21,8 @@ public sealed class BuriedTreasurePiece(Vector position) : StructurePiece(0, new
 {
     private static readonly IBlock[] buryingBlocks =
     [
-        BlocksRegistry.Get(Material.Sandstone), BlocksRegistry.Get(Material.Stone), BlocksRegistry.Get(Material.Andesite),
-        BlocksRegistry.Get(Material.Granite), BlocksRegistry.Get(Material.Diorite)
+        BlocksRegistry.Sandstone, BlocksRegistry.Stone, BlocksRegistry.Andesite,
+        BlocksRegistry.Granite, BlocksRegistry.Diorite
     ];
 
     public override void PostProcess(StructurePieceContext context)
@@ -41,7 +41,7 @@ public sealed class BuriedTreasurePiece(Vector position) : StructurePiece(0, new
                 continue;
             }
 
-            var cover = !block.IsAir && !IsLiquid(block) ? block : BlocksRegistry.Get(Material.Sand);
+            var cover = !block.IsAir && !IsLiquid(block) ? block : BlocksRegistry.Sand;
             foreach (var face in FeatureHelpers.Directions)
             {
                 var neighbor = position.Offset(face);
@@ -61,5 +61,5 @@ public sealed class BuriedTreasurePiece(Vector position) : StructurePiece(0, new
     }
 
     // Vanilla checks the block, so flowing water and lava count too.
-    private static bool IsLiquid(IBlock block) => block.Material is Material.Water or Material.Lava;
+    private static bool IsLiquid(IBlock block) => block.RegistryId is BlockIds.Water or BlockIds.Lava;
 }

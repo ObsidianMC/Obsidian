@@ -31,7 +31,7 @@ public sealed class LargeDripstoneFeature : ConfiguredFeatureBase
 
     public required float MinBluntnessForWind { get; init; }
 
-    private static IBlock DripstoneBlock => field ??= BlocksRegistry.Get(Material.DripstoneBlock);
+    private static IBlock DripstoneBlock => field ??= BlocksRegistry.DripstoneBlock;
 
     public override bool Place(FeatureContext context)
     {
@@ -111,7 +111,7 @@ public sealed class LargeDripstoneFeature : ConfiguredFeatureBase
 
                 for (var i = 0; i < attempts; i++)
                 {
-                    if (level.GetBlock(position).Material == Material.Lava)
+                    if (level.GetBlock(position).RegistryId == BlockIds.Lava)
                         return false;
 
                     if (DripstoneUtils.IsCircleMostlyEmbeddedInStone(level, wind.Offset(position), this.radius))

@@ -212,7 +212,7 @@ internal sealed class MapData
         for (var slot = 0; slot < inventory.Size; slot++)
         {
             var stack = inventory.GetItem(slot);
-            if (stack is not null && stack.Type == Material.FilledMap && MapStorage.GetMapId(stack) == mapId)
+            if (stack is not null && stack.Is(ItemsRegistry.FilledMap) && MapStorage.GetMapId(stack) == mapId)
                 return true;
         }
 

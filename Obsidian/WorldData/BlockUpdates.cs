@@ -9,20 +9,21 @@ internal static class BlockUpdates
     /// <summary>
     /// Perform gravity affected block tick logic
     /// </summary>
+    /// <param name="level">The level of the update, which spawns the falling block</param>
     /// <param name="blockUpdate">Info about the block update</param>
     /// <returns>Whether caller should block update neighbors</returns>
-    internal static async Task<bool> HandleFallingBlock(IBlockUpdate blockUpdate)
+    internal static async Task<bool> HandleFallingBlock(AbstractLevel level, IBlockUpdate blockUpdate)
     {
         // Only vanilla's blocks fall.
-        if (blockUpdate.Block?.Material is not Material material) { return false; }
+        if (blockUpdate.Block is not IBlock block || BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out _))
+            return false;
 
-        var world = blockUpdate.Level;
         var position = blockUpdate.Position;
-        if (await world.GetBlockAsync(position + Vector.Down) is IBlock below &&
+        if (await level.GetBlockAsync(position + Vector.Down) is IBlock below &&
             below.IsFreeForFallingBlock())
         {
-            await world.SetBlockAsync(position, BlocksRegistry.Air);
-            world.SpawnFallingBlock(position, material);
+            await level.SetBlockAsync(position, BlocksRegistry.Air);
+            level.SpawnFallingBlock(position, BlocksRegistry.GetDefault(block.RegistryId));
             return true;
         }
 

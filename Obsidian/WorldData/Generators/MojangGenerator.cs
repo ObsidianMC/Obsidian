@@ -313,7 +313,8 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
         return fortress != null && manager.GetReferencingStarts(position.X >> 4, position.Z >> 4, fortress).Any(start =>
             start.Pieces.Any(piece => piece.BoundingBox.IsInside(position)) ||
             start.BoundingBox.IsInside(position) && this.world is AbstractLevel level &&
-            level.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetBlock(position.X, position.Y - 1, position.Z).Material == Material.NetherBricks);
+            level.GetLoadedChunk(position.X >> 4, position.Z >> 4)
+                ?.GetBlock(position.X, position.Y - 1, position.Z).RegistryId == BlockIds.NetherBricks);
     }
 
     public NbtCompound? SaveStructureStarts(int chunkX, int chunkZ, NbtCompound? loaded) =>

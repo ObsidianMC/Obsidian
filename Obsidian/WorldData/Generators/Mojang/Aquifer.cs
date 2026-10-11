@@ -39,15 +39,14 @@ internal interface IAquifer
 /// </summary>
 internal readonly record struct FluidStatus(int FluidLevel, IBlock FluidType)
 {
-    // Water, lava or air: vanilla blocks, which always have a material.
-    private readonly Material fluidMaterial = FluidType.Material ?? Material.Air;
+    private readonly int fluidId = FluidType.RegistryId;
 
     public IBlock At(int y) => y < this.FluidLevel ? this.FluidType : BlocksRegistry.Air;
 
     /// <summary>
-    /// The material of <see cref="At"/>, without the interface call.
+    /// The block id of <see cref="At"/>, without the interface call.
     /// </summary>
-    public Material MaterialAt(int y) => y < this.FluidLevel ? this.fluidMaterial : Material.Air;
+    public int BlockIdAt(int y) => y < this.FluidLevel ? this.fluidId : BlockIds.Air;
 
     // Blocks are boxed structs, whose default equality compares fields through reflection; the fluid types are
     // usually the very same instance.

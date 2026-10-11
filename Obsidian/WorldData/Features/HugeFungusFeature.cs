@@ -41,7 +41,7 @@ public sealed class HugeFungusFeature : ConfiguredFeatureBase
 
     private IBlock Decor => field ??= BlocksRegistry.GetFromSimpleState(this.DecorState);
 
-    private static IBlock Air => field ??= BlocksRegistry.Get(Material.Air);
+    private static IBlock Air => field ??= BlocksRegistry.Air;
 
     public override bool Place(FeatureContext context)
     {
@@ -109,7 +109,7 @@ public sealed class HugeFungusFeature : ConfiguredFeatureBase
 
     private void PlaceHat(IWorldGenLevel level, IRandomSource random, Vector origin, int height, bool huge)
     {
-        var netherWart = this.Hat.Material == Material.NetherWartBlock;
+        var netherWart = this.Hat.Is(BlockIds.NetherWartBlock);
         var hatHeight = Math.Min(random.NextInt(1 + height / 3) + 5, height);
         var hatStart = height - hatHeight;
 

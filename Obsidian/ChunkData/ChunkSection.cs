@@ -62,7 +62,7 @@ public sealed class ChunkSection : IChunkSection
             {
                 for (var x = 0; x < 16; x++)
                 {
-                    if (this.GetBlock(x, y, z).Material != Material.Air)
+                    if (this.GetBlock(x, y, z).RegistryId != BlockIds.Air)
                     {
                         this.IsEmpty = false;
                         return;
@@ -79,7 +79,7 @@ public sealed class ChunkSection : IChunkSection
     public BiomeCodec GetBiome(int x, int y, int z) => this.BiomeContainer.Get(x, y, z);
     public void SetBlock(int x, int y, int z, IBlock block)
     {
-        if (block.Material != Material.Air)
+        if (!block.Is(BlockIds.Air))
             IsEmpty = false;
 
         this.BlockStateContainer.Set(x, y, z, block);
@@ -95,7 +95,7 @@ public sealed class ChunkSection : IChunkSection
         {
             foreach (var index in layer)
             {
-                if (blocks[index] is { } block && block.Material != Material.Air)
+                if (blocks[index] is { } block && !block.Is(BlockIds.Air))
                 {
                     IsEmpty = false;
                     break;

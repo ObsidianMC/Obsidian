@@ -6,7 +6,8 @@ namespace Obsidian.WorldData.Decorators;
 
 public class OldGrowthSpruceTaigaDecorator : BaseDecorator
 {
-    private static readonly IBlock sweetBerryBush = BlocksRegistry.Get(Material.SweetBerryBush, new SweetBerryBushStateBuilder().WithAge(3).Build());
+    private static readonly IBlock sweetBerryBush =
+        BlocksRegistry.Get(new SweetBerryBushStateBuilder().WithAge(3).Build().Id);
     public OldGrowthSpruceTaigaDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, Registries.ConfiguredFeatures.Trees.Spruce));

@@ -20,11 +20,11 @@ public sealed class EndGatewayFeature : ConfiguredFeatureBase
     /// </summary>
     public required bool Exact { get; init; }
 
-    private static IBlock Gateway => field ??= BlocksRegistry.Get(Material.EndGateway);
+    private static IBlock Gateway => field ??= BlocksRegistry.EndGateway;
 
-    private static IBlock Bedrock => field ??= BlocksRegistry.Get(Material.Bedrock);
+    private static IBlock Bedrock => field ??= BlocksRegistry.Bedrock;
 
-    private static IBlock Air => field ??= BlocksRegistry.Get(Material.Air);
+    private static IBlock Air => field ??= BlocksRegistry.Air;
 
     public override bool Place(FeatureContext context)
     {

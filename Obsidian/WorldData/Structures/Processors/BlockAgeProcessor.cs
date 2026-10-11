@@ -42,7 +42,7 @@ public sealed class BlockAgeProcessor : StructureProcessor
                 replacement = random.NextFloat() < this.Mossiness ? WithPropertiesOf("minecraft:mossy_stone_brick_slab", block) : null;
             else if (walls.Contains(block))
                 replacement = random.NextFloat() < this.Mossiness ? WithPropertiesOf("minecraft:mossy_stone_brick_wall", block) : null;
-            else if (block.Material == Material.Obsidian)
+            else if (block.Is(BlockIds.Obsidian))
                 replacement = random.NextFloat() < 0.15f ? BlockStateProperties.GetState("minecraft:crying_obsidian") : null;
 
             return replacement is null ? current : current with { Block = replacement };

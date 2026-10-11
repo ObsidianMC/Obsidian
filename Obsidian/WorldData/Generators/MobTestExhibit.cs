@@ -44,10 +44,11 @@ internal sealed record MobTestExhibit(EntityType Type, string Label, bool Frozen
 
             if (type is EntityType.Horse or EntityType.Donkey or EntityType.Mule or EntityType.Camel or
                 EntityType.SkeletonHorse or EntityType.ZombieHorse or EntityType.Pig or EntityType.Strider or EntityType.Nautilus)
-                yield return Equipped(type, "saddled", EquipmentSlot.Saddle, Material.Saddle);
+                yield return Equipped(type, "saddled", EquipmentSlot.Saddle, ItemsRegistry.Saddle);
             if (type is EntityType.Zombie or EntityType.Husk or EntityType.Drowned or EntityType.Skeleton or EntityType.Stray or
                 EntityType.Bogged or EntityType.Parched or EntityType.WitherSkeleton or EntityType.Piglin or EntityType.ZombifiedPiglin)
-                yield return Equipped(type, "armored", EquipmentSlot.Helmet, Material.DiamondHelmet, EquipmentSlot.Chestplate, Material.DiamondChestplate);
+                yield return Equipped(type, "armored", EquipmentSlot.Helmet, ItemsRegistry.DiamondHelmet,
+                    EquipmentSlot.Chestplate, ItemsRegistry.DiamondChestplate);
 
             switch (type)
             {
@@ -120,20 +121,20 @@ internal sealed record MobTestExhibit(EntityType Type, string Label, bool Frozen
                     yield return State(type, "large", "size", 4);
                     break;
                 case EntityType.Pillager:
-                    yield return Equipped(type, "crossbow", EquipmentSlot.MainHand, Material.Crossbow);
+                    yield return Equipped(type, "crossbow", EquipmentSlot.MainHand, ItemsRegistry.Crossbow);
                     break;
                 case EntityType.HappyGhast:
-                    yield return Equipped(type, "harness", EquipmentSlot.Body, Material.RedHarness);
+                    yield return Equipped(type, "harness", EquipmentSlot.Body, ItemsRegistry.RedHarness);
                     break;
                 case EntityType.Nautilus:
-                    yield return Equipped(type, "body armor", EquipmentSlot.Body, Material.DiamondNautilusArmor);
+                    yield return Equipped(type, "body armor", EquipmentSlot.Body, ItemsRegistry.DiamondNautilusArmor);
                     break;
                 case EntityType.Drowned:
-                    yield return Equipped(type, "trident", EquipmentSlot.MainHand, Material.Trident);
+                    yield return Equipped(type, "trident", EquipmentSlot.MainHand, ItemsRegistry.Trident);
                     break;
                 case EntityType.Piglin:
-                    yield return Equipped(type, "crossbow", EquipmentSlot.MainHand, Material.Crossbow);
-                    yield return Equipped(type, "sword", EquipmentSlot.MainHand, Material.GoldenSword);
+                    yield return Equipped(type, "crossbow", EquipmentSlot.MainHand, ItemsRegistry.Crossbow);
+                    yield return Equipped(type, "sword", EquipmentSlot.MainHand, ItemsRegistry.GoldenSword);
                     break;
                 case EntityType.Creeper:
                     yield return State(type, "charged", "powered", true);
@@ -176,18 +177,18 @@ internal sealed record MobTestExhibit(EntityType Type, string Label, bool Frozen
     private static MobTestExhibit State<T>(EntityType type, string label, string key, T value) =>
         new(type, label, true, new() { new NbtTag<T>(key, value) });
 
-    private static MobTestExhibit Equipped(EntityType type, string label, EquipmentSlot slot, Material item,
-        EquipmentSlot? secondSlot = null, Material secondItem = default)
+    private static MobTestExhibit Equipped(EntityType type, string label, EquipmentSlot slot, Item item,
+        EquipmentSlot? secondSlot = null, Item? secondItem = null)
     {
         var equipment = new NbtList(NbtTagType.Compound, "ObsidianEquipment") { Equipment(slot, item) };
-        if (secondSlot is { } additional) equipment.Add(Equipment(additional, secondItem));
+        if (secondSlot is { } additional && secondItem is not null) equipment.Add(Equipment(additional, secondItem));
         return new(type, label, true, new() { equipment, new NbtTag<bool>("Tame", true) });
     }
 
-    private static NbtCompound Equipment(EquipmentSlot slot, Material material)
+    private static NbtCompound Equipment(EquipmentSlot slot, Item item)
     {
         var buffer = new NetworkBuffer();
-        buffer.WriteItemStack(ItemsRegistry.GetSingleItem(material));
+        buffer.WriteItemStack(ItemsRegistry.GetSingleItem(item));
         return new()
         {
             new NbtTag<int>("slot", (int)slot), new NbtTag<float>("drop_chance", 0),

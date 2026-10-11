@@ -50,7 +50,7 @@ public sealed class DesertPyramidStructure() : SinglePieceStructure(21, 21)
             }
             else if (box.IsInside(position))
             {
-                level.SetBlock(position, BlocksRegistry.Get(Material.Sand));
+                level.SetBlock(position, BlocksRegistry.Sand);
             }
         }
     }
@@ -60,7 +60,7 @@ public sealed class DesertPyramidStructure() : SinglePieceStructure(21, 21)
         if (!box.IsInside(position))
             return;
 
-        level.SetBlock(position, BlocksRegistry.Get(Material.SuspiciousSand));
+        level.SetBlock(position, BlocksRegistry.SuspiciousSand);
         FeatureHelpers.SetBrushableLootTable(level, position, ArchaeologyLoot, FeatureHelpers.AsLong(position));
     }
 
@@ -76,13 +76,13 @@ public sealed class DesertPyramidPiece : ScatteredFeaturePiece
     private const string ChestLoot = "minecraft:chests/desert_pyramid";
 
     private static readonly IBlock air = BlocksRegistry.Air;
-    private static readonly IBlock sandstone = BlocksRegistry.Get(Material.Sandstone);
-    private static readonly IBlock cutSandstone = BlocksRegistry.Get(Material.CutSandstone);
-    private static readonly IBlock chiseledSandstone = BlocksRegistry.Get(Material.ChiseledSandstone);
-    private static readonly IBlock sandstoneStairs = BlocksRegistry.Get(Material.SandstoneStairs);
-    private static readonly IBlock orangeTerracotta = BlocksRegistry.Get(Material.OrangeTerracotta);
-    private static readonly IBlock blueTerracotta = BlocksRegistry.Get(Material.BlueTerracotta);
-    private static readonly IBlock sand = BlocksRegistry.Get(Material.Sand);
+    private static readonly IBlock sandstone = BlocksRegistry.Sandstone;
+    private static readonly IBlock cutSandstone = BlocksRegistry.CutSandstone;
+    private static readonly IBlock chiseledSandstone = BlocksRegistry.ChiseledSandstone;
+    private static readonly IBlock sandstoneStairs = BlocksRegistry.SandstoneStairs;
+    private static readonly IBlock orangeTerracotta = BlocksRegistry.OrangeTerracotta;
+    private static readonly IBlock blueTerracotta = BlocksRegistry.BlueTerracotta;
+    private static readonly IBlock sand = BlocksRegistry.Sand;
 
     private readonly bool[] hasPlacedChest = new bool[4];
 
@@ -208,8 +208,8 @@ public sealed class DesertPyramidPiece : ScatteredFeaturePiece
         Box(width - 3, 1, 3, width - 2, 2, 3, sandstone, sandstone);
         Place(sandstone, 1, 1, 2);
         Place(sandstone, width - 2, 1, 2);
-        Place(BlocksRegistry.Get(Material.SandstoneSlab), 1, 2, 2);
-        Place(BlocksRegistry.Get(Material.SandstoneSlab), width - 2, 2, 2);
+        Place(BlocksRegistry.SandstoneSlab, 1, 2, 2);
+        Place(BlocksRegistry.SandstoneSlab, width - 2, 2, 2);
         Place(west, 2, 1, 2);
         Place(east, width - 3, 1, 2);
         Box(4, 3, 5, 4, 3, 17, sandstone, sandstone);
@@ -304,8 +304,8 @@ public sealed class DesertPyramidPiece : ScatteredFeaturePiece
         Box(8, -9, 8, 12, -9, 12, cutSandstone, cutSandstone);
         Box(8, -8, 8, 12, -1, 12, sandstone, sandstone);
         Box(9, -11, 9, 11, -1, 11, air, air);
-        Place(BlocksRegistry.Get(Material.StonePressurePlate), 10, -11, 10);
-        Box(9, -13, 9, 11, -13, 11, BlocksRegistry.Get(Material.Tnt), air);
+        Place(BlocksRegistry.StonePressurePlate, 10, -11, 10);
+        Box(9, -13, 9, 11, -13, 11, BlocksRegistry.Tnt, air);
         Place(air, 8, -11, 10);
         Place(air, 8, -10, 10);
         Place(chiseledSandstone, 7, -10, 10);

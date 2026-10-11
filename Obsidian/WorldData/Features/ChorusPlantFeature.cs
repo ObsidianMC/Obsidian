@@ -12,15 +12,17 @@ public sealed class ChorusPlantFeature : ConfiguredFeatureBase
 
     public override string Type => "minecraft:chorus_plant";
 
-    private static IBlock ChorusPlant => field ??= BlocksRegistry.Get(Material.ChorusPlant);
+    private static IBlock ChorusPlant => field ??= BlocksRegistry.ChorusPlant;
 
-    private static IBlock GrownFlower => field ??= BlocksRegistry.Get(Material.ChorusFlower).WithProperty("age", 5);
+    private static IBlock GrownFlower => field ??= BlocksRegistry.ChorusFlower.WithProperty("age", 5);
 
     public override bool Place(FeatureContext context)
     {
         var level = context.Level;
         var origin = context.Origin;
-        if (!level.EnsureCanWrite(origin) || !level.GetBlock(origin).IsAir || level.GetBlock(origin + Vector.Down).Material != Material.EndStone)
+        if (!level.EnsureCanWrite(origin)
+            || !level.GetBlock(origin).IsAir
+            || !level.GetBlock(origin + Vector.Down).Is(BlockIds.EndStone))
             return false;
 
         level.SetBlock(origin, WithConnections(level, origin));
@@ -94,8 +96,8 @@ public sealed class ChorusPlantFeature : ConfiguredFeatureBase
         foreach (var face in FeatureHelpers.Directions)
         {
             var neighbor = level.GetBlock(position.Offset(face));
-            var connects = neighbor.Material is Material.ChorusPlant or Material.ChorusFlower
-                || face == BlockFace.Down && neighbor.Material == Material.EndStone;
+            var connects = neighbor.RegistryId is BlockIds.ChorusPlant or BlockIds.ChorusFlower
+                || face == BlockFace.Down && neighbor.Is(BlockIds.EndStone);
             state = state.WithProperty(FeatureHelpers.FaceName(face), connects);
         }
 

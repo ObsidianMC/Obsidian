@@ -13,7 +13,7 @@ public sealed class SeaPickleFeature : ConfiguredFeatureBase
     /// </summary>
     public required IIntProvider Count { get; init; }
 
-    private static IBlock SeaPickle => field ??= BlocksRegistry.Get(Material.SeaPickle);
+    private static IBlock SeaPickle => field ??= BlocksRegistry.SeaPickle;
 
     public override bool Place(FeatureContext context)
     {
@@ -35,7 +35,7 @@ public sealed class SeaPickleFeature : ConfiguredFeatureBase
 
             // The pickle count is drawn before the position is checked.
             var state = SeaPickle.WithProperty("pickles", random.NextInt(4) + 1);
-            if (level.GetBlock(position).Material == Material.Water && state.CanSurvive(level, position))
+            if (level.GetBlock(position).RegistryId == BlockIds.Water && state.CanSurvive(level, position))
             {
                 level.SetBlock(position, state);
                 placed++;

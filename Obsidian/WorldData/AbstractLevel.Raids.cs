@@ -163,8 +163,11 @@ public abstract partial class AbstractLevel
             var angle = Random.Shared.NextDouble() * Math.PI * 2;
             var x = center.X + (int)(Math.Cos(angle) * radius); var z = center.Z + (int)(Math.Sin(angle) * radius);
             for (var y = Math.Min(MinY + Height - 2, center.Y + 32); y >= Math.Max(MinY, center.Y - 32); y--)
-                if (terrain.GetBlock(new Vector(x, y, z)) is { IsAir: false } ground && ground.Material != Material.Water && ground.Material != Material.Lava &&
-                    terrain.GetBlock(new Vector(x, y + 1, z))?.IsAir == true && terrain.GetBlock(new Vector(x, y + 2, z))?.IsAir == true)
+                if (terrain.GetBlock(new Vector(x, y, z)) is { IsAir: false } ground
+                    && !ground.Is(BlockIds.Water)
+                    && !ground.Is(BlockIds.Lava)
+                    && terrain.GetBlock(new Vector(x, y + 1, z))?.IsAir == true
+                    && terrain.GetBlock(new Vector(x, y + 2, z))?.IsAir == true)
                     return new VectorD(x + 0.5, y + 1, z + 0.5);
         }
         return null;
@@ -173,7 +176,7 @@ public abstract partial class AbstractLevel
     private static void SetPatrolCaptain(Mob mob)
     {
         mob.UnmodeledData.Set(new NbtTag<bool>("PatrolLeader", true));
-        mob.SetEquipment(EquipmentSlot.Helmet, ItemsRegistry.GetSingleItem(Material.WhiteBanner));
+        mob.SetEquipment(EquipmentSlot.Helmet, ItemsRegistry.GetSingleItem(ItemsRegistry.WhiteBanner));
     }
     internal void NotifyRaiderKilled(Mob raider, IEntity source)
     {
@@ -181,7 +184,7 @@ public abstract partial class AbstractLevel
         if (raid != null) { if (source is IPlayer) raid.Heroes.Add(source.Uuid); return; }
         if (LevelData.GetBooleanRule("mob_drops") && source is IPlayer && raider.UnmodeledData.TryGetBool("PatrolLeader", out var captain) && captain)
             SpawnEntity(new ItemEntity { Level = this, EntityId = Server.GetNextEntityId(), Position = raider.Position,
-                Item = ItemsRegistry.GetSingleItem(Material.OminousBottle) });
+                Item = ItemsRegistry.GetSingleItem(ItemsRegistry.OminousBottle) });
     }
     private static void ClearRaidBar(VillageRaid raid)
     { if (raid.Bar != null) foreach (var id in raid.Bar.Players.ToArray()) raid.Bar.RemovePlayer(id); }

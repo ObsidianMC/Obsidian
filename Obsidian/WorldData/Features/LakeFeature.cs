@@ -19,9 +19,9 @@ public sealed class LakeFeature : ConfiguredFeatureBase
     private static readonly BlockSet featuresCannotReplace = new("#minecraft:features_cannot_replace");
     private static readonly BlockSet lavaPoolStoneCannotReplace = new("#minecraft:lava_pool_stone_cannot_replace");
 
-    private static IBlock CaveAir => field ??= BlocksRegistry.Get(Material.CaveAir);
+    private static IBlock CaveAir => field ??= BlocksRegistry.CaveAir;
 
-    private static IBlock Ice => field ??= BlocksRegistry.Get(Material.Ice);
+    private static IBlock Ice => field ??= BlocksRegistry.Ice;
 
     public override bool Place(FeatureContext context)
     {

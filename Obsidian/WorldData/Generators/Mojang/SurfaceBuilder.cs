@@ -224,10 +224,10 @@ internal sealed class SurfaceBuilder
         {
             var block = context.GetBlock(localX, y, localZ);
 
-            if (block.Material == this.defaultBlock.Material)
+            if (block.RegistryId == this.defaultBlock.RegistryId)
                 break;
 
-            if (block.Material == Material.Water)
+            if (block.Is(BlockIds.Water))
                 return;
         }
 
@@ -271,7 +271,11 @@ internal sealed class SurfaceBuilder
         {
             var block = context.GetBlock(localX, y, localZ);
             var place = (block.IsAir && y < (int)top && random.NextDouble() > 0.01)
-                || (block.Material == Material.Water && y > (int)bottom && y < this.seaLevel && bottom != 0.0 && random.NextDouble() > 0.15);
+                || (block.Is(BlockIds.Water)
+                    && y > (int)bottom
+                    && y < this.seaLevel
+                    && bottom != 0.0
+                    && random.NextDouble() > 0.15);
 
             if (!place)
                 continue;
@@ -339,7 +343,7 @@ internal sealed class SurfaceBuilder
 
     // Block instances aren't canonical (they're cached per state id and per name), so compare by value.
     private static bool IsSameBlock(IBlock a, IBlock b) =>
-        a.Material == b.Material && (a.State is null || b.State is null || a.State.Id == b.State.Id);
+        a.RegistryId == b.RegistryId && (a.State is null || b.State is null || a.State.Id == b.State.Id);
 
     private int ResolveY(VerticalAnchor anchor)
     {

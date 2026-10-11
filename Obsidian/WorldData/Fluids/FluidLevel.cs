@@ -214,7 +214,7 @@ internal sealed class FluidLevel
         if (!FluidState.Of(block).IsLava)
             return true;
 
-        var onSoulSoil = this.GetBlock(position + Vector.Down).Material == Material.SoulSoil;
+        var onSoulSoil = this.GetBlock(position + Vector.Down).RegistryId == BlockIds.SoulSoil;
         foreach (var direction in possibleFlowDirections)
         {
             var neighbor = position.Offset(direction.Opposite());
@@ -226,7 +226,7 @@ internal sealed class FluidLevel
                 return false;
             }
 
-            if (onSoulSoil && this.GetBlock(neighbor).Material == Material.BlueIce)
+            if (onSoulSoil && this.GetBlock(neighbor).RegistryId == BlockIds.BlueIce)
             {
                 this.SetBlock(position, basalt, BlockUpdateFlags.All);
                 this.Fizz(position);

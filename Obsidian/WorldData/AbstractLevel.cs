@@ -294,7 +294,7 @@ public abstract partial class AbstractLevel : ILevel
     {
         // Like vanilla, everything outside the build range reads as void air.
         if (this.IsOutsideBuildHeight(y))
-            return BlocksRegistry.Get(Material.VoidAir);
+            return BlocksRegistry.VoidAir;
 
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         return c?.GetBlock(x, y, z);
@@ -860,7 +860,13 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
-    public IEntity SpawnFallingBlock(VectorD position, Material mat)
+    public IEntity SpawnFallingBlock(VectorD position, Material mat) =>
+        SpawnFallingBlock(position, BlocksRegistry.Get(mat));
+
+    /// <summary>
+    /// Spawns a falling block entity of the given block state, centered on the block at the position.
+    /// </summary>
+    public IEntity SpawnFallingBlock(VectorD position, IBlock block)
     {
         position.X += 0.5f;
         position.Z += 0.5f;
@@ -870,7 +876,7 @@ public abstract partial class AbstractLevel : ILevel
             Type = EntityType.FallingBlock,
             EntityId = Server.GetNextEntityId(),
             Level = this,
-            Block = BlocksRegistry.Get(mat),
+            Block = block,
         };
 
         entity.SpawnEntity(null, entity.Block.GetHashCode());
@@ -900,7 +906,7 @@ public abstract partial class AbstractLevel : ILevel
     public IEntity SpawnEntity(VectorD position, EntityType type)
     {
         if (type == EntityType.FallingBlock)
-            return SpawnFallingBlock(position + (0, 20, 0), Material.Sand);
+            return SpawnFallingBlock(position + (0, 20, 0), BlocksRegistry.Sand);
 
         return GetNewEntitySpawner()
             .WithEntityType(type)
@@ -958,7 +964,7 @@ public abstract partial class AbstractLevel : ILevel
 
         // Fluids react to block changes through their scheduled ticks instead (see LevelFluids).
         if (block.IsGravityAffected())
-            return await BlockUpdates.HandleFallingBlock(update);
+            return await BlockUpdates.HandleFallingBlock(this, update);
 
         return false;
     }
@@ -1119,7 +1125,7 @@ public abstract partial class AbstractLevel : ILevel
                     var by = chunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(bx, bz);
                     IBlock block = chunk.GetBlock(bx, by, bz);
 
-                    if (by < 64 || !block.Is(Material.GrassBlock) && !block.Is(Material.Sand))
+                    if (by < 64 || !block.Is(BlockIds.GrassBlock) && !block.Is(BlockIds.Sand))
                     {
                         continue;
                     }

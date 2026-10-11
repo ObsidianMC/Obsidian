@@ -95,7 +95,7 @@ public sealed class OceanRuinPiece : TemplateStructurePiece
         if (metadata == "chest")
         {
             var waterlogged = FeatureHelpers.IsWaterFluid(level.GetBlock(position));
-            level.SetBlock(position, BlocksRegistry.Get(Material.Chest).WithProperty("waterlogged", waterlogged));
+            level.SetBlock(position, BlocksRegistry.Chest.WithProperty("waterlogged", waterlogged));
             SetChestLootTable(level, context.Random, position,
                 this.isLarge ? "minecraft:chests/underwater_ruin_big" : "minecraft:chests/underwater_ruin_small");
         }
@@ -107,7 +107,7 @@ public sealed class OceanRuinPiece : TemplateStructurePiece
                 Data = new NbtCompound { new NbtTag<bool>("PersistenceRequired", true) }
             });
 
-            level.SetBlock(position, position.Y > level.SeaLevel ? BlocksRegistry.Air : BlocksRegistry.Get(Material.Water));
+            level.SetBlock(position, position.Y > level.SeaLevel ? BlocksRegistry.Air : BlocksRegistry.Water);
         }
     }
 

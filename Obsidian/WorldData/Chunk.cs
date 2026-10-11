@@ -250,7 +250,7 @@ public sealed class Chunk : IChunk
                 for (int y = this.MinY + this.Height - 1; y >= this.MinY; y--)
                 {
                     var block = GetBlock(x, y, z);
-                    if (block.Material == Material.Air)
+                    if (block.Is(BlockIds.Air))
                         continue;
 
                     target.Set(x, z, value: y);

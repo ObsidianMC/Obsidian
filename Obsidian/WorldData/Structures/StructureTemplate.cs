@@ -13,7 +13,7 @@ namespace Obsidian.WorldData.Structures;
 /// <remarks>Templates are immutable after loading and safe to share between threads.</remarks>
 public sealed class StructureTemplate
 {
-    private static readonly IBlock barrier = BlocksRegistry.Get(Material.Barrier);
+    private static readonly IBlock barrier = BlocksRegistry.Barrier;
 
     // Vanilla's waterlogging pass looks for water sources in these directions.
     private static readonly Vector[] waterSourceDirections = [Vector.Up, new(0, 0, -1), new(1, 0, 0), new(0, 0, 1), new(-1, 0, 0)];
@@ -182,17 +182,19 @@ public sealed class StructureTemplate
     }
 
     /// <summary>
-    /// Vanilla <c>filterBlocks</c>: the blocks of type <paramref name="block"/> in a random palette, with their state
-    /// rotated, at world positions (or template positions when <paramref name="relative"/> is false), inside the settings' box.
+    /// Vanilla <c>filterBlocks</c>: the blocks with the id <paramref name="blockId"/> in a random palette, with their
+    /// state rotated, at world positions (or template positions when <paramref name="relative"/> is false), inside
+    /// the settings' box.
     /// </summary>
-    public List<StructureBlockInfo> FilterBlocks(Vector position, StructurePlaceSettings settings, Material block, bool relative = true)
+    public List<StructureBlockInfo> FilterBlocks(Vector position, StructurePlaceSettings settings, int blockId,
+        bool relative = true)
     {
         var result = new List<StructureBlockInfo>();
         if (this.palettes.Count == 0)
             return result;
 
         var box = settings.BoundingBox;
-        foreach (var info in settings.GetRandomPalette(this.palettes, position).BlocksOf(block))
+        foreach (var info in settings.GetRandomPalette(this.palettes, position).BlocksOf(blockId))
         {
             var target = relative ? CalculateRelativePosition(settings, info.Position) + position : info.Position;
             if (box is null || box.Value.IsInside(target))
@@ -416,7 +418,8 @@ public sealed class StructureTemplate
     /// Blocks implementing vanilla's <c>LiquidBlockContainer</c>: waterloggable blocks, kelp and seagrass.
     /// </summary>
     private static bool IsLiquidBlockContainer(IBlock block) =>
-        block.HasProperty("waterlogged") || block.Material is Material.Kelp or Material.KelpPlant or Material.Seagrass or Material.TallSeagrass;
+        block.HasProperty("waterlogged")
+            || block.RegistryId is BlockIds.Kelp or BlockIds.KelpPlant or BlockIds.Seagrass or BlockIds.TallSeagrass;
 
     /// <summary>
     /// Vanilla <c>SimpleWaterloggedBlock.placeLiquid</c>: a dry waterloggable block takes a water source's water.
@@ -970,13 +973,14 @@ public sealed class StructureTemplate
     /// </summary>
     private sealed class Palette(List<StructureBlockInfo> blocks)
     {
-        private readonly ConcurrentDictionary<Material, List<StructureBlockInfo>> byMaterial = new();
+        private readonly ConcurrentDictionary<int, List<StructureBlockInfo>> byBlockId = new();
 
         public List<StructureBlockInfo> Blocks { get; } = blocks;
 
         private readonly IReadOnlyList<JigsawBlockInfo>?[] rotatedJigsaws = new IReadOnlyList<JigsawBlockInfo>?[4];
 
-        public IReadOnlyList<JigsawBlockInfo> Jigsaws => field ??= [.. this.BlocksOf(Material.Jigsaw).Select(JigsawBlockInfo.Of)];
+        public IReadOnlyList<JigsawBlockInfo> Jigsaws =>
+            field ??= [.. this.BlocksOf(BlockIds.Jigsaw).Select(JigsawBlockInfo.Of)];
 
         /// <summary>The jigsaws rotated around the template's origin, built once per rotation.</summary>
         public IReadOnlyList<JigsawBlockInfo> RotatedJigsaws(StructureRotation rotation) =>
@@ -986,8 +990,8 @@ public sealed class StructureTemplate
                     jigsaw.Info.Block.Rotate(rotation), jigsaw.Info.Nbt)
             })];
 
-        public List<StructureBlockInfo> BlocksOf(Material material) =>
-            this.byMaterial.GetOrAdd(material, key => this.Blocks.Where(info => info.Block.Material == key).ToList());
+        public List<StructureBlockInfo> BlocksOf(int blockId) =>
+            this.byBlockId.GetOrAdd(blockId, key => this.Blocks.Where(info => info.Block.RegistryId == key).ToList());
     }
 
     private readonly record struct EntityPosition(double X, double Y, double Z);

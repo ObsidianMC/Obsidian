@@ -50,7 +50,7 @@ internal static class FeatureHelpers
         foreach (var face in Horizontal)
         {
             var neighbor = level.GetBlock(position.Offset(face));
-            if (neighbor.Material == Material.Chest)
+            if (neighbor.Is(BlockIds.Chest))
                 return chest;
 
             if (IsSolidRender(neighbor))

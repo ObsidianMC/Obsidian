@@ -8,7 +8,7 @@ public sealed class IceSpikeFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:ice_spike";
 
-    private static IBlock PackedIce => field ??= BlocksRegistry.Get(Material.PackedIce);
+    private static IBlock PackedIce => field ??= BlocksRegistry.PackedIce;
 
     public override bool Place(FeatureContext context)
     {
@@ -21,7 +21,7 @@ public sealed class IceSpikeFeature : ConfiguredFeatureBase
         while (level.GetBlock(origin).IsAir && origin.Y > level.MinY + 2)
             origin += Vector.Down;
 
-        if (level.GetBlock(origin).Material != Material.SnowBlock)
+        if (level.GetBlock(origin).RegistryId != BlockIds.SnowBlock)
             return false;
 
         origin += new Vector(0, random.NextInt(4), 0);
@@ -77,7 +77,7 @@ public sealed class IceSpikeFeature : ConfiguredFeatureBase
                 {
                     var existing = level.GetBlock(position);
                     if (!existing.IsAir && !FeatureHelpers.IsDirt(existing)
-                        && existing.Material is not (Material.SnowBlock or Material.Ice or Material.PackedIce))
+                        && existing.RegistryId is not (BlockIds.SnowBlock or BlockIds.Ice or BlockIds.PackedIce))
                         break;
 
                     level.SetBlock(position, PackedIce);
@@ -96,5 +96,5 @@ public sealed class IceSpikeFeature : ConfiguredFeatureBase
     }
 
     private static bool CanReplace(IBlock block) =>
-        block.IsAir || FeatureHelpers.IsDirt(block) || block.Material is Material.SnowBlock or Material.Ice;
+        block.IsAir || FeatureHelpers.IsDirt(block) || block.RegistryId is BlockIds.SnowBlock or BlockIds.Ice;
 }

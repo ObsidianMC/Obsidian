@@ -41,8 +41,8 @@ public abstract partial class AbstractLevel
             var terrain = new MobTerrain(this);
             for (var y = 127; y >= MinY; y--)
                 if (terrain.GetBlock(new Vector(0, y, 0)) is { IsAir: false } center)
-                { exitPortal = new Vector(0, center.Material == Material.Bedrock ? y - 3 : y + 1, 0); break; }
-            dragonKilled = terrain.GetBlock(exitPortal + new Vector(1, 0, 0))?.Material == Material.EndPortal;
+                { exitPortal = new Vector(0, center.Is(BlockIds.Bedrock) ? y - 3 : y + 1, 0); break; }
+            dragonKilled = terrain.GetBlock(exitPortal + new Vector(1, 0, 0))?.RegistryId == BlockIds.EndPortal;
             dragonPreviouslyKilled = dragonKilled;
             var existing = entities.OfType<EnderDragon>().FirstOrDefault();
             if (existing != null) fightDragon = existing.Uuid;
@@ -112,12 +112,12 @@ public abstract partial class AbstractLevel
             if (player.GameMode == GameMode.Spectator || endPortalCooldowns.ContainsKey(player.Uuid)) continue;
             var position = (Vector)player.Position.Floor();
             var block = await GetBlockAsync(position);
-            if (block?.Material == Material.EndPortal && this is IDimension dimension)
+            if (block?.RegistryId == BlockIds.EndPortal && this is IDimension dimension)
             {
                 endPortalCooldowns[player.Uuid] = 100;
                 await player.TransferDimensionAsync(dimension.ParentWorld);
             }
-            else if (block?.Material == Material.EndGateway)
+            else if (block?.RegistryId == BlockIds.EndGateway)
             {
                 var data = await GetBlockEntityAsync(position) as DataBlockEntity;
                 Vector destination;
@@ -139,7 +139,7 @@ public abstract partial class AbstractLevel
                     // Gateways always have a safe arrival platform, including gateways aimed into the void.
                     for (var x = -2; x <= 2; x++)
                     for (var z = -2; z <= 2; z++)
-                        await SetBlockAsync(destination + new Vector(x, -2, z), BlocksRegistry.Get(Material.EndStone), true);
+                        await SetBlockAsync(destination + new Vector(x, -2, z), BlocksRegistry.EndStone, true);
                     var returnGateway = destination + new Vector(0, 1, 0);
                     await CreateEndGatewayAsync(returnGateway);
                     await StoreGatewayExitAsync(returnGateway, position + new Vector(0, 3, 0));
@@ -177,7 +177,7 @@ public abstract partial class AbstractLevel
         fightDragon = Guid.Empty;
         await CreateExitPortalAsync(true);
         if (!dragonPreviouslyKilled)
-            await SetBlockAsync(exitPortal + new Vector(0, 4, 0), BlocksRegistry.Get(Material.DragonEgg), true);
+            await SetBlockAsync(exitPortal + new Vector(0, 4, 0), BlocksRegistry.DragonEgg, true);
         dragonPreviouslyKilled = true;
         if (gatewaysCreated >= 20) return;
         var gatewayOrder = FeatureHelpers.ShuffledCopy(Enumerable.Range(0, 20), new LegacyRandomSource(RandomState.ParseSeed(Seed)));
@@ -193,9 +193,12 @@ public abstract partial class AbstractLevel
         for (var y = -2; y <= 2; y++)
         for (var z = -1; z <= 1; z++)
         {
-            var material = x == 0 && y == 0 && z == 0 ? Material.EndGateway :
-                y != 0 && (Math.Abs(y) == 2 ? x == 0 && z == 0 : x == 0 || z == 0) ? Material.Bedrock : Material.Air;
-            await SetBlockAsync(gateway + new Vector(x, y, z), BlocksRegistry.Get(material), true);
+            var block = x == 0 && y == 0 && z == 0
+                ? BlocksRegistry.EndGateway
+                : y != 0 && (Math.Abs(y) == 2 ? x == 0 && z == 0 : x == 0 || z == 0)
+                    ? BlocksRegistry.Bedrock
+                    : BlocksRegistry.Air;
+            await SetBlockAsync(gateway + new Vector(x, y, z), block, true);
         }
         if (await GetBlockEntityAsync(gateway) == null)
             await SetBlockEntity(gateway, new DataBlockEntity { Id = "minecraft:end_gateway", BlockPosition = gateway });
@@ -222,15 +225,21 @@ public abstract partial class AbstractLevel
             if (distance > 12) continue;
             for (var y = -1; y <= 3; y++)
             {
-                var material = y == -1 ? distance <= 6 ? Material.Bedrock : Material.EndStone :
-                    y == 0 ? distance > 6 ? Material.Bedrock : active ? Material.EndPortal : Material.Air : Material.Air;
-                if (x == 0 && z == 0 && y >= 0) material = Material.Bedrock;
-                await SetBlockAsync(exitPortal + new Vector(x, y, z), BlocksRegistry.Get(material), true);
+                var block = BlocksRegistry.Air;
+                if (y == -1)
+                    block = distance <= 6 ? BlocksRegistry.Bedrock : BlocksRegistry.EndStone;
+                else if (y == 0 && distance > 6)
+                    block = BlocksRegistry.Bedrock;
+                else if (y == 0 && active)
+                    block = BlocksRegistry.EndPortal;
+
+                if (x == 0 && z == 0 && y >= 0) block = BlocksRegistry.Bedrock;
+                await SetBlockAsync(exitPortal + new Vector(x, y, z), block, true);
             }
         }
         foreach (var (offset, facing) in new[] { (new Vector(1, 2, 0), "east"), (new Vector(-1, 2, 0), "west"),
             (new Vector(0, 2, 1), "south"), (new Vector(0, 2, -1), "north") })
-            await SetBlockAsync(exitPortal + offset, BlocksRegistry.Get(Material.WallTorch).WithProperty("facing", facing), true);
+            await SetBlockAsync(exitPortal + offset, BlocksRegistry.WallTorch.WithProperty("facing", facing), true);
     }
 
     private async ValueTask RebuildEndSpikeAsync(EndSpike spike, bool resurrecting)
@@ -252,9 +261,11 @@ public abstract partial class AbstractLevel
         for (var z = -radius; z <= radius; z++)
         for (var y = MinY; y <= spike.Height + 10; y++)
         {
-            var material = x * x + z * z <= radius * radius + 1 && y < spike.Height ? Material.Obsidian : Material.Air;
-            if (material == Material.Air && y <= 65) continue;
-            await SetBlockAsync(new Vector(spike.CenterX + x, y, spike.CenterZ + z), BlocksRegistry.Get(material), true);
+            var block = x * x + z * z <= radius * radius + 1 && y < spike.Height
+                ? BlocksRegistry.ObsidianBlock
+                : BlocksRegistry.Air;
+            if (block.IsAir && y <= 65) continue;
+            await SetBlockAsync(new Vector(spike.CenterX + x, y, spike.CenterZ + z), block, true);
         }
         if (spike.Guarded)
             for (var x = -2; x <= 2; x++)
@@ -262,11 +273,11 @@ public abstract partial class AbstractLevel
             for (var y = 0; y <= 3; y++)
                 if (Math.Abs(x) == 2 || Math.Abs(z) == 2 || y == 3)
                     await SetBlockAsync(new Vector(spike.CenterX + x, spike.Height + y, spike.CenterZ + z),
-                        BlocksRegistry.Get(Material.IronBars).WithProperty("north", (Math.Abs(x) == 2 || y == 3) && z != -2)
+                        BlocksRegistry.IronBars.WithProperty("north", (Math.Abs(x) == 2 || y == 3) && z != -2)
                         .WithProperty("south", (Math.Abs(x) == 2 || y == 3) && z != 2)
                         .WithProperty("west", (Math.Abs(z) == 2 || y == 3) && x != -2)
                         .WithProperty("east", (Math.Abs(z) == 2 || y == 3) && x != 2), true);
-        await SetBlockAsync(new Vector(spike.CenterX, spike.Height, spike.CenterZ), BlocksRegistry.Get(Material.Bedrock), true);
+        await SetBlockAsync(new Vector(spike.CenterX, spike.Height, spike.CenterZ), BlocksRegistry.Bedrock, true);
         var crystalEntity = new EndCrystal { Level = this, EntityId = Server.GetNextEntityId(),
             Position = new VectorD(spike.CenterX + 0.5, spike.Height + 1, spike.CenterZ + 0.5), Invulnerable = resurrecting };
         if (resurrecting) crystalEntity.SetBeam(new Vector(0, 128, 0));

@@ -171,7 +171,7 @@ public sealed class AttachedToLogsFallenTreeDecorator : FallenTreeDecorator
 [ConfiguredFeatureProperty("minecraft:trunk_vine")]
 public sealed class TrunkVineFallenTreeDecorator : FallenTreeDecorator
 {
-    private static IBlock Vine => field ??= BlocksRegistry.Get(Material.Vine);
+    private static IBlock Vine => field ??= BlocksRegistry.Vine;
 
     public override void Place(IWorldGenLevel level, IRandomSource random, IReadOnlyList<Vector> logs)
     {
