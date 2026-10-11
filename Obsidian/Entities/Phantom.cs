@@ -40,7 +40,7 @@ public sealed partial class Phantom : PathfinderMob
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (source is IPlayer) DropItem(Material.PhantomMembrane, Random.Next(2));
+        if (source is IPlayer) DropItem(ItemsRegistry.PhantomMembrane, Random.Next(2));
         return default;
     }
     public override void Write(INetStreamWriter writer)

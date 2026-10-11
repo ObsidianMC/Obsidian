@@ -45,7 +45,10 @@ public sealed partial class Witch : PathfinderMob
             return default;
         }
         var effect = -1;
-        if (Random.NextSingle() < 0.15f && Terrain.GetBlock((Vector)EyePosition.Floor())?.Material == Material.Water && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1)) effect = (int)PotionEffect.WaterBreathing - 1;
+        if (Random.NextSingle() < 0.15f
+            && Terrain.GetBlock((Vector)EyePosition.Floor())?.RegistryId == BlockIds.Water
+            && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1))
+            effect = (int)PotionEffect.WaterBreathing - 1;
         else if (Random.NextSingle() < 0.15f && (Burning || InLava) && !HasPotionEffect((int)PotionEffect.FireResistance - 1)) effect = (int)PotionEffect.FireResistance - 1;
         else if (Random.NextSingle() < 0.05f && Health < GetAttributeValue("minecraft:generic.max_health")) effect = (int)PotionEffect.InstantHealth - 1;
         else if (Random.NextSingle() < 0.5f && AttackTarget is { } target && !IsInRange(target, 11) && !HasPotionEffect((int)PotionEffect.Speed - 1)) effect = (int)PotionEffect.Speed - 1;
@@ -53,14 +56,14 @@ public sealed partial class Witch : PathfinderMob
         {
             drinkEffect = effect;
             drinkTicks = 32;
-            SetEquipment(EquipmentSlot.MainHand, MakePotion(Material.Potion, effect, 3600));
+            SetEquipment(EquipmentSlot.MainHand, MakePotion(ItemsRegistry.Potion, effect, 3600));
             PlayMobSound("drink");
             SynchronizeMetadata();
         }
         return default;
     }
-    internal static ItemStack MakePotion(Material material, int effect, int duration, int amplifier = 0) =>
-        new(ItemsRegistry.Get(material), 1, new PotionContentsDataComponent
+    internal static ItemStack MakePotion(Item potion, int effect, int duration, int amplifier = 0) =>
+        new(potion, 1, new PotionContentsDataComponent
         { CustomEffects = effect >= 0 ? [new PotionEffectData { Id = effect, Duration = duration, Amplifier = amplifier, ShowParticles = true, ShowIcon = true }] : [] });
     internal void ThrowPotion(IEntity target)
     {
@@ -85,9 +88,13 @@ public sealed partial class Witch : PathfinderMob
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        Material[] materials = [Material.GlowstoneDust, Material.Sugar, Material.GlassBottle, Material.SpiderEye, Material.Gunpowder, Material.Stick, Material.Stick];
-        for (var i = Random.Next(1, 4); i > 0; i--) DropItem(materials[Random.Next(materials.Length)], Random.Next(3));
-        DropItem(Material.Redstone, Random.Next(4, 9));
+        Item[] drops =
+        [
+            ItemsRegistry.GlowstoneDust, ItemsRegistry.Sugar, ItemsRegistry.GlassBottle, ItemsRegistry.SpiderEye,
+            ItemsRegistry.Gunpowder, ItemsRegistry.Stick, ItemsRegistry.Stick
+        ];
+        for (var i = Random.Next(1, 4); i > 0; i--) DropItem(drops[Random.Next(drops.Length)], Random.Next(3));
+        DropItem(ItemsRegistry.Redstone, Random.Next(4, 9));
         return default;
     }
     public override void Write(INetStreamWriter writer)

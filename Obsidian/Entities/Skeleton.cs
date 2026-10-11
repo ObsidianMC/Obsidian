@@ -49,7 +49,7 @@ public partial class Skeleton : PathfinderMob
     {
         CanPickUpLoot = Random.NextSingle() < 0.55f * SpecialDifficulty;
         PopulateDefaultArmor();
-        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(Material.Bow));
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.Bow));
     }
 
     protected override async ValueTask TickMobAsync()
@@ -61,7 +61,7 @@ public partial class Skeleton : PathfinderMob
         }
         if (Type == EntityType.Skeleton)
         {
-            if (Terrain.GetBlock((Vector)Position.Floor())?.Material == Material.PowderSnow)
+            if (Terrain.GetBlock((Vector)Position.Floor())?.RegistryId == BlockIds.PowderSnow)
             {
                 if (StrayConversionTicks >= 0)
                 {
@@ -124,8 +124,8 @@ public partial class Skeleton : PathfinderMob
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.Bone, Random.Next(3));
-        DropItem(Material.Arrow, Random.Next(3));
+        DropItem(ItemsRegistry.Bone, Random.Next(3));
+        DropItem(ItemsRegistry.Arrow, Random.Next(3));
         foreach (var slot in Enum.GetValues<EquipmentSlot>())
             if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot))
                 DropItem(GetEquipment(slot));
@@ -145,8 +145,10 @@ public partial class Skeleton : PathfinderMob
 
 internal sealed class SkeletonMeleeGoal(Skeleton skeleton) : MeleeAttackGoal(skeleton, 1.2f)
 {
-    public override bool CanUse() => skeleton.GetEquipment(EquipmentSlot.MainHand).Type != Material.Bow && base.CanUse();
-    public override bool CanContinue() => skeleton.GetEquipment(EquipmentSlot.MainHand).Type != Material.Bow && base.CanContinue();
+    public override bool CanUse() =>
+        !skeleton.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Bow) && base.CanUse();
+    public override bool CanContinue() =>
+        !skeleton.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Bow) && base.CanContinue();
 }
 
 internal sealed class BowAttackGoal(Skeleton skeleton) : NavigationGoal(skeleton, 1)
@@ -160,7 +162,7 @@ internal sealed class BowAttackGoal(Skeleton skeleton) : NavigationGoal(skeleton
     private bool drawing;
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
-    public override bool CanUse() => skeleton.GetEquipment(EquipmentSlot.MainHand).Type == Material.Bow &&
+    public override bool CanUse() => skeleton.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Bow) &&
         skeleton.AttackTarget is { } target && skeleton.IsValidTarget(target);
     public override bool CanContinue() => CanUse();
     public override void Start() => skeleton.SetAggressive(true);
@@ -259,11 +261,11 @@ public sealed class Bogged : Skeleton
             !IsInRange(player, 4) || !CanSee(player))
             return;
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (held is not { Count: > 0, Type: Material.Shears })
+        if (held is not { Count: > 0, Holder.Id: ItemIds.Shears })
             return;
         Sheared = true;
         for (var index = 0; index < 2; index++)
-            DropItem(Random.Next(2) == 0 ? Material.RedMushroom : Material.BrownMushroom);
+            DropItem(Random.Next(2) == 0 ? ItemsRegistry.RedMushroom : ItemsRegistry.BrownMushroom);
         await DamageInteractionToolAsync(player, hand);
         SynchronizeMetadata();
     }

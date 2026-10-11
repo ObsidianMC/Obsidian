@@ -133,7 +133,7 @@ internal sealed class MobProjectile : Entity
                 var fire = (Vector)(Position - Motion * 0.05f).Floor();
                 if (terrain.GetBlock(fire)?.IsAir == true && terrain.GetBlock(new Vector(fire.X, fire.Y - 1, fire.Z)) is { } floor &&
                     BlockCollisionShapes.Get(floor).Count > 0)
-                    await level.SetBlockAsync(fire, BlocksRegistry.Get(Material.Fire), true);
+                    await level.SetBlockAsync(fire, BlocksRegistry.Fire, true);
             }
             await RemoveAsync();
             return;
@@ -174,7 +174,8 @@ internal sealed class MobProjectile : Entity
         base.Write(writer);
         if (Type != EntityType.SplashPotion) return;
         writer.WriteEntityMetadataType(8, EntityMetadataType.Slot);
-        writer.WriteItemStack(Witch.MakePotion(Material.SplashPotion, SplashEffect, SplashDuration, SplashAmplifier));
+        var potion = Witch.MakePotion(ItemsRegistry.SplashPotion, SplashEffect, SplashDuration, SplashAmplifier);
+        writer.WriteItemStack(potion);
     }
 
     private async ValueTask SplashAsync(IEntity? directHit)

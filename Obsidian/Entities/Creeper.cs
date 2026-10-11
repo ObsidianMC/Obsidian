@@ -1,3 +1,4 @@
+using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 
 namespace Obsidian.Entities;
@@ -38,11 +39,11 @@ public sealed partial class Creeper : PathfinderMob
             !IsInRange(player, 4) || !CanSee(player))
             return;
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (held is not { Count: > 0 } || held.Type is not Material.FlintAndSteel and not Material.FireCharge)
+        if (held is not { Count: > 0 } || held.Holder.Id is not ItemIds.FlintAndSteel and not ItemIds.FireCharge)
             return;
         Ignited = true;
         SynchronizeMetadata();
-        if (held.Type == Material.FlintAndSteel)
+        if (held.Is(ItemsRegistry.FlintAndSteel))
             await DamageInteractionToolAsync(player, hand);
         else if (player.GameMode != GameMode.Creative)
         {
@@ -80,12 +81,16 @@ public sealed partial class Creeper : PathfinderMob
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.Gunpowder, Random.Next(3));
+        DropItem(ItemsRegistry.Gunpowder, Random.Next(3));
         if (source is Skeleton)
         {
-            Material[] discs = [Material.MusicDisc13, Material.MusicDiscCat, Material.MusicDiscBlocks, Material.MusicDiscChirp,
-                Material.MusicDiscFar, Material.MusicDiscMall, Material.MusicDiscMellohi, Material.MusicDiscStal,
-                Material.MusicDiscStrad, Material.MusicDiscWard, Material.MusicDisc11, Material.MusicDiscWait];
+            Item[] discs =
+            [
+                ItemsRegistry.MusicDisc13, ItemsRegistry.MusicDiscCat, ItemsRegistry.MusicDiscBlocks,
+                ItemsRegistry.MusicDiscChirp, ItemsRegistry.MusicDiscFar, ItemsRegistry.MusicDiscMall,
+                ItemsRegistry.MusicDiscMellohi, ItemsRegistry.MusicDiscStal, ItemsRegistry.MusicDiscStrad,
+                ItemsRegistry.MusicDiscWard, ItemsRegistry.MusicDisc11, ItemsRegistry.MusicDiscWait
+            ];
             DropItem(discs[Random.Next(discs.Length)]);
         }
         return default;

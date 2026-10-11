@@ -97,7 +97,7 @@ public class Living : Entity, ILiving
         var feet = (Vector)(Position + new VectorD(0, 0.1f, 0)).Floor();
         if (Burning && fireTicks == 0)
             fireTicks = 160;
-        if (IsFireImmune || terrain.GetBlock(feet)?.Material == Material.Water ||
+        if (IsFireImmune || terrain.GetBlock(feet)?.RegistryId == BlockIds.Water ||
             Level.LevelData.Raining && terrain.GetSkyLight(feet) == 15)
             fireTicks = 0;
         if (fireTicks > 0)

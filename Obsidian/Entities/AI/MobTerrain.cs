@@ -24,11 +24,12 @@ internal sealed class MobTerrain(ILevel level)
         level is AbstractLevel concrete && concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4) is { } chunk &&
         chunk.GetBiome(position.X, position.Y, position.Z).Element.HasPrecipitation && GetTemperature(position) >= 0.15f;
 
-    public float GetFriction(VectorD position) => GetBlock((Vector)(position - new VectorD(0, 0.500001f, 0)).Floor())?.Material switch
+    public float GetFriction(VectorD position) =>
+        GetBlock((Vector)(position - new VectorD(0, 0.500001f, 0)).Floor())?.RegistryId switch
     {
-        Material.Ice or Material.PackedIce or Material.FrostedIce => 0.98f,
-        Material.BlueIce => 0.989f,
-        Material.SlimeBlock => 0.8f,
+        BlockIds.Ice or BlockIds.PackedIce or BlockIds.FrostedIce => 0.98f,
+        BlockIds.BlueIce => 0.989f,
+        BlockIds.SlimeBlock => 0.8f,
         _ => 0.6f
     };
     public IBlock? GetBlock(Vector position)

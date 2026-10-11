@@ -253,7 +253,11 @@ public sealed partial class Warden : PathfinderMob
         return delta.X * delta.X + delta.Z * delta.Z <= 225 && Math.Abs(delta.Y) <= 20;
     }
 
-    protected override ValueTask OnDeathAsync(IEntity source) { DropItem(Material.SculkCatalyst); return default; }
+    protected override ValueTask OnDeathAsync(IEntity source)
+    {
+        DropItem(ItemsRegistry.SculkCatalyst);
+        return default;
+    }
 
     public override void Write(INetStreamWriter writer)
     {

@@ -54,7 +54,7 @@ public sealed partial class Allay : PathfinderMob
     {
         if (!Alive || IsRemoved || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player)) return;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (dancing && duplicationCooldown == 0 && item is { Count: > 0, Type: Material.AmethystShard })
+        if (dancing && duplicationCooldown == 0 && item is { Count: > 0, Holder.Id: ItemIds.AmethystShard })
         {
             await ConsumeInteractionItemAsync(player, hand);
             var child = (Allay)Level.GetNewEntitySpawner().WithEntityType(Type!.Value).AtPosition(Position).Spawn();
@@ -89,7 +89,8 @@ public sealed partial class Allay : PathfinderMob
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
         if (AiTick % 20 == 0 && jukebox is { } musicPosition)
         {
-            if (((VectorD)musicPosition + new VectorD(0.5, 0.5, 0.5) - Position).MagnitudeSquared() > 100 || Terrain.GetBlock(musicPosition)?.Material != Material.Jukebox)
+            if (((VectorD)musicPosition + new VectorD(0.5, 0.5, 0.5) - Position).MagnitudeSquared() > 100
+                || Terrain.GetBlock(musicPosition)?.RegistryId != BlockIds.Jukebox)
                 ReceiveJukeboxEvent(musicPosition, false);
         }
         var held = GetEquipment(EquipmentSlot.MainHand);

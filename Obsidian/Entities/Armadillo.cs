@@ -14,7 +14,8 @@ public sealed partial class Armadillo : FarmAnimal
     private int scuteTime;
     public Armadillo() => Type = EntityType.Armadillo;
     protected override string? SoundName => "armadillo";
-    protected override bool CanEat(ItemStack? item) => state == 0 && item is { Count: > 0, Type: Material.SpiderEye };
+    protected override bool CanEat(ItemStack? item) =>
+        state == 0 && item is { Count: > 0, Holder.Id: ItemIds.SpiderEye };
     protected override float DimensionScale => IsBaby ? 0.6f : 1;
     protected override void FinalizeSpawn() => scuteTime = Random.Next(6000, 12001);
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
@@ -41,7 +42,13 @@ public sealed partial class Armadillo : FarmAnimal
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
-        if (!IsBaby && --scuteTime <= 0) { DropItem(Material.ArmadilloScute); PlayMobSound("scute_drop"); scuteTime = Random.Next(6000, 12001); }
+        if (!IsBaby && --scuteTime <= 0)
+        {
+            DropItem(ItemsRegistry.ArmadilloScute);
+            PlayMobSound("scute_drop");
+            scuteTime = Random.Next(6000, 12001);
+        }
+
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
         stateTicks++;
         if (AiTick % 5 == 0 && !InWater && !InLava && Rider == null && GetEntitiesNear(11).Any(entity =>
@@ -62,8 +69,12 @@ public sealed partial class Armadillo : FarmAnimal
     {
         if (!Alive || IsRemoved || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player)) return;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (!IsBaby && item is { Count: > 0, Type: Material.Brush })
-        { DropItem(Material.ArmadilloScute); PlayMobSound("brush"); await DamageInteractionToolAsync(player, hand, 16); }
+        if (!IsBaby && item is { Count: > 0, Holder.Id: ItemIds.Brush })
+        {
+            DropItem(ItemsRegistry.ArmadilloScute);
+            PlayMobSound("brush");
+            await DamageInteractionToolAsync(player, hand, 16);
+        }
         else await base.FeedAsync(player, hand);
     }
     public override void Write(INetStreamWriter writer)

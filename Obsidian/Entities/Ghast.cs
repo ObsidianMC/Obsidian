@@ -72,8 +72,8 @@ public sealed partial class Ghast : Mob
     protected override VectorD Travel() => EntityMovement.Move(this, Terrain, VectorD.Zero, 0, 0.91f);
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.Gunpowder, Random.Next(3));
-        DropItem(Material.GhastTear, Random.Next(2));
+        DropItem(ItemsRegistry.Gunpowder, Random.Next(3));
+        DropItem(ItemsRegistry.GhastTear, Random.Next(2));
         return default;
     }
     public override void Write(INetStreamWriter writer)

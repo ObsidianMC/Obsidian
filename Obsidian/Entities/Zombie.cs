@@ -66,7 +66,7 @@ public partial class Zombie : PathfinderMob
                     return;
                 }
             }
-            else if (Terrain.GetBlock((Vector)EyePosition.Floor())?.Material == Material.Water)
+            else if (Terrain.GetBlock((Vector)EyePosition.Floor())?.RegistryId == BlockIds.Water)
             {
                 if (++DrowningWaterTicks >= 600)
                 {
@@ -116,9 +116,9 @@ public partial class Zombie : PathfinderMob
             return;
         var weapon = Random.Next(6) switch
         {
-            0 => Material.IronSword,
-            1 => Material.IronSpear,
-            _ => Material.IronShovel
+            0 => ItemsRegistry.IronSword,
+            1 => ItemsRegistry.IronSpear,
+            _ => ItemsRegistry.IronShovel
         };
         var item = ItemsRegistry.GetSingleItem(weapon);
         var durability = Obsidian.API.Inventory.DataComponents.ComponentBuilder.MaxDamage;
@@ -161,9 +161,15 @@ public partial class Zombie : PathfinderMob
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.RottenFlesh, Random.Next(3));
+        DropItem(ItemsRegistry.RottenFlesh, Random.Next(3));
         if (source is IPlayer && Random.NextSingle() < 0.025f)
-            DropItem(Random.Next(3) switch { 0 => Material.IronIngot, 1 => Material.Carrot, _ => Material.Potato });
+            DropItem(Random.Next(3) switch
+            {
+                0 => ItemsRegistry.IronIngot,
+                1 => ItemsRegistry.Carrot,
+                _ => ItemsRegistry.Potato
+            });
+
         foreach (var slot in Enum.GetValues<Obsidian.API.Inventory.EquipmentSlot>())
         {
             var item = GetEquipment(slot);

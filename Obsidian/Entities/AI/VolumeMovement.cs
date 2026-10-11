@@ -39,7 +39,7 @@ internal static class VolumeMovement
     internal static bool CanOccupy(Mob mob, VectorD point) =>
         mob.Terrain.IsFree(mob.Dimension.CreateBBFromPosition(point)) &&
         (mob.FlyingNavigation ? mob.Terrain.GetBlock((Vector)point.Floor()) is { IsLiquid: false } :
-            mob.Terrain.GetBlock((Vector)point.Floor())?.Material == Material.Water);
+            mob.Terrain.GetBlock((Vector)point.Floor())?.RegistryId == BlockIds.Water);
 
     internal static IEnumerable<VectorD> Neighbors(Mob mob, VectorD point)
     {

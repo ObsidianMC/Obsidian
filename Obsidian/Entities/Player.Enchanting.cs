@@ -44,7 +44,7 @@ public partial class Player
     {
         random = new LegacyRandomSource(unchecked(EnchantmentSeed + option));
         var selected = EnchantmentHelper.SelectEnchantments(random, item, cost, tableEnchantments);
-        if (item.Type == Material.Book && selected.Count > 1) selected.RemoveAt(random.NextInt(selected.Count));
+        if (item.Is(ItemsRegistry.Book) && selected.Count > 1) selected.RemoveAt(random.NextInt(selected.Count));
         return selected;
     }
 
@@ -94,17 +94,20 @@ public partial class Player
     {
         if (containerId != CurrentContainerId || option is < 0 or > 2 || OpenedContainer is not EnchantmentTable table ||
             !Alive || Respawning || GameMode == GameMode.Spectator || (Position - (VectorD)table.BlockPosition).Magnitude > 8 ||
-            new MobTerrain(Level).GetBlock(table.BlockPosition)?.Material != Material.EnchantingTable) return;
+            new MobTerrain(Level).GetBlock(table.BlockPosition)?.RegistryId != BlockIds.EnchantingTable) return;
         await RefreshEnchantingAsync();
         var item = table.GetItem(0);
         var lapis = table.GetItem(1);
         var cost = enchantmentCosts[option];
         var paidLevels = option + 1;
         if (item is not { Count: 1 } || cost <= 0 || GameMode != GameMode.Creative &&
-            (XpLevel < cost || XpLevel < paidLevels || lapis is not { Type: Material.LapisLazuli } || lapis.Count < paidLevels)) return;
+            (XpLevel < cost
+                || XpLevel < paidLevels
+                || lapis is not { Holder.Id: ItemIds.LapisLazuli }
+                || lapis.Count < paidLevels)) return;
         var selected = EnchantingSelection(item, option, cost, out _);
         if (selected.Count == 0) return;
-        if (item.Type == Material.Book) item = item.TransmuteCopy(ItemsRegistry.EnchantedBook);
+        if (item.Is(ItemsRegistry.Book)) item = item.TransmuteCopy(ItemsRegistry.EnchantedBook);
         foreach (var (enchantment, level) in selected) EnchantmentHelper.Enchant(item, enchantment, level);
         table.SetItem(0, item);
         if (GameMode != GameMode.Creative)

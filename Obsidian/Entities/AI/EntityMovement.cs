@@ -13,8 +13,8 @@ internal static class EntityMovement
             gravity = 0;
         }
         var feet = terrain.GetBlock((Vector)(mob.Position + new VectorD(0, 0.1f, 0)).Floor());
-        var inWater = feet?.Material == Material.Water;
-        var inLava = feet?.Material == Material.Lava;
+        var inWater = feet?.RegistryId == BlockIds.Water;
+        var inLava = feet?.RegistryId == BlockIds.Lava;
         var grounded = mob.MovementFlags.HasFlag(MovementFlags.OnGround);
         if (mob is Mob jumpingMob && jumpingMob.JumpControl.Consume())
         {

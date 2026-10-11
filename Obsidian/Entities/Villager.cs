@@ -10,10 +10,23 @@ public sealed partial class Villager : AgeableMob
 {
     internal static readonly string[] Professions = ["none", "armorer", "butcher", "cartographer", "cleric", "farmer", "fisherman", "fletcher", "leatherworker", "librarian", "mason", "nitwit", "shepherd", "toolsmith", "weaponsmith"];
     internal static readonly string[] BiomeTypes = ["desert", "jungle", "plains", "savanna", "snow", "swamp", "taiga"];
-    internal static readonly Dictionary<Material, int> Workstations = new()
-    { [Material.BlastFurnace] = 1, [Material.Smoker] = 2, [Material.CartographyTable] = 3, [Material.BrewingStand] = 4,
-        [Material.Composter] = 5, [Material.Barrel] = 6, [Material.FletchingTable] = 7, [Material.Cauldron] = 8,
-        [Material.Lectern] = 9, [Material.Stonecutter] = 10, [Material.Loom] = 12, [Material.SmithingTable] = 13, [Material.Grindstone] = 14 };
+    // Workstation block id to the profession it grants.
+    internal static readonly Dictionary<int, int> Workstations = new()
+    {
+        [BlockIds.BlastFurnace] = 1,
+        [BlockIds.Smoker] = 2,
+        [BlockIds.CartographyTable] = 3,
+        [BlockIds.BrewingStand] = 4,
+        [BlockIds.Composter] = 5,
+        [BlockIds.Barrel] = 6,
+        [BlockIds.FletchingTable] = 7,
+        [BlockIds.Cauldron] = 8,
+        [BlockIds.Lectern] = 9,
+        [BlockIds.Stonecutter] = 10,
+        [BlockIds.Loom] = 12,
+        [BlockIds.SmithingTable] = 13,
+        [BlockIds.Grindstone] = 14
+    };
     public int VillagerType { get; set; } = 2;
     public int VillagerProfession { get; set; }
     public int VillagerLevel { get; set; } = 1;
@@ -93,7 +106,9 @@ public sealed partial class Villager : AgeableMob
         {
             if (Home is { } home && (Terrain.GetBlock(home) is not { } bed || !TagsRegistry.Block.Beds.Entries.Contains(bed.RegistryId)))
             { level.ReleaseVillagePoi(home, Uuid); Home = null; }
-            if (JobSite is { } job && (!Workstations.TryGetValue(Terrain.GetBlock(job)?.Material ?? Material.Air, out var profession) || profession != VillagerProfession))
+            if (JobSite is { } job
+                && (!Workstations.TryGetValue(Terrain.GetBlock(job)?.RegistryId ?? BlockIds.Air, out var profession)
+                    || profession != VillagerProfession))
             {
                 level.ReleaseVillagePoi(job, Uuid); JobSite = null;
                 if (VillagerXp == 0) { VillagerProfession = 0; offers = []; tradingLevel = 0; SynchronizeMetadata(); }
@@ -110,8 +125,7 @@ public sealed partial class Villager : AgeableMob
                 else if (!IsBaby
                     && JobSite == null
                     && VillagerProfession != 11
-                    && block.Material is Material workstation
-                    && Workstations.TryGetValue(workstation, out var candidateProfession)
+                    && Workstations.TryGetValue(block.RegistryId, out var candidateProfession)
                     && (VillagerProfession == 0 || VillagerProfession == candidateProfession))
                 {
                     points.Add((point, candidateProfession, false));

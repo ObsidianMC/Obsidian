@@ -34,13 +34,23 @@ public sealed partial class Parrot : Animal
     {
         if (!Alive || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4)) return;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (item is { Count: > 0, Type: Material.Cookie })
+        if (item is { Count: > 0, Holder.Id: ItemIds.Cookie })
         {
             await ConsumeInteractionItemAsync(player, hand);
             AddPotionEffect((int)PotionEffect.Poison - 1, 900);
             await DamageEnvironmentAsync(Health);
         }
-        else if (!Tamed && item is { Count: > 0, Type: Material.WheatSeeds or Material.MelonSeeds or Material.PumpkinSeeds or Material.BeetrootSeeds or Material.TorchflowerSeeds or Material.PitcherPod })
+        else if (!Tamed
+            && item is
+            {
+                Count: > 0,
+                Holder.Id: ItemIds.WheatSeeds
+                    or ItemIds.MelonSeeds
+                    or ItemIds.PumpkinSeeds
+                    or ItemIds.BeetrootSeeds
+                    or ItemIds.TorchflowerSeeds
+                    or ItemIds.PitcherPod
+            })
         {
             await ConsumeInteractionItemAsync(player, hand);
             if (Random.Next(10) == 0) { Owner = player.Uuid; PersistenceRequired = true; }
@@ -78,7 +88,7 @@ public sealed partial class Parrot : Animal
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.Feather, Random.Next(1, 3));
+        DropItem(ItemsRegistry.Feather, Random.Next(1, 3));
         return default;
     }
     public override void Write(INetStreamWriter writer)

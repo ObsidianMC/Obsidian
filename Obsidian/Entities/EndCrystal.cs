@@ -44,7 +44,7 @@ public sealed partial class EndCrystal : Entity
             Level is not AbstractLevel level || !level.IsMobTicking(Position)) return;
         var position = (Vector)Position.Floor();
         if (new MobTerrain(Level).GetBlock(position)?.IsAir == true)
-            await level.SetBlockAsync(position, BlocksRegistry.Get(Material.Fire), true);
+            await level.SetBlockAsync(position, BlocksRegistry.Fire, true);
     }
 
     public override void Write(INetStreamWriter writer)

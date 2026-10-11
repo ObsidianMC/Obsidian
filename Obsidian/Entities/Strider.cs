@@ -15,7 +15,7 @@ public sealed partial class Strider : FarmAnimal
     protected override bool UsesFloatGoal => false;
     protected override bool WaterSensitive => true;
     protected override string? SoundName => "strider";
-    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.WarpedFungus };
+    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.WarpedFungus };
     internal override float MovementSpeed => base.MovementSpeed * (cold ? 0.66f : 1);
     protected override VectorD Travel()
     {
@@ -23,7 +23,8 @@ public sealed partial class Strider : FarmAnimal
         if (InLava)
         {
             NoGravity = true;
-            var above = Terrain.GetBlock((Vector)(Position + new VectorD(0, 0.6, 0)).Floor())?.Material == Material.Lava;
+            var above = Terrain.GetBlock((Vector)(Position + new VectorD(0, 0.6, 0)).Floor())?.RegistryId
+                == BlockIds.Lava;
             if (above) Motion = new VectorD(Motion.X, Math.Max(Motion.Y, 0.1), Motion.Z);
             else { Motion = new VectorD(Motion.X, Math.Max(0, Motion.Y), Motion.Z); MovementFlags |= MovementFlags.OnGround; }
         }
@@ -47,7 +48,7 @@ public sealed partial class Strider : FarmAnimal
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (CanEat(item)) { await base.FeedAsync(player, hand); return; }
         if (IsBaby) return;
-        if (item is { Count: > 0, Type: Material.Saddle } && GetEquipment(EquipmentSlot.Saddle).IsAir)
+        if (item is { Count: > 0, Holder.Id: ItemIds.Saddle } && GetEquipment(EquipmentSlot.Saddle).IsAir)
         { SetEquipment(EquipmentSlot.Saddle, new ItemStack(item)); await ConsumeInteractionItemAsync(player, hand); }
         else if (!player.Sneaking && !GetEquipment(EquipmentSlot.Saddle).IsAir && player is Player rider && Mount(rider)) GoalController?.Pause();
     }
@@ -60,13 +61,22 @@ public sealed partial class Strider : FarmAnimal
     {
         base.TickRidden();
         if (Rider == null) { if (GoalController is GoalSelector { IsPaused: true } goals) goals.Resume(); return; }
-        if (Rider.GetHeldItem()?.Type != Material.WarpedFungusOnAStick && Rider.GetOffHandItem()?.Type != Material.WarpedFungusOnAStick) return;
+        if (Rider.GetHeldItem()?.Is(ItemsRegistry.WarpedFungusOnAStick) != true
+            && Rider.GetOffHandItem()?.Is(ItemsRegistry.WarpedFungusOnAStick) != true) return;
         Yaw = Rider.Yaw;
         var boost = boostDuration > 0 ? 1 + 1.15f * MathF.Sin((float)boostTicks / boostDuration * MathF.PI) : 1;
         MoveControl.Ride(MovementSpeed * 0.55f * boost);
     }
     protected override ValueTask OnDeathAsync(IEntity source)
-    { if (!IsBaby) DropItem(Material.String, Random.Next(2, 6)); if (!GetEquipment(EquipmentSlot.Saddle).IsAir) DropItem(GetEquipment(EquipmentSlot.Saddle)); return default; }
+    {
+        if (!IsBaby)
+            DropItem(ItemsRegistry.String, Random.Next(2, 6));
+
+        if (!GetEquipment(EquipmentSlot.Saddle).IsAir)
+            DropItem(GetEquipment(EquipmentSlot.Saddle));
+
+        return default;
+    }
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);

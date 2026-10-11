@@ -43,11 +43,11 @@ public sealed partial class Tadpole : PathfinderMob
     }
     internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (await TryCaptureInBucketAsync(player, hand, Material.TadpoleBucket)) return;
+        if (await TryCaptureInBucketAsync(player, hand, ItemsRegistry.TadpoleBucket)) return;
         if (!Alive || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4))
             return;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (item is { Count: > 0, Type: Material.SlimeBall })
+        if (item is { Count: > 0, Holder.Id: ItemIds.SlimeBall })
         {
             Age += Math.Max(1, (MaturationTicks - Age) / 10);
             await ConsumeInteractionItemAsync(player, hand);
@@ -86,7 +86,7 @@ internal sealed class SeekWaterGoal(PathfinderMob mob, bool onlyDuringDay = fals
         for (var z = -8; z <= 8; z++)
         {
             var point = new Vector(origin.X + x, origin.Y + y, origin.Z + z);
-            if (mob.Terrain.GetBlock(point)?.Material == Material.Water &&
+            if (mob.Terrain.GetBlock(point)?.RegistryId == BlockIds.Water &&
                 mob.Terrain.IsFree(mob.Dimension.CreateBBFromPosition((VectorD)point + new VectorD(0.5f, 0, 0.5f))))
             {
                 destination = (VectorD)point + new VectorD(0.5f, 0, 0.5f);

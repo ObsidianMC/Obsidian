@@ -84,7 +84,7 @@ public sealed class PanicGoal(PathfinderMob mob, float speed) : NavigationGoal(m
             for (var z = origin.Z - 5; z <= origin.Z + 5; z++)
             {
                 var waterPoint = new VectorD(x + 0.5f, y, z + 0.5f);
-                if (Mob.Terrain.GetBlock(new Vector(x, y, z))?.Material == Material.Water &&
+                if (Mob.Terrain.GetBlock(new Vector(x, y, z))?.RegistryId == BlockIds.Water &&
                     (position == null || (waterPoint - Mob.Position).MagnitudeSquared() < (position.Value - Mob.Position).MagnitudeSquared()))
                     position = waterPoint;
             }

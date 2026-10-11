@@ -13,8 +13,8 @@ public partial class Cow : FarmAnimal
         if (!CanInteract(player))
             return;
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (!IsBaby && held is { Count: > 0, Type: Material.Bucket })
-            await GiveInteractionItemAsync(player, hand, Material.MilkBucket);
+        if (!IsBaby && held is { Count: > 0, Holder.Id: ItemIds.Bucket })
+            await GiveInteractionItemAsync(player, hand, ItemsRegistry.MilkBucket);
         else
             await base.FeedAsync(player, hand);
     }
@@ -34,8 +34,8 @@ public partial class Cow : FarmAnimal
     {
         if (!IsBaby)
         {
-            DropItem(Material.Leather, Random.Next(3));
-            DropItem(Burning ? Material.CookedBeef : Material.Beef, Random.Next(1, 4));
+            DropItem(ItemsRegistry.Leather, Random.Next(3));
+            DropItem(Burning ? ItemsRegistry.CookedBeef : ItemsRegistry.Beef, Random.Next(1, 4));
         }
         return default;
     }

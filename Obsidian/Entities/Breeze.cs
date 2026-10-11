@@ -29,7 +29,7 @@ public sealed partial class Breeze : PathfinderMob
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (source is IPlayer) DropItem(Material.BreezeRod, Random.Next(1, 3));
+        if (source is IPlayer) DropItem(ItemsRegistry.BreezeRod, Random.Next(1, 3));
         return default;
     }
     internal void SetAttackPose(Pose pose)
