@@ -413,34 +413,46 @@ public abstract partial class AbstractLevel : ILevel
             yield break;
         }
 
-        var (left, top) = Region.ChunkOf(location - new VectorD(distance));
-        var (right, bottom) = Region.ChunkOf(location + new VectorD(distance));
-
-        left >>= Region.CubicRegionSizeShift;
-        right >>= Region.CubicRegionSizeShift;
-        top >>= Region.CubicRegionSizeShift;
-        bottom >>= Region.CubicRegionSizeShift;
-
-        distance *= distance;
-
-        for (int x = left; x <= right; x++)
+        var distanceSquared = (double)distance * distance;
+        foreach (var region in GetRegions())
         {
-            for (int z = top; z <= bottom; z++)
+            foreach (var entity in region.Entities.Values)
             {
-                if (GetRegionForChunk(x << Region.CubicRegionSizeShift, z << Region.CubicRegionSizeShift) is not Region region)
+                if (entity.Type == EntityType.Player)
                     continue;
 
-                foreach (var entity in region.Entities.Values)
+                var difference = entity.Position - location;
+                if (difference.MagnitudeSquared() <= distanceSquared)
+                    yield return entity;
+            }
+        }
+
+        IEnumerable<IRegion> GetRegions()
+        {
+            // Owner lookups use float.MaxValue. Scan loaded regions before converting such ranges to chunk coordinates.
+            if (distance >= Region.CubicRegionSize * 16)
+            {
+                foreach (var region in Regions.Values)
+                    yield return region;
+                yield break;
+            }
+
+            var (left, top) = Region.ChunkOf(location - new VectorD(distance));
+            var (right, bottom) = Region.ChunkOf(location + new VectorD(distance));
+
+            left >>= Region.CubicRegionSizeShift;
+            right >>= Region.CubicRegionSizeShift;
+            top >>= Region.CubicRegionSizeShift;
+            bottom >>= Region.CubicRegionSizeShift;
+
+            for (int x = left; x <= right; x++)
+            {
+                for (int z = top; z <= bottom; z++)
                 {
-                    if (entity.Type == EntityType.Player)
+                    if (GetRegionForChunk(x << Region.CubicRegionSizeShift, z << Region.CubicRegionSizeShift) is not Region region)
                         continue;
 
-                    var locationDifference = LocationDiff.GetDifference(entity.Position, location);
-
-                    if (locationDifference.CalculatedDifference + locationDifference.DifferenceY * locationDifference.DifferenceY <= distance)
-                    {
-                        yield return entity;
-                    }
+                    yield return region;
                 }
             }
         }
