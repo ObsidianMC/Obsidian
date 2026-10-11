@@ -10,23 +10,23 @@ public partial class Player
     // already saved.
     private readonly SemaphoreSlim tickGate = new(1, 1);
 
-    // The player whose tick the current flow is in, so that leaving from inside it (a plugin kicking the player, say)
-    // doesn't wait for itself.
+    // The player whose tick the current flow is in.
     private static readonly AsyncLocal<Player?> tickingPlayer = new();
 
     private bool stoppedTicking;
 
     /// <summary>
-    /// Waits for a tick of the player under way and stops ticking them: they're leaving.
+    /// Whether the current flow is in one of the player's ticks, which a leave waits for: a leave started from it (a
+    /// plugin kicking the player, say) mustn't be waited for there.
+    /// </summary>
+    internal bool IsInOwnTick => tickingPlayer.Value == this;
+
+    /// <summary>
+    /// Waits for a tick of the player under way and stops ticking them: they're leaving. Never call it from the
+    /// player's own tick.
     /// </summary>
     internal async Task StopTickingAsync()
     {
-        if (tickingPlayer.Value == this)
-        {
-            this.stoppedTicking = true;
-            return;
-        }
-
         await this.tickGate.WaitAsync();
         this.stoppedTicking = true;
         this.tickGate.Release();

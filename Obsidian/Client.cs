@@ -660,23 +660,30 @@ public sealed partial class Client : IClient
     /// Raises the player's leave event, which saves them, once however the connection ends: closed by the server
     /// (<see cref="DisconnectAsync"/>) or by the client (<see cref="Disconnect"/>). Every call returns the same leave, so
     /// a later one waits for it, and the server's shutdown waits for it too (<see cref="Server.TrackLeave"/>). A call from
-    /// a leave handler itself (kicking the player who's leaving) doesn't wait, since the leave waits for it.
+    /// a leave handler itself (kicking the player who's leaving) or from one of the player's ticks doesn't wait, since
+    /// the leave waits for those.
     /// </summary>
     private Task LeaveAsync()
     {
         if (this.Player is not Player player || raisingLeave.Value == this)
             return Task.CompletedTask;
 
+        // The leave waits for a tick of the player under way, so a leave from inside one isn't waited for.
+        var inOwnTick = player.IsInOwnTick;
+
         var leave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         if (Interlocked.CompareExchange(ref this.leaving, leave, null) is TaskCompletionSource started)
-            return started.Task;
+            return inOwnTick ? Task.CompletedTask : started.Task;
 
         // Tracked before it starts, so a shutdown that begins meanwhile still waits for it.
         if (this.Server is Server server)
             server.TrackLeave(leave.Task);
 
-        _ = this.RaiseLeaveAsync(player, leave);
-        return leave.Task;
+        // Raised apart from the caller's flow, so that it doesn't count as being in the caller's tick.
+        using (ExecutionContext.SuppressFlow())
+            _ = Task.Run(() => this.RaiseLeaveAsync(player, leave));
+
+        return inOwnTick ? Task.CompletedTask : leave.Task;
     }
 
     // Raises the leave event and completes the leave; it never throws.
