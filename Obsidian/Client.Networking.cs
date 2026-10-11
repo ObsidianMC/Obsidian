@@ -186,7 +186,10 @@ public partial class Client
                 case ClientState.Status: // Server ping/list
                     if (packetData.Id == 0x00)
                     {
-                        var status = new ServerStatus(this.Server, ServerConstants.ServerIcon);
+                        var status = new ServerStatus(this.Server, ServerConstants.ServerIcon)
+                        {
+                            IsModded = ((Server)this.Server).PayloadChannels.HasChannels
+                        };
 
                         await this.eventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.Server, status));
 

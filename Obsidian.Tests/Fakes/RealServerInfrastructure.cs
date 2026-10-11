@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Obsidian.API;
 using Obsidian.API.Configuration;
+using Obsidian.API.Networking;
 using Obsidian.API.World;
 using Obsidian.Commands.Framework;
 using Obsidian.Entities;
@@ -68,6 +69,12 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
     public void SetState(ClientState state) => this.State = state;
 
     public ValueTask<bool> VerifyProfileAsync() => ValueTask.FromResult(true);
+
+    // Payload channels need a real connection's handshake; see ClientChannels.
+    public bool HasChannel(string channel) => false;
+
+    public ValueTask<bool> SendPayloadAsync<TPayload>(TPayload payload) where TPayload : ICustomPayload<TPayload> =>
+        ValueTask.FromResult(false);
 
     public void ClearPackets() => this.packets.Clear();
 

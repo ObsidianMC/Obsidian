@@ -1,7 +1,8 @@
-﻿using System.Text;
+﻿namespace Obsidian.Net.Packets.Common;
 
-namespace Obsidian.Net.Packets.Common;
-
+/// <summary>
+/// A payload on a plugin channel. The connection's <see cref="Payloads.ClientChannels"/> handles received ones.
+/// </summary>
 public partial record class CustomPayloadPacket
 {
     public string Channel { get; set; } = default!;
@@ -16,33 +17,6 @@ public partial record class CustomPayloadPacket
         PluginData = data;
     }
 
-    public PluginMessageStore? Handle()
-    {
-        using var buffer = new NetworkBuffer(PluginData.ToArray());
-
-        var result = Channel switch
-        {
-            "minecraft:brand" => new PluginMessageStore
-            {
-                Type = PluginMessageType.Brand,
-                Value = buffer.ReadString()
-            },
-            "minecraft:register" => new PluginMessageStore // Payload should be a list of strings
-            {
-                Type = PluginMessageType.Register,
-                Value = Encoding.UTF8.GetString(PluginData.Span)
-            },
-            "minecraft:unregister" => new PluginMessageStore
-            {
-                Type = PluginMessageType.Unregister,
-                Value = Encoding.UTF8.GetString(PluginData.Span)
-            },
-            _ => null
-        };
-
-        return result;
-    }
-
     public override void Populate(INetStreamReader reader)
     {
         Channel = reader.ReadString();
@@ -54,57 +28,4 @@ public partial record class CustomPayloadPacket
         writer.WriteString(this.Channel);
         writer.WriteByteArray(this.PluginData.Span);
     }
-
-    public override ValueTask HandleAsync(IServer server, IClientPlayer player)
-    {
-        var result = Handle();
-
-        if (result is null)
-            return default;
-
-        switch (result.Type)
-        {
-            case PluginMessageType.Brand:
-                player.Client.Brand = result.Value.ToString();
-                break;
-
-            case PluginMessageType.Register:
-                {
-                    var list = result.Value.ToString().Split("/"); // Unsure if this is the only separator that's used
-
-                    if (list.Length > 0)
-                        foreach (var item in list)
-                            server.RegisteredChannels.Add(item);
-                    else
-                        server.RegisteredChannels.Add(result.Value.ToString());
-
-                    break;
-                }
-
-            case PluginMessageType.Unregister:
-                // TODO unregister registered channels 
-
-                //server.RegisteredChannels.RemoveWhere(x => x == this.Channel.ToLower());
-                break;
-
-            case PluginMessageType.Custom: // This can be ignored for now
-                break;
-        }
-
-        return ValueTask.CompletedTask;
-    }
-}
-
-public enum PluginMessageType
-{
-    Brand,
-    Register,
-    Unregister,
-    Custom
-}
-
-public class PluginMessageStore
-{
-    public PluginMessageType Type { get; init; }
-    public object Value { get; init; }
 }

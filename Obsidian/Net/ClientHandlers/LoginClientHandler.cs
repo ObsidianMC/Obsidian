@@ -2,9 +2,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.Integrated;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Common;
-using Obsidian.Net.Packets.Configuration.Clientbound;
 using Obsidian.Net.Packets.Login.Serverbound;
-using Obsidian.WorldData;
 using System.Threading;
 
 namespace Obsidian.Net.ClientHandlers;
@@ -68,7 +66,8 @@ internal sealed partial class LoginClientHandler : ClientHandler
                 {
                     this.Client.SetState(ClientState.Configuration);
 
-                    this.Configure();
+                    // The rest of configuration follows once the client answered the handshake's ping.
+                    this.Client.Channels.StartConfiguration();
 
                     return true;
                 }
@@ -79,59 +78,6 @@ internal sealed partial class LoginClientHandler : ClientHandler
         }
 
         return false;
-    }
-
-    private void Configure()
-    {
-        this.SendPacket(new SelectKnownPacksPacket
-        {
-            KnownPacks = [new() { Id = "core", Version = ServerConstants.ProtocolDescription, Namespace = "minecraft" }]
-        });
-
-        //This is very inconvenient
-        var dialogs = this.Server.CreateDialogConfiguration();
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Dialog.CodecKey, dialogs.Codecs) { WriteCodecs = true });
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey,
-            CodecRegistry.Dimensions.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey,
-            CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey,
-            CodecRegistry.ChatType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageType.CodecKey,
-            CodecRegistry.DamageType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPattern.CodecKey,
-            CodecRegistry.TrimPattern.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterial.CodecKey,
-            CodecRegistry.TrimMaterial.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.CatVariant.CodecKey,
-            CodecRegistry.CatVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.ChickenVariant.CodecKey,
-            CodecRegistry.ChickenVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.CowVariant.CodecKey,
-            CodecRegistry.CowVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.FrogVariant.CodecKey,
-            CodecRegistry.FrogVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.PigVariant.CodecKey,
-            CodecRegistry.PigVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.ZombieNautilusVariant.CodecKey,
-            CodecRegistry.ZombieNautilusVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey,
-            CodecRegistry.WolfVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfSoundVariant.CodecKey,
-            CodecRegistry.WolfSoundVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.PaintingVariant.CodecKey,
-            CodecRegistry.PaintingVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-
-        // Item components refer to these by network id (the index of the entry sent here), e.g. an item's enchantments.
-        this.SendPacket(new RegistryDataPacket("minecraft:enchantment", EnchantmentsRegistry.All.Select(enchantment => enchantment.Identifier)));
-        this.SendPacket(new RegistryDataPacket("minecraft:instrument", InstrumentsRegistry.All.Select(instrument => instrument.Identifier)));
-        this.SendPacket(new RegistryDataPacket("minecraft:jukebox_song", Obsidian.Registries.JukeboxSongsRegistry.Identifiers));
-
-        this.SendPacket(UpdateTagsPacket.ClientboundConfiguration with { Tags = dialogs.Tags });
-
-        this.SendPacket(FinishConfigurationPacket.Default);
     }
 
     private async Task HandleLoginStartAsync(byte[] data)
