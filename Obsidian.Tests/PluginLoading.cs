@@ -185,11 +185,13 @@ public sealed class PluginLoading : IDisposable
 
     private (PluginManager Manager, EventDispatcher Dispatcher, FakeServer Server) CreateManager()
     {
+        var server = new FakeServer();
+
         var services = new ServiceCollection();
         services.AddOptions<ServerConfiguration>();
+        services.AddSingleton<IServer>(server);
         var provider = services.BuildServiceProvider();
 
-        var server = new FakeServer();
         var dispatcher = new EventDispatcher(NullLogger<EventDispatcher>.Instance, provider);
         var commands = new CommandHandler(provider, NullLogger<CommandHandler>.Instance);
         var manager = new PluginManager(server, provider, dispatcher, commands, NullLogger<PluginManager>.Instance,
@@ -261,10 +263,17 @@ public sealed class ProbePlugin : PluginBase
         this.Container.InjectServices(NullLogger.Instance, this);
 
         Assert.NotNull(this.Service);
+        Assert.Same(server, this.Service.Server);
         Assert.NotNull(this.Logger);
 
         return ValueTask.CompletedTask;
     }
 }
 
-public sealed class ProbeService;
+/// <summary>
+/// A service of <see cref="ProbePlugin"/>, built with one of the server's services.
+/// </summary>
+public sealed class ProbeService(IServer server)
+{
+    public IServer Server { get; } = server;
+}

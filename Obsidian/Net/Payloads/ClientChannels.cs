@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System.IO;
 using Obsidian.API.Networking;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Plugins;
@@ -28,13 +29,20 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
     private ImmutableDictionary<string, string> playChannels = ImmutableDictionary<string, string>.Empty;
     private ImmutableHashSet<string> clientChannels = ImmutableHashSet<string>.Empty;
 
+    // How many channels a client may register itself, and how long their ids may be: the registrations are kept for
+    // the whole connection, and the client chooses them.
+    private const int MaxClientChannels = 1024;
+    private const int MaxChannelLength = 256;
+
     private bool handshakeFinished;
 
-    // Set when the NeoForge negotiation refused the client, so configuration doesn't go on.
-    private bool refused;
+    // Set when the client sent a NeoForge query, whether or not it was accepted: a client that sent one but wasn't
+    // accepted (refused, or a malformed query) mustn't go on as a vanilla client.
+    private bool queryReceived;
 
     /// <summary>
-    /// Whether the client answered with a NeoForge channel query, rather than being a vanilla (or other) client.
+    /// Whether the client answered with a NeoForge channel query that the server accepted, rather than being a vanilla
+    /// (or other) client.
     /// </summary>
     public bool IsNeoForge { get; private set; }
 
@@ -55,7 +63,11 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
 
         var negotiated = protocol == NetworkProtocol.Configuration ? this.configurationChannels : this.playChannels;
 
-        return negotiated.ContainsKey(channel) || this.clientChannels.Contains(channel);
+        // A reload can replace a channel with another version than the one agreed on; its payloads aren't compatible.
+        if (negotiated.TryGetValue(channel, out var version))
+            return registry.TryGet(channel, out var registration) && registration.Version == version;
+
+        return this.clientChannels.Contains(channel);
     }
 
     /// <summary>
@@ -109,8 +121,8 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
 
         this.handshakeFinished = true;
 
-        if (this.IsNeoForge)
-            return !this.refused;
+        if (this.queryReceived)
+            return this.IsNeoForge;
 
         return await this.InitializeOtherConnectionAsync();
     }
@@ -163,11 +175,8 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
                     return;
                 }
             case ChannelPayloads.NeoForgeQuery when protocol == NetworkProtocol.Configuration:
-                {
-                    using var reader = new NetworkBuffer(data.ToArray());
-                    await this.InitializeNeoForgeConnectionAsync(ChannelPayloads.ReadQuery(reader));
-                    return;
-                }
+                await this.HandleQueryAsync(data);
+                return;
         }
 
         if (!registry.TryGet(channel, out var registration) || registration.Handler is null)
@@ -206,6 +215,38 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
         }
     }
 
+    // A client gets one query, during the handshake; a malformed one disconnects it.
+    private async ValueTask HandleQueryAsync(ReadOnlyMemory<byte> data)
+    {
+        if (this.queryReceived || this.handshakeFinished)
+        {
+            await client.DisconnectAsync("Unexpected NeoForge channel query.");
+            return;
+        }
+
+        this.queryReceived = true;
+
+        Dictionary<NetworkProtocol, List<NetworkComponent>> query;
+        try
+        {
+            using var reader = new NetworkBuffer(data.ToArray());
+            query = ChannelPayloads.ReadQuery(reader);
+
+            if (query.Values.Any(components => components.DistinctBy(component => component.Id).Count()
+                != components.Count))
+                throw new InvalidDataException("A channel is listed twice.");
+        }
+        catch (Exception ex)
+        {
+            // Whatever the client sent, a query that can't be read refuses it rather than letting it continue.
+            Log.MalformedQuery(client.Logger, ex);
+            await client.DisconnectAsync("Malformed NeoForge channel query.");
+            return;
+        }
+
+        await this.InitializeNeoForgeConnectionAsync(query);
+    }
+
     /// <summary>
     /// Agrees on channels with a NeoForge client's query, like NeoForge's server: on success the client learns the
     /// agreed channels; otherwise it learns why and is disconnected.
@@ -213,8 +254,6 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
     private async ValueTask InitializeNeoForgeConnectionAsync(
         Dictionary<NetworkProtocol, List<NetworkComponent>> query)
     {
-        this.IsNeoForge = true;
-
         var setup = new Dictionary<NetworkProtocol, IReadOnlyDictionary<string, string>>();
         var failures = new Dictionary<string, string>();
 
@@ -232,8 +271,6 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
 
         if (failures.Count > 0)
         {
-            this.refused = true;
-
             var channels = string.Join(", ", failures.Keys);
             Log.NegotiationFailed(client.Logger, channels);
 
@@ -246,6 +283,7 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
             return;
         }
 
+        this.IsNeoForge = true;
         this.configurationChannels = setup[NetworkProtocol.Configuration].ToImmutableDictionary();
         this.playChannels = setup[NetworkProtocol.Play].ToImmutableDictionary();
 
@@ -289,12 +327,13 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
 
     private void RegisterClientChannels(List<string> channels)
     {
-        ImmutableInterlocked.Update(ref this.clientChannels, set => set.Union(channels));
+        var valid = channels.Where(channel => channel.Length <= MaxChannelLength && channel.Contains(':'));
 
-        // Kept for plugins reading the server-wide set, which only grows; what a connection may use is tracked above.
-        var registered = client.Server.RegisteredChannels;
-        lock (registered)
-            registered.UnionWith(channels);
+        ImmutableInterlocked.Update(ref this.clientChannels, set =>
+        {
+            var registered = set.Union(valid);
+            return registered.Count <= MaxClientChannels ? registered : set;
+        });
     }
 
     /// <summary>
@@ -340,6 +379,9 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
         [LoggerMessage(Level = LogLevel.Debug,
             Message = "Ignored a payload on channel {Channel}, which isn't set up for this connection and phase")]
         public static partial void ChannelNotSetUp(ILogger logger, string channel);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Disconnecting a client that sent a malformed channel query")]
+        public static partial void MalformedQuery(ILogger logger, Exception exception);
 
         [LoggerMessage(Level = LogLevel.Information,
             Message = "Refused a client whose payload channels don't match the server's: {Channels}")]

@@ -25,6 +25,14 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
                 }
             case 3:
                 {
+                    // Finishing before the server did would skip the channel handshake and the registries.
+                    if (!this.configurationSent)
+                    {
+                        Log.FinishedEarly(this.Logger);
+                        await this.Client.DisconnectAsync("Finished configuration before the server.");
+                        return false;
+                    }
+
                     if (!await HandleFromPoolAsync<ServerboundFinishConfigurationPacket>(buffer))
                         return false;
 
@@ -53,11 +61,16 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
         return false;
     }
 
+    // Whether the server sent its configuration and FinishConfiguration, after which the client may finish.
+    private bool configurationSent;
+
     /// <summary>
     /// Sends the server's known packs, registries and tags, then finishes configuration.
     /// </summary>
     private void SendConfiguration()
     {
+        this.configurationSent = true;
+
         this.SendPacket(new SelectKnownPacksPacket
         {
             KnownPacks =
@@ -125,6 +138,10 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
 
     private static partial class Log
     {
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "Disconnecting a client that finished configuration before the server did")]
+        public static partial void FinishedEarly(ILogger logger);
+
         [LoggerMessage(Level = LogLevel.Debug, Message = "Configuration packet {PacketId} is not handled")]
         public static partial void UnhandledPacket(ILogger logger, int packetId);
     }

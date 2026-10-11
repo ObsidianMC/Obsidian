@@ -65,6 +65,7 @@ public sealed class CommandHandler : ICommandHandler
     /// <summary>
     /// Finds the parser registered for <paramref name="type"/>. An enum without one gets an
     /// <see cref="EnumArgumentParser"/>, kept for later lookups, so a plugin's parser for an enum must be added first.
+    /// A plugin's enums get a new one each time instead: keeping it would keep the plugin loaded.
     /// </summary>
     private bool TryGetArgumentParser(Type type, [NotNullWhen(true)] out BaseArgumentParser? parser)
     {
@@ -74,7 +75,9 @@ public sealed class CommandHandler : ICommandHandler
         if (!type.IsEnum)
             return false;
 
-        parser = this._argumentParsers.GetOrAdd(type, enumType => new EnumArgumentParser(enumType));
+        parser = type.Assembly.IsCollectible
+            ? new EnumArgumentParser(type)
+            : this._argumentParsers.GetOrAdd(type, enumType => new EnumArgumentParser(enumType));
         return true;
     }
 
@@ -507,12 +510,28 @@ public sealed class CommandHandler : ICommandHandler
             args = Enumerable.Skip(args, 1).ToArray();
         }
 
-        if (cmd is not null)
+        if (cmd is null)
+        {
+            await ctx.Sender.SendMessageAsync("No such command was found!");
+            return;
+        }
+
+        // Unloading the command's plugin waits for it to finish, and refuses it once started.
+        var plugin = cmd.PluginContainer as PluginContainer;
+        if (plugin is not null && !plugin.TryEnter())
+        {
+            await ctx.Sender.SendMessageAsync("This command's plugin is reloading; try again.");
+            return;
+        }
+
+        try
         {
             ctx.Plugin = cmd.PluginContainer?.Plugin;
             await cmd.ExecuteAsync(ctx, args);
         }
-        else
-            await ctx.Sender.SendMessageAsync("No such command was found!");
+        finally
+        {
+            plugin?.Exit();
+        }
     }
 }

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Networking;
@@ -121,12 +121,40 @@ public class ModdedNetworking
 
         Assert.True(await channels.SendAsync(new EchoPayload("back")));
 
-        // The connection keeps the channel through a plugin reload, but nothing handles it while the plugin is gone.
+        // Nothing handles the channel while its plugin is gone; a reload with the agreed version restores it, but one
+        // with another version doesn't, since the client still speaks the old one.
         registry.UnregisterPluginPayloads(plugin);
         await channels.HandlePayloadAsync(EchoPayload.Channel, Write(new EchoPayload("dropped").Write));
 
         Assert.Equal(["hello"], received);
+        Assert.False(channels.HasChannel(EchoPayload.Channel));
+
+        registry.Register<EchoPayload>(plugin, PayloadPhase.Common, PayloadDirection.Bidirectional, null, "2", false);
         Assert.True(channels.HasChannel(EchoPayload.Channel));
+
+        registry.UnregisterPluginPayloads(plugin);
+        registry.Register<EchoPayload>(plugin, PayloadPhase.Common, PayloadDirection.Bidirectional, null, "3", false);
+        Assert.False(channels.HasChannel(EchoPayload.Channel));
+    }
+
+    [Fact]
+    public async Task MalformedQueryRefusesClient()
+    {
+        var registry = new PayloadChannelRegistry();
+        registry.Register<EchoPayload>(new FakePluginContainer(), PayloadPhase.Play, PayloadDirection.Bidirectional,
+            null, "1", optional: false);
+
+        var client = new TestClient(new FakeServer());
+        client.SetState(ClientState.Configuration);
+        var channels = new ClientChannels(client, registry);
+
+        channels.StartConfiguration();
+
+        // Claims one protocol, then ends: the client is refused rather than treated as a vanilla one.
+        await channels.HandlePayloadAsync(ChannelPayloads.NeoForgeQuery, new byte[] { 1 });
+
+        Assert.False(client.Connected);
+        Assert.False(await channels.FinishHandshakeAsync(0));
     }
 
     [Fact(DisplayName = "A client without NeoForge only joins when the server's channels are optional")]

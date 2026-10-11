@@ -18,6 +18,10 @@ public interface IServer : IDisposable
     public ServerConfiguration Configuration { get; }
     public ConcurrentDictionary<Guid, IPlayer> OnlinePlayers { get; }
     public ConcurrentDictionary<int, IClient> Connections { get; }
+    /// <summary>
+    /// No longer filled: which channels a connection may use is per connection, see <see cref="IClient.HasChannel"/>.
+    /// </summary>
+    [Obsolete("Channels are per connection; use IClient.HasChannel.")]
     public HashSet<string> RegisteredChannels { get; }
 
     public ReadOnlyMemory<byte> BrandData { get; }

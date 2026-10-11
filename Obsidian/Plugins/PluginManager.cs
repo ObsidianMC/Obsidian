@@ -247,10 +247,19 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     private Task UnloadPluginAsync(string path) => this.RunChangeAsync(async () =>
     {
-        this.stagedPlugins = this.stagedPlugins.RemoveAll(staged => staged.Source == path);
+        var staged = this.stagedPlugins.Length;
+        this.stagedPlugins = this.stagedPlugins.RemoveAll(archive => archive.Source == path);
 
         if (this.plugins.FirstOrDefault(plugin => plugin.Source == path) is PluginContainer plugin)
+        {
             await this.UnloadAndRetryAsync(plugin);
+        }
+        else if (this.stagedPlugins.Length != staged)
+        {
+            // A staged plugin can block others too, e.g. as one of a cycle.
+            await this.LoadArchivesAsync([]);
+            this.OnPluginsChanged();
+        }
     });
 
     private Task RenameAsync(string oldPath, string newPath) => this.RunChangeAsync(() =>
@@ -436,7 +445,6 @@ public sealed partial class PluginManager : IAsyncDisposable
     private async Task UnloadAsync(PluginContainer pluginContainer)
     {
         var name = pluginContainer.Info.Name;
-        var stopwatch = Stopwatch.StartNew();
 
         this.commandHandler.UnregisterPluginCommands(pluginContainer);
         this.eventDispatcher.UnregisterPluginEvents(pluginContainer);
@@ -447,17 +455,50 @@ public sealed partial class PluginManager : IAsyncDisposable
         if (pluginContainer.LoadContext is not null)
             this.commandHandler.UnregisterArgumentParsers(pluginContainer.LoadContext);
 
-        // Handlers that started before they were unregistered finish before the plugin's services go.
-        if (!await pluginContainer.CloseAsync(drainTimeout))
-            Log.DrainTimedOut(this.logger, name, drainTimeout.TotalSeconds);
+        this.plugins = this.plugins.Remove(pluginContainer);
+
+        // Handlers that started before they were unregistered finish before the plugin's services go. If they take too
+        // long, the plugin is released once they're done, without holding up the rest of the change.
+        if (await pluginContainer.CloseAsync(drainTimeout))
+        {
+            await this.ReleaseAsync(pluginContainer);
+            return;
+        }
+
+        Log.DrainTimedOut(this.logger, name, drainTimeout.TotalSeconds);
+
+        _ = Task.Run(async () =>
+        {
+            await pluginContainer.CloseAsync(Timeout.InfiniteTimeSpan);
+            await this.ReleaseAsync(pluginContainer);
+        });
+    }
+
+    /// <summary>
+    /// Runs a plugin's unloading callback, disposes it and its services, and unloads its load context, even if any of
+    /// those fail.
+    /// </summary>
+    private async Task ReleaseAsync(PluginContainer pluginContainer)
+    {
+        var name = pluginContainer.Info.Name;
+        var stopwatch = Stopwatch.StartNew();
 
         if (pluginContainer.Plugin is PluginBase plugin)
         {
+            if (pluginContainer.Loaded)
+            {
+                try
+                {
+                    await plugin.OnUnloadingAsync();
+                }
+                catch (Exception ex)
+                {
+                    Log.UnloadingFailed(this.logger, ex, name);
+                }
+            }
+
             try
             {
-                if (pluginContainer.Loaded)
-                    await plugin.OnUnloadingAsync();
-
                 await plugin.DisposeAsync();
             }
             catch (Exception ex)
@@ -465,8 +506,6 @@ public sealed partial class PluginManager : IAsyncDisposable
                 Log.DisposeFailed(this.logger, ex, name);
             }
         }
-
-        this.plugins = this.plugins.Remove(pluginContainer);
 
         var loadContext = pluginContainer.LoadContext;
 
@@ -582,12 +621,15 @@ public sealed partial class PluginManager : IAsyncDisposable
         public static partial void Untrusted(ILogger logger, string path);
 
         [LoggerMessage(Level = LogLevel.Warning,
-            Message = "Unloading plugin {PluginName} although its handlers still ran after {Seconds}s")]
+            Message = "Plugin {PluginName} unloads once its handlers finish; they still ran after {Seconds}s")]
         public static partial void DrainTimedOut(ILogger logger, string pluginName, double seconds);
 
         [LoggerMessage(Level = LogLevel.Information,
             Message = "Unloaded plugin {PluginName} in {ElapsedMilliseconds}ms")]
         public static partial void Unloaded(ILogger logger, string pluginName, long elapsedMilliseconds);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginName} failed while unloading")]
+        public static partial void UnloadingFailed(ILogger logger, Exception exception, string pluginName);
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Disposing plugin {PluginName} failed")]
         public static partial void DisposeFailed(ILogger logger, Exception exception, string pluginName);
