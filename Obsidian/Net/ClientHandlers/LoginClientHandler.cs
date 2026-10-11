@@ -185,6 +185,10 @@ internal sealed partial class LoginClientHandler : ClientHandler
             return;
         }
 
+        // The local player's earlier connection may still be saving them as it leaves.
+        if (this.Server is Server server)
+            await server.WaitForLeavesAsync(name);
+
         this.Client.InitializeOffline(name, this.Server.DefaultWorld, integrated.Configuration.LocalPlayerUuid);
     }
 

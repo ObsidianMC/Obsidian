@@ -587,11 +587,13 @@ public sealed partial class Client : IClient
             this.reconfigurationStarted = Environment.TickCount64;
         }
 
+        // The connection's one leave, until the player joins again. It's started, and tracked, before the player stops
+        // being online, so that the player joining again elsewhere waits for it.
+        var leave = this.LeaveAsync();
+
         this.Server.RemovePlayer(player);
         await player.StopSendingChunksAsync();
-
-        // The connection's one leave, until the player joins again.
-        await this.LeaveAsync();
+        await leave;
         await this.QueuePacketAsync(new Net.Packets.Play.Clientbound.StartConfigurationPacket());
     }
 
