@@ -100,23 +100,10 @@ internal sealed class PluginEntity(EntityDefinition definition) : Entity
             return;
         }
 
-        var before = this.Position;
         await this.RunBehaviorAsync(behavior => behavior.TickAsync(this));
 
         if (this.removed)
             return;
-
-        // The behaviour may have moved the entity, which the level has to know about first; a move it can't make,
-        // into an unloaded region say, is undone.
-        if (this.Position != before)
-        {
-            if (!level.TryMoveEntity(this, before, this.Position))
-                this.Position = before;
-            else
-                this.Broadcast(this.Motion, onGround: this.resting);
-
-            this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
-        }
 
         if (definition.Kind == EntityKind.Projectile)
             await this.FlyAsync(level);
@@ -159,7 +146,7 @@ internal sealed class PluginEntity(EntityDefinition definition) : Entity
             }
         }
 
-        this.Motion = motion * Drag - new VectorD(0, definition.Settings.Gravity, 0);
+        this.Motion = motion * Drag - new VectorD(0, this.Gravity, 0);
     }
 
     // Like vanilla moves entities: as a box, clipped against the blocks' shapes one axis at a time, so that it slides
@@ -204,7 +191,7 @@ internal sealed class PluginEntity(EntityDefinition definition) : Entity
             ? VectorD.Zero
             : new VectorD(
                 moved.X == motion.X ? motion.X * Drag : 0,
-                (moved.Y == motion.Y ? motion.Y * Drag : 0) - definition.Settings.Gravity,
+                (moved.Y == motion.Y ? motion.Y * Drag : 0) - this.Gravity,
                 moved.Z == motion.Z ? motion.Z * Drag : 0);
 
         if (to != from || landed != this.resting)
@@ -284,20 +271,41 @@ internal sealed class PluginEntity(EntityDefinition definition) : Entity
             .FirstOrDefault(entity => entity.Uuid == uuid);
     }
 
+    // The type's gravity, unless the entity was saved without gravity.
+    private float Gravity => this.NoGravity ? 0 : definition.Settings.Gravity;
+
     internal ValueTask InteractAsync(IPlayer player, InteractionHand hand) =>
         this.RunBehaviorAsync(behavior => behavior.InteractAsync(this, player, hand));
 
-    // Runs the type's behaviour as a call into its plugin, so that the plugin can't be released meanwhile.
+    // Runs the type's behaviour as a call into its plugin, so that the plugin can't be released meanwhile. The
+    // behaviour may move or turn the entity: the level learns of a move first (one it can't make, into an unloaded
+    // region say, is undone), and clients of both.
     private async ValueTask RunBehaviorAsync(Func<IEntityBehavior, ValueTask> run)
     {
         if (definition.Binding is not { Behavior: IEntityBehavior behavior, Owner: PluginContainer plugin })
             return;
 
-        using var call = plugin.TryEnter();
-        if (call is null)
+        var (position, yaw, pitch) = (this.Position, this.Yaw, this.Pitch);
+
+        using (var call = plugin.TryEnter())
+        {
+            if (call is null)
+                return;
+
+            await run(behavior);
+        }
+
+        if (this.removed || this.Level is not AbstractLevel level)
             return;
 
-        await run(behavior);
+        if (this.Position != position && !level.TryMoveEntity(this, position, this.Position))
+            this.Position = position;
+
+        if (this.Position != position || this.Yaw != yaw || this.Pitch != pitch)
+        {
+            this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
+            this.Broadcast(this.Motion, onGround: this.resting);
+        }
     }
 
     internal override void WriteNbt(NbtCompound tag)
