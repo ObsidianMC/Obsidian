@@ -108,6 +108,10 @@ internal sealed partial class LoginClientHandler : ClientHandler
 
         await this.Server.DisconnectPlayerIfConnectedAsync(username);
 
+        // The earlier connection's leave may still be saving the player (it waits for their tick under way).
+        if (this.Server is Server server)
+            await server.WaitForLeavesAsync(username);
+
         if (this.Server.Configuration.OnlineMode)
         {
             if (await this.Client.TrySetCachedProfileAsync(username))

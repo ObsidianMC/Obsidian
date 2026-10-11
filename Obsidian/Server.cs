@@ -31,7 +31,8 @@ public sealed partial class Server : IServer
 
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
 
-    private readonly ConcurrentDictionary<Task, byte> pendingLeaves = new();
+    // Leaves under way, with the name of the player leaving.
+    private readonly ConcurrentDictionary<Task, string> pendingLeaves = new();
 
     internal readonly CancellationTokenSource cancelTokenSource;
     internal readonly ILogger logger;
@@ -624,14 +625,15 @@ public sealed partial class Server : IServer
     }
 
     /// <summary>
-    /// Keeps track of a player leaving after their connection closed, whose save stopping the server waits for.
+    /// Keeps track of a player leaving after their connection closed, whose save stopping the server, and the player
+    /// joining again (<see cref="WaitForLeavesAsync"/>), waits for.
     /// </summary>
-    internal void TrackLeave(Task leave)
+    internal void TrackLeave(Task leave, string username)
     {
         if (leave.IsCompleted)
             return;
 
-        this.pendingLeaves.TryAdd(leave, 0);
+        this.pendingLeaves.TryAdd(leave, username);
         _ = leave.ContinueWith(finished => this.pendingLeaves.TryRemove(finished, out _), TaskScheduler.Default);
     }
 
@@ -641,6 +643,13 @@ public sealed partial class Server : IServer
 
     // Leaves log their own failures, so waiting for them never throws.
     private Task PendingLeavesAsync() => Task.WhenAll(this.pendingLeaves.Keys);
+
+    /// <summary>
+    /// Waits until a player's earlier connection has left and saved them, so that joining again loads what it saved.
+    /// </summary>
+    internal Task WaitForLeavesAsync(string username) => Task.WhenAll(this.pendingLeaves
+        .Where(entry => string.Equals(entry.Value, username, StringComparison.OrdinalIgnoreCase))
+        .Select(entry => entry.Key));
 
     public bool RemovePlayer(IPlayer player)
     {

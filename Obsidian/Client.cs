@@ -677,7 +677,7 @@ public sealed partial class Client : IClient
 
         // Tracked before it starts, so a shutdown that begins meanwhile still waits for it.
         if (this.Server is Server server)
-            server.TrackLeave(leave.Task);
+            server.TrackLeave(leave.Task, player.Username);
 
         // Raised apart from the caller's flow, so that it doesn't count as being in the caller's tick.
         using (ExecutionContext.SuppressFlow())
