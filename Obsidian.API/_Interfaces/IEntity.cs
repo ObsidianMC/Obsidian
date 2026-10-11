@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.AI;
+using Obsidian.API.Entities;
 
 namespace Obsidian.API;
 
@@ -19,7 +20,15 @@ public interface IEntity
     public int EntityId { get; }
 
     public Pose Pose { get; set; }
-    public EntityType Type { get; }
+    /// <summary>
+    /// The entity's vanilla type, or null for an entity of a plugin's type.
+    /// </summary>
+    public EntityType? Type { get; }
+
+    /// <summary>
+    /// The plugin entity type the entity is of, or null for a vanilla entity.
+    /// </summary>
+    public EntityDefinition? Definition { get; }
 
     public BoundingBox BoundingBox { get; }
     public EntityDimension Dimension { get; }

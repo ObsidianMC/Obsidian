@@ -79,16 +79,20 @@ internal static class CombatEffects
         }
     }
 
-    internal static bool IsUndead(EntityType type) => type is EntityType.Zombie or EntityType.Husk or EntityType.Drowned or
-        EntityType.ZombieVillager or EntityType.ZombifiedPiglin or EntityType.Zoglin or EntityType.Skeleton or EntityType.Stray or
-        EntityType.Bogged or EntityType.Parched or EntityType.WitherSkeleton or EntityType.Wither or EntityType.Phantom or
-        EntityType.SkeletonHorse or EntityType.ZombieHorse or EntityType.ZombieNautilus or EntityType.CamelHusk or EntityType.Giant;
+    internal static bool IsUndead(EntityType? type) => type is EntityType.Zombie or EntityType.Husk
+        or EntityType.Drowned or EntityType.ZombieVillager or EntityType.ZombifiedPiglin or EntityType.Zoglin
+        or EntityType.Skeleton or EntityType.Stray or EntityType.Bogged or EntityType.Parched
+        or EntityType.WitherSkeleton
+        or EntityType.Wither or EntityType.Phantom or EntityType.SkeletonHorse or EntityType.ZombieHorse
+        or EntityType.ZombieNautilus or EntityType.CamelHusk or EntityType.Giant;
 
-    internal static bool IsArthropod(EntityType type) => type is EntityType.Spider or EntityType.CaveSpider or EntityType.Silverfish or EntityType.Endermite or EntityType.Bee;
+    internal static bool IsArthropod(EntityType? type) => type is EntityType.Spider or EntityType.CaveSpider
+        or EntityType.Silverfish or EntityType.Endermite or EntityType.Bee;
 
-    internal static bool IsAquatic(EntityType type) => type is EntityType.Axolotl or EntityType.Cod or EntityType.Salmon or
-        EntityType.Pufferfish or EntityType.TropicalFish or EntityType.Squid or EntityType.GlowSquid or EntityType.Turtle or
-        EntityType.Dolphin or EntityType.Guardian or EntityType.ElderGuardian or EntityType.Nautilus;
+    internal static bool IsAquatic(EntityType? type) => type is EntityType.Axolotl or EntityType.Cod
+        or EntityType.Salmon or EntityType.Pufferfish or EntityType.TropicalFish or EntityType.Squid
+        or EntityType.GlowSquid or EntityType.Turtle or EntityType.Dolphin or EntityType.Guardian
+        or EntityType.ElderGuardian or EntityType.Nautilus;
 
     internal static void Knockback(Living target, VectorD direction, float strength)
     {

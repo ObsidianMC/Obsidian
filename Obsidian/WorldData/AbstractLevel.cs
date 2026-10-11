@@ -908,6 +908,14 @@ public abstract partial class AbstractLevel : ILevel
             .Spawn();
     }
 
+    public IEntity SpawnEntity(VectorD position, API.Entities.EntityDefinition definition) =>
+        this.SpawnEntity(new PluginMob(definition)
+        {
+            Level = this,
+            EntityId = Server.GetNextEntityId(),
+            Position = position
+        });
+
     public IEntity SpawnEntity(IEntity entity)
     {
         if (entity is EnderDragon dragon) dragon.EnsureMultipartIds();

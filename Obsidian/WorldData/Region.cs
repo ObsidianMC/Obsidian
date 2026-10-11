@@ -204,7 +204,7 @@ public class Region : IRegion
             {
                 foreach (var entity in entities.OfType<NbtCompound>())
                 {
-                    if (entity.TryGetTagValue<string>("id", out var id) && EntityNbt.TryParseType(id, out _) &&
+                    if (entity.TryGetTagValue<string>("id", out var id) && EntityNbt.IsKnownType(id) &&
                         EntityNbt.ToGeneratedEntity(entity) is GeneratedEntity pending)
                         chunk.PendingEntities.Add(pending);
                     else

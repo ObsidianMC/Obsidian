@@ -246,7 +246,8 @@ public sealed partial class Pufferfish : Fish
     protected override Material BucketItem => Material.PufferfishBucket;
     protected override Material FishItem => Material.Pufferfish;
     private bool IsThreat(IEntity target) => IsValidTarget(target) && target is Living &&
-        target.Type != EntityType.Axolotl && !TagsRegistry.EntityType.Aquatic.Entries.Contains((int)target.Type);
+        target.Type != EntityType.Axolotl
+        && !IsIn(target, TagsRegistry.EntityType.Aquatic);
 
     protected override async ValueTask TickMobAsync()
     {

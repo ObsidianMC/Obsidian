@@ -53,7 +53,7 @@ client. This document describes the design and tracks its progress. The archive 
      and shapes come from a vanilla template block (stone, glass or cobweb). Vanilla blocks keep their generated
      types; `IBlock.Material` is null for plugins' blocks. Saved worlds store blocks by name, so a plugin block loads
      as air once its plugin is gone.
-   - Done for block and item tags: like a NeoForge or Fabric mod's data pack, a plugin's
+   - Done for block, item and entity type tags: like a NeoForge or Fabric mod's data pack, a plugin's
      `data/<namespace>/tags/<registry>/<path>.json` files (`values` with `#` tag references and optional entries,
      `replace`, and NeoForge's `remove`) are merged with vanilla's tags in load order, and again when plugins load or
      unload. Plugins add to vanilla's tags (vanilla's `Tag` objects hold their entries, so server code sees them) and
@@ -61,8 +61,13 @@ client. This document describes the design and tracks its progress. The archive 
      its earlier entries rather than disappearing as in vanilla.
    - Done: blocks generated from `data/<namespace>/blocks/*.json` by Obsidian's source generator, with typed states
      and a `Register` method, and `TagKey`s for a plugin's tags (see [plugin-content.md](plugin-content.md)).
-   - Next: entity types the same way as blocks; moving `Material` call sites to items and blocks until `Material` can
-     go; reconfiguring connected players when a reload changes the registered content or tags.
+   - Done for entity types: `IPluginRegistry.RegisterEntity` registers a type with an id after vanilla's, synced to
+     NeoForge and Fabric clients with the `minecraft:entity_type` registry. Its entities are mobs (a `PathfinderMob`
+     with the type's size, health and speed, no goals of its own) that call its `IEntityBehavior`; they're saved by the
+     type's identifier, and kept as saved when the plugin is gone. `IEntity.Type` is null for them, and
+     `IEntity.Definition` names their type. Non-living plugin entities aren't supported yet.
+   - Next: moving `Material` call sites to items and blocks until `Material` can go; reconfiguring connected players
+     when a reload changes the registered content or tags.
 3. **Data-driven content and world generation**: loading a mod's `data/` folder like a data pack (biomes, dimension
    types, damage types, tags, worldgen features), letting mods register codec types for data-driven objects (feature,
    density function and biome source types), and reload-safe world generators.

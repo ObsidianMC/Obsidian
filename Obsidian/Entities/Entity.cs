@@ -45,7 +45,23 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public int PowderedSnowTicks { get; set; }
 
-    public EntityType Type { get; set; }
+    public EntityType? Type { get; set; }
+
+    public virtual API.Entities.EntityDefinition? Definition => null;
+
+    /// <summary>
+    /// The entity's type's id in the entity type registry, which clients are sent: its vanilla type's, or its plugin
+    /// type's.
+    /// </summary>
+    internal int TypeId => this.Definition?.Id
+        ?? (int)(this.Type ?? throw new InvalidOperationException($"Entity {this.EntityId} has no type."));
+
+    /// <summary>
+    /// Whether an entity's type, vanilla's or a plugin's, is in an entity type tag.
+    /// </summary>
+    internal static bool IsIn(IEntity entity, Tag tag) => entity.Definition?.Id is int id
+        ? tag.Entries.Contains(id)
+        : entity.Type is EntityType type && tag.Entries.Contains((int)type);
 
     public short Air { get; set; } = 300;
 
@@ -507,7 +523,11 @@ public class Entity : IEquatable<Entity>, IEntity
             await Level.DestroyEntityAsync(this);
 
             Level = target.Level;
-            Level.SpawnEntity(to.Position, Type);
+
+            if (Definition is API.Entities.EntityDefinition definition)
+                Level.SpawnEntity(to.Position, definition);
+            else if (Type is EntityType type)
+                Level.SpawnEntity(to.Position, type);
 
             return;
         }
@@ -568,7 +588,7 @@ public class Entity : IEquatable<Entity>, IEntity
                 {
                     EntityId = this.EntityId,
                     Uuid = this.Uuid,
-                    Type = this.Type,
+                    Type = this.TypeId,
                     Position = this.Position,
                     Pitch = this.Pitch,
                     Yaw = this.Yaw,

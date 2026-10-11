@@ -102,6 +102,17 @@ public sealed partial class Server : IServer
             registries.Add(new Net.Payloads.SyncedRegistry("minecraft:block", blocks));
         }
 
+        if (EntityDefinitionsRegistry.PluginDefinitions.Count > 0)
+        {
+            var entityTypes = Enum.GetValues<EntityType>()
+                .Select(type => ((int)type, Entities.EntityNbt.TypeId(type)))
+                .Concat(EntityDefinitionsRegistry.PluginDefinitions.Select(definition =>
+                    (definition.Id, definition.Identifier)))
+                .ToArray();
+
+            registries.Add(new Net.Payloads.SyncedRegistry("minecraft:entity_type", entityTypes));
+        }
+
         if (ItemsRegistry.HasPluginItems)
         {
             var items = ItemsRegistry.All

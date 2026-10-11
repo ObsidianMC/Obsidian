@@ -90,6 +90,11 @@ public interface ILevel : IAsyncDisposable
     public bool TryAddPlayer(IPlayer player);
 
     public IEntity SpawnEntity(VectorD position, EntityType type);
+
+    /// <summary>
+    /// Spawns an entity of a plugin's entity type.
+    /// </summary>
+    public IEntity SpawnEntity(VectorD position, Entities.EntityDefinition definition);
     public IEntity SpawnEntity(IEntity entity);
     public IEntity SpawnFallingBlock(VectorD position, Material mat);
     public void SpawnExperienceOrbs(VectorD position, short count);

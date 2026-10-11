@@ -132,6 +132,26 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         return block;
     }
 
+    public API.Entities.EntityDefinition RegisterEntity(
+        string identifier,
+        API.Entities.EntityProperties? properties = null)
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        CheckIdentifier(container, identifier);
+
+        properties ??= new API.Entities.EntityProperties();
+        if (properties.Width <= 0 || properties.Height <= 0 || properties.MaxHealth <= 0)
+            throw new ArgumentException("An entity needs a size and health.", nameof(properties));
+
+        var definition = EntityDefinitionsRegistry.Register(identifier);
+
+        if (!EntityDefinitionsRegistry.TryBind(definition, properties, container, () => container.IsClosing))
+            throw new InvalidOperationException($"{container.Info.Name} is unloading.");
+
+        return definition;
+    }
+
     public IPluginRegistry AddToTag(string registry, string tag, params IEnumerable<string> entries)
     {
         var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());

@@ -1,8 +1,8 @@
-# Plugin blocks and tags
+# Plugin blocks, entities and tags
 
-Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, and add tags with data
-pack tag files, like NeoForge and Fabric mods. Clients need the matching mod: NeoForge and Fabric clients are sent the
-block and item registries, so their ids agree with the server's.
+Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, add entity types in
+code, and add tags with data pack tag files, like NeoForge and Fabric mods. Clients need the matching mod: NeoForge and
+Fabric clients are sent the block, item and entity type registries, so their ids agree with the server's.
 
 ## Blocks in code
 
@@ -63,10 +63,30 @@ var state = new RubyBlocks.LampState(Lit: true, Power: 2, Color: RubyBlocks.Lamp
 Obsidian.MSBuild gives the data folder's files to the generator; without it, add the project's `data` folder's files
 as `AdditionalFiles`.
 
+## Entities
+
+```csharp
+var golem = registry.RegisterEntity("ruby:golem", new EntityProperties
+{
+    Width = 1.4f,
+    Height = 2.7f,
+    MaxHealth = 100,
+    Behavior = new GolemBehavior()
+});
+
+level.SpawnEntity(position, golem);
+```
+
+A plugin's entities are mobs: they fall, take damage and run the goals given through `IEntity.GoalController`, and
+call the type's `IEntityBehavior` each tick and when a player uses them. The client mod's entity should be a mob too,
+so that their data matches. They're saved with the type's identifier; while the plugin is gone, saved ones stay as
+they were.
+
 ## Tags
 
-Tags are data pack tag files: `data/<namespace>/tags/block/<path>.json` or `tags/item/...`, with `values`
-(identifiers, `#` followed by a tag, or `{ "id": ..., "required": false }`), `replace`, and NeoForge's `remove`. A
+Tags are data pack tag files: `data/<namespace>/tags/block/<path>.json`, `tags/item/...` or `tags/entity_type/...`,
+with `values` (identifiers, `#` followed by a tag, or `{ "id": ..., "required": false }`), `replace`, and NeoForge's
+`remove`. A
 file for a vanilla tag adds to it, for example `data/minecraft/tags/block/mineable/pickaxe.json` to mine a block with a
 pickaxe; other files make new tags, like the shared `c:` ones. Obsidian merges vanilla's tags with the loaded plugins'
 files in load order whenever a plugin loads or unloads, and vanilla's `Tag` objects hold the result, so server code

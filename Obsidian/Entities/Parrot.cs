@@ -65,9 +65,9 @@ public sealed partial class Parrot : Animal
         await base.TickMobAsync();
         if (MobBitMask.HasFlag(MobBitmask.NoAi) || Random.Next(50) != 0) return;
         var mob = GetEntitiesNear(20).OfType<Mob>().FirstOrDefault(entity => entity.Hostile && !entity.Silent);
-        if (mob != null)
+        if (mob is { Type: EntityType imitated })
         {
-            var name = EntityNbt.TypeId(mob.Type)[10..];
+            var name = EntityNbt.TypeId(imitated)[10..];
             if (mob.Type is EntityType.Zombie or EntityType.Skeleton or EntityType.Creeper or EntityType.Spider or EntityType.CaveSpider or
                 EntityType.Blaze or EntityType.Ghast or EntityType.Enderman or EntityType.Slime or EntityType.MagmaCube or EntityType.Silverfish or
                 EntityType.Husk or EntityType.Stray or EntityType.Bogged)

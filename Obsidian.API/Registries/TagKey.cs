@@ -21,6 +21,12 @@ public readonly record struct TagKey(string Registry, string Identifier)
     public bool Contains(IBlock block) => this.Contains(block.RegistryId);
 
     /// <summary>
+    /// Whether an entity's type is in the tag, for an entity type tag.
+    /// </summary>
+    public bool Contains(IEntity entity) =>
+        entity.Definition?.Id is int id ? this.Contains(id) : entity.Type is EntityType type && this.Contains((int)type);
+
+    /// <summary>
     /// Finds the tag.
     /// </summary>
     public bool TryGet([NotNullWhen(true)] out Tag? tag) =>

@@ -44,7 +44,7 @@ public sealed partial class Wither : BossMob
     }
 
     private bool CanAttack(IEntity target) => target is Living && IsValidTarget(target) &&
-        !TagsRegistry.EntityType.WitherFriends.Entries.Contains((int)target.Type);
+        !IsIn(target, TagsRegistry.EntityType.WitherFriends);
 
     protected override async ValueTask TickMobAsync()
     {
@@ -128,7 +128,7 @@ public sealed partial class Wither : BossMob
     }
 
     protected override bool CanTakeDamage(IEntity source) => invulnerableTicks == 0 && source.Type != EntityType.Wither &&
-        !TagsRegistry.EntityType.WitherFriends.Entries.Contains((int)source.Type);
+        !IsIn(source, TagsRegistry.EntityType.WitherFriends);
 
     protected override ValueTask OnHurtAsync(IEntity source)
     {

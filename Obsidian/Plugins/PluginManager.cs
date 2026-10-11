@@ -375,6 +375,8 @@ public sealed partial class PluginManager : IAsyncDisposable
             Dependencies = dependencies
         };
 
+        container.LoadContext.Container = container;
+
         foreach (var dependency in dependencies)
             container.LoadContext.AddDependency(dependency.LoadContext);
 
@@ -467,6 +469,7 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         ItemsRegistry.ReleasePlugin(pluginContainer);
         BlocksRegistry.ReleasePlugin(pluginContainer);
+        EntityDefinitionsRegistry.ReleasePlugin(pluginContainer);
 
         if (pluginContainer.LoadContext is not null)
             this.commandHandler.UnregisterArgumentParsers(pluginContainer.LoadContext);
@@ -545,6 +548,10 @@ public sealed partial class PluginManager : IAsyncDisposable
             Log.DisposeFailed(this.logger, ex, name);
         }
 
+        // None of the plugin's code runs any more, its services' disposal included, so what it gave mobs can go.
+        if (loadContext is not null)
+            this.ReleaseFromMobs(loadContext);
+
         stopwatch.Stop();
 
         loadContext.Unloading += _ => Log.Unloaded(this.logger, name, stopwatch.ElapsedMilliseconds);
@@ -571,6 +578,47 @@ public sealed partial class PluginManager : IAsyncDisposable
         }
 
         return files;
+    }
+
+    // Has every loaded mob drop the goals, navigators and goal controllers plugins gave it from the load context, on
+    // its level's tick, where its AI runs. The queued actions hold the context weakly: a level that doesn't tick would
+    // keep it loaded otherwise, and once nothing else holds it, no mob has anything to drop.
+    private void ReleaseFromMobs(PluginLoadContext loadContext)
+    {
+        var levels = this.server.WorldManager.GetAvailableWorlds()
+            .OfType<WorldData.World>()
+            .SelectMany(world => world.dimensions.Values.OfType<WorldData.AbstractLevel>().Prepend(world));
+
+        var weakContext = new WeakReference<PluginLoadContext>(loadContext);
+
+        foreach (var level in levels)
+        {
+            level.EnqueueEntityAction(() =>
+            {
+                if (!weakContext.TryGetTarget(out var context))
+                    return default;
+
+                var mobs = level.Regions.Values
+                    .OfType<WorldData.Region>()
+                    .SelectMany(region => region.Entities.Values)
+                    .OfType<Entities.Mob>();
+
+                // One mob failing mustn't keep the others holding the plugin.
+                foreach (var mob in mobs)
+                {
+                    try
+                    {
+                        mob.ReleasePluginObjects(context);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.MobReleaseFailed(this.logger, ex, mob.EntityId);
+                    }
+                }
+
+                return default;
+            });
+        }
     }
 
     // The tags hold vanilla's entries and the loaded plugins' tag files, in load order.
@@ -630,6 +678,9 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     private static partial class Log
     {
+        [LoggerMessage(Level = LogLevel.Error, Message = "Couldn't drop an unloaded plugin's AI from mob {EntityId}")]
+        public static partial void MobReleaseFailed(ILogger logger, Exception exception, int entityId);
+
         [LoggerMessage(Level = LogLevel.Error, Message = "Left out tag file {Path} of plugin {Source}")]
         public static partial void TagFileFailed(ILogger logger, Exception exception, string path, string source);
 

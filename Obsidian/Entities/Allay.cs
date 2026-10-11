@@ -57,7 +57,7 @@ public sealed partial class Allay : PathfinderMob
         if (dancing && duplicationCooldown == 0 && item is { Count: > 0, Type: Material.AmethystShard })
         {
             await ConsumeInteractionItemAsync(player, hand);
-            var child = (Allay)Level.GetNewEntitySpawner().WithEntityType(Type).AtPosition(Position).Spawn();
+            var child = (Allay)Level.GetNewEntitySpawner().WithEntityType(Type!.Value).AtPosition(Position).Spawn();
             duplicationCooldown = child.duplicationCooldown = 6000;
             SendEntityEvent(18);
             SynchronizeMetadata();

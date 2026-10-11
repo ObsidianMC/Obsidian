@@ -4,12 +4,14 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Blocks;
+using Obsidian.API.Entities;
 using Obsidian.API.Configuration;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
+using Obsidian.Entities;
 using Obsidian.Plugins;
 using Obsidian.Plugins.Archives;
 using Obsidian.Registries;
@@ -146,6 +148,16 @@ public sealed class PluginLoading : IDisposable
         // And its tags: one from its data folder, one from code.
         Assert.True(TagsRegistry.Contains("block", "probe:ores", ore.Id));
         Assert.True(TagsRegistry.Contains("block", "probe:shiny", ore.Id));
+
+        // And its entity type, whose mobs are saved and loaded by its identifier.
+        Assert.True(EntityDefinitionsRegistry.TryGet("probe:golem", out var golem));
+        Assert.Same(reloaded, golem.Owner);
+        Assert.True(TagsRegistry.Contains("entity_type", "probe:golems", golem.Id));
+
+        var saved = EntityNbt.Save(new PluginMob(golem) { Level = null! })!;
+        Assert.True(saved.TryGetTagValue<string>("id", out var savedId));
+        Assert.Equal("probe:golem", savedId);
+        Assert.Same(golem, EntityNbt.Load(saved, null!)?.Definition);
 
         // Only the reloaded plugin's handler runs: unloading removed the old one.
         AppContext.SetData(ProbePlugin.CallsKey, 0);
@@ -315,6 +327,8 @@ public sealed class ProbePlugin : PluginBase
         });
 
         pluginRegistry.AddToTag("block", "probe:shiny", "probe:ore");
+        pluginRegistry.RegisterEntity("probe:golem", new EntityProperties { Width = 1.4f, Height = 2.7f });
+        pluginRegistry.AddToTag("entity_type", "probe:golems", "probe:golem");
 
         // Its blocks generated from data/probe/blocks.
         ProbeBlocks.Register(pluginRegistry);

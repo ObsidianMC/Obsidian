@@ -73,6 +73,20 @@ public interface IPluginRegistry
     public BlockType RegisterBlock(string identifier, BlockProperties? properties = null);
 
     /// <summary>
+    /// Registers an entity type, like a NeoForge mod's: its identifier is in the plugin's namespace, and it gets the
+    /// next free entity type id. Its entities are mobs, spawned with <see cref="ILevel.SpawnEntity(VectorD,
+    /// Entities.EntityDefinition)"/>. Registering it again, e.g. when the plugin reloads, gives back the same type with
+    /// the new properties and behaviour.
+    /// </summary>
+    /// <remarks>
+    /// Like a plugin's blocks, its entity types need NeoForge or Fabric clients with a matching mod, whose entity is a
+    /// mob, and stay registered until the server stops. Saved entities of a type whose plugin is gone are kept as they
+    /// were saved.
+    /// </remarks>
+    /// <exception cref="ArgumentException">The identifier isn't in the plugin's namespace, or isn't valid.</exception>
+    public Entities.EntityDefinition RegisterEntity(string identifier, Entities.EntityProperties? properties = null);
+
+    /// <summary>
     /// Adds entries to a tag, vanilla's or a new one, like a tag file in the plugin's <c>data/</c> folder would: the
     /// entries are identifiers, or other tags' identifiers after a <c>#</c>, and the tag fails (keeping its earlier
     /// entries) when one doesn't exist. The entries are removed when the plugin unloads.
@@ -82,7 +96,7 @@ public interface IPluginRegistry
     /// <c>data/&lt;namespace&gt;/tags/&lt;registry&gt;/&lt;path&gt;.json</c> with <c>values</c>, <c>replace</c> and
     /// NeoForge's <c>remove</c>. Clients get the tags when they join.
     /// </remarks>
-    /// <param name="registry">The tag's registry: <c>block</c> or <c>item</c>.</param>
+    /// <param name="registry">The tag's registry: <c>block</c>, <c>item</c> or <c>entity_type</c>.</param>
     /// <param name="tag">The tag's identifier, like <c>minecraft:mineable/pickaxe</c>.</param>
     /// <param name="entries">The entries to add, like <c>myplugin:ruby_ore</c> or <c>#c:ores</c>.</param>
     /// <exception cref="ArgumentException">The registry isn't supported, or an identifier isn't valid.</exception>

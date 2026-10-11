@@ -20,11 +20,13 @@ internal sealed partial class MobSpawner(AbstractLevel level)
     private static readonly Dictionary<string, string> mobCategories = biomeSpawns.Values.SelectMany(categories => categories)
         .SelectMany(category => category.Value.Select(mob => (mob.Type, Category: category.Key)))
         .GroupBy(entry => entry.Type).ToDictionary(group => group.Key, group => group.First().Category);
-    internal static string SpawnCategory(EntityType type) => type switch
+    internal static string SpawnCategory(EntityType? type) => type switch
     {
+        // A plugin's mob.
+        null => "misc",
         EntityType.Blaze or EntityType.Silverfish or EntityType.Bogged or EntityType.Parched => "monster",
         EntityType.Cat or EntityType.Camel or EntityType.SkeletonHorse => "creature",
-        _ => mobCategories.GetValueOrDefault(EntityNbt.TypeId(type), "misc")
+        EntityType vanilla => mobCategories.GetValueOrDefault(EntityNbt.TypeId(vanilla), "misc")
     };
     internal static bool IsAquatic(EntityType type) => type is EntityType.Squid or EntityType.GlowSquid or EntityType.Dolphin or EntityType.Axolotl or EntityType.Tadpole or
         EntityType.Cod or EntityType.Salmon or EntityType.TropicalFish or EntityType.Pufferfish or EntityType.Drowned or EntityType.Guardian or EntityType.ElderGuardian;

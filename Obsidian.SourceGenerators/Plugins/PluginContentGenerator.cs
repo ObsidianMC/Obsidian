@@ -195,7 +195,7 @@ public sealed class PluginContentGenerator : IIncrementalGenerator
         foreach (var file in files)
         {
             var parts = file.Path.Split('/');
-            if (parts[1] != "tags" || parts.Length < 4 || parts[2] is not ("block" or "item"))
+            if (parts[1] != "tags" || parts.Length < 4 || parts[2] is not ("block" or "item" or "entity_type"))
                 continue;
 
             var path = WithoutExtension(string.Join("/", parts.Skip(3)));

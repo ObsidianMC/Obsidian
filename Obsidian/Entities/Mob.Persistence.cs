@@ -34,7 +34,7 @@ public partial class Mob
     {
         if (writeCompound)
             writer.WriteCompoundStart();
-        writer.WriteString("id", EntityNbt.TypeId(Type));
+        writer.WriteString("id", EntityNbt.TypeId(this));
         var uuidBytes = Uuid.ToByteArray(true);
         var uuid = new int[4];
         for (var index = 0; index < 4; index++)

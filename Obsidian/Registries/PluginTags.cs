@@ -15,14 +15,14 @@ namespace Obsidian.Registries;
 /// <c>values</c> add entries (identifiers, <c>#</c> tag references, or <c>{"id": ..., "required": false}</c>),
 /// <c>replace</c> drops what came before it, and NeoForge's <c>remove</c> takes entries out. A tag whose required entry
 /// is missing fails like in vanilla, but keeps vanilla's entries rather than disappearing, since server code holds
-/// vanilla's tags. Only block and item tags are supported so far.
+/// vanilla's tags. Block, item and entity type tags are supported so far.
 /// </remarks>
 internal static partial class PluginTags
 {
     /// <summary>
     /// The registries plugins' tags may be for.
     /// </summary>
-    public static FrozenSet<string> Registries { get; } = FrozenSet.Create("block", "item");
+    public static FrozenSet<string> Registries { get; } = FrozenSet.Create("block", "item", "entity_type");
 
     private static readonly Lock applying = new();
 
@@ -377,6 +377,14 @@ internal static partial class PluginTags
     // The id of a registry's entry by its identifier.
     private static int? FindId(string registry, string identifier)
     {
+        if (registry == "entity_type")
+        {
+            if (Entities.EntityNbt.TryParseType(identifier, out var vanilla))
+                return (int)vanilla;
+
+            return EntityDefinitionsRegistry.TryGet(identifier, out var definition) ? definition.Id : null;
+        }
+
         if (registry == "block")
         {
             if (vanillaBlockIds.Value.TryGetValue(identifier, out var block))

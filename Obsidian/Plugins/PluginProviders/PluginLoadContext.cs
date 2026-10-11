@@ -8,6 +8,11 @@ public sealed class PluginLoadContext(string name) : AssemblyLoadContext(name: n
 {
     public List<PluginLoadContext> Dependencies { get; } = [];
 
+    /// <summary>
+    /// The plugin loaded in the context, to find the plugin that code from the context belongs to.
+    /// </summary>
+    internal PluginContainer? Container { get; set; }
+
     public Assembly? LoadAssembly(byte[] mainBytes, byte[]? pbdBytes = null)
     {
         using var mainStream = new MemoryStream(mainBytes, false);

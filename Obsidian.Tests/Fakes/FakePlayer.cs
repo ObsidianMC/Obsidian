@@ -105,7 +105,8 @@ public sealed class FakePlayer : IPlayer
 
     public Pose Pose { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
-    public EntityType Type => throw new NotImplementedException();
+    public EntityType? Type => throw new NotImplementedException();
+    public API.Entities.EntityDefinition? Definition => null;
 
     public BoundingBox BoundingBox => throw new NotImplementedException();
 

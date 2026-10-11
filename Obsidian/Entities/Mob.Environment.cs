@@ -91,8 +91,10 @@ public partial class Mob
 
     protected virtual async ValueTask TickAirSupplyAsync()
     {
-        if (Terrain.GetBlock((Vector)EyePosition.Floor())?.Material == Material.Water &&
-              !TagsRegistry.EntityType.CanBreatheUnderWater.Entries.Contains((int)Type) && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1) && !HasPotionEffect((int)PotionEffect.BreathOfTheNautilus - 1))
+        if (Terrain.GetBlock((Vector)EyePosition.Floor())?.Material == Material.Water
+            && !TagsRegistry.EntityType.CanBreatheUnderWater.Entries.Contains(TypeId)
+            && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1)
+            && !HasPotionEffect((int)PotionEffect.BreathOfTheNautilus - 1))
         {
             Air--;
             if (Air == -20)

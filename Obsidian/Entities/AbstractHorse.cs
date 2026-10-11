@@ -25,7 +25,7 @@ public class AbstractHorse : Animal
 
     protected override IEntity CreateOffspring(Animal mate)
     {
-        var type = Type != mate.Type && (Type is EntityType.Horse or EntityType.Donkey) ? EntityType.Mule : Type;
+        var type = Type != mate.Type && (Type is EntityType.Horse or EntityType.Donkey) ? EntityType.Mule : Type!.Value;
         var child = (AbstractHorse)Level.GetNewEntitySpawner().WithEntityType(type).AtPosition(Position).AsBaby().Spawn();
         HorseMask |= HorseMask.HasBred;
         ((AbstractHorse)mate).HorseMask |= HorseMask.HasBred;

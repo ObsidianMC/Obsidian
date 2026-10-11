@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
+using System.Runtime.Loader;
 
 namespace Obsidian.Entities;
 
@@ -100,6 +101,27 @@ public partial class Mob
         RegisterGoals(goals, TargetGoals);
         if (finalizeSpawn)
             FinalizeSpawn();
+    }
+
+    /// <summary>
+    /// Drops what an unloading plugin, whose code is in <paramref name="context"/>, gave the mob through the API:
+    /// goals, a navigator or a goal controller, which would keep the plugin loaded. Run on the mob's level's tick.
+    /// </summary>
+    internal void ReleasePluginObjects(AssemblyLoadContext context)
+    {
+        goals.RemoveGoalsFrom(context);
+        TargetGoals.RemoveGoalsFrom(context);
+
+        if (GoalController is GoalSelector replacement)
+            replacement.RemoveGoalsFrom(context);
+        else if (IsFrom(GoalController, context))
+            GoalController = goals;
+
+        if (IsFrom(Navigator, context))
+            Navigator = this is PathfinderMob pathfinder ? new Navigator(pathfinder) : null;
+
+        static bool IsFrom(object? value, AssemblyLoadContext context) =>
+            value is not null && AssemblyLoadContext.GetLoadContext(value.GetType().Assembly) == context;
     }
 
     protected virtual void RegisterGoals(GoalSelector actionGoals, GoalSelector targetGoals) { }

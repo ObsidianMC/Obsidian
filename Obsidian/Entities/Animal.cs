@@ -62,7 +62,7 @@ public class Animal : AgeableMob
     }
 
     protected virtual IEntity CreateOffspring(Animal mate) =>
-        Level.GetNewEntitySpawner().WithEntityType(Type).AtPosition(Position).AsBaby().Spawn();
+        Level.GetNewEntitySpawner().WithEntityType(Type!.Value).AtPosition(Position).AsBaby().Spawn();
 
     public async override ValueTask TickAsync()
     {
