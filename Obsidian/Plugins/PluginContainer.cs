@@ -1,19 +1,35 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
+using Obsidian.Plugins.Archives;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
-using System.Collections.Frozen;
-using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Obsidian.Plugins;
 
+/// <summary>
+/// A loaded plugin: its archive, the load context its assemblies live in, and its services.
+/// </summary>
+/// <remarks>
+/// Keeping a reference to a container, its plugin or anything from its assembly outside the plugin manager stops the
+/// plugin from unloading.
+/// </remarks>
 public sealed class PluginContainer : IDisposable, IPluginContainer
 {
-    public IServiceScope ServiceScope { get; internal set; } = default!;
-    public PluginInfo Info { get; internal set; } = default!;
+    private ServiceProvider? ownServices;
+
+    public IServiceScope ServiceScope { get; private set; } = default!;
+
+    /// <summary>
+    /// The plugin's services, falling back to those of its dependencies and the server.
+    /// </summary>
+    public IServiceProvider ServiceProvider { get; private set; } = default!;
+
+    public required PluginInfo Info { get; init; }
+
+    public required PluginArchive Archive { get; init; }
 
     public PluginBase? Plugin { get; internal set; }
 
@@ -23,17 +39,14 @@ public sealed class PluginContainer : IDisposable, IPluginContainer
     [AllowNull]
     public Assembly PluginAssembly { get; internal set; } = default!;
 
-    [AllowNull]
-    public FrozenDictionary<string, PluginFileEntry> FileEntries { get; internal set; } = default!;
+    /// <summary>
+    /// The loaded plugins this one depends on, which its load context resolves assemblies from.
+    /// </summary>
+    public ImmutableArray<PluginContainer> Dependencies { get; init; } = [];
 
     public required string Source { get; set; }
-    public required bool ValidSignature { get; init; }
+    public bool ValidSignature => this.Archive.ValidSignature;
     public bool Loaded { get; internal set; }
-
-    ~PluginContainer()
-    {
-        this.Dispose(false);
-    }
 
     internal void Initialize()
     {
@@ -41,52 +54,43 @@ public sealed class PluginContainer : IDisposable, IPluginContainer
         this.Plugin!.Info = this.Info;
     }
 
-    //TODO PLUGINS SHOULD USE VERSION CLASS TO SPECIFY VERSION
-    internal bool IsDependency(string pluginId) =>
-        this.Info.Dependencies.Any(x => x.Id == pluginId);
-
-    internal bool AddDependency(PluginLoadContext pluginLoadContext)
+    /// <summary>
+    /// Builds the plugin's services once it registered them.
+    /// </summary>
+    internal void SetServices(IServiceCollection services, IServiceProvider serverProvider)
     {
-        ArgumentNullException.ThrowIfNull(pluginLoadContext);
+        this.ownServices = services.BuildServiceProvider(validateScopes: true);
 
-        if (this.LoadContext is null)
-            return false;
+        IReadOnlyList<IServiceProvider> fallbacks =
+        [
+            .. this.Dependencies.Select(dependency => dependency.ServiceProvider),
+            serverProvider
+        ];
+        var provider = new PluginServiceProvider(this.ownServices, fallbacks);
 
-        this.LoadContext.AddDependency(pluginLoadContext);
-        return true;
+        this.ServiceProvider = provider;
+        this.ServiceScope = provider.CreateScope();
     }
 
     /// <summary>
-    /// Inject the scoped services into 
+    /// Inject the scoped services into the plugin, or into a module of it.
     /// </summary>
     public void InjectServices(ILogger? logger, object? target = null) =>
         PluginServiceHandler.InjectServices(this.ServiceScope.ServiceProvider, target ?? this.Plugin, logger);
 
     ///<inheritdoc/>
-    public byte[]? GetFileData(string fileName)
-    {
-        var fileEntry = this.FileEntries?.GetValueOrDefault(fileName);
-
-        return fileEntry?.GetData();
-    }
+    public byte[]? GetFileData(string fileName) => this.Archive.Read(fileName);
 
     public void Dispose()
     {
-        this.Dispose(true);
-
-        GC.SuppressFinalize(this);
-    }
-
-    private void Dispose(bool disposing)
-    {
         this.ServiceScope?.Dispose();
+        this.ownServices?.Dispose();
 
-        if (disposing)
-        {
-            this.PluginAssembly = null;
-            this.LoadContext = null;
-            this.Plugin = null;
-            this.FileEntries = null;
-        }
+        this.ServiceScope = null!;
+        this.ServiceProvider = null!;
+        this.ownServices = null;
+        this.PluginAssembly = null;
+        this.LoadContext = null;
+        this.Plugin = null;
     }
 }

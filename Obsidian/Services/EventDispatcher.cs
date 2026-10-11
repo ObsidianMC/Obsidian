@@ -19,7 +19,9 @@ public sealed partial class EventDispatcher : IEventDispatcher
 
     private readonly ILogger<EventDispatcher> logger;
     private readonly IServiceProvider serviceProvider;
-    private readonly FrozenDictionary<string, List<IEventExecutor>> registeredEvents;
+    // Each event's handlers, sorted by priority. An immutable array, replaced whole, lets plugins (un)register while
+    // events run on other threads, which happens when a plugin reloads.
+    private readonly FrozenDictionary<string, EventHandlers> registeredEvents;
     private readonly FrozenDictionary<Type, string> eventNames;
 
     public EventDispatcher(ILogger<EventDispatcher> logger, IServiceProvider serviceProvider)
@@ -31,9 +33,9 @@ public sealed partial class EventDispatcher : IEventDispatcher
             .ToList();
 
         //Temp workaround until we decide to expose this event
-        var dict = new Dictionary<string, List<IEventExecutor>>()
+        var dict = new Dictionary<string, EventHandlers>()
         {
-            { "QueuePacket", [] }
+            { "QueuePacket", new() }
         };
 
         var names = new Dictionary<Type, string>()
@@ -46,7 +48,7 @@ public sealed partial class EventDispatcher : IEventDispatcher
 
             var name = eventType.Name.TrimEventArgs();
 
-            dict.Add(name, []);
+            dict.Add(name, new());
             names.Add(eventType, name);
         }
 
@@ -54,45 +56,15 @@ public sealed partial class EventDispatcher : IEventDispatcher
         this.eventNames = names.ToFrozenDictionary();
     }
 
-    public void RegisterEvents<TEventModule>(IPluginContainer? pluginContainer) where TEventModule : MinecraftEventHandler
-    {
-        var eventModule = typeof(TEventModule);
-        var eventModuleTypeInfo = eventModule.GetTypeInfo();
-        var methods = eventModule.GetMethods().Where(x => x.CustomAttributes.Any(x => x.AttributeType == eventPriorityAttributeType));
-
-        foreach (var method in methods)
-        {
-            var eventPriorityAttribute = method.GetCustomAttribute<EventPriorityAttribute>()!;
-            var eventType = method.GetParameters().FirstOrDefault()?.ParameterType
-                ?? throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
-
-            if (!eventType.IsSubclassOf(baseMinecraftEventArgsType))
-                throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
-
-            if (!this.registeredEvents.TryGetValue(this.eventNames[eventType], out var values))
-                continue;
-
-            values.Add(new MinecraftEventExecutor
-            {
-                EventType = eventType,
-                ModuleFactory = ActivatorUtilities.CreateFactory(eventModule, []),
-                PluginContainer = pluginContainer,
-                Priority = eventPriorityAttribute.Priority,
-                MethodExecutor = ObjectMethodExecutor.Create(method, eventModuleTypeInfo),
-                ModuleType = eventModule,
-                Logger = this.logger
-            });
-        }
-    }
+    public void RegisterEvents<TEventModule>(IPluginContainer? pluginContainer)
+        where TEventModule : MinecraftEventHandler =>
+        this.RegisterEventsInternal([typeof(TEventModule)], pluginContainer);
 
     public void RegisterEvent<TEventArgs>(IPluginContainer pluginContainer, ValueTaskContextDelegate<TEventArgs> contextDelegate,
         Priority priority = Priority.Low)
         where TEventArgs : BaseMinecraftEventArgs
     {
-        if (!this.registeredEvents.TryGetValue(this.eventNames[typeof(TEventArgs)], out var values))
-            return;
-
-        values.Add(new MinecraftEventDelegateExecutor
+        this.Add(typeof(TEventArgs), pluginContainer, new MinecraftEventDelegateExecutor
         {
             EventType = typeof(TEventArgs),
             PluginContainer = pluginContainer,
@@ -107,10 +79,7 @@ public sealed partial class EventDispatcher : IEventDispatcher
         var eventType = handler.Method.GetParameters().FirstOrDefault()?.ParameterType ??
             throw new InvalidOperationException("Missing parameter for event.");
 
-        if (!this.registeredEvents.TryGetValue(this.eventNames[eventType], out var values))
-            return;
-
-        values.Add(new MinecraftEventDelegateExecutor
+        this.Add(eventType, pluginContainer, new MinecraftEventDelegateExecutor
         {
             EventType = eventType,
             PluginContainer = pluginContainer,
@@ -148,10 +117,7 @@ public sealed partial class EventDispatcher : IEventDispatcher
                 if (!eventType.IsSubclassOf(baseMinecraftEventArgsType))
                     throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
 
-                if (!this.registeredEvents.TryGetValue(this.eventNames[eventType], out var values))
-                    continue;
-
-                values.Add(new MinecraftEventExecutor
+                this.Add(eventType, pluginContainer, new MinecraftEventExecutor
                 {
                     EventType = eventType,
                     ModuleFactory = ActivatorUtilities.CreateFactory(eventModule, []),
@@ -173,15 +139,14 @@ public sealed partial class EventDispatcher : IEventDispatcher
         if (!this.registeredEvents.TryGetValue(this.eventNames[typeof(TEventArgs)], out var events))
             return EventResult.Completed;
 
-        var foundEvents = events.OrderBy(x => x.Priority);//Plugins with the lowest priority must be called first 
-
         var eventResult = EventResult.Completed;
 
-        foreach (var @event in foundEvents)
+        // Handlers with the lowest priority run first.
+        foreach (var registration in events.Registrations)
         {
             try
             {
-                await @event.Execute(serviceScope.ServiceProvider, [eventArgs]);
+                await registration.Executor.Execute(serviceScope.ServiceProvider, [eventArgs]);
 
                 if (eventArgs is ICancellable cancellable && cancellable.IsCancelled)
                     eventResult = EventResult.Cancelled;
@@ -198,13 +163,46 @@ public sealed partial class EventDispatcher : IEventDispatcher
         return eventResult;
     }
 
-    public void Dispose()
+    /// <summary>
+    /// Removes every event handler a plugin registered, as the plugin unloads.
+    /// </summary>
+    public void UnregisterPluginEvents(IPluginContainer plugin)
     {
-        foreach (var (_, values) in this.registeredEvents)
+        foreach (var (_, handlers) in this.registeredEvents)
         {
-            values.Clear();
+            ImmutableInterlocked.Update(ref handlers.Registrations,
+                registrations => registrations.RemoveAll(registration => registration.Plugin == plugin));
         }
     }
+
+    public void Dispose()
+    {
+        foreach (var (_, handlers) in this.registeredEvents)
+            handlers.Registrations = [];
+    }
+
+    private void Add(Type eventType, IPluginContainer? plugin, IEventExecutor executor)
+    {
+        if (!this.registeredEvents.TryGetValue(this.eventNames[eventType], out var handlers))
+            return;
+
+        // Inserted after the handlers of the same priority, so handlers of one priority run in registration order.
+        ImmutableInterlocked.Update(ref handlers.Registrations, registrations =>
+        {
+            var index = 0;
+            while (index < registrations.Length && registrations[index].Executor.Priority <= executor.Priority)
+                index++;
+
+            return registrations.Insert(index, new EventRegistration(executor, plugin));
+        });
+    }
+
+    private sealed class EventHandlers
+    {
+        public ImmutableArray<EventRegistration> Registrations = [];
+    }
+
+    private readonly record struct EventRegistration(IEventExecutor Executor, IPluginContainer? Plugin);
 
     private static partial class Log
     {

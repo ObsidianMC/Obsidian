@@ -49,6 +49,10 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
         try
         {
+            // Plugins register world generators and content, which the worlds need, so they load first.
+            if (serviceProvider.GetService<Plugins.PluginStartup>() is Plugins.PluginStartup pluginStartup)
+                await pluginStartup.Loaded.WaitAsync(stoppingToken);
+
             this.levelFactory.Initialize();
 
             // Structure templates come from Mojang's server jar, which Obsidian can't ship.

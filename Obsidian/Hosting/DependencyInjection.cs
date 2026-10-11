@@ -8,6 +8,7 @@ using Obsidian.API.Configuration;
 using Obsidian.Commands.Framework;
 using Obsidian.Console;
 using Obsidian.Integrated;
+using Obsidian.Plugins;
 using Obsidian.Services;
 using Obsidian.WorldData;
 using OpenTelemetry.Logs;
@@ -132,6 +133,7 @@ public static class DependencyInjection
         builder.Services.AddSingleton<IServer, Server>();
         builder.Services.AddSingleton<IUserCache, UserCache>();
         builder.Services.AddSingleton<EventDispatcher>();
+        builder.Services.AddSingleton<PluginStartup>();
         builder.Services.AddSingleton<ILevelFactory, LevelFactory>();
 
         builder.Services.AddSingleton<IConsoleCommandHandler, RegistryConsoleCommandHandler>();
