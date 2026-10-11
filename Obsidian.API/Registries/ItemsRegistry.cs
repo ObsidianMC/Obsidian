@@ -105,6 +105,10 @@ public static partial class ItemsRegistry
                 return existing;
             }
 
+            // The protocol allows more, but Obsidian's ids are shorts.
+            if (table.ById.Length > short.MaxValue)
+                throw new InvalidOperationException("No item ids are left.");
+
             var item = new Item(table.ById.Length, unlocalizedName, type: null);
             table = new ItemTable([.. table.ById, item]);
 
@@ -118,10 +122,35 @@ public static partial class ItemsRegistry
     /// </summary>
     internal static void ReleasePlugin(IPluginContainer plugin)
     {
-        foreach (var item in table.ById.AsSpan(VanillaCount))
+        lock (registering)
         {
-            if (item.Binding?.Owner == plugin)
-                item.Binding = null;
+            foreach (var item in table.ById.AsSpan(VanillaCount))
+            {
+                if (item.Binding?.Owner == plugin)
+                    item.Binding = null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gives an item its properties and its plugin's behaviour, unless the plugin started unloading: then its items
+    /// were released already, and binding one now would keep the plugin loaded.
+    /// </summary>
+    /// <param name="closing">Whether the plugin started unloading.</param>
+    /// <returns>Whether the item was bound.</returns>
+    internal static bool TryBind(Item item, ItemProperties properties, IPluginContainer plugin, Func<bool> closing)
+    {
+        lock (registering)
+        {
+            if (closing())
+                return false;
+
+            item.MaxStackSize = properties.MaxStackSize;
+            item.MaxDamage = properties.MaxDamage;
+            item.Enchantable = properties.Enchantable;
+            item.Binding = new ItemBinding(plugin, properties.Behavior);
+
+            return true;
         }
     }
 

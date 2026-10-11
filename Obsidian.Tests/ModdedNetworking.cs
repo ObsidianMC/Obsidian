@@ -140,8 +140,9 @@ public class ModdedNetworking
     [Fact]
     public async Task PluginItemsAreSyncedToNeoForgeClientsAndRefuseOthers()
     {
-        RegistrySnapshot items = new("minecraft:item", ["minecraft:air", "test:gem"]);
-        IReadOnlyList<RegistrySnapshot> Modded() => [items];
+        // Id 1 belongs to an unloaded plugin's item, which clients aren't told about.
+        SyncedRegistry items = new("minecraft:item", [(0, "minecraft:air"), (2, "test:gem")]);
+        IReadOnlyList<SyncedRegistry> Modded() => [items];
 
         // A vanilla client can't learn the plugin's item.
         var vanilla = new TestClient(new FakeServer());
@@ -185,7 +186,7 @@ public class ModdedNetworking
             writer.WriteVarInt(2);
             writer.WriteVarInt(0);
             writer.WriteString("minecraft:air");
-            writer.WriteVarInt(1);
+            writer.WriteVarInt(2);
             writer.WriteString("test:gem");
             writer.WriteVarInt(0);
         }), PayloadOn(client, ChannelPayloads.RegistrySnapshot));

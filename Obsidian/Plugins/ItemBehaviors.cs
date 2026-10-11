@@ -7,6 +7,12 @@ namespace Obsidian.Plugins;
 /// </summary>
 internal static class ItemBehaviors
 {
+    /// <summary>
+    /// Whether a player may use items at all, which vanilla checks before an item does anything: a spectator or a dead
+    /// player can't.
+    /// </summary>
+    public static bool CanUseItems(IPlayer player) => player.Health > 0 && player.GameMode != GameMode.Spectator;
+
     /// <returns>Whether the item's behaviour handled the use.</returns>
     public static ValueTask<bool> UseAsync(ItemUseContext context) =>
         RunAsync(context.Stack.Holder, behavior => behavior.UseAsync(context));

@@ -103,7 +103,7 @@ public static partial class RecipesRegistry
     }
 
     private static bool MatchesIngredient(Ingredient ingredient, ItemStack item) =>
-        ingredient.Any(candidate => candidate.Type == item.Type);
+        ingredient.Any(candidate => candidate.Holder == item.Holder);
 
     private static bool MatchesShapeless(List<ItemStack> items, IReadOnlyList<Ingredient> ingredients, int index, bool[] used)
     {

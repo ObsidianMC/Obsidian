@@ -146,7 +146,7 @@ internal static class ChannelPayloads
     /// <summary>
     /// Writes a <c>neoforge:frozen_registry_sync_start</c> payload: the names of the registries about to be sent.
     /// </summary>
-    public static void WriteRegistrySyncStart(INetStreamWriter writer, IReadOnlyList<RegistrySnapshot> registries)
+    public static void WriteRegistrySyncStart(INetStreamWriter writer, IReadOnlyList<SyncedRegistry> registries)
     {
         writer.WriteVarInt(registries.Count);
 
@@ -158,15 +158,15 @@ internal static class ChannelPayloads
     /// Writes a <c>neoforge:frozen_registry</c> payload: the registry's name, then NeoForge's registry snapshot, a map
     /// from each entry's id to its identifier and a map of aliases, which Obsidian has none of.
     /// </summary>
-    public static void WriteRegistrySnapshot(INetStreamWriter writer, RegistrySnapshot registry)
+    public static void WriteRegistrySnapshot(INetStreamWriter writer, SyncedRegistry registry)
     {
         writer.WriteString(registry.Name);
-        writer.WriteVarInt(registry.Identifiers.Count);
+        writer.WriteVarInt(registry.Entries.Count);
 
-        for (var id = 0; id < registry.Identifiers.Count; id++)
+        foreach (var (id, identifier) in registry.Entries)
         {
             writer.WriteVarInt(id);
-            writer.WriteString(registry.Identifiers[id]);
+            writer.WriteString(identifier);
         }
 
         writer.WriteVarInt(0);
@@ -192,5 +192,7 @@ internal static class ChannelPayloads
 /// A registry that clients must agree with the server on, because plugins added to it.
 /// </summary>
 /// <param name="Name">The registry, like <c>minecraft:item</c>.</param>
-/// <param name="Identifiers">Every entry's identifier, by id.</param>
-internal sealed record RegistrySnapshot(string Name, IReadOnlyList<string> Identifiers);
+/// <param name="Entries">
+/// The entries clients may know, by id. Ids can have gaps: an unloaded plugin's entries keep their ids but are left out.
+/// </param>
+internal sealed record SyncedRegistry(string Name, IReadOnlyList<(int Id, string Identifier)> Entries);

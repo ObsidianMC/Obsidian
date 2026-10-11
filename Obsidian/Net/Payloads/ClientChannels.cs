@@ -21,7 +21,7 @@ namespace Obsidian.Net.Payloads;
 /// NeoForge client gets them with NeoForge's registry sync. None if null.
 /// </param>
 internal sealed partial class ClientChannels(IClient client, PayloadChannelRegistry registry,
-    Func<IReadOnlyList<RegistrySnapshot>>? moddedRegistries = null)
+    Func<IReadOnlyList<SyncedRegistry>>? moddedRegistries = null)
 {
     private const int HandshakePingId = 0;
 
@@ -162,7 +162,7 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
     /// registries: their names, each registry's ids, then a completion that the client answers once it applied them.
     /// </summary>
     /// <returns>False: configuration goes on once the client answers.</returns>
-    private async ValueTask<bool> StartRegistrySyncAsync(IReadOnlyList<RegistrySnapshot> registries)
+    private async ValueTask<bool> StartRegistrySyncAsync(IReadOnlyList<SyncedRegistry> registries)
     {
         // A NeoForge client always has these channels; without them its ids for plugins' entries would be wrong.
         if (!this.configurationChannels.ContainsKey(ChannelPayloads.RegistrySyncStart)

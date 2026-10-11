@@ -117,7 +117,7 @@ public partial class UseItemOnPacket
         }
 
         // Like vanilla, the block reacts first (above); then the item does, here a plugin's item.
-        if (currentItem is { Count: > 0 })
+        if (currentItem is { Count: > 0 } && Plugins.ItemBehaviors.CanUseItems(player))
         {
             var used = await Plugins.ItemBehaviors.UseOnBlockAsync(new ItemUseOnBlockContext
             {

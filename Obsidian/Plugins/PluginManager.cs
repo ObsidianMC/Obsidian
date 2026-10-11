@@ -460,6 +460,9 @@ public sealed partial class PluginManager : IAsyncDisposable
     /// </remarks>
     private async Task UnloadAsync(PluginContainer pluginContainer)
     {
+        // Closed first, so that whatever the plugin registers meanwhile is refused rather than kept after unloading.
+        pluginContainer.Close();
+
         this.commandHandler.UnregisterPluginCommands(pluginContainer);
         this.eventDispatcher.UnregisterPluginEvents(pluginContainer);
 
@@ -472,7 +475,6 @@ public sealed partial class PluginManager : IAsyncDisposable
             this.commandHandler.UnregisterArgumentParsers(pluginContainer.LoadContext);
 
         this.plugins = this.plugins.Remove(pluginContainer);
-        pluginContainer.Close();
 
         var dependents = this.releases
             .Where(pair => pair.Key.Dependencies.Contains(pluginContainer))

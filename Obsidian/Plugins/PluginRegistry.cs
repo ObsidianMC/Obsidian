@@ -114,10 +114,8 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
 
         var item = ItemsRegistry.Register(identifier);
 
-        item.MaxStackSize = properties.MaxStackSize;
-        item.MaxDamage = properties.MaxDamage;
-        item.Enchantable = properties.Enchantable;
-        item.Binding = new ItemBinding(container, properties.Behavior);
+        if (!ItemsRegistry.TryBind(item, properties, container, () => container.IsClosing))
+            throw new InvalidOperationException($"{container.Info.Name} is unloading.");
 
         return item;
     }

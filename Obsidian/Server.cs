@@ -87,14 +87,18 @@ public sealed partial class Server : IServer
     /// The registries loaded plugins added to, which clients must agree with the server on: vanilla clients can't join
     /// while there are any, and NeoForge clients are sent them.
     /// </summary>
-    internal IReadOnlyList<Net.Payloads.RegistrySnapshot> GetModdedRegistries()
+    internal IReadOnlyList<Net.Payloads.SyncedRegistry> GetModdedRegistries()
     {
         if (!ItemsRegistry.HasPluginItems)
             return [];
 
-        var items = ItemsRegistry.All.Select(item => item.UnlocalizedName).ToArray();
+        // An unloaded plugin's items are left out: a client without that plugin's mod would refuse them.
+        var items = ItemsRegistry.All
+            .Where(item => item.KnownToClients)
+            .Select(item => ((int)item.Id, item.UnlocalizedName))
+            .ToArray();
 
-        return [new Net.Payloads.RegistrySnapshot("minecraft:item", items)];
+        return [new Net.Payloads.SyncedRegistry("minecraft:item", items)];
     }
 
     public ICommandHandler CommandHandler { get; }

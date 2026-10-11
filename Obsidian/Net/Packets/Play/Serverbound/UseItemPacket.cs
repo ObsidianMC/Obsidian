@@ -31,7 +31,7 @@ public partial class UseItemPacket
         if (args.IsCancelled)
             return;
 
-        if (args.Item is { Count: > 0 } stack)
+        if (args.Item is { Count: > 0 } stack && Plugins.ItemBehaviors.CanUseItems(player))
         {
             var used = await Plugins.ItemBehaviors.UseAsync(new ItemUseContext
             {

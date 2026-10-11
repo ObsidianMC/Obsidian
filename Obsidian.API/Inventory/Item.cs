@@ -52,11 +52,9 @@ public sealed class Item : INetworkSerializable<Item>
     /// </summary>
     public int Enchantable { get; internal set; }
 
-    /// <summary>
-    /// What the item does when used, given by the plugin that registered it, or null for vanilla items and while the
-    /// plugin is unloaded.
-    /// </summary>
-    public IItemBehavior? Behavior => this.Binding?.Behavior;
+    // What the item does when used, run by the server as a call into its plugin (so not handed out: a caller holding it
+    // could run it while the plugin unloads).
+    internal IItemBehavior? Behavior => this.Binding?.Behavior;
 
     /// <summary>
     /// The plugin that registered the item and provides its behaviour, or null for vanilla items and while the plugin
@@ -67,7 +65,14 @@ public sealed class Item : INetworkSerializable<Item>
     // The plugin and its behaviour, replaced together so that a use never pairs one plugin's behaviour with another.
     internal ItemBinding? Binding { get; set; }
 
-    public static void Write(Item value, INetStreamWriter writer) => writer.WriteVarInt(value.Id);
+    /// <summary>
+    /// Whether clients can know the item: vanilla's items, and those of plugins that are loaded. Stacks of other items
+    /// are kept on the server but shown to clients as nothing, until their plugin comes back.
+    /// </summary>
+    internal bool KnownToClients => this.Id < ItemsRegistry.VanillaCount || this.Binding is not null;
+
+    public static void Write(Item value, INetStreamWriter writer) =>
+        writer.WriteVarInt(value.KnownToClients ? value.Id : ItemsRegistry.Air.Id);
     public static Item Read(INetStreamReader reader) => ItemsRegistry.Get(reader);
 
     public override string ToString() => $"{{{this.UnlocalizedName}}}";

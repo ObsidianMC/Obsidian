@@ -57,7 +57,7 @@ public sealed class Container : BaseContainer, IBlockEntity
         {
             var invItem = this.items[i];
 
-            if (invItem?.Type == item.Type)
+            if (invItem is not null && invItem.Holder == item.Holder)
             {
                 if (invItem.Count >= 64)
                     continue;

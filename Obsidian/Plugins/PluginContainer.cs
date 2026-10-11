@@ -119,6 +119,11 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     internal void Close() => this.closing = true;
 
     /// <summary>
+    /// Whether the plugin started unloading.
+    /// </summary>
+    internal bool IsClosing => this.closing;
+
+    /// <summary>
     /// Waits until no call into the plugin runs.
     /// </summary>
     internal async Task WaitForCallsAsync()

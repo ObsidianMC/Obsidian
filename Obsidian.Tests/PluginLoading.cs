@@ -193,6 +193,24 @@ public sealed class PluginLoading : IDisposable
     }
 
     [Fact]
+    public void PluginItems_StackOnlyWithThemselves()
+    {
+        // Plugin items have no vanilla material, so they must be told apart by identity.
+        var ruby = ItemsRegistry.Register("stacking:ruby");
+        var sapphire = ItemsRegistry.Register("stacking:sapphire");
+        var container = new Container(9);
+
+        Assert.Equal(0, container.AddItem(new ItemStack(ruby, 1)));
+        Assert.Equal(1, container.AddItem(new ItemStack(sapphire, 1)));
+        Assert.Equal(0, container.AddItem(new ItemStack(ruby, 1)));
+
+        Assert.Same(ruby, container.GetItem(0)!.Holder);
+        Assert.Equal(2, container.GetItem(0)!.Count);
+        Assert.Same(sapphire, container.GetItem(1)!.Holder);
+        Assert.Same(ruby, ItemsRegistry.Register("stacking:ruby"));
+    }
+
+    [Fact]
     public async Task UnloadFromItsOwnCall_ReleasesOnceTheCallEnds()
     {
         var (manager, _, _) = this.CreateManager();

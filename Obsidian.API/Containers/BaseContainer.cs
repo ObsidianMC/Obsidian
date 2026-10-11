@@ -43,7 +43,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         {
             var invItem = this.items[i];
 
-            if (invItem?.Type == item.Type)
+            if (invItem is not null && invItem.Holder == item.Holder)
             {
                 //TODO use the items max stack size
                 if (invItem.Count >= 64)

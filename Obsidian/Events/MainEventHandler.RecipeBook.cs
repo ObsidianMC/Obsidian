@@ -166,7 +166,7 @@ public partial class MainEventHandler
     {
         var choices = ingredients.Select(ingredient => Enumerable.Range(0, stock.Count)
             .Where(index => stock[index].Count >= amount && stock[index].MaxStackSize >= amount &&
-                ingredient.Any(item => item.Type == stock[index].Type)).ToArray()).ToArray();
+                ingredient.Any(item => item.Holder == stock[index].Holder)).ToArray()).ToArray();
         var order = Enumerable.Range(0, ingredients.Count).OrderBy(index => choices[index].Length).ToArray();
         var remaining = stock.Select(item => item.Count).ToArray();
         var assignment = new int[ingredients.Count];
