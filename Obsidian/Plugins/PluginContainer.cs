@@ -6,6 +6,7 @@ using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Threading;
 
 namespace Obsidian.Plugins;
 
@@ -16,20 +17,30 @@ namespace Obsidian.Plugins;
 /// Keeping a reference to a container, its plugin or anything from its assembly outside the plugin manager stops the
 /// plugin from unloading.
 /// </remarks>
-public sealed class PluginContainer : IDisposable, IPluginContainer
+public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
 {
-    private ServiceProvider? ownServices;
+    private PluginServiceProvider? ownServices;
+    private PluginServiceProvider? scope;
+
+    // Calls into the plugin that are running (see TryEnter), and whether it is unloading, which refuses new ones.
+    private int activeCalls;
+    private volatile bool closing;
 
     public IServiceScope ServiceScope { get; private set; } = default!;
 
     /// <summary>
-    /// The plugin's services, falling back to those of its dependencies and the server.
+    /// The plugin's services, falling back to the server's.
     /// </summary>
-    public IServiceProvider ServiceProvider { get; private set; } = default!;
+    public IServiceProvider ServiceProvider => this.ownServices!;
 
     public required PluginInfo Info { get; init; }
 
     public required PluginArchive Archive { get; init; }
+
+    /// <summary>
+    /// The plugin's file.
+    /// </summary>
+    public string Source => this.Archive.Source;
 
     public PluginBase? Plugin { get; internal set; }
 
@@ -44,7 +55,11 @@ public sealed class PluginContainer : IDisposable, IPluginContainer
     /// </summary>
     public ImmutableArray<PluginContainer> Dependencies { get; init; } = [];
 
-    public required string Source { get; set; }
+    /// <summary>
+    /// The singleton services the plugin registered, which the plugins that depend on it can use too.
+    /// </summary>
+    internal ImmutableArray<Type> ExportedSingletons { get; private set; } = [];
+
     public bool ValidSignature => this.Archive.ValidSignature;
     public bool Loaded { get; internal set; }
 
@@ -57,19 +72,68 @@ public sealed class PluginContainer : IDisposable, IPluginContainer
     /// <summary>
     /// Builds the plugin's services once it registered them.
     /// </summary>
-    internal void SetServices(IServiceCollection services, IServiceProvider serverProvider)
+    /// <param name="services">The plugin's services, starting with <paramref name="registeredFrom"/> base ones.</param>
+    /// <param name="registeredFrom">The number of base services, which come before the plugin's own.</param>
+    /// <param name="serverProvider">The server's services.</param>
+    internal void SetServices(IServiceCollection services, int registeredFrom, IServiceProvider serverProvider)
     {
-        this.ownServices = services.BuildServiceProvider(validateScopes: true);
-
-        IReadOnlyList<IServiceProvider> fallbacks =
+        this.ExportedSingletons =
         [
-            .. this.Dependencies.Select(dependency => dependency.ServiceProvider),
-            serverProvider
+            .. services
+                .Skip(registeredFrom)
+                .Where(descriptor => descriptor.Lifetime == ServiceLifetime.Singleton
+                    && !descriptor.IsKeyedService
+                    && !descriptor.ServiceType.IsGenericTypeDefinition)
+                .Select(descriptor => descriptor.ServiceType)
+                .Distinct()
         ];
-        var provider = new PluginServiceProvider(this.ownServices, fallbacks);
 
-        this.ServiceProvider = provider;
-        this.ServiceScope = provider.CreateScope();
+        var provider = services.BuildServiceProvider(validateScopes: true);
+
+        this.ownServices = new PluginServiceProvider(provider, serverProvider, provider);
+        this.scope = this.ownServices.CreateScope();
+        this.ServiceScope = new Scope(this.scope);
+    }
+
+    /// <summary>
+    /// Starts a call into the plugin, e.g. running one of its event handlers, which unloading waits for.
+    /// </summary>
+    /// <returns>Whether the call may go ahead; it may not once the plugin is unloading. Then don't call
+    /// <see cref="Exit"/>.</returns>
+    internal bool TryEnter()
+    {
+        Interlocked.Increment(ref this.activeCalls);
+
+        if (!this.closing)
+            return true;
+
+        this.Exit();
+        return false;
+    }
+
+    /// <summary>
+    /// Ends a call started with <see cref="TryEnter"/>.
+    /// </summary>
+    internal void Exit() => Interlocked.Decrement(ref this.activeCalls);
+
+    /// <summary>
+    /// Refuses new calls into the plugin and waits for the running ones to end, for at most <paramref name="timeout"/>.
+    /// </summary>
+    /// <returns>Whether every call ended in time.</returns>
+    internal async Task<bool> CloseAsync(TimeSpan timeout)
+    {
+        this.closing = true;
+
+        var deadline = DateTime.UtcNow + timeout;
+        while (Volatile.Read(ref this.activeCalls) > 0)
+        {
+            if (DateTime.UtcNow >= deadline)
+                return false;
+
+            await Task.Delay(10);
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -81,16 +145,42 @@ public sealed class PluginContainer : IDisposable, IPluginContainer
     ///<inheritdoc/>
     public byte[]? GetFileData(string fileName) => this.Archive.Read(fileName);
 
-    public void Dispose()
+    /// <summary>
+    /// Disposes the plugin's services and drops every reference into its load context, even if disposing a service
+    /// fails, so that the load context can still unload.
+    /// </summary>
+    public async ValueTask DisposeAsync()
     {
-        this.ServiceScope?.Dispose();
-        this.ownServices?.Dispose();
+        try
+        {
+            if (this.scope is not null)
+                await this.scope.DisposeAsync();
+        }
+        finally
+        {
+            try
+            {
+                if (this.ownServices is not null)
+                    await this.ownServices.DisposeAsync();
+            }
+            finally
+            {
+                this.scope = null;
+                this.ownServices = null;
+                this.ServiceScope = null!;
+                this.ExportedSingletons = [];
+                this.PluginAssembly = null;
+                this.LoadContext = null;
+                this.Plugin = null;
+            }
+        }
+    }
 
-        this.ServiceScope = null!;
-        this.ServiceProvider = null!;
-        this.ownServices = null;
-        this.PluginAssembly = null;
-        this.LoadContext = null;
-        this.Plugin = null;
+    // The container's scope, disposed with the container rather than by whoever holds it.
+    private sealed class Scope(PluginServiceProvider provider) : IServiceScope
+    {
+        public IServiceProvider ServiceProvider => provider;
+
+        public void Dispose() { }
     }
 }

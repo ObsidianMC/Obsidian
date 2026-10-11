@@ -17,8 +17,8 @@ internal static class PluginDependencyResolver
     /// <param name="loaded">The plugins already loaded, which candidates can depend on.</param>
     /// <param name="side">The side this runs on; dependencies declared for the other side are ignored.</param>
     /// <returns>
-    /// The candidates that can load, in an order where each loads after the dependencies it needs, and those that can't,
-    /// with the reason.
+    /// The candidates that can load, in an order where each loads after the dependencies it needs, and those that
+    /// can't, with the reason.
     /// </returns>
     public static Resolution Resolve(IReadOnlyList<PluginInfo> candidates, IReadOnlyList<PluginInfo> loaded,
         PluginSide side)
@@ -45,7 +45,8 @@ internal static class PluginDependencyResolver
                 if (rejected.ContainsKey(candidate))
                     continue;
 
-                var reason = Check(candidate, present, rejected, side, warnings);
+                var reason = Check(candidate, present, side, warnings)
+                    ?? CheckLoaded(candidate, loaded, side, warnings);
                 if (reason is null)
                     continue;
 
@@ -73,8 +74,9 @@ internal static class PluginDependencyResolver
     public static bool AppliesTo(PluginDependency dependency, PluginSide side) =>
         dependency.Side == PluginSide.Both || dependency.Side == side;
 
-    private static string? Check(PluginInfo candidate, Dictionary<string, PluginInfo> present,
-        Dictionary<PluginInfo, string> rejected, PluginSide side, List<string> warnings)
+    // The candidate's own dependencies.
+    private static string? Check(PluginInfo candidate, Dictionary<string, PluginInfo> present, PluginSide side,
+        List<string> warnings)
     {
         foreach (var dependency in candidate.Dependencies)
         {
@@ -83,6 +85,11 @@ internal static class PluginDependencyResolver
 
             if (!VersionRange.TryParse(dependency.Version, out var range))
                 return $"its dependency '{dependency.Id}' has an invalid version range '{dependency.Version}'";
+
+            // Obsidian loads a plugin's required dependencies first, for their types, so it can't come before them.
+            if (dependency.Type == PluginDependencyType.Required
+                && dependency.Ordering == PluginDependencyOrdering.Before)
+                return $"it requires '{dependency.Id}' but orders itself before it";
 
             var found = present.GetValueOrDefault(dependency.Id);
             var accepted = found is not null && range.Satisfies(new NuGetVersion(found.Version));
@@ -104,6 +111,39 @@ internal static class PluginDependencyResolver
         return null;
     }
 
+    // What the loaded plugins declare about the candidate: a plugin arriving later mustn't break their constraints.
+    private static string? CheckLoaded(PluginInfo candidate, IReadOnlyList<PluginInfo> loaded, PluginSide side,
+        List<string> warnings)
+    {
+        var version = new NuGetVersion(candidate.Version);
+
+        foreach (var plugin in loaded)
+        {
+            foreach (var dependency in plugin.Dependencies)
+            {
+                if (dependency.Id != candidate.Id
+                    || !AppliesTo(dependency, side)
+                    || !VersionRange.TryParse(dependency.Version, out var range))
+                    continue;
+
+                var accepted = range.Satisfies(version);
+
+                switch (dependency.Type)
+                {
+                    case PluginDependencyType.Required or PluginDependencyType.Optional when !accepted:
+                        return $"'{plugin.Id}' needs {dependency.Version} of it";
+                    case PluginDependencyType.Incompatible when accepted:
+                        return $"'{plugin.Id}' is incompatible with it";
+                    case PluginDependencyType.Discouraged when accepted:
+                        warnings.Add($"{plugin.Name} discourages using '{candidate.Id}' {candidate.Version} with it");
+                        break;
+                }
+            }
+        }
+
+        return null;
+    }
+
     // Kahn's algorithm, taking the lowest id among the plugins that are ready so that the order doesn't depend on the
     // order the files were found in.
     private static List<PluginInfo> Sort(List<PluginInfo> accepted, PluginSide side,
@@ -111,7 +151,7 @@ internal static class PluginDependencyResolver
     {
         var byId = accepted.ToDictionary(info => info.Id);
         var after = accepted.ToDictionary(info => info, _ => new List<PluginInfo>());
-        var waitingOn = accepted.ToDictionary(info => info, _ => 0);
+        var softEdges = new List<(PluginInfo First, PluginInfo Second)>();
 
         foreach (var plugin in accepted)
         {
@@ -123,15 +163,26 @@ internal static class PluginDependencyResolver
                 if (dependency.Type is PluginDependencyType.Incompatible or PluginDependencyType.Discouraged)
                     continue;
 
-                // A present dependency loads first, so the plugin can use its types, unless ordered otherwise.
-                var (first, second) = dependency.Ordering == PluginDependencyOrdering.Before
-                    ? (plugin, other)
-                    : (other, plugin);
-
-                after[first].Add(second);
-                waitingOn[second]++;
+                if (dependency.Ordering == PluginDependencyOrdering.Before)
+                    after[plugin].Add(other);
+                else if (dependency.Ordering == PluginDependencyOrdering.After || dependency.Required)
+                    after[other].Add(plugin);
+                else
+                    softEdges.Add((other, plugin));
             }
         }
+
+        // An optional dependency without an ordering loads first too, so that the plugin can use its types, unless
+        // that contradicts the other orderings (as for two plugins that optionally depend on each other).
+        foreach (var (first, second) in softEdges.OrderBy(edge => edge.Second.Id, StringComparer.Ordinal))
+        {
+            if (!Reaches(after, second, first))
+                after[first].Add(second);
+        }
+
+        var waitingOn = accepted.ToDictionary(info => info, _ => 0);
+        foreach (var second in after.Values.SelectMany(seconds => seconds))
+            waitingOn[second]++;
 
         var ready = new SortedSet<PluginInfo>(
             waitingOn.Where(pair => pair.Value == 0).Select(pair => pair.Key),
@@ -155,6 +206,26 @@ internal static class PluginDependencyResolver
             rejected[plugin] = "its dependencies form a cycle";
 
         return order;
+    }
+
+    private static bool Reaches(Dictionary<PluginInfo, List<PluginInfo>> after, PluginInfo from, PluginInfo to)
+    {
+        var visited = new HashSet<PluginInfo>();
+        var pending = new Stack<PluginInfo>([from]);
+
+        while (pending.TryPop(out var plugin))
+        {
+            if (plugin == to)
+                return true;
+
+            if (!visited.Add(plugin))
+                continue;
+
+            foreach (var next in after[plugin])
+                pending.Push(next);
+        }
+
+        return false;
     }
 
     public sealed class Resolution

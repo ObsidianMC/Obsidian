@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Networking;
 using Obsidian.Net.Packets.Common;
+using Obsidian.Plugins;
 
 namespace Obsidian.Net.Payloads;
 
@@ -190,7 +191,19 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
             Phase = protocol == NetworkProtocol.Configuration ? PayloadPhase.Configuration : PayloadPhase.Play
         };
 
-        await registration.Handler(payloadReader, context);
+        // Unloading the channel's plugin waits for running handlers, and refuses new ones.
+        var plugin = registration.Owner as PluginContainer;
+        if (plugin is not null && !plugin.TryEnter())
+            return;
+
+        try
+        {
+            await registration.Handler(payloadReader, context);
+        }
+        finally
+        {
+            plugin?.Exit();
+        }
     }
 
     /// <summary>

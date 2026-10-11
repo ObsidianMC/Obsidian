@@ -6,6 +6,7 @@ using Obsidian.API.Plugins;
 using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Events;
 using Obsidian.Events.EventArgs;
+using Obsidian.Plugins;
 using System.Collections.Frozen;
 using System.Reflection;
 
@@ -144,6 +145,12 @@ public sealed partial class EventDispatcher : IEventDispatcher
         // Handlers with the lowest priority run first.
         foreach (var registration in events.Registrations)
         {
+            // The snapshot can hold handlers of a plugin that started unloading; those are skipped, and unloading
+            // waits for the ones that already run.
+            var plugin = registration.Plugin as PluginContainer;
+            if (plugin is not null && !plugin.TryEnter())
+                continue;
+
             try
             {
                 await registration.Executor.Execute(serviceScope.ServiceProvider, [eventArgs]);
@@ -157,6 +164,10 @@ public sealed partial class EventDispatcher : IEventDispatcher
                 Log.HandlerFailed(this.logger, ex, eventType.Name);
 
                 return EventResult.Failed;
+            }
+            finally
+            {
+                plugin?.Exit();
             }
         }
 

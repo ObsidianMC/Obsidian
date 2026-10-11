@@ -24,15 +24,23 @@ namespace Obsidian.Plugins;
 /// <para>
 /// At startup every plugin in the plugins folder loads, in dependency order, before the worlds do. Afterwards the
 /// folder is watched: a changed file reloads its plugin, and a deleted one unloads it. A plugin's dependents reload
-/// with it, since they use its types. Plugins whose dependencies are missing wait and load once they are satisfied.
+/// with it, since they use its types. Plugins that can't load yet (a required dependency is missing, say) wait and are
+/// tried again whenever the loaded plugins change.
 /// </para>
 /// <para>
-/// Everything a plugin registers (commands, events, services) is removed when it unloads, so that its collectible load
-/// context can unload too.
+/// Everything a plugin registers (commands, events, payload channels, services) is removed when it unloads, so that its
+/// collectible load context can unload too.
 /// </para>
 /// </remarks>
 public sealed partial class PluginManager : IAsyncDisposable
 {
+    // How long unloading waits for a plugin's running event and payload handlers to finish.
+    private static readonly TimeSpan drainTimeout = TimeSpan.FromSeconds(5);
+
+    // Set while a change runs on this async flow, to catch a plugin changing plugins from its own lifecycle callback,
+    // which would wait for itself.
+    private static readonly AsyncLocal<PluginManager?> changing = new();
+
     internal readonly ILogger logger;
     private readonly IConfiguration configuration;
     internal readonly IServer server;
@@ -50,18 +58,19 @@ public sealed partial class PluginManager : IAsyncDisposable
     private ImmutableArray<PluginContainer> plugins = [];
     private ImmutableArray<PluginArchive> stagedPlugins = [];
     private bool serverReady;
+    private bool disposed;
 
     public ImmutableArray<RSAParameters> AcceptedKeys => [.. this.acceptedKeys];
 
     /// <summary>
     /// The loaded plugins, in load order.
-    /// <br/><b>Important note:</b> keeping references to plugin containers outside this class will make them unloadable.
+    /// <br/><b>Important note:</b> keeping references to plugin containers outside this class will make them
+    /// unloadable.
     /// </summary>
     public IReadOnlyList<PluginContainer> Plugins => this.plugins;
 
     /// <summary>
-    /// Plugins that couldn't load yet, e.g. because a required dependency is missing. They are tried again whenever
-    /// another plugin loads.
+    /// Plugins that can't load yet, e.g. because a required dependency is missing.
     /// </summary>
     public IReadOnlyList<PluginArchive> StagedPlugins => this.stagedPlugins;
 
@@ -89,7 +98,7 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         DirectoryWatcher.Filters = [".obby"];
         DirectoryWatcher.FileChanged += path => _ = this.LoadPluginAsync(path);
-        DirectoryWatcher.FileRenamed += this.OnPluginSourceRenamed;
+        DirectoryWatcher.FileRenamed += (oldPath, newPath) => _ = this.RenameAsync(oldPath, newPath);
         DirectoryWatcher.FileDeleted += path => _ = this.UnloadPluginAsync(path);
     }
 
@@ -102,22 +111,19 @@ public sealed partial class PluginManager : IAsyncDisposable
         {
             await this.LoadAcceptedKeysAsync();
 
-            var archives = new List<PluginArchive>();
-            foreach (var file in Directory.GetFiles(ServerConstants.PluginsPath, "*.obby", SearchOption.AllDirectories))
+            await this.RunChangeAsync(async () =>
             {
-                if (await this.TryOpenAsync(file) is PluginArchive archive)
-                    archives.Add(archive);
-            }
+                var archives = new List<PluginArchive>();
+                var files = Directory.GetFiles(ServerConstants.PluginsPath, "*.obby", SearchOption.AllDirectories);
 
-            await this.changes.WaitAsync();
-            try
-            {
+                foreach (var file in files)
+                {
+                    if (await this.TryOpenAsync(file) is PluginArchive archive)
+                        archives.Add(archive);
+                }
+
                 await this.LoadArchivesAsync(archives);
-            }
-            finally
-            {
-                this.changes.Release();
-            }
+            });
 
             DirectoryWatcher.Watch(ServerConstants.PluginsPath);
         }
@@ -127,34 +133,27 @@ public sealed partial class PluginManager : IAsyncDisposable
         }
     }
 
-    public async Task UnloadPluginsAsync()
-    {
-        await this.changes.WaitAsync();
-        try
-        {
-            foreach (var plugin in this.plugins.Reverse())
-                await this.UnloadAsync(plugin);
-        }
-        finally
-        {
-            this.changes.Release();
-        }
-    }
+    public Task UnloadPluginsAsync() => this.RunChangeAsync(this.UnloadAllAsync);
 
     /// <summary>
     /// Loads a plugin file, or reloads it if it is loaded already.
     /// </summary>
     /// <param name="path">The plugin file.</param>
     /// <returns>The loaded plugin, or null if it couldn't load (or has to wait for its dependencies).</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Called from a plugin's load, ready or unloading callback.
+    /// </exception>
     public async Task<PluginContainer?> LoadPluginAsync(string path)
     {
-        var archive = await this.TryOpenAsync(path);
-        if (archive is null)
-            return null;
+        PluginContainer? loaded = null;
 
-        await this.changes.WaitAsync();
-        try
+        await this.RunChangeAsync(async () =>
         {
+            // Read inside the change, so that a deletion or a newer write handled meanwhile isn't undone.
+            var archive = await this.TryOpenAsync(path);
+            if (archive is null)
+                return;
+
             var reloading = new List<PluginArchive> { archive };
 
             var old = this.plugins.FirstOrDefault(plugin => plugin.Source == path);
@@ -171,45 +170,32 @@ public sealed partial class PluginManager : IAsyncDisposable
             this.stagedPlugins = this.stagedPlugins.RemoveAll(staged => staged.Source == path);
 
             await this.LoadArchivesAsync(reloading);
+            this.OnPluginsChanged();
 
-            return this.plugins.FirstOrDefault(plugin => plugin.Source == path);
-        }
-        finally
-        {
-            this.changes.Release();
-        }
+            loaded = this.plugins.FirstOrDefault(plugin => plugin.Source == path);
+        });
+
+        return loaded;
     }
 
     /// <summary>
-    /// Unloads a plugin, and the plugins that depend on it.
+    /// Unloads a plugin, and the plugins that depend on it, which wait for it to come back.
     /// </summary>
-    public async Task UnloadPluginAsync(PluginContainer pluginContainer)
-    {
-        await this.changes.WaitAsync();
-        try
-        {
-            await this.UnloadAndStageDependentsAsync(pluginContainer);
-        }
-        finally
-        {
-            this.changes.Release();
-        }
-    }
+    /// <exception cref="InvalidOperationException">
+    /// Called from a plugin's load, ready or unloading callback.
+    /// </exception>
+    public Task UnloadPluginAsync(PluginContainer pluginContainer) =>
+        this.RunChangeAsync(() => this.UnloadAndRetryAsync(pluginContainer));
 
     public async ValueTask OnServerReadyAsync()
     {
-        await this.changes.WaitAsync();
-        try
+        await this.RunChangeAsync(async () =>
         {
             this.serverReady = true;
 
             foreach (var pluginContainer in this.plugins)
                 await this.StartAsync(pluginContainer);
-        }
-        finally
-        {
-            this.changes.Release();
-        }
+        });
 
         //THis only needs to be called once 😭😭
         CommandsRegistry.Register((Server)server);
@@ -224,29 +210,63 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await this.UnloadPluginsAsync();
-
+        // The watcher goes first, so that no file change starts a load once the plugins are gone.
         this.DirectoryWatcher.Dispose();
+
+        await this.RunChangeAsync(async () =>
+        {
+            await this.UnloadAllAsync();
+            this.disposed = true;
+        });
     }
 
-    private async Task UnloadPluginAsync(string path)
+    /// <summary>
+    /// Runs a change to the loaded plugins once the changes before it finished, unless the manager was disposed.
+    /// </summary>
+    private async Task RunChangeAsync(Func<Task> change)
     {
+        if (changing.Value == this)
+            throw new InvalidOperationException(
+                "Plugins can't be loaded or unloaded from a plugin's load, ready or unloading callback.");
+
         await this.changes.WaitAsync();
         try
         {
-            this.stagedPlugins = this.stagedPlugins.RemoveAll(staged => staged.Source == path);
+            if (this.disposed)
+                return;
 
-            if (this.plugins.FirstOrDefault(plugin => plugin.Source == path) is PluginContainer plugin)
-                await this.UnloadAndStageDependentsAsync(plugin);
+            changing.Value = this;
+            await change();
         }
         finally
         {
+            changing.Value = null;
             this.changes.Release();
         }
     }
 
-    // Dependents can't stay loaded without the plugin, so they wait for it to come back.
-    private async Task UnloadAndStageDependentsAsync(PluginContainer pluginContainer)
+    private Task UnloadPluginAsync(string path) => this.RunChangeAsync(async () =>
+    {
+        this.stagedPlugins = this.stagedPlugins.RemoveAll(staged => staged.Source == path);
+
+        if (this.plugins.FirstOrDefault(plugin => plugin.Source == path) is PluginContainer plugin)
+            await this.UnloadAndRetryAsync(plugin);
+    });
+
+    private Task RenameAsync(string oldPath, string newPath) => this.RunChangeAsync(() =>
+    {
+        foreach (var archive in this.plugins.Select(plugin => plugin.Archive).Concat(this.stagedPlugins))
+        {
+            if (archive.Source == oldPath)
+                archive.Source = newPath;
+        }
+
+        return Task.CompletedTask;
+    });
+
+    // The dependents can't stay loaded without the plugin, so they wait for it to come back. Removing a plugin can also
+    // let a staged one load, e.g. one that is incompatible with it.
+    private async Task UnloadAndRetryAsync(PluginContainer pluginContainer)
     {
         if (!this.plugins.Contains(pluginContainer))
             return;
@@ -257,7 +277,14 @@ public sealed partial class PluginManager : IAsyncDisposable
                 this.stagedPlugins = this.stagedPlugins.Add(unloaded.Archive);
         }
 
+        await this.LoadArchivesAsync([]);
         this.OnPluginsChanged();
+    }
+
+    private async Task UnloadAllAsync()
+    {
+        foreach (var plugin in this.plugins.Reverse())
+            await this.UnloadAsync(plugin);
     }
 
     /// <summary>
@@ -317,8 +344,6 @@ public sealed partial class PluginManager : IAsyncDisposable
 
             await this.LoadAsync(archive);
         }
-
-        this.OnPluginsChanged();
     }
 
     private async Task LoadAsync(PluginArchive archive)
@@ -335,7 +360,6 @@ public sealed partial class PluginManager : IAsyncDisposable
         {
             Info = info,
             Archive = archive,
-            Source = archive.Source,
             LoadContext = new PluginLoadContext(info.AssemblyName),
             Dependencies = dependencies
         };
@@ -348,11 +372,14 @@ public sealed partial class PluginManager : IAsyncDisposable
             PluginAssemblyLoader.Load(container);
 
             // The plugin can use the server's services while it registers its own.
-            PluginServiceHandler.InjectServices(this.serverProvider, container.Plugin!, this.logger);
+            var serverOnly = new PluginServiceProvider(null, this.serverProvider);
+            PluginServiceHandler.InjectServices(serverOnly, container.Plugin!, this.logger);
 
-            var services = this.CreatePluginServices();
+            var services = this.CreatePluginServices(dependencies);
+            var baseServices = services.Count;
+
             container.Plugin!.ConfigureServices(services);
-            container.SetServices(services, this.serverProvider);
+            container.SetServices(services, baseServices, this.serverProvider);
 
             // Registering looks the plugin up by its assembly, so it has to be in the list first.
             this.plugins = this.plugins.Add(container);
@@ -414,11 +441,15 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.commandHandler.UnregisterPluginCommands(pluginContainer);
         this.eventDispatcher.UnregisterPluginEvents(pluginContainer);
 
+        if (this.server is Server concreteServer)
+            concreteServer.PayloadChannels.UnregisterPluginPayloads(pluginContainer);
+
         if (pluginContainer.LoadContext is not null)
             this.commandHandler.UnregisterArgumentParsers(pluginContainer.LoadContext);
 
-        if (this.server is Server concreteServer)
-            concreteServer.PayloadChannels.UnregisterPluginPayloads(pluginContainer);
+        // Handlers that started before they were unregistered finish before the plugin's services go.
+        if (!await pluginContainer.CloseAsync(drainTimeout))
+            Log.DrainTimedOut(this.logger, name, drainTimeout.TotalSeconds);
 
         if (pluginContainer.Plugin is PluginBase plugin)
         {
@@ -440,7 +471,14 @@ public sealed partial class PluginManager : IAsyncDisposable
         var loadContext = pluginContainer.LoadContext;
 
         // Disposing drops the container's references into the load context, which can't unload while they exist.
-        pluginContainer.Dispose();
+        try
+        {
+            await pluginContainer.DisposeAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.DisposeFailed(this.logger, ex, name);
+        }
 
         stopwatch.Stop();
 
@@ -448,7 +486,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         loadContext.Unload();
     }
 
-    // Players see the commands of the plugins that are loaded now.
+    // Players see the commands of the plugins that are loaded now. Startup doesn't need this: nobody has joined yet.
     private void OnPluginsChanged()
     {
         if (!this.serverReady)
@@ -460,7 +498,10 @@ public sealed partial class PluginManager : IAsyncDisposable
             player.SendPacket(CommandsRegistry.Packet);
     }
 
-    private ServiceCollection CreatePluginServices()
+    /// <summary>
+    /// The services every plugin starts with, plus the singletons of the plugins it depends on.
+    /// </summary>
+    private ServiceCollection CreatePluginServices(ImmutableArray<PluginContainer> dependencies)
     {
         var services = new ServiceCollection();
 
@@ -471,6 +512,13 @@ public sealed partial class PluginManager : IAsyncDisposable
         });
 
         services.AddSingleton(this.serverProvider.GetRequiredService<IOptionsMonitor<ServerConfiguration>>());
+
+        // Added as instances, which the dependent's provider doesn't dispose: they belong to the dependency.
+        foreach (var dependency in dependencies)
+        {
+            foreach (var type in dependency.ExportedSingletons)
+                services.AddSingleton(type, dependency.ServiceProvider.GetRequiredService(type));
+        }
 
         return services;
     }
@@ -510,13 +558,6 @@ public sealed partial class PluginManager : IAsyncDisposable
         }
     }
 
-    private void OnPluginSourceRenamed(string oldSource, string newSource)
-    {
-        var renamedPlugin = this.plugins.FirstOrDefault(plugin => plugin.Source == oldSource);
-        if (renamedPlugin is not null)
-            renamedPlugin.Source = newSource;
-    }
-
     private static partial class Log
     {
         [LoggerMessage(Level = LogLevel.Information,
@@ -532,14 +573,20 @@ public sealed partial class PluginManager : IAsyncDisposable
         [LoggerMessage(Level = LogLevel.Warning, Message = "{Warning}")]
         public static partial void DependencyWarning(ILogger logger, string warning);
 
-        [LoggerMessage(Level = LogLevel.Debug, Message = "Skipping plugin {PluginName}: it only runs on the {Side} side")]
+        [LoggerMessage(Level = LogLevel.Debug,
+            Message = "Skipping plugin {PluginName}: it only runs on the {Side} side")]
         public static partial void WrongSide(ILogger logger, string pluginName, PluginSide side);
 
         [LoggerMessage(Level = LogLevel.Warning,
-            Message = "Skipping plugin {Path}: it isn't signed by an accepted key and untrusted plugins aren't allowed")]
+            Message = "Skipping plugin {Path}: no accepted key signed it, and untrusted plugins aren't allowed")]
         public static partial void Untrusted(ILogger logger, string path);
 
-        [LoggerMessage(Level = LogLevel.Information, Message = "Unloaded plugin {PluginName} in {ElapsedMilliseconds}ms")]
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "Unloading plugin {PluginName} although its handlers still ran after {Seconds}s")]
+        public static partial void DrainTimedOut(ILogger logger, string pluginName, double seconds);
+
+        [LoggerMessage(Level = LogLevel.Information,
+            Message = "Unloaded plugin {PluginName} in {ElapsedMilliseconds}ms")]
         public static partial void Unloaded(ILogger logger, string pluginName, long elapsedMilliseconds);
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Disposing plugin {PluginName} failed")]

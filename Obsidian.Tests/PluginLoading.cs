@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Configuration;
@@ -31,29 +32,51 @@ public sealed class PluginLoading : IDisposable
 
     public void Dispose() => Directory.Delete(this.folder, recursive: true);
 
-    public static TheoryData<string, string[], string[], string[]> Resolutions => new()
+    public static TheoryData<string, string[], string[], string[], string[]> Resolutions => new()
     {
-        // Name, plugins as "id version [dependency type range ordering side]*", expected load order, rejected ids.
-        { "required present", ["a 1.0", "b 1.0 a required [1.0,) none both"], ["a", "b"], [] },
-        { "required missing", ["b 1.0 a required [1.0,) none both"], [], ["b"] },
-        { "required too old", ["a 1.0", "b 1.0 a required [2.0,) none both"], ["a"], ["b"] },
-        { "rejection cascades", ["b 1.0 a required 1.0 none both", "c 1.0 b required 1.0 none both"], [], ["b", "c"] },
-        { "optional absent", ["b 1.0 a optional 1.0 none both"], ["b"], [] },
-        { "optional wrong version", ["a 1.0", "b 1.0 a optional [2.0,) none both"], ["a"], ["b"] },
-        { "incompatible present", ["a 1.0", "b 1.0 a incompatible [1.0,) none both"], ["a"], ["b"] },
-        { "incompatible other version", ["a 1.0", "b 1.0 a incompatible [2.0,) none both"], ["a", "b"], [] },
-        { "discouraged only warns", ["a 1.0", "b 1.0 a discouraged 1.0 none both"], ["a", "b"], [] },
-        { "ordered before", ["a 1.0", "b 1.0 a optional 1.0 before both"], ["b", "a"], [] },
-        { "client-only dependency", ["b 1.0 a required 1.0 none client"], ["b"], [] },
-        { "cycle", ["a 1.0 b optional 1.0 none both", "b 1.0 a optional 1.0 none both"], [], ["a", "b"] },
-        { "duplicate id", ["a 1.0", "a 2.0"], ["a"], ["a"] }
+        // Name, plugins as "id version [dependency type range ordering side]*", plugins already loaded, expected load
+        // order, rejected ids.
+        { "required present", ["a 1.0", "b 1.0 a required [1.0,) none both"], [], ["a", "b"], [] },
+        { "required missing", ["b 1.0 a required [1.0,) none both"], [], [], ["b"] },
+        { "required too old", ["a 1.0", "b 1.0 a required [2.0,) none both"], [], ["a"], ["b"] },
+        { "required before", ["a 1.0", "b 1.0 a required 1.0 before both"], [], ["a"], ["b"] },
+        {
+            "rejection cascades",
+            ["b 1.0 a required 1.0 none both", "c 1.0 b required 1.0 none both"],
+            [],
+            [],
+            ["b", "c"]
+        },
+        { "optional absent", ["b 1.0 a optional 1.0 none both"], [], ["b"], [] },
+        { "optional wrong version", ["a 1.0", "b 1.0 a optional [2.0,) none both"], [], ["a"], ["b"] },
+        { "optional loads first", ["a 1.0 b optional 1.0 none both", "b 1.0"], [], ["b", "a"], [] },
+        {
+            "mutually optional",
+            ["a 1.0 b optional 1.0 none both", "b 1.0 a optional 1.0 none both"],
+            [],
+            ["b", "a"],
+            []
+        },
+        { "incompatible present", ["a 1.0", "b 1.0 a incompatible [1.0,) none both"], [], ["a"], ["b"] },
+        { "incompatible other version", ["a 1.0", "b 1.0 a incompatible [2.0,) none both"], [], ["a", "b"], [] },
+        { "loaded is incompatible", ["b 1.0"], ["a 1.0 b incompatible 1.0 none both"], [], ["b"] },
+        { "loaded needs another version", ["b 1.0"], ["a 1.0 b optional [2.0,) none both"], [], ["b"] },
+        { "discouraged only warns", ["a 1.0", "b 1.0 a discouraged 1.0 none both"], [], ["a", "b"], [] },
+        { "ordered before", ["a 1.0", "b 1.0 a optional 1.0 before both"], [], ["b", "a"], [] },
+        { "client-only dependency", ["b 1.0 a required 1.0 none client"], [], ["b"], [] },
+        { "cycle", ["a 1.0 b optional 1.0 after both", "b 1.0 a optional 1.0 after both"], [], [], ["a", "b"] },
+        { "duplicate id", ["a 1.0", "a 2.0"], [], ["a"], ["a"] }
     };
 
     [Theory]
     [MemberData(nameof(Resolutions))]
-    public void Resolve_FollowsNeoForgeDependencyRules(string name, string[] plugins, string[] order, string[] rejected)
+    public void Resolve_FollowsNeoForgeDependencyRules(string name, string[] plugins, string[] loaded, string[] order,
+        string[] rejected)
     {
-        var resolution = PluginDependencyResolver.Resolve([.. plugins.Select(Info)], [], PluginSide.Server);
+        var resolution = PluginDependencyResolver.Resolve(
+            [.. plugins.Select(Info)],
+            [.. loaded.Select(Info)],
+            PluginSide.Server);
 
         Assert.True(order.SequenceEqual(resolution.LoadOrder.Select(info => info.Id)), name);
         Assert.True(rejected.Order().SequenceEqual(resolution.Rejected.Keys.Select(info => info.Id).Order()), name);
@@ -133,10 +156,13 @@ public sealed class PluginLoading : IDisposable
         await dispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(server, new ServerStatus(server, "")));
         Assert.Equal(1, AppContext.GetData(ProbePlugin.CallsKey));
 
-        for (var i = 0; unloaded.IsAlive && i < 20; i++)
+        // Unloading finishes over several collections, and can wait for background work like tiered compilation to
+        // let go of the plugin's code, which takes longer while other tests keep the machine busy.
+        for (var i = 0; unloaded.IsAlive && i < 100; i++)
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            await Task.Delay(20);
         }
 
         Assert.False(unloaded.IsAlive, "The unloaded plugin's load context is still referenced.");
@@ -207,11 +233,20 @@ public sealed class PluginLoading : IDisposable
 
 /// <summary>
 /// The plugin that <see cref="PluginLoading"/> loads from the test assembly. It counts its event handler's calls in
-/// <see cref="AppContext"/> data, since its static fields belong to its own copy of the assembly.
+/// <see cref="AppContext"/> data, since its static fields belong to its own copy of the assembly. Its injected services
+/// have types from its own assembly, which mustn't be cached outside it.
 /// </summary>
 public sealed class ProbePlugin : PluginBase
 {
     public const string CallsKey = "Obsidian.Tests.ProbePlugin.Calls";
+
+    [Inject]
+    public ProbeService? Service { get; set; }
+
+    [Inject]
+    public ILogger<ProbePlugin>? Logger { get; set; }
+
+    public override void ConfigureServices(IServiceCollection services) => services.AddSingleton<ProbeService>();
 
     public override void ConfigureRegistry(IPluginRegistry pluginRegistry) =>
         pluginRegistry.MapEvent<ServerStatusRequestEventArgs>(_ =>
@@ -219,4 +254,17 @@ public sealed class ProbePlugin : PluginBase
             AppContext.SetData(CallsKey, (int)(AppContext.GetData(CallsKey) ?? 0) + 1);
             return ValueTask.CompletedTask;
         });
+
+    public override ValueTask OnLoadedAsync(IServer server)
+    {
+        // Loading injects again once the plugin's own services exist, as OnServerReadyAsync does.
+        this.Container.InjectServices(NullLogger.Instance, this);
+
+        Assert.NotNull(this.Service);
+        Assert.NotNull(this.Logger);
+
+        return ValueTask.CompletedTask;
+    }
 }
+
+public sealed class ProbeService;

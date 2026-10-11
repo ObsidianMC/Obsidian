@@ -61,11 +61,14 @@ Each dependency has:
 | `modId` | | Required. The other plugin's id. |
 | `type` | `required` | `required`: must be present with an accepted version. `optional`: if present, must have an accepted version. `incompatible`: this plugin doesn't load while an accepted version is present. `discouraged`: only warns. |
 | `versionRange` | any | Accepted versions, as a Maven/NuGet range (`[1.0,2.0)`) or a minimum version (`1.0`). |
-| `ordering` | `none` | `before` loads this plugin before the dependency; otherwise a present dependency loads first. |
+| `ordering` | `none` | `after` loads the dependency first, `before` loads this plugin first. With `none`, a present dependency still loads first (so that the plugin can use its types), unless other orderings contradict that for an optional one. A required dependency can't be ordered `before`: Obsidian has to load it first. |
 | `side` | `both` | The side the dependency applies to; on the other side it is ignored. |
 
-Plugins load in dependency order; among plugins that are free to load, by id. A plugin that can't load yet (say, its
-required dependency is missing) waits and loads once another plugin's arrival satisfies it.
+Plugins load in dependency order; among plugins that are free to load, by id. The constraints of plugins already
+loaded apply to plugins that arrive later too: a plugin another one declares incompatible doesn't load. A plugin that
+can't load yet (say, its required dependency is missing) waits, and is tried again whenever plugins load or unload.
+
+A plugin's services can use the singletons registered by the plugins it depends on, and the server's services.
 
 ## Signing
 
@@ -81,8 +84,10 @@ archives signed by one of them load.
 
 Changing a plugin's file reloads the plugin; deleting it unloads it. The plugins that depend on it reload, or wait,
 with it, since they use its types. Unloading removes everything the plugin registered (commands, event handlers,
-services), so its assemblies, which load into a collectible load context, can be freed. A plugin must not leave
-references to its own types with the server or other plugins outside what it registered, or it can't unload.
+services, payload channels, argument parsers), so its assemblies, which load into a collectible load context, can be
+freed. Unloading waits (up to five seconds) for the plugin's running event and payload handlers to finish. A plugin
+must not leave references to its own types with the server or other plugins outside what it registered, or it can't
+unload, and it can't load or unload plugins from its own load, ready or unloading callbacks.
 
 ## Version 1
 

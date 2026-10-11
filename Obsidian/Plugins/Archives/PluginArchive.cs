@@ -13,13 +13,13 @@ namespace Obsidian.Plugins.Archives;
 /// </remarks>
 public abstract class PluginArchive
 {
-    public required string Source { get; init; }
+    public string Source { get; internal set; } = string.Empty;
 
     public required PluginInfo Info { get; init; }
 
     /// <summary>
-    /// Whether one of the server's accepted keys signed the archive. Unsigned archives only load while the server allows
-    /// untrusted plugins.
+    /// Whether one of the server's accepted keys signed the archive. Unsigned archives only load while the server
+    /// allows untrusted plugins.
     /// </summary>
     public required bool ValidSignature { get; init; }
 

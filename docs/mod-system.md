@@ -26,12 +26,13 @@ client. This document describes the design and tracks its progress. The archive 
 
 ## Phases
 
-1. **Foundation** (in progress)
-   - Done: `.obby` v2 archives with NeoForge-style metadata, dependency resolution, reloading a plugin together with
-     its dependents, per-plugin services, unregistering events and argument parsers on unload, and loading plugins
-     before the worlds.
-   - In progress: NeoForge's channel negotiation in the configuration phase, a payload channel API for mods, and
-     `isModded` in the status response.
+1. **Foundation** (done)
+   - `.obby` v2 archives with NeoForge-style metadata and dependency resolution.
+   - Reloading a plugin together with its dependents, with per-plugin services, and unregistering its events,
+     argument parsers and payload channels on unload.
+   - Loading plugins before the worlds.
+   - NeoForge's channel negotiation in the configuration phase, a payload channel API for mods, and `isModded` in
+     the status response.
 2. **Content registries**: blocks (with their states), items and entity types that mods add at runtime, after the
    vanilla entries, with ids that survive reloads; NeoForge's frozen registry sync to modded clients; refusing vanilla
    clients when content they can't display is registered; reconfiguring connected players after a reload.

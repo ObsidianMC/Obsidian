@@ -131,14 +131,24 @@ public sealed class DirectoryWatcher : IDisposable
 
     public void Dispose()
     {
-        foreach (var (path, watcher) in watchers)
+        lock (watchers)
         {
-            watcher.Created -= OnFileUpdated;
-            watcher.Changed -= OnFileUpdated;
-            watcher.Renamed -= OnFileRenamed;
-            watcher.Deleted -= OnFileDeleted;
-            watcher.Dispose();
+            foreach (var (path, watcher) in watchers)
+            {
+                watcher.Created -= OnFileUpdated;
+                watcher.Changed -= OnFileUpdated;
+                watcher.Renamed -= OnFileRenamed;
+                watcher.Deleted -= OnFileDeleted;
+                watcher.Dispose();
+            }
+            watchers.Clear();
         }
-        watchers.Clear();
+
+        // Changes still settling are dropped, so nothing fires after disposal.
+        foreach (var path in this.pendingUpdates.Keys)
+        {
+            if (this.pendingUpdates.TryRemove(path, out var pending))
+                pending.Cancel();
+        }
     }
 }
