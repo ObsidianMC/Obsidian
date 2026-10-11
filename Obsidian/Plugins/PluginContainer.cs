@@ -49,7 +49,7 @@ public sealed class PluginContainer : IDisposable, IPluginContainer
     {
         ArgumentNullException.ThrowIfNull(pluginLoadContext);
 
-        if (this.LoadContext == null)
+        if (this.LoadContext is null)
             return false;
 
         this.LoadContext.AddDependency(pluginLoadContext);
@@ -59,7 +59,8 @@ public sealed class PluginContainer : IDisposable, IPluginContainer
     /// <summary>
     /// Inject the scoped services into 
     /// </summary>
-    public void InjectServices(ILogger? logger, object? target = null) => PluginServiceHandler.InjectServices(this.ServiceScope.ServiceProvider, target ?? this.Plugin, logger);
+    public void InjectServices(ILogger? logger, object? target = null) =>
+        PluginServiceHandler.InjectServices(this.ServiceScope.ServiceProvider, target ?? this.Plugin, logger);
 
     ///<inheritdoc/>
     public byte[]? GetFileData(string fileName)

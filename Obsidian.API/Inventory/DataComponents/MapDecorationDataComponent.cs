@@ -16,20 +16,15 @@ public sealed record class MapDecorationDataComponent : DataComponent
 
     public override void Read(INetStreamReader reader)
     {
-        var count = reader.ReadVarInt();
-
-        var decorations = new Dictionary<string, MapDecoration>(count);
-
-        for (int i = 0; i < count; i++)
+        var compound = reader.ReadNbtCompound();
+        this.Decorations = new();
+        foreach (var (key, tag) in compound)
         {
-            var key = reader.ReadString();
-
-            decorations[key] = new()
+            var value = (NbtCompound)tag;
+            this.Decorations[key] = new()
             {
-                Type = Enum.Parse<MapDecorationType>(reader.ReadString().TrimResourceTag().ToPascalCase(), true),
-                X = reader.ReadDouble(),
-                Z = reader.ReadDouble(),
-                Rotation = reader.ReadSingle()
+                Type = Enum.Parse<MapDecorationType>(value.GetString("type")!.TrimResourceTag().ToPascalCase(), true),
+                X = value.GetDouble("x"), Z = value.GetDouble("z"), Rotation = value.GetFloat("rotation")
             };
         }
     }

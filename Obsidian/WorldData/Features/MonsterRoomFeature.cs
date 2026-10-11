@@ -78,7 +78,10 @@ public sealed class MonsterRoomFeature : ConfiguredFeatureBase
                         if (position.Y >= level.MinY && !level.GetBlock(position + Vector.Down).IsSolid())
                             level.SetBlock(position, CaveAir);
                         else if (existing.IsSolid() && existing.Material != Material.Chest)
-                            FeatureHelpers.SafeSetBlock(level, position, y == -1 && random.NextInt(4) != 0 ? MossyCobblestone : Cobblestone, canReplace);
+                        {
+                            FeatureHelpers.SafeSetBlock(level, position, y == -1 && random.NextInt(4) != 0 ? MossyCobblestone : Cobblestone,
+                                canReplace);
+                        }
                     }
                     else if (existing.Material is not (Material.Chest or Material.Spawner))
                     {

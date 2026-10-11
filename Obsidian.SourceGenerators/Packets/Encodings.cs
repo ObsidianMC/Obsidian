@@ -72,7 +72,8 @@ internal sealed class Encodings
         {
             case "boolean": case "byte": case "short": case "unsigned_short": case "int": case "var_int": case "long":
             case "var_long": case "float": case "double": case "string": case "identifier": case "uuid": case "block_pos":
-            case "vec3": case "lp_vec3": case "angle": case "component": case "item_stack": case "nbt": case "optional_nbt":
+            case "vec3": case "lp_vec3": case "angle": case "component": case "item_stack": case "untrusted_item_stack":
+            case "required_item_stack": case "nbt": case "optional_nbt":
             case "byte_array": case "long_array": case "var_int_array": case "bit_set": case "remaining_bytes": case "instant":
             case "container_id": case "registry_id":
                 return null;
@@ -117,7 +118,8 @@ internal sealed class Encodings
         "lp_vec3" => "global::Obsidian.API.Velocity",
         "angle" => "global::Obsidian.API.Angle",
         "component" => "global::Obsidian.API.ChatMessage",
-        "item_stack" => "global::Obsidian.API.Inventory.ItemStack?",
+        "item_stack" or "untrusted_item_stack" => "global::Obsidian.API.Inventory.ItemStack?",
+        "required_item_stack" => "global::Obsidian.API.Inventory.ItemStack",
         "nbt" => "global::Obsidian.Nbt.NbtCompound",
         "optional_nbt" => "global::Obsidian.Nbt.NbtCompound?",
         "byte_array" or "remaining_bytes" => "byte[]",
@@ -141,32 +143,82 @@ internal sealed class Encodings
     {
         switch (Kind(encoding))
         {
-            case "boolean": code.Line($"writer.WriteBoolean({value});"); break;
-            case "byte": code.Line(javaType == "byte" ? $"writer.WriteByte({value});" : $"writer.WriteByte(unchecked((byte){value}));"); break;
-            case "short": code.Line(javaType == "short" ? $"writer.WriteShort({value});" : $"writer.WriteShort(unchecked((short){value}));"); break;
-            case "unsigned_short": code.Line($"writer.WriteUnsignedShort(unchecked((ushort){value}));"); break;
-            case "int": code.Line($"writer.WriteInt({value});"); break;
-            case "var_int": case "container_id": case "registry_id": code.Line($"writer.WriteVarInt({value});"); break;
-            case "long": code.Line($"writer.WriteLong({value});"); break;
-            case "var_long": code.Line($"writer.WriteVarLong({value});"); break;
-            case "float": code.Line($"writer.WriteSingle({value});"); break;
-            case "double": code.Line($"writer.WriteDouble({value});"); break;
-            case "string": code.Line($"writer.WriteString({value}, {Max(encoding, 32767)});"); break;
-            case "identifier": code.Line($"writer.WriteString({value});"); break;
-            case "uuid": code.Line($"writer.WriteUuid({value});"); break;
-            case "block_pos": code.Line($"writer.WritePosition({value});"); break;
-            case "vec3": code.Line($"global::Obsidian.API.VectorD.Write({value}, writer);"); break;
-            case "lp_vec3": code.Line($"writer.WriteVelocity({value});"); break;
-            case "angle": code.Line($"writer.WriteByte({value}.Value);"); break;
-            case "component": code.Line($"writer.WriteChat({value});"); break;
-            case "item_stack": code.Line($"writer.WriteItemStack({value});"); break;
-            case "nbt": code.Line($"writer.WriteNbtCompound({value});"); break;
-            case "optional_nbt": code.Line($"writer.WriteOptionalNbtCompound({value});"); break;
+            case "boolean":
+                code.Line($"writer.WriteBoolean({value});");
+                break;
+            case "byte":
+                code.Line(javaType == "byte" ? $"writer.WriteByte({value});" : $"writer.WriteByte(unchecked((byte){value}));");
+                break;
+            case "short":
+                code.Line(javaType == "short" ? $"writer.WriteShort({value});" : $"writer.WriteShort(unchecked((short){value}));");
+                break;
+            case "unsigned_short":
+                code.Line($"writer.WriteUnsignedShort(unchecked((ushort){value}));");
+                break;
+            case "int":
+                code.Line($"writer.WriteInt({value});");
+                break;
+            case "var_int": case "container_id": case "registry_id":
+                code.Line($"writer.WriteVarInt({value});");
+                break;
+            case "long":
+                code.Line($"writer.WriteLong({value});");
+                break;
+            case "var_long":
+                code.Line($"writer.WriteVarLong({value});");
+                break;
+            case "float":
+                code.Line($"writer.WriteSingle({value});");
+                break;
+            case "double":
+                code.Line($"writer.WriteDouble({value});");
+                break;
+            case "string":
+                code.Line($"writer.WriteString({value}, {Max(encoding, 32767)});");
+                break;
+            case "identifier":
+                code.Line($"writer.WriteString({value});");
+                break;
+            case "uuid":
+                code.Line($"writer.WriteUuid({value});");
+                break;
+            case "block_pos":
+                code.Line($"writer.WritePosition({value});");
+                break;
+            case "vec3":
+                code.Line($"global::Obsidian.API.VectorD.Write({value}, writer);");
+                break;
+            case "lp_vec3":
+                code.Line($"writer.WriteVelocity({value});");
+                break;
+            case "angle":
+                code.Line($"writer.WriteByte({value}.Value);");
+                break;
+            case "component":
+                code.Line($"writer.WriteChat({value});");
+                break;
+            case "untrusted_item_stack":
+                code.Line($"writer.WriteUntrustedItemStack({value});");
+                break;
+            case "required_item_stack":
+                code.Line($"writer.WriteRequiredItemStack({value});");
+                break;
+            case "item_stack":
+                code.Line($"writer.WriteItemStack({value});");
+                break;
+            case "nbt":
+                code.Line($"writer.WriteNbtCompound({value});");
+                break;
+            case "optional_nbt":
+                code.Line($"writer.WriteOptionalNbtCompound({value});");
+                break;
             case "byte_array":
                 code.Line($"writer.WriteVarInt({value}.Length);");
                 code.Line($"writer.WriteByteArray({value});");
                 break;
-            case "remaining_bytes": code.Line($"writer.WriteByteArray({value});"); break;
+            case "remaining_bytes":
+                code.Line($"writer.WriteByteArray({value});");
+                break;
             case "long_array":
                 code.Line($"writer.WriteVarInt({value}.Length);");
                 code.Line($"writer.WriteLongArray({value});");
@@ -180,11 +232,21 @@ internal sealed class Encodings
                 code.EndScope();
                 break;
             }
-            case "bit_set": code.Line($"writer.WriteBitSet({value});"); break;
-            case "fixed_bit_set": code.Line($"writer.WriteFixedBitSet({value}, {encoding.GetProperty("size").GetInt32()});"); break;
-            case "instant": code.Line($"writer.WriteDateTimeOffset({value});"); break;
-            case "enum": Write(code, encoding.GetProperty("as"), "int", $"(int){value}"); break;
-            case "type": code.Line($"{Types}.{ReferencedType(encoding)!.Name}.Write({value}, writer);"); break;
+            case "bit_set":
+                code.Line($"writer.WriteBitSet({value});");
+                break;
+            case "fixed_bit_set":
+                code.Line($"writer.WriteFixedBitSet({value}, {encoding.GetProperty("size").GetInt32()});");
+                break;
+            case "instant":
+                code.Line($"writer.WriteDateTimeOffset({value});");
+                break;
+            case "enum":
+                Write(code, encoding.GetProperty("as"), "int", $"(int){value}");
+                break;
+            case "type":
+                code.Line($"{Types}.{ReferencedType(encoding)!.Name}.Write({value}, writer);");
+                break;
             case "optional":
             case "nullable":
             {
@@ -238,7 +300,8 @@ internal sealed class Encodings
             case "boolean": return "reader.ReadBoolean()";
             case "byte" when IsUnsigned(encoding): return javaType == "byte" ? "unchecked((sbyte)reader.ReadByte())" : "(int)reader.ReadByte()";
             case "byte": return javaType == "byte" ? "reader.ReadSignedByte()" : "(int)reader.ReadSignedByte()";
-            case "short" when IsUnsigned(encoding): return javaType == "short" ? "unchecked((short)reader.ReadUnsignedShort())" : "(int)reader.ReadUnsignedShort()";
+            case "short" when IsUnsigned(encoding):
+                return javaType == "short" ? "unchecked((short)reader.ReadUnsignedShort())" : "(int)reader.ReadUnsignedShort()";
             case "short": return javaType == "short" ? "reader.ReadShort()" : "(int)reader.ReadShort()";
             case "unsigned_short": return "(int)reader.ReadUnsignedShort()";
             case "int": return "reader.ReadInt()";
@@ -256,6 +319,8 @@ internal sealed class Encodings
             case "angle": return "reader.ReadAngle()";
             case "component": return "reader.ReadChat()";
             case "item_stack": return "reader.ReadItemStack()";
+            case "untrusted_item_stack": return "reader.ReadUntrustedItemStack()";
+            case "required_item_stack": return "reader.ReadRequiredItemStack()";
             case "nbt": return "reader.ReadNbtCompound()";
             case "optional_nbt": return "reader.ReadOptionalNbtCompound()";
             case "byte_array": return $"reader.ReadByteArray({Max(encoding, int.MaxValue)})";
@@ -366,8 +431,12 @@ internal sealed class Encodings
         {
             switch (javaType[i])
             {
-                case '<': depth++; break;
-                case '>': depth--; break;
+                case '<':
+                    depth++;
+                    break;
+                case '>':
+                    depth--;
+                    break;
                 case ',' when depth == 0:
                     arguments.Add(javaType.Substring(from, i - from).Trim());
                     from = i + 1;

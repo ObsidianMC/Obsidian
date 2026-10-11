@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.API.Containers;
@@ -68,7 +68,7 @@ public partial class ContainerClickPacket
         this.CarriedItem = reader.ReadHashedItemStack();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         if (this.ContainerId != (player.OpenedContainer is null ? 0 : player.CurrentContainerId))
             return;

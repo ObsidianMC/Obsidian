@@ -11,7 +11,7 @@ public abstract class CommandModuleBase
     {
         get
         {
-            if (commandContext == null)
+            if (commandContext is null)
                 throw new UnreachableException();//TODO empty command context maybe??
 
             return this.commandContext;

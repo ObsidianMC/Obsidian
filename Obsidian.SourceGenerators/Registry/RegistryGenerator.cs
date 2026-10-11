@@ -40,7 +40,7 @@ public sealed partial class RegistryGenerator : IIncrementalGenerator
 
         var symbol = ctx.SemanticModel.GetDeclaredSymbol(ctx.Node);
 
-        if (symbol == null)
+        if (symbol is null)
             return null;
 
         return symbol.GetAttributes().Any(x => x.AttributeClass?.Name == AttributeName) ? syntax : null;
@@ -49,7 +49,9 @@ public sealed partial class RegistryGenerator : IIncrementalGenerator
     private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<ClassDeclarationSyntax> typeList, 
         string? parsersJson)
     {
-        if (parsersJson == null) return;
+        if (parsersJson is null)
+            return;
+
 
         using var document = JsonDocument.Parse(parsersJson);
 
@@ -77,7 +79,8 @@ public sealed partial class RegistryGenerator : IIncrementalGenerator
 
             if (!@class.Modifiers.Any(x => x.IsKind(SyntaxKind.PartialKeyword)))
             {
-                context.ReportDiagnostic(DiagnosticSeverity.Error, $"Type {symbol.Name} must be marked as partial in order to generate required properties.", @class);
+                context.ReportDiagnostic(DiagnosticSeverity.Error,
+                    $"Type {symbol.Name} must be marked as partial in order to generate required properties.", @class);
                 continue;
             }
 
@@ -87,7 +90,8 @@ public sealed partial class RegistryGenerator : IIncrementalGenerator
 
             if(!constantValue.HasValue)
             {
-                context.ReportDiagnostic(DiagnosticSeverity.Error, $"ArgumentParserAttribute for type {symbol.Name} must be a constant value.", @class);
+                context.ReportDiagnostic(DiagnosticSeverity.Error,
+                    $"ArgumentParserAttribute for type {symbol.Name} must be a constant value.", @class);
                 continue;
             }
 

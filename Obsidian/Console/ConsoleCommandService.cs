@@ -15,6 +15,9 @@ public sealed partial class ConsoleCommandService(
     ILogger<ConsoleCommandService> logger,
     ConsoleTerminal? terminal = null) : BackgroundService
 {
+    // Whether lines are read with the interactive prompt: when the options allow it and the terminal supports it.
+    private bool Interactive => options.Value.Interactive && terminal?.IsInteractive == true;
+
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
@@ -36,7 +39,7 @@ public sealed partial class ConsoleCommandService(
 
                 try
                 {
-                    line = terminal?.IsInteractive == true
+                    line = this.Interactive
                         ? await terminal.ReadLineAsync(token, this.CompleteAsync).ConfigureAwait(false)
                         : await Task.Run(input.ReadLine, token).WaitAsync(token).ConfigureAwait(false);
                 }
@@ -48,7 +51,18 @@ public sealed partial class ConsoleCommandService(
                 }
 
                 if (line is null)
+                {
+                    if (options.Value.StopOnEndOfInput)
+                    {
+                        // Earlier commands finish first, as with "stop".
+                        await pending.WaitAsync(token).ConfigureAwait(false);
+
+                        Log.InputEnded(logger);
+                        lifetime.StopApplication();
+                    }
+
                     break;
+                }
 
                 token.ThrowIfCancellationRequested();
 
@@ -76,6 +90,10 @@ public sealed partial class ConsoleCommandService(
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
         }
+
+        // A command still running when the host stops (a save, say) finishes before the host disposes the services it
+        // uses and exits. Commands queued behind it run with the cancelled token.
+        await pending.ConfigureAwait(false);
     }
 
     private async ValueTask<bool> TryHandleBuiltInAsync(string commandLine, Task pending, CancellationToken token)
@@ -87,7 +105,7 @@ public sealed partial class ConsoleCommandService(
             case "quit":
                 // Redirected input is read ahead of execution. Let earlier commands finish before
                 // StopApplication cancels the token they run with.
-                if (terminal?.IsInteractive != true)
+                if (!this.Interactive)
                     await pending.WaitAsync(token).ConfigureAwait(false);
 
                 Log.ShutdownRequested(logger);
@@ -97,7 +115,7 @@ public sealed partial class ConsoleCommandService(
 
             case "clear":
             case "cls":
-                if (terminal?.IsInteractive == true)
+                if (this.Interactive)
                 {
                     terminal.Clear();
 
@@ -176,6 +194,9 @@ public sealed partial class ConsoleCommandService(
 
         [LoggerMessage(Level = LogLevel.Information, Message = "Shutdown requested from the console")]
         public static partial void ShutdownRequested(ILogger logger);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Console input ended; stopping the server")]
+        public static partial void InputEnded(ILogger logger);
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "The terminal does not support clearing the screen")]
         public static partial void ClearUnsupported(ILogger logger, Exception exception);

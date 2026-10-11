@@ -111,6 +111,17 @@ public abstract partial class AbstractLevel : ILevel
 
     public string LevelDataFilePath { get; protected set; }
 
+    /// <summary>
+    /// The folder of the level's chunk region files, inside <see cref="FolderPath"/>: Obsidian's <c>regions</c>, or
+    /// vanilla's <c>region</c> in worlds laid out like vanilla saves.
+    /// </summary>
+    protected virtual string RegionFolderName => "regions";
+
+    /// <summary>
+    /// Called while <see cref="GenerateAsync"/> runs, with the chunks generated so far and the chunks to generate.
+    /// </summary>
+    internal Action<int, int>? GenerationProgress { get; set; }
+
     protected ILogger Logger { get; }
 
     /// <summary>
@@ -328,9 +339,9 @@ public abstract partial class AbstractLevel : ILevel
     internal void BroadcastBlockChange(IBlock block, Vector location)
     {
         var packet = new BlockUpdatePacket(location, block.GetHashCode());
-        foreach (Player player in PlayersInRange(location).Cast<Player>())
+        foreach (var player in PlayersInRange(location))
         {
-            player.Client.SendPacket(packet);
+            player.SendPacket(packet);
         }
     }
 
@@ -340,8 +351,8 @@ public abstract partial class AbstractLevel : ILevel
     internal void BroadcastLevelEvent(int type, Vector location, int data)
     {
         var packet = new LevelEventPacket(type, location, data);
-        foreach (Player player in PlayersInRange(location).Cast<Player>())
-            player.Client.SendPacket(packet);
+        foreach (var player in PlayersInRange(location))
+            player.SendPacket(packet);
     }
 
     public IEnumerable<IPlayer> PlayersInRange(Vector location)
@@ -352,7 +363,8 @@ public abstract partial class AbstractLevel : ILevel
         return this.Players.Values.Where(player => player.LoadedChunks.Contains(packedXZ));
     }
 
-    public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) => SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
+    public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) =>
+        SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 
     public async ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false)
     {
@@ -475,7 +487,8 @@ public abstract partial class AbstractLevel : ILevel
 
     public bool TryAddPlayer(IPlayer player) => Players.TryAdd(player.Uuid, player);
 
-    public bool TryRemovePlayer(IPlayer player) => Players.TryRemove(player.Uuid, out _);
+    // Matches the instance, not just the UUID, so a stale reference can't remove a newer player with the same UUID.
+    public bool TryRemovePlayer(IPlayer player) => Players.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player));
 
     public async virtual Task DoWorldTickAsync()
     {
@@ -548,7 +561,7 @@ public abstract partial class AbstractLevel : ILevel
                 await concrete.TickBlocksAsync();
             }
         }
-        foreach (var player in Players.Values.OfType<Player>())
+        foreach (var player in Players.Values)
         {
             TickStage = $"tracking for {player.Username}";
             await player.SynchronizeTrackedEntitiesAsync();
@@ -565,8 +578,8 @@ public abstract partial class AbstractLevel : ILevel
     internal void SendLightUpdate(IChunk chunk)
     {
         var packet = new LightUpdatePacket(chunk);
-        foreach (Player player in this.GetPlayersInChunkRange(new Vector(chunk.X << 4, 0, chunk.Z << 4)).Cast<Player>())
-            player.Client.SendPacket(packet);
+        foreach (var player in this.GetPlayersInChunkRange(new Vector(chunk.X << 4, 0, chunk.Z << 4)))
+            player.SendPacket(packet);
     }
 
     /// <summary>
@@ -626,7 +639,7 @@ public abstract partial class AbstractLevel : ILevel
             if (Regions.TryGetValue(value, out region))
                 return region;
 
-            region = new Region(regionX, regionZ, FolderPath, minY: this.MinY, height: this.Height)
+            region = new Region(regionX, regionZ, FolderPath, this.RegionFolderName, minY: this.MinY, height: this.Height)
             {
                 LockChunk = this.Generator.LockChunkAsync,
                 FluidTickLock = this.Fluids.TickLock,
@@ -867,7 +880,8 @@ public abstract partial class AbstractLevel : ILevel
         return entity;
     }
 
-    public ValueTask<IBlockEntity?> GetBlockEntityAsync(Vector blockPosition) => GetBlockEntityAsync(blockPosition.X, blockPosition.Y, blockPosition.Z);
+    public ValueTask<IBlockEntity?> GetBlockEntityAsync(Vector blockPosition) =>
+        GetBlockEntityAsync(blockPosition.X, blockPosition.Y, blockPosition.Z);
 
     public async ValueTask<IBlockEntity?> GetBlockEntityAsync(int x, int y, int z)
     {
@@ -875,7 +889,8 @@ public abstract partial class AbstractLevel : ILevel
         return c?.GetBlockEntity(x, y, z);
     }
 
-    public ValueTask SetBlockEntity(Vector blockPosition, IBlockEntity tileEntityData) => SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
+    public ValueTask SetBlockEntity(Vector blockPosition, IBlockEntity tileEntityData) =>
+        SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
     public async ValueTask SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
@@ -960,8 +975,11 @@ public abstract partial class AbstractLevel : ILevel
     /// Starts the initial generation of the world, which includes pregenerating chunks in a square around the spawn and loading their regions,
     /// as well as setting the world spawn if specified. This should be called after Initialize and before allowing players to join.
     /// </summary>
-    /// <param name="setWorldSpawn">Whether to set the world spawn after generation.</param>
-    public async Task GenerateAsync()
+    /// <param name="cancellationToken">
+    /// Stops generation: no new chunk starts, and <see cref="OperationCanceledException"/> is thrown. The chunks already
+    /// generating finish in the background, and disposal waits for them.
+    /// </param>
+    public async Task GenerateAsync(CancellationToken cancellationToken = default)
     {
         if (this.generated)
             return;
@@ -1018,7 +1036,7 @@ public abstract partial class AbstractLevel : ILevel
         var flushedThousands = 0;
         while (this.ChunksToGen.TryDequeue(out var job))
         {
-            await this.generationSlots.WaitAsync();
+            await this.generationSlots.WaitAsync(cancellationToken);
             jobs.Add(this.GenerateQueuedChunkAsync(job));
 
             while (completedChunks < jobs.Count && jobs[completedChunks].IsCompleted)
@@ -1028,9 +1046,17 @@ public abstract partial class AbstractLevel : ILevel
             if (pctComplete != lastPercent)
             {
                 lastPercent = pctComplete;
-                var cps = completedChunks / Math.Max(stopwatch.Elapsed.TotalSeconds, 0.001);
-                var remain = (startChunks - completedChunks) / (int)Math.Max(cps, 1);
-                System.Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
+
+                // Without a listener, the progress goes to the terminal.
+                if (this.GenerationProgress is not null)
+                    this.GenerationProgress(completedChunks, startChunks);
+                else
+                {
+                    var cps = completedChunks / Math.Max(stopwatch.Elapsed.TotalSeconds, 0.001);
+                    var remain = (startChunks - completedChunks) / (int)Math.Max(cps, 1);
+                    System.Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ",
+                        cps.ToString("###.00"), pctComplete, remain);
+                }
             }
 
             // The flush after the loop saves the last chunks.
@@ -1045,8 +1071,14 @@ public abstract partial class AbstractLevel : ILevel
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
             ExceptionDispatchInfo.Throw(failure);
 
-        System.Console.Write("\r{0} chunks/second - 100% complete - 0 seconds remaining   ", (startChunks / stopwatch.Elapsed.TotalSeconds).ToString("###.00"));
-        System.Console.WriteLine();
+        if (this.GenerationProgress is not null)
+            this.GenerationProgress(startChunks, startChunks);
+        else
+        {
+            System.Console.Write("\r{0} chunks/second - 100% complete - 0 seconds remaining   ",
+                (startChunks / stopwatch.Elapsed.TotalSeconds).ToString("###.00"));
+            System.Console.WriteLine();
+        }
 
         await FlushRegionsAsync();
         await SetWorldSpawnAsync();
@@ -1130,7 +1162,8 @@ public abstract partial class AbstractLevel : ILevel
         return region is not null && region.Entities.TryAdd(entity.EntityId, entity);
     }
 
-    protected void BroadcastTime() => this.PacketBroadcaster.QueuePacketToLevel(this, new SetTimePacket(LevelData.Time, LevelData.Time % 24000, true));
+    protected void BroadcastTime() =>
+        this.PacketBroadcaster.QueuePacketToLevel(this, new SetTimePacket(LevelData.Time, LevelData.Time % 24000, true));
 
     public async virtual ValueTask DisposeAsync()
     {
@@ -1165,7 +1198,8 @@ public abstract partial class AbstractLevel : ILevel
 
     public ValueTask<IBlock?> GetBlockAsync(Vector location) => this.GetBlockAsync(location.X, location.Y, location.Z);
     public ValueTask SetBlockAsync(Vector location, IBlock block) => this.SetBlockAsync(location.X, location.Y, location.Z, block);
-    public ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate) => this.SetBlockAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
+    public ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate) =>
+        this.SetBlockAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 
     private static partial class Log
     {

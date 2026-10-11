@@ -58,4 +58,9 @@ public class SuperflatGenerator : ILevelGenerator
 
     public void Init(ILevel level) { }
 
+    /// <summary>
+    /// Players spawn on the grass at the world's center, which is the same everywhere.
+    /// </summary>
+    public ValueTask<VectorD?> FindSpawnPointAsync() => ValueTask.FromResult<VectorD?>(new VectorD(0.5, -59, 0.5));
+
 }

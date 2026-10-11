@@ -88,7 +88,8 @@ public class VanillaStructureGeneration(WorldgenFixture worldgen)
     {
         // Vanilla: /loot spawn 100 64 100 loot minecraft:chests/shipwreck_map, then the colors of the map's saved data.
         var builder = worldgen.Builder(MojangDimension.Overworld, 12345L);
-        var target = new StructureLocator(builder.Structures!).FindNearest(StructureTags.All["minecraft:on_treasure_maps"], new Vector(100, 64, 100), 50, false);
+        var target = new StructureLocator(builder.Structures!)
+            .FindNearest(StructureTags.All["minecraft:on_treasure_maps"], new Vector(100, 64, 100), 50, false);
         Assert.Equal(new Vector(761, 0, 409), target);
 
         var map = MapData.CreateFresh(target!.Value.X, target.Value.Z, 1, true, true, "minecraft:overworld");

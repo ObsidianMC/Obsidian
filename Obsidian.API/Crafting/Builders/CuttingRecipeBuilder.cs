@@ -3,7 +3,8 @@ using Obsidian.API.Inventory;
 
 namespace Obsidian.API.Crafting.Builders;
 
-public sealed class CuttingRecipeBuilder : BaseRecipeBuilder<CuttingRecipe>, IIngredientRecipe<IOutputCountRecipe<CuttingRecipe>>, IOutputCountRecipe<CuttingRecipe>
+public sealed class CuttingRecipeBuilder : BaseRecipeBuilder<CuttingRecipe>, IIngredientRecipe<IOutputCountRecipe<CuttingRecipe>>,
+    IOutputCountRecipe<CuttingRecipe>
 {
     private Ingredient ingredient = new();
 

@@ -23,7 +23,8 @@ public class BossBar : IBossBar
 
     public BossBarFlags Flags { get; set; }
 
-    public BossBar(IPacketBroadcaster packetBroadcaster, ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags)
+    public BossBar(IPacketBroadcaster packetBroadcaster, ChatMessage title, float health, BossBarColor color,
+        BossBarDivisionType divisionType, BossBarFlags flags)
     {
         this.removeAction = new BossBarRemoveAction
         {

@@ -19,7 +19,7 @@ public partial class UseItemPacket
         reader.ReadSingle();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var args = new PlayerInteractEventArgs(player, server)
         {

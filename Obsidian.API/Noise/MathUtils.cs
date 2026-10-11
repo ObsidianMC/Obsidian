@@ -23,7 +23,8 @@ public static class MathUtils
         return Lerp(tz, zLerpBottom, zLerpTop);                    // Interpolate along z-axis
     }
 
-    public static double ClampedMap(double blockY, double fromY, double toY, double fromValue, double toValue) => ClampedLerp(InverseLerp(blockY, fromY, toY), fromValue, toValue);
+    public static double ClampedMap(double blockY, double fromY, double toY, double fromValue, double toValue) =>
+        ClampedLerp(InverseLerp(blockY, fromY, toY), fromValue, toValue);
 
     public static double InverseLerp(double t, double start, double end) => (t - start) / (end - start);
 

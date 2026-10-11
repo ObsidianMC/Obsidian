@@ -1,0 +1,216 @@
+// @map MC_Vec3_addVector net.minecraft.world.phys.Vec3#add(net.minecraft.world.phys.Vec3)
+// @map MC_Level_getBlockState net.minecraft.world.level.Level#getBlockState(net.minecraft.core.BlockPos)
+// @map MC_CollisionGetter_getEntityCollisions net.minecraft.world.level.CollisionGetter#getEntityCollisions(net.minecraft.world.entity.Entity,net.minecraft.world.phys.AABB)
+// @map MC_CollisionGetter_getBlockCollisions net.minecraft.world.level.CollisionGetter#getBlockCollisions(net.minecraft.world.entity.Entity,net.minecraft.world.phys.AABB)
+// @map MC_CollisionGetter_getWorldBorder net.minecraft.world.level.CollisionGetter#getWorldBorder()
+// @map MC_LivingEntity_getMainArm net.minecraft.world.entity.LivingEntity#getMainArm()
+// @map MC_Entity_onGround net.minecraft.world.entity.Entity#onGround()
+// @map MC_LivingEntity_onClimbable net.minecraft.world.entity.LivingEntity#onClimbable()
+// @map MC_Entity_isSprinting net.minecraft.world.entity.Entity#isSprinting()
+// @map MC_LivingEntity_getSpeed net.minecraft.world.entity.LivingEntity#getSpeed()
+// @map MC_LivingEntity_getFlyingSpeed net.minecraft.world.entity.LivingEntity#getFlyingSpeed()
+// @map MC_LivingEntity_getEffectiveGravity net.minecraft.world.entity.LivingEntity#getEffectiveGravity()
+// @map MC_Entity_getBlockPosBelowThatAffectsMyMovement net.minecraft.world.entity.Entity#getBlockPosBelowThatAffectsMyMovement()
+// @map MC_LivingEntity_hasEffect net.minecraft.world.entity.LivingEntity#hasEffect(net.minecraft.core.Holder)
+// @map MC_LivingEntity_getEffect net.minecraft.world.entity.LivingEntity#getEffect(net.minecraft.core.Holder)
+// @map MC_LivingEntity_getAttributeValue net.minecraft.world.entity.LivingEntity#getAttributeValue(net.minecraft.core.Holder)
+// @map MC_Entity_getFluidHeight net.minecraft.world.entity.Entity#getFluidHeight(net.minecraft.tags.TagKey)
+// @map MC_LivingEntity_maxUpStep net.minecraft.world.entity.LivingEntity#maxUpStep()
+// @map MC_LivingEntity_isSuppressingSlidingDownLadder net.minecraft.world.entity.LivingEntity#isSuppressingSlidingDownLadder()
+// @map MC_Entity_move net.minecraft.world.entity.Entity#move(net.minecraft.world.entity.MoverType,net.minecraft.world.phys.Vec3)
+// @map MC_Entity_setDeltaMovement net.minecraft.world.entity.Entity#setDeltaMovement(net.minecraft.world.phys.Vec3)
+// @map MC_Entity_getDeltaMovement net.minecraft.world.entity.Entity#getDeltaMovement()
+// @map MC_Entity_level net.minecraft.world.entity.Entity#level()
+// @map MC_Vec3_multiply net.minecraft.world.phys.Vec3#multiply(double,double,double)
+// @map MC_Block_defaultBlockState net.minecraft.world.level.block.Block#defaultBlockState()
+// @map MC_SharedConstants_tryDetectVersion net.minecraft.SharedConstants#tryDetectVersion()
+// @map MC_Bootstrap_bootStrap net.minecraft.server.Bootstrap#bootStrap()
+// @map MC_SmoothDouble_getNewDeltaValue net.minecraft.util.SmoothDouble#getNewDeltaValue(double,double)
+// @map MC_Registry_getKey net.minecraft.core.Registry#getKey(java.lang.Object)
+// @map MC_Vec3i_getX net.minecraft.core.Vec3i#getX()
+// @map MC_Vec3i_getZ net.minecraft.core.Vec3i#getZ()
+// @map MC_BlockBehaviour_BlockStateBase_getOffset net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase#getOffset(net.minecraft.core.BlockPos)
+// @map MC_Vec3_subtract net.minecraft.world.phys.Vec3#subtract(net.minecraft.world.phys.Vec3)
+// @map MC_Shapes_box net.minecraft.world.phys.shapes.Shapes#box(double,double,double,double,double,double)
+// @map MC_VoxelShape_toAabbs net.minecraft.world.phys.shapes.VoxelShape#toAabbs()
+// @map MC_BlockBehaviour_BlockStateBase_is net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase#is(net.minecraft.world.level.block.Block)
+// @map MC_Vec3_add net.minecraft.world.phys.Vec3#add(double,double,double)
+// @map MC_EntityType_field_PLAYER net.minecraft.world.entity.EntityType#PLAYER
+// @map MC_HumanoidArm_field_RIGHT net.minecraft.world.entity.HumanoidArm#RIGHT
+// @map MC_BlockPos_field_ZERO net.minecraft.core.BlockPos#ZERO
+// @map MC_Attributes_field_JUMP_STRENGTH net.minecraft.world.entity.ai.attributes.Attributes#JUMP_STRENGTH
+// @map MC_Attributes_field_GRAVITY net.minecraft.world.entity.ai.attributes.Attributes#GRAVITY
+// @map MC_Blocks_field_SOUL_SAND net.minecraft.world.level.block.Blocks#SOUL_SAND
+// @map MC_Blocks_field_ICE net.minecraft.world.level.block.Blocks#ICE
+// @map MC_Blocks_field_STONE net.minecraft.world.level.block.Blocks#STONE
+// @map MC_Blocks_field_BAMBOO net.minecraft.world.level.block.Blocks#BAMBOO
+// @map MC_Blocks_field_DANDELION net.minecraft.world.level.block.Blocks#DANDELION
+// @map MC_Blocks_field_SHORT_GRASS net.minecraft.world.level.block.Blocks#SHORT_GRASS
+// @map MC_Vec3_field_ZERO net.minecraft.world.phys.Vec3#ZERO
+// @map MC_BuiltInRegistries_field_BLOCK net.minecraft.core.registries.BuiltInRegistries#BLOCK
+// @map MC_Vec3_field_x net.minecraft.world.phys.Vec3#x
+// @map MC_Vec3_field_y net.minecraft.world.phys.Vec3#y
+// @map MC_Vec3_field_z net.minecraft.world.phys.Vec3#z
+// @map MC_AABB_field_minX net.minecraft.world.phys.AABB#minX
+// @map MC_AABB_field_minY net.minecraft.world.phys.AABB#minY
+// @map MC_AABB_field_minZ net.minecraft.world.phys.AABB#minZ
+// @map MC_AABB_field_maxX net.minecraft.world.phys.AABB#maxX
+// @map MC_AABB_field_maxY net.minecraft.world.phys.AABB#maxY
+// @map MC_AABB_field_maxZ net.minecraft.world.phys.AABB#maxZ
+// @map MC_Entity_field_level net.minecraft.world.entity.Entity#level
+// @map MC_Entity_field_position net.minecraft.world.entity.Entity#position
+// @map MC_Entity_field_bb net.minecraft.world.entity.Entity#bb
+// @map MC_Entity_collideWithShapes net.minecraft.world.entity.Entity#collideWithShapes(net.minecraft.world.phys.Vec3,net.minecraft.world.phys.AABB,java.util.List)
+// @map MC_Entity_collide net.minecraft.world.entity.Entity#collide(net.minecraft.world.phys.Vec3)
+// @map MC_LivingEntity_travelInAir net.minecraft.world.entity.LivingEntity#travelInAir(net.minecraft.world.phys.Vec3)
+// @map MC_LivingEntity_travelInWater net.minecraft.world.entity.LivingEntity#travelInWater(net.minecraft.world.phys.Vec3,double,boolean,double)
+// @map MC_LivingEntity_travelInLava net.minecraft.world.entity.LivingEntity#travelInLava(net.minecraft.world.phys.Vec3,double,boolean,double)
+// @map MC_LivingEntity_updateFallFlyingMovement net.minecraft.world.entity.LivingEntity#updateFallFlyingMovement(net.minecraft.world.phys.Vec3)
+// @map MC_MobEffectInstance net.minecraft.world.effect.MobEffectInstance
+// @map MC_BuiltInRegistries net.minecraft.core.registries.BuiltInRegistries
+// @map MC_SharedConstants net.minecraft.SharedConstants
+// @map MC_LivingEntity net.minecraft.world.entity.LivingEntity
+// @map MC_SmoothDouble net.minecraft.util.SmoothDouble
+// @map MC_ServerLevel net.minecraft.server.level.ServerLevel
+// @map MC_WorldBorder net.minecraft.world.level.border.WorldBorder
+// @map MC_HumanoidArm net.minecraft.world.entity.HumanoidArm
+// @map MC_BlockState net.minecraft.world.level.block.state.BlockState
+// @map MC_VoxelShape net.minecraft.world.phys.shapes.VoxelShape
+// @map MC_EntityType net.minecraft.world.entity.EntityType
+// @map MC_Attributes net.minecraft.world.entity.ai.attributes.Attributes
+// @map MC_MobEffect net.minecraft.world.effect.MobEffect
+// @map MC_Attribute net.minecraft.world.entity.ai.attributes.Attribute
+// @map MC_MoverType net.minecraft.world.entity.MoverType
+// @map MC_Bootstrap net.minecraft.server.Bootstrap
+// @map MC_BlockPos net.minecraft.core.BlockPos
+// @map MC_Entity net.minecraft.world.entity.Entity
+// @map MC_Holder net.minecraft.core.Holder
+// @map MC_TagKey net.minecraft.tags.TagKey
+// @map MC_Blocks net.minecraft.world.level.block.Blocks
+// @map MC_Shapes net.minecraft.world.phys.shapes.Shapes
+// @map MC_Fluid net.minecraft.world.level.material.Fluid
+// @map MC_Block net.minecraft.world.level.block.Block
+// @map MC_AABB net.minecraft.world.phys.AABB
+// @map MC_Vec3 net.minecraft.world.phys.Vec3
+import com.google.gson.*;
+import java.nio.file.*;
+import java.lang.reflect.*;
+import java.util.*;
+
+/** Build-time physics capture using the installed client and its mappings; no vanilla source is copied.
+ * Unsafe skips constructors only to replace unrelated server/world services. All measured collision and
+ * travel methods execute in the original jar. The output is an ignored generated parity fixture.
+ */
+class PlayerPhysicsFixtures {
+    static sun.misc.Unsafe unsafe;
+    static Method sweep, collide, air, water, lava, glide;
+    static class World extends MC_ServerLevel {
+        MC_BlockState surface;
+        List<MC_VoxelShape> shapes;
+        World() { super(null,null,null,null,null,null,false,0,null,false,null); }
+        @Override public MC_BlockState MC_Level_getBlockState(MC_BlockPos pos) { return surface; }
+        @Override public List<MC_VoxelShape> MC_CollisionGetter_getEntityCollisions(MC_Entity entity, MC_AABB box) { return List.of(); }
+        @Override public Iterable<MC_VoxelShape> MC_CollisionGetter_getBlockCollisions(MC_Entity entity, MC_AABB box) { return shapes; }
+        @Override public MC_WorldBorder MC_CollisionGetter_getWorldBorder() { return new MC_WorldBorder(); }
+    }
+    static class Probe extends MC_LivingEntity {
+        boolean ground, ladder, sprint;
+        MC_Vec3 accumulated;
+        Probe() { super(MC_EntityType.MC_EntityType_field_PLAYER, null); }
+        @Override public MC_HumanoidArm MC_LivingEntity_getMainArm() { return MC_HumanoidArm.MC_HumanoidArm_field_RIGHT; }
+        @Override public boolean MC_Entity_onGround() { return ground; }
+        @Override public boolean MC_LivingEntity_onClimbable() { return ladder; }
+        @Override public boolean MC_Entity_isSprinting() { return sprint; }
+        @Override public float MC_LivingEntity_getSpeed() { return .1f; }
+        @Override protected float MC_LivingEntity_getFlyingSpeed() { return .02f; }
+        @Override protected double MC_LivingEntity_getEffectiveGravity() { return .08; }
+        @Override public MC_BlockPos MC_Entity_getBlockPosBelowThatAffectsMyMovement() { return MC_BlockPos.MC_BlockPos_field_ZERO; }
+        @Override public boolean MC_LivingEntity_hasEffect(MC_Holder<MC_MobEffect> effect) { return false; }
+        @Override public MC_MobEffectInstance MC_LivingEntity_getEffect(MC_Holder<MC_MobEffect> effect) { return null; }
+        @Override public double MC_LivingEntity_getAttributeValue(MC_Holder<MC_Attribute> attribute) { return attribute == MC_Attributes.MC_Attributes_field_JUMP_STRENGTH ? .42 : attribute == MC_Attributes.MC_Attributes_field_GRAVITY ? .08 : 0; }
+        @Override public double MC_Entity_getFluidHeight(MC_TagKey<MC_Fluid> tag) { return .8; }
+        @Override public float MC_LivingEntity_maxUpStep() { return .6f; }
+        @Override public boolean MC_LivingEntity_isSuppressingSlidingDownLadder() { return false; }
+        @Override public void MC_Entity_move(MC_MoverType type, MC_Vec3 movement) {
+            accumulated = accumulated.MC_Vec3_add(movement.MC_Vec3_field_x, ground ? 0 : movement.MC_Vec3_field_y, movement.MC_Vec3_field_z);
+            if (ground) MC_Entity_setDeltaMovement(new MC_Vec3(movement.MC_Vec3_field_x, 0, movement.MC_Vec3_field_z));
+            if (((World)MC_Entity_level()).surface.MC_BlockBehaviour_BlockStateBase_is(MC_Blocks.MC_Blocks_field_SOUL_SAND)) MC_Entity_setDeltaMovement(MC_Entity_getDeltaMovement().MC_Vec3_multiply(.4f,1,.4f));
+        }
+    }
+    static void field(Object target, Class<?> type, String name, Object value) throws Exception {
+        var field=type.getDeclaredField(name); field.setAccessible(true); field.set(target,value);
+    }
+    static Method method(Class<?> type, String name, Class<?>... args) throws Exception {
+        var method=type.getDeclaredMethod(name,args); method.setAccessible(true); return method;
+    }
+    static double[] vector(MC_Vec3 v) { return new double[]{v.MC_Vec3_field_x,v.MC_Vec3_field_y,v.MC_Vec3_field_z}; }
+    static Probe probe(MC_Block surface) throws Exception {
+        var world=(World)unsafe.allocateInstance(World.class);world.surface=surface.MC_Block_defaultBlockState();world.shapes=List.of();
+        var p=(Probe)unsafe.allocateInstance(Probe.class);field(p,MC_Entity.class,"MC_Entity_field_level",world);field(p,MC_Entity.class,"MC_Entity_field_position",MC_Vec3.MC_Vec3_field_ZERO);
+        p.MC_Entity_setDeltaMovement(MC_Vec3.MC_Vec3_field_ZERO);p.accumulated=MC_Vec3.MC_Vec3_field_ZERO;return p;
+    }
+    public static void main(String[] args) throws Exception {
+        MC_SharedConstants.MC_SharedConstants_tryDetectVersion();MC_Bootstrap.MC_Bootstrap_bootStrap();
+        var f=sun.misc.Unsafe.class.getDeclaredField("theUnsafe");f.setAccessible(true);unsafe=(sun.misc.Unsafe)f.get(null);
+        sweep=method(MC_Entity.class,"MC_Entity_collideWithShapes",MC_Vec3.class,MC_AABB.class,List.class);
+        collide=method(MC_Entity.class,"MC_Entity_collide",MC_Vec3.class);
+        air=method(MC_LivingEntity.class,"MC_LivingEntity_travelInAir",MC_Vec3.class);
+        water=method(MC_LivingEntity.class,"MC_LivingEntity_travelInWater",MC_Vec3.class,double.class,boolean.class,double.class);
+        lava=method(MC_LivingEntity.class,"MC_LivingEntity_travelInLava",MC_Vec3.class,double.class,boolean.class,double.class);
+        glide=method(MC_LivingEntity.class,"MC_LivingEntity_updateFallFlyingMovement",MC_Vec3.class);
+        var result=new LinkedHashMap<String,Object>();
+        var motions=new LinkedHashMap<String,Object>();
+        for(var scenario:List.of("stone","ice","soul_sand","air","water","water_sprint","lava","glide","climb")) {
+            var p=probe(scenario.equals("ice")?MC_Blocks.MC_Blocks_field_ICE:scenario.equals("soul_sand")?MC_Blocks.MC_Blocks_field_SOUL_SAND:MC_Blocks.MC_Blocks_field_STONE);
+            p.ground=List.of("stone","ice","soul_sand").contains(scenario);p.ladder=scenario.equals("climb");
+            p.sprint=scenario.equals("water_sprint");
+            if(scenario.equals("glide"))p.MC_Entity_setDeltaMovement(new MC_Vec3(.5,-.1,.5));
+            if(p.ground)p.MC_Entity_setDeltaMovement(new MC_Vec3(0,-.08*.98f,0));
+            if(p.ladder)p.MC_Entity_setDeltaMovement(new MC_Vec3(.4,-.3,.4));
+            var rows=new ArrayList<Object>();
+            for(int i=0;i<5;i++) {
+                if(scenario.startsWith("water")) water.invoke(p,new MC_Vec3(0,0,.98f),.08,p.MC_Entity_getDeltaMovement().MC_Vec3_field_y<=0,0);
+                else if(scenario.equals("lava")) lava.invoke(p,new MC_Vec3(0,0,.98f),.08,p.MC_Entity_getDeltaMovement().MC_Vec3_field_y<=0,0);
+                else if(scenario.equals("glide")) { p.MC_Entity_setDeltaMovement((MC_Vec3)glide.invoke(p,p.MC_Entity_getDeltaMovement()));p.accumulated=p.accumulated.MC_Vec3_addVector(p.MC_Entity_getDeltaMovement()); }
+                else air.invoke(p,new MC_Vec3(0,0,.98f));
+                rows.add(Map.of("position",vector(p.accumulated),"velocity",vector(p.MC_Entity_getDeltaMovement())));
+            }
+            motions.put(scenario,rows);
+        }
+        result.put("travel",motions);
+        var mouse = new MC_SmoothDouble();
+        var mouseRows = new ArrayList<double[]>();
+        for (var delta : new double[]{10,0,0,-3,0,0}) mouseRows.add(new double[]{delta, mouse.MC_SmoothDouble_getNewDeltaValue(delta, 1.0/60)});
+        result.put("mouse", mouseRows);
+        var offsets = new ArrayList<Object>();
+        for (var block : List.of(MC_Blocks.MC_Blocks_field_BAMBOO, MC_Blocks.MC_Blocks_field_DANDELION, MC_Blocks.MC_Blocks_field_SHORT_GRASS)) {
+            for (var pos : List.of(new MC_BlockPos(13,5,-7),new MC_BlockPos(-987,0,324))) {
+                var state = block.MC_Block_defaultBlockState();
+                offsets.add(Map.of("block",MC_BuiltInRegistries.MC_BuiltInRegistries_field_BLOCK.MC_Registry_getKey(block).toString(),"x",pos.MC_Vec3i_getX(),"z",pos.MC_Vec3i_getZ(),
+                    "offset",vector(state.MC_BlockBehaviour_BlockStateBase_getOffset(pos).MC_Vec3_subtract(state.MC_BlockBehaviour_BlockStateBase_getOffset(MC_BlockPos.MC_BlockPos_field_ZERO)))));
+            }
+        }
+        result.put("offsets", offsets);
+        var cases=new ArrayList<Object>();
+        MC_AABB box=new MC_AABB(.2,1,.2,.8,2.8,.8);
+        for(var scenario:List.of("slab","stair","fence","corner_x","corner_z","ceiling","epsilon")) {
+            List<MC_VoxelShape> shapes=new ArrayList<>();shapes.add(MC_Shapes.MC_Shapes_box(-4,0,-4,4,1,4));
+            MC_Vec3 desired=new MC_Vec3(.8,-.0784,.25);
+            switch(scenario) {
+                case "slab" -> shapes.add(MC_Shapes.MC_Shapes_box(1,1,0,2,1.5,1));
+                case "stair" -> {shapes.add(MC_Shapes.MC_Shapes_box(1,1,0,2,1.5,1));shapes.add(MC_Shapes.MC_Shapes_box(1.5,1.5,0,2,2,1));}
+                case "fence" -> shapes.add(MC_Shapes.MC_Shapes_box(1.375,1,.375,1.625,2.5,.625));
+                case "corner_x","corner_z" -> {shapes.add(MC_Shapes.MC_Shapes_box(1,1,1,2,3,2));desired=scenario.equals("corner_x")?new MC_Vec3(.8,-.0784,.7):new MC_Vec3(.7,-.0784,.8);}
+                case "ceiling" -> {shapes.add(MC_Shapes.MC_Shapes_box(1,1,0,2,1.5,1));shapes.add(MC_Shapes.MC_Shapes_box(0,3,0,2,4,2));}
+                case "epsilon" -> desired=new MC_Vec3(1e-8,-.0784,0);
+            }
+            var p=probe(MC_Blocks.MC_Blocks_field_STONE);p.ground=true;field(p,MC_Entity.class,"MC_Entity_field_bb",box);((World)p.MC_Entity_level()).shapes=shapes;
+            var allowed=(MC_Vec3)collide.invoke(p,desired);
+            cases.add(Map.of("name",scenario,"box",new double[]{box.MC_AABB_field_minX,box.MC_AABB_field_minY,box.MC_AABB_field_minZ,box.MC_AABB_field_maxX,box.MC_AABB_field_maxY,box.MC_AABB_field_maxZ},
+                "shapes",shapes.stream().flatMap(s->s.MC_VoxelShape_toAabbs().stream()).map(b->new double[]{b.MC_AABB_field_minX,b.MC_AABB_field_minY,b.MC_AABB_field_minZ,b.MC_AABB_field_maxX,b.MC_AABB_field_maxY,b.MC_AABB_field_maxZ}).toList(),
+                "motion",vector(desired),"allowed",vector(allowed)));
+        }
+        result.put("collisions",cases);
+        Files.writeString(Path.of(args[0]),new GsonBuilder().setPrettyPrinting().create().toJson(result));
+    }
+}

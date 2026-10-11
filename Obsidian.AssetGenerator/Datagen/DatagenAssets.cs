@@ -39,6 +39,7 @@ internal static class DatagenAssets
         WriteJson(Path.Combine(outputDirectory, "recipes.json"), Combine(Path.Combine(data, "recipe"), path => path));
         WriteJson(Path.Combine(outputDirectory, "advancements.json"), Combine(Path.Combine(data, "advancement"), ToId));
         WriteJson(Path.Combine(outputDirectory, "enchantments.json"), Combine(Path.Combine(data, "enchantment"), ToId));
+        WriteJson(Path.Combine(outputDirectory, "dialogs.json"), Combine(Path.Combine(data, "dialog"), ToId));
         WriteJson(Path.Combine(outputDirectory, "instruments.json"), Combine(Path.Combine(data, "instrument"), ToId));
 
         foreach (var category in lootTableCategories)
@@ -97,7 +98,8 @@ internal static class DatagenAssets
                         ["state"] = ToPascalCase(state),
                         ["packet_id"] = packet!["protocol_id"]!.DeepClone(),
                         ["usable_interface"] = $"I{ToPascalCase(direction)}Packet",
-                        ["fields"] = (fields[direction]?[id] ?? throw new InvalidDataException($"The Java dumper has no fields for {direction} {id}.")).DeepClone()
+                        ["fields"] = (fields[direction]?[id]
+                            ?? throw new InvalidDataException($"The Java dumper has no fields for {direction} {id}.")).DeepClone()
                     });
                 }
             }

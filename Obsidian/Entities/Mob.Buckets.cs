@@ -25,11 +25,9 @@ public partial class Mob
             if (player.GameMode != GameMode.Creative) player.Inventory.RemoveItem(slot, 1);
             var added = player.Inventory.AddItem(bucket);
             if (added < 0) DropItem(bucket);
-            else await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-            { ContainerId = 0, Slot = (short)added, SlotData = player.Inventory.GetItem(added) });
+            else await player.SendInventorySlotAsync(added);
         }
-        await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-        { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
+        await player.SendInventorySlotAsync(slot);
         await RemoveAsync();
         return true;
     }

@@ -2,6 +2,7 @@
 using Obsidian.API.Entities;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace Obsidian.API.World;
 
@@ -98,7 +99,11 @@ public interface ILevel : IAsyncDisposable
     public Task<bool> LoadAsync(DimensionCodec codec);
     public Task SaveAsync();
 
-    public Task GenerateAsync();
+    /// <summary>
+    /// Generates a new level's chunks around its spawn. Cancelling stops starting new chunks and throws
+    /// <see cref="OperationCanceledException"/>; chunks already generating finish in the background.
+    /// </summary>
+    public Task GenerateAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Initializes the level with the given dimension codec. 

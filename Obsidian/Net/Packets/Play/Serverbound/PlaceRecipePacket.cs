@@ -19,7 +19,7 @@ public partial class PlaceRecipePacket
     [Field(2)]
     public bool MakeAll { get; private set; }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         await MainEventHandler.PlaceBookRecipeAsync(player, ContainerId, RecipeDisplayId, MakeAll);
     }

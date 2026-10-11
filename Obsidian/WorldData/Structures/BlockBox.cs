@@ -40,13 +40,18 @@ public readonly record struct BlockBox(Vector Min, Vector Max)
     /// Vanilla <c>BoundingBox.orientBox</c>: a box of the given size at an offset from (<paramref name="x"/>,
     /// <paramref name="y"/>, <paramref name="z"/>), extending in <paramref name="direction"/> (width across it, depth along it).
     /// </summary>
-    public static BlockBox Orient(int x, int y, int z, int offsetX, int offsetY, int offsetZ, int width, int height, int depth, BlockFace direction) =>
+    public static BlockBox Orient(int x, int y, int z, int offsetX, int offsetY, int offsetZ, int width, int height, int depth,
+        BlockFace direction) =>
         direction switch
         {
-            BlockFace.North => Create(x + offsetX, y + offsetY, z - depth + 1 + offsetZ, x + width - 1 + offsetX, y + height - 1 + offsetY, z + offsetZ),
-            BlockFace.West => Create(x - depth + 1 + offsetZ, y + offsetY, z + offsetX, x + offsetZ, y + height - 1 + offsetY, z + width - 1 + offsetX),
-            BlockFace.East => Create(x + offsetZ, y + offsetY, z + offsetX, x + depth - 1 + offsetZ, y + height - 1 + offsetY, z + width - 1 + offsetX),
-            _ => Create(x + offsetX, y + offsetY, z + offsetZ, x + width - 1 + offsetX, y + height - 1 + offsetY, z + depth - 1 + offsetZ)
+            BlockFace.North => Create(x + offsetX, y + offsetY, z - depth + 1 + offsetZ,
+                x + width - 1 + offsetX, y + height - 1 + offsetY, z + offsetZ),
+            BlockFace.West => Create(x - depth + 1 + offsetZ, y + offsetY, z + offsetX,
+                x + offsetZ, y + height - 1 + offsetY, z + width - 1 + offsetX),
+            BlockFace.East => Create(x + offsetZ, y + offsetY, z + offsetX,
+                x + depth - 1 + offsetZ, y + height - 1 + offsetY, z + width - 1 + offsetX),
+            _ => Create(x + offsetX, y + offsetY, z + offsetZ,
+                x + width - 1 + offsetX, y + height - 1 + offsetY, z + depth - 1 + offsetZ)
         };
 
     /// <summary>The smallest box containing every box in <paramref name="boxes"/>, or <c>null</c> when there are none.</summary>

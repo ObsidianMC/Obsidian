@@ -12,7 +12,7 @@ public partial class PlayerInputPacket
         this.Flags = (PlayerInput)reader.ReadByte();
     }
 
-    public override ValueTask HandleAsync(IServer server, IPlayer player)
+    public override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var wasSneaking = player.Sneaking;
 

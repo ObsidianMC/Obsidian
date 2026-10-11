@@ -179,7 +179,8 @@ internal sealed class SculkSpreader
         public int Charge { get; private set; } = charge;
 
         public readonly bool IsPosUnreasonable(Vector origin) =>
-            Math.Max(Math.Max(Math.Abs(this.Position.X - origin.X), Math.Abs(this.Position.Y - origin.Y)), Math.Abs(this.Position.Z - origin.Z)) > 1024;
+            Math.Max(Math.Max(Math.Abs(this.Position.X - origin.X), Math.Abs(this.Position.Y - origin.Y)),
+                Math.Abs(this.Position.Z - origin.Z)) > 1024;
 
         public void Update(IWorldGenLevel level, Vector origin, IRandomSource random, bool spreadVeins)
         {

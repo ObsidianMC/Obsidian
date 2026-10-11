@@ -11,7 +11,8 @@ public partial class ItemEntity : Entity
 {
     private int age;
     internal void SetExtendedLifetime() => age = -6000;
-    // Region ticks and player movement packets can transfer the same stack concurrently.
+    // Merges, pickups and removal check and set Removed under this lock, so a stack isn't transferred after its entity
+    // is removed, even when the removal comes from outside the level tick.
     internal static readonly object TransferLock = new();
     internal bool Removed { get; set; }
     private int pickupDelay = 10;
@@ -45,7 +46,10 @@ public partial class ItemEntity : Entity
             Item = new ItemStack(stack, stack.Count),
             Level = player.Level,
             Position = new VectorD(player.Position.X, player.HeadY - 0.3, player.Position.Z),
-            Motion = motion
+            Motion = motion,
+            // Vanilla gives an item a player drops 40 ticks before anyone can pick it up, so the thrower doesn't
+            // collect it again straight away.
+            pickupDelay = 40
         };
         if (!player.Level.TryAddEntity(item))
             return false;

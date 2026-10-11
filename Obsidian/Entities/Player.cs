@@ -17,13 +17,17 @@ using System.Threading;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:player")]
-public sealed partial class Player : Avatar, IPlayer
+public sealed partial class Player : Avatar, IClientPlayer
 {
     public byte CurrentContainerId { get; set; }
 
     public IClient Client { get; internal set; }
 
     public ILogger Logger => this.Client.Logger;
+
+    public bool SendPacket(IClientboundPacket packet) => this.Client.SendPacket(packet);
+
+    public ValueTask QueuePacketAsync(IClientboundPacket packet) => this.Client.QueuePacketAsync(packet);
 
     internal HashSet<IPlayer> visiblePlayers = [];
 
@@ -183,7 +187,6 @@ public sealed partial class Player : Avatar, IPlayer
     public Permission PlayerPermissions { get; private set; } = new Permission("root");
 
     public string PersistentDataFile { get; }
-    public string PersistentDataBackupFile { get; }
 
     public string? ClientIP => Client.Ip;
 
@@ -208,7 +211,6 @@ public sealed partial class Player : Avatar, IPlayer
         Type = EntityType.Player;
 
         PersistentDataFile = Path.Combine(ServerConstants.PersistentDataPath, $"{Uuid}.dat");
-        PersistentDataBackupFile = Path.Combine(ServerConstants.PersistentDataPath, $"{Uuid}.dat.old");
 
         Health = 20f;
 
@@ -335,16 +337,25 @@ public sealed partial class Player : Avatar, IPlayer
         // save current world/persistent data 
         await SaveAsync();
 
-        Level.TryRemovePlayer(this);
-        w.TryAddPlayer(this);
+        // Held until the client's view is reset, so the chunk loop can't send chunks of the old world in between.
+        await this.chunkUpdates.WaitAsync();
+        try
+        {
+            Level.TryRemovePlayer(this);
+            w.TryAddPlayer(this);
 
-        Level = w;
+            Level = w;
 
-        // resync player data
-        await LoadAsync(false);
+            // resync player data
+            await LoadAsync(false);
 
-        // reload world stuff and send rest of the info
-        await UpdateChunksAsync(true);
+            // reload world stuff and send rest of the info
+            await this.UpdateChunksUnderLockAsync(true);
+        }
+        finally
+        {
+            this.chunkUpdates.Release();
+        }
 
         await SendPlayerInfoAsync();
     }
@@ -402,17 +413,28 @@ public sealed partial class Player : Avatar, IPlayer
         origin.TryRemovePlayer(this);
         foreach (var observer in origin.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
             observer.visiblePlayers.Remove(this);
-        Level = destination;
-        Position = spawn;
-        LastPosition = spawn;
-        BoundingBox = Dimension.CreateBBFromPosition(spawn);
-        HeadY = spawn.Y + 1.62;
-        Motion = VectorD.Zero;
-        FallDistance = 0;
-        foodPosition = null;
-        destination.TryAddPlayer(this);
-        destination.TryAddEntity(this);
-        await RespawnAsync();
+
+        // Held from the level change until the respawn resets the client's view (see RespawnUnderLockAsync).
+        await this.chunkUpdates.WaitAsync();
+        try
+        {
+            Level = destination;
+            Position = spawn;
+            LastPosition = spawn;
+            BoundingBox = Dimension.CreateBBFromPosition(spawn);
+            HeadY = spawn.Y + 1.62;
+            Motion = VectorD.Zero;
+            FallDistance = 0;
+            foodPosition = null;
+            destination.TryAddPlayer(this);
+            destination.TryAddEntity(this);
+            await this.RespawnUnderLockAsync(DataKept.Metadata);
+        }
+        finally
+        {
+            this.chunkUpdates.Release();
+        }
+
         await Client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
         { Dimension = destination.DimensionName, Pos = (Vector)spawn.Floor() }, 0, 0));
         await Client.QueuePacketAsync(new SetTimePacket(destination.LevelData.Time, destination.LevelData.DayTime, true));
@@ -425,7 +447,30 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
     {
-        if (Respawning) return;
+        if (Respawning)
+            return;
+
+        await this.chunkUpdates.WaitAsync();
+        try
+        {
+            await this.RespawnUnderLockAsync(dataKept);
+        }
+        finally
+        {
+            this.chunkUpdates.Release();
+        }
+    }
+
+    /// <summary>
+    /// Respawns the player, with <see cref="chunkUpdates"/> already held. Callers that change the player's level take
+    /// it before the change, so the chunk loop can't send chunks of the old level after the respawn packet, or load
+    /// the new level's chunks into the old view.
+    /// </summary>
+    private async Task RespawnUnderLockAsync(DataKept dataKept)
+    {
+        if (Respawning)
+            return;
+
         Respawning = true;
         try
         {
@@ -507,7 +552,7 @@ public sealed partial class Player : Avatar, IPlayer
                 TeleportId = 0
             });
 
-            pendingRespawnChunks = !await UpdateChunksAsync(true);
+            pendingRespawnChunks = !await this.UpdateChunksUnderLockAsync(true);
             respawnChunkRetryTicks = 20;
             Level.TryAddEntity(this);
             await Client.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
@@ -581,7 +626,8 @@ public sealed partial class Player : Avatar, IPlayer
 
     public ValueTask UpdateDisplayNameAsync(string newDisplayName)
     {
-        this.PacketBroadcaster.QueuePacketToLevel(this.Level, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateDisplayNameInfoAction(newDisplayName))));
+        this.PacketBroadcaster.QueuePacketToLevel(this.Level,
+            new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateDisplayNameInfoAction(newDisplayName))));
 
         CustomName = newDisplayName;
 
@@ -755,8 +801,6 @@ public sealed partial class Player : Avatar, IPlayer
         HeadY = position.Y + 1.62f;
 
         await TrySpawnPlayerAsync(position);
-
-        await PickupNearbyItemsAsync();
     }
 
     public async override ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
@@ -774,8 +818,6 @@ public sealed partial class Player : Avatar, IPlayer
         HeadY = position.Y + 1.62f;
 
         await TrySpawnPlayerAsync(position);
-
-        await PickupNearbyItemsAsync();
     }
 
     public async override ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
@@ -784,8 +826,6 @@ public sealed partial class Player : Avatar, IPlayer
         await base.UpdateAsync(yaw, pitch, movementFlags);
         MovementFlags = movementFlags;
         await UpdateFallAsync(Position, movementFlags);
-
-        await PickupNearbyItemsAsync();
     }
 
     public async ValueTask DisconnectAsync(ChatMessage reason) => await this.Client.DisconnectAsync(reason);
@@ -803,72 +843,78 @@ public sealed partial class Player : Avatar, IPlayer
         await this.chunkUpdates.WaitAsync();
         try
         {
-            if (unloadAll)
-            {
-                var tracked = TrackedEntities.Keys.ToArray();
-                TrackedEntities.Clear();
-                if (!Respawning && tracked.Length > 0)
-                    await Client.QueuePacketAsync(new RemoveEntitiesPacket(tracked));
-                if (!Respawning)
-                {
-                    foreach (var value in LoadedChunks)
-                    {
-                        NumericsHelper.LongToInts(value, out var x, out var z);
-                        await UnloadChunkAsync(x, z);
-                    }
-                }
-
-                LoadedChunks.Clear();
-                this.pendingChunks.Clear();
-                this.pendingChunkLoads.Clear();
-                this.chunkCacheCenter = null;
-            }
-
-            var (centerX, centerZ) = Position.ToChunkCoord();
-
-            // The client drops chunks outside the range around its center, so the center goes first.
-            if (this.chunkCacheCenter != (centerX, centerZ))
-            {
-                this.chunkCacheCenter = (centerX, centerZ);
-                this.pendingChunkLoads.Clear();
-                await Client.QueuePacketAsync(new SetChunkCacheCenterPacket(centerX, centerZ));
-            }
-
-            // Like vanilla, at least 2.
-            var viewDistance = Math.Max(2, distance < 1 ? ClientInformation.ViewDistance : distance);
-            if (this.chunkViewDistance != viewDistance)
-                this.pendingChunkLoads.Clear();
-            this.chunkViewDistance = viewDistance;
-
-            foreach (var value in LoadedChunks)
-            {
-                NumericsHelper.LongToInts(value, out var x, out var z);
-                if (!this.IsInView(x, z) && LoadedChunks.TryRemove(value))
-                    await Client.QueuePacketAsync(new ForgetLevelChunkPacket(x, z));
-            }
-
-            this.pendingChunks.RemoveWhere(value =>
-            {
-                NumericsHelper.LongToInts(value, out var x, out var z);
-                return !this.IsInView(x, z);
-            });
-
-            for (var x = centerX - this.chunkViewDistance - 1; x <= centerX + this.chunkViewDistance + 1; x++)
-            {
-                for (var z = centerZ - this.chunkViewDistance - 1; z <= centerZ + this.chunkViewDistance + 1; z++)
-                {
-                    var value = NumericsHelper.IntsToLong(x, z);
-                    if (this.IsInView(x, z) && !LoadedChunks.Contains(value))
-                        this.pendingChunks.Add(value);
-                }
-            }
-
-            return await this.SendReadyChunksAsync();
+            return await this.UpdateChunksUnderLockAsync(unloadAll, distance);
         }
         finally
         {
             this.chunkUpdates.Release();
         }
+    }
+
+    // UpdateChunksAsync, with chunkUpdates already held.
+    private async Task<bool> UpdateChunksUnderLockAsync(bool unloadAll, int distance = 0)
+    {
+        if (unloadAll)
+        {
+            var tracked = TrackedEntities.Keys.ToArray();
+            TrackedEntities.Clear();
+            if (!Respawning && tracked.Length > 0)
+                await Client.QueuePacketAsync(new RemoveEntitiesPacket(tracked));
+            if (!Respawning)
+            {
+                foreach (var value in LoadedChunks)
+                {
+                    NumericsHelper.LongToInts(value, out var x, out var z);
+                    await UnloadChunkAsync(x, z);
+                }
+            }
+
+            LoadedChunks.Clear();
+            this.pendingChunks.Clear();
+            this.pendingChunkLoads.Clear();
+            this.chunkCacheCenter = null;
+        }
+
+        var (centerX, centerZ) = Position.ToChunkCoord();
+
+        // The client drops chunks outside the range around its center, so the center goes first.
+        if (this.chunkCacheCenter != (centerX, centerZ))
+        {
+            this.chunkCacheCenter = (centerX, centerZ);
+            this.pendingChunkLoads.Clear();
+            await Client.QueuePacketAsync(new SetChunkCacheCenterPacket(centerX, centerZ));
+        }
+
+        // Like vanilla, at least 2.
+        var viewDistance = Math.Max(2, distance < 1 ? ClientInformation.ViewDistance : distance);
+        if (this.chunkViewDistance != viewDistance)
+            this.pendingChunkLoads.Clear();
+        this.chunkViewDistance = viewDistance;
+
+        foreach (var value in LoadedChunks)
+        {
+            NumericsHelper.LongToInts(value, out var x, out var z);
+            if (!this.IsInView(x, z) && LoadedChunks.TryRemove(value))
+                await Client.QueuePacketAsync(new ForgetLevelChunkPacket(x, z));
+        }
+
+        this.pendingChunks.RemoveWhere(value =>
+        {
+            NumericsHelper.LongToInts(value, out var x, out var z);
+            return !this.IsInView(x, z);
+        });
+
+        for (var x = centerX - this.chunkViewDistance - 1; x <= centerX + this.chunkViewDistance + 1; x++)
+        {
+            for (var z = centerZ - this.chunkViewDistance - 1; z <= centerZ + this.chunkViewDistance + 1; z++)
+            {
+                var value = NumericsHelper.IntsToLong(x, z);
+                if (this.IsInView(x, z) && !LoadedChunks.Contains(value))
+                    this.pendingChunks.Add(value);
+            }
+        }
+
+        return await this.SendReadyChunksAsync();
     }
 
     /// <summary>
@@ -1010,7 +1056,7 @@ public sealed partial class Player : Avatar, IPlayer
         [LoggerMessage(Level = LogLevel.Debug, Message = "Moving {Username} to {LevelName}")]
         public static partial void ChangingLevel(ILogger logger, string username, string levelName);
 
-        [LoggerMessage(Level = LogLevel.Warning, Message = "{Username} has invalid saved data; spawning them at the world spawn")]
-        public static partial void InvalidSavedData(ILogger logger, Exception exception, string username);
+        [LoggerMessage(Level = LogLevel.Warning, Message = "{Username} was saved in {Dimension}; spawning them at the world spawn")]
+        public static partial void OtherDimension(ILogger logger, string username, string dimension);
     }
 }

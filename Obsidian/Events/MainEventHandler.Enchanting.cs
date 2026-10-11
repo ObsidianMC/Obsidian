@@ -58,7 +58,7 @@ public partial class MainEventHandler
         else if (args.ClickType == ClickType.PickupAll) HandlePickupAll(args);
         else if (args.ClickType == ClickType.QuickCraft) HandleEnchantingDrag(args, table);
         await player.RefreshEnchantingAsync();
-        await player.Client.QueuePacketAsync(new ContainerSetContentPacket(args.ContainerId,
+        await player.QueuePacketAsync(new ContainerSetContentPacket(args.ContainerId,
             table.Concat(player.Inventory.Skip(9).Take(36)).ToList()) { StateId = args.StateId + 1, CarriedItem = player.CarriedItem });
         return true;
     }
@@ -114,6 +114,6 @@ public partial class MainEventHandler
             SpawnThrownItem(player, carried);
             player.CarriedItem = null;
         }
-        await player.Client.QueuePacketAsync(new ContainerSetContentPacket(0, player.Inventory.ToList()));
+        await player.QueuePacketAsync(new ContainerSetContentPacket(0, player.Inventory.ToList()));
     }
 }

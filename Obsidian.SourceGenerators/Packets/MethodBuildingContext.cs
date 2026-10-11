@@ -1,6 +1,7 @@
 ﻿namespace Obsidian.SourceGenerators.Packets;
 
-internal sealed class MethodBuildingContext(string streamName, string dataName, Property property, IReadOnlyList<Property> allProperties, CodeBuilder codeBuilder, Method method, MethodsRegistry methodsRegistry, SourceProductionContext context)
+internal sealed class MethodBuildingContext(string streamName, string dataName, Property property, IReadOnlyList<Property> allProperties,
+    CodeBuilder codeBuilder, Method method, MethodsRegistry methodsRegistry, SourceProductionContext context)
 {
     public string StreamName { get; } = streamName;
     public string DataName { get; } = dataName;

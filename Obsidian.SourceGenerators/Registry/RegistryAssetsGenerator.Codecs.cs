@@ -128,7 +128,8 @@ public partial class RegistryAssetsGenerator
 
             builder.AppendValueType(value, ctx, name == "Assets");
         }, ctx);
-        builder.GenerateSimpleCodec(codecs["wolf_sound_variant"].ToArray(), "WolfSoundVariant", "minecraft:wolf_sound_variant", "WolfSoundVariantCodec", ctx);
+        builder.GenerateSimpleCodec(codecs["wolf_sound_variant"].ToArray(), "WolfSoundVariant",
+            "minecraft:wolf_sound_variant", "WolfSoundVariantCodec", ctx);
 
         builder.GenerateSimpleCodec(codecs["cat_variant"].ToArray(), "CatVariant", "minecraft:cat_variant", "BiomeVariantCodec", ctx);
         builder.GenerateSimpleCodec(codecs["chicken_variant"].ToArray(), "ChickenVariant", "minecraft:chicken_variant", "BiomeVariantCodec", ctx);
@@ -136,9 +137,11 @@ public partial class RegistryAssetsGenerator
         builder.GenerateSimpleCodec(codecs["frog_variant"].ToArray(), "FrogVariant", "minecraft:frog_variant", "BiomeVariantCodec", ctx);
         builder.GenerateSimpleCodec(codecs["pig_variant"].ToArray(), "PigVariant", "minecraft:pig_variant", "BiomeVariantCodec", ctx);
 
-        builder.GenerateSimpleCodec(codecs["painting_variant"].ToArray(), "PaintingVariant", "minecraft:painting_variant", "PaintingVariantCodec", ctx);
+        builder.GenerateSimpleCodec(codecs["painting_variant"].ToArray(), "PaintingVariant",
+            "minecraft:painting_variant", "PaintingVariantCodec", ctx);
         builder.GenerateSimpleCodec(codecs["dialogs"].ToArray(), "Dialog", "minecraft:dialog", "DialogCodec", ctx);
-        builder.GenerateSimpleCodec(codecs["zombie_nautilus_variant"].ToArray(), "ZombieNautilusVariant", "minecraft:zombie_nautilus_variant", "ZombieNautilusVariantCodec", ctx);
+        builder.GenerateSimpleCodec(codecs["zombie_nautilus_variant"].ToArray(), "ZombieNautilusVariant",
+            "minecraft:zombie_nautilus_variant", "ZombieNautilusVariantCodec", ctx);
 
         builder.EndScope();
 

@@ -25,32 +25,21 @@ public sealed record class ConsumableDataComponent : DataComponent
     {
         this.ConsumeSeconds = reader.ReadSingle();
         this.Animation = reader.ReadVarInt<ItemAnimation>();
-        this.Sound = reader.ReadSoundEvent();
-
-        var count = reader.ReadVarInt();
-        var effects = new List<ConsumeEffect>(count);
-
-        for (int i = 0; i < count; i++)
+        this.Sound = ComponentValueCodecs.ReadSoundHolder(reader);
+        this.HasConsumeParticles = reader.ReadBoolean();
+        this.Effects = reader.ReadLengthPrefixedArray(() =>
         {
-            var type = reader.ReadString();
-
-            var effect = ConsumeEffects.Compile(type);
-
-            effects[i] = new() { Effect = effect, Type = type };
-        }
+            var effect = ComponentConsumeEffect.ReadValue(reader);
+            return new ConsumeEffect { Type = effect.Type, Effect = effect };
+        }).ToList();
     }
 
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteSingle(this.ConsumeSeconds);
         writer.WriteVarInt(this.Animation);
-        writer.WriteSoundEvent(this.Sound);
+        ComponentValueCodecs.WriteSoundHolder(this.Sound, writer);
         writer.WriteBoolean(this.HasConsumeParticles);
-
-        foreach (var consumeEffect in this.Effects)
-        {
-            writer.WriteString(consumeEffect.Type);
-            consumeEffect.Effect.Write(writer);
-        }
+        writer.WriteLengthPrefixedArray(effect => ComponentConsumeEffect.WriteValue(effect.Effect, writer), this.Effects.ToArray());
     }
 }

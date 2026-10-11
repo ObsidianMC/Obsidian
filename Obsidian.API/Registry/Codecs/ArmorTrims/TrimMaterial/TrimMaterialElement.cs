@@ -24,7 +24,7 @@ public sealed record class TrimMaterialElement : INetworkSerializable<TrimMateri
         var count = element.OverrideArmorAssets?.Count ?? 0;
         writer.WriteVarInt(count);
 
-        if (element.OverrideArmorAssets != null)
+        if (element.OverrideArmorAssets is not null)
         {
             foreach (var (rootId, name) in element.OverrideArmorAssets)
             {

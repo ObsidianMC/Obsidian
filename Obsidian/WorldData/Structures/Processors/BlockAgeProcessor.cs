@@ -58,8 +58,10 @@ public sealed class BlockAgeProcessor : StructureProcessor
         if (random.NextFloat() >= 0.5f)
             return null;
 
-        IBlock[] cracked = [BlockStateProperties.GetState("minecraft:cracked_stone_bricks"), RandomFacingStairs(random, "minecraft:stone_brick_stairs")];
-        IBlock[] mossy = [BlockStateProperties.GetState("minecraft:mossy_stone_bricks"), RandomFacingStairs(random, "minecraft:mossy_stone_brick_stairs")];
+        IBlock[] cracked = [BlockStateProperties.GetState("minecraft:cracked_stone_bricks"),
+            RandomFacingStairs(random, "minecraft:stone_brick_stairs")];
+        IBlock[] mossy = [BlockStateProperties.GetState("minecraft:mossy_stone_bricks"),
+            RandomFacingStairs(random, "minecraft:mossy_stone_brick_stairs")];
         return this.GetRandomBlock(random, cracked, mossy);
     }
 
@@ -68,7 +70,8 @@ public sealed class BlockAgeProcessor : StructureProcessor
         if (random.NextFloat() >= 0.5f)
             return null;
 
-        IBlock[] mossy = [WithPropertiesOf("minecraft:mossy_stone_brick_stairs", block), BlockStateProperties.GetState("minecraft:mossy_stone_brick_slab")];
+        IBlock[] mossy = [WithPropertiesOf("minecraft:mossy_stone_brick_stairs", block),
+            BlockStateProperties.GetState("minecraft:mossy_stone_brick_slab")];
         return this.GetRandomBlock(random, nonMossyReplacements, mossy);
     }
 

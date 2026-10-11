@@ -9,7 +9,7 @@ public sealed partial class ChunkBatchReceivedPacket
 
     public override void Populate(INetStreamReader reader) => this.ChunksPerTick = reader.ReadSingle();
 
-    public override ValueTask HandleAsync(IServer server, IPlayer player)
+    public override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         (player as Player)?.OnChunkBatchReceived(this.ChunksPerTick);
         return default;

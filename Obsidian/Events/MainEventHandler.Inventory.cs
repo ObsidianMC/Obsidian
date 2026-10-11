@@ -27,7 +27,7 @@ public partial class MainEventHandler
                 args.ClickType == ClickType.Swap && args.Button == 40 ? args.Player.GetOffHandItem() : null;
             if (locked || !incoming.IsNullOrAir() && CombatItems.PlayerArmorSlot(incoming) != args.ClickedSlot)
             {
-                await args.Player.Client.QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetContentPacket(0, args.Player.Inventory.ToList())
+                await args.Player.QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetContentPacket(0, args.Player.Inventory.ToList())
                 { StateId = args.StateId + 1, CarriedItem = args.Player.CarriedItem });
                 return;
             }
