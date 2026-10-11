@@ -15,6 +15,20 @@ internal static class ChannelPayloads
     public const string NeoForgeQuery = "neoforge:register";
     public const string NeoForgeNetwork = "neoforge:network";
     public const string NeoForgeSetupFailed = "neoforge:modded_network_setup_failed";
+    public const string RegistrySyncStart = "neoforge:frozen_registry_sync_start";
+    public const string RegistrySnapshot = "neoforge:frozen_registry";
+    public const string RegistrySyncCompleted = "neoforge:frozen_registry_sync_completed";
+
+    /// <summary>
+    /// NeoForge's own channels the server takes part in, declared like NeoForge declares them (optional, version 1,
+    /// configuration phase) so that negotiating with a NeoForge client keeps them: its registry sync.
+    /// </summary>
+    public static ImmutableArray<NetworkComponent> BuiltinComponents { get; } =
+    [
+        new(RegistrySyncStart, "1", PacketFlow.Clientbound, true),
+        new(RegistrySnapshot, "1", PacketFlow.Clientbound, true),
+        new(RegistrySyncCompleted, "1", null, true)
+    ];
 
     /// <summary>
     /// The handshake channels the server always listens on, announced with <c>minecraft:register</c>.
@@ -130,6 +144,35 @@ internal static class ChannelPayloads
     }
 
     /// <summary>
+    /// Writes a <c>neoforge:frozen_registry_sync_start</c> payload: the names of the registries about to be sent.
+    /// </summary>
+    public static void WriteRegistrySyncStart(INetStreamWriter writer, IReadOnlyList<RegistrySnapshot> registries)
+    {
+        writer.WriteVarInt(registries.Count);
+
+        foreach (var registry in registries)
+            writer.WriteString(registry.Name);
+    }
+
+    /// <summary>
+    /// Writes a <c>neoforge:frozen_registry</c> payload: the registry's name, then NeoForge's registry snapshot, a map
+    /// from each entry's id to its identifier and a map of aliases, which Obsidian has none of.
+    /// </summary>
+    public static void WriteRegistrySnapshot(INetStreamWriter writer, RegistrySnapshot registry)
+    {
+        writer.WriteString(registry.Name);
+        writer.WriteVarInt(registry.Identifiers.Count);
+
+        for (var id = 0; id < registry.Identifiers.Count; id++)
+        {
+            writer.WriteVarInt(id);
+            writer.WriteString(registry.Identifiers[id]);
+        }
+
+        writer.WriteVarInt(0);
+    }
+
+    /// <summary>
     /// Writes a <c>neoforge:modded_network_setup_failed</c> payload: a map from channel id to the reason as a text
     /// component.
     /// </summary>
@@ -144,3 +187,10 @@ internal static class ChannelPayloads
         }
     }
 }
+
+/// <summary>
+/// A registry that clients must agree with the server on, because plugins added to it.
+/// </summary>
+/// <param name="Name">The registry, like <c>minecraft:item</c>.</param>
+/// <param name="Identifiers">Every entry's identifier, by id.</param>
+internal sealed record RegistrySnapshot(string Name, IReadOnlyList<string> Identifiers);

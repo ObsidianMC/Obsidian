@@ -180,7 +180,8 @@ public sealed partial class Client : IClient
             { ClientState.Play, new PlayClientHandler { Client = this } }
         }.ToFrozenDictionary();
 
-        this.Channels = new ClientChannels(this, ((Server)server).PayloadChannels);
+        var concreteServer = (Server)server;
+        this.Channels = new ClientChannels(this, concreteServer.PayloadChannels, concreteServer.GetModdedRegistries);
 
         packetQueue = Channel.CreateUnbounded<IClientboundPacket>(new() { SingleReader = true, SingleWriter = false });
     }

@@ -189,6 +189,7 @@ public partial class Client
                         var status = new ServerStatus(this.Server, ServerConstants.ServerIcon)
                         {
                             IsModded = ((Server)this.Server).PayloadChannels.HasChannels
+                                || ((Server)this.Server).GetModdedRegistries().Count > 0
                         };
 
                         await this.eventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.Server, status));

@@ -14,7 +14,14 @@ namespace Obsidian.Net.Payloads;
 /// Only channel ids and versions are kept here, never plugin types, so the connection outlives a plugin reload. The
 /// handshake runs on the connection's packet loop; the state it leaves behind may be read from any thread.
 /// </remarks>
-internal sealed partial class ClientChannels(IClient client, PayloadChannelRegistry registry)
+/// <param name="client">The connection.</param>
+/// <param name="registry">The plugins' payload channels.</param>
+/// <param name="moddedRegistries">
+/// The registries plugins added to, which clients must agree on: a vanilla client can't join while there are any, and a
+/// NeoForge client gets them with NeoForge's registry sync. None if null.
+/// </param>
+internal sealed partial class ClientChannels(IClient client, PayloadChannelRegistry registry,
+    Func<IReadOnlyList<RegistrySnapshot>>? moddedRegistries = null)
 {
     private const int HandshakePingId = 0;
 
@@ -35,6 +42,11 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
     private const int MaxChannelLength = 256;
 
     private bool handshakeFinished;
+
+    // Set while the server waits for a NeoForge client to apply the registries it sent, and once it did, until the
+    // configuration handler goes on with configuration.
+    private bool awaitingRegistrySync;
+    private bool readyForConfiguration;
 
     // Set when the client sent a NeoForge query, whether or not it was accepted: a client that sent one but wasn't
     // accepted (refused, or a malformed query) mustn't go on as a vanilla client.
@@ -121,10 +133,62 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
 
         this.handshakeFinished = true;
 
-        if (this.queryReceived)
-            return this.IsNeoForge;
+        if (!this.queryReceived)
+            return await this.InitializeOtherConnectionAsync();
 
-        return await this.InitializeOtherConnectionAsync();
+        if (!this.IsNeoForge)
+            return false;
+
+        var registries = moddedRegistries?.Invoke() ?? [];
+        if (registries.Count == 0)
+            return true;
+
+        return await this.StartRegistrySyncAsync(registries);
+    }
+
+    /// <summary>
+    /// Whether the client applied the registries the server sent, so configuration can go on. True once.
+    /// </summary>
+    public bool TakeReadyForConfiguration()
+    {
+        var ready = this.readyForConfiguration;
+        this.readyForConfiguration = false;
+
+        return ready;
+    }
+
+    /// <summary>
+    /// Sends a NeoForge client the registries plugins added to, like NeoForge's server does before vanilla's
+    /// registries: their names, each registry's ids, then a completion that the client answers once it applied them.
+    /// </summary>
+    /// <returns>False: configuration goes on once the client answers.</returns>
+    private async ValueTask<bool> StartRegistrySyncAsync(IReadOnlyList<RegistrySnapshot> registries)
+    {
+        // A NeoForge client always has these channels; without them its ids for plugins' entries would be wrong.
+        if (!this.configurationChannels.ContainsKey(ChannelPayloads.RegistrySyncStart)
+            || !this.configurationChannels.ContainsKey(ChannelPayloads.RegistrySnapshot)
+            || !this.configurationChannels.ContainsKey(ChannelPayloads.RegistrySyncCompleted))
+        {
+            await client.DisconnectAsync("Your client can't sync this server's registries.");
+            return false;
+        }
+
+        this.awaitingRegistrySync = true;
+
+        this.Send(
+            ChannelPayloads.RegistrySyncStart,
+            writer => ChannelPayloads.WriteRegistrySyncStart(writer, registries));
+
+        foreach (var snapshot in registries)
+        {
+            this.Send(
+                ChannelPayloads.RegistrySnapshot,
+                writer => ChannelPayloads.WriteRegistrySnapshot(writer, snapshot));
+        }
+
+        this.Send(ChannelPayloads.RegistrySyncCompleted, []);
+
+        return false;
     }
 
     /// <summary>
@@ -176,6 +240,10 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
                 }
             case ChannelPayloads.NeoForgeQuery when protocol == NetworkProtocol.Configuration:
                 await this.HandleQueryAsync(data);
+                return;
+            case ChannelPayloads.RegistrySyncCompleted when this.awaitingRegistrySync:
+                this.awaitingRegistrySync = false;
+                this.readyForConfiguration = true;
                 return;
         }
 
@@ -294,6 +362,16 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
     /// </summary>
     private async ValueTask<bool> InitializeOtherConnectionAsync()
     {
+        // A vanilla client has no way to learn plugins' items, so it couldn't show them.
+        var registries = moddedRegistries?.Invoke() ?? [];
+        if (registries.Count > 0)
+        {
+            Log.ModdedContentRefused(client.Logger);
+            await client.DisconnectAsync(
+                "This server has content from its plugins that needs NeoForge with the matching mods.");
+            return false;
+        }
+
         var missing = new List<string>();
 
         foreach (var protocol in NegotiatedProtocols)
@@ -374,7 +452,12 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
             Message = "Ignored a payload on channel {Channel}, which isn't set up for this connection and phase")]
         public static partial void ChannelNotSetUp(ILogger logger, string channel);
 
-        [LoggerMessage(Level = LogLevel.Warning, Message = "Disconnecting a client that sent a malformed channel query")]
+        [LoggerMessage(Level = LogLevel.Information,
+            Message = "Refused a client without NeoForge: plugins added content it can't show")]
+        public static partial void ModdedContentRefused(ILogger logger);
+
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "Disconnecting a client that sent a malformed channel query")]
         public static partial void MalformedQuery(ILogger logger, Exception exception);
 
         [LoggerMessage(Level = LogLevel.Information,

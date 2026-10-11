@@ -96,8 +96,16 @@ internal sealed class PayloadChannelRegistry
     /// <summary>
     /// The server's declarations for <paramref name="protocol"/>, to negotiate with a client's.
     /// </summary>
-    public List<NetworkComponent> GetComponents(NetworkProtocol protocol) => this.registrations.Values
-        .Where(registration => registration.Phase.Includes(protocol))
-        .Select(registration => registration.ToComponent())
-        .ToList();
+    public List<NetworkComponent> GetComponents(NetworkProtocol protocol)
+    {
+        var components = this.registrations.Values
+            .Where(registration => registration.Phase.Includes(protocol))
+            .Select(registration => registration.ToComponent())
+            .ToList();
+
+        if (protocol == NetworkProtocol.Configuration)
+            components.AddRange(ChannelPayloads.BuiltinComponents);
+
+        return components;
+    }
 }

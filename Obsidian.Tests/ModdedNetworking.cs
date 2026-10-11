@@ -138,6 +138,77 @@ public class ModdedNetworking
     }
 
     [Fact]
+    public async Task PluginItemsAreSyncedToNeoForgeClientsAndRefuseOthers()
+    {
+        RegistrySnapshot items = new("minecraft:item", ["minecraft:air", "test:gem"]);
+        IReadOnlyList<RegistrySnapshot> Modded() => [items];
+
+        // A vanilla client can't learn the plugin's item.
+        var vanilla = new TestClient(new FakeServer());
+        vanilla.SetState(ClientState.Configuration);
+        var vanillaChannels = new ClientChannels(vanilla, new PayloadChannelRegistry(), Modded);
+
+        vanillaChannels.StartConfiguration();
+
+        Assert.False(await vanillaChannels.FinishHandshakeAsync(0));
+        Assert.False(vanilla.Connected);
+
+        // A NeoForge client declares NeoForge's registry sync channels, and is sent the registry before configuration
+        // goes on, which it does once the client applied it.
+        var client = new TestClient(new FakeServer());
+        client.SetState(ClientState.Configuration);
+        var channels = new ClientChannels(client, new PayloadChannelRegistry(), Modded);
+
+        channels.StartConfiguration();
+        client.ClearPackets();
+
+        var query = new Dictionary<NetworkProtocol, List<NetworkComponent>>
+        {
+            [NetworkProtocol.Configuration] = [.. ChannelPayloads.BuiltinComponents]
+        };
+        var queryPayload = Write(writer => ChannelPayloads.WriteQuery(writer, query));
+        await channels.HandlePayloadAsync(ChannelPayloads.NeoForgeQuery, queryPayload);
+
+        Assert.False(await channels.FinishHandshakeAsync(0));
+        Assert.True(client.Connected);
+
+        Assert.Equal(Write(writer =>
+        {
+            writer.WriteVarInt(1);
+            writer.WriteString("minecraft:item");
+        }), PayloadOn(client, ChannelPayloads.RegistrySyncStart));
+
+        // NeoForge's registry snapshot: the registry, each id with its identifier, then no aliases.
+        Assert.Equal(Write(writer =>
+        {
+            writer.WriteString("minecraft:item");
+            writer.WriteVarInt(2);
+            writer.WriteVarInt(0);
+            writer.WriteString("minecraft:air");
+            writer.WriteVarInt(1);
+            writer.WriteString("test:gem");
+            writer.WriteVarInt(0);
+        }), PayloadOn(client, ChannelPayloads.RegistrySnapshot));
+        Assert.Empty(PayloadOn(client, ChannelPayloads.RegistrySyncCompleted));
+
+        Assert.False(channels.TakeReadyForConfiguration());
+        await channels.HandlePayloadAsync(ChannelPayloads.RegistrySyncCompleted, Array.Empty<byte>());
+        Assert.True(channels.TakeReadyForConfiguration());
+        Assert.False(channels.TakeReadyForConfiguration());
+
+        // A NeoForge client without the sync channels would get the plugin's item ids wrong.
+        var withoutSync = new TestClient(new FakeServer());
+        withoutSync.SetState(ClientState.Configuration);
+        var withoutSyncChannels = new ClientChannels(withoutSync, new PayloadChannelRegistry(), Modded);
+
+        withoutSyncChannels.StartConfiguration();
+        await withoutSyncChannels.HandlePayloadAsync(ChannelPayloads.NeoForgeQuery, new byte[] { 0 });
+
+        Assert.False(await withoutSyncChannels.FinishHandshakeAsync(0));
+        Assert.False(withoutSync.Connected);
+    }
+
+    [Fact]
     public async Task MalformedQueryRefusesClient()
     {
         var registry = new PayloadChannelRegistry();
@@ -168,9 +239,11 @@ public class ModdedNetworking
 
         var optionalOnly = await HandshakeWithoutNeoForgeAsync(registry);
 
+        // Like NeoForge's server, it announces the optional channels it receives on, its own registry sync's too.
         Assert.True(optionalOnly.Continued);
         Assert.Equal(
-            "minecraft:register\0minecraft:unregister\0neoforge:register\0test:echo\0",
+            "minecraft:register\0minecraft:unregister\0neoforge:register\0test:echo\0"
+                + "neoforge:frozen_registry_sync_completed\0",
             Encoding.ASCII.GetString(PayloadOn(optionalOnly.Client, ChannelPayloads.Register)));
 
         // An optional channel still has to be registered by the client before it may be used.

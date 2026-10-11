@@ -33,9 +33,14 @@ client. This document describes the design and tracks its progress. The archive 
    - Loading plugins before the worlds.
    - NeoForge's channel negotiation in the configuration phase, a payload channel API for mods, and `isModded` in
      the status response.
-2. **Content registries**: blocks (with their states), items and entity types that mods add at runtime, after the
-   vanilla entries, with ids that survive reloads; NeoForge's frozen registry sync to modded clients; refusing vanilla
-   clients when content they can't display is registered; reconfiguring connected players after a reload.
+2. **Content registries** (in progress)
+   - Done for items: `Item` is a registered item type (one instance per item, keyed by identifier) rather than a
+     `Material`-keyed struct. Plugins register items in their namespace with `IPluginRegistry.RegisterItem`, with an
+     `IItemBehavior` for using them. An item keeps its instance and id across reloads; only its behaviour is replaced.
+     While a loaded plugin has items, vanilla clients are refused and NeoForge clients are sent the item registry with
+     NeoForge's registry sync before vanilla's registries.
+   - Next: blocks (with their states) and entity types the same way; moving `Material` call sites to items and blocks
+     until `Material` can go; reconfiguring connected players when a reload changes the registered content.
 3. **Data-driven content and world generation**: loading a mod's `data/` folder like a data pack (biomes, dimension
    types, damage types, tags, worldgen features), letting mods register codec types for data-driven objects (feature,
    density function and biome source types), and reload-safe world generators.

@@ -83,6 +83,20 @@ public sealed partial class Server : IServer
     /// </summary>
     internal Net.Payloads.PayloadChannelRegistry PayloadChannels { get; } = new();
 
+    /// <summary>
+    /// The registries loaded plugins added to, which clients must agree with the server on: vanilla clients can't join
+    /// while there are any, and NeoForge clients are sent them.
+    /// </summary>
+    internal IReadOnlyList<Net.Payloads.RegistrySnapshot> GetModdedRegistries()
+    {
+        if (!ItemsRegistry.HasPluginItems)
+            return [];
+
+        var items = ItemsRegistry.All.Select(item => item.UnlocalizedName).ToArray();
+
+        return [new Net.Payloads.RegistrySnapshot("minecraft:item", items)];
+    }
+
     public ICommandHandler CommandHandler { get; }
     public ServerConfiguration Configuration { get; set; }
     public string Version => ServerConstants.VERSION;

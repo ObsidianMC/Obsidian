@@ -21,6 +21,11 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
                     payload.Populate(buffer);
 
                     await this.Client.Channels.HandlePayloadAsync(payload.Channel, payload.PluginData);
+
+                    // A NeoForge client applied the registries plugins added to; vanilla's come next.
+                    if (this.Client.Channels.TakeReadyForConfiguration())
+                        this.SendConfiguration();
+
                     return true;
                 }
             case 3:

@@ -43,9 +43,21 @@ public static partial class ItemsRegistry
     public static IReadOnlyList<Item> All => table.ById;
 
     /// <summary>
-    /// Whether a plugin registered any item, which clients without that plugin can't show.
+    /// Whether a loaded plugin registered any item, which clients without that plugin can't show.
     /// </summary>
-    public static bool HasPluginItems => table.ById.Length > VanillaCount;
+    public static bool HasPluginItems
+    {
+        get
+        {
+            foreach (var item in table.ById.AsSpan(VanillaCount))
+            {
+                if (item.Binding is not null)
+                    return true;
+            }
+
+            return false;
+        }
+    }
 
     public static Item Get(INetStreamReader reader) => Get(reader.ReadVarInt());
 
