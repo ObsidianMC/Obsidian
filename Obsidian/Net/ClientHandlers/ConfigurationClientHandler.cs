@@ -42,6 +42,20 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
                         return false;
 
                     await this.Client.Channels.FinishConfigurationAsync();
+
+                    // Plugins changed the content while the client was configured with the earlier one.
+                    var server = (Server)this.Server;
+                    var current = server.GetContentVersion();
+                    if (this.Client.NeedsReconfiguration(current))
+                    {
+                        this.Client.RequestReconfiguration();
+                    }
+                    else if (this.Client.State == ClientState.Play && this.Client.ConfiguredContent != current)
+                    {
+                        var tags = server.CreateDialogConfiguration().Tags;
+                        await this.Client.QueuePacketAsync(UpdateTagsPacket.ClientboundPlay with { Tags = tags });
+                    }
+
                     return true;
                 }
             case 4:
@@ -68,6 +82,11 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
 
     // Whether the server sent its configuration and FinishConfiguration, after which the client may finish.
     private bool configurationSent;
+
+    /// <summary>
+    /// Starts over for a client going through configuration again.
+    /// </summary>
+    internal void Reset() => this.configurationSent = false;
 
     /// <summary>
     /// Sends the server's known packs, registries and tags, then finishes configuration.

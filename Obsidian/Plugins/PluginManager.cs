@@ -635,6 +635,22 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         foreach (var player in this.server.OnlinePlayers.Values)
             player.SendPacket(CommandsRegistry.Packet);
+
+        // Clients catch up with the plugins' content outside the plugin change, which reconfiguring players' leave
+        // handlers mustn't wait on.
+        _ = this.RefreshClientsAsync();
+    }
+
+    private async Task RefreshClientsAsync()
+    {
+        try
+        {
+            await ((Server)this.server).RefreshClientsAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.RefreshClientsFailed(this.logger, ex);
+        }
     }
 
     /// <summary>
@@ -678,6 +694,9 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     private static partial class Log
     {
+        [LoggerMessage(Level = LogLevel.Error, Message = "Updating connected players to the plugins' content failed")]
+        public static partial void RefreshClientsFailed(ILogger logger, Exception exception);
+
         [LoggerMessage(Level = LogLevel.Error,
             Message = "Couldn't drop an unloaded plugin's AI from entity {EntityId}")]
         public static partial void MobReleaseFailed(ILogger logger, Exception exception, int entityId);

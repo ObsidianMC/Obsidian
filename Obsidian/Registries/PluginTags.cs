@@ -26,6 +26,13 @@ internal static partial class PluginTags
 
     private static readonly Lock applying = new();
 
+    /// <summary>
+    /// How many times plugins' tags were applied, so a client can tell it has older tags.
+    /// </summary>
+    public static int Revision => Volatile.Read(ref revision);
+
+    private static int revision;
+
     // Vanilla's entries of the tags plugins changed, to restore when they no longer do.
     // By reference: a tag is a record, whose equality and hash change with its entries.
     private static readonly Dictionary<Tag, ImmutableArray<int>> vanillaEntries =
@@ -145,6 +152,7 @@ internal static partial class PluginTags
                     tag.SetEntries(entries);
 
                 TagsRegistry.SetPluginTags(new Dictionary<string, Tag[]>());
+                Interlocked.Increment(ref revision);
                 return;
             }
 
@@ -184,6 +192,7 @@ internal static partial class PluginTags
             }
 
             TagsRegistry.SetPluginTags(pluginTags.ToDictionary(entry => entry.Key, entry => entry.Value.ToArray()));
+            Interlocked.Increment(ref revision);
         }
     }
 

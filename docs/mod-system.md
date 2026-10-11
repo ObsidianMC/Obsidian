@@ -68,8 +68,12 @@ client. This document describes the design and tracks its progress. The archive 
      `IEntityBehavior`; they're saved by the type's identifier, and kept as saved when the plugin is gone.
      `IEntity.Type` is null for them, and `IEntity.Definition` names their type. Goals, navigators and goal
      controllers plugins give mobs through the API are dropped when the plugin unloads.
-   - Next: moving `Material` call sites to items and blocks until `Material` can go; reconfiguring connected players
-     when a reload changes the registered content or tags.
+   - Done: connected players follow plugin changes. A client configured with other registries (plugins' items,
+     blocks or entity types), or a modded client with other payload channels, goes back through configuration like
+     vanilla's reconfiguration: the player leaves the world (saved), the channel handshake and registry sync run
+     again, and they join again; a client that can't have the new content is refused, like when joining. Other
+     clients get the merged tags in play, like vanilla's `/reload` sends them.
+   - Next: moving `Material` call sites to items and blocks until `Material` can go.
 3. **Data-driven content and world generation**: loading a mod's `data/` folder like a data pack (biomes, dimension
    types, damage types, tags, worldgen features), letting mods register codec types for data-driven objects (feature,
    density function and biome source types), and reload-safe world generators.

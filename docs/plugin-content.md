@@ -104,5 +104,6 @@ if (RubyTags.Blocks.Ores.Contains(block))
 
 A tag whose required entry is missing keeps its earlier entries rather than disappearing, as server code holds
 vanilla's tags. When tags refer to each other through optional references, the reference that would close the cycle
-is left out in identifier order, where vanilla's order depends on its hash map. Players already connected get changed
-tags once reconfiguring them exists.
+is left out in identifier order, where vanilla's order depends on its hash map. Players already connected get the
+changed tags when a plugin loads or unloads, and go back through configuration when its blocks, items, entity types or
+channels changed.

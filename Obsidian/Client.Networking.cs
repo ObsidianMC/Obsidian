@@ -57,6 +57,9 @@ public partial class Client
 
         lock (this.sendLock)
         {
+            if (!this.Accepts(packet))
+                return false;
+
             if (this.compressionThreshold >= 0)
                 this.sendBufferMain.WriteCompressedPacket(packet, this.compressionThreshold);
             else

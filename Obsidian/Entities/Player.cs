@@ -48,6 +48,9 @@ public sealed partial class Player : Avatar, IClientPlayer
     private static readonly TimeSpan ChunkLoadTimeBudget = TimeSpan.FromMilliseconds(5);
     private readonly SemaphoreSlim chunkUpdates = new(1, 1);
 
+    // Set once the player left for reconfiguration, after which the client's next player sends its chunks.
+    private bool chunksStopped;
+
     // Vanilla's chunk batch flow control (PlayerChunkSender): chunks go out in batches the client acknowledges with how
     // many chunks a tick it can take, so a slow connection isn't flooded and later packets (keep-alives) don't wait
     // behind megabytes of chunks. The client's rate tops up a quota every tick. One batch may be unacknowledged at first,
@@ -921,6 +924,17 @@ public sealed partial class Player : Avatar, IClientPlayer
     /// Sends the chunks in view that weren't generated when they were last asked for and are now. The server's chunk
     /// loop calls it every tick, independently of the world tick; it skips the tick while the chunks are being updated.
     /// </summary>
+    /// <summary>
+    /// Waits for a chunk send under way and stops sending this player chunks: they left to go back through
+    /// configuration, and the client's next player gets its chunks.
+    /// </summary>
+    internal async Task StopSendingChunksAsync()
+    {
+        await this.chunkUpdates.WaitAsync();
+        this.chunksStopped = true;
+        this.chunkUpdates.Release();
+    }
+
     internal async Task SendPendingChunksAsync()
     {
         lock (this.chunkBatchLock)
@@ -954,6 +968,9 @@ public sealed partial class Player : Avatar, IClientPlayer
     // retrying ungenerated chunks, so they can't prevent the rest of the view from being requested. Called under chunkUpdates.
     private async Task<bool> SendReadyChunksAsync()
     {
+        if (this.chunksStopped)
+            return true;
+
         if (this.pendingChunks.Count == 0 || this.chunkCacheCenter is not var (centerX, centerZ))
             return this.pendingChunks.Count == 0;
 

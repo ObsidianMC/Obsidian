@@ -49,7 +49,7 @@ internal sealed partial class PlayClientHandler : ClientHandler
                 await HandleFromPoolAsync<CommandSuggestionPacket>(data);
                 break;
             case 15:
-                await HandleFromPoolAsync<ConfigurationAcknowledgedPacket>(data);
+                await this.Client.AcknowledgeReconfigurationAsync();
                 break;
             case 16:
                 await HandleFromPoolAsync<ContainerButtonClickPacket>(data);

@@ -125,6 +125,70 @@ public sealed partial class Server : IServer
         return registries;
     }
 
+    /// <summary>
+    /// What clients configure with that plugins change: the registries plugins added to, whose ids only grow, so their
+    /// sizes tell them apart, and the plugins' payload channels.
+    /// </summary>
+    internal ContentVersion GetContentVersion()
+    {
+        var registries = $"{ItemsRegistry.All.Count}/{BlocksRegistry.PluginBlocks.Count}/"
+            + $"{EntityDefinitionsRegistry.PluginDefinitions.Count}";
+
+        Net.Payloads.NetworkProtocol[] protocols =
+            [Net.Payloads.NetworkProtocol.Configuration, Net.Payloads.NetworkProtocol.Play];
+
+        var channels = string.Join(';', protocols
+            .SelectMany(protocol => this.PayloadChannels
+                .GetComponents(protocol)
+                .Select(component => $"{protocol}:{component.Id}={component.Version}:{component.Flow}:"
+                    + $"{component.Optional}"))
+            .Order(StringComparer.Ordinal));
+
+        return new ContentVersion(registries, channels, PluginTags.Revision);
+    }
+
+    /// <summary>
+    /// Has each connected client catch up once plugins changed the content: one configured with other registries, or,
+    /// for a client that agreed on channels, other channels, goes back through configuration; the others get the
+    /// current tags, like vanilla's <c>/reload</c> sends them.
+    /// </summary>
+    internal async Task RefreshClientsAsync()
+    {
+        // One at a time, so an earlier refresh can't send its older tags after a later one.
+        await this.refreshing.WaitAsync();
+        try
+        {
+            await this.RefreshClientsOnceAsync();
+        }
+        finally
+        {
+            this.refreshing.Release();
+        }
+    }
+
+    private readonly SemaphoreSlim refreshing = new(1, 1);
+
+    private async Task RefreshClientsOnceAsync()
+    {
+        var current = this.GetContentVersion();
+        var tags = this.CreateDialogConfiguration().Tags;
+
+        foreach (var client in this.Connections.Values.OfType<Client>())
+        {
+            if (client.State != ClientState.Play
+                || client.AwaitingReconfiguration
+                || client.ConfiguredContent is null)
+            {
+                continue;
+            }
+
+            if (client.NeedsReconfiguration(current))
+                client.RequestReconfiguration();
+            else
+                await client.QueuePacketAsync(UpdateTagsPacket.ClientboundPlay with { Tags = tags });
+        }
+    }
+
     public ICommandHandler CommandHandler { get; }
     public ServerConfiguration Configuration { get; set; }
     public string Version => ServerConstants.VERSION;
@@ -688,8 +752,11 @@ public sealed partial class Server : IServer
             // Stopping.
         }
 
+        // A client going back to configuration gets no keep-alives, but times out if it doesn't acknowledge it.
         static ValueTask SendKeepAliveAsync(IClient client) => client.State switch
         {
+            _ when client is Client { AwaitingReconfiguration: true } awaiting
+                => awaiting.CheckReconfigurationTimeoutAsync(),
             ClientState.Play => KeepAlivePacket.ClientboundPlay.HandleAsync(client),
             ClientState.Configuration => KeepAlivePacket.ClientboundConfiguration.HandleAsync(client),
             _ => ValueTask.CompletedTask

@@ -157,7 +157,21 @@ public sealed partial class Client : IClient
     /// <summary>
     /// The connection's payload channels and NeoForge handshake.
     /// </summary>
-    internal ClientChannels Channels { get; }
+    internal ClientChannels Channels { get; private set; }
+
+    /// <summary>
+    /// The server's content (see <see cref="Server.GetContentVersion"/>) when the client last finished configuration:
+    /// its registries and channels are those.
+    /// </summary>
+    internal ContentVersion? ConfiguredContent { get; set; }
+
+    /// <summary>
+    /// Whether the server asked the client to go back to configuration and waits for it to acknowledge: the player has
+    /// left the world, and the client's play packets are ignored meanwhile.
+    /// </summary>
+    internal bool AwaitingReconfiguration { get; private set; }
+
+    private volatile bool reconfigurationRequested;
 
     public Client(IEventDispatcher eventDispatcher, IServer server, ILoggerFactory loggerFactory,
         IUserCache playerCache,
@@ -275,8 +289,14 @@ public sealed partial class Client : IClient
 
     public async ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
-        if (this.disposed || this.cancellationSource.IsCancellationRequested || !this.Connected)
+        if (this.disposed
+            || this.cancellationSource.IsCancellationRequested
+            || !this.Connected
+            || !this.Accepts(packet))
+        {
             return;
+        }
+
         try
         {
             var args = new QueuePacketEventArgs(this.Server, this, packet);
@@ -298,6 +318,26 @@ public sealed partial class Client : IClient
     }
 
     public bool SendPacket(IClientboundPacket packet) => this.SendAsync(packet);
+
+    // While the client goes back to configuration, nothing but the switch reaches it, and once it's there, play
+    // packets still sent for the player who left (a chunk send under way, say) don't either: it would misread them.
+    // Sending checks it under the send lock, which the switches change the state under, so no play packet is written
+    // after the switch.
+    private bool Accepts(IClientboundPacket packet)
+    {
+        if (packet is Net.Packets.Play.Clientbound.StartConfigurationPacket)
+            return true;
+
+        if (this.AwaitingReconfiguration)
+            return false;
+
+        var playNamespace = typeof(Net.Packets.Play.Clientbound.StartConfigurationPacket).Namespace;
+        var play = packet is Net.Packets.CommonPacket common
+            ? common.State == ClientState.Play
+            : packet.GetType().Namespace == playNamespace;
+
+        return !(play && this.State == ClientState.Configuration);
+    }
 
     public bool HasChannel(string channel) => this.Channels.HasChannel(channel);
 
@@ -452,6 +492,17 @@ public sealed partial class Client : IClient
 
     private async ValueTask<bool> HandlePacketAsync(PacketData packetData)
     {
+        // Between packets nothing else of this client's is running, so the player can leave the world unchanged.
+        if (this.reconfigurationRequested && this.State == ClientState.Play && !this.AwaitingReconfiguration)
+        {
+            this.reconfigurationRequested = false;
+            await this.ReconfigureAsync();
+        }
+
+        // Until it acknowledges going back to configuration, the client's play packets are for a player who left.
+        if (this.AwaitingReconfiguration && packetData.Id != ConfigurationAcknowledgedId)
+            return true;
+
         try
         {
             return await this.handlers[this.State].HandleAsync(packetData);
@@ -480,6 +531,119 @@ public sealed partial class Client : IClient
 
             this.Logger = this.loggerFactory.CreateLogger($"Client({this.Id})");
         }
+    }
+
+    // The play packet that acknowledges going back to configuration.
+    private const int ConfigurationAcknowledgedId = 15;
+
+    /// <summary>
+    /// Has the player go back through configuration, like vanilla's reconfiguration, so that the client learns the
+    /// server's current content: they leave the world (saved, like leaving), the channel handshake and registry sync
+    /// run again, and they join again. A client that can't have the content is refused, like when joining. It happens
+    /// before the client's next packet is handled, when nothing of the client's is running.
+    /// </summary>
+    internal void RequestReconfiguration() => this.reconfigurationRequested = true;
+
+    /// <summary>
+    /// Disconnects a client that hasn't acknowledged going back to configuration within the keep-alive timeout, as it
+    /// isn't sent keep-alives meanwhile.
+    /// </summary>
+    internal ValueTask CheckReconfigurationTimeoutAsync()
+    {
+        var waited = Environment.TickCount64 - this.reconfigurationStarted;
+        if (waited > this.Server.Configuration.Network.KeepAliveTimeoutInterval)
+            return this.DisconnectAsync("Timed out..");
+
+        return ValueTask.CompletedTask;
+    }
+
+    // When the server sent the client back to configuration.
+    private long reconfigurationStarted;
+
+    /// <summary>
+    /// Sends a keep-alive and records it as unanswered, under the send lock, so that going back to configuration,
+    /// which forgets it, can't come in between.
+    /// </summary>
+    internal void SendKeepAlive(KeepAlivePacket packet)
+    {
+        lock (this.sendLock)
+        {
+            if (this.SendPacket(packet))
+                this.LastKeepAliveId = packet.KeepAliveId;
+        }
+    }
+
+    private async ValueTask ReconfigureAsync()
+    {
+        if (this.Player is not Player player)
+            return;
+
+        // Like vanilla, the player leaves the world before the client switches, and nothing else is sent to them in
+        // play from here.
+        lock (this.sendLock)
+        {
+            this.AwaitingReconfiguration = true;
+            this.LastKeepAliveId = null;
+            this.reconfigurationStarted = Environment.TickCount64;
+        }
+
+        this.Server.RemovePlayer(player);
+        await player.StopSendingChunksAsync();
+
+        // The connection's one leave, until the player joins again.
+        await this.LeaveAsync();
+        await this.QueuePacketAsync(new Net.Packets.Play.Clientbound.StartConfigurationPacket());
+    }
+
+    /// <summary>
+    /// Starts the configuration handshake, recording the server's content first: what the handshake agrees on is at
+    /// least as new, so a later change is told apart.
+    /// </summary>
+    internal void StartConfiguration()
+    {
+        this.ConfiguredContent = ((Server)this.Server).GetContentVersion();
+        this.Channels.StartConfiguration();
+    }
+
+    /// <summary>
+    /// Whether the client, configured with <see cref="ConfiguredContent"/>, has to go back through configuration for
+    /// <paramref name="current"/>: other registries, or other channels for a client that agreed on them. Other tags
+    /// are sent in play instead.
+    /// </summary>
+    internal bool NeedsReconfiguration(ContentVersion current) =>
+        this.ConfiguredContent is ContentVersion configured
+        && (configured.Registries != current.Registries
+            || this.Channels.IsModded && configured.Channels != current.Channels);
+
+    /// <summary>
+    /// Goes back to configuration once the client acknowledged it, with a new player for the new join.
+    /// </summary>
+    internal async ValueTask AcknowledgeReconfigurationAsync()
+    {
+        if (!this.AwaitingReconfiguration || this.Player is not Player player)
+        {
+            await this.DisconnectAsync("Unexpected configuration acknowledgement.");
+            return;
+        }
+
+        lock (this.sendLock)
+        {
+            this.AwaitingReconfiguration = false;
+            this.LastKeepAliveId = null;
+            this.SetState(ClientState.Configuration);
+        }
+
+        // The new join loads the player as they were saved when they left, and they leave again on their own: the
+        // earlier leave finished before the switch.
+        this.Player = this.CreatePlayer(player.Uuid, player.Username, this.Server.DefaultWorld);
+        this.Player.SkinProperties = player.SkinProperties;
+        this.leaving = null;
+
+        var concreteServer = (Server)this.Server;
+        this.Channels = new ClientChannels(this, concreteServer.PayloadChannels, concreteServer.GetModdedRegistries);
+        ((ConfigurationClientHandler)this.handlers[ClientState.Configuration]).Reset();
+
+        this.StartConfiguration();
     }
 
     private Player CreatePlayer(Guid uuid, string username, IWorld world) => new(uuid, username, this, world)

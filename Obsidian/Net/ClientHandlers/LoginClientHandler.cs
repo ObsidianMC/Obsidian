@@ -67,7 +67,7 @@ internal sealed partial class LoginClientHandler : ClientHandler
                     this.Client.SetState(ClientState.Configuration);
 
                     // The rest of configuration follows once the client answered the handshake's ping.
-                    this.Client.Channels.StartConfiguration();
+                    this.Client.StartConfiguration();
 
                     return true;
                 }

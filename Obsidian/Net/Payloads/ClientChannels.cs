@@ -71,6 +71,12 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
     public bool IsNeoForge { get; private set; }
 
     /// <summary>
+    /// Whether the client agreed on channels with the server, through NeoForge's handshake or the common channels, so
+    /// that a change of the server's channels concerns it.
+    /// </summary>
+    public bool IsModded => this.IsNeoForge || this.commonNetworking;
+
+    /// <summary>
     /// Whether the connection may carry payloads on <paramref name="channel"/> in <paramref name="protocol"/>. Like
     /// NeoForge, vanilla and handshake channels always may; others must have been agreed on in the handshake or
     /// registered by the client with <c>minecraft:register</c> or <c>c:register</c>.
