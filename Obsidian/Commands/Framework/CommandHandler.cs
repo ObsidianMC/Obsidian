@@ -11,6 +11,7 @@ using Obsidian.Commands.Modules;
 using Obsidian.Plugins;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Loader;
 
 namespace Obsidian.Commands.Framework;
 
@@ -109,6 +110,20 @@ public sealed class CommandHandler : ICommandHandler
 
     public bool TryAddArgumentParser<TValue>(BaseArgumentParser<TValue> parser) =>
         _argumentParsers.TryAdd(typeof(TValue), parser);
+
+    /// <summary>
+    /// Removes the argument parsers for, or from, a plugin's assemblies as the plugin unloads, including the enum
+    /// parsers created for its enums, which would otherwise keep its load context alive.
+    /// </summary>
+    public void UnregisterArgumentParsers(AssemblyLoadContext pluginContext)
+    {
+        foreach (var (type, parser) in _argumentParsers)
+        {
+            if (AssemblyLoadContext.GetLoadContext(type.Assembly) == pluginContext
+                || AssemblyLoadContext.GetLoadContext(parser.GetType().Assembly) == pluginContext)
+                _argumentParsers.TryRemove(type, out _);
+        }
+    }
 
     public void UnregisterPluginCommands(IPluginContainer? plugin) =>
         ImmutableInterlocked.Update(ref _commands, commands => commands.RemoveAll(x => x.PluginContainer == plugin));

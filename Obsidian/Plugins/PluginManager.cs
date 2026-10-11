@@ -414,6 +414,9 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.commandHandler.UnregisterPluginCommands(pluginContainer);
         this.eventDispatcher.UnregisterPluginEvents(pluginContainer);
 
+        if (pluginContainer.LoadContext is not null)
+            this.commandHandler.UnregisterArgumentParsers(pluginContainer.LoadContext);
+
         if (pluginContainer.Plugin is PluginBase plugin)
         {
             try
