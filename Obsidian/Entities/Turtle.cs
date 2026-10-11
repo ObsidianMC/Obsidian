@@ -17,7 +17,7 @@ public sealed partial class Turtle : FarmAnimal
     protected override bool UsesFloatGoal => false;
     protected override string? SoundName => "turtle";
     protected override float DimensionScale => IsBaby ? 0.3f : 1;
-    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.Seagrass };
+    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.Seagrass };
     internal override bool CanBreed => !HasEgg && base.CanBreed;
     protected override VectorD Travel() => VolumeMovement.Travel(this, InWater);
     protected override ValueTask TickAirSupplyAsync() { Air = 300; return default; }
@@ -31,16 +31,19 @@ public sealed partial class Turtle : FarmAnimal
     protected override IEntity CreateOffspring(Animal mate) { HasEgg = true; SynchronizeMetadata(); return this; }
     protected override async ValueTask TickMobAsync()
     {
-        var baby = IsBaby; await base.TickMobAsync(); if (baby && !IsBaby) DropItem(Material.TurtleScute);
+        var baby = IsBaby; await base.TickMobAsync(); if (baby && !IsBaby) DropItem(ItemsRegistry.TurtleScute);
     }
     internal async ValueTask LayEggAsync(Vector point)
     {
-        if (Terrain.GetBlock(point)?.IsAir != true || Terrain.GetBlock(point - new Vector(0, 1, 0))?.Material is not (Material.Sand or Material.RedSand)) return;
-        await Level.SetBlockAsync(point, BlocksRegistry.Get(Material.TurtleEgg).WithProperty("eggs", Random.Next(1, 5)), true);
+        if (Terrain.GetBlock(point)?.IsAir != true
+            || Terrain.GetBlock(point - new Vector(0, 1, 0))?.RegistryId is not (BlockIds.Sand or BlockIds.RedSand))
+            return;
+
+        await Level.SetBlockAsync(point, BlocksRegistry.TurtleEgg.WithProperty("eggs", Random.Next(1, 5)), true);
         HasEgg = false; Laying = false; LoveTicks = 0; SynchronizeMetadata();
     }
     protected override ValueTask OnDeathAsync(IEntity source)
-    { if (!IsBaby) DropItem(Material.Seagrass, Random.Next(3)); return default; }
+    { if (!IsBaby) DropItem(ItemsRegistry.Seagrass, Random.Next(3)); return default; }
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -68,7 +71,10 @@ internal sealed class TurtleLayEggGoal(Turtle turtle) : NavigationGoal(turtle, 1
         for (var attempt = 0; attempt < 30; attempt++)
         {
             point = turtle.Home + new Vector(turtle.Random.Next(-8, 9), turtle.Random.Next(-2, 3), turtle.Random.Next(-8, 9));
-            if (turtle.Terrain.GetBlock(point)?.IsAir == true && turtle.Terrain.GetBlock(point - new Vector(0, 1, 0))?.Material is Material.Sand or Material.RedSand) return true;
+            if (turtle.Terrain.GetBlock(point)?.IsAir == true
+                && turtle.Terrain.GetBlock(point - new Vector(0, 1, 0))?.RegistryId
+                    is BlockIds.Sand or BlockIds.RedSand)
+                return true;
         }
         return false;
     }

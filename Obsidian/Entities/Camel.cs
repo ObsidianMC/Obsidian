@@ -31,7 +31,7 @@ public partial class Camel : AbstractHorse
     }
     protected virtual float DashSpeed => 22.2222f;
     protected override string? SoundName => "camel";
-    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.Cactus };
+    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.Cactus };
     protected override int GetExperienceReward() => IsBaby ? 0 : Random.Next(1, 4);
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
@@ -83,7 +83,7 @@ public partial class Camel : AbstractHorse
         }
         if (IsBaby)
             return;
-        if (!HasSaddle && item is { Count: > 0, Type: Material.Saddle })
+        if (!HasSaddle && item is { Count: > 0, Holder.Id: ItemIds.Saddle })
         {
             HasSaddle = true;
             await ConsumeInteractionItemAsync(player, hand);

@@ -7,12 +7,13 @@ namespace Obsidian.Entities;
 
 internal static class MerchantOffers
 {
-    internal static TradeEntry Trade(Material input, int cost, Material output, int count = 1, int maxUses = 12, int xp = 1,
-        Material second = Material.Air, int secondCount = 0) => new()
+    /// <param name="second">The second cost item, or <see langword="null"/> for none (air).</param>
+    internal static TradeEntry Trade(Item input, int cost, Item output, int count = 1, int maxUses = 12, int xp = 1,
+        Item? second = null, int secondCount = 0) => new()
     {
-        FirstInput = new TradeItem(ItemsRegistry.Get(input).Id, cost, []),
-        SecondInput = new TradeItem(ItemsRegistry.Get(second).Id, secondCount, []),
-        Output = new ItemStack(ItemsRegistry.Get(output), count), MaxCount = maxUses, XP = xp, Multiplier = 0.05f
+        FirstInput = new TradeItem(input.Id, cost, []),
+        SecondInput = new TradeItem((second ?? ItemsRegistry.Air).Id, secondCount, []),
+        Output = new ItemStack(output, count), MaxCount = maxUses, XP = xp, Multiplier = 0.05f
     };
 
     internal static void Write(INbtWriter writer, ImmutableArray<TradeEntry> offers)

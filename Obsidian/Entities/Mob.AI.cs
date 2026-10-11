@@ -13,8 +13,10 @@ public partial class Mob
     internal Random Random { get; } = new();
     internal MobTerrain Terrain { get; private set; } = null!;
     internal long AiTick { get; private set; }
-    internal bool InWater => Terrain.GetBlock((Vector)(Position + new VectorD(0, 0.1f, 0)).Floor())?.Material == Material.Water;
-    internal bool InLava => Terrain.GetBlock((Vector)(Position + new VectorD(0, 0.1f, 0)).Floor())?.Material == Material.Lava;
+    internal bool InWater =>
+        Terrain.GetBlock((Vector)(Position + new VectorD(0, 0.1f, 0)).Floor())?.RegistryId == BlockIds.Water;
+    internal bool InLava =>
+        Terrain.GetBlock((Vector)(Position + new VectorD(0, 0.1f, 0)).Floor())?.RegistryId == BlockIds.Lava;
     internal bool IsRemoved { get; private set; }
     internal IEntity? LastAttacker { get; private set; }
     internal long LastHurtTick { get; private set; } = -100;

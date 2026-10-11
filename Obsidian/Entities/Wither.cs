@@ -142,7 +142,7 @@ public sealed partial class Wither : BossMob
         if (Level.LevelData.GetBooleanRule("mob_drops"))
         {
             var star = new ItemEntity { Level = Level, EntityId = Server.GetNextEntityId(), Position = Position,
-                Item = ItemsRegistry.GetSingleItem(Material.NetherStar) };
+                Item = ItemsRegistry.GetSingleItem(ItemsRegistry.NetherStar) };
             star.SetExtendedLifetime();
             Level.SpawnEntity(star);
         }

@@ -124,8 +124,8 @@ public sealed partial class Evoker : PathfinderMob
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.TotemOfUndying);
-        if (source is IPlayer) DropItem(Material.Emerald, Random.Next(2));
+        DropItem(ItemsRegistry.TotemOfUndying);
+        if (source is IPlayer) DropItem(ItemsRegistry.Emerald, Random.Next(2));
         return default;
     }
     public override void Write(INetStreamWriter writer)

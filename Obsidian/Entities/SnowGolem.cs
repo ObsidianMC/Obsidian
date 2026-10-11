@@ -35,7 +35,7 @@ public sealed partial class SnowGolem : PathfinderMob
             var snow = (Vector)(Position + new VectorD((index % 2 * 2 - 1) * 0.25f, 0, (index / 2 * 2 - 1) * 0.25f)).Floor();
             if (Terrain.GetBlock(snow)?.IsAir == true && Terrain.GetBlock(new Vector(snow.X, snow.Y - 1, snow.Z)) is { } floor &&
                 floor.IsCollisionShapeFullBlock() && !floor.IsLiquid)
-                await Level.SetBlockAsync(snow, BlocksRegistry.Get(Material.Snow), true);
+                await Level.SetBlockAsync(snow, BlocksRegistry.Snow, true);
         }
     }
     internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
@@ -43,10 +43,10 @@ public sealed partial class SnowGolem : PathfinderMob
         if (!Alive || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 3) || !CanSee(player))
             return;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (Pumpkin && item?.Type == Material.Shears)
+        if (Pumpkin && item?.Is(ItemsRegistry.Shears) == true)
         {
             Pumpkin = false;
-            DropItem(Material.CarvedPumpkin, 1);
+            DropItem(ItemsRegistry.CarvedPumpkin, 1);
             PlayMobSound("shear");
             await DamageInteractionToolAsync(player, hand);
             SynchronizeMetadata();
@@ -54,7 +54,7 @@ public sealed partial class SnowGolem : PathfinderMob
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.Snowball, Random.Next(16));
+        DropItem(ItemsRegistry.Snowball, Random.Next(16));
         return default;
     }
     public override void Write(INetStreamWriter writer)

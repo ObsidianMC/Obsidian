@@ -78,8 +78,8 @@ public sealed partial class PolarBear : Animal
         if (!IsBaby)
         {
             var cod = Random.Next(4) != 0;
-            var fish = cod ? Material.Cod : Material.Salmon;
-            if (Burning) fish = cod ? Material.CookedCod : Material.CookedSalmon;
+            var fish = cod ? ItemsRegistry.Cod : ItemsRegistry.Salmon;
+            if (Burning) fish = cod ? ItemsRegistry.CookedCod : ItemsRegistry.CookedSalmon;
             DropItem(fish, Random.Next(3));
         }
         return default;

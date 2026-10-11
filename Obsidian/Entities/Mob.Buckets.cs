@@ -7,12 +7,12 @@ namespace Obsidian.Entities;
 
 public partial class Mob
 {
-    protected async ValueTask<bool> TryCaptureInBucketAsync(IPlayer player, InteractionHand hand, Material bucketType)
+    protected async ValueTask<bool> TryCaptureInBucketAsync(IPlayer player, InteractionHand hand, Item bucketType)
     {
         if (!Alive || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player)) return false;
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var item = player.Inventory.GetItem(slot);
-        if (item is not { Count: > 0, Type: Material.WaterBucket }) return false;
+        if (item is not { Count: > 0, Holder.Id: ItemIds.WaterBucket }) return false;
         var data = EntityNbt.Save(this)!;
         foreach (var name in new[] { "id", "UUID", "Pos", "Motion", "Rotation" }) data.Remove(name);
         data.Set(new NbtTag<bool>("FromBucket", true));

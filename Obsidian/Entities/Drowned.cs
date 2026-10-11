@@ -11,9 +11,10 @@ public sealed partial class Drowned : Zombie
     internal override bool SwimmingNavigation => true;
     protected override string? SoundName => "drowned";
     protected override VectorD Travel() => VolumeMovement.Travel(this, InWater);
-    protected internal override float GetPathCost(IBlock feet, IBlock floor) => feet.Material == Material.Water ? 0 : base.GetPathCost(feet, floor);
+    protected internal override float GetPathCost(IBlock feet, IBlock floor) =>
+        feet.RegistryId == BlockIds.Water ? 0 : base.GetPathCost(feet, floor);
     internal bool CanAttackNow(IEntity target) => Level.DayTime is < 0 or >= 12000 ||
-        Terrain.GetBlock((Vector)(target.Position + new VectorD(0, 0.1f, 0)).Floor())?.Material == Material.Water;
+        Terrain.GetBlock((Vector)(target.Position + new VectorD(0, 0.1f, 0)).Floor())?.RegistryId == BlockIds.Water;
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
@@ -35,10 +36,14 @@ public sealed partial class Drowned : Zombie
         CanPickUpLoot = Random.NextSingle() < 0.55f * SpecialDifficulty;
         IsBaby |= Random.NextSingle() < 0.05f;
         if (Random.NextSingle() > 0.9f)
-            SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(Random.Next(16) < 10 ? Material.Trident : Material.FishingRod));
+        {
+            var weapon = Random.Next(16) < 10 ? ItemsRegistry.Trident : ItemsRegistry.FishingRod;
+            SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(weapon));
+        }
+
         if (Random.NextSingle() < 0.03f)
         {
-            SetEquipment(EquipmentSlot.OffHand, ItemsRegistry.GetSingleItem(Material.NautilusShell));
+            SetEquipment(EquipmentSlot.OffHand, ItemsRegistry.GetSingleItem(ItemsRegistry.NautilusShell));
             SetEquipmentDropChance(EquipmentSlot.OffHand, 2);
         }
     }
@@ -47,8 +52,8 @@ public sealed partial class Drowned : Zombie
     protected override ValueTask OnHurtAsync(IEntity source) => default;
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.RottenFlesh, Random.Next(3));
-        if (source is IPlayer && Random.NextSingle() < 0.11f) DropItem(Material.CopperIngot);
+        DropItem(ItemsRegistry.RottenFlesh, Random.Next(3));
+        if (source is IPlayer && Random.NextSingle() < 0.11f) DropItem(ItemsRegistry.CopperIngot);
         foreach (var slot in Enum.GetValues<EquipmentSlot>())
             if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot)) DropItem(GetEquipment(slot));
         return default;
@@ -57,9 +62,9 @@ public sealed partial class Drowned : Zombie
 
 internal sealed class DrownedMeleeGoal(Drowned drowned) : MeleeAttackGoal(drowned)
 {
-    public override bool CanUse() => drowned.GetEquipment(EquipmentSlot.MainHand).Type != Material.Trident &&
+    public override bool CanUse() => !drowned.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Trident) &&
         drowned.AttackTarget is { } target && drowned.CanAttackNow(target) && base.CanUse();
-    public override bool CanContinue() => drowned.GetEquipment(EquipmentSlot.MainHand).Type != Material.Trident &&
+    public override bool CanContinue() => !drowned.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Trident) &&
         drowned.AttackTarget is { } target && drowned.CanAttackNow(target) && base.CanContinue();
 }
 
@@ -69,7 +74,7 @@ internal sealed class DrownedTridentGoal(Drowned drowned) : NavigationGoal(drown
     private long nextThrow;
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
-    public override bool CanUse() => drowned.GetEquipment(EquipmentSlot.MainHand).Type == Material.Trident &&
+    public override bool CanUse() => drowned.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Trident) &&
         drowned.AttackTarget is { } target && drowned.IsValidTarget(target) && drowned.CanAttackNow(target);
     public override bool CanContinue() => CanUse();
     public override void Start()

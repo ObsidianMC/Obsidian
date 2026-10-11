@@ -13,7 +13,12 @@ public sealed partial class Chicken : FarmAnimal
     protected override float PanicSpeed => 1.4f;
     protected override float TemptSpeed => 1;
     protected override bool CanEat(ItemStack? item) => item is { Count: > 0 } &&
-        item.Type is Material.WheatSeeds or Material.MelonSeeds or Material.PumpkinSeeds or Material.BeetrootSeeds or Material.TorchflowerSeeds or Material.PitcherPod;
+        item.Holder.Id is ItemIds.WheatSeeds
+            or ItemIds.MelonSeeds
+            or ItemIds.PumpkinSeeds
+            or ItemIds.BeetrootSeeds
+            or ItemIds.TorchflowerSeeds
+            or ItemIds.PitcherPod;
     protected override void FinalizeSpawn() => Variant = GetFarmVariant();
 
     protected override async ValueTask TickMobAsync()
@@ -21,7 +26,7 @@ public sealed partial class Chicken : FarmAnimal
         await base.TickMobAsync();
         if (!IsBaby && !IsChickenJockey && --EggLayTime <= 0)
         {
-            DropItem(Material.Egg);
+            DropItem(ItemsRegistry.Egg);
             PlayMobSound("egg");
             EggLayTime = Random.Next(6000, 12000);
         }
@@ -41,8 +46,8 @@ public sealed partial class Chicken : FarmAnimal
     {
         if (!IsBaby)
         {
-            DropItem(Material.Feather, Random.Next(3));
-            DropItem(Burning ? Material.CookedChicken : Material.Chicken);
+            DropItem(ItemsRegistry.Feather, Random.Next(3));
+            DropItem(Burning ? ItemsRegistry.CookedChicken : ItemsRegistry.Chicken);
         }
         return default;
     }

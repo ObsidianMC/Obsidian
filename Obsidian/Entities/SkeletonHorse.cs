@@ -61,8 +61,12 @@ public sealed partial class SkeletonHorse : AbstractHorse
             if (index > 0) Level.SpawnEntity(horse);
             var skeleton = new Skeleton { Level = Level, EntityId = Server.GetNextEntityId(), Position = Position + new VectorD(0, Dimension.Height, 0), PersistenceRequired = true };
             skeleton.InitializeAi();
-            skeleton.SetEquipment(Obsidian.API.Inventory.EquipmentSlot.Helmet, ItemsRegistry.GetSingleItem(Material.IronHelmet));
-            skeleton.SetEquipment(Obsidian.API.Inventory.EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(Material.Bow));
+            skeleton.SetEquipment(
+                Obsidian.API.Inventory.EquipmentSlot.Helmet,
+                ItemsRegistry.GetSingleItem(ItemsRegistry.IronHelmet));
+            skeleton.SetEquipment(
+                Obsidian.API.Inventory.EquipmentSlot.MainHand,
+                ItemsRegistry.GetSingleItem(ItemsRegistry.Bow));
             Level.SpawnEntity(skeleton);
             horse.AttachSkeleton(skeleton);
         }

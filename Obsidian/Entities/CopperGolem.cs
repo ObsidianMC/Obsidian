@@ -41,7 +41,7 @@ public sealed partial class CopperGolem : PathfinderMob
         {
             if (!GetEquipment(EquipmentSlot.MainHand).IsAir) DropItem(GetEquipment(EquipmentSlot.MainHand));
             var facing = new[] { "south", "west", "north", "east" }[((int)Math.Floor(Yaw.Degrees / 90 + 0.5) % 4 + 4) % 4];
-            var statue = BlocksRegistry.Get(Material.OxidizedCopperGolemStatue).WithProperty("facing", facing);
+            var statue = BlocksRegistry.OxidizedCopperGolemStatue.WithProperty("facing", facing);
             await Level.SetBlockAsync((Vector)Position.Floor(), statue, true);
             await RemoveAsync(); return;
         }
@@ -120,7 +120,11 @@ public sealed partial class CopperGolem : PathfinderMob
     {
         var block = Terrain.GetBlock(entity.BlockPosition);
         var copper = block?.UnlocalizedName.Contains("copper_chest", StringComparison.Ordinal) == true;
-        if (held.IsAir ? !copper : block?.Material != Material.Chest && block?.Material != Material.TrappedChest) return false;
+        if (held.IsAir
+            ? !copper
+            : block?.RegistryId != BlockIds.Chest && block?.RegistryId != BlockIds.TrappedChest)
+            return false;
+
         var container = ReadContainer(entity);
         if (container == null) return false;
         if (held.IsAir) return container.Any(item => item is { Count: > 0 } && !item.IsAir);
@@ -131,7 +135,7 @@ public sealed partial class CopperGolem : PathfinderMob
     {
         if (!Alive || IsRemoved || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player)) return;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (item is { Count: > 0, Type: Material.Honeycomb } && nextWeather != -2)
+        if (item is { Count: > 0, Holder.Id: ItemIds.Honeycomb } && nextWeather != -2)
         { nextWeather = -2; await ConsumeInteractionItemAsync(player, hand); }
         else if (item is { Count: > 0 } && item.Holder.UnlocalizedName.EndsWith("_axe", StringComparison.Ordinal) && (weather > 0 || nextWeather == -2))
         {
@@ -141,7 +145,13 @@ public sealed partial class CopperGolem : PathfinderMob
         }
     }
     protected override ValueTask OnDeathAsync(IEntity source)
-    { DropItem(Material.CopperIngot, Random.Next(1, 4)); if (!GetEquipment(EquipmentSlot.MainHand).IsAir) DropItem(GetEquipment(EquipmentSlot.MainHand)); return default; }
+    {
+        DropItem(ItemsRegistry.CopperIngot, Random.Next(1, 4));
+        if (!GetEquipment(EquipmentSlot.MainHand).IsAir)
+            DropItem(GetEquipment(EquipmentSlot.MainHand));
+
+        return default;
+    }
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);

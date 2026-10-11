@@ -27,7 +27,7 @@ public partial class Squid : AgeableMob
         }
         if (InWater)
         {
-            if (Terrain.GetBlock((Vector)(Position + swimming * 4).Floor())?.Material != Material.Water)
+            if (Terrain.GetBlock((Vector)(Position + swimming * 4).Floor())?.RegistryId != BlockIds.Water)
                 swimming = new VectorD(swimming.X, -0.1f, swimming.Z);
             Motion = swimming;
             if (AiTick % 5 == 0)
@@ -72,7 +72,7 @@ public partial class Squid : AgeableMob
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (!IsBaby) DropItem(Material.InkSac, Random.Next(1, 4));
+        if (!IsBaby) DropItem(ItemsRegistry.InkSac, Random.Next(1, 4));
         return default;
     }
     private sealed class InkParticle(ParticleType type) : ParticleData

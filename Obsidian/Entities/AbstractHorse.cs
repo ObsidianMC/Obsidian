@@ -16,7 +16,8 @@ public class AbstractHorse : Animal
     protected virtual bool CanBreedHorse => false;
     protected virtual int MaximumTemper => 100;
     protected virtual bool SupportsSaddle => true;
-    protected virtual bool IsBreedingFood(Material food) => food is Material.GoldenCarrot or Material.GoldenApple;
+    protected virtual bool IsBreedingFood(Item food) =>
+        food.Id is ItemIds.GoldenCarrot or ItemIds.GoldenApple;
     internal override bool CanMateWith(Animal mate) => HorseMask.HasFlag(HorseMask.Tamed) &&
         Health >= GetAttributeValue("minecraft:generic.max_health") && mate is AbstractHorse other &&
         other.HorseMask.HasFlag(HorseMask.Tamed) && other.Health >= other.GetAttributeValue("minecraft:generic.max_health") &&
@@ -52,7 +53,12 @@ public class AbstractHorse : Animal
     }
 
     protected override bool CanEat(ItemStack? item) => CanBreedHorse && item is { Count: > 0 } &&
-        item.Type is Material.Wheat or Material.Sugar or Material.Apple or Material.HayBlock or Material.GoldenCarrot or Material.GoldenApple;
+        item.Holder.Id is ItemIds.Wheat
+            or ItemIds.Sugar
+            or ItemIds.Apple
+            or ItemIds.HayBlock
+            or ItemIds.GoldenCarrot
+            or ItemIds.GoldenApple;
 
     internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
     {
@@ -64,16 +70,23 @@ public class AbstractHorse : Animal
         var tamed = HorseMask.HasFlag(HorseMask.Tamed);
         if (CanEat(item))
         {
-            var food = item!.Type;
-            var heal = food switch { Material.HayBlock => 20, Material.Apple => 3, Material.GoldenCarrot => 4, Material.GoldenApple => 10, _ => 2 };
-            var breedingFood = food is Material known && IsBreedingFood(known);
+            var food = item!.Holder;
+            var heal = food.Id switch
+            {
+                ItemIds.HayBlock => 20,
+                ItemIds.Apple => 3,
+                ItemIds.GoldenCarrot => 4,
+                ItemIds.GoldenApple => 10,
+                _ => 2
+            };
+            var breedingFood = IsBreedingFood(food);
             if (Health >= GetAttributeValue("minecraft:generic.max_health") && !IsBaby &&
                 (tamed || Temper >= MaximumTemper) && !(tamed && breedingFood && Age == 0 && LoveTicks == 0))
                 return;
             Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + heal);
             Temper = Math.Min(MaximumTemper, Temper + (breedingFood ? 5 : 3));
             if (IsBaby)
-                Age = Math.Min(0, Age + (food == Material.HayBlock ? 3600 : 1200));
+                Age = Math.Min(0, Age + (food == ItemsRegistry.HayBlock ? 3600 : 1200));
             else if (tamed && breedingFood && Age == 0)
             {
                 LoveTicks = 600;
@@ -85,7 +98,7 @@ public class AbstractHorse : Animal
         }
         if (IsBaby)
             return;
-        if (SupportsSaddle && tamed && !HasSaddle && item is { Count: > 0, Type: Material.Saddle })
+        if (SupportsSaddle && tamed && !HasSaddle && item is { Count: > 0, Holder.Id: ItemIds.Saddle })
         {
             HasSaddle = true;
             await ConsumeItemAsync(player, slot);
@@ -106,13 +119,15 @@ public class AbstractHorse : Animal
     public bool HasSaddle
     {
         get => !GetEquipment(EquipmentSlot.Saddle).IsAir;
-        set => SetEquipment(EquipmentSlot.Saddle, value ? ItemsRegistry.GetSingleItem(Material.Saddle) : ItemStack.Air);
+        set => SetEquipment(
+            EquipmentSlot.Saddle,
+            value ? ItemsRegistry.GetSingleItem(ItemsRegistry.Saddle) : ItemStack.Air);
     }
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         if (HasSaddle)
-            DropItem(Material.Saddle);
+            DropItem(ItemsRegistry.Saddle);
         return default;
     }
 
@@ -172,7 +187,8 @@ internal sealed class HorseGrazeGoal(AbstractHorse horse) : Goal
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
     public override bool CanUse() => !horse.HasRider && !horse.IsBaby && horse.Random.Next(300) == 0 &&
-        horse.Terrain.GetBlock((Vector)(horse.Position - new VectorD(0, 0.01f, 0)).Floor())?.Material == Material.GrassBlock;
+        horse.Terrain.GetBlock((Vector)(horse.Position - new VectorD(0, 0.01f, 0)).Floor())?.RegistryId
+            == BlockIds.GrassBlock;
     public override bool CanContinue() => ticks > 0 && !horse.HasRider;
     public override void Start()
     {

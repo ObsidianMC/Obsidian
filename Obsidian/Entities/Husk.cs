@@ -19,7 +19,7 @@ public sealed partial class Husk : Zombie
             if (--ConversionTicks < 0)
                 await ConvertToAsync(EntityType.Zombie);
         }
-        else if (Terrain.GetBlock((Vector)EyePosition.Floor())?.Material == Material.Water)
+        else if (Terrain.GetBlock((Vector)EyePosition.Floor())?.RegistryId == BlockIds.Water)
         {
             if (++WaterTicks >= 600)
             {

@@ -42,6 +42,6 @@ public sealed partial class CamelHusk : Camel
     protected override async ValueTask OnDeathAsync(IEntity source)
     {
         await base.OnDeathAsync(source);
-        DropItem(Material.RottenFlesh, Random.Next(3));
+        DropItem(ItemsRegistry.RottenFlesh, Random.Next(3));
     }
 }

@@ -155,13 +155,13 @@ public partial class Mob
         return broke;
     }
 
-    protected void DropItem(Material material, int count = 1)
+    protected void DropItem(Item item, int count = 1)
     {
         if (count <= 0)
             return;
-        var item = ItemsRegistry.GetSingleItem(material);
-        item.Count = count;
-        DropItem(item);
+        var stack = ItemsRegistry.GetSingleItem(item);
+        stack.Count = count;
+        DropItem(stack);
     }
 
     protected void DropItem(ItemStack item)

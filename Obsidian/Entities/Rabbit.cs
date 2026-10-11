@@ -34,7 +34,8 @@ public sealed partial class Rabbit : FarmAnimal
     protected override string? SoundName => "rabbit";
     protected override float PanicSpeed => 2.2f;
     protected override float TemptSpeed => 1;
-    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.Carrot or Material.GoldenCarrot or Material.Dandelion };
+    protected override bool CanEat(ItemStack? item) =>
+        item is { Count: > 0, Holder.Id: ItemIds.Carrot or ItemIds.GoldenCarrot or ItemIds.Dandelion };
     protected override void FinalizeSpawn() => Variant = GetNaturalVariant();
     private int GetNaturalVariant()
     {
@@ -67,9 +68,9 @@ public sealed partial class Rabbit : FarmAnimal
     {
         if (!IsBaby)
         {
-            DropItem(Material.RabbitHide, Random.Next(2));
-            DropItem(Burning ? Material.CookedRabbit : Material.Rabbit);
-            if (source is IPlayer && Random.NextSingle() < 0.1f) DropItem(Material.RabbitFoot);
+            DropItem(ItemsRegistry.RabbitHide, Random.Next(2));
+            DropItem(Burning ? ItemsRegistry.CookedRabbit : ItemsRegistry.Rabbit);
+            if (source is IPlayer && Random.NextSingle() < 0.1f) DropItem(ItemsRegistry.RabbitFoot);
         }
         return default;
     }
@@ -105,7 +106,10 @@ internal sealed class RabbitRaidGardenGoal(Rabbit rabbit) : NavigationGoal(rabbi
         for (var z = -8; z <= 8; z++)
         {
             var point = origin + new Vector(x, y, z);
-            if (!IsMature(point) || rabbit.Terrain.GetBlock(point - new Vector(0, 1, 0))?.Material != Material.Farmland) continue;
+            if (!IsMature(point)
+                || rabbit.Terrain.GetBlock(point - new Vector(0, 1, 0))?.RegistryId != BlockIds.Farmland)
+                continue;
+
             var squared = x * x + y * y + z * z;
             if (squared < distance) { closest = point; distance = squared; }
         }
@@ -113,7 +117,8 @@ internal sealed class RabbitRaidGardenGoal(Rabbit rabbit) : NavigationGoal(rabbi
         carrot = closest.Value;
         return true;
     }
-    private bool IsMature(Vector point) => rabbit.Terrain.GetBlock(point) is { Material: Material.Carrots } block && block.GetProperty("age") == "7";
+    private bool IsMature(Vector point) =>
+        rabbit.Terrain.GetBlock(point) is { RegistryId: BlockIds.Carrots } block && block.GetProperty("age") == "7";
     public override void Start()
     {
         ate = false;
@@ -126,7 +131,8 @@ internal sealed class RabbitRaidGardenGoal(Rabbit rabbit) : NavigationGoal(rabbi
         var destination = new VectorD(carrot.X + 0.5, carrot.Y, carrot.Z + 0.5);
         rabbit.LookControl.LookAt(destination);
         if ((destination - rabbit.Position).MagnitudeSquared() > 1) { MoveTo(destination); return; }
-        if (rabbit.Terrain.GetBlock(carrot) is { Material: Material.Carrots } block && block.GetProperty("age") == "7")
+        if (rabbit.Terrain.GetBlock(carrot) is { RegistryId: BlockIds.Carrots } block
+            && block.GetProperty("age") == "7")
         {
             await rabbit.Level.SetBlockAsync(carrot, block.WithProperty("age", 6), true);
             rabbit.PlayMobSound("eat");

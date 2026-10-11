@@ -111,7 +111,7 @@ public partial class Player
             new MobTerrain(Level).GetBlock((Vector)Position.Floor()) is { } feet && !TagsRegistry.Block.Climbable.Entries.Contains(feet.RegistryId);
         if (critical) damage *= 1.5f;
         damage += CombatEffects.DamageBonus(item, target) * charge;
-        if (item?.Type == Material.Mace && FallDistance > 1.5f && !FlyingWithElytra)
+        if (item?.Is(ItemsRegistry.Mace) == true && FallDistance > 1.5f && !FlyingWithElytra)
             damage += CombatItems.SmashBonus(FallDistance) + 0.5f * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Density) * FallDistance;
         return (damage, critical);
     }
@@ -134,7 +134,9 @@ public partial class Player
         }
         if (damage <= 0) return;
         var charged = AttackCharge > 0.9f;
-        var smashDistance = item?.Type == Material.Mace && FallDistance > 1.5f && !FlyingWithElytra ? FallDistance : 0;
+        var smashDistance = item?.Is(ItemsRegistry.Mace) == true && FallDistance > 1.5f && !FlyingWithElytra
+            ? FallDistance
+            : 0;
         if (!attack.PiercingAttack && !attack.ChargeAttack) attackTicks = 0;
         var health = target.Health;
         var accepted = (target as Living)?.AcceptedDamageCount;
@@ -172,7 +174,11 @@ public partial class Player
                     }
             }
         }
-        await DamageInventoryItemAsync(slot, attack.ChargeAttack || attack.PiercingAttack || item?.Holder.UnlocalizedName.EndsWith("_sword", StringComparison.Ordinal) == true || item?.Type is Material.Trident or Material.Mace ? 1 : 2);
+        var lightWear = attack.ChargeAttack
+            || attack.PiercingAttack
+            || item?.Holder.UnlocalizedName.EndsWith("_sword", StringComparison.Ordinal) == true
+            || item?.Holder.Id is ItemIds.Trident or ItemIds.Mace;
+        await DamageInventoryItemAsync(slot, lightWear ? 1 : 2);
     }
 
     internal void ApplyImpulse(VectorD impulse)
@@ -187,7 +193,7 @@ public partial class Player
         var feet = terrain.GetBlock((Vector)Position.Floor());
         if (Vehicle != null || Abilities.HasFlag(PlayerAbility.Flying) || GameMode is GameMode.Creative or GameMode.Spectator ||
             HasPotionEffect((int)PotionEffect.Levitation - 1) || HasPotionEffect((int)PotionEffect.SlowFalling - 1) ||
-            feet?.Material is Material.Water or Material.Lava or Material.Cobweb or Material.PowderSnow ||
+            feet?.RegistryId is BlockIds.Water or BlockIds.Lava or BlockIds.Cobweb or BlockIds.PowderSnow ||
             feet != null && TagsRegistry.Block.Climbable.Entries.Contains(feet.RegistryId))
         { FallDistance = 0; return; }
         if (previous.Y > Position.Y) FallDistance += (float)(previous.Y - Position.Y);
@@ -200,10 +206,10 @@ public partial class Player
         var floor = terrain.GetBlock((Vector)(Position - new VectorD(0, 0.2, 0)).Floor());
         var distance = FallDistance;
         FallDistance = 0;
-        if (floor?.Material == Material.SlimeBlock && !Sneaking) return;
+        if (floor?.RegistryId == BlockIds.SlimeBlock && !Sneaking) return;
         var jump = ActivePotionEffects.TryGetValue((int)PotionEffect.JumpBoost - 1, out var effect) ? effect.EffectData.Amplifier + 1 : 0;
         var damage = Math.Max(0, MathF.Ceiling((distance - GetAttributeValue("minecraft:safe_fall_distance") - jump) * GetAttributeValue("minecraft:fall_damage_multiplier")));
-        if (floor?.Material is Material.HayBlock or Material.HoneyBlock) damage *= 0.2f;
+        if (floor?.RegistryId is BlockIds.HayBlock or BlockIds.HoneyBlock) damage *= 0.2f;
         else if (floor != null && TagsRegistry.Block.Beds.Entries.Contains(floor.RegistryId)) damage *= 0.5f;
         await DamageCombatAsync(this, damage, CombatDamageKind.Fall);
     }

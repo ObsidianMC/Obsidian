@@ -21,7 +21,7 @@ public sealed partial class PiglinBrute : PathfinderMob
     protected override void FinalizeSpawn()
     {
         PersistenceRequired = true;
-        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(Material.GoldenAxe));
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.GoldenAxe));
     }
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {

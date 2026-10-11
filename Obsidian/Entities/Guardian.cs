@@ -47,15 +47,17 @@ public partial class Guardian : PathfinderMob
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.PrismarineShard, Random.Next(3));
+        DropItem(ItemsRegistry.PrismarineShard, Random.Next(3));
         var bonus = Random.Next(5);
-        if (bonus < 2) DropItem(Burning ? Material.CookedCod : Material.Cod);
-        else if (bonus < 4) DropItem(Material.PrismarineCrystals);
+        if (bonus < 2) DropItem(Burning ? ItemsRegistry.CookedCod : ItemsRegistry.Cod);
+        else if (bonus < 4) DropItem(ItemsRegistry.PrismarineCrystals);
         if (source is IPlayer && Random.NextSingle() < 0.025f)
         {
             var fish = Random.Next(100);
-            DropItem(fish < 60 ? Burning ? Material.CookedCod : Material.Cod : fish < 85 ? Burning ? Material.CookedSalmon : Material.Salmon :
-                fish < 87 ? Material.TropicalFish : Material.Pufferfish);
+            DropItem(fish < 60 ? Burning ? ItemsRegistry.CookedCod : ItemsRegistry.Cod
+                : fish < 85 ? Burning ? ItemsRegistry.CookedSalmon : ItemsRegistry.Salmon
+                : fish < 87 ? ItemsRegistry.TropicalFish
+                : ItemsRegistry.Pufferfish);
         }
         return default;
     }
@@ -139,7 +141,7 @@ public sealed partial class ElderGuardian : Guardian
     protected override async ValueTask OnDeathAsync(IEntity source)
     {
         await base.OnDeathAsync(source);
-        if (source is IPlayer) DropItem(Material.WetSponge);
-        if (Random.Next(5) == 0) DropItem(Material.TideArmorTrimSmithingTemplate);
+        if (source is IPlayer) DropItem(ItemsRegistry.WetSponge);
+        if (Random.Next(5) == 0) DropItem(ItemsRegistry.TideArmorTrimSmithingTemplate);
     }
 }

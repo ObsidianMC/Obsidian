@@ -61,7 +61,9 @@ public sealed partial class HappyGhast : FarmAnimal
             SetEquipment(EquipmentSlot.Body, new ItemStack(held));
             await ConsumeInteractionItemAsync(player, hand);
         }
-        else if (held is { Count: > 0, Type: Material.Shears } && !GetEquipment(EquipmentSlot.Body).IsAir && Rider == null)
+        else if (held is { Count: > 0, Holder.Id: ItemIds.Shears }
+            && !GetEquipment(EquipmentSlot.Body).IsAir
+            && Rider == null)
         {
             DropItem(GetEquipment(EquipmentSlot.Body)); SetEquipment(EquipmentSlot.Body, ItemStack.Air);
             await DamageInteractionToolAsync(player, hand, 1);

@@ -34,22 +34,26 @@ public partial class Player
             await SyncInventorySlotAsync(armorSlot);
             return;
         }
-        if (item.Type == Material.Crossbow && item.GetComponent<SimpleDataComponent<ItemStack[]>>(DataComponentType.ChargedProjectiles)?.Value is { Length: > 0 } loaded)
+        var charged = item.GetComponent<SimpleDataComponent<ItemStack[]>>(DataComponentType.ChargedProjectiles);
+        if (item.Is(ItemsRegistry.Crossbow) && charged?.Value is { Length: > 0 } loaded)
         {
             if (await ShootCrossbowAsync(item, loaded))
             {
                 item[DataComponentType.ChargedProjectiles] = ComponentBuilder.ChargedProjectiles with { Value = [] };
-                await DamageInventoryItemAsync(slot, loaded.Any(projectile => projectile.Type == Material.FireworkRocket) ? 3 : 1);
+                var fireworks = loaded.Any(projectile => projectile.Is(ItemsRegistry.FireworkRocket));
+                await DamageInventoryItemAsync(slot, fireworks ? 3 : 1);
                 await SyncInventorySlotAsync(slot);
             }
             return;
         }
         var spear = CombatItems.Component(item, "kinetic_weapon").ValueKind == JsonValueKind.Object;
-        if (item.Type is not (Material.Bow or Material.Crossbow or Material.Trident or Material.Shield) && !spear)
+        if (item.Holder.Id is not (ItemIds.Bow or ItemIds.Crossbow or ItemIds.Trident or ItemIds.Shield) && !spear)
         { StartEating(hand); return; }
-        if (item.Type is Material.Bow or Material.Crossbow && FindAmmunition(item.Type == Material.Crossbow) < 0 && GameMode != GameMode.Creative) return;
-        if (item.Type == Material.Shield && shieldCooldown > 0) return;
-        if (item.Type == Material.Trident && (item.Damage >= CombatItems.MaxDamage(item) - 1 ||
+        if (item.Holder.Id is ItemIds.Bow or ItemIds.Crossbow
+            && FindAmmunition(item.Is(ItemsRegistry.Crossbow)) < 0
+            && GameMode != GameMode.Creative) return;
+        if (item.Is(ItemsRegistry.Shield) && shieldCooldown > 0) return;
+        if (item.Is(ItemsRegistry.Trident) && (item.Damage >= CombatItems.MaxDamage(item) - 1 ||
             CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Riptide) > 0 && !IsWet())) return;
         usingWeapon = item;
         weaponSlot = slot;
@@ -74,14 +78,18 @@ public partial class Player
     private bool IsWet()
     {
         var terrain = new MobTerrain(Level);
-        return terrain.GetBlock((Vector)Position.Floor())?.Material == Material.Water || terrain.IsRainingAt((Vector)Position.Floor());
+        return terrain.GetBlock((Vector)Position.Floor())?.RegistryId == BlockIds.Water
+            || terrain.IsRainingAt((Vector)Position.Floor());
     }
 
     private int FindAmmunition(bool crossbow)
     {
         foreach (var slot in new[] { 45, (int)CurrentHeldItemSlot }.Concat(Enumerable.Range(9, 36)).Distinct())
             if (Inventory.GetItem(slot) is { Count: > 0 } item &&
-                (item.Type is Material.Arrow or Material.TippedArrow or Material.SpectralArrow || crossbow && (slot == 45 || slot == CurrentHeldItemSlot) && item.Type == Material.FireworkRocket))
+                (item.Holder.Id is ItemIds.Arrow or ItemIds.TippedArrow or ItemIds.SpectralArrow
+                    || crossbow
+                        && (slot == 45 || slot == CurrentHeldItemSlot)
+                        && item.Is(ItemsRegistry.FireworkRocket)))
                 return slot;
         return -1;
     }
@@ -98,7 +106,7 @@ public partial class Player
         var valid = ReferenceEquals(Inventory.GetItem(slot), item) && item.Count > 0 && (slot == 45 || slot == CurrentHeldItemSlot) && Alive && !Respawning;
         CancelWeaponUse();
         if (!valid) return;
-        if (item.Type == Material.Bow)
+        if (item.Is(ItemsRegistry.Bow))
         {
             var draw = ticks / 20f;
             draw = Math.Min(1, (draw * draw + draw * 2) / 3);
@@ -106,12 +114,14 @@ public partial class Player
             var ammunitionSlot = FindAmmunition(false);
             var ammunition = ammunitionSlot >= 0 ? Inventory.GetItem(ammunitionSlot)! : GameMode == GameMode.Creative ? new ItemStack(ItemsRegistry.Arrow) : null;
             if (ammunition == null) return;
-            var infinite = GameMode == GameMode.Creative || ammunition.Type == Material.Arrow && CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Infinity) > 0;
+            var infinite = GameMode == GameMode.Creative
+                || ammunition.Is(ItemsRegistry.Arrow)
+                    && CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Infinity) > 0;
             if (!ShootArrow(item, ammunition, draw * 3, draw == 1, infinite ? ArrowPickup.CreativeOnly : ArrowPickup.Allowed)) return;
             if (!infinite && ammunitionSlot >= 0) { Inventory.RemoveItem(ammunitionSlot, 1); await SyncInventorySlotAsync(ammunitionSlot); }
             await DamageInventoryItemAsync(slot, 1);
         }
-        else if (item.Type == Material.Trident && ticks >= 10)
+        else if (item.Is(ItemsRegistry.Trident) && ticks >= 10)
         {
             var riptide = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Riptide);
             if (riptide > 0)
@@ -159,14 +169,14 @@ public partial class Player
         var arrow = new Arrow
         {
             Level = Level, EntityId = Obsidian.Server.GetNextEntityId(), Owner = this,
-            Type = ammunition.Type == Material.SpectralArrow ? EntityType.SpectralArrow : EntityType.Arrow,
+            Type = ammunition.Is(ItemsRegistry.SpectralArrow) ? EntityType.SpectralArrow : EntityType.Arrow,
             Position = Position + new VectorD(0, 1.52, 0), Motion = ShotDirection(angle) * speed + (crossbow ? VectorD.Zero : CombatMotion),
             Weapon = new ItemStack(weapon), PickupItem = new ItemStack(ammunition), Pickup = pickup, Crit = critical,
             PiercingLevel = crossbow ? CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Piercing) : 0,
             KnockbackLevel = CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Punch),
             FireSeconds = CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Flame) > 0 ? 5 : 0,
-            Effect = ammunition.Type == Material.SpectralArrow ? (int)PotionEffect.Glowing - 1 : -1,
-            EffectDuration = ammunition.Type == Material.SpectralArrow ? 200 : 0
+            Effect = ammunition.Is(ItemsRegistry.SpectralArrow) ? (int)PotionEffect.Glowing - 1 : -1,
+            EffectDuration = ammunition.Is(ItemsRegistry.SpectralArrow) ? 200 : 0
         };
         var power = CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Power);
         if (power > 0) arrow.Damage += power * 0.5f + 0.5f;
@@ -182,7 +192,7 @@ public partial class Player
         {
             var angle = index == 0 ? 0 : index % 2 == 1 ? -10 : 10;
             var round = ammunition[index];
-            if (round.Type == Material.FireworkRocket)
+            if (round.Is(ItemsRegistry.FireworkRocket))
             {
                 var rocket = new FireworkRocket
                 {
@@ -217,7 +227,7 @@ public partial class Player
         if (!Alive || Respawning || GameMode == GameMode.Spectator || !ReferenceEquals(Inventory.GetItem(weaponSlot), item) || item.Count <= 0 || weaponSlot != 45 && weaponSlot != CurrentHeldItemSlot)
         { CancelWeaponUse(); return; }
         weaponTicks++;
-        if (item.Type == Material.Crossbow && weaponTicks >= CrossbowChargeTicks(item))
+        if (item.Is(ItemsRegistry.Crossbow) && weaponTicks >= CrossbowChargeTicks(item))
         {
             var slot = FindAmmunition(true);
             var ammunition = slot >= 0 ? Inventory.GetItem(slot)! : GameMode == GameMode.Creative ? new ItemStack(ItemsRegistry.Arrow) : null;
@@ -308,7 +318,7 @@ public partial class Player
 
     private async ValueTask<bool> TryBlockDamageAsync(IEntity source, float amount, CombatDamageKind kind, ItemStack? weapon)
     {
-        if (usingWeapon?.Type != Material.Shield || weaponTicks < 5 || shieldCooldown > 0 ||
+        if (usingWeapon?.Is(ItemsRegistry.Shield) != true || weaponTicks < 5 || shieldCooldown > 0 ||
             kind is not (CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion)) return false;
         if (kind == CombatDamageKind.Projectile && CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Piercing) > 0) return false;
         var incoming = source.Position - Position;

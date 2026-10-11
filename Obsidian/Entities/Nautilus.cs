@@ -52,7 +52,7 @@ public partial class Nautilus : FarmAnimal
             return;
         }
         if (Owner == Guid.Empty || IsBaby) return;
-        if (held is { Count: > 0, Type: Material.Saddle } && GetEquipment(EquipmentSlot.Saddle).IsAir)
+        if (held is { Count: > 0, Holder.Id: ItemIds.Saddle } && GetEquipment(EquipmentSlot.Saddle).IsAir)
         { SetEquipment(EquipmentSlot.Saddle, new ItemStack(held)); await ConsumeInteractionItemAsync(player, hand); }
         else if (held is { Count: > 0 } && held.Holder.UnlocalizedName.EndsWith("_nautilus_armor", StringComparison.Ordinal))
         {

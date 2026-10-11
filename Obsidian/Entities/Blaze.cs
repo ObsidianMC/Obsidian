@@ -48,7 +48,7 @@ public sealed partial class Blaze : PathfinderMob
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         if (source is IPlayer)
-            DropItem(Material.BlazeRod, Random.Next(2));
+            DropItem(ItemsRegistry.BlazeRod, Random.Next(2));
         return default;
     }
     public override void Write(INetStreamWriter writer)

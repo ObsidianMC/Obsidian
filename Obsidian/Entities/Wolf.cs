@@ -110,7 +110,9 @@ public sealed partial class Wolf : Animal
         {
             var interested = Level.GetPlayersInRange(Position, 8).FirstOrDefault(player => player.Health > 0 &&
                 player.GameMode != GameMode.Spectator && (CanEat(player.GetHeldItem()) || CanEat(player.GetOffHandItem()) ||
-                    !Tamed && (player.GetHeldItem()?.Type == Material.Bone || player.GetOffHandItem()?.Type == Material.Bone)));
+                    !Tamed
+                    && (player.GetHeldItem()?.Is(ItemsRegistry.Bone) == true
+                        || player.GetOffHandItem()?.Is(ItemsRegistry.Bone) == true)));
             if (interested != null && AttackTarget == null) LookControl.LookAt(interested);
             if (begging != (interested != null)) { begging = interested != null; SynchronizeMetadata(); }
             if (!Tamed && AngerTicks > 0 && AttackTarget == null && Level.LevelData.Difficulty != Difficulty.Peaceful)
@@ -157,7 +159,7 @@ public sealed partial class Wolf : Animal
             !IsInRange(player, 3) || !CanSee(player))
             return;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (!Tamed && AngerTicks == 0 && item?.Type == Material.Bone)
+        if (!Tamed && AngerTicks == 0 && item?.Is(ItemsRegistry.Bone) == true)
         {
             await ConsumeInteractionItemAsync(player, hand);
             if (Random.Next(3) == 0)

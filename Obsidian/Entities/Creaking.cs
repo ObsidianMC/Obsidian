@@ -36,7 +36,9 @@ public sealed partial class Creaking : PathfinderMob
     protected override async ValueTask TickMobAsync()
     {
         if (Level.LevelData.Difficulty == Difficulty.Peaceful) { await RemoveAsync(); return; }
-        if (HomePosition is { } home && Terrain.GetBlock(home)?.Material != Material.CreakingHeart) TearingDown = true;
+        if (HomePosition is { } home && Terrain.GetBlock(home)?.RegistryId != BlockIds.CreakingHeart)
+            TearingDown = true;
+
         if (TearingDown)
         {
             if (teardownTicks++ == 0) { SendEntityEvent(61); SynchronizeMetadata(); }

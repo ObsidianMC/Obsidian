@@ -29,7 +29,8 @@ public sealed partial class Cat : Animal
     }
     protected override bool UsesAi => true;
     protected override string? SoundName => "cat";
-    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.Cod or Material.Salmon };
+    protected override bool CanEat(ItemStack? item) =>
+        item is { Count: > 0, Holder.Id: ItemIds.Cod or ItemIds.Salmon };
     protected override int GetExperienceReward() => IsBaby ? 0 : Random.Next(1, 4);
     protected override void FinalizeSpawn() => Variant = Random.Next(VariantNames.Length);
 

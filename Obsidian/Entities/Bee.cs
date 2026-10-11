@@ -45,7 +45,8 @@ public sealed partial class Bee : FarmAnimal
         if (HasStung && ++stingTicks >= 1200)
             await DamageEnvironmentAsync(Health);
         if (searchCooldown > 0) searchCooldown--;
-        if (HivePosition is Vector hive && Terrain.GetBlock(hive)?.Material is not Material.BeeNest and not Material.Beehive)
+        if (HivePosition is Vector hive
+            && Terrain.GetBlock(hive)?.RegistryId is not BlockIds.BeeNest and not BlockIds.Beehive)
             HivePosition = null;
         if (FlowerPosition is Vector flower && (Terrain.GetBlock(flower) is not { } plant || !TagsRegistry.Block.Flowers.Entries.Contains(plant.RegistryId)))
         {
@@ -63,7 +64,7 @@ public sealed partial class Bee : FarmAnimal
             {
                 var point = new Vector(origin.X + x, origin.Y + y, origin.Z + z);
                 if (Terrain.GetBlock(point) is not { } block) continue;
-                if (HivePosition == null && block.Material is Material.BeeNest or Material.Beehive &&
+                if (HivePosition == null && block.RegistryId is BlockIds.BeeNest or BlockIds.Beehive &&
                     GetHive(point) is DataBlockEntity entity &&
                     (!entity.Data.TryGetTag<NbtList>("bees", out var occupants) || occupants.Count < 3))
                     candidates.Add((point, ((VectorD)point - Position).MagnitudeSquared()));

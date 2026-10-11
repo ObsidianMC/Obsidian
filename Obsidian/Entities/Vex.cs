@@ -24,7 +24,7 @@ public sealed partial class Vex : PathfinderMob
     protected internal override float AttackDamage => base.AttackDamage + GetWeaponDamage(GetEquipment(EquipmentSlot.MainHand));
     protected override void FinalizeSpawn()
     {
-        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(Material.IronSword));
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.IronSword));
         SetEquipmentDropChance(EquipmentSlot.MainHand, 0);
         BoundPosition ??= (Vector)Position.Floor();
     }
