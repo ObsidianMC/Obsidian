@@ -23,9 +23,15 @@ public sealed class ServerConfiguration
     public string Motd { get; set; } = $"§k||||§r §5Obsidian §cPre§r-§cRelease §r§k||||§r \n§r§lRunning on .NET §l§c{Environment.Version} §r§l<3";
 
     /// <summary>
-    /// The port on which to listen for incoming connection attempts.
+    /// The port on which to listen for incoming connection attempts; 0 lets the operating system pick a free one.
     /// </summary>
     public int Port { get; set; } = 25565;
+
+    /// <summary>
+    /// The IP address to listen on, e.g. <c>127.0.0.1</c> to accept local connections only. Empty means every IPv4
+    /// address.
+    /// </summary>
+    public string? BindAddress { get; set; }
 
     /// <summary>
     /// Whether the server uses MojangAPI for loading skins etc.

@@ -21,12 +21,12 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster) : ISc
         var packet = new SetObjectivePacket
         {
             ObjectiveName = this.name,
-            Mode = this.Objective != null ? ScoreboardMode.Update : ScoreboardMode.Create,
+            Mode = this.Objective is not null ? ScoreboardMode.Update : ScoreboardMode.Create,
             Value = title,
             Type = displayType
         };
 
-        if (this.Objective != null)
+        if (this.Objective is not null)
         {
             this.UpdateObjective(packet);
         }

@@ -126,7 +126,8 @@ internal static class BlockEntityNbt
         "minecraft:dispenser" => new Container(9) { Id = "dispenser", Title = "Dispenser", BlockPosition = position },
         "minecraft:dropper" => new Container(9) { Id = "dropper", Title = "Dropper", BlockPosition = position },
         "minecraft:furnace" => new SmeltingContainer(InventoryType.Furnace, "furnace") { Title = "Furnace", BlockPosition = position },
-        "minecraft:blast_furnace" => new SmeltingContainer(InventoryType.BlastFurnace, "blast_furnace") { Title = "BlastFurnace", BlockPosition = position },
+        "minecraft:blast_furnace" =>
+            new SmeltingContainer(InventoryType.BlastFurnace, "blast_furnace") { Title = "BlastFurnace", BlockPosition = position },
         "minecraft:smoker" => new SmeltingContainer(InventoryType.Smoker, "smoker") { Title = "Smoker", BlockPosition = position },
         "minecraft:brewing_stand" => new BrewingStand { BlockPosition = position },
         _ => null

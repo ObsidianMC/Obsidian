@@ -35,7 +35,7 @@ public partial class OpenScreenPacket
     public override string ToString() => $"{this.ContainerId}:{this.Type}";
 }
 
-// Do not mess up the order this is how it's supposed to be ordered
+// The order of vanilla's menu registry (minecraft:menu), which gives the ids sent to clients.
 public enum WindowType : int
 {
     Generic9x1,
@@ -60,7 +60,6 @@ public enum WindowType : int
     Loom,
     Merchant,
     ShulkerBox,
-    LegacySmithing,
     Smithing,
     Smoker,
     CartographyTable,

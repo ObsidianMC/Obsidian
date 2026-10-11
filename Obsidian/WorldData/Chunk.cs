@@ -69,6 +69,18 @@ public sealed class Chunk : IChunk
     internal NbtCompound? StructureStarts { get; set; }
 
     /// <summary>
+    /// The structure references saved in the chunk (vanilla's <c>structures.References</c>), as loaded, or <c>null</c>.
+    /// Obsidian finds references from the starts around the chunk, but vanilla reads them from the save.
+    /// </summary>
+    internal NbtCompound? StructureReferences { get; set; }
+
+    /// <summary>
+    /// Top-level tags of the saved chunk that Obsidian doesn't model, like vanilla's <c>block_ticks</c>. They're saved
+    /// back as loaded, so saving a vanilla world doesn't drop them.
+    /// </summary>
+    internal List<INbtTag> UnmodeledTags { get; } = [];
+
+    /// <summary>
     /// Positions generation marked to check once the chunk is complete: fluids that tick right away and blocks whose state
     /// depends on their neighbors (fence connections, torch support...), like vanilla's post-processing list.
     /// </summary>

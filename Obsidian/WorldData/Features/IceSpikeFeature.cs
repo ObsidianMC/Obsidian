@@ -76,7 +76,8 @@ public sealed class IceSpikeFeature : ConfiguredFeatureBase
                 while (position.Y > 50)
                 {
                     var existing = level.GetBlock(position);
-                    if (!existing.IsAir && !FeatureHelpers.IsDirt(existing) && existing.Material is not (Material.SnowBlock or Material.Ice or Material.PackedIce))
+                    if (!existing.IsAir && !FeatureHelpers.IsDirt(existing)
+                        && existing.Material is not (Material.SnowBlock or Material.Ice or Material.PackedIce))
                         break;
 
                     level.SetBlock(position, PackedIce);

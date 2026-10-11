@@ -8,8 +8,10 @@ using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
 using Obsidian.Commands.Framework;
+using Obsidian.Commands.Modules;
 using Obsidian.Entities;
 using Obsidian.Events;
+using Obsidian.Integrated;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -28,6 +30,8 @@ public sealed partial class Server : IServer
     private static int EntityCounter;
 
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
+
+    private readonly ConcurrentDictionary<Task, byte> pendingLeaves = new();
 
     internal readonly CancellationTokenSource cancelTokenSource;
     internal readonly ILogger logger;
@@ -49,7 +53,10 @@ public sealed partial class Server : IServer
     private readonly IDisposable? configWatcher;
     private readonly object shutdownLock = new();
     private Task? shutdownTask;
-    private Task[] serverTasks = [];
+    private Task loopTask = Task.CompletedTask;
+
+    // The keep-alive and chunk loops, which run beside the tick loop and stop with it.
+    private Task connectionLoopsTask = Task.CompletedTask;
 
     public IOptionsMonitor<WhitelistConfiguration> WhitelistConfiguration { get; }
 
@@ -76,7 +83,48 @@ public sealed partial class Server : IServer
     public string Version => ServerConstants.VERSION;
 
     public string Brand { get; } = "obsidian";
-    public int Port { get; }
+
+    /// <summary>
+    /// The port the server listens on: the configured one until it's started, then the bound one.
+    /// </summary>
+    public int Port { get; private set; }
+
+    /// <summary>
+    /// Whether the worlds are paused, like an integrated server while its game is paused: they don't tick, and the ticks
+    /// don't count toward the autosave, while connections keep running. See <see cref="PauseAsync"/> and
+    /// <see cref="Resume"/>.
+    /// </summary>
+    public bool Paused { get; private set; }
+
+    // Held while the worlds tick, so pausing waits for the tick in progress.
+    private readonly SemaphoreSlim tickGate = new(1, 1);
+
+    /// <summary>
+    /// Raised when a save of everything starts, with whether it's an autosave.
+    /// </summary>
+    public event Action<bool>? SaveStarted;
+
+    /// <summary>
+    /// Raised when a save of everything ends, with whether it was an autosave and its failure, if it failed.
+    /// </summary>
+    public event Action<bool, Exception?>? SaveCompleted;
+
+    /// <summary>
+    /// Raised when handling a player's leave failed, so their data may not have been saved, with a message saying so.
+    /// Unlike a failed save of everything, a later save doesn't make up for it: the player is gone.
+    /// </summary>
+    public event Action<string>? PlayerSaveFailed;
+
+    /// <summary>
+    /// The integrated server's session, when a game client runs this server.
+    /// </summary>
+    internal IntegratedSession? Integrated { get; }
+
+    // Vanilla's autosave interval (MinecraftServer's autosave period): every 6000 ticks, 5 minutes at 20 TPS.
+    private const int AutosaveInterval = 6000;
+
+    // Saves of everything run one at a time.
+    private readonly SemaphoreSlim saveLock = new(1, 1);
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
 
     /// <summary>
@@ -111,8 +159,9 @@ public sealed partial class Server : IServer
 
         this.Configuration = config;
         this.Port = config.Port;
+        this.Integrated = serviceProvider.GetService<IntegratedSession>();
 
-        this.Operators = new OperatorList(this, loggerFactory);
+        this.Operators = new OperatorList(this, loggerFactory, this.Integrated);
         this.CommandHandler = commandHandler;
         this.PluginManager = ActivatorUtilities.CreateInstance<PluginManager>(this.serviceProvider, this);
     }
@@ -189,6 +238,17 @@ public sealed partial class Server : IServer
     }
 
     /// <summary>
+    /// Whether <paramref name="player"/> may change or lock the world's difficulty: like vanilla, a game master
+    /// (permission level 2) or the owner of a singleplayer world, whether or not it allows commands.
+    /// </summary>
+    internal bool MayChangeDifficulty(IPlayer player) =>
+        this.Integrated?.IsLocalPlayer(player) == true || ((OperatorList)this.Operators).GetPermissionLevel(player) >= 2;
+
+    /// <summary>Tells every player the world's difficulty and whether it's locked.</summary>
+    internal void BroadcastDifficulty() =>
+        this.DefaultWorld.PacketBroadcaster.QueuePacket(Net.Packets.Play.Clientbound.ChangeDifficultyPacket.Of(this.DefaultWorld.LevelData));
+
+    /// <summary>
     /// Starts this server asynchronously.
     /// </summary>
     public async Task RunAsync()
@@ -197,6 +257,9 @@ public sealed partial class Server : IServer
 
         this.CommandHandler.RegisterCommands();
         this.EventDispatcher.RegisterEvents();
+
+        if (this.Integrated is not null)
+            ((CommandHandler)this.CommandHandler).RegisterCommandClass(null, typeof(IntegratedCommandModule));
 
         Directory.CreateDirectory(ServerConstants.PermissionPath);
         Directory.CreateDirectory(ServerConstants.PersistentDataPath);
@@ -229,38 +292,19 @@ public sealed partial class Server : IServer
 
         CommandsRegistry.Register(this);
 
-        this.serverTasks = [
-            LoopAsync(),
-            KeepAliveLoopAsync(),
-            ChunkLoopAsync(),
-            ServerSaveAsync()
-        ];
+        this.loopTask = LoopAsync();
+        this.connectionLoopsTask = Task.WhenAll(KeepAliveLoopAsync(), ChunkLoopAsync());
 
-        // A failure here reaches the host, which reports the crash.
+        // A failure here reaches the host, which reports the crash. A stop while the worlds load shuts down gracefully too.
         try
         {
-            // Polling leaves the cores to world generation instead of spinning one.
-            while (!this.WorldManager.ReadyToJoin)
+            if (await this.StartWhenWorldsLoadAsync())
             {
-                if (this.cancelTokenSource.IsCancellationRequested)
-                    return;
-
-                await Task.Delay(50);
+                loadTimeStopwatch.Stop();
+                Log.Ready(this.logger, loadTimeStopwatch.Elapsed, this.Port);
             }
 
-            if (this.cancelTokenSource.IsCancellationRequested)
-                return;
-
-            ScoreboardManager = new ScoreboardManager(this, this.loggerFactory);
-
-            await this.PluginManager.OnServerReadyAsync();
-
-            loadTimeStopwatch.Stop();
-            Log.Ready(this.logger, loadTimeStopwatch.Elapsed, this.Port);
-
-            await this.StartAsync(this.Port);
-
-            await Task.WhenAll(this.serverTasks);
+            await this.loopTask;
         }
         finally
         {
@@ -268,6 +312,38 @@ public sealed partial class Server : IServer
             await this.StopAsync();
             Log.Stopped(this.logger);
         }
+    }
+
+    /// <summary>
+    /// Waits for the worlds to load, then starts accepting connections, unless the server stops first.
+    /// </summary>
+    /// <returns>Whether the server started.</returns>
+    private async Task<bool> StartWhenWorldsLoadAsync()
+    {
+        // Polling with a delay leaves the cores to world generation instead of spinning one.
+        while (!this.WorldManager.ReadyToJoin)
+        {
+            if (this.Stopping)
+                return false;
+
+            await Task.Delay(50);
+        }
+
+        ScoreboardManager = new ScoreboardManager(this, this.loggerFactory);
+
+        await this.PluginManager.OnServerReadyAsync();
+
+        try
+        {
+            await this.StartAsync(this.Port);
+        }
+        catch (InvalidOperationException) when (this.Stopping)
+        {
+            // Stopped just before the listener opened (see ListenAsync).
+            return false;
+        }
+
+        return true;
     }
 
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) =>
@@ -280,6 +356,14 @@ public sealed partial class Server : IServer
         await CommandHandler.ProcessCommand(context);
     }
 
+    /// <summary>
+    /// Whether the server is stopping or stopped: nothing new (saves, listeners) should start.
+    /// </summary>
+    internal bool Stopping => this.cancelTokenSource.IsCancellationRequested;
+
+    /// <summary>
+    /// Stops the server once: every call returns the same shutdown.
+    /// </summary>
     public Task StopAsync()
     {
         lock (this.shutdownLock)
@@ -290,18 +374,98 @@ public sealed partial class Server : IServer
     {
         await cancelTokenSource.CancelAsync();
 
-        this.socket?.Close();
+        this.CloseListeners();
 
         try
         {
-            await Task.WhenAll(this.serverTasks);
+            // The loop disconnects the players once it stops, so their leaves save them before the worlds are.
+            await Task.WhenAll(this.loopTask, this.connectionLoopsTask);
         }
         finally
         {
-            await WorldManager.DisposeAsync();
-            await this.PluginManager.DisposeAsync();
+            await this.PendingLeavesAsync();
 
-            await this.userCache.SaveAsync();
+            // The final save waits for a save in progress (a pause, the save command, an autosave), so they never
+            // overlap.
+            await this.saveLock.WaitAsync();
+            try
+            {
+                // Worlds that didn't finish loading aren't saved: a new world whose generation was stopped keeps no
+                // level.dat, so it isn't later taken for a complete world.
+                if (this.WorldManager.ReadyToJoin)
+                    await WorldManager.FlushLoadedWorldsAsync();
+
+                await WorldManager.DisposeAsync();
+                await this.PluginManager.DisposeAsync();
+
+                await this.userCache.SaveAsync();
+            }
+            finally
+            {
+                this.saveLock.Release();
+            }
+        }
+    }
+    /// <summary>
+    /// Pauses the worlds between two ticks: once this returns, no world tick runs until <see cref="Resume"/>.
+    /// </summary>
+    /// <returns>Whether the worlds were running, so this call paused them.</returns>
+    public async Task<bool> PauseAsync()
+    {
+        await this.tickGate.WaitAsync();
+        try
+        {
+            var wasRunning = !this.Paused;
+            this.Paused = true;
+
+            return wasRunning;
+        }
+        finally
+        {
+            this.tickGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Lets the worlds tick again from the next tick.
+    /// </summary>
+    public void Resume() => this.Paused = false;
+
+    /// <summary>
+    /// Saves everything: the online players, the worlds with their regions and level data, and the user cache. Saves run
+    /// one at a time; a failed one is logged and reported through <see cref="SaveCompleted"/>.
+    /// </summary>
+    /// <param name="autosave">Whether this is the periodic autosave, rather than one that was asked for.</param>
+    /// <returns>Whether the save succeeded.</returns>
+    public async Task<bool> SaveEverythingAsync(bool autosave)
+    {
+        await this.saveLock.WaitAsync();
+        try
+        {
+            Log.SavingWorlds(this.logger);
+            this.SaveStarted?.Invoke(autosave);
+
+            try
+            {
+                foreach (var player in this.OnlinePlayers.Values)
+                    await player.SaveAsync();
+
+                await WorldManager.FlushLoadedWorldsAsync();
+                await this.userCache.SaveAsync();
+            }
+            catch (Exception ex)
+            {
+                Log.AutosaveFailed(this.logger, ex);
+                this.SaveCompleted?.Invoke(autosave, ex);
+                return false;
+            }
+
+            this.SaveCompleted?.Invoke(autosave, null);
+            return true;
+        }
+        finally
+        {
+            this.saveLock.Release();
         }
     }
 
@@ -348,6 +512,25 @@ public sealed partial class Server : IServer
             throw;
         }
     }
+
+    /// <summary>
+    /// Keeps track of a player leaving after their connection closed, whose save stopping the server waits for.
+    /// </summary>
+    internal void TrackLeave(Task leave)
+    {
+        if (leave.IsCompleted)
+            return;
+
+        this.pendingLeaves.TryAdd(leave, 0);
+        _ = leave.ContinueWith(finished => this.pendingLeaves.TryRemove(finished, out _), TaskScheduler.Default);
+    }
+
+    /// <summary>Reports through <see cref="PlayerSaveFailed"/> that a player's data may not have been saved as they left.</summary>
+    internal void ReportPlayerSaveFailed(string username) =>
+        this.PlayerSaveFailed?.Invoke($"Saving {username} as they left failed.");
+
+    // Leaves log their own failures, so waiting for them never throws.
+    private Task PendingLeavesAsync() => Task.WhenAll(this.pendingLeaves.Keys);
 
     public bool RemovePlayer(IPlayer player)
     {
@@ -541,31 +724,64 @@ public sealed partial class Server : IServer
         .SelectMany(world => world.dimensions.Values.OfType<AbstractLevel>().Prepend(world))
         .Select(level => $"{level.Name}: {level.TickStage}"));
 
-    private async Task ServerSaveAsync()
+    /// <summary>
+    /// The mean time the last 100 world ticks took to run, in milliseconds, like vanilla's smoothed tick time (the busy
+    /// time of a tick, not its 50 ms interval).
+    /// </summary>
+    public double AverageTickMilliseconds
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(5));
+        get
+        {
+            lock (this.tickTimes)
+                return this.tickTimeCount == 0 ? 0 : this.tickTimes.Take(this.tickTimeCount).Average();
+        }
+    }
 
+    private readonly double[] tickTimes = new double[100];
+    private int tickTimeCount;
+    private int tickTimeIndex;
+
+    private void RecordTickTime(TimeSpan elapsed)
+    {
+        lock (this.tickTimes)
+        {
+            this.tickTimes[this.tickTimeIndex] = elapsed.TotalMilliseconds;
+            this.tickTimeIndex = (this.tickTimeIndex + 1) % this.tickTimes.Length;
+            this.tickTimeCount = Math.Min(this.tickTimeCount + 1, this.tickTimes.Length);
+        }
+    }
+
+    /// <summary>
+    /// Ticks the worlds once and records how long it took. A failing tick is reported rather than thrown, so the loop
+    /// goes on.
+    /// </summary>
+    private async Task TickWorldsOnceAsync()
+    {
+        TickStage = "ticking worlds";
+        var tickStart = Stopwatch.GetTimestamp();
+        Volatile.Write(ref this.tickStarted, tickStart);
         try
         {
-            while (await timer.WaitForNextTickAsync(this.cancelTokenSource.Token))
-            {
-                Log.SavingWorlds(this.logger);
-                try
-                {
-                    await WorldManager.FlushLoadedWorldsAsync();
-                    await this.userCache.SaveAsync();
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    logger.LogError(ex, "World autosave failed");
-                }
-            }
+            await this.WorldManager.TickWorldsAsync();
         }
-        catch (OperationCanceledException) when (cancelTokenSource.IsCancellationRequested) { }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancelTokenSource.IsCancellationRequested)
+        {
+            // A failing tick used to end the tick loop for good: players could still join, but nothing ticked again.
+            // The next tick runs anyway; repeated failures are only logged now and then.
+            this.ReportTickFailure(ex);
+        }
+        finally
+        {
+            Volatile.Write(ref this.tickStarted, 0);
+            this.RecordTickTime(Stopwatch.GetElapsedTime(tickStart));
+        }
     }
 
     private async Task LoopAsync()
     {
+        var worldTicks = 0;
+        Task autosave = Task.CompletedTask;
+
         var tpsMeasure = new TpsMeasure();
         var stopwatch = Stopwatch.StartNew();
         var timer = new BalancingTimer(50, cancelTokenSource.Token);
@@ -579,21 +795,22 @@ public sealed partial class Server : IServer
                 // chunks) would change them before the world is ready.
                 if (this.WorldManager.ReadyToJoin)
                 {
-                    TickStage = "ticking worlds";
-                    Volatile.Write(ref this.tickStarted, Stopwatch.GetTimestamp());
+                    // Under the gate, so a pause lands between two ticks (see PauseAsync).
+                    await this.tickGate.WaitAsync();
                     try
                     {
-                        await this.WorldManager.TickWorldsAsync();
-                    }
-                    catch (Exception ex) when (ex is not OperationCanceledException || !cancelTokenSource.IsCancellationRequested)
-                    {
-                        // A failing tick used to end this loop for good: players could still join, but nothing ticked
-                        // again. The next tick runs anyway; repeated failures are only logged now and then.
-                        this.ReportTickFailure(ex);
+                        if (!this.Paused)
+                        {
+                            await this.TickWorldsOnceAsync();
+
+                            // The autosave runs beside the ticks, and is skipped while the previous one still runs.
+                            if (++worldTicks % AutosaveInterval == 0 && autosave.IsCompleted)
+                                autosave = this.SaveEverythingAsync(autosave: true);
+                        }
                     }
                     finally
                     {
-                        Volatile.Write(ref this.tickStarted, 0);
+                        this.tickGate.Release();
                     }
                 }
 
@@ -617,13 +834,16 @@ public sealed partial class Server : IServer
             throw;
         }
 
+        await autosave;
+
         TickStage = "stopped";
         foreach (var client in this.Connections.Values)
         {
             await client.DisconnectAsync("Server closed");
         }
 
-        await WorldManager.FlushLoadedWorldsAsync();
+        // The worlds are saved by StopAsync, which follows.
+        await this.PendingLeavesAsync();
     }
 
     public bool IsWhitelisted(string username) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => string.Equals(x.Name, username, StringComparison.OrdinalIgnoreCase));
@@ -685,6 +905,9 @@ public sealed partial class Server : IServer
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Saving worlds")]
         public static partial void SavingWorlds(ILogger logger);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Saving the worlds failed")]
+        public static partial void AutosaveFailed(ILogger logger, Exception exception);
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Throttled {Ip} for reconnecting too quickly")]
         public static partial void Throttled(ILogger logger, string ip);

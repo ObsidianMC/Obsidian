@@ -7,7 +7,7 @@ public sealed class CommandContext(string message, ICommandSender commandSender,
     public IPlayer? Player { get; } = player;
     public IServer Server { get; } = server;
     public ICommandSender Sender { get; } = commandSender;
-    public bool IsPlayer => Player != null;
+    public bool IsPlayer => Player is not null;
 
     public PluginBase? Plugin { get; internal set; }
     internal string Message { get; } = message;

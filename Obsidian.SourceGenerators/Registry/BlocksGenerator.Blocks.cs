@@ -54,7 +54,10 @@ public partial class BlocksGenerator
                 builder.Line("this.State = state;").EndScope();
             }
 
-            builder.Line().Method("public override int GetHashCode()").Line($"return this.State != null ? this.State.Id : this.DefaultId;").EndScope();
+            builder.Line()
+                .Method("public override int GetHashCode()")
+                .Line($"return this.State != null ? this.State.Id : this.DefaultId;")
+                .EndScope();
 
             builder.EndScope();
             ctx.AddSource($"{blockName}.g.cs", builder.ToString());

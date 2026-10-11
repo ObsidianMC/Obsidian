@@ -22,6 +22,10 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
 
     public bool? Obfuscated { get; set; }
 
+    /// <summary>Optional signed ARGB shadow color from the text component codec.</summary>
+    [System.Text.Json.Serialization.JsonPropertyName("shadow_color")]
+    public int? ShadowColor { get; set; }
+
     public string? Insertion { get; set; }
 
     public ClickComponent? ClickEvent { get; set; }

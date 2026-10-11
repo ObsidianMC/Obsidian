@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
@@ -11,9 +11,10 @@ public sealed partial class LanBroadcasterService : BackgroundService
 {
     private readonly IDisposable optionsChanged;
     private readonly ILogger<LanBroadcasterService> logger;
+    private readonly IServer server;
     private ServerConfiguration configuration;
 
-    public LanBroadcasterService(IOptionsMonitor<ServerConfiguration> options, ILogger<LanBroadcasterService> logger)
+    public LanBroadcasterService(IOptionsMonitor<ServerConfiguration> options, ILogger<LanBroadcasterService> logger, IServer server)
     {
         this.configuration = options.CurrentValue;
         this.optionsChanged = options.OnChange((configuration, _) =>
@@ -21,34 +22,51 @@ public sealed partial class LanBroadcasterService : BackgroundService
             this.configuration = configuration;
         });
         this.logger = logger;
+        this.server = server;
     }
 
-    protected async override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!this.configuration.AllowLan)
-            return;
+            return Task.CompletedTask;
 
+        // The server's port is the bound one once it listens, which matters when the configured port is 0.
+        return BroadcastAsync(() => (this.configuration.Motd, this.server.Port), this.logger, stoppingToken);
+    }
+
+    /// <summary>
+    /// Advertises a server to the LAN until <paramref name="stoppingToken"/> is cancelled, like vanilla's
+    /// <c>LanServerPinger</c>: a <c>[MOTD]...[/MOTD][AD]port[/AD]</c> datagram to 224.0.2.60:4445 every 1.5 seconds.
+    /// </summary>
+    /// <param name="advertisement">The MOTD and port to advertise, read before each datagram.</param>
+    internal static async Task BroadcastAsync(Func<(string Motd, int Port)> advertisement, ILogger logger, CancellationToken stoppingToken)
+    {
         using var udpClient = new UdpClient("224.0.2.60", 4445);
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1.5));
-        string lastMotd = string.Empty;
-        byte[] bytes = []; // Cached motd as utf-8 bytes
+        (string Motd, int Port) last = default;
+        byte[] bytes = []; // Cached advertisement as utf-8 bytes
 
         try
         {
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                if (this.configuration.Motd != lastMotd)
+                var current = advertisement();
+                if (current != last)
                 {
-                    lastMotd = this.configuration.Motd;
-                    bytes = Encoding.UTF8.GetBytes($"[MOTD]{this.configuration.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{this.configuration.Port}[/AD]");
+                    last = current;
+                    bytes = Encoding.UTF8.GetBytes($"[MOTD]{current.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{current.Port}[/AD]");
                 }
 
                 await udpClient.SendAsync(bytes, bytes.Length);
             }
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (OperationCanceledException)
         {
-            Log.BroadcastFailed(this.logger, ex);
+            // The server is stopping.
+        }
+        catch (Exception ex)
+        {
+            Log.BroadcastFailed(logger, ex);
         }
     }
 

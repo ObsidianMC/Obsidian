@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.API.Containers;

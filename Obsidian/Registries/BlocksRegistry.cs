@@ -67,7 +67,7 @@ internal static partial class BlocksRegistry
 
     public static IBlock Get(string resourceId, IBlockState? state = null)
     {
-        if (state != null)
+        if (state is not null)
             return Get(state.Id);
 
         if (!resourceIdToName.TryGetValue(resourceId, out var blockName))
@@ -78,7 +78,7 @@ internal static partial class BlocksRegistry
 
     public static IBlock Get(Material material, IBlockState? state = null)
     {
-        if (state != null)
+        if (state is not null)
             return Get(state.Id);
 
         return (uint)material < (uint)materialBlocks.Length && materialBlocks[(int)material] is IBlock block

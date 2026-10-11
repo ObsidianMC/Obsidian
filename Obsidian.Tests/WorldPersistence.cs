@@ -156,7 +156,8 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
             await using (var region = new Region(regionX, regionZ, this.folder) { EntitiesLoaded = this.ChunksWithEntities.Add })
             {
                 await region.InitAsync();
-                this.Chunk = (Chunk)await region.GetChunkAsync(ChunkX - (regionX << Region.CubicRegionSizeShift), ChunkZ - (regionZ << Region.CubicRegionSizeShift));
+                this.Chunk = (Chunk)await region.GetChunkAsync(ChunkX - (regionX << Region.CubicRegionSizeShift),
+                    ChunkZ - (regionZ << Region.CubicRegionSizeShift));
             }
 
             this.Hut = new ChunkBuilder(Seed).Structures!.GetStarts(ChunkX, ChunkZ).Single(start => start.Structure.Identifier == SwampHut);

@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Crafting;
+using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Utilities;
 using System.Diagnostics;

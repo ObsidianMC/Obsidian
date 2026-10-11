@@ -171,7 +171,8 @@ public class VanillaFluids(VanillaFluids.ScenarioFixture fixture) : IClassFixtur
             return true;
         }
 
-        public void ScheduleFluidTick(Vector position, FluidKind fluid, int delay) => this.Chunk(position).FluidTicks.Schedule(position, fluid, delay);
+        public void ScheduleFluidTick(Vector position, FluidKind fluid, int delay) =>
+            this.Chunk(position).FluidTicks.Schedule(position, fluid, delay);
 
         private bool IsOutsideBuildHeight(int y) => y < this.MinY || y >= this.MinY + this.Height;
 

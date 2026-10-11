@@ -222,8 +222,10 @@ public class ConcurrentHashSet<T> : IReadOnlyCollection<T>, ICollection<T>
 
     private ConcurrentHashSet(int concurrencyLevel, int capacity, bool growLockArray, IEqualityComparer<T> comparer)
     {
-        if (concurrencyLevel < 1) throw new ArgumentOutOfRangeException(nameof(concurrencyLevel));
-        if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity));
+        if (concurrencyLevel < 1)
+            throw new ArgumentOutOfRangeException(nameof(concurrencyLevel));
+        if (capacity < 0)
+            throw new ArgumentOutOfRangeException(nameof(capacity));
 
         // The capacity should be at least as large as the concurrency level. Otherwise, we would have locks that don't guard
         // any buckets.
@@ -297,7 +299,7 @@ public class ConcurrentHashSet<T> : IReadOnlyCollection<T>, ICollection<T>
         // The Volatile.Read ensures that the load of the fields of 'n' doesn't move before the load from buckets[i].
         var current = Volatile.Read(ref tables.Buckets[bucketNo]);
 
-        while (current != null)
+        while (current is not null)
         {
             if (hashcode == current.Hashcode && _comparer.Equals(current.Item, item))
             {
@@ -333,13 +335,13 @@ public class ConcurrentHashSet<T> : IReadOnlyCollection<T>, ICollection<T>
                 }
 
                 Node previous = null;
-                for (var current = tables.Buckets[bucketNo]; current != null; current = current.Next)
+                for (var current = tables.Buckets[bucketNo]; current is not null; current = current.Next)
                 {
-                    Debug.Assert((previous == null && current == tables.Buckets[bucketNo]) || previous.Next == current);
+                    Debug.Assert((previous is null && current == tables.Buckets[bucketNo]) || previous.Next == current);
 
                     if (hashcode == current.Hashcode && _comparer.Equals(current.Item, item))
                     {
-                        if (previous == null)
+                        if (previous is null)
                         {
                             Volatile.Write(ref tables.Buckets[bucketNo], current.Next);
                         }
@@ -379,7 +381,7 @@ public class ConcurrentHashSet<T> : IReadOnlyCollection<T>, ICollection<T>
             // The Volatile.Read ensures that the load of the fields of 'current' doesn't move before the load from buckets[i].
             var current = Volatile.Read(ref buckets[i]);
 
-            while (current != null)
+            while (current is not null)
             {
                 yield return current.Item;
                 current = current.Next;
@@ -394,7 +396,8 @@ public class ConcurrentHashSet<T> : IReadOnlyCollection<T>, ICollection<T>
     void ICollection<T>.CopyTo(T[] array, int arrayIndex)
     {
         ArgumentNullException.ThrowIfNull(array);
-        if (arrayIndex < 0) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+        if (arrayIndex < 0)
+            throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 
         var locksAcquired = 0;
         try
@@ -460,9 +463,9 @@ public class ConcurrentHashSet<T> : IReadOnlyCollection<T>, ICollection<T>
 
                 // Try to find this item in the bucket
                 Node previous = null;
-                for (var current = tables.Buckets[bucketNo]; current != null; current = current.Next)
+                for (var current = tables.Buckets[bucketNo]; current is not null; current = current.Next)
                 {
-                    Debug.Assert(previous == null && current == tables.Buckets[bucketNo] || previous.Next == current);
+                    Debug.Assert(previous is null && current == tables.Buckets[bucketNo] || previous.Next == current);
                     if (hashcode == current.Hashcode && _comparer.Equals(current.Item, item))
                     {
                         return false;
@@ -630,7 +633,7 @@ public class ConcurrentHashSet<T> : IReadOnlyCollection<T>, ICollection<T>
             for (var i = 0; i < tables.Buckets.Length; i++)
             {
                 var current = tables.Buckets[i];
-                while (current != null)
+                while (current is not null)
                 {
                     var next = current.Next;
                     GetBucketAndLockNo(current.Hashcode, out int newBucketNo, out int newLockNo, newBuckets.Length, newLocks.Length);
@@ -707,7 +710,7 @@ public class ConcurrentHashSet<T> : IReadOnlyCollection<T>, ICollection<T>
         var buckets = _tables.Buckets;
         for (var i = 0; i < buckets.Length; i++)
         {
-            for (var current = buckets[i]; current != null; current = current.Next)
+            for (var current = buckets[i]; current is not null; current = current.Next)
             {
                 array[index] = current.Item;
                 index++; //this should never flow, CopyToItems is only called when there's no overflow risk

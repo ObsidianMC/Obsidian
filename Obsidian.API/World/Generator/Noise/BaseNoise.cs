@@ -63,7 +63,8 @@ public partial class BaseNoise : INoise
     public BaseNoise Bind(IPositionalRandomFactory worldRandom) => this.Bind(worldRandom.FromHashOf(this.Key));
 
     public void Create() =>
-        this.noise ??= NormalNoise.Create(new XoroshiroRandomSource(0L).ForkPositional().FromHashOf(this.Key), (int)this.FirstOctave, this.Amplitudes.AsSpan());
+        this.noise ??= NormalNoise.Create(new XoroshiroRandomSource(0L).ForkPositional().FromHashOf(this.Key), (int)this.FirstOctave,
+            this.Amplitudes.AsSpan());
 
     public double GetValue(double x, double y, double z) => this.Noise.GetValue(x, y, z);
 }

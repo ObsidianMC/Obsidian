@@ -18,7 +18,9 @@ public class GenHelper
     public GenHelper(ILevel world)
     {
         this.level = world;
-        this.World = world as IWorld ?? (world as IDimension)?.ParentWorld ?? throw new ArgumentException("Level must be a world or dimension.", nameof(world));
+        this.World = world as IWorld
+            ?? (world as IDimension)?.ParentWorld
+            ?? throw new ArgumentException("Level must be a world or dimension.", nameof(world));
         if (!int.TryParse(world.Seed, out int seedHash))
             seedHash = BitConverter.ToInt32(MD5.HashData(Encoding.UTF8.GetBytes(world.Seed)));
         Seed = seedHash;

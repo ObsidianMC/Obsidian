@@ -19,7 +19,8 @@ public class Noise
 
     private sealed class TestNoiseModule(int sourceModuleCount) : Module(sourceModuleCount)
     {
-        public override double GetValue(double x, double y, double z) => 1;//NoiseRegistry.NoiseSettings.Overworld.NoiseRouter.Continents.GetValue(x, y, z);
+        //NoiseRegistry.NoiseSettings.Overworld.NoiseRouter.Continents.GetValue(x, y, z);
+        public override double GetValue(double x, double y, double z) => 1;
     }
 
     [Fact(DisplayName = "Mojang Continents")]

@@ -13,7 +13,8 @@ public static partial class ItemsRegistry
 
     public static bool TryGet(Material mat, out Item item) => Items.TryGetValue(mat, out item);
 
-    public static ItemStack Get(string unlocalizedName, short count, params List<DataComponent> components) => new(Get(unlocalizedName), count, components);
+    public static ItemStack Get(string unlocalizedName, short count, params List<DataComponent> components) =>
+        new(Get(unlocalizedName), count, components);
 
     public static ItemStack GetSingleItem(Material mat, params List<DataComponent> components) => new(Get(mat), 1, components);
 

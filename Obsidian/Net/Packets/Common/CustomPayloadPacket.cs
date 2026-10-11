@@ -59,7 +59,7 @@ public partial record class CustomPayloadPacket
     {
         var result = Handle();
 
-        if (result == null)
+        if (result is null)
             return default;
 
         switch (result.Type)

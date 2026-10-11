@@ -79,7 +79,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             var old = plugins.FirstOrDefault(plugin => plugin.Source == path) ??
                 stagedPlugins.FirstOrDefault(plugin => plugin.Source == path);
 
-            if (old != null)
+            if (old is not null)
                 await this.UnloadPluginAsync(old);
 
             await this.LoadPluginAsync(path);
@@ -101,7 +101,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             this.acceptedKeys.Add(rsa.ExportParameters(false));
         }
 
-        var files = Directory.GetFiles("plugins", "*.obby", SearchOption.AllDirectories);
+        var files = Directory.GetFiles(ServerConstants.PluginsPath, "*.obby", SearchOption.AllDirectories);
 
         var waitingForDepend = new List<PluginContainer>();
         foreach (var file in files)
@@ -127,7 +127,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             await this.HandlePluginAsync(canLoad);
         }
 
-        DirectoryWatcher.Watch("plugins");
+        DirectoryWatcher.Watch(ServerConstants.PluginsPath);
     }
 
     public async Task UnloadPluginsAsync()
@@ -228,7 +228,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         {
             var plugin = this.Plugins.FirstOrDefault(x => x.Info.Id == dependency.Id && x.Info.Id != dependent.Info.Id);
 
-            if (plugin == null)
+            if (plugin is null)
                 continue;
 
             var info = plugin.Info;
@@ -329,15 +329,16 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     private void OnPluginSourceRenamed(string oldSource, string newSource)
     {
-        var renamedPlugin = plugins.FirstOrDefault(plugin => plugin.Source == oldSource) ?? stagedPlugins.FirstOrDefault(plugin => plugin.Source == oldSource);
-        if (renamedPlugin != null)
+        var renamedPlugin = plugins.FirstOrDefault(plugin => plugin.Source == oldSource)
+            ?? stagedPlugins.FirstOrDefault(plugin => plugin.Source == oldSource);
+        if (renamedPlugin is not null)
             renamedPlugin.Source = newSource;
     }
 
     private async void OnPluginSourceDeleted(string path)
     {
         var deletedPlugin = plugins.FirstOrDefault(plugin => plugin.Source == path) ?? stagedPlugins.FirstOrDefault(plugin => plugin.Source == path);
-        if (deletedPlugin != null)
+        if (deletedPlugin is not null)
             await UnloadPluginAsync(deletedPlugin);
     }
 

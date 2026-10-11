@@ -5,7 +5,7 @@ public class UpdateDisplayNameInfoAction(ChatMessage? displayName = null) : Info
     public override PlayerInfoAction Type => PlayerInfoAction.UpdateDisplayName;
 
     public ChatMessage? DisplayName { get; init; } = displayName;
-    public bool HasDisplayName => this.DisplayName != null;
+    public bool HasDisplayName => this.DisplayName is not null;
 
     public override void Write(INetStreamWriter writer)
     {

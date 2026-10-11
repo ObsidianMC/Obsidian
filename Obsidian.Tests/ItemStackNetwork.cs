@@ -46,7 +46,10 @@ public class ItemStackNetwork
                 {
                     Potion = Potion.LongNightVision,
                     CustomColor = 0x123456,
-                    CustomEffects = [new PotionEffectData { Id = (int)MobEffect.Speed, Amplifier = 1, Duration = 200, ShowParticles = true, ShowIcon = true }],
+                    CustomEffects =
+                    [
+                        new PotionEffectData { Id = (int)MobEffect.Speed, Amplifier = 1, Duration = 200, ShowParticles = true, ShowIcon = true }
+                    ],
                     CustomName = "water"
                 });
             case "map":

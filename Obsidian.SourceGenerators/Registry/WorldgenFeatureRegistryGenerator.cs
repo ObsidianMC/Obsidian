@@ -24,7 +24,8 @@ namespace Obsidian.SourceGenerators.Registry;
 public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGenerator
 {
     private static readonly string[] attributeNames =
-        ["ConfiguredFeatureClassAttribute", "ConfiguredFeaturePropertyAttribute", "TreePropertyAttribute", "ConfiguredFeatureAttribute", "StructureTypeAttribute"];
+        ["ConfiguredFeatureClassAttribute", "ConfiguredFeaturePropertyAttribute", "TreePropertyAttribute",
+            "ConfiguredFeatureAttribute", "StructureTypeAttribute"];
 
     private static readonly DiagnosticDescriptor unknownType = new("OBSWG001", "Unknown worldgen type",
         "No class is registered for worldgen type '{0}' assignable to {1} (used by {2})", "WorldgenFeatures", DiagnosticSeverity.Warning, true);
@@ -641,7 +642,8 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             if (symbol is null)
             {
                 this.Report(unknownType, type, "ConfiguredFeatureBase");
-                return ("global::Obsidian.API.World.Features.ConfiguredFeatureBase", $"new global::Obsidian.WorldData.Features.UnsupportedFeature({Literal(type)})");
+                return ("global::Obsidian.API.World.Features.ConfiguredFeatureBase",
+                    $"new global::Obsidian.WorldData.Features.UnsupportedFeature({Literal(type)})");
             }
 
             var config = json.TryGetProperty("config", out var value) ? value : default;
@@ -727,12 +729,16 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                     return EmitBlockState(json);
                 case "BlockSet":
                     {
-                        var entries = json.ValueKind == JsonValueKind.Array ? json.EnumerateArray().Select(entry => entry.GetString()!) : [json.GetString()!];
+                        var entries = json.ValueKind == JsonValueKind.Array
+                            ? json.EnumerateArray().Select(entry => entry.GetString()!)
+                            : [json.GetString()!];
                         return $"new global::Obsidian.WorldData.Features.BlockSet({string.Join(", ", entries.Select(Literal))})";
                     }
                 case "BiomeSet":
                     {
-                        var entries = json.ValueKind == JsonValueKind.Array ? json.EnumerateArray().Select(entry => entry.GetString()!) : [json.GetString()!];
+                        var entries = json.ValueKind == JsonValueKind.Array
+                            ? json.EnumerateArray().Select(entry => entry.GetString()!)
+                            : [json.GetString()!];
                         return $"new global::Obsidian.WorldData.Structures.BiomeSet({string.Join(", ", entries.Select(Literal))})";
                     }
                 case "Vector":
@@ -756,22 +762,30 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
             if (this.structureBase is not null && IsAssignableTo(target, this.structureBase))
             {
-                return json.ValueKind == JsonValueKind.String ? this.StructureReference(json.GetString()!) : this.EmitStructure(json, null).Expression;
+                return json.ValueKind == JsonValueKind.String
+                    ? this.StructureReference(json.GetString()!)
+                    : this.EmitStructure(json, null).Expression;
             }
 
             if (this.templatePool is not null && SymbolEqualityComparer.Default.Equals(target, this.templatePool))
             {
-                return json.ValueKind == JsonValueKind.String ? this.TemplatePoolReference(json.GetString()!) : this.EmitObject(this.templatePool, json, null, null);
+                return json.ValueKind == JsonValueKind.String
+                    ? this.TemplatePoolReference(json.GetString()!)
+                    : this.EmitObject(this.templatePool, json, null, null);
             }
 
             if (this.structureSet is not null && SymbolEqualityComparer.Default.Equals(target, this.structureSet))
             {
-                return json.ValueKind == JsonValueKind.String ? this.StructureSetReference(json.GetString()!) : this.EmitObject(this.structureSet, json, null, null);
+                return json.ValueKind == JsonValueKind.String
+                    ? this.StructureSetReference(json.GetString()!)
+                    : this.EmitObject(this.structureSet, json, null, null);
             }
 
             if (IsAssignableTo(target, this.configuredFeatureBase))
             {
-                return json.ValueKind == JsonValueKind.String ? this.ConfiguredReference(json.GetString()!) : this.EmitConfiguredFeature(json, null).Expression;
+                return json.ValueKind == JsonValueKind.String
+                    ? this.ConfiguredReference(json.GetString()!)
+                    : this.EmitConfiguredFeature(json, null).Expression;
             }
 
             var named = (INamedTypeSymbol)target;

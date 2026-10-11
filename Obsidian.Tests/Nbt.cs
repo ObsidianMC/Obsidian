@@ -51,7 +51,8 @@ public class Nbt(ITestOutputHelper output)
         var doubleTest = main.GetDouble("doubleTest");
         Assert.Equal(0.49312871321823148, doubleTest);
 
-        main.TryGetTag<NbtArray<byte>>("byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))", out var byteArrayTest);
+        main.TryGetTag<NbtArray<byte>>("byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))",
+            out var byteArrayTest);
         Assert.Equal(1000, byteArrayTest.Count);
 
         for (int n = 0; n < 1000; n++)

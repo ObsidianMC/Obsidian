@@ -33,7 +33,9 @@ public sealed record class InstrumentData : INetworkSerializable<InstrumentData>
         var soundHolder = reader.ReadVarInt();
         return new()
         {
-            SoundEvent = soundHolder == 0 ? reader.ReadSoundEvent() : new SoundEvent { ResourceLocation = string.Empty, RegistryId = soundHolder - 1 },
+            SoundEvent = soundHolder == 0
+                ? reader.ReadSoundEvent()
+                : new SoundEvent { ResourceLocation = string.Empty, RegistryId = soundHolder - 1 },
             UseDuration = reader.ReadSingle(),
             Range = reader.ReadSingle(),
             Description = reader.ReadChat()

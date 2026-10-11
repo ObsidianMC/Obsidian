@@ -30,7 +30,10 @@ public readonly record struct CommonPlayerSpawnInfo : INetworkSerializable<Commo
 
         Debug = reader.ReadBoolean(),
         Flat = reader.ReadBoolean(),
-        DeathLocation = reader.ReadOptional<DeathLocation>()
+        DeathLocation = reader.ReadOptional<DeathLocation>(),
+
+        PortalCooldown = reader.ReadVarInt(),
+        SeaLevel = reader.ReadVarInt()
     };
 
     public static void Write(CommonPlayerSpawnInfo value, INetStreamWriter writer)

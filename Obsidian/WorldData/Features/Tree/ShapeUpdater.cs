@@ -35,7 +35,8 @@ internal static class ShapeUpdater
         "minecraft:melon", "minecraft:pumpkin", "#minecraft:shulker_boxes");
 
     // Vanilla BlockBehaviour.UPDATE_SHAPE_ORDER.
-    private static readonly BlockFace[] updateShapeOrder = [BlockFace.West, BlockFace.East, BlockFace.North, BlockFace.South, BlockFace.Down, BlockFace.Up];
+    private static readonly BlockFace[] updateShapeOrder = [BlockFace.West, BlockFace.East, BlockFace.North,
+        BlockFace.South, BlockFace.Down, BlockFace.Up];
 
     /// <summary>
     /// Vanilla <c>Block.updateFromNeighbourShapes</c>: <paramref name="state"/> updated against each of its neighbors.
@@ -467,7 +468,8 @@ internal static class ShapeUpdater
     private static bool IsStemFruit(IBlock stem, IBlock neighbor) =>
         neighbor.Material == (stem.Material == Material.AttachedMelonStem ? Material.Melon : Material.Pumpkin);
 
-    private static string StemFor(IBlock attached) => attached.Material == Material.AttachedMelonStem ? "minecraft:melon_stem" : "minecraft:pumpkin_stem";
+    private static string StemFor(IBlock attached) =>
+        attached.Material == Material.AttachedMelonStem ? "minecraft:melon_stem" : "minecraft:pumpkin_stem";
 
     /// <summary>
     /// Vanilla <c>FaceAttachedHorizontalDirectionalBlock.updateShape</c> (levers, buttons): drops without a sturdy face to
@@ -529,7 +531,8 @@ internal static class ShapeUpdater
     /// </summary>
     private static bool WallConnectsTo(IBlock neighbor, bool sturdy, BlockFace direction)
     {
-        var gate = neighbor.BlockClass() == "FenceGateBlock" && SameAxis(FeatureHelpers.ParseFace(neighbor.GetProperty("facing")), direction.ClockWise());
+        var gate = neighbor.BlockClass() == "FenceGateBlock"
+            && SameAxis(FeatureHelpers.ParseFace(neighbor.GetProperty("facing")), direction.ClockWise());
         return walls.Contains(neighbor) || !IsExceptionForConnection(neighbor) && sturdy
             || neighbor.BlockClass() is "IronBarsBlock" or "StainedGlassPaneBlock" or "WeatheringCopperBarsBlock" || gate;
     }

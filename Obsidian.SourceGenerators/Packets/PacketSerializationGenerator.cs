@@ -80,7 +80,9 @@ public sealed class PacketSerializationGenerator : IIncrementalGenerator
             if (blockEnums.TryGetValue(type.Name, out var members))
             {
                 var matches = type.IsEnum && members.Length == type.Values.Count
-                    && type.Values.Select((value, index) => Protocol.PascalCase(value.Name) == members[index] && value.Value == index).All(match => match);
+                    && type.Values
+                        .Select((value, index) => Protocol.PascalCase(value.Name) == members[index] && value.Value == index)
+                        .All(match => match);
                 return matches ? null : $"a block state enum is already named {type.Name}";
             }
             return null;

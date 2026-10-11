@@ -11,6 +11,9 @@ public partial class ChangeDifficultyPacket(Difficulty difficulty)
     [Field(1)]
     public bool DifficultyLocked { get; init; }
 
+    /// <summary>The packet telling players a world's difficulty and whether it's locked.</summary>
+    internal static ChangeDifficultyPacket Of(LevelData level) => new(level.Difficulty) { DifficultyLocked = level.DifficultyLocked };
+
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteByte(this.Difficulty);

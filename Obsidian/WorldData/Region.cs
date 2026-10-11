@@ -1,4 +1,3 @@
-using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -83,14 +82,16 @@ public class Region : IRegion
     private readonly int minY;
     private readonly int height;
 
-    internal Region(int x, int z, string worldFolderPath, NbtCompression chunkCompression = NbtCompression.ZLib,
-        int minY = -64, int height = 384)
+    /// <param name="regionFolderName">The chunk region files' folder in <paramref name="worldFolderPath"/>: Obsidian's
+    /// <c>regions</c>, or vanilla's <c>region</c>. Entities are in <c>entities</c> either way.</param>
+    internal Region(int x, int z, string worldFolderPath, string regionFolderName = "regions",
+        NbtCompression chunkCompression = NbtCompression.ZLib, int minY = -64, int height = 384)
     {
         X = x;
         Z = z;
         this.minY = minY;
         this.height = height;
-        RegionFolder = Path.Join(worldFolderPath, "regions");
+        RegionFolder = Path.Join(worldFolderPath, regionFolderName);
         Directory.CreateDirectory(RegionFolder);
         var filePath = Path.Join(RegionFolder, $"r.{X}.{Z}.mca");
 
@@ -267,8 +268,6 @@ public class Region : IRegion
 
     private async Task WriteChunkAsync(IChunk chunk, bool unloading)
     {
-        await this.initialization.Value;
-
         var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
 
         await using MemoryStream strm = new();
@@ -360,7 +359,8 @@ public class Region : IRegion
         await using MemoryStream strm = new();
         await using (NbtWriterStream writer = new(strm, ChunkCompression, ""))
         {
-            writer.WriteInt("DataVersion", LevelData.DataVersion);
+            // Entities are saved in 1.21.11's format too (items with components).
+            writer.WriteInt("DataVersion", VanillaLevelData.DataVersion);
             writer.WriteArray("Position", [chunkX, chunkZ]);
             writer.WriteTag(entities);
             writer.EndCompound();
@@ -433,6 +433,28 @@ public class Region : IRegion
     }
 
     #region NBT Ops
+    // The chunk tags SerializeChunk writes. isLightOn is left out on purpose: without it, vanilla relights the chunk
+    // rather than trusting light Obsidian computed.
+    private static readonly HashSet<string> modeledChunkTags =
+    [
+        "DataVersion",
+        "xPos",
+        "zPos",
+        "yPos",
+        "Status",
+        "InhabitedTime",
+        "sections",
+        "Heightmaps",
+        "block_entities",
+        "entities",
+        "structures",
+        "PostProcessing",
+        "fluid_ticks",
+        "ObsidianMobEggTicks",
+        "ObsidianFrogspawnTicks",
+        "isLightOn"
+    ];
+
     private Chunk DeserializeChunk(NbtCompound chunkCompound)
     {
         int x = chunkCompound.GetInt("xPos");
@@ -465,58 +487,16 @@ public class Region : IRegion
             if (sectionIndex < 0 || sectionIndex >= chunk.Sections.Length)
                 continue;
 
-            if (!sectionCompound.TryGetTag("block_states", out var statesTag))
-                throw new UnreachableException("Unable to find block states from NBT.");
-
-            var statesCompound = statesTag as NbtCompound;
-
             var section = chunk.Sections[sectionIndex];
 
-            if (statesCompound!.TryGetTag("palette", out var palleteArrayTag))
-            {
-                var blockStatesPalette = palleteArrayTag as NbtList;
-
-                foreach (var entry in blockStatesPalette!.Cast<NbtCompound>())
-                {
-                    var id = entry.GetInt("Id");
-                    var block = BlocksRegistry.Get(id);
-                    section.BlockStateContainer.Add(block);//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
-                }
-
-                if (section.BlockStateContainer.Palette.Count == 1 && !section.BlockStateContainer.IsSingleValued)
-                    throw new UnreachableException("Chunk palette has only one entry but chunk container is not single valued.");
-            }
-
-            if (statesCompound.TryGetTag("data", out var dataArrayTag))
-            {
-                var data = dataArrayTag as NbtArray<long>;
-                section.BlockStateContainer.DataArray.storage = data!.GetArray();
-            }
+            if (sectionCompound.TryGetTag<NbtCompound>("block_states", out var blockStates))
+                ChunkSectionNbt.ReadBlockStates(blockStates, section.BlockStateContainer);
 
             // The storage was filled directly, so the section doesn't know whether it holds blocks yet.
             (section as ChunkSection)?.RecalculateEmpty();
 
-            if (sectionCompound.TryGetTag<NbtCompound>("biomes", out var biomesCompound))
-            {
-                if (biomesCompound.TryGetTag<NbtList>("palette", out var biomesPalette))
-                {
-                    foreach (NbtTag<string> biome in biomesPalette!.Cast<NbtTag<string>>())
-                    {
-                        if (CodecRegistry.TryGetBiome(biome.Value, out var value))
-                        {
-                            section.BiomeContainer.Add(value);
-                        }
-                    }
-
-                    if(section.BiomeContainer.Palette.Count == 1 && !section.BiomeContainer.IsSingleValued)
-                        throw new UnreachableException("Biome palette has only one entry but biome container is not single valued.");
-                }
-
-                if (biomesCompound.TryGetTag<NbtArray<long>>("data", out var data))
-                {
-                    section.BiomeContainer.DataArray.storage = data!.GetArray();
-                }
-            }
+            if (sectionCompound.TryGetTag<NbtCompound>("biomes", out var biomes))
+                ChunkSectionNbt.ReadBiomes(biomes, section.BiomeContainer);
 
             if (sectionCompound.TryGetTag("SkyLight", out var skyLightTag))
             {
@@ -535,17 +515,18 @@ public class Region : IRegion
 
         // Stored heights are relative to the stored min Y and packed for the stored height, so they're only kept when both
         // match; otherwise they're recomputed from the blocks.
-        var heightmaps = (NbtCompound)chunkCompound["Heightmaps"];
         var expectedLength = chunk.Heightmaps[HeightmapType.MotionBlocking].data.storage.Length;
+        var heightmaps = chunkCompound.TryGetTag<NbtCompound>("Heightmaps", out var heightmapsTag) ? heightmapsTag : null;
         var heightmapsMatch = storedMinSection == minSection
-            && heightmaps.All(entry => ((NbtArray<long>)entry.Value).Count == expectedLength);
+            && heightmaps is not null
+            && heightmaps.All(entry => entry.Value is NbtArray<long> array && array.Count == expectedLength);
 
         if (heightmapsMatch)
         {
-            foreach (var (name, heightmap) in heightmaps)
+            foreach (var (name, heightmap) in heightmaps!)
             {
-                var heightmapType = (HeightmapType)Enum.Parse(typeof(HeightmapType), name.Replace("_", ""), true);
-                chunk.Heightmaps[heightmapType].data.storage = ((NbtArray<long>)heightmap).GetArray();
+                if (Enum.TryParse<HeightmapType>(name.Replace("_", ""), true, out var type) && chunk.Heightmaps.TryGetValue(type, out var target))
+                    target.data.storage = ((NbtArray<long>)heightmap).GetArray();
             }
         }
         else
@@ -569,11 +550,8 @@ public class Region : IRegion
             }
         }
 
-        if (chunkCompound.TryGetTag<NbtArray<int>>("PostProcessing", out var postProcessing) && storedMinSection == minSection)
-        {
-            foreach (var packed in postProcessing.GetArray())
-                chunk.PostProcessing.Add(new Vector((x << 4) + (packed & 15), this.minY + (packed >> 8), (z << 4) + ((packed >> 4) & 15)));
-        }
+        if (storedMinSection == minSection)
+            ReadPostProcessing(chunkCompound, chunk);
 
         if (chunkCompound.TryGetTag<NbtList>("fluid_ticks", out var fluidTicks))
             chunk.FluidTicks.Read(fluidTicks, x, z);
@@ -588,12 +566,97 @@ public class Region : IRegion
             }
         }
 
-        if (chunkCompound.TryGetTag<NbtCompound>("structures", out var structures) && structures.TryGetTag<NbtCompound>("starts", out var starts))
+        var hasStructures = chunkCompound.TryGetTag<NbtCompound>("structures", out var structures);
+        if (hasStructures && structures!.TryGetTag<NbtCompound>("starts", out var starts))
             chunk.StructureStarts = starts;
 
-        chunk.SetChunkStatus((ChunkGenStage)(Enum.TryParse(typeof(ChunkGenStage), chunkCompound.GetString("Status"), out var status) ? status : ChunkGenStage.empty));
+        // Data from another version is in that version's shape, which the current DataVersion would misrepresent.
+        if (chunkCompound.TryGetTagValue<int>("DataVersion", out var dataVersion)
+            && dataVersion == VanillaLevelData.DataVersion)
+        {
+            foreach (var (name, tag) in chunkCompound)
+            {
+                if (!modeledChunkTags.Contains(name))
+                    chunk.UnmodeledTags.Add(tag);
+            }
+
+            if (hasStructures && structures!.TryGetTag<NbtCompound>("References", out var references))
+                chunk.StructureReferences = references;
+        }
+
+        chunk.SetChunkStatus(ParseStatus(chunkCompound.TryGetTag<NbtTag<string>>("Status", out var status) ? status.Value : null));
 
         return chunk;
+    }
+
+    /// <summary>
+    /// A saved chunk status: vanilla's namespaced ids (<c>minecraft:full</c>) or Obsidian's previous bare names (<c>full</c>).
+    /// </summary>
+    /// <remarks>
+    /// A status that's missing or unknown counts as complete, so a chunk that has data is never generated again over it.
+    /// </remarks>
+    internal static ChunkGenStage ParseStatus(string? status)
+    {
+        const string Namespace = "minecraft:";
+
+        var name = status is not null && status.StartsWith(Namespace, StringComparison.Ordinal) ? status[Namespace.Length..] : status;
+
+        // Compared back to the name, since parsing also accepts numbers.
+        return Enum.TryParse<ChunkGenStage>(name, out var stage) && stage.ToString() == name ? stage : ChunkGenStage.full;
+    }
+
+    /// <summary>
+    /// Reads post-processing marks: vanilla's list per section of positions packed as <c>x | y &lt;&lt; 4 | z &lt;&lt; 8</c>
+    /// within the section, or Obsidian's array packed as <c>x | z &lt;&lt; 4 | (y - min Y) &lt;&lt; 8</c> within
+    /// the chunk.
+    /// </summary>
+    private void ReadPostProcessing(NbtCompound chunkCompound, Chunk chunk)
+    {
+        var (blockX, blockZ) = (chunk.X << 4, chunk.Z << 4);
+
+        if (chunkCompound.TryGetTag<NbtArray<int>>("PostProcessing", out var ownShape))
+        {
+            foreach (var packed in ownShape.GetArray())
+                chunk.PostProcessing.Add(new Vector(blockX + (packed & 15), this.minY + (packed >> 8), blockZ + ((packed >> 4) & 15)));
+
+            return;
+        }
+
+        if (!chunkCompound.TryGetTag<NbtList>("PostProcessing", out var sections))
+            return;
+
+        for (var sectionIndex = 0; sectionIndex < sections.Count; sectionIndex++)
+        {
+            if (sections[sectionIndex] is not NbtList positions)
+                continue;
+
+            var sectionY = this.minY + (sectionIndex << 4);
+            foreach (var packed in positions.OfType<NbtTag<short>>().Select(position => position.Value))
+                chunk.PostProcessing.Add(new Vector(blockX + (packed & 15), sectionY + ((packed >> 4) & 15), blockZ + ((packed >> 8) & 15)));
+        }
+    }
+
+    /// <summary>
+    /// Writes post-processing marks in vanilla's shape (see <see cref="ReadPostProcessing"/>): a list for every section,
+    /// of positions packed as <c>x | y &lt;&lt; 4 | z &lt;&lt; 8</c> within it.
+    /// </summary>
+    private static void WritePostProcessing(NbtWriterStream writer, Chunk chunk)
+    {
+        var bySection = chunk.PostProcessing.ToLookup(position => (position.Y - chunk.MinY) >> 4);
+
+        writer.WriteListStart("PostProcessing", NbtTagType.List, chunk.Sections.Length);
+        for (var section = 0; section < chunk.Sections.Length; section++)
+        {
+            var marks = bySection[section].ToList();
+
+            writer.WriteListStart("", NbtTagType.Short, marks.Count);
+            foreach (var position in marks)
+                writer.WriteShort((short)((position.X & 15) | (position.Y & 15) << 4 | (position.Z & 15) << 8));
+
+            writer.EndList();
+        }
+
+        writer.EndList();
     }
 
     private static void SerializeChunk(NbtWriterStream writer, IChunk chunk, NbtCompound? structureStarts)
@@ -608,87 +671,9 @@ public class Region : IRegion
 
             writer.WriteCompoundStart();
 
-            // The containers are locked while they're written: live writes (fluid ticks, players) may grow a palette meanwhile.
-            using (section.BlockStateContainer.EnterScope())
-            {
-                writer.WriteCompoundStart("block_states");
-
-                if (section.BlockStateContainer.Palette is IndirectBlockPalette indirect)
-                {
-                    writer.WriteListStart("palette", NbtTagType.Compound, indirect.Count);
-
-                    ReadOnlySpan<int> span = indirect.Values;
-                    for (int i = 0; i < indirect.Count; i++)
-                    {
-                        var id = span[i];
-                        var block = BlocksRegistry.Get(id);
-
-                        writer.WriteCompoundStart();
-
-                        writer.WriteString("Name", block.UnlocalizedName);
-                        writer.WriteInt("Id", id);
-
-                        writer.EndCompound();//TODO INCLUDE PROPERTIES
-                    }
-
-                    writer.EndList();
-
-                    writer.WriteArray("data", section.BlockStateContainer.DataArray.storage);
-                }
-                else if (section.BlockStateContainer.Palette is SingleValuePalette<IBlock> singleValueBlockPalette && singleValueBlockPalette.IsFull)
-                {
-                    writer.WriteListStart("palette", NbtTagType.Compound, 1);
-
-                    var block = singleValueBlockPalette.GetValueFromIndex(0);
-
-                    writer.WriteCompoundStart();
-
-                    writer.WriteString("Name", block.UnlocalizedName);
-                    writer.WriteInt("Id", block.GetHashCode());
-
-                    writer.EndCompound();//TODO INCLUDE PROPERTIES
-
-                    writer.EndList();
-                }
-
-                writer.EndCompound();
-            }
-
-            using (section.BiomeContainer.EnterScope())
-            {
-                if (section.BiomeContainer.Palette.Count >= 1)
-                {
-                    writer.WriteCompoundStart("biomes");
-
-                    if (section.BiomeContainer.Palette is BaseIndirectPalette<BiomeCodec> indirectBiomePalette)
-                    {
-                        writer.WriteListStart("palette", NbtTagType.String, indirectBiomePalette.Count);
-
-                        ReadOnlySpan<int> span = indirectBiomePalette.Values;
-                        for (int i = 0; i < indirectBiomePalette.Count; i++)
-                        {
-                            var biome = CodecRegistry.GetBiome(span[i]);
-                            writer.WriteString(biome?.Name);
-                        }
-
-                        writer.EndList();
-
-                        writer.WriteArray("data", section.BiomeContainer.DataArray.storage);
-                    }
-                    else if (section.BiomeContainer.Palette is SingleValuePalette<BiomeCodec> singleValueBiomePalette && singleValueBiomePalette.IsFull)
-                    {
-                        writer.WriteListStart("palette", NbtTagType.String, 1);
-
-                        var biome = singleValueBiomePalette.GetValueFromIndex(0);
-
-                        writer.WriteString(biome.Name);
-
-                        writer.EndList();
-                    }
-
-                    writer.EndCompound();
-                }
-            }
+            // The containers are packed under their locks: live writes (fluid ticks, players) may grow a palette meanwhile.
+            ChunkSectionNbt.WriteBlockStates(writer, section.BlockStateContainer);
+            ChunkSectionNbt.WriteBiomes(writer, section.BiomeContainer);
 
             writer.WriteByte("Y", (byte)section.YBase);
             writer.WriteArray("SkyLight", section.SkyLightArray.ToArray());
@@ -714,24 +699,34 @@ public class Region : IRegion
             writer.WriteListTag(EntityNbt.ToNbt(entity));
         writer.EndList();
 
-        // Vanilla's structures.starts. References aren't saved: they follow from the starts, which are recomputed from the
-        // seed, so only the starts' placement state needs saving.
-        if (structureStarts is { Count: > 0 })
+        // Vanilla's structures.starts. Obsidian follows references from the starts, which are recomputed from the seed,
+        // so it only keeps the references a chunk was loaded with, for vanilla to read.
+        var structureReferences = (chunk as Chunk)?.StructureReferences;
+        if (structureStarts is { Count: > 0 } || structureReferences is not null)
         {
             writer.WriteCompoundStart("structures");
             writer.WriteCompoundStart("starts");
-            foreach (var (_, start) in structureStarts)
-                writer.WriteTag(start);
+            if (structureStarts is not null)
+            {
+                foreach (var (_, start) in structureStarts)
+                    writer.WriteTag(start);
+            }
+
             writer.EndCompound();
+
+            if (structureReferences is not null)
+                writer.WriteTag(structureReferences);
+
             writer.EndCompound();
         }
 
-        // Post-processing marks, each packed as (x | z << 4 | (y - min Y) << 8) within the chunk.
         if (chunk is Chunk generated)
         {
-            writer.WriteArray("PostProcessing", generated.PostProcessing
-                .Select(position => (position.X & 15) | (position.Z & 15) << 4 | (position.Y - chunk.MinY) << 8)
-                .ToArray());
+            foreach (var tag in generated.UnmodeledTags)
+                writer.WriteTag(tag);
+
+            if (generated.PostProcessing.Count > 0)
+                WritePostProcessing(writer, generated);
 
             // Scheduled fluid ticks, like vanilla's "fluid_ticks".
             generated.FluidTicks.Write(writer);
@@ -764,8 +759,10 @@ public class Region : IRegion
         writer.WriteInt("xPos", chunk.X);
         writer.WriteInt("zPos", chunk.Z);
         writer.WriteInt("yPos", chunk.MinY >> 4);
-        writer.WriteInt("DataVersion", 3337);
-        writer.WriteString("Status", chunk.ChunkStatus.ToString());
+
+        // Chunks are saved in 1.21.11's format, so vanilla reads them without upgrading them.
+        writer.WriteInt("DataVersion", VanillaLevelData.DataVersion);
+        writer.WriteString("Status", $"minecraft:{chunk.ChunkStatus}");
 
         // Every heightmap the chunk still has. Chunks that aren't fully generated keep their world generation heightmaps,
         // which later generation steps read.

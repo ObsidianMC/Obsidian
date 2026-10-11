@@ -38,8 +38,10 @@ public sealed class Container : BaseContainer, IBlockEntity
         if (this.IsPlayerInventory)
         {
             int? slot = InventoryItem(item, PlayerHotbarStart, PlayerHotbarEnd);
-            if (slot is null) slot = InventoryItem(item, PlayerMainInventoryStart, PlayerMainInventoryEnd);
-            if (slot is not null) return slot.Value;
+            if (slot is null)
+                slot = InventoryItem(item, PlayerMainInventoryStart, PlayerMainInventoryEnd);
+            if (slot is not null)
+                return slot.Value;
         }
         else
         {

@@ -25,7 +25,8 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
 
     internal DataArray? DataArray { get; private protected set; }
 
-    public DataContainer(byte initialBitsPerEntry, byte minBitsPerEntry, byte maxBitsPerEntry, int maxEntryCount, Func<byte, IPalette<T>> paletteFactory)
+    public DataContainer(byte initialBitsPerEntry, byte minBitsPerEntry, byte maxBitsPerEntry, int maxEntryCount,
+        Func<byte, IPalette<T>> paletteFactory)
         : this(minBitsPerEntry, maxBitsPerEntry, maxEntryCount, paletteFactory)
     {
         this.Palette = this.PaletteFactory(initialBitsPerEntry);
@@ -45,6 +46,18 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
     /// Holds the container's lock, so its palette and data can be read together while nothing writes them (saving).
     /// </summary>
     internal Lock.Scope EnterScope() => this.dataLock.EnterScope();
+
+    /// <summary>
+    /// Empties the container, as it was created: a single value palette without a value.
+    /// </summary>
+    internal void Reset()
+    {
+        lock (this.dataLock)
+        {
+            this.Palette = this.PaletteFactory(0);
+            this.DataArray = null;
+        }
+    }
 
     public bool TryGrow()
     {

@@ -19,7 +19,8 @@ public class BambooFlora(GenHelper helper, IChunk chunk) : BaseTallFlora(helper,
 
         var bambooBase = BlocksRegistry.Get(this.FloraMat, new BambooStateBuilder().WithAge(1).WithLeaves(LeavesType.None).WithStage(1).Build());
         var bambooLeaves = BlocksRegistry.Get(this.FloraMat, new BambooStateBuilder().WithAge(1).WithLeaves(LeavesType.Small).WithStage(1).Build());
-        var bambooLeavesFull = BlocksRegistry.Get(this.FloraMat, new BambooStateBuilder().WithAge(1).WithLeaves(LeavesType.Large).WithStage(1).Build());
+        var bambooLeavesFull = BlocksRegistry.Get(this.FloraMat,
+            new BambooStateBuilder().WithAge(1).WithLeaves(LeavesType.Large).WithStage(1).Build());
 
         // Grow base
         for (int y = 0; y < growHeight - 3; y++)

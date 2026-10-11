@@ -67,7 +67,8 @@ internal static class ChunkBuilder
         CodecRegistry.Biomes.StonyPeaks
     ];
 
-    private static ReadOnlySpan<OreType> OreTypes => [OreType.Coal, OreType.Iron, OreType.Copper, OreType.Gold, OreType.Lapis, OreType.Redstone, OreType.Emerald, OreType.Diamond];
+    private static ReadOnlySpan<OreType> OreTypes =>
+        [OreType.Coal, OreType.Iron, OreType.Copper, OreType.Gold, OreType.Lapis, OreType.Redstone, OreType.Emerald, OreType.Diamond];
 
     internal enum OreType : int
     {

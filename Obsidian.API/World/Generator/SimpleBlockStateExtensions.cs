@@ -23,7 +23,7 @@ public static class SimpleBlockStateExtensions
     /// </summary>
     public static IBlock ToBlock(this SimpleBlockState state)
     {
-        if (_converter == null)
+        if (_converter is null)
             throw new InvalidOperationException(
                 "SimpleBlockState converter not initialized. " +
                 "Call SimpleBlockStateExtensions.SetConverter() during startup.");

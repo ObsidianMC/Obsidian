@@ -43,7 +43,8 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         return this;
     }
 
-    public IPluginRegistry MapEvent<TEventArgs>(ValueTaskContextDelegate<TEventArgs> contextDelegate, Priority priority = Priority.Low) where TEventArgs : BaseMinecraftEventArgs
+    public IPluginRegistry MapEvent<TEventArgs>(ValueTaskContextDelegate<TEventArgs> contextDelegate, Priority priority = Priority.Low)
+        where TEventArgs : BaseMinecraftEventArgs
     {
         var asm = Assembly.GetCallingAssembly();
 

@@ -17,7 +17,8 @@ internal sealed class ActualTypeBehavior : AttributeBehaviorBase
     {
         if (!context.MethodsRegistry.TryGetWriteMethod(context.Property.CloneWithType(Type), out Method writeMethod))
         {
-            DiagnosticHelper.ReportDiagnostic(context.GeneratorContext, DiagnosticSeverity.Warning, "There is no write method for this type, attribute will be ignored.", syntax);
+            DiagnosticHelper.ReportDiagnostic(context.GeneratorContext, DiagnosticSeverity.Warning,
+                "There is no write method for this type, attribute will be ignored.", syntax);
             return false;
         }
 
@@ -37,7 +38,8 @@ internal sealed class ActualTypeBehavior : AttributeBehaviorBase
     {
         if (!context.MethodsRegistry.TryGetReadMethod(context.Property.CloneWithType(Type), out Method readMethod))
         {
-            DiagnosticHelper.ReportDiagnostic(context.GeneratorContext, DiagnosticSeverity.Warning, "There is no read method for this type, attribute will be ignored.", syntax);
+            DiagnosticHelper.ReportDiagnostic(context.GeneratorContext, DiagnosticSeverity.Warning,
+                "There is no read method for this type, attribute will be ignored.", syntax);
             return false;
         }
 

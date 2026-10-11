@@ -26,7 +26,8 @@ public abstract class TemplateStructurePiece : StructurePiece
     {
     }
 
-    private TemplateStructurePiece(int genDepth, StructureTemplate template, string templateName, StructurePlaceSettings settings, Vector templatePosition)
+    private TemplateStructurePiece(int genDepth, StructureTemplate template, string templateName,
+        StructurePlaceSettings settings, Vector templatePosition)
         : base(genDepth, template.GetBoundingBox(settings, templatePosition))
     {
         this.Orientation = BlockFace.North;

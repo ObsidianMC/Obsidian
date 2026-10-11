@@ -14,6 +14,11 @@ public sealed partial class FinishConfigurationPacket
 
         client.SetState(ClientState.Play);
         await player.LoadAsync();
+
+        // An integrated server opened to LAN forces its game mode on players who join.
+        if (((Server)server).Integrated?.GetForcedGameMode(player.Level.LevelData) is GameMode forcedGameMode)
+            player.GameMode = forcedGameMode;
+
         if (!server.AddPlayer(player))
         {
             await player.DisconnectAsync("Unable to complete login due to a server error. Please try again or contact an administrator.");
@@ -21,12 +26,14 @@ public sealed partial class FinishConfigurationPacket
             return;
         }
 
-        if (!CodecRegistry.TryGetDimension(player.Level.DimensionName, out var codec) && !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
+        if (!CodecRegistry.TryGetDimension(player.Level.DimensionName, out var codec)
+            && !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
             throw new UnreachableException("Failed to retrieve proper dimension for player.");
 
         await client.QueuePacketAsync(new LoginPacket
         {
             EntityId = player.EntityId,
+            Hardcore = player.Level.LevelData.Hardcore,
             ViewDistance = server.Configuration.ViewDistance,
             SimulationDistance = server.Configuration.SimulationDistance,
             DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
@@ -43,6 +50,9 @@ public sealed partial class FinishConfigurationPacket
             EnableRespawnScreen = true,
         });
 
+        // Like vanilla's PlayerList.placeNewPlayer, the player learns the world's difficulty right after joining.
+        await client.QueuePacketAsync(ChangeDifficultyPacket.Of(server.DefaultWorld.LevelData));
+
         var spawnLevel = player.Level is IDimension dimension ? dimension.ParentWorld : player.Level;
         await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
         {
@@ -50,9 +60,15 @@ public sealed partial class FinishConfigurationPacket
             Pos = (Vector)spawnLevel.LevelData.SpawnPosition.Floor()
         }, 0, 0));
         await client.QueuePacketAsync(new SetTimePacket(player.Level.LevelData.Time, player.Level.LevelData.DayTime, true));
-        await client.QueuePacketAsync(new GameEventPacket(player.Level.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        await client.QueuePacketAsync(new GameEventPacket(player.Level.LevelData.Raining
+            ? ChangeGameStateReason.BeginRaining
+            : ChangeGameStateReason.EndRaining));
 
         await client.QueuePacketAsync(CustomPayloadPacket.ClientboundPlay with { Channel = "minecraft:brand", PluginData = server.BrandData });
+
+        // Like vanilla's PlayerList.placeNewPlayer, the player learns their permission level before the commands.
+        var permissionLevel = ((OperatorList)server.Operators).GetPermissionLevel(player);
+        await client.QueuePacketAsync(EntityEventPacket.PermissionLevel(player.EntityId, permissionLevel));
         await client.QueuePacketAsync(CommandsRegistry.Packet);
         await client.QueuePacketAsync(new RecipeBookSettingsPacket());
         await client.QueuePacketAsync(new RecipeBookAddPacket());

@@ -982,7 +982,8 @@ public sealed class StructureTemplate
         public IReadOnlyList<JigsawBlockInfo> RotatedJigsaws(StructureRotation rotation) =>
             this.rotatedJigsaws[(int)rotation] ??= [.. this.Jigsaws.Select(jigsaw => jigsaw with
             {
-                Info = new StructureBlockInfo(Transform(jigsaw.Info.Position, rotation, Vector.Zero), jigsaw.Info.Block.Rotate(rotation), jigsaw.Info.Nbt)
+                Info = new StructureBlockInfo(Transform(jigsaw.Info.Position, rotation, Vector.Zero),
+                    jigsaw.Info.Block.Rotate(rotation), jigsaw.Info.Nbt)
             })];
 
         public List<StructureBlockInfo> BlocksOf(Material material) =>

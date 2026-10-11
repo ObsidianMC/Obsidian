@@ -11,7 +11,7 @@ public sealed class PlayerChatMessageHeader
 
     public required string PlainMessage { get; init; }
 
-    public bool FormattedMessagePresent => this.FormattedMessage != null;
+    public bool FormattedMessagePresent => this.FormattedMessage is not null;
 
     public ChatMessage? FormattedMessage { get; init; }
 

@@ -1,0 +1,107 @@
+// @map MC_BuiltInRegistries_REGISTRY net.minecraft.core.registries.BuiltInRegistries#REGISTRY
+// @map MC_SharedConstants_tryDetectVersion net.minecraft.SharedConstants#tryDetectVersion()
+// @map MC_Bootstrap_bootStrap net.minecraft.server.Bootstrap#bootStrap()
+// @map MC_MappedRegistry_freeze net.minecraft.core.MappedRegistry#freeze()
+// @map MC_RegistryAccess_fromRegistryOfRegistries net.minecraft.core.RegistryAccess#fromRegistryOfRegistries(net.minecraft.core.Registry)
+// @map MC_RegistryAccess_registries net.minecraft.core.RegistryAccess#registries()
+// @map MC_RegistryAccess_RegistryEntry_value net.minecraft.core.RegistryAccess$RegistryEntry#value()
+// @map MC_RegistryOps_create net.minecraft.resources.RegistryOps#create(com.mojang.serialization.DynamicOps,net.minecraft.core.HolderLookup$Provider)
+// @map MC_Registry_getId net.minecraft.core.Registry#getId(java.lang.Object)
+// @map MC_Registry_getKey net.minecraft.core.Registry#getKey(java.lang.Object)
+// @map MC_Identifier_getPath net.minecraft.resources.Identifier#getPath()
+// @map MC_MobEffect_getColor net.minecraft.world.effect.MobEffect#getColor()
+// @map MC_MobEffect_isBeneficial net.minecraft.world.effect.MobEffect#isBeneficial()
+// @map MC_StreamEncoder_encode net.minecraft.network.codec.StreamEncoder#encode(java.lang.Object,java.lang.Object)
+// @map MC_Ingredient_of net.minecraft.world.item.crafting.Ingredient#of(net.minecraft.world.level.ItemLike[])
+// @map MC_BuiltInRegistries_MOB_EFFECT net.minecraft.core.registries.BuiltInRegistries#MOB_EFFECT
+// @map MC_Registries_TRIM_PATTERN net.minecraft.core.registries.Registries#TRIM_PATTERN
+// @map MC_RecipeDisplay_CODEC net.minecraft.world.item.crafting.display.RecipeDisplay#CODEC
+// @map MC_RecipeDisplay_STREAM_CODEC net.minecraft.world.item.crafting.display.RecipeDisplay#STREAM_CODEC
+// @map MC_RecipeBookCategories_CRAFTING_MISC net.minecraft.world.item.crafting.RecipeBookCategories#CRAFTING_MISC
+// @map MC_SlotDisplay_CODEC net.minecraft.world.item.crafting.display.SlotDisplay#CODEC
+// @map MC_SlotDisplay_STREAM_CODEC net.minecraft.world.item.crafting.display.SlotDisplay#STREAM_CODEC
+// @map MC_Items_OAK_PLANKS net.minecraft.world.item.Items#OAK_PLANKS
+// @map MC_Items_BIRCH_PLANKS net.minecraft.world.item.Items#BIRCH_PLANKS
+// @map MC_ClientboundRecipeBookAddPacket_Entry_STREAM_CODEC net.minecraft.network.protocol.game.ClientboundRecipeBookAddPacket$Entry#STREAM_CODEC
+// @map MC_RegistryAccess_ImmutableRegistryAccess net.minecraft.core.RegistryAccess$ImmutableRegistryAccess
+// @map MC_ClientboundRecipeBookAddPacket_Entry net.minecraft.network.protocol.game.ClientboundRecipeBookAddPacket$Entry
+// @map MC_RegistryFriendlyByteBuf net.minecraft.network.RegistryFriendlyByteBuf
+// @map MC_RecipeBookCategories net.minecraft.world.item.crafting.RecipeBookCategories
+// @map MC_RecipeDisplayEntry net.minecraft.world.item.crafting.display.RecipeDisplayEntry
+// @map MC_BuiltInRegistries net.minecraft.core.registries.BuiltInRegistries
+// @map MC_RecipeDisplayId net.minecraft.world.item.crafting.display.RecipeDisplayId
+// @map MC_SharedConstants net.minecraft.SharedConstants
+// @map MC_RegistryAccess net.minecraft.core.RegistryAccess
+// @map MC_MappedRegistry net.minecraft.core.MappedRegistry
+// @map MC_RecipeDisplay net.minecraft.world.item.crafting.display.RecipeDisplay
+// @map MC_RegistryOps net.minecraft.resources.RegistryOps
+// @map MC_TrimPattern net.minecraft.world.item.equipment.trim.TrimPattern
+// @map MC_SlotDisplay net.minecraft.world.item.crafting.display.SlotDisplay
+// @map MC_Ingredient net.minecraft.world.item.crafting.Ingredient
+// @map MC_Registries net.minecraft.core.registries.Registries
+// @map MC_Bootstrap net.minecraft.server.Bootstrap
+// @map MC_Registry net.minecraft.core.Registry
+// @map MC_Items net.minecraft.world.item.Items
+import com.google.gson.*;
+import io.netty.buffer.*;
+import java.nio.file.*;
+import com.mojang.serialization.JsonOps;
+
+/** Build-time protocol-774 capture using the installed client's public codecs; no game assets are exported. */
+class HudFixtures {
+    public static void main(String[] args) throws Exception {
+        MC_SharedConstants.MC_SharedConstants_tryDetectVersion();
+        MC_Bootstrap.MC_Bootstrap_bootStrap();
+        var trimPatterns = new MC_MappedRegistry<MC_TrimPattern>(MC_Registries.MC_Registries_TRIM_PATTERN, com.mojang.serialization.Lifecycle.stable());
+        trimPatterns.MC_MappedRegistry_freeze();
+        var registries = new java.util.ArrayList<MC_Registry<?>>();
+        MC_RegistryAccess.MC_RegistryAccess_fromRegistryOfRegistries(MC_BuiltInRegistries.MC_BuiltInRegistries_REGISTRY).MC_RegistryAccess_registries().forEach(entry -> registries.add(entry.MC_RegistryAccess_RegistryEntry_value()));
+        registries.add(trimPatterns);
+        var access = new MC_RegistryAccess_ImmutableRegistryAccess(registries);
+        var ops = MC_RegistryOps.MC_RegistryOps_create(JsonOps.INSTANCE, access);
+        var effects = new JsonArray();
+        for (var effect : MC_BuiltInRegistries.MC_BuiltInRegistries_MOB_EFFECT) {
+            var row = new JsonObject();
+            row.addProperty("id", MC_BuiltInRegistries.MC_BuiltInRegistries_MOB_EFFECT.MC_Registry_getId(effect));
+            row.addProperty("name", MC_BuiltInRegistries.MC_BuiltInRegistries_MOB_EFFECT.MC_Registry_getKey(effect).MC_Identifier_getPath());
+            row.addProperty("color", effect.MC_MobEffect_getColor());
+            row.addProperty("beneficial", effect.MC_MobEffect_isBeneficial());
+            effects.add(row);
+        }
+        String item = "{\"type\":\"minecraft:item\",\"item\":\"minecraft:oak_planks\"}";
+        String result = "{\"type\":\"minecraft:item_stack\",\"item\":{\"id\":\"minecraft:crafting_table\",\"count\":1}}";
+        String station = "{\"type\":\"minecraft:item\",\"item\":\"minecraft:crafting_table\"}";
+        String tag = "{\"type\":\"minecraft:tag\",\"tag\":\"minecraft:planks\"}";
+        String composite = "{\"type\":\"minecraft:composite\",\"contents\":[" + item + "," + tag + "]}";
+        String remainder = "{\"type\":\"minecraft:with_remainder\",\"input\":" + item + ",\"remainder\":{\"type\":\"minecraft:empty\"}}";
+        String tail = ",\"result\":" + result + ",\"crafting_station\":" + station + "}";
+        String[] inputs = {
+            "{\"type\":\"minecraft:crafting_shapeless\",\"ingredients\":[" + composite + "," + remainder + "]" + tail,
+            "{\"type\":\"minecraft:crafting_shaped\",\"width\":2,\"height\":2,\"ingredients\":[" + String.join(",", item,item,item,item) + "]" + tail,
+            "{\"type\":\"minecraft:furnace\",\"ingredient\":" + tag + ",\"fuel\":{\"type\":\"minecraft:any_fuel\"},\"duration\":200,\"experience\":0.7" + tail,
+            "{\"type\":\"minecraft:stonecutter\",\"input\":" + item + tail,
+            "{\"type\":\"minecraft:smithing\",\"template\":" + item + ",\"base\":" + item + ",\"addition\":" + tag + tail
+        };
+        var recipes = new JsonArray();
+        for (String input : inputs) {
+            var json = JsonParser.parseString(input);
+            var recipe = MC_RecipeDisplay.MC_RecipeDisplay_CODEC.parse(ops, json).getOrThrow();
+            var buffer = new MC_RegistryFriendlyByteBuf(Unpooled.buffer(), access);
+            MC_RecipeDisplay.MC_RecipeDisplay_STREAM_CODEC.MC_StreamEncoder_encode(buffer, recipe);
+            var row = new JsonObject(); row.add("input", json); row.addProperty("wire", ByteBufUtil.hexDump(buffer));
+            buffer.clear();
+            var requirements = java.util.Optional.of(java.util.List.of(MC_Ingredient.MC_Ingredient_of(MC_Items.MC_Items_OAK_PLANKS, MC_Items.MC_Items_BIRCH_PLANKS), MC_Ingredient.MC_Ingredient_of(MC_Items.MC_Items_OAK_PLANKS)));
+            var entry = new MC_RecipeDisplayEntry(new MC_RecipeDisplayId(42 + recipes.size()), recipe, java.util.OptionalInt.of(7), MC_RecipeBookCategories.MC_RecipeBookCategories_CRAFTING_MISC, requirements);
+            ((MC_ClientboundRecipeBookAddPacket_Entry)null).MC_ClientboundRecipeBookAddPacket_Entry_STREAM_CODEC.MC_StreamEncoder_encode(buffer, new MC_ClientboundRecipeBookAddPacket_Entry(entry, true, true));
+            row.addProperty("entry", ByteBufUtil.hexDump(buffer));
+            recipes.add(row); buffer.release();
+        }
+        var resultJson = new JsonObject(); resultJson.add("effects", effects); resultJson.add("recipes", recipes);
+        var trimInput = JsonParser.parseString("{\"type\":\"minecraft:smithing_trim\",\"base\":" + item + ",\"material\":" + item + ",\"pattern\":{\"asset_id\":\"minecraft:sentry\",\"description\":{\"text\":\"Fixture\"},\"decal\":false}}");
+        var trim = MC_SlotDisplay.MC_SlotDisplay_CODEC.parse(ops, trimInput).getOrThrow();
+        var trimBuffer = new MC_RegistryFriendlyByteBuf(Unpooled.buffer(), access);
+        MC_SlotDisplay.MC_SlotDisplay_STREAM_CODEC.MC_StreamEncoder_encode(trimBuffer, trim);
+        resultJson.addProperty("trimSlot", ByteBufUtil.hexDump(trimBuffer)); trimBuffer.release();
+        Files.writeString(Path.of(args[0]), new GsonBuilder().setPrettyPrinting().create().toJson(resultJson));
+    }
+}
