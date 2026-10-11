@@ -1,5 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.Registries;
+using Obsidian.API.World.Generator.DensityFunctions;
+using Obsidian.API.World.Generator.Noise;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Structures;
@@ -225,6 +227,44 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
             .ToArray();
 
         Assert.Equal(expectedLight, Convert.ToHexStringLower(SHA256.HashData(light)));
+    }
+
+    [Fact]
+    public void Cache2DOfYDependentFunctionKeepsFirstCornerOfColumn()
+    {
+        // Vanilla's cache_2d keeps its argument's value at the first position sampled in a column, which is the lowest
+        // corner, even when the argument varies with Y. A range choice sending upper corners to the same cache first
+        // must not change which corner primes it.
+        var y = new YClampedGradientDensityFunction { FromY = -64, ToY = 320, FromValue = -64, ToValue = 320 };
+        var cache = new Cache2DDensityFunction { Argument = y };
+        var finalDensity = new InterpolatedDensityFunction
+        {
+            Argument = new RangeChoiceDensityFunction { Input = y, MinInclusive = 0, MaxExclusive = 1000, WhenInRange = cache, WhenOutOfRange = cache }
+        };
+
+        var overworld = NoiseRegistry.NoiseSettings.All["minecraft:overworld"];
+        var zero = new ConstantDensityFunction { Argument = 0 };
+        var settings = new NoiseSetting
+        {
+            DefaultBlock = overworld.DefaultBlock,
+            DefaultFluid = overworld.DefaultFluid,
+            Noise = overworld.Noise,
+            SeaLevel = overworld.SeaLevel,
+            NoiseRouter = new NoiseRouter
+            {
+                Barrier = zero, Continents = zero, Depth = zero, Erosion = zero, FinalDensity = finalDensity, FluidLevelFloodedness = zero,
+                FluidLevelSpread = zero, PreliminarySurfaceLevel = zero, Lava = zero, Ridges = zero, Temperature = zero, Vegetation = zero,
+                VeinGap = zero, VeinRidged = zero, VeinToggle = zero
+            }
+        };
+
+        var chunk = new NoiseChunk(new RandomState(settings, 0L), 0, 0);
+        var values = new double[chunk.CellSize];
+        for (var cellY = 0; cellY < chunk.CellCountY; cellY++)
+        {
+            chunk.FillFinalDensity(0, cellY, 0, values);
+            Assert.All(values, value => Assert.Equal(-64.0, value));
+        }
     }
 
     private static string BlockNames(IChunk chunk)

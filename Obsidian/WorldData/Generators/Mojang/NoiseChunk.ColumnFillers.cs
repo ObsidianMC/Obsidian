@@ -13,6 +13,11 @@ internal sealed partial class NoiseChunk
     // Every corner Y index of a column, in order.
     private int[]? allCornerIndices;
 
+    // Set while mapping the router when a cache_2d wraps a function that varies with Y. Vanilla's cache keeps that function's
+    // value at the first position sampled in a column, and only sampling the corners one by one, bottom up, visits them in
+    // vanilla's order: column fillers skip arguments corner by corner and fill branches one after the other.
+    private bool hasYDependentCache2D;
+
     /// <summary>
     /// Samples <paramref name="filler"/> at every corner of the column at (<paramref name="blockX"/>, <paramref name="blockZ"/>).
     /// </summary>
@@ -24,10 +29,10 @@ internal sealed partial class NoiseChunk
 
     /// <summary>
     /// The filler sampling a mapped function at the corners of a column, or <c>null</c> where noises can't be sampled in
-    /// lanes, which is what makes filling a column worth it.
+    /// lanes, which is what makes filling a column worth it, or where the router has a Y-dependent cache_2d.
     /// </summary>
     private ColumnFiller? CompileForColumns(IDensityFunction function) =>
-        ImprovedNoiseLanes.IsSupported ? this.CompileColumn(function) : null;
+        ImprovedNoiseLanes.IsSupported && !this.hasYDependentCache2D ? this.CompileColumn(function) : null;
 
     private ColumnFiller CompileColumn(IDensityFunction function)
     {
@@ -37,7 +42,8 @@ internal sealed partial class NoiseChunk
         filler = function switch
         {
             ConstantDensityFunction constant => new ConstantColumn(constant.Argument),
-            // Their values don't depend on Y; asking them at the first corner also keeps their caches as sampling does.
+            // Their values don't depend on Y (see hasYDependentCache2D); asking them at the first corner also keeps their
+            // caches as sampling does.
             FlatCache flatCache => new FlatCacheColumn(flatCache),
             ColumnCache or Cache2D => new YIndependentColumn(function),
             CacheOnce cacheOnce => new CachedColumn(this.CompileColumn(cacheOnce.Argument), this.CellCountY + 1),

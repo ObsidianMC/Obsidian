@@ -435,6 +435,9 @@ internal sealed partial class NoiseChunk
         {
             if (!this.mapped.TryGetValue(function, out var result))
             {
+                if (function is Cache2DDensityFunction && !this.chunk.RandomState.IsYIndependent(function))
+                    this.chunk.hasYDependentCache2D = true;
+
                 // Interpolators are told which router function they stand for, which keys the shared corners.
                 result = function is InterpolatedDensityFunction interpolated
                     ? this.chunk.Track(new CellInterpolator(this.chunk, this.Map(interpolated.Argument), this.order, interpolated))
