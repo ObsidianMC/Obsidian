@@ -92,9 +92,14 @@ public interface ILevel : IAsyncDisposable
     public IEntity SpawnEntity(VectorD position, EntityType type);
 
     /// <summary>
-    /// Spawns an entity of a plugin's entity type.
+    /// Spawns an entity of a plugin's entity type, moving at <paramref name="motion"/> blocks per tick; a projectile
+    /// remembers <paramref name="owner"/> as what shot it.
     /// </summary>
-    public IEntity SpawnEntity(VectorD position, Entities.EntityDefinition definition);
+    public IEntity SpawnEntity(
+        VectorD position,
+        Entities.EntityDefinition definition,
+        VectorD motion = default,
+        IEntity? owner = null);
     public IEntity SpawnEntity(IEntity entity);
     public IEntity SpawnFallingBlock(VectorD position, Material mat);
     public void SpawnExperienceOrbs(VectorD position, short count);

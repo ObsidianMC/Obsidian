@@ -77,10 +77,13 @@ var golem = registry.RegisterEntity("ruby:golem", new EntityProperties
 level.SpawnEntity(position, golem);
 ```
 
-A plugin's entities are mobs: they fall, take damage and run the goals given through `IEntity.GoalController`, and
-call the type's `IEntityBehavior` each tick and when a player uses them. The client mod's entity should be a mob too,
-so that their data matches. They're saved with the type's identifier; while the plugin is gone, saved ones stay as
-they were.
+A plugin's entities are mobs by default: they fall, take damage and run the goals given through
+`IEntity.GoalController`. With `Kind = EntityKind.Projectile` they fly along the motion they're spawned with, slowed by
+drag and pulled down by `Gravity`, and call `IEntityBehavior.HitAsync` on the first block or living entity in their
+way, which removes them; spawn them with `level.SpawnEntity(position, type, motion, owner)`. With `EntityKind.Object`
+they fall and rest where they land. Every kind calls the type's behaviour each tick and when a player uses it. The
+client mod's entity should be of the same kind, so that their data matches. Entities are saved with the type's
+identifier; while the plugin is gone, saved ones stay as they were.
 
 ## Tags
 

@@ -107,7 +107,7 @@ public partial class Mob
     /// Drops what an unloading plugin, whose code is in <paramref name="context"/>, gave the mob through the API:
     /// goals, a navigator or a goal controller, which would keep the plugin loaded. Run on the mob's level's tick.
     /// </summary>
-    internal void ReleasePluginObjects(AssemblyLoadContext context)
+    internal override void ReleasePluginObjects(AssemblyLoadContext context)
     {
         goals.RemoveGoalsFrom(context);
         TargetGoals.RemoveGoalsFrom(context);
@@ -119,9 +119,6 @@ public partial class Mob
 
         if (IsFrom(Navigator, context))
             Navigator = this is PathfinderMob pathfinder ? new Navigator(pathfinder) : null;
-
-        static bool IsFrom(object? value, AssemblyLoadContext context) =>
-            value is not null && AssemblyLoadContext.GetLoadContext(value.GetType().Assembly) == context;
     }
 
     protected virtual void RegisterGoals(GoalSelector actionGoals, GoalSelector targetGoals) { }

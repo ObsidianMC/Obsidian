@@ -141,10 +141,10 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         CheckIdentifier(container, identifier);
 
         properties ??= new API.Entities.EntityProperties();
-        if (properties.Width <= 0 || properties.Height <= 0 || properties.MaxHealth <= 0)
-            throw new ArgumentException("An entity needs a size and health.", nameof(properties));
+        if (properties.Width <= 0 || properties.Height <= 0 || properties.MaxHealth <= 0 || properties.Gravity < 0)
+            throw new ArgumentException("An entity needs a size, health and no negative gravity.", nameof(properties));
 
-        var definition = EntityDefinitionsRegistry.Register(identifier);
+        var definition = EntityDefinitionsRegistry.Register(identifier, properties.Kind);
 
         if (!EntityDefinitionsRegistry.TryBind(definition, properties, container, () => container.IsClosing))
             throw new InvalidOperationException($"{container.Info.Name} is unloading.");

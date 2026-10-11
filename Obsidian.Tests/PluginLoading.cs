@@ -159,6 +159,11 @@ public sealed class PluginLoading : IDisposable
         Assert.Equal("probe:golem", savedId);
         Assert.Same(golem, EntityNbt.Load(saved, null!)?.Definition);
 
+        // A projectile type's entities load as projectiles.
+        Assert.True(EntityDefinitionsRegistry.TryGet("probe:pebble", out var pebble));
+        var thrown = EntityNbt.Save(new PluginEntity(pebble) { Level = null! })!;
+        Assert.IsType<PluginEntity>(EntityNbt.Load(thrown, null!));
+
         // Only the reloaded plugin's handler runs: unloading removed the old one.
         AppContext.SetData(ProbePlugin.CallsKey, 0);
         await dispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(server, new ServerStatus(server, "")));
@@ -329,6 +334,7 @@ public sealed class ProbePlugin : PluginBase
         pluginRegistry.AddToTag("block", "probe:shiny", "probe:ore");
         pluginRegistry.RegisterEntity("probe:golem", new EntityProperties { Width = 1.4f, Height = 2.7f });
         pluginRegistry.AddToTag("entity_type", "probe:golems", "probe:golem");
+        pluginRegistry.RegisterEntity("probe:pebble", new EntityProperties { Kind = EntityKind.Projectile });
 
         // Its blocks generated from data/probe/blocks.
         ProbeBlocks.Register(pluginRegistry);

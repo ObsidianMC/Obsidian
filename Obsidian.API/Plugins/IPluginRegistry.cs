@@ -74,16 +74,19 @@ public interface IPluginRegistry
 
     /// <summary>
     /// Registers an entity type, like a NeoForge mod's: its identifier is in the plugin's namespace, and it gets the
-    /// next free entity type id. Its entities are mobs, spawned with <see cref="ILevel.SpawnEntity(VectorD,
-    /// Entities.EntityDefinition)"/>. Registering it again, e.g. when the plugin reloads, gives back the same type with
-    /// the new properties and behaviour.
+    /// next free entity type id. Its entities are mobs, projectiles or objects (see <see cref="Entities.EntityKind"/>),
+    /// spawned with <see cref="ILevel.SpawnEntity(VectorD, Entities.EntityDefinition, VectorD, IEntity?)"/>.
+    /// Registering it again, e.g. when the plugin reloads, gives back the same type with the new properties and
+    /// behaviour; its kind can't change until the server restarts.
     /// </summary>
     /// <remarks>
-    /// Like a plugin's blocks, its entity types need NeoForge or Fabric clients with a matching mod, whose entity is a
-    /// mob, and stay registered until the server stops. Saved entities of a type whose plugin is gone are kept as they
-    /// were saved.
+    /// Like a plugin's blocks, its entity types need NeoForge or Fabric clients with a matching mod, whose entity is
+    /// of the same kind, and stay registered until the server stops. Saved entities of a type whose plugin is gone are
+    /// kept as they were saved.
     /// </remarks>
-    /// <exception cref="ArgumentException">The identifier isn't in the plugin's namespace, or isn't valid.</exception>
+    /// <exception cref="ArgumentException">
+    /// The identifier isn't in the plugin's namespace or isn't valid, or the type's kind changed.
+    /// </exception>
     public Entities.EntityDefinition RegisterEntity(string identifier, Entities.EntityProperties? properties = null);
 
     /// <summary>

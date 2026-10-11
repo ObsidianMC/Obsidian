@@ -57,6 +57,28 @@ public class Entity : IEquatable<Entity>, IEntity
         ?? (int)(this.Type ?? throw new InvalidOperationException($"Entity {this.EntityId} has no type."));
 
     /// <summary>
+    /// Drops what an unloading plugin, whose code is in <paramref name="context"/>, gave the entity through the API: a
+    /// navigator or goal controller, which would keep the plugin loaded. Run on the entity's level's tick.
+    /// </summary>
+    internal virtual void ReleasePluginObjects(System.Runtime.Loader.AssemblyLoadContext context)
+    {
+        if (this.GoalController is AI.GoalSelector selector)
+            selector.RemoveGoalsFrom(context);
+        else if (IsFrom(this.GoalController, context))
+            this.GoalController = null;
+
+        if (IsFrom(this.Navigator, context))
+            this.Navigator = null;
+    }
+
+    /// <summary>
+    /// Whether an object's code is in <paramref name="context"/>.
+    /// </summary>
+    internal static bool IsFrom(object? value, System.Runtime.Loader.AssemblyLoadContext context) =>
+        value is not null
+        && System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(value.GetType().Assembly) == context;
+
+    /// <summary>
     /// Whether an entity's type, vanilla's or a plugin's, is in an entity type tag.
     /// </summary>
     internal static bool IsIn(IEntity entity, Tag tag) => entity.Definition?.Id is int id

@@ -58,7 +58,22 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
     [EventPriority(Priority = Priority.Internal)]
     public async Task OnEntityInteract(EntityInteractEventArgs e)
     {
-        if (e.IsCancelled || e.TargetPosition != null || e.Entity is not Mob { HasAi: true } mob)
+        if (e.IsCancelled || e.TargetPosition != null)
+            return;
+
+        // A plugin's projectile or object does what its type's behaviour does, on its level's tick like a mob.
+        if (e.Entity is PluginEntity pluginEntity)
+        {
+            ValueTask Use() => pluginEntity.InteractAsync(e.Player, e.Hand ?? InteractionHand.MainHand);
+            if (pluginEntity.Level is Obsidian.WorldData.AbstractLevel entityLevel)
+                entityLevel.EnqueueEntityAction(Use);
+            else
+                await Use();
+
+            return;
+        }
+
+        if (e.Entity is not Mob { HasAi: true } mob)
             return;
 
         ValueTask Feed() => mob.InteractAsync(e.Player, e.Hand ?? InteractionHand.MainHand);

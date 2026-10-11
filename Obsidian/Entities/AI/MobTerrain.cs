@@ -39,7 +39,16 @@ internal sealed class MobTerrain(ILevel level)
         return concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetBlock(position);
     }
 
-    public IEnumerable<BoundingBox> GetCollisions(BoundingBox bounds, bool ignoreWoodenDoors = false)
+    public IEnumerable<BoundingBox> GetCollisions(BoundingBox bounds, bool ignoreWoodenDoors = false) =>
+        GetBlockCollisions(bounds, ignoreWoodenDoors).Select(collision => collision.Shape);
+
+    /// <summary>
+    /// The collision shapes near <paramref name="bounds"/>, each with the position of the block it belongs to, which
+    /// it may reach out of (a fence above, a pitcher crop below).
+    /// </summary>
+    public IEnumerable<(BoundingBox Shape, Vector Block)> GetBlockCollisions(
+        BoundingBox bounds,
+        bool ignoreWoodenDoors = false)
     {
         // Shapes such as fences can extend above their block's unit cube.
         for (var x = (int)Math.Floor(bounds.Min.X); x <= (int)Math.Floor(bounds.Max.X); x++)
@@ -50,14 +59,14 @@ internal sealed class MobTerrain(ILevel level)
             var block = GetBlock(position);
             if (block == null)
             {
-                yield return new BoundingBox(new VectorD(x, y, z), new VectorD(x + 1, y + 1, z + 1));
+                yield return (new BoundingBox(new VectorD(x, y, z), new VectorD(x + 1, y + 1, z + 1)), position);
                 continue;
             }
             if (ignoreWoodenDoors && TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId))
                 continue;
 
             foreach (var shape in BlockCollisionShapes.Get(block))
-                yield return shape.OffsetBy(new VectorD(x, y, z));
+                yield return (shape.OffsetBy(new VectorD(x, y, z)), position);
         }
     }
 

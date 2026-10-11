@@ -36,18 +36,25 @@ internal static class EntityDefinitionsRegistry
     /// <summary>
     /// Registers an entity type, or returns the one registered before under the same identifier, which keeps its id.
     /// </summary>
-    /// <exception cref="ArgumentException">The identifier is in vanilla's namespace.</exception>
-    public static EntityDefinition Register(string identifier)
+    /// <exception cref="ArgumentException">
+    /// The identifier is in vanilla's namespace, or the type was registered before as another kind.
+    /// </exception>
+    public static EntityDefinition Register(string identifier, EntityKind kind)
     {
         if (identifier.StartsWith("minecraft:", StringComparison.Ordinal))
             throw new ArgumentException($"{identifier} is in vanilla's namespace.", nameof(identifier));
 
         lock (registering)
         {
+            // Its entities exist as one kind, mobs or not, until the server restarts.
             if (byName.TryGetValue(identifier, out var existing))
-                return existing;
+            {
+                return existing.Kind == kind
+                    ? existing
+                    : throw new ArgumentException($"{identifier}'s kind can't change until the server restarts.");
+            }
 
-            var definition = new EntityDefinition(VanillaCount + definitions.Length, identifier);
+            var definition = new EntityDefinition(VanillaCount + definitions.Length, identifier, kind);
 
             definitions = [.. definitions, definition];
             byName = definitions.ToFrozenDictionary(entry => entry.Identifier, StringComparer.OrdinalIgnoreCase);

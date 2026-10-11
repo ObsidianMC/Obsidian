@@ -908,13 +908,23 @@ public abstract partial class AbstractLevel : ILevel
             .Spawn();
     }
 
-    public IEntity SpawnEntity(VectorD position, API.Entities.EntityDefinition definition) =>
-        this.SpawnEntity(new PluginMob(definition)
-        {
-            Level = this,
-            EntityId = Server.GetNextEntityId(),
-            Position = position
-        });
+    public IEntity SpawnEntity(
+        VectorD position,
+        API.Entities.EntityDefinition definition,
+        VectorD motion = default,
+        IEntity? owner = null)
+    {
+        var entity = PluginEntity.Create(definition, this);
+
+        entity.EntityId = Server.GetNextEntityId();
+        entity.Position = position;
+        entity.Motion = motion;
+
+        if (entity is PluginEntity projectile)
+            projectile.SetOwner(owner);
+
+        return this.SpawnEntity(entity);
+    }
 
     public IEntity SpawnEntity(IEntity entity)
     {

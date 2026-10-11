@@ -42,7 +42,7 @@ internal static class EntityNbt
 
         // A plugin's entity, while its plugin is loaded; one whose plugin is gone stays as it was saved.
         if (EntityDefinitionsRegistry.TryGet(id.Value!, out var definition))
-            return definition.Binding is null ? null : Restore(new PluginMob(definition) { Level = level }, tag);
+            return definition.Binding is null ? null : Restore(PluginEntity.Create(definition, level), tag);
 
         if (!TryParseType(id.Value, out var type) || !IsSaved(type))
             return null;

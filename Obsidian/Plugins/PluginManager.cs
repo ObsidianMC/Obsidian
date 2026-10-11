@@ -580,7 +580,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         return files;
     }
 
-    // Has every loaded mob drop the goals, navigators and goal controllers plugins gave it from the load context, on
+    // Has every loaded entity drop the goals, navigators and goal controllers plugins gave it from the load context, on
     // its level's tick, where its AI runs. The queued actions hold the context weakly: a level that doesn't tick would
     // keep it loaded otherwise, and once nothing else holds it, no mob has anything to drop.
     private void ReleaseFromMobs(PluginLoadContext loadContext)
@@ -598,21 +598,21 @@ public sealed partial class PluginManager : IAsyncDisposable
                 if (!weakContext.TryGetTarget(out var context))
                     return default;
 
-                var mobs = level.Regions.Values
+                var entities = level.Regions.Values
                     .OfType<WorldData.Region>()
                     .SelectMany(region => region.Entities.Values)
-                    .OfType<Entities.Mob>();
+                    .OfType<Entities.Entity>();
 
-                // One mob failing mustn't keep the others holding the plugin.
-                foreach (var mob in mobs)
+                // One entity failing mustn't keep the others holding the plugin.
+                foreach (var entity in entities)
                 {
                     try
                     {
-                        mob.ReleasePluginObjects(context);
+                        entity.ReleasePluginObjects(context);
                     }
                     catch (Exception ex)
                     {
-                        Log.MobReleaseFailed(this.logger, ex, mob.EntityId);
+                        Log.MobReleaseFailed(this.logger, ex, entity.EntityId);
                     }
                 }
 
@@ -678,7 +678,8 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     private static partial class Log
     {
-        [LoggerMessage(Level = LogLevel.Error, Message = "Couldn't drop an unloaded plugin's AI from mob {EntityId}")]
+        [LoggerMessage(Level = LogLevel.Error,
+            Message = "Couldn't drop an unloaded plugin's AI from entity {EntityId}")]
         public static partial void MobReleaseFailed(ILogger logger, Exception exception, int entityId);
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Left out tag file {Path} of plugin {Source}")]

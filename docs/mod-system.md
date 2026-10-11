@@ -63,9 +63,11 @@ client. This document describes the design and tracks its progress. The archive 
      and a `Register` method, and `TagKey`s for a plugin's tags (see [plugin-content.md](plugin-content.md)).
    - Done for entity types: `IPluginRegistry.RegisterEntity` registers a type with an id after vanilla's, synced to
      NeoForge and Fabric clients with the `minecraft:entity_type` registry. Its entities are mobs (a `PathfinderMob`
-     with the type's size, health and speed, no goals of its own) that call its `IEntityBehavior`; they're saved by the
-     type's identifier, and kept as saved when the plugin is gone. `IEntity.Type` is null for them, and
-     `IEntity.Definition` names their type. Non-living plugin entities aren't supported yet.
+     with the type's size, health and speed, no goals of its own), projectiles (flying with gravity and drag, hitting
+     the first block or living entity in their way) or objects (falling and resting where they land), and call its
+     `IEntityBehavior`; they're saved by the type's identifier, and kept as saved when the plugin is gone.
+     `IEntity.Type` is null for them, and `IEntity.Definition` names their type. Goals, navigators and goal
+     controllers plugins give mobs through the API are dropped when the plugin unloads.
    - Next: moving `Material` call sites to items and blocks until `Material` can go; reconfiguring connected players
      when a reload changes the registered content or tags.
 3. **Data-driven content and world generation**: loading a mod's `data/` folder like a data pack (biomes, dimension

@@ -6,6 +6,12 @@ namespace Obsidian.API.Entities;
 public sealed class EntityProperties
 {
     /// <summary>
+    /// What the entities are: mobs, projectiles or objects. It can't change until the server restarts, since entities
+    /// of the type exist as one kind.
+    /// </summary>
+    public EntityKind Kind { get; init; } = EntityKind.Mob;
+
+    /// <summary>
     /// The width of the entity's hitbox, in blocks.
     /// </summary>
     public float Width { get; init; } = 0.6f;
@@ -16,7 +22,13 @@ public sealed class EntityProperties
     public float Height { get; init; } = 1.8f;
 
     /// <summary>
-    /// The health the entity spawns with.
+    /// How fast a projectile or object falls, in blocks per tick per tick: 0.03 for a snowball, 0.04 for an item, 0 to
+    /// float. Mobs fall like vanilla's.
+    /// </summary>
+    public float Gravity { get; init; } = 0.03f;
+
+    /// <summary>
+    /// The health a mob spawns with.
     /// </summary>
     public float MaxHealth { get; init; } = 20;
 
@@ -26,7 +38,8 @@ public sealed class EntityProperties
     public float MovementSpeed { get; init; } = 0.25f;
 
     /// <summary>
-    /// What the entity does each tick and when a player uses it, or null for nothing.
+    /// What the entity does each tick, when a player uses it and, for a projectile, when it hits something; or null for
+    /// nothing.
     /// </summary>
     public IEntityBehavior? Behavior { get; init; }
 }

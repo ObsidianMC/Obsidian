@@ -3,8 +3,8 @@ using Obsidian.API.Plugins;
 namespace Obsidian.API.Entities;
 
 /// <summary>
-/// A kind of entity a plugin registered with <see cref="IPluginRegistry.RegisterEntity"/>. Its entities are mobs:
-/// they have health, fall, take damage and can be given goals through <see cref="IEntity.GoalController"/>.
+/// A kind of entity a plugin registered with <see cref="IPluginRegistry.RegisterEntity"/>: mobs, projectiles or
+/// objects (see <see cref="EntityKind"/>).
 /// </summary>
 /// <remarks>
 /// The server owns the definition: it keeps its instance, identifier and id until the server stops, even when the
@@ -12,11 +12,17 @@ namespace Obsidian.API.Entities;
 /// </remarks>
 public sealed class EntityDefinition
 {
-    internal EntityDefinition(int id, string identifier)
+    internal EntityDefinition(int id, string identifier, EntityKind kind)
     {
         this.Id = id;
         this.Identifier = identifier;
+        this.Kind = kind;
     }
+
+    /// <summary>
+    /// What the type's entities are.
+    /// </summary>
+    public EntityKind Kind { get; }
 
     /// <summary>
     /// The entity type's identifier, like <c>myplugin:golem</c>.
@@ -53,8 +59,12 @@ internal sealed record EntityBinding(IPluginContainer Owner, IEntityBehavior? Be
 /// The parts of a plugin entity type's <see cref="EntityProperties"/> the server keeps: plain values, so that keeping
 /// them doesn't keep the plugin loaded.
 /// </summary>
-internal sealed record EntitySettings(float Width, float Height, float MaxHealth, float MovementSpeed)
+internal sealed record EntitySettings(float Width, float Height, float MaxHealth, float MovementSpeed, float Gravity)
 {
-    public static EntitySettings From(EntityProperties properties) =>
-        new(properties.Width, properties.Height, properties.MaxHealth, properties.MovementSpeed);
+    public static EntitySettings From(EntityProperties properties) => new(
+        properties.Width,
+        properties.Height,
+        properties.MaxHealth,
+        properties.MovementSpeed,
+        properties.Gravity);
 }
