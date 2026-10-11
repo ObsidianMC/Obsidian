@@ -78,6 +78,11 @@ public sealed partial class Server : IServer
 
     public HashSet<string> RegisteredChannels { get; } = [];
 
+    /// <summary>
+    /// The payload channels plugins registered; the plugin manager removes a plugin's when it unloads.
+    /// </summary>
+    internal Net.Payloads.PayloadChannelRegistry PayloadChannels { get; } = new();
+
     public ICommandHandler CommandHandler { get; }
     public ServerConfiguration Configuration { get; set; }
     public string Version => ServerConstants.VERSION;

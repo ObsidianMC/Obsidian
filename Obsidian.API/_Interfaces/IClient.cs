@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Networking;
 using System.ComponentModel;
 
 namespace Obsidian.API;
@@ -47,4 +48,16 @@ public interface IClient : IDisposable
     public void SetState(ClientState state);
 
     public ValueTask<bool> VerifyProfileAsync();
+
+    /// <summary>
+    /// Whether the connection may receive payloads on <paramref name="channel"/> in its current phase: a vanilla
+    /// channel, one negotiated with a NeoForge client, or one the client registered with <c>minecraft:register</c>.
+    /// </summary>
+    public bool HasChannel(string channel);
+
+    /// <summary>
+    /// Sends <paramref name="payload"/> if the connection may receive its channel (see <see cref="HasChannel"/>).
+    /// </summary>
+    /// <returns>Whether the payload was queued.</returns>
+    public ValueTask<bool> SendPayloadAsync<TPayload>(TPayload payload) where TPayload : ICustomPayload<TPayload>;
 }

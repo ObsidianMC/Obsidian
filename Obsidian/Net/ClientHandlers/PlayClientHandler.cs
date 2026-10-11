@@ -61,8 +61,13 @@ internal sealed partial class PlayClientHandler : ClientHandler
                 await HandleFromPoolAsync<ContainerClosePacket>(data);
                 break;
             case 21:
-                await HandleFromPoolAsync<CustomPayloadPacket>(data);
-                break;
+                {
+                    var payload = new CustomPayloadPacket();
+                    payload.Populate(data);
+
+                    await this.Client.Channels.HandlePayloadAsync(payload.Channel, payload.PluginData);
+                    break;
+                }
             case 25:
                 await HandleFromPoolAsync<InteractPacket>(data);
                 break;

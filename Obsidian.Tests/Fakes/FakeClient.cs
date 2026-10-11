@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
+using Obsidian.API.Networking;
 using System;
 using System.Threading.Tasks;
 
@@ -31,5 +32,8 @@ public sealed class FakeClient : IClient
     public ValueTask QueuePacketAsync(IClientboundPacket packet) => throw new NotImplementedException();
     public void SetState(ClientState state) => throw new NotImplementedException();
     public ValueTask<bool> VerifyProfileAsync() => throw new NotImplementedException();
+    public bool HasChannel(string channel) => false;
+    public ValueTask<bool> SendPayloadAsync<TPayload>(TPayload payload) where TPayload : ICustomPayload<TPayload> =>
+        ValueTask.FromResult(false);
     public void Dispose() { }
 }

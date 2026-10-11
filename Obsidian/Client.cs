@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ObjectPool;
 using Obsidian.API.Events;
+using Obsidian.API.Networking;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Integrated;
@@ -9,6 +10,7 @@ using Obsidian.Net;
 using Obsidian.Net.ClientHandlers;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Login.Clientbound;
+using Obsidian.Net.Payloads;
 using Obsidian.Services;
 using Obsidian.Utilities.Mojang;
 using System.Collections.Frozen;
@@ -152,6 +154,11 @@ public sealed partial class Client : IClient
 
     public bool Connected => this.Socket.Connected;
 
+    /// <summary>
+    /// The connection's payload channels and NeoForge handshake.
+    /// </summary>
+    internal ClientChannels Channels { get; }
+
     public Client(IEventDispatcher eventDispatcher, IServer server, ILoggerFactory loggerFactory,
         IUserCache playerCache,
         ServerMetrics serverMetrics, IServiceProvider serviceProvider, ObjectPool<SocketAsyncEventArgs> pool)
@@ -172,6 +179,8 @@ public sealed partial class Client : IClient
             { ClientState.Configuration, new ConfigurationClientHandler { Client = this } },
             { ClientState.Play, new PlayClientHandler { Client = this } }
         }.ToFrozenDictionary();
+
+        this.Channels = new ClientChannels(this, ((Server)server).PayloadChannels);
 
         packetQueue = Channel.CreateUnbounded<IClientboundPacket>(new() { SingleReader = true, SingleWriter = false });
     }
@@ -288,6 +297,11 @@ public sealed partial class Client : IClient
     }
 
     public bool SendPacket(IClientboundPacket packet) => this.SendAsync(packet);
+
+    public bool HasChannel(string channel) => this.Channels.HasChannel(channel);
+
+    public ValueTask<bool> SendPayloadAsync<TPayload>(TPayload payload) where TPayload : ICustomPayload<TPayload> =>
+        this.Channels.SendAsync(payload);
 
     /// <summary>
     /// Tells the client to compress packets from the configured size (vanilla's network compression threshold; a

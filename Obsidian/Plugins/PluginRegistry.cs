@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Events;
+using Obsidian.API.Networking;
 using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
 using Obsidian.Services;
@@ -73,6 +74,20 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         var container = this.pluginManager.GetPluginContainerByAssembly(asm);
 
         this.eventDispatcher.RegisterEvents(container);
+
+        return this;
+    }
+
+    public IPluginRegistry MapPayload<TPayload>(PayloadPhase phase, PayloadDirection direction,
+        PayloadHandler<TPayload>? handler = null, string version = "1", bool optional = false)
+        where TPayload : ICustomPayload<TPayload>
+    {
+        var asm = Assembly.GetCallingAssembly();
+
+        var container = this.pluginManager.GetPluginContainerByAssembly(asm);
+        var server = (Server)this.pluginManager.server;
+
+        server.PayloadChannels.Register(container, phase, direction, handler, version, optional);
 
         return this;
     }
