@@ -77,6 +77,9 @@ public sealed partial class Client : IClient
     // The player's leave, once it was raised; see LeaveAsync.
     private TaskCompletionSource? leaving;
 
+    // Starting a leave and tracking it happen together, so that no caller sees a leave the server doesn't track yet.
+    private readonly Lock leavingLock = new();
+
     // Set once Disconnect ran; it may be called again (a shutdown disconnecting a client that already left). Guarded by
     // lifecycleLock together with disposing and registering the client, so a login that resumes after a disconnect
     // doesn't register it again.
@@ -639,7 +642,8 @@ public sealed partial class Client : IClient
         // earlier leave finished before the switch.
         this.Player = this.CreatePlayer(player.Uuid, player.Username, this.Server.DefaultWorld);
         this.Player.SkinProperties = player.SkinProperties;
-        this.leaving = null;
+        lock (this.leavingLock)
+            this.leaving = null;
 
         var concreteServer = (Server)this.Server;
         this.Channels = new ClientChannels(this, concreteServer.PayloadChannels, concreteServer.GetModdedRegistries);
@@ -673,13 +677,19 @@ public sealed partial class Client : IClient
         // The leave waits for a tick of the player under way, so a leave from inside one isn't waited for.
         var inOwnTick = player.IsInOwnTick;
 
-        var leave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        if (Interlocked.CompareExchange(ref this.leaving, leave, null) is TaskCompletionSource started)
-            return inOwnTick ? Task.CompletedTask : started.Task;
+        TaskCompletionSource leave;
+        lock (this.leavingLock)
+        {
+            if (this.leaving is TaskCompletionSource started)
+                return inOwnTick ? Task.CompletedTask : started.Task;
 
-        // Tracked before it starts, so a shutdown that begins meanwhile still waits for it.
-        if (this.Server is Server server)
-            server.TrackLeave(leave.Task, player.Username);
+            leave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            this.leaving = leave;
+
+            // Tracked before it starts, so a shutdown, or the player joining again, that begins meanwhile waits for it.
+            if (this.Server is Server server)
+                server.TrackLeave(leave.Task, player.Username);
+        }
 
         // Raised apart from the caller's flow, so that it doesn't count as being in the caller's tick.
         using (ExecutionContext.SuppressFlow())
@@ -697,8 +707,11 @@ public sealed partial class Client : IClient
             EventResult result;
             try
             {
-                // The player's ticks stop first, so the leave saves them as the last tick left them.
+                // The player's ticks stop first, so the leave saves them as the last tick left them. A tick under way
+                // may have moved them to another level (through a portal) after they were removed, so they're removed
+                // from where they are now too.
                 await player.StopTickingAsync();
+                player.Level.TryRemovePlayer(player);
 
                 result = await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this.Server, DateTimeOffset.Now));
             }
