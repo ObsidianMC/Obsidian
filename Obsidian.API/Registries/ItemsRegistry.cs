@@ -158,6 +158,11 @@ public static partial class ItemsRegistry
 
     public static ItemStack GetSingleItem(Material mat, params List<DataComponent> components) => new(Get(mat), 1, components);
 
+    /// <summary>
+    /// A stack of one <paramref name="item"/>.
+    /// </summary>
+    public static ItemStack GetSingleItem(Item item, params List<DataComponent> components) => new(item, 1, components);
+
     public static ItemStack GetSingleItem(string unlocalizedName, params List<DataComponent> components) => new(Get(unlocalizedName), 1, components);
 
     public static Ingredient GetIngredientFromTag(string tag, short count)

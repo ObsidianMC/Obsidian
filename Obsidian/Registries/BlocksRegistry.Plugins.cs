@@ -78,10 +78,37 @@ internal static partial class BlocksRegistry
             return item is not null;
         }
 
-        item = null;
-        return block.Material is Material material
-            && ItemsRegistry.TryGet(material, out item)
-            && item != ItemsRegistry.Air;
+        return ItemsRegistry.TryGet(block.UnlocalizedName, out item) && item != ItemsRegistry.Air;
+    }
+
+    /// <summary>
+    /// The block an item places as itself: the vanilla block named like a vanilla item, or a plugin item's block.
+    /// Items placing a block named otherwise (wheat seeds placing wheat, say) aren't covered.
+    /// </summary>
+    public static bool TryGetBlock(Item item, [NotNullWhen(true)] out IBlock? block)
+    {
+        if (item.Block is BlockType type)
+        {
+            block = type.DefaultState;
+            return true;
+        }
+
+        return TryGetDefault(item.UnlocalizedName, out block) && !block.IsAir;
+    }
+
+    /// <summary>
+    /// The default state of the block with the given identifier, like <c>minecraft:stone</c>, vanilla's or a plugin's.
+    /// </summary>
+    public static bool TryGetDefault(string identifier, [NotNullWhen(true)] out IBlock? block)
+    {
+        if (resourceIdToName.TryGetValue(identifier, out var name))
+        {
+            block = defaultBlockCache[name];
+            return true;
+        }
+
+        block = TryGetPluginBlock(identifier, out var type) ? type.DefaultState : null;
+        return block is not null;
     }
 
     /// <summary>

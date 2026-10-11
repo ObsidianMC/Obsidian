@@ -37,7 +37,12 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
                 Material.WrittenBook or Material.NetherStar or Material.EndCrystal or Material.DebugStick ||
             this.Enchantments.Count > 0 || this.Type == Material.Compass && this.ContainsKey(DataComponentType.LodestoneTracker));
 
-    public bool IsAir => Type == Material.Air;
+    public bool IsAir => this.Holder == ItemsRegistry.Air;
+
+    /// <summary>
+    /// Whether the stack holds <paramref name="item"/>.
+    /// </summary>
+    public bool Is(Item item) => this.Holder == item;
 
     /// <summary>
     /// Saved components Obsidian doesn't model (e.g. <c>minecraft:custom_data</c>), kept as they were loaded so saving the

@@ -46,5 +46,28 @@ public partial class RegistryAssetsGenerator
         builder.EndScope();
 
         context.AddSource("ItemsRegistry.g.cs", builder.ToString());
+
+        GenerateItemIds(assets, context);
+    }
+
+    // Vanilla's item ids as constants, for switches and patterns over items in the server's vanilla code.
+    private static void GenerateItemIds(Assets assets, SourceProductionContext context)
+    {
+        var builder = new CodeBuilder();
+        builder.Namespace("Obsidian.API.Registries");
+        builder.Line();
+        builder.Line("/// <summary>");
+        builder.Line("/// Vanilla's item ids (<see cref=\"Obsidian.API.Inventory.Item.Id\"/>), as constants");
+        builder.Line("/// to match items by in switches and patterns. Plugins' items have no constant: compare");
+        builder.Line("/// them by instance.");
+        builder.Line("/// </summary>");
+        builder.Type("public static class ItemIds");
+
+        foreach (Item item in assets.Items)
+            builder.Line($"public const int {item.Name} = {item.Id};");
+
+        builder.EndScope();
+
+        context.AddSource("ItemIds.g.cs", builder.ToString());
     }
 }

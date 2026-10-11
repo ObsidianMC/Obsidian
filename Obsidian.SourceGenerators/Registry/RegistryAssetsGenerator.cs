@@ -36,6 +36,7 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
         {
             GenerateTags(assets, context);
             GenerateItems(assets, context);
+            GenerateBlockIdConstants(assets, context);
             GenerateCodecs(assets, context);
             GenerateMaterials(assets, context);
             GenerateSounds(assets, context);

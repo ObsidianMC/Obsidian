@@ -67,6 +67,18 @@ internal static partial class BlocksRegistry
         return TryGetPluginBlock(stateId, out var type) ? type.Id : 0;
     }
 
+    /// <summary>
+    /// The default state of the block with the given id, like <see cref="BlockIds.Stone"/>, or a plugin's block's.
+    /// </summary>
+    public static IBlock GetDefault(int blockId)
+    {
+        if ((uint)blockId < (uint)defaultBlocks.Length)
+            return defaultBlocks[blockId];
+
+        return PluginBlocks.FirstOrDefault(type => type.Id == blockId)?.DefaultState
+            ?? throw new ArgumentOutOfRangeException(nameof(blockId), blockId, "There's no block with this id.");
+    }
+
     /// <summary>The material of the block a state belongs to, or null for a plugin's block.</summary>
     public static Material? MaterialOf(int stateId) =>
         (uint)stateId < (uint)StateToNumeric.Length ? registryMaterials[StateToNumeric[stateId]] : null;
