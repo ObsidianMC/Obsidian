@@ -56,16 +56,24 @@ public sealed class Item : INetworkSerializable<Item>
     /// What the item does when used, given by the plugin that registered it, or null for vanilla items and while the
     /// plugin is unloaded.
     /// </summary>
-    public IItemBehavior? Behavior { get; internal set; }
+    public IItemBehavior? Behavior => this.Binding?.Behavior;
 
     /// <summary>
     /// The plugin that registered the item and provides its behaviour, or null for vanilla items and while the plugin
     /// is unloaded.
     /// </summary>
-    public IPluginContainer? Owner { get; internal set; }
+    public IPluginContainer? Owner => this.Binding?.Owner;
+
+    // The plugin and its behaviour, replaced together so that a use never pairs one plugin's behaviour with another.
+    internal ItemBinding? Binding { get; set; }
 
     public static void Write(Item value, INetStreamWriter writer) => writer.WriteVarInt(value.Id);
     public static Item Read(INetStreamReader reader) => ItemsRegistry.Get(reader);
 
     public override string ToString() => $"{{{this.UnlocalizedName}}}";
 }
+
+/// <summary>
+/// The plugin that registered an item, and what the item does.
+/// </summary>
+internal sealed record ItemBinding(IPluginContainer Owner, IItemBehavior? Behavior);

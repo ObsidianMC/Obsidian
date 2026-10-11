@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Events;
+using Obsidian.API.Inventory;
 using Obsidian.API.Networking;
 using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
@@ -90,6 +91,35 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         server.PayloadChannels.Register(container, phase, direction, handler, version, optional);
 
         return this;
+    }
+
+    public Item RegisterItem(string identifier, ItemProperties? properties = null)
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        // Like a NeoForge mod's, a plugin's content is in its own namespace, so plugins can't take each other's.
+        if (!identifier.StartsWith($"{container.Info.Id}:", StringComparison.Ordinal))
+            throw new ArgumentException($"{identifier} isn't in the plugin's namespace, {container.Info.Id}.");
+
+        // Vanilla's identifier rules, which clients parse the identifier with.
+        var path = identifier[(container.Info.Id.Length + 1)..];
+        if (path.Length == 0
+            || !container.Info.Id.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c is '_' or '-' or '.')
+            || !path.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c is '_' or '-' or '.' or '/'))
+            throw new ArgumentException($"{identifier} isn't a valid identifier.");
+
+        properties ??= new ItemProperties();
+        ArgumentOutOfRangeException.ThrowIfLessThan(properties.MaxStackSize, 1, nameof(properties));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(properties.MaxStackSize, 99, nameof(properties));
+
+        var item = ItemsRegistry.Register(identifier);
+
+        item.MaxStackSize = properties.MaxStackSize;
+        item.MaxDamage = properties.MaxDamage;
+        item.Enchantable = properties.Enchantable;
+        item.Binding = new ItemBinding(container, properties.Behavior);
+
+        return item;
     }
 
     public IPluginRegistry RegisterCommandArgumentHandler<T>(BaseArgumentParser<T> parser) 

@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
+using Obsidian.API.Plugins;
 using Obsidian.API.Utilities;
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
@@ -96,6 +97,19 @@ public static partial class ItemsRegistry
             table = new ItemTable([.. table.ById, item]);
 
             return item;
+        }
+    }
+
+    /// <summary>
+    /// Drops the behaviour of every item <paramref name="plugin"/> registered, as the plugin unloads. The items stay
+    /// registered, with their ids, for stacks of them and for the plugin to register again when it comes back.
+    /// </summary>
+    internal static void ReleasePlugin(IPluginContainer plugin)
+    {
+        foreach (var item in table.ById.AsSpan(VanillaCount))
+        {
+            if (item.Binding?.Owner == plugin)
+                item.Binding = null;
         }
     }
 

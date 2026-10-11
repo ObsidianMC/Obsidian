@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Events;
+using Obsidian.API.Inventory;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -27,7 +28,23 @@ public partial class UseItemPacket
             Hand = this.Hand,
         };
         await server.EventDispatcher.ExecuteEventAsync(args);
-        if (!args.IsCancelled && player is Obsidian.Entities.Player concrete)
+        if (args.IsCancelled)
+            return;
+
+        if (args.Item is { Count: > 0 } stack)
+        {
+            var used = await Plugins.ItemBehaviors.UseAsync(new ItemUseContext
+            {
+                Player = player,
+                Stack = stack,
+                Hand = this.Hand
+            });
+
+            if (used)
+                return;
+        }
+
+        if (player is Obsidian.Entities.Player concrete)
             await concrete.StartUsingItemAsync(Hand);
     }
 }

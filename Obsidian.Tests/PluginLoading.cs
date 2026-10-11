@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Configuration;
 using Obsidian.API.Events;
+using Obsidian.API.Inventory;
+using Obsidian.API.Registries;
 using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
 using Obsidian.Plugins;
@@ -143,13 +145,27 @@ public sealed class PluginLoading : IDisposable
         var path = Path.Join(this.folder, "probe.obby");
 
         await File.WriteAllBytesAsync(path, ProbeArchive("1.0.0"));
-        var unloaded = await LoadAndTrackAsync(manager, path);
+        var (unloaded, gem) = await LoadAndTrackAsync(manager, path);
 
         await File.WriteAllBytesAsync(path, ProbeArchive("1.1.0"));
         var reloaded = await manager.LoadPluginAsync(path);
 
         Assert.Equal(new Version(1, 1, 0, 0), reloaded!.Info.Version);
         Assert.Single(manager.Plugins);
+
+        // The plugin's item keeps its instance and id, and gets the reloaded plugin's behaviour.
+        Assert.True(ItemsRegistry.TryGet("probe:gem", out var reloadedGem));
+        Assert.Same(gem, reloadedGem);
+        Assert.Same(reloaded, gem.Owner);
+        Assert.Equal(16, gem.MaxStackSize);
+
+        var context = new ItemUseContext
+        {
+            Player = null!,
+            Stack = new ItemStack(gem),
+            Hand = InteractionHand.MainHand
+        };
+        Assert.True(await ItemBehaviors.UseAsync(context));
 
         // Only the reloaded plugin's handler runs: unloading removed the old one.
         AppContext.SetData(ProbePlugin.CallsKey, 0);
@@ -169,6 +185,11 @@ public sealed class PluginLoading : IDisposable
 
         await manager.DisposeAsync();
         Assert.Empty(manager.Plugins);
+
+        // Unloaded, the item loses its behaviour but stays registered with its id.
+        Assert.Null(gem.Behavior);
+        Assert.Same(gem, ItemsRegistry.Get(gem.Id));
+        Assert.False(await ItemBehaviors.UseAsync(context));
     }
 
     [Fact]
@@ -199,14 +220,17 @@ public sealed class PluginLoading : IDisposable
 
     // Kept out of the test method so that no local keeps the first load alive.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task<WeakReference> LoadAndTrackAsync(PluginManager manager, string path)
+    private static async Task<(WeakReference LoadContext, Item Gem)> LoadAndTrackAsync(PluginManager manager,
+        string path)
     {
         var container = await manager.LoadPluginAsync(path);
 
         Assert.NotNull(container);
         Assert.True(container.LoadContext.IsCollectible);
+        Assert.True(ItemsRegistry.TryGet("probe:gem", out var gem));
+        Assert.True(gem.Id >= ItemsRegistry.VanillaCount);
 
-        return new WeakReference(container.LoadContext);
+        return (new WeakReference(container.LoadContext), gem);
     }
 
     private (PluginManager Manager, EventDispatcher Dispatcher, FakeServer Server) CreateManager()
@@ -276,12 +300,25 @@ public sealed class ProbePlugin : PluginBase
 
     public override void ConfigureServices(IServiceCollection services) => services.AddSingleton<ProbeService>();
 
-    public override void ConfigureRegistry(IPluginRegistry pluginRegistry) =>
+    public override void ConfigureRegistry(IPluginRegistry pluginRegistry)
+    {
         pluginRegistry.MapEvent<ServerStatusRequestEventArgs>(_ =>
         {
             AppContext.SetData(CallsKey, (int)(AppContext.GetData(CallsKey) ?? 0) + 1);
             return ValueTask.CompletedTask;
         });
+
+        pluginRegistry.RegisterItem("probe:gem", new ItemProperties
+        {
+            MaxStackSize = 16,
+            Behavior = new GemBehavior()
+        });
+    }
+
+    private sealed class GemBehavior : IItemBehavior
+    {
+        public ValueTask<bool> UseAsync(ItemUseContext context) => ValueTask.FromResult(true);
+    }
 
     public override ValueTask OnLoadedAsync(IServer server)
     {

@@ -116,6 +116,26 @@ public partial class UseItemOnPacket
             return;
         }
 
+        // Like vanilla, the block reacts first (above); then the item does, here a plugin's item.
+        if (currentItem is { Count: > 0 })
+        {
+            var used = await Plugins.ItemBehaviors.UseOnBlockAsync(new ItemUseOnBlockContext
+            {
+                Player = player,
+                Stack = currentItem,
+                Hand = this.Hand,
+                Position = position,
+                Face = this.Face,
+                Block = b
+            });
+
+            if (used)
+            {
+                player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+                return;
+            }
+        }
+
         if (player.Level is AbstractLevel level && currentItem is { Count: > 0 } &&
             currentItem.Type is Material.EnderEye or Material.FlintAndSteel or Material.FireCharge)
         {
