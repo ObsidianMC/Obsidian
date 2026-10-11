@@ -67,9 +67,7 @@ public partial class Extensions
         if (item is null || !item.TryGetTag<NbtTag<string>>("id", out var id))
             return null;
 
-        // Unknown ids give the default item.
-        var holder = ItemsRegistry.Get(id.Value!);
-        if (holder.UnlocalizedName is null)
+        if (!ItemsRegistry.TryGet(id.Value!, out var holder))
             return null;
 
         var count = item.TryGetTag<NbtTag<int>>("count", out var countTag) ? countTag.Value

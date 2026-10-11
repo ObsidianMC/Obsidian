@@ -1,17 +1,113 @@
 ﻿using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Utilities;
+using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace Obsidian.API.Registries;
+/// <summary>
+/// Every item: vanilla's, as static properties and in vanilla's id order, then the ones plugins registered.
+/// </summary>
+/// <remarks>
+/// Like vanilla's item registry, looking up an unknown id or identifier gives <see cref="Air"/>; use
+/// <see cref="TryGet(string, out Item)"/> to tell the two apart. Ids only grow while the server runs: an item a plugin
+/// registered keeps its id when the plugin reloads or unloads.
+/// </remarks>
 public static partial class ItemsRegistry
 {
-    public static Item Get(INetStreamReader reader) => Get(reader.ReadVarInt());
-    public static Item Get(int id) => Items.Values.SingleOrDefault(x => x.Id == id);
-    public static Item Get(Material mat) => Items.GetValueOrDefault(mat);
-    public static Item Get(string unlocalizedName) =>
-        Items.Values.SingleOrDefault(x => x.UnlocalizedName.EqualsIgnoreCase(unlocalizedName));
+    private static readonly Lock registering = new();
 
-    public static bool TryGet(Material mat, out Item item) => Items.TryGetValue(mat, out item);
+    // Items by id and identifier. Registering replaces the table whole, so lookups never lock.
+    private static ItemTable table;
+
+    // Builds the table once the generated static properties exist: field initializers across partial declarations run
+    // in no particular order, but all before the static constructor.
+    static ItemsRegistry()
+    {
+        var vanilla = Items.Values.OrderBy(item => item.Id).ToArray();
+
+        VanillaCount = vanilla.Length;
+        table = new ItemTable(vanilla);
+    }
+
+    /// <summary>
+    /// How many items vanilla has; ids from this one on are plugins' items.
+    /// </summary>
+    public static int VanillaCount { get; }
+
+    /// <summary>
+    /// Every item, by id.
+    /// </summary>
+    public static IReadOnlyList<Item> All => table.ById;
+
+    /// <summary>
+    /// Whether a plugin registered any item, which clients without that plugin can't show.
+    /// </summary>
+    public static bool HasPluginItems => table.ById.Length > VanillaCount;
+
+    public static Item Get(INetStreamReader reader) => Get(reader.ReadVarInt());
+
+    public static Item Get(int id)
+    {
+        var items = table.ById;
+
+        return (uint)id < (uint)items.Length ? items[id] : Air;
+    }
+
+    /// <summary>
+    /// Finds an item by its id.
+    /// </summary>
+    public static bool TryGet(int id, [NotNullWhen(true)] out Item? item)
+    {
+        var items = table.ById;
+        item = (uint)id < (uint)items.Length ? items[id] : null;
+
+        return item is not null;
+    }
+
+    public static Item Get(Material mat) => Items.GetValueOrDefault(mat) ?? Air;
+
+    public static Item Get(string unlocalizedName) => TryGet(unlocalizedName, out var item) ? item : Air;
+
+    /// <summary>
+    /// Finds an item by its identifier, ignoring case.
+    /// </summary>
+    public static bool TryGet(string unlocalizedName, [NotNullWhen(true)] out Item? item) =>
+        table.ByName.TryGetValue(unlocalizedName, out item);
+
+    /// <summary>
+    /// Registers an item, or returns the one registered before under the same identifier, which keeps its id.
+    /// </summary>
+    /// <exception cref="ArgumentException">The identifier is one of vanilla's.</exception>
+    internal static Item Register(string unlocalizedName)
+    {
+        lock (registering)
+        {
+            if (table.ByName.TryGetValue(unlocalizedName, out var existing))
+            {
+                if (existing.Id < VanillaCount)
+                    throw new ArgumentException($"{unlocalizedName} is a vanilla item.", nameof(unlocalizedName));
+
+                return existing;
+            }
+
+            var item = new Item(table.ById.Length, unlocalizedName, type: null);
+            table = new ItemTable([.. table.ById, item]);
+
+            return item;
+        }
+    }
+
+    private sealed class ItemTable(Item[] byId)
+    {
+        public Item[] ById { get; } = byId;
+
+        public FrozenDictionary<string, Item> ByName { get; } =
+            byId.ToFrozenDictionary(item => item.UnlocalizedName, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public static bool TryGet(Material mat, [NotNullWhen(true)] out Item? item) => Items.TryGetValue(mat, out item);
 
     public static ItemStack Get(string unlocalizedName, short count, params List<DataComponent> components) =>
         new(Get(unlocalizedName), count, components);

@@ -1,4 +1,4 @@
-using Obsidian.API.Inventory.DataComponents;
+﻿using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.Nbt;
 using System.Diagnostics.CodeAnalysis;
@@ -13,7 +13,10 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public Item Holder { get; }
 
-    public Material Type => this.Holder.Type;
+    /// <summary>
+    /// The vanilla material of the stack's item, or null for an item a plugin registered.
+    /// </summary>
+    public Material? Type => this.Holder.Type;
 
     // A marker component: the item is unbreakable when it has one.
     public bool Unbreakable => this.ContainsKey(DataComponentType.Unbreakable);

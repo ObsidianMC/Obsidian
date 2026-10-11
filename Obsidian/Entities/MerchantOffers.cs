@@ -43,7 +43,7 @@ internal static class MerchantOffers
             var output = new NetworkBuffer(bytes.GetArray()).ReadItemStack();
             if (output == null || output.IsAir || output.Count <= 0) continue;
             var first = entry.GetInt("FirstId"); var second = entry.GetInt("SecondId");
-            if (ItemsRegistry.Get(first).UnlocalizedName == null || ItemsRegistry.Get(second).UnlocalizedName == null) continue;
+            if ((uint)first >= ItemsRegistry.All.Count || (uint)second >= ItemsRegistry.All.Count) continue;
             var offer = new TradeEntry { FirstInput = new TradeItem(first, Math.Clamp(entry.GetInt("FirstCount"), 1, 64), []),
                 SecondInput = new TradeItem(second, Math.Clamp(entry.GetInt("SecondCount"), 0, 64), []),
                 Output = output, MaxCount = Math.Max(1, entry.GetInt("MaxUses")), UsedCount = Math.Max(0, entry.GetInt("Uses")),

@@ -176,7 +176,8 @@ public partial class UseItemOnPacket
             case Material.LavaBucket:
                 itemType = Material.Lava;
                 break;
-            case Material.Air:
+            case Material.Air or null:
+                // Only vanilla items place blocks for now; a plugin's item does what its behaviour does.
                 return;
             default:
                 break;
@@ -185,7 +186,7 @@ public partial class UseItemOnPacket
         IBlock block;
         try
         {
-            block = BlocksRegistry.Get(itemType);
+            block = BlocksRegistry.Get(itemType.Value);
         }
         catch //item is not a block so just return
         {
