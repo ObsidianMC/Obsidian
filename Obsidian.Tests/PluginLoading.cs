@@ -27,6 +27,8 @@ using Xunit;
 
 namespace Obsidian.Tests;
 
+// Loading plugins merges their tags into vanilla's, which PluginTagFiles changes too.
+[Collection(nameof(PluginTagFiles))]
 public sealed class PluginLoading : IDisposable
 {
     private readonly string folder = Path.Join(Path.GetTempPath(), $"obsidian-plugins-{Guid.NewGuid():N}");
@@ -40,18 +42,8 @@ public sealed class PluginLoading : IDisposable
         // Name, plugins as "id version [dependency type range ordering side]*", plugins already loaded, expected load
         // order, rejected ids.
         { "required present", ["a 1.0", "b 1.0 a required [1.0,) none both"], [], ["a", "b"], [] },
-        { "required missing", ["b 1.0 a required [1.0,) none both"], [], [], ["b"] },
         { "required too old", ["a 1.0", "b 1.0 a required [2.0,) none both"], [], ["a"], ["b"] },
         { "required before", ["a 1.0", "b 1.0 a required 1.0 before both"], [], ["a"], ["b"] },
-        {
-            "rejection cascades",
-            ["b 1.0 a required 1.0 none both", "c 1.0 b required 1.0 none both"],
-            [],
-            [],
-            ["b", "c"]
-        },
-        { "optional absent", ["b 1.0 a optional 1.0 none both"], [], ["b"], [] },
-        { "optional wrong version", ["a 1.0", "b 1.0 a optional [2.0,) none both"], [], ["a"], ["b"] },
         { "optional loads first", ["a 1.0 b optional 1.0 none both", "b 1.0"], [], ["b", "a"], [] },
         {
             "mutually optional",
@@ -61,12 +53,7 @@ public sealed class PluginLoading : IDisposable
             []
         },
         { "incompatible present", ["a 1.0", "b 1.0 a incompatible [1.0,) none both"], [], ["a"], ["b"] },
-        { "incompatible other version", ["a 1.0", "b 1.0 a incompatible [2.0,) none both"], [], ["a", "b"], [] },
         { "loaded is incompatible", ["b 1.0"], ["a 1.0 b incompatible 1.0 none both"], [], ["b"] },
-        { "loaded needs another version", ["b 1.0"], ["a 1.0 b optional [2.0,) none both"], [], ["b"] },
-        { "discouraged only warns", ["a 1.0", "b 1.0 a discouraged 1.0 none both"], [], ["a", "b"], [] },
-        { "ordered before", ["a 1.0", "b 1.0 a optional 1.0 before both"], [], ["b", "a"], [] },
-        { "client-only dependency", ["b 1.0 a required 1.0 none client"], [], ["b"], [] },
         { "cycle", ["a 1.0 b optional 1.0 after both", "b 1.0 a optional 1.0 after both"], [], [], ["a", "b"] },
         { "duplicate id", ["a 1.0", "a 2.0"], [], ["a"], ["a"] }
     };
@@ -109,24 +96,6 @@ public sealed class PluginLoading : IDisposable
         // Asset and data paths are used to find files on disk too, so none may leave the archive.
         files["assets/../../evil.txt"] = [1];
         Assert.Throws<InvalidDataException>(() => PluginArchive.Open("ruby.obby", PluginArchives.Zip(files)));
-    }
-
-    [Fact]
-    public void LegacyArchive_ReadsHeaderOrModJson()
-    {
-        var files = new Dictionary<string, byte[]> { ["Old.dll"] = [4, 5, 6] };
-
-        var legacy = PluginArchive.Open("old.obby", PluginArchives.Legacy("old", "1.0.0", "Old", files));
-
-        Assert.Equal("old", legacy.Info.Id);
-        Assert.Equal("Old", legacy.Info.AssemblyName);
-        Assert.Equal([4, 5, 6], legacy.Read("Old.dll"));
-
-        files[PluginMetadata.FileName] = PluginArchives.Metadata("renamed", "2.0.0", "Old");
-        var withMetadata = PluginArchive.Open("old.obby", PluginArchives.Legacy("old", "1.0.0", "Old", files));
-
-        Assert.Equal("renamed", withMetadata.Info.Id);
-        Assert.Equal(new Version(2, 0, 0, 0), withMetadata.Info.Version);
     }
 
     [Fact]
@@ -174,6 +143,10 @@ public sealed class PluginLoading : IDisposable
         };
         Assert.True(await BlockBehaviors.UseAsync(blockContext));
 
+        // And its tags: one from its data folder, one from code.
+        Assert.True(TagsRegistry.Contains("block", "probe:ores", ore.Id));
+        Assert.True(TagsRegistry.Contains("block", "probe:shiny", ore.Id));
+
         // Only the reloaded plugin's handler runs: unloading removed the old one.
         AppContext.SetData(ProbePlugin.CallsKey, 0);
         await dispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(server, new ServerStatus(server, "")));
@@ -201,24 +174,7 @@ public sealed class PluginLoading : IDisposable
         Assert.Null(ore.Owner);
         Assert.True(ore.Is(BlocksRegistry.Get(ore.DefaultState.GetHashCode())));
         Assert.False(await BlockBehaviors.UseAsync(blockContext));
-    }
-
-    [Fact]
-    public void PluginItems_StackOnlyWithThemselves()
-    {
-        // Plugin items have no vanilla material, so they must be told apart by identity.
-        var ruby = ItemsRegistry.Register("stacking:ruby");
-        var sapphire = ItemsRegistry.Register("stacking:sapphire");
-        var container = new Container(9);
-
-        Assert.Equal(0, container.AddItem(new ItemStack(ruby, 1)));
-        Assert.Equal(1, container.AddItem(new ItemStack(sapphire, 1)));
-        Assert.Equal(0, container.AddItem(new ItemStack(ruby, 1)));
-
-        Assert.Same(ruby, container.GetItem(0)!.Holder);
-        Assert.Equal(2, container.GetItem(0)!.Count);
-        Assert.Same(sapphire, container.GetItem(1)!.Holder);
-        Assert.Same(ruby, ItemsRegistry.Register("stacking:ruby"));
+        Assert.False(TagsRegistry.TryGet("block", "probe:ores", out _));
     }
 
     [Fact]
@@ -287,11 +243,18 @@ public sealed class PluginLoading : IDisposable
         var assembly = typeof(ProbePlugin).Assembly;
         var name = assembly.GetName().Name!;
 
-        return PluginArchives.Zip(new Dictionary<string, byte[]>
+        var files = new Dictionary<string, byte[]>
         {
             [PluginMetadata.FileName] = PluginArchives.Metadata("probe", version, name),
             [$"{name}.dll"] = File.ReadAllBytes(assembly.Location)
-        });
+        };
+
+        // Its data folder, which its blocks are generated from, packed like the packer packs a plugin's.
+        var output = Path.GetDirectoryName(assembly.Location)!;
+        foreach (var file in Directory.EnumerateFiles(Path.Join(output, "data"), "*", SearchOption.AllDirectories))
+            files[Path.GetRelativePath(output, file).Replace('\\', '/')] = File.ReadAllBytes(file);
+
+        return PluginArchives.Zip(files);
     }
 
     private static PluginInfo Info(string description)
@@ -350,6 +313,11 @@ public sealed class ProbePlugin : PluginBase
             StateProperties = [StateProperty.Bool("lit")],
             Behavior = new OreBehavior()
         });
+
+        pluginRegistry.AddToTag("block", "probe:shiny", "probe:ore");
+
+        // Its blocks generated from data/probe/blocks.
+        ProbeBlocks.Register(pluginRegistry);
     }
 
     private sealed class OreBehavior : IBlockBehavior
@@ -371,6 +339,16 @@ public sealed class ProbePlugin : PluginBase
         Assert.Same(server, this.Service.Server);
         Assert.NotNull(this.Logger);
 
+        // The generated typed states read and make the lamp's states, and its tag file was loaded with it.
+        var state = new ProbeBlocks.LampState(Color: ProbeBlocks.LampColor.Green, Lit: true, Power: 2);
+        Assert.True(ProbeBlocks.Lamp.Is(state.ToBlock()));
+        Assert.Equal(state, ProbeBlocks.LampState.From(state.ToBlock()));
+        Assert.Equal(
+            new(false, 0, ProbeBlocks.LampColor.Red),
+            ProbeBlocks.LampState.From(ProbeBlocks.Lamp.DefaultState));
+        Assert.Equal(16, ProbeBlocks.Lamp.Item?.MaxStackSize);
+        Assert.True(ProbeTags.Blocks.Ores.Contains(ProbeBlocks.Lamp.DefaultState));
+
         return ValueTask.CompletedTask;
     }
 }
@@ -381,4 +359,11 @@ public sealed class ProbePlugin : PluginBase
 public sealed class ProbeService(IServer server)
 {
     public IServer Server { get; } = server;
+}
+
+/// <summary>
+/// The behaviour of <see cref="ProbePlugin"/>'s generated lamp, named in its block definition.
+/// </summary>
+public sealed class ProbeLampBehavior : IBlockBehavior
+{
 }

@@ -38,4 +38,14 @@
 		<ProjectReference Include="..\Obsidian\Obsidian.csproj" />
 	</ItemGroup>
 
+	<!-- The probe plugin is a plugin project too: its data folder is generated from, like a plugin's, and packed into
+	     its archive by the tests. -->
+	<ItemGroup>
+		<ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj"
+		                  OutputItemType="Analyzer"
+		                  ReferenceOutputAssembly="false" />
+		<AdditionalFiles Include="data\**\*.json" />
+		<None Include="data\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
 </Project>
