@@ -140,7 +140,7 @@ public class ModdedNetworking
     [Fact]
     public async Task PluginItemsAreSyncedToNeoForgeClientsAndRefuseOthers()
     {
-        // Id 1 belongs to an unloaded plugin's item, which clients aren't told about.
+        // NeoForge's snapshot maps ids to identifiers, so it needn't be dense.
         SyncedRegistry items = new("minecraft:item", [(0, "minecraft:air"), (2, "test:gem")]);
         IReadOnlyList<SyncedRegistry> Modded() => [items];
 

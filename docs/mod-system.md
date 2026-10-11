@@ -37,8 +37,10 @@ client. This document describes the design and tracks its progress. The archive 
    - Done for items: `Item` is a registered item type (one instance per item, keyed by identifier) rather than a
      `Material`-keyed struct. Plugins register items in their namespace with `IPluginRegistry.RegisterItem`, with an
      `IItemBehavior` for using them. An item keeps its instance and id across reloads; only its behaviour is replaced.
-     While a loaded plugin has items, vanilla clients are refused and NeoForge clients are sent the item registry with
-     NeoForge's registry sync before vanilla's registries.
+     Once a plugin registered items, vanilla clients are refused and NeoForge clients are sent the item registry with
+     NeoForge's registry sync before vanilla's registries. A plugin's items stay registered, and synced, until the
+     server stops, even if the plugin unloads for good: stacks of them can still be anywhere, so clients need the mod
+     until then.
    - Next: blocks (with their states) and entity types the same way; moving `Material` call sites to items and blocks
      until `Material` can go; reconfiguring connected players when a reload changes the registered content.
 3. **Data-driven content and world generation**: loading a mod's `data/` folder like a data pack (biomes, dimension

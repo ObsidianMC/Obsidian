@@ -65,14 +65,7 @@ public sealed class Item : INetworkSerializable<Item>
     // The plugin and its behaviour, replaced together so that a use never pairs one plugin's behaviour with another.
     internal ItemBinding? Binding { get; set; }
 
-    /// <summary>
-    /// Whether clients can know the item: vanilla's items, and those of plugins that are loaded. Stacks of other items
-    /// are kept on the server but shown to clients as nothing, until their plugin comes back.
-    /// </summary>
-    internal bool KnownToClients => this.Id < ItemsRegistry.VanillaCount || this.Binding is not null;
-
-    public static void Write(Item value, INetStreamWriter writer) =>
-        writer.WriteVarInt(value.KnownToClients ? value.Id : ItemsRegistry.Air.Id);
+    public static void Write(Item value, INetStreamWriter writer) => writer.WriteVarInt(value.Id);
     public static Item Read(INetStreamReader reader) => ItemsRegistry.Get(reader);
 
     public override string ToString() => $"{{{this.UnlocalizedName}}}";

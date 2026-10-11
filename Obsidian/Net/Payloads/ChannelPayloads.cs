@@ -192,7 +192,5 @@ internal static class ChannelPayloads
 /// A registry that clients must agree with the server on, because plugins added to it.
 /// </summary>
 /// <param name="Name">The registry, like <c>minecraft:item</c>.</param>
-/// <param name="Entries">
-/// The entries clients may know, by id. Ids can have gaps: an unloaded plugin's entries keep their ids but are left out.
-/// </param>
+/// <param name="Entries">The registry's entries, by id.</param>
 internal sealed record SyncedRegistry(string Name, IReadOnlyList<(int Id, string Identifier)> Entries);

@@ -41,8 +41,9 @@ public interface IPluginRegistry
     /// <param name="properties">The item's properties and behaviour; the defaults if null.</param>
     /// <returns>The item, to create stacks of.</returns>
     /// <remarks>
-    /// Clients without the plugin can't show its items, so while a plugin with items is loaded, only NeoForge clients
-    /// with a matching mod can join. When the plugin unloads its items lose their behaviour but stay registered.
+    /// Clients without the plugin can't show its items, so once a plugin registered items, only NeoForge clients with a
+    /// matching mod can join. When the plugin unloads, its items lose their behaviour but stay registered, and synced to
+    /// clients, until the server stops: stacks of them may still be in inventories and the world.
     /// </remarks>
     /// <exception cref="ArgumentException">The identifier isn't in the plugin's namespace, or isn't valid.</exception>
     public Item RegisterItem(string identifier, ItemProperties? properties = null);

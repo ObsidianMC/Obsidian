@@ -43,21 +43,10 @@ public static partial class ItemsRegistry
     public static IReadOnlyList<Item> All => table.ById;
 
     /// <summary>
-    /// Whether a loaded plugin registered any item, which clients without that plugin can't show.
+    /// Whether a plugin registered any item, which clients without that plugin's mod can't show. Plugins' items stay
+    /// registered until the server stops, even once their plugin unloads, since stacks of them may still be around.
     /// </summary>
-    public static bool HasPluginItems
-    {
-        get
-        {
-            foreach (var item in table.ById.AsSpan(VanillaCount))
-            {
-                if (item.Binding is not null)
-                    return true;
-            }
-
-            return false;
-        }
-    }
+    public static bool HasPluginItems => table.ById.Length > VanillaCount;
 
     public static Item Get(INetStreamReader reader) => Get(reader.ReadVarInt());
 

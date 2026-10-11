@@ -89,7 +89,9 @@ with it, since they use its types. Unloading removes everything the plugin regis
 services, payload channels, argument parsers), so its assemblies, which load into a collectible load context, can be
 freed. Unloading stops new calls into the plugin (its event and payload handlers, commands and command suggestions),
 and the plugin is released (its unloading callback runs, and its services are disposed) once the running ones end,
-after the plugins that depend on it. A plugin may reload itself from one of its own commands. It must not leave
+after the plugins that depend on it. A plugin may reload itself from one of its own commands. Content a plugin
+registered, like its items, keeps its identity and ids while the server runs: reloading the plugin gives the same items
+their new behaviour, and unloading it leaves them registered, without behaviour, until the server stops. It must not leave
 references to its own types with the server or other plugins outside what it registered, or it can't unload, and it
 can't load or unload plugins from its own load, ready or unloading callbacks.
 

@@ -428,8 +428,7 @@ public partial class NetworkBuffer : INetStreamWriter
 
         var item = value.AsItem();
 
-        // A stack of an item whose plugin is unloaded is shown as nothing: clients can't know the item.
-        if (value.Count <= 0 || value.IsAir || !item.KnownToClients)
+        if (value.Count <= 0 || value.IsAir)
         {
             this.WriteVarInt(0);
             return;
