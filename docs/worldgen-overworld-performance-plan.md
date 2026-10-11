@@ -438,7 +438,7 @@ dotnet run -c Release --project Obsidian.WorldgenBench -- pipeline [--dimension 
 To pin the pipeline to the first N physical cores on Windows, run it with `start /affinity <mask> /wait /b`. The mask
 sets every other bit, so `55555555` is 16 cores.
 
-The server comparison uses the local harness in `C:\Users\LostT\mcdecomp\bench`:
+The server comparison uses a local harness that isn't in this repository:
 - `bench_dims.py <obsidian|vanilla> <overworld|nether|end> <tag> --cpus N` runs one server benchmark. `run_dims.sh` runs
   the whole matrix, and `summarize_dims.py` prints the table above.
 - `ObsidianHostWg` is the headless Obsidian host it starts. It builds against the checkout named in its project
