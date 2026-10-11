@@ -86,6 +86,6 @@ public partial class MainEventHandler
     {
         var f = Globals.Random.NextSingle();
 
-        return f * 0.5f;
+        return f * 0.1f;
     }
 }
