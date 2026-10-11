@@ -417,6 +417,9 @@ public sealed partial class PluginManager : IAsyncDisposable
         if (pluginContainer.LoadContext is not null)
             this.commandHandler.UnregisterArgumentParsers(pluginContainer.LoadContext);
 
+        if (this.server is Server concreteServer)
+            concreteServer.PayloadChannels.UnregisterPluginPayloads(pluginContainer);
+
         if (pluginContainer.Plugin is PluginBase plugin)
         {
             try

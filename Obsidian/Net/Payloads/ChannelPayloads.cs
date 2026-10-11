@@ -49,6 +49,9 @@ internal static class ChannelPayloads
     /// </summary>
     public static Dictionary<NetworkProtocol, List<NetworkComponent>> ReadQuery(INetStreamReader reader)
     {
+        // The counts come from the client, so they only bound the loops, not the memory reserved up front.
+        const int initialCapacity = 64;
+
         var query = new Dictionary<NetworkProtocol, List<NetworkComponent>>();
         var protocolCount = reader.ReadVarInt();
 
@@ -56,7 +59,7 @@ internal static class ChannelPayloads
         {
             var protocol = (NetworkProtocol)reader.ReadVarInt();
             var componentCount = reader.ReadVarInt();
-            var components = new List<NetworkComponent>(componentCount);
+            var components = new List<NetworkComponent>(Math.Min(componentCount, initialCapacity));
 
             for (var j = 0; j < componentCount; j++)
             {
