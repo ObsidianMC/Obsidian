@@ -45,7 +45,7 @@ public sealed class MobAi
     {
         Assert.IsType<Obsidian.API.Inventory.DataComponents.CanBreakDataComponent>(
             Obsidian.API.Inventory.DataComponents.ComponentBuilder.Create(DataComponentType.CanBreak));
-        var item = Obsidian.API.Registries.ItemsRegistry.GetSingleItem(Material.Bow);
+        var item = Obsidian.API.Registries.ItemsRegistry.GetSingleItem(Obsidian.API.Registries.ItemsRegistry.Bow);
         var buffer = new Obsidian.Net.NetworkBuffer();
         buffer.WriteItemStack(item);
         var reader = new Obsidian.Net.NetworkBuffer(buffer.AsSpan(0, buffer.Size).ToArray());
@@ -219,7 +219,7 @@ public sealed class MobAi
         }
         if (mob is Enderman enderman)
         {
-            enderman.CarriedBlock = BlocksRegistry.Get(Material.GrassBlock).WithProperty("snowy", "true");
+            enderman.CarriedBlock = BlocksRegistry.GrassBlock.WithProperty("snowy", "true");
             enderman.AngerTicks = 234;
             enderman.AngryAt = System.Guid.Parse("01234567-89ab-cdef-0123-456789abcdef");
         }

@@ -14,13 +14,13 @@ namespace Obsidian.Tests;
 public sealed class Combat
 {
     [Theory]
-    [InlineData(Material.IronSword, 6, 1.6)]
-    [InlineData(Material.Trident, 9, 1.1)]
-    [InlineData(Material.Mace, 6, 0.6)]
-    [InlineData(Material.IronSpear, 3, 1.0526316)]
-    public void WeaponStatsComeFromVanillaComponents(Material material, float damage, float speed)
+    [InlineData("minecraft:iron_sword", 6, 1.6)]
+    [InlineData("minecraft:trident", 9, 1.1)]
+    [InlineData("minecraft:mace", 6, 0.6)]
+    [InlineData("minecraft:iron_spear", 3, 1.0526316)]
+    public void WeaponStatsComeFromVanillaComponents(string identifier, float damage, float speed)
     {
-        var item = ItemsRegistry.GetSingleItem(material);
+        var item = ItemsRegistry.GetSingleItem(ItemsRegistry.Get(identifier));
         Assert.Equal(damage, CombatItems.Attribute(item, "attack_damage", "mainhand", 1), 4);
         Assert.Equal(speed, CombatItems.Attribute(item, "attack_speed", "mainhand", 4), 4);
     }
@@ -70,8 +70,13 @@ public sealed class Combat
         var mob = new Zombie { Level = null! };
         foreach (var slot in new[] { EquipmentSlot.Helmet, EquipmentSlot.Chestplate, EquipmentSlot.Leggings, EquipmentSlot.Boots })
         {
-            var item = ItemsRegistry.GetSingleItem(slot switch { EquipmentSlot.Helmet => Material.DiamondHelmet,
-                EquipmentSlot.Chestplate => Material.DiamondChestplate, EquipmentSlot.Leggings => Material.DiamondLeggings, _ => Material.DiamondBoots });
+            var item = ItemsRegistry.GetSingleItem(slot switch
+            {
+                EquipmentSlot.Helmet => ItemsRegistry.DiamondHelmet,
+                EquipmentSlot.Chestplate => ItemsRegistry.DiamondChestplate,
+                EquipmentSlot.Leggings => ItemsRegistry.DiamondLeggings,
+                _ => ItemsRegistry.DiamondBoots
+            });
             EnchantmentHelper.Enchant(item, EnchantmentsRegistry.Protection, 10);
             mob.SetEquipment(slot, item);
         }
@@ -83,7 +88,7 @@ public sealed class Combat
     public void FeatherFallingOnlyProtectsAgainstFalls()
     {
         var mob = new Zombie { Level = null! };
-        var boots = ItemsRegistry.GetSingleItem(Material.DiamondBoots);
+        var boots = ItemsRegistry.GetSingleItem(ItemsRegistry.DiamondBoots);
         EnchantmentHelper.Enchant(boots, EnchantmentsRegistry.FeatherFalling, 4);
         mob.SetEquipment(EquipmentSlot.Boots, boots);
         Assert.Equal(5.2f, CombatEffects.Protect(mob, 10, CombatDamageKind.Fall), 4);
@@ -93,7 +98,7 @@ public sealed class Combat
     [Fact]
     public void DurabilityFallsBackToTheItemsVanillaMaximum()
     {
-        var sword = ItemsRegistry.GetSingleItem(Material.IronSword);
+        var sword = ItemsRegistry.GetSingleItem(ItemsRegistry.IronSword);
         sword[DataComponentType.Damage] = ComponentBuilder.Damage with { Value = sword.Holder.MaxDamage - 1 };
         Assert.True(CombatItems.HurtItem(sword, 1));
         Assert.Equal(0, sword.Count);
@@ -108,14 +113,14 @@ public sealed class Combat
             ComponentBuilder.ChargedProjectiles with { Value = [ammunition] });
         var restored = crossbow.ToNbt().ItemFromNbt()!;
         var loaded = Assert.Single(restored.GetComponent<SimpleDataComponent<ItemStack[]>>(DataComponentType.ChargedProjectiles)!.Value!);
-        Assert.Equal(Material.TippedArrow, loaded.Type);
+        Assert.Same(ItemsRegistry.TippedArrow, loaded.Holder);
         Assert.Equal(Potion.StrongPoison, loaded.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents)!.Potion);
     }
 
     [Fact]
     public void TridentsKeepLoyaltyDamageAndOwnershipAcrossSaving()
     {
-        var item = ItemsRegistry.GetSingleItem(Material.Trident);
+        var item = ItemsRegistry.GetSingleItem(ItemsRegistry.Trident);
         EnchantmentHelper.Enchant(item, EnchantmentsRegistry.Loyalty, 3);
         item[DataComponentType.Damage] = ComponentBuilder.Damage with { Value = 42 };
         var owner = new Zombie { Level = null! };

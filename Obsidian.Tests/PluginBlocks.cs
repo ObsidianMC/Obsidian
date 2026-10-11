@@ -91,7 +91,6 @@ public class PluginBlocks
         Assert.True(lamp.Is(state));
         Assert.Equal(lamp.Id, BlocksRegistry.RegistryIdOf(state.GetHashCode()));
         Assert.Equal("blocks:lamp", state.UnlocalizedName);
-        Assert.Null(state.Material);
         Assert.Equal(new Dictionary<string, string> { ["lit"] = "true", ["power"] = "2" }, state.GetProperties());
         Assert.Equal(state, lit.WithProperty("power", 2));
         Assert.Equal(state, state.WithProperty("power", "9"));

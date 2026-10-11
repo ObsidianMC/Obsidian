@@ -33,9 +33,10 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         this.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value ?? [];
     public bool HasEnchantmentGlint => this.GetComponent<SimpleDataComponent<bool>>(DataComponentType.EnchantmentGlintOverride)?.Value ??
         (!this.RemoveComponents.Contains(DataComponentType.EnchantmentGlintOverride) &&
-            this.Type is Material.EnchantedBook or Material.EnchantedGoldenApple or Material.ExperienceBottle or
-                Material.WrittenBook or Material.NetherStar or Material.EndCrystal or Material.DebugStick ||
-            this.Enchantments.Count > 0 || this.Type == Material.Compass && this.ContainsKey(DataComponentType.LodestoneTracker));
+            this.Holder.Id is ItemIds.EnchantedBook or ItemIds.EnchantedGoldenApple or ItemIds.ExperienceBottle
+                or ItemIds.WrittenBook or ItemIds.NetherStar or ItemIds.EndCrystal or ItemIds.DebugStick ||
+            this.Enchantments.Count > 0
+            || this.Is(ItemsRegistry.Compass) && this.ContainsKey(DataComponentType.LodestoneTracker));
 
     public bool IsAir => this.Holder == ItemsRegistry.Air;
 

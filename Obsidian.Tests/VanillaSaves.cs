@@ -58,8 +58,8 @@ public sealed class VanillaSaves : IDisposable
         Assert.Equal(ChunkGenStage.full, chunk.ChunkStatus);
         Assert.Equal(BlockStateProperties.GetState("minecraft:oak_stairs", stairsProperties), chunk.GetBlock(stairs));
         Assert.Equal("east", chunk.GetBlock(stairs).GetProperty("facing"));
-        Assert.Equal(BlocksRegistry.Get(Material.Stone), chunk.GetBlock(stairs + new Vector(1, 0, 0)));
-        Assert.Equal(BlocksRegistry.Get(Material.Granite), chunk.GetBlock(0, 16, 0));
+        Assert.Equal(BlocksRegistry.Stone, chunk.GetBlock(stairs + new Vector(1, 0, 0)));
+        Assert.Equal(BlocksRegistry.Granite, chunk.GetBlock(0, 16, 0));
         Assert.Equal("minecraft:desert", chunk.GetBiome(desert.X, desert.Y, desert.Z).Name);
         Assert.Equal("minecraft:plains", chunk.GetBiome(0, 0, 0).Name);
     }
@@ -148,8 +148,8 @@ public sealed class VanillaSaves : IDisposable
             Assert.Equal(39, player.CurrentHeldItemSlot);
             Assert.Equal(5, player.Inventory.GetItem(39)!.Damage);
             Assert.Equal(64, player.Inventory.GetItem(9)!.Count);
-            Assert.Equal(Material.IronHelmet, player.Inventory.GetItem(5)!.Type);
-            Assert.Equal(Material.Shield, player.Inventory.GetItem(45)!.Type);
+            Assert.Same(ItemsRegistry.IronHelmet, player.Inventory.GetItem(5)!.Holder);
+            Assert.Same(ItemsRegistry.Shield, player.Inventory.GetItem(45)!.Holder);
             Assert.Equal(3, player.EnderInventory.GetItem(0)!.Count);
 
             player.XpLevel = 6;
@@ -452,7 +452,7 @@ public sealed class VanillaSaves : IDisposable
                             new NbtCompound
                             {
                                 new NbtTag<string>("Name", "minecraft:granite"),
-                                new NbtTag<int>("Id", BlocksRegistry.Get(Material.Granite).GetHashCode())
+                                new NbtTag<int>("Id", BlocksRegistry.Granite.GetHashCode())
                             }
                         }
                     }

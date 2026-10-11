@@ -11,11 +11,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 public partial class UseItemOnPacket
 {
     // Blocks whose screen opens through the interact event when used without sneaking. Vanilla has no tag for these.
-    private static readonly HashSet<Material> interactableBlocks =
+    private static readonly HashSet<int> interactableBlocks =
     [
-        Material.Chest, Material.EnderChest, Material.TrappedChest, Material.Anvil, Material.ChippedAnvil,
-        Material.DamagedAnvil, Material.Hopper, Material.Smoker, Material.Furnace, Material.CraftingTable,
-        Material.Barrel, Material.BlastFurnace, Material.Grindstone, Material.BrewingStand
+        BlockIds.Chest, BlockIds.EnderChest, BlockIds.TrappedChest, BlockIds.Anvil, BlockIds.ChippedAnvil,
+        BlockIds.DamagedAnvil, BlockIds.Hopper, BlockIds.Smoker, BlockIds.Furnace, BlockIds.CraftingTable,
+        BlockIds.Barrel, BlockIds.BlastFurnace, BlockIds.Grindstone, BlockIds.BrewingStand
     ];
 
     [Field(0), ActualType(typeof(int)), VarLength]
@@ -55,21 +55,27 @@ public partial class UseItemOnPacket
         var handSlot = Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var bucket = player.Inventory.GetItem(handSlot);
         if (await TryPlaceEndCrystalAsync(player, handSlot, bucket)) return;
-        if (bucket is { Count: > 0, Type: Material.AxolotlBucket or Material.TadpoleBucket or Material.CodBucket or
-            Material.SalmonBucket or Material.TropicalFishBucket or Material.PufferfishBucket } && player.Health > 0 && player.GameMode != GameMode.Spectator)
+        if (bucket is
+            {
+                Count: > 0,
+                Holder.Id: ItemIds.AxolotlBucket or ItemIds.TadpoleBucket or ItemIds.CodBucket
+                    or ItemIds.SalmonBucket or ItemIds.TropicalFishBucket or ItemIds.PufferfishBucket
+            }
+            && player.Health > 0
+            && player.GameMode != GameMode.Spectator)
         {
             var destination = Position + Face.ToVector();
             if ((player.Position - (VectorD)destination).MagnitudeSquared() > 36 || player.Level is not Obsidian.WorldData.AbstractLevel bucketLevel || bucketLevel.IsOutsideBuildHeight(destination.Y)) return;
             var terrain = new Obsidian.Entities.AI.MobTerrain(bucketLevel);
             var existing = terrain.GetBlock(destination);
-            if (existing == null || !existing.IsAir && existing.Material != Material.Water) return;
-            var type = bucket.Type switch
+            if (existing == null || !existing.IsAir && !existing.Is(BlockIds.Water)) return;
+            var type = bucket.Holder.Id switch
             {
-                Material.AxolotlBucket => EntityType.Axolotl,
-                Material.TadpoleBucket => EntityType.Tadpole,
-                Material.CodBucket => EntityType.Cod,
-                Material.SalmonBucket => EntityType.Salmon,
-                Material.TropicalFishBucket => EntityType.TropicalFish,
+                ItemIds.AxolotlBucket => EntityType.Axolotl,
+                ItemIds.TadpoleBucket => EntityType.Tadpole,
+                ItemIds.CodBucket => EntityType.Cod,
+                ItemIds.SalmonBucket => EntityType.Salmon,
+                ItemIds.TropicalFishBucket => EntityType.TropicalFish,
                 _ => EntityType.Pufferfish
             };
             var mob = Obsidian.Entities.Factories.EntitySpawner.CreateMob(bucketLevel, type)!;
@@ -89,7 +95,7 @@ public partial class UseItemOnPacket
             bucketLevel.SpawnEntity(mob);
             if (player.GameMode != GameMode.Creative)
             {
-                player.Inventory.SetItem(handSlot, ItemsRegistry.GetSingleItem(Material.Bucket));
+                player.Inventory.SetItem(handSlot, ItemsRegistry.GetSingleItem(ItemsRegistry.Bucket));
                 await player.Client.QueuePacketAsync(new ContainerSetSlotPacket { ContainerId = 0, Slot = (short)handSlot, SlotData = player.Inventory.GetItem(handSlot) });
             }
             player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });
@@ -124,7 +130,7 @@ public partial class UseItemOnPacket
             }
         }
 
-        if (b.Material is Material interactable && interactableBlocks.Contains(interactable) && !player.Sneaking)
+        if (interactableBlocks.Contains(b.RegistryId) && !player.Sneaking)
         {
             await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)
             {
@@ -157,12 +163,12 @@ public partial class UseItemOnPacket
         }
 
         if (player.Level is AbstractLevel level && currentItem is { Count: > 0 } &&
-            currentItem.Type is Material.EnderEye or Material.FlintAndSteel or Material.FireCharge)
+            currentItem.Holder.Id is ItemIds.EnderEye or ItemIds.FlintAndSteel or ItemIds.FireCharge)
         {
             var used = false;
             if (player.GameMode != GameMode.Spectator && (uint)this.Face <= (uint)BlockFace.East)
             {
-                if (currentItem.Type == Material.EnderEye)
+                if (currentItem.Is(ItemsRegistry.EnderEye))
                     used = await level.Portals.TryInsertEyeAsync(position);
                 else if (player.GameMode != GameMode.Adventure)
                 {
@@ -173,8 +179,11 @@ public partial class UseItemOnPacket
                         used = await level.Portals.TryIgniteAsync(firePosition);
                         if (!used && await level.GetBlockAsync(firePosition + Vector.Down) is { } below && below.HasFullTopCollisionFace())
                         {
-                            await level.SetBlockAsync(firePosition, BlocksRegistry.Get(
-                                below.Material is Material.SoulSand or Material.SoulSoil ? Material.SoulFire : Material.Fire), true);
+                            var fire = below.RegistryId is BlockIds.SoulSand or BlockIds.SoulSoil
+                                ? BlocksRegistry.SoulFire
+                                : BlocksRegistry.Fire;
+
+                            await level.SetBlockAsync(firePosition, fire, true);
                             used = true;
                         }
                     }
@@ -182,17 +191,17 @@ public partial class UseItemOnPacket
             }
             if (used)
             {
-                if (currentItem.Type is Material.FlintAndSteel or Material.FireCharge)
+                if (currentItem.Holder.Id is ItemIds.FlintAndSteel or ItemIds.FireCharge)
                 {
                     var soundPosition = position + this.Face.ToVector();
                     level.PacketBroadcaster.BroadcastToLevelInRange(level, soundPosition, new SoundPacket
                     {
-                        SoundLocation = currentItem.Type == Material.FlintAndSteel
+                        SoundLocation = currentItem.Is(ItemsRegistry.FlintAndSteel)
                             ? "minecraft:item.flintandsteel.use" : "minecraft:item.firecharge.use",
                         SoundPosition = new SoundPosition(soundPosition.X + 0.5, soundPosition.Y + 0.5, soundPosition.Z + 0.5),
                         Category = SoundCategory.Blocks,
                         Volume = 1,
-                        Pitch = currentItem.Type == Material.FlintAndSteel
+                        Pitch = currentItem.Is(ItemsRegistry.FlintAndSteel)
                             ? 0.8f + Random.Shared.NextSingle() * 0.4f
                             : 0.8f + (Random.Shared.NextSingle() - Random.Shared.NextSingle()) * 0.2f,
                         Seed = Random.Shared.NextInt64()
@@ -204,7 +213,6 @@ public partial class UseItemOnPacket
             return;
         }
 
-        var itemType = currentItem != null ? currentItem.Type : Material.Air;
         if (player is Obsidian.Entities.Player eatingPlayer)
             eatingPlayer.StartEating(Hand);
 
@@ -217,37 +225,32 @@ public partial class UseItemOnPacket
 
             block = pluginBlock.DefaultState;
         }
+        else if (currentItem is null)
+        {
+            return;
+        }
+        else if (currentItem.Is(ItemsRegistry.WaterBucket))
+        {
+            block = BlocksRegistry.Water;
+        }
+        else if (currentItem.Is(ItemsRegistry.LavaBucket))
+        {
+            block = BlocksRegistry.Lava;
+        }
+        else if (!BlocksRegistry.TryGetBlock(currentItem.Holder, out var placed))
+        {
+            // The item isn't a block, or it's a plugin's item without one, which does what its behaviour does.
+            return;
+        }
         else
         {
-            switch (itemType)
-            {
-                case Material.WaterBucket:
-                    itemType = Material.Water;
-                    break;
-                case Material.LavaBucket:
-                    itemType = Material.Lava;
-                    break;
-                case Material.Air or null:
-                    // A plugin's item without a block does what its behaviour does.
-                    return;
-                default:
-                    break;
-            }
-
-            try
-            {
-                block = BlocksRegistry.Get(itemType.Value);
-            }
-            catch //item is not a block so just return
-            {
-                return;
-            }
+            block = placed;
         }
 
         if (player.GameMode != GameMode.Creative)
             player.Inventory.RemoveItem(this.Hand == InteractionHand.MainHand ? player.CurrentHeldItemSlot : (short)45, 1);
 
-        if (block.Material == Material.EndPortalFrame)
+        if (block.Is(BlockIds.EndPortalFrame))
         {
             string[] facings = ["north", "east", "south", "west"];
             block = block.WithProperty("facing", facings[(int)Math.Floor((player.Yaw.Degrees + 45) / 90) % 4]);
@@ -309,9 +312,9 @@ public partial class UseItemOnPacket
     private async ValueTask ConsumePortalItemAsync(IClientPlayer player, ItemStack item)
     {
         var slot = this.Hand == InteractionHand.MainHand ? player.CurrentHeldItemSlot : (short)45;
-        if (item.Type == Material.EnderEye || player.GameMode != GameMode.Creative)
+        if (item.Is(ItemsRegistry.EnderEye) || player.GameMode != GameMode.Creative)
         {
-            if (item.Type != Material.FlintAndSteel)
+            if (!item.Is(ItemsRegistry.FlintAndSteel))
                 player.Inventory.RemoveItem(slot, 1);
             else if (!item.Unbreakable && ShouldDamageTool(item))
             {

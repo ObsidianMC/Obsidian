@@ -82,7 +82,7 @@ public partial class RecipeBookAddPacket
         writer.WriteVarInt(3);
         writer.WriteItemStack(recipe.Result.First());
         writer.WriteVarInt(2);
-        writer.WriteVarInt(ItemsRegistry.Get(Material.CraftingTable).Id);
+        writer.WriteVarInt(ItemsRegistry.CraftingTable.Id);
     }
 
     private static void WriteIngredientDisplay(INetStreamWriter writer, Ingredient ingredient)

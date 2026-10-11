@@ -2,6 +2,7 @@ using Obsidian.API.Effects;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot.Numbers;
+using Obsidian.API.Registries;
 
 namespace Obsidian.API.Loot.Functions;
 
@@ -15,7 +16,7 @@ public sealed class SetStewEffectFunction : LootFunction
 
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
-        if (!LootItems.Is(stack, Material.SuspiciousStew) || this.Effects.Length == 0)
+        if (!LootItems.Is(stack, ItemsRegistry.SuspiciousStew) || this.Effects.Length == 0)
             return stack;
 
         var effect = this.Effects[context.Random.NextInt(this.Effects.Length)];

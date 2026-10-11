@@ -256,10 +256,11 @@ public partial class MainEventHandler
             if (ingredient.IsNullOrAir() || ingredient.Count <= 0)
                 continue;
 
-            var remainder = ingredient.Type switch
+            var remainder = ingredient.Holder.Id switch
             {
-                Material.MilkBucket or Material.WaterBucket or Material.LavaBucket => ItemsRegistry.GetSingleItem(Material.Bucket),
-                Material.HoneyBottle => ItemsRegistry.GetSingleItem(Material.GlassBottle),
+                ItemIds.MilkBucket or ItemIds.WaterBucket or ItemIds.LavaBucket
+                    => ItemsRegistry.GetSingleItem(ItemsRegistry.Bucket),
+                ItemIds.HoneyBottle => ItemsRegistry.GetSingleItem(ItemsRegistry.GlassBottle),
                 _ => null
             };
             grid.RemoveItem(slot, 1);

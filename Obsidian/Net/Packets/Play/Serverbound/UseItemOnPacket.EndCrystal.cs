@@ -10,12 +10,12 @@ public partial class UseItemOnPacket
 {
     private async ValueTask<bool> TryPlaceEndCrystalAsync(IClientPlayer player, int handSlot, ItemStack? item)
     {
-        if (item is not { Count: > 0, Type: Material.EndCrystal }) return false;
+        if (item is not { Count: > 0, Holder.Id: ItemIds.EndCrystal }) return false;
         player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });
         if (player.GameMode == GameMode.Spectator || player.Health <= 0 || player.Level is not AbstractLevel level ||
             (player.Position - (VectorD)Position).MagnitudeSquared() > 36) return true;
         var terrain = new MobTerrain(level);
-        if (terrain.GetBlock(Position)?.Material is not Material.Obsidian and not Material.Bedrock) return true;
+        if (terrain.GetBlock(Position)?.RegistryId is not BlockIds.Obsidian and not BlockIds.Bedrock) return true;
         var above = Position + Vector.Up;
         if (level.IsOutsideBuildHeight(above.Y) || terrain.GetBlock(above)?.IsAir != true) return true;
         var bounds = new BoundingBox((VectorD)above, (VectorD)above + new VectorD(1, 2, 1));

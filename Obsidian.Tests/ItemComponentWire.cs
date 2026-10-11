@@ -196,7 +196,7 @@ public class ItemComponentWire
         Assert.DoesNotContain(DataComponentType.MaxDamage, copy.RemoveComponents);
         Assert.Equal(500, copy.MaxDamage);
 
-        var book = new ItemStack(ItemsRegistry.Get(Material.EnchantedBook));
+        var book = new ItemStack(ItemsRegistry.EnchantedBook);
         Assert.True(book.HasEnchantmentGlint);
         book.Remove(DataComponentType.EnchantmentGlintOverride);
         Assert.False(book.HasEnchantmentGlint);

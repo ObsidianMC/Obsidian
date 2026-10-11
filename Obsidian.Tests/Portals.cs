@@ -45,7 +45,7 @@ public class Portals
         blocks.Remove(new Vector(0, 63, 0));
         Assert.Null(await NetherPortalShape.FindAsync(Read, new Vector(0, 64, 0), "x", -64));
         blocks = Frame("x", 2, 3);
-        blocks[new Vector(1, 65, 0)] = BlocksRegistry.Get(Material.Stone);
+        blocks[new Vector(1, 65, 0)] = BlocksRegistry.Stone;
         Assert.Null(await NetherPortalShape.FindAsync(Read, new Vector(0, 64, 0), "x", -64));
         ValueTask<IBlock?> Read(Vector position) => new(blocks.GetValueOrDefault(position, BlocksRegistry.Air));
     }
@@ -54,7 +54,7 @@ public class Portals
     public async Task ExistingPortalBlocksAreCounted()
     {
         var blocks = Frame("x", 2, 3);
-        blocks[new Vector(0, 64, 0)] = BlocksRegistry.Get(Material.NetherPortal);
+        blocks[new Vector(0, 64, 0)] = BlocksRegistry.NetherPortal;
         var shape = await NetherPortalShape.FindAsync(Read, new Vector(1, 66, 0), "x", -64);
         Assert.Equal(new Vector(0, 64, 0), shape!.Value.Origin);
         Assert.Equal(1, shape.Value.PortalBlocks);
@@ -67,7 +67,7 @@ public class Portals
         var blocks = new Dictionary<Vector, IBlock>();
         var origin = new Vector(0, 64, 0);
         foreach (var (position, facing) in EndPortalFrames.Ring(origin))
-            blocks[position] = BlocksRegistry.Get(Material.EndPortalFrame).WithProperty("eye", true).WithProperty("facing", facing);
+            blocks[position] = BlocksRegistry.EndPortalFrame.WithProperty("eye", true).WithProperty("facing", facing);
         Assert.True(await EndPortalFrames.IsCompleteAsync(Read, origin));
         var north = origin + new Vector(0, 0, -1);
         blocks[north] = blocks[north].WithProperty("facing", "north");
@@ -80,7 +80,7 @@ public class Portals
     [Fact]
     public void ExitCollisionUsesSlabShapeInsteadOfWholeBlock()
     {
-        var slab = BlocksRegistry.Get(Material.StoneSlab).WithProperty("type", "bottom");
+        var slab = BlocksRegistry.StoneSlab.WithProperty("type", "bottom");
         IBlock Read(Vector position) => position == new Vector(0, 64, 0) ? slab : BlocksRegistry.Air;
         var exit = PortalCollision.FindFreePosition(Read, new VectorD(0.5, 64.2, 0.5), 0.6, 1.8);
         Assert.Equal(64.5, exit.Y, 6);
@@ -98,7 +98,7 @@ public class Portals
     [Fact]
     public void ObstructedExitMovesToNearestFreePosition()
     {
-        IBlock Read(Vector position) => position == new Vector(0, 64, 0) ? BlocksRegistry.Get(Material.Stone) : BlocksRegistry.Air;
+        IBlock Read(Vector position) => position == new Vector(0, 64, 0) ? BlocksRegistry.Stone : BlocksRegistry.Air;
         var exit = PortalCollision.FindFreePosition(Read, new VectorD(0.5, 64, 0.5), 0.6, 1.8);
         var distance = Math.Sqrt(Math.Pow(exit.X - 0.5, 2) + Math.Pow(exit.Y - 64, 2) + Math.Pow(exit.Z - 0.5, 2));
         Assert.Equal(0.8, distance, 6);
@@ -111,13 +111,13 @@ public class Portals
         var origin = new Vector(0, 64, 0);
         for (var x = 0; x < width; x++)
         {
-            blocks[origin + step * x + Vector.Down] = BlocksRegistry.Get(Material.Obsidian);
-            blocks[origin + step * x + Vector.Up * height] = BlocksRegistry.Get(Material.Obsidian);
+            blocks[origin + step * x + Vector.Down] = BlocksRegistry.ObsidianBlock;
+            blocks[origin + step * x + Vector.Up * height] = BlocksRegistry.ObsidianBlock;
         }
         for (var y = 0; y < height; y++)
         {
-            blocks[origin - step + Vector.Up * y] = BlocksRegistry.Get(Material.Obsidian);
-            blocks[origin + step * width + Vector.Up * y] = BlocksRegistry.Get(Material.Obsidian);
+            blocks[origin - step + Vector.Up * y] = BlocksRegistry.ObsidianBlock;
+            blocks[origin + step * width + Vector.Up * y] = BlocksRegistry.ObsidianBlock;
         }
         return blocks;
     }

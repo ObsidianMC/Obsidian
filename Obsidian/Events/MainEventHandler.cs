@@ -109,10 +109,10 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         if (block is null)
             return;
 
-        switch (block.Material)
+        switch (block.RegistryId)
         {
-            case Material.Chest:
-            case Material.TrappedChest:
+            case BlockIds.Chest:
+            case BlockIds.TrappedChest:
                 {
                     await player.Client.QueuePacketAsync(new BlockEventPacket
                     {
@@ -128,7 +128,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
                     break;
                 }
-            case Material.EnderChest:
+            case BlockIds.EnderChest:
                 {
                     await player.Client.QueuePacketAsync(new BlockEventPacket
                     {
@@ -143,7 +143,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     //    .Build());
                     break;
                 }
-            case Material.Barrel://Barrels don't have a block action
+            case BlockIds.Barrel://Barrels don't have a block action
                 {
                     //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelClose)
                     //    .WithSoundPosition(position.SoundPosition)
@@ -151,7 +151,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
                     break;
                 }
-            case Material.ShulkerBox:
+            case BlockIds.ShulkerBox:
                 {
                     await player.Client.QueuePacketAsync(new BlockEventPacket
                     {
@@ -183,7 +183,8 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         var player = e.Player as Player;
 
         if (block == null && player != null && item is { Count: > 0 } &&
-            (player.Vehicle is Pig && item.Type == Material.CarrotOnAStick || player.Vehicle is Strider && item.Type == Material.WarpedFungusOnAStick))
+            (player.Vehicle is Pig && item.Is(ItemsRegistry.CarrotOnAStick)
+                || player.Vehicle is Strider && item.Is(ItemsRegistry.WarpedFungusOnAStick)))
         {
             async ValueTask Boost()
             {
@@ -195,7 +196,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 item[DataComponentType.Damage] = component;
                 var slot = e.Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
                 if (component.Value >= (player.Vehicle is Strider ? 100 : 25))
-                    player.Inventory.SetItem(slot, ItemsRegistry.GetSingleItem(Material.FishingRod));
+                    player.Inventory.SetItem(slot, ItemsRegistry.GetSingleItem(ItemsRegistry.FishingRod));
                 await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
                 {
                     ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot)
@@ -218,43 +219,44 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
             player.LastClickedBlock = block;
 
-            var type = block.Material;
+            var type = block.RegistryId;
 
             BaseContainer? container = type switch
             {
-                Material.Anvil or Material.SmithingTable => new AnvilContainer(type.ToString().ToSnakeCase())
+                BlockIds.Anvil or BlockIds.SmithingTable => new AnvilContainer(
+                    type == BlockIds.Anvil ? "anvil" : "smithing_table")
                 {
-                    Title = type == Material.Anvil ? "Anvil" : "Smithing Table"
+                    Title = type == BlockIds.Anvil ? "Anvil" : "Smithing Table"
                 },
-                Material.EnchantingTable => new EnchantmentTable
+                BlockIds.EnchantingTable => new EnchantmentTable
                 {
                     BlockPosition = blockPosition
                 },
-                Material.Dropper or Material.Dispenser => new Container(9)
+                BlockIds.Dropper or BlockIds.Dispenser => new Container(9)
                 {
                     Owner = player.Uuid,
-                    Title = type.ToString(),
+                    Title = type == BlockIds.Dropper ? "Dropper" : "Dispenser",
                     BlockPosition = blockPosition,
-                    Id = type is Material.Dropper ? "dropper" : "dispenser"
+                    Id = type is BlockIds.Dropper ? "dropper" : "dispenser"
                 },
-                Material.BrewingStand => new BrewingStand
+                BlockIds.BrewingStand => new BrewingStand
                 {
                     BlockPosition = blockPosition
                 },
-                Material.Hopper => new Container(5)
+                BlockIds.Hopper => new Container(5)
                 {
                     BlockPosition = blockPosition
                 },
-                Material.CraftingTable => new CraftingTable(),
-                Material.Loom => new Loom(),
-                Material.CartographyTable => new CartographyTable(),
-                Material.Stonecutter => new Stonecutter(),
-                Material.Grindstone => new Grindstone(),
+                BlockIds.CraftingTable => new CraftingTable(),
+                BlockIds.Loom => new Loom(),
+                BlockIds.CartographyTable => new CartographyTable(),
+                BlockIds.Stonecutter => new Stonecutter(),
+                BlockIds.Grindstone => new Grindstone(),
 
                 _ => null
             };
             //TODO check if container is cached if so get that container
-            if (type is Material.Chest or Material.TrappedChest) // TODO check if chest its next to another single chest
+            if (type is BlockIds.Chest or BlockIds.TrappedChest) // TODO check if chest its next to another single chest
             {
                 container = new Container
                 {
@@ -276,13 +278,13 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 //    .WithSoundPosition(blockPosition.SoundPosition)
                 //    .Build());
             }
-            else if (type == Material.EnderChest)
+            else if (type == BlockIds.EnderChest)
             {
                 container = new Container
                 {
                     Owner = player.Uuid,
                     Title = "Ender Chest",
-                    Id = type.ToString().ToSnakeCase()
+                    Id = "ender_chest"
                 };
 
                 await player.OpenInventoryAsync(container);
@@ -297,13 +299,13 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 //    .WithSoundPosition(blockPosition.SoundPosition)
                 //    .Build());
             }
-            else if (type is Material.Furnace or Material.BlastFurnace or Material.Smoker)
+            else if (type is BlockIds.Furnace or BlockIds.BlastFurnace or BlockIds.Smoker)
             {
                 InventoryType actualType = type switch
                 {
-                    Material.Furnace => InventoryType.Furnace,
-                    Material.BlastFurnace => InventoryType.BlastFurnace,
-                    Material.Smoker => InventoryType.Smoker,
+                    BlockIds.Furnace => InventoryType.Furnace,
+                    BlockIds.BlastFurnace => InventoryType.BlastFurnace,
+                    BlockIds.Smoker => InventoryType.Smoker,
                     _ => InventoryType.Furnace
                 };
 
@@ -313,7 +315,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     Title = actualType.ToString()
                 };
             }
-            else if (type is Material.ShulkerBox) //TODO colored shulker boxes as well
+            else if (type is BlockIds.ShulkerBox) //TODO colored shulker boxes as well
             {
                 container = new Container // TODO shulker box functionality
                 {
@@ -334,7 +336,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 //    .WithSoundPosition(blockPosition.SoundPosition)
                 //    .Build());
             }
-            else if (type == Material.Barrel)
+            else if (type == BlockIds.Barrel)
             {
                 container = new Container
                 {
@@ -347,7 +349,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 //    .WithSoundPosition(blockPosition.SoundPosition)
                 //    .Build());
             }
-            else if (type == Material.Lectern)
+            else if (type == BlockIds.Lectern)
             {
                 //TODO open lectern??
             }

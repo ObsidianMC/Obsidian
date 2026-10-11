@@ -15,7 +15,7 @@ internal static class LootItems
     /// </summary>
     public static Item ItemOf(ItemStack stack) => IsEmpty(stack) ? ItemsRegistry.Air : stack.Holder;
 
-    public static bool Is(ItemStack stack, Material material) => ItemOf(stack).Type == material;
+    public static bool Is(ItemStack stack, Item item) => ItemOf(stack) == item;
 
     public static bool IsEmpty(ItemStack? stack) => stack is null || stack.IsAir || stack.Count <= 0;
 
