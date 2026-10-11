@@ -88,6 +88,11 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
     /// </summary>
     internal void Reset() => this.configurationSent = false;
 
+    // A registry's entries in id order: the order they're sent in gives clients their ids.
+    private static Dictionary<string, ICodec> ById<TCodec>(IEnumerable<KeyValuePair<string, TCodec>> entries)
+        where TCodec : ICodec =>
+        entries.OrderBy(entry => entry.Value.Id).ToDictionary(entry => entry.Key, entry => (ICodec)entry.Value);
+
     /// <summary>
     /// Sends the server's known packs, registries and tags, then finishes configuration.
     /// </summary>
@@ -111,18 +116,14 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
         //This is very inconvenient
         var dialogs = this.Server.CreateDialogConfiguration();
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Dialog.CodecKey, dialogs.Codecs) { WriteCodecs = true });
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey,
-            CodecRegistry.Dimensions.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey,
-            CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey,
-            CodecRegistry.ChatType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageType.CodecKey,
-            CodecRegistry.DamageType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey, ById(CodecRegistry.Dimensions.All)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, ById(CodecRegistry.Biomes.All)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey, ById(CodecRegistry.ChatType.All)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageType.CodecKey, ById(CodecRegistry.DamageType.All)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPattern.CodecKey,
-            CodecRegistry.TrimPattern.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+            ById(CodecRegistry.TrimPattern.All)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterial.CodecKey,
-            CodecRegistry.TrimMaterial.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+            ById(CodecRegistry.TrimMaterial.All)));
 
         this.SendPacket(new RegistryDataPacket(CodecRegistry.CatVariant.CodecKey,
             CodecRegistry.CatVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
@@ -144,7 +145,7 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
         this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfSoundVariant.CodecKey,
             CodecRegistry.WolfSoundVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.PaintingVariant.CodecKey,
-            CodecRegistry.PaintingVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+            ById(CodecRegistry.PaintingVariant.All)));
 
         // Item components refer to these by network id (the index of the entry sent here), e.g. an item's
         // enchantments.
