@@ -4,8 +4,9 @@ namespace Obsidian.Net.Payloads;
 
 /// <summary>
 /// The ids and encodings of the payloads that set up payload channels: vanilla-era <c>minecraft:register</c> and
-/// <c>minecraft:unregister</c>, and NeoForge's handshake. The encodings match what NeoForge 21.11 reads and writes,
-/// field for field, since a NeoForge client decodes them.
+/// <c>minecraft:unregister</c>, NeoForge's handshake, the common channels NeoForge and Fabric share, and Fabric's
+/// registry sync. The encodings match what NeoForge 21.11 and Fabric API for 1.21.11 read and write, field for field,
+/// since their clients decode them.
 /// </summary>
 internal static class ChannelPayloads
 {
@@ -18,6 +19,15 @@ internal static class ChannelPayloads
     public const string RegistrySyncStart = "neoforge:frozen_registry_sync_start";
     public const string RegistrySnapshot = "neoforge:frozen_registry";
     public const string RegistrySyncCompleted = "neoforge:frozen_registry_sync_completed";
+    public const string CommonVersion = "c:version";
+    public const string CommonRegister = "c:register";
+    public const string FabricRegistrySync = "fabric:registry/sync";
+    public const string FabricRegistrySyncCompleted = "fabric:registry/sync/complete";
+
+    /// <summary>
+    /// The version of the common channels the server speaks, the only one there is.
+    /// </summary>
+    public const int CommonNetworkingVersion = 1;
 
     /// <summary>
     /// NeoForge's own channels the server takes part in, declared like NeoForge declares them (optional, version 1,
@@ -171,6 +181,153 @@ internal static class ChannelPayloads
 
         writer.WriteVarInt(0);
     }
+
+    /// <summary>
+    /// Writes a <c>c:version</c> payload: the common networking versions the sender supports.
+    /// </summary>
+    public static void WriteCommonVersion(INetStreamWriter writer, IReadOnlyList<int> versions)
+    {
+        writer.WriteVarInt(versions.Count);
+
+        foreach (var version in versions)
+            writer.WriteVarInt(version);
+    }
+
+    /// <summary>
+    /// Reads a <c>c:version</c> payload; see <see cref="WriteCommonVersion"/>.
+    /// </summary>
+    public static List<int> ReadCommonVersion(INetStreamReader reader)
+    {
+        var count = reader.ReadVarInt();
+        var versions = new List<int>();
+
+        for (var i = 0; i < count; i++)
+            versions.Add(reader.ReadVarInt());
+
+        return versions;
+    }
+
+    /// <summary>
+    /// Writes a <c>c:register</c> payload: the common networking version, the phase the channels are for
+    /// (<c>configuration</c> or <c>play</c>), then the channels the sender receives payloads on in it.
+    /// </summary>
+    public static void WriteCommonRegister(
+        INetStreamWriter writer,
+        NetworkProtocol protocol,
+        IReadOnlyCollection<string> channels)
+    {
+        writer.WriteVarInt(CommonNetworkingVersion);
+        writer.WriteString(protocol == NetworkProtocol.Play ? "play" : "configuration");
+        writer.WriteVarInt(channels.Count);
+
+        foreach (var channel in channels)
+            writer.WriteString(channel);
+    }
+
+    /// <summary>
+    /// Reads a <c>c:register</c> payload; see <see cref="WriteCommonRegister"/>. The protocol is null for a phase
+    /// other than configuration and play.
+    /// </summary>
+    public static (int Version, NetworkProtocol? Protocol, List<string> Channels) ReadCommonRegister(
+        INetStreamReader reader)
+    {
+        var version = reader.ReadVarInt();
+        NetworkProtocol? protocol = reader.ReadString() switch
+        {
+            "play" => NetworkProtocol.Play,
+            "configuration" => NetworkProtocol.Configuration,
+            _ => null
+        };
+
+        var count = reader.ReadVarInt();
+        var channels = new List<string>();
+
+        for (var i = 0; i < count; i++)
+            channels.Add(reader.ReadString());
+
+        return (version, protocol, channels);
+    }
+
+    /// <summary>
+    /// Writes a <c>fabric:registry/sync</c> payload, which tells a Fabric client the id of every entry of the
+    /// registries plugins added to. Registries are grouped by namespace, then each registry's entries by namespace,
+    /// and those in runs of consecutive ids, so that a run's identifiers follow each other without their ids.
+    /// </summary>
+    /// <remarks>
+    /// Fabric API's encoding, which its client decodes: <c>minecraft</c> is written as an empty namespace, a registry
+    /// has an attribute byte (0: not optional, so a client without the registry refuses to join), and a run starts at
+    /// its offset from the end of the registry's previous run, which is negative when namespaces interleave.
+    /// </remarks>
+    public static void WriteFabricRegistrySync(INetStreamWriter writer, IReadOnlyList<SyncedRegistry> registries)
+    {
+        var byNamespace = registries
+            .GroupBy(registry => SplitIdentifier(registry.Name).Namespace)
+            .ToList();
+
+        writer.WriteVarInt(byNamespace.Count);
+
+        foreach (var group in byNamespace)
+        {
+            writer.WriteString(ShortNamespace(group.Key));
+            writer.WriteVarInt(group.Count());
+
+            foreach (var registry in group)
+            {
+                writer.WriteString(SplitIdentifier(registry.Name).Path);
+                writer.WriteByte((byte)0);
+                WriteFabricEntries(writer, registry.Entries);
+            }
+        }
+    }
+
+    private static void WriteFabricEntries(INetStreamWriter writer, IReadOnlyList<(int Id, string Identifier)> entries)
+    {
+        var byNamespace = entries
+            .OrderBy(entry => entry.Id)
+            .Select(entry => (entry.Id, Identifier: SplitIdentifier(entry.Identifier)))
+            .GroupBy(entry => entry.Identifier.Namespace)
+            .ToList();
+
+        writer.WriteVarInt(byNamespace.Count);
+
+        var previousId = 0;
+
+        foreach (var group in byNamespace)
+        {
+            var runs = new List<List<(int Id, string Path)>>();
+
+            foreach (var (id, identifier) in group)
+            {
+                if (runs.Count == 0 || runs[^1][^1].Id + 1 != id)
+                    runs.Add([]);
+
+                runs[^1].Add((id, identifier.Path));
+            }
+
+            writer.WriteString(ShortNamespace(group.Key));
+            writer.WriteVarInt(runs.Count);
+
+            foreach (var run in runs)
+            {
+                writer.WriteVarInt(run[0].Id - previousId);
+                writer.WriteVarInt(run.Count);
+
+                foreach (var (_, path) in run)
+                    writer.WriteString(path);
+
+                previousId = run[^1].Id;
+            }
+        }
+    }
+
+    private static (string Namespace, string Path) SplitIdentifier(string identifier)
+    {
+        var colon = identifier.IndexOf(':');
+
+        return colon < 0 ? ("minecraft", identifier) : (identifier[..colon], identifier[(colon + 1)..]);
+    }
+
+    private static string ShortNamespace(string @namespace) => @namespace == "minecraft" ? "" : @namespace;
 
     /// <summary>
     /// Writes a <c>neoforge:modded_network_setup_failed</c> payload: a map from channel id to the reason as a text

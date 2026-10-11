@@ -51,7 +51,8 @@ public interface IClient : IDisposable
 
     /// <summary>
     /// Whether the connection may receive payloads on <paramref name="channel"/> in its current phase: a vanilla
-    /// channel, one negotiated with a NeoForge client, or one the client registered with <c>minecraft:register</c>.
+    /// channel, one negotiated with a NeoForge client, or one the client registered with <c>minecraft:register</c> or
+    /// <c>c:register</c>.
     /// </summary>
     public bool HasChannel(string channel);
 

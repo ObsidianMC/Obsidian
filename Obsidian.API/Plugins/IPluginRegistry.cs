@@ -18,7 +18,8 @@ public interface IPluginRegistry
 
     /// <summary>
     /// Registers a payload channel for <typeparamref name="TPayload"/>, negotiated with NeoForge clients during
-    /// configuration. The registration is removed when the plugin unloads.
+    /// configuration, and checked against the channels Fabric clients register. The registration is removed when the
+    /// plugin unloads.
     /// </summary>
     /// <param name="phase">The connection phase the channel is used in.</param>
     /// <param name="direction">Which way the channel carries payloads.</param>
@@ -26,7 +27,10 @@ public interface IPluginRegistry
     /// Handles payloads clients send on the channel; required to receive them, and not allowed for a clientbound
     /// channel.
     /// </param>
-    /// <param name="version">The channel version; a NeoForge client mod must declare the same one.</param>
+    /// <param name="version">
+    /// The channel version; a NeoForge client mod must declare the same one. Fabric channels have no version, so when a
+    /// reload changes the payload's encoding, change the channel id too.
+    /// </param>
     /// <param name="optional">Whether clients without the channel may still connect.</param>
     public IPluginRegistry MapPayload<TPayload>(PayloadPhase phase, PayloadDirection direction,
         PayloadHandler<TPayload>? handler = null, string version = "1", bool optional = false)
@@ -41,9 +45,10 @@ public interface IPluginRegistry
     /// <param name="properties">The item's properties and behaviour; the defaults if null.</param>
     /// <returns>The item, to create stacks of.</returns>
     /// <remarks>
-    /// Clients without the plugin can't show its items, so once a plugin registered items, only NeoForge clients with a
-    /// matching mod can join. When the plugin unloads, its items lose their behaviour but stay registered, and synced to
-    /// clients, until the server stops: stacks of them may still be in inventories and the world.
+    /// Clients without the plugin can't show its items, so once a plugin registered items, only NeoForge and Fabric
+    /// clients with a matching mod can join. When the plugin unloads, its items lose their behaviour but stay
+    /// registered, and synced to clients, until the server stops: stacks of them may still be in inventories and the
+    /// world.
     /// </remarks>
     /// <exception cref="ArgumentException">The identifier isn't in the plugin's namespace, or isn't valid.</exception>
     public Item RegisterItem(string identifier, ItemProperties? properties = null);

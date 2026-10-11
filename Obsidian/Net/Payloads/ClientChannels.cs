@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using System.IO;
+using System.Threading;
 using Obsidian.API.Networking;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Plugins;
@@ -7,8 +8,9 @@ using Obsidian.Plugins;
 namespace Obsidian.Net.Payloads;
 
 /// <summary>
-/// One connection's payload channels: NeoForge's configuration handshake, the channels it agreed on, the channels the
-/// client registered itself, and receiving and sending payloads on them.
+/// One connection's payload channels: the configuration handshake (NeoForge's, or for other clients the common channels
+/// Fabric API speaks), the channels it agreed on, the channels the client registered itself, and receiving and sending
+/// payloads on them.
 /// </summary>
 /// <remarks>
 /// Only channel ids and versions are kept here, never plugin types, so the connection outlives a plugin reload. The
@@ -17,8 +19,8 @@ namespace Obsidian.Net.Payloads;
 /// <param name="client">The connection.</param>
 /// <param name="registry">The plugins' payload channels.</param>
 /// <param name="moddedRegistries">
-/// The registries plugins added to, which clients must agree on: a vanilla client can't join while there are any, and a
-/// NeoForge client gets them with NeoForge's registry sync. None if null.
+/// The registries plugins added to, which clients must agree on: a vanilla client can't join while there are any, and
+/// NeoForge and Fabric clients get them with their loader's registry sync. None if null.
 /// </param>
 internal sealed partial class ClientChannels(IClient client, PayloadChannelRegistry registry,
     Func<IReadOnlyList<SyncedRegistry>>? moddedRegistries = null)
@@ -34,7 +36,11 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
 
     private ImmutableDictionary<string, string> configurationChannels = ImmutableDictionary<string, string>.Empty;
     private ImmutableDictionary<string, string> playChannels = ImmutableDictionary<string, string>.Empty;
-    private ImmutableHashSet<string> clientChannels = ImmutableHashSet<string>.Empty;
+
+    // The channels the client registered itself, per protocol: with minecraft:register in that protocol, or for play
+    // with c:register during configuration.
+    private ImmutableHashSet<string> configurationClientChannels = ImmutableHashSet<string>.Empty;
+    private ImmutableHashSet<string> playClientChannels = ImmutableHashSet<string>.Empty;
 
     // How many channels a client may register itself, and how long their ids may be: the registrations are kept for
     // the whole connection, and the client chooses them.
@@ -43,9 +49,15 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
 
     private bool handshakeFinished;
 
-    // Set while the server waits for a NeoForge client to apply the registries it sent, and once it did, until the
-    // configuration handler goes on with configuration.
-    private bool awaitingRegistrySync;
+    // Whether a client without NeoForge agreed on the common channels' version, so it tells the server its channels.
+    private bool commonNetworking;
+
+    // Whether a client without NeoForge passed the handshake's checks, so it may send on the server's channels.
+    private bool otherAccepted;
+
+    // What the handshake waits for the client to answer, and whether it's done, until the configuration handler goes
+    // on with configuration.
+    private Awaiting awaiting;
     private bool readyForConfiguration;
 
     // Set when the client sent a NeoForge query, whether or not it was accepted: a client that sent one but wasn't
@@ -61,8 +73,12 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
     /// <summary>
     /// Whether the connection may carry payloads on <paramref name="channel"/> in <paramref name="protocol"/>. Like
     /// NeoForge, vanilla and handshake channels always may; others must have been agreed on in the handshake or
-    /// registered by the client with <c>minecraft:register</c>.
+    /// registered by the client with <c>minecraft:register</c> or <c>c:register</c>.
     /// </summary>
+    /// <remarks>
+    /// A channel the client registered itself has no version, so after a reload changes the channel's version it can
+    /// only be told apart by its id: give a changed payload a new channel id rather than a new version.
+    /// </remarks>
     public bool CanUse(string channel, NetworkProtocol protocol)
     {
         if (channel.StartsWith("minecraft:", StringComparison.Ordinal)
@@ -79,7 +95,7 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
         if (negotiated.TryGetValue(channel, out var version))
             return registry.TryGet(channel, out var registration) && registration.Version == version;
 
-        return this.clientChannels.Contains(channel);
+        return this.RegisteredChannels(protocol).Contains(channel);
     }
 
     /// <summary>
@@ -173,7 +189,7 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
             return false;
         }
 
-        this.awaitingRegistrySync = true;
+        this.awaiting = Awaiting.NeoForgeRegistrySync;
 
         this.Send(
             ChannelPayloads.RegistrySyncStart,
@@ -194,7 +210,7 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
     /// <summary>
     /// Updates the client's view of the server's channels once it entered play, like NeoForge: the configuration
     /// channels go away, and the server listens on the registration channels plus, for a client without NeoForge, its
-    /// optional play channels.
+    /// play channels.
     /// </summary>
     public async ValueTask FinishConfigurationAsync()
     {
@@ -205,7 +221,7 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
 
         IEnumerable<string> play = this.IsNeoForge
             ? [ChannelPayloads.NeoForgeQuery]
-            : this.GetOptionalListeningChannels(NetworkProtocol.Play);
+            : this.GetListeningChannels(NetworkProtocol.Play);
         string[] listening = [ChannelPayloads.Register, ChannelPayloads.Unregister, .. play];
         var register = ChannelPayloads.WriteChannelList(listening);
 
@@ -213,12 +229,13 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
     }
 
     /// <summary>
-    /// Handles a payload the client sent: the brand, channel registrations, NeoForge's query, or a plugin's channel.
+    /// Handles a payload the client sent: the brand, channel registrations, the handshake, or a plugin's channel.
     /// Payloads on unknown channels are ignored, like vanilla does.
     /// </summary>
     public async ValueTask HandlePayloadAsync(string channel, ReadOnlyMemory<byte> data)
     {
-        if (client.State.ToNetworkProtocol() is not NetworkProtocol protocol)
+        // Packets read before a refusal disconnected the client mustn't carry on the handshake it failed.
+        if (!client.Connected || client.State.ToNetworkProtocol() is not NetworkProtocol protocol)
             return;
 
         switch (channel)
@@ -230,19 +247,26 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
                     return;
                 }
             case ChannelPayloads.Register:
-                this.RegisterClientChannels(ChannelPayloads.ReadChannelList(data.Span));
+                this.RegisterClientChannels(protocol, ChannelPayloads.ReadChannelList(data.Span));
                 return;
             case ChannelPayloads.Unregister:
                 {
                     var channels = ChannelPayloads.ReadChannelList(data.Span);
-                    ImmutableInterlocked.Update(ref this.clientChannels, set => set.Except(channels));
+                    ImmutableInterlocked.Update(ref this.RegisteredChannels(protocol), set => set.Except(channels));
                     return;
                 }
             case ChannelPayloads.NeoForgeQuery when protocol == NetworkProtocol.Configuration:
                 await this.HandleQueryAsync(data);
                 return;
-            case ChannelPayloads.RegistrySyncCompleted when this.awaitingRegistrySync:
-                this.awaitingRegistrySync = false;
+            case ChannelPayloads.CommonVersion when this.awaiting == Awaiting.CommonVersion:
+                await this.HandleCommonVersionAsync(data);
+                return;
+            case ChannelPayloads.CommonRegister when this.commonNetworking:
+                await this.HandleCommonRegisterAsync(data);
+                return;
+            case ChannelPayloads.RegistrySyncCompleted when this.awaiting == Awaiting.NeoForgeRegistrySync:
+            case ChannelPayloads.FabricRegistrySyncCompleted when this.awaiting == Awaiting.FabricRegistrySync:
+                this.awaiting = Awaiting.Nothing;
                 this.readyForConfiguration = true;
                 return;
         }
@@ -253,7 +277,11 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
             return;
         }
 
-        if (!registration.Phase.Includes(protocol) || !this.CanUse(channel, protocol))
+        // A NeoForge client may only send on channels it agreed on. Other clients register only the channels they
+        // receive on, so once accepted they may send on any the server receives on: it announced those.
+        var allowed = this.IsNeoForge ? this.CanUse(channel, protocol) : this.otherAccepted;
+
+        if (!registration.Phase.Includes(protocol) || !allowed)
         {
             Log.ChannelNotSetUp(client.Logger, channel);
             return;
@@ -301,7 +329,7 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
         catch (Exception ex)
         {
             // Whatever the client sent, a query that can't be read refuses it rather than letting it continue.
-            Log.MalformedQuery(client.Logger, ex);
+            Log.MalformedPayload(client.Logger, ChannelPayloads.NeoForgeQuery, ex);
             await client.DisconnectAsync("Malformed NeoForge channel query.");
             return;
         }
@@ -356,33 +384,126 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
     }
 
     /// <summary>
-    /// Sets up a client without NeoForge, like NeoForge's server does: it can't have any channel, so the server's
-    /// required channels refuse it. Otherwise the server announces its optional configuration channels, which the
-    /// client may use once it registers them itself.
+    /// Sets up a client without NeoForge. One that registered the common channels (a Fabric client does, in answer to
+    /// the server's <c>minecraft:register</c>) first agrees on their version and tells the server its play channels,
+    /// like on a Fabric server; then, or right away for other clients, <see cref="CompleteOtherConnectionAsync"/>
+    /// decides whether it may join.
     /// </summary>
+    /// <returns>Whether configuration should go on now.</returns>
     private async ValueTask<bool> InitializeOtherConnectionAsync()
     {
-        // A vanilla client has no way to learn plugins' items, so it couldn't show them.
+        var registered = this.configurationClientChannels;
+
+        if (!registered.Contains(ChannelPayloads.CommonVersion) || !registered.Contains(ChannelPayloads.CommonRegister))
+            return await this.CompleteOtherConnectionAsync();
+
+        this.awaiting = Awaiting.CommonVersion;
+        this.Send(
+            ChannelPayloads.CommonVersion,
+            writer => ChannelPayloads.WriteCommonVersion(writer, [ChannelPayloads.CommonNetworkingVersion]));
+
+        return false;
+    }
+
+    // The client's answer to the server's c:version: the versions it supports too.
+    private async ValueTask HandleCommonVersionAsync(ReadOnlyMemory<byte> data)
+    {
+        List<int> versions;
+        try
+        {
+            using var reader = new NetworkBuffer(data.ToArray());
+            versions = ChannelPayloads.ReadCommonVersion(reader);
+        }
+        catch (Exception ex)
+        {
+            Log.MalformedPayload(client.Logger, ChannelPayloads.CommonVersion, ex);
+            await client.DisconnectAsync("Malformed common network version.");
+            return;
+        }
+
+        if (!versions.Contains(ChannelPayloads.CommonNetworkingVersion))
+        {
+            await client.DisconnectAsync(
+                $"Unsupported common network version. Obsidian supports {ChannelPayloads.CommonNetworkingVersion}.");
+            return;
+        }
+
+        this.commonNetworking = true;
+        this.awaiting = Awaiting.CommonRegister;
+
+        string[] play = [.. this.GetListeningChannels(NetworkProtocol.Play)];
+        this.Send(
+            ChannelPayloads.CommonRegister,
+            writer => ChannelPayloads.WriteCommonRegister(writer, NetworkProtocol.Play, play));
+    }
+
+    // The client's channels for a phase, which replace those it registered for it before. During the handshake, its
+    // play channels answer the server's.
+    private async ValueTask HandleCommonRegisterAsync(ReadOnlyMemory<byte> data)
+    {
+        int version;
+        NetworkProtocol? protocol;
+        List<string> channels;
+        try
+        {
+            using var reader = new NetworkBuffer(data.ToArray());
+            (version, protocol, channels) = ChannelPayloads.ReadCommonRegister(reader);
+        }
+        catch (Exception ex)
+        {
+            Log.MalformedPayload(client.Logger, ChannelPayloads.CommonRegister, ex);
+            await client.DisconnectAsync("Malformed common channel registration.");
+            return;
+        }
+
+        if (version != ChannelPayloads.CommonNetworkingVersion)
+        {
+            await client.DisconnectAsync("Common channels registered with a version that wasn't agreed on.");
+            return;
+        }
+
+        if (protocol is not NetworkProtocol phase)
+            return;
+
+        var valid = ValidChannels(channels).ToImmutableHashSet();
+        if (valid.Count <= MaxClientChannels)
+            Volatile.Write(ref this.RegisteredChannels(phase), valid);
+
+        if (this.awaiting == Awaiting.CommonRegister && phase == NetworkProtocol.Play)
+        {
+            this.awaiting = Awaiting.Nothing;
+            this.readyForConfiguration = await this.CompleteOtherConnectionAsync();
+        }
+    }
+
+    /// <summary>
+    /// Decides whether a client without NeoForge may join. A vanilla client can't have any channel, so the server's
+    /// required channels refuse it, like on NeoForge's server. A client that told the server its channels with the
+    /// common channels must have registered each required channel it receives payloads on; those only the server
+    /// receives on can't be checked, since a client only registers the channels it receives on. Content plugins added
+    /// needs a client with Fabric API's registry sync, which it gets before configuration goes on.
+    /// </summary>
+    /// <returns>Whether configuration should go on now.</returns>
+    private async ValueTask<bool> CompleteOtherConnectionAsync()
+    {
+        // Without a registry sync, the client has no way to learn plugins' items, so it couldn't show them.
         var registries = moddedRegistries?.Invoke() ?? [];
-        if (registries.Count > 0)
+        if (registries.Count > 0 && !this.configurationClientChannels.Contains(ChannelPayloads.FabricRegistrySync))
         {
             Log.ModdedContentRefused(client.Logger);
             await client.DisconnectAsync(
-                "This server has content from its plugins that needs NeoForge with the matching mods.");
+                "This server has content from its plugins that needs NeoForge or Fabric with the matching mods.");
             return false;
         }
 
-        var missing = new List<string>();
-
-        foreach (var protocol in NegotiatedProtocols)
-        {
-            var result = NetworkComponentNegotiator.Negotiate(registry.GetComponents(protocol), []);
-            missing.AddRange(result.FailureReasons.Keys);
-        }
+        var missing = NegotiatedProtocols
+            .SelectMany(this.FindMissingChannels)
+            .Distinct()
+            .ToList();
 
         if (missing.Count > 0)
         {
-            var channels = string.Join(", ", missing.Distinct());
+            var channels = string.Join(", ", missing);
             Log.NegotiationFailed(client.Logger, channels);
 
             var reason = $"This server needs client mods you don't have. Missing channels: {channels}";
@@ -390,30 +511,61 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
             return false;
         }
 
-        var optional = this.GetOptionalListeningChannels(NetworkProtocol.Configuration);
-        var listening = ChannelPayloads.Builtin.Concat(optional);
+        this.otherAccepted = true;
+
+        var listening = ChannelPayloads.Builtin.Concat(this.GetListeningChannels(NetworkProtocol.Configuration));
         this.Send(ChannelPayloads.Register, ChannelPayloads.WriteChannelList(listening));
 
-        return true;
+        if (registries.Count == 0)
+            return true;
+
+        this.awaiting = Awaiting.FabricRegistrySync;
+        this.Send(
+            ChannelPayloads.FabricRegistrySync,
+            writer => ChannelPayloads.WriteFabricRegistrySync(writer, registries));
+
+        return false;
     }
 
-    private void RegisterClientChannels(List<string> channels)
-    {
-        var valid = channels.Where(channel => channel.Length <= MaxChannelLength && channel.Contains(':'));
+    // The server's required channels in a protocol that a client without NeoForge lacks; see
+    // CompleteOtherConnectionAsync.
+    private IEnumerable<string> FindMissingChannels(NetworkProtocol protocol) => registry
+        .GetComponents(protocol)
+        .Where(component => !component.Optional)
+        .Where(component => !this.commonNetworking
+            || (component.Flow != PacketFlow.Serverbound
+                && !this.RegisteredChannels(protocol).Contains(component.Id)))
+        .Select(component => component.Id);
 
-        ImmutableInterlocked.Update(ref this.clientChannels, set =>
+    private void RegisterClientChannels(NetworkProtocol protocol, List<string> channels)
+    {
+        var valid = ValidChannels(channels);
+
+        ImmutableInterlocked.Update(ref this.RegisteredChannels(protocol), set =>
         {
             var registered = set.Union(valid);
             return registered.Count <= MaxClientChannels ? registered : set;
         });
     }
 
+    private static IEnumerable<string> ValidChannels(IEnumerable<string> channels) =>
+        channels.Where(channel => channel.Length <= MaxChannelLength && channel.Contains(':'));
+
+    // The channels the client registered itself for a protocol.
+    private ref ImmutableHashSet<string> RegisteredChannels(NetworkProtocol protocol)
+    {
+        if (protocol == NetworkProtocol.Configuration)
+            return ref this.configurationClientChannels;
+
+        return ref this.playClientChannels;
+    }
+
     /// <summary>
-    /// The server's optional channels in <paramref name="protocol"/> it receives payloads on.
+    /// The server's channels in <paramref name="protocol"/> it receives payloads on.
     /// </summary>
-    private IEnumerable<string> GetOptionalListeningChannels(NetworkProtocol protocol) => registry
+    private IEnumerable<string> GetListeningChannels(NetworkProtocol protocol) => registry
         .GetComponents(protocol)
-        .Where(component => component.Optional && component.Flow != PacketFlow.Clientbound)
+        .Where(component => component.Flow != PacketFlow.Clientbound)
         .Select(component => component.Id);
 
     /// <summary>
@@ -443,6 +595,15 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
         };
     }
 
+    private enum Awaiting
+    {
+        Nothing,
+        CommonVersion,
+        CommonRegister,
+        NeoForgeRegistrySync,
+        FabricRegistrySync
+    }
+
     private static partial class Log
     {
         [LoggerMessage(Level = LogLevel.Debug, Message = "Ignored a payload on unknown channel {Channel}")]
@@ -453,12 +614,12 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
         public static partial void ChannelNotSetUp(ILogger logger, string channel);
 
         [LoggerMessage(Level = LogLevel.Information,
-            Message = "Refused a client without NeoForge: plugins added content it can't show")]
+            Message = "Refused a client without NeoForge or Fabric API: plugins added content it can't show")]
         public static partial void ModdedContentRefused(ILogger logger);
 
         [LoggerMessage(Level = LogLevel.Warning,
-            Message = "Disconnecting a client that sent a malformed channel query")]
-        public static partial void MalformedQuery(ILogger logger, Exception exception);
+            Message = "Disconnecting a client that sent a malformed {Channel} payload")]
+        public static partial void MalformedPayload(ILogger logger, string channel, Exception exception);
 
         [LoggerMessage(Level = LogLevel.Information,
             Message = "Refused a client whose payload channels don't match the server's: {Channels}")]

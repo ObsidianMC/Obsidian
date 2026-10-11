@@ -10,10 +10,12 @@ client. This document describes the design and tracks its progress. The archive 
 - **One system, both sides.** The public API lives in Obsidian.API and doesn't depend on the server. The server
   implements it; a client (the Obsidian client, or another) implements the client-facing parts, which are interfaces
   only. A plugin's `side` says where it runs.
-- **NeoForge's protocol on the wire.** Mods negotiate network channels with NeoForge's configuration-phase handshake,
-  and synchronise registries with its registry sync. A server running Obsidian mods accepts vanilla clients when no
-  mod needs a channel the client lacks, accepts NeoForge clients whose mods match, and the Obsidian client speaks the
-  same protocol.
+- **NeoForge's protocol on the wire, and Fabric's.** Mods negotiate network channels with NeoForge's
+  configuration-phase handshake, and synchronise registries with its registry sync. Fabric clients tell the server
+  their channels with the common `c:version` and `c:register` channels instead, and get registries with Fabric API's
+  registry sync. A server running Obsidian mods accepts vanilla clients when no mod needs a channel or content the
+  client lacks, accepts NeoForge and Fabric clients whose mods match, and the Obsidian client speaks NeoForge's
+  protocol.
 - **Reloadable.** A plugin can be reloaded or unloaded while the server runs. NeoForge freezes its registries;
   Obsidian separates identity from behaviour instead:
   - The server owns identity: an identifier like `ruby:ruby_block` keeps its numeric id for the life of the process,
@@ -33,14 +35,17 @@ client. This document describes the design and tracks its progress. The archive 
    - Loading plugins before the worlds.
    - NeoForge's channel negotiation in the configuration phase, a payload channel API for mods, and `isModded` in
      the status response.
+   - Fabric clients: the common channels (`c:version`, `c:register`) tell the server a Fabric client's channels, so
+     required channels are checked against them. Fabric channels have no versions, so a reload that changes a
+     channel's payloads should change its id.
 2. **Content registries** (in progress)
    - Done for items: `Item` is a registered item type (one instance per item, keyed by identifier) rather than a
      `Material`-keyed struct. Plugins register items in their namespace with `IPluginRegistry.RegisterItem`, with an
      `IItemBehavior` for using them. An item keeps its instance and id across reloads; only its behaviour is replaced.
-     Once a plugin registered items, vanilla clients are refused and NeoForge clients are sent the item registry with
-     NeoForge's registry sync before vanilla's registries. A plugin's items stay registered, and synced, until the
-     server stops, even if the plugin unloads for good: stacks of them can still be anywhere, so clients need the mod
-     until then.
+     Once a plugin registered items, vanilla clients are refused, NeoForge clients are sent the item registry with
+     NeoForge's registry sync and Fabric clients with Fabric API's, before vanilla's registries. A plugin's items
+     stay registered, and synced, until the server stops, even if the plugin unloads for good: stacks of them can
+     still be anywhere, so clients need the mod until then.
    - Next: blocks (with their states) and entity types the same way; moving `Material` call sites to items and blocks
      until `Material` can go; reconfiguring connected players when a reload changes the registered content.
 3. **Data-driven content and world generation**: loading a mod's `data/` folder like a data pack (biomes, dimension
@@ -54,4 +59,4 @@ client. This document describes the design and tracks its progress. The archive 
 
 - World generators, dialogs and other registries that plugins fill through injected services are not yet removed when
   their plugin unloads (phase 3 and 2).
-- Obsidian.MSBuild still packs version 1 archives; it needs to write version 2 ones, with `assets/` and `data/`.
+- Obsidian.MSBuild writes version 2 archives on its `feat/obby-v2` branch, which isn't released yet.

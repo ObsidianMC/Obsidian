@@ -261,6 +261,161 @@ public class ModdedNetworking
         Assert.False(required.Client.Connected);
     }
 
+    [Fact(DisplayName = "A Fabric client tells the server its channels, then gets plugins' items with Fabric's sync")]
+    public async Task FabricClientHandshake()
+    {
+        var registry = new PayloadChannelRegistry();
+        var received = new List<string>();
+
+        registry.Register<RequiredPayload>(new FakePluginContainer(), PayloadPhase.Play, PayloadDirection.Clientbound,
+            null, "1", optional: false);
+        registry.Register<EchoPayload>(new FakePluginContainer(), PayloadPhase.Play, PayloadDirection.Serverbound,
+            (payload, _) =>
+            {
+                received.Add(payload.Text);
+                return ValueTask.CompletedTask;
+            }, "1", optional: true);
+
+        // Plugins from two namespaces, one registering an item after the other's.
+        SyncedRegistry items = new("minecraft:item",
+        [
+            (0, "minecraft:air"),
+            (1, "minecraft:stone"),
+            (2, "test:gem"),
+            (3, "other:dust"),
+            (4, "test:ruby")
+        ]);
+
+        async Task<(TestClient Client, ClientChannels Channels)> HandshakeAsync(params string[] playChannels)
+        {
+            var client = new TestClient(new FakeServer());
+            client.SetState(ClientState.Configuration);
+            var channels = new ClientChannels(client, registry, () => [items]);
+
+            channels.StartConfiguration();
+            client.ClearPackets();
+
+            // Fabric API answers the server's minecraft:register with its configuration channels, before the pong.
+            var register = Encoding.ASCII.GetBytes("c:version\0c:register\0fabric:registry/sync\0");
+            await channels.HandlePayloadAsync(ChannelPayloads.Register, register);
+
+            Assert.False(await channels.FinishHandshakeAsync(0));
+            Assert.Equal(Write(writer =>
+            {
+                writer.WriteVarInt(1);
+                writer.WriteVarInt(1);
+            }), PayloadOn(client, ChannelPayloads.CommonVersion));
+
+            await channels.HandlePayloadAsync(ChannelPayloads.CommonVersion, Write(writer =>
+            {
+                writer.WriteVarInt(1);
+                writer.WriteVarInt(1);
+            }));
+
+            // The server's play channels it receives on.
+            Assert.Equal(Write(writer =>
+            {
+                writer.WriteVarInt(1);
+                writer.WriteString("play");
+                writer.WriteVarInt(1);
+                writer.WriteString(EchoPayload.Channel);
+            }), PayloadOn(client, ChannelPayloads.CommonRegister));
+
+            await channels.HandlePayloadAsync(ChannelPayloads.CommonRegister, Write(writer =>
+            {
+                writer.WriteVarInt(1);
+                writer.WriteString("play");
+                writer.WriteVarInt(playChannels.Length);
+
+                foreach (var channel in playChannels)
+                    writer.WriteString(channel);
+            }));
+
+            return (client, channels);
+        }
+
+        var (fabric, fabricChannels) = await HandshakeAsync(RequiredPayload.Channel);
+
+        Assert.True(fabric.Connected);
+        Assert.True(fabricChannels.CanUse(RequiredPayload.Channel, NetworkProtocol.Play));
+        Assert.False(fabricChannels.TakeReadyForConfiguration());
+
+        // Fabric's encoding: registries by namespace ("minecraft" written empty), then each registry's path, attributes
+        // and entries by namespace, in runs of consecutive ids starting at their offset from the previous run's end.
+        Assert.Equal(Write(writer =>
+        {
+            writer.WriteVarInt(1);
+            writer.WriteString("");
+            writer.WriteVarInt(1);
+            writer.WriteString("item");
+            writer.WriteByte((byte)0);
+            writer.WriteVarInt(3);
+
+            writer.WriteString("");
+            writer.WriteVarInt(1);
+            writer.WriteVarInt(0);
+            writer.WriteVarInt(2);
+            writer.WriteString("air");
+            writer.WriteString("stone");
+
+            writer.WriteString("test");
+            writer.WriteVarInt(2);
+            writer.WriteVarInt(1);
+            writer.WriteVarInt(1);
+            writer.WriteString("gem");
+            writer.WriteVarInt(2);
+            writer.WriteVarInt(1);
+            writer.WriteString("ruby");
+
+            writer.WriteString("other");
+            writer.WriteVarInt(1);
+            writer.WriteVarInt(-1);
+            writer.WriteVarInt(1);
+            writer.WriteString("dust");
+        }), PayloadOn(fabric, ChannelPayloads.FabricRegistrySync));
+
+        await fabricChannels.HandlePayloadAsync(ChannelPayloads.FabricRegistrySyncCompleted, Array.Empty<byte>());
+        Assert.True(fabricChannels.TakeReadyForConfiguration());
+
+        // The client never registers a channel only the server receives on, but may send on it.
+        fabric.SetState(ClientState.Play);
+        await fabricChannels.HandlePayloadAsync(EchoPayload.Channel, Write(new EchoPayload("hello").Write));
+        Assert.Equal(["hello"], received);
+
+        // Without the mod that receives the server's required channel, the client is refused.
+        var (withoutMod, _) = await HandshakeAsync();
+
+        Assert.False(withoutMod.Connected);
+
+        // A refusal is final: payloads the client sent after it, like a version the server does support, are ignored.
+        var unsupported = new TestClient(new FakeServer());
+        unsupported.SetState(ClientState.Configuration);
+        var unsupportedChannels = new ClientChannels(unsupported, registry, () => [items]);
+
+        unsupportedChannels.StartConfiguration();
+        await unsupportedChannels.HandlePayloadAsync(
+            ChannelPayloads.Register,
+            Encoding.ASCII.GetBytes("c:version\0c:register\0"));
+        await unsupportedChannels.FinishHandshakeAsync(0);
+        unsupported.ClearPackets();
+
+        await unsupportedChannels.HandlePayloadAsync(ChannelPayloads.CommonVersion, Write(writer =>
+        {
+            writer.WriteVarInt(1);
+            writer.WriteVarInt(2);
+        }));
+        await unsupportedChannels.HandlePayloadAsync(ChannelPayloads.CommonVersion, Write(writer =>
+        {
+            writer.WriteVarInt(1);
+            writer.WriteVarInt(1);
+        }));
+
+        Assert.False(unsupported.Connected);
+        Assert.DoesNotContain(
+            unsupported.SentPackets.OfType<CustomPayloadPacket>(),
+            packet => packet.Channel == ChannelPayloads.CommonRegister);
+    }
+
     [Fact(DisplayName = "The status response says whether the server is modded")]
     public void StatusReportsModded()
     {
