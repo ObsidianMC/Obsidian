@@ -61,6 +61,9 @@ heightmaps; `nbt` covers the chunk as saved):
 | Nether | `af7e0c06757df39c` | `0182f3c2505ffb8c` |
 | End | `e2618139ae48a1ca` | `7c2bb04c8b8081bd` |
 
+The vanilla save format (#539) later changed the `nbt` hashes to `f72b36a825c25cc8`, `a3ae9be2af4901ed` and
+`e809ef68a3c4b1cc`. The block hashes were unchanged.
+
 ### Where the overworld's time goes
 
 From a sampled CPU profile of the single-threaded run. Inclusive times only: the sampler's innermost frames (`PollGC`,
