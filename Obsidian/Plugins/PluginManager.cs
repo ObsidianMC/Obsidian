@@ -110,6 +110,9 @@ public sealed partial class PluginManager : IAsyncDisposable
         {
             await this.RunChangeAsync(async () =>
             {
+                // Obsidian's convention (c:) tags are there with no plugins too; each plugin applies the tags again.
+                this.ApplyTags();
+
                 var archives = new List<PluginArchive>();
                 var files = Directory.GetFiles(ServerConstants.PluginsPath, "*.obby", SearchOption.AllDirectories);
 

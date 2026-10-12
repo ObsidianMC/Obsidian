@@ -172,6 +172,11 @@ client. This document describes the design and tracks its progress. The archive 
        attributes than `monsters_burn`;
      - raids and the end fight in plugins' dimensions, which only the default world has (plugins build their own
        portals).
+   - Phase 3.5, convention tags (done): Obsidian ships its own `c:` tags (349: 90 block, 204 item, 5 entity type,
+     50 biome tags), filled with vanilla's entries under the shared names NeoForge's and Fabric's mods use, like
+     `c:ores/iron`, `c:ingots/iron`, `c:is_overworld` and `c:bosses`. They're merged like a built-in data pack
+     between vanilla's tags and plugins' files, exist with no plugins loaded and are sent to clients (see
+     [plugin-content.md](plugin-content.md#convention-tags)). Fluids have no `c:` tags, as plugins can't tag fluids.
    - Phase 3.5, part B (done): inline entries in plugins' level stems, and tree parts in the API. A stem's
      `generator.settings` may define noise settings inline, read like a plugin's noise settings file, with
      inline or named density functions; the plugins whose types they use, and the plugin entries they name, are
