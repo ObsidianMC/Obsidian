@@ -259,7 +259,9 @@ client. This document describes the design and tracks its progress. The archive 
      colour, blended like vanilla's, or a fixed colour, on faces with a `tintindex`; items take vanilla's default
      colours unless their definitions have tints), and draws its entity types (`EntityRendererProperties`: a model
      layer from `assets/<ns>/models/entity/`, in the shape of the client's `client_models.json` layers, a texture,
-     scale and shadow radius; heads follow the look and legs swing, by part name). See
+     scale and shadow radius; heads follow the look and legs swing, by part name). Like the server's content, a mod's
+     bindings, tints and renderers are its own (in its namespace, for its blocks and entity types); they take effect
+     only once `ConfigureClient` returns, and the registry is sealed then. See
      [plugin-content.md](plugin-content.md#client).
    - Next: particle providers (mods' particle definitions are loaded already) and screens for menu types, once
      plugins can register particle types and menu types on the server; unloading and reloading client mods while the
