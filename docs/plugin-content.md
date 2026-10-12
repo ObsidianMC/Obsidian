@@ -209,8 +209,8 @@ themselves, and vanilla's entries by name, so vanilla clients always decode them
 given as an int is sent as `"#rrggbb"`, defaults vanilla leaves out are left out, and of a biome only its climate,
 attributes and effects are sent, as vanilla sends them. Players already connected go back through configuration when
 entries are added or their data changes. Plugin biomes generate in plugins' dimensions (see [Dimensions](#dimensions)),
-not in vanilla's yet, and the Obsidian client colours biomes from compiled tables, so plugin biomes have no tint there
-yet.
+and in vanilla's through biome regions (see [Biome regions](#biome-regions)), and the Obsidian client colours biomes
+from compiled tables, so plugin biomes have no tint there yet.
 
 ### What's checked
 
@@ -903,6 +903,97 @@ Players get there with `/dimension <id>`, like `/dimension ruby:crystal_world`, 
 clients see a plugin's dimension as a level of that name with its dimension type, sent in login and respawn with the
 build height of the type, and its plugin biomes in chunks by their registry ids. There are no portals to plugins'
 dimensions, and only the default world has them.
+
+## Biome regions
+
+A biome region adds a plugin's biomes to a dimension that already exists, like the overworld or the nether, without
+replacing its layout, so that several plugins' biomes generate side by side. It's Obsidian's own format, for what
+TerraBlender does for NeoForge and Fabric mods: `data/<namespace>/biome_region/<path>.json` is the region
+`<namespace>:<path>`. A region is an alternative layout for parts of the dimension: either the dimension's own with
+some biomes swapped,
+
+```json
+// data/ruby/biome_region/crystal_plains.json
+{
+  "dimension": "minecraft:overworld",
+  "weight": 2,
+  "replace": {
+    "minecraft:plains": "ruby:crystal_plains",
+    "minecraft:sunflower_plains": "ruby:crystal_plains"
+  }
+}
+```
+
+or a parameter list of its own, picked from the climate like a `multi_noise` biome source's `biomes` (see
+[Dimensions](#dimensions)):
+
+```json
+// data/ruby/biome_region/crystal_lands.json
+{
+  "dimension": "minecraft:overworld",
+  "weight": 1,
+  "biomes": [
+    {
+      "biome": "ruby:crystal_plains",
+      "parameters": {
+        "temperature": [-1, 1], "humidity": [-1, 1], "continentalness": [-0.11, 1],
+        "erosion": [-1, 1], "depth": 0, "weirdness": [-1, 1], "offset": 0
+      }
+    },
+    {
+      "biome": "minecraft:ocean",
+      "parameters": {
+        "temperature": [-1, 1], "humidity": [-1, 1], "continentalness": [-1.2, -0.11],
+        "erosion": [-1, 1], "depth": 0, "weirdness": [-1, 1], "offset": 0
+      }
+    }
+  ]
+}
+```
+
+- `dimension` names the dimension by its level stem: `minecraft:overworld`, `minecraft:the_nether` or a plugin's
+  dimension. Regions are meant for dimensions whose biomes follow the climate (`multi_noise`, like the overworld and
+  the nether, whatever their parameter list), but apply to any dimension of vanilla's noise generator. A region
+  naming a dimension that doesn't exist does nothing.
+- `weight`, from 1 to 1000, is how often the region is picked, against the dimension's other regions and its own
+  layout, which weighs 10 (like TerraBlender's vanilla regions).
+- `replace` maps biomes of the dimension to the biomes generated instead; biomes the dimension doesn't generate are
+  never replaced. `biomes` is a parameter list, the dimension's whole layout where the region is: every climate
+  should find a fitting biome, oceans and caves included. A region has one of the two.
+- Biomes are vanilla's or plugins' registered ones, the plugin's own or those of plugins loaded before it. Fields the
+  format doesn't have are errors. A file that can't be read is logged and left out, and the plugin loads without it.
+  When two plugins define the same region, the first in load order wins.
+
+Each column's region is picked from the world seed and the dimension: the dimension is split into irregular cells
+about 1024 blocks across, each of which picks a region, or the dimension's own layout, at random by weight. A world
+generates the same regions every time. Terrain doesn't depend on biomes, so only biomes change, with what follows
+them: surface rules, features, carvers, spawns and structures. A region's biomes count among the dimension's possible
+biomes, whose features are ordered together (when they can't be, biome modifiers are left out as for any dimension,
+see [Biome modifiers](#biome-modifiers)), and structures generate in them where their biome tags allow. A dimension
+with no regions generates exactly as without them.
+
+Region biomes are plain biomes, so tags group them with the dimension's other biomes. Add them to the tags that biome
+modifiers and other plugins name, like `#c:is_overworld` and `#minecraft:is_overworld` (or `#c:is_nether` and
+`#minecraft:is_nether`), and to vanilla's structure tags for the structures they should have, like
+`#minecraft:has_structure/village_plains`:
+
+```json
+// data/c/tags/worldgen/biome/is_overworld.json, and the same in data/minecraft/tags/worldgen/biome/
+{ "values": ["ruby:crystal_plains"] }
+```
+
+The rules:
+
+- Regions are part of a dimension's generator. A dimension takes the loaded plugins' regions when it starts
+  generating (at startup for vanilla's, when it's added for a plugin's), and keeps them until the server stops, so
+  that its chunks all generate with the same layout. A plugin loading, reloading or unloading later doesn't change
+  the regions of a dimension that generates already; the change is logged, and applies after a restart.
+- A region whose plugin unloads keeps generating with its biomes, which stay registered (see
+  [Biomes](#biomes-dimension-types-and-damage-types)), without the plugin's features, which go with it. Regions are
+  data, so they never keep a plugin's code loaded.
+- Adding or removing a dimension's regions moves where its regions generate in chunks not generated yet, since the
+  cells pick again; chunks already generated stay as they are. After a restart without the plugin, its biomes in
+  saved chunks load as plains.
 
 ## Level generators
 

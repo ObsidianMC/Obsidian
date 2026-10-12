@@ -161,8 +161,8 @@ client. This document describes the design and tracks its progress. The archive 
      every plugin change, plugins' code is only called holding a call into the plugin, and levels stop and resume
      generating with their plugins rather than failing or keeping their code loaded.
    - Possible later, gaps noted along the way (see [plugin-content.md](plugin-content.md)):
-     - adding plugin biomes to vanilla's overworld and nether climate (like TerraBlender), rather than only to
-       plugins' own dimensions, deferred until needed;
+     - biome regions defined in code, and biome tags as a region's `replace` keys (Phase 3.7 added plugin biomes
+       to vanilla's overworld and nether climate, like TerraBlender, with regions from data files);
      - in level stems: dimension types and biomes defined inline, `minecraft:flat` and `minecraft:debug`
        generators, and plugin level generators as a stem's `generator`;
      - noises defined inline, a constant `spline`, and a range for a spawn target's `depth`;
@@ -206,6 +206,17 @@ client. This document describes the design and tracks its progress. The archive 
      `c:ores/iron`, `c:ingots/iron`, `c:is_overworld` and `c:bosses`. They're merged like a built-in data pack
      between vanilla's tags and plugins' files, exist with no plugins loaded and are sent to clients (see
      [plugin-content.md](plugin-content.md#convention-tags)). Fluids have no `c:` tags, as plugins can't tag fluids.
+   - Phase 3.7, biome regions (done): several plugins add their biomes to the overworld's and nether's climate,
+     or any other dimension's, without overriding each other, Obsidian's equivalent of TerraBlender. A
+     `data/<namespace>/biome_region` file names a `dimension` and a `weight`, and either the biomes it `replace`s
+     in the dimension's own layout or a parameter list of its own (`biomes`, like a `multi_noise` source's).
+     The dimension's biome source picks a region per column from irregular cells about 1024 blocks across,
+     seeded by the world seed and the dimension, its own layout weighing 10; terrain stays as it is, and surface,
+     features, carvers, spawns and structures follow the region's biomes, which count among the dimension's
+     possible biomes for feature ordering and structures. A dimension takes the loaded plugins' regions when it
+     starts generating and keeps them until the server stops: later changes apply after a restart, and a region
+     whose plugin unloads keeps generating with its biomes. Without regions, dimensions generate exactly as
+     before (see [plugin-content.md](plugin-content.md#biome-regions)).
    - Next: Phase 4.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource
