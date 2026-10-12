@@ -207,7 +207,8 @@ internal static partial class PluginDimensions
     /// like a wrapper around their biome source, goes here or in <see cref="LevelStemData"/>.
     /// </para>
     /// </remarks>
-    /// <returns>The dimension the level takes, whose dimension type it must use; null when it's not available.</returns>
+    /// <returns>The dimension the level takes, whose dimension type it must use, or null when it's not
+    /// available.</returns>
     public static MojangDimension? Take(MojangDimension dimension)
     {
         lock (applying)
