@@ -59,12 +59,19 @@ internal sealed record EntityBinding(IPluginContainer Owner, IEntityBehavior? Be
 /// The parts of a plugin entity type's <see cref="EntityProperties"/> the server keeps: plain values, so that keeping
 /// them doesn't keep the plugin loaded.
 /// </summary>
-internal sealed record EntitySettings(float Width, float Height, float MaxHealth, float MovementSpeed, float Gravity)
+internal sealed record EntitySettings(
+    float Width,
+    float Height,
+    float MaxHealth,
+    float MovementSpeed,
+    float Gravity,
+    MobCategory Category)
 {
     public static EntitySettings From(EntityProperties properties) => new(
         properties.Width,
         properties.Height,
         properties.MaxHealth,
         properties.MovementSpeed,
-        properties.Gravity);
+        properties.Gravity,
+        properties.Category);
 }

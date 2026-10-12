@@ -12,8 +12,8 @@ namespace Obsidian.Registries.Codecs;
 /// <remarks>
 /// Vanilla logs and drops a carver, feature or spawner it can't read; a plugin's file is rejected instead. Placed
 /// features are vanilla's or plugins' identifiers, a tag, or defined inline, which are kept as their JSON and read
-/// with the plugins' features (see <see cref="PluginFeatures"/>). Carvers are vanilla's identifiers or a tag:
-/// plugins can't add carvers yet.
+/// with the plugins' features (see <see cref="PluginFeatures"/>). Carvers are vanilla's or plugins' configured
+/// carvers, or a tag. Tags are resolved with the features, since they may be plugins' tags.
 /// </remarks>
 internal sealed record BiomeData(
     bool HasPrecipitation,
@@ -44,7 +44,11 @@ internal sealed record BiomeData(
     ];
 
     /// <param name="isPlacedFeature">Whether a placed feature exists; vanilla's by default.</param>
-    public static BiomeData Read(JsonElement root, Func<string, bool>? isPlacedFeature = null)
+    /// <param name="isConfiguredCarver">Whether a configured carver exists; vanilla's by default.</param>
+    public static BiomeData Read(
+        JsonElement root,
+        Func<string, bool>? isPlacedFeature = null,
+        Func<string, bool>? isConfiguredCarver = null)
     {
         Object(root, "");
 
@@ -57,7 +61,7 @@ internal sealed record BiomeData(
             Required(root, "", "carvers"),
             "carvers",
             "worldgen/configured_carver",
-            RegistryIds.IsConfiguredCarver);
+            isConfiguredCarver ?? RegistryIds.IsConfiguredCarver);
 
         return new BiomeData(
             HasPrecipitation: Bool(Required(root, "", "has_precipitation"), "has_precipitation"),
@@ -148,7 +152,10 @@ internal sealed record BiomeData(
     /// identifiers. Vanilla also takes entries defined inline, which are kept as their JSON text where
     /// <paramref name="inline"/> allows them.
     /// </summary>
-    /// <returns>The identifiers and inline entries' JSON, or the tag as a single <c>#tag</c>.</returns>
+    /// <returns>
+    /// The identifiers and inline entries' JSON, or the tag as a single <c>#tag</c>, which isn't checked here: plugins'
+    /// tags are applied after their files are read.
+    /// </returns>
     public static ImmutableArray<string> ReadHolderSet(
         JsonElement value,
         string path,
@@ -157,13 +164,7 @@ internal sealed record BiomeData(
         bool inline = false)
     {
         if (value.ValueKind == JsonValueKind.String && value.GetString()!.StartsWith('#'))
-        {
-            var tag = Tag(value, path);
-            if (!TagsRegistry.TryGet(registry, tag, out _))
-                throw Error(path, $"#{tag} isn't a {registry} tag");
-
-            return [$"#{tag}"];
-        }
+            return [$"#{Tag(value, path)}"];
 
         if (value.ValueKind != JsonValueKind.Array)
             return [ReadReference(value, path, registry, exists, inline)];
@@ -256,7 +257,11 @@ internal sealed record BiomeData(
         return spawners;
     }
 
-    private static SpawnerMob ReadSpawner(JsonElement value, string path)
+    /// <summary>
+    /// Reads a spawner like vanilla's weighted SpawnerData: <c>{type, weight, minCount, maxCount}</c>, of vanilla's
+    /// or a loaded plugin's entity type.
+    /// </summary>
+    public static SpawnerMob ReadSpawner(JsonElement value, string path)
     {
         Object(value, path);
 

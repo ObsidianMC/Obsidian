@@ -6,9 +6,9 @@ using Obsidian.Plugins;
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
-/// What a level stem generates with vanilla's noise generator: its dimension type, noise settings, biome source and
-/// carvers. Vanilla's world preset's dimensions are the statics; plugins' are read from their level stem files (see
-/// <see cref="Registries.Codecs.LevelStemData"/>).
+/// What a level stem generates with vanilla's noise generator: its dimension type, noise settings and biome source,
+/// whose biomes give the carvers. Vanilla's world preset's dimensions are the statics; plugins' are read from their
+/// level stem files (see <see cref="Registries.Codecs.LevelStemData"/>).
 /// </summary>
 internal sealed class MojangDimension
 {
@@ -120,16 +120,6 @@ internal sealed class MojangDimension
     /// </summary>
     public bool IsReleased => this.settings is null;
 
-    /// <summary>
-    /// Configured carver names (in <c>Assets/configured_carver</c>), in the order the dimension's biomes list them.
-    /// </summary>
-    /// <remarks>
-    /// Vanilla picks the carvers of each start chunk's biome; every vanilla biome of a dimension lists the same ones,
-    /// so one list per dimension gives the same result. A plugin's dimension carves like the vanilla dimension whose
-    /// noise settings it uses, whatever its biomes list, and like the overworld with a plugin's noise settings.
-    /// </remarks>
-    public IReadOnlyList<string> Carvers { get; }
-
     /// <param name="identifier">The level stem's identifier.</param>
     /// <param name="dimensionType">A registered dimension type.</param>
     /// <param name="noiseSettings">The noise settings' identifier.</param>
@@ -154,7 +144,6 @@ internal sealed class MojangDimension
         this.createBiomeSource = createBiomeSource;
         this.possibleBiomes = possibleBiomes;
         this.Plugins = plugins.IsDefault ? [] : plugins;
-        this.Carvers = CarversOf(noiseSettings);
     }
 
     /// <summary>
@@ -184,12 +173,4 @@ internal sealed class MojangDimension
 
     private InvalidOperationException Released() =>
         new($"{this.Identifier} was released when a plugin it generates with unloaded.");
-
-    // The carvers vanilla's biomes of the dimension using these settings list.
-    private static IReadOnlyList<string> CarversOf(string noiseSettings) => noiseSettings switch
-    {
-        "minecraft:nether" => ["nether_cave"],
-        "minecraft:end" => [],
-        _ => ["cave", "cave_extra_underground", "canyon"]
-    };
 }

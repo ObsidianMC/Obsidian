@@ -89,7 +89,7 @@ internal sealed class ChunkBuilder
         this.terrainGenerator = new TerrainGenerator(this.RandomState);
         this.biomeSource = dimension.CreateBiomeSource(this.RandomState);
         this.surfaceBuilder = new SurfaceBuilder(this.RandomState, this.biomeSource);
-        this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource, dimension.Carvers);
+        this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource);
         this.features = features ?? (static () => PluginFeatures.Current);
         this.decoration = this.CreateDecoration(this.features());
         this.regionRandom = this.RandomState.Random.FromHashOf("minecraft:worldgen_region_random").ForkPositional();
@@ -164,14 +164,15 @@ internal sealed class ChunkBuilder
     }
 
     /// <summary>
-    /// Carves caves and canyons. Fluids that need an update are added to the chunk's post-processing.
+    /// Carves caves and canyons with the current biome carvers (see <see cref="WorldgenFeatureSet.BiomeCarvers"/>).
+    /// Fluids that need an update are added to the chunk's post-processing.
     /// </summary>
     public void ApplyCarvers(IChunk chunk)
     {
         using var calls = this.EnterGenerator();
 
         var noiseChunk = this.GetNoiseChunk(chunk);
-        this.carverStep.Apply(chunk, (chunk as Chunk)?.PostProcessing, noiseChunk);
+        this.carverStep.Apply(chunk, this.features().BiomeCarvers, (chunk as Chunk)?.PostProcessing, noiseChunk);
         this.noiseChunks.Remove(chunk);
         this.ReturnNoiseChunk(noiseChunk);
         WorldgenHeightmaps.Update(chunk, this.dimension.MinY, ChunkColumns.NonAirHeight(chunk, this.dimension.MinY, this.dimension.Height));

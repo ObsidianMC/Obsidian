@@ -35,9 +35,16 @@ public static partial class TagsRegistry
     /// <summary>
     /// Every tag clients are sent, by registry: vanilla's, with plugins' entries, and plugins' own.
     /// </summary>
+    /// <remarks>
+    /// Of the worldgen registries, vanilla syncs only biomes, so only their tags are sent, as <c>worldgen/biome</c>.
+    /// </remarks>
     internal static Dictionary<string, Tag[]> GetCategories()
     {
-        var categories = Categories.ToDictionary(category => category.Key, category => category.Value);
+        var categories = Categories
+            .Where(category => category.Key != "worldgen")
+            .ToDictionary(category => category.Key, category => category.Value);
+
+        categories["worldgen/biome"] = Worldgen.Biome.All;
 
         foreach (var (registry, tags) in pluginTags)
             categories[registry] = [.. categories.GetValueOrDefault(registry) ?? [], .. tags];

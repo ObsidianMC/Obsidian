@@ -8,13 +8,10 @@ public partial record class UpdateTagsPacket
 
     public override void Serialize(INetStreamWriter writer)
     {
-        writer.WriteVarInt(Tags.Count - 1);
+        writer.WriteVarInt(Tags.Count);
 
         foreach (var (resourceId, tags) in Tags)
         {
-            if (resourceId == "worldgen")
-                continue;
-
             var namespaceId = $"minecraft:{resourceId.TrimEnd('s')}";
 
             writer.WriteString(namespaceId);
@@ -22,11 +19,9 @@ public partial record class UpdateTagsPacket
 
             foreach (var tag in tags)
             {
-                // Tags in a subfolder of their registry (type item/enchantable) go by their path in it
-                // (enchantable/armor), and vanilla's without their namespace.
-                var folderStart = tag.Type.IndexOf('/');
-                var path = folderStart < 0 ? tag.Name : $"{tag.Type[(folderStart + 1)..]}/{tag.Name}";
-                var name = tag.Namespace == "minecraft" ? path : $"{tag.Namespace}:{path}";
+                // Tags go by their path in their registry (enchantable/armor in item, has_structure/igloo in
+                // worldgen/biome), and vanilla's without their namespace.
+                var name = tag.Namespace == "minecraft" ? tag.Path : tag.Identifier;
 
                 writer.WriteString(name);
                 // Read once: plugins loading or unloading replace a tag's entries meanwhile.

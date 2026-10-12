@@ -15,14 +15,26 @@ namespace Obsidian.WorldData;
 
 internal sealed partial class MobSpawner(AbstractLevel level)
 {
-    private static readonly Dictionary<string, Dictionary<string, SpawnerMob[]>> biomeSpawns = LoadBiomeSpawns();
     private static readonly SpawnerMob[] fortressSpawns = LoadFortressSpawns();
     private static readonly (string Name, int Cap, bool Rare)[] spawnCategories =
     [("monster", 70, false), ("creature", 10, true), ("ambient", 15, false), ("axolotls", 5, false),
         ("underground_water_creature", 5, false), ("water_creature", 5, false), ("water_ambient", 20, false)];
-    private static readonly Dictionary<string, string> mobCategories = biomeSpawns.Values.SelectMany(categories => categories)
+
+    // Vanilla mobs' categories, from vanilla's biomes alone, so that plugins' spawns don't change how they count.
+    private static readonly Dictionary<string, string> mobCategories = BiomeSpawns.Vanilla.Biomes.Values
+        .SelectMany(categories => categories)
         .SelectMany(category => category.Value.Select(mob => (mob.Type, Category: category.Key)))
-        .GroupBy(entry => entry.Type).ToDictionary(group => group.Key, group => group.First().Category);
+        .GroupBy(entry => entry.Type)
+        .ToDictionary(group => group.Key, group => group.First().Category);
+
+    /// <summary>
+    /// The category a mob counts in: a plugin's mob in its type's, a vanilla one like
+    /// <see cref="SpawnCategory(EntityType?)"/>.
+    /// </summary>
+    internal static string SpawnCategory(Mob mob) => mob.Definition is API.Entities.EntityDefinition definition
+        ? PluginSpawns.Name(definition.Settings.Category)
+        : SpawnCategory(mob.Type);
+
     internal static string SpawnCategory(EntityType? type) => type switch
     {
         // A plugin's mob.
@@ -49,23 +61,22 @@ internal sealed partial class MobSpawner(AbstractLevel level)
     private readonly Dictionary<string, bool> supportedSpawns = [];
     private bool SupportsSpawn(string id)
     {
+        // A plugin's mobs spawn while their plugin is loaded, unless they're misc: plugin mobs don't despawn, and misc
+        // ones would never count against a cap.
+        if (!id.StartsWith("minecraft:", StringComparison.Ordinal)
+            && EntityDefinitionsRegistry.TryGet(id, out var definition))
+        {
+            return definition.Kind == API.Entities.EntityKind.Mob
+                && definition.Binding is not null
+                && definition.Settings.Category != API.Entities.MobCategory.Misc;
+        }
+
         if (!supportedSpawns.TryGetValue(id, out var supported))
             supportedSpawns[id] = supported = EntityNbt.TryParseType(id, out var type) && EntitySpawner.CreateMob(level, type) is { HasAi: true };
         return supported;
     }
     private long ticks;
     private int phantomDelay;
-
-    private static Dictionary<string, Dictionary<string, SpawnerMob[]>> LoadBiomeSpawns()
-    {
-        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Assets.Codecs.biomes.json")
-            ?? throw new InvalidDataException("Missing biome spawn data.");
-        using var document = JsonDocument.Parse(stream);
-        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        return document.RootElement.GetProperty("value").EnumerateArray().ToDictionary(
-            entry => entry.GetProperty("name").GetString()!,
-            entry => entry.GetProperty("element").GetProperty("spawners").Deserialize<Dictionary<string, SpawnerMob[]>>(options)!);
-    }
 
     internal void PopulateChunk(IChunk chunk)
     {
@@ -95,7 +106,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         var mobs = level.Regions.Values.SelectMany(region => region.Entities.Values).OfType<Mob>()
             .Where(mob => mob.Alive && level.IsMobTicking(mob.Position)).ToArray();
         var counts = mobs.Where(mob => !mob.PersistenceRequired && mob.CustomName == null)
-            .GroupBy(mob => SpawnCategory(mob.Type)).ToDictionary(group => group.Key, group => group.Count());
+            .GroupBy(SpawnCategory).ToDictionary(group => group.Key, group => group.Count());
         foreach (var packed in chunks.OrderBy(_ => random.Next()))
         {
             NumericsHelper.LongToInts(packed, out var cx, out var cz);
@@ -136,8 +147,14 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         var y = category == "creature" ? top : category == "water_creature" ? random.Next(seaLevel - 23, seaLevel) :
             random.Next(level.MinY, Math.Clamp(top + 1, level.MinY + 1, maxY));
         var biome = chunk.GetBiome(x, Math.Clamp(y, level.MinY, maxY - 1), z);
-        if (!biomeSpawns.TryGetValue(biome.Name, out var categories) || !categories.TryGetValue(category, out var choices) || choices.Length == 0)
+        // Vanilla's biomes' spawners, with plugins' biomes and spawn modifiers.
+        if (!PluginSpawns.Current.Biomes.TryGetValue(biome.Name, out var categories)
+            || !categories.TryGetValue(category, out var choices)
+            || choices.Length == 0)
+        {
             return 0;
+        }
+
         if (category == "monster" && level.Generator is MojangGenerator structureGenerator &&
             structureGenerator.IsInsideFortress(new Vector(x, y, z)))
             choices = fortressSpawns;
@@ -169,8 +186,23 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 break;
             }
         }
-        if (choice == null || !EntityNbt.TryParseType(choice.Type, out var type))
+        if (choice == null)
             return 0;
+
+        // A vanilla mob, or a plugin's (SupportsSpawn checked it can spawn), which follows the rules of the category it
+        // was chosen in, as a vanilla mob without rules of its own would.
+        EntityType? type = null;
+        API.Entities.EntityDefinition? definition = null;
+
+        if (EntityNbt.TryParseType(choice.Type, out var vanillaType))
+            type = vanillaType;
+        else if (!EntityDefinitionsRegistry.TryGet(choice.Type, out definition))
+            return 0;
+
+        var aquatic = type is EntityType known
+            ? IsAquatic(known)
+            : category is "axolotls" or "underground_water_creature" or "water_creature" or "water_ambient";
+
         var spawned = 0;
         int? wolfVariant = null;
         var group = type == EntityType.Ghast ? 1 : random.Next(choice.MinCount, choice.MaxCount + 1);
@@ -195,13 +227,15 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             if (type == EntityType.Blaze && (level.Generator is not MojangGenerator fortressGenerator ||
                 !fortressGenerator.IsInsideFortress(new Vector(x, y, z))))
                 continue;
-            var mob = EntitySpawner.CreateMob(level, type);
+            var mob = definition is null
+                ? EntitySpawner.CreateMob(level, type)
+                : PluginEntity.Create(definition, level) as Mob;
             if (mob == null)
                 continue;
             var feet = terrain.GetBlock(new Vector(x, y, z));
             var floor = terrain.GetBlock(new Vector(x, y - 1, z));
             if (feet == null || floor == null || !terrain.IsFree(mob.Dimension.CreateBBFromPosition(position)) ||
-                (IsAquatic(type) ? !feet.Is(BlockIds.Water) :
+                (aquatic ? !feet.Is(BlockIds.Water) :
                     feet.IsLiquid || type is not EntityType.Ghast and not EntityType.Bat && (floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0)))
                 continue;
             var sky = candidateChunk.GetLightLevel(x, y, z, LightType.Sky);
@@ -227,7 +261,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                     Math.Max(block, Math.Max(0, sky - (!generation && level.DayTime is >= 12000 and < 23000 ? 11 : 0))) <= 8)
                     continue;
             }
-            else if (IsAquatic(type))
+            else if (aquatic)
             {
                 if (terrain.GetBlock(new Vector(x, y + 1, z))?.RegistryId != BlockIds.Water)
                     continue;
@@ -299,7 +333,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
 
     // Mobs whose vanilla spawn rules don't ask for darkness (Monster.checkAnyLightMonsterSpawnRules, or their own
     // rules), so the dimension type's monster light rules don't apply to them.
-    private static bool IgnoresDarkness(EntityType type) =>
+    private static bool IgnoresDarkness(EntityType? type) =>
         type is EntityType.Blaze
             or EntityType.MagmaCube
             or EntityType.Silverfish

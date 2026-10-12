@@ -15,14 +15,29 @@ namespace Obsidian.Registries;
 /// <c>values</c> add entries (identifiers, <c>#</c> tag references, or <c>{"id": ..., "required": false}</c>),
 /// <c>replace</c> drops what came before it, and NeoForge's <c>remove</c> takes entries out. A tag whose required entry
 /// is missing fails like in vanilla, but keeps vanilla's entries rather than disappearing, since server code holds
-/// vanilla's tags. Block, item and entity type tags are supported so far.
+/// vanilla's tags. Block, item, entity type and biome tags are supported, and placed feature and configured carver
+/// tags, which name entries by identifier since those registries have no ids (see <see cref="TryGetIdentifiers"/>).
 /// </remarks>
 internal static partial class PluginTags
 {
+    public const string Biome = "worldgen/biome";
+
+    public const string PlacedFeature = "worldgen/placed_feature";
+
+    public const string ConfiguredCarver = "worldgen/configured_carver";
+
     /// <summary>
     /// The registries plugins' tags may be for.
     /// </summary>
-    public static FrozenSet<string> Registries { get; } = FrozenSet.Create("block", "item", "entity_type");
+    public static FrozenSet<string> Registries { get; } =
+        FrozenSet.Create("block", "item", "entity_type", Biome, PlacedFeature, ConfiguredCarver);
+
+    // Worldgen registries that aren't synced and have no ids: their tags hold identifiers, and aren't sent to clients.
+    private static readonly FrozenSet<string> identifierRegistries = FrozenSet.Create(PlacedFeature, ConfiguredCarver);
+
+    // The tags of identifierRegistries, vanilla's (none in 1.21.11) and plugins', by registry and tag identifier.
+    private static FrozenDictionary<(string Registry, string Identifier), ImmutableArray<string>> identifierTags =
+        FrozenDictionary<(string Registry, string Identifier), ImmutableArray<string>>.Empty;
 
     private static readonly Lock applying = new();
 
@@ -153,7 +168,7 @@ internal static partial class PluginTags
 
     /// <summary>
     /// Finds the tag files in a plugin's files, by their paths: <c>data/&lt;namespace&gt;/tags/&lt;registry&gt;/</c>
-    /// followed by the tag's path and <c>.json</c>.
+    /// followed by the tag's path and <c>.json</c>. A worldgen registry is two folders, like <c>worldgen/biome</c>.
     /// </summary>
     /// <returns>Each file's path, registry and tag identifier; files of other registries are left out.</returns>
     public static IEnumerable<(string Path, string Registry, string Identifier)> FindFiles(IEnumerable<string> paths)
@@ -164,22 +179,41 @@ internal static partial class PluginTags
             if (parts.Length < 5
                 || parts[0] != "data"
                 || parts[2] != "tags"
-                || !Registries.Contains(parts[3])
                 || !path.EndsWith(".json", StringComparison.Ordinal))
             {
                 continue;
             }
 
-            var tagPath = string.Join('/', parts[4..])[..^".json".Length];
-            yield return (path, parts[3], $"{parts[1]}:{tagPath}");
+            var folders = parts[3] == "worldgen" ? 2 : 1;
+            var registry = string.Join('/', parts[3..(3 + folders)]);
+
+            if (parts.Length < 4 + folders || !Registries.Contains(registry))
+                continue;
+
+            var tagPath = string.Join('/', parts[(3 + folders)..])[..^".json".Length];
+            yield return (path, registry, $"{parts[1]}:{tagPath}");
         }
     }
+
+    /// <summary>
+    /// Finds a placed feature or configured carver tag's entries, which are identifiers: those registries have no ids.
+    /// </summary>
+    /// <param name="registry"><see cref="PlacedFeature"/> or <see cref="ConfiguredCarver"/>.</param>
+    public static bool TryGetIdentifiers(string registry, string identifier, out ImmutableArray<string> entries) =>
+        Volatile.Read(ref identifierTags).TryGetValue((registry, identifier), out entries);
 
     /// <summary>
     /// Makes the tags hold what vanilla's definitions and the given tag files add and remove, in order, like vanilla
     /// builds tags from its data packs. Applying no files restores vanilla's tags.
     /// </summary>
-    public static void Apply(IEnumerable<TagFile> files, ILogger logger)
+    /// <param name="worldgenEntries">
+    /// The loaded plugins' placed features and configured carvers, by registry (<see cref="PlacedFeature"/> or
+    /// <see cref="ConfiguredCarver"/>) and identifier, which tags may name besides vanilla's.
+    /// </param>
+    public static void Apply(
+        IEnumerable<TagFile> files,
+        ILogger logger,
+        IEnumerable<(string Registry, string Identifier)>? worldgenEntries = null)
     {
         lock (applying)
         {
@@ -191,9 +225,12 @@ internal static partial class PluginTags
                     tag.SetEntries(entries);
 
                 TagsRegistry.SetPluginTags(new Dictionary<string, Tag[]>());
+                Volatile.Write(ref identifierTags, FrozenDictionary<(string, string), ImmutableArray<string>>.Empty);
                 Interlocked.Increment(ref revision);
                 return;
             }
+
+            var ids = new EntryIds(worldgenEntries?.ToHashSet() ?? []);
 
             // Vanilla's definitions come first, like vanilla's data pack, so that plugins' files add to or replace
             // them, and so that a change to a vanilla tag reaches the vanilla tags that refer to it.
@@ -204,16 +241,22 @@ internal static partial class PluginTags
 
             var resolved = new Dictionary<(string Registry, string Identifier), ImmutableArray<int>?>();
             var pluginTags = new Dictionary<string, List<Tag>>();
+            var byIdentifier = new Dictionary<(string Registry, string Identifier), ImmutableArray<string>>();
 
             // Like vanilla's tag loader, tags are built after the tags they refer to.
             foreach (var key in SortByDependencies(byTag, logger))
-                resolved[key] = Build(key, byTag[key], resolved, logger);
+                resolved[key] = Build(key, byTag[key], resolved, ids, logger);
 
             foreach (var key in byTag.Keys)
             {
                 var entries = resolved.GetValueOrDefault(key);
 
-                if (TagsRegistry.TryGetVanilla(key.Registry, key.Identifier, out var vanilla))
+                if (identifierRegistries.Contains(key.Registry))
+                {
+                    if (entries is ImmutableArray<int> named)
+                        byIdentifier[key] = [.. named.Select(ids.Identifier)];
+                }
+                else if (TagsRegistry.TryGetVanilla(key.Registry, key.Identifier, out var vanilla))
                 {
                     // A vanilla tag's own entries, from before any plugin changed it, which it keeps when it fails.
                     if (!vanillaEntries.TryGetValue(vanilla, out var original))
@@ -231,6 +274,7 @@ internal static partial class PluginTags
             }
 
             TagsRegistry.SetPluginTags(pluginTags.ToDictionary(entry => entry.Key, entry => entry.Value.ToArray()));
+            Volatile.Write(ref identifierTags, byIdentifier.ToFrozenDictionary());
             Interlocked.Increment(ref revision);
         }
     }
@@ -344,6 +388,7 @@ internal static partial class PluginTags
         (string Registry, string Identifier) key,
         List<TagFile> tagFiles,
         Dictionary<(string Registry, string Identifier), ImmutableArray<int>?> resolved,
+        EntryIds entryIds,
         ILogger logger)
     {
         // Like vanilla's tag builder: the entries in the order they're first added.
@@ -385,7 +430,7 @@ internal static partial class PluginTags
         {
             IEnumerable<int>? found = entry.IsTag
                 ? resolved.GetValueOrDefault((key.Registry, entry.Id))
-                : FindId(key.Registry, entry.Id) is int id ? [id] : null;
+                : entryIds.Find(key.Registry, entry.Id) is int id ? [id] : null;
 
             if (found is null && entry.Required)
             {
@@ -397,8 +442,8 @@ internal static partial class PluginTags
         }
     }
 
-    // Vanilla's block and item tag definitions, with their references to other tags, from the tags of vanilla's data
-    // pack (Assets/tags.json, keyed by registry and path).
+    // Vanilla's tag definitions of the registries plugins' tags may be for, from the tags of vanilla's data pack
+    // (Assets/tags.json, keyed by registry and path).
     private static List<TagFile> LoadVanillaFiles()
     {
         using var stream = typeof(PluginTags).Assembly.GetManifestResourceStream("Obsidian.Assets.tags.json")
@@ -409,8 +454,8 @@ internal static partial class PluginTags
 
         foreach (var tag in document.RootElement.EnumerateObject())
         {
-            var registry = tag.Name[..tag.Name.IndexOf('/')];
-            if (!Registries.Contains(registry))
+            var registry = Registries.FirstOrDefault(name => tag.Name.StartsWith($"{name}/", StringComparison.Ordinal));
+            if (registry is null)
                 continue;
 
             var identifier = $"minecraft:{tag.Name[(registry.Length + 1)..]}";
@@ -422,26 +467,67 @@ internal static partial class PluginTags
         return files;
     }
 
-    // The id of a registry's entry by its identifier.
-    private static int? FindId(string registry, string identifier)
+    /// <summary>
+    /// The id of an entity type, vanilla's or a plugin's, by its identifier.
+    /// </summary>
+    internal static int? EntityTypeId(string identifier)
     {
-        if (registry == "entity_type")
-        {
-            if (Entities.EntityNbt.TryParseType(identifier, out var vanilla))
-                return (int)vanilla;
+        if (Entities.EntityNbt.TryParseType(identifier, out var vanilla))
+            return (int)vanilla;
 
-            return EntityDefinitionsRegistry.TryGet(identifier, out var definition) ? definition.Id : null;
+        return EntityDefinitionsRegistry.TryGet(identifier, out var definition) ? definition.Id : null;
+    }
+
+    /// <summary>
+    /// Ids of registries' entries by identifier while tags are built. Registries without ids (placed features and
+    /// configured carvers) get ones for the build, numbering entries as they're found.
+    /// </summary>
+    private sealed class EntryIds(HashSet<(string Registry, string Identifier)> worldgenEntries)
+    {
+        private readonly Dictionary<string, int> numbered = [];
+        private readonly List<string> identifiers = [];
+
+        public int? Find(string registry, string identifier)
+        {
+            switch (registry)
+            {
+                case "entity_type":
+                    return EntityTypeId(identifier);
+
+                case "block":
+                    if (vanillaBlockIds.Value.TryGetValue(identifier, out var block))
+                        return block;
+
+                    return BlocksRegistry.TryGetPluginBlock(identifier, out var type) ? type.Id : null;
+
+                case "item":
+                    return ItemsRegistry.TryGet(identifier, out var item) ? item.Id : null;
+
+                case Biome:
+                    return CodecRegistry.TryGetBiome(identifier, out var biome) ? biome!.Id : null;
+            }
+
+            var exists = worldgenEntries.Contains((registry, identifier))
+                || (registry == PlacedFeature
+                    ? Codecs.RegistryIds.IsPlacedFeature(identifier)
+                    : Codecs.RegistryIds.IsConfiguredCarver(identifier));
+
+            if (!exists)
+                return null;
+
+            if (!this.numbered.TryGetValue(identifier, out var id))
+            {
+                this.numbered[identifier] = id = this.identifiers.Count;
+                this.identifiers.Add(identifier);
+            }
+
+            return id;
         }
 
-        if (registry == "block")
-        {
-            if (vanillaBlockIds.Value.TryGetValue(identifier, out var block))
-                return block;
-
-            return BlocksRegistry.TryGetPluginBlock(identifier, out var type) ? type.Id : null;
-        }
-
-        return ItemsRegistry.TryGet(identifier, out var item) ? item.Id : null;
+        /// <summary>
+        /// The identifier of an entry numbered by <see cref="Find"/>.
+        /// </summary>
+        public string Identifier(int id) => this.identifiers[id];
     }
 
     // A new tag: its type is the registry followed by the folders of its path, like vanilla's generated tags.

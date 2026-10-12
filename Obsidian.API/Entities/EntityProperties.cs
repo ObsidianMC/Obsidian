@@ -38,6 +38,12 @@ public sealed class EntityProperties
     public float MovementSpeed { get; init; } = 0.25f;
 
     /// <summary>
+    /// A mob's category, like a vanilla entity type's: NeoForge's <c>add_spawns</c> biome modifiers add the mob to
+    /// this category's spawn lists, and naturally spawned mobs count against its cap. Misc mobs don't spawn naturally.
+    /// </summary>
+    public MobCategory Category { get; init; } = MobCategory.Misc;
+
+    /// <summary>
     /// What the entity does each tick, when a player uses it and, for a projectile, when it hits something; or null for
     /// nothing.
     /// </summary>

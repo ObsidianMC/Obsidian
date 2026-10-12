@@ -1,43 +1,56 @@
 using Obsidian.API.World.Generator.RandomSources;
-using System.Reflection;
-using System.Text.Json;
+using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Mojang.Carvers;
 
 /// <summary>
-/// The carvers step of vanilla's NoiseBasedChunkGenerator: runs every carver started within 8 chunks.
+/// The carvers step of vanilla's NoiseBasedChunkGenerator: runs the carvers of every chunk within 8 chunks, each
+/// start chunk with its biome's carvers.
 /// </summary>
 internal sealed class CarverStep
 {
     private const int Radius = 8;
 
-    private static readonly ConcurrentDictionary<string, IConfiguredCarver> loadedCarvers = new();
+    // Start chunks' biomes, which vanilla keeps on each chunk; cleared once this many are kept.
+    private const int MaxStartBiomes = 1 << 16;
 
     private readonly RandomState randomState;
     private readonly SurfaceBuilder surfaceBuilder;
-    private readonly IBiomeSource biomeSource;
-    private readonly IConfiguredCarver[] carvers;
+    private readonly IClimateBiomeSource biomeSource;
+    private readonly ConcurrentDictionary<long, string> startBiomes = new();
+
+    // The carvers every possible biome shares for the biome carvers last given, if they share them.
+    private CarverChoice? choice;
 
     // A chunk's carving buffers, kept by each thread for its next chunk. Taken while in use.
     [ThreadStatic]
     private static CarvingBuffers? freeBuffers;
 
-    /// <param name="carvers">Configured carver names in the biomes' order, which decides each carver's seed.</param>
-    public CarverStep(RandomState randomState, SurfaceBuilder surfaceBuilder, IBiomeSource biomeSource, IEnumerable<string> carvers)
+    public CarverStep(RandomState randomState, SurfaceBuilder surfaceBuilder, IClimateBiomeSource biomeSource)
     {
         this.randomState = randomState;
         this.surfaceBuilder = surfaceBuilder;
         this.biomeSource = biomeSource;
-        this.carvers = [.. carvers.Select(name => loadedCarvers.GetOrAdd(name, Load))];
     }
 
-    /// <param name="noiseChunk">The chunk's noise chunk when the other steps share it, or <c>null</c> for a new one.</param>
-    public void Apply(IChunk chunk, ICollection<Vector>? fluidUpdates = null, NoiseChunk? noiseChunk = null)
+    /// <param name="biomeCarvers">
+    /// Each biome's configured carvers, by biome identifier; a biome missing has none.
+    /// </param>
+    /// <param name="noiseChunk">
+    /// The chunk's noise chunk when the other steps share it, or <c>null</c> for a new one.
+    /// </param>
+    public void Apply(
+        IChunk chunk,
+        IReadOnlyDictionary<string, ImmutableArray<IConfiguredCarver>> biomeCarvers,
+        ICollection<Vector>? fluidUpdates = null,
+        NoiseChunk? noiseChunk = null)
     {
         var settings = this.randomState.Settings;
         noiseChunk ??= new NoiseChunk(this.randomState, chunk.X, chunk.Z);
 
-        var buffers = freeBuffers is not null && freeBuffers.MinY == settings.Noise.MinY && freeBuffers.Height == settings.Noise.Height
+        var buffers = freeBuffers is not null
+            && freeBuffers.MinY == settings.Noise.MinY
+            && freeBuffers.Height == settings.Noise.Height
             ? freeBuffers
             : new CarvingBuffers(settings.Noise.MinY, settings.Noise.Height);
         freeBuffers = null;
@@ -48,16 +61,20 @@ internal sealed class CarverStep
             Chunk = chunk,
             NoiseChunk = noiseChunk,
             Aquifer = noiseChunk.Aquifer,
-            Biomes = new BiomeManager(this.biomeSource, this.randomState.Seed, settings.Noise.MinY, settings.Noise.Height),
+            Biomes = new BiomeManager(
+                this.biomeSource,
+                this.randomState.Seed,
+                settings.Noise.MinY,
+                settings.Noise.Height),
             FluidUpdates = fluidUpdates
         };
 
-        // Carvers read the aquifer's last answer even where the lava level picks the block (see WorldCarver.CarveBlock),
-        // so they start from a cleared one rather than the terrain fill's.
+        // Carvers read the aquifer's last answer even where the lava level picks the block (see
+        // WorldCarver.CarveBlock), so they start from a cleared one rather than the terrain fill's.
         context.Aquifer.ResetFluidUpdate();
 
         var random = new WorldgenRandom(new LegacyRandomSource(0L));
-        var carvers = this.carvers;
+        var uniform = this.Choose(biomeCarvers).Uniform;
 
         for (var offsetX = -Radius; offsetX <= Radius; offsetX++)
         {
@@ -65,7 +82,9 @@ internal sealed class CarverStep
             {
                 var startChunkX = chunk.X + offsetX;
                 var startChunkZ = chunk.Z + offsetZ;
+                var carvers = uniform ?? biomeCarvers.GetValueOrDefault(this.StartBiome(startChunkX, startChunkZ), []);
 
+                // Like vanilla, a carver's seed is its index in its start chunk's biome's list.
                 for (var index = 0; index < carvers.Length; index++)
                 {
                     random.SetLargeFeatureSeed(this.randomState.Seed + index, startChunkX, startChunkZ);
@@ -79,91 +98,45 @@ internal sealed class CarverStep
         freeBuffers = buffers;
     }
 
-    private static IConfiguredCarver Load(string name)
+    // Vanilla's biome of a start chunk's carvers: the noise biome at its corner, at Y 0.
+    private string StartBiome(int chunkX, int chunkZ)
     {
-        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"Obsidian.Assets.configured_carver.{name}.json")
-            ?? throw new InvalidOperationException($"Missing configured carver '{name}'.");
-        using var document = JsonDocument.Parse(stream);
+        var key = NumericsHelper.IntsToLong(chunkX, chunkZ);
+        if (this.startBiomes.TryGetValue(key, out var biome))
+            return biome;
 
-        var root = document.RootElement;
-        var config = root.GetProperty("config");
-        var type = root.GetProperty("type").GetString();
+        biome = this.biomeSource.GetNoiseBiome(chunkX << 2, 0, chunkZ << 2).Name;
 
-        var probability = config.GetProperty("probability").GetSingle();
-        var y = HeightProvider.Parse(config.GetProperty("y"));
-        var yScale = FloatProvider.Parse(config.GetProperty("yScale"));
-        var lavaLevel = CarverAnchor.Parse(config.GetProperty("lava_level"));
-        var replaceable = ResolveBlockTag(config.GetProperty("replaceable").GetString()!);
+        if (this.startBiomes.Count >= MaxStartBiomes)
+            this.startBiomes.Clear();
 
-        CaveCarverConfiguration CaveConfiguration() => new()
-        {
-            Probability = probability,
-            Y = y,
-            YScale = yScale,
-            LavaLevel = lavaLevel,
-            Replaceable = replaceable,
-            HorizontalRadiusMultiplier = FloatProvider.Parse(config.GetProperty("horizontal_radius_multiplier")),
-            VerticalRadiusMultiplier = FloatProvider.Parse(config.GetProperty("vertical_radius_multiplier")),
-            FloorLevel = FloatProvider.Parse(config.GetProperty("floor_level"))
-        };
-
-        return type switch
-        {
-            "minecraft:cave" => new ConfiguredCarver<CaveCarverConfiguration>(new CaveWorldCarver(), CaveConfiguration()),
-            "minecraft:nether_cave" => new ConfiguredCarver<CaveCarverConfiguration>(new NetherWorldCarver(), CaveConfiguration()),
-            "minecraft:canyon" => new ConfiguredCarver<CanyonCarverConfiguration>(new CanyonWorldCarver(), new CanyonCarverConfiguration
-            {
-                Probability = probability,
-                Y = y,
-                YScale = yScale,
-                LavaLevel = lavaLevel,
-                Replaceable = replaceable,
-                VerticalRotation = FloatProvider.Parse(config.GetProperty("vertical_rotation")),
-                DistanceFactor = FloatProvider.Parse(config.GetProperty("shape").GetProperty("distance_factor")),
-                Thickness = FloatProvider.Parse(config.GetProperty("shape").GetProperty("thickness")),
-                WidthSmoothness = config.GetProperty("shape").GetProperty("width_smoothness").GetInt32(),
-                HorizontalRadiusFactor = FloatProvider.Parse(config.GetProperty("shape").GetProperty("horizontal_radius_factor")),
-                VerticalRadiusDefaultFactor = config.GetProperty("shape").GetProperty("vertical_radius_default_factor").GetSingle(),
-                VerticalRadiusCenterFactor = config.GetProperty("shape").GetProperty("vertical_radius_center_factor").GetSingle()
-            }),
-            _ => throw new NotSupportedException($"Unsupported carver type '{type}'.")
-        };
+        this.startBiomes[key] = biome;
+        return biome;
     }
 
-    private static bool[] ResolveBlockTag(string tag)
+    // Vanilla's biomes of a dimension all list the same carvers, so its chunks are carved without looking start
+    // chunks' biomes up, like before carvers came from biomes; only biomes with other carvers (plugins') need them.
+    private CarverChoice Choose(IReadOnlyDictionary<string, ImmutableArray<IConfiguredCarver>> biomeCarvers)
     {
-        var name = tag.TrimStart('#').Replace("minecraft:", string.Empty);
-        var match = TagsRegistry.Block.All.FirstOrDefault(blockTag => blockTag.Name == name)
-            ?? throw new InvalidOperationException($"Unknown block tag '{tag}'.");
+        var current = Volatile.Read(ref this.choice);
+        if (current is not null && ReferenceEquals(current.Source, biomeCarvers))
+            return current;
 
-        var flags = new bool[match.Entries.DefaultIfEmpty(-1).Max() + 1];
-        foreach (var id in match.Entries)
-            flags[id] = true;
+        var lists = this.biomeSource.PossibleBiomes
+            .Select(biome => biomeCarvers.GetValueOrDefault(biome.Name, []))
+            .ToList();
 
-        return flags;
+        ImmutableArray<IConfiguredCarver>? shared = null;
+        if (lists.Count > 0 && lists.All(list => list.SequenceEqual(lists[0])))
+            shared = lists[0];
+
+        current = new CarverChoice(biomeCarvers, shared);
+
+        Volatile.Write(ref this.choice, current);
+        return current;
     }
 
-    private interface IConfiguredCarver
-    {
-        public bool IsStartChunk(IRandomSource random);
-
-        public void Carve(CarvingContext context, IRandomSource random, int startChunkX, int startChunkZ);
-    }
-
-    private sealed class ConfiguredCarver<TConfiguration> : IConfiguredCarver where TConfiguration : CarverConfiguration
-    {
-        private readonly WorldCarver<TConfiguration> carver;
-        private readonly TConfiguration configuration;
-
-        public ConfiguredCarver(WorldCarver<TConfiguration> carver, TConfiguration configuration)
-        {
-            this.carver = carver;
-            this.configuration = configuration;
-        }
-
-        public bool IsStartChunk(IRandomSource random) => WorldCarver<TConfiguration>.IsStartChunk(this.configuration, random);
-
-        public void Carve(CarvingContext context, IRandomSource random, int startChunkX, int startChunkZ) =>
-            this.carver.Carve(context, this.configuration, random, startChunkX, startChunkZ);
-    }
+    private sealed record CarverChoice(
+        IReadOnlyDictionary<string, ImmutableArray<IConfiguredCarver>> Source,
+        ImmutableArray<IConfiguredCarver>? Uniform);
 }

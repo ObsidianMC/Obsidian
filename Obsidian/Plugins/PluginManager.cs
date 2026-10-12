@@ -413,8 +413,10 @@ public sealed partial class PluginManager : IAsyncDisposable
             container.TagFiles.InsertRange(0, this.ReadTagFiles(archive));
             container.FeatureFiles = this.ReadFeatureFiles(archive);
             container.CodecFiles = this.ReadCodecFiles(archive, container.FeatureFiles);
-            this.ApplyTags();
+
+            // Biome tags name the plugin's biomes, so they're applied once the biomes have ids.
             this.ApplyCodecs();
+            this.ApplyTags();
 
             // Noise settings name blocks, and the plugin's types, which are registered by now.
             container.NoiseFiles = this.ReadNoiseFiles(archive);
@@ -426,6 +428,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             this.ApplyDimensions();
             this.ResumeGenerators();
             this.ApplyFeatures();
+            this.ApplySpawns();
             await this.AddDimensionLevelsAsync();
             container.Loaded = true;
 
@@ -503,10 +506,11 @@ public sealed partial class PluginManager : IAsyncDisposable
             this.commandHandler.UnregisterArgumentParsers(pluginContainer.LoadContext);
 
         this.plugins = this.plugins.Remove(pluginContainer);
-        this.ApplyTags();
         this.ApplyCodecs();
+        this.ApplyTags();
         this.ApplyNoise();
         this.ApplyFeatures();
+        this.ApplySpawns();
         this.StopGenerators(pluginContainer);
         this.ResumeGenerators();
 
@@ -614,18 +618,21 @@ public sealed partial class PluginManager : IAsyncDisposable
     }
 
     // A plugin's biome, dimension type and damage type files. A file that can't be read, or would override one of
-    // vanilla's entries, is left out; the plugin loads without it. Biomes may use vanilla's placed features, the
-    // loaded plugins' and the plugin's own.
+    // vanilla's entries, is left out; the plugin loads without it. Biomes may use vanilla's placed features and
+    // configured carvers, the loaded plugins' and the plugin's own.
     private ImmutableArray<CodecFile> ReadCodecFiles(PluginArchive archive, ImmutableArray<FeatureFile> features)
     {
         var files = ImmutableArray.CreateBuilder<CodecFile>();
-        var placedFeatures = features
-            .Where(file => file.Registry == PluginFeatures.PlacedFeature)
-            .Select(file => file.Identifier)
+        var entries = features
+            .Select(file => (file.Registry, file.Identifier))
             .ToHashSet();
 
         bool IsPlacedFeature(string identifier) =>
-            placedFeatures.Contains(identifier) || PluginFeatures.IsPlacedFeature(identifier);
+            entries.Contains((PluginFeatures.PlacedFeature, identifier)) || PluginFeatures.IsPlacedFeature(identifier);
+
+        bool IsConfiguredCarver(string identifier) =>
+            entries.Contains((PluginFeatures.ConfiguredCarver, identifier))
+            || PluginFeatures.IsConfiguredCarver(identifier);
 
         foreach (var (path, registry, identifier) in PluginCodecs.FindFiles(archive.Paths))
         {
@@ -633,7 +640,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             {
                 var data = archive.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
                 var source = $"{archive.Info.Id}/{path}";
-                files.Add(PluginCodecs.Parse(registry, identifier, source, data, IsPlacedFeature));
+                files.Add(PluginCodecs.Parse(registry, identifier, source, data, IsPlacedFeature, IsConfiguredCarver));
             }
             catch (InvalidDataException ex)
             {
@@ -749,9 +756,14 @@ public sealed partial class PluginManager : IAsyncDisposable
         }
     }
 
-    // The tags hold vanilla's entries and the loaded plugins' tag files, in load order.
-    private void ApplyTags() =>
-        PluginTags.Apply(this.plugins.SelectMany(plugin => plugin.TagFiles), this.logger);
+    // The tags hold vanilla's entries and the loaded plugins' tag files, in load order. Placed feature and
+    // configured carver tags may name the loaded plugins' entries.
+    private void ApplyTags() => PluginTags.Apply(
+        this.plugins.SelectMany(plugin => plugin.TagFiles),
+        this.logger,
+        this.plugins
+            .SelectMany(plugin => plugin.FeatureFiles)
+            .Select(file => (file.Registry, file.Identifier)));
 
     // The loaded plugins' entries are in their registries, in load order. Ones no plugin has any more stay.
     private void ApplyCodecs() =>
@@ -881,6 +893,12 @@ public sealed partial class PluginManager : IAsyncDisposable
                 Log.KeptPreviousFeatures(this.logger, dimension);
         }
     }
+
+    // Natural spawning uses the loaded plugins' biomes' spawners and spawn biome modifiers from now on.
+    private void ApplySpawns() => PluginSpawns.Apply(
+        this.plugins.SelectMany(plugin => plugin.FeatureFiles),
+        this.plugins.SelectMany(plugin => plugin.CodecFiles),
+        this.logger);
 
     // Players see the commands of the plugins that are loaded now. Startup doesn't need this: nobody has joined yet.
     private void OnPluginsChanged()

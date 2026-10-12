@@ -4,8 +4,10 @@ using Obsidian.API;
 using Obsidian.API.Registries;
 using Obsidian.API.World.Features;
 using Obsidian.Registries;
+using Obsidian.WorldData;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Mojang.Carvers;
 using Obsidian.WorldData.Structures;
 using System;
 using System.Collections.Generic;
@@ -21,9 +23,75 @@ namespace Obsidian.Tests;
 /// </summary>
 /// <remarks>
 /// Feature sets are built without becoming the current one, which tests loading plugins in parallel would replace.
+/// Tags are global, so these tests run with the other tests applying tags.
 /// </remarks>
+[Collection(nameof(PluginTagFiles))]
 public class PluginFeatureFiles
 {
+    // Vanilla's cave carver, starting in every chunk.
+    private const string EveryChunkCaves = """
+        {
+          "type": "minecraft:cave",
+          "config": {
+            "probability": 1,
+            "y": {
+              "type": "minecraft:uniform",
+              "min_inclusive": { "above_bottom": 8 },
+              "max_inclusive": { "absolute": 60 }
+            },
+            "yScale": { "type": "minecraft:uniform", "min_inclusive": 0.1, "max_exclusive": 0.9 },
+            "lava_level": { "above_bottom": 8 },
+            "replaceable": "#minecraft:overworld_carver_replaceables",
+            "horizontal_radius_multiplier": 1,
+            "vertical_radius_multiplier": 1,
+            "floor_level": -0.7
+          }
+        }
+        """;
+
+    // A placed feature tag in a modifier, and spawns added and removed with an entity type tag.
+    private const string AddTaggedOres = """
+        {
+          "type": "neoforge:add_features",
+          "biomes": "minecraft:plains",
+          "features": "#featurefiles:ores",
+          "step": "underground_ores"
+        }
+        """;
+
+    private const string AddPolarBears = """
+        {
+          "type": "neoforge:add_spawns",
+          "biomes": "minecraft:plains",
+          "spawners": { "type": "minecraft:polar_bear", "weight": 5, "minCount": 1, "maxCount": 2 }
+        }
+        """;
+
+    private const string RemoveSkeletons = """
+        {
+          "type": "neoforge:remove_spawns",
+          "biomes": ["minecraft:plains"],
+          "entity_types": "#minecraft:skeletons"
+        }
+        """;
+
+    // Overworld biomes get the carver, except the deep dark, so start chunks' biomes decide.
+    private const string AddCaves = """
+        {
+          "type": "neoforge:add_carvers",
+          "biomes": "#minecraft:is_overworld",
+          "carvers": "featurefiles:every_chunk_caves"
+        }
+        """;
+
+    private const string RemoveCaves = """
+        {
+          "type": "neoforge:remove_carvers",
+          "biomes": "minecraft:deep_dark",
+          "carvers": ["featurefiles:every_chunk_caves"]
+        }
+        """;
+
     // Diamond blocks, which vanilla never generates without structures, in place of stone.
     private const string Ore = """
         {
@@ -252,6 +320,79 @@ public class PluginFeatureFiles
         Assert.Empty(current.PlacedFeatures);
         Assert.Same(BiomeFeatures.All, current.BiomeFeatures);
         Assert.False(HasDiamondBlocks(chunks.Get(8, 8)));
+    }
+
+    [Fact(DisplayName = "Spawn and carver modifiers and placed feature tags change vanilla biomes, and go with them")]
+    public void AppliesSpawnAndCarverModifiersAndFeatureTags()
+    {
+        FeatureFile[] files =
+        [
+            Parse(PluginFeatures.ConfiguredFeature, "featurefiles:ore_marker", Ore),
+            Parse(PluginFeatures.PlacedFeature, "featurefiles:ore_marker", PlacedOre),
+            Parse(PluginFeatures.ConfiguredCarver, "featurefiles:every_chunk_caves", EveryChunkCaves),
+            Parse(PluginFeatures.BiomeModifier, "featurefiles:add_tagged_ores", AddTaggedOres),
+            Parse(PluginFeatures.BiomeModifier, "featurefiles:remove_caves", RemoveCaves),
+            Parse(PluginFeatures.BiomeModifier, "featurefiles:add_caves", AddCaves),
+            Parse(PluginFeatures.BiomeModifier, "featurefiles:remove_skeletons", RemoveSkeletons),
+            Parse(PluginFeatures.BiomeModifier, "featurefiles:add_polar_bears", AddPolarBears)
+        ];
+
+        var tagPath = "data/featurefiles/tags/worldgen/placed_feature/ores.json";
+        var (_, registry, identifier) = Assert.Single(PluginTags.FindFiles([tagPath]));
+        var ores = PluginTags.Parse(registry, identifier, "test", """{ "values": ["featurefiles:ore_marker"] }"""u8);
+
+        try
+        {
+            PluginTags.Apply([ores], NullLogger.Instance, files.Select(file => (file.Registry, file.Identifier)));
+
+            var logger = new ListLogger();
+            var current = PluginFeatures.Build(files, [], [], logger);
+            var spawns = PluginSpawns.Build(files, [], logger);
+            Assert.Empty(logger.Messages);
+
+            var ore = current.PlacedFeatures["featurefiles:ore_marker"];
+            Assert.Contains(ore, current.BiomeFeatures["minecraft:plains"][(int)DecorationStep.UndergroundOres]);
+
+            // Carvers are added to the end of the biomes' lists, after every removal ran.
+            var caves = current.ConfiguredCarvers["featurefiles:every_chunk_caves"];
+            Assert.Equal(caves, current.BiomeCarvers["minecraft:plains"][^1]);
+            Assert.Equal(4, current.BiomeCarvers["minecraft:plains"].Length);
+            Assert.Equal(3, current.BiomeCarvers["minecraft:deep_dark"].Length);
+
+            // Spawners go to their type's category's list.
+            var plains = spawns.Biomes["minecraft:plains"];
+            Assert.Equal("minecraft:polar_bear", plains["creature"][^1].Type);
+            Assert.DoesNotContain(plains["monster"], spawner => spawner.Type == "minecraft:skeleton");
+            Assert.Contains(
+                spawns.Biomes["minecraft:forest"]["monster"],
+                spawner => spawner.Type == "minecraft:skeleton");
+
+            // Each start chunk carves with its biome's carvers.
+            var builder = new ChunkBuilder(MojangDimension.Overworld, 1234, generateStructures: false, () => current);
+            var vanilla = new ChunkBuilder(MojangDimension.Overworld, 1234, generateStructures: false);
+            Assert.True(CarvedAir(builder) > CarvedAir(vanilla));
+
+            // Once the plugin is gone, vanilla's spawns and carvers are back.
+            Assert.Same(BiomeSpawns.Vanilla, PluginSpawns.Build([], [], logger));
+            Assert.Same(ConfiguredCarvers.VanillaBiomes, PluginFeatures.Build([], [], [], logger).BiomeCarvers);
+        }
+        finally
+        {
+            PluginTags.Apply([], NullLogger.Instance);
+        }
+    }
+
+    // The air in chunk (0, 0) below Y 60 once carved.
+    private static int CarvedAir(ChunkBuilder builder)
+    {
+        var chunk = new Chunk(0, 0, MojangDimension.Overworld.MinY, MojangDimension.Overworld.Height);
+        builder.PopulateBiomes(chunk);
+        builder.Generate3DTerrain(chunk);
+        builder.ApplySurfaceRules(chunk);
+        builder.ApplyCarvers(chunk);
+
+        return Enumerable.Range(0, 16 * 16 * 124)
+            .Count(i => chunk.GetBlock(i & 15, (i >> 8) - 64, (i >> 4) & 15).IsAir);
     }
 
     internal class ListLogger : ILogger

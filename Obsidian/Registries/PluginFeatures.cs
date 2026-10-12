@@ -4,6 +4,7 @@ using Obsidian.Plugins;
 using Obsidian.Registries.Codecs;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Mojang.Carvers;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using System.Collections.Frozen;
 using System.IO;
@@ -13,8 +14,8 @@ using System.Threading;
 namespace Obsidian.Registries;
 
 /// <summary>
-/// Adds plugins' configured and placed features from their data files, like a data pack's, and applies their
-/// NeoForge biome modifiers to the biomes' features.
+/// Adds plugins' configured and placed features and configured carvers from their data files, like a data pack's, and
+/// applies their NeoForge biome modifiers to the biomes' features and carvers.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
@@ -22,6 +23,8 @@ namespace Obsidian.Registries;
 /// <c>worldgen/placed_feature/...</c> are the features <c>&lt;namespace&gt;:&lt;path&gt;</c>, read with
 /// <see cref="WorldgenReader"/>. They refer to vanilla's or plugins' features by identifier, or define them
 /// inline.</item>
+/// <item><c>worldgen/configured_carver/...</c> are configured carvers, read with <see cref="ConfiguredCarvers"/>.
+/// </item>
 /// <item><c>data/&lt;namespace&gt;/neoforge/biome_modifier/&lt;path&gt;.json</c> is a biome modifier (see
 /// <see cref="BiomeModifierData"/>).</item>
 /// </list>
@@ -36,13 +39,15 @@ internal static partial class PluginFeatures
 
     public const string PlacedFeature = "worldgen/placed_feature";
 
+    public const string ConfiguredCarver = "worldgen/configured_carver";
+
     public const string BiomeModifier = "neoforge/biome_modifier";
 
     /// <summary>
-    /// The folders of plugins' feature and biome modifier files.
+    /// The folders of plugins' feature, carver and biome modifier files.
     /// </summary>
     public static FrozenSet<string> Registries { get; } =
-        FrozenSet.Create(ConfiguredFeature, PlacedFeature, BiomeModifier);
+        FrozenSet.Create(ConfiguredFeature, PlacedFeature, ConfiguredCarver, BiomeModifier);
 
     private static readonly Lock applying = new();
 
@@ -65,6 +70,12 @@ internal static partial class PluginFeatures
     /// </summary>
     public static bool IsPlacedFeature(string identifier) =>
         RegistryIds.IsPlacedFeature(identifier) || Current.PlacedFeatures.ContainsKey(identifier);
+
+    /// <summary>
+    /// Whether a configured carver is vanilla's or a loaded plugin's.
+    /// </summary>
+    public static bool IsConfiguredCarver(string identifier) =>
+        RegistryIds.IsConfiguredCarver(identifier) || Current.ConfiguredCarvers.ContainsKey(identifier);
 
     /// <summary>
     /// Finds the feature and biome modifier files in a plugin's files, by their paths.
@@ -128,7 +139,7 @@ internal static partial class PluginFeatures
             var modifier = registry switch
             {
                 BiomeModifier => BiomeModifierData.Read(root),
-                ConfiguredFeature or PlacedFeature => null,
+                ConfiguredFeature or PlacedFeature or ConfiguredCarver => null,
                 _ => throw new ArgumentException($"{registry} isn't read from plugins' files.", nameof(registry))
             };
 
@@ -205,8 +216,9 @@ internal static partial class PluginFeatures
         }
 
         var resolver = new FeatureResolver(kept, WorldgenTypes.With(types));
+        var carvers = ReadCarvers(kept, logger);
 
-        foreach (var file in kept.Where(file => file.Registry != BiomeModifier))
+        foreach (var file in kept.Where(file => file.Registry is ConfiguredFeature or PlacedFeature))
         {
             try
             {
@@ -222,23 +234,43 @@ internal static partial class PluginFeatures
         }
 
         var biomeFeatures = new BiomeFeatureLists();
+        var biomeCarvers = new BiomeCarverLists();
 
         foreach (var biome in PluginBiomes(biomes))
         {
+            var element = (BiomeElement)biome.Element;
+
             try
             {
-                biomeFeatures.Set(biome.Identifier, resolver.BiomeSteps((BiomeElement)biome.Element));
+                biomeFeatures.Set(biome.Identifier, resolver.BiomeSteps(element));
             }
             catch (InvalidDataException ex)
             {
                 Log.BiomeFeaturesLeftOut(logger, biome.Identifier, biome.Source, ex.Message);
             }
+
+            try
+            {
+                biomeCarvers.Set(biome.Identifier, carvers.Resolve(element.Carvers, "carvers"));
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.BiomeCarversLeftOut(logger, biome.Identifier, biome.Source, ex.Message);
+            }
         }
 
-        // Like NeoForge, every modifier adding features runs before any removing them, each in load order.
-        var modifiers = kept.Where(file => file.Modifier is not null).ToList();
-        var phases = modifiers.Where(file => file.Modifier!.Type == BiomeModifierData.AddFeatures)
-            .Concat(modifiers.Where(file => file.Modifier!.Type == BiomeModifierData.RemoveFeatures));
+        // Like NeoForge, every modifier adding features or carvers runs before any removing them, each in load
+        // order. Spawn modifiers are PluginSpawns'.
+        var modifiers = kept
+            .Where(file => file.Modifier?.Type is BiomeModifierData.AddFeatures
+                or BiomeModifierData.RemoveFeatures
+                or BiomeModifierData.AddCarvers
+                or BiomeModifierData.RemoveCarvers)
+            .ToList();
+
+        var phases = modifiers
+            .Where(file => file.Modifier!.Adds)
+            .Concat(modifiers.Where(file => !file.Modifier!.Adds));
 
         var unmodified = biomeFeatures.Snapshot();
 
@@ -246,7 +278,10 @@ internal static partial class PluginFeatures
         {
             try
             {
-                biomeFeatures.Modify(file.Modifier!, resolver);
+                if (file.Modifier!.Type is BiomeModifierData.AddCarvers or BiomeModifierData.RemoveCarvers)
+                    biomeCarvers.Modify(file.Modifier, carvers);
+                else
+                    biomeFeatures.Modify(file.Modifier, resolver);
             }
             catch (InvalidDataException ex)
             {
@@ -266,8 +301,62 @@ internal static partial class PluginFeatures
             result,
             Owners(result, resolver.Owners))
         {
-            Unordered = unordered
+            Unordered = unordered,
+            ConfiguredCarvers = carvers.Plugins.ToFrozenDictionary(),
+            BiomeCarvers = biomeCarvers.Result
         };
+    }
+
+    /// <summary>
+    /// A holder set of biomes to their identifiers: vanilla's or plugins' biomes, or a biome tag, vanilla's or a
+    /// plugin's (see <see cref="PluginTags"/>).
+    /// </summary>
+    /// <exception cref="InvalidDataException">A biome or the tag doesn't exist.</exception>
+    public static List<string> ResolveBiomes(ImmutableArray<string> biomes)
+    {
+        if (biomes is [var only] && only.StartsWith('#'))
+        {
+            if (!TagsRegistry.TryGet(PluginTags.Biome, only[1..], out var tag))
+                throw new InvalidDataException($"biomes: {only} isn't a biome tag");
+
+            return [.. tag.Entries
+                .Select(id => CodecRegistry.TryGetBiome(id, out var biome) ? biome!.Name : null)
+                .OfType<string>()];
+        }
+
+        foreach (var biome in biomes)
+        {
+            if (!CodecRegistry.TryGetBiome(biome, out _))
+                throw new InvalidDataException($"biomes: {biome} isn't a biome");
+        }
+
+        return [.. biomes.Distinct()];
+    }
+
+    // A tag's identifiers, for registries whose tags hold identifiers (placed features and configured carvers).
+    private static ImmutableArray<string> TagEntries(string registry, string tag, string path) =>
+        PluginTags.TryGetIdentifiers(registry, tag[1..], out var entries)
+            ? entries
+            : throw new InvalidDataException($"{path}: {tag} isn't a {registry} tag");
+
+    // The plugins' configured carvers that can be read; the others are logged and left out.
+    private static CarverResolver ReadCarvers(List<FeatureFile> files, ILogger logger)
+    {
+        var carvers = new Dictionary<string, IConfiguredCarver>();
+
+        foreach (var file in files.Where(file => file.Registry == ConfiguredCarver))
+        {
+            try
+            {
+                carvers[file.Identifier] = ConfiguredCarvers.Read(file.Json);
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.Invalid(logger, file.Source, ex.Message);
+            }
+        }
+
+        return new CarverResolver(carvers);
     }
 
     // The plugins whose code the biomes' features run, for the features that run any.
@@ -371,6 +460,14 @@ internal static partial class PluginFeatures
         }
 
         /// <summary>
+        /// The placed features a holder set entry given as JSON stands for: a <c>#tag</c>'s, or the one given.
+        /// </summary>
+        public IEnumerable<PlacedFeature> PlacedSet(JsonElement json, string path) =>
+            json.ValueKind == JsonValueKind.String && json.GetString()!.StartsWith('#')
+                ? TagEntries(PlacedFeature, json.GetString()!, path).Select(this.Placed).ToList()
+                : [this.Placed(json, path)];
+
+        /// <summary>
         /// A placed feature given as JSON: an identifier, or one defined inline, which is a new feature each time.
         /// </summary>
         public PlacedFeature Placed(JsonElement json, string path) =>
@@ -392,12 +489,13 @@ internal static partial class PluginFeatures
                 foreach (var entry in biome.Features[step])
                 {
                     var path = $"features[{step}]";
-                    if (entry.StartsWith('#'))
-                        throw new InvalidDataException($"{path}: placed feature tags aren't supported");
 
-                    features.Add(entry.StartsWith('{')
-                        ? this.Placed(ParseInline(entry, path), path)
-                        : this.Placed(entry));
+                    if (entry.StartsWith('#'))
+                        features.AddRange(TagEntries(PlacedFeature, entry, path).Select(this.Placed));
+                    else if (entry.StartsWith('{'))
+                        features.Add(this.Placed(ParseInline(entry, path), path));
+                    else
+                        features.Add(this.Placed(entry));
                 }
 
                 steps.Add(features);
@@ -497,7 +595,7 @@ internal static partial class PluginFeatures
         {
             var biomes = ResolveBiomes(modifier.Biomes);
             var features = modifier.Features
-                .Select((feature, i) => resolver.Placed(feature, $"features[{i}]"))
+                .SelectMany((feature, i) => resolver.PlacedSet(feature, $"features[{i}]"))
                 .ToList();
 
             var removed = features.ToHashSet(ReferenceEqualityComparer.Instance);
@@ -620,27 +718,85 @@ internal static partial class PluginFeatures
 
             return changed;
         }
+    }
 
-        // A holder set of biomes to their identifiers: vanilla's or plugins' biomes, or a vanilla biome tag.
-        private static List<string> ResolveBiomes(ImmutableArray<string> biomes)
+    /// <summary>
+    /// Finds configured carvers: the plugins' that could be read, or vanilla's.
+    /// </summary>
+    private sealed class CarverResolver(Dictionary<string, IConfiguredCarver> plugins)
+    {
+        /// <summary>
+        /// The plugins' configured carvers that could be read, by identifier.
+        /// </summary>
+        public Dictionary<string, IConfiguredCarver> Plugins => plugins;
+
+        /// <summary>
+        /// A holder set of configured carvers: identifiers, or a single <c>#tag</c>.
+        /// </summary>
+        /// <exception cref="InvalidDataException">A carver or the tag doesn't exist.</exception>
+        public List<IConfiguredCarver> Resolve(ImmutableArray<string> carvers, string path)
         {
-            if (biomes is [var only] && only.StartsWith('#'))
-            {
-                if (!TagsRegistry.TryGet("worldgen/biome", only[1..], out var tag))
-                    throw new InvalidDataException($"biomes: {only} isn't a biome tag");
+            var identifiers = carvers is [var only] && only.StartsWith('#')
+                ? TagEntries(ConfiguredCarver, only, path)
+                : carvers;
 
-                return [.. tag.Entries
-                    .Select(id => CodecRegistry.TryGetBiome(id, out var biome) ? biome!.Name : null)
-                    .OfType<string>()];
-            }
+            return [.. identifiers.Select(identifier => this.Find(identifier, path))];
+        }
+
+        private IConfiguredCarver Find(string identifier, string path)
+        {
+            if (plugins.TryGetValue(identifier, out var carver))
+                return carver;
+
+            return RegistryIds.IsConfiguredCarver(identifier)
+                ? ConfiguredCarvers.Vanilla(identifier)
+                : throw new InvalidDataException($"{path}: {identifier} isn't a configured carver");
+        }
+    }
+
+    /// <summary>
+    /// The biomes' configured carvers, starting from vanilla's biomes', which stay the result as long as nothing
+    /// changes them.
+    /// </summary>
+    private sealed class BiomeCarverLists
+    {
+        private readonly Dictionary<string, ImmutableArray<IConfiguredCarver>> lists =
+            new(ConfiguredCarvers.VanillaBiomes);
+
+        private bool changed;
+
+        public IReadOnlyDictionary<string, ImmutableArray<IConfiguredCarver>> Result =>
+            this.changed ? this.lists.ToFrozenDictionary() : ConfiguredCarvers.VanillaBiomes;
+
+        /// <summary>
+        /// Gives a plugin's biome its carvers.
+        /// </summary>
+        public void Set(string biome, List<IConfiguredCarver> carvers)
+        {
+            this.lists[biome] = [.. carvers];
+            this.changed = true;
+        }
+
+        /// <summary>
+        /// Applies a carver modifier: like NeoForge, <c>add_carvers</c> appends its carvers to each biome's, and
+        /// <c>remove_carvers</c> removes them.
+        /// </summary>
+        public void Modify(BiomeModifierData modifier, CarverResolver resolver)
+        {
+            var biomes = ResolveBiomes(modifier.Biomes);
+            var carvers = resolver.Resolve(modifier.Carvers, "carvers");
+            var removed = carvers.ToHashSet(ReferenceEqualityComparer.Instance);
 
             foreach (var biome in biomes)
             {
-                if (!CodecRegistry.TryGetBiome(biome, out _))
-                    throw new InvalidDataException($"biomes: {biome} isn't a biome");
+                var current = this.lists.GetValueOrDefault(biome, []);
+
+                this.lists[biome] = modifier.Type == BiomeModifierData.AddCarvers
+                    ? current.AddRange(carvers)
+                    : current.RemoveAll(carver => removed.Contains(carver));
             }
 
-            return [.. biomes.Distinct()];
+            this.changed |= biomes.Count > 0;
         }
     }
 
@@ -656,6 +812,14 @@ internal static partial class PluginFeatures
         [LoggerMessage(Level = LogLevel.Error,
             Message = "Left out the features of {Identifier} from {Source}: {Message}")]
         public static partial void BiomeFeaturesLeftOut(
+            ILogger logger,
+            string identifier,
+            string source,
+            string message);
+
+        [LoggerMessage(Level = LogLevel.Error,
+            Message = "Left out the carvers of {Identifier} from {Source}: {Message}")]
+        public static partial void BiomeCarversLeftOut(
             ILogger logger,
             string identifier,
             string source,
@@ -679,7 +843,7 @@ internal static partial class PluginFeatures
 }
 
 /// <summary>
-/// A plugin's configured feature, placed feature or biome modifier file.
+/// A plugin's configured feature, placed feature, configured carver or biome modifier file.
 /// </summary>
 /// <param name="Registry">One of <see cref="PluginFeatures.Registries"/>.</param>
 /// <param name="Identifier">The entry's identifier, like <c>ruby:ore_ruby</c>.</param>
@@ -694,8 +858,8 @@ internal sealed record FeatureFile(
     BiomeModifierData? Modifier);
 
 /// <summary>
-/// The features chunk generation places: the loaded plugins' features, and every biome's features per decoration
-/// step, which are vanilla's with plugins' biomes and biome modifiers applied.
+/// The features and carvers chunk generation places: the loaded plugins' features, and every biome's features per
+/// decoration step and carvers, which are vanilla's with plugins' biomes and biome modifiers applied.
 /// </summary>
 /// <param name="ConfiguredFeatures">The plugins' configured features, by identifier.</param>
 /// <param name="PlacedFeatures">The plugins' placed features, by identifier.</param>
@@ -723,6 +887,19 @@ internal sealed record WorldgenFeatureSet(
     /// own features are in a cycle. They can't be generated with these features.
     /// </summary>
     public ImmutableArray<string> Unordered { get; init; } = [];
+
+    /// <summary>
+    /// The plugins' configured carvers, by identifier.
+    /// </summary>
+    public FrozenDictionary<string, IConfiguredCarver> ConfiguredCarvers { get; init; } =
+        FrozenDictionary<string, IConfiguredCarver>.Empty;
+
+    /// <summary>
+    /// Each biome's configured carvers, by biome identifier: vanilla's biomes' (<c>ConfiguredCarvers.VanillaBiomes</c>
+    /// itself when plugins change none), with plugins' biomes and carver modifiers applied.
+    /// </summary>
+    public IReadOnlyDictionary<string, ImmutableArray<IConfiguredCarver>> BiomeCarvers { get; init; } =
+        WorldData.Generators.Mojang.Carvers.ConfiguredCarvers.VanillaBiomes;
 
     /// <summary>
     /// Every plugin whose code any of the biomes' features runs.
