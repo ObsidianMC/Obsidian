@@ -78,7 +78,7 @@ internal static partial class PluginDimensions
     /// </exception>
     public static DimensionFile Parse(string identifier, string source, ReadOnlySpan<byte> json)
     {
-        if (!PluginTags.IsIdentifier(identifier))
+        if (!PluginTags.IsFileIdentifier(identifier))
             throw new InvalidDataException($"{source}: {identifier} isn't a valid identifier.");
 
         if (identifier.StartsWith("minecraft:", StringComparison.Ordinal))

@@ -8,7 +8,9 @@ using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Mojang.Features;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -71,6 +73,8 @@ public sealed class PluginDimensionFiles : IDisposable
           "spawn_costs": {}
         }
         """;
+
+    private const string NoOp = """{ "feature": { "type": "minecraft:no_op", "config": {} }, "placement": [] }""";
 
     private const string FixedStem = """
         {
@@ -203,6 +207,108 @@ public sealed class PluginDimensionFiles : IDisposable
         Assert.Same(gladeBiome, saved.GetBiome(0, 0, 0));
         Assert.True(PluginFeatureFiles.HasDiamondBlocks(saved));
     }
+
+    [Fact(DisplayName = "A file path giving an identifier with an empty, . or .. segment is refused")]
+    public void RefusesPathsOutOfTheirFolder()
+    {
+        // data/<ns>/dimension//world.json would be <ns>:/world, whose folder would leave the world's folder.
+        var (_, identifier) = Assert.Single(PluginDimensions.FindFiles(["data/stemfiles/dimension//world.json"]));
+        Assert.Equal("stemfiles:/world", identifier);
+
+        string[] identifiers =
+        [
+            identifier,
+            "stemfiles:world/",
+            "stemfiles:a//b",
+            "stemfiles:../world",
+            "stemfiles:a/./b"
+        ];
+
+        foreach (var bad in identifiers)
+        {
+            var refused = Assert.Throws<InvalidDataException>(() => Parse(bad, FixedStem));
+            Assert.Contains("isn't a valid identifier", refused.Message);
+        }
+    }
+
+    [Fact(DisplayName = "Reverting one dimension's modifiers re-checks the dimensions sharing its biomes")]
+    public void RevertsUntilEveryDimensionIsOrdered()
+    {
+        var logger = new PluginFeatureFiles.ListLogger();
+        bool isFeature(string id) => id is "stemfiles:x" or "stemfiles:y" or "stemfiles:z";
+
+        CodecFile[] biomes =
+        [
+            Biome("stemfiles:roll_a", """["stemfiles:x", "stemfiles:y"]""", isFeature),
+            Biome("stemfiles:roll_b", """["stemfiles:y"]""", isFeature),
+            Biome("stemfiles:roll_c", """["stemfiles:z"]""", isFeature)
+        ];
+
+        PluginCodecs.Apply(biomes, logger);
+
+        // With every modifier, a = [y, z] and b = [y, x] order in the first dimension, but a and c = [z, y] don't in
+        // the second. Reverting the second gives a back [x, y], which breaks the first, so it's reverted too.
+        var first = Parse("stemfiles:roll_first", Checkerboard("stemfiles:roll_a", "stemfiles:roll_b")).Dimension;
+        var second = Parse("stemfiles:roll_second", Checkerboard("stemfiles:roll_a", "stemfiles:roll_c")).Dimension;
+
+        FeatureFile[] files =
+        [
+            Feature(PluginFeatures.PlacedFeature, "stemfiles:x", NoOp),
+            Feature(PluginFeatures.PlacedFeature, "stemfiles:y", NoOp),
+            Feature(PluginFeatures.PlacedFeature, "stemfiles:z", NoOp),
+            Modifier("stemfiles:add_x", "add", "stemfiles:roll_b", "stemfiles:x"),
+            Modifier("stemfiles:add_y", "add", "stemfiles:roll_c", "stemfiles:y"),
+            Modifier("stemfiles:add_z", "add", "stemfiles:roll_a", "stemfiles:z"),
+            Modifier("stemfiles:no_x", "remove", "stemfiles:roll_a", "stemfiles:x")
+        ];
+
+        var features = PluginFeatures.Build(files, biomes, [], logger, [first, second]);
+
+        Assert.Empty(features.Unordered);
+        Assert.Equal(2, logger.Messages.Count(message => message.StartsWith("Left out plugins' biome modifiers")));
+
+        // Both can be generated: ordering their features doesn't throw.
+        foreach (var dimension in new[] { first, second })
+        {
+            FeatureSorter.Build(
+                dimension.PossibleBiomes,
+                biome => features.BiomeFeatures.GetValueOrDefault(biome.Name) ?? []);
+        }
+
+        var b = features.BiomeFeatures["stemfiles:roll_b"][0];
+        Assert.Equal(["stemfiles:y"], b.Select(feature => feature.Identifier));
+    }
+
+    // A plugin biome placing the features in the raw_generation step.
+    private static CodecFile Biome(string identifier, string features, Func<string, bool> isFeature)
+    {
+        var json = Glade.Replace("""[[], [], [], [], [], [], ["stemfiles:ore_marker"]]""", $"[{features}]");
+
+        return PluginCodecs.Parse(PluginCodecs.Biome, identifier, "test", Bytes(json), isFeature);
+    }
+
+    private static string Checkerboard(string a, string b) => FixedStem.Replace(
+        """{ "type": "minecraft:fixed", "biome": "stemfiles:glade" }""",
+        $$"""{ "type": "minecraft:checkerboard", "biomes": ["{{a}}", "{{b}}"] }""");
+
+    // A modifier adding a feature to a biome's raw_generation step, or removing it from every step.
+    private static FeatureFile Modifier(string identifier, string type, string biome, string feature)
+    {
+        var step = type == "add" ? "\"step\": \"raw_generation\"," : "";
+        var json = $$"""
+            {
+              {{step}}
+              "type": "neoforge:{{type}}_features",
+              "biomes": "{{biome}}",
+              "features": "{{feature}}"
+            }
+            """;
+
+        return Feature(PluginFeatures.BiomeModifier, identifier, json);
+    }
+
+    private static FeatureFile Feature(string registry, string identifier, string json) =>
+        PluginFeatures.Parse(registry, identifier, "test", Bytes(json));
 
     private static DimensionFile Parse(string identifier, string json) =>
         PluginDimensions.Parse(identifier, "test", Bytes(json));

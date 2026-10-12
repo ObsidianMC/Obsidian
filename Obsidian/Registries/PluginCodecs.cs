@@ -101,7 +101,7 @@ internal static partial class PluginCodecs
         ReadOnlySpan<byte> json,
         Func<string, bool>? isPlacedFeature = null)
     {
-        if (!PluginTags.IsIdentifier(identifier))
+        if (!PluginTags.IsFileIdentifier(identifier))
             throw new InvalidDataException($"{source}: {identifier} isn't a valid identifier.");
 
         // Clients take vanilla's entries from the minecraft:core pack they share with the server.

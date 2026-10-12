@@ -54,7 +54,7 @@ internal static partial class PluginTags
     public static TagFile Parse(string registry, string identifier, string source, ReadOnlySpan<byte> json)
     {
         // Clients read the tag's identifier with vanilla's rules, and refuse the tags if it breaks them.
-        if (!IsIdentifier(identifier))
+        if (!IsFileIdentifier(identifier))
             throw new InvalidDataException($"{source}: {identifier} isn't a valid tag identifier.");
 
         try
@@ -111,6 +111,17 @@ internal static partial class PluginTags
         static bool IsPathChar(char c) =>
             char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c is '_' or '-' or '.' or '/';
     }
+
+    /// <summary>
+    /// Whether an identifier taken from a data file's path is valid: an identifier whose path also passes vanilla's
+    /// check of resource paths (<c>FileUtil.decomposePath</c>), so no segment is empty, <c>.</c> or <c>..</c>. A
+    /// dimension's folder is made from its identifier, so this also keeps it inside the world.
+    /// </summary>
+    internal static bool IsFileIdentifier(string identifier) =>
+        IsIdentifier(identifier)
+        && identifier[(identifier.IndexOf(':') + 1)..]
+            .Split('/')
+            .All(segment => segment is not ("" or "." or ".."));
 
     /// <summary>
     /// Finds the tag files in a plugin's files, by their paths: <c>data/&lt;namespace&gt;/tags/&lt;registry&gt;/</c>

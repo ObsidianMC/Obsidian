@@ -37,7 +37,7 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// <summary>
     /// The dimension this generator builds; levels using it must have the dimension's build range.
     /// </summary>
-    protected MojangDimension Dimension { get; }
+    internal MojangDimension Dimension { get; }
 
     private ChunkBuilder builder;
 

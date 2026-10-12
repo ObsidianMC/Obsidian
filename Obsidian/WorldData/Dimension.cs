@@ -19,9 +19,13 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
 
     public override void Initialize(DimensionCodec codec)
     {
-        this.FolderPath = this.UsesVanillaLayout
-            ? Path.Combine(this.ParentWorld.FolderPath, VanillaFolder(this.Name))
-            : Path.Combine(ServerConstants.WorldsPath, ParentWorld.Name, ObsidianFolder(this.Name));
+        var worldFolder = this.UsesVanillaLayout
+            ? this.ParentWorld.FolderPath
+            : Path.Combine(ServerConstants.WorldsPath, ParentWorld.Name);
+
+        var folder = this.UsesVanillaLayout ? VanillaFolder(this.Name) : ObsidianFolder(this.Name);
+        this.FolderPath = Path.Combine(worldFolder, folder);
+        CheckInWorld(worldFolder, folder, this.FolderPath);
 
         // A dimension is named after its level stem, which plugins' dimensions don't share with their type.
         this.SetDimension(this.Name, codec);
@@ -41,6 +45,17 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
         this.LevelDataFilePath = Path.Combine(this.FolderPath, "level.dat");
 
         Directory.CreateDirectory(this.FolderPath);
+    }
+
+    // Plugins name their dimensions, and a folder is made from the name, so one that would leave the world's
+    // dimensions folder is refused (the nether's and end's vanilla folders sit in the world's folder itself).
+    private void CheckInWorld(string worldFolder, string folder, string path)
+    {
+        var root = folder is "DIM-1" or "DIM1" ? worldFolder : Path.Combine(worldFolder, "dimensions");
+        var rootPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)) + Path.DirectorySeparatorChar;
+
+        if (!Path.GetFullPath(path).StartsWith(rootPath, StringComparison.Ordinal))
+            throw new InvalidOperationException($"{this.Name}'s folder {path} would be outside {root}.");
     }
 
     /// <summary>

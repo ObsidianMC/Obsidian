@@ -30,6 +30,7 @@ internal sealed class ChunkBuilder
     private readonly Func<WorldgenFeatureSet> features;
     private readonly Lock decorationLock = new();
     private Decoration decoration;
+    private WeakReference<WorldgenFeatureSet>? rejected;
 
     // Vanilla's WorldGenRegion random factory (RandomState.getOrCreateRandomFactory("worldgen_region_random")).
     private readonly IPositionalRandomFactory regionRandom;
@@ -205,7 +206,12 @@ internal sealed class ChunkBuilder
     /// <summary>
     /// Moves decoration to the current biome features, if they changed, so the previous ones aren't kept.
     /// </summary>
-    public void RefreshFeatures() => this.CurrentDecoration();
+    /// <returns>
+    /// Whether decoration uses the current features: false when they can't be ordered for this dimension, and the
+    /// previous ones are kept.
+    /// </returns>
+    public bool RefreshFeatures() =>
+        ReferenceEquals(this.CurrentDecoration().BiomeFeatures, this.features().BiomeFeatures);
 
     // Plugins' feature types run plugin code, so decorating is a call into every plugin whose features it may place,
     // which keeps the plugin from being released (its services disposed, its load context unloaded) until it ends.
@@ -239,22 +245,40 @@ internal sealed class ChunkBuilder
     // decorated when plugins change finish with the previous features. Like vanilla with the same data pack, the
     // new decorator sorts the features again, which can change the seeds of vanilla's features in a step plugins
     // added to.
+    // Features can't be ordered for this dimension when its biomes' features are in a cycle. PluginFeatures doesn't
+    // publish such features for a generating dimension, but if any come, decoration keeps the previous ones rather
+    // than failing every chunk and, with it, chunk management. Weak, so the plugins they came from aren't kept.
     private Decoration CurrentDecoration()
     {
+        var features = this.features();
         var decoration = Volatile.Read(ref this.decoration);
-        if (ReferenceEquals(decoration.BiomeFeatures, this.features().BiomeFeatures))
+        if (ReferenceEquals(decoration.BiomeFeatures, features.BiomeFeatures) || this.IsRejected(features))
             return decoration;
 
         lock (this.decorationLock)
         {
             // Read again under the lock, so a slower thread can't put back features older than another's.
-            var features = this.features();
-            if (!ReferenceEquals(this.decoration.BiomeFeatures, features.BiomeFeatures))
+            features = this.features();
+            if (ReferenceEquals(this.decoration.BiomeFeatures, features.BiomeFeatures) || this.IsRejected(features))
+                return this.decoration;
+
+            try
+            {
                 Volatile.Write(ref this.decoration, this.CreateDecoration(features));
+            }
+            catch (InvalidOperationException)
+            {
+                Volatile.Write(ref this.rejected, new WeakReference<WorldgenFeatureSet>(features));
+            }
 
             return this.decoration;
         }
     }
+
+    private bool IsRejected(WorldgenFeatureSet features) =>
+        Volatile.Read(ref this.rejected) is { } rejected
+        && rejected.TryGetTarget(out var target)
+        && ReferenceEquals(target, features);
 
     // Keeps only what decorating needs of the feature set, so that a plugin's features not in any biome aren't
     // kept after the plugin unloads.

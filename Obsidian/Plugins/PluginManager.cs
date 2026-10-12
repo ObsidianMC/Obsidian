@@ -741,23 +741,32 @@ public sealed partial class PluginManager : IAsyncDisposable
     }
 
     // World generation places the loaded plugins' features, with their biome modifiers applied. Every level's
-    // generator moves to them now, so none keeps the previous features (and the plugins they came from).
+    // generator moves to them now, so none keeps the previous features (and the plugins they came from). Features
+    // that a generating dimension can't order aren't applied: the previous ones stay (see PluginFeatures.Apply).
     private void ApplyFeatures()
     {
-        PluginFeatures.Apply(
+        var generators = this.server.WorldManager.GetAvailableWorlds()
+            .OfType<WorldData.World>()
+            .SelectMany(world => world.dimensions.Values.OfType<WorldData.AbstractLevel>().Prepend(world))
+            .Select(level => level.Generator)
+            .OfType<WorldData.Generators.MojangGenerator>()
+            .Where(generator => generator.Builder is not null)
+            .ToList();
+
+        var applied = PluginFeatures.Apply(
             this.plugins.SelectMany(plugin => plugin.FeatureFiles),
             this.plugins.SelectMany(plugin => plugin.CodecFiles),
             this.plugins.SelectMany(plugin => plugin.WorldgenTypes),
+            generators.Select(generator => generator.Dimension.Identifier).ToHashSet(),
             this.logger);
 
-        var levels = this.server.WorldManager.GetAvailableWorlds()
-            .OfType<WorldData.World>()
-            .SelectMany(world => world.dimensions.Values.OfType<WorldData.AbstractLevel>().Prepend(world));
+        if (!applied)
+            return;
 
-        foreach (var level in levels)
+        foreach (var generator in generators)
         {
-            if (level.Generator is WorldData.Generators.MojangGenerator { Builder: { } builder })
-                builder.RefreshFeatures();
+            if (!generator.Builder.RefreshFeatures())
+                Log.KeptPreviousFeatures(this.logger, generator.Dimension.Identifier);
         }
     }
 
@@ -832,6 +841,10 @@ public sealed partial class PluginManager : IAsyncDisposable
     {
         [LoggerMessage(Level = LogLevel.Error, Message = "Updating connected players to the plugins' content failed")]
         public static partial void RefreshClientsFailed(ILogger logger, Exception exception);
+
+        [LoggerMessage(Level = LogLevel.Error,
+            Message = "{Dimension} keeps placing its previous features: it can't order the new ones")]
+        public static partial void KeptPreviousFeatures(ILogger logger, string dimension);
 
         [LoggerMessage(Level = LogLevel.Error,
             Message = "Couldn't drop an unloaded plugin's AI from entity {EntityId}")]

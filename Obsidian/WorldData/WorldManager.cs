@@ -280,28 +280,48 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     private async Task AddPluginDimensionAsync(World world, MojangDimension stem, CancellationToken cancellationToken)
     {
         var factory = (LevelFactory)this.levelFactory;
-        IDimension dimension;
+        IDimension? dimension = null;
+        var registered = false;
 
+        // The level is registered once it's loaded or generated with its spawn, so players can't reach it, and it
+        // doesn't tick, before then. One that fails is left out and disposed; a later plugin load tries it again.
         try
         {
             // Building the generator orders the features of the dimension's biomes, which fails when they can't be
             // ordered, as vanilla's would.
             dimension = factory.CreateDimension(world, stem.Identifier, new LevelStemGenerator(stem));
+            dimension.Initialize(stem.DimensionType);
+
+            if (!await dimension.LoadAsync(stem.DimensionType))
+            {
+                Log.CreatingDimension(this.logger, stem.Identifier, world.Name);
+                await dimension.GenerateAsync(cancellationToken);
+                await dimension.SaveAsync();
+            }
+
+            world.RegisterDimension(dimension);
+            registered = true;
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             Log.PluginDimensionFailed(this.logger, ex, stem.Identifier);
-            return;
         }
-
-        dimension.Initialize(stem.DimensionType);
-        world.RegisterDimension(dimension);
-
-        if (!await dimension.LoadAsync(stem.DimensionType))
+        finally
         {
-            Log.CreatingDimension(this.logger, stem.Identifier, world.Name);
-            await dimension.GenerateAsync(cancellationToken);
-            await dimension.SaveAsync();
+            if (!registered && dimension is not null)
+                await this.DisposeFailedDimensionAsync(dimension, stem.Identifier);
+        }
+    }
+
+    private async Task DisposeFailedDimensionAsync(IDimension dimension, string identifier)
+    {
+        try
+        {
+            await dimension.DisposeAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.PluginDimensionFailed(this.logger, ex, identifier);
         }
     }
 

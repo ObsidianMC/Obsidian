@@ -105,7 +105,7 @@ internal static partial class PluginFeatures
     /// </exception>
     public static FeatureFile Parse(string registry, string identifier, string source, ReadOnlySpan<byte> json)
     {
-        if (!PluginTags.IsIdentifier(identifier))
+        if (!PluginTags.IsFileIdentifier(identifier))
             throw new InvalidDataException($"{source}: {identifier} isn't a valid identifier.");
 
         if (identifier.StartsWith("minecraft:", StringComparison.Ordinal))
@@ -137,14 +137,32 @@ internal static partial class PluginFeatures
     /// <param name="files">The loaded plugins' feature and biome modifier files, in load order.</param>
     /// <param name="biomes">The loaded plugins' codec files, in load order, whose biomes' features are added.</param>
     /// <param name="types">The worldgen types the loaded plugins registered, which files can name.</param>
-    public static void Apply(
+    /// <param name="generating">The identifiers of the dimensions levels generate now.</param>
+    /// <returns>
+    /// Whether the features are now the current ones. A level's generator can't move to features it can't order, so
+    /// when a dimension in <paramref name="generating"/> can't be ordered, the previous features stay, and it's logged.
+    /// </returns>
+    public static bool Apply(
         IEnumerable<FeatureFile> files,
         IEnumerable<CodecFile> biomes,
         IEnumerable<WorldgenTypeRegistration> types,
+        IReadOnlySet<string> generating,
         ILogger logger)
     {
         lock (applying)
-            Volatile.Write(ref current, Build(files, biomes, types, logger));
+        {
+            var features = Build(files, biomes, types, logger);
+            var broken = features.Unordered.FirstOrDefault(generating.Contains);
+
+            if (broken is not null)
+            {
+                Log.KeptPrevious(logger, broken);
+                return false;
+            }
+
+            Volatile.Write(ref current, features);
+            return true;
+        }
     }
 
     /// <summary>
@@ -227,22 +245,9 @@ internal static partial class PluginFeatures
             }
         }
 
-        // Vanilla's generator stops when it can't order the features of its biome source's possible biomes, which
-        // happens when one is placed both before and after another in different biomes. NeoForge builds biomes once
-        // every phase ran, so only the final lists count. A dimension whose lists can't be ordered is generated
-        // without the modifiers instead. Vanilla orders its biomes' own features; a plugin's dimension whose biomes'
-        // own features can't be ordered can't be generated (see WorldManager.AddPluginDimensionsAsync).
-        if (modifiers.Count > 0)
-        {
-            foreach (var dimension in dimensions ?? PluginDimensions.All)
-            {
-                if (!biomeFeatures.HasCycle(dimension))
-                    continue;
-
-                Log.ModifiersLeftOut(logger, dimension.Identifier);
-                biomeFeatures.Revert(dimension, unmodified);
-            }
-        }
+        var unordered = biomeFeatures.Changed
+            ? biomeFeatures.Order([.. dimensions ?? PluginDimensions.All], unmodified, logger)
+            : [];
 
         var result = biomeFeatures.Result;
 
@@ -250,7 +255,10 @@ internal static partial class PluginFeatures
             resolver.ConfiguredFeatures.ToFrozenDictionary(),
             resolver.PlacedFeatures.ToFrozenDictionary(),
             result,
-            Owners(result, resolver.Owners));
+            Owners(result, resolver.Owners))
+        {
+            Unordered = unordered
+        };
     }
 
     // The plugins whose code the biomes' features run, for the features that run any.
@@ -490,6 +498,11 @@ internal static partial class PluginFeatures
             this.changed ? this.lists.ToFrozenDictionary() : global::Obsidian.Registries.BiomeFeatures.All;
 
         /// <summary>
+        /// Whether any biome's features differ from vanilla's.
+        /// </summary>
+        public bool Changed => this.changed;
+
+        /// <summary>
         /// Gives a biome its features.
         /// </summary>
         public void Set(string biome, List<List<PlacedFeature>> steps)
@@ -561,19 +574,75 @@ internal static partial class PluginFeatures
         }
 
         /// <summary>
-        /// Gives the dimension's biomes back the features they had in <paramref name="snapshot"/>.
+        /// Makes every dimension's biomes' features orderable where it can, by giving the biomes of each dimension
+        /// that can't be ordered back their features from <paramref name="unmodified"/>.
         /// </summary>
-        public void Revert(
+        /// <returns>The dimensions that still can't be ordered: their biomes' own features are in a cycle.</returns>
+        /// <remarks>
+        /// Vanilla's generator stops when it can't order the features of its biome source's possible biomes, which
+        /// happens when one is placed both before and after another in different biomes. NeoForge builds biomes once
+        /// every phase ran, so only the final lists count. Dimensions share biomes, so reverting one dimension's
+        /// biomes can break another checked before it: the checks repeat until nothing more is reverted. Reverting
+        /// only ever goes back to the unmodified lists, so this ends.
+        /// </remarks>
+        public ImmutableArray<string> Order(
+            List<MojangDimension> dimensions,
+            Dictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> unmodified,
+            ILogger logger)
+        {
+            bool reverted;
+
+            do
+            {
+                reverted = false;
+
+                foreach (var dimension in dimensions)
+                {
+                    if (this.HasCycle(dimension) && this.Revert(dimension, unmodified))
+                    {
+                        Log.ModifiersLeftOut(logger, dimension.Identifier);
+                        reverted = true;
+                    }
+                }
+            }
+            while (reverted);
+
+            var unordered = dimensions
+                .Where(this.HasCycle)
+                .Select(dimension => dimension.Identifier)
+                .Distinct()
+                .ToImmutableArray();
+
+            foreach (var dimension in unordered)
+                Log.Unordered(logger, dimension);
+
+            return unordered;
+        }
+
+        // Gives the dimension's biomes back the features they had in the snapshot; whether any changed.
+        private bool Revert(
             MojangDimension dimension,
             Dictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> snapshot)
         {
+            var changed = false;
+
             foreach (var biome in dimension.PossibleBiomes)
             {
-                if (snapshot.TryGetValue(biome.Name, out var steps))
+                var current = this.lists.GetValueOrDefault(biome.Name);
+                var steps = snapshot.GetValueOrDefault(biome.Name);
+
+                if (ReferenceEquals(current, steps))
+                    continue;
+
+                if (steps is not null)
                     this.lists[biome.Name] = steps;
                 else
                     this.lists.Remove(biome.Name);
+
+                changed = true;
             }
+
+            return changed;
         }
 
         // A holder set of biomes to their identifiers: vanilla's or plugins' biomes, or a vanilla biome tag.
@@ -620,6 +689,16 @@ internal static partial class PluginFeatures
             Message = "Left out plugins' biome modifiers in {Dimension}: with them, its biomes' features would be in "
                 + "a cycle, one placed both before and after another")]
         public static partial void ModifiersLeftOut(ILogger logger, string dimension);
+
+        [LoggerMessage(Level = LogLevel.Error,
+            Message = "Can't generate {Dimension}: its biomes' own features would be in a cycle, one placed both "
+                + "before and after another")]
+        public static partial void Unordered(ILogger logger, string dimension);
+
+        [LoggerMessage(Level = LogLevel.Error,
+            Message = "Kept the previous features: with the loaded plugins' files, the features of {Dimension}, "
+                + "which is generating, can't be ordered")]
+        public static partial void KeptPrevious(ILogger logger, string dimension);
     }
 }
 
@@ -662,6 +741,12 @@ internal sealed record WorldgenFeatureSet(
         FrozenDictionary<string, PlacedFeature>.Empty,
         global::Obsidian.Registries.BiomeFeatures.All,
         FrozenDictionary<PlacedFeature, ImmutableArray<PluginContainer>>.Empty);
+
+    /// <summary>
+    /// The dimensions whose biomes' features can't be ordered even without biome modifiers, because their biomes'
+    /// own features are in a cycle. They can't be generated with these features.
+    /// </summary>
+    public ImmutableArray<string> Unordered { get; init; } = [];
 
     /// <summary>
     /// Every plugin whose code any of the biomes' features runs.
