@@ -413,6 +413,10 @@ public sealed partial class PluginManager : IAsyncDisposable
             container.DimensionFiles = this.ReadDimensionFiles(archive);
             this.ApplyDimensions();
             this.ResumeGenerators();
+
+            // Biome regions name biomes, and add to dimensions' biomes, whose features are ordered together.
+            container.BiomeRegionFiles = this.ReadBiomeRegionFiles(archive);
+            this.ApplyBiomeRegions();
             this.ApplyFeatures();
             this.ApplySpawns();
             await this.AddDimensionLevelsAsync();
@@ -495,6 +499,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.ApplyCodecs();
         this.ApplyTags();
         this.ApplyNoise();
+        this.ApplyBiomeRegions();
         this.ApplyFeatures();
         this.ApplySpawns();
         this.StopGenerators(pluginContainer);
@@ -649,6 +654,27 @@ public sealed partial class PluginManager : IAsyncDisposable
             {
                 var data = archive.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
                 files.Add(PluginDimensions.Parse(identifier, $"{archive.Info.Id}/{path}", data));
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.CodecFileFailed(this.logger, ex, path, archive.Source);
+            }
+        }
+
+        return files.ToImmutable();
+    }
+
+    // A plugin's biome region files. A file that can't be read is left out; the plugin loads without it.
+    private ImmutableArray<BiomeRegionFile> ReadBiomeRegionFiles(PluginArchive archive)
+    {
+        var files = ImmutableArray.CreateBuilder<BiomeRegionFile>();
+
+        foreach (var (path, identifier) in PluginBiomeRegions.FindFiles(archive.Paths))
+        {
+            try
+            {
+                var data = archive.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
+                files.Add(PluginBiomeRegions.Parse(identifier, $"{archive.Info.Id}/{path}", data));
             }
             catch (InvalidDataException ex)
             {
@@ -836,6 +862,10 @@ public sealed partial class PluginManager : IAsyncDisposable
         if (generator.Resume(dimension))
             Log.GeneratorResumed(this.logger, dimension.Identifier);
     }
+
+    // Dimensions not generating yet take the loaded plugins' biome regions; generating ones keep theirs.
+    private void ApplyBiomeRegions() =>
+        PluginBiomeRegions.Apply(this.plugins.SelectMany(plugin => plugin.BiomeRegionFiles), this.logger);
 
     // The loaded plugins' dimensions are added. Ones no plugin has any more stay, with their levels.
     private void ApplyDimensions() =>

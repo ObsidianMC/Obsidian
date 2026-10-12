@@ -110,7 +110,7 @@ internal static partial class PluginDimensions
 
             // A change to what it reads from plugins' data is a change to the dimension too: the noise files its noise
             // settings and biome source read, and the biomes it names, which tags may resolve differently.
-            var biomes = string.Join(' ', dimension.PossibleBiomes.Select(biome => biome.Name));
+            var biomes = string.Join(' ', dimension.SourceBiomes.Select(biome => biome.Name));
             var text = $"{Encoding.UTF8.GetString(bytes)}\n{biomes}\n{noise.Sources(entries)}";
 
             return new DimensionFile(identifier, source, text, bytes, dimension);

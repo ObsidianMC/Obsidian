@@ -82,6 +82,11 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     internal ImmutableArray<DimensionFile> DimensionFiles { get; set; } = [];
 
     /// <summary>
+    /// The plugin's biome region files, which dimensions not generating yet take while it's loaded.
+    /// </summary>
+    internal ImmutableArray<BiomeRegionFile> BiomeRegionFiles { get; set; } = [];
+
+    /// <summary>
     /// The plugin's noise settings, density function and noise files, which dimensions can use while it's loaded.
     /// </summary>
     internal ImmutableArray<NoiseFile> NoiseFiles { get; set; } = [];
