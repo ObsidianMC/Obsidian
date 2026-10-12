@@ -10,15 +10,20 @@ public sealed record EntityDataComponent(DataComponentType ComponentType) : Data
     public int RegistryId { get; set; }
     public NbtCompound Data { get; set; } = new();
 
+    // The registry RegistryId belongs to: entity types, or block entity types for minecraft:block_entity_data.
+    private string Registry => this.ComponentType == DataComponentType.BlockEntityData
+        ? ComponentValueCodecs.BlockEntityTypes
+        : ComponentValueCodecs.EntityTypes;
+
     public override void Read(INetStreamReader reader)
     {
-        this.RegistryId = reader.ReadVarInt();
+        this.RegistryId = reader.ReadRegistryId(this.Registry);
         this.Data = reader.ReadNbtCompound();
     }
 
     public override void Write(INetStreamWriter writer)
     {
-        writer.WriteVarInt(this.RegistryId);
+        writer.WriteRegistryId(this.Registry, this.RegistryId);
         writer.WriteNbtCompound(this.Data);
     }
 }

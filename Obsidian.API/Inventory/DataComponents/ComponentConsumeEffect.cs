@@ -47,7 +47,7 @@ public sealed class ComponentConsumeEffect : IConsumeEffect
                 this.Probability = reader.ReadSingle();
                 break;
             case 1:
-                this.RemovedEffects = reader.ReadIdSet();
+                this.RemovedEffects = reader.ReadIdSet(ComponentValueCodecs.MobEffects);
                 break;
             case 2:
                 break;
@@ -71,7 +71,7 @@ public sealed class ComponentConsumeEffect : IConsumeEffect
                 writer.WriteSingle(this.Probability);
                 break;
             case 1:
-                IdSet.Write(this.RemovedEffects, writer);
+                IdSet.Write(this.RemovedEffects, writer, ComponentValueCodecs.MobEffects);
                 break;
             case 2:
                 break;

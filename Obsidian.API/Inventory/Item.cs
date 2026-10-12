@@ -1,4 +1,5 @@
 using Obsidian.API.Blocks;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Plugins;
 using Obsidian.API.Registries;
 
@@ -65,8 +66,11 @@ public sealed class Item : INetworkSerializable<Item>
     // The plugin and its behaviour, replaced together so that a use never pairs one plugin's behaviour with another.
     internal ItemBinding? Binding { get; set; }
 
-    public static void Write(Item value, INetStreamWriter writer) => writer.WriteVarInt(value.Id);
-    public static Item Read(INetStreamReader reader) => ItemsRegistry.Get(reader);
+    public static void Write(Item value, INetStreamWriter writer) =>
+        writer.WriteRegistryId(ComponentValueCodecs.Items, value.Id);
+
+    public static Item Read(INetStreamReader reader) =>
+        ItemsRegistry.Get(reader.ReadRegistryId(ComponentValueCodecs.Items));
 
     public override string ToString() => $"{{{this.UnlocalizedName}}}";
 }

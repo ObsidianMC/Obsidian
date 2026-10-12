@@ -23,7 +23,7 @@ public sealed record class ToolDataComponent : DataComponent
     {
         this.Rules = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(() => new ToolRule()
         {
-            Blocks = reader.ReadIdSet(),
+            Blocks = reader.ReadIdSet(ComponentValueCodecs.Blocks),
             Speed = reader.ReadOptionalFloat(),
             CorrectDropForBlocks = reader.ReadOptionalBoolean()
         }));
@@ -52,20 +52,24 @@ public readonly record struct ToolRule : INetworkSerializable<ToolRule>
 
     public static ToolRule Read(INetStreamReader reader) => new()
     {
-        Blocks = IdSet.Read(reader),
+        Blocks = IdSet.Read(reader, ComponentValueCodecs.Blocks),
         Speed = reader.ReadOptionalFloat(),
         CorrectDropForBlocks = reader.ReadOptionalBoolean()
     };
 
     public static void Write(ToolRule value, INetStreamWriter writer)
     {
-        IdSet.Write(value.Blocks, writer);
+        IdSet.Write(value.Blocks, writer, ComponentValueCodecs.Blocks);
         writer.WriteOptional(value.Speed);
         writer.WriteOptional(value.CorrectDropForBlocks);
     }
 }
 
-public readonly record struct IdSet : INetworkSerializable<IdSet>
+/// <summary>
+/// A set of a registry's entries, like vanilla's <c>HolderSet</c> stream codec: a tag, or ids that a connection may
+/// number differently (<see cref="INetStreamReader.ReadRegistryId"/>).
+/// </summary>
+public readonly record struct IdSet
 {
     /// <summary>
     /// Value used to determine the data that follows. 
@@ -92,28 +96,30 @@ public readonly record struct IdSet : INetworkSerializable<IdSet>
     /// </summary>
     public ImmutableArray<int>? Ids { get; init; }
 
-    public static IdSet Read(INetStreamReader reader)
+    /// <summary>Reads a set of the registry <paramref name="registry"/>, e.g. <c>minecraft:block</c>.</summary>
+    public static IdSet Read(INetStreamReader reader, string registry)
     {
         var type = reader.ReadVarInt();
 
         return type == 0
             ? new() { Type = type, TagName = reader.ReadString() }
-            : new() { Type = type, Ids = ReadIds(reader, type - 1) };
+            : new() { Type = type, Ids = ReadIds(reader, type - 1, registry) };
     }
 
-    private static ImmutableArray<int> ReadIds(INetStreamReader reader, int count)
+    private static ImmutableArray<int> ReadIds(INetStreamReader reader, int count, string registry)
     {
         if (count < 0 || count > 65536)
             throw new System.IO.InvalidDataException("Invalid ID set size.");
 
         var ids = ImmutableArray.CreateBuilder<int>(count);
         for (var i = 0; i < count; i++)
-            ids.Add(reader.ReadVarInt());
+            ids.Add(reader.ReadRegistryId(registry));
 
         return ids.MoveToImmutable();
     }
 
-    public static void Write(IdSet value, INetStreamWriter writer)
+    /// <summary>Writes a set of the registry <paramref name="registry"/>, e.g. <c>minecraft:block</c>.</summary>
+    public static void Write(IdSet value, INetStreamWriter writer, string registry)
     {
         writer.WriteVarInt(value.Type == 0 ? 0 : value.Ids!.Value.Length + 1);
         if (value.Type == 0)
@@ -131,6 +137,6 @@ public readonly record struct IdSet : INetworkSerializable<IdSet>
         var ids = value.Ids.Value;
 
         foreach (var id in ids)
-            writer.WriteVarInt(id);
+            writer.WriteRegistryId(registry, id);
     }
 }

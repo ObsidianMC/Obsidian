@@ -290,8 +290,15 @@ client. This document describes the design and tracks its progress. The archive 
      the fast path). That covers block states (chunk palettes, whose global palette's bits follow the server's number
      of states, block updates, particles, entity metadata, falling blocks and level events), blocks, block entity
      types, items and data component types in item stacks (read and written, so creative slots and clicks use the
-     server's ids), entity types, particle types, menus, mob effects, sound events, attributes, command argument
-     types, slot displays, tags and statistics. Block states aren't synced: like NeoForge, they're numbered from the
+     server's ids), the registry ids item components hold (read and written: tool rules' and block predicates'
+     blocks, repairable items, pot decorations, equippable sounds and entity types, attribute modifiers' attributes,
+     consumables' and death protection's effects and sounds, potion contents' and suspicious stews' effects, entity,
+     bee and block entity data types, and block predicates' component types; components the client doesn't model,
+     or whose ids don't translate, keep the server's bytes, and a stack naming an entry the server lacks is written
+     empty), component hashes (which name the client's entries), beacon effects (menu data and `SetBeacon`), entity
+     types, particle types, menus, mob effects, sound events, attributes, command argument types, slot displays, tags
+     and statistics. A mod's payload serialized before the maps change is dropped rather than sent with stale ids.
+     Block states aren't synced: like NeoForge, they're numbered from the
      server's block order, each block with the states the client registered it with. So a server running the same
      mods in another order, or that reloaded plugins, is accepted. A NeoForge or Obsidian server numbers vanilla's
      entries like vanilla, so the other vanilla registries it syncs must keep the client's ids. NeoForge's other

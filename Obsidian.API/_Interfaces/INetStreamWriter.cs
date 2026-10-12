@@ -25,6 +25,19 @@ public interface INetStreamWriter : INetStream
     public void WriteVarInt(int value);
     public void WriteVarInt(Enum value);
 
+    /// <summary>
+    /// Writes this process's id <paramref name="id"/> of the built-in registry <paramref name="registry"/> (e.g.
+    /// <c>minecraft:block</c>), in the connection's numbering where it numbers the registry differently.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The connection lacks the entry.</exception>
+    public void WriteRegistryId(string registry, int id);
+
+    /// <summary>
+    /// Writes a holder like vanilla's <c>ByteBufCodecs.holder</c>: the registry id <paramref name="id"/> (see
+    /// <see cref="WriteRegistryId"/>), or, if null, the marker of a value the caller writes inline next.
+    /// </summary>
+    public void WriteRegistryHolder(string registry, int? id);
+
     public void WriteLongArray(long[] values);
     public void WriteVarLong(long value);
 

@@ -93,7 +93,8 @@ public static partial class ComponentBuilder
         reader => reader.ReadVarInt());
 
     public static SimpleDataComponent<IdSet> Repairable => BuildSimpleComponent(DataComponentType.Repairable, "minecraft:repairable",
-        (writer, value) => IdSet.Write(value, writer), IdSet.Read);
+        (writer, value) => IdSet.Write(value, writer, ComponentValueCodecs.Items),
+        reader => IdSet.Read(reader, ComponentValueCodecs.Items));
 
     // Don't know what this is for
     public static SimpleDataComponent Glider => new(DataComponentType.Glider, "minecraft:glider");

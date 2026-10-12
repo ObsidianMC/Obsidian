@@ -104,9 +104,10 @@ internal sealed class RegistryIdMap
 /// Only the Obsidian client sets it, from NeoForge's registry sync; a server's buffers have none.
 /// </summary>
 /// <remarks>
-/// <see cref="NetworkBuffer"/> translates item and data component type ids in item stacks with it; the client's own
-/// decoders read the rest (<see cref="Get"/>) and block states (<see cref="BlockStates"/>), which NeoForge numbers from
-/// the blocks' order rather than syncing them.
+/// <see cref="NetworkBuffer"/> translates the ids in item stacks with it: items, data component types and the registry
+/// ids components hold (<see cref="INetStreamReader.ReadRegistryId"/>). The client's own decoders read the rest
+/// (<see cref="Get"/>) and block states (<see cref="BlockStates"/>), which NeoForge numbers from the blocks' order
+/// rather than syncing them.
 /// </remarks>
 internal sealed class RegistryIdMaps
 {
@@ -140,3 +141,9 @@ internal sealed class RegistryIdMaps
     /// </summary>
     public RegistryIdMap Get(string registry) => this.maps.GetValueOrDefault(registry, RegistryIdMap.Identity);
 }
+
+/// <summary>
+/// A registry entry that one side of a connection lacks, met translating its id with <see cref="RegistryIdMaps"/>.
+/// </summary>
+internal sealed class MissingRegistryEntryException(string registry, int id)
+    : InvalidOperationException($"Entry {id} of {registry} has no counterpart across the connection.");

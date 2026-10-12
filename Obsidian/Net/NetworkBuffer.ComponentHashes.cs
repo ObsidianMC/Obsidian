@@ -21,7 +21,17 @@ public partial class NetworkBuffer
     public bool TryHashDataComponent(DataComponent component, out int hash)
     {
         var buffer = new NetworkBuffer { ComponentRegistryName = this.ComponentRegistryName, IdMaps = this.IdMaps };
-        buffer.WriteDataComponent(component);
+        try
+        {
+            buffer.WriteDataComponent(component);
+        }
+        catch (MissingRegistryEntryException)
+        {
+            // The value names an entry the connection lacks; the hash it expects can't be known.
+            hash = 0;
+            return false;
+        }
+
         buffer.Reset();
         buffer.SkipComponent(component.Type);
         if (buffer.Offset != buffer.Size)
@@ -43,7 +53,9 @@ public partial class NetworkBuffer
     /// <summary>Writes a click prediction. Unsupported hashes are omitted; vanilla then resynchronizes the slot.</summary>
     public void WriteHashedItemStack(ItemStack? stack)
     {
-        if (stack is null || stack.IsAir || stack.Count <= 0)
+        // Like WriteItemStack, an item the connection lacks is written as an empty stack.
+        var itemId = stack is null ? -1 : this.RemoteItemId(stack.Holder.Id);
+        if (stack is null || stack.IsAir || stack.Count <= 0 || itemId < 0)
         {
             this.WriteBoolean(false);
             return;
@@ -57,7 +69,7 @@ public partial class NetworkBuffer
         }
 
         this.WriteBoolean(true);
-        this.WriteVarInt(this.RemoteItemId(stack.Holder.Id));
+        this.WriteVarInt(itemId);
         this.WriteVarInt(stack.Count);
         this.WriteVarInt(hashes.Count);
         foreach (var (type, hash) in hashes)
@@ -74,11 +86,12 @@ public partial class NetworkBuffer
     /// <summary>Writes already computed hashes, for relaying or capturing ContainerClick values.</summary>
     public void WriteHashedItemStack(IHashedItemStack? stack)
     {
-        this.WriteBoolean(stack is not null);
-        if (stack is null)
+        var itemId = stack is null ? -1 : this.RemoteItemId(stack.Holder.Id);
+        this.WriteBoolean(itemId >= 0);
+        if (stack is null || itemId < 0)
             return;
 
-        this.WriteVarInt(this.RemoteItemId(stack.Holder.Id));
+        this.WriteVarInt(itemId);
         this.WriteVarInt(stack.Count);
         this.WriteVarInt(stack.HashedComponents.Count);
         foreach (var (type, hash) in stack.HashedComponents)
@@ -122,13 +135,21 @@ public partial class NetworkBuffer
         if (this.ComponentRegistryName is not null)
             return this.ComponentRegistryName(registry, id) ?? throw new UnsupportedComponentHashException();
 
-        // Built-in registries have fixed IDs; dynamic registries must come from the connection.
+        // Built-in registries have fixed IDs; dynamic registries must come from the connection. The names are this
+        // process's, so a connection's ID is translated first (see IdMaps).
+        var local = this.IdMaps is RegistryIdMaps maps ? maps.Get(registry).ToLocal(id) : id;
+        if (local < 0)
+            throw new UnsupportedComponentHashException();
+
         return registry switch
         {
-            "minecraft:potion" when Enum.IsDefined((Potion)id) => "minecraft:" + ((Potion)id).ToString().ToSnakeCase(),
-            "minecraft:mob_effect" when Enum.IsDefined((MobEffect)id) => "minecraft:" + ((MobEffect)id).ToString().ToSnakeCase(),
-            "minecraft:item" => ItemsRegistry.Get(this.IdMaps?.Item.ToLocal(id) ?? id).UnlocalizedName,
-            "minecraft:enchantment" when id >= 0 && id < EnchantmentsRegistry.All.Count => EnchantmentsRegistry.All[id].Identifier,
+            "minecraft:potion" when Enum.IsDefined((Potion)local) =>
+                "minecraft:" + ((Potion)local).ToString().ToSnakeCase(),
+            "minecraft:mob_effect" when Enum.IsDefined((MobEffect)local) =>
+                "minecraft:" + ((MobEffect)local).ToString().ToSnakeCase(),
+            "minecraft:item" => ItemsRegistry.Get(local).UnlocalizedName,
+            "minecraft:enchantment" when local < EnchantmentsRegistry.All.Count =>
+                EnchantmentsRegistry.All[local].Identifier,
             _ => throw new UnsupportedComponentHashException()
         };
     }

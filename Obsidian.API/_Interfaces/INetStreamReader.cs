@@ -29,7 +29,23 @@ public interface INetStreamReader : INetStream
     public byte[] ReadUInt8Array(int length = 0);
     public long ReadVarLong();
 
-    public IdSet ReadIdSet();
+    /// <summary>
+    /// Reads an id of the built-in registry <paramref name="registry"/> (e.g. <c>minecraft:block</c>), in this
+    /// process's numbering where the connection numbers the registry differently.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">This process lacks the connection's entry.</exception>
+    public int ReadRegistryId(string registry);
+
+    /// <summary>
+    /// Reads a holder of the registry <paramref name="registry"/> like vanilla's <c>ByteBufCodecs.holder</c>: its id
+    /// (see <see cref="ReadRegistryId"/>), or null for a value written inline, which the caller reads next.
+    /// </summary>
+    public int? ReadRegistryHolder(string registry);
+
+    /// <summary>
+    /// Reads an ID set of the registry <paramref name="registry"/> (see <see cref="ReadRegistryId"/>).
+    /// </summary>
+    public IdSet ReadIdSet(string registry);
     public SoundEvent ReadSoundEvent();
 
     public TValue[] ReadLengthPrefixedArray<TValue>(Func<TValue> read);
