@@ -48,7 +48,8 @@ internal sealed class WorldgenTypes
 
     /// <summary>
     /// The first concrete type with the identifier that can be assigned to <paramref name="target"/>, or null. A
-    /// registered type is only found where its registered base type is expected.
+    /// registered type is only found where exactly its registered base type is expected, as its identifier is only
+    /// unique for that base.
     /// </summary>
     public Type? Find(string identifier, Type target)
     {
@@ -60,7 +61,7 @@ internal sealed class WorldgenTypes
         }
 
         return this.registered.TryGetValue(identifier, out var registrations)
-            ? registrations.FirstOrDefault(registration => registration.Base.IsAssignableTo(target))?.Type
+            ? registrations.FirstOrDefault(registration => registration.Base == target)?.Type
             : null;
     }
 

@@ -199,14 +199,17 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
     {
         CheckIdentifier(container, identifier);
 
-        if (container.Loaded || container.IsClosing)
+        lock (container.WorldgenTypes)
         {
-            throw new InvalidOperationException(
-                $"{container.Info.Name} can only register worldgen types in ConfigureRegistry.");
-        }
+            if (!container.RegisteringWorldgenTypes || container.IsClosing)
+            {
+                throw new InvalidOperationException(
+                    $"{container.Info.Name} can only register worldgen types in ConfigureRegistry.");
+            }
 
-        container.WorldgenTypes.Add(
-            WorldgenTypeRegistration.Create(container.WorldgenTypes, identifier, baseType, type));
+            container.WorldgenTypes.Add(
+                WorldgenTypeRegistration.Create(container.WorldgenTypes, identifier, baseType, type));
+        }
     }
 
     private static Item RegisterItem(PluginContainer container, string identifier, ItemProperties properties)

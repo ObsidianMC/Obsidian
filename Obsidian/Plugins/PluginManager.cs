@@ -397,7 +397,19 @@ public sealed partial class PluginManager : IAsyncDisposable
             // Registering looks the plugin up by its assembly, so it has to be in the list first.
             this.plugins = this.plugins.Add(container);
 
-            container.Plugin.ConfigureRegistry(this.pluginRegistry);
+            lock (container.WorldgenTypes)
+                container.RegisteringWorldgenTypes = true;
+
+            try
+            {
+                container.Plugin.ConfigureRegistry(this.pluginRegistry);
+            }
+            finally
+            {
+                lock (container.WorldgenTypes)
+                    container.RegisteringWorldgenTypes = false;
+            }
+
             container.TagFiles.InsertRange(0, this.ReadTagFiles(archive));
             container.FeatureFiles = this.ReadFeatureFiles(archive);
             container.CodecFiles = this.ReadCodecFiles(archive, container.FeatureFiles);
