@@ -84,6 +84,7 @@ own namespace, its `modId`:
 | `assets/<ns>/textures/block/...`, `textures/item/...` | Textures, referred to as `<ns>:block/<name>` and `<ns>:item/<name>`. |
 | `assets/<ns>/items/<item>.json` | The definition (the model) of the item `<ns>:<item>`. |
 | `assets/<ns>/lang/<language>.json` | Translations, merged with vanilla's and other mods' per language. |
+| `assets/<ns>/models/entity/<path>.json`, `textures/entity/...` | Entity model layers and textures, for the mod's entity renderers (see [plugin-content.md](plugin-content.md#client)). |
 | `assets/<ns>/particles/<particle>.json` | Particle sprite sets, for the particle `<ns>:<particle>`. |
 | `assets/<ns>/sounds.json`, `sounds/...` | Sound events and their files. |
 
