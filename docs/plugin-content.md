@@ -297,8 +297,9 @@ The rules:
   dimension's biomes like vanilla orders them, which decides their random seeds, so a world generates like vanilla
   with the same data pack. Like NeoForge, only the lists after every phase count: an add that a later removal
   resolves is fine. When a dimension's final lists would order features in a cycle (one placed both before and after
-  another in its biomes, which vanilla can't generate), the error is logged and that dimension is generated without
-  plugins' biome modifiers; other dimensions keep them.
+  another in its biomes, which vanilla can't generate), the error is logged and that dimension's biomes get their own
+  features back, without plugins' biome modifiers. Dimensions share biomes, so this repeats until every dimension's
+  features can be ordered; other dimensions keep the modifiers where they can.
 - Placing a feature made of a plugin's types (its feature type, a placement modifier or a provider inside it) is a
   call into the plugin, like its event handlers, so unloading waits for chunks being decorated with it. Chunks
   decorated while it unloads leave its features out.
@@ -308,7 +309,9 @@ The rules:
   features after them in that step.
 - Plugin biomes generate in plugins' dimensions, which place their features (see [Dimensions](#dimensions)). A
   plugin's dimension is one more dimension whose features are ordered together: when its final lists would order
-  features in a cycle, it's generated without plugins' biome modifiers too.
+  features in a cycle, it's generated without plugins' biome modifiers too. When a plugin change would leave a
+  generating dimension's biomes' own features in a cycle, the change's features aren't applied: the previous ones
+  stay, and it's logged.
 
 ### Feature types
 
@@ -472,8 +475,16 @@ The rules:
 - Like other plugin data, files in the `minecraft` namespace are left out, and when two plugins define the same
   dimension, the first in load order wins. A file that can't be read is logged and left out; the plugin loads without
   it. A dimension whose biomes' features can't be ordered (vanilla can't generate it either) is logged and left out.
+- A file's path gives the dimension's identifier, and, as vanilla checks resource paths, one with an empty, `.` or
+  `..` segment (like `data/ruby/dimension//world.json`) is refused. This holds for every plugin data file.
 - A dimension's level is created when its plugin loads, at startup or later, and is saved in the world's folder under
   `dimensions/<namespace>/<path>`, where vanilla saves a data pack's dimensions, and loaded from there after a restart.
+  Players can reach it, and it ticks, once it's loaded or generated with its spawn. One that fails to load or generate
+  is logged and left out, and the next plugin load tries it again.
+- Gameplay follows the dimension type, as in vanilla: monsters spawn with its monster light limits, and undead mobs
+  burn by day in a type with the overworld's timelines (`#minecraft:in_overworld`) or its own
+  `minecraft:gameplay/monsters_burn`. Patrols, wandering traders and phantom spawns stay in the overworld, where
+  vanilla runs them; raids, the end fight and portals stay with vanilla's levels for now.
 - A dimension's level stays until the server stops, even when its plugin unloads, since it only uses vanilla's
   generator and entries that stay registered. Its features come and go with their plugins like any features.
 - A reload changing a level stem keeps the dimension as it was, with a warning: the change applies after a restart,

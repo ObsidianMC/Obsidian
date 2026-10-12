@@ -92,7 +92,8 @@ client. This document describes the design and tracks its progress. The archive 
      particles with options and rich bed rule messages), and are sent as vanilla's network codecs write what was read,
      so vanilla clients always accept them; vanilla's entries are sent by name from the `minecraft:core` pack. A
      change to these entries sends connected players back through configuration. Plugin biomes generate in plugins'
-     dimensions (slice 4a), and the server doesn't apply environment attributes itself yet.
+     dimensions (slice 4a). The server applies only a dimension type's `monsters_burn` attribute and timelines tag
+     itself, for undead mobs burning by day.
    - Done: worldgen features. Plugins' `data/<namespace>/worldgen/configured_feature` and `placed_feature` files are
      read at runtime into the same objects the source generator makes of vanilla's features (a parity test reads all
      of vanilla's features both ways and compares them), and NeoForge's `neoforge/biome_modifier` files
