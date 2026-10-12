@@ -3,7 +3,9 @@ using Obsidian.Entities.AI;
 using Obsidian.Entities.Factories;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
+using Obsidian.Providers.IntProviders;
 using Obsidian.WorldData.Generators;
 using System.Reflection;
 using System.Text.Json;
@@ -40,6 +42,10 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             .GetProperty("spawns").Deserialize<SpawnerMob[]>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
     }
     private readonly Random random = new();
+
+    // The darkness checks' draws, from a random like vanilla's level's so that the dimension type's light level
+    // providers sample as vanilla's do.
+    private readonly LegacyRandomSource lightRandom = new(Random.Shared.NextInt64());
     private readonly Dictionary<string, bool> supportedSpawns = [];
     private bool SupportsSpawn(string id)
     {
@@ -254,7 +260,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 ReadOnlySpan<float> phases = [1, 0.75f, 0.5f, 0.25f, 0, 0.25f, 0.5f, 0.75f];
                 var moon = phases[(int)(level.LevelData.Time / 24000 % 8 + 8) % 8];
                 var swamp = localBiome.Name == "minecraft:swamp" && y is > 50 and < 70 && random.NextSingle() < moon &&
-                    Math.Max(block, Math.Max(0, sky - (level.DayTime is >= 12000 and < 23000 ? 11 : 0))) <= random.Next(8);
+                    Math.Max(block, Math.Max(0, sky - level.SkyDarken())) <= random.Next(8);
                 if (!swamp && !(y < 40 && IsSlimeChunk(level.LevelData.RandomSeed, x >> 4, z >> 4) && random.Next(10) == 0))
                     continue;
             }
@@ -308,33 +314,34 @@ internal sealed partial class MobSpawner(AbstractLevel level)
     /// </summary>
     private bool IsDarkEnoughToSpawn(int block, int sky)
     {
-        if (sky > random.Next(32))
+        if (sky > lightRandom.NextInt(32))
             return false;
 
         var type = level.DimensionType.Element;
         if (type.MonsterSpawnBlockLightLimit < 15 && block > type.MonsterSpawnBlockLightLimit)
             return false;
 
-        // The sky's darkening at night, approximated as elsewhere in the spawner.
-        var darkening = level.DayTime is >= 12000 and < 23000 ? 11 : 0;
+        // Vanilla darkens the sky by 10 while it thunders, whatever the time, and otherwise by the level's darkening.
+        var darkening = level.IsThundering() ? 10 : level.SkyDarken();
         var light = Math.Max(block, Math.Max(0, sky - darkening));
 
-        return light <= this.SampleLightLevel(type.MonsterSpawnLightLevel);
+        // Drawn last, as vanilla does.
+        return light <= MonsterSpawnLightTest(type).Sample(lightRandom);
     }
 
-    // Samples a monster spawn light level like vanilla's IntProvider: constant, uniform and biased to bottom as
-    // vanilla does, and other providers, which the dimension type only keeps the bounds of, uniformly within them.
-    private int SampleLightLevel(MonsterSpawnLightLevel lightLevel)
+    // The provider of the type's monster spawn light level: a plugin's type's decoded provider, or one made from the
+    // constant or range that vanilla's types (constant or uniform) and types made in code keep.
+    private static IIntProvider MonsterSpawnLightTest(DimensionElement type)
     {
-        if (lightLevel.Value is not { } provider)
-            return lightLevel.IntValue ?? 0;
+        if (type.MonsterSpawnLightProvider is not null)
+            return type.MonsterSpawnLightProvider;
 
-        var min = provider.MinInclusive;
-        var max = provider.MaxInclusive;
+        if (type.MonsterSpawnLightLevel.Value is not { } range)
+            return new ConstantIntProvider { Value = type.MonsterSpawnLightLevel.IntValue ?? 0 };
 
-        return provider.Type == IntProviderTypes.BiasedToBottom
-            ? min + random.Next(random.Next(max - min + 1) + 1)
-            : random.Next(min, max + 1);
+        return range.Type == IntProviderTypes.BiasedToBottom
+            ? new BiasedToBottomIntProvider { MinInclusive = range.MinInclusive, MaxInclusive = range.MaxInclusive }
+            : new UniformIntProvider { MinInclusive = range.MinInclusive, MaxInclusive = range.MaxInclusive };
     }
 
     internal static bool IsSlimeChunk(long seed, int x, int z)

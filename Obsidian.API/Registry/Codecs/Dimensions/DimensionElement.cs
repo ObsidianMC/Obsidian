@@ -20,6 +20,13 @@ public sealed record class DimensionElement : INbtSerializable
     public MonsterSpawnLightLevel MonsterSpawnLightLevel { get; set; } = new() { IntValue = 0 };
 
     /// <summary>
+    /// The monster spawn light level as the provider a plugin's type decodes to, which the server samples; null for
+    /// vanilla's types and ones made in code, whose <see cref="MonsterSpawnLightLevel"/> is sampled. Not written:
+    /// clients get <see cref="MonsterSpawnLightLevel"/>.
+    /// </summary>
+    public IIntProvider? MonsterSpawnLightProvider { get; set; }
+
+    /// <summary>
     /// Whether piglins don't turn into zombified piglins. Not part of 1.21.11's dimension types (its
     /// <c>minecraft:gameplay/piglins_zombify</c> attribute), so false unless set in code.
     /// </summary>
@@ -91,6 +98,13 @@ public sealed record class DimensionElement : INbtSerializable
     public bool MonstersBurn { get; set; }
 
     /// <summary>
+    /// The type's own <c>minecraft:gameplay/sky_light_level</c> attribute applied to its default of 15, before the
+    /// day and the weather change it; null for vanilla's types, which the server knows. Not written, like
+    /// <see cref="Timelines"/>.
+    /// </summary>
+    public float? SkyLightLevel { get; set; }
+
+    /// <summary>
     /// Writes the fields this element models as vanilla's DimensionType.NETWORK_CODEC does. Clients get vanilla's
     /// dimension types by name, and plugins' with the data their files decode to, attributes included.
     /// </summary>
@@ -129,7 +143,8 @@ public sealed record class DimensionElement : INbtSerializable
 /// </summary>
 /// <remarks>
 /// A plugin's provider other than a constant, uniform or biased-to-bottom one is kept here by its type and bounds;
-/// clients are sent it exactly as its file has it.
+/// clients are sent it exactly as its file has it, and the server samples
+/// <see cref="DimensionElement.MonsterSpawnLightProvider"/>.
 /// </remarks>
 public sealed record class MonsterSpawnLightLevel
 {

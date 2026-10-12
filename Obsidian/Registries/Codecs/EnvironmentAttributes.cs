@@ -49,6 +49,54 @@ internal sealed record EnvironmentAttributeMap(ImmutableArray<EnvironmentAttribu
     }
 
     /// <summary>
+    /// A float attribute's value once this map applies to <paramref name="value"/>: its override, or its modifier
+    /// with vanilla's FloatModifier operations, computed in single precision as vanilla does. Without an entry the
+    /// value stays. The caller clamps it to the attribute's range.
+    /// </summary>
+    /// <param name="attribute">The attribute's identifier, like <c>minecraft:gameplay/sky_light_level</c>.</param>
+    public float Apply(string attribute, float value)
+    {
+        var entry = this.Entries.FirstOrDefault(entry => entry.Attribute == attribute);
+
+        if (entry?.Value is NbtTag<float> overridden)
+            return overridden.Value;
+
+        if (entry?.Value is not NbtCompound modifier
+            || !modifier.TryGetTag<NbtTag<string>>("modifier", out var operation))
+        {
+            return value;
+        }
+
+        // An alpha blend's argument is {value, alpha}, or a plain float when its alpha is 1.
+        if (operation.Value == "alpha_blend"
+            && modifier.TryGetTag<NbtCompound>("argument", out var blend)
+            && blend.TryGetTag<NbtTag<float>>("value", out var target)
+            && blend.TryGetTag<NbtTag<float>>("alpha", out var alpha))
+        {
+            return Lerp(alpha.Value, value, target.Value);
+        }
+
+        if (!modifier.TryGetTag<NbtTag<float>>("argument", out var argumentTag))
+            return value;
+
+        var argument = argumentTag.Value;
+
+        return operation.Value switch
+        {
+            "alpha_blend" => Lerp(1f, value, argument),
+            "add" => value + argument,
+            "subtract" => value - argument,
+            "multiply" => value * argument,
+            "minimum" => Math.Min(value, argument),
+            "maximum" => Math.Max(value, argument),
+            _ => value
+        };
+    }
+
+    // Vanilla's Mth.lerp for floats.
+    internal static float Lerp(float delta, float start, float end) => start + delta * (end - start);
+
+    /// <summary>
     /// The map as vanilla's EnvironmentAttributeMap.NETWORK_CODEC writes it: only the attributes clients sync. A
     /// map that isn't empty is written even if none of its attributes are synced, as vanilla writes it.
     /// </summary>

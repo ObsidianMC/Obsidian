@@ -1,12 +1,15 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API.Registries;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Configuration.Clientbound;
 using Obsidian.Registries;
+using Obsidian.Registries.Codecs;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Xunit;
 
@@ -167,6 +170,32 @@ public class PluginCodecFiles
         Assert.Equal(1.0, Assert.IsType<NbtTag<double>>(file.Data["coordinate_scale"]).Value);
         Assert.Equal((byte)1, Assert.IsType<NbtTag<byte>>(file.Data["has_skylight"]).Value);
         Assert.False(file.Data.HasTag("skybox"));
+    }
+
+    [Fact(DisplayName = "A plugin's dimension type's light level provider samples with vanilla's draws")]
+    public void SamplesLightLevelProvidersLikeVanilla()
+    {
+        var patch = """
+            {
+              "monster_spawn_light_level": {
+                "type": "minecraft:weighted_list",
+                "distribution": [
+                  { "data": 0, "weight": 1 },
+                  { "data": { "type": "minecraft:uniform", "min_inclusive": 5, "max_inclusive": 7 }, "weight": 1 }
+                ]
+              }
+            }
+            """;
+
+        using var document = JsonDocument.Parse(Patched(MinimalDimension, patch));
+        var provider = DimensionTypeData.Read(document.RootElement).ToElement().MonsterSpawnLightProvider;
+        Assert.NotNull(provider);
+
+        // Vanilla 1.21.11's WeightedListInt with RandomSource.create(42): nextInt(2) picks, the uniform draws again.
+        var random = new LegacyRandomSource(42);
+        int[] expected = [5, 7, 0, 7, 6, 0, 7, 0];
+
+        Assert.Equal(expected, expected.Select(_ => provider.Sample(random)));
     }
 
     // A file with a patch's fields merged in, objects into objects.
