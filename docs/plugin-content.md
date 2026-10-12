@@ -4,7 +4,8 @@ Plugins add blocks in code or from JSON files that Obsidian's source generator t
 particle types, menu types, worldgen types and level generators in code, and add tags, biomes, dimension types, damage
 types, worldgen features, biome modifiers, noise settings and dimensions with data pack files, much like NeoForge and
 Fabric mods. Clients need the matching mod for blocks, items, entity types, particle types and menu types: NeoForge
-and Fabric clients are sent those registries, so their ids agree with the server's. Biomes, dimension types and
+and Fabric clients, and the Obsidian client, are sent those registries and map the server's ids to their own, so the
+mods may load in any order. Biomes, dimension types and
 damage types are sent with their data, so vanilla clients can join too. On the Obsidian client, a mod adds its client
 side in code (see [Client](#client)).
 
