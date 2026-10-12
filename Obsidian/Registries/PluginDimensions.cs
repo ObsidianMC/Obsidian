@@ -17,12 +17,12 @@ namespace Obsidian.Registries;
 /// <remarks>
 /// A dimension added stays until the server stops, even once its plugin unloads, with the stem and noise settings it
 /// was read with: changing a live level's generator would mix two generators' chunks. For the same reason a reload
-/// changing a stem, or the plugin noise files it uses, keeps the dimension as it was, with a warning, until a restart.
+/// changing a stem, or the plugin data it reads, keeps the dimension as it was, with a warning, until a restart.
 /// A dimension whose generator is made of a plugin's types can't outlive the plugin's code, though: when the plugin
 /// unloads, it's released (see <see cref="Release"/>) and its level stops generating new chunks. Once the plugin is
 /// back, the dimension is read again from the stem it was added with (see <see cref="Apply"/>), and its level
-/// generates again. Vanilla's dimensions can't be overridden, and when plugins define the same dimension, the first in
-/// load order wins.
+/// generates again, unless its stem or the plugin data it reads changed: then it stays stopped until a restart.
+/// Vanilla's dimensions can't be overridden, and when plugins define the same dimension, the first in load order wins.
 /// </remarks>
 internal static partial class PluginDimensions
 {
@@ -38,6 +38,10 @@ internal static partial class PluginDimensions
     };
 
     private static ImmutableArray<DimensionFile> added = [];
+
+    // Added dimensions whose stem, or what it reads from plugins' data, changed since they were added: once stopped,
+    // they stay stopped until a restart rather than being read again.
+    private static ImmutableHashSet<string> restartRequired = [];
 
     /// <summary>
     /// The plugins' dimensions added since the server started, in the order they were added.
@@ -101,10 +105,13 @@ internal static partial class PluginDimensions
         {
             var bytes = json.ToArray();
             using var document = JsonDocument.Parse(bytes, documentOptions);
-            var dimension = LevelStemData.Read(identifier, document.RootElement, noise);
+            var entries = new HashSet<object>(ReferenceEqualityComparer.Instance);
+            var dimension = LevelStemData.Read(identifier, document.RootElement, noise, entries);
 
-            // A change to the plugin noise files it was read from is a change to the dimension too.
-            var text = Encoding.UTF8.GetString(bytes) + noise.Sources(dimension.Settings);
+            // A change to what it reads from plugins' data is a change to the dimension too: the noise files its noise
+            // settings and biome source read, and the biomes it names, which tags may resolve differently.
+            var biomes = string.Join(' ', dimension.PossibleBiomes.Select(biome => biome.Name));
+            var text = $"{Encoding.UTF8.GetString(bytes)}\n{biomes}\n{noise.Sources(entries)}";
 
             return new DimensionFile(identifier, source, text, bytes, dimension);
         }
@@ -116,8 +123,8 @@ internal static partial class PluginDimensions
 
     /// <summary>
     /// Adds the files' dimensions that weren't added yet. Ones added before stay as they were, and those whose file
-    /// changed are logged: the change applies after a restart. Added dimensions that were released are read again
-    /// from their stems with the plugins loaded now, so that their levels can generate again (see
+    /// changed are logged: the change applies after a restart. Added dimensions that were released, and didn't change,
+    /// are read again from their stems with the plugins loaded now, so that their levels can generate again (see
     /// <see cref="WorldData.Generators.MojangGenerator.Resume"/>).
     /// </summary>
     /// <remarks>
@@ -156,6 +163,7 @@ internal static partial class PluginDimensions
                     if (existing.Json != file.Json)
                     {
                         Log.ChangedUntilRestart(logger, file.Identifier, file.Source);
+                        restartRequired = restartRequired.Add(file.Identifier);
                     }
                     else if (existing.Dimension.IsReleased && !file.Dimension.IsReleased)
                     {
@@ -178,8 +186,13 @@ internal static partial class PluginDimensions
                 changed = true;
             }
 
-            // Released when a plugin they generate with unloaded, they're read again once it's back.
-            foreach (var file in current.Where(file => file.Dimension.IsReleased).ToList())
+            // Released when a plugin they generate with unloaded, they're read again once it's back, unless they
+            // changed.
+            var released = current
+                .Where(file => file.Dimension.IsReleased && !restartRequired.Contains(file.Identifier))
+                .ToList();
+
+            foreach (var file in released)
             {
                 if (Rebuild(file, logger) is DimensionFile rebuilt)
                 {
@@ -207,7 +220,7 @@ internal static partial class PluginDimensions
         added.FirstOrDefault(file => file.Identifier == identifier)?.Dimension;
 
     // Reads a released dimension's stem again, or returns null when it can't be: a plugin it generates with isn't
-    // loaded, or the plugin noise files it uses changed, which applies after a restart.
+    // loaded, or the plugin data it reads changed, which applies after a restart.
     private static DimensionFile? Rebuild(DimensionFile file, ILogger logger)
     {
         DimensionFile rebuilt;
@@ -232,6 +245,7 @@ internal static partial class PluginDimensions
 
         Log.ChangedUntilRestart(logger, file.Identifier, file.Source);
         rebuilt.Dimension.Release();
+        restartRequired = restartRequired.Add(file.Identifier);
 
         return null;
     }
@@ -291,8 +305,8 @@ internal static partial class PluginDimensions
 /// </summary>
 /// <param name="Identifier">The dimension's identifier, like <c>ruby:crystal_world</c>.</param>
 /// <param name="Source">Where the file comes from, for messages.</param>
-/// <param name="Json">The file's text, with the plugin noise files it uses, to tell a changed dimension on
-/// reload.</param>
+/// <param name="Json">The file's text, with the biomes and plugin noise files it reads, to tell a changed dimension
+/// on reload.</param>
 /// <param name="Stem">The file's bytes, to read the dimension again once it's released.</param>
 /// <param name="Dimension">What the stem generates.</param>
 internal sealed record DimensionFile(

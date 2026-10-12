@@ -152,6 +152,20 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
             : Path.Combine("dimensions", parts[0], parts[1]);
     }
 
+    /// <summary>
+    /// Whether the dimension was saved before: it has level data or chunks in its folder. Known once it's initialized.
+    /// </summary>
+    internal bool IsSaved
+    {
+        get
+        {
+            var regions = Path.Combine(this.FolderPath, this.RegionFolderName);
+
+            return File.Exists(this.LevelDataFilePath)
+                || (Directory.Exists(regions) && Directory.EnumerateFileSystemEntries(regions).Any());
+        }
+    }
+
     public override async Task<bool> LoadAsync(DimensionCodec codec)
     {
         if (!File.Exists(LevelDataFilePath)) return false;

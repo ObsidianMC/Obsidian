@@ -409,11 +409,13 @@ internal sealed class WorldgenNoise
         [.. this.Dependencies(entry).OfType<PluginContainer>()];
 
     /// <summary>
-    /// The text of the plugin files an entry is read from, counting the entries it refers to, to tell when a reload
-    /// changes it; empty for vanilla's.
+    /// The text of the plugin files entries are read from, counting the entries they refer to, to tell when a reload
+    /// changes them; empty for vanilla's.
     /// </summary>
-    public string Sources(object entry) => string.Concat(this.Dependencies(entry)
+    public string Sources(IEnumerable<object> entries) => string.Concat(entries
+        .SelectMany(this.Dependencies)
         .OfType<NoiseFile>()
+        .Distinct()
         .OrderBy(file => file.Registry, StringComparer.Ordinal)
         .ThenBy(file => file.Identifier, StringComparer.Ordinal)
         .Select(file => $"{file.Registry} {file.Identifier}\n{file.Text}\n"));
@@ -423,7 +425,8 @@ internal sealed class WorldgenNoise
     /// </summary>
     /// <param name="owners">Gets the plugins whose types what's read is made of: those of the objects it creates,
     /// and the owners of the entries it refers to.</param>
-    public WorldgenReader Reader(ISet<PluginContainer>? owners = null) => new(
+    /// <param name="entries">Gets the density functions and noises what's read refers to.</param>
+    public WorldgenReader Reader(ISet<PluginContainer>? owners = null, ISet<object>? entries = null) => new(
         this.Types,
         identifier => throw new InvalidDataException($"{identifier}: features can't be used here"),
         identifier => throw new InvalidDataException($"{identifier}: features can't be used here"),
@@ -432,14 +435,16 @@ internal sealed class WorldgenNoise
             if (WorldgenDependencies<PluginContainer>.Owner(type) is PluginContainer owner)
                 owners?.Add(owner);
         },
-        identifier => this.Referenced(this.FindDensityFunction(identifier), owners),
-        identifier => this.Referenced(this.FindNoise(identifier), owners));
+        identifier => this.Referenced(this.FindDensityFunction(identifier), owners, entries),
+        identifier => this.Referenced(this.FindNoise(identifier), owners, entries));
 
     // An entry referred to, which brings its owners along: generating with it runs their code.
-    private T Referenced<T>(T entry, ISet<PluginContainer>? owners)
+    private T Referenced<T>(T entry, ISet<PluginContainer>? owners, ISet<object>? entries)
         where T : notnull
     {
         owners?.UnionWith(this.Owners(entry));
+        entries?.Add(entry);
+
         return entry;
     }
 

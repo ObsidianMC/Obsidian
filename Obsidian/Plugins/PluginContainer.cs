@@ -150,6 +150,30 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     internal void Exit() => Interlocked.Decrement(ref this.activeCalls);
 
     /// <summary>
+    /// Keeps the plugin from being released, like a call, for something of the plugin's that outlives a call, such as
+    /// a level's generator. Unlike a call, it doesn't make the current flow count as inside the plugin.
+    /// </summary>
+    /// <returns>The hold, to dispose once it's no longer needed, or null once the plugin is unloading.</returns>
+    internal IDisposable? TryHold()
+    {
+        Interlocked.Increment(ref this.activeCalls);
+
+        if (!this.closing)
+            return new Hold(this);
+
+        Interlocked.Decrement(ref this.activeCalls);
+        return null;
+    }
+
+    /// <summary>
+    /// Creates a scope of the plugin's services, still falling back to the server's, for something of the plugin's
+    /// that lives longer than a call; dispose it once that's done, before the plugin is released.
+    /// </summary>
+    internal PluginServiceProvider CreateServiceScope() =>
+        (this.ownServices ?? throw new InvalidOperationException($"{this.Info.Name} has no services."))
+            .CreateScope();
+
+    /// <summary>
     /// Refuses new calls into the plugin.
     /// </summary>
     internal void Close() => this.closing = true;
@@ -207,6 +231,14 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
                 this.Plugin = null;
             }
         }
+    }
+
+    // Ends a hold started with TryHold, once.
+    private sealed class Hold(PluginContainer plugin) : IDisposable
+    {
+        private PluginContainer? plugin = plugin;
+
+        public void Dispose() => Interlocked.Exchange(ref this.plugin, null)?.Exit();
     }
 
     // The container's scope, disposed with the container rather than by whoever holds it.

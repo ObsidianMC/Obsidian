@@ -31,8 +31,14 @@ internal static class LevelStemData
     /// </summary>
     /// <param name="identifier">The stem's identifier, which names its dimension.</param>
     /// <param name="noise">The noise settings and worldgen types the stem can name.</param>
+    /// <param name="entries">Gets the noise entries the stem reads: its noise settings, and the density functions
+    /// and noises its biome source names.</param>
     /// <exception cref="InvalidDataException">The stem isn't valid, or Obsidian can't generate it.</exception>
-    public static MojangDimension Read(string identifier, JsonElement root, WorldgenNoise noise)
+    public static MojangDimension Read(
+        string identifier,
+        JsonElement root,
+        WorldgenNoise noise,
+        ISet<object>? entries = null)
     {
         CodecJson.Object(root, "");
 
@@ -42,7 +48,7 @@ internal static class LevelStemData
 
         return type switch
         {
-            "minecraft:noise" => Noise(identifier, dimensionType, generator, noise),
+            "minecraft:noise" => Noise(identifier, dimensionType, generator, noise, entries),
             "minecraft:flat" or "minecraft:debug" => throw CodecJson.Error(
                 "generator.type",
                 $"{type} generators aren't supported yet: use minecraft:noise"),
@@ -54,10 +60,12 @@ internal static class LevelStemData
         string identifier,
         string dimensionType,
         JsonElement generator,
-        WorldgenNoise noise)
+        WorldgenNoise noise,
+        ISet<object>? entries)
     {
         const string settingsPath = "generator.settings";
         var (settingsId, settings) = NoiseSettings(CodecJson.Required(generator, "generator", "settings"), noise);
+        entries?.Add(settings);
 
         // The plugins whose code generating runs: those whose types the settings and the biome source are made of.
         var plugins = new HashSet<PluginContainer>(noise.Owners(settings));
@@ -65,7 +73,8 @@ internal static class LevelStemData
             CodecJson.Required(generator, "generator", "biome_source"),
             "generator.biome_source",
             noise,
-            plugins);
+            plugins,
+            entries);
 
         // Obsidian's terrain generator fills every cell of the noise settings, so they must lie in the build range;
         // vanilla would clamp them to it instead. Vanilla's own pairings all fit.
@@ -126,8 +135,14 @@ internal static class LevelStemData
     }
 
     /// <param name="plugins">Gets the plugins whose types a plugin's biome source is made of.</param>
+    /// <param name="entries">Gets the density functions and noises a plugin's biome source names.</param>
     private static (Func<RandomState, IClimateBiomeSource> Create, Func<IReadOnlyList<BiomeCodec>> PossibleBiomes)
-        BiomeSource(JsonElement value, string path, WorldgenNoise noise, HashSet<PluginContainer> plugins)
+        BiomeSource(
+            JsonElement value,
+            string path,
+            WorldgenNoise noise,
+            HashSet<PluginContainer> plugins,
+            ISet<object>? entries)
     {
         CodecJson.Object(value, path);
         var typePath = CodecJson.Field(path, "type");
@@ -160,7 +175,7 @@ internal static class LevelStemData
                         + "minecraft:checkerboard, minecraft:the_end or a type a plugin registered");
                 }
 
-                return PluginSource(value, path, noise, plugins);
+                return PluginSource(value, path, noise, plugins, entries);
         }
     }
 
@@ -168,9 +183,14 @@ internal static class LevelStemData
     // here, so that ordering features doesn't call the plugin. The plugins it's made of, counting those of the
     // density functions and noises it names, are added to the dimension's.
     private static (Func<RandomState, IClimateBiomeSource> Create, Func<IReadOnlyList<BiomeCodec>> PossibleBiomes)
-        PluginSource(JsonElement value, string path, WorldgenNoise noise, HashSet<PluginContainer> plugins)
+        PluginSource(
+            JsonElement value,
+            string path,
+            WorldgenNoise noise,
+            HashSet<PluginContainer> plugins,
+            ISet<object>? entries)
     {
-        var source = noise.Reader(plugins).Read<BiomeSourceBase>(value, path);
+        var source = noise.Reader(plugins, entries).Read<BiomeSourceBase>(value, path);
         var biomesPath = CodecJson.Field(path, "possible_biomes");
         IReadOnlyList<string> names;
 

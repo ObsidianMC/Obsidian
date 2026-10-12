@@ -118,6 +118,7 @@ public sealed class PluginLoading : IDisposable
 
         Assert.Null(generator.Plugin);
 
+        AppContext.SetData(ProbeGenerator.DisposedKey, 0);
         await File.WriteAllBytesAsync(path, ProbeArchive("1.0.0"));
         var (unloaded, gem, ore) = await LoadAndTrackAsync(manager, path, generator);
 
@@ -127,8 +128,10 @@ public sealed class PluginLoading : IDisposable
         Assert.Equal(new Version(1, 1, 0, 0), reloaded!.Info.Version);
         Assert.Single(manager.Plugins);
 
-        // Unloading stopped the world's generator, which generates again with the reloaded plugin's generator, and
-        // stops when it fails, without what it wrote into the chunk.
+        // Unloading stopped the world's generator, disposing the old plugin's, and it generates again with the
+        // reloaded plugin's generator, built with a scoped service. It stops when that fails, without what it wrote
+        // into the chunk, and disposes it too.
+        Assert.Equal(1, AppContext.GetData(ProbeGenerator.DisposedKey));
         Assert.Same(reloaded, generator.Plugin);
         Assert.Same(reloaded.LoadContext, AssemblyLoadContext.GetLoadContext(generator.Generator!.GetType().Assembly));
         Assert.True((await generator.GenerateChunkAsync(1, 0)).IsGenerated);
@@ -139,6 +142,7 @@ public sealed class PluginLoading : IDisposable
         Assert.NotSame(failing, failed);
         Assert.False(failed.IsGenerated);
         Assert.Null(generator.Plugin);
+        Assert.Equal(2, AppContext.GetData(ProbeGenerator.DisposedKey));
 
         // The plugin's item keeps its instance and id, and gets the reloaded plugin's behaviour.
         Assert.True(ItemsRegistry.TryGet("probe:gem", out var reloadedGem));
@@ -377,7 +381,11 @@ public sealed class ProbePlugin : PluginBase
     [Inject]
     public ILogger<ProbePlugin>? Logger { get; set; }
 
-    public override void ConfigureServices(IServiceCollection services) => services.AddSingleton<ProbeService>();
+    public override void ConfigureServices(IServiceCollection services)
+    {
+        services.AddSingleton<ProbeService>();
+        services.AddScoped<ProbeScopedService>();
+    }
 
     public override void ConfigureRegistry(IPluginRegistry pluginRegistry)
     {
@@ -470,15 +478,27 @@ public sealed class ProbeLampBehavior : IBlockBehavior
 }
 
 /// <summary>
-/// <see cref="ProbePlugin"/>'s feature type, written with the API alone: a column of a block up from its origin,
-/// replacing only the blocks it may.
+/// A scoped service of <see cref="ProbePlugin"/>, which its level generator is built with.
 /// </summary>
-// The probe plugin's level generator: a bedrock block in each chunk, and a failure in chunks at FailingChunk.
-public sealed class ProbeGenerator : ILevelGenerator
+public sealed class ProbeScopedService
+{
+}
+
+/// <summary>
+/// The probe plugin's level generator: a bedrock block in each chunk, and a failure in chunks at
+/// <see cref="FailingChunk"/>. It counts its disposals in <see cref="AppContext"/> data.
+/// </summary>
+public sealed class ProbeGenerator(ProbeScopedService scoped) : ILevelGenerator, IDisposable
 {
     public const int FailingChunk = 99;
 
+    public const string DisposedKey = "Obsidian.Tests.ProbeGenerator.Disposed";
+
     public string Id => "probe:flat";
+
+    public ProbeScopedService Scoped { get; } = scoped;
+
+    public void Dispose() => AppContext.SetData(DisposedKey, (int)(AppContext.GetData(DisposedKey) ?? 0) + 1);
 
     public void Init(ILevel level)
     {
@@ -499,6 +519,10 @@ public sealed class ProbeGenerator : ILevelGenerator
     }
 }
 
+/// <summary>
+/// <see cref="ProbePlugin"/>'s feature type, written with the API alone: a column of a block up from its origin,
+/// replacing only the blocks it may.
+/// </summary>
 public sealed class ProbePillarFeature : ConfiguredFeatureBase
 {
     public override string Type => "probe:pillar";

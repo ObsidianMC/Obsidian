@@ -166,9 +166,9 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
             dimension.Initialize(codec);
             world.RegisterDimension(dimension);
 
-            // A loaded world's dimensions are already generated: they read their own level data, if they saved any, and
-            // their chunks load as they're needed.
-            if (loaded)
+            // A dimension saved before reads its own level data, if it saved any, and its chunks load as they're
+            // needed. One that wasn't is new, even in a loaded world, and is generated with its spawn.
+            if (dimension is Dimension { IsSaved: true })
             {
                 await dimension.LoadAsync(codec);
             }
