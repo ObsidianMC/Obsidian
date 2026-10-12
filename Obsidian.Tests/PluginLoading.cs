@@ -112,8 +112,8 @@ public sealed class PluginLoading : IDisposable
     {
         // A world generating with the plugin's generator, stopped until a plugin registers it.
         var generator = new PluginLevelGenerator("probe:flat");
-        var (manager, dispatcher, server) = this.CreateManager(
-            TestWorldFactory.Create($"probe-{Guid.NewGuid():N}", generator));
+        var world = TestWorldFactory.Create($"probe-{Guid.NewGuid():N}", generator);
+        var (manager, dispatcher, server) = this.CreateManager(world);
         var path = Path.Join(this.folder, "probe.obby");
 
         Assert.Null(generator.Plugin);
@@ -143,6 +143,11 @@ public sealed class PluginLoading : IDisposable
         Assert.False(failed.IsGenerated);
         Assert.Null(generator.Plugin);
         Assert.Equal(2, AppContext.GetData(ProbeGenerator.DisposedKey));
+
+        // Disposing the world lets go of its failed generator: unloading plugins no longer track it.
+        Assert.True(generator.Tracked);
+        await world.DisposeAsync();
+        Assert.False(generator.Tracked);
 
         // The plugin's item keeps its instance and id, and gets the reloaded plugin's behaviour.
         Assert.True(ItemsRegistry.TryGet("probe:gem", out var reloadedGem));

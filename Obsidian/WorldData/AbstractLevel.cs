@@ -1200,6 +1200,10 @@ public abstract partial class AbstractLevel : ILevel
         for (var i = 0; i < Environment.ProcessorCount; i++)
             await this.generationSlots.WaitAsync();
 
+        // Nothing generates any more, so the level's generator can let go of what it holds (a plugin's generator, see
+        // PluginLevelGenerator); the saves below still lock chunks through it.
+        (this.Generator as IDisposable)?.Dispose();
+
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
             Log.ChunkGenerationFailed(this.Logger, failure);
 

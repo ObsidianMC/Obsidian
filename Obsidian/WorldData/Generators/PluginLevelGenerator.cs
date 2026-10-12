@@ -29,16 +29,18 @@ namespace Obsidian.WorldData.Generators;
 /// generator writing into other chunks than the one it generates locks them with its own
 /// <see cref="ILevelGenerator.LockChunkAsync"/>, which a save takes too while it runs. Once it's stopped, replaced or
 /// failed, its plugin may refuse calls into that lock, so saves wait for its calls to end instead, which is rare and
-/// short.
+/// short. A newly started generator first waits for the saves already locking chunks, as they may not have seen it,
+/// and holds new ones back meanwhile (see <see cref="LockChunkAsync"/>).
 /// </para>
 /// <para>
 /// Each instance of a plugin's generator is created in a service scope of its own, and once it's stopped, replaced
 /// or failed, it's disposed with its scope when the calls using it end (if it's <see cref="IDisposable"/> or
-/// <see cref="IAsyncDisposable"/>). Until then its plugin can't be released.
+/// <see cref="IAsyncDisposable"/>). Until then its plugin can't be released. Disposing the level disposes this
+/// generator (see <see cref="Dispose"/>), which retires its instance for good.
 /// </para>
 /// </remarks>
 /// <param name="identifier">The generator's identifier, which the level saves.</param>
-internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGenerator
+internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGenerator, IDisposable
 {
     // Chunk locks are striped so their number stays bounded.
     private const int LockStripeCount = 1024;
@@ -60,6 +62,17 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
     // transitions.
     private volatile PluginContainer? failedBy;
 
+    // Guards the count of held save handles (see LockChunkAsync). Taken after transitions, never across an await.
+    private readonly Lock saveGate = new();
+    private int saves;
+
+    // Set while a newly started instance waits for the save handles held when it started, which new ones wait for too,
+    // so they can't starve it. Completed and cleared once those are all released. Set under saveGate.
+    private TaskCompletionSource? earlierSaves;
+
+    // Set under transitions once the level is disposed: no plugin's generator starts in it any more.
+    private volatile bool disposed;
+
     private ILevel? level;
 
     public string Id { get; } = identifier;
@@ -73,6 +86,18 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
     /// The plugin's generator, or null when the level is stopped.
     /// </summary>
     internal ILevelGenerator? Generator => this.instances.Running?.Generator;
+
+    /// <summary>
+    /// Whether unloading plugins tracks this generator: while a plugin's generator runs in it, or failed.
+    /// </summary>
+    internal bool Tracked
+    {
+        get
+        {
+            lock (transitions)
+                return referencing.Contains(this);
+        }
+    }
 
     private ILogger Logger => (this.level as AbstractLevel)?.Logger ?? NullLogger.Instance;
 
@@ -110,7 +135,7 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
     /// <returns>Whether it generates with it.</returns>
     internal bool Start(PluginGenerator registered)
     {
-        if (this.level is null || registered.Plugin == this.failedBy)
+        if (this.level is null || this.disposed || registered.Plugin == this.failedBy)
             return false;
 
         if (this.instances.Running is Instance current)
@@ -136,8 +161,9 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
         {
             lock (transitions)
             {
-                // A closing plugin may have looked for this level already, and wouldn't clear the failure.
-                if (!registered.Plugin.IsClosing)
+                // A closing plugin may have looked for this level already, and wouldn't clear the failure; nor would
+                // anything once the level is disposed.
+                if (!registered.Plugin.IsClosing && !this.disposed)
                 {
                     this.failedBy = registered.Plugin;
                     referencing.Add(this);
@@ -157,9 +183,16 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
         {
             // Checked under the lock StopAll reads the referencing set under: a plugin that closed while its
             // generator initialized either is seen closing here, or finds this level once it's published.
-            if (this.instances.Running is null && !registered.Plugin.IsClosing)
+            if (this.instances.Running is null && !this.disposed && !registered.Plugin.IsClosing)
             {
-                this.instances = this.instances with { Running = started };
+                // Under the gate's lock, so each save handle is either held now, and waited for, or registers after
+                // this and reads this instance as running.
+                lock (this.saveGate)
+                {
+                    started.Ready = this.CloseSaveGate();
+                    this.instances = this.instances with { Running = started };
+                }
+
                 referencing.Add(this);
                 published = true;
             }
@@ -205,6 +238,32 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
         return stopped is not null;
     }
 
+    /// <summary>
+    /// Stops generating for good, as the level is disposed: no plugin's generator starts in it any more, and unloading
+    /// plugins no longer track it. Its running instance is retired like a stopped one, so saves still wait for its
+    /// calls. Call it once nothing generates in the level any more.
+    /// </summary>
+    public void Dispose()
+    {
+        Instance? stopped = null;
+
+        lock (transitions)
+        {
+            this.disposed = true;
+            this.failedBy = null;
+
+            if (this.instances.Running is Instance current)
+            {
+                this.Detach(current);
+                stopped = current;
+            }
+
+            referencing.Remove(this);
+        }
+
+        stopped?.Retire();
+    }
+
     /// <remarks>
     /// Once stopped, a chunk is returned as it was given, ungenerated; one the plugin's generator fails on is returned
     /// empty and ungenerated instead, without what it wrote, and replaces the given one where its level stores it.
@@ -214,30 +273,32 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
     {
         chunk ??= this.EmptyChunk(x, z);
 
-        using var chunkLock = await this.LockAsync(x, z);
+        var (chunkLock, running) = await this.LockToGenerateAsync(x, z);
 
-        // Read once, so a swap applies from the next chunk.
-        if (this.instances.Running is not Instance current)
-            return chunk;
-
-        using var use = current.TryUse();
-        using var call = use is null ? null : current.Plugin.TryEnter();
-        if (call is null)
-            return chunk;
-
-        try
+        using (chunkLock)
         {
-            return await current.Generator.GenerateChunkAsync(x, z, chunk, stage);
-        }
-        catch (Exception ex) when (this.Contain(current, ex))
-        {
-            // Stored while the chunk's lock is still held, so a save waiting for it serializes the empty chunk
-            // rather than what the generator wrote into the given one.
-            var empty = this.EmptyChunk(x, z);
-            if (this.level is AbstractLevel level && level.GetRegionForChunk(x, z) is Region region)
-                region.ReplaceChunk(chunk, empty);
+            if (running is not Instance current)
+                return chunk;
 
-            return empty;
+            using var use = current.TryUse();
+            using var call = use is null ? null : current.Plugin.TryEnter();
+            if (call is null)
+                return chunk;
+
+            try
+            {
+                return await current.Generator.GenerateChunkAsync(x, z, chunk, stage);
+            }
+            catch (Exception ex) when (this.Contain(current, ex))
+            {
+                // Stored while the chunk's lock is still held, so a save waiting for it serializes the empty chunk
+                // rather than what the generator wrote into the given one.
+                var empty = this.EmptyChunk(x, z);
+                if (this.level is AbstractLevel level && level.GetRegionForChunk(x, z) is Region region)
+                    region.ReplaceChunk(chunk, empty);
+
+                return empty;
+            }
         }
     }
 
@@ -245,6 +306,8 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
     {
         if (this.instances.Running is not Instance current)
             return null;
+
+        await current.Ready;
 
         using var use = current.TryUse();
         using var call = use is null ? null : current.Plugin.TryEnter();
@@ -262,45 +325,64 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
     }
 
     /// <remarks>
-    /// The chunk's own lock is always taken. Then the save waits for the calls of retired instances to end, and
-    /// takes the running instance's own lock, or waits for its calls too if its plugin is closing. The returned lock
-    /// keeps that instance, and so its plugin, from being disposed until it's released.
+    /// <para>
+    /// The save registers a handle with this generator's save gate, then takes the chunk's own lock. Then it waits
+    /// for the calls of retired instances to end, and takes the running instance's own lock, or waits for its calls
+    /// too if its plugin is closing. The returned lock keeps that instance, and so its plugin, from being disposed,
+    /// and the handle registered, until it's released.
+    /// </para>
+    /// <para>
+    /// An instance starting meanwhile could write into the chunk as a neighbour, unseen by the save, so it doesn't
+    /// generate until the handles held when it started are released, and new handles wait for that too. Neither
+    /// waits while holding a chunk's lock, and saves never wait for an instance to be ready, so there's no deadlock:
+    /// a held handle only waits for chunk locks held by calls of ready or retired instances.
+    /// </para>
     /// </remarks>
     public async ValueTask<IDisposable?> LockChunkAsync(int x, int z)
     {
-        var chunkLock = await this.LockAsync(x, z);
+        var save = await this.EnterSaveAsync();
+        IDisposable? chunkLock = null;
 
         try
         {
+            chunkLock = await this.LockAsync(x, z);
+
+            // Read once registered: an instance started after this waits for the save to be released.
             var instances = this.instances;
 
             foreach (var retired in instances.Retired)
                 await retired.Drained;
 
             return instances.Running is Instance current
-                ? await this.LockRunningAsync(current, chunkLock, x, z)
-                : chunkLock;
+                ? await this.LockRunningAsync(current, save, chunkLock, x, z)
+                : new Locks(save, chunkLock);
         }
         catch
         {
-            chunkLock.Dispose();
+            chunkLock?.Dispose();
+            save.Dispose();
             throw;
         }
     }
 
-    // Adds the running instance's own lock of a chunk to the chunk's lock. When it can't, as its plugin is closing
+    // Adds the running instance's own lock of a chunk to the save's locks. When it can't, as its plugin is closing
     // (which stops it) or it failed, its calls are waited for instead: they may be writing into the chunk.
-    private async ValueTask<IDisposable> LockRunningAsync(Instance current, IDisposable chunkLock, int x, int z)
+    private async ValueTask<IDisposable> LockRunningAsync(
+        Instance current,
+        IDisposable save,
+        IDisposable chunkLock,
+        int x,
+        int z)
     {
         // Disposed already, so no call into it runs.
         if (current.TryUse() is not IDisposable use)
-            return chunkLock;
+            return new Locks(save, chunkLock);
 
         try
         {
             using var call = current.Plugin.TryEnter();
             if (call is not null)
-                return new Locks(await current.Generator.LockChunkAsync(x, z), use, chunkLock);
+                return new Locks(save, chunkLock, use, await current.Generator.LockChunkAsync(x, z));
         }
         catch (Exception ex) when (this.Contain(current, ex))
         {
@@ -315,7 +397,79 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
         use.Dispose();
         await current.Drained;
 
-        return chunkLock;
+        return new Locks(save, chunkLock);
+    }
+
+    // Registers a save handle once no newly started instance waits for the held ones.
+    private async ValueTask<IDisposable> EnterSaveAsync()
+    {
+        while (true)
+        {
+            Task closed;
+
+            lock (this.saveGate)
+            {
+                if (this.earlierSaves is null)
+                {
+                    this.saves++;
+                    return new SaveHandle(this);
+                }
+
+                closed = this.earlierSaves.Task;
+            }
+
+            await closed;
+        }
+    }
+
+    private void ExitSave()
+    {
+        TaskCompletionSource? released = null;
+
+        lock (this.saveGate)
+        {
+            this.saves--;
+
+            if (this.saves == 0)
+            {
+                released = this.earlierSaves;
+                this.earlierSaves = null;
+            }
+        }
+
+        released?.SetResult();
+    }
+
+    // Under saveGate, as an instance starts: holds new save handles back until the held ones are released, and
+    // returns a task that completes when they are.
+    private Task CloseSaveGate()
+    {
+        if (this.saves == 0)
+            return Task.CompletedTask;
+
+        this.earlierSaves ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        return this.earlierSaves.Task;
+    }
+
+    // Takes the chunk's lock to generate it, and reads the running instance (null when stopped) under it, once, so a
+    // swap applies from the next chunk. A newly started instance is waited for without the chunk's lock, which the
+    // saves it waits for may need.
+    private async ValueTask<(IDisposable ChunkLock, Instance? Running)> LockToGenerateAsync(int x, int z)
+    {
+        while (true)
+        {
+            if (this.instances.Running is Instance starting)
+                await starting.Ready;
+
+            var chunkLock = await this.LockAsync(x, z);
+            var running = this.instances.Running;
+
+            if (running is null || running.Ready.IsCompleted)
+                return (chunkLock, running);
+
+            chunkLock.Dispose();
+        }
     }
 
     // Contains a failure of the plugin's generator, which would otherwise end chunk management or the server: it's
@@ -432,6 +586,12 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
         public PluginContainer Plugin { get; } = plugin;
 
         /// <summary>
+        /// Completes once the save handles held when it started are released; until then it doesn't generate. Set
+        /// before it's published.
+        /// </summary>
+        public Task Ready { get; set; } = Task.CompletedTask;
+
+        /// <summary>
         /// Completes once it's retired and its uses ended: no call into it runs any more.
         /// </summary>
         public Task Drained => this.drained.Task;
@@ -490,8 +650,21 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
         public void Dispose() => Interlocked.Exchange(ref this.stripe, null)?.Release();
     }
 
-    // A save's locks: the running generator's own, its use, then the chunk's, released in that order.
-    private sealed class Locks(IDisposable? generatorLock, IDisposable use, IDisposable chunkLock) : IDisposable
+    // A save's handle on the save gate.
+    private sealed class SaveHandle(PluginLevelGenerator owner) : IDisposable
+    {
+        private PluginLevelGenerator? owner = owner;
+
+        public void Dispose() => Interlocked.Exchange(ref this.owner, null)?.ExitSave();
+    }
+
+    // A save's locks: the running generator's own and its use, if any, the chunk's, then the save's handle, released
+    // in that order.
+    private sealed class Locks(
+        IDisposable save,
+        IDisposable chunkLock,
+        IDisposable? use = null,
+        IDisposable? generatorLock = null) : IDisposable
     {
         public void Dispose()
         {
@@ -501,8 +674,9 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
             }
             finally
             {
-                use.Dispose();
+                use?.Dispose();
                 chunkLock.Dispose();
+                save.Dispose();
             }
         }
     }
