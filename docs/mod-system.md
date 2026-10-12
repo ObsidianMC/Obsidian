@@ -91,8 +91,8 @@ client. This document describes the design and tracks its progress. The archive 
      checked like vanilla 1.21.11's codecs read a data pack's entries, environment attributes included (except
      particles with options and rich bed rule messages), and are sent as vanilla's network codecs write what was read,
      so vanilla clients always accept them; vanilla's entries are sent by name from the `minecraft:core` pack. A
-     change to these entries sends connected players back through configuration. Plugin biomes don't generate anywhere
-     yet, and the server doesn't apply environment attributes itself yet.
+     change to these entries sends connected players back through configuration. Plugin biomes generate in plugins'
+     dimensions (slice 4a), and the server doesn't apply environment attributes itself yet.
    - Done: worldgen features. Plugins' `data/<namespace>/worldgen/configured_feature` and `placed_feature` files are
      read at runtime into the same objects the source generator makes of vanilla's features (a parity test reads all
      of vanilla's features both ways and compares them), and NeoForge's `neoforge/biome_modifier` files
@@ -110,9 +110,20 @@ client. This document describes the design and tracks its progress. The archive 
      feature made of any of a plugin's types, nested ones included, holds a call into the plugin. `BlockSet` moved to
      the API so plugin types can take block lists and tags. Vanilla's tree placers and decorators, structure
      processors and weighted lists stay in Obsidian for now.
-   - Next, slice 4: dimensions and reload-safe generators, with plugin biomes placed in dimensions, runtime noise
-     settings, and plugins' density function, surface rule and biome source types, which only matter once plugins
-     define dimensions.
+   - Done, slice 4a: plugins' dimensions. A plugin's `data/<namespace>/dimension` level stem files are read like
+     vanilla's, with vanilla's noise generator, vanilla's noise settings and any of vanilla's biome sources
+     (`multi_noise` inline or by preset, `fixed`, `checkerboard`, `the_end`), so plugin biomes generate. Each becomes a
+     level of the default world, created when its plugin loads and saved under `dimensions/<namespace>/<path>` like a
+     data pack's dimension. Vanilla's dimensions are the same generator built from vanilla's stems, and generate as
+     before. A level's name and its dimension type are now separate, so clients get the plugin dimension's name in
+     login and respawn with its type's height. Levels stay until the server stops; a changed stem applies after a
+     restart. Players get there with `/dimension <id>` or `IPlayer.TeleportToDimensionAsync`; there are no portals
+     (see [plugin-content.md](plugin-content.md#dimensions)).
+   - Next, slice 4b: runtime noise settings, density functions and surface rules read from plugins' files, and plugin
+     types for density functions, surface rules and biome sources.
+   - Then slice 4c: plugin generator types, and reload-safe generators.
+   - Possible later: adding plugin biomes to vanilla's overworld and nether climate (like TerraBlender), rather than
+     only to plugins' own dimensions.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource
    packs, and answers NeoForge's handshake and registry sync.
