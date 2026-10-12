@@ -86,4 +86,31 @@ public interface IClientRegistry
     /// </exception>
     /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
     public IClientRegistry RegisterEntityRenderer(string entityType, EntityRendererProperties renderer);
+
+    /// <summary>
+    /// Sets how a mod's particle type's particles move and how long they live. They're drawn with the sprites of its
+    /// definition, <c>assets/&lt;ns&gt;/particles/&lt;name&gt;.json</c>, with or without a provider.
+    /// </summary>
+    /// <param name="particleType">
+    /// The identifier of a particle type the mod registered, like <c>examplemod:spark</c>.
+    /// </param>
+    /// <param name="provider">How its particles move and live.</param>
+    /// <exception cref="ArgumentException">
+    /// The particle type isn't one the mod registered, or the mod gave it a provider already.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+    public IClientRegistry RegisterParticleProvider(string particleType, ParticleProviderProperties provider);
+
+    /// <summary>
+    /// Shows a mod's menu type with a background and slot positions from its assets. Without a screen, the menu shows
+    /// like a chest.
+    /// </summary>
+    /// <param name="menuType">The identifier of a menu type the mod registered, like <c>examplemod:pouch</c>.</param>
+    /// <param name="screen">The background and where the slots go.</param>
+    /// <exception cref="ArgumentException">
+    /// The menu type isn't one the mod registered, the screen places a different number of slots than the menu has,
+    /// or the mod gave it a screen already.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+    public IClientRegistry RegisterMenuScreen(string menuType, MenuScreenProperties screen);
 }
