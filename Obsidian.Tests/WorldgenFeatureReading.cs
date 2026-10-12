@@ -66,6 +66,11 @@ public class WorldgenFeatureReading
             "probe:cap",
             typeof(TreeDecorator),
             typeof(CapDecorator)));
+        registrations.Add(WorldgenTypeRegistration.Create(
+            registrations,
+            "probe:column",
+            typeof(FeatureSize),
+            typeof(ColumnFeatureSize)));
 
         var reader = new WorldgenReader(
             WorldgenTypes.With(registrations),
@@ -91,12 +96,7 @@ public class WorldgenFeatureReading
                 },
                 "foliage_placer": { "type": "probe:cube", "radius": 2, "offset": 0, "height": 3 },
                 "dirt_provider": { "type": "minecraft:simple_state_provider", "state": { "Name": "minecraft:dirt" } },
-                "minimum_size": {
-                  "type": "minecraft:two_layers_feature_size",
-                  "limit": 1,
-                  "lower_size": 0,
-                  "upper_size": 1
-                },
+                "minimum_size": { "type": "probe:column", "min_clipped_height": 3 },
                 "decorators": [{ "type": "probe:cap", "state": { "Name": "minecraft:gold_block" } }]
               }
             }
@@ -107,6 +107,7 @@ public class WorldgenFeatureReading
         Assert.Equal(3, Assert.IsType<CubeFoliagePlacer>(tree.FoliagePlacer).Height);
         Assert.Equal(2, tree.FoliagePlacer.Radius.MaxValue);
         Assert.Equal("minecraft:gold_block", Assert.IsType<CapDecorator>(Assert.Single(tree.Decorators)).State.Name);
+        Assert.Equal(3, Assert.IsType<ColumnFeatureSize>(tree.MinimumSize).MinClippedHeight);
     }
 
     // A plugin's foliage placer: square rows of leaves of its radius, for its height.
@@ -147,6 +148,12 @@ public class WorldgenFeatureReading
             if (context.Logs.Count > 0)
                 context.SetBlock(context.Logs[^1] + Vector.Up, this.State.ToBlock());
         }
+    }
+
+    // A plugin's feature size: only the trunk's column needs to be free.
+    public sealed class ColumnFeatureSize : FeatureSize
+    {
+        public override int GetSizeAtHeight(int height, int y) => 0;
     }
 
     // The entries of the category assets the generator reads, like Assets/worldgen/features/ores.json.

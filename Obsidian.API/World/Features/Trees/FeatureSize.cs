@@ -1,7 +1,8 @@
-namespace Obsidian.WorldData.Features.Tree;
+namespace Obsidian.API.World.Features.Trees;
 
 /// <summary>
-/// How much free space a tree needs around its trunk at each height, like vanilla's <c>FeatureSize</c>.
+/// How much free space a tree needs around its trunk at each height, like vanilla's <c>FeatureSize</c>: a tree's
+/// <c>minimum_size</c>. Plugins add types with <c>RegisterWorldgenType&lt;FeatureSize, T&gt;</c>.
 /// </summary>
 public abstract class FeatureSize
 {
@@ -16,6 +17,9 @@ public abstract class FeatureSize
     /// </summary>
     public int MinClippedHeight { get; init; } = NoMinClippedHeight;
 
-    /// <summary>Radius that must be free at <paramref name="y"/> blocks above the trunk base of a tree of <paramref name="height"/>.</summary>
+    /// <summary>
+    /// Radius that must be free at <paramref name="y"/> blocks above the trunk base of a tree of
+    /// <paramref name="height"/>.
+    /// </summary>
     public abstract int GetSizeAtHeight(int height, int y);
 }
