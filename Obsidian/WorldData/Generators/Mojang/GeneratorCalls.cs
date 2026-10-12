@@ -42,6 +42,36 @@ internal readonly struct GeneratorCalls : IDisposable
         return new GeneratorCalls(calls);
     }
 
+    /// <summary>
+    /// Enters every plugin, or none when one is unloading, such as the plugins whose types a structure is made of.
+    /// </summary>
+    /// <returns>Whether every plugin was entered.</returns>
+    public static bool TryEnter(ImmutableArray<PluginContainer> plugins, out GeneratorCalls entered)
+    {
+        entered = default;
+        if (plugins.IsDefaultOrEmpty)
+            return true;
+
+        var calls = new PluginCall[plugins.Length];
+
+        for (var i = 0; i < plugins.Length; i++)
+        {
+            if (plugins[i].TryEnter() is PluginCall call)
+            {
+                calls[i] = call;
+                continue;
+            }
+
+            for (var started = i - 1; started >= 0; started--)
+                calls[started].Dispose();
+
+            return false;
+        }
+
+        entered = new GeneratorCalls(calls);
+        return true;
+    }
+
     public void Dispose()
     {
         if (this.calls is null)

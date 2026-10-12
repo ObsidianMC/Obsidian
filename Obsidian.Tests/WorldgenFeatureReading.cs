@@ -8,6 +8,7 @@ using Obsidian.Registries;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Features.Tree;
 using Obsidian.WorldData.Structures;
+using Obsidian.WorldData.Structures.Pools;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -51,6 +52,48 @@ public class WorldgenFeatureReading
         Assert.Empty(differences.Take(20));
         Assert.Equal(ConfiguredFeatures.All.Count, configured);
         Assert.Equal(PlacedFeatures.All.Count, placed);
+    }
+
+    [Fact(DisplayName = "Every vanilla structure, structure set, template pool and processor list read at runtime "
+        + "equals the generated one")]
+    public void ReadsVanillaStructuresLikeTheGenerator()
+    {
+        var reader = new WorldgenReader(
+            WorldgenTypes.BuiltIn,
+            id => ConfiguredFeatures.All.GetValueOrDefault(id) ?? throw new InvalidDataException(id),
+            id => PlacedFeatures.All.GetValueOrDefault(id) ?? throw new InvalidDataException(id));
+
+        var differences = new List<string>();
+        var read = 0;
+
+        foreach (var (id, json) in Entries("worldgen.processor_lists."))
+        {
+            Compare(ProcessorLists.All[id], reader.ReadProcessorList(json, id), id, differences, 0);
+            read++;
+        }
+
+        foreach (var (id, json) in Entries("worldgen.template_pools."))
+        {
+            Compare(TemplatePools.All[id], reader.ReadTemplatePool(json, id), id, differences, 0);
+            read++;
+        }
+
+        foreach (var (id, json) in Entries("worldgen.structures."))
+        {
+            Compare(Structures.All[id], reader.ReadStructure(json, id), id, differences, 0);
+            read++;
+        }
+
+        foreach (var (id, json) in Entries("worldgen.structure_sets."))
+        {
+            Compare(StructureSets.All[id], reader.ReadStructureSet(json, id), id, differences, 0);
+            read++;
+        }
+
+        Assert.Empty(differences.Take(20));
+        Assert.Equal(
+            ProcessorLists.All.Count + TemplatePools.All.Count + Structures.All.Count + StructureSets.All.Count,
+            read);
     }
 
     [Fact(DisplayName = "A plugin's tree part and structure processor types are read in vanilla features")]
@@ -215,6 +258,10 @@ public class WorldgenFeatureReading
     // entries below the root by identifier.
     private static void Compare(object? expected, object? actual, string path, List<string> differences, int depth)
     {
+        // Shared objects, like structure templates, are equal.
+        if (ReferenceEquals(expected, actual))
+            return;
+
         if (expected is null || actual is null)
         {
             if (expected is not null || actual is not null)
@@ -288,6 +335,9 @@ public class WorldgenFeatureReading
         ConfiguredFeatureBase { Identifier.Length: > 0 } feature => feature.Identifier,
         PlacedFeature { Identifier.Length: > 0 } feature => feature.Identifier,
         StructureProcessorList { Identifier.Length: > 0 } list => list.Identifier,
+        StructureTemplatePool { Identifier.Length: > 0 } pool => pool.Identifier,
+        Structure { Identifier.Length: > 0 } structure => structure.Identifier,
+        StructureSet { Identifier.Length: > 0 } set => set.Identifier,
         _ => null
     };
 

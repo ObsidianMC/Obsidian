@@ -75,8 +75,11 @@ internal sealed class ChunkBuilder
     /// <see cref="PluginFeatures.Current"/> by default.</param>
     /// <param name="startCache">The structure starts of the builder this one replaces, generated with the same seed
     /// and dimension, so the state of their placed pieces carries over; new ones by default.</param>
+    /// <param name="structures">The structures and structure sets, read as structures start;
+    /// <see cref="PluginStructures.Current"/> by default.</param>
     public ChunkBuilder(MojangDimension dimension, long seed, bool generateStructures = true,
-        Func<WorldgenFeatureSet>? features = null, StructureStartCache? startCache = null)
+        Func<WorldgenFeatureSet>? features = null, StructureStartCache? startCache = null,
+        Func<WorldgenStructures>? structures = null)
     {
         this.dimension = dimension;
         this.settings = dimension.Settings;
@@ -103,7 +106,8 @@ internal sealed class ChunkBuilder
                 this.terrainGenerator,
                 dimension.MinY,
                 dimension.Height,
-                startCache);
+                startCache,
+                structures);
         }
     }
 
@@ -252,6 +256,12 @@ internal sealed class ChunkBuilder
     /// </returns>
     public bool RefreshFeatures() =>
         ReferenceEquals(this.CurrentDecoration().BiomeFeatures, this.features().BiomeFeatures);
+
+    /// <summary>
+    /// Moves structures to the current ones, if plugins changed them, dropping the starts of structure sets that are
+    /// gone (see <see cref="StructureManager.Refresh"/>).
+    /// </summary>
+    public void RefreshStructures() => this.Structures?.Refresh();
 
     // Plugins' feature types run plugin code, so decorating is a call into every plugin whose features it may place,
     // which keeps the plugin from being released (its services disposed, its load context unloaded) until it ends.

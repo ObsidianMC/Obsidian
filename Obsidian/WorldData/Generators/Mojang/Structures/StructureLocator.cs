@@ -17,11 +17,18 @@ internal sealed class StructureLocator(StructureManager structures)
     /// <param name="skipKnownStructures">Skips starts already found by an earlier search (they're found once each).</param>
     public Vector? FindNearest(IReadOnlyCollection<Structure> targets, Vector position, int radius, bool skipKnownStructures)
     {
+        // Targets are matched by identifier, as plugins and data packs may override them, like vanilla's tags hold
+        // a registry's entries by identifier.
+        var targetIds = targets.Select(target => target.Identifier).ToHashSet();
+
         // Each placement with the target structures it places, in structure set order.
         var placements = new List<(StructurePlacement Placement, Structure[] Structures)>();
         foreach (var set in structures.Sets)
         {
-            var placed = set.Structures.Select(entry => entry.Structure).Where(targets.Contains).ToArray();
+            var placed = set.Structures
+                .Select(entry => entry.Structure)
+                .Where(structure => targetIds.Contains(structure.Identifier))
+                .ToArray();
             if (placed.Length > 0)
                 placements.Add((set.Placement, placed));
         }

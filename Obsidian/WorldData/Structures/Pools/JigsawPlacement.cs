@@ -26,7 +26,7 @@ internal static class JigsawPlacement
     {
         var random = context.Random;
         var rotation = StructureRotationExtensions.Random(random);
-        var pool = StructureTemplatePool.Get(aliases.Lookup(startPool.Identifier)) ?? startPool;
+        var pool = context.Pools(aliases.Lookup(startPool.Identifier)) ?? startPool;
         var element = pool.GetRandomTemplate(random);
         if (element is EmptyPoolElement)
             return null;
@@ -153,11 +153,11 @@ internal static class JigsawPlacement
                 var relativeY = jigsawPosition.Y - minY;
                 var surfaceY = int.MinValue;
 
-                var pool = StructureTemplatePool.Get(aliases.Lookup(jigsaw.Pool));
+                var pool = context.Pools(aliases.Lookup(jigsaw.Pool));
                 if (pool is null || pool.Size == 0 && pool.Identifier != StructureTemplatePool.EmptyId)
                     continue;
 
-                var fallback = pool.FallbackPool;
+                var fallback = context.Pools(pool.Fallback);
                 if (fallback is null || fallback.Size == 0 && fallback.Identifier != StructureTemplatePool.EmptyId)
                     continue;
 
@@ -299,8 +299,8 @@ internal static class JigsawPlacement
                 if (!candidateBox.IsInside(candidateJigsaw.Info.Position + candidateJigsaw.FrontFacing.ToVector()))
                     continue;
 
-                var pool = StructureTemplatePool.Get(aliases.Lookup(candidateJigsaw.Pool));
-                var fallback = pool?.FallbackPool;
+                var pool = context.Pools(aliases.Lookup(candidateJigsaw.Pool));
+                var fallback = pool is null ? null : context.Pools(pool.Fallback);
                 height = Math.Max(height, Math.Max(pool?.MaxSize ?? 0, fallback?.MaxSize ?? 0));
             }
 

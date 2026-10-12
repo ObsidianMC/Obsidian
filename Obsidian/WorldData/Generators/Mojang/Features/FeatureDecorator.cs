@@ -105,14 +105,17 @@ internal sealed class FeatureDecorator
         var reachingStructures = structures?.GetStartsReaching(chunkX, chunkZ).Select(start => start.Structure)
             .ToHashSet(ReferenceEqualityComparer.Instance) ?? [];
 
+        // Read once, so that every step places the structures of the same layout.
+        var layout = structures?.Layout;
+
         // The features of the area's biomes in a step, one bit per index in the step's features.
         Span<ulong> chosen = stackalloc ulong[this.maxStepWords];
 
         for (var step = 0; step < stepCount; step++)
         {
-            if (structures is not null && step < structures.StructuresPerStep.Count)
+            if (structures is not null && layout is not null && step < layout.StructuresPerStep.Count)
             {
-                var stepStructures = structures.StructuresPerStep[step];
+                var stepStructures = layout.StructuresPerStep[step];
                 for (var index = 0; index < stepStructures.Count; index++)
                 {
                     if (!reachingStructures.Contains(stepStructures[index]))
@@ -125,18 +128,7 @@ internal sealed class FeatureDecorator
                         Generation = generation
                     };
 
-                    foreach (var start in structures.GetReferencingStarts(chunkX, chunkZ, stepStructures[index]))
-                    {
-                        try
-                        {
-                            start.PlaceInChunk(context);
-                        }
-                        catch (Exception exception)
-                        {
-                            throw new InvalidOperationException(
-                                $"Failed to place structure '{start.Structure.Identifier}' in chunk ({chunkX}, {chunkZ}).", exception);
-                        }
-                    }
+                    PlaceStructure(structures, layout, stepStructures[index], context);
                 }
             }
 
@@ -180,6 +172,41 @@ internal sealed class FeatureDecorator
                             + $"(decoration seed {decorationSeed}).",
                             exception);
                     }
+                }
+            }
+        }
+    }
+
+    // Places the starts of a structure reaching the chunk. A structure made of plugins' types runs their code, so
+    // placing it is a call into them: one whose plugins are unloading is left out, like their features, and its
+    // failing is theirs.
+    private static void PlaceStructure(
+        StructureManager structures,
+        StructureLayout layout,
+        Structure structure,
+        StructurePieceContext context)
+    {
+        var owners = layout.OwnersOf(structure);
+        if (!GeneratorCalls.TryEnter(owners, out var calls))
+            return;
+
+        using (calls)
+        {
+            foreach (var start in structures.GetReferencingStarts(context.ChunkX, context.ChunkZ, structure))
+            {
+                try
+                {
+                    start.PlaceInChunk(context);
+                }
+                catch (Exception exception) when (exception is not OutOfMemoryException)
+                {
+                    var message = $"Failed to place structure '{structure.Identifier}' in chunk "
+                        + $"({context.ChunkX}, {context.ChunkZ}).";
+
+                    if (owners.IsEmpty)
+                        throw new InvalidOperationException(message, exception);
+
+                    throw new PluginGenerationException(owners, message, exception);
                 }
             }
         }
