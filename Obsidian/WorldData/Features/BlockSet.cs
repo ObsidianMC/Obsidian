@@ -44,9 +44,8 @@ public sealed class BlockSet
         {
             if (entry.StartsWith('#'))
             {
-                var name = entry[1..].Replace("minecraft:", string.Empty);
-                var tag = TagsRegistry.Block.All.FirstOrDefault(tag => tag.Name == name)
-                    ?? throw new InvalidOperationException($"Unknown block tag '{entry}'.");
+                if (!TagsRegistry.TryGet("block", entry[1..], out var tag))
+                    throw new InvalidOperationException($"Unknown block tag '{entry}'.");
 
                 ids.UnionWith(tag.Entries);
             }
