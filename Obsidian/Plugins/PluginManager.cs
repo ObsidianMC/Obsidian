@@ -42,10 +42,23 @@ public sealed partial class PluginManager : IAsyncDisposable
     private static readonly AsyncLocal<PluginManager?> changing = new();
 
     /// <summary>
-    /// Set while worlds create plugins' dimensions on this async flow, whose generation runs plugins' code: a change
-    /// from there would wait for the pass it runs in, which may wait for a change.
+    /// The pass creating plugins' dimensions on this async flow, whose generation runs plugins' code: a change from
+    /// there would wait for the pass it runs in, which may wait for a change. Tasks the pass starts inherit it, so it
+    /// only counts while <see cref="DimensionPass.Active"/>: a task outliving the pass may change plugins.
     /// </summary>
-    internal static readonly AsyncLocal<bool> creatingDimensions = new();
+    internal static readonly AsyncLocal<DimensionPass?> creatingDimensions = new();
+
+    /// <summary>
+    /// A pass creating plugins' dimensions (see <see cref="creatingDimensions"/>).
+    /// </summary>
+    internal sealed class DimensionPass
+    {
+        private volatile bool active = true;
+
+        public bool Active => this.active;
+
+        public void End() => this.active = false;
+    }
 
     internal readonly ILogger logger;
     private readonly IConfiguration configuration;
@@ -255,7 +268,7 @@ public sealed partial class PluginManager : IAsyncDisposable
     /// </summary>
     private async Task RunChangeAsync(Func<Task> change)
     {
-        if (changing.Value == this || creatingDimensions.Value)
+        if (changing.Value == this || creatingDimensions.Value is { Active: true })
         {
             throw new InvalidOperationException(
                 "Plugins can't be loaded or unloaded from a plugin's load, ready or unloading callback, or while its "

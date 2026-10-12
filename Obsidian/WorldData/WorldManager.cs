@@ -288,10 +288,13 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     private async Task AddPluginDimensionsAsync(bool opening, CancellationToken cancellationToken)
     {
         await this.pluginDimensionLock.WaitAsync(cancellationToken);
+
+        var pass = new PluginManager.DimensionPass();
+
         try
         {
             // Generating the dimensions' spawn chunks runs plugins' code, which can't change plugins from here.
-            PluginManager.creatingDimensions.Value = true;
+            PluginManager.creatingDimensions.Value = pass;
             this.pluginDimensionsOpen |= opening;
 
             if (!this.pluginDimensionsOpen || this.DefaultWorld is not World world)
@@ -308,7 +311,8 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         }
         finally
         {
-            PluginManager.creatingDimensions.Value = false;
+            pass.End();
+            PluginManager.creatingDimensions.Value = null;
             this.pluginDimensionLock.Release();
         }
     }
