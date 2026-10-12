@@ -91,6 +91,41 @@ public interface IPluginRegistry
     public Entities.EntityDefinition RegisterEntity(string identifier, Entities.EntityProperties? properties = null);
 
     /// <summary>
+    /// Registers a particle type without options, like a NeoForge mod's <c>SimpleParticleType</c>: its identifier is
+    /// in the plugin's namespace, and it gets the next free particle type id. Send it to players with
+    /// <see cref="ILevel.SpawnParticles"/>. Registering it again, e.g. when the plugin reloads, gives back the same
+    /// type.
+    /// </summary>
+    /// <param name="identifier">The particle type's identifier, like <c>myplugin:spark</c>.</param>
+    /// <returns>The particle type, which is the particle to send.</returns>
+    /// <remarks>
+    /// Like a plugin's blocks, its particle types need NeoForge or Fabric clients with a matching mod, which draws
+    /// them, and stay registered until the server stops.
+    /// </remarks>
+    /// <exception cref="ArgumentException">The identifier isn't in the plugin's namespace, or isn't valid.</exception>
+    public ParticleDefinition RegisterParticle(string identifier);
+
+    /// <summary>
+    /// Registers a menu type, like a NeoForge mod's <c>MenuType</c>: a grid of slots above the player's inventory,
+    /// whose identifier is in the plugin's namespace and which gets the next free menu id. Open it for a player with
+    /// <see cref="IPlayer.OpenInventoryAsync"/> and a <see cref="MenuContainer"/>. Registering it again, e.g. when the
+    /// plugin reloads, gives back the same type; its shape can't change until the server restarts.
+    /// </summary>
+    /// <param name="identifier">The menu type's identifier, like <c>myplugin:pouch</c>.</param>
+    /// <param name="rows">How many rows of slots it has, from 1 to 6.</param>
+    /// <param name="columns">How many slots each row has, from 1 to 9.</param>
+    /// <returns>The menu type, to create containers of.</returns>
+    /// <remarks>
+    /// Like a plugin's blocks, its menu types need NeoForge or Fabric clients with a matching mod, which shows their
+    /// screens, and stay registered until the server stops.
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// The identifier isn't in the plugin's namespace or isn't valid, or the menu's shape changed.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">The rows or columns are out of range.</exception>
+    public MenuDefinition RegisterMenu(string identifier, int rows, int columns = 9);
+
+    /// <summary>
     /// Adds entries to a tag, vanilla's or a new one, like a tag file in the plugin's <c>data/</c> folder would: the
     /// entries are identifiers, or other tags' identifiers after a <c>#</c>, and the tag fails (keeping its earlier
     /// entries) when one doesn't exist. The entries are removed when the plugin unloads.

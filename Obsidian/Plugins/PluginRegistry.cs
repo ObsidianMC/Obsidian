@@ -118,6 +118,20 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         return RegisterEntity(container, identifier, properties);
     }
 
+    public ParticleDefinition RegisterParticle(string identifier)
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        return RegisterParticle(container, identifier);
+    }
+
+    public MenuDefinition RegisterMenu(string identifier, int rows, int columns = 9)
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        return RegisterMenu(container, identifier, rows, columns);
+    }
+
     // The content registrations below are shared with the Obsidian client, which registers its mods' content the
     // same way, so that it gets the same ids as a server running the same mods.
 
@@ -173,6 +187,26 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
             throw new InvalidOperationException($"{container.Info.Name} is unloading.");
 
         return definition;
+    }
+
+    /// <summary>
+    /// Registers <paramref name="container"/>'s particle type. It has no behaviour, so there's nothing to bind.
+    /// </summary>
+    internal static ParticleDefinition RegisterParticle(PluginContainer container, string identifier)
+    {
+        CheckIdentifier(container, identifier);
+
+        return ParticleTypesRegistry.Register(identifier);
+    }
+
+    /// <summary>
+    /// Registers <paramref name="container"/>'s menu type. It has no behaviour, so there's nothing to bind.
+    /// </summary>
+    internal static MenuDefinition RegisterMenu(PluginContainer container, string identifier, int rows, int columns)
+    {
+        CheckIdentifier(container, identifier);
+
+        return MenuTypesRegistry.Register(identifier, rows, columns);
     }
 
     public IPluginRegistry AddToTag(string registry, string tag, params IEnumerable<string> entries)

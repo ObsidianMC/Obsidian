@@ -1,0 +1,76 @@
+using Obsidian.API.Plugins;
+
+namespace Obsidian.API;
+
+/// <summary>
+/// A menu type a plugin registered with <see cref="IPluginRegistry.RegisterMenu"/>, like a NeoForge mod's
+/// <c>MenuType</c>: a grid of <see cref="Rows"/> by <see cref="Columns"/> slots above the player's inventory. Open one
+/// with <see cref="IPlayer.OpenInventoryAsync"/> and a <see cref="MenuContainer"/> of the type.
+/// </summary>
+/// <remarks>
+/// The server owns the definition: it keeps its instance, identifier, id and shape until the server stops, even when
+/// the plugin reloads or unloads.
+/// </remarks>
+public sealed class MenuDefinition
+{
+    internal MenuDefinition(int id, string identifier, int rows, int columns)
+    {
+        this.Id = id;
+        this.Identifier = identifier;
+        this.Rows = rows;
+        this.Columns = columns;
+    }
+
+    /// <summary>
+    /// The menu type's identifier, like <c>myplugin:pouch</c>.
+    /// </summary>
+    public string Identifier { get; }
+
+    /// <summary>
+    /// The menu type's id in the menu registry. Vanilla's come first; plugins' follow, in the order they were first
+    /// registered.
+    /// </summary>
+    public int Id { get; }
+
+    /// <summary>
+    /// How many rows of slots the menu has, from 1 to 6.
+    /// </summary>
+    public int Rows { get; }
+
+    /// <summary>
+    /// How many slots each row has, from 1 to 9.
+    /// </summary>
+    public int Columns { get; }
+
+    /// <summary>
+    /// How many slots the menu has, numbered row by row from 0; the player's inventory follows them, like in
+    /// vanilla's menus.
+    /// </summary>
+    public int SlotCount => this.Rows * this.Columns;
+
+    public override string ToString() => this.Identifier;
+}
+
+/// <summary>
+/// The slots of a plugin's menu (see <see cref="MenuDefinition"/>), opened with
+/// <see cref="IPlayer.OpenInventoryAsync"/>. Players move items in and out of it like a chest's;
+/// <see cref="Events.ContainerClickEventArgs"/> lets the plugin cancel or handle their clicks.
+/// </summary>
+public sealed class MenuContainer : BaseContainer
+{
+    /// <summary>
+    /// Creates an empty container of <paramref name="menu"/>'s type.
+    /// </summary>
+    /// <param name="menu">The menu type.</param>
+    /// <param name="title">The title the menu's screen shows.</param>
+    public MenuContainer(MenuDefinition menu, ChatMessage title) : base(menu.SlotCount)
+    {
+        this.Menu = menu;
+        this.Title = title;
+    }
+
+    /// <summary>
+    /// The menu type.
+    /// </summary>
+    public MenuDefinition Menu { get; }
+}

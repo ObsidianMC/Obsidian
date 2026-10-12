@@ -101,7 +101,8 @@ public sealed partial class Server : IServer
     {
         var registries = $"{ItemsRegistry.All.Count}/{BlocksRegistry.PluginBlocks.Count}/"
             + $"{EntityDefinitionsRegistry.PluginDefinitions.Count}/{CodecRegistry.Biomes.All.Count}/"
-            + $"{CodecRegistry.Dimensions.All.Count}/{CodecRegistry.DamageType.All.Count}/{PluginCodecs.Revision}";
+            + $"{CodecRegistry.Dimensions.All.Count}/{CodecRegistry.DamageType.All.Count}/{PluginCodecs.Revision}/"
+            + $"{MenuTypesRegistry.PluginMenus.Count}/{ParticleTypesRegistry.PluginParticles.Count}";
 
         Net.Payloads.NetworkProtocol[] protocols =
             [Net.Payloads.NetworkProtocol.Configuration, Net.Payloads.NetworkProtocol.Play];

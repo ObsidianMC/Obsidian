@@ -2,7 +2,8 @@ namespace Obsidian.Net.Payloads;
 
 /// <summary>
 /// The registries plugins add to that clients must agree with the server on, numbered as NeoForge's and Fabric's
-/// registry sync send them: blocks (whose order numbers block states), entity types and items.
+/// registry sync send them: blocks (whose order numbers block states), entity types, items, menu types and particle
+/// types.
 /// </summary>
 /// <remarks>
 /// The server sends the ones plugins added to; the Obsidian client checks what it receives against its own, which its
@@ -13,11 +14,13 @@ internal static class SyncedRegistries
     public const string Blocks = "minecraft:block";
     public const string EntityTypes = "minecraft:entity_type";
     public const string Items = "minecraft:item";
+    public const string Menus = "minecraft:menu";
+    public const string ParticleTypes = "minecraft:particle_type";
 
     /// <summary>
     /// The registries, in the order the server sends them.
     /// </summary>
-    public static ImmutableArray<string> Names { get; } = [Blocks, EntityTypes, Items];
+    public static ImmutableArray<string> Names { get; } = [Blocks, EntityTypes, Items, Menus, ParticleTypes];
 
     /// <summary>
     /// The registries plugins added to, with all their entries.
@@ -32,6 +35,8 @@ internal static class SyncedRegistries
         Blocks => BlocksRegistry.PluginBlocks.Count > 0,
         EntityTypes => EntityDefinitionsRegistry.PluginDefinitions.Count > 0,
         Items => ItemsRegistry.HasPluginItems,
+        Menus => MenuTypesRegistry.PluginMenus.Count > 0,
+        ParticleTypes => ParticleTypesRegistry.PluginParticles.Count > 0,
         _ => throw new ArgumentException($"{name} isn't a synced registry.", nameof(name))
     };
 
@@ -53,6 +58,14 @@ internal static class SyncedRegistries
                 .ToArray(),
             Items => ItemsRegistry.All
                 .Select(item => ((int)item.Id, item.UnlocalizedName))
+                .ToArray(),
+            Menus => MenuTypesRegistry.VanillaIdentifiers
+                .Select((identifier, id) => (id, identifier))
+                .Concat(MenuTypesRegistry.PluginMenus.Select(menu => (menu.Id, menu.Identifier)))
+                .ToArray(),
+            ParticleTypes => ParticleTypesRegistry.VanillaIdentifiers
+                .Select((identifier, id) => (id, identifier))
+                .Concat(ParticleTypesRegistry.PluginParticles.Select(particle => (particle.Id, particle.Identifier)))
                 .ToArray(),
             _ => throw new ArgumentException($"{name} isn't a synced registry.", nameof(name))
         };

@@ -269,7 +269,9 @@ public sealed partial class Player : Avatar, IClientPlayer
 
         await Client.QueuePacketAsync(new OpenScreenPacket(container, nextId));
 
-        if (container is CraftingTable { Type: InventoryType.Crafting })
+        // Like vanilla's menus, a plugin's is sent whole, its slots then the player's inventory, so that clients know
+        // how many slots it has before the player clicks.
+        if (container is CraftingTable { Type: InventoryType.Crafting } or MenuContainer)
             await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId,
                 container.Concat(this.Inventory.Skip(9).Take(36)).ToList()));
         else if (container.HasItems())

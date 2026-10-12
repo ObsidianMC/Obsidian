@@ -974,6 +974,36 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
+    public void SpawnParticles(
+        ParticleData particle,
+        VectorD position,
+        int count = 1,
+        VectorF spread = default,
+        float speed = 0,
+        bool force = false)
+    {
+        ArgumentNullException.ThrowIfNull(particle);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+
+        var packet = new LevelParticlesPacket
+        {
+            OverrideLimiter = force,
+            Position = position,
+            Offset = spread,
+            MaxSpeed = speed,
+            ParticleCount = count,
+            Data = particle
+        };
+
+        // Vanilla's ServerLevel.sendParticles range: 32 blocks, or 512 when the limiter is overridden.
+        var players = GetPlayersInRange(position, force ? 512 : 32)
+            .Select(player => player.EntityId)
+            .ToArray();
+
+        if (players.Length > 0)
+            this.PacketBroadcaster.QueuePacketTo(packet, players);
+    }
+
     public async ValueTask<bool> HandleBlockUpdateAsync(IBlockUpdate update)
     {
         if (update.Block is not IBlock block)

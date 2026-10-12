@@ -112,6 +112,30 @@ public interface ILevel : IAsyncDisposable
     public IEntity SpawnEntity(IEntity entity);
     public IEntity SpawnFallingBlock(VectorD position, IBlock block);
     public void SpawnExperienceOrbs(VectorD position, short count);
+
+    /// <summary>
+    /// Shows particles to the players within 32 blocks of <paramref name="position"/>, like vanilla's
+    /// <c>/particle</c>: with a count of 0, one particle moving along <paramref name="spread"/> times
+    /// <paramref name="speed"/>; otherwise <paramref name="count"/> particles scattered around the position by up to
+    /// about <paramref name="spread"/> on each axis, moving randomly at up to about <paramref name="speed"/>.
+    /// </summary>
+    /// <param name="particle">
+    /// The particle: a plugin's <see cref="ParticleDefinition"/>, or vanilla's particle data.
+    /// </param>
+    /// <param name="position">Where the particles appear.</param>
+    /// <param name="count">How many particles appear.</param>
+    /// <param name="spread">How far they're scattered on each axis, or the direction of a single particle.</param>
+    /// <param name="speed">How fast they move.</param>
+    /// <param name="force">
+    /// Whether players up to 512 blocks away see them too, whatever their particle setting.
+    /// </param>
+    public void SpawnParticles(
+        ParticleData particle,
+        VectorD position,
+        int count = 1,
+        VectorF spread = default,
+        float speed = 0,
+        bool force = false);
     public IEnumerable<IPlayer> PlayersInRange(Vector location);
     public Task DoWorldTickAsync();
     public Task FlushRegionsAsync();
