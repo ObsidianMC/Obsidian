@@ -117,6 +117,11 @@ internal static partial class PluginDimensions
     /// Adds the files' dimensions that weren't added yet. Ones added before stay as they were, and those whose file
     /// changed are logged: the change applies after a restart.
     /// </summary>
+    /// <remarks>
+    /// A file whose dimension isn't kept, because another plugin defines it first or the dimension was added before,
+    /// is released (see <see cref="MojangDimension.Release"/>), so that it doesn't keep the plugins it's made of
+    /// loaded. A released file isn't added again: its plugin is reloaded to read it again.
+    /// </remarks>
     /// <param name="files">The loaded plugins' files, in load order.</param>
     /// <returns>Whether a dimension was added.</returns>
     public static bool Apply(IEnumerable<DimensionFile> files, ILogger logger)
@@ -132,42 +137,57 @@ internal static partial class PluginDimensions
                 if (byIdentifier.TryGetValue(file.Identifier, out var first))
                 {
                     Log.Duplicate(logger, file.Identifier, file.Source, first.Source);
+                    Discard(file);
                     continue;
                 }
 
                 byIdentifier.Add(file.Identifier, file);
 
                 var existing = current.FirstOrDefault(entry => entry.Identifier == file.Identifier);
-                if (existing is null)
+                if (ReferenceEquals(existing, file))
+                    continue;
+
+                if (existing is not null && !existing.Dimension.IsReleased)
                 {
-                    current = current.Add(file);
-                    changed = true;
+                    if (existing.Json != file.Json)
+                        Log.ChangedUntilRestart(logger, file.Identifier, file.Source);
+
+                    Discard(file);
+                    continue;
                 }
-                else if (existing.Dimension.IsReleased)
+
+                if (file.Dimension.IsReleased)
                 {
-                    // Released when its plugin unloaded: a level of it stays stopped until a restart, but one not
-                    // created yet can be, with the plugin loaded again.
-                    current = current.Replace(existing, file);
-                    changed = true;
+                    Log.ReleasedUntilReload(logger, file.Identifier, file.Source);
+                    continue;
                 }
-                else if (existing.Json != file.Json)
-                {
-                    Log.ChangedUntilRestart(logger, file.Identifier, file.Source);
-                }
+
+                // A dimension released when its plugin unloaded keeps its level stopped until a restart, but one not
+                // created yet can be, with the plugin loaded again.
+                current = existing is null ? current.Add(file) : current.Replace(existing, file);
+                changed = true;
             }
 
             added = current;
 
             return changed;
+
+            void Discard(DimensionFile file)
+            {
+                if (!current.Any(entry => ReferenceEquals(entry, file)) && !file.Dimension.IsReleased)
+                    file.Dimension.Release();
+            }
         }
     }
 
     /// <summary>
     /// Releases the dimensions whose generators are made of an unloading plugin's types (see
-    /// <see cref="MojangDimension.Release"/>), so that they don't keep its code loaded.
+    /// <see cref="MojangDimension.Release"/>), so that they don't keep its code loaded: those added, and those of
+    /// the files plugins hold that weren't.
     /// </summary>
-    /// <returns>The dimensions released.</returns>
-    public static IReadOnlyList<MojangDimension> Release(PluginContainer plugin)
+    /// <param name="held">The files plugins hold, the unloading plugin's included.</param>
+    /// <returns>The added dimensions released.</returns>
+    public static IReadOnlyList<MojangDimension> Release(PluginContainer plugin, IEnumerable<DimensionFile> held)
     {
         lock (applying)
         {
@@ -178,6 +198,12 @@ internal static partial class PluginDimensions
 
             foreach (var dimension in released)
                 dimension.Release();
+
+            foreach (var file in held)
+            {
+                if (!file.Dimension.IsReleased && file.Dimension.Plugins.Contains(plugin))
+                    file.Dimension.Release();
+            }
 
             return released;
         }
@@ -192,6 +218,11 @@ internal static partial class PluginDimensions
         [LoggerMessage(Level = LogLevel.Warning,
             Message = "Kept dimension {Identifier} as it was: the change in {Source} applies after a restart")]
         public static partial void ChangedUntilRestart(ILogger logger, string identifier, string source);
+
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "Left out dimension {Identifier} from {Source}: a plugin it generates with unloaded since it "
+                + "was read, so its plugin has to be reloaded to add it")]
+        public static partial void ReleasedUntilReload(ILogger logger, string identifier, string source);
     }
 }
 

@@ -782,7 +782,10 @@ public sealed partial class PluginManager : IAsyncDisposable
             generator.Stop();
         }
 
-        PluginDimensions.Release(plugin);
+        // The plugin is out of the list by now, but its files' dimensions may be made of its types too.
+        PluginDimensions.Release(
+            plugin,
+            this.plugins.SelectMany(loaded => loaded.DimensionFiles).Concat(plugin.DimensionFiles));
     }
 
     // The loaded plugins' dimensions are added. Ones no plugin has any more stay, with their levels.

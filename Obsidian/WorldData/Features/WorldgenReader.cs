@@ -327,6 +327,8 @@ internal sealed partial class WorldgenReader(
                 throw Error(Field(path, required.Name.ToSnakeCase()), "is required");
         }
 
+        CheckParameters(instance, path);
+
         return instance;
     }
 

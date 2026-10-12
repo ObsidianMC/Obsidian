@@ -1,5 +1,6 @@
 using Obsidian.API.World.Generator.DensityFunctions;
 using Obsidian.API.World.Generator.Noise;
+using Obsidian.API.World.Generator.SurfaceConditions;
 using System.IO;
 using System.Text.Json;
 using static Obsidian.Registries.Codecs.CodecJson;
@@ -12,6 +13,14 @@ namespace Obsidian.WorldData.Features;
 // codecs make where they're cheap.
 internal sealed partial class WorldgenReader
 {
+    // Vanilla's bounds for density function values, and for the heights density functions and anchors name: twice
+    // and once the range dimension types can have.
+    private const double MaxNoiseValue = 1_000_000.0;
+    private const int MinFunctionY = -4064;
+    private const int MaxFunctionY = 4062;
+    private const int MinAnchorY = -2032;
+    private const int MaxAnchorY = 2031;
+
     // Vanilla's NoiseGeneratorSettings codec requires every field.
     private static readonly string[] noiseSettingsFields =
     [
@@ -94,7 +103,7 @@ internal sealed partial class WorldgenReader
         {
             return new ConstantDensityFunction
             {
-                Argument = Double(json, path, -1_000_000.0, 1_000_000.0)
+                Argument = Double(json, path, -MaxNoiseValue, MaxNoiseValue)
             };
         }
 
@@ -123,6 +132,61 @@ internal sealed partial class WorldgenReader
             Required(json, path, field);
 
         return (NoiseSetting)this.ReadObject(typeof(NoiseSetting), json, null, null, path);
+    }
+
+    // The ranges vanilla's codecs give the values of density functions and surface conditions. Generation relies on
+    // them: a find_top_surface with no cell height would never end, for one.
+    private static void CheckParameters(object value, string path)
+    {
+        switch (value)
+        {
+            case ConstantDensityFunction constant:
+                CheckNoiseValue(constant.Argument, path, "argument");
+                break;
+            case ClampDensityFunction clamp:
+                CheckNoiseValue(clamp.Min, path, "min");
+                CheckNoiseValue(clamp.Max, path, "max");
+                break;
+            case RangeChoiceDensityFunction choice:
+                CheckNoiseValue(choice.MinInclusive, path, "min_inclusive");
+                CheckNoiseValue(choice.MaxExclusive, path, "max_exclusive");
+                break;
+            case YClampedGradientDensityFunction gradient:
+                CheckRange(gradient.FromY, MinFunctionY, MaxFunctionY, path, "from_y");
+                CheckRange(gradient.ToY, MinFunctionY, MaxFunctionY, path, "to_y");
+                CheckNoiseValue(gradient.FromValue, path, "from_value");
+                CheckNoiseValue(gradient.ToValue, path, "to_value");
+                break;
+            case FindTopSurface surface:
+                CheckRange(surface.LowerBound, MinFunctionY, MaxFunctionY, path, "lower_bound");
+
+                if (surface.CellHeight < 1)
+                    throw Error(Field(path, "cell_height"), $"{surface.CellHeight} isn't positive");
+
+                break;
+            case OldBlendedNoiseDensityFunction blended:
+                CheckRange(blended.XzScale, 0.001, 1000.0, path, "xz_scale");
+                CheckRange(blended.YScale, 0.001, 1000.0, path, "y_scale");
+                CheckRange(blended.XzFactor, 0.001, 1000.0, path, "xz_factor");
+                CheckRange(blended.YFactor, 0.001, 1000.0, path, "y_factor");
+                CheckRange(blended.SmearScaleMultiplier, 1.0, 8.0, path, "smear_scale_multiplier");
+                break;
+            case WaterSurfaceCondition water:
+                CheckRange(water.SurfaceDepthMultiplier, -20, 20, path, "surface_depth_multiplier");
+                break;
+            case YAboveSurfaceCondition above:
+                CheckRange(above.SurfaceDepthMultiplier, -20, 20, path, "surface_depth_multiplier");
+                break;
+        }
+    }
+
+    private static void CheckNoiseValue(double value, string path, string field) =>
+        CheckRange(value, -MaxNoiseValue, MaxNoiseValue, path, field);
+
+    private static void CheckRange(double value, double min, double max, string path, string field)
+    {
+        if (value < min || value > max)
+            throw Error(Field(path, field), FormattableString.Invariant($"{value} isn't from {min} to {max}"));
     }
 
     // Vanilla's NoiseSettings codec: the noise's cells must lie in the range dimension types can have.
@@ -179,7 +243,7 @@ internal sealed partial class WorldgenReader
         };
     }
 
-    // Vanilla's VerticalAnchor codec: exactly one of its three forms.
+    // Vanilla's VerticalAnchor codec: exactly one of its three forms, in the range dimension types can have.
     private static SurfaceAnchor ReadSurfaceAnchor(JsonElement json, string path)
     {
         const string expected = "expected one of absolute, above_bottom or below_top";
@@ -189,7 +253,7 @@ internal sealed partial class WorldgenReader
             throw Error(path, expected);
 
         var property = properties[0];
-        var value = Int(property.Value, Field(path, property.Name));
+        var value = Int(property.Value, Field(path, property.Name), MinAnchorY, MaxAnchorY);
 
         return property.Name switch
         {

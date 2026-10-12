@@ -1,5 +1,7 @@
+using Microsoft.Extensions.Logging;
 using Obsidian.API.World;
 using Obsidian.Nbt;
+using Obsidian.Plugins;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Lighting;
@@ -12,7 +14,7 @@ namespace Obsidian.WorldData.Generators;
 /// <summary>
 /// Vanilla's overworld generator.
 /// </summary>
-internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
+internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 {
     // Chunk locks are striped so their number stays bounded; stripes are always taken in ascending order.
     private const int LockStripeCount = 4096;
@@ -70,7 +72,7 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
             using var calls = builder.EnterGenerator();
             return new StructureLocator(manager).FindNearest(targets, position, 16, false);
         }
-        catch (GeneratorStoppedException)
+        catch (Exception ex) when (this.Contain(ex))
         {
             return null;
         }
@@ -78,14 +80,17 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
     private ILevel world;
 
+    // Set by the first plugin failure contained, which is the one logged.
+    private int failed;
+
     private readonly SemaphoreSlim[] chunkLocks = [.. Enumerable.Range(0, LockStripeCount).Select(_ => new SemaphoreSlim(1, 1))];
 
     // Carving and decorating steps in flight, so requests that need the same step share it instead of queueing on its locks.
     private readonly ConcurrentDictionary<(int X, int Z, ChunkGenStage Stage), Lazy<Task>> steps = [];
 
     /// <remarks>
-    /// Once the generator stopped (see <see cref="Stop"/>), a chunk not generated yet is returned as it is: its level
-    /// keeps it, and generates it after a restart.
+    /// Once the generator stopped (see <see cref="Stop"/> and <see cref="Contain"/>), a chunk not generated yet is
+    /// returned as it is: its level keeps it, and generates it after a restart.
     /// </remarks>
     public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null,
         ChunkGenStage stage = ChunkGenStage.full)
@@ -96,10 +101,60 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
         {
             return await this.GenerateChunkAsync(cx, cz, chunk, stage, decorateInOrder: false);
         }
-        catch (GeneratorStoppedException)
+        catch (Exception ex) when (this.Contain(ex))
         {
             return chunk;
         }
+    }
+
+    /// <summary>
+    /// Contains a failure of plugins' code, which would otherwise reach the level and end chunk management, or the
+    /// server: it's logged with the plugins' names, and the generator stops like it does when they unload (see
+    /// <see cref="Stop"/>). Chunks keep the status of the steps they finished, so the failed ones generate after a
+    /// restart. The dimension isn't released, as its plugins are still loaded, and vanilla's are shared.
+    /// </summary>
+    /// <remarks>
+    /// A failure is plugins' when it's raised in a step of a dimension whose noise settings or biome source are made
+    /// of their types (<see cref="MojangDimension.Plugins"/>), or placing a feature made of their types: their
+    /// density functions run all through the noise, so where the failure was raised can't tell whose it is.
+    /// Failures generating with Obsidian's types alone aren't contained.
+    /// </remarks>
+    /// <returns>Whether the caller goes on as if the generator had stopped: the failure was plugins', or the
+    /// generator had stopped already.</returns>
+    internal bool Contain(Exception exception)
+    {
+        if (exception is GeneratorStoppedException)
+            return true;
+
+        var plugins = this.FailedPlugins(exception);
+        if (plugins.IsEmpty)
+            return false;
+
+        Volatile.Write(ref this.builder, null);
+
+        // Steps running alongside may fail too, once the first did.
+        if (Interlocked.Exchange(ref this.failed, 1) == 0 && this.world is AbstractLevel level)
+        {
+            var names = string.Join(", ", plugins.Select(plugin => plugin.Info.Name));
+            Log.PluginFailed(level.Logger, exception, this.Dimension.Identifier, names);
+        }
+
+        return true;
+    }
+
+    // The plugins whose code a failure is attributed to (see Contain), or none.
+    private ImmutableArray<PluginContainer> FailedPlugins(Exception exception)
+    {
+        if (exception is OutOfMemoryException)
+            return [];
+
+        for (var inner = exception; inner is not null; inner = inner.InnerException)
+        {
+            if (inner is PluginGenerationException failure)
+                return failure.Plugins;
+        }
+
+        return this.Dimension.Plugins;
     }
 
     /// <summary>
@@ -195,9 +250,21 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
     /// <summary>
     /// Vanilla's initial spawn: the climate spawn chunk at the default spawn height, moved onto the first standable block
-    /// found in the chunks spiraling out from it.
+    /// found in the chunks spiraling out from it. None once the generator stopped.
     /// </summary>
     public virtual async ValueTask<VectorD?> FindSpawnPointAsync()
+    {
+        try
+        {
+            return await this.SearchSpawnAsync();
+        }
+        catch (Exception ex) when (this.Contain(ex))
+        {
+            return null;
+        }
+    }
+
+    private async ValueTask<VectorD?> SearchSpawnAsync()
     {
         var (x, z) = this.Running.FindClimateSpawn();
         var spawnChunkX = x >> 4;
@@ -398,7 +465,7 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
                 level.GetLoadedChunk(position.X >> 4, position.Z >> 4)
                     ?.GetBlock(position.X, position.Y - 1, position.Z).RegistryId == BlockIds.NetherBricks);
         }
-        catch (GeneratorStoppedException)
+        catch (Exception ex) when (this.Contain(ex))
         {
             return false;
         }
@@ -494,12 +561,30 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     public void Init(ILevel world)
     {
         this.world = world;
-        var builder = new ChunkBuilder(this.Dimension, RandomState.ParseSeed(world.Seed));
+
+        // Binding the noise runs plugins' code, which may fail: the level is then created stopped.
+        ChunkBuilder builder;
+
+        try
+        {
+            builder = new ChunkBuilder(this.Dimension, RandomState.ParseSeed(world.Seed));
+        }
+        catch (Exception ex) when (this.Contain(ex))
+        {
+            return;
+        }
 
         if (builder.Structures is StructureManager structures)
             structures.LoadStartChunk = this.LoadStartChunk;
 
         Volatile.Write(ref this.builder, builder);
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Error,
+            Message = "{Level} stopped generating new chunks until a restart: generating with {Plugins} failed")]
+        public static partial void PluginFailed(ILogger logger, Exception exception, string level, string plugins);
     }
 
     private readonly struct ChunkLocks(SemaphoreSlim[] locks, SortedSet<int> stripes) : IDisposable

@@ -220,6 +220,11 @@ internal sealed class ChunkBuilder
                 onPlaced,
                 skip);
         }
+        catch (FeaturePlacementException ex) when (decoration.Owners.TryGetValue(ex.Feature, out var owners))
+        {
+            // A feature made of plugins' types ran their code: the failure is theirs.
+            throw new PluginGenerationException(owners, ex.Message, ex);
+        }
         finally
         {
             for (var i = calls.Length - 1; i >= 0; i--)

@@ -37,7 +37,7 @@ internal sealed class ExplorationMaps(AbstractLevel level, MojangGenerator gener
             using var calls = builder.EnterGenerator();
             return this.Create(request, builder);
         }
-        catch (GeneratorStoppedException)
+        catch (Exception ex) when (generator.Contain(ex))
         {
             return null;
         }

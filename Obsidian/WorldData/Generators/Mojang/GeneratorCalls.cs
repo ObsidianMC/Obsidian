@@ -56,3 +56,15 @@ internal readonly struct GeneratorCalls : IDisposable
 /// A dimension can't generate any more: a plugin its generator is made of unloaded.
 /// </summary>
 internal sealed class GeneratorStoppedException(string message) : InvalidOperationException(message);
+
+/// <summary>
+/// Generating failed running plugins' code, such as placing a feature made of their types.
+/// </summary>
+/// <param name="plugins">The plugins whose code failed.</param>
+internal sealed class PluginGenerationException(
+    ImmutableArray<PluginContainer> plugins,
+    string message,
+    Exception innerException) : InvalidOperationException(message, innerException)
+{
+    public ImmutableArray<PluginContainer> Plugins { get; } = plugins;
+}

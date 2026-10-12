@@ -130,7 +130,7 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal Action<int, int>? GenerationProgress { get; set; }
 
-    protected ILogger Logger { get; }
+    protected internal ILogger Logger { get; }
 
     /// <summary>
     /// The level's fluids and their scheduled ticks.

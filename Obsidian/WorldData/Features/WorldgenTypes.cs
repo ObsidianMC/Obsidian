@@ -178,11 +178,22 @@ internal sealed record WorldgenTypeRegistration(string Identifier, Type Base, Ty
 
     private static bool HasFunctionChildren(Type type) => type
         .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-        .Select(property => property.PropertyType)
-        .Select(propertyType => propertyType.IsArray
-            ? propertyType.GetElementType()!
-            : propertyType.IsGenericType ? propertyType.GenericTypeArguments[^1] : propertyType)
-        .Any(propertyType => propertyType.IsAssignableTo(typeof(IDensityFunction))
-            || propertyType.IsAssignableTo(typeof(INoise))
-            || propertyType.IsAssignableTo(typeof(ISpline)));
+        .Any(property => HoldsFunctions(property.PropertyType));
+
+    // A function, noise or spline, or anything made of them at any depth: the reader fills lists of lists, and
+    // nullable values, so every element and type argument is looked into.
+    private static bool HoldsFunctions(Type type)
+    {
+        if (type.IsAssignableTo(typeof(IDensityFunction))
+            || type.IsAssignableTo(typeof(INoise))
+            || type.IsAssignableTo(typeof(ISpline)))
+        {
+            return true;
+        }
+
+        if (type.IsArray)
+            return HoldsFunctions(type.GetElementType()!);
+
+        return type.IsGenericType && type.GenericTypeArguments.Any(HoldsFunctions);
+    }
 }

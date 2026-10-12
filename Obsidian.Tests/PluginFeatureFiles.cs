@@ -254,7 +254,7 @@ public class PluginFeatureFiles
         Assert.False(HasDiamondBlocks(chunks.Get(8, 8)));
     }
 
-    internal sealed class ListLogger : ILogger
+    internal class ListLogger : ILogger
     {
         public List<string> Messages { get; } = [];
 
@@ -265,6 +265,8 @@ public class PluginFeatureFiles
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
             Func<TState, Exception?, string> formatter) => this.Messages.Add(formatter(state, exception));
     }
+
+    internal sealed class ListLogger<T> : ListLogger, ILogger<T>;
 
     private static FeatureFile Parse(string registry, string identifier, string json) =>
         PluginFeatures.Parse(registry, identifier, "test", Encoding.UTF8.GetBytes(json));

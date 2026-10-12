@@ -421,14 +421,27 @@ internal sealed class WorldgenNoise
     /// <summary>
     /// A reader of other data, like a level stem's biome source, whose density functions and noises are these.
     /// </summary>
-    /// <param name="created">Called with the type of every object created.</param>
-    public WorldgenReader Reader(Action<Type>? created = null) => new(
+    /// <param name="owners">Gets the plugins whose types what's read is made of: those of the objects it creates,
+    /// and the owners of the entries it refers to.</param>
+    public WorldgenReader Reader(ISet<PluginContainer>? owners = null) => new(
         this.Types,
         identifier => throw new InvalidDataException($"{identifier}: features can't be used here"),
         identifier => throw new InvalidDataException($"{identifier}: features can't be used here"),
-        created,
-        this.FindDensityFunction,
-        this.FindNoise);
+        type =>
+        {
+            if (WorldgenDependencies<PluginContainer>.Owner(type) is PluginContainer owner)
+                owners?.Add(owner);
+        },
+        identifier => this.Referenced(this.FindDensityFunction(identifier), owners),
+        identifier => this.Referenced(this.FindNoise(identifier), owners));
+
+    // An entry referred to, which brings its owners along: generating with it runs their code.
+    private T Referenced<T>(T entry, ISet<PluginContainer>? owners)
+        where T : notnull
+    {
+        owners?.UnionWith(this.Owners(entry));
+        return entry;
+    }
 
     private IEnumerable<object> Dependencies(object entry) =>
         this.dependencies.TryGetValue(entry, out var dependencies) ? dependencies : [];

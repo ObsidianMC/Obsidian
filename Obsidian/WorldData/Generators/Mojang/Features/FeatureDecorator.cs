@@ -174,8 +174,11 @@ internal sealed class FeatureDecorator
                     }
                     catch (Exception exception)
                     {
-                        throw new InvalidOperationException(
-                            $"Failed to place feature '{feature.Identifier}' in chunk ({chunkX}, {chunkZ}) (decoration seed {decorationSeed}).", exception);
+                        throw new FeaturePlacementException(
+                            feature,
+                            $"Failed to place feature '{feature.Identifier}' in chunk ({chunkX}, {chunkZ}) "
+                            + $"(decoration seed {decorationSeed}).",
+                            exception);
                     }
                 }
             }
@@ -262,4 +265,13 @@ internal sealed class FeatureDecorator
             }
         }
     }
+}
+
+/// <summary>
+/// Placing a feature failed; the feature tells whose code ran (see <see cref="ChunkBuilder.Decorate"/>).
+/// </summary>
+internal sealed class FeaturePlacementException(PlacedFeature feature, string message, Exception innerException)
+    : InvalidOperationException(message, innerException)
+{
+    public PlacedFeature Feature { get; } = feature;
 }

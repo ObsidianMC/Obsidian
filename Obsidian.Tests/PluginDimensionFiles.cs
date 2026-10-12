@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Configuration;
@@ -233,6 +234,11 @@ public sealed class PluginDimensionFiles : IDisposable
             "probe:halves",
             typeof(BiomeSourceBase),
             typeof(HalvesSource)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:failing",
+            typeof(IDensityFunction),
+            typeof(FailingFunction)));
 
         // A density function with functions in it has to map them, or they'd stay unseeded without any error.
         Assert.Throws<ArgumentException>(() => WorldgenTypeRegistration.Create(
@@ -250,13 +256,18 @@ public sealed class PluginDimensionFiles : IDisposable
                 PluginNoise.Parse(PluginNoise.NoiseSettings, "probe:shelf_world", "test", Bytes(ShelfWorld)),
                 PluginNoise.Parse(PluginNoise.DensityFunction, "probe:ground", "test", Bytes(Ground)),
                 PluginNoise.Parse(PluginNoise.DensityFunction, "probe:loop", "test", Bytes("\"probe:loop\"")),
+                PluginNoise.Parse(PluginNoise.DensityFunction, "probe:stuck", "test", Bytes(Stuck)),
+                PluginNoise.Parse(PluginNoise.NoiseSettings, "probe:failing_world", "test", Bytes(FailingWorld)),
                 PluginNoise.Parse(PluginNoise.Noise, "probe:bumps", "test", Bytes(Bumps))
             ],
             types,
             logger);
 
-        // A file referring back to itself is left out, and the others load.
-        Assert.Contains("probe:loop refers back to itself", Assert.Single(logger.Messages));
+        // A file referring back to itself, or with a value vanilla's codec refuses, is left out; the others load.
+        Assert.Collection(
+            logger.Messages,
+            message => Assert.Contains("probe:loop refers back to itself", message),
+            message => Assert.Contains("cell_height: 0 isn't positive", message));
 
         var settings = noise.NoiseSettings["probe:shelf_world"];
         var shelf = Assert.IsType<ShelfFunction>(settings.NoiseRouter.FinalDensity);
@@ -305,6 +316,25 @@ public sealed class PluginDimensionFiles : IDisposable
         Assert.True(west.GetBlock(3, 38, 5).Is(BlockIds.Stone));
         Assert.True(west.GetBlock(3, 40, 5).IsAir);
 
+        // A plugin's code failing stops its level, rather than chunk management, and the chunk isn't generated.
+        var failing = new MojangDimension(
+            "stemfiles:failing",
+            "minecraft:overworld",
+            "probe:failing_world",
+            noise.NoiseSettings["probe:failing_world"],
+            read.CreateBiomeSource,
+            () => read.PossibleBiomes,
+            [plugin]);
+        var levelLogger = new PluginFeatureFiles.ListLogger<Dimension>();
+        await using (var failingLevel = CreateLevel(this.CreateWorld(), failing, levelLogger))
+        {
+            var failingGenerator = (LevelStemGenerator)failingLevel.Generator;
+
+            Assert.False((await failingGenerator.GenerateChunkAsync(0, 0)).IsGenerated);
+            Assert.Null(failingGenerator.Builder);
+            Assert.Contains("stemfiles:failing stopped generating", Assert.Single(levelLogger.Messages));
+        }
+
         // Unloading: the generator holds the plugin while a level is created with it, then refuses to generate.
         var world = this.CreateWorld();
         await using var level = CreateLevel(world, dimension);
@@ -327,6 +357,15 @@ public sealed class PluginDimensionFiles : IDisposable
     }
 
     private const string Bumps = """{ "firstOctave": -4, "amplitudes": [1.0, 0.5] }""";
+
+    // Vanilla's codec wants a positive cell height: with none, the search would never end.
+    private const string Stuck = """
+        { "type": "find_top_surface", "density": 0, "upper_bound": 0, "lower_bound": 0, "cell_height": 0 }
+        """;
+
+    private static readonly string FailingWorld = ShelfWorld.Replace(
+        """{ "type": "probe:shelf", "y": 40, "argument": "probe:ground" }""",
+        """{ "type": "probe:failing" }""");
 
     // Solid, from a plugin noise, at least 2.5 everywhere.
     private const string Ground = """
@@ -392,6 +431,18 @@ public sealed class PluginDimensionFiles : IDisposable
             Argument = visitor.Map(this.Argument),
             Y = this.Y
         });
+    }
+
+    // A plugin's density function whose code fails.
+    public sealed class FailingFunction : IDensityFunction
+    {
+        public string Type => "probe:failing";
+
+        public double MinValue => -1.0;
+
+        public double MaxValue => 1.0;
+
+        public double GetValue(double x, double y, double z) => throw new InvalidOperationException("probe failed");
     }
 
     // A density function that doesn't map the function in it.
@@ -570,10 +621,10 @@ public sealed class PluginDimensionFiles : IDisposable
     }
 
     // The level the server creates for a plugin's dimension (see WorldManager.AddPluginDimensionsAsync).
-    private static Dimension CreateLevel(World world, MojangDimension dimension)
+    private static Dimension CreateLevel(World world, MojangDimension dimension, ILogger<Dimension>? logger = null)
     {
         var level = new Dimension(
-            NullLogger<Dimension>.Instance,
+            logger ?? NullLogger<Dimension>.Instance,
             null!,
             new TestOptionsMonitor<ServerConfiguration>(new ServerConfiguration()),
             null!,

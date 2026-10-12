@@ -165,17 +165,12 @@ internal static class LevelStemData
     }
 
     // A biome source type a plugin registered, read like its other worldgen types. Its possible biomes are read
-    // here, so that ordering features doesn't call the plugin.
+    // here, so that ordering features doesn't call the plugin. The plugins it's made of, counting those of the
+    // density functions and noises it names, are added to the dimension's.
     private static (Func<RandomState, IClimateBiomeSource> Create, Func<IReadOnlyList<BiomeCodec>> PossibleBiomes)
         PluginSource(JsonElement value, string path, WorldgenNoise noise, HashSet<PluginContainer> plugins)
     {
-        void OnCreated(Type type)
-        {
-            if (WorldgenDependencies<PluginContainer>.Owner(type) is PluginContainer owner)
-                plugins.Add(owner);
-        }
-
-        var source = noise.Reader(OnCreated).Read<BiomeSourceBase>(value, path);
+        var source = noise.Reader(plugins).Read<BiomeSourceBase>(value, path);
         var biomesPath = CodecJson.Field(path, "possible_biomes");
         IReadOnlyList<string> names;
 
