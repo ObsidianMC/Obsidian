@@ -809,7 +809,9 @@ The rules:
   the structure, its pools or the processor lists they name) is a call into the plugin, like placing its features.
   One whose plugin unloads isn't started or placed, and its failing stops the dimension like a failing feature (see
   [Noise types](#noise-types)). A jigsaw's pieces name pools by identifier, so every jigsaw structure counts the
-  plugins of every pool read from files.
+  plugins of every pool read from files. A start keeps the plugins it started with: once one unloads, the start isn't
+  placed any more, even if its structure set stays (a vanilla set whose overridden template reached the plugin's
+  pool, say), and the set starts again without the plugin in chunks not generated yet, with the state the start had.
 - Explorer maps and dolphins find vanilla's structures by vanilla's structure tags; plugins can't add structure
   tags yet, so they don't find plugins' structures.
 

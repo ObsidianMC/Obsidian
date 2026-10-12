@@ -46,7 +46,7 @@ internal sealed class StructureManager : IStructurePlacementState
     private readonly Lock layoutLock = new();
     private StructureLayout layout;
 
-    // See GetReachingStarts. Per manager, and its values don't reference the manager, so idle threads don't keep it alive.
+    // See FindReaching. Per manager, and its values don't reference the manager, so idle threads don't keep it alive.
     // Replaced when structures change, so idle threads don't keep the starts of plugins that are gone either: the
     // previous one lets go of its values once it's collected.
     private ThreadLocal<ReachingStarts?> lastReachingStarts = new();
@@ -120,17 +120,25 @@ internal sealed class StructureManager : IStructurePlacementState
     /// <summary>
     /// The structures that start in a chunk (vanilla's structure starts status), at most one per structure set.
     /// </summary>
-    public StructureStart[] GetStarts(int chunkX, int chunkZ) =>
-        this.StartCache.Get(chunkX, chunkZ, this.Layout, this.CreateStart);
+    public StructureStart[] GetStarts(int chunkX, int chunkZ)
+    {
+        // The cache gives none for a layout older than one it was pruned for: the current one is read again.
+        while (true)
+        {
+            var made = this.StartCache.Get(chunkX, chunkZ, this.Layout, this.CreateStart);
+            if (made is not null)
+                return made.Starts;
+        }
+    }
 
     /// <summary>
     /// Moves to the current structures, if plugins changed them, and drops the starts of structure sets that are
-    /// gone, so that the plugins they came from aren't kept.
+    /// gone, and those of plugins that are unloading, so that the plugins aren't kept.
     /// </summary>
     public void Refresh()
     {
         var layout = this.Layout;
-        this.StartCache.Prune(layout.Source.Sets.Values.ToHashSet());
+        this.StartCache.Prune(layout.Source);
         Volatile.Write(ref this.lastReachingStarts, new ThreadLocal<ReachingStarts?>());
 
         foreach (var placement in this.ringPositions.Keys)
@@ -143,39 +151,44 @@ internal sealed class StructureManager : IStructurePlacementState
     /// <summary>
     /// The starts of <paramref name="structure"/> whose box reaches the chunk, in the order vanilla places them.
     /// </summary>
-    public List<StructureStart> GetReferencingStarts(int chunkX, int chunkZ, Structure structure)
-    {
-        // Vanilla adds the reference chunks to a LongOpenHashSet in this order and places the starts in the set's order.
-        List<long>? references = null;
-        Dictionary<long, StructureStart>? byChunk = null;
-
-        foreach (var (key, start) in this.GetReachingStarts(chunkX, chunkZ))
-        {
-            if (start.Structure != structure)
-                continue;
-
-            (references ??= []).Add(key);
-            (byChunk ??= [])[key] = start;
-        }
-
-        return references is null ? [] : [.. LongHashSetOrder.Order(references).Select(key => byChunk![key])];
-    }
+    public List<StructureStart> GetReferencingStarts(int chunkX, int chunkZ, Structure structure) =>
+        this.FindReaching(chunkX, chunkZ).Of(structure);
 
     /// <summary>
-    /// The starts whose box reaches the chunk with their start chunk's key, start chunk by start chunk (X, then Z).
+    /// The starts whose box reaches the chunk, all made for the current layout: what decorating the chunk places.
     /// </summary>
     /// <remarks>
     /// Decorating a chunk asks for the starts of every structure in turn, so each thread keeps the last chunk's starts.
     /// Starts don't change once created.
     /// </remarks>
-    private List<(long Key, StructureStart Start)> GetReachingStarts(int chunkX, int chunkZ)
+    public ReachingStarts FindReaching(int chunkX, int chunkZ)
     {
-        var version = this.Layout.Version;
-        var cache = Volatile.Read(ref this.lastReachingStarts);
-        var last = cache.Value;
-        if (last is not null && last.Version == version && last.ChunkX == chunkX && last.ChunkZ == chunkZ)
-            return last.Starts;
+        while (true)
+        {
+            var layout = this.Layout;
+            var cache = Volatile.Read(ref this.lastReachingStarts);
+            var last = cache.Value;
+            if (last is not null && last.Layout == layout && last.ChunkX == chunkX && last.ChunkZ == chunkZ)
+                return last;
 
+            if (this.TryFindReaching(layout, chunkX, chunkZ) is ReachingStarts found)
+            {
+                cache.Value = found;
+                return found;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Every start whose box reaches the chunk, of any structure: the starts placed when the chunk is decorated.
+    /// </summary>
+    public IEnumerable<StructureStart> GetStartsReaching(int chunkX, int chunkZ) =>
+        this.FindReaching(chunkX, chunkZ).Starts;
+
+    // The starts reaching the chunk, made for the layout, or null once a later layout replaced it: start chunks with
+    // starts of different layouts would place structures of both, or leave some out.
+    private ReachingStarts? TryFindReaching(StructureLayout layout, int chunkX, int chunkZ)
+    {
         var minX = chunkX << 4;
         var minZ = chunkZ << 4;
         var reaching = new List<(long, StructureStart)>();
@@ -184,7 +197,11 @@ internal sealed class StructureManager : IStructurePlacementState
         {
             for (var z = chunkZ - ReferenceRadius; z <= chunkZ + ReferenceRadius; z++)
             {
-                foreach (var start in this.GetStarts(x, z))
+                var made = this.StartCache.Get(x, z, layout, this.CreateStart);
+                if (made is null || made.Version > layout.Version && this.Layout != layout)
+                    return null;
+
+                foreach (var start in made.Starts)
                 {
                     if (start.BoundingBox.Intersects(minX, minZ, minX + 15, minZ + 15))
                         reaching.Add((ChunkKey(x, z), start));
@@ -192,29 +209,7 @@ internal sealed class StructureManager : IStructurePlacementState
             }
         }
 
-        cache.Value = new ReachingStarts(version, chunkX, chunkZ, reaching);
-        return reaching;
-    }
-
-    /// <summary>
-    /// Every start whose box reaches the chunk, of any structure: the starts placed when the chunk is decorated.
-    /// </summary>
-    public IEnumerable<StructureStart> GetStartsReaching(int chunkX, int chunkZ)
-    {
-        var minX = chunkX << 4;
-        var minZ = chunkZ << 4;
-
-        for (var x = chunkX - ReferenceRadius; x <= chunkX + ReferenceRadius; x++)
-        {
-            for (var z = chunkZ - ReferenceRadius; z <= chunkZ + ReferenceRadius; z++)
-            {
-                foreach (var start in this.GetStarts(x, z))
-                {
-                    if (start.BoundingBox.Intersects(minX, minZ, minX + 15, minZ + 15))
-                        yield return start;
-                }
-            }
-        }
+        return new ReachingStarts(layout, chunkX, chunkZ, reaching);
     }
 
     /// <summary>
@@ -257,9 +252,10 @@ internal sealed class StructureManager : IStructurePlacementState
     /// </remarks>
     public IEnumerable<StructureStart> GetTerrainAdaptingStarts(int chunkX, int chunkZ)
     {
-        foreach (var structure in this.Layout.TerrainAdapting)
+        var reaching = this.FindReaching(chunkX, chunkZ);
+        foreach (var structure in reaching.Layout.TerrainAdapting)
         {
-            foreach (var start in this.GetReferencingStarts(chunkX, chunkZ, structure))
+            foreach (var start in reaching.Of(structure))
                 yield return start;
         }
     }
@@ -284,14 +280,22 @@ internal sealed class StructureManager : IStructurePlacementState
     /// <summary>
     /// Vanilla <c>ChunkGenerator.createStructures</c> for one structure set in one chunk.
     /// </summary>
-    private StructureStart? CreateStart(StructureLayout layout, StructureSet set, int chunkX, int chunkZ)
+    /// <param name="refused">Set when a structure the set picked can't start since a plugin it runs is unloading:
+    /// the set's start isn't known then.</param>
+    private StructureStart? CreateStart(
+        StructureLayout layout,
+        StructureSet set,
+        int chunkX,
+        int chunkZ,
+        out bool refused)
     {
+        refused = false;
         if (!set.Placement.IsStructureChunk(this, chunkX, chunkZ))
             return null;
 
         return set.Structures.Length == 1
-            ? this.TryGenerate(layout, set.Structures[0].Structure, chunkX, chunkZ)
-            : this.TryGenerateWeighted(layout, set.Structures, chunkX, chunkZ);
+            ? this.TryGenerate(layout, set.Structures[0].Structure, chunkX, chunkZ, out refused)
+            : this.TryGenerateWeighted(layout, set.Structures, chunkX, chunkZ, out refused);
     }
 
     /// <summary>
@@ -301,8 +305,10 @@ internal sealed class StructureManager : IStructurePlacementState
         StructureLayout layout,
         ImmutableArray<StructureSetEntry> entries,
         int chunkX,
-        int chunkZ)
+        int chunkZ,
+        out bool refused)
     {
+        refused = false;
         var candidates = entries.ToList();
         var random = new WorldgenRandom(new LegacyRandomSource(0L));
         random.SetLargeFeatureSeed(this.Seed, chunkX, chunkZ);
@@ -322,8 +328,8 @@ internal sealed class StructureManager : IStructurePlacementState
             }
 
             var chosen = candidates[index];
-            var start = this.TryGenerate(layout, chosen.Structure, chunkX, chunkZ);
-            if (start is not null)
+            var start = this.TryGenerate(layout, chosen.Structure, chunkX, chunkZ, out refused);
+            if (start is not null || refused)
                 return start;
 
             candidates.RemoveAt(index);
@@ -334,18 +340,28 @@ internal sealed class StructureManager : IStructurePlacementState
     }
 
     // A structure made of plugins' types runs their code as it starts, so it's a call into them; one whose plugins
-    // are unloading doesn't start, and its failing is theirs.
-    private StructureStart? TryGenerate(StructureLayout layout, Structure structure, int chunkX, int chunkZ)
+    // are unloading is refused, and its failing is theirs. The start keeps its plugins, whose code its pieces run.
+    private StructureStart? TryGenerate(
+        StructureLayout layout,
+        Structure structure,
+        int chunkX,
+        int chunkZ,
+        out bool refused)
     {
         var owners = layout.OwnersOf(structure);
-        if (!GeneratorCalls.TryEnter(owners, out var calls))
+        refused = !GeneratorCalls.TryEnter(owners, out var calls);
+        if (refused)
             return null;
 
         using (calls)
         {
             try
             {
-                return this.Generate(layout, structure, chunkX, chunkZ);
+                var start = this.Generate(layout, structure, chunkX, chunkZ);
+                if (start is not null)
+                    start.Owners = owners;
+
+                return start;
             }
             catch (Exception ex) when (!owners.IsEmpty && ex is not (GeneratorStoppedException or OutOfMemoryException))
             {
@@ -465,10 +481,4 @@ internal sealed class StructureManager : IStructurePlacementState
 
     /// <summary>Vanilla <c>ChunkPos.asLong</c>.</summary>
     private static long ChunkKey(int chunkX, int chunkZ) => (chunkX & 0xFFFFFFFFL) | (chunkZ & 0xFFFFFFFFL) << 32;
-
-    private sealed record ReachingStarts(
-        long Version,
-        int ChunkX,
-        int ChunkZ,
-        List<(long Key, StructureStart Start)> Starts);
 }

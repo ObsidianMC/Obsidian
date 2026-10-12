@@ -207,11 +207,16 @@ internal sealed class ChunkBuilder
     /// </summary>
     /// <param name="area">The chunk and its 8 neighbors, all past the carvers step. Features may write into any of them.</param>
     /// <param name="onPlaced">Optional callback for each placed feature (step, global index, feature, placed anything).</param>
+    /// <param name="structures">The structure starts to place, found before (see
+    /// <see cref="StructureManager.FindReaching"/>), as when their state was restored meanwhile; found now by
+    /// default.</param>
     public void Decorate(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ,
-        Action<int, int, PlacedFeature, bool>? onPlaced = null)
+        Action<int, int, PlacedFeature, bool>? onPlaced = null, ReachingStarts? structures = null)
     {
         // Features look biomes and structures up, which runs the generator's plugins' code too.
         using var generatorCalls = this.EnterGenerator();
+
+        structures ??= this.Structures?.FindReaching(chunkX, chunkZ);
 
         var region = this.CreateRegion(area, chunkX, chunkZ, trackHeightmaps: true);
 
@@ -230,7 +235,7 @@ internal sealed class ChunkBuilder
                 neighbors,
                 chunkX,
                 chunkZ,
-                this.Structures,
+                structures,
                 this.terrainGenerator,
                 onPlaced,
                 skip);

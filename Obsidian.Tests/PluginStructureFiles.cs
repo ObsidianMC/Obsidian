@@ -213,6 +213,61 @@ public class PluginStructureFiles
         Assert.True(again.IsStateRestored);
     }
 
+    [Fact(DisplayName = "A start keeps its plugins: once they unload, it isn't placed, and is made again without them")]
+    public void DropsStartsOfUnloadingPlugins()
+    {
+        var plugin = new PluginContainer
+        {
+            Info = new PluginInfo("structureprobe"),
+            Archive = PluginArchive.Open(
+                "structureprobe.obby",
+                PluginArchives.Zip(new Dictionary<string, byte[]>
+                {
+                    [PluginMetadata.FileName] = PluginArchives.Metadata("structureprobe", "1.0.0", "Probe")
+                }))
+        };
+
+        // The tower's pieces run the plugin's code, as a vanilla structure does when an overridden template reaches
+        // a plugin's pool with a plugin's processor.
+        var built = Only(Build(TowerFiles()), "structuretest:towers");
+        var tower = built.Structures[Tower];
+        var structures = built with
+        {
+            Owners = new Dictionary<Structure, ImmutableArray<PluginContainer>> { [tower] = [plugin] }
+                .ToFrozenDictionary()
+        };
+
+        try
+        {
+            StructureRegistry.SetOverrides(structures.Templates);
+
+            var builder = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => structures);
+            var manager = builder.Structures!;
+            var start = manager.GetStarts(0, 0).Single(candidate => candidate.Structure == tower);
+            Assert.Equal(plugin, Assert.Single(start.Owners));
+            StructureManager.RestoreStart(start, null);
+
+            // The plugin unloads: the set stays, and the structures no longer name the plugin. The start made with it
+            // isn't placed, though the current structures don't run the plugin's code.
+            plugin.Close();
+            structures = built with { Version = built.Version + 1 };
+
+            Assert.Equal(0, DiamondBlocks(new FullChunks(builder, MojangDimension.Overworld).Get(0, 0)));
+
+            // Once the generator moves on, it's made again without the plugin, and takes the state it had.
+            manager.Refresh();
+
+            var again = manager.GetStarts(0, 0).Single(candidate => candidate.Structure == tower);
+            Assert.NotSame(start, again);
+            Assert.Empty(again.Owners);
+            Assert.True(again.IsStateRestored);
+        }
+        finally
+        {
+            StructureRegistry.SetOverrides(PluginStructures.Current.Templates);
+        }
+    }
+
     [Fact(DisplayName = "A template declaring more than its data holds, or nested too deeply, is rejected unread")]
     public void RejectsHostileTemplates()
     {
