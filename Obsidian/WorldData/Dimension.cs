@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using System.Collections.Frozen;
 using System.IO;
 using Obsidian.Nbt;
 
@@ -64,8 +65,9 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
 
     // A dimension needs a folder of its own: two identifiers can map to one folder, like ruby:world and
     // minecraft:ruby/world in Obsidian's layout, or a name Windows reads differently, like ruby. for ruby. So every
-    // part of the folder must be portable, and it can't be, hold or sit in another dimension's folder: one this world
-    // has, or vanilla's nether's or end's, which may not be loaded yet.
+    // part of the folder must be portable, and it can't be another dimension's folder (one this world has, or vanilla's
+    // nether's or end's, which may not be loaded yet), or one of the folders a dimension keeps its data in. Like
+    // vanilla, a dimension may sit in another's folder otherwise: ruby:foo/bar's chunks don't mix with ruby:foo's.
     private void CheckOwnFolder(string worldFolder, string folder)
     {
         if (!folder.Split(Path.DirectorySeparatorChar).All(PluginTags.IsPortableName))
@@ -85,17 +87,33 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
 
         foreach (var other in others.Select(WithSeparator))
         {
-            // Windows' folders ignore case, so folders differing only by case count as one.
-            if (path.StartsWith(other, StringComparison.OrdinalIgnoreCase)
-                || other.StartsWith(path, StringComparison.OrdinalIgnoreCase))
-            {
+            if (Overlaps(path, other) || Overlaps(other, path))
                 throw new InvalidOperationException($"{this.Name}'s folder {this.FolderPath} would overlap {other}.");
-            }
         }
 
         static string WithSeparator(string path) =>
             Path.TrimEndingDirectorySeparator(Path.GetFullPath(path)) + Path.DirectorySeparatorChar;
+
+        // Whether the inner folder is the outer one, or one of the outer dimension's data folders or in one. Windows'
+        // folders ignore case, so folders differing only by case count as one.
+        static bool Overlaps(string inner, string outer)
+        {
+            if (!inner.StartsWith(outer, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var below = inner[outer.Length..].Split(Path.DirectorySeparatorChar, 2)[0];
+            return below.Length == 0 || dataFolders.Contains(below);
+        }
     }
+
+    // The folders a dimension keeps its data in, which no other dimension's folder may be.
+    private static readonly FrozenSet<string> dataFolders = FrozenSet.Create(
+        StringComparer.OrdinalIgnoreCase,
+        "region",
+        "regions",
+        "entities",
+        "poi",
+        "data");
 
     private string Folder(string dimension) =>
         this.UsesVanillaLayout ? VanillaFolder(dimension) : ObsidianFolder(dimension);
