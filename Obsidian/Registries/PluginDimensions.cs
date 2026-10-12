@@ -77,8 +77,9 @@ internal static partial class PluginDimensions
     // they stay stopped until a restart rather than being read again.
     private static ImmutableHashSet<string> restartRequired = [];
 
-    // Vanilla's dimensions a level generates with, which are kept from then on.
-    private static ImmutableHashSet<string> taken = [];
+    // The dimensions levels generate with, which are kept from then on, with how many levels took each: one whose
+    // level couldn't be created is given back (see GiveBack).
+    private static ImmutableDictionary<string, int> taken = ImmutableDictionary<string, int>.Empty;
 
     /// <summary>
     /// The plugins' and data packs' dimensions added since the server started, in the order they were added; vanilla's
@@ -193,7 +194,8 @@ internal static partial class PluginDimensions
 
     /// <summary>
     /// The dimension a level generates with, as files define it now: the added one of its identifier, or else the one
-    /// given, like vanilla's compiled one. It's kept from then on: later changes apply after a restart.
+    /// given, like vanilla's compiled one. It's kept from then on: later changes apply after a restart, unless the
+    /// level can't be created and gives it back (see <see cref="GiveBack"/>).
     /// </summary>
     /// <remarks>
     /// <para>
@@ -217,8 +219,31 @@ internal static partial class PluginDimensions
             if (current.IsReleased && !IsVanilla(dimension.Identifier))
                 return null;
 
-            taken = taken.Add(dimension.Identifier);
+            taken = taken.SetItem(dimension.Identifier, taken.GetValueOrDefault(dimension.Identifier) + 1);
             return current;
+        }
+    }
+
+    /// <summary>
+    /// Gives back a dimension <see cref="Take"/> gave a level that couldn't be created, as building its generator
+    /// failed before it generated anything (when its biomes' features can't be ordered, say). Once no level holds it,
+    /// it follows its files again, so that a corrected stem can be taken, and its biome regions, which building its
+    /// biome source fixed, are the loaded plugins' again (see <see cref="PluginBiomeRegions"/>).
+    /// </summary>
+    public static void GiveBack(string identifier)
+    {
+        lock (applying)
+        {
+            var holders = taken.GetValueOrDefault(identifier);
+            if (holders > 1)
+            {
+                taken = taken.SetItem(identifier, holders - 1);
+                return;
+            }
+
+            taken = taken.Remove(identifier);
+            restartRequired = restartRequired.Remove(identifier);
+            PluginBiomeRegions.Unfix(identifier);
         }
     }
 
@@ -281,7 +306,7 @@ internal static partial class PluginDimensions
             {
                 var existing = current.FirstOrDefault(entry => entry.Identifier == file.Identifier);
 
-                if (!taken.Contains(file.Identifier))
+                if (!taken.ContainsKey(file.Identifier))
                 {
                     if (existing is not null && !existing.Dimension.IsReleased && existing.Json == file.Json)
                     {
@@ -330,7 +355,7 @@ internal static partial class PluginDimensions
             // again then, unless a level took them: that change applies after a restart.
             foreach (var file in current.Where(file => read.All(entry => entry.Identifier != file.Identifier)).ToList())
             {
-                if (!taken.Contains(file.Identifier))
+                if (!taken.ContainsKey(file.Identifier))
                 {
                     current = current.Remove(file);
                     ReleaseFile(file);
@@ -385,7 +410,8 @@ internal static partial class PluginDimensions
         {
             var misfits = new Dictionary<string, string>();
 
-            foreach (var compiled in MojangDimension.Vanilla.Where(dimension => !taken.Contains(dimension.Identifier)))
+            var untaken = MojangDimension.Vanilla.Where(dimension => !taken.ContainsKey(dimension.Identifier));
+            foreach (var compiled in untaken)
             {
                 var dimension = Find(compiled.Identifier) ?? compiled;
                 if (dimension.IsReleased)

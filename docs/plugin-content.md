@@ -895,13 +895,15 @@ The rules:
   follows the files: its stem is read again whenever plugins or data packs change, so at startup it sees the noise
   settings, parameter lists and types later plugins and data packs override, and when the file winning goes, the one
   before it wins again. A dimension whose biomes' features can't be ordered (vanilla can't generate it either) is
-  logged and left out.
+  logged and left out; as its level was never created, it keeps following the files, so a reload correcting its stem
+  applies without a restart.
 - A file's path gives the dimension's identifier, and, as vanilla checks resource paths, one with an empty, `.` or
   `..` segment (like `data/ruby/dimension//world.json`) is refused. This holds for every plugin data file.
 - A dimension's level is created when its plugin loads, at startup or later, and is saved in the world's folder under
   `dimensions/<namespace>/<path>`, where vanilla saves a data pack's dimensions, and loaded from there after a restart.
   Players can reach it, and it ticks, once it's loaded or generated with its spawn. One that fails to load or generate
-  is logged and left out, and the next plugin load tries it again.
+  is logged and left out, and the next plugin load tries it again. A plugin loading while the worlds load gets its
+  dimensions' levels too, created after those of the plugins loaded before.
 - Gameplay follows the dimension type, as in vanilla: monsters spawn with its monster light limits, and undead mobs
   burn by day in a type with the overworld's timelines (`#minecraft:in_overworld`) or its own
   `minecraft:gameplay/monsters_burn`. Patrols, wandering traders and phantom spawns stay in the overworld, where
@@ -967,8 +969,10 @@ last file for an entry replaces it whole, and tag files merge (`"replace": true`
   must hold the noise settings its vanilla dimension generates with, as overridden: vanilla clamps generation to the
   build range, which Obsidian can't yet, so a type override that doesn't fit, like the overworld's at `min_y` 0 with
   vanilla's overworld noise settings from -64, is logged once startup has read every plugin and pack, and left out,
-  keeping vanilla's type. Override the noise settings to match it. Stems are then read against the types kept, so
-  one that couldn't be read with the type override, like an overworld stem using those noise settings, is read
+  keeping vanilla's type. Override the noise settings to match it. A stem startup couldn't read yet, like a
+  plugin's overworld stem naming noise settings a data pack adds, is read before the types are checked, so a type
+  is checked with the noise settings its dimension's stem names. Stems are then read against the types kept, so one
+  that couldn't be read with the type override, like an overworld stem using vanilla's noise settings, is read
   again and applies.
 - tags, merged as above.
 
@@ -1074,7 +1078,8 @@ The rules:
 - Regions are part of a dimension's generator. A dimension takes the loaded plugins' regions when it starts
   generating (at startup for vanilla's, when it's added for a plugin's), and keeps them until the server stops, so
   that its chunks all generate with the same layout. A plugin loading, reloading or unloading later doesn't change
-  the regions of a dimension that generates already; the change is logged, and applies after a restart.
+  the regions of a dimension that generates already; the change is logged, and applies after a restart. A dimension
+  whose generator can't be built, and whose level is left out, lets go of its regions.
 - A region whose plugin unloads keeps generating with its biomes, which stay registered (see
   [Biomes](#biomes-dimension-types-and-damage-types)), without the plugin's features, which go with it. Regions are
   data, so they never keep a plugin's code loaded.

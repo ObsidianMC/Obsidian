@@ -7,6 +7,8 @@ using Obsidian.API.World.Generator.Noise;
 using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.Registries.Codecs;
+using Obsidian.Tests.Fakes;
+using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using System;
@@ -297,6 +299,63 @@ public sealed class WorldgenOverrides : IDisposable
         }
         finally
         {
+            PluginDimensions.Apply([], NullLogger.Instance);
+        }
+
+        Assert.Null(PluginDimensions.Find(identifier));
+    }
+
+    [Fact(DisplayName = "A level whose generator can't be built gives back its dimension and biome regions")]
+    public void FailedGeneratorGivesItsDimensionBack()
+    {
+        const string identifier = "overridetest:broken";
+        var logger = new PluginFeatureFiles.ListLogger();
+        var region = PluginBiomeRegions.Parse(
+            "overridetest:crimson",
+            "plugin",
+            Encoding.UTF8.GetBytes($$"""
+                {
+                  "dimension": "{{identifier}}",
+                  "weight": 10,
+                  "replace": { "minecraft:plains": "minecraft:crimson_forest" }
+                }
+                """));
+
+        try
+        {
+            PluginBiomeRegions.Apply([region], logger);
+            PluginDimensions.Apply(
+                [PluginDimensions.Parse(identifier, "plugin", Encoding.UTF8.GetBytes(FixedPlainsStem))],
+                logger);
+
+            // Building the generator fails after its biome source fixed the regions, before anything generated, as
+            // when its biomes' features can't be ordered: its level isn't created.
+            var generator = new LevelStemGenerator(PluginDimensions.Find(identifier)!)
+            {
+                Features = () => throw new InvalidDataException("The features can't be ordered.")
+            };
+
+            var level = $"broken-{Guid.NewGuid():N}";
+            Assert.Throws<InvalidDataException>(() => TestWorldFactory.Create(level, generator));
+            Assert.False(generator.IsTaken);
+
+            // Its regions follow the plugins again, which dropped the region, and a corrected stem applies at once
+            // rather than after a restart.
+            PluginBiomeRegions.Apply([], logger);
+            Assert.Equal("minecraft:plains", Assert.Single(generator.Dimension.PossibleBiomes).Name);
+
+            var desert = FixedPlainsStem.Replace("minecraft:plains", "minecraft:desert");
+            PluginDimensions.Apply(
+                [PluginDimensions.Parse(identifier, "plugin", Encoding.UTF8.GetBytes(desert))],
+                logger);
+
+            var dimension = PluginDimensions.Find(identifier)!;
+            Assert.Equal("minecraft:desert", Assert.Single(dimension.PossibleBiomes).Name);
+            Assert.DoesNotContain(logger.Messages, message => message.Contains("restart"));
+        }
+        finally
+        {
+            PluginBiomeRegions.Apply([], NullLogger.Instance);
             PluginDimensions.Apply([], NullLogger.Instance);
         }
 

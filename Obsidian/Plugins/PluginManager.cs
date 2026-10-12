@@ -72,8 +72,8 @@ public sealed partial class PluginManager : IAsyncDisposable
     private bool dimensionTypesSettled;
 
     // Level stems startup couldn't read as it read their plugin or data pack. What they name may come with a later
-    // plugin or pack, or change as dimension types settle, so they're read once more then (see
-    // SettleDimensionTypes), and only left out, logged, if they still can't be.
+    // plugin or pack, or change as dimension types settle, so they're read again once every plugin and pack is read,
+    // and once more when types settled (see SettleDimensionTypes), and only left out, logged, if they still can't be.
     private readonly List<StartupStem> startupStems = [];
 
     private bool serverReady;
@@ -665,7 +665,7 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     // A plugin's or data pack's level stem files, given the container or pack owning them. A file that can't be read
     // is left out; the plugin or pack loads without it. During startup, one whose bytes were read is kept to read
-    // once more when every plugin and pack is read (see ReadStartupStems).
+    // again when every plugin and pack is read (see ReadStartupStems).
     private ImmutableArray<DimensionFile> ReadDimensionFiles(DataFiles source, object owner)
     {
         var files = ImmutableArray.CreateBuilder<DimensionFile>();
@@ -692,12 +692,14 @@ public sealed partial class PluginManager : IAsyncDisposable
         return files.ToImmutable();
     }
 
-    // Reads the stems startup kept once more, against the final plugins, data packs and dimension types: those that
-    // read join their plugin's or pack's files, and the others are left out, logged.
+    // Reads the stems startup kept once more, against the final plugins and data packs: those that read join their
+    // plugin's or pack's files. Until dimension types settle, the others are kept to read again then; once they have,
+    // they're left out, logged.
     // Returns whether a stem joined.
     private bool ReadStartupStems()
     {
         var joined = false;
+        var unread = new List<StartupStem>();
 
         foreach (var stem in this.startupStems)
         {
@@ -723,11 +725,15 @@ public sealed partial class PluginManager : IAsyncDisposable
             }
             catch (InvalidDataException ex)
             {
-                Log.CodecFileFailed(this.logger, ex, stem.Path, stem.Location);
+                if (this.dimensionTypesSettled)
+                    Log.CodecFileFailed(this.logger, ex, stem.Path, stem.Location);
+                else
+                    unread.Add(stem);
             }
         }
 
         this.startupStems.Clear();
+        this.startupStems.AddRange(unread);
 
         return joined;
     }
@@ -938,10 +944,16 @@ public sealed partial class PluginManager : IAsyncDisposable
     // Once every startup plugin and data pack is read, and before the worlds create their levels, a vanilla dimension
     // type whose build range a vanilla dimension, as overridden, can't generate in stays vanilla's. Vanilla clamps
     // generation to the build range instead, but Obsidian's generator fills every cell of the noise settings; a level
-    // stem's own pairing is checked as it's read (see LevelStemData). Stems are then read against the settled types,
-    // those startup kept included, and only now is one that can't be read logged.
+    // stem's own pairing is checked as it's read (see LevelStemData). The stems startup kept are read first, against
+    // every plugin's and pack's data, so that a vanilla dimension is checked with the noise settings its stem names
+    // even when they came with a later pack. Stems are then read against the settled types, those startup kept
+    // included, and only now is one that can't be read logged.
     private void SettleDimensionTypes()
     {
+        var joined = this.ReadStartupStems();
+        if (joined)
+            this.ApplyDimensions();
+
         var misfits = PluginDimensions.VanillaTypeMisfits();
 
         foreach (var (type, reason) in misfits)
@@ -955,7 +967,7 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         this.dimensionTypesSettled = true;
 
-        var joined = this.ReadStartupStems();
+        joined |= this.ReadStartupStems();
         this.ApplyDimensions();
 
         if (misfits.Count > 0 || joined)
@@ -1057,11 +1069,11 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.DataFilesOf(plugin => plugin.DimensionFiles, pack => pack.DimensionFiles),
         this.dimensionTypesSettled ? this.logger : NullLogger.Instance);
 
-    // Once the worlds are loaded, a plugin's new dimensions get their levels as it loads; before, the worlds create
-    // them as they load.
+    // A plugin's new dimensions get their levels as it loads. Before the worlds load, loading them creates the levels
+    // instead, and a plugin loading while they do waits for that (see WorldManager.AddPluginDimensionsAsync).
     private async Task AddDimensionLevelsAsync()
     {
-        if (this.server.WorldManager is WorldData.WorldManager { ReadyToJoin: true } worldManager)
+        if (this.server.WorldManager is WorldData.WorldManager worldManager)
             await worldManager.AddPluginDimensionsAsync();
     }
 

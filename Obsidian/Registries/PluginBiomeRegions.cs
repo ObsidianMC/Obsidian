@@ -156,6 +156,17 @@ internal static partial class PluginBiomeRegions
         return RegionBiomeSource.GetPossibleBiomes(biomes, regions?.Regions ?? []);
     }
 
+    /// <summary>
+    /// Lets go of a dimension's fixed regions, as no level generates it: building its generator failed (see
+    /// <see cref="PluginDimensions.GiveBack"/>). The next biome source created for it takes the loaded plugins' ones.
+    /// </summary>
+    /// <param name="dimension">The dimension's identifier, its level stem's.</param>
+    public static void Unfix(string dimension)
+    {
+        lock (applying)
+            fixedRegions = fixedRegions.Remove(dimension);
+    }
+
     private static ImmutableArray<BiomeRegion> Fix(string dimension)
     {
         lock (applying)
