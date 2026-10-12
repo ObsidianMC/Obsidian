@@ -2,6 +2,7 @@ using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.Entities.Factories;
 using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Generators;
 using System.Reflection;
@@ -224,8 +225,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             {
                 if (terrain.GetBlock(new Vector(x, y + 1, z))?.RegistryId != BlockIds.Water)
                     continue;
-                if (type == EntityType.Drowned && (block != 0 || sky > random.Next(32) ||
-                    Math.Max(block, Math.Max(0, sky - (level.DayTime is >= 12000 and < 23000 ? 11 : 0))) > random.Next(8)))
+                if (type == EntityType.Drowned && !this.IsDarkEnoughToSpawn(block, sky))
                     continue;
                 if (type is EntityType.Squid or EntityType.Dolphin && (y <= seaLevel - 24 || y >= seaLevel - 1) ||
                     type == EntityType.GlowSquid && (y >= seaLevel - 33 || Math.Max(block, sky) > 0))
@@ -242,11 +242,10 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 if (y >= seaLevel || !halloween && random.Next(2) == 0 || Math.Max(block, sky) > random.Next(halloween ? 7 : 4))
                     continue;
             }
-            else if (level.DimensionName == "minecraft:the_nether")
+            else if (type == EntityType.Ghast)
             {
-                if (type == EntityType.Ghast && random.Next(20) != 0 ||
-                    type is not EntityType.Ghast and not EntityType.MagmaCube and not EntityType.Blaze && block > 11 ||
-                    type == EntityType.Blaze && block > 11)
+                // Vanilla's ghast rule: one try in 20, at any light.
+                if (random.Next(20) != 0)
                     continue;
             }
             else if (type == EntityType.Slime)
@@ -259,8 +258,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 if (!swamp && !(y < 40 && IsSlimeChunk(level.LevelData.RandomSeed, x >> 4, z >> 4) && random.Next(10) == 0))
                     continue;
             }
-            else if (block != 0 || sky > random.Next(32) ||
-                Math.Max(block, Math.Max(0, sky - (level.DayTime is >= 12000 and < 23000 ? 11 : 0))) > random.Next(8))
+            else if (!IgnoresDarkness(type) && !this.IsDarkEnoughToSpawn(block, sky))
                 continue;
             if (type is EntityType.Husk or EntityType.Parched or EntityType.Stray && sky != 15)
                 continue;
@@ -291,6 +289,52 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         if (y < chunk.MinY + chunk.Height && BlockCollisionShapes.Get(chunk.GetBlock(x, y, z)).Count > 0)
             y++;
         return y;
+    }
+
+    // Mobs whose vanilla spawn rules don't ask for darkness (Monster.checkAnyLightMonsterSpawnRules, or their own
+    // rules), so the dimension type's monster light rules don't apply to them.
+    private static bool IgnoresDarkness(EntityType type) =>
+        type is EntityType.Blaze
+            or EntityType.MagmaCube
+            or EntityType.Silverfish
+            or EntityType.ZombifiedPiglin
+            or EntityType.Piglin
+            or EntityType.Hoglin;
+
+    /// <summary>
+    /// Vanilla's <c>Monster.isDarkEnoughToSpawn</c> with the level's dimension type: sky light against a roll of 32,
+    /// block light against the type's block light limit, then the light against a sample of its monster spawn light
+    /// level. The limits are vanilla's per dimension type, so a plugin's dimension spawns monsters like its type.
+    /// </summary>
+    private bool IsDarkEnoughToSpawn(int block, int sky)
+    {
+        if (sky > random.Next(32))
+            return false;
+
+        var type = level.DimensionType.Element;
+        if (type.MonsterSpawnBlockLightLimit < 15 && block > type.MonsterSpawnBlockLightLimit)
+            return false;
+
+        // The sky's darkening at night, approximated as elsewhere in the spawner.
+        var darkening = level.DayTime is >= 12000 and < 23000 ? 11 : 0;
+        var light = Math.Max(block, Math.Max(0, sky - darkening));
+
+        return light <= this.SampleLightLevel(type.MonsterSpawnLightLevel);
+    }
+
+    // Samples a monster spawn light level like vanilla's IntProvider: constant, uniform and biased to bottom as
+    // vanilla does, and other providers, which the dimension type only keeps the bounds of, uniformly within them.
+    private int SampleLightLevel(MonsterSpawnLightLevel lightLevel)
+    {
+        if (lightLevel.Value is not { } provider)
+            return lightLevel.IntValue ?? 0;
+
+        var min = provider.MinInclusive;
+        var max = provider.MaxInclusive;
+
+        return provider.Type == IntProviderTypes.BiasedToBottom
+            ? min + random.Next(random.Next(max - min + 1) + 1)
+            : random.Next(min, max + 1);
     }
 
     internal static bool IsSlimeChunk(long seed, int x, int z)

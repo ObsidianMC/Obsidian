@@ -16,6 +16,39 @@ internal sealed record EnvironmentAttributeMap(ImmutableArray<EnvironmentAttribu
     public static EnvironmentAttributeMap Empty { get; } = new([]);
 
     /// <summary>
+    /// A boolean attribute's value once this map applies to <paramref name="value"/>: its override, or its modifier
+    /// with vanilla's BooleanModifier operations. Without an entry the value stays.
+    /// </summary>
+    /// <param name="attribute">The attribute's identifier, like <c>minecraft:gameplay/monsters_burn</c>.</param>
+    public bool Apply(string attribute, bool value)
+    {
+        var entry = this.Entries.FirstOrDefault(entry => entry.Attribute == attribute);
+
+        switch (entry?.Value)
+        {
+            case NbtTag<byte> overridden:
+                return overridden.Value != 0;
+            case NbtCompound modifier
+                when modifier.TryGetTag<NbtTag<string>>("modifier", out var operation)
+                && modifier.TryGetTag<NbtTag<byte>>("argument", out var argumentTag):
+                var argument = argumentTag.Value != 0;
+
+                return operation.Value switch
+                {
+                    "and" => value && argument,
+                    "nand" => !(value && argument),
+                    "or" => value || argument,
+                    "nor" => !(value || argument),
+                    "xor" => value ^ argument,
+                    "xnor" => value == argument,
+                    _ => value
+                };
+            default:
+                return value;
+        }
+    }
+
+    /// <summary>
     /// The map as vanilla's EnvironmentAttributeMap.NETWORK_CODEC writes it: only the attributes clients sync. A
     /// map that isn't empty is written even if none of its attributes are synced, as vanilla writes it.
     /// </summary>

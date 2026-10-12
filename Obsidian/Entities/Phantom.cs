@@ -1,6 +1,7 @@
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -33,7 +34,7 @@ public sealed partial class Phantom : PathfinderMob
     }
     protected override ValueTask TickMobAsync()
     {
-        if (Level.DimensionName == "minecraft:overworld" && Level.DayTime is >= 0 and < 12000 &&
+        if (Level.MonstersBurn() &&
             !Level.LevelData.Raining && !InWater && Terrain.GetSkyLight((Vector)EyePosition.Floor()) == 15)
             Ignite(8);
         return default;

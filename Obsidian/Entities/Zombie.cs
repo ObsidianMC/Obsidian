@@ -1,5 +1,6 @@
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -76,8 +77,7 @@ public partial class Zombie : PathfinderMob
             }
             else DrowningWaterTicks = -1;
         }
-        var dayTime = Level.DayTime;
-        if (Level.DimensionName != "minecraft:overworld" || dayTime is < 0 or >= 12000 ||
+        if (!Level.MonstersBurn() ||
             Level.LevelData.Raining || Level.LevelData.Thundering || InWater || Random.NextSingle() * 30 >= 1.2f)
             return;
         var position = (Vector)EyePosition.Floor();

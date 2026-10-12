@@ -46,10 +46,9 @@ internal sealed partial class MobSpawner
                 continue;
             var blockLight = chunk.GetLightLevel(blockPoint.X, blockPoint.Y, blockPoint.Z, LightType.Block);
             var sky = chunk.GetLightLevel(blockPoint.X, blockPoint.Y, blockPoint.Z, LightType.Sky);
-            var maxBlockLight = type == EntityType.Blaze || level.DimensionName == "minecraft:the_nether" ? 11 : 0;
-            if ((mob.Hostile || mob is Zombie or Skeleton or Creeper) && type is not EntityType.MagmaCube and not EntityType.Silverfish && (blockLight > maxBlockLight ||
-                type != EntityType.Blaze && level.DimensionName != "minecraft:the_nether" &&
-                Math.Max(blockLight, Math.Max(0, sky - (level.DayTime is >= 12000 and < 23000 ? 11 : 0))) > random.Next(8)))
+            if ((mob.Hostile || mob is Zombie or Skeleton or Creeper)
+                && !IgnoresDarkness(type)
+                && !this.IsDarkEnoughToSpawn(blockLight, sky))
                 continue;
             mob.EntityId = Server.GetNextEntityId();
             mob.Position = point;

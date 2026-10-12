@@ -257,7 +257,7 @@ internal sealed class VillagerShelterGoal(Villager villager) : NavigationGoal(vi
     private VectorD destination;
     public override bool CanUse()
     {
-        if (villager.Level.DimensionName != "minecraft:overworld" ||
+        if (!villager.Level.HasDayCycle() ||
             !villager.Level.LevelData.Raining && villager.Level.DayTime is >= 0 and < 12000 ||
             villager.Terrain.GetSkyLight((Vector)villager.Position.Floor()) < 15 || villager.Random.Next(20) != 0)
             return false;

@@ -103,7 +103,11 @@ internal sealed record DimensionTypeData(
                     MaxInclusive = this.MonsterSpawnLightLevel.MaxValue
                 }
             },
-        MonsterSpawnBlockLightLimit = this.MonsterSpawnBlockLightLimit
+        MonsterSpawnBlockLightLimit = this.MonsterSpawnBlockLightLimit,
+        Timelines = this.TimelineTag is null ? null : $"#{this.TimelineTag}",
+
+        // The attribute's default is false; the dimension type's map applies first, as in vanilla.
+        MonstersBurn = this.Attributes.Apply("minecraft:gameplay/monsters_burn", false)
     };
 
     /// <summary>

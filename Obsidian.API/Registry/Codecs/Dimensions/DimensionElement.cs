@@ -78,6 +78,19 @@ public sealed record class DimensionElement : INbtSerializable
     public bool HasCeiling { get; set; }
 
     /// <summary>
+    /// The tag of a plugin's dimension type's timelines, like <c>#minecraft:in_overworld</c>, or null for none or for
+    /// vanilla's types. The server reads it for the day cycle. It isn't written: clients get it from the type's data.
+    /// </summary>
+    public string? Timelines { get; set; }
+
+    /// <summary>
+    /// Whether undead monsters burn in daylight at any time of day: the type's own
+    /// <c>minecraft:gameplay/monsters_burn</c> attribute, which the overworld's day timeline otherwise sets by day.
+    /// Not written, like <see cref="Timelines"/>.
+    /// </summary>
+    public bool MonstersBurn { get; set; }
+
+    /// <summary>
     /// Writes the fields this element models as vanilla's DimensionType.NETWORK_CODEC does. Clients get vanilla's
     /// dimension types by name, and plugins' with the data their files decode to, attributes included.
     /// </summary>

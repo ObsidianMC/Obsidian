@@ -1,5 +1,6 @@
 using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -85,7 +86,7 @@ public partial class Skeleton : PathfinderMob
                     SynchronizeMetadata();
             }
         }
-        if (BurnsInSun && Level.DimensionName == "minecraft:overworld" && Level.DayTime is >= 0 and < 12000 &&
+        if (BurnsInSun && Level.MonstersBurn() &&
             !Level.LevelData.Raining && !InWater && Random.NextSingle() * 30 < 1.2f && Terrain.GetSkyLight((Vector)EyePosition.Floor()) == 15)
         {
             if (GetEquipment(EquipmentSlot.Helmet).IsAir)
