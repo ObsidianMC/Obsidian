@@ -495,6 +495,11 @@ public sealed partial class Client : IClient
 
     private async ValueTask<bool> HandlePacketAsync(PacketData packetData)
     {
+        // A closing connection's packets still buffered aren't handled: the player has left, and a packet that joins
+        // them (finishing configuration, say) would bring them back.
+        if (this.cancellationSource.IsCancellationRequested)
+            return false;
+
         // Between packets nothing else of this client's is running, so the player can leave the world unchanged.
         if (this.reconfigurationRequested && this.State == ClientState.Play && !this.AwaitingReconfiguration)
         {
