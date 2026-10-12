@@ -44,12 +44,20 @@ public sealed partial class Silverfish : PathfinderMob
                 var point = new Vector(origin.X + x, origin.Y + y * sign, origin.Z + z);
                 if (Terrain.GetBlock(point) is not { } block || !block.UnlocalizedName.StartsWith("minecraft:infested_", StringComparison.Ordinal))
                     continue;
-                await Level.SetBlockAsync(point, BlocksRegistry.Air, true);
-                SpawnFromBlock(Level, point);
+                if (Level.LevelData.GetBooleanRule("mob_griefing"))
+                {
+                    await Level.SetBlockAsync(point, BlocksRegistry.Air, true);
+                    SpawnFromBlock(Level, point);
+                }
+                else if (BlockStateParser.TryParse("minecraft:" + block.UnlocalizedName[19..]) is { } host)
+                {
+                    foreach (var property in BlockStateProperties.GetProperties(block)) host = host.WithProperty(property.Key, property.Value);
+                    await Level.SetBlockAsync(point, host, true);
+                }
                 if (Random.Next(2) == 0) return;
             }
         }
-        if (AttackTarget == null && AiTick - LastHurtTick > 100 && Random.Next(10) == 0)
+        if (AttackTarget == null && AiTick - LastHurtTick > 100 && Level.LevelData.GetBooleanRule("mob_griefing") && Random.Next(10) == 0)
         {
             var offset = directions[Random.Next(directions.Length)];
             var point = new Vector(origin.X + offset.X, origin.Y + offset.Y, origin.Z + offset.Z);

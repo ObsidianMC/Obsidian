@@ -77,6 +77,7 @@ public sealed class Combat
         }
         Assert.Equal(2, CombatEffects.Protect(mob, 10, CombatDamageKind.Melee), 4);
         Assert.Equal(10, CombatEffects.Protect(mob, 10, CombatDamageKind.Starvation));
+        Assert.Equal(10, CombatEffects.Protect(mob, 10, CombatDamageKind.SonicBoom));
     }
 
     [Fact]

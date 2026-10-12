@@ -113,6 +113,7 @@ public sealed class Chunk : IChunk
         X = x;
         Z = z;
         MinY = minY;
+        ChunkStatus = status;
 
         // Sections come first: heightmaps size their entries from the chunk height.
         this.sections = new ChunkSection[height >> 4];

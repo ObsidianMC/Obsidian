@@ -20,6 +20,7 @@ internal sealed class VolumeMoveControl(Mob mob) : MoveControl(mob)
             return;
         }
         Acceleration = VectorD.Zero;
+        base.Stop();
         if (destination is not VectorD target)
             return;
         destination = null;
@@ -28,6 +29,8 @@ internal sealed class VolumeMoveControl(Mob mob) : MoveControl(mob)
             return;
         mob.Yaw = LookControl.RotateTowards(mob.Yaw.Degrees, (float)(Math.Atan2(-delta.X, delta.Z) * 180 / Math.PI), 30);
         Acceleration = delta / delta.Magnitude * (mob.MovementSpeed * speed * (mob.InWater ? 0.02f : 0.05f));
+        if (mob.InWater && mob is Fish)
+            Acceleration = new VectorD(Acceleration.X, delta.Y / delta.Magnitude * mob.MovementSpeed * speed * 0.1f, Acceleration.Z);
     }
 }
 
@@ -39,7 +42,7 @@ internal static class VolumeMovement
     internal static bool CanOccupy(Mob mob, VectorD point) =>
         mob.Terrain.IsFree(mob.Dimension.CreateBBFromPosition(point)) &&
         (mob.FlyingNavigation ? mob.Terrain.GetBlock((Vector)point.Floor()) is { IsLiquid: false } :
-            mob.Terrain.GetBlock((Vector)point.Floor())?.Material == Material.Water);
+            mob.Terrain.IsInFluid(point, water: true));
 
     internal static IEnumerable<VectorD> Neighbors(Mob mob, VectorD point)
     {

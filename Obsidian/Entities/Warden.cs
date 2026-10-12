@@ -180,15 +180,16 @@ public sealed partial class Warden : PathfinderMob
                     {
                         var damage = target is IPlayer ? Level.LevelData.Difficulty switch
                         { Difficulty.Easy => 6, Difficulty.Hard => 15, Difficulty.Peaceful => 0, _ => 10 } : 10;
-                        if (target is Mob mob) await mob.DamageMagicAsync(this, damage, ignoreHurtCooldown: true);
-                        else await target.DamageAsync(this, damage);
-                        if (target is Entity entity)
+                        if (target is Living living)
                         {
-                            var delta = target.Position - Position;
-                            var length = Math.Sqrt(delta.MagnitudeSquared());
-                            var resistance = 1 - Math.Clamp(entity.GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1);
-                            if (length > 0) entity.Motion += new VectorD(delta.X / length * 2.5 * resistance,
-                                delta.Y / length * 0.5 * resistance, delta.Z / length * 2.5 * resistance);
+                            var accepted = living.AcceptedDamageCount;
+                            await living.DamageCombatAsync(this, damage, CombatDamageKind.SonicBoom);
+                            if (living.AcceptedDamageCount != accepted && beamLength > 0)
+                            {
+                                var resistance = 1 - Math.Clamp(living.GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1);
+                                living.Motion += new VectorD(beam.X / beamLength * 2.5 * resistance,
+                                    beam.Y / beamLength * 0.5 * resistance, beam.Z / beamLength * 2.5 * resistance);
+                            }
                         }
                     }
                 }

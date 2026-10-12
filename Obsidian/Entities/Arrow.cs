@@ -136,7 +136,7 @@ public partial class Arrow : Entity
                 else if (Crit && Type is EntityType.Arrow or EntityType.SpectralArrow)
                     damage += Globals.Random.Next((int)(damage / 2) + 2);
                 if (target is EnderDragonPart part) await part.Parent.DamagePartAsync(Owner ?? this, damage, part.Index, projectile: true);
-                else if (target is Living victim) await victim.DamageCombatAsync(Owner ?? this, damage, CombatDamageKind.Projectile, Weapon);
+                else if (target is Living victim) await victim.DamageCombatAsync(Owner ?? this, damage, CombatDamageKind.Projectile, Weapon, this);
                 else await target.DamageAsync(Owner ?? this, damage);
             }
             var damaged = target.Health < health || target is Living hitLiving && hitLiving.AcceptedDamageCount != accepted;

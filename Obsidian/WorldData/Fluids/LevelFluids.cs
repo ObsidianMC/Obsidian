@@ -45,6 +45,15 @@ internal sealed class LevelFluids : IFluidLevelAccess
     /// </remarks>
     public Random Random { get; } = new();
 
+    internal VectorD GetFlow(Vector position)
+    {
+        lock (sync)
+        {
+            var fluid = fluidLevel.GetFluid(position);
+            return fluid.Type?.GetFlow(fluidLevel, position, fluid) ?? VectorD.Zero;
+        }
+    }
+
     /// <summary>
     /// Starts ticking a complete chunk's fluid ticks, like vanilla when a chunk starts ticking. Chunks that aren't complete,
     /// or already tick, are ignored.

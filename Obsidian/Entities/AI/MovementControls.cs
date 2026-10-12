@@ -63,10 +63,10 @@ public class MoveControl(Mob mob)
         mob.Yaw = LookControl.RotateTowards(mob.Yaw.Degrees, wantedYaw, 90);
         var speed = mob.MovementSpeed * speedModifier;
         var friction = mob.Terrain.GetFriction(mob.Position);
-        var acceleration = mob.InWater || mob.InLava ? 0.02f : mob.MovementFlags.HasFlag(MovementFlags.OnGround) ? speed * 0.21600002f / (friction * friction * friction) : 0.02f;
+        var acceleration = mob.InWater || mob.InLava ? 0.02f : mob.MovementFlags.HasFlag(MovementFlags.OnGround) ? 0.21600002f / (friction * friction * friction) : 0.02f;
         var yaw = mob.Yaw.Degrees * MathF.PI / 180;
         Acceleration = new VectorD(-MathF.Sin(yaw), 0, MathF.Cos(yaw)) * (acceleration * speed * 0.98f);
-        if (delta.Y > 0.6f && horizontalDistance < MathF.Max(1, mob.Dimension.Width))
+        if (delta.Y > mob.GetAttributeValue("minecraft:generic.step_height") && horizontalDistance < MathF.Max(1, mob.Dimension.Width))
             mob.JumpControl.Jump();
     }
 }

@@ -32,7 +32,8 @@ internal sealed class Assets
         Dictionary<string, Codec[]> codecs = GetCodecs(files);
         BiomeEntry[] biomes = [.. codecs["biomes"].Select(biome => new BiomeEntry(biome.Name, biome.RegistryId))];
         EnchantmentEntry[] enchantments = GetEnchantments(files.GetJsonFromArray("enchantments"));
-        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids, biomes, enchantments);
+        EntityEntry[] entities = GetEntities(files.GetJsonFromArray("entities"));
+        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids, biomes, enchantments, entities);
 
         IDictionary<string, List<Sound>> sounds = GetSounds(files.GetJsonFromArray("sounds"));
 
@@ -207,8 +208,16 @@ internal sealed class Assets
         return items.ToArray();
     }
 
+    private static EntityEntry[] GetEntities(string? json)
+    {
+        if (json is null) return [];
+        using var document = JsonDocument.Parse(json);
+        return [.. document.RootElement.EnumerateObject().Where(entry => entry.Value.TryGetProperty("id", out _))
+            .Select(entry => new EntityEntry(entry.Name, entry.Value.GetProperty("id").GetInt32()))];
+    }
+
     public static Tag[] GetTags(string? json, Block[] blocks, Item[] items, Fluid[] fluids, BiomeEntry[] biomes,
-        EnchantmentEntry[] enchantments)
+        EnchantmentEntry[] enchantments, EntityEntry[] entities)
     {
         if (json is null)
             return [];
@@ -220,6 +229,7 @@ internal sealed class Assets
         taggables.AddRange(fluids);
         taggables.AddRange(biomes);
         taggables.AddRange(enchantments);
+        taggables.AddRange(entities);
 
         using var document = JsonDocument.Parse(json);
 

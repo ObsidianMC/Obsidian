@@ -28,7 +28,7 @@ public sealed partial class SnowGolem : PathfinderMob
         var temperature = Terrain.GetTemperature(point);
         if (temperature > 1)
             await DamageEnvironmentAsync(1);
-        if (!Alive || temperature >= 0.8f || MobBitMask.HasFlag(MobBitmask.NoAi))
+        if (!Alive || temperature >= 0.8f || MobBitMask.HasFlag(MobBitmask.NoAi) || !Level.LevelData.GetBooleanRule("mob_griefing"))
             return;
         for (var index = 0; index < 4; index++)
         {

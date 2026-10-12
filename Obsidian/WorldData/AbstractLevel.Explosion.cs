@@ -80,7 +80,11 @@ public abstract partial class AbstractLevel
                     visible++;
             }
             var exposure = (1 - distance) * visible / Math.Max(1, total);
-            await target.DamageAsync(owner ?? source, (float)Math.Floor((exposure * exposure + exposure) / 2 * 7 * diameter + 1));
+            var damage = (float)Math.Floor((exposure * exposure + exposure) / 2 * 7 * diameter + 1);
+            if (target is Living living)
+                await living.DamageCombatAsync(owner ?? source, damage, CombatDamageKind.Explosion);
+            else
+                await target.DamageAsync(owner ?? source, damage);
             var knockback = direction * exposure * (1 - Math.Clamp(target.GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
             target.Motion += knockback;
             if (target is IPlayer)

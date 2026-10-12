@@ -12,9 +12,14 @@ internal static class EntityMovement
             velocity.Y += (0.05f * (levitation.EffectData.Amplifier + 1) - velocity.Y) * 0.2f;
             gravity = 0;
         }
-        var feet = terrain.GetBlock((Vector)(mob.Position + new VectorD(0, 0.1f, 0)).Floor());
-        var inWater = feet?.Material == Material.Water;
-        var inLava = feet?.Material == Material.Lava;
+        var fluidBounds = mob.Dimension.CreateBBFromPosition(mob.Position);
+        var inWater = terrain.ContainsFluid(fluidBounds, water: true);
+        var inLava = terrain.ContainsFluid(fluidBounds, water: false);
+        if (mob is Mob && mob is not (Fish or Squid or Dolphin or Axolotl or Frog or Turtle or Nautilus or EnderDragon or Drowned { Swimming: true }))
+        {
+            if (inWater) velocity += terrain.FluidPush(fluidBounds, water: true, velocity);
+            if (inLava) velocity += terrain.FluidPush(fluidBounds, water: false, velocity);
+        }
         var grounded = mob.MovementFlags.HasFlag(MovementFlags.OnGround);
         if (mob is Mob jumpingMob && jumpingMob.JumpControl.Consume())
         {
@@ -25,22 +30,25 @@ internal static class EntityMovement
         }
 
         var bounds = mob.Dimension.CreateBBFromPosition(mob.Position);
+        var stepHeight = Math.Clamp(mob.GetAttributeValue("minecraft:generic.step_height"), 0, 10);
         var swept = new BoundingBox(VectorD.Min(bounds.Min, bounds.Min + velocity),
-            VectorD.Max(bounds.Max, bounds.Max + velocity) + new VectorD(0, 1, 0));
+            VectorD.Max(bounds.Max, bounds.Max + velocity) + new VectorD(0, stepHeight, 0));
         var shapes = terrain.GetCollisions(swept).ToArray();
         var displacement = Clip(bounds, velocity, shapes);
         var horizontalCollision = Math.Abs(displacement.X - velocity.X) > 0.00001f ||
             Math.Abs(displacement.Z - velocity.Z) > 0.00001f;
 
-        if (mob is Mob && horizontalCollision && (grounded || velocity.Y < 0 && displacement.Y != velocity.Y))
+        if (mob is Mob && stepHeight > 0 && horizontalCollision && (grounded || velocity.Y < 0 && displacement.Y != velocity.Y))
         {
-            var rise = Clip(bounds, new VectorD(0, 0.6f, 0), shapes);
+            var rise = Clip(bounds, new VectorD(0, stepHeight, 0), shapes);
             var step = Clip(bounds.OffsetBy(rise), new VectorD(velocity.X, 0, velocity.Z), shapes);
             var descent = Clip(bounds.OffsetBy(rise + step), new VectorD(0, velocity.Y - rise.Y, 0), shapes);
             var stepped = rise + step + descent;
             if (stepped.X * stepped.X + stepped.Z * stepped.Z > displacement.X * displacement.X + displacement.Z * displacement.Z)
                 displacement = stepped;
         }
+        horizontalCollision = Math.Abs(displacement.X - velocity.X) > 0.00001f ||
+            Math.Abs(displacement.Z - velocity.Z) > 0.00001f;
 
         var onGround = velocity.Y < 0 && Math.Abs(displacement.Y - velocity.Y) > 0.00001f;
         if (!onGround && Math.Abs(velocity.Y) < 0.00001f)
@@ -61,6 +69,14 @@ internal static class EntityMovement
 
         var friction = inWater ? 0.8f : inLava ? 0.5f : grounded ? terrain.GetFriction(mob.Position) * airFriction : airFriction;
         mob.Motion = new VectorD(velocity.X * friction, velocity.Y * (inWater ? 0.8f : inLava ? 0.5f : 0.98f), velocity.Z * friction);
+        if (mob is Mob && (inWater || inLava) && horizontalCollision)
+        {
+            // Vanilla's fluid collision boost allows mobs to climb onto a bank.
+            var exit = bounds.OffsetBy(displacement + new VectorD(mob.Motion.X,
+                mob.Motion.Y + 0.6f - displacement.Y, mob.Motion.Z));
+            if (terrain.IsFree(exit) && terrain.IsFreeOfFluid(exit))
+                mob.Motion = new VectorD(mob.Motion.X, 0.3f, mob.Motion.Z);
+        }
         return mob.Position + displacement;
     }
 

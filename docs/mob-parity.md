@@ -2,7 +2,25 @@
 
 This document inventories missing and approximate mob behavior in the current source, including shared systems and older mobs. A concrete factory implementation does not imply vanilla parity. **Missing** means no corresponding behavior was found in the audited implementation; **approximate** means behavior exists but uses a reduced model; **unverified** means equivalence still needs a targeted comparison or runtime validation. Shared gaps apply to every relevant mob, even when not repeated in its entry.
 
-The audit covers `Obsidian/Entities`, mob spawning/storage, village/raid systems, game events, explosions and End-fight handling. It is a source audit, not an exhaustive comparison of every vanilla code path. Builds, tests and in-game checks were not run. Unknown defects and unlisted edge cases remain possible.
+The audit covers `Obsidian/Entities`, mob spawning/storage, village/raid systems, game events, explosions and End-fight handling. It is not an exhaustive comparison of every vanilla code path. Focused automated checks cover the implemented changes below; in-game equivalence is still unverified. Unknown defects and unlisted edge cases remain possible.
+
+## Implemented corrections
+
+- Deep-water surface paths, shore collision boosts and navigation through surface bobbing, including a chicken escaping onto a bank. Movement checks account for waterlogged blocks and fluid surface heights. Water/lava currents use vanilla fluid gradients and aquatic pushing exceptions.
+- Ground movement speed, direct flight commands and rounded relative movement packet deltas.
+- Constructor chunk status, so explicitly complete chunks tick their mobs/projectiles. Species step-height attributes now drive stepping, jump decisions and allowed path rises.
+- Entity tag generation, including underwater breathing, freeze immunity and Wither-friendly entities.
+- Hidden potion-effect stacking, concurrent hidden durations, infinite durations, saved visibility flags and late-tracker flags.
+- Mob absorption grants, consumption, expiry and fractional save restoration; fire immunity/resistance rejects contact damage before armor wear and hurt cooldowns.
+- Suffocation, cactus, powder-snow freezing and wearable immunity, wither roses, dimension-relative void damage, and fire-contact armor rules.
+- `mob_griefing` checks for sheep, foxes, Endermen, silverfish, snow golems and equipment pickup.
+- Wither spawn-charge targeting, gravity, chase acceleration and main-head firing delay. Boss bars follow tracked Withers and fight-controlled dragons, update custom names, and retain dragon death-animation health.
+- Dragon hover initialization, flying death approach, multipart orientation/history, flight graph, flight steering, takeoff route and seated scanning transitions. Remaining phase and fight gaps are listed below.
+- Typed guardian beam, dragon cloud, explosion and Warden sonic damage. Sonic knockback occurs only after accepted damage and excludes ordinary hurt knockback.
+- Iron-golem ingot repair, death-drop quantities and attack launch. Wolf armor equip/removal/repair and damage absorption; wolf food healing uses twice the food nutrition.
+- Direct projectile positions for shields, armored Wither projectile rejection and guardian thorns damage context.
+- Cat owner-follow teleport thresholds and sleeping-owner relaxation; parrot imitation selection, sounds and owner-follow timing; bee nectar crop growth and saved growth counters.
+- Older mob saves without `TicksFrozen` load with zero frozen ticks.
 
 ## Shared systems
 
@@ -10,7 +28,7 @@ The audit covers `Obsidian/Entities`, mob spawning/storage, village/raid systems
 
 - **Approximate:** Brain-driven mobs use goals and local timers rather than the complete vanilla activities, memories and sensors. Work, social behavior, hunting, retreat, group coordination and interruption rules are reduced.
 - **Approximate:** Ground paths use a common node evaluator with fixed step/drop constraints; swimming and flying use a common volume movement model. Species-specific path costs, water entry/exit, obstacle avoidance, landing selection, door handling and stuck recovery are not fully equivalent.
-- **Approximate:** Movement uses common gravity, friction, fluid checks and a fixed 0.6-block collision step. Per-mob step heights, fluid flow, climbing, block movement effects and exact steering need parity work.
+- **Approximate:** Movement uses common gravity, friction and a reduced collision-step model. Climbing, block movement effects and exact species-specific steering need parity work.
 - **Missing/incomplete:** General entity pushing, crowd collision and entity cramming are not part of the mob movement collision model. Target predicates frequently use explicit type lists rather than the complete vanilla tags and context rules.
 - **Unverified:** Goal priority, target visibility/retention, difficulty scaling, attack reach and `NoAI` handling across every species/state.
 
@@ -19,10 +37,10 @@ Source: `Entities/Mob.AI.cs`, `Entities/AI/*`, `Entities/PathfinderMob.cs`, indi
 ### Damage, effects and equipment
 
 - **Missing:** A complete typed damage-source model. The attacker entity cannot represent all direct/indirect owners, projectile/magic/explosion distinctions and bypass tags, so immunities, retaliation and kill attribution cannot consistently match vanilla.
-- **Incomplete:** Shield blocking/disabling, enchantment protections and attacks, absorption consumption, equipment attribute modifiers, durability rules and exact damage/knockback ordering. Mob armor has a material-name lookup; player incoming damage has a cooldown but no equivalent armor/shield calculation in `Player.Combat.cs`.
+- **Incomplete:** Exhaustive shield, enchantment, absorption, equipment attribute, durability and damage/knockback ordering equivalence. Player armor/shield/protection calculations exist; mob armor still uses a material-name lookup.
 - **Approximate:** Equipment selection scores item names, armor values and durability rather than the complete component/enchantment/preference rules. Spawn armor is randomized without complete enchantment initialization. Melee weapon values are a limited item-name calculation.
-- **Missing/incomplete:** Suffocation inside blocks, cactus damage, freezing, wither-rose damage and the complete environmental damage matrix in the common mob environment tick. Fire, lava, drowning, falls, magma and berry bushes cover only part of that matrix; the void check uses a fixed Y threshold.
-- **Approximate:** Active effects replace an existing effect directly, without vanilla hidden-effect stacking/priority behavior. Only selected effects have server-side gameplay handling. Restoration saves duration/amplifier without the complete ambient/icon/particle state; living metadata writes an empty effect-particle list.
+- **Incomplete:** The complete environmental damage matrix, collision-shape edge cases and special species exceptions need comparison beyond the implemented common hazards.
+- **Incomplete:** Only selected effects have server-side gameplay handling; living metadata writes an empty effect-particle list. Hidden-effect stacking and saved ambient/icon/particle flags are implemented.
 - **Unverified:** Invulnerability windows, resistance/protection exceptions, potion interactions and special damage behavior across all mobs. Dedicated sonic/magic helpers do not resolve the shared damage model.
 
 Source: `Entities/Living.cs`, `Entities/Mob.AI.cs`, `Entities/Mob.Environment.cs`, `Entities/Mob.Equipment.cs`, `Entities/Player.Combat.cs`.
@@ -61,14 +79,13 @@ Source: `Entities/Mob.Riding.cs`, `Entities/AbstractHorse.cs`, `Entities/Chested
 - **Incomplete:** Vanilla save interoperability. Equipment and effects use `ObsidianEquipment`/`ObsidianEffects`; many memories and timers use custom fields. Preserving unknown NBT does not make it drive behavior. Complete vanilla Brain, attribute modifiers, equipment/effect and passenger data are not interpreted.
 - **Incomplete:** Numerous goal-local timers, targets, animation states and cross-references reset on reload. Generic conversion copies selected fields rather than the complete vanilla transfer policy; gossip, offers, effects and passenger relationships require explicit handling.
 - **Unverified:** Owner/rider/projectile-reference restoration when entities load in different chunks/orders or dimensions.
-- **Approximate:** Mob relative movement packets floor the displacement rather than using the rounded-position delta helper in `Entity.cs`; exact client position reconstruction needs parity work.
+- **Unverified:** Client position reconstruction across movement, teleports, mount changes and late tracking; ordinary mob relative movement uses rounded-position deltas.
 - **Incomplete:** Full sounds, particles, status events and animations. Common sound naming/volume/pitch omits species- and state-specific cases. Packet payloads, metadata indexes, late tracking and movement/animation synchronization require client validation.
 
 Source: `Entities/Mob.Persistence.cs`, `Entities/EntityNbt.cs`, `WorldData/MobStorage.cs`, mob metadata/sound methods and tracking packets.
 
 ### Gamerules and world events
 
-- **Missing/incomplete:** `mob_griefing` checks on several older actions, including sheep grass eating, fox berry harvesting, Enderman block pickup/placement, silverfish infestation/wake-up and Snow Golem snow placement. Generic equipment pickup likewise lacks that rule check.
 - **Incomplete:** Exhaustive coverage of spawn/drop/griefing rules and specialized event contexts. Existing checks in bosses, raids and egg systems do not establish compliance for every mob action.
 - **Incomplete:** Full vibration event coverage and calibrated-sensor frequency filtering. Warning escalation, pending vibrations and active sensor/shrieker timing are transient rather than a complete saved vanilla listener state.
 - **Approximate:** Hive occupant timing/release and frogspawn lifecycle run through the player-nearby spawning loop; block lifecycles outside that loop and exact release/hatching conditions need parity work.
@@ -111,13 +128,13 @@ Source: `Entities/Villager*.cs`, `Entities/ZombieVillager.cs`, `Entities/Wanderi
 | Bee | Missing crop growth while carrying nectar; reduced hive/flower search, pollination and anger/sting timing. Complete smoke/fire/hive harvesting/release interactions and saved anger targets need parity work. |
 | Cat | Missing bed/chest/furnace sitting, owner-sleep relaxation and morning gifts. Lying/relaxation metadata is always false; owner following lacks the distant teleport behavior. Full village/moon/variant selection is incomplete. |
 | Ocelot | Simplified temptation/trust checks, avoidance and prey stalking; complete feeding movement constraints and spawn-group behavior need comparison. |
-| Wolf | Missing wolf-armor equip/remove/repair and its damage absorption. Complete pack/owner-defense targeting, prey/tag rules, anger and follow/teleport conditions remain incomplete. |
+| Wolf | Complete pack/owner-defense targeting, prey/tag rules, anger and follow/teleport conditions remain incomplete. Armor crack particles/sounds and custom equipment-component interactions need comparison. |
 | Parrot | Missing shoulder landing/release and jukebox dancing behavior. Imitation is limited to an explicit older mob list, omitting the 1.21.11 additions; following lacks full teleport/perching behavior. |
 | Fox | Missing full trusted-player defense, held-food eating and glow-berry interaction; simplified sleep/pounce/prey behavior. Metadata only exposes sleeping, omitting the full crouch/pounce/sit/faceplant presentation. |
 | Frog, Tadpole | Reduced long-jump/swimming/tongue decisions and water search; frog pregnancy uses a local placement scan rather than full spawn-laying behavior. Exact tongue timing, frogspawn conditions and maturation/bucket transfer need validation. |
 | Goat | Approximate ram target selection/run-up/collision and long-jump trajectory/landing checks; full horn selection/drop and screaming/inheritance rules need comparison. |
 | Panda | Reduced personality activities, rolling, sneezing, resting and aggression. Breeding uses a fixed nearby bamboo count; full social/unhappy/thunder behavior and animation state are incomplete. |
-| Pig, Cow, Chicken, Sheep | Shared breeding/temptation/spawn-group/loot limitations. Sheep color mixing is a hard-coded subset rather than recipe-driven matching, and grazing ignores `mob_griefing`. Exact biome distributions, egg/jockey behavior and interaction presentation need validation. |
+| Pig, Cow, Chicken, Sheep | Shared breeding/temptation/spawn-group/loot limitations. Sheep color mixing is a hard-coded subset rather than recipe-driven matching. Exact biome distributions, egg/jockey behavior and interaction presentation need validation. |
 | Mooshroom | Missing lightning-driven red/brown conversion; complete flower/stew/conversion state and presentation need validation. |
 | Rabbit | Approximate jumps/navigation/avoidance and crop interactions; full spawn variants, killer-rabbit behavior and conditional/looting drops need comparison. |
 | Polar Bear | Approximate cub/parent defense, anger and standing/attack decisions; full target retention and presentation need comparison. |
@@ -145,8 +162,8 @@ The mount and imitation requirements above use the [official Java Edition 1.21.1
 | Squid, Glow Squid | Approximate movement/tentacle rotation, fleeing/ink effects and environmental behavior; glow/dark timing and full presentation unverified. |
 | Dolphin | Treasure following uses short waypoints toward a structure position rather than full search/navigation; item play only pushes a nearby item. Complete breathing, swimmer-following, jumping and group retaliation behavior is reduced. |
 | Guardian, Elder Guardian | Approximate beam targeting, movement and thorns damage; exact mining-fatigue selection/timing/presentation and home restrictions need parity work. |
-| Iron Golem | Missing iron-ingot repair, flower offering and iron/poppy death drops in the current class. Reduced village defense without full reputation, village patrol/home and attack-launch behavior. |
-| Snow Golem | Approximate target selection, temperature/snow-placement rules and projectile behavior; snow placement ignores `mob_griefing`. |
+| Iron Golem | Missing flower offering. Reduced village defense without full reputation and village patrol/home behavior; anger and attack context need comparison. |
+| Snow Golem | Approximate target selection, temperature/snow-placement rules and projectile behavior. |
 | Copper Golem | Approximate chest search, sorting/timing and container matching; loot-table containers are skipped. Missing full statue reactivation/lightning/event rules; double-chest/open-container behavior and oxidation/wax interactions need comparison. |
 
 Source: `Entities/Fish.cs`, `Entities/Squid.cs`, `Entities/GlowSquid.cs`, `Entities/Dolphin.cs`, `Entities/Guardian.cs`, `Entities/IronGolem.cs`, `Entities/SnowGolem.cs`, `Entities/CopperGolem.cs` and their shared systems.

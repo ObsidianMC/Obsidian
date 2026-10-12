@@ -132,13 +132,17 @@ internal sealed class EatGrassGoal(Sheep sheep) : Goal
             return;
         var position = (Vector)sheep.Position.Floor();
         if (sheep.Terrain.GetBlock(position)?.Material == Material.ShortGrass)
-            await sheep.Level.SetBlockAsync(position, BlocksRegistry.Air, true);
+        {
+            if (sheep.Level.LevelData.GetBooleanRule("mob_griefing"))
+                await sheep.Level.SetBlockAsync(position, BlocksRegistry.Air, true);
+        }
         else
         {
             position -= new Vector(0, 1, 0);
             if (sheep.Terrain.GetBlock(position)?.Material != Material.GrassBlock)
                 return;
-            await sheep.Level.SetBlockAsync(position, BlocksRegistry.Dirt, true);
+            if (sheep.Level.LevelData.GetBooleanRule("mob_griefing"))
+                await sheep.Level.SetBlockAsync(position, BlocksRegistry.Dirt, true);
         }
         sheep.EatGrass();
     }
