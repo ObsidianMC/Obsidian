@@ -264,7 +264,7 @@ internal static class LevelStemData
     }
 
     // Vanilla's Climate.ParameterList codec: a non-empty list of {"parameters": point, "biome": biome}.
-    private static List<(ParameterPoint Point, BiomeCodec Biome)> ParameterList(JsonElement value, string path)
+    internal static List<(ParameterPoint Point, BiomeCodec Biome)> ParameterList(JsonElement value, string path)
     {
         CodecJson.Array(value, path);
 

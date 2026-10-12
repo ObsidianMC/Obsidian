@@ -2,6 +2,7 @@ using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.World.Generator.Noise;
 using Obsidian.Plugins;
+using Obsidian.Registries;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -60,10 +61,17 @@ internal sealed class MojangDimension
     public string Identifier { get; }
 
     /// <summary>
-    /// The biomes the dimension's biome source can return, in vanilla's possibleBiomes order. Its generator orders the
-    /// features of these biomes, and only these, together.
+    /// The biomes the dimension's biome source can return, in vanilla's possibleBiomes order, followed by those its
+    /// plugins' biome regions add (see <see cref="PluginBiomeRegions"/>). Its generator orders the features of these
+    /// biomes, and only these, together.
     /// </summary>
-    public IReadOnlyList<BiomeCodec> PossibleBiomes => this.possibleBiomes();
+    public IReadOnlyList<BiomeCodec> PossibleBiomes =>
+        PluginBiomeRegions.PossibleBiomes(this.Identifier, this.possibleBiomes());
+
+    /// <summary>
+    /// The possible biomes of the dimension's own biome source, without those of plugins' biome regions.
+    /// </summary>
+    public IReadOnlyList<BiomeCodec> SourceBiomes => this.possibleBiomes();
 
     /// <summary>
     /// The dimension type's codec, which decides the build range and sky light.
@@ -141,7 +149,8 @@ internal sealed class MojangDimension
         this.NoiseSettings = noiseSettings;
         this.settings = settings;
         this.SeaLevel = settings.SeaLevel;
-        this.createBiomeSource = createBiomeSource;
+        // Plugins' biome regions join the dimension's biome source as it's created.
+        this.createBiomeSource = PluginBiomeRegions.Wrap(identifier, createBiomeSource);
         this.possibleBiomes = possibleBiomes;
         this.Plugins = plugins.IsDefault ? [] : plugins;
     }
