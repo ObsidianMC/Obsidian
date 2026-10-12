@@ -1,3 +1,4 @@
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Dimensions;
 
 namespace Obsidian.WorldData.Generators.Mojang;
@@ -10,21 +11,52 @@ internal sealed class MojangDimension
     /// <summary>
     /// The overworld (dimension type <c>minecraft:overworld</c>, noise settings <c>minecraft:overworld</c>).
     /// </summary>
-    public static MojangDimension Overworld { get; } = new("minecraft:overworld", "minecraft:overworld", MultiNoiseBiomeSource.Overworld,
+    public static MojangDimension Overworld { get; } = new(
+        "minecraft:overworld",
+        "minecraft:overworld",
+        MultiNoiseBiomeSource.Overworld,
+        () => MultiNoiseBiomeSource.OverworldBiomes,
         ["cave", "cave_extra_underground", "canyon"]);
 
     /// <summary>
     /// The nether (dimension type <c>minecraft:the_nether</c>, noise settings <c>minecraft:nether</c>).
     /// </summary>
-    public static MojangDimension Nether { get; } = new("minecraft:the_nether", "minecraft:nether", MultiNoiseBiomeSource.Nether,
+    public static MojangDimension Nether { get; } = new(
+        "minecraft:the_nether",
+        "minecraft:nether",
+        MultiNoiseBiomeSource.Nether,
+        () => MultiNoiseBiomeSource.NetherBiomes,
         ["nether_cave"]);
 
     /// <summary>
     /// The end (dimension type <c>minecraft:the_end</c>, noise settings <c>minecraft:end</c>).
     /// </summary>
-    public static MojangDimension End { get; } = new("minecraft:the_end", "minecraft:end", randomState => new TheEndBiomeSource(randomState), []);
+    public static MojangDimension End { get; } = new(
+        "minecraft:the_end",
+        "minecraft:end",
+        randomState => new TheEndBiomeSource(randomState),
+        () => TheEndBiomeSource.Biomes,
+        []);
+
+    /// <summary>
+    /// Every dimension vanilla's world preset generates.
+    /// </summary>
+    public static IReadOnlyList<MojangDimension> All { get; } = [Overworld, Nether, End];
 
     private readonly string dimensionType;
+
+    private readonly Func<IReadOnlyList<BiomeCodec>> possibleBiomes;
+
+    /// <summary>
+    /// The dimension's identifier, which is its dimension type's.
+    /// </summary>
+    public string Identifier => this.dimensionType;
+
+    /// <summary>
+    /// The biomes the dimension's biome source can return, in vanilla's possibleBiomes order. Its generator orders the
+    /// features of these biomes, and only these, together.
+    /// </summary>
+    public IReadOnlyList<BiomeCodec> PossibleBiomes => this.possibleBiomes();
 
     /// <summary>
     /// The dimension type's codec, which decides the build range and sky light.
@@ -67,12 +99,17 @@ internal sealed class MojangDimension
     /// </remarks>
     public IReadOnlyList<string> Carvers { get; }
 
-    private MojangDimension(string dimensionType, string noiseSettings, Func<RandomState, IClimateBiomeSource> createBiomeSource,
+    private MojangDimension(
+        string dimensionType,
+        string noiseSettings,
+        Func<RandomState, IClimateBiomeSource> createBiomeSource,
+        Func<IReadOnlyList<BiomeCodec>> possibleBiomes,
         IReadOnlyList<string> carvers)
     {
         this.dimensionType = dimensionType;
         this.NoiseSettings = noiseSettings;
         this.CreateBiomeSource = createBiomeSource;
+        this.possibleBiomes = possibleBiomes;
         this.Carvers = carvers;
     }
 }

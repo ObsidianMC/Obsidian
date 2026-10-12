@@ -33,10 +33,12 @@ namespace Obsidian.WorldData.Features;
 /// <see cref="InvalidDataException"/>.</param>
 /// <param name="placedFeature">Looks up a placed feature by identifier, or throws an
 /// <see cref="InvalidDataException"/>.</param>
+/// <param name="created">Called with the type of every object created, such as a plugin's feature type.</param>
 internal sealed class WorldgenReader(
     WorldgenTypes types,
     Func<string, ConfiguredFeatureBase> configuredFeature,
-    Func<string, PlacedFeature> placedFeature)
+    Func<string, PlacedFeature> placedFeature,
+    Action<Type>? created = null)
 {
     private static readonly string[] discriminators = ["type", "predicate_type", "processor_type", "element_type"];
 
@@ -49,14 +51,32 @@ internal sealed class WorldgenReader(
     /// <param name="identifier">The feature's identifier, or null for one defined inline.</param>
     /// <param name="path">Where the value is in its file, for messages.</param>
     public ConfiguredFeatureBase ReadConfiguredFeature(JsonElement json, string? identifier = null, string path = "") =>
-        this.ReadConfiguredFeature(json, typeof(ConfiguredFeatureBase), identifier, path);
+        Guard(path, () => this.ReadConfiguredFeature(json, typeof(ConfiguredFeatureBase), identifier, path));
 
     /// <summary>
     /// Reads a placed feature, <c>{"feature": ..., "placement": [...]}</c>.
     /// </summary>
     /// <param name="identifier">The feature's identifier, or null for one defined inline.</param>
     /// <param name="path">Where the value is in its file, for messages.</param>
-    public PlacedFeature ReadPlacedFeature(JsonElement json, string? identifier = null, string path = "")
+    public PlacedFeature ReadPlacedFeature(JsonElement json, string? identifier = null, string path = "") =>
+        Guard(path, () => this.ReadPlacedFeatureCore(json, identifier, path));
+
+    // Reading reflects over types, plugins' included, and runs their constructors and setters, which can fail in
+    // more ways than the data's errors (a plugin type missing a dependency, an open generic type, ...). Any failure
+    // is the file's, so that the file is left out rather than stopping the plugin loading.
+    private static T Guard<T>(string path, Func<T> read)
+    {
+        try
+        {
+            return read();
+        }
+        catch (Exception ex) when (ex is not (InvalidDataException or OutOfMemoryException))
+        {
+            throw Error(path, ex.InnerException?.Message ?? ex.Message);
+        }
+    }
+
+    private PlacedFeature ReadPlacedFeatureCore(JsonElement json, string? identifier, string path)
     {
         Object(json, path);
 
@@ -146,7 +166,7 @@ internal sealed class WorldgenReader(
         {
             return json.ValueKind == JsonValueKind.String
                 ? this.Placed(json, path)
-                : this.ReadPlacedFeature(json, null, path);
+                : this.ReadPlacedFeatureCore(json, null, path);
         }
 
         if (target == typeof(StructureProcessorList))
@@ -441,17 +461,22 @@ internal sealed class WorldgenReader(
 
     // Creating a type, and setting its properties, runs its code: a failure is the data's error, so that a
     // plugin's file is left out rather than stopping the plugin loading.
-    private static object Create(Type type, string path)
+    private object Create(Type type, string path)
     {
+        object instance;
+
         try
         {
-            return Activator.CreateInstance(type, nonPublic: true)
+            instance = Activator.CreateInstance(type, nonPublic: true)
                 ?? throw Error(path, $"{type.Name} can't be created");
         }
         catch (Exception ex) when (ex is TargetInvocationException or MissingMethodException or MemberAccessException)
         {
             throw Error(path, $"{type.Name} can't be created: {ex.InnerException?.Message ?? ex.Message}");
         }
+
+        created?.Invoke(type);
+        return instance;
     }
 
     private static void Set(PropertyInfo property, object instance, object? value, string path)

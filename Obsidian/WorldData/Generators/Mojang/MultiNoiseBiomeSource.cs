@@ -31,6 +31,16 @@ internal sealed class MultiNoiseBiomeSource : IClimateBiomeSource
     }
 
     /// <summary>
+    /// The overworld preset's possible biomes, without creating a source.
+    /// </summary>
+    public static IReadOnlyList<BiomeCodec> OverworldBiomes => overworldParameters.Value.Biomes;
+
+    /// <summary>
+    /// The nether preset's possible biomes, without creating a source.
+    /// </summary>
+    public static IReadOnlyList<BiomeCodec> NetherBiomes => netherParameters.Value.Biomes;
+
+    /// <summary>
     /// Creates the source for vanilla's overworld biome layout (the <c>minecraft:overworld</c> parameter list preset).
     /// </summary>
     public static MultiNoiseBiomeSource Overworld(RandomState randomState) =>

@@ -71,7 +71,19 @@ internal sealed class WorldgenTypes
 
     private static IEnumerable<string> Identifiers(Type type)
     {
-        foreach (var attribute in type.GetCustomAttributes(inherit: false))
+        object[] attributes;
+
+        // A plugin's type whose attributes can't be loaded (a dependency missing, say) can't be named by data.
+        try
+        {
+            attributes = type.GetCustomAttributes(inherit: false);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            yield break;
+        }
+
+        foreach (var attribute in attributes)
         {
             var identifier = attribute switch
             {

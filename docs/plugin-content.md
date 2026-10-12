@@ -291,10 +291,15 @@ The rules:
 - Features may refer to each other in any order and across plugins; a feature that refers back to itself is left
   out. Each feature is read once and shared, so a feature given by identifier is the same instance everywhere.
 - A biome's features are vanilla's, or a plugin biome's `features`, with every `add_features` modifier applied and
-  then every `remove_features` one, each in load order, like NeoForge's phases. Features are ordered across biomes
-  like vanilla orders them, which decides their random seeds, so a world generates like vanilla with the same data
-  pack. A modifier that would order features in a cycle (one placed both before and after another in different
-  biomes, which vanilla can't generate) is left out with an error.
+  then every `remove_features` one, each in load order, like NeoForge's phases. Features are ordered across a
+  dimension's biomes like vanilla orders them, which decides their random seeds, so a world generates like vanilla
+  with the same data pack. Like NeoForge, only the lists after every phase count: an add that a later removal
+  resolves is fine. When a dimension's final lists would order features in a cycle (one placed both before and after
+  another in its biomes, which vanilla can't generate), the error is logged and that dimension is generated without
+  plugins' biome modifiers; other dimensions keep them.
+- Placing a feature made of a plugin's types (a feature type in its assembly, say) is a call into the plugin, like
+  its event handlers, so unloading waits for chunks being decorated with it. Chunks decorated while it unloads
+  leave its features out.
 - Features aren't sent to clients or saved, so they come and go with their plugin: when plugins load or unload, the
   features are read again and every world's generator moves to them for the chunks it decorates next. Chunks
   already generated keep what was placed. As in vanilla, adding features to a step can change the seeds of the

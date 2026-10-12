@@ -102,8 +102,8 @@ client. This document describes the design and tracks its progress. The archive 
      features again like vanilla with the same data pack. Without plugins, worlds generate exactly as before; chunks
      already generated are kept.
    - Next, slice 3: codec types registered by plugins (feature, placement modifier and density function types).
-     Worldgen types in plugins' assemblies are already found by their attributes; registering them, and freeing
-     them on unload, isn't designed yet.
+     Worldgen types in plugins' assemblies are already found by their attributes, and placing features made of
+     them holds a call into their plugin, which unloading waits for; registering them isn't designed yet.
    - Then slice 4: dimensions and reload-safe generators, with plugin biomes placed in dimensions.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource

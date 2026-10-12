@@ -6,7 +6,9 @@ using Obsidian.WorldData.Features.Tree;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Fluids;
+using Obsidian.Plugins;
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -24,7 +26,7 @@ internal sealed class ChunkBuilder
     private readonly IClimateBiomeSource biomeSource;
     private readonly CarverStep carverStep;
 
-    // The decorator of the current biome features, rebuilt when plugins change them (see CurrentDecorator).
+    // The decorator of the current biome features, rebuilt when plugins change them (see CurrentDecoration).
     private readonly Func<WorldgenFeatureSet> features;
     private readonly Lock decorationLock = new();
     private Decoration decoration;
@@ -82,7 +84,7 @@ internal sealed class ChunkBuilder
         this.surfaceBuilder = new SurfaceBuilder(this.RandomState, this.biomeSource);
         this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource, dimension.Carvers);
         this.features = features ?? (static () => PluginFeatures.Current);
-        this.decoration = this.CreateDecoration(this.features().BiomeFeatures);
+        this.decoration = this.CreateDecoration(this.features());
         this.regionRandom = this.RandomState.Random.FromHashOf("minecraft:worldgen_region_random").ForkPositional();
         this.rentNoiseChunk = this.RentNoiseChunk;
 
@@ -178,45 +180,98 @@ internal sealed class ChunkBuilder
             .Select(entry => entry.Value)
             .ToArray();
 
-        var decorator = this.CurrentDecorator();
-        decorator.Decorate(region, neighbors, chunkX, chunkZ, this.Structures, this.terrainGenerator, onPlaced);
+        var decoration = this.CurrentDecoration();
+        var calls = EnterPlugins(decoration, out var skip);
+
+        try
+        {
+            decoration.Decorator.Decorate(
+                region,
+                neighbors,
+                chunkX,
+                chunkZ,
+                this.Structures,
+                this.terrainGenerator,
+                onPlaced,
+                skip);
+        }
+        finally
+        {
+            for (var i = calls.Length - 1; i >= 0; i--)
+                calls[i].Dispose();
+        }
     }
 
     /// <summary>
     /// Moves decoration to the current biome features, if they changed, so the previous ones aren't kept.
     /// </summary>
-    public void RefreshFeatures() => this.CurrentDecorator();
+    public void RefreshFeatures() => this.CurrentDecoration();
 
-    // The decorator of the current biome features. A chunk is decorated with one decorator throughout; ones being
+    // Plugins' feature types run plugin code, so decorating is a call into every plugin whose features it may place,
+    // which keeps the plugin from being released (its services disposed, its load context unloaded) until it ends.
+    // A plugin that's unloading refuses, and its features are left out, as they are once generators move on.
+    // Without plugin types, as with vanilla's features, there's nothing to enter.
+    private static PluginCall[] EnterPlugins(Decoration decoration, out Func<PlacedFeature, bool>? skip)
+    {
+        skip = null;
+
+        if (decoration.Plugins.IsEmpty)
+            return [];
+
+        var calls = new List<PluginCall>(decoration.Plugins.Length);
+        HashSet<PluginContainer>? refused = null;
+
+        foreach (var plugin in decoration.Plugins)
+        {
+            if (plugin.TryEnter() is PluginCall call)
+                calls.Add(call);
+            else
+                (refused ??= []).Add(plugin);
+        }
+
+        if (refused is not null)
+            skip = feature => decoration.Owners.TryGetValue(feature, out var owners) && owners.Any(refused.Contains);
+
+        return [.. calls];
+    }
+
+    // The decoration of the current biome features. A chunk is decorated with one decorator throughout; ones being
     // decorated when plugins change finish with the previous features. Like vanilla with the same data pack, the
     // new decorator sorts the features again, which can change the seeds of vanilla's features in a step plugins
     // added to.
-    private FeatureDecorator CurrentDecorator()
+    private Decoration CurrentDecoration()
     {
         var decoration = Volatile.Read(ref this.decoration);
         if (ReferenceEquals(decoration.BiomeFeatures, this.features().BiomeFeatures))
-            return decoration.Decorator;
+            return decoration;
 
         lock (this.decorationLock)
         {
             // Read again under the lock, so a slower thread can't put back features older than another's.
-            var biomeFeatures = this.features().BiomeFeatures;
-            if (!ReferenceEquals(this.decoration.BiomeFeatures, biomeFeatures))
-                Volatile.Write(ref this.decoration, this.CreateDecoration(biomeFeatures));
+            var features = this.features();
+            if (!ReferenceEquals(this.decoration.BiomeFeatures, features.BiomeFeatures))
+                Volatile.Write(ref this.decoration, this.CreateDecoration(features));
 
-            return this.decoration.Decorator;
+            return this.decoration;
         }
     }
 
-    private Decoration CreateDecoration(
-        IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> biomeFeatures)
+    // Keeps only what decorating needs of the feature set, so that a plugin's features not in any biome aren't
+    // kept after the plugin unloads.
+    private Decoration CreateDecoration(WorldgenFeatureSet features)
     {
-        var biomes = this.biomeSource.PossibleBiomes;
-        return new Decoration(biomeFeatures, new FeatureDecorator(biomes, biomeFeatures, this.settings.Noise.Height));
+        var decorator = new FeatureDecorator(
+            this.biomeSource.PossibleBiomes,
+            features.BiomeFeatures,
+            this.settings.Noise.Height);
+
+        return new Decoration(features.BiomeFeatures, features.Owners, features.Plugins, decorator);
     }
 
     private sealed record Decoration(
         IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> BiomeFeatures,
+        FrozenDictionary<PlacedFeature, ImmutableArray<PluginContainer>> Owners,
+        ImmutableArray<PluginContainer> Plugins,
         FeatureDecorator Decorator);
 
     /// <summary>

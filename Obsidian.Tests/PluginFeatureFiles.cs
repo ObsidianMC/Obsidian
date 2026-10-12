@@ -76,7 +76,37 @@ public class PluginFeatureFiles
         }
         """;
 
-    // A plugin biome with a placed feature defined inline and the plugin's ore.
+    private const string NoOp = """{ "feature": { "type": "minecraft:no_op", "config": {} }, "placement": [] }""";
+
+    // Plains places a before b, and forest and nether wastes b before a.
+    private const string AddAB = """
+        {
+          "type": "neoforge:add_features",
+          "biomes": "minecraft:plains",
+          "features": ["featurefiles:a", "featurefiles:b"],
+          "step": "vegetal_decoration"
+        }
+        """;
+
+    private const string AddBA = """
+        {
+          "type": "neoforge:add_features",
+          "biomes": ["minecraft:forest", "minecraft:nether_wastes"],
+          "features": ["featurefiles:b", "featurefiles:a"],
+          "step": "vegetal_decoration"
+        }
+        """;
+
+    private const string RemoveA = """
+        {
+          "type": "neoforge:remove_features",
+          "biomes": "minecraft:forest",
+          "features": "featurefiles:a"
+        }
+        """;
+
+    // A plugin biome with a placed feature defined inline, written leniently like data packs can be, and the plugin's
+    // ore.
     private const string Marsh = """
         {
           "has_precipitation": true,
@@ -86,7 +116,10 @@ public class PluginFeatureFiles
           "carvers": [],
           "features": [
             [],
-            [{ "feature": { "type": "minecraft:no_op", "config": {} }, "placement": [] }, "featurefiles:ore_marker"]
+            [
+              { "feature": { "type": "minecraft:no_op", "config": {} /* off */, }, "placement": [] },
+              "featurefiles:ore_marker"
+            ]
           ],
           "spawners": {},
           "spawn_costs": {}
@@ -104,7 +137,12 @@ public class PluginFeatureFiles
             Parse(PluginFeatures.ConfiguredFeature, "featurefiles:ore_marker", Ore),
             Parse(PluginFeatures.PlacedFeature, "featurefiles:ore_marker", PlacedOre),
             Parse(PluginFeatures.BiomeModifier, "featurefiles:remove_coal", RemoveCoal),
-            Parse(PluginFeatures.BiomeModifier, "featurefiles:add_ore", AddOre)
+            Parse(PluginFeatures.BiomeModifier, "featurefiles:add_ore", AddOre),
+            Parse(PluginFeatures.PlacedFeature, "featurefiles:a", NoOp),
+            Parse(PluginFeatures.PlacedFeature, "featurefiles:b", NoOp),
+            Parse(PluginFeatures.BiomeModifier, "featurefiles:add_ab", AddAB),
+            Parse(PluginFeatures.BiomeModifier, "featurefiles:add_ba", AddBA),
+            Parse(PluginFeatures.BiomeModifier, "featurefiles:remove_a", RemoveA)
         ];
 
         var marsh = PluginCodecs.Parse(
@@ -134,6 +172,24 @@ public class PluginFeatureFiles
         var marshSteps = current.BiomeFeatures["featurefiles:marsh"];
         Assert.Equal("minecraft:no_op", marshSteps[1][0].Feature.Type);
         Assert.Same(ore, marshSteps[1][1]);
+
+        // Features are ordered once every modifier ran, and per dimension: removing a from forest resolves the
+        // overworld's cycle, and the nether's order is its own.
+        var a = current.PlacedFeatures["featurefiles:a"];
+        var b = current.PlacedFeatures["featurefiles:b"];
+        var vegetal = (int)DecorationStep.VegetalDecoration;
+
+        Assert.Equal([a, b], current.BiomeFeatures["minecraft:plains"][vegetal].TakeLast(2));
+        Assert.Equal([b], current.BiomeFeatures["minecraft:forest"][vegetal].TakeLast(1));
+        Assert.Equal([b, a], current.BiomeFeatures["minecraft:nether_wastes"][vegetal].TakeLast(2));
+
+        // Without the removal, the overworld can't be ordered and is generated without the modifiers.
+        var cycle = PluginFeatures.Build(files[..^1], [], [], logger);
+        var cycleA = cycle.PlacedFeatures["featurefiles:a"];
+
+        Assert.Single(logger.Messages);
+        Assert.DoesNotContain(cycleA, cycle.BiomeFeatures["minecraft:plains"][vegetal]);
+        Assert.Contains(cycleA, cycle.BiomeFeatures["minecraft:nether_wastes"][vegetal]);
 
         var builder = new ChunkBuilder(MojangDimension.Overworld, 1234, generateStructures: false, () => current);
         var chunks = new FullChunks(builder, MojangDimension.Overworld);

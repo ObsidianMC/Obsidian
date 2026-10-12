@@ -1,11 +1,15 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.Plugins;
+using Obsidian.Plugins.PluginProviders;
 using Obsidian.Registries.Codecs;
 using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using System.Collections.Frozen;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Text.Json;
 using System.Threading;
 
@@ -206,6 +210,8 @@ internal static partial class PluginFeatures
         var phases = modifiers.Where(file => file.Modifier!.Type == BiomeModifierData.AddFeatures)
             .Concat(modifiers.Where(file => file.Modifier!.Type == BiomeModifierData.RemoveFeatures));
 
+        var unmodified = biomeFeatures.Snapshot();
+
         foreach (var file in phases)
         {
             try
@@ -218,10 +224,48 @@ internal static partial class PluginFeatures
             }
         }
 
+        // Vanilla's generator stops when it can't order the features of its biome source's possible biomes, which
+        // happens when one is placed both before and after another in different biomes. NeoForge builds biomes once
+        // every phase ran, so only the final lists count. A dimension whose lists can't be ordered is generated
+        // without the modifiers instead: its biomes are vanilla's, whose features vanilla orders.
+        if (modifiers.Count > 0)
+        {
+            foreach (var dimension in MojangDimension.All)
+            {
+                if (!biomeFeatures.HasCycle(dimension))
+                    continue;
+
+                Log.ModifiersLeftOut(logger, dimension.Identifier);
+                biomeFeatures.Revert(dimension, unmodified);
+            }
+        }
+
+        var result = biomeFeatures.Result;
+
         return new WorldgenFeatureSet(
             resolver.ConfiguredFeatures.ToFrozenDictionary(),
             resolver.PlacedFeatures.ToFrozenDictionary(),
-            biomeFeatures.Result);
+            result,
+            Owners(result, resolver.Owners));
+    }
+
+    // The plugins whose code the biomes' features run, for the features that run any.
+    private static FrozenDictionary<PlacedFeature, ImmutableArray<PluginContainer>> Owners(
+        IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> biomeFeatures,
+        Dictionary<object, ImmutableArray<PluginContainer>> owners)
+    {
+        if (owners.Count == 0)
+            return FrozenDictionary<PlacedFeature, ImmutableArray<PluginContainer>>.Empty;
+
+        var result = new Dictionary<PlacedFeature, ImmutableArray<PluginContainer>>();
+
+        foreach (var feature in biomeFeatures.Values.SelectMany(steps => steps).SelectMany(step => step))
+        {
+            if (owners.TryGetValue(feature, out var plugins))
+                result.TryAdd(feature, plugins);
+        }
+
+        return result.ToFrozenDictionary();
     }
 
     // The loaded plugins' biome files, the first in load order for each biome.
@@ -241,6 +285,9 @@ internal static partial class PluginFeatures
         private readonly HashSet<FeatureFile> reading = new(ReferenceEqualityComparer.Instance);
         private readonly WorldgenReader reader;
 
+        // The plugins whose types each feature being read is made of so far, the innermost feature's last.
+        private readonly Stack<HashSet<PluginContainer>> owning = [];
+
         public FeatureResolver(List<FeatureFile> files, WorldgenTypes types)
         {
             this.configuredFiles = files
@@ -251,28 +298,37 @@ internal static partial class PluginFeatures
                 .Where(file => file.Registry == PlacedFeature)
                 .ToDictionary(file => file.Identifier);
 
-            this.reader = new WorldgenReader(types, this.Configured, this.Placed);
+            this.reader = new WorldgenReader(types, this.Configured, this.Placed, this.OnCreated);
         }
 
         public Dictionary<string, ConfiguredFeatureBase> ConfiguredFeatures { get; } = [];
 
         public Dictionary<string, PlacedFeature> PlacedFeatures { get; } = [];
 
+        /// <summary>
+        /// The plugins whose code each feature read runs: those whose types it, or a feature it refers to, is made
+        /// of. Features made of Obsidian's types alone aren't in it.
+        /// </summary>
+        public Dictionary<object, ImmutableArray<PluginContainer>> Owners { get; } =
+            new(ReferenceEqualityComparer.Instance);
+
         public ConfiguredFeatureBase Configured(string identifier)
         {
             if (global::Obsidian.Registries.ConfiguredFeatures.All.TryGetValue(identifier, out var vanilla))
                 return vanilla;
 
-            if (this.ConfiguredFeatures.TryGetValue(identifier, out var feature))
-                return feature;
+            if (!this.ConfiguredFeatures.TryGetValue(identifier, out var feature))
+            {
+                if (!this.configuredFiles.TryGetValue(identifier, out var file))
+                    throw new InvalidDataException($"{identifier} isn't a configured feature");
 
-            if (!this.configuredFiles.TryGetValue(identifier, out var file))
-                throw new InvalidDataException($"{identifier} isn't a configured feature");
+                feature = this.Read(
+                    file,
+                    this.ConfiguredFeatures,
+                    () => this.reader.ReadConfiguredFeature(file.Json, file.Identifier));
+            }
 
-            return this.Read(
-                file,
-                this.ConfiguredFeatures,
-                () => this.reader.ReadConfiguredFeature(file.Json, file.Identifier));
+            return this.Used(feature);
         }
 
         public PlacedFeature Placed(string identifier)
@@ -280,16 +336,18 @@ internal static partial class PluginFeatures
             if (global::Obsidian.Registries.PlacedFeatures.All.TryGetValue(identifier, out var vanilla))
                 return vanilla;
 
-            if (this.PlacedFeatures.TryGetValue(identifier, out var feature))
-                return feature;
+            if (!this.PlacedFeatures.TryGetValue(identifier, out var feature))
+            {
+                if (!this.placedFiles.TryGetValue(identifier, out var file))
+                    throw new InvalidDataException($"{identifier} isn't a placed feature");
 
-            if (!this.placedFiles.TryGetValue(identifier, out var file))
-                throw new InvalidDataException($"{identifier} isn't a placed feature");
+                feature = this.Read(
+                    file,
+                    this.PlacedFeatures,
+                    () => this.reader.ReadPlacedFeature(file.Json, file.Identifier));
+            }
 
-            return this.Read(
-                file,
-                this.PlacedFeatures,
-                () => this.reader.ReadPlacedFeature(file.Json, file.Identifier));
+            return this.Used(feature);
         }
 
         /// <summary>
@@ -298,7 +356,7 @@ internal static partial class PluginFeatures
         public PlacedFeature Placed(JsonElement json, string path) =>
             json.ValueKind == JsonValueKind.String
                 ? this.Placed(json.GetString()!)
-                : this.reader.ReadPlacedFeature(json, null, path);
+                : this.Used(this.Track(() => this.reader.ReadPlacedFeature(json, null, path)));
 
         /// <summary>
         /// The features of a plugin biome's steps, given as identifiers or inline features' JSON text.
@@ -317,14 +375,9 @@ internal static partial class PluginFeatures
                     if (entry.StartsWith('#'))
                         throw new InvalidDataException($"{path}: placed feature tags aren't supported");
 
-                    if (!entry.StartsWith('{'))
-                    {
-                        features.Add(this.Placed(entry));
-                        continue;
-                    }
-
-                    using var document = JsonDocument.Parse(entry);
-                    features.Add(this.reader.ReadPlacedFeature(document.RootElement, null, path));
+                    features.Add(entry.StartsWith('{')
+                        ? this.Placed(ParseInline(entry, path), path)
+                        : this.Placed(entry));
                 }
 
                 steps.Add(features);
@@ -333,7 +386,22 @@ internal static partial class PluginFeatures
             return steps;
         }
 
+        // The biome file was read leniently, so a feature's JSON text can have comments and trailing commas.
+        private static JsonElement ParseInline(string json, string path)
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(json, documentOptions);
+                return document.RootElement.Clone();
+            }
+            catch (JsonException ex)
+            {
+                throw CodecJson.Error(path, ex.Message);
+            }
+        }
+
         private T Read<T>(FeatureFile file, Dictionary<string, T> features, Func<T> read)
+            where T : class
         {
             if (this.failed.ContainsKey(file))
                 throw new InvalidDataException($"{file.Identifier} isn't valid");
@@ -343,7 +411,7 @@ internal static partial class PluginFeatures
 
             try
             {
-                var feature = read();
+                var feature = this.Track(read);
                 features[file.Identifier] = feature;
                 return feature;
             }
@@ -355,6 +423,50 @@ internal static partial class PluginFeatures
             finally
             {
                 this.reading.Remove(file);
+            }
+        }
+
+        // Reads a feature, noting the plugins whose types it's made of in Owners.
+        private T Track<T>(Func<T> read)
+            where T : class
+        {
+            var owners = new HashSet<PluginContainer>();
+            this.owning.Push(owners);
+
+            try
+            {
+                var feature = read();
+                if (owners.Count > 0)
+                    this.Owners[feature] = [.. owners];
+
+                return feature;
+            }
+            finally
+            {
+                this.owning.Pop();
+            }
+        }
+
+        // A feature used by the one being read, if any, which then runs its plugins' code too.
+        private T Used<T>(T feature)
+            where T : class
+        {
+            if (this.owning.TryPeek(out var user) && this.Owners.TryGetValue(feature, out var owners))
+                user.UnionWith(owners);
+
+            return feature;
+        }
+
+        // An object the reader created, which belongs to a plugin when its type is from the plugin's assembly.
+        private void OnCreated(Type type)
+        {
+            if (this.owning.TryPeek(out var owners)
+                && AssemblyLoadContext.GetLoadContext(type.Assembly) is PluginLoadContext
+                {
+                    Container: PluginContainer owner
+                })
+            {
+                owners.Add(owner);
             }
         }
     }
@@ -374,25 +486,20 @@ internal static partial class PluginFeatures
             this.changed ? this.lists.ToFrozenDictionary() : global::Obsidian.Registries.BiomeFeatures.All;
 
         /// <summary>
-        /// Gives a biome its features, unless they'd make the features' order a cycle.
+        /// Gives a biome its features.
         /// </summary>
         public void Set(string biome, List<List<PlacedFeature>> steps)
         {
             if (steps.Count == 0)
                 return;
 
-            var previous = this.lists.GetValueOrDefault(biome);
             this.lists[biome] = steps;
-
-            if (this.HasCycle())
-            {
-                Restore(this.lists, biome, previous);
-                throw new InvalidDataException(CycleMessage);
-            }
-
             this.changed = true;
         }
 
+        /// <summary>
+        /// Applies a biome modifier. Its features' order isn't checked here: a later modifier may still change it.
+        /// </summary>
         public void Modify(BiomeModifierData modifier, FeatureResolver resolver)
         {
             var biomes = ResolveBiomes(modifier.Biomes);
@@ -401,7 +508,6 @@ internal static partial class PluginFeatures
                 .ToList();
 
             var removed = features.ToHashSet(ReferenceEqualityComparer.Instance);
-            var previous = biomes.ToDictionary(biome => biome, this.lists.GetValueOrDefault);
 
             foreach (var biome in biomes)
             {
@@ -425,29 +531,23 @@ internal static partial class PluginFeatures
                 this.lists[biome] = steps;
             }
 
-            // Vanilla can't order features that two biomes list in opposite orders, and stops; this modifier is
-            // left out instead.
-            if (this.HasCycle())
-            {
-                foreach (var (biome, steps) in previous)
-                    Restore(this.lists, biome, steps);
-
-                throw new InvalidDataException(CycleMessage);
-            }
-
             this.changed |= biomes.Count > 0;
         }
 
-        private const string CycleMessage = "the biomes' features would be in a cycle: one feature would have to "
-            + "be placed both before and after another";
+        /// <summary>
+        /// The biomes' features as they are now, to <see cref="Revert"/> to.
+        /// </summary>
+        public Dictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> Snapshot() => new(this.lists);
 
-        // Whether the features' order over every biome has a cycle, which FeatureSorter rejects. A dimension's
-        // biomes are a subset, so they can then always be sorted.
-        private bool HasCycle()
+        /// <summary>
+        /// Whether the dimension's generator can't order its biomes' features, like vanilla's FeatureSorter, which
+        /// sorts the features of its biome source's possible biomes alone.
+        /// </summary>
+        public bool HasCycle(MojangDimension dimension)
         {
             try
             {
-                FeatureSorter.Build(this.lists.Keys.ToList(), biome => this.lists[biome]);
+                FeatureSorter.Build(dimension.PossibleBiomes, biome => this.lists.GetValueOrDefault(biome.Name) ?? []);
                 return false;
             }
             catch (InvalidOperationException)
@@ -456,15 +556,20 @@ internal static partial class PluginFeatures
             }
         }
 
-        private static void Restore(
-            Dictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> lists,
-            string biome,
-            IReadOnlyList<IReadOnlyList<PlacedFeature>>? steps)
+        /// <summary>
+        /// Gives the dimension's biomes back the features they had in <paramref name="snapshot"/>.
+        /// </summary>
+        public void Revert(
+            MojangDimension dimension,
+            Dictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> snapshot)
         {
-            if (steps is null)
-                lists.Remove(biome);
-            else
-                lists[biome] = steps;
+            foreach (var biome in dimension.PossibleBiomes)
+            {
+                if (snapshot.TryGetValue(biome.Name, out var steps))
+                    this.lists[biome.Name] = steps;
+                else
+                    this.lists.Remove(biome.Name);
+            }
         }
 
         // A holder set of biomes to their identifiers: vanilla's or plugins' biomes, or a vanilla biome tag.
@@ -506,6 +611,11 @@ internal static partial class PluginFeatures
             string identifier,
             string source,
             string message);
+
+        [LoggerMessage(Level = LogLevel.Error,
+            Message = "Left out plugins' biome modifiers in {Dimension}: with them, its biomes' features would be in "
+                + "a cycle, one placed both before and after another")]
+        public static partial void ModifiersLeftOut(ILogger logger, string dimension);
     }
 }
 
@@ -532,10 +642,13 @@ internal sealed record FeatureFile(
 /// <param name="PlacedFeatures">The plugins' placed features, by identifier.</param>
 /// <param name="BiomeFeatures">The placed features of each biome's steps, by biome identifier. This is
 /// <c>BiomeFeatures.All</c> itself when plugins change none.</param>
+/// <param name="Owners">The plugins whose code each of the biomes' features runs, because it's made of their types,
+/// for the features that run any. Placing them is a call into those plugins (see <see cref="PluginCall"/>).</param>
 internal sealed record WorldgenFeatureSet(
     FrozenDictionary<string, ConfiguredFeatureBase> ConfiguredFeatures,
     FrozenDictionary<string, PlacedFeature> PlacedFeatures,
-    IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> BiomeFeatures)
+    IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> BiomeFeatures,
+    FrozenDictionary<PlacedFeature, ImmutableArray<PluginContainer>> Owners)
 {
     /// <summary>
     /// Vanilla's features alone.
@@ -543,5 +656,12 @@ internal sealed record WorldgenFeatureSet(
     public static WorldgenFeatureSet Vanilla { get; } = new(
         FrozenDictionary<string, ConfiguredFeatureBase>.Empty,
         FrozenDictionary<string, PlacedFeature>.Empty,
-        global::Obsidian.Registries.BiomeFeatures.All);
+        global::Obsidian.Registries.BiomeFeatures.All,
+        FrozenDictionary<PlacedFeature, ImmutableArray<PluginContainer>>.Empty);
+
+    /// <summary>
+    /// Every plugin whose code any of the biomes' features runs.
+    /// </summary>
+    public ImmutableArray<PluginContainer> Plugins { get; } =
+        [.. Owners.Values.SelectMany(owners => owners).Distinct()];
 }

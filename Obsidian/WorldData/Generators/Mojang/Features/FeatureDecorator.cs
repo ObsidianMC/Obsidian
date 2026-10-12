@@ -73,8 +73,17 @@ internal sealed class FeatureDecorator
     /// <param name="structures">The world's structures, or <c>null</c> when structures aren't generated.</param>
     /// <param name="terrain">The noise terrain, for structure pieces that read it.</param>
     /// <param name="onPlaced">Optional callback with the step, global index, feature and whether it placed anything.</param>
-    public void Decorate(WorldGenRegion region, IReadOnlyCollection<IChunk> areaChunks, int chunkX, int chunkZ,
-        StructureManager? structures, IStructureTerrain terrain, Action<int, int, PlacedFeature, bool>? onPlaced = null)
+    /// <param name="skip">Optionally, whether to leave a feature out, such as one of a plugin that's unloading. The
+    /// other features' seeds don't change.</param>
+    public void Decorate(
+        WorldGenRegion region,
+        IReadOnlyCollection<IChunk> areaChunks,
+        int chunkX,
+        int chunkZ,
+        StructureManager? structures,
+        IStructureTerrain terrain,
+        Action<int, int, PlacedFeature, bool>? onPlaced = null,
+        Func<PlacedFeature, bool>? skip = null)
     {
         var origin = new Vector(chunkX << 4, region.MinY, chunkZ << 4);
         // Like vanilla's PlacementContext: the level's min Y, but at most the generator's depth (128 in the nether), so
@@ -153,6 +162,9 @@ internal sealed class FeatureDecorator
                 {
                     var index = (word << 6) + BitOperations.TrailingZeroCount(bits);
                     var feature = stepFeatures.Features[index];
+                    if (skip is not null && skip(feature))
+                        continue;
+
                     random.SetFeatureSeed(decorationSeed, index, step);
 
                     try
