@@ -399,9 +399,11 @@ public sealed partial class PluginManager : IAsyncDisposable
 
             container.Plugin.ConfigureRegistry(this.pluginRegistry);
             container.TagFiles.InsertRange(0, this.ReadTagFiles(archive));
-            container.CodecFiles = this.ReadCodecFiles(archive);
+            container.FeatureFiles = this.ReadFeatureFiles(archive);
+            container.CodecFiles = this.ReadCodecFiles(archive, container.FeatureFiles);
             this.ApplyTags();
             this.ApplyCodecs();
+            this.ApplyFeatures();
             container.Loaded = true;
 
             await container.Plugin.OnLoadedAsync(this.server);
@@ -479,6 +481,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.plugins = this.plugins.Remove(pluginContainer);
         this.ApplyTags();
         this.ApplyCodecs();
+        this.ApplyFeatures();
 
         var dependents = this.releases
             .Where(pair => pair.Key.Dependencies.Contains(pluginContainer))
@@ -584,17 +587,48 @@ public sealed partial class PluginManager : IAsyncDisposable
     }
 
     // A plugin's biome, dimension type and damage type files. A file that can't be read, or would override one of
-    // vanilla's entries, is left out; the plugin loads without it.
-    private ImmutableArray<CodecFile> ReadCodecFiles(PluginArchive archive)
+    // vanilla's entries, is left out; the plugin loads without it. Biomes may use vanilla's placed features, the
+    // loaded plugins' and the plugin's own.
+    private ImmutableArray<CodecFile> ReadCodecFiles(PluginArchive archive, ImmutableArray<FeatureFile> features)
     {
         var files = ImmutableArray.CreateBuilder<CodecFile>();
+        var placedFeatures = features
+            .Where(file => file.Registry == PluginFeatures.PlacedFeature)
+            .Select(file => file.Identifier)
+            .ToHashSet();
+
+        bool IsPlacedFeature(string identifier) =>
+            placedFeatures.Contains(identifier) || PluginFeatures.IsPlacedFeature(identifier);
 
         foreach (var (path, registry, identifier) in PluginCodecs.FindFiles(archive.Paths))
         {
             try
             {
                 var data = archive.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
-                files.Add(PluginCodecs.Parse(registry, identifier, $"{archive.Info.Id}/{path}", data));
+                var source = $"{archive.Info.Id}/{path}";
+                files.Add(PluginCodecs.Parse(registry, identifier, source, data, IsPlacedFeature));
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.CodecFileFailed(this.logger, ex, path, archive.Source);
+            }
+        }
+
+        return files.ToImmutable();
+    }
+
+    // A plugin's configured feature, placed feature and biome modifier files. A file that can't be read is left out;
+    // the plugin loads without it.
+    private ImmutableArray<FeatureFile> ReadFeatureFiles(PluginArchive archive)
+    {
+        var files = ImmutableArray.CreateBuilder<FeatureFile>();
+
+        foreach (var (path, registry, identifier) in PluginFeatures.FindFiles(archive.Paths))
+        {
+            try
+            {
+                var data = archive.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
+                files.Add(PluginFeatures.Parse(registry, identifier, $"{archive.Info.Id}/{path}", data));
             }
             catch (InvalidDataException ex)
             {
@@ -653,6 +687,27 @@ public sealed partial class PluginManager : IAsyncDisposable
     // The loaded plugins' entries are in their registries, in load order. Ones no plugin has any more stay.
     private void ApplyCodecs() =>
         PluginCodecs.Apply(this.plugins.SelectMany(plugin => plugin.CodecFiles), this.logger);
+
+    // World generation places the loaded plugins' features, with their biome modifiers applied. Every level's
+    // generator moves to them now, so none keeps the previous features (and the plugins they came from).
+    private void ApplyFeatures()
+    {
+        PluginFeatures.Apply(
+            this.plugins.SelectMany(plugin => plugin.FeatureFiles),
+            this.plugins.SelectMany(plugin => plugin.CodecFiles),
+            this.plugins.SelectMany(plugin => plugin.LoadContext?.Assemblies ?? []),
+            this.logger);
+
+        var levels = this.server.WorldManager.GetAvailableWorlds()
+            .OfType<WorldData.World>()
+            .SelectMany(world => world.dimensions.Values.OfType<WorldData.AbstractLevel>().Prepend(world));
+
+        foreach (var level in levels)
+        {
+            if (level.Generator is WorldData.Generators.MojangGenerator { Builder: { } builder })
+                builder.RefreshFeatures();
+        }
+    }
 
     // Players see the commands of the plugins that are loaded now. Startup doesn't need this: nobody has joined yet.
     private void OnPluginsChanged()

@@ -23,7 +23,11 @@ internal sealed class ChunkBuilder
     private readonly SurfaceBuilder surfaceBuilder;
     private readonly IClimateBiomeSource biomeSource;
     private readonly CarverStep carverStep;
-    private readonly FeatureDecorator featureDecorator;
+
+    // The decorator of the current biome features, rebuilt when plugins change them (see CurrentDecorator).
+    private readonly Func<WorldgenFeatureSet> features;
+    private readonly Lock decorationLock = new();
+    private Decoration decoration;
 
     // Vanilla's WorldGenRegion random factory (RandomState.getOrCreateRandomFactory("worldgen_region_random")).
     private readonly IPositionalRandomFactory regionRandom;
@@ -64,7 +68,10 @@ internal sealed class ChunkBuilder
     /// <param name="dimension">The dimension to generate. Chunks passed in must use its build range.</param>
     /// <param name="seed">World seed; see <see cref="RandomState.ParseSeed"/> for level seed strings.</param>
     /// <param name="generateStructures">Whether structures generate, like vanilla's <c>generate-structures</c> option.</param>
-    public ChunkBuilder(MojangDimension dimension, long seed, bool generateStructures = true)
+    /// <param name="features">The biomes' features, read before each chunk is decorated;
+    /// <see cref="PluginFeatures.Current"/> by default.</param>
+    public ChunkBuilder(MojangDimension dimension, long seed, bool generateStructures = true,
+        Func<WorldgenFeatureSet>? features = null)
     {
         this.dimension = dimension;
         this.settings = NoiseRegistry.NoiseSettings.All[dimension.NoiseSettings];
@@ -74,7 +81,8 @@ internal sealed class ChunkBuilder
         this.biomeSource = dimension.CreateBiomeSource(this.RandomState);
         this.surfaceBuilder = new SurfaceBuilder(this.RandomState, this.biomeSource);
         this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource, dimension.Carvers);
-        this.featureDecorator = new FeatureDecorator(this.biomeSource.PossibleBiomes, BiomeFeatures.All, this.settings.Noise.Height);
+        this.features = features ?? (static () => PluginFeatures.Current);
+        this.decoration = this.CreateDecoration(this.features().BiomeFeatures);
         this.regionRandom = this.RandomState.Random.FromHashOf("minecraft:worldgen_region_random").ForkPositional();
         this.rentNoiseChunk = this.RentNoiseChunk;
 
@@ -170,8 +178,46 @@ internal sealed class ChunkBuilder
             .Select(entry => entry.Value)
             .ToArray();
 
-        this.featureDecorator.Decorate(region, neighbors, chunkX, chunkZ, this.Structures, this.terrainGenerator, onPlaced);
+        var decorator = this.CurrentDecorator();
+        decorator.Decorate(region, neighbors, chunkX, chunkZ, this.Structures, this.terrainGenerator, onPlaced);
     }
+
+    /// <summary>
+    /// Moves decoration to the current biome features, if they changed, so the previous ones aren't kept.
+    /// </summary>
+    public void RefreshFeatures() => this.CurrentDecorator();
+
+    // The decorator of the current biome features. A chunk is decorated with one decorator throughout; ones being
+    // decorated when plugins change finish with the previous features. Like vanilla with the same data pack, the
+    // new decorator sorts the features again, which can change the seeds of vanilla's features in a step plugins
+    // added to.
+    private FeatureDecorator CurrentDecorator()
+    {
+        var decoration = Volatile.Read(ref this.decoration);
+        if (ReferenceEquals(decoration.BiomeFeatures, this.features().BiomeFeatures))
+            return decoration.Decorator;
+
+        lock (this.decorationLock)
+        {
+            // Read again under the lock, so a slower thread can't put back features older than another's.
+            var biomeFeatures = this.features().BiomeFeatures;
+            if (!ReferenceEquals(this.decoration.BiomeFeatures, biomeFeatures))
+                Volatile.Write(ref this.decoration, this.CreateDecoration(biomeFeatures));
+
+            return this.decoration.Decorator;
+        }
+    }
+
+    private Decoration CreateDecoration(
+        IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> biomeFeatures)
+    {
+        var biomes = this.biomeSource.PossibleBiomes;
+        return new Decoration(biomeFeatures, new FeatureDecorator(biomes, biomeFeatures, this.settings.Noise.Height));
+    }
+
+    private sealed record Decoration(
+        IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> BiomeFeatures,
+        FeatureDecorator Decorator);
 
     /// <summary>
     /// The block (with Y 0) whose climate best fits the noise settings' spawn target, like vanilla's

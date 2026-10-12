@@ -89,11 +89,17 @@ internal static partial class PluginCodecs
     /// <param name="registry">One of <see cref="Registries"/>.</param>
     /// <param name="identifier">The entry's identifier, like <c>ruby:crystal_caves</c>.</param>
     /// <param name="source">Where the file comes from, for messages.</param>
+    /// <param name="isPlacedFeature">Whether a placed feature a biome refers to exists; vanilla's by default.</param>
     /// <exception cref="InvalidDataException">
     /// The file isn't valid, saying where and what's expected, or it's for an entry in the <c>minecraft</c>
     /// namespace, which plugins can't override.
     /// </exception>
-    public static CodecFile Parse(string registry, string identifier, string source, ReadOnlySpan<byte> json)
+    public static CodecFile Parse(
+        string registry,
+        string identifier,
+        string source,
+        ReadOnlySpan<byte> json,
+        Func<string, bool>? isPlacedFeature = null)
     {
         if (!PluginTags.IsIdentifier(identifier))
             throw new InvalidDataException($"{source}: {identifier} isn't a valid identifier.");
@@ -114,7 +120,7 @@ internal static partial class PluginCodecs
             switch (registry)
             {
                 case Biome:
-                    var biome = BiomeData.Read(root);
+                    var biome = BiomeData.Read(root, isPlacedFeature);
                     element = biome.ToElement();
                     data = biome.ToNetworkNbt();
                     break;

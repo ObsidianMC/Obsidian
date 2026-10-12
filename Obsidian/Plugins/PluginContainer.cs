@@ -70,6 +70,11 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     /// </summary>
     internal ImmutableArray<CodecFile> CodecFiles { get; set; } = [];
 
+    /// <summary>
+    /// The plugin's feature and biome modifier files, applied to world generation while it's loaded.
+    /// </summary>
+    internal ImmutableArray<FeatureFile> FeatureFiles { get; set; } = [];
+
     public bool Loaded { get; internal set; }
 
     internal void Initialize()

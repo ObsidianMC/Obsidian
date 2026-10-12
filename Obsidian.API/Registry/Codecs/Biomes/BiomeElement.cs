@@ -22,8 +22,8 @@ public sealed record class BiomeElement
     public string? TemperatureModifier { get; set; }
 
     /// <summary>
-    /// The placed features of each generation step: identifiers, or a single <c>#tag</c>. Empty for vanilla's
-    /// entries, whose generation is built in.
+    /// The placed features of each generation step: identifiers, placed features defined inline as their JSON text
+    /// (starting with <c>{</c>), or a single <c>#tag</c>. Empty for vanilla's entries, whose generation is built in.
     /// </summary>
     public ImmutableArray<ImmutableArray<string>> Features { get; set; } = [];
 

@@ -10,8 +10,10 @@ namespace Obsidian.Registries.Codecs;
 /// generation and mob spawns.
 /// </summary>
 /// <remarks>
-/// Vanilla logs and drops a carver, feature or spawner it can't read; a plugin's file is rejected instead. Features
-/// and carvers are read by reference only (vanilla's identifiers, or a tag), since plugins can't add them.
+/// Vanilla logs and drops a carver, feature or spawner it can't read; a plugin's file is rejected instead. Placed
+/// features are vanilla's or plugins' identifiers, a tag, or defined inline, which are kept as their JSON and read
+/// with the plugins' features (see <see cref="PluginFeatures"/>). Carvers are vanilla's identifiers or a tag:
+/// plugins can't add carvers yet.
 /// </remarks>
 internal sealed record BiomeData(
     bool HasPrecipitation,
@@ -41,7 +43,8 @@ internal sealed record BiomeData(
         "water_ambient", "misc"
     ];
 
-    public static BiomeData Read(JsonElement root)
+    /// <param name="isPlacedFeature">Whether a placed feature exists; vanilla's by default.</param>
+    public static BiomeData Read(JsonElement root, Func<string, bool>? isPlacedFeature = null)
     {
         Object(root, "");
 
@@ -68,7 +71,10 @@ internal sealed record BiomeData(
             GrassColor: OptionalColor(effects, "grass_color"),
             GrassColorModifier: OptionalEnum(effects, "effects", "grass_color_modifier", grassColorModifiers),
             Carvers: carvers,
-            Features: ReadFeatures(Required(root, "", "features"), "features"),
+            Features: ReadFeatures(
+                Required(root, "", "features"),
+                "features",
+                isPlacedFeature ?? RegistryIds.IsPlacedFeature),
             CreatureSpawnProbability: TryGet(root, "creature_spawn_probability", out var probability)
                 ? Float(probability, "creature_spawn_probability", 0f, 0.9999999f)
                 : 0.1f,
@@ -139,14 +145,16 @@ internal sealed record BiomeData(
 
     /// <summary>
     /// Reads a holder set like vanilla's RegistryCodecs.homogeneousList: a <c>#tag</c>, an identifier, or a list of
-    /// identifiers. Vanilla also takes entries defined inline, which can't be read here.
+    /// identifiers. Vanilla also takes entries defined inline, which are kept as their JSON text where
+    /// <paramref name="inline"/> allows them.
     /// </summary>
-    /// <returns>The identifiers, or the tag as a single <c>#tag</c>.</returns>
+    /// <returns>The identifiers and inline entries' JSON, or the tag as a single <c>#tag</c>.</returns>
     public static ImmutableArray<string> ReadHolderSet(
         JsonElement value,
         string path,
         string registry,
-        Func<string, bool> exists)
+        Func<string, bool> exists,
+        bool inline = false)
     {
         if (value.ValueKind == JsonValueKind.String && value.GetString()!.StartsWith('#'))
         {
@@ -158,12 +166,12 @@ internal sealed record BiomeData(
         }
 
         if (value.ValueKind != JsonValueKind.Array)
-            return [ReadReference(value, path, registry, exists)];
+            return [ReadReference(value, path, registry, exists, inline)];
 
         var ids = ImmutableArray.CreateBuilder<string>();
 
         for (var i = 0; i < value.GetArrayLength(); i++)
-            ids.Add(ReadReference(value[i], Index(path, i), registry, exists));
+            ids.Add(ReadReference(value[i], Index(path, i), registry, exists, inline));
 
         return ids.ToImmutable();
     }
@@ -176,7 +184,10 @@ internal sealed record BiomeData(
         TryGet(obj, name, out var value) ? Enum(value, Field(path, name), names) : names[0];
 
     // A list of holder sets of placed features, one per generation step.
-    private static ImmutableArray<ImmutableArray<string>> ReadFeatures(JsonElement value, string path)
+    private static ImmutableArray<ImmutableArray<string>> ReadFeatures(
+        JsonElement value,
+        string path,
+        Func<string, bool> isPlacedFeature)
     {
         Array(value, path);
 
@@ -184,17 +195,26 @@ internal sealed record BiomeData(
 
         for (var i = 0; i < value.GetArrayLength(); i++)
         {
-            var step = ReadHolderSet(value[i], Index(path, i), "worldgen/placed_feature", RegistryIds.IsPlacedFeature);
+            var step = ReadHolderSet(value[i], Index(path, i), "worldgen/placed_feature", isPlacedFeature, true);
             steps.Add(step);
         }
 
         return steps.ToImmutable();
     }
 
-    private static string ReadReference(JsonElement value, string path, string registry, Func<string, bool> exists)
+    private static string ReadReference(
+        JsonElement value,
+        string path,
+        string registry,
+        Func<string, bool> exists,
+        bool inline)
     {
         if (value.ValueKind == JsonValueKind.Object)
-            throw Error(path, $"plugins can't define a {registry} inline; refer to one by its identifier");
+        {
+            return inline
+                ? value.GetRawText()
+                : throw Error(path, $"plugins can't define a {registry} inline yet; refer to one by its identifier");
+        }
 
         var id = Identifier(value, path);
 
