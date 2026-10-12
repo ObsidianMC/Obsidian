@@ -48,6 +48,11 @@ public sealed class MenuDefinition
     /// </summary>
     public int SlotCount => this.Rows * this.Columns;
 
+    /// <summary>
+    /// The plugin that registered the menu type last, while it's loaded; its menus close when it unloads.
+    /// </summary>
+    internal IPluginContainer? Owner { get; set; }
+
     public override string ToString() => this.Identifier;
 }
 
@@ -57,7 +62,9 @@ public sealed class MenuDefinition
 /// <see cref="Events.ContainerClickEventArgs"/> lets the plugin cancel or handle their clicks.
 /// </summary>
 /// <remarks>
-/// Several players can have the same container open: their clicks take turns, and each sees the others' changes.
+/// Several players can have the same container open: their clicks take turns, and each sees the others' changes. It
+/// closes for its viewers, with <see cref="Events.ContainerClosedEventArgs"/>, when the plugin that registered its
+/// menu type unloads.
 /// </remarks>
 public sealed class MenuContainer : BaseContainer
 {

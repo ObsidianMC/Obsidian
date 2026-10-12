@@ -200,13 +200,17 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
     }
 
     /// <summary>
-    /// Registers <paramref name="container"/>'s menu type. It has no behaviour, so there's nothing to bind.
+    /// Registers <paramref name="container"/>'s menu type. It has no behaviour, so there's nothing to bind, but the
+    /// plugin owns it until it unloads, which closes its open menus.
     /// </summary>
     internal static MenuDefinition RegisterMenu(PluginContainer container, string identifier, int rows, int columns)
     {
         CheckIdentifier(container, identifier);
 
-        return MenuTypesRegistry.Register(identifier, rows, columns);
+        var menu = MenuTypesRegistry.Register(identifier, rows, columns);
+        menu.Owner = container;
+
+        return menu;
     }
 
     public IPluginRegistry AddToTag(string registry, string tag, params IEnumerable<string> entries)

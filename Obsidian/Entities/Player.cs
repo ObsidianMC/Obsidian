@@ -318,6 +318,26 @@ public sealed partial class Player : Avatar, IClientPlayer
         }
     }
 
+    /// <summary>
+    /// Closes the player's open container from the server, like the player closing it: the close event runs, then
+    /// their screen closes. Unlike the player's close, cancelling the event doesn't keep it open.
+    /// </summary>
+    internal async ValueTask CloseContainerAsync()
+    {
+        if (this.OpenedContainer is not BaseContainer container)
+            return;
+
+        var containerId = this.CurrentContainerId;
+        await this.EventDispatcher.ExecuteEventAsync(new ContainerClosedEventArgs(this, this.Server, container));
+
+        // A handler may have opened another container instead, which stays open.
+        if (!ReferenceEquals(this.OpenedContainer, container))
+            return;
+
+        this.OpenedContainer = null;
+        await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = containerId });
+    }
+
     public async override ValueTask TeleportAsync(VectorD pos)
     {
         FallDistance = 0;
