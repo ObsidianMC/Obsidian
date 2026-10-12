@@ -303,8 +303,8 @@ The rules:
 - Placing a feature made of a plugin's types (its feature type, a placement modifier or a provider inside it) is a
   call into the plugin, like its event handlers, so unloading waits for chunks being decorated with it. Chunks
   decorated while it unloads leave its features out. When placing such a feature throws, the error is logged naming
-  the plugins, and the level stops generating new chunks until a restart; the chunk isn't saved as decorated, so it
-  generates after the restart.
+  the plugins, and the level stops generating new chunks until a restart. The chunk counts as decorated without the
+  features left, with a warning (see [Noise types](#noise-types)).
 - Features aren't sent to clients or saved, so they come and go with their plugin: when plugins load or unload, the
   features are read again and every world's generator moves to them for the chunks it decorates next. Chunks
   already generated keep what was placed. As in vanilla, adding features to a step can change the seeds of the
@@ -560,8 +560,19 @@ A plugin's code failing while a dimension generates with its types (an exception
 rule or biome source) is logged as an error naming the plugins, and the level stops generating new chunks until a
 restart, as when the plugin unloads, rather than stopping chunk management or the server. Such a dimension's levels
 stop on any generation failure, since plugins' density functions run all through the noise and the failure can't be
-told apart from Obsidian's. Chunks keep the steps they finished, so the failed ones generate after a restart. Failures
-generating with vanilla's types alone still stop the server.
+told apart from Obsidian's. Failures generating with vanilla's types alone still stop the server.
+
+A step that fails partway leaves nothing for a restart to build on:
+
+- A step before decoration (biomes, noise, surface, carvers) only writes into its chunk, but reads what it wrote and
+  marks blocks for post-processing, so running it again over its partial result could differ. The chunk goes back
+  to before its biomes, and those steps run again from scratch after a restart.
+- Decoration writes into the chunk's neighbors and adds entities and scheduled ticks, which placing its features
+  again would duplicate. The chunk counts as decorated, with a warning: it keeps the features placed before the
+  failure and lacks the rest. Later steps (post-processing, light) don't run plugins' features, and run after the
+  restart.
+- Structure pieces placed until the failure are saved with their start, so a restart doesn't place their entities
+  again.
 
 ## Dimensions
 
