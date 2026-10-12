@@ -20,9 +20,15 @@ public sealed class FallenTreeFeature : ConfiguredFeatureBase
     /// </summary>
     public required IIntProvider LogLength { get; init; }
 
-    public required ImmutableArray<FallenTreeDecorator> StumpDecorators { get; init; }
+    /// <summary>
+    /// Tree decorators run on the stump; like vanilla's, they see only logs (no leaves or roots).
+    /// </summary>
+    public required ImmutableArray<TreeDecorator> StumpDecorators { get; init; }
 
-    public required ImmutableArray<FallenTreeDecorator> LogDecorators { get; init; }
+    /// <summary>
+    /// Tree decorators run on the lying log; like vanilla's, they see only logs (no leaves or roots).
+    /// </summary>
+    public required ImmutableArray<TreeDecorator> LogDecorators { get; init; }
 
     public override bool Place(FeatureContext context)
     {
@@ -33,7 +39,7 @@ public sealed class FallenTreeFeature : ConfiguredFeatureBase
             return false;
 
         var stump = this.PlaceLogBlock(level, random, origin, null);
-        Decorate(level, random, [stump], this.StumpDecorators);
+        Decorate(context, [stump], this.StumpDecorators);
 
         var direction = FeatureHelpers.RandomHorizontal(random);
         var length = this.LogLength.Sample(random) - 2;
@@ -51,7 +57,7 @@ public sealed class FallenTreeFeature : ConfiguredFeatureBase
             }
 
             // Vanilla collects the log positions in a HashSet before decorating.
-            Decorate(level, random, FeatureHelpers.JavaHashSetOrder(logs), this.LogDecorators);
+            Decorate(context, FeatureHelpers.JavaHashSetOrder(logs), this.LogDecorators);
         }
 
         return true;
@@ -105,15 +111,15 @@ public sealed class FallenTreeFeature : ConfiguredFeatureBase
         return position;
     }
 
-    private static void Decorate(IWorldGenLevel level, IRandomSource random, List<Vector> logs, ImmutableArray<FallenTreeDecorator> decorators)
+    private static void Decorate(FeatureContext context, List<Vector> logs, ImmutableArray<TreeDecorator> decorators)
     {
         if (decorators.Length == 0)
             return;
 
         // TreeDecorator.Context sorts the logs by Y with a stable sort.
-        var sorted = logs.OrderBy(log => log.Y).ToList();
+        var view = new LogsView(context, [.. logs.OrderBy(log => log.Y)]);
         foreach (var decorator in decorators)
-            decorator.Place(level, random, sorted);
+            decorator.Place(view);
     }
 
     private static bool ValidTreePos(IWorldGenLevel level, Vector position)
@@ -124,70 +130,23 @@ public sealed class FallenTreeFeature : ConfiguredFeatureBase
 
     private static bool IsOverSolidGround(IWorldGenLevel level, Vector position) =>
         level.GetBlock(position + Vector.Down).IsFaceSturdy(BlockFace.Up);
-}
 
-/// <summary>
-/// A tree decorator applied to a fallen tree's stump or log, like vanilla's TreeDecorator with only logs in its context.
-/// </summary>
-/// <remarks>
-/// Fallen trees only use <c>attached_to_logs</c> and <c>trunk_vine</c>, which are implemented here against the log list.
-/// </remarks>
-public abstract class FallenTreeDecorator
-{
-    public string Type { get; init; } = string.Empty;
-
-    /// <summary>
-    /// Decorates the logs (sorted by Y like vanilla's decorator context).
-    /// </summary>
-    public abstract void Place(IWorldGenLevel level, IRandomSource random, IReadOnlyList<Vector> logs);
-}
-
-/// <summary>
-/// Vanilla's AttachedToLogsDecorator: places blocks (mushrooms) next to random logs in one of <see cref="Directions"/>.
-/// </summary>
-[ConfiguredFeatureProperty("minecraft:attached_to_logs")]
-public sealed class AttachedToLogsFallenTreeDecorator : FallenTreeDecorator
-{
-    public required float Probability { get; init; }
-
-    public required IBlockStateProvider BlockProvider { get; init; }
-
-    public required ImmutableArray<BlockFace> Directions { get; init; }
-
-    public override void Place(IWorldGenLevel level, IRandomSource random, IReadOnlyList<Vector> logs)
+    // What the decorators see of a fallen tree: like vanilla's, a decorator context with only logs, whose blocks are
+    // set straight into the level.
+    private sealed class LogsView(FeatureContext context, Vector[] logs) : TreeDecoratorContext
     {
-        foreach (var log in FeatureHelpers.ShuffledCopy(logs, random))
-        {
-            var direction = this.Directions[random.NextInt(this.Directions.Length)];
-            var position = log.Offset(direction);
-            if (random.NextFloat() <= this.Probability && level.GetBlock(position).IsAir)
-                level.SetBlock(position, this.BlockProvider.GetState(random, position));
-        }
-    }
-}
+        public override IWorldGenLevel Level => context.Level;
 
-/// <summary>
-/// Vanilla's TrunkVineDecorator: vines on the sides of each log with a 2 in 3 chance per side.
-/// </summary>
-[ConfiguredFeatureProperty("minecraft:trunk_vine")]
-public sealed class TrunkVineFallenTreeDecorator : FallenTreeDecorator
-{
-    private static IBlock Vine => field ??= BlocksRegistry.Vine;
+        public override IRandomSource Random => context.Random;
 
-    public override void Place(IWorldGenLevel level, IRandomSource random, IReadOnlyList<Vector> logs)
-    {
-        foreach (var log in logs)
-        {
-            PlaceVine(level, random, log + Vector.West, "east");
-            PlaceVine(level, random, log + Vector.East, "west");
-            PlaceVine(level, random, log + Vector.North, "south");
-            PlaceVine(level, random, log + Vector.South, "north");
-        }
-    }
+        public override WorldGenerationContext Generation => context.Generation;
 
-    private static void PlaceVine(IWorldGenLevel level, IRandomSource random, Vector position, string face)
-    {
-        if (random.NextInt(3) > 0 && level.GetBlock(position).IsAir)
-            level.SetBlock(position, Vine.WithProperty(face, true));
+        public override IReadOnlyList<Vector> Logs => logs;
+
+        public override IReadOnlyList<Vector> Leaves => [];
+
+        public override IReadOnlyList<Vector> Roots => [];
+
+        public override void SetBlock(Vector position, IBlock block) => context.Level.SetBlock(position, block);
     }
 }
