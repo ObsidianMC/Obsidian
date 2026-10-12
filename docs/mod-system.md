@@ -83,6 +83,12 @@ client. This document describes the design and tracks its progress. The archive 
      `BlockIds` constants (vanilla's ids) let vanilla code keep matching items and blocks in switches and patterns
      (`stack.Holder.Id is ItemIds.Bucket`, `block.Is(BlockIds.Stone)`). A block item places the block with its
      identifier, or a plugin item's block.
+   - Done for particle types and menu types: `IPluginRegistry.RegisterParticle` registers a particle type without
+     options, sent with `ILevel.SpawnParticles`, and `RegisterMenu` a menu type of up to six rows of up to nine slots
+     above the player's inventory, opened with a `MenuContainer` that the server's container code drives like a
+     chest's. Both get ids after vanilla's that stay for the process, are synced to NeoForge and Fabric clients with
+     the `minecraft:particle_type` and `minecraft:menu` registries (refusing vanilla clients once there are any), and
+     have no behaviour to replace on reload; a menu's shape can't change until the server restarts.
    - Next: Phase 3.
 3. **Data-driven content and world generation** (done): loading a mod's `data/` folder like a data pack
    (biomes, dimension types, damage types, tags, worldgen features), letting mods register codec types for
@@ -302,10 +308,17 @@ client. This document describes the design and tracks its progress. The archive 
      bindings, tints and renderers are its own (in its namespace, for its blocks and entity types); they take effect
      only once `ConfigureClient` returns, and the registry is sealed then. See
      [plugin-content.md](plugin-content.md#client).
-   - Next: particle providers (mods' particle definitions are loaded already) and screens for menu types, once
-     plugins can register particle types and menu types on the server; unloading and reloading client mods while the
-     client runs, with its configuration, like the server's plugins (they load once at startup now); keyframed
-     entity animations, entity render layers and held items for mods' entities; a client tick event, so mods can poll
+   - Done, particles and menus: the client registers its mods' particle types and menu types with the server's ids
+     and checks the synced `minecraft:particle_type` and `minecraft:menu` snapshots against them. Mods' particles
+     (read without options) are drawn with the sprites of their definitions and behave like vanilla's base particle,
+     or as an `IClientRegistry.RegisterParticleProvider` says (lifetime, gravity, friction, scale, the server's
+     velocity kept or randomised, animated sprites). Mods' menus show like a chest with their slots centred, or with
+     the background and slot positions an `IClientRegistry.RegisterMenuScreen` gives.
+   - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
+     move or draw unlike a sprite; menus beyond a grid of slots (other slot shapes, data slots, buttons, NeoForge's
+     extra open data) and screens drawing more than their background; unloading and reloading client mods while the
+     client runs, with its configuration, like the server's plugins (they load once at startup now); keyframed entity
+     animations, entity render layers and held items for mods' entities; a client tick event, so mods can poll
      `IsDown` and do per-frame work.
 
 ## Known gaps

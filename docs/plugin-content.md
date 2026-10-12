@@ -1,11 +1,12 @@
 # Plugin blocks, entities, tags and data
 
 Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, add entity types,
-worldgen types and level generators in code, and add tags, biomes, dimension types, damage types, worldgen features,
-biome modifiers, noise settings and dimensions with data pack files, much like NeoForge and Fabric mods.
-Clients need the matching mod for blocks, items and entity types: NeoForge and Fabric clients are sent those
-registries, so their ids agree with the server's. Biomes, dimension types and damage types are sent with their data,
-so vanilla clients can join too. On the Obsidian client, a mod adds its client side in code (see [Client](#client)).
+particle types, menu types, worldgen types and level generators in code, and add tags, biomes, dimension types, damage
+types, worldgen features, biome modifiers, noise settings and dimensions with data pack files, much like NeoForge and
+Fabric mods. Clients need the matching mod for blocks, items, entity types, particle types and menu types: NeoForge
+and Fabric clients are sent those registries, so their ids agree with the server's. Biomes, dimension types and
+damage types are sent with their data, so vanilla clients can join too. On the Obsidian client, a mod adds its client
+side in code (see [Client](#client)).
 
 ## Blocks in code
 
@@ -93,6 +94,39 @@ modifiers adding spawners (see [Biome modifiers](#biome-modifiers)) spawn a plug
 plugin is loaded, and they count against their category's cap; misc mobs don't spawn naturally, since plugin mobs
 don't despawn. They spawn with the rules of the list they're chosen from: on grass in light as creatures, in water in
 the water categories, and in the dark otherwise.
+
+## Particles
+
+```csharp
+var spark = registry.RegisterParticle("ruby:spark");
+
+level.SpawnParticles(spark, position, count: 8, spread: new VectorF(0.2f), speed: 0.05f);
+```
+
+A plugin's particle type is a particle without options, like a NeoForge mod's `SimpleParticleType`; the
+`ParticleDefinition` that `RegisterParticle` returns is the particle to send. `ILevel.SpawnParticles` sends any
+particle, vanilla's particle data too, like vanilla's `/particle`: to players within 32 blocks (512 with `force`),
+with a count of 0 as one particle moving along `spread` times `speed`, and otherwise as `count` particles scattered by
+up to about `spread` on each axis. The type keeps its id across reloads and stays registered until the server stops.
+Clients draw it: a NeoForge or Fabric mod registers a particle type with the same identifier and a provider, and the
+Obsidian client draws it with the mod's sprites (see [Client](#client)).
+
+## Menus
+
+```csharp
+var pouch = registry.RegisterMenu("ruby:pouch", rows: 1, columns: 5);
+
+var container = new MenuContainer(pouch, "Ruby pouch");
+container.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 3));
+await player.OpenInventoryAsync(container);
+```
+
+A plugin's menu type is a grid of 1 to 6 rows of 1 to 9 slots above the player's inventory, numbered row by row and
+followed by the player's inventory like vanilla's menus. The server opens it with its id and moves items in it like a
+chest's; a `ContainerClickEventArgs` handler cancels or handles players' clicks, and the plugin reads and changes the
+container's slots. A NeoForge or Fabric mod's menu type with the same identifier and slots shows it, made without
+extra data (vanilla's open screen packet carries none). The type keeps its id and shape across reloads and stays
+registered until the server stops; registering it again with another shape throws.
 
 ## Tags
 
@@ -1161,9 +1195,9 @@ What `ConfigureClient` registers takes effect when it returns and stays until th
 mod fails to load and none of it does. The registry only takes registrations during `ConfigureClient`, since the
 client loads the assets that depend on them afterwards: registering later, through a registry the mod kept, throws
 `InvalidOperationException`. Its `Connection`, and sending payloads on it, stay usable for as long as the client
-runs. Like the server's content, key bindings, tints and renderers are the mod's own: their identifiers are in its
-namespace (its mod id) and valid by vanilla's rules, tints and renderers are for blocks and entity types it
-registered, and registering one twice throws `ArgumentException`.
+runs. Like the server's content, key bindings, tints, renderers, particle providers and menu screens are the mod's
+own: their identifiers are in its namespace (its mod id) and valid by vanilla's rules, they're for blocks, entity
+types, particle types and menu types it registered, and registering one twice throws `ArgumentException`.
 
 ```csharp
 public sealed class RubyMod : PluginBase, IClientPlugin
@@ -1172,6 +1206,8 @@ public sealed class RubyMod : PluginBase, IClientPlugin
     {
         registry.RegisterBlock("ruby:mossy_ruby");
         registry.RegisterEntity("ruby:golem", new EntityProperties { Width = 1.4f, Height = 2.7f });
+        registry.RegisterParticle("ruby:spark");
+        registry.RegisterMenu("ruby:pouch", rows: 1, columns: 5);
         registry.MapPayload<SummonGolem>(PayloadPhase.Play, PayloadDirection.Bidirectional, SummonAsync);
     }
 
@@ -1191,6 +1227,16 @@ public sealed class RubyMod : PluginBase, IClientPlugin
             Model = "ruby:golem",
             Texture = "ruby:entity/golem",
             ShadowRadius = 0.7f
+        });
+        registry.RegisterParticleProvider("ruby:spark", new ParticleProviderProperties
+        {
+            Lifetime = 20,
+            Gravity = 0.5f
+        });
+        registry.RegisterMenuScreen("ruby:pouch", new MenuScreenProperties
+        {
+            Texture = "ruby:gui/container/pouch",
+            Slots = [new(44, 20), new(62, 20), new(80, 20), new(98, 20), new(116, 20)]
         });
     }
 }
@@ -1218,6 +1264,19 @@ public sealed class RubyMod : PluginBase, IClientPlugin
   then apply by index): with vanilla's grass block item colour (the grass colormap at temperature 0.5 and downfall
   1), its default foliage colour (`#48B518`), dry foliage colour (`#5C3C32`) or water colour (`#3F76E4`), or the
   fixed colour.
+- **Particle providers.** A mod's particle type is drawn with the sprites of its definition,
+  `assets/<ns>/particles/<name>.json` (`{"textures": ["<ns>:spark_0", "<ns>:spark_1"]}`, from
+  `assets/<ns>/textures/particle/`), one picked at random per particle or, with `AnimateSprite`, in turn over its life.
+  Without a provider its particles behave like vanilla's base particle: they live 4 to 40 ticks, are 0.1 to 0.2 blocks
+  wide, drift in a random direction around the velocity sent, and slow down without falling.
+  `ParticleProviderProperties` sets their `Lifetime` in ticks, `Gravity` (vanilla's: 1 speeds their fall by 0.04
+  blocks per tick each tick), `Friction`, `Scale`, and whether to keep the server's velocity
+  (`RandomizeVelocity = false`).
+- **Menu screens.** A mod's menu type shows like a chest without a screen: vanilla's chest background with its rows,
+  their slots centred, and the player's inventory below. `MenuScreenProperties` gives it a background instead, from
+  `assets/<ns>/textures/gui/...` (`Texture = "<ns>:gui/container/pouch"`, its top left `Width` by `Height` pixels),
+  with a position for each of the menu's slots, in order, and for the player's inventory, the title and the
+  "Inventory" label. Its slots must be as many as the menu has.
 - **Entity renderers.** A mod's entity type is drawn with a model layer from `assets/<ns>/models/entity/<path>.json`
   (`Model = "<ns>:<path>"`) and a texture from `assets/<ns>/textures/entity/...` (`Texture = "<ns>:entity/..."`, or
   `minecraft:entity/...` for vanilla's), scaled by `Scale`, with a shadow of `ShadowRadius` blocks. Without a
@@ -1254,6 +1313,3 @@ parent's), its rotation in radians and its scale, its cubes, and its child parts
 and a face four vertices `[x, y, z, u, v]`: a position in pixels from the part's pivot and a texture coordinate as a
 fraction of the texture's width and height. Model space is vanilla's: 16 pixels to a block, Y pointing down, and the
 entity's feet at Y 24.
-
-Particle providers and screens for menu types are for later: plugins can't register particle types or menu types on
-the server yet.
