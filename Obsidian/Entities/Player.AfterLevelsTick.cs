@@ -19,7 +19,7 @@ public partial class Player
     /// Whether the current flow is in one of the player's ticks, which a leave waits for: a leave started from it (a
     /// plugin kicking the player, say) mustn't be waited for there.
     /// </summary>
-    internal bool IsInOwnTick => tickingPlayer.Value == this;
+    internal bool IsInOwnTick => ReferenceEquals(tickingPlayer.Value, this);
 
     /// <summary>
     /// Waits for a tick of the player under way and stops ticking them: they're leaving. Never call it from the
