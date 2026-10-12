@@ -3,6 +3,7 @@ using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Payloads;
 using Obsidian.Registries;
+using Obsidian.WorldData;
 using System;
 using System.Linq;
 using Xunit;
@@ -59,6 +60,16 @@ public sealed class PluginParticlesAndMenus
                 writer.WriteVarInt(pouch.Id);
             }),
             screen[..(1 + VarIntSize(pouch.Id))]);
+    }
+
+    [Fact(DisplayName = "Particles reach players closer than their range in 3D, from their block's centre")]
+    public void ParticleRangeIsThreeDimensional()
+    {
+        var player = new VectorD(0.9, 100, 0.9);
+
+        Assert.False(AbstractLevel.IsInParticleRange(player, new VectorD(0.5, 64, 0.5), 32));
+        Assert.True(AbstractLevel.IsInParticleRange(player, new VectorD(0.5, 69, 0.5), 32));
+        Assert.True(AbstractLevel.IsInParticleRange(player, new VectorD(0.5, 64, 0.5), 512));
     }
 
     private static int VarIntSize(int value) => Write(writer => writer.WriteVarInt(value)).Length;
