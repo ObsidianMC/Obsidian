@@ -192,6 +192,28 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         return this;
     }
 
+    public IPluginRegistry RegisterGenerator<TGenerator>(string identifier)
+        where TGenerator : class, ILevelGenerator
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        CheckIdentifier(container, identifier);
+
+        // Levels look for it once the plugin loaded (see PluginManager.ResumeGenerators), so it's registered before.
+        lock (container.WorldgenTypes)
+        {
+            if (!container.RegisteringWorldgenTypes || container.IsClosing)
+            {
+                throw new InvalidOperationException(
+                    $"{container.Info.Name} can only register generators in ConfigureRegistry.");
+            }
+
+            PluginGenerators.Register(container, identifier, typeof(TGenerator));
+        }
+
+        return this;
+    }
+
     // The plugin's feature files are read once it configured its registry, with the types it registered by then, and
     // read again whenever plugins change. Types registered later would only count from the next change, so they're
     // refused instead.

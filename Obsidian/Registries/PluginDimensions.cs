@@ -15,13 +15,14 @@ namespace Obsidian.Registries;
 /// (see <see cref="LevelStemData"/>), generated in the default world as a level of that name.
 /// </summary>
 /// <remarks>
-/// A dimension added stays until the server stops, even once its plugin unloads, with the noise settings it was read
-/// with: changing a live level's generator would mix two generators' chunks. For the same reason a reload changing a
-/// stem, or the plugin noise files it uses, keeps the dimension as it was, with a warning, until a restart. A
-/// dimension whose generator is made of a plugin's types can't outlive the plugin's code, though: when the plugin
-/// unloads, it's released (see <see cref="Release"/>) and its level stops generating new chunks until a restart.
-/// Vanilla's dimensions can't be overridden, and when plugins define the same dimension, the first in load order
-/// wins.
+/// A dimension added stays until the server stops, even once its plugin unloads, with the stem and noise settings it
+/// was read with: changing a live level's generator would mix two generators' chunks. For the same reason a reload
+/// changing a stem, or the plugin noise files it uses, keeps the dimension as it was, with a warning, until a restart.
+/// A dimension whose generator is made of a plugin's types can't outlive the plugin's code, though: when the plugin
+/// unloads, it's released (see <see cref="Release"/>) and its level stops generating new chunks. Once the plugin is
+/// back, the dimension is read again from the stem it was added with (see <see cref="Apply"/>), and its level
+/// generates again. Vanilla's dimensions can't be overridden, and when plugins define the same dimension, the first in
+/// load order wins.
 /// </remarks>
 internal static partial class PluginDimensions
 {
@@ -105,7 +106,7 @@ internal static partial class PluginDimensions
             // A change to the plugin noise files it was read from is a change to the dimension too.
             var text = Encoding.UTF8.GetString(bytes) + noise.Sources(dimension.Settings);
 
-            return new DimensionFile(identifier, source, text, dimension);
+            return new DimensionFile(identifier, source, text, bytes, dimension);
         }
         catch (Exception ex) when (ex is JsonException or InvalidDataException)
         {
@@ -115,12 +116,14 @@ internal static partial class PluginDimensions
 
     /// <summary>
     /// Adds the files' dimensions that weren't added yet. Ones added before stay as they were, and those whose file
-    /// changed are logged: the change applies after a restart.
+    /// changed are logged: the change applies after a restart. Added dimensions that were released are read again
+    /// from their stems with the plugins loaded now, so that their levels can generate again (see
+    /// <see cref="WorldData.Generators.MojangGenerator.Resume"/>).
     /// </summary>
     /// <remarks>
     /// A file whose dimension isn't kept, because another plugin defines it first or the dimension was added before,
     /// is released (see <see cref="MojangDimension.Release"/>), so that it doesn't keep the plugins it's made of
-    /// loaded. A released file isn't added again: its plugin is reloaded to read it again.
+    /// loaded. A released file that wasn't added isn't added: its plugin is reloaded to read it again.
     /// </remarks>
     /// <param name="files">The loaded plugins' files, in load order.</param>
     /// <returns>Whether a dimension was added.</returns>
@@ -147,10 +150,19 @@ internal static partial class PluginDimensions
                 if (ReferenceEquals(existing, file))
                     continue;
 
-                if (existing is not null && !existing.Dimension.IsReleased)
+                if (existing is not null)
                 {
+                    // The same stem read again with the plugins loaded now replaces a released dimension.
                     if (existing.Json != file.Json)
+                    {
                         Log.ChangedUntilRestart(logger, file.Identifier, file.Source);
+                    }
+                    else if (existing.Dimension.IsReleased && !file.Dimension.IsReleased)
+                    {
+                        current = current.Replace(existing, file);
+                        changed = true;
+                        continue;
+                    }
 
                     Discard(file);
                     continue;
@@ -162,10 +174,18 @@ internal static partial class PluginDimensions
                     continue;
                 }
 
-                // A dimension released when its plugin unloaded keeps its level stopped until a restart, but one not
-                // created yet can be, with the plugin loaded again.
-                current = existing is null ? current.Add(file) : current.Replace(existing, file);
+                current = current.Add(file);
                 changed = true;
+            }
+
+            // Released when a plugin they generate with unloaded, they're read again once it's back.
+            foreach (var file in current.Where(file => file.Dimension.IsReleased).ToList())
+            {
+                if (Rebuild(file, logger) is DimensionFile rebuilt)
+                {
+                    current = current.Replace(file, rebuilt);
+                    changed = true;
+                }
             }
 
             added = current;
@@ -178,6 +198,42 @@ internal static partial class PluginDimensions
                     file.Dimension.Release();
             }
         }
+    }
+
+    /// <summary>
+    /// The added dimension <paramref name="identifier"/>, released or not, or null.
+    /// </summary>
+    public static MojangDimension? Find(string identifier) =>
+        added.FirstOrDefault(file => file.Identifier == identifier)?.Dimension;
+
+    // Reads a released dimension's stem again, or returns null when it can't be: a plugin it generates with isn't
+    // loaded, or the plugin noise files it uses changed, which applies after a restart.
+    private static DimensionFile? Rebuild(DimensionFile file, ILogger logger)
+    {
+        DimensionFile rebuilt;
+
+        try
+        {
+            rebuilt = Parse(file.Identifier, file.Source, file.Stem);
+        }
+        catch (InvalidDataException)
+        {
+            return null;
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Reading creates plugins' types, whose code may fail.
+            Log.RebuildFailed(logger, ex, file.Identifier);
+            return null;
+        }
+
+        if (rebuilt.Json == file.Json)
+            return rebuilt;
+
+        Log.ChangedUntilRestart(logger, file.Identifier, file.Source);
+        rebuilt.Dimension.Release();
+
+        return null;
     }
 
     /// <summary>
@@ -223,6 +279,10 @@ internal static partial class PluginDimensions
             Message = "Left out dimension {Identifier} from {Source}: a plugin it generates with unloaded since it "
                 + "was read, so its plugin has to be reloaded to add it")]
         public static partial void ReleasedUntilReload(ILogger logger, string identifier, string source);
+
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "Dimension {Identifier} stays stopped: reading its level stem again failed")]
+        public static partial void RebuildFailed(ILogger logger, Exception exception, string identifier);
     }
 }
 
@@ -233,5 +293,11 @@ internal static partial class PluginDimensions
 /// <param name="Source">Where the file comes from, for messages.</param>
 /// <param name="Json">The file's text, with the plugin noise files it uses, to tell a changed dimension on
 /// reload.</param>
+/// <param name="Stem">The file's bytes, to read the dimension again once it's released.</param>
 /// <param name="Dimension">What the stem generates.</param>
-internal sealed record DimensionFile(string Identifier, string Source, string Json, MojangDimension Dimension);
+internal sealed record DimensionFile(
+    string Identifier,
+    string Source,
+    string Json,
+    byte[] Stem,
+    MojangDimension Dimension);

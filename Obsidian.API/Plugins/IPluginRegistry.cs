@@ -172,6 +172,26 @@ public interface IPluginRegistry
     /// </exception>
     public IPluginRegistry RegisterWorldgenType<TBase, TValue>(string identifier)
         where TValue : class, TBase;
+
+    /// <summary>
+    /// Registers a level generator that worlds and dimensions name by its identifier: a world's <c>Generator</c> in
+    /// <c>worlds.json</c>, or a child dimension's name there. Each level using it gets its own instance, created with
+    /// the plugin's services, and saves the identifier.
+    /// </summary>
+    /// <typeparam name="TGenerator">The generator. Its <see cref="ILevelGenerator.Id"/> isn't used.</typeparam>
+    /// <param name="identifier">The generator's identifier, in the plugin's namespace.</param>
+    /// <remarks>
+    /// Register generators in <see cref="PluginBase.ConfigureRegistry"/>. A level using one stops generating new
+    /// chunks when the plugin unloads, or when the generator throws, and generates again with a new instance once the
+    /// plugin loads again; until then, and after a restart without the plugin, its chunks already generated still load.
+    /// Each call into the generator holds a call into the plugin, a chunk at a time.
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// The identifier isn't in the plugin's namespace, or is already a generator of the plugin.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The plugin has already loaded, or is unloading.</exception>
+    public IPluginRegistry RegisterGenerator<TGenerator>(string identifier)
+        where TGenerator : class, ILevelGenerator;
 }
 
 

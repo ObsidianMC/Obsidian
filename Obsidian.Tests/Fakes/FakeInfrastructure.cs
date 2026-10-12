@@ -86,7 +86,8 @@ internal sealed class FakeWorldManager(IWorld defaultWorld) : IWorldManager
 
 internal static class TestWorldFactory
 {
-    public static World Create(string name)
+    /// <param name="generator">The world's generator; an empty world's by default.</param>
+    public static World Create(string name, ILevelGenerator? generator = null)
     {
         var configuration = new ServerConfiguration { SpawnChunkRadius = 0, TimeTickSpeedMultiplier = 1 };
         var world = new World(
@@ -95,7 +96,7 @@ internal static class TestWorldFactory
             new FakePacketBroadcaster(),
             new TestOptionsMonitor<ServerConfiguration>(configuration),
             new FakeEventDispatcher(),
-            new EmptyWorldGenerator(),
+            generator ?? new EmptyWorldGenerator(),
             name,
             "test-seed");
 

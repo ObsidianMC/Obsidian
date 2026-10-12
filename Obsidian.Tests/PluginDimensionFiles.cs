@@ -383,6 +383,28 @@ public sealed class PluginDimensionFiles : IDisposable
         Assert.True(dimension.IsReleased);
         Assert.Equal(["minecraft:desert", "minecraft:plains"], dimension.PossibleBiomes.Select(biome => biome.Name));
         Assert.False((await generator.GenerateChunkAsync(5, 5)).IsGenerated);
+
+        // Once the plugin loads again, the dimension read again from its stem resumes the level from its next chunk.
+        var reloadedPlugin = new PluginContainer
+        {
+            Info = plugin.Info,
+            Archive = plugin.Archive
+        };
+        var rebuilt = new MojangDimension(
+            read.Identifier,
+            "minecraft:overworld",
+            read.NoiseSettings,
+            read.Settings,
+            read.CreateBiomeSource,
+            () => read.PossibleBiomes,
+            [reloadedPlugin]);
+
+        Assert.True(generator.Resume(rebuilt));
+        Assert.Same(rebuilt, generator.Dimension);
+
+        var resumed = await generator.GenerateChunkAsync(6, 6, stage: ChunkGenStage.carvers);
+        Assert.True(resumed.ChunkStatus >= ChunkGenStage.surface);
+        Assert.True(resumed.GetBlock(3, 39, 5).Is(BlockIds.GoldBlock));
     }
 
     private const string Bumps = """{ "firstOctave": -4, "amplitudes": [1.0, 0.5] }""";

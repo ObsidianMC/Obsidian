@@ -73,8 +73,10 @@ internal sealed class ChunkBuilder
     /// <param name="generateStructures">Whether structures generate, like vanilla's <c>generate-structures</c> option.</param>
     /// <param name="features">The biomes' features, read before each chunk is decorated;
     /// <see cref="PluginFeatures.Current"/> by default.</param>
+    /// <param name="startCache">The structure starts of the builder this one replaces, generated with the same seed
+    /// and dimension, so the state of their placed pieces carries over; new ones by default.</param>
     public ChunkBuilder(MojangDimension dimension, long seed, bool generateStructures = true,
-        Func<WorldgenFeatureSet>? features = null)
+        Func<WorldgenFeatureSet>? features = null, StructureStartCache? startCache = null)
     {
         this.dimension = dimension;
         this.settings = dimension.Settings;
@@ -94,7 +96,15 @@ internal sealed class ChunkBuilder
         this.rentNoiseChunk = this.RentNoiseChunk;
 
         if (generateStructures)
-            this.Structures = new StructureManager(this.RandomState, this.biomeSource, this.terrainGenerator, dimension.MinY, dimension.Height);
+        {
+            this.Structures = new StructureManager(
+                this.RandomState,
+                this.biomeSource,
+                this.terrainGenerator,
+                dimension.MinY,
+                dimension.Height,
+                startCache);
+        }
     }
 
     /// <summary>

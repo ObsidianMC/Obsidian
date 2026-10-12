@@ -17,16 +17,9 @@ public sealed class LevelFactory(IServiceScopeFactory serviceScopeFactory) : ILe
 
     public IDimension CreateDimension(IWorld parentWorld, string name, string generatorId)
     {
-        Type? generatorType;
-        if (!this.LevelGenerators.TryGetValue(generatorId, out generatorType))
-            this.LevelGenerators.TryGetValue("overworld", out generatorType);
-
-        if(generatorType == null)
-            throw new InvalidOperationException($"Failed to find generator with id: {generatorId}");
-
         using var serviceProviderScope = this.serviceScopeFactory.CreateScope();
 
-        var generator = (ILevelGenerator)ActivatorUtilities.CreateInstance(serviceProviderScope.ServiceProvider, generatorType);
+        var generator = this.CreateGenerator(serviceProviderScope.ServiceProvider, generatorId);
 
         return this.dimensionFactory.Invoke(serviceProviderScope.ServiceProvider, [generator, name, parentWorld]);
     }
@@ -44,19 +37,20 @@ public sealed class LevelFactory(IServiceScopeFactory serviceScopeFactory) : ILe
 
     public IWorld CreateWorld(string name, string seed, string generatorId)
     {
-        Type? generatorType;
-        if (!this.LevelGenerators.TryGetValue(generatorId, out generatorType))
-            this.LevelGenerators.TryGetValue("overworld", out generatorType);
-
-        if(generatorType == null)
-            throw new InvalidOperationException($"Failed to find generator with id: {generatorId}");
-
         using var serviceProviderScope = this.serviceScopeFactory.CreateScope();
 
-        var generator = (ILevelGenerator)ActivatorUtilities.CreateInstance(serviceProviderScope.ServiceProvider, generatorType);
+        var generator = this.CreateGenerator(serviceProviderScope.ServiceProvider, generatorId);
 
         return this.worldFactory.Invoke(serviceProviderScope.ServiceProvider, [generator, name, seed]);
     }
+
+    // A generator the host registered, or else one running the plugin generator of that identifier (see
+    // PluginLevelGenerator), which leaves the level stopped while no plugin registers it, rather than generating it
+    // with another generator.
+    private ILevelGenerator CreateGenerator(IServiceProvider services, string generatorId) =>
+        this.LevelGenerators.TryGetValue(generatorId, out var generatorType)
+            ? (ILevelGenerator)ActivatorUtilities.CreateInstance(services, generatorType)
+            : new PluginLevelGenerator(generatorId);
 
     public void Initialize()
     {
@@ -83,9 +77,9 @@ public sealed class LevelFactory(IServiceScopeFactory serviceScopeFactory) : ILe
     }
 
     /// <summary>
-    /// Registers new world generator(s) to the server.
+    /// Registers a world generator of the server, which stays until it stops. Plugins register theirs with
+    /// <see cref="API.Plugins.IPluginRegistry.RegisterGenerator{TGenerator}"/> instead, which unloading removes.
     /// </summary>
-    /// <param name="entries">A compatible list of entries.</param>
     public void RegisterGenerator<T>() where T : ILevelGenerator, new()
     {
         var gen = new T();

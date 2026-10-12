@@ -92,8 +92,8 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     internal List<WorldgenTypeRegistration> WorldgenTypes { get; } = [];
 
     /// <summary>
-    /// Whether the plugin is in <c>ConfigureRegistry</c>, the only time it may register worldgen types. Changed and
-    /// read under <see cref="WorldgenTypes"/>' lock.
+    /// Whether the plugin is in <c>ConfigureRegistry</c>, the only time it may register worldgen types and
+    /// generators. Changed and read under <see cref="WorldgenTypes"/>' lock.
     /// </summary>
     internal bool RegisteringWorldgenTypes { get; set; }
 

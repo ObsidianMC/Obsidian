@@ -32,15 +32,26 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// </summary>
     protected internal MojangGenerator(MojangDimension dimension)
     {
-        this.Dimension = dimension;
+        this.dimension = dimension;
     }
 
     public virtual string Id => "minecraft:mojang_generator";
 
+    private MojangDimension dimension;
+
     /// <summary>
-    /// The dimension this generator builds; levels using it must have the dimension's build range.
+    /// The dimension this generator builds; levels using it must have the dimension's build range. <see cref="Resume"/>
+    /// replaces it with one rebuilt from the same level stem.
     /// </summary>
-    internal MojangDimension Dimension { get; }
+    internal MojangDimension Dimension => Volatile.Read(ref this.dimension);
+
+    private ImmutableArray<PluginContainer> failedBy = [];
+
+    /// <summary>
+    /// The plugins whose code failing stopped the generator (see <see cref="Contain"/>), or none. It resumes once
+    /// they're no longer loaded: reloaded, or gone.
+    /// </summary>
+    internal ImmutableArray<PluginContainer> FailedBy => this.failedBy;
 
     private ChunkBuilder? builder;
 
@@ -99,7 +110,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
     /// <remarks>
     /// Once the generator stopped (see <see cref="Stop"/> and <see cref="Contain"/>), a chunk not generated yet is
-    /// returned as it is: its level keeps it, and generates it after a restart.
+    /// returned as it is: its level keeps it, and generates it once the generator resumes.
     /// </remarks>
     public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null,
         ChunkGenStage stage = ChunkGenStage.full)
@@ -124,7 +135,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// <remarks>
     /// <para>
     /// No step leaves a partial result that replaying it would build on: a step before decoration that fails
-    /// rewinds its chunk (see <see cref="GenerateUpToCarvers"/>), which generates again after a restart, while a
+    /// rewinds its chunk (see <see cref="GenerateUpToCarvers"/>), which generates again once it resumes, while a
     /// decoration that fails counts as done (see <see cref="Decorate"/>).
     /// </para>
     /// <para>
@@ -146,6 +157,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
             return false;
 
         Volatile.Write(ref this.builder, null);
+        ImmutableInterlocked.Update(ref this.failedBy, failed => failed.Union(plugins).ToImmutableArray());
 
         // Steps running alongside may fail too, once the first did.
         if (Interlocked.Exchange(ref this.failed, 1) == 0 && this.world is AbstractLevel level)
@@ -181,8 +193,29 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     {
         Volatile.Write(ref this.builder, null);
 
-        if (!this.Dimension.IsReleased)
-            this.Dimension.Release();
+        var dimension = this.Dimension;
+        if (!dimension.IsReleased)
+            dimension.Release();
+    }
+
+    /// <summary>
+    /// Generates again once the generator stopped, from the next step on, with <paramref name="dimension"/>: one
+    /// rebuilt from the same level stem with the plugins loaded now, or the same one once the plugins that failed are
+    /// gone. The structure starts and chunk locks stay, so chunks generated before are kept as they are, and ones
+    /// partway through go on from their last finished step.
+    /// </summary>
+    /// <returns>Whether it generates again: building the generator runs plugins' code, which may fail (see
+    /// <see cref="Contain"/>).</returns>
+    internal bool Resume(MojangDimension dimension)
+    {
+        if (this.Builder is not null)
+            return true;
+
+        Volatile.Write(ref this.dimension, dimension);
+        this.failedBy = [];
+        Interlocked.Exchange(ref this.failed, 0);
+
+        return this.Start();
     }
 
     /// <param name="decorateInOrder">Whether the chunk's neighbors are decorated one after another in a fixed order, so the
@@ -433,7 +466,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         }
         catch (Exception ex) when (ex is not GeneratorStoppedException && this.Contain(ex))
         {
-            // A stopped generator refuses before any feature is placed, so the chunk is decorated after a restart.
+            // A stopped generator refuses before any feature is placed, so the chunk is decorated once it resumes.
             if (this.world is AbstractLevel level)
                 Log.DecorationCut(level.Logger, cx, cz, this.Dimension.Identifier);
         }
@@ -626,17 +659,26 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     public void Init(ILevel world)
     {
         this.world = world;
+        this.Start();
+    }
 
-        // Binding the noise runs plugins' code, which may fail: the level is then created stopped.
+    // Builds the builder the steps run with, keeping the structure starts of the one before it, if any. Binding the
+    // noise runs plugins' code, which may fail: the generator then stays stopped.
+    private bool Start()
+    {
         ChunkBuilder builder;
 
         try
         {
-            builder = new ChunkBuilder(this.Dimension, RandomState.ParseSeed(world.Seed), features: this.Features);
+            builder = new ChunkBuilder(
+                this.Dimension,
+                RandomState.ParseSeed(this.world.Seed),
+                features: this.Features,
+                startCache: this.startCache);
         }
         catch (Exception ex) when (this.Contain(ex))
         {
-            return;
+            return false;
         }
 
         if (builder.Structures is StructureManager structures)
@@ -646,12 +688,15 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         }
 
         Volatile.Write(ref this.builder, builder);
+
+        return true;
     }
 
     private static partial class Log
     {
         [LoggerMessage(Level = LogLevel.Error,
-            Message = "{Level} stopped generating new chunks until a restart: generating with {Plugins} failed")]
+            Message = "{Level} stopped generating new chunks until {Plugins} reload or the server restarts: "
+                + "generating with them failed")]
         public static partial void PluginFailed(ILogger logger, Exception exception, string level, string plugins);
 
         [LoggerMessage(Level = LogLevel.Warning,

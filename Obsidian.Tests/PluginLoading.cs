@@ -10,6 +10,7 @@ using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.API.Plugins;
+using Obsidian.API.World;
 using Obsidian.API.World.Features;
 using Obsidian.API.World.Generator;
 using Obsidian.API.World.Generator.RandomSources;
@@ -21,6 +22,8 @@ using Obsidian.Registries;
 using Obsidian.Services;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
+using Obsidian.WorldData;
+using Obsidian.WorldData.Generators;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -107,17 +110,35 @@ public sealed class PluginLoading : IDisposable
     [Fact]
     public async Task Reload_ReplacesHandlersAndFreesTheOldLoadContext()
     {
-        var (manager, dispatcher, server) = this.CreateManager();
+        // A world generating with the plugin's generator, stopped until a plugin registers it.
+        var generator = new PluginLevelGenerator("probe:flat");
+        var (manager, dispatcher, server) = this.CreateManager(
+            TestWorldFactory.Create($"probe-{Guid.NewGuid():N}", generator));
         var path = Path.Join(this.folder, "probe.obby");
 
+        Assert.Null(generator.Plugin);
+
         await File.WriteAllBytesAsync(path, ProbeArchive("1.0.0"));
-        var (unloaded, gem, ore) = await LoadAndTrackAsync(manager, path);
+        var (unloaded, gem, ore) = await LoadAndTrackAsync(manager, path, generator);
 
         await File.WriteAllBytesAsync(path, ProbeArchive("1.1.0"));
         var reloaded = await manager.LoadPluginAsync(path);
 
         Assert.Equal(new Version(1, 1, 0, 0), reloaded!.Info.Version);
         Assert.Single(manager.Plugins);
+
+        // Unloading stopped the world's generator, which generates again with the reloaded plugin's generator, and
+        // stops when it fails, without what it wrote into the chunk.
+        Assert.Same(reloaded, generator.Plugin);
+        Assert.Same(reloaded.LoadContext, AssemblyLoadContext.GetLoadContext(generator.Generator!.GetType().Assembly));
+        Assert.True((await generator.GenerateChunkAsync(1, 0)).IsGenerated);
+
+        var failing = new Chunk(ProbeGenerator.FailingChunk, 0);
+        var failed = await generator.GenerateChunkAsync(failing.X, failing.Z, failing);
+
+        Assert.NotSame(failing, failed);
+        Assert.False(failed.IsGenerated);
+        Assert.Null(generator.Plugin);
 
         // The plugin's item keeps its instance and id, and gets the reloaded plugin's behaviour.
         Assert.True(ItemsRegistry.TryGet("probe:gem", out var reloadedGem));
@@ -218,6 +239,12 @@ public sealed class PluginLoading : IDisposable
 
         // Its features are gone with its types.
         Assert.False(PluginFeatures.Current.PlacedFeatures.ContainsKey("probe:pillar"));
+
+        // Its world stops generating, and keeps the generator's identifier to save.
+        Assert.Null(generator.Plugin);
+        Assert.Null(PluginGenerators.Find("probe:flat"));
+        Assert.False((await generator.GenerateChunkAsync(2, 0)).IsGenerated);
+        Assert.Equal("probe:flat", generator.Id);
     }
 
     // Adds the probe plugin's pillar to every overworld biome.
@@ -260,7 +287,8 @@ public sealed class PluginLoading : IDisposable
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task<(WeakReference LoadContext, Item Gem, BlockType Ore)> LoadAndTrackAsync(
         PluginManager manager,
-        string path)
+        string path,
+        PluginLevelGenerator generator)
     {
         var container = await manager.LoadPluginAsync(path);
 
@@ -270,12 +298,16 @@ public sealed class PluginLoading : IDisposable
         Assert.True(gem.Id >= ItemsRegistry.VanillaCount);
         Assert.True(BlocksRegistry.TryGetPluginBlock("probe:ore", out var ore));
 
+        // The world generates with the plugin's generator once the plugin loaded.
+        Assert.Same(container, generator.Plugin);
+        Assert.True((await generator.GenerateChunkAsync(0, 0)).IsGenerated);
+
         return (new WeakReference(container.LoadContext), gem, ore);
     }
 
-    private (PluginManager Manager, EventDispatcher Dispatcher, FakeServer Server) CreateManager()
+    private (PluginManager Manager, EventDispatcher Dispatcher, FakeServer Server) CreateManager(World? world = null)
     {
-        var server = new FakeServer();
+        var server = world is null ? new FakeServer() : new FakeServer(world);
 
         var services = new ServiceCollection();
         services.AddOptions<ServerConfiguration>();
@@ -380,6 +412,9 @@ public sealed class ProbePlugin : PluginBase
         pluginRegistry.RegisterFeatureType<ProbePillarFeature>("probe:pillar");
         pluginRegistry.RegisterPlacementModifierType<ProbeAtHeight>("probe:at_height");
 
+        // Its level generator, which worlds name by its identifier.
+        pluginRegistry.RegisterGenerator<ProbeGenerator>("probe:flat");
+
         Assert.Throws<ArgumentException>(
             () => pluginRegistry.RegisterFeatureType<ProbePillarFeature>("minecraft:pillar"));
         Assert.Throws<ArgumentException>(
@@ -438,6 +473,32 @@ public sealed class ProbeLampBehavior : IBlockBehavior
 /// <see cref="ProbePlugin"/>'s feature type, written with the API alone: a column of a block up from its origin,
 /// replacing only the blocks it may.
 /// </summary>
+// The probe plugin's level generator: a bedrock block in each chunk, and a failure in chunks at FailingChunk.
+public sealed class ProbeGenerator : ILevelGenerator
+{
+    public const int FailingChunk = 99;
+
+    public string Id => "probe:flat";
+
+    public void Init(ILevel level)
+    {
+    }
+
+    public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null,
+        ChunkGenStage stage = ChunkGenStage.full)
+    {
+        var generated = (Chunk)(chunk ?? new Chunk(x, z));
+        generated.SetBlock(0, -64, 0, BlocksRegistry.Bedrock);
+
+        if (x == FailingChunk)
+            throw new InvalidOperationException("The probe's generator failed partway.");
+
+        generated.SetChunkStatus(ChunkGenStage.full);
+
+        return ValueTask.FromResult<IChunk>(generated);
+    }
+}
+
 public sealed class ProbePillarFeature : ConfiguredFeatureBase
 {
     public override string Type => "probe:pillar";

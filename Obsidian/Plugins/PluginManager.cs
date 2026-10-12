@@ -424,6 +424,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             // once those are registered, and their dimensions take part in ordering the features.
             container.DimensionFiles = this.ReadDimensionFiles(archive);
             this.ApplyDimensions();
+            this.ResumeGenerators();
             this.ApplyFeatures();
             await this.AddDimensionLevelsAsync();
             container.Loaded = true;
@@ -496,6 +497,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         ItemsRegistry.ReleasePlugin(pluginContainer);
         BlocksRegistry.ReleasePlugin(pluginContainer);
         EntityDefinitionsRegistry.ReleasePlugin(pluginContainer);
+        PluginGenerators.Release(pluginContainer);
 
         if (pluginContainer.LoadContext is not null)
             this.commandHandler.UnregisterArgumentParsers(pluginContainer.LoadContext);
@@ -506,6 +508,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.ApplyNoise();
         this.ApplyFeatures();
         this.StopGenerators(pluginContainer);
+        this.ResumeGenerators();
 
         var dependents = this.releases
             .Where(pair => pair.Key.Dependencies.Contains(pluginContainer))
@@ -712,9 +715,7 @@ public sealed partial class PluginManager : IAsyncDisposable
     // keep it loaded otherwise, and once nothing else holds it, no mob has anything to drop.
     private void ReleaseFromMobs(PluginLoadContext loadContext)
     {
-        var levels = this.server.WorldManager.GetAvailableWorlds()
-            .OfType<WorldData.World>()
-            .SelectMany(world => world.dimensions.Values.OfType<WorldData.AbstractLevel>().Prepend(world));
+        var levels = this.Levels();
 
         var weakContext = new WeakReference<PluginLoadContext>(loadContext);
 
@@ -762,30 +763,84 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.plugins.SelectMany(plugin => plugin.WorldgenTypes),
         this.logger);
 
-    // A dimension whose generator is made of an unloading plugin's types can't call it any more: its level stops
-    // generating new chunks (a step running now finishes first, holding the plugin), and the generator drops its
-    // parts so the plugin's code can unload. Levels made of vanilla's types and plugins' data keep generating.
+    // Every world's levels, dimensions included.
+    private List<WorldData.AbstractLevel> Levels() => [.. this.server.WorldManager.GetAvailableWorlds()
+        .OfType<WorldData.World>()
+        .SelectMany(world => world.dimensions.Values.OfType<WorldData.AbstractLevel>().Prepend(world))];
+
+    // A level generating with an unloading plugin's generator, or a dimension whose generator is made of its types,
+    // can't call it any more: the level stops generating new chunks (a chunk or step running now finishes first,
+    // holding the plugin), and its generator lets go of the plugin's code so it can unload. Levels made of vanilla's
+    // types and plugins' data keep generating.
     private void StopGenerators(PluginContainer plugin)
     {
-        var generators = this.server.WorldManager.GetAvailableWorlds()
-            .OfType<WorldData.World>()
-            .SelectMany(world => world.dimensions.Values.OfType<WorldData.AbstractLevel>().Prepend(world))
-            .Select(level => level.Generator)
-            .OfType<WorldData.Generators.MojangGenerator>()
-            .Where(generator => generator.Dimension.Plugins.Contains(plugin));
-
-        foreach (var generator in generators)
+        foreach (var level in this.Levels())
         {
-            if (generator.Builder is not null)
-                Log.GeneratorStopped(this.logger, generator.Dimension.Identifier, plugin.Info.Name);
+            switch (level.Generator)
+            {
+                case WorldData.Generators.PluginLevelGenerator generator:
+                    if (generator.Stop(plugin))
+                        Log.GeneratorStopped(this.logger, level.Name, plugin.Info.Name);
 
-            generator.Stop();
+                    break;
+
+                case WorldData.Generators.MojangGenerator generator
+                    when generator.Dimension.Plugins.Contains(plugin):
+                    if (generator.Builder is not null)
+                        Log.GeneratorStopped(this.logger, generator.Dimension.Identifier, plugin.Info.Name);
+
+                    generator.Stop();
+                    break;
+            }
         }
 
         // The plugin is out of the list by now, but its files' dimensions may be made of its types too.
         PluginDimensions.Release(
             plugin,
             this.plugins.SelectMany(loaded => loaded.DimensionFiles).Concat(plugin.DimensionFiles));
+    }
+
+    // Levels that stopped generating start again once they can, from their next chunk: a level whose plugin generator
+    // a loaded plugin registers, and a dimension whose generator's parts are back (read again from its stem, see
+    // PluginDimensions.Apply). One stopped by plugins' code failing waits until those plugins reloaded or unloaded.
+    private void ResumeGenerators()
+    {
+        foreach (var level in this.Levels())
+        {
+            try
+            {
+                switch (level.Generator)
+                {
+                    case WorldData.Generators.PluginLevelGenerator generator
+                        when generator.Plugin is null && PluginGenerators.Find(generator.Id) is PluginGenerator found:
+                        generator.Start(found);
+                        break;
+
+                    case WorldData.Generators.MojangGenerator generator when generator.Builder is null:
+                        this.Resume(generator);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.ResumeFailed(this.logger, ex, level.Name);
+            }
+        }
+    }
+
+    private void Resume(WorldData.Generators.MojangGenerator generator)
+    {
+        if (generator.FailedBy.Any(this.plugins.Contains))
+            return;
+
+        // A plugin's dimension is read again once released, while vanilla's are never released.
+        var current = generator.Dimension;
+        var dimension = PluginDimensions.Find(current.Identifier) ?? current;
+        if (dimension.IsReleased)
+            return;
+
+        if (generator.Resume(dimension))
+            Log.GeneratorResumed(this.logger, dimension.Identifier);
     }
 
     // The loaded plugins' dimensions are added. Ones no plugin has any more stay, with their levels.
@@ -807,9 +862,7 @@ public sealed partial class PluginManager : IAsyncDisposable
     // stopped meanwhile is harmless.
     private void ApplyFeatures()
     {
-        var builders = this.server.WorldManager.GetAvailableWorlds()
-            .OfType<WorldData.World>()
-            .SelectMany(world => world.dimensions.Values.OfType<WorldData.AbstractLevel>().Prepend(world))
+        var builders = this.Levels()
             .Select(level => level.Generator)
             .OfType<WorldData.Generators.MojangGenerator>()
             .Select(generator => (generator.Dimension.Identifier, generator.Builder))
@@ -955,9 +1008,15 @@ public sealed partial class PluginManager : IAsyncDisposable
         public static partial void DisposeFailed(ILogger logger, Exception exception, string pluginName);
 
         [LoggerMessage(Level = LogLevel.Warning,
-            Message = "Dimension {Dimension} stopped generating new chunks until a restart: it generates with "
-                + "{PluginName}'s types, which unloaded")]
-        public static partial void GeneratorStopped(ILogger logger, string dimension, string pluginName);
+            Message = "{Level} stopped generating new chunks until {PluginName} loads again: it generates with its "
+                + "code, which unloaded")]
+        public static partial void GeneratorStopped(ILogger logger, string level, string pluginName);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Dimension {Dimension} generates new chunks again")]
+        public static partial void GeneratorResumed(ILogger logger, string dimension);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "{Level} couldn't start generating again")]
+        public static partial void ResumeFailed(ILogger logger, Exception exception, string level);
     }
 }
 

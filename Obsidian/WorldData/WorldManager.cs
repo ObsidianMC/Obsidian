@@ -138,6 +138,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         var loaded = await world.LoadAsync(defaultCodec);
         if (!loaded)
         {
+            ThrowIfCantGenerate(world);
             Log.CreatingWorld(this.logger, serverWorld.Name);
             createLevel?.Invoke(world);
         }
@@ -173,6 +174,8 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
             }
             else
             {
+                ThrowIfCantGenerate(dimension);
+
                 if (integratedOptions.Value.Enabled)
                     ((AbstractLevel)dimension).GenerationProgress = Report;
 
@@ -194,6 +197,17 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
         if (serverWorld.Default && this.DefaultWorld is null)
             this.DefaultWorld = world;
+    }
+
+    // A saved level whose plugin generator is missing loads stopped, but a new one would be created without its
+    // spawn area, so it isn't created at all.
+    private static void ThrowIfCantGenerate(ILevel level)
+    {
+        if (level is AbstractLevel { Generator: PluginLevelGenerator { Plugin: null } generator })
+        {
+            throw new InvalidOperationException(
+                $"{level.Name} can't be created: no generator {generator.Id} is registered.");
+        }
     }
 
     /// <summary>

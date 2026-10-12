@@ -47,7 +47,7 @@ internal sealed class StructureManager : IStructurePlacementState
     /// <summary>
     /// The starts created so far, which keep the state their pieces were placed with until it's saved.
     /// </summary>
-    public StructureStartCache StartCache { get; } = new();
+    public StructureStartCache StartCache { get; }
 
     /// <summary>
     /// The structure sets of the dimension, in registry order.
@@ -59,8 +59,17 @@ internal sealed class StructureManager : IStructurePlacementState
     /// </summary>
     public IReadOnlyList<IReadOnlyList<Structure>> StructuresPerStep { get; }
 
-    public StructureManager(RandomState randomState, IClimateBiomeSource biomeSource, IStructureTerrain terrain, int minY, int height)
+    /// <param name="startCache">Starts created before with the same seed and terrain, to keep; new ones by
+    /// default.</param>
+    public StructureManager(
+        RandomState randomState,
+        IClimateBiomeSource biomeSource,
+        IStructureTerrain terrain,
+        int minY,
+        int height,
+        StructureStartCache? startCache = null)
     {
+        this.StartCache = startCache ?? new();
         this.randomState = randomState;
         this.biomeSource = biomeSource;
         this.terrain = terrain;
