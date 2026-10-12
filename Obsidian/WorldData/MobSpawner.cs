@@ -135,7 +135,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 var cap = category.Cap * chunks.Count / 289;
                 var count = counts.GetValueOrDefault(category.Name);
                 if (count < cap)
-                    counts[category.Name] = count + SpawnGroup(chunk, category.Name, players, cap - count);
+                    SpawnGroup(chunk, category.Name, players, cap - count, counts: counts);
             }
         }
         if (level.LevelData.GetBooleanRule("spawn_mobs"))
@@ -145,7 +145,15 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         }
     }
 
-    private int SpawnGroup(IChunk chunk, string category, IPlayer[] players, int remaining, bool generation = false)
+    // Counts, when given, each spawned mob against its own type's category, like vanilla's SpawnState.afterSpawn:
+    // a mob a biome lists under another category (jungles' ocelots, listed as monsters) still counts as its own.
+    private int SpawnGroup(
+        IChunk chunk,
+        string category,
+        IPlayer[] players,
+        int remaining,
+        bool generation = false,
+        Dictionary<string, int>? counts = null)
     {
         var terrain = new MobTerrain(level);
         var x = chunk.X * 16 + random.Next(16);
@@ -316,6 +324,12 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 continue;
             level.SpawnEntity(mob);
             spawned++;
+
+            if (counts is not null)
+            {
+                var counted = SpawnCategory(mob);
+                counts[counted] = counts.GetValueOrDefault(counted) + 1;
+            }
         }
         return spawned;
     }
