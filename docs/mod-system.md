@@ -93,8 +93,18 @@ client. This document describes the design and tracks its progress. The archive 
      so vanilla clients always accept them; vanilla's entries are sent by name from the `minecraft:core` pack. A
      change to these entries sends connected players back through configuration. Plugin biomes don't generate anywhere
      yet, and the server doesn't apply environment attributes itself yet.
-   - Next: worldgen data (configured and placed features, and biomes' features at runtime), then codec types
-     registered by plugins, then dimensions and reload-safe generators.
+   - Done: worldgen features. Plugins' `data/<namespace>/worldgen/configured_feature` and `placed_feature` files are
+     read at runtime into the same objects the source generator makes of vanilla's features (a parity test reads all
+     of vanilla's features both ways and compares them), and NeoForge's `neoforge/biome_modifier` files
+     (`neoforge:add_features`, `neoforge:remove_features`) change biomes' features. Plugin biomes' `features` take
+     plugins' placed features, by identifier or inline. Features aren't synced or saved, so they come and go with
+     their plugin: each plugin change builds a new feature set and every level's generator moves to it, sorting the
+     features again like vanilla with the same data pack. Without plugins, worlds generate exactly as before; chunks
+     already generated are kept.
+   - Next, slice 3: codec types registered by plugins (feature, placement modifier and density function types).
+     Worldgen types in plugins' assemblies are already found by their attributes; registering them, and freeing
+     them on unload, isn't designed yet.
+   - Then slice 4: dimensions and reload-safe generators, with plugin biomes placed in dimensions.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource
    packs, and answers NeoForge's handshake and registry sync.
@@ -102,5 +112,5 @@ client. This document describes the design and tracks its progress. The archive 
 ## Known gaps
 
 - World generators, dialogs and other registries that plugins fill through injected services are not yet removed when
-  their plugin unloads (phase 3 and 2).
+  their plugin unloads (phase 3 and 2). Plugins' worldgen features are.
 - Obsidian.MSBuild writes version 2 archives on its `feat/obby-v2` branch, which isn't released yet.

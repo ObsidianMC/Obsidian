@@ -1,7 +1,8 @@
 # Plugin blocks, entities, tags and data
 
 Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, add entity types in
-code, and add tags, biomes, dimension types and damage types with data pack files, like NeoForge and Fabric mods.
+code, and add tags, biomes, dimension types, damage types, worldgen features and NeoForge biome modifiers with data
+pack files, like NeoForge and Fabric mods.
 Clients need the matching mod for blocks, items and entity types: NeoForge and Fabric clients are sent those
 registries, so their ids agree with the server's. Biomes, dimension types and damage types are sent with their data,
 so vanilla clients can join too.
@@ -182,9 +183,10 @@ accepts it and left out where vanilla would fail, with a message naming the fiel
   most its `maxCount`, and both are positive.
 - References must exist. Sound events and particle, entity and activity types are vanilla's (entity types may be a
   loaded plugin's). A sound vanilla doesn't have is given inline as `{"sound_id": ..., "range": ...}`.
-- A biome is read whole, like vanilla reads it. Its `carvers` and `features` refer to vanilla's configured carvers and
-  placed features by identifier (plugins can't define them inline yet). Where vanilla would log and drop a carver,
-  feature or spawner it can't read, the file is left out instead.
+- A biome is read whole, like vanilla reads it. Its `features` are vanilla's or loaded plugins' placed features by
+  identifier, or placed features defined inline (see [World generation features](#world-generation-features)). Its
+  `carvers` refer to vanilla's configured carvers by identifier: plugins can't add carvers or define them inline
+  yet. Where vanilla would log and drop a carver, feature or spawner it can't read, the file is left out instead.
 - A dimension type's `timelines` can only be a timeline tag, like `"#minecraft:in_overworld"`: the server sends clients
   the timeline tags but not the timelines.
 
@@ -201,3 +203,100 @@ Two kinds of attribute value can't be read yet, so a file with them is left out:
 - a bed rule's `error_message` other than a string, `{"text": ...}` or `{"translate": ..., "fallback": ...}`.
 
 The server's own gameplay doesn't apply attributes yet: they change what clients show and play.
+
+## World generation features
+
+Plugins add configured and placed features, and change which features biomes place with NeoForge's biome modifiers:
+
+- `data/<namespace>/worldgen/configured_feature/<path>.json` is the configured feature `<namespace>:<path>`;
+- `data/<namespace>/worldgen/placed_feature/<path>.json` is a placed feature;
+- `data/<namespace>/neoforge/biome_modifier/<path>.json` is a biome modifier.
+
+Features are vanilla 1.21.11's format, read into the same objects as vanilla's features: a configured feature is
+`{"type": ..., "config": {...}}` and a placed feature `{"feature": ..., "placement": [...]}`. Every feature, placement
+modifier, provider, predicate and placer type vanilla's own features use is available, and `minecraft:no_op`. A
+feature refers to vanilla's or plugins' features by identifier, or defines one inline. An ore that replaces stone
+with a plugin block, in every overworld biome:
+
+```json
+// data/ruby/worldgen/configured_feature/ore_ruby.json
+{
+  "type": "minecraft:ore",
+  "config": {
+    "size": 8,
+    "discard_chance_on_air_exposure": 0,
+    "targets": [
+      {
+        "target": { "predicate_type": "minecraft:tag_match", "tag": "minecraft:stone_ore_replaceables" },
+        "state": { "Name": "ruby:ruby_ore" }
+      },
+      {
+        "target": { "predicate_type": "minecraft:tag_match", "tag": "minecraft:deepslate_ore_replaceables" },
+        "state": { "Name": "ruby:deepslate_ruby_ore" }
+      }
+    ]
+  }
+}
+```
+
+```json
+// data/ruby/worldgen/placed_feature/ore_ruby.json
+{
+  "feature": "ruby:ore_ruby",
+  "placement": [
+    { "type": "minecraft:count", "count": 6 },
+    { "type": "minecraft:in_square" },
+    {
+      "type": "minecraft:height_range",
+      "height": {
+        "type": "minecraft:trapezoid",
+        "min_inclusive": { "above_bottom": -32 },
+        "max_inclusive": { "absolute": 48 }
+      }
+    },
+    { "type": "minecraft:biome" }
+  ]
+}
+```
+
+```json
+// data/ruby/neoforge/biome_modifier/add_ore_ruby.json
+{
+  "type": "neoforge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": "ruby:ore_ruby",
+  "step": "underground_ores"
+}
+```
+
+A biome modifier is NeoForge's:
+
+- `neoforge:add_features` adds `features` to the end of a decoration `step` of each of the `biomes`;
+- `neoforge:remove_features` removes `features` from the `biomes`, in the given `steps` (one or a list) or in all;
+- `neoforge:none` does nothing.
+
+`biomes` is a biome (vanilla's or a plugin's), a list of them, or a vanilla biome tag like `#minecraft:is_overworld`;
+`features` is a placed feature, or a list of them, and features added may be defined inline. Steps are vanilla's
+decoration steps: `raw_generation`, `lakes`, `local_modifications`, `underground_structures`, `surface_structures`,
+`strongholds`, `underground_ores`, `underground_decoration`, `fluid_springs`, `vegetal_decoration` and
+`top_layer_modification`. Other modifier types (spawns, carvers), NeoForge's holder set types (`neoforge:any`,
+`neoforge:and`, ...) and placed feature tags aren't supported yet, and leave the file out.
+
+The rules:
+
+- Like other plugin data, files in the `minecraft` namespace are left out, and when two plugins define the same entry,
+  the first in load order wins. A file that can't be read is logged and left out, with the features and modifiers
+  that need it; the plugin loads without them. Values are checked like the source generator checks vanilla's:
+  unknown types, fields, enum names and blocks, and missing required fields, are errors.
+- Features may refer to each other in any order and across plugins; a feature that refers back to itself is left
+  out. Each feature is read once and shared, so a feature given by identifier is the same instance everywhere.
+- A biome's features are vanilla's, or a plugin biome's `features`, with every `add_features` modifier applied and
+  then every `remove_features` one, each in load order, like NeoForge's phases. Features are ordered across biomes
+  like vanilla orders them, which decides their random seeds, so a world generates like vanilla with the same data
+  pack. A modifier that would order features in a cycle (one placed both before and after another in different
+  biomes, which vanilla can't generate) is left out with an error.
+- Features aren't sent to clients or saved, so they come and go with their plugin: when plugins load or unload, the
+  features are read again and every world's generator moves to them for the chunks it decorates next. Chunks
+  already generated keep what was placed. As in vanilla, adding features to a step can change the seeds of the
+  features after them in that step.
+- Plugin biomes don't generate anywhere yet, so their features only matter once dimensions can place them.
