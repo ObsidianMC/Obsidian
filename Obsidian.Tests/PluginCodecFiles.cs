@@ -36,6 +36,10 @@ public class PluginCodecFiles
         // Vanilla's entries come from the pack clients share with the server, so plugins can't override them.
         Assert.Throws<InvalidDataException>(() => Parse("minecraft:plains", json));
 
+        // Clients couldn't decode a dimension type without vanilla's fields, so such a file is left out.
+        Assert.Throws<InvalidDataException>(
+            () => PluginCodecs.Parse(PluginCodecs.DimensionType, "codecfiles:void", "test", "{}"u8));
+
         PluginCodecs.Apply([Parse("codecfiles:glade", json)], NullLogger.Instance);
 
         Assert.True(CodecRegistry.TryGetBiome("codecfiles:glade", out var glade));

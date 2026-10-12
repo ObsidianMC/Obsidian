@@ -118,6 +118,8 @@ internal static partial class PluginCodecs
             if (root.ValueKind != JsonValueKind.Object)
                 throw new InvalidDataException($"{source} isn't a JSON object.");
 
+            CheckShape(shapes.Value[registry], clientFields.GetValueOrDefault(registry), root, source, path: "");
+
             object? element = registry switch
             {
                 Biome => root.Deserialize<BiomeElement>(elementOptions),
@@ -171,7 +173,7 @@ internal static partial class PluginCodecs
                 (codec, element) => codec.Element = element);
 
             changed |= CodecRegistry.Dimensions.Table.Apply(
-                Entries<DimensionElement>(kept, DimensionType),
+                Entries<DimensionElement>(kept, DimensionType).Where(entry => KeepsHeight(entry, logger)),
                 (name, id, element) => new DimensionCodec { Name = name, Id = id, Element = element },
                 (codec, element) => codec.Element = element);
 
@@ -183,6 +185,147 @@ internal static partial class PluginCodecs
             if (changed)
                 Interlocked.Increment(ref revision);
         }
+    }
+
+    // What vanilla's entries of a registry look like, by the path of each object in them ("" for the entry, like
+    // "effects" for a biome's effects): the fields every such object has, and the JSON kinds each field takes. A
+    // plugin's file must look the same: clients decode it with vanilla's codecs, which need those fields, and a file
+    // they can't decode would keep every client from joining until the server stops.
+    private static readonly Lazy<FrozenDictionary<string, FrozenDictionary<string, ObjectShape>>> shapes =
+        new(() => new Dictionary<string, FrozenDictionary<string, ObjectShape>>
+        {
+            [Biome] = ReadShapes("biomes"),
+            [DimensionType] = ReadShapes("dimensions"),
+            [DamageType] = ReadShapes("damage_type")
+        }.ToFrozenDictionary());
+
+    // The fields of a biome clients decode (vanilla's Biome.NETWORK_CODEC), which are all a plugin's biome needs;
+    // dimension types and damage types are decoded whole.
+    private static readonly FrozenDictionary<string, FrozenSet<string>> clientFields =
+        new Dictionary<string, FrozenSet<string>>
+        {
+            [Biome] = FrozenSet.Create(
+                "has_precipitation",
+                "temperature",
+                "temperature_modifier",
+                "downfall",
+                "effects")
+        }.ToFrozenDictionary();
+
+    private sealed record ObjectShape(
+        FrozenSet<string> Required,
+        FrozenDictionary<string, FrozenSet<JsonValueKind>> Kinds);
+
+    private static FrozenDictionary<string, ObjectShape> ReadShapes(string file)
+    {
+        var resource = $"Obsidian.Assets.Codecs.{file}.json";
+        using var stream = typeof(PluginCodecs).Assembly.GetManifestResourceStream(resource)
+            ?? throw new InvalidOperationException($"Vanilla's {file} are missing.");
+        using var document = JsonDocument.Parse(stream);
+
+        var required = new Dictionary<string, HashSet<string>>();
+        var kinds = new Dictionary<string, Dictionary<string, HashSet<JsonValueKind>>>();
+
+        void Visit(JsonElement value, string path)
+        {
+            var names = value.EnumerateObject().Select(property => property.Name).ToHashSet();
+            if (required.TryGetValue(path, out var common))
+                common.IntersectWith(names);
+            else
+                required[path] = names;
+
+            if (!kinds.TryGetValue(path, out var fields))
+                kinds[path] = fields = [];
+
+            foreach (var property in value.EnumerateObject())
+            {
+                if (!fields.TryGetValue(property.Name, out var taken))
+                    fields[property.Name] = taken = [];
+
+                taken.Add(KindOf(property.Value));
+
+                if (property.Value.ValueKind == JsonValueKind.Object)
+                    Visit(property.Value, path.Length == 0 ? property.Name : $"{path}.{property.Name}");
+            }
+        }
+
+        foreach (var entry in document.RootElement.GetProperty("value").EnumerateArray())
+            Visit(entry.GetProperty("element"), "");
+
+        return required.ToFrozenDictionary(
+            entry => entry.Key,
+            entry => new ObjectShape(
+                entry.Value.ToFrozenSet(),
+                kinds[entry.Key].ToFrozenDictionary(field => field.Key, field => field.Value.ToFrozenSet())));
+    }
+
+    // True and false are one kind.
+    private static JsonValueKind KindOf(JsonElement value) =>
+        value.ValueKind == JsonValueKind.False ? JsonValueKind.True : value.ValueKind;
+
+    // Checks an object of a plugin's file, and the objects in it, against vanilla's at the same path. Fields vanilla
+    // doesn't have are left to the client, which ignores them.
+    private static void CheckShape(
+        FrozenDictionary<string, ObjectShape> shapes,
+        FrozenSet<string>? clientFields,
+        JsonElement value,
+        string source,
+        string path)
+    {
+        if (!shapes.TryGetValue(path, out var shape))
+            return;
+
+        foreach (var name in shape.Required)
+        {
+            var field = path.Length == 0 ? name : path.Split('.')[0];
+            if (clientFields is not null && !clientFields.Contains(field))
+                continue;
+
+            if (!value.TryGetProperty(name, out _))
+                throw new InvalidDataException($"{source} lacks {Field(path, name)}, which clients need.");
+        }
+
+        foreach (var property in value.EnumerateObject())
+        {
+            if (!shape.Kinds.TryGetValue(property.Name, out var allowed))
+                continue;
+
+            // Where vanilla's files have a string, its codecs also take a colour as a number and a sound as an
+            // object; numbers and booleans have to be what vanilla's are.
+            var kind = KindOf(property.Value);
+            var stringLike = allowed.Contains(JsonValueKind.String)
+                && kind is JsonValueKind.Number or JsonValueKind.Object;
+
+            if (!allowed.Contains(kind) && !stringLike)
+            {
+                throw new InvalidDataException(
+                    $"{source}: {Field(path, property.Name)} isn't {string.Join(" or ", allowed)}, as in vanilla's.");
+            }
+
+            if (property.Value.ValueKind == JsonValueKind.Object)
+                CheckShape(shapes, clientFields, property.Value, source, Field(path, property.Name));
+        }
+    }
+
+    private static string Field(string path, string name) => path.Length == 0 ? name : $"{path}.{name}";
+
+    // A plugin's dimension type in use keeps its height until the server stops: levels and clients' chunks are sized
+    // by it when created, so a reload changing it would leave them disagreeing.
+    private static bool KeepsHeight(PluginCodecEntry<DimensionElement> entry, ILogger logger)
+    {
+        if (!CodecRegistry.Dimensions.All.TryGetValue(entry.Name, out var existing))
+            return true;
+
+        var current = existing.Element;
+        if (current.MinY == entry.Element.MinY
+            && current.Height == entry.Element.Height
+            && current.LogicalHeight == entry.Element.LogicalHeight)
+        {
+            return true;
+        }
+
+        Log.HeightChanged(logger, entry.Name);
+        return false;
     }
 
     // A registry's entries of the files, in their order.
@@ -317,6 +460,10 @@ internal static partial class PluginCodecs
         [LoggerMessage(Level = LogLevel.Warning,
             Message = "Left out {Identifier} from {Source}: {First} defined it first")]
         public static partial void Duplicate(ILogger logger, string identifier, string source, string first);
+
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "Kept {Identifier} as it was: its height can't change until the server restarts")]
+        public static partial void HeightChanged(ILogger logger, string identifier);
     }
 }
 

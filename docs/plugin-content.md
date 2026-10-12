@@ -146,7 +146,11 @@ Obsidian reads the files whenever a plugin loads or unloads, and at startup befo
   blocks load as air.
 - Plugins can't override vanilla's entries: a file in the `minecraft` namespace is left out, with a warning. When two
   plugins define the same entry, the first in load order wins and the other is logged.
-- A file that can't be read is logged and left out; the plugin loads without it.
+- A file that can't be read is logged and left out; the plugin loads without it. So is a file clients couldn't
+  decode: it must have the fields every vanilla entry of its registry has (for a biome, those clients read:
+  `has_precipitation`, `temperature`, `downfall` and `effects`), with values of the same kinds as vanilla's.
+- A dimension type keeps its `min_y`, `height` and `logical_height` until the server restarts: a reload changing them
+  keeps the entry as it was, with a warning.
 
 Clients are sent a plugin's entries with its files' data, and vanilla's by name, so vanilla clients accept them like a
 data pack's entries. Players already connected go back through configuration when entries are added or their data
