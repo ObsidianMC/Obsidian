@@ -1,7 +1,8 @@
+using Obsidian.API.Registries;
 using Obsidian.API.Registry.Codecs.Biomes;
 using System.Collections.Frozen;
 
-namespace Obsidian.WorldData.Structures;
+namespace Obsidian.API.World.Features;
 
 /// <summary>
 /// A set of biomes written like vanilla's biome holder sets: biome ids and <c>#</c>-prefixed biome tags, resolved on
@@ -27,7 +28,8 @@ public sealed class BiomeSet
         {
             if (entry.StartsWith('#'))
             {
-                // "#minecraft:has_structure/village_plains" is the tag "village_plains" of type "worldgen/biome/has_structure".
+                // "#minecraft:has_structure/village_plains" is the tag "village_plains" of type
+                // "worldgen/biome/has_structure".
                 var path = entry[1..].Replace("minecraft:", string.Empty);
                 var slash = path.LastIndexOf('/');
                 var type = slash < 0 ? "worldgen/biome" : "worldgen/biome/" + path[..slash];

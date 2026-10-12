@@ -1,9 +1,10 @@
 using Obsidian.API.World.Generator.RandomSources;
 
-namespace Obsidian.WorldData.Features.Tree;
+namespace Obsidian.API.World.Features.Trees;
 
 /// <summary>
-/// Places a tree's trunk and reports where foliage attaches, like vanilla's <c>TrunkPlacer</c>.
+/// Places a tree's trunk and reports where foliage attaches, like vanilla's <c>TrunkPlacer</c>. Plugins add types
+/// with <c>RegisterWorldgenType&lt;TrunkPlacer, T&gt;</c>.
 /// </summary>
 public abstract class TrunkPlacer
 {
@@ -27,22 +28,27 @@ public abstract class TrunkPlacer
 
     /// <summary>Whether a trunk may grow through the position: <see cref="ValidTreePos"/> or an existing log.</summary>
     public bool IsFree(IWorldGenLevel level, Vector position) =>
-        this.ValidTreePos(level, position) || TreeBlocks.Logs.Contains(level.GetBlock(position));
+        this.ValidTreePos(level, position) || TreeBlockRules.Logs.Contains(level.GetBlock(position));
 
-    /// <summary>Vanilla <c>setDirtAt</c>: replaces the block with the dirt provider unless it's already dirt (forced by <c>force_dirt</c>).</summary>
+    /// <summary>
+    /// Vanilla <c>setDirtAt</c>: replaces the block with the dirt provider unless it's already dirt (forced by
+    /// <c>force_dirt</c>).
+    /// </summary>
     protected static void SetDirtAt(TreeContext tree, Vector position)
     {
-        if (tree.Config.ForceDirt || !TreeBlocks.IsDirtUnderTrunk(tree.Level.GetBlock(position)))
-            tree.SetLog(position, tree.Config.DirtProvider.GetState(tree.Random, position));
+        if (tree.ForceDirt || !TreeBlockRules.IsDirtUnderTrunk(tree.Level.GetBlock(position)))
+            tree.SetLog(position, tree.DirtProvider.GetState(tree.Random, position));
     }
 
-    /// <summary>Places a trunk block if <see cref="ValidTreePos"/>, optionally transforming the provided state (e.g. log axis).</summary>
+    /// <summary>
+    /// Places a trunk block if <see cref="ValidTreePos"/>, optionally transforming the provided state (e.g. log axis).
+    /// </summary>
     protected bool PlaceLog(TreeContext tree, Vector position, Func<IBlock, IBlock>? transform = null)
     {
         if (!this.ValidTreePos(tree.Level, position))
             return false;
 
-        var block = tree.Config.TrunkProvider.GetState(tree.Random, position);
+        var block = tree.TrunkProvider.GetState(tree.Random, position);
         tree.SetLog(position, transform is null ? block : transform(block));
         return true;
     }
@@ -53,10 +59,13 @@ public abstract class TrunkPlacer
             this.PlaceLog(tree, position);
     }
 
-    protected virtual bool ValidTreePos(IWorldGenLevel level, Vector position) => TreeBlocks.ValidTreePos(level, position);
+    /// <summary>Vanilla <c>TreeFeature.validTreePos</c>: air or <c>#replaceable_by_trees</c>.</summary>
+    protected virtual bool ValidTreePos(IWorldGenLevel level, Vector position) =>
+        TreeBlockRules.ValidTreePos(level, position);
 
     /// <summary>Vanilla <c>trySetValue(RotatedPillarBlock.AXIS, axis)</c>.</summary>
-    protected static Func<IBlock, IBlock> WithAxis(string axis) => block => block.WithProperty("axis", axis);
+    protected static Func<IBlock, IBlock> WithAxis(string axis) =>
+        block => TreeBlockRules.WithProperty(block, "axis", axis);
 
     protected static string AxisOf(BlockFace face) => face switch
     {

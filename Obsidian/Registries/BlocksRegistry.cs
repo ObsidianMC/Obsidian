@@ -1,3 +1,4 @@
+using Obsidian.API.World.Features.Trees;
 using Obsidian.API.World.Generator;
 using Obsidian.Providers.BlockStateProviders;
 using System.Diagnostics.CodeAnalysis;
@@ -33,6 +34,7 @@ internal static partial class BlocksRegistry
         plugins = new PluginBlockTable([], StateToNumeric.Length);
 
         SimpleBlockStateExtensions.SetConverter(GetFromSimpleState);
+        TreeBlockRules.States = new BlockStateAccess();
     }
 
     /// <summary>

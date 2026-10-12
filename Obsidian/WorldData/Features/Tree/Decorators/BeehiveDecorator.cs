@@ -1,3 +1,4 @@
+using Obsidian.API.World.Features.Trees;
 using Obsidian.Nbt;
 
 namespace Obsidian.WorldData.Features.Tree.Decorators;

@@ -1,3 +1,4 @@
+using Obsidian.API.World.Features.Trees;
 using Obsidian.Providers.IntProviders;
 
 namespace Obsidian.WorldData.Features.Tree.Placers.Trunk;
