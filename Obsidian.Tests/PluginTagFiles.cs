@@ -84,6 +84,8 @@ public class PluginTagFiles
     {
         var vanilla = TagsRegistry.Block.All
             .Concat(TagsRegistry.Item.All)
+            .Concat(TagsRegistry.EntityType.All)
+            .Concat(TagsRegistry.Worldgen.Biome.All)
             .Distinct()
             .ToDictionary(tag => tag, tag => tag.Entries.ToArray());
 
@@ -136,6 +138,52 @@ public class PluginTagFiles
         Assert.Throws<System.IO.InvalidDataException>(() => File("block", "tagfiles:x", """
             { "replace": true, "values": ["dirt", { "id": "minecraft:STONE", "required": false }] }
             """));
+    }
+
+    [Fact(DisplayName = "Obsidian's convention tags resolve with no plugins, are synced, and plugins add to them")]
+    public void ConventionTags()
+    {
+        using var stream = typeof(PluginTags).Assembly
+            .GetManifestResourceStream("Obsidian.Registries.convention_tags.json")!;
+        using var document = System.Text.Json.JsonDocument.Parse(stream);
+
+        var shipped = document.RootElement
+            .EnumerateObject()
+            .Select(tag => tag.Name)
+            .ToList();
+
+        var ironOre = TagsRegistry.Block.IronOres.Entries[0];
+
+        try
+        {
+            PluginTags.Apply([], NullLogger.Instance);
+
+            // A tag missing a required entry would fail and not exist; every shipped tag has entries.
+            Assert.All(shipped, name =>
+            {
+                var registry = PluginTags.Registries.First(registry => name.StartsWith($"{registry}/"));
+                var identifier = $"c:{name[(registry.Length + 1)..]}";
+
+                Assert.True(TagsRegistry.TryGet(registry, identifier, out var tag), identifier);
+                Assert.NotEmpty(tag.Entries);
+            });
+
+            Assert.True(TagsRegistry.Contains("block", "c:ores", ironOre));
+            Assert.Contains(TagsRegistry.GetCategories()["worldgen/biome"], tag => tag.Identifier == "c:is_overworld");
+
+            // A plugin's file adds to a convention tag, which reaches the tags that refer to it.
+            PluginTags.Apply(
+                [File("block", "c:ores/iron", """{ "values": ["minecraft:dirt"] }""")],
+                NullLogger.Instance);
+
+            Assert.True(TagsRegistry.Contains("block", "c:ores", 9));
+        }
+        finally
+        {
+            PluginTags.Apply([], NullLogger.Instance);
+        }
+
+        Assert.False(TagsRegistry.Contains("block", "c:ores", 9));
     }
 
     private static TagFile File(string registry, string identifier, string json) =>

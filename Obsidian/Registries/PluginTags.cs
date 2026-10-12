@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using System.Collections.Frozen;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 
@@ -8,7 +9,7 @@ namespace Obsidian.Registries;
 
 /// <summary>
 /// Merges plugins' tag files with vanilla's tags, the way NeoForge and Fabric merge mods' data packs: vanilla's tags
-/// first, then each plugin's files in load order.
+/// first, then Obsidian's convention (<c>c:</c>) tags, then each plugin's files in load order.
 /// </summary>
 /// <remarks>
 /// A tag file is a data pack's (<c>data/&lt;namespace&gt;/tags/&lt;registry&gt;/&lt;path&gt;.json</c>): its
@@ -52,12 +53,15 @@ internal static partial class PluginTags
     /// </summary>
     public static int Revision => TagsRegistry.Revision;
 
-    // Vanilla's entries of the tags plugins changed, to restore when they no longer do.
+    // Vanilla's own entries of its tags, which a tag keeps when plugins' files make it fail.
     // By reference: a tag is a record, whose equality and hash change with its entries.
     private static readonly Dictionary<Tag, ImmutableArray<int>> vanillaEntries =
         new(ReferenceEqualityComparer.Instance);
 
-    private static readonly Lazy<List<TagFile>> vanillaFiles = new(LoadVanillaFiles);
+    // Vanilla's tag definitions, then Obsidian's convention tags, which act as a built-in data pack loaded between
+    // vanilla's and plugins'.
+    private static readonly Lazy<List<TagFile>> builtInFiles =
+        new(() => [.. LoadVanillaFiles(), .. LoadConventionFiles()]);
 
     private static readonly Lazy<FrozenDictionary<string, int>> vanillaBlockIds = new(() => BlocksRegistry.ResourceIds
         .Select((identifier, id) => (identifier, id))
@@ -202,8 +206,9 @@ internal static partial class PluginTags
         Volatile.Read(ref identifierTags).TryGetValue((registry, identifier), out entries);
 
     /// <summary>
-    /// Makes the tags hold what vanilla's definitions and the given tag files add and remove, in order, like vanilla
-    /// builds tags from its data packs. Applying no files restores vanilla's tags.
+    /// Makes the tags hold what vanilla's definitions, Obsidian's convention tags and the given tag files add and
+    /// remove, in order, like vanilla builds tags from its data packs. Applying no files restores vanilla's tags and
+    /// makes the convention tags.
     /// </summary>
     /// <param name="worldgenEntries">
     /// The loaded plugins' placed features and configured carvers, by registry (<see cref="PlacedFeature"/> or
@@ -216,25 +221,12 @@ internal static partial class PluginTags
     {
         lock (applying)
         {
-            var pluginFiles = files.ToList();
-
-            if (pluginFiles.Count == 0)
-            {
-                foreach (var (tag, entries) in vanillaEntries)
-                    tag.SetEntries(entries);
-
-                // Last, as it moves the revision on.
-                Volatile.Write(ref identifierTags, FrozenDictionary<(string, string), ImmutableArray<string>>.Empty);
-                TagsRegistry.SetPluginTags(new Dictionary<string, Tag[]>());
-                return;
-            }
-
             var ids = new EntryIds(worldgenEntries?.ToHashSet() ?? []);
 
-            // Vanilla's definitions come first, like vanilla's data pack, so that plugins' files add to or replace
-            // them, and so that a change to a vanilla tag reaches the vanilla tags that refer to it.
-            var byTag = vanillaFiles.Value
-                .Concat(pluginFiles)
+            // Vanilla's definitions and the convention tags come first, like vanilla's data pack, so that plugins'
+            // files add to or replace them, and so that a change to a tag reaches the tags that refer to it.
+            var byTag = builtInFiles.Value
+                .Concat(files)
                 .GroupBy(file => (file.Registry, file.Identifier))
                 .ToDictionary(group => group.Key, group => group.ToList());
 
@@ -460,6 +452,29 @@ internal static partial class PluginTags
             var values = ReadEntries(tag.Value.GetProperty("values"));
 
             files.Add(new TagFile(registry, identifier, "vanilla", Replace: false, values, Remove: []));
+        }
+
+        return files;
+    }
+
+    // Obsidian's convention tags: the shared c namespace NeoForge's and Fabric's mods use (c:ores, c:is_overworld...),
+    // filled with vanilla's entries. Registries/convention_tags.json holds each tag's file, keyed by registry and path.
+    private static List<TagFile> LoadConventionFiles()
+    {
+        using var stream = typeof(PluginTags).Assembly
+            .GetManifestResourceStream("Obsidian.Registries.convention_tags.json")
+            ?? throw new InvalidOperationException("Missing convention tags.");
+        using var document = JsonDocument.Parse(stream);
+
+        var files = new List<TagFile>();
+
+        foreach (var tag in document.RootElement.EnumerateObject())
+        {
+            var registry = Registries.First(name => tag.Name.StartsWith($"{name}/", StringComparison.Ordinal));
+            var identifier = $"c:{tag.Name[(registry.Length + 1)..]}";
+            var json = Encoding.UTF8.GetBytes(tag.Value.GetRawText());
+
+            files.Add(Parse(registry, identifier, "convention tags", json));
         }
 
         return files;

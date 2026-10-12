@@ -55,6 +55,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- Obsidian's convention (c:) tags, merged with vanilla's tags like a built-in data pack. -->
+		<EmbeddedResource Include="Registries\convention_tags.json" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="NuGet.Versioning" Version="7.0.1" />
 		<PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.14.0" />
 		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
