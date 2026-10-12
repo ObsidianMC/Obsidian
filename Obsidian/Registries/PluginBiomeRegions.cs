@@ -94,7 +94,7 @@ internal static partial class PluginBiomeRegions
     /// generating already keep theirs: a change to them is logged, and applies after a restart.
     /// </summary>
     /// <param name="files">The loaded plugins' region files, in load order; when two define the same region, the
-    /// first wins.</param>
+    /// last wins, like any other entry.</param>
     public static void Apply(IEnumerable<BiomeRegionFile> files, ILogger logger)
     {
         lock (applying)
@@ -103,13 +103,10 @@ internal static partial class PluginBiomeRegions
 
             foreach (var file in files)
             {
-                if (byIdentifier.TryGetValue(file.Identifier, out var first))
-                {
-                    Log.Duplicate(logger, file.Identifier, file.Source, first.Source);
-                    continue;
-                }
+                if (byIdentifier.TryGetValue(file.Identifier, out var earlier))
+                    Log.Replaced(logger, file.Identifier, earlier.Source, file.Source);
 
-                byIdentifier.Add(file.Identifier, file);
+                byIdentifier[file.Identifier] = file;
             }
 
             var previous = loaded;
@@ -198,8 +195,8 @@ internal static partial class PluginBiomeRegions
     private static partial class Log
     {
         [LoggerMessage(Level = LogLevel.Warning,
-            Message = "Left out biome region {Identifier} from {Source}: {First} defined it first")]
-        public static partial void Duplicate(ILogger logger, string identifier, string source, string first);
+            Message = "Biome region {Identifier} from {Earlier} is replaced by {Source}")]
+        public static partial void Replaced(ILogger logger, string identifier, string earlier, string source);
 
         [LoggerMessage(Level = LogLevel.Warning,
             Message = "The biome regions of {Dimension} changed: it keeps generating with the regions it started "

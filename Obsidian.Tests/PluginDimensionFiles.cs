@@ -159,8 +159,8 @@ public sealed class PluginDimensionFiles : IDisposable
         PluginCodecs.Apply([glade], logger);
         Assert.True(CodecRegistry.TryGetBiome("stemfiles:glade", out var gladeBiome));
 
-        // Vanilla's dimensions can't be overridden, and what Obsidian can't generate yet is rejected, saying so.
-        Assert.Throws<InvalidDataException>(() => Parse("minecraft:glade", FixedStem));
+        // A vanilla dimension keeps its type, and what Obsidian can't generate yet is rejected, saying so.
+        Assert.Throws<InvalidDataException>(() => Parse("minecraft:the_nether", FixedStem));
         var flat = Assert.Throws<InvalidDataException>(() => Parse(
             "stemfiles:flat",
             """{ "type": "overworld", "generator": { "type": "flat", "settings": {} } }"""));
@@ -249,9 +249,6 @@ public sealed class PluginDimensionFiles : IDisposable
             "probe:unmapped",
             typeof(IDensityFunction),
             typeof(UnmappedFunction)));
-
-        Assert.Throws<InvalidDataException>(
-            () => PluginNoise.Parse(PluginNoise.Noise, "minecraft:bumps", "test", Bytes(Bumps)));
 
         var logger = new PluginFeatureFiles.ListLogger();
         var noise = PluginNoise.Build(

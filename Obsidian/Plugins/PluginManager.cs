@@ -58,6 +58,10 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     private ImmutableArray<PluginContainer> plugins = [];
     private ImmutableArray<PluginArchive> stagedPlugins = [];
+
+    // The server's data packs, read once at startup; their files apply after every plugin's (see DataPack).
+    private ImmutableArray<DataPack> dataPacks = [];
+
     private bool serverReady;
     private bool disposed;
 
@@ -123,6 +127,9 @@ public sealed partial class PluginManager : IAsyncDisposable
                 }
 
                 await this.LoadArchivesAsync(archives);
+
+                // The operator's data packs win over plugins' files, so they're applied after them.
+                this.LoadDataPacks();
             });
 
             DirectoryWatcher.Watch(ServerConstants.PluginsPath);
@@ -396,21 +403,22 @@ public sealed partial class PluginManager : IAsyncDisposable
                     container.RegisteringWorldgenTypes = false;
             }
 
-            container.TagFiles.InsertRange(0, this.ReadTagFiles(archive));
-            container.FeatureFiles = this.ReadFeatureFiles(archive);
-            container.CodecFiles = this.ReadCodecFiles(archive, container.FeatureFiles);
+            var files = DataFiles.Of(archive);
+            container.TagFiles.InsertRange(0, this.ReadTagFiles(files));
+            container.FeatureFiles = this.ReadFeatureFiles(files);
+            container.CodecFiles = this.ReadCodecFiles(files, container.FeatureFiles);
 
             // Biome tags name the plugin's biomes, so they're applied once the biomes have ids.
             this.ApplyCodecs();
             this.ApplyTags();
 
             // Noise settings name blocks, and the plugin's types, which are registered by now.
-            container.NoiseFiles = this.ReadNoiseFiles(archive);
+            container.NoiseFiles = this.ReadNoiseFiles(files);
             this.ApplyNoise();
 
             // Level stems name biomes, dimension types and noise settings, the plugin's own included, so they're read
             // once those are registered, and their dimensions take part in ordering the features.
-            container.DimensionFiles = this.ReadDimensionFiles(archive);
+            container.DimensionFiles = this.ReadDimensionFiles(files);
             this.ApplyDimensions();
             this.ResumeGenerators();
 
@@ -499,6 +507,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.ApplyCodecs();
         this.ApplyTags();
         this.ApplyNoise();
+        this.ApplyDimensions();
         this.ApplyBiomeRegions();
         this.ApplyFeatures();
         this.ApplySpawns();
@@ -586,32 +595,32 @@ public sealed partial class PluginManager : IAsyncDisposable
         loadContext.Unload();
     }
 
-    // A plugin's tag files, from its data folder like a data pack's. A malformed file is left out, like vanilla leaves
-    // out a data pack's.
-    private List<TagFile> ReadTagFiles(PluginArchive archive)
+    // A plugin's or data pack's tag files, from its data folder. A malformed file is left out, like vanilla leaves out
+    // a data pack's.
+    private List<TagFile> ReadTagFiles(DataFiles source)
     {
         var files = new List<TagFile>();
 
-        foreach (var (path, registry, identifier) in PluginTags.FindFiles(archive.Paths))
+        foreach (var (path, registry, identifier) in PluginTags.FindFiles(source.Paths))
         {
             try
             {
-                var data = archive.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
-                files.Add(PluginTags.Parse(registry, identifier, $"{archive.Info.Id}/{path}", data));
+                var data = source.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
+                files.Add(PluginTags.Parse(registry, identifier, $"{source.Name}/{path}", data));
             }
             catch (InvalidDataException ex)
             {
-                Log.TagFileFailed(this.logger, ex, path, archive.Source);
+                Log.TagFileFailed(this.logger, ex, path, source.Location);
             }
         }
 
         return files;
     }
 
-    // A plugin's biome, dimension type and damage type files. A file that can't be read, or would override one of
-    // vanilla's entries, is left out; the plugin loads without it. Biomes may use vanilla's placed features and
-    // configured carvers, the loaded plugins' and the plugin's own.
-    private ImmutableArray<CodecFile> ReadCodecFiles(PluginArchive archive, ImmutableArray<FeatureFile> features)
+    // A plugin's or data pack's biome, dimension type and damage type files. A file that can't be read is left out;
+    // the plugin or pack loads without it. Biomes may use vanilla's placed features and configured carvers, the
+    // loaded plugins' and those of the features given, its own.
+    private ImmutableArray<CodecFile> ReadCodecFiles(DataFiles source, ImmutableArray<FeatureFile> features)
     {
         var files = ImmutableArray.CreateBuilder<CodecFile>();
         var entries = features
@@ -625,39 +634,39 @@ public sealed partial class PluginManager : IAsyncDisposable
             entries.Contains((PluginFeatures.ConfiguredCarver, identifier))
             || PluginFeatures.IsConfiguredCarver(identifier);
 
-        foreach (var (path, registry, identifier) in PluginCodecs.FindFiles(archive.Paths))
+        foreach (var (path, registry, identifier) in PluginCodecs.FindFiles(source.Paths))
         {
             try
             {
-                var data = archive.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
-                var source = $"{archive.Info.Id}/{path}";
-                files.Add(PluginCodecs.Parse(registry, identifier, source, data, IsPlacedFeature, IsConfiguredCarver));
+                var data = source.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
+                var name = $"{source.Name}/{path}";
+                files.Add(PluginCodecs.Parse(registry, identifier, name, data, IsPlacedFeature, IsConfiguredCarver));
             }
             catch (InvalidDataException ex)
             {
-                Log.CodecFileFailed(this.logger, ex, path, archive.Source);
+                Log.CodecFileFailed(this.logger, ex, path, source.Location);
             }
         }
 
         return files.ToImmutable();
     }
 
-    // A plugin's level stem files. A file that can't be read, or would override one of vanilla's dimensions, is left
-    // out; the plugin loads without it.
-    private ImmutableArray<DimensionFile> ReadDimensionFiles(PluginArchive archive)
+    // A plugin's or data pack's level stem files. A file that can't be read is left out; the plugin or pack loads
+    // without it.
+    private ImmutableArray<DimensionFile> ReadDimensionFiles(DataFiles source)
     {
         var files = ImmutableArray.CreateBuilder<DimensionFile>();
 
-        foreach (var (path, identifier) in PluginDimensions.FindFiles(archive.Paths))
+        foreach (var (path, identifier) in PluginDimensions.FindFiles(source.Paths))
         {
             try
             {
-                var data = archive.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
-                files.Add(PluginDimensions.Parse(identifier, $"{archive.Info.Id}/{path}", data));
+                var data = source.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
+                files.Add(PluginDimensions.Parse(identifier, $"{source.Name}/{path}", data));
             }
             catch (InvalidDataException ex)
             {
-                Log.CodecFileFailed(this.logger, ex, path, archive.Source);
+                Log.CodecFileFailed(this.logger, ex, path, source.Location);
             }
         }
 
@@ -685,49 +694,116 @@ public sealed partial class PluginManager : IAsyncDisposable
         return files.ToImmutable();
     }
 
-    // A plugin's noise settings, density function and noise files. A file that can't be read, or would override one
-    // of vanilla's entries, is left out; the plugin loads without it.
-    private ImmutableArray<NoiseFile> ReadNoiseFiles(PluginArchive archive)
+    // A plugin's or data pack's noise settings, density function, noise and parameter list files. A file that can't
+    // be read is left out; the plugin or pack loads without it.
+    private ImmutableArray<NoiseFile> ReadNoiseFiles(DataFiles source)
     {
         var files = ImmutableArray.CreateBuilder<NoiseFile>();
 
-        foreach (var (path, registry, identifier) in PluginNoise.FindFiles(archive.Paths))
+        foreach (var (path, registry, identifier) in PluginNoise.FindFiles(source.Paths))
         {
             try
             {
-                var data = archive.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
-                files.Add(PluginNoise.Parse(registry, identifier, $"{archive.Info.Id}/{path}", data));
+                var data = source.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
+                files.Add(PluginNoise.Parse(registry, identifier, $"{source.Name}/{path}", data));
             }
             catch (InvalidDataException ex)
             {
-                Log.CodecFileFailed(this.logger, ex, path, archive.Source);
+                Log.CodecFileFailed(this.logger, ex, path, source.Location);
             }
         }
 
         return files.ToImmutable();
     }
 
-    // A plugin's configured feature, placed feature and biome modifier files. A file that can't be read is left out;
-    // the plugin loads without it.
-    private ImmutableArray<FeatureFile> ReadFeatureFiles(PluginArchive archive)
+    // A plugin's or data pack's configured feature, placed feature, configured carver and biome modifier files. A
+    // file that can't be read is left out; the plugin or pack loads without it.
+    private ImmutableArray<FeatureFile> ReadFeatureFiles(DataFiles source)
     {
         var files = ImmutableArray.CreateBuilder<FeatureFile>();
 
-        foreach (var (path, registry, identifier) in PluginFeatures.FindFiles(archive.Paths))
+        foreach (var (path, registry, identifier) in PluginFeatures.FindFiles(source.Paths))
         {
             try
             {
-                var data = archive.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
-                files.Add(PluginFeatures.Parse(registry, identifier, $"{archive.Info.Id}/{path}", data));
+                var data = source.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
+                files.Add(PluginFeatures.Parse(registry, identifier, $"{source.Name}/{path}", data));
             }
             catch (InvalidDataException ex)
             {
-                Log.CodecFileFailed(this.logger, ex, path, archive.Source);
+                Log.CodecFileFailed(this.logger, ex, path, source.Location);
             }
         }
 
         return files.ToImmutable();
     }
+
+    // Reads the data packs folder's packs, in the order plugins' files are read, and applies them after the plugins'.
+    // Data packs are read once: a change applies after a restart.
+    private void LoadDataPacks()
+    {
+        var packs = DataPack.OpenAll(ServerConstants.DataPacksPath, this.logger);
+        if (packs.Count == 0)
+            return;
+
+        foreach (var pack in packs)
+        {
+            pack.TagFiles.AddRange(this.ReadTagFiles(pack.Files));
+            pack.FeatureFiles = this.ReadFeatureFiles(pack.Files);
+        }
+
+        // Biomes may name any pack's features.
+        ImmutableArray<FeatureFile> features = [.. packs.SelectMany(pack => pack.FeatureFiles)];
+        foreach (var pack in packs)
+            pack.CodecFiles = this.ReadCodecFiles(pack.Files, features);
+
+        this.dataPacks = [.. packs];
+        this.ApplyCodecs();
+        this.ApplyTags();
+
+        foreach (var pack in packs)
+            pack.NoiseFiles = this.ReadNoiseFiles(pack.Files);
+
+        this.ApplyNoise();
+
+        foreach (var pack in packs)
+            pack.DimensionFiles = this.ReadDimensionFiles(pack.Files);
+
+        this.ApplyDimensions();
+        this.ApplyFeatures();
+        this.ApplySpawns();
+
+        foreach (var pack in packs)
+        {
+            var read = pack.TagFiles.Count
+                + pack.FeatureFiles.Length
+                + pack.CodecFiles.Length
+                + pack.NoiseFiles.Length
+                + pack.DimensionFiles.Length;
+
+            var leftOut = LeftOut(pack.Files);
+            Log.DataPackLoaded(this.logger, pack.Files.Name, read, leftOut);
+        }
+    }
+
+    // How many of a data pack's data files Obsidian doesn't read, like recipes or structures.
+    private static int LeftOut(DataFiles files)
+    {
+        var read = PluginTags.FindFiles(files.Paths).Select(file => file.Path)
+            .Concat(PluginFeatures.FindFiles(files.Paths).Select(file => file.Path))
+            .Concat(PluginCodecs.FindFiles(files.Paths).Select(file => file.Path))
+            .Concat(PluginNoise.FindFiles(files.Paths).Select(file => file.Path))
+            .Concat(PluginDimensions.FindFiles(files.Paths).Select(file => file.Path))
+            .ToHashSet(StringComparer.Ordinal);
+
+        return files.Paths.Count(path => path.StartsWith("data/", StringComparison.Ordinal) && !read.Contains(path));
+    }
+
+    // The files plugins hold in load order, then data packs' in theirs, which win.
+    private IEnumerable<T> DataFilesOf<T>(
+        Func<PluginContainer, IEnumerable<T>> plugin,
+        Func<DataPack, IEnumerable<T>> pack) =>
+        this.plugins.SelectMany(plugin).Concat(this.dataPacks.SelectMany(pack));
 
     // Has every loaded entity drop the goals, navigators and goal controllers plugins gave it from the load context, on
     // its level's tick, where its AI runs. The queued actions hold the context weakly: a level that doesn't tick would
@@ -768,22 +844,26 @@ public sealed partial class PluginManager : IAsyncDisposable
         }
     }
 
-    // The tags hold vanilla's entries and the loaded plugins' tag files, in load order. Placed feature and
-    // configured carver tags may name the loaded plugins' entries.
+    // The tags hold vanilla's entries and the loaded plugins' and data packs' tag files, in order. Placed feature and
+    // configured carver tags may name their entries.
     private void ApplyTags() => PluginTags.Apply(
-        this.plugins.SelectMany(plugin => plugin.TagFiles),
+        this.DataFilesOf(plugin => plugin.TagFiles, pack => pack.TagFiles),
         this.logger,
-        this.plugins
-            .SelectMany(plugin => plugin.FeatureFiles)
+        this.DataFilesOf(plugin => plugin.FeatureFiles, pack => pack.FeatureFiles)
             .Select(file => (file.Registry, file.Identifier)));
 
-    // The loaded plugins' entries are in their registries, in load order. Ones no plugin has any more stay.
-    private void ApplyCodecs() =>
-        PluginCodecs.Apply(this.plugins.SelectMany(plugin => plugin.CodecFiles), this.logger);
+    // The loaded plugins' and data packs' entries are in their registries, the last file of each winning. Plugins'
+    // entries no file has any more stay; vanilla's are vanilla's again. Vanilla's dimension types keep their height
+    // once levels exist.
+    private void ApplyCodecs() => PluginCodecs.Apply(
+        this.DataFilesOf(plugin => plugin.CodecFiles, pack => pack.CodecFiles),
+        this.logger,
+        levelsCreated: this.Levels().Count > 0);
 
-    // Dimensions read from now on use the loaded plugins' noise settings, density functions and noises.
+    // Dimensions read from now on use the loaded plugins' and data packs' noise settings, density functions, noises
+    // and parameter lists.
     private void ApplyNoise() => PluginNoise.Apply(
-        this.plugins.SelectMany(plugin => plugin.NoiseFiles),
+        this.DataFilesOf(plugin => plugin.NoiseFiles, pack => pack.NoiseFiles),
         this.plugins.SelectMany(plugin => plugin.WorldgenTypes),
         this.logger);
 
@@ -817,7 +897,8 @@ public sealed partial class PluginManager : IAsyncDisposable
         // The plugin is out of the list by now, but its files' dimensions may be made of its types too.
         PluginDimensions.Release(
             plugin,
-            this.plugins.SelectMany(loaded => loaded.DimensionFiles).Concat(plugin.DimensionFiles));
+            this.DataFilesOf(loaded => loaded.DimensionFiles, pack => pack.DimensionFiles)
+                .Concat(plugin.DimensionFiles));
     }
 
     // Levels that stopped generating start again once they can, from their next chunk: a level whose plugin generator
@@ -853,7 +934,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         if (generator.FailedBy.Any(this.plugins.Contains))
             return;
 
-        // A plugin's dimension is read again once released, while vanilla's are never released.
+        // A dimension built from a stem is read again once released; vanilla's compiled ones are never released.
         var current = generator.Dimension;
         var dimension = PluginDimensions.Find(current.Identifier) ?? current;
         if (dimension.IsReleased)
@@ -867,9 +948,11 @@ public sealed partial class PluginManager : IAsyncDisposable
     private void ApplyBiomeRegions() =>
         PluginBiomeRegions.Apply(this.plugins.SelectMany(plugin => plugin.BiomeRegionFiles), this.logger);
 
-    // The loaded plugins' dimensions are added. Ones no plugin has any more stay, with their levels.
-    private void ApplyDimensions() =>
-        PluginDimensions.Apply(this.plugins.SelectMany(plugin => plugin.DimensionFiles), this.logger);
+    // The loaded plugins' and data packs' dimensions are added. Ones no plugin has any more stay, with their levels.
+    // Vanilla's dimensions follow their overrides until a level takes them.
+    private void ApplyDimensions() => PluginDimensions.Apply(
+        this.DataFilesOf(plugin => plugin.DimensionFiles, pack => pack.DimensionFiles),
+        this.logger);
 
     // Once the worlds are loaded, a plugin's new dimensions get their levels as it loads; before, the worlds create
     // them as they load.
@@ -894,8 +977,8 @@ public sealed partial class PluginManager : IAsyncDisposable
             .ToList();
 
         var applied = PluginFeatures.Apply(
-            this.plugins.SelectMany(plugin => plugin.FeatureFiles),
-            this.plugins.SelectMany(plugin => plugin.CodecFiles),
+            this.DataFilesOf(plugin => plugin.FeatureFiles, pack => pack.FeatureFiles),
+            this.DataFilesOf(plugin => plugin.CodecFiles, pack => pack.CodecFiles),
             this.plugins.SelectMany(plugin => plugin.WorldgenTypes),
             builders.Select(entry => entry.Identifier).ToHashSet(),
             this.logger);
@@ -912,8 +995,8 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     // Natural spawning uses the loaded plugins' biomes' spawners and spawn biome modifiers from now on.
     private void ApplySpawns() => PluginSpawns.Apply(
-        this.plugins.SelectMany(plugin => plugin.FeatureFiles),
-        this.plugins.SelectMany(plugin => plugin.CodecFiles),
+        this.DataFilesOf(plugin => plugin.FeatureFiles, pack => pack.FeatureFiles),
+        this.DataFilesOf(plugin => plugin.CodecFiles, pack => pack.CodecFiles),
         this.logger);
 
     // Players see the commands of the plugins that are loaded now. Startup doesn't need this: nobody has joined yet.
@@ -996,11 +1079,15 @@ public sealed partial class PluginManager : IAsyncDisposable
             Message = "Couldn't drop an unloaded plugin's AI from entity {EntityId}")]
         public static partial void MobReleaseFailed(ILogger logger, Exception exception, int entityId);
 
-        [LoggerMessage(Level = LogLevel.Error, Message = "Left out tag file {Path} of plugin {Source}")]
+        [LoggerMessage(Level = LogLevel.Error, Message = "Left out tag file {Path} of {Source}")]
         public static partial void TagFileFailed(ILogger logger, Exception exception, string path, string source);
 
-        [LoggerMessage(Level = LogLevel.Warning, Message = "Left out data file {Path} of plugin {Source}")]
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Left out data file {Path} of {Source}")]
         public static partial void CodecFileFailed(ILogger logger, Exception exception, string path, string source);
+
+        [LoggerMessage(Level = LogLevel.Information,
+            Message = "Loaded data pack {Name}: read {Read} files, left out {LeftOut} that Obsidian doesn't read")]
+        public static partial void DataPackLoaded(ILogger logger, string name, int read, int leftOut);
 
         [LoggerMessage(Level = LogLevel.Information,
             Message = "Loaded plugin {PluginName} {Version} in {ElapsedMilliseconds}ms")]

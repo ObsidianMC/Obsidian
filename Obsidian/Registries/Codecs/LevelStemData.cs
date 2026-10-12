@@ -17,7 +17,7 @@ namespace Obsidian.Registries.Codecs;
 /// supported, with vanilla's or plugins' noise settings and any of vanilla's biome sources:
 /// <c>minecraft:multi_noise</c> (an inline <c>biomes</c> list or a <c>preset</c>), <c>minecraft:fixed</c>,
 /// <c>minecraft:checkerboard</c> and <c>minecraft:the_end</c>, or the biome source types plugins registered.
-/// Noise settings and parameter list presets may be named or defined inline; dimension types and biomes are named.
+/// Noise settings and parameter lists may be named or defined inline; dimension types and biomes are named.
 /// Values are checked like vanilla's codecs check them, and references must exist; a stem vanilla would accept but
 /// Obsidian can't generate is rejected with a message saying so.
 /// </remarks>
@@ -165,7 +165,7 @@ internal static class LevelStemData
                 return (_ => source, () => source.PossibleBiomes);
             }
             case "minecraft:multi_noise":
-                return MultiNoise(value, path);
+                return MultiNoise(value, path, noise, entries);
             case "minecraft:the_end":
                 return (randomState => new TheEndBiomeSource(randomState), () => TheEndBiomeSource.Biomes);
             default:
@@ -220,9 +220,9 @@ internal static class LevelStemData
         return (randomState => new PluginBiomeSource(source, biomes, randomState), () => biomes);
     }
 
-    // Like vanilla's Codec.mapEither: an inline biomes list, or else a preset.
+    // Like vanilla's Codec.mapEither: an inline biomes list, or else a parameter list (a preset's).
     private static (Func<RandomState, IClimateBiomeSource> Create, Func<IReadOnlyList<BiomeCodec>> PossibleBiomes)
-        MultiNoise(JsonElement value, string path)
+        MultiNoise(JsonElement value, string path, WorldgenNoise noise, ISet<object>? entries)
     {
         InvalidDataException? listError = null;
 
@@ -245,22 +245,28 @@ internal static class LevelStemData
         if (!CodecJson.TryGet(value, "preset", out var preset))
             throw listError ?? CodecJson.Error(path, "expected a biomes list or a preset");
 
-        // A parameter list by identifier, or defined inline as vanilla's {"preset": ...}, which names a built-in one.
+        // A parameter list by identifier, vanilla's or a file's, or defined inline as vanilla's {"preset": ...}; either
+        // way it names a built-in preset.
         var presetPath = CodecJson.Field(path, "preset");
+        ParameterListPreset parameters;
+
         if (preset.ValueKind == JsonValueKind.Object)
         {
-            preset = CodecJson.Required(preset, presetPath, "preset");
-            presetPath = CodecJson.Field(presetPath, "preset");
+            parameters = ParameterListPreset.Read(preset, presetPath);
+        }
+        else
+        {
+            var identifier = CodecJson.Identifier(preset, presetPath);
+            if (!noise.TryGetParameterList(identifier, out var named))
+                throw CodecJson.Error(presetPath, $"{identifier} isn't a multi-noise parameter list");
+
+            parameters = named;
+            entries?.Add(parameters);
         }
 
-        return CodecJson.Identifier(preset, presetPath) switch
-        {
-            "minecraft:overworld" => (MultiNoiseBiomeSource.Overworld, () => MultiNoiseBiomeSource.OverworldBiomes),
-            "minecraft:nether" => (MultiNoiseBiomeSource.Nether, () => MultiNoiseBiomeSource.NetherBiomes),
-            var other => throw CodecJson.Error(
-                presetPath,
-                $"{other} isn't a parameter list preset: expected minecraft:overworld or minecraft:nether")
-        };
+        return parameters.Preset == "minecraft:nether"
+            ? (MultiNoiseBiomeSource.Nether, () => MultiNoiseBiomeSource.NetherBiomes)
+            : (MultiNoiseBiomeSource.Overworld, () => MultiNoiseBiomeSource.OverworldBiomes);
     }
 
     // Vanilla's Climate.ParameterList codec: a non-empty list of {"parameters": point, "biome": biome}.

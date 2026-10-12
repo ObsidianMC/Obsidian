@@ -116,8 +116,8 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
         //This is very inconvenient
         var dialogs = this.Server.CreateDialogConfiguration();
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Dialog.CodecKey, dialogs.Codecs) { WriteCodecs = true });
-        // Plugins' dimension types, biomes and damage types are sent with their data, which vanilla clients accept
-        // like a data pack's.
+        // Plugins' dimension types, biomes and damage types, and vanilla's that files override, are sent with their
+        // data, which vanilla clients accept like a data pack's; vanilla's others by name from the core pack.
         this.SendPacket(new RegistryDataPacket(
             CodecRegistry.Dimensions.CodecKey,
             CodecRegistry.Dimensions.Table.NetworkEntries));

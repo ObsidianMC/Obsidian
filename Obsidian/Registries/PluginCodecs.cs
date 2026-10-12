@@ -13,19 +13,20 @@ using System.Threading;
 namespace Obsidian.Registries;
 
 /// <summary>
-/// Adds plugins' biomes, dimension types and damage types from their data files, like a data pack's: a file
+/// Adds plugins' and data packs' biomes, dimension types and damage types from their data files: a file
 /// <c>data/&lt;namespace&gt;/worldgen/biome/&lt;path&gt;.json</c> (or <c>dimension_type</c>, <c>damage_type</c>)
 /// is the entry <c>&lt;namespace&gt;:&lt;path&gt;</c>.
 /// </summary>
 /// <remarks>
 /// Entries are added to the codec registries after vanilla's (see <see cref="CodecTable{TCodec}"/>) and stay until the
-/// server stops, even once their plugin unloads, since chunks and saves refer to them. Vanilla's entries can't be
-/// overridden, and when plugins define the same entry, the first in load order wins.
+/// server stops, even once their plugin unloads, since chunks and saves refer to them. A file for one of vanilla's
+/// entries overrides it until no file does any more, and when files define the same entry, the last in order wins
+/// (see <see cref="VanillaOverrides.LastWins"/>).
 /// <para>
 /// A file is read the way vanilla 1.21.11 reads a data pack's entry with the registry's codec, and rejected where
 /// vanilla would reject it (see <see cref="BiomeData"/>, <see cref="DimensionTypeData"/> and
-/// <see cref="DamageTypeData"/>). Clients are sent plugins' entries as vanilla's network codecs write the read values,
-/// so they always decode them, and vanilla's entries by name.
+/// <see cref="DamageTypeData"/>). Clients are sent files' entries as vanilla's network codecs write the read values,
+/// so they always decode them, and vanilla's entries no file overrides by name.
 /// </para>
 /// </remarks>
 internal static partial class PluginCodecs
@@ -93,10 +94,7 @@ internal static partial class PluginCodecs
     /// <param name="isConfiguredCarver">
     /// Whether a configured carver a biome refers to exists; vanilla's by default.
     /// </param>
-    /// <exception cref="InvalidDataException">
-    /// The file isn't valid, saying where and what's expected, or it's for an entry in the <c>minecraft</c>
-    /// namespace, which plugins can't override.
-    /// </exception>
+    /// <exception cref="InvalidDataException">The file isn't valid, saying where and what's expected.</exception>
     public static CodecFile Parse(
         string registry,
         string identifier,
@@ -107,10 +105,6 @@ internal static partial class PluginCodecs
     {
         if (!PluginTags.IsFileIdentifier(identifier))
             throw new InvalidDataException($"{source}: {identifier} isn't a valid identifier.");
-
-        // Clients take vanilla's entries from the minecraft:core pack they share with the server.
-        if (identifier.StartsWith("minecraft:", StringComparison.Ordinal))
-            throw new InvalidDataException($"{source} would override vanilla's {identifier}, which plugins can't.");
 
         try
         {
@@ -151,43 +145,36 @@ internal static partial class PluginCodecs
     }
 
     /// <summary>
-    /// Adds the files' entries to their registries, or gives the entries they added before their new data. Entries
-    /// no file has any more stay as they were.
+    /// Adds the files' entries to their registries, or gives the entries they added before their new data. Plugins'
+    /// entries no file has any more stay as they were; vanilla's entries no file overrides any more are vanilla's
+    /// again.
     /// </summary>
-    /// <param name="files">The loaded plugins' files, in load order.</param>
-    public static void Apply(IEnumerable<CodecFile> files, ILogger logger)
+    /// <param name="files">The loaded plugins' files in load order, then data packs' files in theirs.</param>
+    /// <param name="levelsCreated">Whether levels exist, sized by vanilla's dimension types, which can't change height
+    /// then. A plugin's dimension type can't once added either way.</param>
+    public static void Apply(IEnumerable<CodecFile> files, ILogger logger, bool levelsCreated = true)
     {
         lock (applying)
         {
-            // The first plugin in load order defining an entry wins.
-            var kept = new List<CodecFile>();
-            var byEntry = new Dictionary<(string Registry, string Identifier), CodecFile>();
-
-            foreach (var file in files)
-            {
-                if (byEntry.TryGetValue((file.Registry, file.Identifier), out var first))
-                {
-                    Log.Duplicate(logger, file.Identifier, file.Source, first.Source);
-                    continue;
-                }
-
-                byEntry.Add((file.Registry, file.Identifier), file);
-                kept.Add(file);
-            }
+            var kept = Winners(files, logger);
 
             var changed = CodecRegistry.Biomes.Table.Apply(
                 Entries<BiomeElement>(kept, Biome),
                 (name, id, element) => new BiomeCodec { Name = name, Id = id, Element = element },
+                codec => codec.Element,
                 (codec, element) => codec.Element = element);
 
             changed |= CodecRegistry.Dimensions.Table.Apply(
-                Entries<DimensionElement>(kept, DimensionType).Where(entry => KeepsHeight(entry, logger)),
+                Entries<DimensionElement>(kept, DimensionType),
                 (name, id, element) => new DimensionCodec { Name = name, Id = id, Element = element },
-                (codec, element) => codec.Element = element);
+                codec => codec.Element,
+                (codec, element) => codec.Element = element,
+                (codec, element) => KeepsHeight(codec, element, levelsCreated, logger));
 
             changed |= CodecRegistry.DamageType.Table.Apply(
                 Entries<DamageTypeElement>(kept, DamageType),
                 (name, id, element) => new DamageTypeCodec { Name = name, Id = id, Element = element },
+                codec => codec.Element,
                 (codec, element) => codec.Element = element);
 
             if (changed)
@@ -195,22 +182,28 @@ internal static partial class PluginCodecs
         }
     }
 
-    // A plugin's dimension type in use keeps its height until the server stops: levels and clients' chunks are sized
-    // by it when created, so a reload changing it would leave them disagreeing.
-    private static bool KeepsHeight(PluginCodecEntry<DimensionElement> entry, ILogger logger)
+    /// <summary>
+    /// The files whose entries apply: the last in order for each entry (see <see cref="VanillaOverrides.LastWins"/>).
+    /// </summary>
+    public static List<CodecFile> Winners(IEnumerable<CodecFile> files, ILogger logger) =>
+        VanillaOverrides.LastWins(files, file => (file.Registry, file.Identifier), file => file.Source, logger);
+
+    // A dimension type in use keeps its height until the server stops: levels and clients' chunks are sized by it when
+    // created, so a change would leave them disagreeing. Vanilla's are in use once levels exist, plugins' once added.
+    private static bool KeepsHeight(DimensionCodec codec, DimensionElement element, bool levelsCreated, ILogger logger)
     {
-        if (!CodecRegistry.Dimensions.All.TryGetValue(entry.Name, out var existing))
+        if (codec.Id < CodecRegistry.Dimensions.Table.VanillaCount && !levelsCreated)
             return true;
 
-        var current = existing.Element;
-        if (current.MinY == entry.Element.MinY
-            && current.Height == entry.Element.Height
-            && current.LogicalHeight == entry.Element.LogicalHeight)
+        var current = codec.Element;
+        if (current.MinY == element.MinY
+            && current.Height == element.Height
+            && current.LogicalHeight == element.LogicalHeight)
         {
             return true;
         }
 
-        Log.HeightChanged(logger, entry.Name);
+        Log.HeightChanged(logger, codec.Name);
         return false;
     }
 
@@ -227,17 +220,13 @@ internal static partial class PluginCodecs
     private static partial class Log
     {
         [LoggerMessage(Level = LogLevel.Warning,
-            Message = "Left out {Identifier} from {Source}: {First} defined it first")]
-        public static partial void Duplicate(ILogger logger, string identifier, string source, string first);
-
-        [LoggerMessage(Level = LogLevel.Warning,
             Message = "Kept {Identifier} as it was: its height can't change until the server restarts")]
         public static partial void HeightChanged(ILogger logger, string identifier);
     }
 }
 
 /// <summary>
-/// A plugin's biome, dimension type or damage type file.
+/// A plugin's or data pack's biome, dimension type or damage type file.
 /// </summary>
 /// <param name="Registry">The entry's registry, one of <see cref="PluginCodecs.Registries"/>.</param>
 /// <param name="Identifier">The entry's identifier, like <c>ruby:crystal_caves</c>.</param>

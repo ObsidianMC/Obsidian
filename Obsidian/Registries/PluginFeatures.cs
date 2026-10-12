@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Plugins;
 using Obsidian.Registries.Codecs;
@@ -15,8 +16,8 @@ using System.Threading;
 namespace Obsidian.Registries;
 
 /// <summary>
-/// Adds plugins' configured and placed features and configured carvers from their data files, like a data pack's, and
-/// applies their biome modifiers to the biomes' features and carvers.
+/// Adds plugins' and data packs' configured and placed features and configured carvers from their data files, and
+/// applies plugins' biome modifiers to the biomes' features and carvers.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
@@ -29,10 +30,12 @@ namespace Obsidian.Registries;
 /// <item><c>data/&lt;namespace&gt;/biome_modifier/&lt;path&gt;.json</c> is a biome modifier (see
 /// <see cref="BiomeModifierData"/>).</item>
 /// </list>
-/// Vanilla's entries can't be overridden, and when plugins define the same entry, the first in load order wins.
-/// Unlike biomes, features aren't sent to clients or saved, so they come and go with their plugin: each
-/// <see cref="Apply"/> reads the loaded plugins' files into a new <see cref="WorldgenFeatureSet"/> and nothing keeps
-/// the previous one's features once generators moved to the new one.
+/// A file for one of vanilla's features or carvers overrides it in the biomes that place it, and the vanilla features
+/// naming it are read again from vanilla's files (see <see cref="VanillaOverrides"/>); when files define the same
+/// entry, the last in order wins. A file for one of vanilla's biomes replaces its features and carvers. Unlike
+/// biomes, features aren't sent to clients or saved, so they come and go with their plugin: each
+/// <see cref="Apply"/> reads the loaded plugins' and data packs' files into a new <see cref="WorldgenFeatureSet"/> and
+/// nothing keeps the previous one's features once generators moved to the new one.
 /// </remarks>
 internal static partial class PluginFeatures
 {
@@ -121,16 +124,11 @@ internal static partial class PluginFeatures
     /// <param name="registry">One of <see cref="Registries"/>.</param>
     /// <param name="identifier">The entry's identifier, like <c>ruby:ore_ruby</c>.</param>
     /// <param name="source">Where the file comes from, for messages.</param>
-    /// <exception cref="InvalidDataException">
-    /// The file isn't valid, or it's for an entry in the <c>minecraft</c> namespace, which plugins can't override.
-    /// </exception>
+    /// <exception cref="InvalidDataException">The file isn't valid.</exception>
     public static FeatureFile Parse(string registry, string identifier, string source, ReadOnlySpan<byte> json)
     {
         if (!PluginTags.IsFileIdentifier(identifier))
             throw new InvalidDataException($"{source}: {identifier} isn't a valid identifier.");
-
-        if (identifier.StartsWith("minecraft:", StringComparison.Ordinal))
-            throw new InvalidDataException($"{source} would override vanilla's {identifier}, which plugins can't.");
 
         try
         {
@@ -155,8 +153,10 @@ internal static partial class PluginFeatures
     /// <summary>
     /// Makes the features of the loaded plugins' files the <see cref="Current"/> ones.
     /// </summary>
-    /// <param name="files">The loaded plugins' feature and biome modifier files, in load order.</param>
-    /// <param name="biomes">The loaded plugins' codec files, in load order, whose biomes' features are added.</param>
+    /// <param name="files">The loaded plugins' feature and biome modifier files in load order, then data
+    /// packs'.</param>
+    /// <param name="biomes">The loaded plugins' and data packs' codec files, in order, whose biomes' features are
+    /// added.</param>
     /// <param name="types">The worldgen types the loaded plugins registered, which files can name.</param>
     /// <param name="generating">The identifiers of the dimensions levels generate now.</param>
     /// <returns>
@@ -200,21 +200,13 @@ internal static partial class PluginFeatures
         ILogger logger,
         IEnumerable<MojangDimension>? dimensions = null)
     {
-        // The first plugin in load order defining an entry wins.
-        var kept = new List<FeatureFile>();
-        var byEntry = new Dictionary<(string Registry, string Identifier), FeatureFile>();
+        var kept = VanillaOverrides.LastWins(
+            files,
+            file => (file.Registry, file.Identifier),
+            file => file.Source,
+            logger);
 
-        foreach (var file in files)
-        {
-            if (byEntry.TryGetValue((file.Registry, file.Identifier), out var first))
-            {
-                Log.Duplicate(logger, file.Identifier, file.Source, first.Source);
-                continue;
-            }
-
-            byEntry.Add((file.Registry, file.Identifier), file);
-            kept.Add(file);
-        }
+        kept.AddRange(VanillaDependents(kept));
 
         var resolver = new FeatureResolver(kept, WorldgenTypes.With(types));
         var carvers = ReadCarvers(kept, logger);
@@ -236,6 +228,11 @@ internal static partial class PluginFeatures
 
         var biomeFeatures = new BiomeFeatureLists();
         var biomeCarvers = new BiomeCarverLists();
+
+        // Vanilla's biomes place the overridden features and carvers, and the vanilla features read again.
+        var vanillaPlaced = global::Obsidian.Registries.PlacedFeatures.All;
+        biomeFeatures.Replace(Overrides(resolver.PlacedFeatures, vanillaPlaced.ContainsKey, id => vanillaPlaced[id]));
+        biomeCarvers.Replace(Overrides(carvers.Plugins, RegistryIds.IsConfiguredCarver, ConfiguredCarvers.Vanilla));
 
         foreach (var biome in PluginBiomes(biomes))
         {
@@ -401,10 +398,48 @@ internal static partial class PluginFeatures
         return result.ToFrozenDictionary();
     }
 
-    // The loaded plugins' biome files, the first in load order for each biome.
-    private static IEnumerable<CodecFile> PluginBiomes(IEnumerable<CodecFile> files) => files
-        .Where(file => file.Registry == PluginCodecs.Biome)
-        .DistinctBy(file => file.Identifier);
+    // The biome files that apply, the last in order for each biome; PluginCodecs logs those replaced.
+    private static IEnumerable<CodecFile> PluginBiomes(IEnumerable<CodecFile> files) =>
+        PluginCodecs.Winners(files, NullLogger.Instance).Where(file => file.Registry == PluginCodecs.Biome);
+
+    // Vanilla's features naming an overridden one, read again from vanilla's files so that they use the override.
+    private static IEnumerable<FeatureFile> VanillaDependents(List<FeatureFile> files)
+    {
+        // Carvers and biome modifiers aren't named by features.
+        var overridden = files
+            .Where(file => file.Registry is ConfiguredFeature or PlacedFeature)
+            .Select(file => (file.Registry, file.Identifier))
+            .ToHashSet();
+
+        if (!overridden.Any(entry => entry.Identifier.StartsWith("minecraft:", StringComparison.Ordinal)))
+            return [];
+
+        return VanillaOverrides.Dependents([ConfiguredFeature, PlacedFeature], overridden)
+            .Select(entry => new FeatureFile(
+                entry.Registry,
+                entry.Identifier,
+                $"vanilla's {entry.Identifier}",
+                entry.Json,
+                null));
+    }
+
+    // Vanilla's compiled entries that files' entries of the same identifier replace, to what replaces them.
+    private static Dictionary<T, T> Overrides<T>(
+        IReadOnlyDictionary<string, T> read,
+        Func<string, bool> isVanilla,
+        Func<string, T> vanilla)
+        where T : class
+    {
+        var replaced = new Dictionary<T, T>(ReferenceEqualityComparer.Instance);
+
+        foreach (var (identifier, entry) in read)
+        {
+            if (isVanilla(identifier))
+                replaced[vanilla(identifier)] = entry;
+        }
+
+        return replaced;
+    }
 
     /// <summary>
     /// Reads plugins' features on demand, so that features can refer to each other in any order: each is read once
@@ -446,8 +481,11 @@ internal static partial class PluginFeatures
 
         public ConfiguredFeatureBase Configured(string identifier)
         {
-            if (global::Obsidian.Registries.ConfiguredFeatures.All.TryGetValue(identifier, out var vanilla))
+            if (!this.configuredFiles.ContainsKey(identifier)
+                && global::Obsidian.Registries.ConfiguredFeatures.All.TryGetValue(identifier, out var vanilla))
+            {
                 return vanilla;
+            }
 
             if (!this.ConfiguredFeatures.TryGetValue(identifier, out var feature))
             {
@@ -465,8 +503,11 @@ internal static partial class PluginFeatures
 
         public PlacedFeature Placed(string identifier)
         {
-            if (global::Obsidian.Registries.PlacedFeatures.All.TryGetValue(identifier, out var vanilla))
+            if (!this.placedFiles.ContainsKey(identifier)
+                && global::Obsidian.Registries.PlacedFeatures.All.TryGetValue(identifier, out var vanilla))
+            {
                 return vanilla;
+            }
 
             if (!this.PlacedFeatures.TryGetValue(identifier, out var feature))
             {
@@ -625,13 +666,32 @@ internal static partial class PluginFeatures
         /// <summary>
         /// Gives a biome its features.
         /// </summary>
+        // A biome file's features; one overriding a vanilla biome replaces its features even with none.
         public void Set(string biome, List<List<PlacedFeature>> steps)
         {
-            if (steps.Count == 0)
+            if (steps.Count == 0 && !this.lists.ContainsKey(biome))
                 return;
 
             this.lists[biome] = steps;
             this.changed = true;
+        }
+
+        // Swaps features in every biome's steps.
+        public void Replace(Dictionary<PlacedFeature, PlacedFeature> replaced)
+        {
+            if (replaced.Count == 0)
+                return;
+
+            foreach (var (biome, steps) in this.lists.ToList())
+            {
+                if (!steps.Any(step => step.Any(replaced.ContainsKey)))
+                    continue;
+
+                this.lists[biome] = [.. steps.Select(step => step
+                    .Select(feature => replaced.GetValueOrDefault(feature, feature))
+                    .ToList())];
+                this.changed = true;
+            }
         }
 
         /// <summary>
@@ -865,6 +925,22 @@ internal static partial class PluginFeatures
             this.changed = true;
         }
 
+        // Swaps carvers in every biome's list.
+        public void Replace(Dictionary<IConfiguredCarver, IConfiguredCarver> replaced)
+        {
+            if (replaced.Count == 0)
+                return;
+
+            foreach (var (biome, carvers) in this.lists.ToList())
+            {
+                if (!carvers.Any(replaced.ContainsKey))
+                    continue;
+
+                this.lists[biome] = [.. carvers.Select(carver => replaced.GetValueOrDefault(carver, carver))];
+                this.changed = true;
+            }
+        }
+
         /// <summary>
         /// Adds carvers to the end of the biomes' carvers.
         /// </summary>
@@ -898,10 +974,6 @@ internal static partial class PluginFeatures
 
     private static partial class Log
     {
-        [LoggerMessage(Level = LogLevel.Warning,
-            Message = "Left out {Identifier} from {Source}: {First} defined it first")]
-        public static partial void Duplicate(ILogger logger, string identifier, string source, string first);
-
         [LoggerMessage(Level = LogLevel.Error, Message = "Left out {Source}: {Message}")]
         public static partial void Invalid(ILogger logger, string source, string message);
 
