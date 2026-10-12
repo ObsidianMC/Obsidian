@@ -15,7 +15,7 @@ contain `..`.
 | `<Assembly>.dll` | Required. The plugin's main assembly, named by `assembly` in the metadata. |
 | `<Assembly>.pdb`, `<Assembly>.deps.json` | Optional. Symbols, and the dependency manifest that lists the libraries to load. |
 | `*.dll`, `*.pdb` | Libraries the plugin uses, as `dotnet publish` puts them beside the main assembly. |
-| `assets/<namespace>/...` | Optional. Client resources (textures, models, translations), laid out like a resource pack. |
+| `assets/<namespace>/...` | Optional. Client resources (textures, models, translations), laid out like a resource pack, see [below](#assets). |
 | `data/<namespace>/...` | Optional. Server data laid out like a data pack; block, item and entity tags are read. |
 
 Entries may be stored or deflated. Obsidian reads the file into memory once and decompresses each file when it is
@@ -70,6 +70,41 @@ can't load yet (say, its required dependency is missing) waits, and is tried aga
 The services a plugin registers can take, in their constructors, its other services, the singletons registered by
 the plugins it depends on, `IServer`, the server configuration and loggers. Its `[Inject]` properties can also get the
 server's other services.
+
+## Assets
+
+The Obsidian client reads a mod's `assets/` as a resource pack, one per mod in load order, above vanilla's assets and
+below the player's resource packs (and servers' packs). It's laid out like a resource pack's, usually under the mod's
+own namespace, its `modId`:
+
+| Path | Contents |
+| --- | --- |
+| `assets/<ns>/blockstates/<block>.json` | The models of the states of the block `<ns>:<block>`. |
+| `assets/<ns>/models/...` | Block and item models, referred to as `<ns>:block/<name>` and `<ns>:item/<name>`. |
+| `assets/<ns>/textures/block/...`, `textures/item/...` | Textures, referred to as `<ns>:block/<name>` and `<ns>:item/<name>`. |
+| `assets/<ns>/items/<item>.json` | The definition (the model) of the item `<ns>:<item>`. |
+| `assets/<ns>/lang/<language>.json` | Translations, merged with vanilla's and other mods' per language. |
+| `assets/<ns>/particles/<particle>.json` | Particle sprite sets, for the particle `<ns>:<particle>`. |
+| `assets/<ns>/sounds.json`, `sounds/...` | Sound events and their files. |
+
+For a block `ruby:ruby_block` and its item:
+
+```text
+assets/ruby/blockstates/ruby_block.json
+    {"variants": {"": {"model": "ruby:block/ruby_block"}}}
+assets/ruby/models/block/ruby_block.json
+    {"parent": "minecraft:block/cube_all", "textures": {"all": "ruby:block/ruby_block"}}
+assets/ruby/textures/block/ruby_block.png
+assets/ruby/items/ruby_block.json
+    {"model": {"type": "minecraft:model", "model": "ruby:block/ruby_block"}}
+assets/ruby/lang/en_us.json
+    {"block.ruby.ruby_block": "Block of Ruby"}
+```
+
+A `pack.mcmeta` is optional; a mod that has one gets its filter and overlays applied like a resource pack's. Only
+`assets/` (and overlays' `assets/`) are read, within the client's resource pack limits. A mod's block draws each face
+in the render layer its texture needs: solid when it's opaque, cutout with fully transparent pixels, and translucent
+with partly transparent ones. Version 1 archives have no assets.
 
 ## Reloading
 

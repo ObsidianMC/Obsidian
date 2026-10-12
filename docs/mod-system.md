@@ -218,11 +218,21 @@ client. This document describes the design and tracks its progress. The archive 
      different id disconnects with a message naming the mod content), sends its brand, and dispatches mods' payloads
      in configuration and play. Reconfiguration resets what the previous configuration received. Mods come only
      from the player's folder: servers can't send code.
-   - Slice 4b, mods' assets: each mod's `assets/` is a resource pack layered above vanilla's and below the player's
-     packs, and the asset loaders read every namespace (block states and models, textures and atlases, item
-     definitions, particles, translations), so mod blocks and items render with their models. Block models are baked
-     for every state, plugins' included. Biomes' tints come from the biome data the server sends, so plugin biomes
-     get their grass, foliage and water colours.
+   - Done, slice 4b, mods' assets: each mod archive's `assets/` is a resource pack, one per mod in load order, above
+     vanilla's assets and below the player's packs (and servers' and realms' above those), reloaded with them. An
+     archive needs no `pack.mcmeta`, only its `assets/` are read, and resource packs' limits and read budgets apply.
+     Until slice 4a hands over the mods it loads, the client takes the `.obby` files in its `mods` folder by file
+     name. The asset loaders read every namespace like vanilla: block states and block and item models by identifier,
+     atlases' directory sources in every namespace (sprites named `<ns>:<path>`), item definitions for vanilla's and
+     plugins' items, GUI sprites, particle definitions (mods' by identifier, for slice 4c) and translations, merged per
+     language across namespaces. Models are baked for every block state, plugins' after vanilla's, so plugin blocks
+     render in the world and their items in the GUI and in hand. Vanilla's name-based rules (tints, render layers,
+     culling between glass) leave plugin blocks alone: their faces' render layers come from their textures, and
+     their tints wait for slice 4c's tint sources. Biomes the client's registry lacks, like a server's plugin biomes,
+     are tinted from the data the server sends for them (grass, foliage, dry foliage and water colours, the grass
+     colour modifier, and temperature and downfall for the colormaps); vanilla's biomes keep the registry's colours
+     (see [plugin-archives.md](plugin-archives.md#assets)). Blocks registered after the assets load, like an
+     integrated server's plugins' blocks, render after the next resource reload.
    - Slice 4c, the client API: `Obsidian.API.Client` interfaces a mod's plugin implements (`IClientPlugin` with
      `ConfigureClient(IClientRegistry)`) to register entity renderers (model layers and textures), particle
      providers, key bindings, block and item tint sources, and screens for its menu types; only the Obsidian client
