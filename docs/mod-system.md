@@ -129,8 +129,9 @@ client. This document describes the design and tracks its progress. The archive 
      (`IDensityFunction`, `ISurfaceRule` with `ICustomSurfaceRule`, `ISurfaceCondition` with
      `ICustomSurfaceCondition`, `BiomeSourceBase`). Each step of generating a chunk holds the plugins whose types
      the dimension's generator is made of; when one unloads, the dimension stops generating new chunks until a
-     restart, and its generator lets go of the plugin's code. A dimension keeps the noise settings it was created
-     with, and a reload changing them applies after a restart (see
+     restart, and its generator lets go of the plugin's code. A plugin's code failing stops the level the same way,
+     with an error, rather than the server. Values are checked against vanilla's codecs' ranges. A dimension keeps
+     the noise settings it was created with, and a reload changing them applies after a restart (see
      [plugin-content.md](plugin-content.md#noise-settings-density-functions-and-noises)).
    - Next, slice 4c: plugin generator types (`ILevelGenerator`), and reload-safe generators, so that a reloaded
      plugin's dimension generates again without a restart.

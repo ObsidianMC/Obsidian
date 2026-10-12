@@ -302,7 +302,9 @@ The rules:
   features can be ordered; other dimensions keep the modifiers where they can.
 - Placing a feature made of a plugin's types (its feature type, a placement modifier or a provider inside it) is a
   call into the plugin, like its event handlers, so unloading waits for chunks being decorated with it. Chunks
-  decorated while it unloads leave its features out.
+  decorated while it unloads leave its features out. When placing such a feature throws, the error is logged naming
+  the plugins, and the level stops generating new chunks until a restart; the chunk isn't saved as decorated, so it
+  generates after the restart.
 - Features aren't sent to clients or saved, so they come and go with their plugin: when plugins load or unload, the
   features are read again and every world's generator moves to them for the chunks it decorates next. Chunks
   already generated keep what was placed. As in vanilla, adding features to a step can change the seeds of the
@@ -463,7 +465,8 @@ The rules:
 - Like other plugin data, files in the `minecraft` namespace are left out, and when two plugins define the same entry,
   the first in load order wins. A file that can't be read is logged and left out, with the entries that need it; the
   plugin loads without them. Unknown types, fields and blocks, missing fields and values out of vanilla's ranges are
-  errors.
+  errors, such as a `find_top_surface` whose `cell_height` isn't positive or an `old_blended_noise` scale out of
+  0.001 to 1000.
 - Entries refer to vanilla's or plugins' entries by identifier, in any order and across plugins; one that refers
   back to itself is left out. Each is read once and shared, like vanilla's registry entries, so a density function
   named twice is one function, whose caches are shared.
@@ -488,9 +491,10 @@ registry.RegisterWorldgenType<BiomeSourceBase, Rings>("ruby:rings");
 They're read like [feature types](#feature-types), with the same rules, and:
 
 - A density function implements `IDensityFunction`: `GetValue` and the bounds of its values, `MinValue` and
-  `MaxValue`. One with density functions, noises or splines in its properties implements `MapAll` too, rebuilding
-  itself with each passed through the visitor (`visitor.Map(...)`, `visitor.VisitNoise(...)`), as vanilla's do:
-  that's how generation seeds its noises and gives it the chunk's caches. Registering one that doesn't is an error.
+  `MaxValue`. One with density functions, noises or splines in its properties, or in lists of them at any depth,
+  implements `MapAll` too, rebuilding itself with each passed through the visitor (`visitor.Map(...)`,
+  `visitor.VisitNoise(...)`), as vanilla's do: that's how generation seeds its noises and gives it the chunk's caches.
+  Registering one that doesn't is an error.
   Plugins' functions are sampled block by block, where vanilla's are filled a cell at a time.
 - A surface rule implements `ICustomSurfaceRule`, whose `Apply` gives the block for the context's block, or null to
   let the next rule of a sequence try; a condition implements `ICustomSurfaceCondition`, whose `Test` says whether it
@@ -549,7 +553,15 @@ noise, surface, carvers, decoration) holds the plugins whose types the dimension
 made of, so unloading waits for chunks being generated. When such a plugin unloads, the dimension's level stops
 generating new chunks, with a warning: chunks already generated still load and are saved, and the rest generate after a
 restart with the plugin. A reload doesn't restart it yet. A dimension made of vanilla's types alone, with plugins'
-data, keeps generating.
+data, keeps generating. A level stem naming another plugin's density functions or noises, in its noise settings or
+biome source, generates with that plugin's types too.
+
+A plugin's code failing while a dimension generates with its types (an exception from a density function, surface
+rule or biome source) is logged as an error naming the plugins, and the level stops generating new chunks until a
+restart, as when the plugin unloads, rather than stopping chunk management or the server. Such a dimension's levels
+stop on any generation failure, since plugins' density functions run all through the noise and the failure can't be
+told apart from Obsidian's. Chunks keep the steps they finished, so the failed ones generate after a restart. Failures
+generating with vanilla's types alone still stop the server.
 
 ## Dimensions
 
@@ -618,7 +630,8 @@ The rules:
   dimension as it was, with a warning: the change applies after a restart, since changing a live level's generator
   would mix two generators' chunks.
 - A dimension generating with a plugin's types stops generating new chunks when that plugin unloads, until a restart
-  (see [Noise types](#noise-types)); its generated chunks still load.
+  (see [Noise types](#noise-types)); its generated chunks still load. A level stem that another plugin's types
+  generate is read with them, so once they unload, the stem's own plugin is reloaded to add its dimension again.
 - After a restart without the plugin, its dimension isn't loaded, and its folder is left alone. Players who were in it
   join at the world's spawn.
 
