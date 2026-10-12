@@ -120,9 +120,20 @@ client. This document describes the design and tracks its progress. The archive 
      login and respawn with its type's height. Levels stay until the server stops; a changed stem applies after a
      restart. Players get there with `/dimension <id>` or `IPlayer.TeleportToDimensionAsync`; there are no portals
      (see [plugin-content.md](plugin-content.md#dimensions)).
-   - Next, slice 4b: runtime noise settings, density functions and surface rules read from plugins' files, and plugin
-     types for density functions, surface rules and biome sources.
-   - Then slice 4c: plugin generator types, and reload-safe generators.
+   - Done, slice 4b: plugins' noise settings, density functions and noises, from their `data/<namespace>/worldgen/
+     noise_settings`, `density_function` and `noise` files, with surface rules inline as in vanilla. They're read at
+     runtime into the same objects the source generator makes of vanilla's (a parity test reads all of vanilla's files
+     both ways and compares them, and generates vanilla's golden chunks with the runtime ones), refer to each other
+     lazily with one shared instance per identifier, and plugins' dimensions use them. Plugins register density
+     function, surface rule, surface condition and biome source types with `RegisterWorldgenType`
+     (`IDensityFunction`, `ISurfaceRule` with `ICustomSurfaceRule`, `ISurfaceCondition` with
+     `ICustomSurfaceCondition`, `BiomeSourceBase`). Each step of generating a chunk holds the plugins whose types
+     the dimension's generator is made of; when one unloads, the dimension stops generating new chunks until a
+     restart, and its generator lets go of the plugin's code. A dimension keeps the noise settings it was created
+     with, and a reload changing them applies after a restart (see
+     [plugin-content.md](plugin-content.md#noise-settings-density-functions-and-noises)).
+   - Next, slice 4c: plugin generator types (`ILevelGenerator`), and reload-safe generators, so that a reloaded
+     plugin's dimension generates again without a restart.
    - Possible later: adding plugin biomes to vanilla's overworld and nether climate (like TerraBlender), rather than
      only to plugins' own dimensions.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
@@ -132,5 +143,6 @@ client. This document describes the design and tracks its progress. The archive 
 ## Known gaps
 
 - World generators, dialogs and other registries that plugins fill through injected services are not yet removed when
-  their plugin unloads (phase 3 and 2). Plugins' worldgen features are.
+  their plugin unloads (phase 3 and 2). Plugins' worldgen features are, and plugins' dimensions generating with their
+  types stop until a restart (slice 4c).
 - Obsidian.MSBuild writes version 2 archives on its `feat/obby-v2` branch, which isn't released yet.

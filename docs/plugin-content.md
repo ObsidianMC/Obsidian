@@ -1,8 +1,8 @@
 # Plugin blocks, entities, tags and data
 
 Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, add entity types and
-worldgen feature types in code, and add tags, biomes, dimension types, damage types, worldgen features, NeoForge
-biome modifiers and dimensions with data pack files, like NeoForge and Fabric mods.
+worldgen types in code, and add tags, biomes, dimension types, damage types, worldgen features, NeoForge biome
+modifiers, noise settings and dimensions with data pack files, like NeoForge and Fabric mods.
 Clients need the matching mod for blocks, items and entity types: NeoForge and Fabric clients are sent those
 registries, so their ids agree with the server's. Biomes, dimension types and damage types are sent with their data,
 so vanilla clients can join too.
@@ -422,8 +422,134 @@ The rules:
   again then (logged like any file that can't be read). A reload registers them again.
 - Not in the API yet: vanilla's tree parts (trunk, foliage and root placers, tree decorators), structure processors,
   weighted lists (`WeightedEntry<T>`) and biome sets. Plugin types can't have properties of those types, and plugins
-  can't add placer or decorator types. Density function, surface rule and biome source types come with plugins'
-  noise settings.
+  can't add placer or decorator types. Density function, surface rule and biome source types are registered the same
+  way (see [Noise types](#noise-types)).
+
+## Noise settings, density functions and noises
+
+Plugins add the data a dimension's terrain is made of, like a data pack:
+
+- `data/<namespace>/worldgen/noise_settings/<path>.json` is the noise settings `<namespace>:<path>`;
+- `data/<namespace>/worldgen/density_function/<path>.json` is a density function;
+- `data/<namespace>/worldgen/noise/<path>.json` is a noise, `{"firstOctave": ..., "amplitudes": [...]}`.
+
+They're vanilla 1.21.11's formats, read into the same objects as vanilla's own (a parity test reads all of vanilla's
+files at runtime, compares them with the generated ones, and generates vanilla's chunks with them). Noise settings
+have every field vanilla's have: `sea_level`, `default_block`, `default_fluid`, `noise` (the cells' `min_y`, `height`,
+`size_horizontal`, `size_vertical`, checked like vanilla), the 15 functions of the `noise_router`, `spawn_target`,
+the flags and `surface_rule`, whose rules and conditions are inline as in vanilla. A density function is a number (a
+constant), an identifier, or an object with a `type`; a noise is always named by its identifier, since noises are
+seeded from it. Plugins' dimensions use plugins' noise settings (see [Dimensions](#dimensions)). Ground rolling
+around y 64 with a plugin's noise:
+
+```json
+// data/ruby/worldgen/noise/bumps.json
+{ "firstOctave": -4, "amplitudes": [1.0, 0.5] }
+```
+
+```json
+// data/ruby/worldgen/density_function/ground.json
+{
+  "type": "minecraft:add",
+  "argument1": { "type": "minecraft:y_clamped_gradient", "from_y": 0, "to_y": 128, "from_value": 1, "to_value": -1 },
+  "argument2": { "type": "minecraft:noise", "noise": "ruby:bumps", "xz_scale": 0.25, "y_scale": 0 }
+}
+```
+
+The noise settings then name `"final_density": "ruby:ground"` in their `noise_router`.
+
+The rules:
+
+- Like other plugin data, files in the `minecraft` namespace are left out, and when two plugins define the same entry,
+  the first in load order wins. A file that can't be read is logged and left out, with the entries that need it; the
+  plugin loads without them. Unknown types, fields and blocks, missing fields and values out of vanilla's ranges are
+  errors.
+- Entries refer to vanilla's or plugins' entries by identifier, in any order and across plugins; one that refers
+  back to itself is left out. Each is read once and shared, like vanilla's registry entries, so a density function
+  named twice is one function, whose caches are shared.
+- A dimension keeps the noise settings it was created with until the server stops: a reload that changes them, or
+  the density functions and noises they use, keeps the dimension as it was, with a warning, and the change applies
+  after a restart.
+- Not supported: noises defined inline (vanilla can't seed them either), noise settings defined inline in a level
+  stem, a constant number for a spline function's `spline`, and a range for a spawn target's `depth`.
+
+### Noise types
+
+Like a NeoForge mod's density function, surface rule and biome source types, a plugin registers types that its
+(and other plugins') files name in their `type`, with `RegisterWorldgenType` in `ConfigureRegistry`:
+
+```csharp
+registry.RegisterWorldgenType<IDensityFunction, Terraces>("ruby:terraces");
+registry.RegisterWorldgenType<ISurfaceRule, Crust>("ruby:crust");
+registry.RegisterWorldgenType<ISurfaceCondition, BelowY>("ruby:below_y");
+registry.RegisterWorldgenType<BiomeSourceBase, Rings>("ruby:rings");
+```
+
+They're read like [feature types](#feature-types), with the same rules, and:
+
+- A density function implements `IDensityFunction`: `GetValue` and the bounds of its values, `MinValue` and
+  `MaxValue`. One with density functions, noises or splines in its properties implements `MapAll` too, rebuilding
+  itself with each passed through the visitor (`visitor.Map(...)`, `visitor.VisitNoise(...)`), as vanilla's do:
+  that's how generation seeds its noises and gives it the chunk's caches. Registering one that doesn't is an error.
+  Plugins' functions are sampled block by block, where vanilla's are filled a cell at a time.
+- A surface rule implements `ICustomSurfaceRule`, whose `Apply` gives the block for the context's block, or null to
+  let the next rule of a sequence try; a condition implements `ICustomSurfaceCondition`, whose `Test` says whether it
+  holds. The context has the block's position, biome, surface and stone depths, water height and steepness, and
+  evaluates other rules and conditions, such as the type's own properties. Vanilla's `sequence`, `condition` and
+  `not` combine them with vanilla's rules.
+- A biome source extends `BiomeSourceBase`: `PossibleBiomes` lists the biomes it gives (read once, when the level
+  stem is) and `GetBiome` picks one per quart from the climate sampler's raw values.
+- All of them run for many positions of every chunk, on several threads at once: keep them fast and stateless.
+
+```csharp
+// Steps a function's values into terraces.
+public sealed class Terraces : IDensityFunction
+{
+    public string Type => "ruby:terraces";
+
+    public required IDensityFunction Argument { get; init; }
+
+    public required double Step { get; init; }
+
+    public double MinValue => Math.Floor(this.Argument.MinValue / this.Step) * this.Step;
+
+    public double MaxValue => Math.Floor(this.Argument.MaxValue / this.Step) * this.Step;
+
+    public double GetValue(double x, double y, double z) =>
+        Math.Floor(this.Argument.GetValue(x, y, z) / this.Step) * this.Step;
+
+    public IDensityFunction MapAll(IDensityFunctionVisitor visitor) => visitor.Apply(new Terraces
+    {
+        Argument = visitor.Map(this.Argument),
+        Step = this.Step
+    });
+}
+
+// Puts a block on the top block of the default block (usually stone).
+public sealed class Crust : ICustomSurfaceRule
+{
+    public string Type => "ruby:crust";
+
+    public required SimpleBlockState Block { get; init; }
+
+    public IBlock? Apply(ISurfaceContext context) => context.StoneDepthAbove <= 1 ? this.Block.ToBlock() : null;
+}
+```
+
+```json
+{ "type": "ruby:terraces", "argument": "ruby:ground", "step": 0.25 }
+```
+
+```json
+{ "type": "ruby:crust", "block": { "Name": "ruby:ruby_block" } }
+```
+
+Generating with a plugin's types is a call into the plugin, like placing its features: each step of a chunk (biomes,
+noise, surface, carvers, decoration) holds the plugins whose types the dimension's noise settings and biome source are
+made of, so unloading waits for chunks being generated. When such a plugin unloads, the dimension's level stops
+generating new chunks, with a warning: chunks already generated still load and are saved, and the rest generate after a
+restart with the plugin. A reload doesn't restart it yet. A dimension made of vanilla's types alone, with plugins'
+data, keeps generating.
 
 ## Dimensions
 
@@ -447,9 +573,10 @@ The file is vanilla 1.21.11's level stem, read with vanilla's rules (see [What's
 
 - `type` names a dimension type, vanilla's or a plugin's. It decides the level's build range, sky light and
   everything else a dimension type does, and clients are sent it like any dimension type.
-- `generator` is `minecraft:noise`, with `settings` naming one of vanilla's noise settings (`minecraft:overworld`,
-  `amplified`, `large_biomes`, `caves`, `floating_islands`, `nether` or `end`) and a `biome_source`, one of
-  vanilla's:
+- `generator` is `minecraft:noise`, with `settings` naming vanilla's noise settings (`minecraft:overworld`,
+  `amplified`, `large_biomes`, `caves`, `floating_islands`, `nether` or `end`) or a plugin's (see
+  [Noise settings](#noise-settings-density-functions-and-noises)), the plugin's own or a plugin loaded before it, and
+  a `biome_source`, one of vanilla's or a type a plugin registered (see [Noise types](#noise-types)):
   - `minecraft:multi_noise`, with an inline `biomes` list of `{"biome": ..., "parameters": {...}}` or a `preset`
     (`minecraft:overworld` or `minecraft:nether`). Each parameter (`temperature`, `humidity`, `continentalness`,
     `erosion`, `depth`, `weirdness`) is a number from -2 to 2 or a range, `[min, max]` or `{"min": ..., "max": ...}`,
@@ -460,15 +587,15 @@ The file is vanilla 1.21.11's level stem, read with vanilla's rules (see [What's
   - `minecraft:the_end`, the end's islands and biomes.
 - Biomes are vanilla's or plugins'. Dimension types, noise settings, biomes and presets are named: defining them
   inline isn't supported yet.
-- Not supported yet, and rejected with a message saying so: `minecraft:flat` and `minecraft:debug` generators,
-  plugins' noise settings, and noise settings that generate outside the dimension type's build range (vanilla
-  clamps them; its own pairings all fit).
+- Not supported yet, and rejected with a message saying so: `minecraft:flat` and `minecraft:debug` generators, and
+  noise settings that generate outside the dimension type's build range (vanilla clamps them; its own pairings all
+  fit).
 
 The dimension generates like a vanilla dimension with those settings: terrain, surface, aquifers and ore veins come
-from the noise settings, caves and canyons are carved like in the vanilla dimension using the same noise settings,
-features are the dimension's biomes' (see [World generation features](#world-generation-features)), and structures
-generate where their biomes allow, as in vanilla. Players are placed on the ground near the climate's spawn, like the
-overworld's spawn.
+from the noise settings, caves and canyons are carved like in the vanilla dimension using the same noise settings
+(like the overworld with a plugin's noise settings), features are the dimension's biomes' (see
+[World generation features](#world-generation-features)), and structures generate where their biomes allow, as in
+vanilla. Players are placed on the ground near the climate's spawn, like the overworld's spawn.
 
 The rules:
 
@@ -485,10 +612,13 @@ The rules:
   burn by day in a type with the overworld's timelines (`#minecraft:in_overworld`) or its own
   `minecraft:gameplay/monsters_burn`. Patrols, wandering traders and phantom spawns stay in the overworld, where
   vanilla runs them; raids, the end fight and portals stay with vanilla's levels for now.
-- A dimension's level stays until the server stops, even when its plugin unloads, since it only uses vanilla's
-  generator and entries that stay registered. Its features come and go with their plugins like any features.
-- A reload changing a level stem keeps the dimension as it was, with a warning: the change applies after a restart,
-  since changing a live level's generator would mix two generators' chunks.
+- A dimension's level stays until the server stops, even when its plugin unloads, with the noise settings it was
+  created with. Its features come and go with their plugins like any features.
+- A reload changing a level stem, or the plugin noise settings, density functions and noises it uses, keeps the
+  dimension as it was, with a warning: the change applies after a restart, since changing a live level's generator
+  would mix two generators' chunks.
+- A dimension generating with a plugin's types stops generating new chunks when that plugin unloads, until a restart
+  (see [Noise types](#noise-types)); its generated chunks still load.
 - After a restart without the plugin, its dimension isn't loaded, and its folder is left alone. Players who were in it
   join at the world's spawn.
 
