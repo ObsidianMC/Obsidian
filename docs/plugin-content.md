@@ -88,10 +88,17 @@ they fall and rest where they land. Every kind calls the type's behaviour each t
 client mod's entity should be of the same kind, so that their data matches. Entities are saved with the type's
 identifier; while the plugin is gone, saved ones stay as they were.
 
+A mob's `Category` (a `MobCategory`, `Misc` by default) is its vanilla mob category. Biomes' `spawners` and NeoForge's
+`neoforge:add_spawns` modifiers (see [Biome modifiers](#biome-modifiers)) spawn a plugin's mobs naturally while the
+plugin is loaded, and they count against their category's cap; misc mobs don't spawn naturally, since plugin mobs
+don't despawn. They spawn with the rules of the list they're chosen from: on grass in light as creatures, in water in
+the water categories, and in the dark otherwise.
+
 ## Tags
 
-Tags are data pack tag files: `data/<namespace>/tags/block/<path>.json`, `tags/item/...` or `tags/entity_type/...`,
-with `values` (identifiers, `#` followed by a tag, or `{ "id": ..., "required": false }`), `replace`, and NeoForge's
+Tags are data pack tag files: `data/<namespace>/tags/block/<path>.json`, `tags/item/...`, `tags/entity_type/...`,
+`tags/worldgen/biome/...`, `tags/worldgen/placed_feature/...` or `tags/worldgen/configured_carver/...`, with
+`values` (identifiers, `#` followed by a tag, or `{ "id": ..., "required": false }`), `replace`, and NeoForge's
 `remove`. A
 file for a vanilla tag adds to it, for example `data/minecraft/tags/block/mineable/pickaxe.json` to mine a block with a
 pickaxe; other files make new tags, like the shared `c:` ones. Obsidian merges vanilla's tags with the loaded plugins'
@@ -110,6 +117,12 @@ vanilla's tags. When tags refer to each other through optional references, the r
 is left out in identifier order, where vanilla's order depends on its hash map. Players already connected get the
 changed tags when a plugin loads or unloads, and go back through configuration when its blocks, items, entity types or
 channels changed.
+
+Biome tags hold vanilla's and plugins' biomes, so a plugin's biome can join `#minecraft:is_overworld`, and biome
+modifiers and level stems can name a plugin's biome tags. Clients are sent the biome tags, vanilla's included, like
+vanilla sends them. Placed feature and configured carver tags (vanilla has none) aren't sent: they're for biomes'
+`features` and `carvers` and biome modifiers. Tags are applied after plugins' biomes are registered, and may name the
+loaded plugins' placed features and carvers.
 
 ## Biomes, dimension types and damage types
 
@@ -185,9 +198,9 @@ accepts it and left out where vanilla would fail, with a message naming the fiel
 - References must exist. Sound events and particle, entity and activity types are vanilla's (entity types may be a
   loaded plugin's). A sound vanilla doesn't have is given inline as `{"sound_id": ..., "range": ...}`.
 - A biome is read whole, like vanilla reads it. Its `features` are vanilla's or loaded plugins' placed features by
-  identifier, or placed features defined inline (see [World generation features](#world-generation-features)). Its
-  `carvers` refer to vanilla's configured carvers by identifier: plugins can't add carvers or define them inline
-  yet. Where vanilla would log and drop a carver, feature or spawner it can't read, the file is left out instead.
+  identifier or tag, or placed features defined inline (see [World generation features](#world-generation-features)).
+  Its `carvers` are vanilla's or plugins' configured carvers by identifier, or a tag; they can't be defined inline.
+  Where vanilla would log and drop a carver, feature or spawner it can't read, the file is left out instead.
 - A dimension type's `timelines` can only be a timeline tag, like `"#minecraft:in_overworld"`: the server sends clients
   the timeline tags but not the timelines.
 
@@ -211,6 +224,7 @@ Plugins add configured and placed features, and change which features biomes pla
 
 - `data/<namespace>/worldgen/configured_feature/<path>.json` is the configured feature `<namespace>:<path>`;
 - `data/<namespace>/worldgen/placed_feature/<path>.json` is a placed feature;
+- `data/<namespace>/worldgen/configured_carver/<path>.json` is a configured carver;
 - `data/<namespace>/neoforge/biome_modifier/<path>.json` is a biome modifier.
 
 Features are vanilla 1.21.11's format, read into the same objects as vanilla's features: a configured feature is
@@ -271,18 +285,74 @@ with a plugin block, in every overworld biome:
 }
 ```
 
-A biome modifier is NeoForge's:
+### Biome modifiers
+
+A biome modifier is NeoForge 1.21.11's:
 
 - `neoforge:add_features` adds `features` to the end of a decoration `step` of each of the `biomes`;
 - `neoforge:remove_features` removes `features` from the `biomes`, in the given `steps` (one or a list) or in all;
+- `neoforge:add_spawns` adds `spawners`, one `{"type", "weight", "minCount", "maxCount"}` or a list of them, to the
+  `biomes`, each at the end of its entity type's category's list, like NeoForge;
+- `neoforge:remove_spawns` removes the `entity_types`' spawners from every category of the `biomes`;
+- `neoforge:add_carvers` adds `carvers` to the end of the `biomes`' carvers, and `neoforge:remove_carvers` removes
+  them (carvers have no steps any more, so a `steps` field is ignored, as NeoForge ignores it);
+- `neoforge:add_spawn_costs` (`entity_types`, `spawn_cost` with `energy_budget` and `charge`) and
+  `neoforge:remove_spawn_costs` (`entity_types`) are read, but change nothing: Obsidian's spawner doesn't use spawn
+  costs, vanilla's included;
 - `neoforge:none` does nothing.
 
-`biomes` is a biome (vanilla's or a plugin's), a list of them, or a vanilla biome tag like `#minecraft:is_overworld`;
-`features` is a placed feature, or a list of them, and features added may be defined inline. Steps are vanilla's
+`biomes`, `features`, `carvers` and `entity_types` are holder sets: an identifier, a list of them, or a tag like
+`#minecraft:is_overworld`, vanilla's or a plugin's. Biomes, placed features and configured carvers may be vanilla's or
+plugins', and features added may be defined inline. Entity types are vanilla's or a loaded plugin's; a vanilla type's
+category is the one vanilla's biomes list it in, and a plugin type's is its `Category`. Steps are vanilla's
 decoration steps: `raw_generation`, `lakes`, `local_modifications`, `underground_structures`, `surface_structures`,
 `strongholds`, `underground_ores`, `underground_decoration`, `fluid_springs`, `vegetal_decoration` and
-`top_layer_modification`. Other modifier types (spawns, carvers), NeoForge's holder set types (`neoforge:any`,
-`neoforge:and`, ...) and placed feature tags aren't supported yet, and leave the file out.
+`top_layer_modification`. NeoForge's holder set types (`neoforge:any`, `neoforge:and`, ...) aren't supported yet, and
+leave the file out.
+
+A carver and a modifier adding it to a plugin's tag of biomes, and plains spawning the plugin's mob:
+
+```json
+// data/ruby/worldgen/configured_carver/crystal_caves.json
+{
+  "type": "minecraft:cave",
+  "config": {
+    "probability": 0.1,
+    "y": { "type": "minecraft:uniform", "min_inclusive": { "above_bottom": 8 }, "max_inclusive": { "absolute": 60 } },
+    "yScale": 0.5,
+    "lava_level": { "above_bottom": 8 },
+    "replaceable": "#minecraft:overworld_carver_replaceables",
+    "horizontal_radius_multiplier": 1,
+    "vertical_radius_multiplier": 1,
+    "floor_level": -0.7
+  }
+}
+```
+
+```json
+// data/ruby/tags/worldgen/biome/has_crystals.json
+{ "values": ["#minecraft:is_mountain", "ruby:crystal_peaks"] }
+```
+
+```json
+// data/ruby/neoforge/biome_modifier/add_crystal_caves.json
+{ "type": "neoforge:add_carvers", "biomes": "#ruby:has_crystals", "carvers": "ruby:crystal_caves" }
+```
+
+```json
+// data/ruby/neoforge/biome_modifier/add_golems.json
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "minecraft:plains",
+  "spawners": { "type": "ruby:golem", "weight": 10, "minCount": 1, "maxCount": 2 }
+}
+```
+
+A configured carver is vanilla's format with the `minecraft:cave`, `minecraft:nether_cave` or `minecraft:canyon`
+type, constant, uniform or trapezoid float providers, constant or uniform heights, and a block tag as `replaceable`.
+Like vanilla, each chunk is carved by the chunks within 8 of it, each with the carvers of its biome at Y 0, seeded
+by the carver's index in that biome's list. Vanilla's biomes of a dimension all list the same carvers, so worlds
+without plugins carve exactly as before.
 
 The rules:
 
@@ -293,7 +363,8 @@ The rules:
 - Features may refer to each other in any order and across plugins; a feature that refers back to itself is left
   out. Each feature is read once and shared, so a feature given by identifier is the same instance everywhere.
 - A biome's features are vanilla's, or a plugin biome's `features`, with every `add_features` modifier applied and
-  then every `remove_features` one, each in load order, like NeoForge's phases. Features are ordered across a
+  then every `remove_features` one, each in load order, like NeoForge's phases. Its carvers and spawners are its own
+  with the add and remove modifiers applied the same way. Features are ordered across a
   dimension's biomes like vanilla orders them, which decides their random seeds, so a world generates like vanilla
   with the same data pack. Like NeoForge, only the lists after every phase count: an add that a later removal
   resolves is fine. When a dimension's final lists would order features in a cycle (one placed both before and after
@@ -305,8 +376,9 @@ The rules:
   decorated while it unloads leave its features out. When placing such a feature throws, the error is logged naming
   the plugins, and the level stops generating new chunks until those plugins reload or unload. The chunk counts as
   decorated without the features left, with a warning (see [Noise types](#noise-types)).
-- Features aren't sent to clients or saved, so they come and go with their plugin: when plugins load or unload, the
-  features are read again and every world's generator moves to them for the chunks it decorates next. Chunks
+- Features, carvers and spawns aren't sent to clients or saved, so they come and go with their plugin: when plugins
+  load or unload, they're read again, every world's generator moves to them for the chunks it carves and decorates
+  next, and natural spawning uses the new spawns. Chunks
   already generated keep what was placed. As in vanilla, adding features to a step can change the seeds of the
   features after them in that step.
 - Plugin biomes generate in plugins' dimensions, which place their features (see [Dimensions](#dimensions)). A

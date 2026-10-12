@@ -158,17 +158,27 @@ client. This document describes the design and tracks its progress. The archive 
      generating with their plugins rather than failing or keeping their code loaded.
    - Possible later, gaps noted along the way (see [plugin-content.md](plugin-content.md)):
      - adding plugin biomes to vanilla's overworld and nether climate (like TerraBlender), rather than only to
-       plugins' own dimensions;
-     - biome modifiers for spawns and carvers, NeoForge's holder set types, placed feature tags, and plugins' own
-       or inline configured carvers;
+       plugins' own dimensions, deferred until needed;
+     - NeoForge's holder set types (`neoforge:any`, `neoforge:and`, ...) and configured carvers defined inline;
      - in level stems: noise settings, dimension types and biomes defined inline, `minecraft:flat` and
        `minecraft:debug` generators, and plugin level generators as a stem's `generator`;
      - noises defined inline, a constant `spline`, and a range for a spawn target's `depth`;
      - vanilla's tree placers and decorators, structure processors, weighted lists and biome sets in the API;
      - environment attributes with particle options or rich bed rule messages, and the server applying more
        attributes than `monsters_burn`;
-     - portals, raids and the end fight in plugins' dimensions, which only the default world has.
+     - raids and the end fight in plugins' dimensions, which only the default world has (plugins build their own
+       portals).
    - Next: Phase 4.
+   - Phase 3.5, part A (done): NeoForge's spawn and carver biome modifiers (`add_spawns`, `remove_spawns`,
+     `add_carvers`, `remove_carvers`; `add_spawn_costs` and `remove_spawn_costs` are read but unused, like vanilla's
+     spawn costs), applied to vanilla's and plugins' biomes in NeoForge's phases. The mob spawner spawns from the
+     merged lists (vanilla's biomes', plugins' biomes' `spawners` and the modifiers'), rebuilt and published atomically
+     on every plugin change; plugin entity types spawn naturally with their new `MobCategory`. Carvers now come from
+     each start chunk's biome, like vanilla, rather than from the dimension; vanilla's biomes of a dimension list the
+     same carvers, so vanilla worlds carve as before (the golden chunk tests check it). Plugins add configured carvers
+     from `worldgen/configured_carver` files. Tags of `worldgen/biome`, `worldgen/placed_feature` and
+     `worldgen/configured_carver` from plugins' files work in biome modifiers and biomes; biome tags hold plugins'
+     biomes and are sent to clients, vanilla's included (see [plugin-content.md](plugin-content.md#biome-modifiers)).
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource
    packs, and answers NeoForge's handshake and registry sync.
