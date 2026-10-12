@@ -1,68 +1,44 @@
-using Obsidian.API.Utilities;
-using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
 
 namespace Obsidian.API.Registry.Codecs.Biomes;
 
+/// <summary>
+/// A 1.21.11 biome's effects (vanilla's BiomeSpecialEffects). Colours are hex strings like <c>#3f76e4</c>, as vanilla
+/// writes them; sky and fog colours, particles and sounds became environment attributes in 1.21.11.
+/// </summary>
 public sealed record class BiomeEffect : INbtSerializable
 {
-    public string? GrassColorModifier { get; set; }
-    public string? AmbientSound { get; set; }
+    public required string WaterColor { get; set; }
 
-    public BiomeParticle? Particle { get; set; }
+    public string? FoliageColor { get; set; }
 
-    public string SkyColor { get; set; }
-    public string WaterFogColor { get; set; }
-    public string FogColor { get; set; }
-    public string WaterColor { get; set; }
-    public string FoliageColor { get; set; }
     public string? DryFoliageColor { get; set; }
-    public string GrassColor { get; set; }
 
+    public string? GrassColor { get; set; }
+
+    /// <summary>
+    /// <c>dark_forest</c> or <c>swamp</c>, or <c>none</c> or null for none.
+    /// </summary>
+    public string? GrassColorModifier { get; set; }
+
+    // Matches vanilla's BiomeSpecialEffects codec: absent optional colours and a "none" modifier are left out.
     public void Write(INbtWriter writer)
     {
         writer.WriteCompoundStart("effects");
 
-        writer.WriteString("fog_color", this.FogColor);
-        writer.WriteString("sky_color", this.SkyColor);
         writer.WriteString("water_color", this.WaterColor);
-        writer.WriteString("water_fog_color", this.WaterFogColor);
 
-        if (!string.IsNullOrEmpty(this.FoliageColor))
-            writer.WriteString("foliage_color", FoliageColor);
+        if (this.FoliageColor is not null)
+            writer.WriteString("foliage_color", this.FoliageColor);
 
-        if (!string.IsNullOrEmpty(this.DryFoliageColor))
+        if (this.DryFoliageColor is not null)
             writer.WriteString("dry_foliage_color", this.DryFoliageColor);
 
-        if (!string.IsNullOrEmpty(this.GrassColor))
+        if (this.GrassColor is not null)
             writer.WriteString("grass_color", this.GrassColor);
 
-        if (!this.GrassColorModifier.IsNullOrEmpty())
+        if (this.GrassColorModifier is not null and not "none")
             writer.WriteString("grass_color_modifier", this.GrassColorModifier);
-
-        //this.AdditionsSound?.Write(writer);
-        //this.MoodSound?.Write(writer);
-        // Not sure if this will be added back, but it was removed in 1.21.11, so I will leave it out for now.
-        //if(this.Music is not null)
-        //{
-        //    writer.WriteListStart("music", NbtTagType.Compound, this.Music.Length);
-
-        //    foreach (var musicData in this.Music)
-        //    {
-        //        writer.WriteCompoundStart();
-
-        //        musicData.Write(writer);
-
-        //        writer.EndCompound();
-        //    }
-
-        //    writer.EndList();
-        //}
-
-        if (!this.AmbientSound.IsNullOrEmpty())
-            writer.WriteString("ambient_sound", this.AmbientSound);
-
-        this.Particle?.Write(writer);
 
         writer.EndCompound();
     }

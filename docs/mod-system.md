@@ -87,10 +87,12 @@ client. This document describes the design and tracks its progress. The archive 
      `dimension_type` and `damage_type` files (see [plugin-content.md](plugin-content.md)). Their registries are
      extensible at runtime: plugins' entries get ids after vanilla's in the order they were first added, keep their id
      and instance across reloads (a reload replaces their data) and stay until the server stops, like items and
-     blocks. The global biome palette's bits follow the registry's size, like vanilla's. Vanilla's entries are sent by
-     name from the `minecraft:core` pack and plugins' with their files as NBT, which vanilla clients accept like a data
-     pack's, so they aren't refused. A change to these entries sends connected players back through configuration.
-     Plugin biomes don't generate anywhere yet.
+     blocks. The global biome palette's bits follow the registry's size, like vanilla's. Plugins' files are read and
+     checked like vanilla 1.21.11's codecs read a data pack's entries, environment attributes included (except
+     particles with options and rich bed rule messages), and are sent as vanilla's network codecs write what was read,
+     so vanilla clients always accept them; vanilla's entries are sent by name from the `minecraft:core` pack. A
+     change to these entries sends connected players back through configuration. Plugin biomes don't generate anywhere
+     yet, and the server doesn't apply environment attributes itself yet.
    - Next: worldgen data (configured and placed features, and biomes' features at runtime), then codec types
      registered by plugins, then dimensions and reload-safe generators.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key

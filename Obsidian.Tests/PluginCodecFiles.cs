@@ -5,7 +5,9 @@ using Obsidian.Net;
 using Obsidian.Net.Packets.Configuration.Clientbound;
 using Obsidian.Registries;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Text.Json.Nodes;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -15,6 +17,34 @@ namespace Obsidian.Tests;
 /// </summary>
 public class PluginCodecFiles
 {
+    private const string MinimalBiome = """
+        {
+          "has_precipitation": true,
+          "temperature": 0.5,
+          "downfall": 0.5,
+          "effects": { "water_color": "#3f76e4" },
+          "carvers": [],
+          "features": [],
+          "spawners": {},
+          "spawn_costs": {}
+        }
+        """;
+
+    private const string MinimalDimension = """
+        {
+          "has_skylight": true,
+          "has_ceiling": false,
+          "coordinate_scale": 1,
+          "min_y": -64,
+          "height": 384,
+          "logical_height": 384,
+          "infiniburn": "#minecraft:infiniburn_overworld",
+          "ambient_light": 0,
+          "monster_spawn_light_level": 7,
+          "monster_spawn_block_light_limit": 0
+        }
+        """;
+
     [Fact(DisplayName = "A plugin's biome registers after vanilla's, keeps its id on reload and is sent with data")]
     public void AddsPluginBiomes()
     {
@@ -23,11 +53,14 @@ public class PluginCodecFiles
               "has_precipitation": true,
               "temperature": 0.5,
               "downfall": 1,
-              "effects": { "water_color": 4159204, "fog_color": "#c0d8ff" },
-              "spawners": { "monster": [{ "type": "minecraft:zombie", "weight": 100, "minCount": 1, "maxCount": 4 }] },
+              "attributes": { "minecraft:visual/sky_color": 7907327, "gameplay/can_start_raid": false },
+              "effects": { "water_color": 4159204 },
+              "spawners": {
+                "monster": [{ "type": "minecraft:zombie", "weight": 100, "minCount": 1, "maxCount": 4 }]
+              },
               "spawn_costs": {},
               "carvers": ["minecraft:cave"],
-              "features": [[], "#minecraft:example"]
+              "features": [[], "minecraft:ore_coal_upper"]
             }
             """;
 
@@ -55,7 +88,7 @@ public class PluginCodecFiles
         Assert.Equal(0.25f, glade.Element.Temperature);
         Assert.True(PluginCodecs.Revision > revision);
 
-        // Vanilla's biomes are sent by name, the plugin's with its file as NBT: numbers as doubles, booleans as bytes.
+        // Vanilla's biomes are sent by name, the plugin's as vanilla's network codec writes it.
         using var buffer = new NetworkBuffer();
         new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, CodecRegistry.Biomes.Table.NetworkEntries)
             .Serialize(buffer);
@@ -83,11 +116,77 @@ public class PluginCodecFiles
             }
         }
 
+        // Floats as float tags, booleans as bytes, colours as vanilla's hex strings, and only synced attributes.
         Assert.NotNull(data);
-        Assert.Equal(0.25, Assert.IsType<NbtTag<double>>(data["temperature"]).Value);
-        Assert.Equal(1.0, Assert.IsType<NbtTag<double>>(data["downfall"]).Value);
+        Assert.Equal(0.25f, Assert.IsType<NbtTag<float>>(data["temperature"]).Value);
+        Assert.Equal(1f, Assert.IsType<NbtTag<float>>(data["downfall"]).Value);
         Assert.Equal((byte)1, Assert.IsType<NbtTag<byte>>(data["has_precipitation"]).Value);
-        Assert.Equal("#c0d8ff", Assert.IsType<NbtCompound>(data["effects"]).GetString("fog_color"));
+        Assert.Equal("#3f76e4", Assert.IsType<NbtCompound>(data["effects"]).GetString("water_color"));
+
+        var attributes = Assert.IsType<NbtCompound>(data["attributes"]);
+        Assert.Equal("#78a7ff", attributes.GetString("minecraft:visual/sky_color"));
+        Assert.False(attributes.HasTag("minecraft:gameplay/can_start_raid"));
+        Assert.False(data.HasTag("features"));
+    }
+
+    // Files vanilla rejects and alternative forms it accepts, each a minimal valid file with the row's JSON merged in.
+    [Theory(DisplayName = "Plugins' files are accepted exactly where vanilla's codecs accept them")]
+    [InlineData(PluginCodecs.DimensionType, false, """{ "height": 17, "logical_height": 16 }""")]
+    [InlineData(PluginCodecs.Biome, false, """{ "attributes": 17 }""")]
+    [InlineData(PluginCodecs.Biome, false, """{ "effects": { "water_color": {} } }""")]
+    [InlineData(
+        PluginCodecs.DimensionType,
+        false,
+        """{ "monster_spawn_light_level": { "type": "uniform", "min_inclusive": 0, "max_inclusive": 16 } }""")]
+    [InlineData(PluginCodecs.Biome, true, """{ "effects": { "water_color": [0.1, 0.2, 0.3] } }""")]
+    [InlineData(
+        PluginCodecs.DimensionType,
+        true,
+        """{ "monster_spawn_light_level": { "type": "minecraft:constant", "value": 7 } }""")]
+    public void ValidatesLikeVanilla(string registry, bool valid, string patch)
+    {
+        var bytes = Patched(registry == PluginCodecs.Biome ? MinimalBiome : MinimalDimension, patch);
+
+        if (valid)
+            PluginCodecs.Parse(registry, "codecfiles:case", "test", bytes);
+        else
+            Assert.Throws<InvalidDataException>(() => PluginCodecs.Parse(registry, "codecfiles:case", "test", bytes));
+    }
+
+    [Fact(DisplayName = "A plugin's dimension type is sent with vanilla's tag types, a constant provider as an int")]
+    public void EncodesDimensionTypesLikeVanilla()
+    {
+        var patch = """{ "monster_spawn_light_level": { "type": "minecraft:constant", "value": 7 } }""";
+        var file = PluginCodecs.Parse(
+            PluginCodecs.DimensionType,
+            "codecfiles:flat",
+            "test",
+            Patched(MinimalDimension, patch));
+
+        Assert.Equal(7, Assert.IsType<NbtTag<int>>(file.Data["monster_spawn_light_level"]).Value);
+        Assert.Equal(1.0, Assert.IsType<NbtTag<double>>(file.Data["coordinate_scale"]).Value);
+        Assert.Equal((byte)1, Assert.IsType<NbtTag<byte>>(file.Data["has_skylight"]).Value);
+        Assert.False(file.Data.HasTag("skybox"));
+    }
+
+    // A file with a patch's fields merged in, objects into objects.
+    private static byte[] Patched(string json, string patch)
+    {
+        var file = JsonNode.Parse(json)!.AsObject();
+        Merge(file, JsonNode.Parse(patch)!.AsObject());
+
+        return Encoding.UTF8.GetBytes(file.ToJsonString());
+
+        static void Merge(JsonObject target, JsonObject patch)
+        {
+            foreach (var (name, value) in patch.ToList())
+            {
+                if (value is JsonObject inner && target[name] is JsonObject existing)
+                    Merge(existing, inner);
+                else
+                    target[name] = value?.DeepClone();
+            }
+        }
     }
 
     private static CodecFile Parse(string identifier, string json) =>

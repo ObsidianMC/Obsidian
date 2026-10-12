@@ -1,13 +1,5 @@
 using Obsidian.API.Advancements;
 using Obsidian.API.Inventory;
-using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
-using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
-using Obsidian.API.Registry.Codecs.Biomes;
-using Obsidian.API.Registry.Codecs.Chat;
-using Obsidian.API.Registry.Codecs.DamageTypes;
-using Obsidian.API.Registry.Codecs.Dimensions;
-using Obsidian.API.Registry.Codecs.PaintingVariant;
-using Obsidian.API.Registry.Codecs.WolfVariant;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
@@ -373,23 +365,6 @@ public partial class NetworkBuffer : INetStreamWriter
         using var writer = new RawNbtWriter(true);
 
         codec.WriteElement(writer);
-
-        if (codec is DimensionCodec dim)
-            dim.WriteElement(writer);
-        else if (codec is BiomeCodec biome)
-            biome.WriteElement(writer);
-        else if (codec is ChatTypeCodec chat)
-            chat.WriteElement(writer);
-        else if (codec is TrimPatternCodec trimPattern)
-            trimPattern.WriteElement(writer);
-        else if (codec is TrimMaterialCodec trimMaterial)
-            trimMaterial.WriteElement(writer);
-        else if (codec is DamageTypeCodec damageType)
-            damageType.WriteElement(writer);
-        else if (codec is WolfVariantCodec wolfVariant)
-            wolfVariant.WriteElement(writer);
-        else if (codec is PaintingVariantCodec paintingVariant)
-            paintingVariant.WriteElement(writer);
 
         writer.EndCompound();
         writer.TryFinish();
