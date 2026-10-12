@@ -73,9 +73,9 @@ internal sealed class MojangDimension
         : throw new InvalidOperationException($"Unknown dimension type '{this.dimensionType}'.");
 
     /// <summary>
-    /// The noise settings' identifier, vanilla's or a plugin's.
+    /// The noise settings' identifier, vanilla's or a plugin's, or null for ones defined inline in the level stem.
     /// </summary>
-    public string NoiseSettings { get; }
+    public string? NoiseSettings { get; }
 
     /// <summary>
     /// The noise settings the dimension generates with.
@@ -126,13 +126,13 @@ internal sealed class MojangDimension
     /// <remarks>
     /// Vanilla picks the carvers of each start chunk's biome; every vanilla biome of a dimension lists the same ones,
     /// so one list per dimension gives the same result. A plugin's dimension carves like the vanilla dimension whose
-    /// noise settings it uses, whatever its biomes list, and like the overworld with a plugin's noise settings.
+    /// noise settings it uses, whatever its biomes list, and like the overworld with a plugin's or inline ones.
     /// </remarks>
     public IReadOnlyList<string> Carvers { get; }
 
     /// <param name="identifier">The level stem's identifier.</param>
     /// <param name="dimensionType">A registered dimension type.</param>
-    /// <param name="noiseSettings">The noise settings' identifier.</param>
+    /// <param name="noiseSettings">The noise settings' identifier, or null for ones defined inline.</param>
     /// <param name="settings">The noise settings.</param>
     /// <param name="createBiomeSource">Creates the biome source for a world.</param>
     /// <param name="possibleBiomes">The biome source's possible biomes, without creating one.</param>
@@ -140,7 +140,7 @@ internal sealed class MojangDimension
     public MojangDimension(
         string identifier,
         string dimensionType,
-        string noiseSettings,
+        string? noiseSettings,
         NoiseSetting settings,
         Func<RandomState, IClimateBiomeSource> createBiomeSource,
         Func<IReadOnlyList<BiomeCodec>> possibleBiomes,
@@ -186,7 +186,7 @@ internal sealed class MojangDimension
         new($"{this.Identifier} was released when a plugin it generates with unloaded.");
 
     // The carvers vanilla's biomes of the dimension using these settings list.
-    private static IReadOnlyList<string> CarversOf(string noiseSettings) => noiseSettings switch
+    private static IReadOnlyList<string> CarversOf(string? noiseSettings) => noiseSettings switch
     {
         "minecraft:nether" => ["nether_cave"],
         "minecraft:end" => [],

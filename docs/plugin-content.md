@@ -473,8 +473,9 @@ The rules:
 - A dimension keeps the noise settings it was created with until the server stops: a reload that changes them, or
   the density functions and noises they use, keeps the dimension as it was, with a warning, and the change applies
   after a restart.
-- Not supported: noises defined inline (vanilla can't seed them either), noise settings defined inline in a level
-  stem, a constant number for a spline function's `spline`, and a range for a spawn target's `depth`.
+- Not supported: noises defined inline (vanilla can't seed them either), a constant number for a spline function's
+  `spline`, and a range for a spawn target's `depth`. Noise settings may be defined inline in a level stem (see
+  [Dimensions](#dimensions)).
 
 ### Noise types
 
@@ -604,18 +605,25 @@ The file is vanilla 1.21.11's level stem, read with vanilla's rules (see [What's
   everything else a dimension type does, and clients are sent it like any dimension type.
 - `generator` is `minecraft:noise`, with `settings` naming vanilla's noise settings (`minecraft:overworld`,
   `amplified`, `large_biomes`, `caves`, `floating_islands`, `nether` or `end`) or a plugin's (see
-  [Noise settings](#noise-settings-density-functions-and-noises)), the plugin's own or a plugin loaded before it, and
-  a `biome_source`, one of vanilla's or a type a plugin registered (see [Noise types](#noise-types)):
+  [Noise settings](#noise-settings-density-functions-and-noises)), the plugin's own or a plugin loaded before it, or
+  defining them inline, and a `biome_source`, one of vanilla's or a type a plugin registered (see
+  [Noise types](#noise-types)):
   - `minecraft:multi_noise`, with an inline `biomes` list of `{"biome": ..., "parameters": {...}}` or a `preset`
-    (`minecraft:overworld` or `minecraft:nether`). Each parameter (`temperature`, `humidity`, `continentalness`,
+    (`minecraft:overworld` or `minecraft:nether`, or inline as `{"preset": "minecraft:overworld"}`). Each parameter (`temperature`, `humidity`, `continentalness`,
     `erosion`, `depth`, `weirdness`) is a number from -2 to 2 or a range, `[min, max]` or `{"min": ..., "max": ...}`,
     and `offset` is from 0 to 1. Biomes are picked from the climate like vanilla picks them;
   - `minecraft:fixed`, with one `biome`;
   - `minecraft:checkerboard`, with `biomes` (a biome, a list of them or a biome tag, not empty) and a `scale` from 0
     to 62 (2 when missing or invalid, like vanilla);
   - `minecraft:the_end`, the end's islands and biomes.
-- Biomes are vanilla's or plugins'. Dimension types, noise settings, biomes and presets are named: defining them
-  inline isn't supported yet.
+- Noise settings defined inline are read like a plugin's noise settings file (see
+  [Noise settings](#noise-settings-density-functions-and-noises)): their density functions may be inline or name
+  vanilla's and plugins' density functions and noises, and their types may be plugins'. The dimension carves like
+  the overworld with them. A reload changing them changes the stem, so it applies after a restart like any change
+  to the stem, as does one changing the plugin entries they name. A plugin biome source's density functions may be
+  inline the same way.
+- Biomes are vanilla's or plugins'. Dimension types and biomes are named: defining them inline isn't supported yet,
+  since clients are sent them by name.
 - Not supported yet, and rejected with a message saying so: `minecraft:flat` and `minecraft:debug` generators, and
   noise settings that generate outside the dimension type's build range (vanilla clamps them; its own pairings all
   fit).
