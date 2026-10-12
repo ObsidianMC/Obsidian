@@ -28,6 +28,14 @@ public sealed class BiomeSet
         {
             if (entry.StartsWith('#'))
             {
+                // A tag keeps its namespace, so plugins' tags (#myplugin:hot) are found too.
+                var identifier = entry[1..].Contains(':') ? entry[1..] : $"minecraft:{entry[1..]}";
+                if (TagsRegistry.TryGet("worldgen/biome", identifier, out var found))
+                {
+                    ids.UnionWith(found.Entries);
+                    continue;
+                }
+
                 // "#minecraft:has_structure/village_plains" is the tag "village_plains" of type
                 // "worldgen/biome/has_structure".
                 var path = entry[1..].Replace("minecraft:", string.Empty);
