@@ -748,6 +748,8 @@ public sealed partial class Client : IClient
         }
         finally
         {
+            // No longer a viewer of what they had open, so other viewers' clicks don't update them.
+            player.OpenedContainer = null;
             leave.SetResult();
         }
     }

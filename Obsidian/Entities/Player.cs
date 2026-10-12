@@ -32,6 +32,7 @@ public sealed partial class Player : Avatar, IClientPlayer
     internal HashSet<IPlayer> visiblePlayers = [];
 
     public bool IsDragging { get; set; }
+    public DraggingState DragStart { get; set; }
     public List<short> DraggedSlots { get; set; } = [];
     public int TeleportId { get; set; }
 
@@ -90,7 +91,26 @@ public sealed partial class Player : Avatar, IClientPlayer
     public Container Inventory { get; }
     public Container EnderInventory { get; }
 
-    public BaseContainer? OpenedContainer { get; set; }
+    /// <summary>
+    /// The container the player has open. Setting it moves the player between the containers'
+    /// <see cref="BaseContainer.Viewers"/> and ends any drag across slots, which vanilla keeps per menu.
+    /// </summary>
+    public BaseContainer? OpenedContainer
+    {
+        get;
+        set
+        {
+            if (ReferenceEquals(field, value))
+                return;
+
+            field?.RemoveViewer(this);
+            value?.AddViewer(this);
+            field = value;
+
+            this.IsDragging = false;
+            this.DraggedSlots.Clear();
+        }
+    }
 
     public List<SkinProperty> SkinProperties { get; set; } = [];
 
@@ -270,17 +290,52 @@ public sealed partial class Player : Avatar, IClientPlayer
         await Client.QueuePacketAsync(new OpenScreenPacket(container, nextId));
 
         // Like vanilla's menus, a plugin's is sent whole, its slots then the player's inventory, so that clients know
-        // how many slots it has before the player clicks.
+        // how many slots it has before the player clicks. The packet sets the cursor too, so it carries the player's.
         if (container is CraftingTable { Type: InventoryType.Crafting } or MenuContainer)
-            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId,
-                container.Concat(this.Inventory.Skip(9).Take(36)).ToList()));
+        {
+            var contents = container.Concat(this.Inventory.Skip(9).Take(36)).ToList();
+            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, contents)
+            {
+                CarriedItem = this.CarriedItem
+            });
+        }
         else if (container.HasItems())
-            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList()));
+        {
+            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList())
+            {
+                CarriedItem = this.CarriedItem
+            });
+        }
+
         if (container is EnchantmentTable)
         {
-            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.Concat(Inventory.Skip(9).Take(36)).ToList()));
+            var contents = container.Concat(Inventory.Skip(9).Take(36)).ToList();
+            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, contents)
+            {
+                CarriedItem = this.CarriedItem
+            });
             await RefreshEnchantingAsync();
         }
+    }
+
+    /// <summary>
+    /// Closes the player's open container from the server, like the player closing it: the close event runs, then
+    /// their screen closes. Unlike the player's close, cancelling the event doesn't keep it open.
+    /// </summary>
+    internal async ValueTask CloseContainerAsync()
+    {
+        if (this.OpenedContainer is not BaseContainer container)
+            return;
+
+        var containerId = this.CurrentContainerId;
+        await this.EventDispatcher.ExecuteEventAsync(new ContainerClosedEventArgs(this, this.Server, container));
+
+        // A handler may have opened another container instead, which stays open.
+        if (!ReferenceEquals(this.OpenedContainer, container))
+            return;
+
+        this.OpenedContainer = null;
+        await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = containerId });
     }
 
     public async override ValueTask TeleportAsync(VectorD pos)

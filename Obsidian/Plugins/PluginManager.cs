@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
+using Obsidian.Entities;
 using Obsidian.Plugins.Archives;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
@@ -526,6 +527,9 @@ public sealed partial class PluginManager : IAsyncDisposable
         // Closed first, so that whatever the plugin registers meanwhile is refused rather than kept after unloading.
         pluginContainer.Close();
 
+        // Before its handlers go, so that the plugin sees its menus close (to keep their contents, say).
+        await this.CloseMenusAsync(pluginContainer);
+
         this.commandHandler.UnregisterPluginCommands(pluginContainer);
         this.eventDispatcher.UnregisterPluginEvents(pluginContainer);
 
@@ -568,6 +572,25 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         if (await Task.WhenAny(release, Task.Delay(drainTimeout)) != release)
             Log.DrainTimedOut(this.logger, pluginContainer.Info.Name, drainTimeout.TotalSeconds);
+    }
+
+    /// <summary>
+    /// Closes the menus of <paramref name="pluginContainer"/>'s menu types that players have open, so that none stays
+    /// interactive without the plugin, and disowns the types.
+    /// </summary>
+    private async Task CloseMenusAsync(PluginContainer pluginContainer)
+    {
+        foreach (var player in this.server.OnlinePlayers.Values.OfType<Player>())
+        {
+            if (player.OpenedContainer is MenuContainer menu && ReferenceEquals(menu.Menu.Owner, pluginContainer))
+                await player.CloseContainerAsync();
+        }
+
+        foreach (var menu in MenuTypesRegistry.PluginMenus)
+        {
+            if (ReferenceEquals(menu.Owner, pluginContainer))
+                menu.Owner = null;
+        }
     }
 
     private async Task ReleaseWhenIdleAsync(PluginContainer pluginContainer, Task[] dependents)

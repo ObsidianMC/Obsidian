@@ -25,6 +25,12 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     public required short ClickedSlot { get; init; }
 
     /// <summary>
+    /// The clicked slot as the open window numbers it: the open container's slots, then the player's inventory.
+    /// <see cref="ClickedSlot"/> is the same slot in <see cref="ContainerEventArgs.Container"/>.
+    /// </summary>
+    internal short WindowSlot { get; init; }
+
+    /// <summary>
     /// The button that was clicked in the inventory. Can vary depending on the inventory type.
     /// </summary>
     public required sbyte Button { get; init; }
@@ -57,6 +63,7 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
         {
             ContainerId = containerId,
             ClickedSlot = clickedSlot,
+            WindowSlot = clickedSlot,
             Button = button,
             StateId = stateId,
             ClickType = clickType

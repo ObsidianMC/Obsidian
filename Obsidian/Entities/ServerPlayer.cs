@@ -98,6 +98,7 @@ public sealed partial class ServerPlayer : Avatar, IPlayer
     public PlayerAbility Abilities { get; set; }
 
     public bool IsDragging { get; set; }
+    public DraggingState DragStart { get; set; }
     public bool Sleeping { get; set; }
     public bool InHorseInventory { get; set; }
 

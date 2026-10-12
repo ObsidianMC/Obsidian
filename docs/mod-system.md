@@ -86,9 +86,10 @@ client. This document describes the design and tracks its progress. The archive 
    - Done for particle types and menu types: `IPluginRegistry.RegisterParticle` registers a particle type without
      options, sent with `ILevel.SpawnParticles`, and `RegisterMenu` a menu type of up to six rows of up to nine slots
      above the player's inventory, opened with a `MenuContainer` that the server's container code drives like a
-     chest's. Both get ids after vanilla's that stay for the process, are synced to NeoForge and Fabric clients with
-     the `minecraft:particle_type` and `minecraft:menu` registries (refusing vanilla clients once there are any), and
-     have no behaviour to replace on reload; a menu's shape can't change until the server restarts.
+     chest's (shared by its viewers, and closed when its plugin unloads). Both get ids after vanilla's that stay for
+     the process, are synced to NeoForge and Fabric clients with the `minecraft:particle_type` and `minecraft:menu`
+     registries (refusing vanilla clients once there are any), and have no behaviour to replace on reload; a menu's
+     shape can't change until the server restarts.
    - Next: Phase 3.
 3. **Data-driven content and world generation** (done): loading a mod's `data/` folder like a data pack
    (biomes, dimension types, damage types, tags, worldgen features), letting mods register codec types for

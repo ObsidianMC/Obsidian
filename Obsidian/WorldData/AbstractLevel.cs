@@ -995,13 +995,25 @@ public abstract partial class AbstractLevel : ILevel
             Data = particle
         };
 
-        // Vanilla's ServerLevel.sendParticles range: 32 blocks, or 512 when the limiter is overridden.
-        var players = GetPlayersInRange(position, force ? 512 : 32)
+        var range = force ? 512.0 : 32.0;
+        var players = this.Players.Values
+            .Where(player => IsInParticleRange(player.Position, position, range))
             .Select(player => player.EntityId)
             .ToArray();
 
         if (players.Length > 0)
             this.PacketBroadcaster.QueuePacketTo(packet, players);
+    }
+
+    // Vanilla's ServerLevel.sendParticles range, which decides who sees them: closer than 32 blocks (512 when the
+    // limiter is overridden) in 3D, measured from the centre of the block the player stands in.
+    internal static bool IsInParticleRange(VectorD player, VectorD particle, double range)
+    {
+        var x = Math.Floor(player.X) + 0.5 - particle.X;
+        var y = Math.Floor(player.Y) + 0.5 - particle.Y;
+        var z = Math.Floor(player.Z) + 0.5 - particle.Z;
+
+        return x * x + y * y + z * z < range * range;
     }
 
     public async ValueTask<bool> HandleBlockUpdateAsync(IBlockUpdate update)

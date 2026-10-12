@@ -40,6 +40,14 @@ public interface IPlayer : ILiving
     public PlayerAbility Abilities { get; set; }
 
     public bool IsDragging { get; set; }
+
+    /// <summary>
+    /// How the player started dragging items across slots, while <see cref="IsDragging"/>:
+    /// <see cref="DraggingState.StartLeft"/> splits the carried stack evenly, <see cref="DraggingState.StartRight"/>
+    /// places one item per slot and <see cref="DraggingState.StartMiddle"/> (creative only) a full stack.
+    /// </summary>
+    public DraggingState DragStart { get; set; }
+
     public bool Sleeping { get; set; }
     public bool InHorseInventory { get; set; }
 

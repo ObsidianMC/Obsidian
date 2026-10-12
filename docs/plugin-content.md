@@ -106,11 +106,12 @@ level.SpawnParticles(spark, position, count: 8, spread: new VectorF(0.2f), speed
 
 A plugin's particle type is a particle without options, like a NeoForge mod's `SimpleParticleType`; the
 `ParticleDefinition` that `RegisterParticle` returns is the particle to send. `ILevel.SpawnParticles` sends any
-particle, vanilla's particle data too, like vanilla's `/particle`: to players within 32 blocks (512 with `force`),
-with a count of 0 as one particle moving along `spread` times `speed`, and otherwise as `count` particles scattered by
-up to about `spread` on each axis. The type keeps its id across reloads and stays registered until the server stops.
-Clients draw it: a NeoForge or Fabric mod registers a particle type with the same identifier and a provider, and the
-Obsidian client draws it with the mod's sprites (see [Client](#client)).
+particle, vanilla's particle data too, like vanilla's `/particle`: to players closer than 32 blocks (512 with
+`force`) in any direction, vertically too, with a count of 0 as one particle moving along `spread` times `speed`,
+and otherwise as `count` particles scattered by up to about `spread` on each axis. The type keeps its id across
+reloads and stays registered until the server stops. Clients draw it: a NeoForge or Fabric mod registers a particle
+type with the same identifier and a provider, and the Obsidian client draws it with the mod's sprites (see
+[Client](#client)).
 
 ## Menus
 
@@ -125,9 +126,12 @@ await player.OpenInventoryAsync(container);
 A plugin's menu type is a grid of 1 to 6 rows of 1 to 9 slots above the player's inventory, numbered row by row and
 followed by the player's inventory like vanilla's menus. The server opens it with its id and moves items in it like a
 chest's; a `ContainerClickEventArgs` handler cancels or handles players' clicks, and the plugin reads and changes the
-container's slots. A NeoForge or Fabric mod's menu type with the same identifier and slots shows it, made without
-extra data (vanilla's open screen packet carries none). The type keeps its id and shape across reloads and stays
-registered until the server stops; registering it again with another shape throws.
+container's slots. Several players can have the same container open: their clicks take turns, so two can't take the
+same stack, and each sees the others' changes. A NeoForge or Fabric mod's menu type with the same identifier and slots
+shows it, made without extra data (vanilla's open screen packet carries none). The type keeps its id and shape across
+reloads and stays registered until the server stops; registering it again with another shape throws. When the plugin
+unloads (or reloads), its menus close for the players who have them open, with a `ContainerClosedEventArgs` the plugin
+still handles.
 
 ## Tags
 
