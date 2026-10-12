@@ -217,17 +217,23 @@ client. This document describes the design and tracks its progress. The archive 
      events, tags and worldgen are a server's and do nothing there, and the server's lifecycle callbacks aren't
      called. A mod that fails to load is logged and skipped, with the mods that require it. Mods come only from the
      player's folder: servers can't send code. In configuration the client sends its brand (`obsidian`), answers
-     NeoForge's channel query with its mods' `MapPayload` channels and NeoForge's registry sync channels before the
-     handshake's pong, registers the agreed channels it receives on with `minecraft:register`, and checks each
-     `frozen_registry` snapshot against its own registries before confirming the sync. A missing entry, an entry
-     only the client has or a different id disconnects it, naming the first few entries, as does a server that
-     syncs nothing while the client's mods added content. Mods' payloads are dispatched in configuration and play
-     on the agreed channels (on servers without NeoForge's handshake, on the channels they register), and sent with
-     `ClientSession.SendPayload`; the handlers' registration is internal until slice 4c's client API. A new
-     configuration forgets the previous one's registries, channels and sync. Singleplayer worlds run the client's
-     mods: the integrated server loads plugins from the client's `mods` folder (`Paths:Plugins`). An empty custom
-     payload, like NeoForge's sync confirmation, no longer fails to parse on the server, and an entity's particle
-     of a type the client doesn't know ends its metadata rather than disconnecting.
+     NeoForge's channel query with its mods' `MapPayload` channels and NeoForge's registry sync and extensible enum
+     channels before the handshake's pong, and registers the agreed channels it receives on with
+     `minecraft:register`; a server without NeoForge's query that registered its own channels (Fabric's) gets the
+     mods' configuration channels with `minecraft:register` before the pong instead. It acknowledges NeoForge's
+     `extensible_enum_data` unless the server's mods extended an enum, which it can't, and disconnects then. Like
+     NeoForge's client, it requires every registry the sync announced before confirming it, refuses a non-empty
+     snapshot of a registry outside vanilla's and NeoForge's namespaces, and checks each `frozen_registry` snapshot
+     of the registries mods add to against its own. A missing entry, an entry only the client has or a different id
+     disconnects it, naming the first few entries, as does a server that syncs nothing while the client's mods added
+     content, or that finishes configuration before the sync it started. Mods' payloads are dispatched in
+     configuration and play on channels a mod declared for that phase and to the client (on a NeoForge server, only
+     agreed ones), and sent with `ClientSession.SendPayload` on the agreed channels (elsewhere, on the channels the
+     server registers), never across a change of protocol; the handlers' registration is internal until slice 4c's
+     client API. A new configuration forgets the previous one's registries, channels and sync. Singleplayer worlds
+     run the client's mods: the integrated server loads plugins from the client's `mods` folder (`Paths:Plugins`).
+     An empty custom payload, like NeoForge's sync confirmation, no longer fails to parse on the server, and an
+     entity's particle of a type the client doesn't know ends its metadata rather than disconnecting.
    - Done, slice 4b, mods' assets: each mod archive's `assets/` is a resource pack, one per mod in load order, above
      vanilla's assets and below the player's packs (and servers' and realms' above those), reloaded with them. An
      archive needs no `pack.mcmeta`, only its `assets/` are read, and resource packs' limits and read budgets apply.
