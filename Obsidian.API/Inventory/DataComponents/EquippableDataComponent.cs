@@ -46,7 +46,7 @@ public sealed record class EquippableDataComponent : DataComponent
         var hasEntities = reader.ReadBoolean();
         if (hasEntities)
         {
-            this.AllowedEntitySet = reader.ReadIdSet();
+            this.AllowedEntitySet = reader.ReadIdSet(ComponentValueCodecs.EntityTypes);
             this.AllowedEntities = this.AllowedEntitySet.Value.Ids;
         }
 
@@ -69,7 +69,10 @@ public sealed record class EquippableDataComponent : DataComponent
         writer.WriteBoolean(hasEntities);
 
         if (hasEntities)
-            IdSet.Write(this.AllowedEntitySet ?? new IdSet { Type = 1, Ids = this.AllowedEntities }, writer);
+        {
+            var entities = this.AllowedEntitySet ?? new IdSet { Type = 1, Ids = this.AllowedEntities };
+            IdSet.Write(entities, writer, ComponentValueCodecs.EntityTypes);
+        }
 
         writer.WriteBoolean(this.Dispensable);
         writer.WriteBoolean(this.Swappable);

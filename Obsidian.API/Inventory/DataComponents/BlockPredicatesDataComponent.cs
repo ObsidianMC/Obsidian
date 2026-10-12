@@ -15,7 +15,7 @@ public abstract record class BlockPredicatesDataComponent : DataComponent
     {
         this.Predicates = reader.ReadLengthPrefixedArray(() => new BlockPredicate
         {
-            Blocks = reader.ReadBoolean() ? reader.ReadIdSet() : null,
+            Blocks = reader.ReadBoolean() ? reader.ReadIdSet(ComponentValueCodecs.Blocks) : null,
             Properties = reader.ReadBoolean() ? reader.ReadLengthPrefixedArray(() =>
             {
                 var name = reader.ReadString();
@@ -31,12 +31,22 @@ public abstract record class BlockPredicatesDataComponent : DataComponent
                     };
             }).ToList() : null,
             Nbt = reader.ReadBoolean() ? reader.ReadNbtCompound() : null,
-            ExactComponents = reader.ReadLengthPrefixedArray(() => reader.ReadDataComponent(reader.ReadVarInt<DataComponentType>())),
-            PartialComponents = reader.ReadLengthPrefixedArray(() => new ComponentPredicate
+            ExactComponents = reader.ReadLengthPrefixedArray(() =>
             {
-                IsPredicateType = reader.ReadBoolean(),
-                TypeId = reader.ReadVarInt(),
-                Value = reader.ReadNbtCompound()
+                var type = (DataComponentType)reader.ReadRegistryId(ComponentValueCodecs.DataComponentTypes);
+                return reader.ReadDataComponent(type);
+            }),
+            PartialComponents = reader.ReadLengthPrefixedArray(() =>
+            {
+                var isPredicateType = reader.ReadBoolean();
+                return new ComponentPredicate
+                {
+                    IsPredicateType = isPredicateType,
+                    TypeId = isPredicateType
+                        ? reader.ReadVarInt()
+                        : reader.ReadRegistryId(ComponentValueCodecs.DataComponentTypes),
+                    Value = reader.ReadNbtCompound()
+                };
             })
         }).ToList();
     }
@@ -47,7 +57,7 @@ public abstract record class BlockPredicatesDataComponent : DataComponent
         {
             writer.WriteBoolean(predicate.Blocks.HasValue);
             if (predicate.Blocks.HasValue)
-                IdSet.Write(predicate.Blocks.Value, writer);
+                IdSet.Write(predicate.Blocks.Value, writer, ComponentValueCodecs.Blocks);
 
             writer.WriteBoolean(predicate.Properties is not null);
             if (predicate.Properties is not null)
@@ -72,13 +82,17 @@ public abstract record class BlockPredicatesDataComponent : DataComponent
 
             writer.WriteLengthPrefixedArray(component =>
             {
-                writer.WriteVarInt(component.Type);
+                writer.WriteRegistryId(ComponentValueCodecs.DataComponentTypes, (int)component.Type);
                 writer.WriteDataComponent(component);
             }, predicate.ExactComponents);
             writer.WriteLengthPrefixedArray(component =>
             {
                 writer.WriteBoolean(component.IsPredicateType);
-                writer.WriteVarInt(component.TypeId);
+                if (component.IsPredicateType)
+                    writer.WriteVarInt(component.TypeId);
+                else
+                    writer.WriteRegistryId(ComponentValueCodecs.DataComponentTypes, component.TypeId);
+
                 writer.WriteNbtCompound(component.Value);
             }, predicate.PartialComponents);
         }, this.Predicates.ToArray());
@@ -86,6 +100,10 @@ public abstract record class BlockPredicatesDataComponent : DataComponent
 }
 
 
+/// <summary>
+/// A partial component predicate: a <c>minecraft:data_component_predicate_type</c> id if
+/// <see cref="IsPredicateType"/>, otherwise the id of the data component type that must be present.
+/// </summary>
 public readonly record struct ComponentPredicate
 {
     public required bool IsPredicateType { get; init; }

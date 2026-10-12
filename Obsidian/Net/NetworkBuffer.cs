@@ -30,9 +30,9 @@ public partial class NetworkBuffer
     public int BytesPending { get; internal set; }
 
     /// <summary>
-    /// The connection's numbering of synced registries, which item stacks' item and component type ids are translated
-    /// with when it differs from this process's; null keeps ids as they are. Buffers made for nested values take it
-    /// over.
+    /// The connection's numbering of synced registries, which item stacks' item and component type ids and the
+    /// registry ids their components hold are translated with when it differs from this process's; null keeps ids as
+    /// they are. Buffers made for nested values take it over.
     /// </summary>
     internal RegistryIdMaps? IdMaps { get; set; }
 

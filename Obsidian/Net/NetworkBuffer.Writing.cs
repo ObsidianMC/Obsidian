@@ -399,6 +399,29 @@ public partial class NetworkBuffer : INetStreamWriter
     /// <summary>Writes the creative-slot codec when delimitedComponents is true.</summary>
     public void WriteItemStack(ItemStack? value, bool delimitedComponents)
     {
+        if (this.IdMaps is null)
+        {
+            this.WriteItemStackPatch(value, delimitedComponents);
+            return;
+        }
+
+        // A stack whose components name an entry the connection lacks is written as nothing, like a missing item.
+        var encoded = new NetworkBuffer { IdMaps = this.IdMaps };
+        try
+        {
+            encoded.WriteItemStackPatch(value, delimitedComponents);
+        }
+        catch (MissingRegistryEntryException)
+        {
+            this.WriteVarInt(0);
+            return;
+        }
+
+        this.Write(encoded.data.AsSpan(0, encoded.Offset));
+    }
+
+    private void WriteItemStackPatch(ItemStack? value, bool delimitedComponents)
+    {
         value ??= ItemStack.Air;
 
         var item = value.AsItem();
@@ -444,6 +467,22 @@ public partial class NetworkBuffer : INetStreamWriter
 
     private void WriteComponentType(DataComponentType type) =>
         this.WriteVarInt(this.IdMaps is RegistryIdMaps maps ? maps.DataComponentType.ToRemote((int)type) : (int)type);
+
+    public void WriteRegistryId(string registry, int id) => this.WriteVarInt(this.ToRemoteId(registry, id));
+
+    public void WriteRegistryHolder(string registry, int? id) =>
+        this.WriteVarInt(id is int value ? this.ToRemoteId(registry, value) + 1 : 0);
+
+    // The connection's id of this process's id of the registry (see IdMaps). An entry the connection lacks throws, and
+    // WriteItemStack then writes the stack as nothing.
+    private int ToRemoteId(string registry, int id)
+    {
+        if (this.IdMaps is not RegistryIdMaps maps)
+            return id;
+
+        var remote = maps.Get(registry).ToRemote(id);
+        return remote >= 0 ? remote : throw new MissingRegistryEntryException(registry, id);
+    }
 
     public void WriteUntrustedItemStack(ItemStack? value) => this.WriteItemStack(value, true);
 

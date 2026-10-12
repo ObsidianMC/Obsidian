@@ -530,7 +530,27 @@ public partial class NetworkBuffer : INetStreamReader
         return result;
     }
 
-    public IdSet ReadIdSet() => IdSet.Read(this);
+    public int ReadRegistryId(string registry) => this.ToLocalId(registry, this.ReadVarInt());
+
+    public int? ReadRegistryHolder(string registry)
+    {
+        var id = this.ReadVarInt();
+        return id == 0 ? null : this.ToLocalId(registry, id - 1);
+    }
+
+    public IdSet ReadIdSet(string registry) => IdSet.Read(this, registry);
+
+    // The local id of the connection's id of the registry (see IdMaps). An entry this process lacks throws, so a
+    // component naming it keeps its bytes (ReadDataComponent).
+    private int ToLocalId(string registry, int id)
+    {
+        if (this.IdMaps is not RegistryIdMaps maps)
+            return id;
+
+        var local = maps.Get(registry).ToLocal(id);
+        return local >= 0 ? local : throw new MissingRegistryEntryException(registry, id);
+    }
+
     public SoundEvent ReadSoundEvent() => new()
     {
         ResourceLocation = this.ReadString(),

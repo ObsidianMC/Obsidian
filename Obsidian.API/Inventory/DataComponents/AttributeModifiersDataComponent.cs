@@ -12,7 +12,7 @@ public sealed record AttributeModifiersDataComponent() : SimpleDataComponent<Att
         {
             var modifier = new AttributeModifier
             {
-                Id = reader.ReadVarInt(),
+                Id = reader.ReadRegistryId(ComponentValueCodecs.Attributes),
                 Uuid = Guid.Empty,
                 Name = reader.ReadString(),
                 Value = reader.ReadDouble(),
@@ -32,7 +32,7 @@ public sealed record AttributeModifiersDataComponent() : SimpleDataComponent<Att
         for (var i = 0; i < this.Value.Length; i++)
         {
             var modifier = this.Value[i];
-            writer.WriteVarInt(modifier.Id);
+            writer.WriteRegistryId(ComponentValueCodecs.Attributes, modifier.Id);
             writer.WriteString(modifier.Name);
             writer.WriteDouble(modifier.Value);
             writer.WriteVarInt(modifier.Operation);
