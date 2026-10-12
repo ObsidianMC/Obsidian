@@ -1069,11 +1069,11 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.DataFilesOf(plugin => plugin.DimensionFiles, pack => pack.DimensionFiles),
         this.dimensionTypesSettled ? this.logger : NullLogger.Instance);
 
-    // Once the worlds are loaded, a plugin's new dimensions get their levels as it loads; before, the worlds create
-    // them as they load.
+    // A plugin's new dimensions get their levels as it loads. Before the worlds load, loading them creates the levels
+    // instead, and a plugin loading while they do waits for that (see WorldManager.AddPluginDimensionsAsync).
     private async Task AddDimensionLevelsAsync()
     {
-        if (this.server.WorldManager is WorldData.WorldManager { ReadyToJoin: true } worldManager)
+        if (this.server.WorldManager is WorldData.WorldManager worldManager)
             await worldManager.AddPluginDimensionsAsync();
     }
 

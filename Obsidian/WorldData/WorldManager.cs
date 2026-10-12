@@ -29,8 +29,12 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     private readonly ILevelFactory levelFactory = levelFactory;
     private readonly IServiceScope serviceScope = serviceProvider.CreateScope();
 
-    // Plugins' dimensions are added one plugin at a time, so none is created twice.
+    // Plugins' dimensions are added one pass at a time, so none is created twice.
     private readonly SemaphoreSlim pluginDimensionLock = new(1, 1);
+
+    // Whether loading the worlds started adding plugins' dimensions, after which every pass adds them; set under
+    // pluginDimensionLock.
+    private bool pluginDimensionsOpen;
 
     // The lock on the single world's folder (see LoadSingleWorldAsync), held until the worlds are disposed.
     private SessionLock? sessionLock;
@@ -106,7 +110,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         //No default world was defined so choose the first one to come up
         this.DefaultWorld ??= this.worlds.FirstOrDefault().Value;
 
-        await this.AddPluginDimensionsAsync(cancellationToken);
+        await this.AddPluginDimensionsAsync(opening: true, cancellationToken);
         if (this.worlds.Values.Any(world => world is AbstractLevel { Generator: Generators.MobTestGenerator }))
         {
             var commands = this.serviceScope.ServiceProvider.GetRequiredService<Obsidian.Commands.Framework.CommandHandler>();
@@ -266,17 +270,30 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     /// yet, loading the saved ones and generating the others. Their levels stay until the server stops.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Only the default world has plugins' dimensions, like vanilla's single world has a data pack's. A level saved by
     /// a plugin that isn't loaded any more isn't loaded, and its folder is left alone.
+    /// </para>
+    /// <para>
+    /// Until the worlds load, this does nothing: loading them adds the dimensions plugins added by then. A plugin
+    /// loading while they're added waits for that pass, then adds those it missed.
+    /// </para>
     /// </remarks>
-    internal async Task AddPluginDimensionsAsync(CancellationToken cancellationToken = default)
-    {
-        if (this.DefaultWorld is not World world)
-            return;
+    internal Task AddPluginDimensionsAsync(CancellationToken cancellationToken = default) =>
+        this.AddPluginDimensionsAsync(opening: false, cancellationToken);
 
+    // A pass adding plugins' dimensions, the first of which, opening, runs as the worlds load. As passes run one at a
+    // time, one a plugin asked for before it, finding them not open, has its dimensions added by that first pass.
+    private async Task AddPluginDimensionsAsync(bool opening, CancellationToken cancellationToken)
+    {
         await this.pluginDimensionLock.WaitAsync(cancellationToken);
         try
         {
+            this.pluginDimensionsOpen |= opening;
+
+            if (!this.pluginDimensionsOpen || this.DefaultWorld is not World world)
+                return;
+
             foreach (var stem in PluginDimensions.Added)
             {
                 // A released dimension can't generate until its plugin loads again.

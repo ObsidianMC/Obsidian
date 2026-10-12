@@ -902,7 +902,8 @@ The rules:
 - A dimension's level is created when its plugin loads, at startup or later, and is saved in the world's folder under
   `dimensions/<namespace>/<path>`, where vanilla saves a data pack's dimensions, and loaded from there after a restart.
   Players can reach it, and it ticks, once it's loaded or generated with its spawn. One that fails to load or generate
-  is logged and left out, and the next plugin load tries it again.
+  is logged and left out, and the next plugin load tries it again. A plugin loading while the worlds load gets its
+  dimensions' levels too, created after those of the plugins loaded before.
 - Gameplay follows the dimension type, as in vanilla: monsters spawn with its monster light limits, and undead mobs
   burn by day in a type with the overworld's timelines (`#minecraft:in_overworld`) or its own
   `minecraft:gameplay/monsters_burn`. Patrols, wandering traders and phantom spawns stay in the overworld, where
