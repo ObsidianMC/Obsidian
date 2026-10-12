@@ -33,6 +33,17 @@ public sealed class WorldgenOverrides : IDisposable
 {
     private const string PackMetadata = """{ "pack": { "pack_format": 94, "description": "" } }""";
 
+    private const string FixedPlainsStem = """
+        {
+          "type": "minecraft:overworld",
+          "generator": {
+            "type": "minecraft:noise",
+            "settings": "minecraft:overworld",
+            "biome_source": { "type": "minecraft:fixed", "biome": "minecraft:plains" }
+          }
+        }
+        """;
+
     private readonly string folder = Path.Join(Path.GetTempPath(), $"obsidian-data-packs-{Guid.NewGuid():N}");
 
     public void Dispose()
@@ -261,6 +272,34 @@ public sealed class WorldgenOverrides : IDisposable
         }
 
         // No level took it, so it went with its files.
+        Assert.Null(PluginDimensions.Find(identifier));
+    }
+
+    [Fact(DisplayName = "A level can't take a dimension that went since its snapshot, which can still come back")]
+    public void TakingAGoneDimensionLeavesItUntaken()
+    {
+        const string identifier = "overridetest:gone";
+        var stem = Encoding.UTF8.GetBytes(FixedPlainsStem);
+        var logger = new PluginFeatureFiles.ListLogger();
+
+        try
+        {
+            PluginDimensions.Apply([PluginDimensions.Parse(identifier, "plugin", stem)], logger);
+            var snapshot = PluginDimensions.Find(identifier)!;
+
+            // The plugin unloads before the level is created: its dimension goes, released.
+            PluginDimensions.Apply([], logger);
+            Assert.Null(PluginDimensions.Take(snapshot));
+
+            // Back, it follows its file again, as nothing took it.
+            PluginDimensions.Apply([PluginDimensions.Parse(identifier, "plugin", stem)], logger);
+            Assert.False(PluginDimensions.Find(identifier)!.IsReleased);
+        }
+        finally
+        {
+            PluginDimensions.Apply([], NullLogger.Instance);
+        }
+
         Assert.Null(PluginDimensions.Find(identifier));
     }
 
