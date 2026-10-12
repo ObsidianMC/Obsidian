@@ -732,9 +732,10 @@ public final class VanillaDumper {
 
     /**
      * {@code entities.json}, read by {@code Obsidian.SourceGenerators/Registry/EntityGenerator.cs}: every entity type
-     * by id, with its {@code EntityType} properties, default attributes ({@code DefaultAttributes}), Mojang class name,
-     * the synced data ids its class declares ({@code EntityDataAccessor} fields) and its superclass. The abstract
-     * superclasses follow by class name, with their own synced data and superclass.
+     * by id, with its {@code EntityType} properties (its mob category included), default attributes
+     * ({@code DefaultAttributes}), Mojang class name, the synced data ids its class declares
+     * ({@code EntityDataAccessor} fields) and its superclass. The abstract superclasses follow by class name, with
+     * their own synced data and superclass.
      */
     private void dumpEntities() throws IOException {
         var types = mojang.get(REGISTRIES, "ENTITY_TYPE");
@@ -755,6 +756,8 @@ public final class VanillaDumper {
         var width = mojang.method(dimensions, "width");
         var height = mojang.method(dimensions, "height");
         var fixed = mojang.method(dimensions, "fixed");
+        var getCategory = mojang.method(ENTITY_TYPE, "getCategory");
+        var categoryName = mojang.method("net.minecraft.world.entity.MobCategory", "getName");
         var lootTableId = mojang.method("net.minecraft.resources.ResourceKey", "identifier");
         var defaultAttributes = "net.minecraft.world.entity.ai.attributes.DefaultAttributes";
         var hasSupplier = mojang.method(defaultAttributes, "hasSupplier", ENTITY_TYPE);
@@ -780,6 +783,7 @@ public final class VanillaDumper {
             entity.put("width", Mojang.call(width, size));
             entity.put("height", Mojang.call(height, size));
             entity.put("size_fixed", Mojang.call(fixed, size));
+            entity.put("category", Mojang.call(categoryName, Mojang.call(getCategory, type)));
 
             if ((boolean) Mojang.call(hasSupplier, null, type)) {
                 var values = new LinkedHashMap<String, Object>();

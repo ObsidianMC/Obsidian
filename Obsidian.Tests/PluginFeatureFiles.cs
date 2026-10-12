@@ -59,18 +59,22 @@ public class PluginFeatureFiles
         }
         """;
 
+    // Bees are in no vanilla biome's spawners, so only their type says they're creatures.
     private const string AddPolarBears = """
         {
           "type": "neoforge:add_spawns",
           "biomes": "minecraft:plains",
-          "spawners": { "type": "minecraft:polar_bear", "weight": 5, "minCount": 1, "maxCount": 2 }
+          "spawners": [
+            { "type": "minecraft:polar_bear", "weight": 5, "minCount": 1, "maxCount": 2 },
+            { "type": "minecraft:bee", "weight": 5, "minCount": 1, "maxCount": 2 }
+          ]
         }
         """;
 
     private const string RemoveSkeletons = """
         {
           "type": "neoforge:remove_spawns",
-          "biomes": ["minecraft:plains"],
+          "biomes": ["minecraft:plains", "minecraft:swamp"],
           "entity_types": "#minecraft:skeletons"
         }
         """;
@@ -361,8 +365,11 @@ public class PluginFeatureFiles
 
             // Spawners go to their type's category's list.
             var plains = spawns.Biomes["minecraft:plains"];
-            Assert.Equal("minecraft:polar_bear", plains["creature"][^1].Type);
+            Assert.Equal(["minecraft:polar_bear", "minecraft:bee"], plains["creature"][^2..].Select(mob => mob.Type));
             Assert.DoesNotContain(plains["monster"], spawner => spawner.Type == "minecraft:skeleton");
+            Assert.DoesNotContain(
+                spawns.Biomes["minecraft:swamp"]["monster"],
+                spawner => spawner.Type == "minecraft:bogged");
             Assert.Contains(
                 spawns.Biomes["minecraft:forest"]["monster"],
                 spawner => spawner.Type == "minecraft:skeleton");

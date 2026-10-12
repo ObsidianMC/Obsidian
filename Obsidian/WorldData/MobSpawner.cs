@@ -20,12 +20,9 @@ internal sealed partial class MobSpawner(AbstractLevel level)
     [("monster", 70, false), ("creature", 10, true), ("ambient", 15, false), ("axolotls", 5, false),
         ("underground_water_creature", 5, false), ("water_creature", 5, false), ("water_ambient", 20, false)];
 
-    // Vanilla mobs' categories, from vanilla's biomes alone, so that plugins' spawns don't change how they count.
-    private static readonly Dictionary<string, string> mobCategories = BiomeSpawns.Vanilla.Biomes.Values
-        .SelectMany(categories => categories)
-        .SelectMany(category => category.Value.Select(mob => (mob.Type, Category: category.Key)))
-        .GroupBy(entry => entry.Type)
-        .ToDictionary(group => group.Key, group => group.First().Category);
+    // Vanilla's entity types' mob categories (EntityType.getCategory), from Assets/entities.json. Vanilla counts a mob
+    // against its type's category's cap, whichever biome list it spawned from (jungles list ocelots as monsters).
+    private static readonly Dictionary<string, string> mobCategories = LoadMobCategories();
 
     /// <summary>
     /// The category a mob counts in: a plugin's mob in its type's, a vanilla one like
@@ -35,14 +32,26 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         ? PluginSpawns.Name(definition.Settings.Category)
         : SpawnCategory(mob.Type);
 
-    internal static string SpawnCategory(EntityType? type) => type switch
+    /// <summary>
+    /// A vanilla entity type's mob category, like <c>monster</c>; <c>misc</c> for a plugin's mob (null).
+    /// </summary>
+    internal static string SpawnCategory(EntityType? type) => type is EntityType vanilla
+        ? mobCategories.GetValueOrDefault(EntityNbt.TypeId(vanilla), "misc")
+        : "misc";
+
+    private static Dictionary<string, string> LoadMobCategories()
     {
-        // A plugin's mob.
-        null => "misc",
-        EntityType.Blaze or EntityType.Silverfish or EntityType.Bogged or EntityType.Parched => "monster",
-        EntityType.Cat or EntityType.Camel or EntityType.SkeletonHorse => "creature",
-        EntityType vanilla => mobCategories.GetValueOrDefault(EntityNbt.TypeId(vanilla), "misc")
-    };
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Assets.entities.json")
+            ?? throw new InvalidDataException("Missing entity type data.");
+        using var document = JsonDocument.Parse(stream);
+
+        // Entries without a category are the entity classes' abstract superclasses.
+        return document.RootElement
+            .EnumerateObject()
+            .Where(type => type.Value.TryGetProperty("category", out _))
+            .ToDictionary(type => type.Name, type => type.Value.GetProperty("category").GetString()!);
+    }
+
     internal static bool IsAquatic(EntityType type) => type is EntityType.Squid or EntityType.GlowSquid or EntityType.Dolphin or EntityType.Axolotl or EntityType.Tadpole or
         EntityType.Cod or EntityType.Salmon or EntityType.TropicalFish or EntityType.Pufferfish or EntityType.Drowned or EntityType.Guardian or EntityType.ElderGuardian;
     private static SpawnerMob[] LoadFortressSpawns()
@@ -158,19 +167,8 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         if (category == "monster" && level.Generator is MojangGenerator structureGenerator &&
             structureGenerator.IsInsideFortress(new Vector(x, y, z)))
             choices = fortressSpawns;
-        if (category == "monster")
-        {
-            var updated = choices.ToList();
-            if (biome.Name is "minecraft:swamp" or "minecraft:mangrove_swamp" && !updated.Any(entry => entry.Type == "minecraft:bogged"))
-                updated.Add(new SpawnerMob { Type = "minecraft:bogged", Weight = 30, MinCount = 4, MaxCount = 4 });
-            if (biome.Name == "minecraft:desert" && !updated.Any(entry => entry.Type == "minecraft:parched"))
-            {
-                updated.RemoveAll(entry => entry.Type == "minecraft:skeleton");
-                updated.Add(new SpawnerMob { Type = "minecraft:skeleton", Weight = 50, MinCount = 4, MaxCount = 4 });
-                updated.Add(new SpawnerMob { Type = "minecraft:parched", Weight = 50, MinCount = 4, MaxCount = 4 });
-            }
-            choices = updated.ToArray();
-        }
+
+        // Vanilla's swamps' bogged and desert's parched come from their biome data, so modifiers can remove them.
         choices = choices.Where(entry => SupportsSpawn(entry.Type)).ToArray();
         var total = choices.Sum(choice => choice.Weight);
         if (total <= 0)

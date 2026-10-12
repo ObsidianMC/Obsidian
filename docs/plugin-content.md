@@ -304,11 +304,12 @@ A biome modifier is NeoForge 1.21.11's:
 `biomes`, `features`, `carvers` and `entity_types` are holder sets: an identifier, a list of them, or a tag like
 `#minecraft:is_overworld`, vanilla's or a plugin's. Biomes, placed features and configured carvers may be vanilla's or
 plugins', and features added may be defined inline. Entity types are vanilla's or a loaded plugin's; a vanilla type's
-category is the one vanilla's biomes list it in, and a plugin type's is its `Category`. Steps are vanilla's
-decoration steps: `raw_generation`, `lakes`, `local_modifications`, `underground_structures`, `surface_structures`,
-`strongholds`, `underground_ores`, `underground_decoration`, `fluid_springs`, `vegetal_decoration` and
-`top_layer_modification`. NeoForge's holder set types (`neoforge:any`, `neoforge:and`, ...) aren't supported yet, and
-leave the file out.
+category is vanilla's for the type (bees are creatures, guardians monsters), and a plugin type's is its `Category`.
+Removing vanilla's swamp bogged or desert parched keeps them removed: they're plain entries of those biomes' lists.
+Steps are vanilla's decoration steps: `raw_generation`, `lakes`, `local_modifications`, `underground_structures`,
+`surface_structures`, `strongholds`, `underground_ores`, `underground_decoration`, `fluid_springs`,
+`vegetal_decoration` and `top_layer_modification`. NeoForge's holder set types (`neoforge:any`, `neoforge:and`, ...)
+aren't supported yet, and leave the file out.
 
 A carver and a modifier adding it to a plugin's tag of biomes, and plains spawning the plugin's mob:
 

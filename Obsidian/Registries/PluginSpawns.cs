@@ -95,8 +95,8 @@ internal static partial class PluginSpawns
     }
 
     /// <summary>
-    /// The category of an entity type's mobs, by the type's identifier: a plugin type's <c>Category</c>, or vanilla's
-    /// as Obsidian's spawner counts them (see <see cref="MobSpawner.SpawnCategory(EntityType?)"/>).
+    /// The category of an entity type's mobs, by the type's identifier: a plugin type's <c>Category</c>, or a vanilla
+    /// type's own (see <see cref="MobSpawner.SpawnCategory(EntityType?)"/>).
     /// </summary>
     public static string CategoryOf(string entityType)
     {
