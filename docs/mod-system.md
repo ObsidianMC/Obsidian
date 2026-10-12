@@ -223,7 +223,7 @@ client. This document describes the design and tracks its progress. The archive 
      only the client has or a different id disconnects it, naming the first few entries, as does a server that
      syncs nothing while the client's mods added content. Mods' payloads are dispatched in configuration and play
      on the agreed channels (on servers without NeoForge's handshake, on the channels they register), and sent with
-     `ClientSession.SendPayload`; the handlers' registration is internal until slice 4c's client API. A new
+     `ClientSession.SendPayload` (since slice 4c, mods handle and send them through the client API). A new
      configuration forgets the previous one's registries, channels and sync. Singleplayer worlds run the client's
      mods: the integrated server loads plugins from the client's `mods` folder (`Paths:Plugins`). An empty custom
      payload, like NeoForge's sync confirmation, no longer fails to parse on the server, and an entity's particle
@@ -233,20 +233,33 @@ client. This document describes the design and tracks its progress. The archive 
      archive needs no `pack.mcmeta`, only its `assets/` are read, and resource packs' limits and read budgets apply.
      The asset loaders read every namespace like vanilla: block states and block and item models by identifier,
      atlases' directory sources in every namespace (sprites named `<ns>:<path>`), item definitions for vanilla's and
-     plugins' items, GUI sprites, particle definitions (mods' by identifier, for slice 4c) and translations, merged per
+     plugins' items, GUI sprites, particle definitions (mods' by identifier, for later) and translations, merged per
      language across namespaces. Models are baked for every block state, plugins' after vanilla's, so plugin blocks
      render in the world and their items in the GUI and in hand. Vanilla's name-based rules (tints, render layers,
      culling between glass) leave plugin blocks alone: their faces' render layers come from their textures, and
-     their tints wait for slice 4c's tint sources. Biomes the client's registry lacks, like a server's plugin biomes,
+     their tints come from slice 4c's tint sources. Biomes the client's registry lacks, like a server's plugin biomes,
      are tinted from the data the server sends for them (grass, foliage, dry foliage and water colours, the grass
      colour modifier, and temperature and downfall for the colormaps); vanilla's biomes keep the registry's colours
      (see [plugin-archives.md](plugin-archives.md#assets)). The client's mods load before its assets, so their
      blocks are baked from the start.
-   - Slice 4c, the client API: `Obsidian.API.Client` interfaces a mod's plugin implements (`IClientPlugin` with
-     `ConfigureClient(IClientRegistry)`) to register entity renderers (model layers and textures), particle
-     providers, key bindings, block and item tint sources, and screens for its menu types; only the Obsidian client
-     calls them, so a `both` mod runs on a server without client code. Client mods unload and reload with the
-     client's configuration like the server's plugins.
+   - Done, slice 4c, the client API: `Obsidian.API.Client` holds interfaces and records only. A mod's plugin
+     implements `IClientPlugin`, whose `ConfigureClient(IClientRegistry)` the Obsidian client calls after
+     `ConfigureRegistry` and servers never call, so a `both` mod runs on a server without client code. Through
+     `IClientRegistry` a mod handles the payloads servers send on the channels it declared with `MapPayload`
+     (`HandlePayload`, replacing the client's internal registration), sends its own on `IClientConnection`s (the one a
+     payload arrived on, or `Connection`, whichever server the client plays on), registers key bindings
+     (`key.<ns>.<path>`, in the key binds screen and `options.txt` like vanilla's, with `Pressed`, `IsDown` and the
+     bound `Key`), tints its blocks and their items (`BlockTint`: the biome's grass, foliage, dry foliage or water
+     colour, blended like vanilla's, or a fixed colour, on faces with a `tintindex`; items take vanilla's default
+     colours unless their definitions have tints), and draws its entity types (`EntityRendererProperties`: a model
+     layer from `assets/<ns>/models/entity/`, in the shape of the client's `client_models.json` layers, a texture,
+     scale and shadow radius; heads follow the look and legs swing, by part name). See
+     [plugin-content.md](plugin-content.md#client).
+   - Next: particle providers (mods' particle definitions are loaded already) and screens for menu types, once
+     plugins can register particle types and menu types on the server; unloading and reloading client mods while the
+     client runs, with its configuration, like the server's plugins (they load once at startup now); keyframed
+     entity animations, entity render layers and held items for mods' entities; a client tick event, so mods can poll
+     `IsDown` and do per-frame work.
 
 ## Known gaps
 

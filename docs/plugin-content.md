@@ -5,7 +5,7 @@ worldgen types and level generators in code, and add tags, biomes, dimension typ
 biome modifiers, noise settings and dimensions with data pack files, much like NeoForge and Fabric mods.
 Clients need the matching mod for blocks, items and entity types: NeoForge and Fabric clients are sent those
 registries, so their ids agree with the server's. Biomes, dimension types and damage types are sent with their data,
-so vanilla clients can join too.
+so vanilla clients can join too. On the Obsidian client, a mod adds its client side in code (see [Client](#client)).
 
 ## Blocks in code
 
@@ -966,3 +966,100 @@ The rules:
   generator. A new world or dimension can't be created without its generator: the server refuses to start it, saying
   which generator is missing. A dimension whose creation was cancelled before it saved its level data or any chunk
   counts as new. An unknown generator identifier is never replaced by the overworld's.
+
+## Client
+
+A mod whose side is `client` or `both` also runs on the Obsidian client, which registers its content like a server
+(see [mod-system.md](mod-system.md)). Its plugin class implements `IClientPlugin`, from `Obsidian.API.Client`, to
+register its client side. The client calls `ConfigureClient` once at startup, after `ConfigureRegistry`; servers never
+call it, so a `both` mod runs on a server without any client code. What it registers stays until the client exits.
+
+```csharp
+public sealed class RubyMod : PluginBase, IClientPlugin
+{
+    public override void ConfigureRegistry(IPluginRegistry registry)
+    {
+        registry.RegisterBlock("ruby:mossy_ruby");
+        registry.RegisterEntity("ruby:golem", new EntityProperties { Width = 1.4f, Height = 2.7f });
+        registry.MapPayload<SummonGolem>(PayloadPhase.Play, PayloadDirection.Bidirectional, SummonAsync);
+    }
+
+    public void ConfigureClient(IClientRegistry registry)
+    {
+        registry.HandlePayload<SummonGolem>((summon, connection) =>
+        {
+            // The server summoned a golem; this runs on the connection's packet thread.
+        });
+
+        var summon = registry.RegisterKeyBinding("ruby:summon_golem", "key.keyboard.r", "ruby:golems");
+        summon.Pressed += () => registry.Connection.SendPayload(new SummonGolem());
+
+        registry.RegisterBlockTint("ruby:mossy_ruby", BlockTint.Foliage);
+        registry.RegisterEntityRenderer("ruby:golem", new EntityRendererProperties
+        {
+            Model = "ruby:golem",
+            Texture = "ruby:entity/golem",
+            ShadowRadius = 0.7f
+        });
+    }
+}
+```
+
+- **Payloads.** `HandlePayload` handles what the server sends on a channel the mod declared with `MapPayload` for
+  payloads to the client (`Clientbound` or `Bidirectional`), in the phases it declared; the handler given to
+  `MapPayload` is the server's and isn't called on the client. Handlers run on the connection's packet thread with
+  the connection the payload arrived on, whose `Phase` says where it is and whose `SendPayload` answers.
+  `registry.Connection` is the connection to whichever server the client is playing on, to send from elsewhere.
+  `SendPayload` returns false while the client isn't connected, or when the server didn't agree on the channel for
+  the current phase.
+- **Key bindings.** A binding `ruby:summon_golem` is named `key.ruby.summon_golem`, its translation key, and saved in
+  `options.txt` as `key_key.ruby.summon_golem` like vanilla's; its category `ruby:golems` is translated from
+  `key.category.ruby.golems`. Mods' bindings are listed after vanilla's in the key binds screen, where players rebind
+  them. Keys use vanilla's names: `key.keyboard.r`, `key.keyboard.left.alt`, `key.mouse.middle`, or
+  `key.keyboard.unknown` for none. `Pressed` is raised on the game's thread when the key is pressed in game with no
+  screen open, `IsDown` stays true until it's released, and `Key` is the key it's bound to now. A key bound to a
+  vanilla binding and a mod's does both.
+- **Block tints.** A tinted block's faces whose model gives them a `tintindex` are multiplied by the tint, like
+  vanilla's block colours: the biome's grass, foliage, dry foliage or water colour, blended across nearby biomes with
+  the player's biome blend (grass follows the swamp and dark forest modifiers), or `BlockTint.Fixed(0xRRGGBB)`. Its
+  item is tinted too unless its item definition gives the model `tints` of its own: with vanilla's grass block item
+  colour (the grass colormap at temperature 0.5 and downfall 1), its default foliage colour (`#48B518`), dry foliage
+  colour (`#5C3C32`) or water colour (`#3F76E4`), or the fixed colour.
+- **Entity renderers.** A mod's entity type is drawn with a model layer from `assets/<ns>/models/entity/<path>.json`
+  (`Model = "<ns>:<path>"`) and a texture from `assets/<ns>/textures/entity/...` (`Texture = "<ns>:entity/..."`),
+  scaled by `Scale`, with a shadow of `ShadowRadius` blocks. Without a renderer, or with a model that's missing or
+  doesn't parse (which is logged), its entities aren't drawn. Entities are placed like vanilla's living entities:
+  turned to their body's yaw and tilted as they die or sleep. Parts named `head` turn to where the entity looks, and
+  parts whose names end in `leg` swing as it walks (left and right, and `front` and back, in opposite phases); other
+  parts stay as modelled.
+
+A model layer has the shape of the layers in the client's `client_models.json`, which are vanilla's model layers:
+
+```json
+{
+  "width": 64,
+  "height": 32,
+  "root": {
+    "x": 0, "y": 0, "z": 0, "xRot": 0, "yRot": 0, "zRot": 0, "xScale": 1, "yScale": 1, "zScale": 1,
+    "cubes": [],
+    "children": {
+      "head": {
+        "x": 0, "y": 4, "z": 0, "xRot": 0, "yRot": 0, "zRot": 0, "xScale": 1, "yScale": 1, "zScale": 1,
+        "cubes": [[
+          [[-4, -8, -4, 0.125, 0.25], [-4, 0, -4, 0.125, 0.5], [4, 0, -4, 0.25, 0.5], [4, -8, -4, 0.25, 0.25]]
+        ]],
+        "children": {}
+      }
+    }
+  }
+}
+```
+
+`width` and `height` are the texture's size in pixels. Each part has its pivot (`x`, `y`, `z`, in pixels from its
+parent's), its rotation in radians and its scale, its cubes, and its child parts by name. A cube is a list of faces,
+and a face four vertices `[x, y, z, u, v]`: a position in pixels from the part's pivot and a texture coordinate as a
+fraction of the texture's width and height. Model space is vanilla's: 16 pixels to a block, Y pointing down, and the
+entity's feet at Y 24.
+
+Particle providers and screens for menu types are for later: plugins can't register particle types or menu types on
+the server yet.
