@@ -110,7 +110,7 @@ client. This document describes the design and tracks its progress. The archive 
      features made of them, and nothing keeps them (a reload test checks its load context is collected). Placing a
      feature made of any of a plugin's types, nested ones included, holds a call into the plugin. `BlockSet` moved to
      the API so plugin types can take block lists and tags. Vanilla's tree parts, weighted lists and biome sets
-     followed in Phase 3.5; structure processors stay in Obsidian for now.
+     followed in Phase 3.5, then feature sizes and structure processors.
    - Done, slice 4a: plugins' dimensions. A plugin's `data/<namespace>/dimension` level stem files are read like
      vanilla's, with vanilla's noise generator, vanilla's noise settings and any of vanilla's biome sources
      (`multi_noise` inline or by preset, `fixed`, `checkerboard`, `the_end`), so plugin biomes generate. Each becomes a
@@ -159,11 +159,11 @@ client. This document describes the design and tracks its progress. The archive 
    - Possible later, gaps noted along the way (see [plugin-content.md](plugin-content.md)):
      - adding plugin biomes to vanilla's overworld and nether climate (like TerraBlender), rather than only to
        plugins' own dimensions, deferred until needed;
-     - NeoForge's holder set types (`neoforge:any`, `neoforge:and`, ...) and configured carvers defined inline;
+     - NeoForge's holder set types (`neoforge:any`, `neoforge:and`, ...) and configured carvers defined inline in
+       biome modifiers;
      - in level stems: dimension types and biomes defined inline, `minecraft:flat` and `minecraft:debug`
        generators, and plugin level generators as a stem's `generator`;
      - noises defined inline, a constant `spline`, and a range for a spawn target's `depth`;
-     - structure processors and tree feature sizes in the API;
      - environment attributes with particle options or rich bed rule messages, and the server applying more
        attributes than `monsters_burn`;
      - raids and the end fight in plugins' dimensions, which only the default world has (plugins build their own
@@ -178,6 +178,12 @@ client. This document describes the design and tracks its progress. The archive 
      plugins register their own placers and decorators with `RegisterWorldgenType` and their feature types take
      properties of these types (see [plugin-content.md](plugin-content.md#tree-parts)); vanilla's own placers
      and decorators stay in Obsidian and generate as before.
+   - Done after Phase 3.5: the bases of tree feature sizes (`FeatureSize`) and structure processors
+     (`StructureProcessor`, with `StructureBlockInfo` and `TemplatePlacement`, what a processor sees of its
+     placement) moved to the API, so plugins register sizes for a tree's `minimum_size` and processors for the
+     fossil feature's processor lists. Fallen trees take any tree decorator, vanilla's or a plugin's, with a
+     context of only logs, like vanilla's, and generate as before. Plugin biomes may define configured carvers
+     inline.
    - Phase 3.5, part A (done): NeoForge's spawn and carver biome modifiers (`add_spawns`, `remove_spawns`,
      `add_carvers`, `remove_carvers`; `add_spawn_costs` and `remove_spawn_costs` are read but unused, like vanilla's
      spawn costs), applied to vanilla's and plugins' biomes in NeoForge's phases. The mob spawner spawns from the

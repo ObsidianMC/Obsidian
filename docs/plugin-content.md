@@ -199,7 +199,8 @@ accepts it and left out where vanilla would fail, with a message naming the fiel
   loaded plugin's). A sound vanilla doesn't have is given inline as `{"sound_id": ..., "range": ...}`.
 - A biome is read whole, like vanilla reads it. Its `features` are vanilla's or loaded plugins' placed features by
   identifier or tag, or placed features defined inline (see [World generation features](#world-generation-features)).
-  Its `carvers` are vanilla's or plugins' configured carvers by identifier, or a tag; they can't be defined inline.
+  Its `carvers` are vanilla's or plugins' configured carvers by identifier or tag, or configured carvers defined
+  inline in the `worldgen/configured_carver` format.
   Where vanilla would log and drop a carver, feature or spawner it can't read, the file is left out instead.
 - A dimension type's `timelines` can only be a timeline tag, like `"#minecraft:in_overworld"`: the server sends clients
   the timeline tags but not the timelines.
@@ -484,8 +485,9 @@ ignoring case and underscores, and a single value given for a list is a list of 
   (`{"data": ..., "weight": ...}`, in lists picked from with `WeightedEntry<T>.Pick` like vanilla's weighted lists);
 - vanilla's kinds of worldgen values, which take any type of that kind by its `type`: `IIntProvider` (a number is a
   constant), `IFloatProvider`, `IHeightProvider` and `VerticalAnchor`, `IBlockStateProvider`, `IBlockPredicate` and
-  `IRuleTest`; `ConfiguredFeatureBase` and `PlacedFeature`, by identifier or inline; and vanilla's tree parts,
-  `TrunkPlacer`, `FoliagePlacer`, `RootPlacer` and `TreeDecorator` (see [Tree parts](#tree-parts));
+  `IRuleTest`; `ConfiguredFeatureBase` and `PlacedFeature`, by identifier or inline; vanilla's tree parts,
+  `TrunkPlacer`, `FoliagePlacer`, `RootPlacer`, `TreeDecorator` and `FeatureSize` (see [Tree parts](#tree-parts));
+  and `StructureProcessor` (see [Structure processors](#structure-processors));
 - the plugin's own classes, read as objects with the same rules.
 
 `RegisterWorldgenType<TBase, TValue>` registers a type of another of those kinds, like
@@ -500,14 +502,15 @@ The rules:
 - Plugins' types are only found when registered; attributes like `ConfiguredFeatureClass` on them don't count.
 - The types are gone when the plugin unloads, and the features made of them are left out when features are read
   again then (logged like any file that can't be read). A reload registers them again.
-- Not in the API yet: vanilla's structure processors and feature sizes (a tree's `minimum_size`). Density function,
-  surface rule and biome source types are registered the same way (see [Noise types](#noise-types)).
+- Density function, surface rule and biome source types are registered the same way (see
+  [Noise types](#noise-types)).
 
 ### Tree parts
 
-Vanilla's `minecraft:tree` feature is made of a trunk placer, a foliage placer, an optional root placer and tree
-decorators. Their base classes are in `Obsidian.API.World.Features.Trees`, so a plugin can add its own types of
-each, which vanilla's tree feature and the plugin's own features take, and give its feature types properties of them:
+Vanilla's `minecraft:tree` feature is made of a trunk placer, a foliage placer, an optional root placer, tree
+decorators and a feature size (its `minimum_size`). Their base classes are in `Obsidian.API.World.Features.Trees`, so
+a plugin can add its own types of each, which vanilla's tree feature and the plugin's own features take, and give its
+feature types properties of them:
 
 ```csharp
 using Obsidian.API.World.Features.Trees;
@@ -569,7 +572,54 @@ Placers get the tree being placed as a `TreeContext`, with its level, random, pr
 each block as part of the tree; the protected helpers (`PlaceLog`, `PlaceLeavesRow`, `TryPlaceLeaf`, `PlaceRoot`,
 ...) place blocks like vanilla's. A decorator's `TreeDecoratorContext` has the tree's logs, leaves and roots in
 vanilla's order. Blocks placed through either are part of the tree, so leaves get their `distance` from its logs
-afterwards like vanilla's. Vanilla's own placers and decorators stay in Obsidian.
+afterwards like vanilla's. Vanilla's `minecraft:fallen_tree` takes the same decorators in its `stump_decorators` and
+`log_decorators`; like vanilla's, their context has only the stump's or the log's logs, and no leaves or roots.
+
+A `FeatureSize` gives the radius that must be free around the trunk at each height above its base
+(`GetSizeAtHeight`); with `min_clipped_height`, a tree with less room grows shorter, down to that height, instead of
+not at all. Vanilla's own placers, decorators and sizes stay in Obsidian.
+
+### Structure processors
+
+Vanilla's `minecraft:fossil` feature runs its templates' blocks through processor lists, `fossil_processors` and
+`overlay_processors`: vanilla's lists by identifier, or lists defined inline, as `{"processors": [...]}` or a bare
+list. The `StructureProcessor` base class is in `Obsidian.API.World.Structures`, so a plugin can add processor types,
+which data names by their `processor_type`, and give its feature types properties of them:
+
+```csharp
+using Obsidian.API.World.Structures;
+
+public override void ConfigureRegistry(IPluginRegistry registry) =>
+    registry.RegisterWorldgenType<StructureProcessor, DecayProcessor>("ruby:decay");
+
+// Keeps each template block with a chance of its integrity.
+public sealed class DecayProcessor : StructureProcessor
+{
+    public required float Integrity { get; init; }
+
+    public override StructureBlockInfo? ProcessBlock(
+        IWorldGenLevel level,
+        Vector origin,
+        Vector pivot,
+        StructureBlockInfo original,
+        StructureBlockInfo current,
+        TemplatePlacement placement) =>
+        placement.GetRandom(current.Position).NextFloat() < this.Integrity ? current : null;
+}
+```
+
+```json
+// data/ruby/worldgen/configured_feature/ruby_fossil.json, with vanilla's other fossil fields
+"fossil_processors": [{ "processor_type": "ruby:decay", "integrity": 0.8 }],
+"overlay_processors": "minecraft:fossil_coal"
+```
+
+`ProcessBlock` gets each block at its world position and returns the block to place, or `null` to drop it;
+`FinalizeProcessing` then sees every kept block at once. A processor whose result depends on the template's other
+blocks overrides `ProcessesWholeTemplate`, so the whole template is processed even where only part of it is placed.
+`TemplatePlacement.GetRandom` is vanilla's placement random: the placement's own, or one seeded from the position.
+Processors are shared between threads, so keep them stateless. Plugins can't add `worldgen/processor_list` files
+yet. Vanilla's own processors stay in Obsidian.
 
 ## Noise settings, density functions and noises
 
