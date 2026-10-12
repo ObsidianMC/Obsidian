@@ -26,6 +26,11 @@ internal static partial class PluginTags
 
     private static readonly Lock applying = new();
 
+    // The device names of vanilla's RESERVED_WINDOWS_FILENAMES, matched without case and before any extension.
+    private static readonly FrozenSet<string> windowsDeviceNames = new[] { "com", "clock$", "con", "prn", "aux", "nul" }
+        .Concat(Enumerable.Range(1, 9).SelectMany(digit => new[] { $"com{digit}", $"lpt{digit}" }))
+        .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>
     /// How many times plugins' tags were applied, so a client can tell it has older tags.
     /// </summary>
@@ -114,14 +119,37 @@ internal static partial class PluginTags
 
     /// <summary>
     /// Whether an identifier taken from a data file's path is valid: an identifier whose path also passes vanilla's
-    /// check of resource paths (<c>FileUtil.decomposePath</c>), so no segment is empty, <c>.</c> or <c>..</c>. A
-    /// dimension's folder is made from its identifier, so this also keeps it inside the world.
+    /// check of resource paths (<c>FileUtil.decomposePath</c>), so no segment is empty, <c>.</c> or <c>..</c>, and
+    /// whose namespace is a portable folder name (<see cref="IsPortableName"/>). A dimension's folder is made from its
+    /// identifier, so a namespace like <c>.</c> would share another's folder.
     /// </summary>
-    internal static bool IsFileIdentifier(string identifier) =>
-        IsIdentifier(identifier)
-        && identifier[(identifier.IndexOf(':') + 1)..]
-            .Split('/')
-            .All(segment => segment is not ("" or "." or ".."));
+    internal static bool IsFileIdentifier(string identifier)
+    {
+        if (!IsIdentifier(identifier))
+            return false;
+
+        var colon = identifier.IndexOf(':');
+
+        return IsPortableName(identifier[..colon])
+            && identifier[(colon + 1)..]
+                .Split('/')
+                .All(segment => segment is not ("" or "." or ".."));
+    }
+
+    /// <summary>
+    /// Whether a folder or file name means the same on every system, as vanilla's <c>FileUtil.isPathPartPortable</c>
+    /// decides: Windows drops a trailing dot, so <c>ruby.</c> shares <c>ruby</c>'s folder, and keeps names like
+    /// <c>con</c> or <c>nul.txt</c> for devices. Empty names, <c>.</c> and <c>..</c> aren't portable either.
+    /// </summary>
+    internal static bool IsPortableName(string name)
+    {
+        if (name.Length == 0 || name.EndsWith('.'))
+            return false;
+
+        var stem = name.Split('.', 2)[0];
+
+        return !windowsDeviceNames.Contains(stem);
+    }
 
     /// <summary>
     /// Finds the tag files in a plugin's files, by their paths: <c>data/&lt;namespace&gt;/tags/&lt;registry&gt;/</c>

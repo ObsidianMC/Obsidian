@@ -11,6 +11,9 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
     IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, IWorld world) :
     AbstractLevel(logger, packetBroadcaster, configuration, eventDispatcher, worldGenerator, name, world.Seed), IDimension
 {
+    // The dimensions besides the overworld that vanilla's worlds have.
+    private static readonly string[] vanillaDimensions = ["minecraft:the_nether", "minecraft:the_end"];
+
     public IWorld ParentWorld { get; } = world;
 
     private bool UsesVanillaLayout => this.ParentWorld is World { UsesVanillaLayout: true };
@@ -23,9 +26,10 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
             ? this.ParentWorld.FolderPath
             : Path.Combine(ServerConstants.WorldsPath, ParentWorld.Name);
 
-        var folder = this.UsesVanillaLayout ? VanillaFolder(this.Name) : ObsidianFolder(this.Name);
+        var folder = this.Folder(this.Name);
         this.FolderPath = Path.Combine(worldFolder, folder);
         CheckInWorld(worldFolder, folder, this.FolderPath);
+        this.CheckOwnFolder(worldFolder, folder);
 
         // A dimension is named after its level stem, which plugins' dimensions don't share with their type.
         this.SetDimension(this.Name, codec);
@@ -57,6 +61,44 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
         if (!Path.GetFullPath(path).StartsWith(rootPath, StringComparison.Ordinal))
             throw new InvalidOperationException($"{this.Name}'s folder {path} would be outside {root}.");
     }
+
+    // A dimension needs a folder of its own: two identifiers can map to one folder, like ruby:world and
+    // minecraft:ruby/world in Obsidian's layout, or a name Windows reads differently, like ruby. for ruby. So every
+    // part of the folder must be portable, and it can't be, hold or sit in another dimension's folder: one this world
+    // has, or vanilla's nether's or end's, which may not be loaded yet.
+    private void CheckOwnFolder(string worldFolder, string folder)
+    {
+        if (!folder.Split(Path.DirectorySeparatorChar).All(PluginTags.IsPortableName))
+            throw new InvalidOperationException($"{this.Name}'s folder {folder} isn't a portable name.");
+
+        var others = vanillaDimensions
+            .Where(name => name != this.Name)
+            .Select(name => Path.Combine(worldFolder, this.Folder(name)))
+            .Concat(this.ParentWorld is World world
+                ? world.dimensions.Values
+                    .OfType<Dimension>()
+                    .Where(dimension => dimension != this)
+                    .Select(dimension => dimension.FolderPath)
+                : []);
+
+        var path = WithSeparator(this.FolderPath);
+
+        foreach (var other in others.Select(WithSeparator))
+        {
+            // Windows' folders ignore case, so folders differing only by case count as one.
+            if (path.StartsWith(other, StringComparison.OrdinalIgnoreCase)
+                || other.StartsWith(path, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"{this.Name}'s folder {this.FolderPath} would overlap {other}.");
+            }
+        }
+
+        static string WithSeparator(string path) =>
+            Path.TrimEndingDirectorySeparator(Path.GetFullPath(path)) + Path.DirectorySeparatorChar;
+    }
+
+    private string Folder(string dimension) =>
+        this.UsesVanillaLayout ? VanillaFolder(dimension) : ObsidianFolder(dimension);
 
     /// <summary>
     /// A dimension's folder in a vanilla save (vanilla's <c>DimensionType.getStorageFolder</c>): <c>DIM-1</c> for the

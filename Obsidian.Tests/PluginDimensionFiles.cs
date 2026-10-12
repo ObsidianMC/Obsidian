@@ -208,16 +208,23 @@ public sealed class PluginDimensionFiles : IDisposable
         Assert.True(PluginFeatureFiles.HasDiamondBlocks(saved));
     }
 
-    [Fact(DisplayName = "A file path giving an identifier with an empty, . or .. segment is refused")]
+    [Fact(DisplayName = "A file path giving an identifier with an empty, . or .. segment or namespace is refused")]
     public void RefusesPathsOutOfTheirFolder()
     {
         // data/<ns>/dimension//world.json would be <ns>:/world, whose folder would leave the world's folder.
         var (_, identifier) = Assert.Single(PluginDimensions.FindFiles(["data/stemfiles/dimension//world.json"]));
         Assert.Equal("stemfiles:/world", identifier);
 
+        // data/./dimension/ruby/world.json would be .:ruby/world, sharing ruby:world's folder.
+        var (_, dotted) = Assert.Single(PluginDimensions.FindFiles(["data/./dimension/ruby/world.json"]));
+        Assert.Equal(".:ruby/world", dotted);
+
         string[] identifiers =
         [
             identifier,
+            dotted,
+            "..:world",
+            "ruby.:world",
             "stemfiles:world/",
             "stemfiles:a//b",
             "stemfiles:../world",
