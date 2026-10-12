@@ -403,14 +403,16 @@ public partial class NetworkBuffer : INetStreamWriter
 
         var item = value.AsItem();
 
-        if (value.Count <= 0 || value.IsAir)
+        // An item the connection lacks, like one of the client's mods' the server doesn't run, is written as nothing.
+        var itemId = this.RemoteItemId(item.Id);
+        if (value.Count <= 0 || value.IsAir || itemId < 0)
         {
             this.WriteVarInt(0);
             return;
         }
         WriteVarInt(value.Count);
 
-        WriteVarInt(item.Id);
+        WriteVarInt(itemId);
 
         // Like vanilla's DataComponentPatch: only the components set on the stack. The client knows the item's defaults,
         // and Obsidian's placeholders for them (e.g. a max stack size of 64) would override them.
@@ -420,11 +422,11 @@ public partial class NetworkBuffer : INetStreamWriter
 
         foreach (var component in components)
         {
-            this.WriteVarInt(component.Type);
+            this.WriteComponentType(component.Type);
 
             if (delimitedComponents)
             {
-                var encoded = new NetworkBuffer();
+                var encoded = new NetworkBuffer { IdMaps = this.IdMaps };
                 encoded.WriteDataComponent(component);
                 this.WriteVarInt(encoded.Offset);
                 this.Write(encoded.data.AsSpan(0, encoded.Offset));
@@ -434,8 +436,14 @@ public partial class NetworkBuffer : INetStreamWriter
         }
 
         foreach (var componentType in value.RemoveComponents)
-            this.WriteVarInt(componentType);
+            this.WriteComponentType(componentType);
     }
+
+    // An item's and a data component type's id, in the connection's numbering (see IdMaps).
+    private int RemoteItemId(int id) => this.IdMaps is RegistryIdMaps maps ? maps.Item.ToRemote(id) : id;
+
+    private void WriteComponentType(DataComponentType type) =>
+        this.WriteVarInt(this.IdMaps is RegistryIdMaps maps ? maps.DataComponentType.ToRemote((int)type) : (int)type);
 
     public void WriteUntrustedItemStack(ItemStack? value) => this.WriteItemStack(value, true);
 

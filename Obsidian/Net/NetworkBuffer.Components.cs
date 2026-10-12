@@ -25,12 +25,12 @@ public partial class NetworkBuffer
 
         try
         {
-            var reader = new NetworkBuffer(bytes) { componentDepth = this.componentDepth };
+            var reader = new NetworkBuffer(bytes) { componentDepth = this.componentDepth, IdMaps = this.IdMaps };
             component.Read(reader);
             if (reader.Offset != bytes.Length)
                 throw new InvalidDataException($"The {type} model consumed {reader.Offset} of {bytes.Length} bytes.");
 
-            var normalized = new NetworkBuffer();
+            var normalized = new NetworkBuffer { IdMaps = this.IdMaps };
             component.Write(normalized);
             ComponentEncodings.Add(component, new(bytes, normalized.data.AsSpan(0, normalized.Offset).ToArray()));
             return component;
@@ -48,7 +48,7 @@ public partial class NetworkBuffer
     {
         if (ComponentEncodings.TryGetValue(component, out var encoding))
         {
-            var current = new NetworkBuffer();
+            var current = new NetworkBuffer { IdMaps = this.IdMaps };
             component.Write(current);
             this.Write(current.data.AsSpan(0, current.Offset).SequenceEqual(encoding.Normalized)
                 ? encoding.Original : current.data.AsSpan(0, current.Offset));
@@ -285,7 +285,7 @@ public partial class NetworkBuffer
                         });
                     }));
                     this.SkipOptional(this.SkipNbt);
-                    this.SkipList(() => this.SkipComponent((DataComponentType)this.ReadVarInt()));
+                    this.SkipList(() => this.SkipComponent(this.ReadComponentType()));
                     this.SkipList(() =>
                     {
                         this.SkipBytes(1);
@@ -574,7 +574,7 @@ public partial class NetworkBuffer
         var added = this.ReadComponentCount();
         var removed = this.ReadComponentCount();
         for (var i = 0; i < added; i++)
-            this.SkipComponent((DataComponentType)this.ReadVarInt());
+            this.SkipComponent(this.ReadComponentType());
 
         for (var i = 0; i < removed; i++)
             this.ReadVarInt();

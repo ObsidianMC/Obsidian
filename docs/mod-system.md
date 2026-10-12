@@ -270,7 +270,7 @@ client. This document describes the design and tracks its progress. The archive 
    - Slice 4a, mods on the client (done): the Obsidian client loads `.obby` mods whose side is `client` or `both`
      from its `mods` folder at startup, with the server's archive, metadata and dependency rules (the same code, with
      the client's side), and runs their `ConfigureServices` and `ConfigureRegistry`. Blocks, items and entity types
-     register exactly as on a server, so they get the same ids as on a server running the same mods; commands,
+     register exactly as on a server, with ids after vanilla's in load order; commands,
      events, tags and worldgen are a server's and do nothing there, and the server's lifecycle callbacks aren't
      called. A mod that fails to load is logged and skipped, with the mods that require it. Mods come only from the
      player's folder: servers can't send code. In configuration the client sends its brand (`obsidian`), answers
@@ -280,17 +280,29 @@ client. This document describes the design and tracks its progress. The archive 
      mods' configuration channels with `minecraft:register` before the pong instead. It acknowledges NeoForge's
      `extensible_enum_data` unless the server's mods extended an enum, which it can't, and disconnects then. Like
      NeoForge's client, it requires every registry the sync announced before confirming it and refuses a non-empty
-     snapshot of a registry that is neither one of vanilla's built-in registries nor NeoForge's. It can't remap ids,
-     so it checks each `frozen_registry` snapshot whose ids it reads against its own table: the registries mods add
-     to (blocks, items, entity types) with its mods' content, every other vanilla registry as vanilla numbers it (from
-     the registries report, `Assets/registry_ids.json`; a NeoForge server syncs the vanilla registries whose ids its
-     packets carry), and `neoforge:entity_data_serializers` as empty, since it decodes only vanilla's serializers.
-     NeoForge's other registries number NeoForge's extensions to vanilla's formats, which the client doesn't decode,
-     and aren't checked. A missing entry, an entry only the client has or a different id disconnects it, naming the
-     first few entries, as does a server that syncs nothing while the client's mods added content, or that finishes
-     configuration before the sync it started. NeoForge itself adds attributes, command argument types and slot
-     displays to vanilla's registries, which the client lacks (it couldn't parse NeoForge's command tree anyway), so
-     it refuses plain NeoForge servers too; Obsidian servers sync only the registries plugins add to. Mods' payloads
+     snapshot of a registry that is neither one of vanilla's built-in registries nor NeoForge's. Like NeoForge's
+     client applying a snapshot, it remaps ids: each `frozen_registry` snapshot whose ids it reads is matched by name
+     against its own table (the registries mods add to with its mods' content, every other vanilla registry as
+     vanilla numbers it, from the registries report, `Assets/registry_ids.json`, and `neoforge:entity_data_serializers`
+     as empty, since it decodes only vanilla's serializers), and the server's ids are translated to the client's
+     where packets carry them (`ServerIds`, a per-connection map every packet's buffer carries; identity maps keep
+     the fast path). That covers block states (chunk palettes, whose global palette's bits follow the server's number
+     of states, block updates, particles, entity metadata, falling blocks and level events), blocks, block entity
+     types, items and data component types in item stacks (read and written, so creative slots and clicks use the
+     server's ids), entity types, particle types, menus, mob effects, sound events, attributes, command argument
+     types, slot displays, tags and statistics. Block states aren't synced: like NeoForge, they're numbered from the
+     server's block order, each block with the states the client registered it with. So a server running the same
+     mods in another order, or that reloaded plugins, is accepted. A NeoForge or Obsidian server numbers vanilla's
+     entries like vanilla, so the other vanilla registries it syncs must keep the client's ids. NeoForge's other
+     registries number NeoForge's extensions to vanilla's formats, which the client doesn't decode, and aren't
+     checked. An entry the client lacks disconnects it, naming the first few, as does a server that finishes
+     configuration before the sync it started; entries only the client has are fine, as on NeoForge's client. Without
+     a sync, the server's registries are vanilla's. The maps are forgotten when a new configuration starts. NeoForge
+     itself adds attributes, command argument types and slot displays to vanilla's registries (NeoForgeMod's), which
+     the client knows, after vanilla's, so it joins plain NeoForge servers: it ignores NeoForge's attributes, parses
+     the `neoforge:enum` and `neoforge:modid` arguments like NeoForge writes them and completes them as words the
+     server suggests, and reads NeoForge's fluid slot displays as empty slots. Entries NeoForge mods add that the
+     client lacks still disconnect it. Obsidian servers sync only the registries plugins add to. Mods' payloads
      are dispatched in configuration and play on channels a mod declared for that phase and to the client (on a
      NeoForge server, only agreed ones), and sent with `ClientSession.SendPayload` on the agreed channels (elsewhere,
      on the channels the server registers), never across a change of protocol; since slice 4c, mods handle and send
@@ -327,8 +339,8 @@ client. This document describes the design and tracks its progress. The archive 
      bindings, tints and renderers are its own (in its namespace, for its blocks and entity types); they take effect
      only once `ConfigureClient` returns, and the registry is sealed then. See
      [plugin-content.md](plugin-content.md#client).
-   - Done, particles and menus: the client registers its mods' particle types and menu types with the server's ids
-     and checks the synced `minecraft:particle_type` and `minecraft:menu` snapshots against them. Mods' particles
+   - Done, particles and menus: the client registers its mods' particle types and menu types like the server and
+     maps the synced `minecraft:particle_type` and `minecraft:menu` snapshots to them. Mods' particles
      (read without options) are drawn with the sprites of their definitions and behave like vanilla's base particle,
      or as an `IClientRegistry.RegisterParticleProvider` says (lifetime, gravity, friction, scale, the server's
      velocity kept or randomised, animated sprites). Mods' menus show like a chest with their slots centred, or with

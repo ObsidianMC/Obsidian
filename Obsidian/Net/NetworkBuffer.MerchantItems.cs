@@ -8,23 +8,23 @@ public partial class NetworkBuffer
     /// <summary>Reads vanilla ItemCost: item ID, count, and exact component predicates (no removal count).</summary>
     public TradeItem ReadItemCost()
     {
-        var id = this.ReadVarInt();
+        var id = this.ReadItemId();
         var count = this.ReadVarInt();
         var components = ImmutableArray.CreateBuilder<DataComponent>(this.ReadComponentCount());
         while (components.Count < components.Capacity)
-            components.Add(this.ReadDataComponent((DataComponentType)this.ReadVarInt()));
+            components.Add(this.ReadDataComponent(this.ReadComponentType()));
 
         return new(id, count, components.MoveToImmutable());
     }
 
     public void WriteItemCost(TradeItem value)
     {
-        this.WriteVarInt(value.ID);
+        this.WriteVarInt(this.RemoteItemId(value.ID));
         this.WriteVarInt(value.Count);
         this.WriteVarInt(value.Components.Length);
         foreach (var component in value.Components)
         {
-            this.WriteVarInt(component.Type);
+            this.WriteComponentType(component.Type);
             this.WriteDataComponent(component);
         }
     }

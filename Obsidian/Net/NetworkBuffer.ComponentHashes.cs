@@ -20,7 +20,7 @@ public partial class NetworkBuffer
     /// False means the value needs an unsupported codec or an unavailable registry entry.</summary>
     public bool TryHashDataComponent(DataComponent component, out int hash)
     {
-        var buffer = new NetworkBuffer { ComponentRegistryName = this.ComponentRegistryName };
+        var buffer = new NetworkBuffer { ComponentRegistryName = this.ComponentRegistryName, IdMaps = this.IdMaps };
         buffer.WriteDataComponent(component);
         buffer.Reset();
         buffer.SkipComponent(component.Type);
@@ -57,18 +57,18 @@ public partial class NetworkBuffer
         }
 
         this.WriteBoolean(true);
-        this.WriteVarInt(stack.Holder.Id);
+        this.WriteVarInt(this.RemoteItemId(stack.Holder.Id));
         this.WriteVarInt(stack.Count);
         this.WriteVarInt(hashes.Count);
         foreach (var (type, hash) in hashes)
         {
-            this.WriteVarInt(type);
+            this.WriteComponentType(type);
             this.WriteInt(hash);
         }
 
         this.WriteVarInt(stack.RemoveComponents.Count);
         foreach (var type in stack.RemoveComponents)
-            this.WriteVarInt(type);
+            this.WriteComponentType(type);
     }
 
     /// <summary>Writes already computed hashes, for relaying or capturing ContainerClick values.</summary>
@@ -78,18 +78,18 @@ public partial class NetworkBuffer
         if (stack is null)
             return;
 
-        this.WriteVarInt(stack.Holder.Id);
+        this.WriteVarInt(this.RemoteItemId(stack.Holder.Id));
         this.WriteVarInt(stack.Count);
         this.WriteVarInt(stack.HashedComponents.Count);
         foreach (var (type, hash) in stack.HashedComponents)
         {
-            this.WriteVarInt(type);
+            this.WriteComponentType(type);
             this.WriteInt(hash);
         }
 
         this.WriteVarInt(stack.ComponentsToRemove.Count);
         foreach (var type in stack.ComponentsToRemove)
-            this.WriteVarInt(type);
+            this.WriteComponentType(type);
     }
 
     private sealed class ReceivedHashedStack(Item holder, int count, Func<string, int, string?>? registryNames) : IHashedItemStack
@@ -127,7 +127,7 @@ public partial class NetworkBuffer
         {
             "minecraft:potion" when Enum.IsDefined((Potion)id) => "minecraft:" + ((Potion)id).ToString().ToSnakeCase(),
             "minecraft:mob_effect" when Enum.IsDefined((MobEffect)id) => "minecraft:" + ((MobEffect)id).ToString().ToSnakeCase(),
-            "minecraft:item" => ItemsRegistry.Get(id).UnlocalizedName,
+            "minecraft:item" => ItemsRegistry.Get(this.IdMaps?.Item.ToLocal(id) ?? id).UnlocalizedName,
             "minecraft:enchantment" when id >= 0 && id < EnchantmentsRegistry.All.Count => EnchantmentsRegistry.All[id].Identifier,
             _ => throw new UnsupportedComponentHashException()
         };
@@ -283,7 +283,7 @@ public partial class NetworkBuffer
                 if (this.ReadBoolean())
                     tooltip.Add(("hide_tooltip", H.Boolean(true)));
 
-                var hidden = this.HashList(() => H.String(OpaqueDataComponent.GetIdentifier((DataComponentType)this.ReadVarInt())));
+                var hidden = this.HashList(() => H.String(OpaqueDataComponent.GetIdentifier(this.ReadComponentType())));
                 if (hidden.Length > 0)
                     tooltip.Add(("hidden_components", H.List(hidden)));
 
@@ -420,12 +420,12 @@ public partial class NetworkBuffer
         var patch = new List<(int, int)>();
         for (var i = 0; i < added; i++)
         {
-            var type = (DataComponentType)this.ReadVarInt();
+            var type = this.ReadComponentType();
             patch.Add((H.String(OpaqueDataComponent.GetIdentifier(type)), this.HashComponent(type)));
         }
 
         for (var i = 0; i < removed; i++)
-            patch.Add((H.String("!" + OpaqueDataComponent.GetIdentifier((DataComponentType)this.ReadVarInt())), H.Record()));
+            patch.Add((H.String("!" + OpaqueDataComponent.GetIdentifier(this.ReadComponentType())), H.Record()));
 
         if (patch.Count > 0)
             fields.Add(("components", H.Map(patch)));
