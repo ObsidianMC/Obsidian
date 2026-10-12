@@ -3,14 +3,20 @@ using Obsidian.API;
 using Obsidian.API.Registries;
 using Obsidian.Nbt;
 using Obsidian.Plugins;
+using Obsidian.Plugins.Archives;
 using Obsidian.Registries;
+using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Structures;
 using Obsidian.WorldData.Structures.Placement;
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using Xunit;
@@ -205,6 +211,64 @@ public class PluginStructureFiles
         var again = manager.GetStarts(0, 0).Single(start => start.Structure.Identifier == Tower);
         Assert.NotSame(tower, again);
         Assert.True(again.IsStateRestored);
+    }
+
+    [Fact(DisplayName = "A template declaring more than its data holds, or nested too deeply, is rejected unread")]
+    public void RejectsHostileTemplates()
+    {
+        // A palette of int.MaxValue block states, in a few bytes.
+        var palette = new MemoryStream();
+        Header(palette, NbtTagType.List, "palette");
+        palette.WriteByte((byte)NbtTagType.Compound);
+        palette.Write([0x7F, 0xFF, 0xFF, 0xFF]);
+
+        // Lists in lists, far deeper than vanilla's reader allows.
+        var nested = new MemoryStream();
+        Header(nested, NbtTagType.List, "deep");
+        for (var i = 0; i < 2_000; i++)
+        {
+            nested.WriteByte((byte)NbtTagType.List);
+            nested.Write([0, 0, 0, 1]);
+        }
+
+        nested.WriteByte((byte)NbtTagType.End);
+        nested.Write([0, 0, 0, 0]);
+
+        foreach (var nbt in (MemoryStream[])[palette, nested])
+        {
+            nbt.WriteByte((byte)NbtTagType.End);
+
+            var gzipped = new MemoryStream();
+            using (var gzip = new GZipStream(gzipped, CompressionLevel.Fastest, leaveOpen: true))
+                gzip.Write(nbt.ToArray());
+
+            Assert.Throws<InvalidDataException>(() => PluginStructures.ParseTemplate(
+                Tower,
+                "test",
+                gzipped.ToArray(),
+                DataPackLimits.Default.FileSize));
+        }
+
+        // The root compound, without a name, then a field's type and name.
+        static void Header(MemoryStream stream, NbtTagType type, string name)
+        {
+            stream.Write([(byte)NbtTagType.Compound, 0, 0, (byte)type, 0, (byte)name.Length]);
+            stream.Write(Encoding.ASCII.GetBytes(name));
+        }
+    }
+
+    [Fact(DisplayName = "A processor list file may be a bare list of processors, as vanilla's codec reads it")]
+    public void ReadsBareProcessorLists()
+    {
+        var file = PluginFeatures.Parse(
+            PluginFeatures.ProcessorList,
+            "structuretest:decay",
+            "test",
+            """[{ "processor_type": "minecraft:block_rot", "integrity": 0.5 }]"""u8);
+
+        var features = PluginFeatures.Build([file], [], [], NullLogger.Instance, dimensions: []);
+
+        Assert.Single(features.ProcessorLists["structuretest:decay"].Processors);
     }
 
     private static WorldgenStructures Build(StructureFile[] files) => PluginStructures.Build(

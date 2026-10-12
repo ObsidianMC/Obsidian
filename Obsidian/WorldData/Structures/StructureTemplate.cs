@@ -632,10 +632,14 @@ public sealed class StructureTemplate
     /// <see cref="LoadTags"/> without building tags for the whole template: the fields are read as they come, and only
     /// block and entity data become tags.
     /// </summary>
-    /// <remarks>Field names are compared as bytes; only values that are kept are read as strings.</remarks>
+    /// <remarks>
+    /// Field names are compared as bytes; only values that are kept are read as strings. What's read is bounded by
+    /// <see cref="ReadLimits"/>, so that a small file, such as a plugin's or data pack's, can't exhaust memory.
+    /// </remarks>
     private static StructureTemplate LoadFields(Stream stream)
     {
         var reader = new NbtReader(stream);
+        var limits = new ReadLimits(stream);
         if ((NbtTagType)reader.ReadByte() != NbtTagType.Compound)
             throw new InvalidDataException("A structure template's root isn't a compound.");
 
@@ -643,6 +647,7 @@ public sealed class StructureTemplate
         reader.ReadString();
         var size = Vector.Zero;
         var blocks = new List<TemplateBlock>();
+        var blockEntries = 0L;
         List<List<IBlock>>? paletteStates = null;
         List<IBlock>? singlePaletteStates = null;
         var entities = new List<StructureEntityInfo>();
@@ -656,73 +661,156 @@ public sealed class StructureTemplate
             var name = ReadFieldName(reader, nameBuffer);
             if (type != NbtTagType.List)
             {
-                SkipPayload(reader, type);
+                SkipPayload(reader, type, limits, 1);
             }
             else if (name.SequenceEqual("size"u8))
             {
-                size = ReadVector(reader);
+                size = ReadVector(reader, limits);
             }
             else if (name.SequenceEqual("blocks"u8))
             {
-                var (elementType, count) = ReadListHeader(reader);
+                var before = limits.Entries;
+                var (elementType, count) = ReadListHeader(reader, limits);
+                limits.Charge(count);
+
                 for (var i = 0; i < count; i++)
                 {
                     if (elementType == NbtTagType.Compound)
-                        blocks.Add(ReadBlock(reader));
+                        blocks.Add(ReadBlock(reader, limits));
                     else
-                        SkipPayload(reader, elementType);
+                        SkipPayload(reader, elementType, limits, 2);
                 }
+
+                blockEntries += limits.Entries - before;
             }
             else if (name.SequenceEqual("palette"u8))
             {
-                singlePaletteStates = ReadPaletteStates(reader);
+                singlePaletteStates = ReadPaletteStates(reader, limits);
             }
             else if (name.SequenceEqual("palettes"u8))
             {
-                paletteStates = [];
-                var (elementType, count) = ReadListHeader(reader);
+                var (elementType, count) = ReadListHeader(reader, limits);
+                limits.Charge(count);
+                paletteStates = new List<List<IBlock>>(count);
+
                 for (var i = 0; i < count; i++)
                 {
                     if (elementType == NbtTagType.List)
-                        paletteStates.Add(ReadPaletteStates(reader));
+                        paletteStates.Add(ReadPaletteStates(reader, limits));
                     else
-                        SkipPayload(reader, elementType);
+                        SkipPayload(reader, elementType, limits, 2);
                 }
             }
             else if (name.SequenceEqual("entities"u8))
             {
-                var (elementType, count) = ReadListHeader(reader);
+                var (elementType, count) = ReadListHeader(reader, limits);
+                limits.Charge(count);
+
                 for (var i = 0; i < count; i++)
                 {
                     if (elementType != NbtTagType.Compound)
                     {
-                        SkipPayload(reader, elementType);
+                        SkipPayload(reader, elementType, limits, 2);
                         continue;
                     }
 
-                    var entity = ReadEntity(reader);
+                    var entity = ReadEntity(reader, limits);
                     if (entity is not null)
                         entities.Add(entity);
                 }
             }
             else
             {
-                SkipPayload(reader, type);
+                SkipPayload(reader, type, limits, 1);
             }
         }
 
+        // Each palette copies the blocks, with their data.
         var palettes = new List<Palette>();
         if (paletteStates is not null)
         {
+            limits.Charge(paletteStates.Count * blockEntries);
             foreach (var states in paletteStates)
                 palettes.Add(BuildPalette(states, blocks));
         }
         else if (singlePaletteStates is not null)
         {
+            limits.Charge(blockEntries);
             palettes.Add(BuildPalette(singlePaletteStates, blocks));
         }
 
         return new StructureTemplate(size, palettes, entities);
+    }
+
+    /// <summary>
+    /// Bounds what reading a template's fields allocates, so that a small file can't make the reader allocate far
+    /// more than its size: each count is checked against the bytes left before anything is allocated for it, nesting
+    /// is limited like vanilla's NBT reader limits it, and the entries kept (list elements, compound fields, and each
+    /// palette's copy of the blocks) count against <see cref="MaxEntries"/>.
+    /// </summary>
+    private sealed class ReadLimits(Stream stream)
+    {
+        /// <summary>
+        /// Far more than vanilla's largest templates, or the 48 by 48 by 48 blocks a structure block saves, need.
+        /// </summary>
+        public const long MaxEntries = 1 << 22;
+
+        /// <summary>
+        /// The deepest nesting of compounds and lists vanilla's NBT reader accepts.
+        /// </summary>
+        public const int MaxDepth = 512;
+
+        /// <summary>
+        /// The entries counted so far.
+        /// </summary>
+        public long Entries { get; private set; }
+
+        /// <exception cref="InvalidDataException">The template has more than <see cref="MaxEntries"/>.</exception>
+        public void Charge(long entries)
+        {
+            this.Entries += entries;
+            if (this.Entries > MaxEntries)
+                throw new InvalidDataException($"A structure template has more than {MaxEntries} entries.");
+        }
+
+        /// <summary>
+        /// Checks a list's or array's element count against the bytes left, which each element needs at least
+        /// <paramref name="elementSize"/> of.
+        /// </summary>
+        /// <exception cref="InvalidDataException">The count is negative, or larger than the data left.</exception>
+        public int Count(int count, int elementSize)
+        {
+            if (count < 0)
+                throw new InvalidDataException($"A structure template has a negative count ({count}).");
+
+            if ((long)count * elementSize > stream.Length - stream.Position)
+                throw new InvalidDataException($"A structure template has {count} elements, more than its data holds.");
+
+            return count;
+        }
+
+        /// <exception cref="InvalidDataException">
+        /// The template is nested deeper than <see cref="MaxDepth"/>.
+        /// </exception>
+        public static void CheckDepth(int depth)
+        {
+            if (depth > MaxDepth)
+                throw new InvalidDataException($"A structure template is nested deeper than {MaxDepth}.");
+        }
+
+        /// <summary>
+        /// The fewest bytes a value of the type takes, after its list's or field's header.
+        /// </summary>
+        public static int MinimumSize(NbtTagType type) => type switch
+        {
+            NbtTagType.Byte or NbtTagType.Compound => 1,
+            NbtTagType.Short or NbtTagType.String => 2,
+            NbtTagType.Int or NbtTagType.Float => 4,
+            NbtTagType.ByteArray or NbtTagType.IntArray or NbtTagType.LongArray => 4,
+            NbtTagType.Long or NbtTagType.Double => 8,
+            NbtTagType.List => 5,
+            _ => throw new InvalidDataException($"A structure template has a list of unknown NBT tag type {type}.")
+        };
     }
 
     // The longest field name compared; longer names match none of the fields read.
@@ -746,14 +834,19 @@ public sealed class StructureTemplate
         return name;
     }
 
-    private static (NbtTagType ElementType, int Count) ReadListHeader(NbtReader reader)
+    // A list's element type and count, checked against the data left; an empty list may have no element type.
+    private static (NbtTagType ElementType, int Count) ReadListHeader(NbtReader reader, ReadLimits limits)
     {
         var type = (NbtTagType)reader.ReadByte();
-        return (type, reader.ReadInt32());
+        var count = reader.ReadInt32();
+        if (type == NbtTagType.End && count <= 0)
+            return (type, 0);
+
+        return (type, limits.Count(count, ReadLimits.MinimumSize(type)));
     }
 
     // The fields of one compound element of "blocks".
-    private static TemplateBlock ReadBlock(NbtReader reader)
+    private static TemplateBlock ReadBlock(NbtReader reader, ReadLimits limits)
     {
         Span<byte> nameBuffer = stackalloc byte[MaxFieldName];
         var position = Vector.Zero;
@@ -768,28 +861,30 @@ public sealed class StructureTemplate
 
             var name = ReadFieldName(reader, nameBuffer);
             if (type == NbtTagType.List && name.SequenceEqual("pos"u8))
-                position = ReadVector(reader);
+                position = ReadVector(reader, limits);
             else if (type == NbtTagType.Int && name.SequenceEqual("state"u8))
                 state = reader.ReadInt32();
             else if (type == NbtTagType.Compound && name.SequenceEqual("nbt"u8))
-                nbt = ReadTagAt(reader, start);
+                nbt = ReadTagAt(reader, start, limits, 3);
             else
-                SkipPayload(reader, type);
+                SkipPayload(reader, type, limits, 3);
         }
 
         return new TemplateBlock(position, state, nbt);
     }
 
-    private static List<IBlock> ReadPaletteStates(NbtReader reader)
+    private static List<IBlock> ReadPaletteStates(NbtReader reader, ReadLimits limits)
     {
         Span<byte> nameBuffer = stackalloc byte[MaxFieldName];
-        var (elementType, count) = ReadListHeader(reader);
-        var states = new List<IBlock>(Math.Max(count, 0));
+        var (elementType, count) = ReadListHeader(reader, limits);
+        limits.Charge(count);
+
+        var states = new List<IBlock>(count);
         for (var i = 0; i < count; i++)
         {
             if (elementType != NbtTagType.Compound)
             {
-                SkipPayload(reader, elementType);
+                SkipPayload(reader, elementType, limits, 3);
                 continue;
             }
 
@@ -805,9 +900,9 @@ public sealed class StructureTemplate
                 if (type == NbtTagType.String && name.SequenceEqual("Name"u8))
                     blockName = reader.ReadString();
                 else if (type == NbtTagType.Compound && name.SequenceEqual("Properties"u8))
-                    properties = ReadProperties(reader);
+                    properties = ReadProperties(reader, limits);
                 else
-                    SkipPayload(reader, type);
+                    SkipPayload(reader, type, limits, 4);
             }
 
             states.Add(BlockStateProperties.GetState(blockName!, properties));
@@ -816,7 +911,7 @@ public sealed class StructureTemplate
         return states;
     }
 
-    private static Dictionary<string, string> ReadProperties(NbtReader reader)
+    private static Dictionary<string, string> ReadProperties(NbtReader reader, ReadLimits limits)
     {
         var properties = new Dictionary<string, string>();
         while (true)
@@ -829,13 +924,15 @@ public sealed class StructureTemplate
             if (type != NbtTagType.String)
                 throw new InvalidDataException($"Block property '{property}' isn't a string.");
 
+            limits.Charge(1);
             properties.Add(property, reader.ReadString());
         }
     }
 
-    private static StructureEntityInfo? ReadEntity(NbtReader reader)
+    private static StructureEntityInfo? ReadEntity(NbtReader reader, ReadLimits limits)
     {
         Span<byte> nameBuffer = stackalloc byte[MaxFieldName];
+        var entriesBefore = limits.Entries;
         var position = default(EntityPosition);
         var blockPosition = Vector.Zero;
         NbtCompound? nbt = null;
@@ -848,31 +945,38 @@ public sealed class StructureTemplate
 
             var name = ReadFieldName(reader, nameBuffer);
             if (type == NbtTagType.List && name.SequenceEqual("pos"u8))
-                position = ReadEntityPosition(reader);
+                position = ReadEntityPosition(reader, limits);
             else if (type == NbtTagType.List && name.SequenceEqual("blockPos"u8))
-                blockPosition = ReadVector(reader);
+                blockPosition = ReadVector(reader, limits);
             else if (type == NbtTagType.Compound && name.SequenceEqual("nbt"u8))
-                nbt = ReadTagAt(reader, start);
+                nbt = ReadTagAt(reader, start, limits, 3);
             else
-                SkipPayload(reader, type);
+                SkipPayload(reader, type, limits, 3);
         }
 
-        return nbt is null ? null : new StructureEntityInfo(position, blockPosition, NbtCopy.Copy(nbt));
+        // The copy kept counts too.
+        if (nbt is null)
+            return null;
+
+        limits.Charge(limits.Entries - entriesBefore);
+        return new StructureEntityInfo(position, blockPosition, NbtCopy.Copy(nbt));
     }
 
-    // Reads the compound field that starts at the position as a whole tag, like the tag tree would hold it.
-    private static NbtCompound ReadTagAt(NbtReader reader, long start)
+    // Reads the compound field that starts at the position as a whole tag, like the tag tree would hold it, once its
+    // payload, just past the field's name, is checked within the limits as it's skipped.
+    private static NbtCompound ReadTagAt(NbtReader reader, long start, ReadLimits limits, int depth)
     {
+        SkipPayload(reader, NbtTagType.Compound, limits, depth);
         reader.BaseStream.Position = start;
         return (NbtCompound)reader.ReadNextTag()!;
     }
 
     // A list of ints like ReadVector(NbtList): the first three, zero when missing.
-    private static Vector ReadVector(NbtReader reader)
+    private static Vector ReadVector(NbtReader reader, ReadLimits limits)
     {
         Span<int> values = stackalloc int[3];
         values.Clear();
-        var (type, count) = ReadListHeader(reader);
+        var (type, count) = ReadListHeader(reader, limits);
         for (var i = 0; i < count; i++)
         {
             if (type != NbtTagType.Int)
@@ -887,11 +991,11 @@ public sealed class StructureTemplate
     }
 
     // A list of doubles like DoubleAt: the first three, zero when missing.
-    private static EntityPosition ReadEntityPosition(NbtReader reader)
+    private static EntityPosition ReadEntityPosition(NbtReader reader, ReadLimits limits)
     {
         Span<double> values = stackalloc double[3];
         values.Clear();
-        var (type, count) = ReadListHeader(reader);
+        var (type, count) = ReadListHeader(reader, limits);
         for (var i = 0; i < count; i++)
         {
             if (type != NbtTagType.Double)
@@ -905,7 +1009,8 @@ public sealed class StructureTemplate
         return new EntityPosition(values[0], values[1], values[2]);
     }
 
-    private static void SkipPayload(NbtReader reader, NbtTagType type)
+    // Skips a value, checking it within the limits, as the tags reading it would hold count; depth is its nesting.
+    private static void SkipPayload(NbtReader reader, NbtTagType type, ReadLimits limits, int depth)
     {
         var stream = reader.BaseStream;
         switch (type)
@@ -923,32 +1028,37 @@ public sealed class StructureTemplate
                 stream.Seek(8, SeekOrigin.Current);
                 break;
             case NbtTagType.ByteArray:
-                stream.Seek(Math.Max(reader.ReadInt32(), 0), SeekOrigin.Current);
+                stream.Seek(limits.Count(reader.ReadInt32(), 1), SeekOrigin.Current);
                 break;
             case NbtTagType.IntArray:
-                stream.Seek(Math.Max(reader.ReadInt32(), 0) * 4L, SeekOrigin.Current);
+                stream.Seek(limits.Count(reader.ReadInt32(), 4) * 4L, SeekOrigin.Current);
                 break;
             case NbtTagType.LongArray:
-                stream.Seek(Math.Max(reader.ReadInt32(), 0) * 8L, SeekOrigin.Current);
+                stream.Seek(limits.Count(reader.ReadInt32(), 8) * 8L, SeekOrigin.Current);
                 break;
             case NbtTagType.String:
                 stream.Seek(Math.Max((int)reader.ReadInt16(), 0), SeekOrigin.Current);
                 break;
             case NbtTagType.List:
-                var (elementType, count) = ReadListHeader(reader);
+                ReadLimits.CheckDepth(depth);
+                var (elementType, count) = ReadListHeader(reader, limits);
+                limits.Charge(count);
+
                 for (var i = 0; i < count; i++)
-                    SkipPayload(reader, elementType);
+                    SkipPayload(reader, elementType, limits, depth + 1);
 
                 break;
             case NbtTagType.Compound:
+                ReadLimits.CheckDepth(depth);
                 while (true)
                 {
                     var fieldType = (NbtTagType)reader.ReadByte();
                     if (fieldType == NbtTagType.End)
                         break;
 
+                    limits.Charge(1);
                     stream.Seek(Math.Max((int)reader.ReadInt16(), 0), SeekOrigin.Current);
-                    SkipPayload(reader, fieldType);
+                    SkipPayload(reader, fieldType, limits, depth + 1);
                 }
 
                 break;

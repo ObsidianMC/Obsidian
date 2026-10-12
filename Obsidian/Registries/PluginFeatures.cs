@@ -123,8 +123,9 @@ internal static partial class PluginFeatures
     }
 
     /// <summary>
-    /// Reads a feature or biome modifier file. Features are only checked to be JSON objects here: they're read when
-    /// applied, since they may refer to other plugins' features.
+    /// Reads a feature or biome modifier file. Features are only checked to be JSON objects here (or lists, for
+    /// processor lists, which vanilla's codec reads either way): they're read when applied, since they may refer to
+    /// other plugins' features.
     /// </summary>
     /// <param name="registry">One of <see cref="Registries"/>.</param>
     /// <param name="identifier">The entry's identifier, like <c>ruby:ore_ruby</c>.</param>
@@ -138,7 +139,9 @@ internal static partial class PluginFeatures
         try
         {
             using var document = JsonDocument.Parse(json.ToArray(), documentOptions);
-            var root = CodecJson.Object(document.RootElement, "").Clone();
+            var root = registry == ProcessorList && document.RootElement.ValueKind == JsonValueKind.Array
+                ? document.RootElement.Clone()
+                : CodecJson.Object(document.RootElement, "").Clone();
 
             var modifier = registry switch
             {
