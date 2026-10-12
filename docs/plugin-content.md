@@ -101,9 +101,9 @@ Tags are data pack tag files: `data/<namespace>/tags/block/<path>.json`, `tags/i
 `values` (identifiers, `#` followed by a tag, or `{ "id": ..., "required": false }`), `replace`, and NeoForge's
 `remove`. A
 file for a vanilla tag adds to it, for example `data/minecraft/tags/block/mineable/pickaxe.json` to mine a block with a
-pickaxe; other files make new tags, like the shared `c:` ones. Obsidian merges vanilla's tags with the loaded plugins'
-files in load order whenever a plugin loads or unloads, and vanilla's `Tag` objects hold the result, so server code
-using them sees the plugins' entries. `IPluginRegistry.AddToTag` adds entries from code.
+pickaxe; other files make new tags, or add to Obsidian's [convention tags](#convention-tags). Obsidian merges vanilla's
+tags with the loaded plugins' files in load order whenever a plugin loads or unloads, and vanilla's `Tag` objects hold
+the result, so server code using them sees the plugins' entries. `IPluginRegistry.AddToTag` adds entries from code.
 
 The generator makes a `RubyTags` class with a `TagKey` per tag of the plugin's namespaces:
 
@@ -123,6 +123,40 @@ modifiers and level stems can name a plugin's biome tags. Clients are sent the b
 vanilla sends them. Placed feature and configured carver tags (vanilla has none) aren't sent: they're for biomes'
 `features` and `carvers` and biome modifiers. Tags are applied after plugins' biomes are registered, and may name the
 loaded plugins' placed features and carvers.
+
+### Convention tags
+
+Obsidian ships tags in the shared `c` namespace that NeoForge's and Fabric's mods use, filled with vanilla's entries,
+so plugins can name and extend common groups without depending on each other: a biome modifier on `#c:is_overworld`,
+a check of `#c:ingots/iron`, or a plugin's `data/c/tags/block/ores.json` (and `tags/item/ores.json`) adding its ore
+to `#c:ores`. They act as a built-in data pack between vanilla's tags and plugins' files: plugins add to them or
+`replace` them, they exist with no plugins loaded, `TagKey`s and `TagsRegistry.TryGet` find them, and clients are sent
+them with vanilla's tags. They're standard tag files, kept in `Obsidian/Registries/convention_tags.json` by registry
+and path, and refer to vanilla's tags where those hold the set, so a plugin's entry in `#minecraft:iron_ores` is in
+`#c:ores/iron` too.
+
+- Blocks and items: `c:ores` and `c:ores/<material>` (coal, copper, diamond, emerald, gold, iron, lapis, redstone,
+  quartz, netherite_scrap), `c:ores_in_ground/<stone|deepslate|netherrack>`, `c:storage_blocks/<material>`,
+  `c:chests` (`/wooden`, `/trapped`, `/ender`, `/copper`), `c:barrels`, `c:glass_blocks`, `c:glass_panes`, `c:stones`,
+  `c:cobblestones`, `c:sands`, `c:gravels`, `c:obsidians`, `c:netherracks`, `c:end_stones`, `c:bookshelves`,
+  `c:fences`, `c:fence_gates`, `c:stripped_logs`, `c:stripped_woods`, `c:concretes`, `c:glazed_terracottas`,
+  `c:player_workstations/<crafting_tables|furnaces>` and `c:dyed/<color>`; blocks also `c:crops`.
+- Items: `c:ingots`, `c:nuggets`, `c:gems`, `c:raw_materials` and `c:dusts`, each with `/<material>`,
+  `c:dyes/<color>`, `c:tools` and `c:tools/<kind>` (bow, brush, crossbow, fishing_rod, igniter, mace, shear, shield,
+  spear, mining_tool, melee_weapon, ranged_weapon), `c:armors`, `c:foods/...`, `c:crops/...`, `c:seeds/...`,
+  `c:rods/...`, `c:buckets/...`, `c:bricks/...`, `c:music_discs`, `c:potions`, and single materials like
+  `c:strings`, `c:leathers`, `c:slime_balls` and `c:ender_pearls`.
+- Entity types: `c:bosses`, `c:minecarts`, `c:boats`, and `c:capturing_not_supported` and
+  `c:teleporting_not_supported`, which hold the bosses.
+- Biomes: `c:is_overworld`, `c:is_nether`, `c:is_end` and `c:is_void`; `c:is_hot` (warmer than 0.9, the warm ocean
+  and the nether), `c:is_cold` (0.3 or colder, and cold oceans), `c:is_wet` and `c:is_dry` (no rain, the nether and the
+  end), each with `/overworld`, `/nether` or `/end` parts; and `c:is_forest`, `c:is_ocean`, `c:is_deep_ocean`,
+  `c:is_shallow_ocean`, `c:is_river`, `c:is_beach`, `c:is_mountain` (`/peak`, `/slope`), `c:is_desert`,
+  `c:is_plains`, `c:is_savanna`, `c:is_jungle`, `c:is_snowy`, `c:is_taiga`, `c:is_swamp`, `c:is_badlands`,
+  `c:is_cave`, `c:is_mushroom` and a few more, like `c:is_windswept` and `c:is_outer_end_island`.
+
+Plugins can't tag fluids, so there are no `c:` fluid tags. Like vanilla's data packs, a convention tag referring to a
+vanilla tag that fails fails too.
 
 ## Biomes, dimension types and damage types
 
