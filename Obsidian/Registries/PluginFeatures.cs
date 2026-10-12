@@ -261,44 +261,41 @@ internal static partial class PluginFeatures
         }
 
         // Every modifier's additions are applied before any modifier's removals, each in load order, so a removal
-        // applies to what any plugin added. A modifier's features and carvers that can't be resolved are left out
-        // together, in both phases. Spawns and spawn costs are PluginSpawns'.
-        var modifiers = kept.Where(file => file.Modifier is not null).ToList();
-        var failed = new HashSet<FeatureFile>();
+        // applies to what any plugin added. Everything a modifier names is resolved first, so one whose features or
+        // carvers can't be resolved is left out whole. Spawns and spawn costs are PluginSpawns'.
+        var modifiers = new List<ResolvedModifier>();
+
+        foreach (var file in kept.Where(file => file.Modifier is not null))
+        {
+            try
+            {
+                var modifier = file.Modifier!;
+
+                modifiers.Add(new ResolvedModifier(
+                    ResolveBiomes(modifier),
+                    resolver.StepFeatures(modifier.Add.Features, "add.features"),
+                    carvers.Resolve(modifier.Add.Carvers, "add.carvers"),
+                    resolver.StepFeatures(modifier.Remove.Features, "remove.features"),
+                    carvers.Resolve(modifier.Remove.Carvers, "remove.carvers")));
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.Invalid(logger, file.Source, ex.Message);
+            }
+        }
+
         var unmodified = biomeFeatures.Snapshot();
 
-        foreach (var adding in (ReadOnlySpan<bool>)[true, false])
+        foreach (var modifier in modifiers)
         {
-            foreach (var file in modifiers.Where(file => !failed.Contains(file)))
-            {
-                try
-                {
-                    var modifier = file.Modifier!;
-                    var changed = ResolveBiomes(modifier);
+            biomeFeatures.Add(modifier.Biomes, modifier.AddedFeatures);
+            biomeCarvers.Add(modifier.Biomes, modifier.AddedCarvers);
+        }
 
-                    if (adding)
-                    {
-                        var added = resolver.StepFeatures(modifier.Add.Features, "add.features");
-                        var addedCarvers = carvers.Resolve(modifier.Add.Carvers, "add.carvers");
-
-                        biomeFeatures.Add(changed, added);
-                        biomeCarvers.Add(changed, addedCarvers);
-                    }
-                    else
-                    {
-                        var removed = resolver.StepFeatures(modifier.Remove.Features, "remove.features");
-                        var removedCarvers = carvers.Resolve(modifier.Remove.Carvers, "remove.carvers");
-
-                        biomeFeatures.Remove(changed, removed);
-                        biomeCarvers.Remove(changed, removedCarvers);
-                    }
-                }
-                catch (InvalidDataException ex)
-                {
-                    failed.Add(file);
-                    Log.Invalid(logger, file.Source, ex.Message);
-                }
-            }
+        foreach (var modifier in modifiers)
+        {
+            biomeFeatures.Remove(modifier.Biomes, modifier.RemovedFeatures);
+            biomeCarvers.Remove(modifier.Biomes, modifier.RemovedCarvers);
         }
 
         var unordered = biomeFeatures.Changed
@@ -787,6 +784,14 @@ internal static partial class PluginFeatures
             return changed;
         }
     }
+
+    // A biome modifier's biomes, features and carvers, resolved before any modifier is applied.
+    private sealed record ResolvedModifier(
+        List<string> Biomes,
+        List<(DecorationStep Step, List<PlacedFeature> Features)> AddedFeatures,
+        List<IConfiguredCarver> AddedCarvers,
+        List<(DecorationStep Step, List<PlacedFeature> Features)> RemovedFeatures,
+        List<IConfiguredCarver> RemovedCarvers);
 
     /// <summary>
     /// Finds configured carvers: the plugins' that could be read, or vanilla's.

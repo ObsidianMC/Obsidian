@@ -75,9 +75,14 @@ internal sealed record BiomeModifierData(
 
         if (TryGet(value, "spawn_costs", out var costs))
         {
+            var costsPath = Field(path, "spawn_costs");
+
+            foreach (var cost in Object(costs, costsPath).EnumerateObject())
+                Fields(cost.Value, Field(costsPath, cost.Name), "energy_budget", "charge");
+
             additions = additions with
             {
-                SpawnCosts = BiomeData.ReadSpawnCosts(costs, Field(path, "spawn_costs")).ToImmutableDictionary()
+                SpawnCosts = BiomeData.ReadSpawnCosts(costs, costsPath).ToImmutableDictionary()
             };
         }
 
@@ -157,9 +162,16 @@ internal sealed record BiomeModifierData(
     private static ImmutableArray<SpawnerMob> ReadSpawners(JsonElement value, string path)
     {
         if (value.ValueKind != JsonValueKind.Array)
-            return [BiomeData.ReadSpawner(value, path)];
+            return [ReadSpawner(value, path)];
 
-        return [.. value.EnumerateArray().Select((spawner, i) => BiomeData.ReadSpawner(spawner, Index(path, i)))];
+        return [.. value.EnumerateArray().Select((spawner, i) => ReadSpawner(spawner, Index(path, i)))];
+    }
+
+    private static SpawnerMob ReadSpawner(JsonElement value, string path)
+    {
+        Fields(value, path, "type", "weight", "minCount", "maxCount");
+
+        return BiomeData.ReadSpawner(value, path);
     }
 
     // Features by decoration step: { "<step>": features, ... }.

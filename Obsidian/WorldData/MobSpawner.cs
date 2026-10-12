@@ -121,7 +121,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             .Where(mob => mob.Alive && level.IsMobTicking(mob.Position)).ToArray();
         var counts = mobs.Where(mob => !mob.PersistenceRequired && mob.CustomName == null)
             .GroupBy(SpawnCategory).ToDictionary(group => group.Key, group => group.Count());
-        var potential = this.Potential(mobs);
+        var potential = this.Potential();
         foreach (var packed in chunks.OrderBy(_ => random.Next()))
         {
             NumericsHelper.LongToInts(packed, out var cx, out var cz);
@@ -151,16 +151,20 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         }
     }
 
-    // The charges of the mobs that count against caps, whose biomes give their types spawn costs, like vanilla's
-    // NaturalSpawner.createState.
-    private SpawnPotential Potential(Mob[] mobs)
+    // The charges of the loaded mobs that may despawn, whose biomes give their types spawn costs, like vanilla's
+    // NaturalSpawner.createState, which takes every loaded entity, ticking or not.
+    private SpawnPotential Potential()
     {
         var spawns = PluginSpawns.Current;
         var potential = new SpawnPotential();
+        var mobs = level.Regions.Values.SelectMany(region => region.Entities.Values).OfType<Mob>();
 
         foreach (var mob in mobs)
         {
-            if (mob.PersistenceRequired || mob.CustomName is not null || SpawnCategory(mob) == "misc")
+            if (!mob.Alive
+                || mob.PersistenceRequired
+                || mob.CustomName is not null
+                || SpawnCategory(mob) == "misc")
                 continue;
 
             var position = (Vector)mob.Position;

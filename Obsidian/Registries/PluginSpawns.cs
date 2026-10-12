@@ -75,41 +75,56 @@ internal static partial class PluginSpawns
             .Where(file => file.Modifier is not null)
             .ToList();
 
+        // As with features, every modifier's additions are applied before any modifier's removals, each in load
+        // order. What a modifier names is resolved first, and its additions are applied whole or not at all, so one
+        // that can't be applied leaves out its spawners and spawn costs, in both phases.
+        var resolved = new List<(BiomeModifierData Modifier, List<string> Biomes, HashSet<int> Spawners,
+            HashSet<int> Costs, FeatureFile File)>();
+
+        foreach (var file in modifiers)
+        {
+            try
+            {
+                var modifier = file.Modifier!;
+
+                resolved.Add((
+                    modifier,
+                    PluginFeatures.ResolveBiomes(modifier),
+                    EntityTypeIds(modifier.Remove.Spawners, "remove.spawners"),
+                    EntityTypeIds(modifier.Remove.SpawnCosts, "remove.spawn_costs"),
+                    file));
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.Invalid(logger, file.Source, ex.Message);
+            }
+        }
+
         var failed = new HashSet<FeatureFile>();
 
-        // As with features, every modifier's additions are applied before any modifier's removals, each in load
-        // order. A modifier's spawners and spawn costs that can't be applied are left out together.
-        foreach (var adding in (ReadOnlySpan<bool>)[true, false])
+        foreach (var (modifier, changedBiomes, _, _, file) in resolved)
         {
-            foreach (var file in modifiers.Where(file => !failed.Contains(file)))
+            try
             {
-                try
-                {
-                    var modifier = file.Modifier!;
-                    var changedBiomes = PluginFeatures.ResolveBiomes(modifier);
-
-                    if (adding)
-                    {
-                        AddSpawns(lists, changedBiomes, modifier.Add.Spawners);
-                        AddCosts(costs, changedBiomes, modifier.Add.SpawnCosts);
-                    }
-                    else
-                    {
-                        var spawners = EntityTypeIds(modifier.Remove.Spawners, "remove.spawners");
-                        var spawnCosts = EntityTypeIds(modifier.Remove.SpawnCosts, "remove.spawn_costs");
-
-                        RemoveSpawns(lists, changedBiomes, spawners);
-                        RemoveCosts(costs, changedBiomes, spawnCosts);
-                    }
-
-                    changed = true;
-                }
-                catch (InvalidDataException ex)
-                {
-                    failed.Add(file);
-                    Log.Invalid(logger, file.Source, ex.Message);
-                }
+                AddSpawns(lists, changedBiomes, modifier.Add.Spawners);
+                AddCosts(costs, changedBiomes, modifier.Add.SpawnCosts);
+                changed = true;
             }
+            catch (InvalidDataException ex)
+            {
+                failed.Add(file);
+                Log.Invalid(logger, file.Source, ex.Message);
+            }
+        }
+
+        foreach (var (_, changedBiomes, spawners, spawnCosts, file) in resolved)
+        {
+            if (failed.Contains(file))
+                continue;
+
+            RemoveSpawns(lists, changedBiomes, spawners);
+            RemoveCosts(costs, changedBiomes, spawnCosts);
+            changed = true;
         }
 
         if (!changed)
