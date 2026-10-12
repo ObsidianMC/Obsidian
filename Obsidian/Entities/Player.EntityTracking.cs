@@ -31,7 +31,7 @@ public partial class Player
             if (entity is Living living)
                 foreach (var (id, effect) in living.ActivePotionEffects)
                     await Client.QueuePacketAsync(new UpdateMobEffectPacket(entity.EntityId, id, effect.CurrentDuration)
-                    { Amplifier = effect.EffectData.Amplifier, Flags = EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon });
+                    { Amplifier = effect.EffectData.Amplifier, Flags = PotionEffectFlags(effect.EffectData) });
             TrackedEntities[entity.EntityId] = entity.Uuid;
         }
         var removed = TrackedEntities.Keys.Where(id => !visible.Contains(id)).ToArray();

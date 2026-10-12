@@ -75,7 +75,7 @@ public partial class Mob
 
     private async ValueTask PickupEquipmentAsync()
     {
-        if (!CanPickUpLoot || !Alive)
+        if (!CanPickUpLoot || !Alive || !Level.LevelData.GetBooleanRule("mob_griefing"))
             return;
         foreach (var entity in GetEntitiesNear(1.5f).OfType<ItemEntity>().Where(item => item.CanPickup && item.Item.Count > 0).ToArray())
         {

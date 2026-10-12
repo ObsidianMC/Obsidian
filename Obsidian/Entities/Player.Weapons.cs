@@ -316,12 +316,13 @@ public partial class Player
         }
     }
 
-    private async ValueTask<bool> TryBlockDamageAsync(IEntity source, float amount, CombatDamageKind kind, ItemStack? weapon)
+    private async ValueTask<bool> TryBlockDamageAsync(IEntity source, float amount, CombatDamageKind kind, ItemStack? weapon, IEntity? directSource)
     {
         if (usingWeapon?.Is(ItemsRegistry.Shield) != true || weaponTicks < 5 || shieldCooldown > 0 ||
-            kind is not (CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion)) return false;
+            kind is not (CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
+                or CombatDamageKind.Thorns)) return false;
         if (kind == CombatDamageKind.Projectile && CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Piercing) > 0) return false;
-        var incoming = source.Position - Position;
+        var incoming = (directSource ?? source).Position - Position;
         var look = GetLookDirection();
         if (incoming.X * look.X + incoming.Z * look.Z <= 0) return false;
         if (amount >= 3) await DamageInventoryItemAsync(weaponSlot, 1 + (int)Math.Floor(amount));

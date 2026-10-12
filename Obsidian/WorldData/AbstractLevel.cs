@@ -421,34 +421,46 @@ public abstract partial class AbstractLevel : ILevel
             yield break;
         }
 
-        var (left, top) = Region.ChunkOf(location - new VectorD(distance));
-        var (right, bottom) = Region.ChunkOf(location + new VectorD(distance));
-
-        left >>= Region.CubicRegionSizeShift;
-        right >>= Region.CubicRegionSizeShift;
-        top >>= Region.CubicRegionSizeShift;
-        bottom >>= Region.CubicRegionSizeShift;
-
-        distance *= distance;
-
-        for (int x = left; x <= right; x++)
+        var distanceSquared = (double)distance * distance;
+        foreach (var region in GetRegions())
         {
-            for (int z = top; z <= bottom; z++)
+            foreach (var entity in region.Entities.Values)
             {
-                if (GetRegionForChunk(x << Region.CubicRegionSizeShift, z << Region.CubicRegionSizeShift) is not Region region)
+                if (entity.Type == EntityType.Player)
                     continue;
 
-                foreach (var entity in region.Entities.Values)
+                var difference = entity.Position - location;
+                if (difference.MagnitudeSquared() <= distanceSquared)
+                    yield return entity;
+            }
+        }
+
+        IEnumerable<IRegion> GetRegions()
+        {
+            // Owner lookups use float.MaxValue. Scan loaded regions before converting such ranges to chunk coordinates.
+            if (distance >= Region.CubicRegionSize * 16)
+            {
+                foreach (var region in Regions.Values)
+                    yield return region;
+                yield break;
+            }
+
+            var (left, top) = Region.ChunkOf(location - new VectorD(distance));
+            var (right, bottom) = Region.ChunkOf(location + new VectorD(distance));
+
+            left >>= Region.CubicRegionSizeShift;
+            right >>= Region.CubicRegionSizeShift;
+            top >>= Region.CubicRegionSizeShift;
+            bottom >>= Region.CubicRegionSizeShift;
+
+            for (int x = left; x <= right; x++)
+            {
+                for (int z = top; z <= bottom; z++)
                 {
-                    if (entity.Type == EntityType.Player)
+                    if (GetRegionForChunk(x << Region.CubicRegionSizeShift, z << Region.CubicRegionSizeShift) is not Region region)
                         continue;
 
-                    var locationDifference = LocationDiff.GetDifference(entity.Position, location);
-
-                    if (locationDifference.CalculatedDifference + locationDifference.DifferenceY * locationDifference.DifferenceY <= distance)
-                    {
-                        yield return entity;
-                    }
+                    yield return region;
                 }
             }
         }
@@ -1051,6 +1063,14 @@ public abstract partial class AbstractLevel : ILevel
         stopwatch.Start();
         Log.Generating(this.Logger, startChunks, this.Name);
 
+        // Most of the work is staged across every core first, without the lock waits of completing chunks one by one, so the
+        // jobs below only complete the chunks.
+        if (this.Generator is MojangGenerator mojang)
+        {
+            await mojang.PrepareAreaAsync(centerX - pregenerationRange, centerZ - pregenerationRange,
+                centerX + pregenerationRange, centerZ + pregenerationRange, cancellationToken);
+        }
+
         // A window of jobs in queue order: a new job starts as soon as one finishes.
         var jobs = new List<Task>(startChunks);
         var completedChunks = 0;
@@ -1081,7 +1101,8 @@ public abstract partial class AbstractLevel : ILevel
                 }
             }
 
-            if (completedChunks / 1024 > flushedThousands)
+            // The flush after the loop saves the last chunks.
+            if (completedChunks / 1024 > flushedThousands && !this.ChunksToGen.IsEmpty)
             {
                 flushedThousands = completedChunks / 1024;
                 await this.FlushRegionsAsync();

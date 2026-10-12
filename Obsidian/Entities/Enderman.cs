@@ -93,6 +93,7 @@ public sealed partial class Enderman : PathfinderMob
                 TryTeleport(enemy.Position);
             }
         }
+        if (!Level.LevelData.GetBooleanRule("mob_griefing")) return;
         if (CarriedBlock == null && Random.Next(20) == 0)
         {
             var point = (Vector)(Position + new VectorD(Random.Next(-2, 3), Random.Next(2), Random.Next(-2, 3))).Floor();

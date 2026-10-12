@@ -37,6 +37,12 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     // The writable chunks written to, a bit per AreaIndex.
     private int writtenAreas;
 
+    // The writable chunks that may hold block entities, a bit per AreaIndex, valid for the chunks in checkedBlockEntityAreas.
+    // Writes of blocks without one remove any block entity, which chunks without them can skip; asking a chunk whether it
+    // has any is slow, so each is asked once.
+    private int blockEntityAreas;
+    private int checkedBlockEntityAreas;
+
     // The sections of the writable chunks, indexed by AreaIndex * sectionCount + section index, so block reads and writes
     // skip the chunk; null for chunks of other types or build ranges, which are read through the chunk.
     private readonly ChunkSection?[] areaSections;
@@ -183,9 +189,14 @@ internal sealed class WorldGenRegion : IWorldGenLevel
 
         // Like DataBlockEntity.ApplyBlockChange, which blocks without a block entity don't need.
         if ((info & BlockEntityBit) != 0)
+        {
             DataBlockEntity.ApplyBlockChange(chunk, position, block ?? BlocksRegistry.Get(stateId));
-        else
+            this.blockEntityAreas |= 1 << index;
+        }
+        else if (this.MayHaveBlockEntities(index, chunk))
+        {
             chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
+        }
 
         return true;
     }
@@ -231,7 +242,10 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     {
         var index = this.AreaIndex(position.X >> 4, position.Z >> 4);
         if (index >= 0 && !this.IsOutsideBuildHeight(position.Y))
+        {
             this.GetAreaChunk(index, position).SetBlockEntity(position.X, position.Y, position.Z, blockEntity);
+            this.blockEntityAreas |= 1 << index;
+        }
     }
 
     public IBlockEntity? GetBlockEntity(Vector position)
@@ -324,6 +338,18 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         }
 
         return this.FindChunk(quartX >> 2, quartZ >> 2)?.GetBiome((quartX & 3) << 2, quartY << 2, (quartZ & 3) << 2);
+    }
+
+    private bool MayHaveBlockEntities(int index, IChunk chunk)
+    {
+        if ((this.checkedBlockEntityAreas >> index & 1) == 0)
+        {
+            this.checkedBlockEntityAreas |= 1 << index;
+            if (chunk is not Chunk generated || !generated.BlockEntities.IsEmpty)
+                this.blockEntityAreas |= 1 << index;
+        }
+
+        return (this.blockEntityAreas >> index & 1) != 0;
     }
 
     private IChunk GetAreaChunk(int index, Vector position) =>

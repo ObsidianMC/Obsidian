@@ -13,10 +13,8 @@ public partial class Mob
     internal Random Random { get; } = new();
     internal MobTerrain Terrain { get; private set; } = null!;
     internal long AiTick { get; private set; }
-    internal bool InWater =>
-        Terrain.GetBlock((Vector)(Position + new VectorD(0, 0.1f, 0)).Floor())?.RegistryId == BlockIds.Water;
-    internal bool InLava =>
-        Terrain.GetBlock((Vector)(Position + new VectorD(0, 0.1f, 0)).Floor())?.RegistryId == BlockIds.Lava;
+    internal bool InWater => Terrain.ContainsFluid(Dimension.CreateBBFromPosition(Position), water: true);
+    internal bool InLava => Terrain.ContainsFluid(Dimension.CreateBBFromPosition(Position), water: false);
     internal bool IsRemoved { get; private set; }
     internal IEntity? LastAttacker { get; private set; }
     internal long LastHurtTick { get; private set; } = -100;
@@ -27,6 +25,8 @@ public partial class Mob
         get
         {
             var speed = GetAttributeValue("minecraft:generic.movement_speed");
+            if (PowderedSnowTicks > 0 && Terrain?.GetBlock((Vector)(Position - new VectorD(0, 0.01, 0)).Floor()) is { IsAir: false })
+                speed = Math.Max(0, speed - 0.05f * Math.Min(PowderedSnowTicks, 140) / 140);
             if (ActivePotionEffects.TryGetValue((int)PotionEffect.Speed - 1, out var faster)) speed *= 1 + 0.2f * (faster.EffectData.Amplifier + 1);
             if (ActivePotionEffects.TryGetValue((int)PotionEffect.Slowness - 1, out var slower)) speed *= Math.Max(0, 1 - 0.15f * (slower.EffectData.Amplifier + 1));
             return speed;
@@ -37,6 +37,7 @@ public partial class Mob
     protected virtual float SafeFallDistance => 3;
     protected virtual bool CanDespawn => this is not Animal;
     protected virtual bool WaterSensitive => false;
+    protected virtual bool CanUpdateTargetGoals => true;
     internal virtual bool Hostile => false;
     internal virtual bool FlyingNavigation => false;
     internal virtual bool SwimmingNavigation => false;
@@ -304,7 +305,10 @@ public partial class Mob
         else
         {
             var updateSelection = AiTick <= 1 || (AiTick + EntityId) % 2 == 0;
-            await TargetGoals.TickAsync(updateSelection);
+            if (CanUpdateTargetGoals)
+                await TargetGoals.TickAsync(updateSelection);
+            else
+                TargetGoals.Cancel();
             if (GoalController is GoalSelector selector)
                 await selector.TickAsync(updateSelection);
             (Navigator as Navigator)?.Tick();
@@ -340,7 +344,7 @@ public partial class Mob
             hasSentPosition = true;
         }
 
-        var delta = (Vector)((Position - lastSentPosition) * 4096).Floor();
+        var delta = MoveDelta(lastSentPosition, Position);
         var moved = delta.X != 0 || delta.Y != 0 || delta.Z != 0;
         var rotated = Yaw != lastSentYaw || Pitch != lastSentPitch;
         if (moved)
@@ -361,7 +365,7 @@ public partial class Mob
                     EntityId = EntityId, Delta = delta, Yaw = Yaw, Pitch = Pitch,
                     OnGround = MovementFlags.HasFlag(MovementFlags.OnGround)
                 }, EntityId);
-                lastSentPosition += (VectorD)delta / 4096;
+                lastSentPosition = Position;
             }
         }
         else if (rotated)
@@ -428,18 +432,21 @@ public partial class Mob
     internal ValueTask DamageEnvironmentAsync(float amount) => ApplyDamageAsync(this, amount, false);
     internal ValueTask DamageMagicAsync(IEntity source, float amount, bool ignoreHurtCooldown = false) => ApplyDamageAsync(source, amount, false, ignoreHurtCooldown);
     protected virtual bool CanTakeDamage(IEntity source) => true;
+    private protected virtual bool TryAbsorbDamage(float amount, CombatDamageKind kind) => false;
 
     private async ValueTask ApplyDamageAsync(IEntity source, float amount, bool applyArmor, bool ignoreHurtCooldown = false)
     {
         var kind = IncomingDamageKind ?? (applyArmor ? CombatDamageKind.Melee : CombatDamageKind.Magic);
-        applyArmor &= kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion;
+        applyArmor &= kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion or CombatDamageKind.FireContact or CombatDamageKind.Thorns;
         if (!UsesAi)
         {
             await base.DamageAsync(source, amount);
             return;
         }
-        if (IsRemoved || !Alive || source.Level != Level || !float.IsFinite(amount) || amount <= 0 || !CanTakeDamage(source))
+        if (IsRemoved || !Alive || source.Level != Level || !float.IsFinite(amount) || amount <= 0 || kind != CombatDamageKind.Void && !CanTakeDamage(source))
             return;
+        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact &&
+            (IsFireImmune || HasPotionEffect((int)PotionEffect.FireResistance - 1))) return;
 
         var incoming = amount;
         var recentlyHurt = !ignoreHurtCooldown && AiTick - lastDamageTick < 10;
@@ -449,7 +456,7 @@ public partial class Mob
                 return;
             amount -= lastDamage;
         }
-        else if (!ignoreHurtCooldown)
+        else if (!ignoreHurtCooldown && kind != CombatDamageKind.SonicBoom)
         {
             var direction = Position - source.Position;
             var horizontal = Math.Sqrt(direction.X * direction.X + direction.Z * direction.Z);
@@ -470,7 +477,9 @@ public partial class Mob
         }
         if (!recentlyHurt)
             lastDamageTick = AiTick;
-        if (applyArmor)
+        var absorbedByEquipment = TryAbsorbDamage(amount, kind);
+        if (absorbedByEquipment) amount = 0;
+        if (applyArmor && !absorbedByEquipment)
         {
             var armor = GetAttributeValue("minecraft:generic.armor") + EquipmentArmor;
             var toughness = GetAttributeValue("minecraft:generic.armor_toughness") + EquipmentToughness;
@@ -481,9 +490,12 @@ public partial class Mob
             DamageEquipment(EquipmentSlot.Body, Math.Max(1, (int)(incoming / 4)));
         }
         amount = CombatEffects.Protect(this, amount, kind);
+        var absorbed = Math.Min(AbsorptionHealth, amount);
+        AbsorptionHealth -= absorbed;
+        amount -= absorbed;
         await base.DamageAsync(source, amount);
         await OnHurtAsync(source);
-        if (Alive)
+        if (Alive && !absorbedByEquipment)
             PlayMobSound("hurt");
         SynchronizeMetadata();
         if (!Alive)

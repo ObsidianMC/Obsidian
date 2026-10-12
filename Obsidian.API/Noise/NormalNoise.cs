@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using System.Runtime.Intrinsics;
 
 namespace Obsidian.API.Noise;
 
@@ -61,6 +62,16 @@ public sealed class NormalNoise
         var scaledY = y * InputFactor;
         var scaledZ = z * InputFactor;
         return (this.first.GetValue(x, y, z) + this.second.GetValue(scaledX, scaledY, scaledZ)) * this.valueFactor;
+    }
+
+    /// <summary>
+    /// <see cref="GetValue"/> at four positions, one per lane, with the same arithmetic in each (see
+    /// <see cref="ImprovedNoiseLanes"/>). Only where <see cref="ImprovedNoiseLanes.IsSupported"/>.
+    /// </summary>
+    internal Vector256<double> GetValue(Vector256<double> x, Vector256<double> y, Vector256<double> z)
+    {
+        var factor = Vector256.Create(InputFactor);
+        return (this.first.GetValue(x, y, z) + this.second.GetValue(x * factor, y * factor, z * factor)) * Vector256.Create(this.valueFactor);
     }
 
     private static double ExpectedDeviation(int octaveSpan) => 0.1 * (1.0 + 1.0 / (octaveSpan + 1));

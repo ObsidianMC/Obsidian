@@ -18,7 +18,7 @@ namespace Obsidian.WorldData.Generators.Mojang;
 /// Only interpolation changes values; the caches exist for speed. Instances are not thread-safe. An instance serves one
 /// chunk at a time, but can move to another (see <see cref="MoveTo"/>) to reuse its compiled functions and buffers.
 /// </remarks>
-internal sealed class NoiseChunk
+internal sealed partial class NoiseChunk
 {
     private readonly Dictionary<long, int> preliminarySurfaceLevels = [];
 
@@ -435,6 +435,9 @@ internal sealed class NoiseChunk
         {
             if (!this.mapped.TryGetValue(function, out var result))
             {
+                if (function is Cache2DDensityFunction && !this.chunk.RandomState.IsYIndependent(function))
+                    this.chunk.hasYDependentCache2D = true;
+
                 // Interpolators are told which router function they stand for, which keys the shared corners.
                 result = function is InterpolatedDensityFunction interpolated
                     ? this.chunk.Track(new CellInterpolator(this.chunk, this.Map(interpolated.Argument), this.order, interpolated))
@@ -474,6 +477,10 @@ internal sealed class NoiseChunk
         private readonly InterpolatedDensityFunction routerFunction;
         private double[]? corners;
         private bool sampled;
+
+        // Samples the argument a column at a time where that's supported; made on first use.
+        private ColumnFiller? columnFiller;
+        private bool columnFillerMade;
 
         // For a column's noise chunk: the lowest corner Y index sampled so far (see GetColumnCorners).
         private int sampledFromY = int.MaxValue;
@@ -755,10 +762,23 @@ internal sealed class NoiseChunk
                     if (border && shared.TryGet(this.routerFunction, columnX, columnZ, column))
                         continue;
 
-                    for (var cellY = 0; cellY <= chunk.CellCountY; cellY++)
+                    if (!this.columnFillerMade)
                     {
-                        var blockY = (chunk.CellNoiseMinY + cellY) * chunk.CellHeight;
-                        column[cellY] = this.argument.GetValue(blockX, blockY, blockZ);
+                        this.columnFiller = chunk.CompileForColumns(this.argument);
+                        this.columnFillerMade = true;
+                    }
+
+                    if (this.columnFiller is not null)
+                    {
+                        chunk.FillCornerColumn(this.columnFiller, blockX, blockZ, column);
+                    }
+                    else
+                    {
+                        for (var cellY = 0; cellY <= chunk.CellCountY; cellY++)
+                        {
+                            var blockY = (chunk.CellNoiseMinY + cellY) * chunk.CellHeight;
+                            column[cellY] = this.argument.GetValue(blockX, blockY, blockZ);
+                        }
                     }
 
                     if (border)
@@ -825,6 +845,17 @@ internal sealed class NoiseChunk
             return quartX >= 0 && quartZ >= 0 && quartX < this.size && quartZ < this.size
                 ? this.values[quartX + quartZ * this.size]
                 : this.outside.GetValue(x, y, z);
+        }
+
+        /// <summary>
+        /// Whether the cache holds the column at (<paramref name="x"/>, <paramref name="z"/>); it samples others at the
+        /// position asked.
+        /// </summary>
+        public bool Covers(int x, int z)
+        {
+            var quartX = (x >> 2) - this.chunk.FirstQuartX;
+            var quartZ = (z >> 2) - this.chunk.FirstQuartZ;
+            return quartX >= 0 && quartZ >= 0 && quartX < this.size && quartZ < this.size;
         }
     }
 

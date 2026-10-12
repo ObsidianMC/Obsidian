@@ -58,7 +58,7 @@ public abstract partial class AbstractLevel
         {
             var dragon = entities.OfType<EnderDragon>().FirstOrDefault(item => item.Uuid == fightDragon);
             if (dragon == null && (fightDragon == Guid.Empty || ++ticksWithoutDragon >= 1200)) CreateFightDragon();
-            else if (dragon != null) { ticksWithoutDragon = 0; dragon.PreviouslyKilled = dragonPreviouslyKilled; }
+            else if (dragon != null) { ticksWithoutDragon = 0; dragon.AttachFight(exitPortal, dragonPreviouslyKilled); }
             return;
         }
         if (resurrectionTicks < 0)
@@ -166,6 +166,7 @@ public abstract partial class AbstractLevel
     {
         var dragon = new EnderDragon { Level = this, EntityId = Server.GetNextEntityId(),
             Position = new VectorD(0, 128, 0), PreviouslyKilled = dragonPreviouslyKilled };
+        dragon.BeginFight(exitPortal);
         SpawnEntity(dragon);
         fightDragon = dragon.Uuid;
     }

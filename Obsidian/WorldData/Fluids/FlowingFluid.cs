@@ -32,6 +32,44 @@ internal abstract class FlowingFluid
     /// </summary>
     public bool IsSame(FluidKind kind) => kind == this.SourceKind || kind == this.FlowingKind;
 
+    public VectorD GetFlow(FluidLevel level, Vector position, FluidState fluid)
+    {
+        var flow = VectorD.Zero;
+        foreach (var face in horizontal)
+        {
+            var neighborPosition = position.Offset(face);
+            var neighbor = level.GetBlock(neighborPosition);
+            var neighborFluid = FluidState.Of(neighbor);
+            if (!neighborFluid.IsEmpty && !IsSame(neighborFluid.Kind)) continue;
+            var difference = 0f;
+            if (neighborFluid.OwnHeight == 0)
+            {
+                if (neighbor.BlocksMotion()) continue;
+                var below = level.GetFluid(neighborPosition + Vector.Down);
+                if ((below.IsEmpty || IsSame(below.Kind)) && below.OwnHeight > 0)
+                    difference = fluid.OwnHeight - (below.OwnHeight - 8f / 9f);
+            }
+            else difference = fluid.OwnHeight - neighborFluid.OwnHeight;
+            flow += new VectorD(neighborPosition.X - position.X, 0, neighborPosition.Z - position.Z) * difference;
+        }
+        if (fluid.Falling)
+            foreach (var face in horizontal)
+            {
+                var neighbor = position.Offset(face);
+                if (!IsSolidFace(neighbor, face) && !IsSolidFace(neighbor + Vector.Up, face)) continue;
+                if (flow.Magnitude > 0) flow /= flow.Magnitude;
+                flow.Y -= 6;
+                break;
+            }
+        return flow.Magnitude > 0 ? flow / flow.Magnitude : VectorD.Zero;
+
+        bool IsSolidFace(Vector point, BlockFace face)
+        {
+            var block = level.GetBlock(point);
+            return !IsSame(block.GetFluid()) && block.RegistryId is not (BlockIds.Ice or BlockIds.FrostedIce) && block.IsFaceSturdy(face);
+        }
+    }
+
     /// <summary>
     /// Ticks between a change and the fluid's next scheduled tick.
     /// </summary>

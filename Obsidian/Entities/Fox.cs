@@ -74,7 +74,7 @@ public sealed partial class Fox : FarmAnimal
         await base.TickMobAsync();
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
         if (sleepDelay > 0) sleepDelay--;
-        if (!Sleeping && AttackTarget == null && AiTick % 100 == 0)
+        if (!Sleeping && AttackTarget == null && AiTick % 100 == 0 && Level.LevelData.GetBooleanRule("mob_griefing"))
         {
             var origin = (Vector)Position.Floor();
             for (var x = -2; x <= 2; x++)

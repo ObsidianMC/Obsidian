@@ -174,12 +174,12 @@ public sealed partial class Wolf : Animal
             SynchronizeMetadata();
             return;
         }
-        if (CanEat(item))
+        if (Tamed && CanEat(item))
         {
             if (Health < GetAttributeValue("minecraft:generic.max_health"))
             {
                 var food = item!.GetComponent<Obsidian.API.Inventory.DataComponents.FoodDataComponent>(DataComponentType.Food);
-                Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + (food?.Nutrition ?? 1));
+                Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 2 * (food?.Nutrition ?? 1));
                 await ConsumeInteractionItemAsync(player, hand);
                 SynchronizeMetadata();
             }
@@ -189,6 +189,37 @@ public sealed partial class Wolf : Animal
         }
         if (!Tamed || Owner != player.Uuid)
             return;
+        var armor = GetEquipment(EquipmentSlot.Body);
+        if (!IsBaby && item is { Count: > 0, Holder.Id: ItemIds.WolfArmor } && armor.IsAir)
+        {
+            var equipped = new Obsidian.API.Inventory.ItemStack(item) { Count = 1 };
+            SetEquipment(EquipmentSlot.Body, equipped);
+            SetEquipmentDropChance(EquipmentSlot.Body, 2);
+            await ConsumeInteractionItemAsync(player, hand);
+            PlayMobSound("armor.equip");
+            return;
+        }
+        if (!armor.IsAir && item is { Count: > 0, Holder.Id: ItemIds.Shears } &&
+            (player.GameMode == GameMode.Creative || CombatItems.EnchantmentLevel(armor, EnchantmentsRegistry.BindingCurse) == 0))
+        {
+            SetEquipment(EquipmentSlot.Body, Obsidian.API.Inventory.ItemStack.Air);
+            DropItem(armor);
+            await DamageInteractionToolAsync(player, hand);
+            PlayMobSound("armor.unequip");
+            return;
+        }
+        if (OrderedToSit && armor.Is(ItemsRegistry.WolfArmor) && armor.Damage > 0 &&
+            item is { Count: > 0, Holder.Id: ItemIds.ArmadilloScute })
+        {
+            var maximum = armor.GetComponent<Obsidian.API.Inventory.DataComponents.SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? 64;
+            var damage = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage;
+            damage.Value = Math.Max(0, armor.Damage - (int)(maximum * 0.125f));
+            armor[DataComponentType.Damage] = damage;
+            SetEquipment(EquipmentSlot.Body, armor);
+            await ConsumeInteractionItemAsync(player, hand);
+            PlayMobSound("armor.repair");
+            return;
+        }
         var color = item == null ? -1 : Array.FindIndex(Cat.DyeNames, name => item.Holder.UnlocalizedName == $"minecraft:{name}_dye");
         if (color >= 0)
         {
@@ -217,6 +248,16 @@ public sealed partial class Wolf : Animal
         child.SoundVariant = Random.Next(2) == 0 ? SoundVariant : ((Wolf)mate).SoundVariant;
         child.SynchronizeMetadata();
         return child;
+    }
+
+    private protected override bool TryAbsorbDamage(float amount, CombatDamageKind kind)
+    {
+        if (GetEquipment(EquipmentSlot.Body) is not { Count: > 0, Holder.Id: ItemIds.WolfArmor } ||
+            kind is not (CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion or
+                CombatDamageKind.Fire or CombatDamageKind.FireContact or CombatDamageKind.Fall or CombatDamageKind.SonicBoom)) return false;
+        DamageEquipment(EquipmentSlot.Body, (int)Math.Ceiling(amount));
+        PlayMobSound("armor.damage");
+        return true;
     }
     public override void Write(INetStreamWriter writer)
     {

@@ -1,9 +1,64 @@
 using Obsidian.WorldData;
+using Obsidian.WorldData.Fluids;
 
 namespace Obsidian.Entities.AI;
 
 internal sealed class MobTerrain(ILevel level)
 {
+    public bool IsInFluid(VectorD point, bool water)
+    {
+        var position = (Vector)point.Floor();
+        if (GetBlock(position) is not { } block) return false;
+        var fluid = FluidState.Of(block);
+        if (!(water ? fluid.IsWater : fluid.IsLava)) return false;
+        var above = GetBlock(position + Vector.Up);
+        var aboveFluid = above == null ? FluidState.Empty : FluidState.Of(above);
+        var height = (water ? aboveFluid.IsWater : aboveFluid.IsLava) ? 1 : fluid.OwnHeight;
+        return point.Y < position.Y + height;
+    }
+
+    public bool ContainsFluid(BoundingBox bounds, bool water)
+    {
+        for (var x = (int)Math.Floor(bounds.Min.X + 0.001); x < (int)Math.Ceiling(bounds.Max.X - 0.001); x++)
+        for (var y = (int)Math.Floor(bounds.Min.Y + 0.001); y < (int)Math.Ceiling(bounds.Max.Y - 0.001); y++)
+        for (var z = (int)Math.Floor(bounds.Min.Z + 0.001); z < (int)Math.Ceiling(bounds.Max.Z - 0.001); z++)
+            if (IsInFluid(new VectorD(x + 0.5, Math.Max(y, bounds.Min.Y + 0.001), z + 0.5), water)) return true;
+        return false;
+    }
+
+    public VectorD FluidPush(BoundingBox bounds, bool water, VectorD motion)
+    {
+        if (level is not AbstractLevel concrete) return VectorD.Zero;
+        var flow = VectorD.Zero;
+        var count = 0;
+        var depth = 0d;
+        for (var x = (int)Math.Floor(bounds.Min.X + 0.001); x < (int)Math.Ceiling(bounds.Max.X - 0.001); x++)
+        for (var y = (int)Math.Floor(bounds.Min.Y + 0.001); y < (int)Math.Ceiling(bounds.Max.Y - 0.001); y++)
+        for (var z = (int)Math.Floor(bounds.Min.Z + 0.001); z < (int)Math.Ceiling(bounds.Max.Z - 0.001); z++)
+        {
+            var point = new Vector(x, y, z);
+            if (GetBlock(point) is not { } block) continue;
+            var fluid = FluidState.Of(block);
+            if (!(water ? fluid.IsWater : fluid.IsLava)) continue;
+            var above = GetBlock(point + Vector.Up);
+            var full = above != null && (water ? FluidState.Of(above).IsWater : FluidState.Of(above).IsLava);
+            var surface = y + (full ? 1 : fluid.OwnHeight);
+            if (surface < bounds.Min.Y + 0.001) continue;
+            depth = Math.Max(depth, surface - bounds.Min.Y - 0.001);
+            var current = concrete.Fluids.GetFlow(point);
+            if (depth < 0.4) current *= depth;
+            flow += current;
+            count++;
+        }
+        if (count == 0 || flow.Magnitude == 0) return VectorD.Zero;
+        flow /= count;
+        flow /= flow.Magnitude;
+        flow *= water ? 0.014 : concrete.DimensionName == "minecraft:the_nether" ? 0.007 : 0.0023333333333333335;
+        if (Math.Abs(motion.X) < 0.003 && Math.Abs(motion.Z) < 0.003 && flow.Magnitude < 0.0045)
+            flow *= 0.0045 / flow.Magnitude;
+        return flow;
+    }
+
     public int GetSkyLight(Vector position) => level is AbstractLevel concrete && !concrete.IsOutsideBuildHeight(position.Y) ?
         concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetLightLevel(position.X, position.Y, position.Z, LightType.Sky) ?? 0 : 0;
 
@@ -73,6 +128,32 @@ internal sealed class MobTerrain(ILevel level)
 
     public bool IsFree(BoundingBox bounds, bool ignoreWoodenDoors = false) =>
         !GetCollisions(bounds, ignoreWoodenDoors).Any(shape => Overlaps(bounds, shape));
+
+    public bool ContainsSuffocatingBlock(BoundingBox bounds)
+    {
+        for (var x = (int)Math.Floor(bounds.Min.X); x <= (int)Math.Floor(bounds.Max.X); x++)
+        for (var y = (int)Math.Floor(bounds.Min.Y); y <= (int)Math.Floor(bounds.Max.Y); y++)
+        for (var z = (int)Math.Floor(bounds.Min.Z); z <= (int)Math.Floor(bounds.Max.Z); z++)
+        {
+            var block = GetBlock(new Vector(x, y, z));
+            if (block != null && BlockPhysics.Suffocates(block.GetHashCode()) &&
+                BlockCollisionShapes.Get(block).Any(shape => Overlaps(bounds, shape.OffsetBy(new VectorD(x, y, z)))))
+                return true;
+        }
+        return false;
+    }
+
+    public bool IsFreeOfFluid(BoundingBox bounds)
+    {
+        for (var x = (int)Math.Floor(bounds.Min.X); x < (int)Math.Ceiling(bounds.Max.X); x++)
+        for (var y = (int)Math.Floor(bounds.Min.Y); y < (int)Math.Ceiling(bounds.Max.Y); y++)
+        for (var z = (int)Math.Floor(bounds.Min.Z); z < (int)Math.Ceiling(bounds.Max.Z); z++)
+        {
+            if (GetBlock(new Vector(x, y, z)) is not { } block || block.GetFluid() != FluidKind.Empty)
+                return false;
+        }
+        return true;
+    }
 
     public static bool Overlaps(BoundingBox left, BoundingBox right) =>
         left.Max.X > right.Min.X + 0.00001f && left.Min.X < right.Max.X - 0.00001f &&

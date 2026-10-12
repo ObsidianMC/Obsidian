@@ -51,7 +51,8 @@ internal sealed class BreezeWindCharge : Entity
         Position = next; BoundingBox = Dimension.CreateBBFromPosition(next);
         if (fraction < 1 || target != null)
         {
-            if (target != null) await target.DamageAsync(owner ?? this, 1);
+            if (target is Living victim && target is not Wither { Armored: true })
+                await victim.DamageCombatAsync(owner ?? this, 1, CombatDamageKind.Projectile, directSource: this);
             await BurstAsync(terrain);
             await RemoveAsync(); return;
         }

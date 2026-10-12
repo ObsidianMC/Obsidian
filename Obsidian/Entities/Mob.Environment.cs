@@ -50,17 +50,18 @@ public partial class Mob
         }
         if (jumpDelay > 0)
             jumpDelay--;
-        if (InLava && !IsFireImmune)
+        if (!IsFireImmune && InLava)
         {
             Ignite(15);
-            if (!HasPotionEffect((int)PotionEffect.FireResistance - 1)) await DamageEnvironmentAsync(4);
+            await DamageCombatAsync(this, 4, CombatDamageKind.FireContact);
         }
         await TickAirSupplyAsync();
         if (WaterSensitive && (InWater || Terrain.IsRainingAt((Vector)Position.Floor())))
             await DamageEnvironmentAsync(1);
 
-        if (Position.Y < -128)
-            await DamageEnvironmentAsync(4);
+        var minimumY = Level is Obsidian.WorldData.AbstractLevel level ? level.MinY : -64;
+        if (Position.Y < minimumY - 64)
+            await DamageCombatAsync(this, 4, CombatDamageKind.Void);
         if (InWater || InLava || HasPotionEffect((int)PotionEffect.Levitation - 1))
             fallDistance = 0;
         else if (MovementFlags.HasFlag(MovementFlags.OnGround))
@@ -80,21 +81,22 @@ public partial class Mob
         if (feet?.RegistryId is BlockIds.Fire or BlockIds.SoulFire && !IsFireImmune)
         {
             Ignite(8);
-            if (!HasPotionEffect((int)PotionEffect.FireResistance - 1)) await ApplyDamageAsync(this, 1, true);
+            await DamageCombatAsync(this, 1, CombatDamageKind.FireContact);
         }
         if (floor?.RegistryId == BlockIds.MagmaBlock
             && !IsFireImmune
             && !Sneaking
             && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
-            await ApplyDamageAsync(this, 1, true);
+            await DamageCombatAsync(this, 1, CombatDamageKind.FireContact);
         if (this is not Fox && feet?.RegistryId == BlockIds.SweetBerryBush && !IsRemoved &&
             (LastPosition - Position).MagnitudeSquared() > 0.000025f)
             await ApplyDamageAsync(this, 1, true);
+        await TickBlockHazardsAsync(feet);
     }
 
     protected virtual async ValueTask TickAirSupplyAsync()
     {
-        if (Terrain.GetBlock((Vector)EyePosition.Floor())?.RegistryId == BlockIds.Water
+        if (Terrain.IsInFluid(EyePosition, water: true)
             && !TagsRegistry.EntityType.CanBreatheUnderWater.Entries.Contains(TypeId)
             && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1)
             && !HasPotionEffect((int)PotionEffect.BreathOfTheNautilus - 1))
@@ -111,7 +113,7 @@ public partial class Mob
 
     }
 
-    protected internal void PlayMobSound(string kind)
+    protected internal virtual void PlayMobSound(string kind)
     {
         if (Silent || SoundName == null || kind == "ambient" && this is Creeper or Slime)
             return;

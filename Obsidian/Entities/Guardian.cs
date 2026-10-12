@@ -42,8 +42,9 @@ public partial class Guardian : PathfinderMob
     }
     protected override async ValueTask OnHurtAsync(IEntity source)
     {
-        if (!moving && !ReferenceEquals(source, this) && source is Living && IsValidTarget(source))
-            await source.DamageAsync(this, 2);
+        if (!moving && !ReferenceEquals(source, this) && (IncomingDirectSource ?? source) is Living attacker && IsValidTarget(attacker) &&
+            IncomingDamageKind is not (CombatDamageKind.Magic or CombatDamageKind.Explosion or CombatDamageKind.Thorns))
+            await attacker.DamageCombatAsync(this, 2, CombatDamageKind.Thorns);
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
@@ -98,6 +99,11 @@ internal sealed class GuardianAttackGoal(Guardian guardian) : Goal
             guardian.SendEntityEvent(21);
         }
         if (chargeTicks < guardian.AttackDuration) return;
+        if (target is Living living)
+        {
+            var magicDamage = 1 + (guardian.Level.LevelData.Difficulty == Difficulty.Hard ? 2 : 0) + (guardian is ElderGuardian ? 2 : 0);
+            await living.DamageCombatAsync(guardian, magicDamage, CombatDamageKind.Magic);
+        }
         var damage = guardian.AttackDamage;
         if (target is IPlayer)
             damage = guardian.Level.LevelData.Difficulty switch

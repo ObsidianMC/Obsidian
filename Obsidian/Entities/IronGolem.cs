@@ -36,7 +36,31 @@ public sealed partial class IronGolem : PathfinderMob
     {
         SendEntityEvent(4);
         PlayMobSound("attack");
+        var accepted = (target as Living)?.AcceptedDamageCount;
         await target.DamageAsync(this, AttackDamage);
+        if (target is Living living && living.AcceptedDamageCount != accepted)
+            living.Motion += new VectorD(0, 0.4f * Math.Max(0, 1 - living.GetAttributeValue("minecraft:generic.knockback_resistance")), 0);
+    }
+
+    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    {
+        if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
+            !IsInRange(player, 3) || !CanSee(player)) return;
+        var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
+        if (held is not { Count: > 0, Holder.Id: ItemIds.IronIngot }) return;
+        var maximum = GetAttributeValue("minecraft:generic.max_health");
+        if (Health >= maximum) return;
+        Health = Math.Min(maximum, Health + 25);
+        PlayMobSound("repair");
+        await ConsumeInteractionItemAsync(player, hand);
+        SynchronizeMetadata();
+    }
+
+    protected override ValueTask OnDeathAsync(IEntity source)
+    {
+        DropItem(ItemsRegistry.Poppy, Random.Next(3));
+        DropItem(ItemsRegistry.IronIngot, Random.Next(3, 6));
+        return default;
     }
 
     public override void Write(INetStreamWriter writer)

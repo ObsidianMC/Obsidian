@@ -13,6 +13,7 @@ public class Navigator : INavigator
     private VectorD lastProgressPosition;
     private VectorD lastPathTarget;
     private bool requested;
+    private bool pathUsesVolume;
 
     public float SpeedModifier { get; set; } = 1;
     public bool CanOpenDoors { get; set; }
@@ -71,7 +72,7 @@ public class Navigator : INavigator
     {
         if (mob == null || IsPaused || !requested)
         {
-            if (mob != null && (IsPaused || !mob.MoveControl.IsStrafing))
+            if (mob != null && IsPaused)
                 mob.MoveControl.Stop();
             return;
         }
@@ -94,6 +95,13 @@ public class Navigator : INavigator
             return;
         }
 
+        var usesVolume = VolumeMovement.UsesVolume(mob);
+        if (path != null && pathUsesVolume != usesVolume)
+        {
+            path = null;
+            repathDelay = 0;
+        }
+
         if (repathDelay > 0)
             repathDelay--;
 
@@ -101,6 +109,7 @@ public class Navigator : INavigator
         {
             pathFinder ??= new PathFinder(mob);
             path = pathFinder.FindPath(TargetLocation);
+            pathUsesVolume = usesVolume;
             ReachedTarget = path?.ReachedTarget == true;
             nextNode = 0;
             lastPathTarget = TargetLocation;
@@ -121,7 +130,7 @@ public class Navigator : INavigator
         {
             var difference = path.Nodes[nextNode] - mob.Position;
             if (difference.X * difference.X + difference.Z * difference.Z > tolerance * tolerance ||
-                Math.Abs(difference.Y) > 0.5f)
+                (usesVolume || !mob.InWater) && Math.Abs(difference.Y) > 0.5f)
                 break;
             nextNode++;
         }

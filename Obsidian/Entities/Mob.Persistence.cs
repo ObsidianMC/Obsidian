@@ -13,7 +13,7 @@ public partial class Mob
     private NbtCompound? originalSave;
     protected virtual void WriteAdditionalSave(INbtWriter writer) { }
     protected virtual void ReadAdditionalSave(NbtCompound tag) { }
-    private static readonly HashSet<string> saveFields = ["id", "UUID", "Pos", "Motion", "Rotation", "Health", "AbsorptionAmount", "Air", "Fire", "OnGround",
+    private static readonly HashSet<string> saveFields = ["id", "UUID", "Pos", "Motion", "Rotation", "Health", "AbsorptionAmount", "Air", "Fire", "OnGround", "TicksFrozen", "FallDistance",
         "NoAI", "LeftHanded", "CanPickUpLoot", "PersistenceRequired", "Silent", "NoGravity", "Glowing", "CustomNameVisible", "CustomName",
         "attributes", "ObsidianEquipment", "Age", "InLove", "IsBaby", "ObsidianVariant", "Type", "EggLayTime", "IsChickenJockey", "Color",
         "Sheared", "sheared", "Size", "powered", "ignited", "Fuse", "ExplosionRadius", "ObsidianEffects", "InWaterTime",
@@ -47,10 +47,12 @@ public partial class Mob
         writer.WriteFloat(Pitch.Degrees);
         writer.EndList();
         writer.WriteFloat("Health", Health);
-        writer.WriteFloat("AbsorptionAmount", AbsorbtionAmount);
+        writer.WriteFloat("AbsorptionAmount", AbsorptionHealth);
         writer.WriteShort("Air", Air);
         writer.WriteShort("Fire", (short)Math.Clamp(FireTicks, 0, short.MaxValue));
         writer.WriteBool("OnGround", MovementFlags.HasFlag(MovementFlags.OnGround));
+        writer.WriteInt("TicksFrozen", PowderedSnowTicks);
+        writer.WriteFloat("FallDistance", fallDistance);
         writer.WriteBool("NoAI", MobBitMask.HasFlag(MobBitmask.NoAi));
         writer.WriteBool("LeftHanded", MobBitMask.HasFlag(MobBitmask.LeftHanded));
         writer.WriteBool("CanPickUpLoot", CanPickUpLoot);
@@ -92,9 +94,7 @@ public partial class Mob
         foreach (var (id, effect) in ActivePotionEffects)
         {
             writer.WriteCompoundStart();
-            writer.WriteInt("id", id);
-            writer.WriteInt("duration", effect.CurrentDuration);
-            writer.WriteInt("amplifier", effect.EffectData.Amplifier);
+            WritePotionEffect(writer, effect.EffectData with { Id = id, Duration = effect.CurrentDuration });
             writer.EndCompound();
         }
         writer.EndList();
@@ -254,14 +254,18 @@ public partial class Mob
         }
         if (tag.TryGetTagValue<float>("Health", out var health))
             Health = health;
+        if (tag.TryGetTagValue<float>("AbsorptionAmount", out var absorption))
+            AbsorptionHealth = float.IsFinite(absorption) ? Math.Max(0, absorption) : 0;
         if (tag.TryGetTagValue<short>("Air", out var air))
             Air = air;
         if (tag.TryGetTagValue<short>("Fire", out var fire))
             FireTicks = Math.Max(0, (int)fire);
         if (tag.TryGetTag<NbtList>("ObsidianEffects", out var effects))
             foreach (var effect in effects.OfType<NbtCompound>())
-                RestorePotionEffect(effect.GetInt("id"), effect.GetInt("duration"), effect.GetInt("amplifier"));
+                RestorePotionEffect(effect);
         MovementFlags = ReadFlag(tag, "OnGround") ? MovementFlags.OnGround : MovementFlags.None;
+        PowderedSnowTicks = tag.TryGetTagValue<int>("TicksFrozen", out var frozen) ? Math.Clamp(frozen, 0, 140) : 0;
+        if (tag.TryGetTagValue<float>("FallDistance", out var fallen) && float.IsFinite(fallen)) fallDistance = Math.Max(0, fallen);
         MobBitMask = (ReadFlag(tag, "NoAI") ? MobBitmask.NoAi : MobBitmask.None) |
             (ReadFlag(tag, "LeftHanded") ? MobBitmask.LeftHanded : MobBitmask.None);
         CanPickUpLoot = ReadFlag(tag, "CanPickUpLoot");
