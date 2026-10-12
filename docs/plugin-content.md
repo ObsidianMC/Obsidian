@@ -292,7 +292,9 @@ A biome modifier is NeoForge 1.21.11's:
 - `neoforge:add_features` adds `features` to the end of a decoration `step` of each of the `biomes`;
 - `neoforge:remove_features` removes `features` from the `biomes`, in the given `steps` (one or a list) or in all;
 - `neoforge:add_spawns` adds `spawners`, one `{"type", "weight", "minCount", "maxCount"}` or a list of them, to the
-  `biomes`, each at the end of its entity type's category's list, like NeoForge;
+  `biomes`, each at the end of its entity type's category's list, like NeoForge. As in vanilla, weights are at least
+  0 and counts at least 1; a modifier that would make a list's weights add up to more than 2147483647 is logged and
+  left out;
 - `neoforge:remove_spawns` removes the `entity_types`' spawners from every category of the `biomes`;
 - `neoforge:add_carvers` adds `carvers` to the end of the `biomes`' carvers, and `neoforge:remove_carvers` removes
   them (carvers have no steps any more, so a `steps` field is ignored, as NeoForge ignores it);

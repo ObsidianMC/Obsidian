@@ -113,11 +113,14 @@ internal static partial class PluginSpawns
     /// </summary>
     public static string Name(MobCategory category) => category.ToString().ToSnakeCase();
 
-    // Like NeoForge, each spawner goes to the end of its entity type's category's list.
+    // Like NeoForge, each spawner goes to the end of its entity type's category's list. A modifier that would make a
+    // list's weights add up to more than vanilla's WeightedList holds (an int) is left out whole.
     private static void AddSpawns(
         Dictionary<string, IReadOnlyDictionary<string, SpawnerMob[]>> lists,
         BiomeModifierData modifier)
     {
+        var updated = new Dictionary<string, IReadOnlyDictionary<string, SpawnerMob[]>>();
+
         foreach (var biome in PluginFeatures.ResolveBiomes(modifier.Biomes))
         {
             var categories = lists.GetValueOrDefault(biome)?.ToDictionary() ?? [];
@@ -125,11 +128,22 @@ internal static partial class PluginSpawns
             foreach (var spawner in modifier.Spawners)
             {
                 var category = CategoryOf(spawner.Type);
-                categories[category] = [.. categories.GetValueOrDefault(category) ?? [], spawner];
+                SpawnerMob[] spawners = [.. categories.GetValueOrDefault(category) ?? [], spawner];
+
+                if (spawners.Sum(mob => (long)mob.Weight) > int.MaxValue)
+                {
+                    throw new InvalidDataException(
+                        $"spawners: the {category} weights of {biome} would add up to more than {int.MaxValue}");
+                }
+
+                categories[category] = spawners;
             }
 
-            lists[biome] = categories;
+            updated[biome] = categories;
         }
+
+        foreach (var (biome, categories) in updated)
+            lists[biome] = categories;
     }
 
     // Like NeoForge, the entity types' spawners are removed from every category.
