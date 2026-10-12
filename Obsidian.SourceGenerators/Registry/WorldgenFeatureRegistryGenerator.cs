@@ -740,7 +740,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                         var entries = json.ValueKind == JsonValueKind.Array
                             ? json.EnumerateArray().Select(entry => entry.GetString()!)
                             : [json.GetString()!];
-                        return $"new global::Obsidian.WorldData.Structures.BiomeSet({string.Join(", ", entries.Select(Literal))})";
+                        return $"new global::Obsidian.API.World.Features.BiomeSet({string.Join(", ", entries.Select(Literal))})";
                     }
                 case "Vector":
                     {

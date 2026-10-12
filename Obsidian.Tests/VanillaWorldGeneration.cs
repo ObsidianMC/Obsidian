@@ -136,7 +136,7 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
             vanilla.Identifier,
             vanilla.DimensionType.Name,
             vanilla.NoiseSettings,
-            noise.NoiseSettings[vanilla.NoiseSettings],
+            noise.NoiseSettings[vanilla.NoiseSettings!],
             vanilla.CreateBiomeSource,
             () => vanilla.PossibleBiomes);
     }

@@ -1,9 +1,10 @@
 using Obsidian.API.World.Generator.RandomSources;
 
-namespace Obsidian.WorldData.Features.Tree;
+namespace Obsidian.API.World.Features.Trees;
 
 /// <summary>
-/// Places a tree's leaves around each <see cref="FoliageAttachment"/>, like vanilla's <c>FoliagePlacer</c>.
+/// Places a tree's leaves around each <see cref="FoliageAttachment"/>, like vanilla's <c>FoliagePlacer</c>. Plugins
+/// add types with <c>RegisterWorldgenType&lt;FoliagePlacer, T&gt;</c>.
 /// </summary>
 public abstract class FoliagePlacer
 {
@@ -14,27 +15,54 @@ public abstract class FoliagePlacer
     public required IIntProvider Offset { get; init; }
 
     /// <summary>Places foliage at one attachment; samples <see cref="Offset"/> once per call, like vanilla.</summary>
-    public void CreateFoliage(TreeContext tree, int freeTreeHeight, FoliageAttachment attachment, int foliageHeight, int foliageRadius) =>
-        this.CreateFoliage(tree, freeTreeHeight, attachment, foliageHeight, foliageRadius, this.Offset.Sample(tree.Random));
+    public void CreateFoliage(
+        TreeContext tree,
+        int freeTreeHeight,
+        FoliageAttachment attachment,
+        int foliageHeight,
+        int foliageRadius)
+    {
+        var offset = this.Offset.Sample(tree.Random);
+        this.CreateFoliage(tree, freeTreeHeight, attachment, foliageHeight, foliageRadius, offset);
+    }
 
     /// <summary>Height of the foliage, used to compute the trunk length before the foliage radius is sampled.</summary>
     public abstract int GetFoliageHeight(IRandomSource random, int treeHeight);
 
     public virtual int GetFoliageRadius(IRandomSource random, int trunkHeight) => this.Radius.Sample(random);
 
-    protected abstract void CreateFoliage(TreeContext tree, int freeTreeHeight, FoliageAttachment attachment, int foliageHeight,
-        int foliageRadius, int offset);
+    protected abstract void CreateFoliage(
+        TreeContext tree,
+        int freeTreeHeight,
+        FoliageAttachment attachment,
+        int foliageHeight,
+        int foliageRadius,
+        int offset);
 
     /// <summary>
-    /// Whether to leave out the leaf at (<paramref name="dx"/>, <paramref name="y"/>, <paramref name="dz"/>) of a row of
-    /// <paramref name="radius"/>; <paramref name="dx"/>/<paramref name="dz"/> are absolute distances from the trunk.
+    /// Whether to leave out the leaf at (<paramref name="dx"/>, <paramref name="y"/>, <paramref name="dz"/>) of a row
+    /// of <paramref name="radius"/>; <paramref name="dx"/>/<paramref name="dz"/> are absolute distances from the trunk.
     /// </summary>
-    protected abstract bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk);
+    protected abstract bool ShouldSkipLocation(
+        IRandomSource random,
+        int dx,
+        int y,
+        int dz,
+        int radius,
+        bool doubleTrunk);
 
     /// <summary>Converts signed offsets to distances (measured from the nearer trunk column of a 2x2 trunk).</summary>
-    protected virtual bool ShouldSkipLocationSigned(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk)
+    protected virtual bool ShouldSkipLocationSigned(
+        IRandomSource random,
+        int dx,
+        int y,
+        int dz,
+        int radius,
+        bool doubleTrunk)
     {
-        int distanceX, distanceZ;
+        int distanceX;
+        int distanceZ;
+
         if (doubleTrunk)
         {
             distanceX = Math.Min(Math.Abs(dx), Math.Abs(dx - 1));
@@ -49,7 +77,10 @@ public abstract class FoliagePlacer
         return this.ShouldSkipLocation(random, distanceX, y, distanceZ, radius, doubleTrunk);
     }
 
-    /// <summary>Places a square row of leaves of <paramref name="radius"/> at <paramref name="y"/> blocks above <paramref name="center"/>.</summary>
+    /// <summary>
+    /// Places a square row of leaves of <paramref name="radius"/> at <paramref name="y"/> blocks above
+    /// <paramref name="center"/>.
+    /// </summary>
     protected void PlaceLeavesRow(TreeContext tree, Vector center, int radius, int y, bool doubleTrunk)
     {
         var extra = doubleTrunk ? 1 : 0;
@@ -67,8 +98,14 @@ public abstract class FoliagePlacer
     /// Places a row like <see cref="PlaceLeavesRow"/>, then randomly hangs one or two leaves below its outer edge
     /// (used by cherry trees).
     /// </summary>
-    protected void PlaceLeavesRowWithHangingLeavesBelow(TreeContext tree, Vector center, int radius, int y, bool doubleTrunk,
-        float hangingLeavesChance, float hangingLeavesExtensionChance)
+    protected void PlaceLeavesRowWithHangingLeavesBelow(
+        TreeContext tree,
+        Vector center,
+        int radius,
+        int y,
+        bool doubleTrunk,
+        float hangingLeavesChance,
+        float hangingLeavesExtensionChance)
     {
         this.PlaceLeavesRow(tree, center, radius, y, doubleTrunk);
 
@@ -93,19 +130,22 @@ public abstract class FoliagePlacer
     }
 
     /// <summary>
-    /// Places a leaf unless the position holds persistent leaves or isn't <see cref="TreeBlocks.ValidTreePos"/>;
-    /// leaves that can be waterlogged are waterlogged in water source blocks.
+    /// Places a leaf unless the position holds persistent leaves or isn't a valid tree position (air or
+    /// <c>#replaceable_by_trees</c>); leaves that can be waterlogged are waterlogged in water source blocks.
     /// </summary>
     protected static bool TryPlaceLeaf(TreeContext tree, Vector position)
     {
         var existing = tree.Level.GetBlock(position);
-        var persistent = existing.GetProperty("persistent") == "true";
-        if (persistent || !TreeBlocks.ValidTreePos(tree.Level, position))
+        var persistent = TreeBlockRules.GetProperty(existing, "persistent") == "true";
+        if (persistent || !TreeBlockRules.ValidTreePos(tree.Level, position))
             return false;
 
-        var leaf = tree.Config.FoliageProvider.GetState(tree.Random, position);
-        if (leaf.HasProperty("waterlogged"))
-            leaf = leaf.WithProperty("waterlogged", TreeBlocks.IsWaterSource(tree.Level.GetBlock(position)));
+        var leaf = tree.FoliageProvider.GetState(tree.Random, position);
+        if (TreeBlockRules.HasProperty(leaf, "waterlogged"))
+        {
+            var waterlogged = TreeBlockRules.States.IsWaterSource(tree.Level.GetBlock(position));
+            leaf = TreeBlockRules.WithProperty(leaf, "waterlogged", waterlogged);
+        }
 
         tree.SetFoliage(position, leaf);
         return true;

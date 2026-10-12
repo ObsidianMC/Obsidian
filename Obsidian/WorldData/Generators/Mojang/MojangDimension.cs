@@ -73,9 +73,9 @@ internal sealed class MojangDimension
         : throw new InvalidOperationException($"Unknown dimension type '{this.dimensionType}'.");
 
     /// <summary>
-    /// The noise settings' identifier, vanilla's or a plugin's.
+    /// The noise settings' identifier, vanilla's or a plugin's, or null for ones defined inline in the level stem.
     /// </summary>
-    public string NoiseSettings { get; }
+    public string? NoiseSettings { get; }
 
     /// <summary>
     /// The noise settings the dimension generates with.
@@ -122,7 +122,7 @@ internal sealed class MojangDimension
 
     /// <param name="identifier">The level stem's identifier.</param>
     /// <param name="dimensionType">A registered dimension type.</param>
-    /// <param name="noiseSettings">The noise settings' identifier.</param>
+    /// <param name="noiseSettings">The noise settings' identifier, or null for ones defined inline.</param>
     /// <param name="settings">The noise settings.</param>
     /// <param name="createBiomeSource">Creates the biome source for a world.</param>
     /// <param name="possibleBiomes">The biome source's possible biomes, without creating one.</param>
@@ -130,7 +130,7 @@ internal sealed class MojangDimension
     public MojangDimension(
         string identifier,
         string dimensionType,
-        string noiseSettings,
+        string? noiseSettings,
         NoiseSetting settings,
         Func<RandomState, IClimateBiomeSource> createBiomeSource,
         Func<IReadOnlyList<BiomeCodec>> possibleBiomes,

@@ -319,6 +319,29 @@ public sealed class PluginDimensionFiles : IDisposable
         Assert.True(west.GetBlock(3, 38, 5).Is(BlockIds.Stone));
         Assert.True(west.GetBlock(3, 40, 5).IsAir);
 
+        // The same settings defined inline generate the same, and the plugin entries they name count as changes.
+        var inlineFile = PluginDimensions.Parse(
+            "stemfiles:inline",
+            "test",
+            Bytes(stem.Replace("\"probe:shelf_world\"", ShelfWorld)),
+            noise);
+        Assert.Null(inlineFile.Dimension.NoiseSettings);
+        Assert.Contains($"{PluginNoise.DensityFunction} probe:ground", inlineFile.Json);
+
+        var inlineBuilder = new ChunkBuilder(
+            inlineFile.Dimension,
+            1234,
+            generateStructures: false,
+            () => WorldgenFeatureSet.Vanilla);
+        var inlineWest = new Chunk(-1, 0);
+
+        inlineBuilder.PopulateBiomes(inlineWest);
+        inlineBuilder.Generate3DTerrain(inlineWest);
+        inlineBuilder.ApplySurfaceRules(inlineWest);
+
+        Assert.True(inlineWest.GetBlock(3, 39, 5).Is(BlockIds.GoldBlock));
+        Assert.True(inlineWest.GetBlock(3, 40, 5).IsAir);
+
         // A plugin's code failing stops its level, rather than chunk management, and the chunk isn't generated.
         var failing = new MojangDimension(
             "stemfiles:failing",

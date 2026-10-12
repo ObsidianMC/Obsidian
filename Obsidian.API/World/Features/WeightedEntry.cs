@@ -1,6 +1,6 @@
 ﻿using Obsidian.API.World.Generator.RandomSources;
 
-namespace Obsidian.Providers;
+namespace Obsidian.API.World.Features;
 
 /// <summary>
 /// An entry of a vanilla weighted list (<c>{"data": ..., "weight": n}</c>).

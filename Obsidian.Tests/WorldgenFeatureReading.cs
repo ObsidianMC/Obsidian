@@ -1,6 +1,11 @@
+using Obsidian.API;
 using Obsidian.API.World.Features;
+using Obsidian.API.World.Features.Trees;
+using Obsidian.API.World.Generator;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Registries;
 using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Features.Tree;
 using Obsidian.WorldData.Structures;
 using System;
 using System.Collections;
@@ -45,6 +50,103 @@ public class WorldgenFeatureReading
         Assert.Empty(differences.Take(20));
         Assert.Equal(ConfiguredFeatures.All.Count, configured);
         Assert.Equal(PlacedFeatures.All.Count, placed);
+    }
+
+    [Fact(DisplayName = "A plugin's tree part types are read in a vanilla tree")]
+    public void ReadsPluginTreeParts()
+    {
+        List<WorldgenTypeRegistration> registrations = [];
+        registrations.Add(WorldgenTypeRegistration.Create(
+            registrations,
+            "probe:cube",
+            typeof(FoliagePlacer),
+            typeof(CubeFoliagePlacer)));
+        registrations.Add(WorldgenTypeRegistration.Create(
+            registrations,
+            "probe:cap",
+            typeof(TreeDecorator),
+            typeof(CapDecorator)));
+
+        var reader = new WorldgenReader(
+            WorldgenTypes.With(registrations),
+            id => throw new InvalidDataException(id),
+            id => throw new InvalidDataException(id));
+        using var document = JsonDocument.Parse("""
+            {
+              "type": "minecraft:tree",
+              "config": {
+                "trunk_provider": {
+                  "type": "minecraft:simple_state_provider",
+                  "state": { "Name": "minecraft:oak_log" }
+                },
+                "trunk_placer": {
+                  "type": "minecraft:straight_trunk_placer",
+                  "base_height": 4,
+                  "height_rand_a": 2,
+                  "height_rand_b": 0
+                },
+                "foliage_provider": {
+                  "type": "minecraft:simple_state_provider",
+                  "state": { "Name": "minecraft:oak_leaves" }
+                },
+                "foliage_placer": { "type": "probe:cube", "radius": 2, "offset": 0, "height": 3 },
+                "dirt_provider": { "type": "minecraft:simple_state_provider", "state": { "Name": "minecraft:dirt" } },
+                "minimum_size": {
+                  "type": "minecraft:two_layers_feature_size",
+                  "limit": 1,
+                  "lower_size": 0,
+                  "upper_size": 1
+                },
+                "decorators": [{ "type": "probe:cap", "state": { "Name": "minecraft:gold_block" } }]
+              }
+            }
+            """);
+
+        var tree = Assert.IsType<TreeFeature>(reader.ReadConfiguredFeature(document.RootElement, "probe:tree"));
+
+        Assert.Equal(3, Assert.IsType<CubeFoliagePlacer>(tree.FoliagePlacer).Height);
+        Assert.Equal(2, tree.FoliagePlacer.Radius.MaxValue);
+        Assert.Equal("minecraft:gold_block", Assert.IsType<CapDecorator>(Assert.Single(tree.Decorators)).State.Name);
+    }
+
+    // A plugin's foliage placer: square rows of leaves of its radius, for its height.
+    public sealed class CubeFoliagePlacer : FoliagePlacer
+    {
+        public required int Height { get; init; }
+
+        public override int GetFoliageHeight(IRandomSource random, int treeHeight) => this.Height;
+
+        protected override void CreateFoliage(
+            TreeContext tree,
+            int freeTreeHeight,
+            FoliageAttachment attachment,
+            int foliageHeight,
+            int foliageRadius,
+            int offset)
+        {
+            for (var y = offset; y > offset - foliageHeight; y--)
+                this.PlaceLeavesRow(tree, attachment.Position, foliageRadius, y, attachment.DoubleTrunk);
+        }
+
+        protected override bool ShouldSkipLocation(
+            IRandomSource random,
+            int dx,
+            int y,
+            int dz,
+            int radius,
+            bool doubleTrunk) => false;
+    }
+
+    // A plugin's tree decorator: a block on the highest log.
+    public sealed class CapDecorator : TreeDecorator
+    {
+        public required SimpleBlockState State { get; init; }
+
+        public override void Place(TreeDecoratorContext context)
+        {
+            if (context.Logs.Count > 0)
+                context.SetBlock(context.Logs[^1] + Vector.Up, this.State.ToBlock());
+        }
     }
 
     // The entries of the category assets the generator reads, like Assets/worldgen/features/ores.json.

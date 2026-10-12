@@ -1,3 +1,5 @@
+using Obsidian.API.World.Features.Trees;
+
 namespace Obsidian.WorldData.Features.Tree.Placers.Trunk;
 
 /// <summary>
@@ -26,7 +28,7 @@ public sealed class BendingTrunkPlacer : TrunkPlacer
             if (i + 1 >= top + random.NextInt(2))
                 cursor += step;
 
-            if (TreeBlocks.ValidTreePos(tree.Level, cursor))
+            if (TreeBlockRules.ValidTreePos(tree.Level, cursor))
                 this.PlaceLog(tree, cursor);
 
             if (i >= this.MinHeightForLeaves)
@@ -38,7 +40,7 @@ public sealed class BendingTrunkPlacer : TrunkPlacer
         var bendLength = this.BendLength.Sample(random);
         for (var i = 0; i <= bendLength; i++)
         {
-            if (TreeBlocks.ValidTreePos(tree.Level, cursor))
+            if (TreeBlockRules.ValidTreePos(tree.Level, cursor))
                 this.PlaceLog(tree, cursor);
 
             attachments.Add(new FoliageAttachment(cursor, 0, false));

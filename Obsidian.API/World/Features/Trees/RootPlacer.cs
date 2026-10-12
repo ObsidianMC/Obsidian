@@ -1,9 +1,10 @@
 using Obsidian.API.World.Generator.RandomSources;
 
-namespace Obsidian.WorldData.Features.Tree;
+namespace Obsidian.API.World.Features.Trees;
 
 /// <summary>
-/// Places roots below a raised trunk, like vanilla's <c>RootPlacer</c> (only mangroves use one).
+/// Places roots below a raised trunk, like vanilla's <c>RootPlacer</c> (only mangroves use one). Plugins add types
+/// with <c>RegisterWorldgenType&lt;RootPlacer, T&gt;</c>.
 /// </summary>
 public abstract class RootPlacer
 {
@@ -16,19 +17,26 @@ public abstract class RootPlacer
 
     public AboveRootPlacement? AboveRootPlacement { get; init; }
 
-    /// <summary>Places the roots between <paramref name="origin"/> and <paramref name="trunkOrigin"/>; <c>false</c> aborts the tree.</summary>
+    /// <summary>
+    /// Places the roots between <paramref name="origin"/> and <paramref name="trunkOrigin"/>; <c>false</c> aborts the
+    /// tree.
+    /// </summary>
     public abstract bool PlaceRoots(TreeContext tree, Vector origin, Vector trunkOrigin);
 
-    public Vector GetTrunkOrigin(Vector origin, IRandomSource random) => origin + (0, this.TrunkOffsetY.Sample(random), 0);
+    public Vector GetTrunkOrigin(Vector origin, IRandomSource random) =>
+        origin + (0, this.TrunkOffsetY.Sample(random), 0);
 
-    protected virtual bool CanPlaceRoot(IWorldGenLevel level, Vector position) => TreeBlocks.ValidTreePos(level, position);
+    /// <summary>Vanilla <c>TreeFeature.validTreePos</c>: air or <c>#replaceable_by_trees</c>.</summary>
+    protected virtual bool CanPlaceRoot(IWorldGenLevel level, Vector position) =>
+        TreeBlockRules.ValidTreePos(level, position);
 
     protected virtual void PlaceRoot(TreeContext tree, Vector position)
     {
         if (!this.CanPlaceRoot(tree.Level, position))
             return;
 
-        tree.SetRoot(position, GetPotentiallyWaterloggedState(tree.Level, position, this.RootProvider.GetState(tree.Random, position)));
+        var root = this.RootProvider.GetState(tree.Random, position);
+        tree.SetRoot(position, GetPotentiallyWaterloggedState(tree.Level, position, root));
 
         var above = this.AboveRootPlacement;
         if (above is null)
@@ -42,9 +50,17 @@ public abstract class RootPlacer
         }
     }
 
-    /// <summary>Waterlogs states that support it when the position holds any water (vanilla <c>FluidTags.WATER</c>).</summary>
-    protected static IBlock GetPotentiallyWaterloggedState(IWorldGenLevel level, Vector position, IBlock block) =>
-        block.HasProperty("waterlogged") ? block.WithProperty("waterlogged", TreeBlocks.IsWater(level.GetBlock(position))) : block;
+    /// <summary>
+    /// Waterlogs states that support it when the position holds any water (vanilla <c>FluidTags.WATER</c>).
+    /// </summary>
+    protected static IBlock GetPotentiallyWaterloggedState(IWorldGenLevel level, Vector position, IBlock block)
+    {
+        if (!TreeBlockRules.HasProperty(block, "waterlogged"))
+            return block;
+
+        var water = TreeBlockRules.States.IsWater(level.GetBlock(position));
+        return TreeBlockRules.WithProperty(block, "waterlogged", water);
+    }
 }
 
 /// <summary>

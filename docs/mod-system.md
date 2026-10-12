@@ -109,8 +109,8 @@ client. This document describes the design and tracks its progress. The archive 
      types are only found when registered, in their own namespace; they're gone when the plugin unloads, with the
      features made of them, and nothing keeps them (a reload test checks its load context is collected). Placing a
      feature made of any of a plugin's types, nested ones included, holds a call into the plugin. `BlockSet` moved to
-     the API so plugin types can take block lists and tags. Vanilla's tree placers and decorators, structure
-     processors and weighted lists stay in Obsidian for now.
+     the API so plugin types can take block lists and tags. Vanilla's tree parts, weighted lists and biome sets
+     followed in Phase 3.5; structure processors stay in Obsidian for now.
    - Done, slice 4a: plugins' dimensions. A plugin's `data/<namespace>/dimension` level stem files are read like
      vanilla's, with vanilla's noise generator, vanilla's noise settings and any of vanilla's biome sources
      (`multi_noise` inline or by preset, `fixed`, `checkerboard`, `the_end`), so plugin biomes generate. Each becomes a
@@ -160,15 +160,24 @@ client. This document describes the design and tracks its progress. The archive 
      - adding plugin biomes to vanilla's overworld and nether climate (like TerraBlender), rather than only to
        plugins' own dimensions, deferred until needed;
      - NeoForge's holder set types (`neoforge:any`, `neoforge:and`, ...) and configured carvers defined inline;
-     - in level stems: noise settings, dimension types and biomes defined inline, `minecraft:flat` and
-       `minecraft:debug` generators, and plugin level generators as a stem's `generator`;
+     - in level stems: dimension types and biomes defined inline, `minecraft:flat` and `minecraft:debug`
+       generators, and plugin level generators as a stem's `generator`;
      - noises defined inline, a constant `spline`, and a range for a spawn target's `depth`;
-     - vanilla's tree placers and decorators, structure processors, weighted lists and biome sets in the API;
+     - structure processors and tree feature sizes in the API;
      - environment attributes with particle options or rich bed rule messages, and the server applying more
        attributes than `monsters_burn`;
      - raids and the end fight in plugins' dimensions, which only the default world has (plugins build their own
        portals).
-   - Next: Phase 4.
+   - Phase 3.5, part B (done): inline entries in plugins' level stems, and tree parts in the API. A stem's
+     `generator.settings` may define noise settings inline, read like a plugin's noise settings file, with
+     inline or named density functions; the plugins whose types they use, and the plugin entries they name, are
+     tracked like a plugin biome source's, and a reload changing them applies after a restart like any stem
+     change. A `multi_noise` preset may be vanilla's inline `{"preset": ...}`. Dimension types and biomes stay
+     named. The bases of vanilla's tree parts (`TrunkPlacer`, `FoliagePlacer`, `RootPlacer`, `TreeDecorator`,
+     with `TreeContext` and `TreeDecoratorContext`), `WeightedEntry<T>` and `BiomeSet` moved to the API, so
+     plugins register their own placers and decorators with `RegisterWorldgenType` and their feature types take
+     properties of these types (see [plugin-content.md](plugin-content.md#tree-parts)); vanilla's own placers
+     and decorators stay in Obsidian and generate as before.
    - Phase 3.5, part A (done): NeoForge's spawn and carver biome modifiers (`add_spawns`, `remove_spawns`,
      `add_carvers`, `remove_carvers`; `add_spawn_costs` and `remove_spawn_costs` are read but unused, like vanilla's
      spawn costs), applied to vanilla's and plugins' biomes in NeoForge's phases. The mob spawner spawns from the
@@ -179,6 +188,7 @@ client. This document describes the design and tracks its progress. The archive 
      from `worldgen/configured_carver` files. Tags of `worldgen/biome`, `worldgen/placed_feature` and
      `worldgen/configured_carver` from plugins' files work in biome modifiers and biomes; biome tags hold plugins'
      biomes and are sent to clients, vanilla's included (see [plugin-content.md](plugin-content.md#biome-modifiers)).
+   - Next: Phase 4.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource
    packs, and answers NeoForge's handshake and registry sync.

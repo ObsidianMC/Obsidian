@@ -1,3 +1,4 @@
+using Obsidian.API.World.Features.Trees;
 using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.WorldData.Features.Tree.Placers.Root;
