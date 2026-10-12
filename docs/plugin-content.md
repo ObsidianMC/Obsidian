@@ -102,8 +102,10 @@ Tags are data pack tag files: `data/<namespace>/tags/block/<path>.json`, `tags/i
 `remove`. A
 file for a vanilla tag adds to it, for example `data/minecraft/tags/block/mineable/pickaxe.json` to mine a block with a
 pickaxe; other files make new tags, or add to Obsidian's [convention tags](#convention-tags). Obsidian merges vanilla's
-tags with the loaded plugins' files in load order whenever a plugin loads or unloads, and vanilla's `Tag` objects hold
-the result, so server code using them sees the plugins' entries. `IPluginRegistry.AddToTag` adds entries from code.
+tags with the loaded plugins' files in load order, then the server's data packs' files (see
+[Data packs and overriding vanilla](#data-packs-and-overriding-vanilla)), whenever a plugin loads or unloads, and
+vanilla's `Tag` objects hold the result, so server code using them sees the plugins' entries.
+`IPluginRegistry.AddToTag` adds entries from code.
 
 The generator makes a `RubyTags` class with a `TagKey` per tag of the plugin's namespaces:
 
@@ -198,14 +200,16 @@ Obsidian reads the files whenever a plugin loads or unloads, and at startup befo
 - Entries stay registered until the server stops, even when their plugin unloads, since chunks and saves refer to
   them. Saved chunks store biomes by name, so after a restart without the plugin its biomes load as plains, as its
   blocks load as air.
-- Plugins can't override vanilla's entries: a file in the `minecraft` namespace is left out, with a warning. When two
-  plugins define the same entry, the first in load order wins and the other is logged.
+- A file for one of vanilla's entries, like `data/minecraft/worldgen/biome/plains.json`, overrides it (see
+  [Data packs and overriding vanilla](#data-packs-and-overriding-vanilla)). When files define the same entry, the
+  last in order wins, plugins' in load order and then data packs', and the one replaced is logged.
 - A file vanilla wouldn't accept is logged and left out, and the plugin loads without it (see below).
 - A dimension type keeps its `min_y`, `height` and `logical_height` until the server restarts: a reload changing them
   keeps the entry as it was, with a warning.
 
 Clients are sent a plugin's entries as vanilla's network codecs write the values read from its files, not the files
-themselves, and vanilla's entries by name, so vanilla clients always decode them like a data pack's entries. A colour
+themselves, and vanilla's entries by name unless a file overrides them, so vanilla clients always decode them like a
+data pack's entries. A colour
 given as an int is sent as `"#rrggbb"`, defaults vanilla leaves out are left out, and of a biome only its climate,
 attributes and effects are sent, as vanilla sends them. Players already connected go back through configuration when
 entries are added or their data changes. Plugin biomes generate in plugins' dimensions (see [Dimensions](#dimensions)),
@@ -403,9 +407,10 @@ without plugins carve exactly as before.
 
 The rules:
 
-- Like other plugin data, files in the `minecraft` namespace are left out, and when two plugins define the same entry,
-  the first in load order wins. A file that can't be read is logged and left out, with the features and modifiers
-  that need it; the plugin loads without them. Values are checked like the source generator checks vanilla's:
+- Files for vanilla's features and carvers override them (see
+  [Data packs and overriding vanilla](#data-packs-and-overriding-vanilla)), and when files define the same entry, the
+  last in order wins. A file that can't be read is logged and left out, with the features and modifiers that need it;
+  the plugin loads without them. Values are checked like the source generator checks vanilla's:
   unknown types, fields, enum names and blocks, and missing required fields, are errors.
 - Features may refer to each other in any order and across plugins; a feature that refers back to itself is left
   out. Each feature is read once and shared, so a feature given by identifier is the same instance everywhere.
@@ -670,7 +675,9 @@ Plugins add the data a dimension's terrain is made of, like a data pack:
 
 - `data/<namespace>/worldgen/noise_settings/<path>.json` is the noise settings `<namespace>:<path>`;
 - `data/<namespace>/worldgen/density_function/<path>.json` is a density function;
-- `data/<namespace>/worldgen/noise/<path>.json` is a noise, `{"firstOctave": ..., "amplitudes": [...]}`.
+- `data/<namespace>/worldgen/noise/<path>.json` is a noise, `{"firstOctave": ..., "amplitudes": [...]}`;
+- `data/<namespace>/worldgen/multi_noise_biome_source_parameter_list/<path>.json` is a multi-noise parameter list,
+  which in vanilla 1.21.11 only names a built-in preset: `{"preset": "minecraft:overworld"}` or `minecraft:nether`.
 
 They're vanilla 1.21.11's formats, read into the same objects as vanilla's own (a parity test reads all of vanilla's
 files at runtime, compares them with the generated ones, and generates vanilla's chunks with them). Noise settings
@@ -699,9 +706,10 @@ The noise settings then name `"final_density": "ruby:ground"` in their `noise_ro
 
 The rules:
 
-- Like other plugin data, files in the `minecraft` namespace are left out, and when two plugins define the same entry,
-  the first in load order wins. A file that can't be read is logged and left out, with the entries that need it; the
-  plugin loads without them. Unknown types, fields and blocks, missing fields and values out of vanilla's ranges are
+- Files for vanilla's entries override them (see
+  [Data packs and overriding vanilla](#data-packs-and-overriding-vanilla)), and when files define the same entry, the
+  last in order wins. A file that can't be read is logged and left out, with the entries that need it; the plugin
+  loads without them. Unknown types, fields and blocks, missing fields and values out of vanilla's ranges are
   errors, such as a `find_top_surface` whose `cell_height` isn't positive or an `old_blended_noise` scale out of
   0.001 to 1000.
 - Entries refer to vanilla's or plugins' entries by identifier, in any order and across plugins; one that refers
@@ -846,10 +854,11 @@ The file is vanilla 1.21.11's level stem, read with vanilla's rules (see [What's
   defining them inline, and a `biome_source`, one of vanilla's or a type a plugin registered (see
   [Noise types](#noise-types)):
   - `minecraft:multi_noise`, with an inline `biomes` list of `{"biome": ..., "parameters": {...}}` or a `preset`
-    (`minecraft:overworld` or `minecraft:nether`, or inline as `{"preset": "minecraft:overworld"}`). Each parameter
-    (`temperature`, `humidity`, `continentalness`, `erosion`, `depth`, `weirdness`) is a number from -2 to 2 or a
-    range, `[min, max]` or `{"min": ..., "max": ...}`, and `offset` is from 0 to 1. Biomes are picked from the climate
-    like vanilla picks them;
+    naming a parameter list (vanilla's `minecraft:overworld` or `minecraft:nether`, or a
+    `worldgen/multi_noise_biome_source_parameter_list` file's), or inline as `{"preset": "minecraft:overworld"}`. Each
+    parameter (`temperature`, `humidity`, `continentalness`, `erosion`, `depth`, `weirdness`) is a number from -2 to 2
+    or a range, `[min, max]` or `{"min": ..., "max": ...}`, and `offset` is from 0 to 1. Biomes are picked from the
+    climate like vanilla picks them;
   - `minecraft:fixed`, with one `biome`;
   - `minecraft:checkerboard`, with `biomes` (a biome, a list of them or a biome tag, not empty) and a `scale` from 0
     to 62 (2 when missing or invalid, like vanilla);
@@ -874,9 +883,11 @@ vanilla. Players are placed on the ground near the climate's spawn, like the ove
 
 The rules:
 
-- Like other plugin data, files in the `minecraft` namespace are left out, and when two plugins define the same
-  dimension, the first in load order wins. A file that can't be read is logged and left out; the plugin loads without
-  it. A dimension whose biomes' features can't be ordered (vanilla can't generate it either) is logged and left out.
+- A file for one of vanilla's dimensions overrides how it generates (see
+  [Data packs and overriding vanilla](#data-packs-and-overriding-vanilla)); the rest of this section is about new
+  dimensions. When files define the same dimension, the last in order wins. A file that can't be read is logged and
+  left out; the plugin loads without it. A dimension whose biomes' features can't be ordered (vanilla can't generate
+  it either) is logged and left out.
 - A file's path gives the dimension's identifier, and, as vanilla checks resource paths, one with an empty, `.` or
   `..` segment (like `data/ruby/dimension//world.json`) is refused. This holds for every plugin data file.
 - A dimension's level is created when its plugin loads, at startup or later, and is saved in the world's folder under
@@ -903,6 +914,65 @@ Players get there with `/dimension <id>`, like `/dimension ruby:crystal_world`, 
 clients see a plugin's dimension as a level of that name with its dimension type, sent in login and respawn with the
 build height of the type, and its plugin biomes in chunks by their registry ids. There are no portals to plugins'
 dimensions, and only the default world has them.
+
+## Data packs and overriding vanilla
+
+Like vanilla's data packs, data can replace vanilla's entries, so a pack can change vanilla's world generation: a
+Terralith-style pack overriding the overworld's level stem, noise settings, parameter list and biomes generates its
+overworld instead of vanilla's. The data comes from two places:
+
+- The server's `datapacks` folder, next to `plugins` (`Paths:DataPacks` sets another, like `Paths:Plugins`). Each
+  folder or zip file in it with a `pack.mcmeta` is a vanilla data pack, read at startup in name order, after the
+  plugins, so the operator's packs win. Obsidian reads the same files of a pack as of a plugin's `data/` folder:
+  biomes, dimension and damage types, features, carvers, noise settings, density functions, noises, parameter lists,
+  level stems and tags (blocks, items, entity types, biomes, placed features and configured carvers). Other files, like
+  recipes, loot tables or structures, are left out, and how many is logged. A pack's `filter` and `overlays` aren't
+  applied, which is logged once for the pack. Data packs are read once: a change applies after a restart.
+- Plugins' own `data/minecraft/...` files, which override vanilla's entries like a data pack's.
+
+Data packs are the server's, not a world's: Obsidian's registries are shared by all its worlds, unlike vanilla's
+single world with its `datapacks` folder, so a pack applies to every world.
+
+The order is vanilla's entries, then plugins' files in load order, then data packs' in name order. As in vanilla, the
+last file for an entry replaces it whole, and tag files merge (`"replace": true` starts over). Overridable:
+
+- biomes, dimension types and damage types. These are synced: an overridden entry is sent to clients with its data
+  rather than by name from the `minecraft:core` pack, like vanilla sends an entry a data pack changed, and it's
+  vanilla's again, sent by name, once nothing overrides it. Overriding a biome replaces its climate, effects,
+  features, carvers, spawners and spawn costs; [biome modifiers](#biome-modifiers) still apply on top.
+- configured and placed features and configured carvers. An overridden feature or carver replaces vanilla's in every
+  biome placing it, and vanilla's features naming an overridden one, directly or through others, are read again from
+  vanilla's files with the runtime reader, so they use it, as vanilla's do by reference. Saplings, bone meal and
+  structures still use vanilla's own features.
+- noise settings, density functions and noises, read again the same way through vanilla's entries naming them. The
+  noises the surface builder reads by name (like `minecraft:surface` or the badlands' and icebergs' noises) stay
+  vanilla's.
+- parameter lists: `data/minecraft/worldgen/multi_noise_biome_source_parameter_list/overworld.json` with
+  `{"preset": "minecraft:nether"}` makes the overworld pick nether biomes from its climate.
+- level stems: `data/minecraft/dimension/overworld.json` (or `the_nether`, `the_end`) replaces how that dimension
+  generates, read like any [dimension](#dimensions), with an inline `biomes` list, say. It must keep vanilla's
+  dimension type (`minecraft:overworld`, `minecraft:the_nether`, `minecraft:the_end`), since Obsidian creates
+  vanilla's levels with those; override the type's file to change it.
+- tags, merged as above.
+
+Vanilla's entries nothing overrides keep their compiled code, so without overrides worlds generate exactly as before.
+A vanilla dimension whose stem, or the noise settings or parameter list its stem names, is overridden is built at
+runtime instead, from the override or from vanilla's own stem, with the same readers as plugins' dimensions.
+
+When overrides apply follows vanilla, which reads a data pack's level stems over those saved in a world's level.dat
+on every load, and named noise settings and biomes too: a pack added to an existing world changes the chunks it
+generates from then on, while chunks already generated stay, with borders between them. Obsidian saves no stems
+(`worlds.json` and level.dat only name the generator), so a vanilla dimension takes its overrides when its level
+starts, in every world, and keeps them until the server stops:
+
+- Data packs, and plugins loaded at startup, apply to every world as it loads.
+- A plugin loaded, reloaded or unloaded later follows the plugin rules: its biomes, features, carvers, spawns, tags
+  and damage types apply at once (players are sent through configuration when synced entries change), while a change
+  to how a running vanilla dimension generates (its stem, the noise it reads, its parameter list) is logged and
+  applies after a restart, like a change to a plugin's dimension. A vanilla dimension type keeps its height once levels
+  exist.
+- A vanilla dimension built with a plugin's types stops generating when the plugin unloads and resumes when it's
+  back, like a plugin's dimension (see [Noise types](#noise-types)).
 
 ## Level generators
 

@@ -206,6 +206,21 @@ client. This document describes the design and tracks its progress. The archive 
      `c:ores/iron`, `c:ingots/iron`, `c:is_overworld` and `c:bosses`. They're merged like a built-in data pack
      between vanilla's tags and plugins' files, exist with no plugins loaded and are sent to clients (see
      [plugin-content.md](plugin-content.md#convention-tags)). Fluids have no `c:` tags, as plugins can't tag fluids.
+   - Phase 3.7, worldgen overrides (done): like vanilla's data packs, data replaces vanilla's entries. The server's
+     `datapacks` folder (`Paths:DataPacks`) holds vanilla data packs, folders or zip files with a `pack.mcmeta`, read
+     once at startup in name order after the plugins, and plugins' own `data/minecraft/...` files override too; the
+     last file for an entry wins, whole, plugins' and data packs' alike (it was the first plugin's before), and tag
+     files merge. Data packs are the server's rather than a world's, as Obsidian's registries are shared by its
+     worlds. Biomes, dimension types and damage types, features and carvers, noise settings, density functions, noises,
+     multi-noise parameter lists (a new plugin file type) and level stems can be overridden. Overridden synced
+     entries are sent with their data instead of by name from `minecraft:core`, like vanilla sends a changed entry.
+     Vanilla's compiled entries naming an override are read again from vanilla's files with the runtime readers, and
+     a vanilla dimension whose stem, noise settings or parameter list is overridden is built at runtime; everything
+     else keeps its compiled code, so worlds without overrides generate exactly as before. Like vanilla, which reads
+     data packs' stems over level.dat's on every load, a vanilla dimension takes its overrides when its level starts,
+     in every world, and keeps them until a restart; plugins' later changes to it apply after a restart, like a
+     plugin dimension's (see
+     [plugin-content.md](plugin-content.md#data-packs-and-overriding-vanilla)).
    - Next: Phase 4.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource
