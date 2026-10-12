@@ -1,9 +1,11 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API.Registries;
 using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.World.Features;
 using Obsidian.Plugins;
 using Obsidian.Registries;
+using Obsidian.Registries.Codecs;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using System;
@@ -11,6 +13,7 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using Xunit;
@@ -21,8 +24,14 @@ namespace Obsidian.Tests;
 /// Data packs' and plugins' files overriding vanilla's entries, like vanilla's data packs. The golden chunk tests check
 /// that worlds without overrides generate as before.
 /// </summary>
+/// <remarks>
+/// In the plugin tests' collection, as some apply files to the server's registries.
+/// </remarks>
+[Collection(nameof(PluginTagFiles))]
 public sealed class WorldgenOverrides : IDisposable
 {
+    private const string PackMetadata = """{ "pack": { "pack_format": 94, "description": "" } }""";
+
     private readonly string folder = Path.Join(Path.GetTempPath(), $"obsidian-data-packs-{Guid.NewGuid():N}");
 
     public void Dispose()
@@ -37,14 +46,14 @@ public sealed class WorldgenOverrides : IDisposable
         var pack = Path.Join(this.folder, "nether_overworld");
         var list = Path.Join(pack, "data", "minecraft", "worldgen", "multi_noise_biome_source_parameter_list");
         Directory.CreateDirectory(list);
-        File.WriteAllText(Path.Join(pack, "pack.mcmeta"), """{ "pack": { "pack_format": 94, "description": "" } }""");
+        File.WriteAllText(Path.Join(pack, "pack.mcmeta"), PackMetadata);
         File.WriteAllText(Path.Join(list, "overworld.json"), """{ "preset": "minecraft:nether" }""");
 
         // Not a pack: no pack.mcmeta.
         Directory.CreateDirectory(Path.Join(this.folder, "notes"));
 
         var logger = new PluginFeatureFiles.ListLogger();
-        var opened = Assert.Single(DataPack.OpenAll(this.folder, logger));
+        var opened = Assert.Single(DataPack.OpenAll(this.folder, _ => true, logger));
         var files = PluginNoise.FindFiles(opened.Files.Paths)
             .Select(file => PluginNoise.Parse(file.Registry, file.Identifier, file.Path, opened.Files.Read(file.Path)!))
             .ToList();
@@ -160,5 +169,126 @@ public sealed class WorldgenOverrides : IDisposable
         Assert.False(table.IsOverridden("minecraft:plains"));
         Assert.Same(vanilla, plains.Element);
         Assert.Null(Assert.Single(table.NetworkEntries).Data);
+    }
+
+    [Fact(DisplayName = "A data pack over its limits is left out, and the files Obsidian doesn't read aren't read")]
+    public void DataPacksAreReadWithinLimits()
+    {
+        var spaces = new string(' ', 4096);
+        Directory.CreateDirectory(this.folder);
+
+        this.Zip("big.zip", new()
+        {
+            ["pack.mcmeta"] = PackMetadata,
+            ["data/minecraft/worldgen/noise/big.json"] = $"{{}}{spaces}"
+        });
+
+        this.Zip("recipes.zip", new()
+        {
+            ["pack.mcmeta"] = PackMetadata,
+            ["data/minecraft/recipe/big.json"] = spaces
+        });
+
+        var logger = new PluginFeatureFiles.ListLogger();
+        var limits = new DataPackLimits(Files: 8, FileSize: 1024, TotalSize: 2048);
+        var pack = Assert.Single(DataPack.OpenAll(this.folder, path => path.Contains("/worldgen/"), logger, limits));
+
+        Assert.Equal("recipes.zip", pack.Files.Name);
+        Assert.Contains("data/minecraft/recipe/big.json", pack.Files.Paths);
+        Assert.Null(pack.Files.Read("data/minecraft/recipe/big.json"));
+        Assert.Contains(logger.Messages, message => message.Contains("big.zip") && message.Contains("1024 bytes"));
+    }
+
+    [Fact(DisplayName = "A dimension follows later overrides of the data its stem names, and its files, until taken")]
+    public void DimensionsFollowTheirFilesUntilTaken()
+    {
+        const string identifier = "overridetest:world";
+        const string stem = """
+            {
+              "type": "minecraft:overworld",
+              "generator": {
+                "type": "minecraft:noise",
+                "settings": "minecraft:overworld",
+                "biome_source": { "type": "minecraft:multi_noise", "preset": "overridetest:climate" }
+              }
+            }
+            """;
+
+        var logger = new PluginFeatureFiles.ListLogger();
+        var pluginList = PluginNoise.Parse(
+            PluginNoise.ParameterList,
+            "overridetest:climate",
+            "plugin",
+            Encoding.UTF8.GetBytes("""{ "preset": "minecraft:overworld" }"""));
+        var packList = PluginNoise.Parse(
+            PluginNoise.ParameterList,
+            "overridetest:climate",
+            "pack",
+            Encoding.UTF8.GetBytes("""{ "preset": "minecraft:nether" }"""));
+
+        try
+        {
+            // A plugin loads with the stem and its parameter list, then a data pack read after it overrides the list.
+            PluginNoise.Apply([pluginList], [], logger);
+            var file = PluginDimensions.Parse(identifier, "plugin", Encoding.UTF8.GetBytes(stem));
+            PluginDimensions.Apply([file], logger);
+
+            PluginNoise.Apply([pluginList, packList], [], logger);
+            PluginDimensions.Apply([file], logger);
+
+            Assert.Equal(MultiNoiseBiomeSource.NetherBiomes, PluginDimensions.Find(identifier)!.PossibleBiomes);
+
+            // Another plugin's stem wins, then that plugin unloads: the first stem wins again, read from its bytes.
+            var fixedStem = stem.Replace(
+                """{ "type": "minecraft:multi_noise", "preset": "overridetest:climate" }""",
+                """{ "type": "minecraft:fixed", "biome": "minecraft:plains" }""");
+            var other = PluginDimensions.Parse(identifier, "other", Encoding.UTF8.GetBytes(fixedStem));
+
+            PluginDimensions.Apply([file, other], logger);
+            Assert.Equal("minecraft:plains", Assert.Single(PluginDimensions.Find(identifier)!.PossibleBiomes).Name);
+
+            PluginDimensions.Apply([file], logger);
+            var dimension = PluginDimensions.Find(identifier)!;
+
+            Assert.False(dimension.IsReleased);
+            Assert.Equal(MultiNoiseBiomeSource.NetherBiomes, dimension.PossibleBiomes);
+        }
+        finally
+        {
+            PluginNoise.Apply([], [], NullLogger.Instance);
+            PluginDimensions.Apply([], NullLogger.Instance);
+        }
+
+        // No level took it, so it went with its files.
+        Assert.Null(PluginDimensions.Find(identifier));
+    }
+
+    [Fact(DisplayName = "Noise settings generating outside a dimension type's build range are found")]
+    public void FindsNoiseSettingsOutsideTheBuildRange()
+    {
+        var overworld = CodecRegistry.Dimensions.All["minecraft:overworld"];
+        var settings = MojangDimension.Overworld.Settings;
+        var lower = new DimensionCodec
+        {
+            Name = overworld.Name,
+            Id = overworld.Id,
+            Element = overworld.Element with { MinY = 0, Height = 256, LogicalHeight = 256 }
+        };
+
+        Assert.Null(LevelStemData.OutsideBuildRange("minecraft:overworld", settings, overworld));
+        Assert.Contains(
+            "from y -64 to 319, outside the build range of minecraft:overworld (0 to 255)",
+            LevelStemData.OutsideBuildRange("minecraft:overworld", settings, lower));
+    }
+
+    private void Zip(string name, Dictionary<string, string> files)
+    {
+        using var zip = ZipFile.Open(Path.Join(this.folder, name), ZipArchiveMode.Create);
+
+        foreach (var (path, text) in files)
+        {
+            using var writer = new StreamWriter(zip.CreateEntry(path).Open());
+            writer.Write(text);
+        }
     }
 }

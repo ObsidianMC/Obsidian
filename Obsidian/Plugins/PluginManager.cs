@@ -62,6 +62,14 @@ public sealed partial class PluginManager : IAsyncDisposable
     // The server's data packs, read once at startup; their files apply after every plugin's (see DataPack).
     private ImmutableArray<DataPack> dataPacks = [];
 
+    // Vanilla's dimension types whose overrides are left out, as a vanilla dimension can't generate in their build
+    // range (see SettleDimensionTypes).
+    private ImmutableHashSet<string> keptDimensionTypes = [];
+
+    // Whether vanilla's dimension types' build ranges are settled: the worlds create their levels with them once
+    // startup has read every plugin and data pack.
+    private bool dimensionTypesSettled;
+
     private bool serverReady;
     private bool disposed;
 
@@ -130,6 +138,7 @@ public sealed partial class PluginManager : IAsyncDisposable
 
                 // The operator's data packs win over plugins' files, so they're applied after them.
                 this.LoadDataPacks();
+                this.SettleDimensionTypes();
             });
 
             DirectoryWatcher.Watch(ServerConstants.PluginsPath);
@@ -742,7 +751,7 @@ public sealed partial class PluginManager : IAsyncDisposable
     // Data packs are read once: a change applies after a restart.
     private void LoadDataPacks()
     {
-        var packs = DataPack.OpenAll(ServerConstants.DataPacksPath, this.logger);
+        var packs = DataPack.OpenAll(ServerConstants.DataPacksPath, ReadsDataFile, this.logger);
         if (packs.Count == 0)
             return;
 
@@ -781,22 +790,25 @@ public sealed partial class PluginManager : IAsyncDisposable
                 + pack.NoiseFiles.Length
                 + pack.DimensionFiles.Length;
 
-            var leftOut = LeftOut(pack.Files);
+            var leftOut = pack.Files.Paths.Count(path => !ReadsDataFile(path));
             Log.DataPackLoaded(this.logger, pack.Files.Name, read, leftOut);
+
+            // What was read is in the files by now.
+            pack.DropContents();
         }
     }
 
-    // How many of a data pack's data files Obsidian doesn't read, like recipes or structures.
-    private static int LeftOut(DataFiles files)
+    // Whether Obsidian reads a plugin's or data pack's data file, by its path; others, like recipes or structures,
+    // are left out.
+    private static bool ReadsDataFile(string path)
     {
-        var read = PluginTags.FindFiles(files.Paths).Select(file => file.Path)
-            .Concat(PluginFeatures.FindFiles(files.Paths).Select(file => file.Path))
-            .Concat(PluginCodecs.FindFiles(files.Paths).Select(file => file.Path))
-            .Concat(PluginNoise.FindFiles(files.Paths).Select(file => file.Path))
-            .Concat(PluginDimensions.FindFiles(files.Paths).Select(file => file.Path))
-            .ToHashSet(StringComparer.Ordinal);
+        string[] paths = [path];
 
-        return files.Paths.Count(path => path.StartsWith("data/", StringComparison.Ordinal) && !read.Contains(path));
+        return PluginTags.FindFiles(paths).Any()
+            || PluginFeatures.FindFiles(paths).Any()
+            || PluginCodecs.FindFiles(paths).Any()
+            || PluginNoise.FindFiles(paths).Any()
+            || PluginDimensions.FindFiles(paths).Any();
     }
 
     // The files plugins hold in load order, then data packs' in theirs, which win.
@@ -854,11 +866,35 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     // The loaded plugins' and data packs' entries are in their registries, the last file of each winning. Plugins'
     // entries no file has any more stay; vanilla's are vanilla's again. Vanilla's dimension types keep their height
-    // once levels exist.
+    // once startup settled them, and those kept vanilla's then stay so.
     private void ApplyCodecs() => PluginCodecs.Apply(
-        this.DataFilesOf(plugin => plugin.CodecFiles, pack => pack.CodecFiles),
+        this.DataFilesOf(plugin => plugin.CodecFiles, pack => pack.CodecFiles)
+            .Where(file => file.Registry != PluginCodecs.DimensionType
+                || !this.keptDimensionTypes.Contains(file.Identifier)),
         this.logger,
-        levelsCreated: this.Levels().Count > 0);
+        levelsCreated: this.dimensionTypesSettled || this.Levels().Count > 0);
+
+    // Once every startup plugin and data pack is read, and before the worlds create their levels, a vanilla dimension
+    // type whose build range a vanilla dimension, as overridden, can't generate in stays vanilla's. Vanilla clamps
+    // generation to the build range instead, but Obsidian's generator fills every cell of the noise settings; a level
+    // stem's own pairing is checked as it's read (see LevelStemData).
+    private void SettleDimensionTypes()
+    {
+        var misfits = PluginDimensions.VanillaTypeMisfits();
+
+        foreach (var (type, reason) in misfits)
+            Log.DimensionTypeKept(this.logger, type, reason);
+
+        if (misfits.Count > 0)
+        {
+            this.keptDimensionTypes = [.. misfits.Keys];
+            this.ApplyCodecs();
+            this.ApplyDimensions();
+            this.ApplyFeatures();
+        }
+
+        this.dimensionTypesSettled = true;
+    }
 
     // Dimensions read from now on use the loaded plugins' and data packs' noise settings, density functions, noises
     // and parameter lists.
@@ -1088,6 +1124,10 @@ public sealed partial class PluginManager : IAsyncDisposable
         [LoggerMessage(Level = LogLevel.Information,
             Message = "Loaded data pack {Name}: read {Read} files, left out {LeftOut} that Obsidian doesn't read")]
         public static partial void DataPackLoaded(ILogger logger, string name, int read, int leftOut);
+
+        [LoggerMessage(Level = LogLevel.Error,
+            Message = "Kept vanilla's dimension type {Type}: {Reason}, which Obsidian can't clamp generation to yet")]
+        public static partial void DimensionTypeKept(ILogger logger, string type, string reason);
 
         [LoggerMessage(Level = LogLevel.Information,
             Message = "Loaded plugin {PluginName} {Version} in {ElapsedMilliseconds}ms")]
