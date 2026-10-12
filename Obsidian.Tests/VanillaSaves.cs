@@ -64,6 +64,25 @@ public sealed class VanillaSaves : IDisposable
         Assert.Equal("minecraft:plains", chunk.GetBiome(0, 0, 0).Name);
     }
 
+    [Fact(DisplayName = "A region file counts as saved chunks only once its header locates one")]
+    public async Task EmptyRegionFileHasNoChunks()
+    {
+        var path = Path.Join(this.folder, "region", "r.0.0.mca");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+        await using (var empty = new RegionFile(path, NbtCompression.ZLib))
+        {
+            await empty.InitializeAsync();
+            empty.Flush();
+        }
+
+        Assert.False(RegionFile.HasChunks(path));
+
+        await WriteChunkAsync(this.folder, VanillaChunk());
+
+        Assert.True(RegionFile.HasChunks(path));
+    }
+
     [Fact(DisplayName = "Obsidian saves chunks in vanilla's section shape and reloads them unchanged")]
     public async Task SavedChunkHasVanillaShape()
     {

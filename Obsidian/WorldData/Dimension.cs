@@ -155,6 +155,10 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
     /// <summary>
     /// Whether the dimension was saved before: it has level data or chunks in its folder. Known once it's initialized.
     /// </summary>
+    /// <remarks>
+    /// Region files alone don't count: generating a new dimension creates them before it saves any chunk, so a
+    /// cancelled creation can leave them empty.
+    /// </remarks>
     internal bool IsSaved
     {
         get
@@ -162,7 +166,7 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
             var regions = Path.Combine(this.FolderPath, this.RegionFolderName);
 
             return File.Exists(this.LevelDataFilePath)
-                || (Directory.Exists(regions) && Directory.EnumerateFileSystemEntries(regions).Any());
+                || (Directory.Exists(regions) && Directory.EnumerateFiles(regions, "*.mca").Any(RegionFile.HasChunks));
         }
     }
 

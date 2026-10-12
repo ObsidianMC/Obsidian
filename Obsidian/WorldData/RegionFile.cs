@@ -199,6 +199,20 @@ public sealed class RegionFile : IAsyncDisposable
     /// </summary>
     public bool HasChunk(int chunkX, int chunkZ) => this.locations[this.GetChunkTableIndex(chunkX, chunkZ)] != 0;
 
+    /// <summary>
+    /// Whether the region file at <paramref name="filePath"/> has any chunk: a location in its header that isn't zero.
+    /// Creating a level can be interrupted after its region files were created but before chunks were written to them.
+    /// </summary>
+    internal static bool HasChunks(string filePath)
+    {
+        using var file = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+        var locations = new byte[HeaderTableSize * 4];
+        var read = file.ReadAtLeast(locations, locations.Length, throwOnEndOfStream: false);
+
+        return locations.AsSpan(0, read).ContainsAnyExcept((byte)0);
+    }
+
     public void Flush()
     {
         this.semaphore.Wait();
