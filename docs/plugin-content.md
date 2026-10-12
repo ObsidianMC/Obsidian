@@ -703,6 +703,7 @@ The rules:
 - Generating a chunk and saving it hold the level's own lock on that chunk, so a save never captures a chunk
   mid-write, even while the generator stops or is replaced. A save also takes the generator's `LockChunkAsync` lock
   while it's the level's generator: lock with it any chunk the generator writes into besides the one it generates.
+  Once it's stopped, replaced or failed, saves wait for its running calls to end instead.
 - When the plugin unloads, the level stops generating new chunks, with a warning, and lets go of the generator, so the
   plugin's code can unload. Chunks already generated still load and are saved; ones players reach meanwhile stay
   ungenerated. When the plugin loads again, the level gets a new instance of the plugin's new generator, and generates
@@ -714,4 +715,5 @@ The rules:
 - After a restart without the plugin, a world saved with its generator loads stopped, with a warning, rather than
   generating with another generator; its chunks still load, and it generates again once a plugin registers the
   generator. A new world or dimension can't be created without its generator: the server refuses to start it, saying
-  which generator is missing. An unknown generator identifier is never replaced by the overworld's.
+  which generator is missing. A dimension whose creation was cancelled before it saved its level data or any chunk
+  counts as new. An unknown generator identifier is never replaced by the overworld's.
