@@ -59,7 +59,7 @@ internal static class FeatureSorter
         foreach (var node in graph.Keys)
         {
             if (!visited.Contains(node) && DepthFirstSearch(graph, visited, inProgress, sorted, node))
-                throw new InvalidOperationException("Feature order cycle found.");
+                throw new FeatureOrderException();
         }
 
         sorted.Reverse();
@@ -135,3 +135,9 @@ internal sealed class StepFeatures
 
     public int IndexOf(PlacedFeature feature) => this.indices[feature];
 }
+
+/// <summary>
+/// Thrown when biomes' features can't be ordered, one being placed both before and after another: a fault of the data
+/// the biomes come from, not of plugins' code, even where plugins' types build the dimension.
+/// </summary>
+internal sealed class FeatureOrderException() : InvalidOperationException("Feature order cycle found.");

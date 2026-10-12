@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.Hosting;
+using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Mojang;
@@ -289,6 +290,8 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         await this.pluginDimensionLock.WaitAsync(cancellationToken);
         try
         {
+            // Generating the dimensions' spawn chunks runs plugins' code, which can't change plugins from here.
+            PluginManager.creatingDimensions.Value = true;
             this.pluginDimensionsOpen |= opening;
 
             if (!this.pluginDimensionsOpen || this.DefaultWorld is not World world)
@@ -305,6 +308,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         }
         finally
         {
+            PluginManager.creatingDimensions.Value = false;
             this.pluginDimensionLock.Release();
         }
     }

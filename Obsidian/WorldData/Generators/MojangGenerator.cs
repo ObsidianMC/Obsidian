@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API.World;
 using Obsidian.Nbt;
 using Obsidian.Plugins;
+using Obsidian.WorldData.Generators.Mojang.Features;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Lighting;
@@ -180,7 +181,8 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     // The plugins whose code a failure is attributed to (see Contain), or none.
     private ImmutableArray<PluginContainer> FailedPlugins(Exception exception)
     {
-        if (exception is OutOfMemoryException)
+        // Features that can't be ordered are the data's fault, which Init gives the dimension back for.
+        if (exception is OutOfMemoryException or FeatureOrderException)
             return [];
 
         for (var inner = exception; inner is not null; inner = inner.InnerException)

@@ -41,6 +41,12 @@ public sealed partial class PluginManager : IAsyncDisposable
     // which would wait for itself.
     private static readonly AsyncLocal<PluginManager?> changing = new();
 
+    /// <summary>
+    /// Set while worlds create plugins' dimensions on this async flow, whose generation runs plugins' code: a change
+    /// from there would wait for the pass it runs in, which may wait for a change.
+    /// </summary>
+    internal static readonly AsyncLocal<bool> creatingDimensions = new();
+
     internal readonly ILogger logger;
     private readonly IConfiguration configuration;
     internal readonly IServer server;
@@ -249,9 +255,12 @@ public sealed partial class PluginManager : IAsyncDisposable
     /// </summary>
     private async Task RunChangeAsync(Func<Task> change)
     {
-        if (changing.Value == this)
+        if (changing.Value == this || creatingDimensions.Value)
+        {
             throw new InvalidOperationException(
-                "Plugins can't be loaded or unloaded from a plugin's load, ready or unloading callback.");
+                "Plugins can't be loaded or unloaded from a plugin's load, ready or unloading callback, or while its "
+                    + "dimensions are created.");
+        }
 
         await this.changes.WaitAsync();
         try
