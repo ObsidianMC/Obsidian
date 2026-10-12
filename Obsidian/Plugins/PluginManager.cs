@@ -459,6 +459,9 @@ public sealed partial class PluginManager : IAsyncDisposable
             // Biome regions name biomes, and add to dimensions' biomes, whose features are ordered together.
             container.BiomeRegionFiles = this.ReadBiomeRegionFiles(archive);
             this.ApplyBiomeRegions();
+
+            // Structures name features and processor lists, so they're applied with them.
+            (container.StructureFiles, container.StructureTemplates) = this.ReadStructureFiles(files);
             this.ApplyFeatures();
             this.ApplySpawns();
             await this.AddDimensionLevelsAsync();
@@ -825,6 +828,54 @@ public sealed partial class PluginManager : IAsyncDisposable
         return files.ToImmutable();
     }
 
+    // A plugin's or data pack's structure, structure set and template pool files, and its structure templates, read
+    // within a data pack's limits (see DataPackLimits): a template's NBT is gzipped, and could decompress to far more.
+    // A file that can't be read is left out; the plugin or pack loads without it.
+    private (ImmutableArray<StructureFile> Files, ImmutableArray<TemplateFile> Templates) ReadStructureFiles(
+        DataFiles source)
+    {
+        var files = ImmutableArray.CreateBuilder<StructureFile>();
+
+        foreach (var (path, registry, identifier) in PluginStructures.FindFiles(source.Paths))
+        {
+            try
+            {
+                var data = source.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
+                files.Add(PluginStructures.Parse(registry, identifier, $"{source.Name}/{path}", data));
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.CodecFileFailed(this.logger, ex, path, source.Location);
+            }
+        }
+
+        var templates = ImmutableArray.CreateBuilder<TemplateFile>();
+        var limits = DataPackLimits.Default;
+        var size = 0L;
+
+        foreach (var (path, identifier) in PluginStructures.FindTemplates(source.Paths).Take(limits.Files))
+        {
+            try
+            {
+                var data = source.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
+                var (template, read) = PluginStructures.ParseTemplate(
+                    identifier,
+                    $"{source.Name}/{path}",
+                    data,
+                    Math.Min(limits.FileSize, limits.TotalSize - size));
+
+                size += read;
+                templates.Add(template);
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.CodecFileFailed(this.logger, ex, path, source.Location);
+            }
+        }
+
+        return (files.ToImmutable(), templates.ToImmutable());
+    }
+
     /// <summary>
     /// Ends startup once the plugins in the plugins folder loaded: the operator's data packs in
     /// <paramref name="dataPacks"/> win over plugins' files, so they're applied after them, then dimension types, and
@@ -865,7 +916,10 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.ApplyNoise();
 
         foreach (var pack in packs)
+        {
             pack.DimensionFiles = this.ReadDimensionFiles(pack.Files, pack);
+            (pack.StructureFiles, pack.StructureTemplates) = this.ReadStructureFiles(pack.Files);
+        }
 
         this.ApplyDimensions();
         this.ApplyFeatures();
@@ -877,7 +931,9 @@ public sealed partial class PluginManager : IAsyncDisposable
                 + pack.FeatureFiles.Length
                 + pack.CodecFiles.Length
                 + pack.NoiseFiles.Length
-                + pack.DimensionFiles.Length;
+                + pack.DimensionFiles.Length
+                + pack.StructureFiles.Length
+                + pack.StructureTemplates.Length;
 
             var leftOut = pack.Files.Paths.Count(path => !ReadsDataFile(path));
             Log.DataPackLoaded(this.logger, pack.Files.Name, read, leftOut);
@@ -887,7 +943,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         }
     }
 
-    // Whether Obsidian reads a plugin's or data pack's data file, by its path; others, like recipes or structures,
+    // Whether Obsidian reads a plugin's or data pack's data file, by its path; others, like recipes or loot tables,
     // are left out.
     private static bool ReadsDataFile(string path)
     {
@@ -897,7 +953,9 @@ public sealed partial class PluginManager : IAsyncDisposable
             || PluginFeatures.FindFiles(paths).Any()
             || PluginCodecs.FindFiles(paths).Any()
             || PluginNoise.FindFiles(paths).Any()
-            || PluginDimensions.FindFiles(paths).Any();
+            || PluginDimensions.FindFiles(paths).Any()
+            || PluginStructures.FindFiles(paths).Any()
+            || PluginStructures.FindTemplates(paths).Any();
     }
 
     // The files plugins hold in load order, then data packs' in theirs, which win.
@@ -1120,13 +1178,34 @@ public sealed partial class PluginManager : IAsyncDisposable
             builders.Select(entry => entry.Identifier).ToHashSet(),
             this.logger);
 
-        if (!applied)
-            return;
-
-        foreach (var (dimension, builder) in builders)
+        if (applied)
         {
-            if (!builder!.RefreshFeatures())
-                Log.KeptPreviousFeatures(this.logger, dimension);
+            foreach (var (dimension, builder) in builders)
+            {
+                if (!builder!.RefreshFeatures())
+                    Log.KeptPreviousFeatures(this.logger, dimension);
+            }
+        }
+
+        this.ApplyStructures();
+    }
+
+    // World generation starts and places the loaded plugins' and data packs' structures, which name the current
+    // features and processor lists. Every level's generator moves to them now, and drops the starts of structure sets
+    // that are gone, so none keeps the plugins they came from; chunks not generated yet get the new sets' structures.
+    private void ApplyStructures()
+    {
+        PluginStructures.Apply(
+            this.DataFilesOf(plugin => plugin.StructureFiles, pack => pack.StructureFiles),
+            this.DataFilesOf(plugin => plugin.StructureTemplates, pack => pack.StructureTemplates),
+            PluginFeatures.Current,
+            this.plugins.SelectMany(plugin => plugin.WorldgenTypes),
+            this.logger);
+
+        foreach (var level in this.Levels())
+        {
+            if (level.Generator is WorldData.Generators.MojangGenerator generator)
+                generator.RefreshStructures();
         }
     }
 

@@ -177,6 +177,9 @@ internal sealed partial class WorldgenReader
             case YAboveSurfaceCondition above:
                 CheckRange(above.SurfaceDepthMultiplier, -20, 20, path, "surface_depth_multiplier");
                 break;
+            default:
+                CheckStructureParameters(value, path);
+                break;
         }
     }
 

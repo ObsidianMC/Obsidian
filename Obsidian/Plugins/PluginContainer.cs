@@ -77,6 +77,16 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     internal ImmutableArray<FeatureFile> FeatureFiles { get; set; } = [];
 
     /// <summary>
+    /// The plugin's structure, structure set and template pool files, applied to world generation while it's loaded.
+    /// </summary>
+    internal ImmutableArray<StructureFile> StructureFiles { get; set; } = [];
+
+    /// <summary>
+    /// The plugin's structure templates, which its and others' pools can name while it's loaded.
+    /// </summary>
+    internal ImmutableArray<TemplateFile> StructureTemplates { get; set; } = [];
+
+    /// <summary>
     /// The plugin's level stem files, whose dimensions are added while it's loaded and stay until the server stops.
     /// </summary>
     internal ImmutableArray<DimensionFile> DimensionFiles { get; set; } = [];

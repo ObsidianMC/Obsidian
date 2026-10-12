@@ -80,7 +80,10 @@ public class SinglePoolElement : StructurePoolElement
     /// <summary>Replaces the structure's liquid settings for this element when set.</summary>
     public LiquidSettings? OverrideLiquidSettings { get; init; }
 
-    public StructureTemplate Template => field ??= StructureRegistry.Get(this.Location);
+    /// <summary>
+    /// The template, looked up each time, as plugins and data packs may override it.
+    /// </summary>
+    public StructureTemplate Template => StructureRegistry.Get(this.Location);
 
     public override Vector GetSize(StructureRotation rotation) => this.Template.GetSize(rotation);
 

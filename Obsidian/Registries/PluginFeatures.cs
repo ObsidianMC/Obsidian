@@ -48,10 +48,15 @@ internal static partial class PluginFeatures
     public const string BiomeModifier = "biome_modifier";
 
     /// <summary>
-    /// The folders of plugins' feature, carver and biome modifier files.
+    /// Structure processor lists, which features (fossils) and structures' template pools name.
+    /// </summary>
+    public const string ProcessorList = "worldgen/processor_list";
+
+    /// <summary>
+    /// The folders of plugins' feature, carver, processor list and biome modifier files.
     /// </summary>
     public static FrozenSet<string> Registries { get; } =
-        FrozenSet.Create(ConfiguredFeature, PlacedFeature, ConfiguredCarver, BiomeModifier);
+        FrozenSet.Create(ConfiguredFeature, PlacedFeature, ConfiguredCarver, BiomeModifier, ProcessorList);
 
     private static readonly Lock applying = new();
 
@@ -138,7 +143,7 @@ internal static partial class PluginFeatures
             var modifier = registry switch
             {
                 BiomeModifier => BiomeModifierData.Read(root),
-                ConfiguredFeature or PlacedFeature or ConfiguredCarver => null,
+                ConfiguredFeature or PlacedFeature or ConfiguredCarver or ProcessorList => null,
                 _ => throw new ArgumentException($"{registry} isn't read from plugins' files.", nameof(registry))
             };
 
@@ -211,14 +216,16 @@ internal static partial class PluginFeatures
         var resolver = new FeatureResolver(kept, WorldgenTypes.With(types));
         var carvers = ReadCarvers(kept, logger);
 
-        foreach (var file in kept.Where(file => file.Registry is ConfiguredFeature or PlacedFeature))
+        foreach (var file in kept.Where(file => file.Registry is ConfiguredFeature or PlacedFeature or ProcessorList))
         {
             try
             {
                 if (file.Registry == ConfiguredFeature)
                     resolver.Configured(file.Identifier);
-                else
+                else if (file.Registry == PlacedFeature)
                     resolver.Placed(file.Identifier);
+                else
+                    resolver.Processors(file.Identifier);
             }
             catch (InvalidDataException ex)
             {
@@ -309,7 +316,9 @@ internal static partial class PluginFeatures
         {
             Unordered = unordered,
             ConfiguredCarvers = carvers.Plugins.ToFrozenDictionary(),
-            BiomeCarvers = biomeCarvers.Result
+            BiomeCarvers = biomeCarvers.Result,
+            ProcessorLists = resolver.ProcessorLists.ToFrozenDictionary(),
+            EntryOwners = resolver.Owners.ToFrozenDictionary(ReferenceEqualityComparer.Instance)
         };
     }
 
@@ -405,16 +414,16 @@ internal static partial class PluginFeatures
     // Vanilla's features naming an overridden one, read again from vanilla's files so that they use the override.
     private static IEnumerable<FeatureFile> VanillaDependents(List<FeatureFile> files)
     {
-        // Carvers and biome modifiers aren't named by features.
+        // Carvers and biome modifiers aren't named by features; processor lists are, by fossils.
         var overridden = files
-            .Where(file => file.Registry is ConfiguredFeature or PlacedFeature)
+            .Where(file => file.Registry is ConfiguredFeature or PlacedFeature or ProcessorList)
             .Select(file => (file.Registry, file.Identifier))
             .ToHashSet();
 
         if (!overridden.Any(entry => entry.Identifier.StartsWith("minecraft:", StringComparison.Ordinal)))
             return [];
 
-        return VanillaOverrides.Dependents([ConfiguredFeature, PlacedFeature], overridden)
+        return VanillaOverrides.Dependents([ConfiguredFeature, PlacedFeature, ProcessorList], overridden)
             .Select(entry => new FeatureFile(
                 entry.Registry,
                 entry.Identifier,
@@ -449,6 +458,7 @@ internal static partial class PluginFeatures
     {
         private readonly Dictionary<string, FeatureFile> configuredFiles;
         private readonly Dictionary<string, FeatureFile> placedFiles;
+        private readonly Dictionary<string, FeatureFile> processorListFiles;
         private readonly Dictionary<FeatureFile, string> failed = new(ReferenceEqualityComparer.Instance);
         private readonly HashSet<FeatureFile> reading = new(ReferenceEqualityComparer.Instance);
         private readonly WorldgenReader reader;
@@ -466,12 +476,23 @@ internal static partial class PluginFeatures
                 .Where(file => file.Registry == PlacedFeature)
                 .ToDictionary(file => file.Identifier);
 
-            this.reader = new WorldgenReader(types, this.Configured, this.Placed, this.OnCreated);
+            this.processorListFiles = files
+                .Where(file => file.Registry == ProcessorList)
+                .ToDictionary(file => file.Identifier);
+
+            this.reader = new WorldgenReader(
+                types,
+                this.Configured,
+                this.Placed,
+                this.OnCreated,
+                structures: StructureLookups.Vanilla with { FindProcessorList = this.Processors });
         }
 
         public Dictionary<string, ConfiguredFeatureBase> ConfiguredFeatures { get; } = [];
 
         public Dictionary<string, PlacedFeature> PlacedFeatures { get; } = [];
+
+        public Dictionary<string, StructureProcessorList> ProcessorLists { get; } = [];
 
         /// <summary>
         /// The plugins whose code each feature read runs: those whose types it, or a feature it refers to, is made
@@ -521,6 +542,28 @@ internal static partial class PluginFeatures
             }
 
             return this.Used(feature);
+        }
+
+        public StructureProcessorList Processors(string identifier)
+        {
+            if (!this.processorListFiles.ContainsKey(identifier)
+                && global::Obsidian.Registries.ProcessorLists.All.TryGetValue(identifier, out var vanilla))
+            {
+                return vanilla;
+            }
+
+            if (!this.ProcessorLists.TryGetValue(identifier, out var list))
+            {
+                if (!this.processorListFiles.TryGetValue(identifier, out var file))
+                    throw new InvalidDataException($"{identifier} isn't a processor list");
+
+                list = this.Read(
+                    file,
+                    this.ProcessorLists,
+                    () => this.reader.ReadProcessorList(file.Json, file.Identifier));
+            }
+
+            return this.Used(list);
         }
 
         /// <summary>
@@ -1068,6 +1111,19 @@ internal sealed record WorldgenFeatureSet(
     /// </summary>
     public IReadOnlyDictionary<string, ImmutableArray<IConfiguredCarver>> BiomeCarvers { get; init; } =
         WorldData.Generators.Mojang.Carvers.ConfiguredCarvers.VanillaBiomes;
+
+    /// <summary>
+    /// The processor lists of plugins' and data packs' files, by identifier, vanilla's overridden ones included.
+    /// </summary>
+    public FrozenDictionary<string, StructureProcessorList> ProcessorLists { get; init; } =
+        FrozenDictionary<string, StructureProcessorList>.Empty;
+
+    /// <summary>
+    /// The plugins whose code each entry read from files runs (features and processor lists, and entries defined
+    /// inline in them), for the entries that run any, so that structures using them call into those plugins.
+    /// </summary>
+    public FrozenDictionary<object, ImmutableArray<PluginContainer>> EntryOwners { get; init; } =
+        FrozenDictionary<object, ImmutableArray<PluginContainer>>.Empty;
 
     /// <summary>
     /// Every plugin whose code any of the biomes' features runs.

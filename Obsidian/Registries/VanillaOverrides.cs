@@ -25,7 +25,11 @@ internal static partial class VanillaOverrides
             [PluginNoise.DensityFunction] = ("Obsidian.Assets.worldgen.density_function.", false),
             [PluginNoise.Noise] = ("Obsidian.Assets.worldgen.noise.", false),
             [PluginFeatures.ConfiguredFeature] = ("Obsidian.Assets.worldgen.features.", true),
-            [PluginFeatures.PlacedFeature] = ("Obsidian.Assets.worldgen.placed_features.", true)
+            [PluginFeatures.PlacedFeature] = ("Obsidian.Assets.worldgen.placed_features.", true),
+            [PluginFeatures.ProcessorList] = ("Obsidian.Assets.worldgen.processor_lists.", true),
+            [PluginStructures.Structure] = ("Obsidian.Assets.worldgen.structures.", true),
+            [PluginStructures.StructureSet] = ("Obsidian.Assets.worldgen.structure_sets.", true),
+            [PluginStructures.TemplatePool] = ("Obsidian.Assets.worldgen.template_pools.", true)
         }.ToFrozenDictionary();
 
     private static readonly ConcurrentDictionary<string, FrozenDictionary<string, JsonElement>> vanilla = new();
@@ -62,7 +66,8 @@ internal static partial class VanillaOverrides
     /// <summary>
     /// Vanilla's entries of a registry, as the JSON the source generator reads, by identifier.
     /// </summary>
-    /// <param name="registry">A noise or feature registry, like <see cref="PluginNoise.DensityFunction"/>.</param>
+    /// <param name="registry">A noise, feature or structure registry, like <see cref="PluginNoise.DensityFunction"/>.
+    /// </param>
     public static FrozenDictionary<string, JsonElement> Entries(string registry) =>
         vanilla.GetOrAdd(registry, Load);
 

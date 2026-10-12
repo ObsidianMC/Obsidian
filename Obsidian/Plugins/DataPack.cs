@@ -45,8 +45,9 @@ internal sealed record DataPackLimits(int Files, long FileSize, long TotalSize)
 /// and applied after every plugin's, in the packs' name order, so that the last pack wins, like vanilla's.
 /// </summary>
 /// <remarks>
-/// Only the files Obsidian reads from plugins are applied (worldgen, biomes, dimension and damage types, and tags);
-/// others, like recipes or structures, are left out unread. A pack's <c>filter</c> and <c>overlays</c> aren't applied.
+/// Only the files Obsidian reads from plugins are applied (worldgen, structures and their templates, biomes, dimension
+/// and damage types, and tags); others, like recipes or loot tables, are left out unread. A pack's <c>filter</c> and
+/// <c>overlays</c> aren't applied.
 /// </remarks>
 internal sealed partial class DataPack(DataFiles files)
 {
@@ -83,6 +84,16 @@ internal sealed partial class DataPack(DataFiles files)
     /// The pack's noise settings, density function, noise and parameter list files.
     /// </summary>
     public ImmutableArray<NoiseFile> NoiseFiles { get; set; } = [];
+
+    /// <summary>
+    /// The pack's structure, structure set and template pool files.
+    /// </summary>
+    public ImmutableArray<StructureFile> StructureFiles { get; set; } = [];
+
+    /// <summary>
+    /// The pack's structure templates.
+    /// </summary>
+    public ImmutableArray<TemplateFile> StructureTemplates { get; set; } = [];
 
     /// <summary>
     /// The pack's level stem files.

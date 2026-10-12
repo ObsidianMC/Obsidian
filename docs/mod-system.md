@@ -244,6 +244,25 @@ client. This document describes the design and tracks its progress. The archive 
      starts generating and keeps them until the server stops: later changes apply after a restart, and a region
      whose plugin unloads keeps generating with its biomes. Without regions, dimensions generate exactly as
      before (see [plugin-content.md](plugin-content.md#biome-regions)).
+   - Phase 3.8, structures (done): plugins' and data packs' structures, structure sets, template pools, processor
+     lists and structure templates, from `data/<namespace>/worldgen/structure`, `structure_set`, `template_pool`,
+     `processor_list` and `data/<namespace>/structure/*.nbt` files, read at runtime like vanilla 1.21.11's codecs
+     into the same objects as vanilla's compiled ones (a parity test reads all of vanilla's both ways and compares
+     them). Every data-driven vanilla structure type is available, jigsaw structures with every pool element type,
+     both placements with exclusion zones and frequency reduction, and plugins' processor types in processor lists.
+     Like features, they're applied again on every plugin change: a level's structures move to the new sets, whose
+     starts chunks not generated yet get, keeping the starts of the sets that stay; starts of a set that's gone are
+     dropped, so their plugin's code isn't kept, with their state saved and restored if it comes back. Starts are
+     saved by their structure's identifier, and one whose structure is gone after a restart loads and stays as saved.
+     Starting and placing a structure made of plugins' types is a call into them, and its failure stops the dimension
+     like a feature's. Overrides of vanilla's structures, sets, pools, processor lists and templates apply to vanilla's
+     structures, which are read again where they name them, as are those naming overridden placed features. Without
+     plugins or overrides, vanilla's compiled structures generate as before (see
+     [plugin-content.md](plugin-content.md#structures)).
+   - Possible later, for structures: structure types and pool element types in code (the structure and piece bases
+     are Obsidian's own, and would need an API like the tree parts'), structure tags from plugins (explorer maps and
+     dolphins use vanilla's), the object forms of a jigsaw's `max_distance_from_center` and `dimension_padding`, and
+     a `/locate` command.
    - Next: Phase 4.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource

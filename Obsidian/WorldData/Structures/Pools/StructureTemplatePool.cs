@@ -49,14 +49,14 @@ public sealed class StructureTemplatePool
         }
     }
 
-    /// <summary>The fallback pool, or <c>null</c> when its id isn't registered.</summary>
-    public StructureTemplatePool? FallbackPool => Get(this.Fallback);
-
     /// <summary>Vanilla <c>getRandomTemplate</c>: one <c>nextInt</c> over the weighted entries.</summary>
     public StructurePoolElement GetRandomTemplate(IRandomSource random) =>
         this.Templates.Length == 0 ? EmptyPoolElement.Instance : this.Templates[random.NextInt(this.Templates.Length)];
 
-    /// <summary>The registered pool with the id, or <c>null</c>.</summary>
+    /// <summary>
+    /// Vanilla's pool with the id, or <c>null</c>. Generation looks pools up through
+    /// <see cref="StructureGenerationContext.Pools"/>, which has plugins' and data packs' pools too.
+    /// </summary>
     public static StructureTemplatePool? Get(string id) => TemplatePools.All.GetValueOrDefault(id);
 }
 

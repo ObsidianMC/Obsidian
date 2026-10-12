@@ -28,8 +28,8 @@ namespace Obsidian.WorldData.Features;
 /// <c>processor_type</c> or <c>element_type</c> among <see cref="WorldgenTypes"/>; a number is its
 /// <c>minecraft:constant</c> and a bare vertical anchor a constant height provider;</item>
 /// <item>a single value given for a list is a list of it, and enums are matched ignoring case and underscores;</item>
-/// <item>configured features, placed features and processor lists given by identifier are looked up, others are
-/// read inline;</item>
+/// <item>configured features, placed features, processor lists, template pools, structures and structure sets given
+/// by identifier are looked up, others are read inline;</item>
 /// <item>a density function is a number (a constant), an identifier or an object; a noise is an identifier, since
 /// vanilla seeds noises by their identifier; a spline value is a number (a constant) or a spline.</item>
 /// </list>
@@ -46,13 +46,16 @@ namespace Obsidian.WorldData.Features;
 /// <see cref="InvalidDataException"/>; vanilla's by default.</param>
 /// <param name="noise">Looks up a noise by identifier, or throws an <see cref="InvalidDataException"/>; vanilla's by
 /// default.</param>
+/// <param name="structures">Looks up processor lists, template pools, structures and structure sets by identifier;
+/// vanilla's by default.</param>
 internal sealed partial class WorldgenReader(
     WorldgenTypes types,
     Func<string, ConfiguredFeatureBase> configuredFeature,
     Func<string, PlacedFeature> placedFeature,
     Action<Type>? created = null,
     Func<string, IDensityFunction>? densityFunction = null,
-    Func<string, BaseNoise>? noise = null)
+    Func<string, BaseNoise>? noise = null,
+    StructureLookups? structures = null)
 {
     private static readonly string[] discriminators = ["type", "predicate_type", "processor_type", "element_type"];
 
@@ -62,6 +65,8 @@ internal sealed partial class WorldgenReader(
     private readonly Func<string, IDensityFunction> densityFunction = densityFunction ?? VanillaDensityFunction;
 
     private readonly Func<string, BaseNoise> noise = noise ?? VanillaNoise;
+
+    private readonly StructureLookups structures = structures ?? StructureLookups.Vanilla;
 
     /// <summary>
     /// Reads a configured feature, <c>{"type": ..., "config": {...}}</c>.
@@ -195,8 +200,8 @@ internal sealed partial class WorldgenReader(
                 : this.ReadPlacedFeatureCore(json, null, path);
         }
 
-        if (target == typeof(StructureProcessorList))
-            return this.ReadProcessorList(json, path);
+        if (this.ReadStructureValue(target, json, path) is object structureValue)
+            return structureValue;
 
         if (this.ReadNoiseValue(target, json, path) is object noiseValue)
             return noiseValue;
@@ -219,24 +224,6 @@ internal sealed partial class WorldgenReader(
         return feature.GetType().IsAssignableTo(target)
             ? feature
             : throw Error(path, $"{feature.Identifier} is a {feature.Type} feature{Expecting(target)}");
-    }
-
-    // A processor list is an identifier, {"processors": [...]} or, as vanilla's codec allows, a bare list.
-    private StructureProcessorList ReadProcessorList(JsonElement json, string path)
-    {
-        if (json.ValueKind == JsonValueKind.String)
-        {
-            var id = Reference(json, path);
-            return ProcessorLists.All.TryGetValue(id, out var list)
-                ? list
-                : throw Error(path, $"{id} isn't a processor list");
-        }
-
-        if (json.ValueKind != JsonValueKind.Array)
-            return (StructureProcessorList)this.ReadObject(typeof(StructureProcessorList), json, null, null, path);
-
-        var processors = this.ReadValue(typeof(ImmutableArray<StructureProcessor>), json, path);
-        return new StructureProcessorList { Processors = (ImmutableArray<StructureProcessor>)processors! };
     }
 
     private object ReadPolymorphic(Type target, JsonElement json, string path)

@@ -84,6 +84,29 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// </summary>
     internal Func<Registries.WorldgenFeatureSet>? Features { get; init; }
 
+    /// <summary>
+    /// The structures and structure sets, read as structures start; <see cref="Registries.PluginStructures.Current"/>
+    /// when null. Tests set them.
+    /// </summary>
+    internal Func<Registries.WorldgenStructures>? Structures { get; init; }
+
+    /// <summary>
+    /// Moves structures to the current ones, if plugins changed them, and drops the starts of structure sets that
+    /// are gone, so that they don't keep the plugins they came from, even once the generator stopped. The state of
+    /// those placed is still saved.
+    /// </summary>
+    internal void RefreshStructures()
+    {
+        if (this.Builder is ChunkBuilder builder)
+        {
+            builder.RefreshStructures();
+            return;
+        }
+
+        var current = this.Structures?.Invoke() ?? Registries.PluginStructures.Current;
+        this.startCache?.Prune(current.Sets.Values.ToHashSet());
+    }
+
     // The builder, for the steps of generation.
     private ChunkBuilder Running => this.Builder
         ?? throw new GeneratorStoppedException($"{this.Dimension.Identifier} stopped generating.");
@@ -749,7 +772,8 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
                 this.Dimension,
                 RandomState.ParseSeed(this.world.Seed),
                 features: this.Features,
-                startCache: this.startCache);
+                startCache: this.startCache,
+                structures: this.Structures);
         }
         catch (Exception ex) when (this.Contain(ex))
         {
