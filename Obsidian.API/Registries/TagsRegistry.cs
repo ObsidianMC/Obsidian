@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace Obsidian.API.Registries;
 
@@ -12,6 +13,14 @@ public static partial class TagsRegistry
 
     // The tags plugins made that vanilla doesn't have, by registry. Replaced whole when plugins load or unload.
     private static FrozenDictionary<string, Tag[]> pluginTags = FrozenDictionary<string, Tag[]>.Empty;
+
+    private static int revision;
+
+    /// <summary>
+    /// How many times plugins' tags were applied. It changes once the tags (vanilla's included, whose entries plugins
+    /// change) are rebuilt, so whatever caches tag contents can tell they're stale.
+    /// </summary>
+    public static int Revision => Volatile.Read(ref revision);
 
     /// <summary>
     /// Finds a tag, vanilla's or a plugin's, by its registry (like <c>block</c>) and identifier (like
@@ -65,8 +74,11 @@ public static partial class TagsRegistry
         vanilla.Value.Values.Where(tag => tag.Registry == registry);
 
     /// <summary>
-    /// Replaces the tags plugins made.
+    /// Replaces the tags plugins made, once every tag was rebuilt, and moves <see cref="Revision"/> on.
     /// </summary>
-    internal static void SetPluginTags(IReadOnlyDictionary<string, Tag[]> tags) =>
+    internal static void SetPluginTags(IReadOnlyDictionary<string, Tag[]> tags)
+    {
         pluginTags = tags.ToFrozenDictionary();
+        Interlocked.Increment(ref revision);
+    }
 }

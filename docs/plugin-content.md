@@ -477,8 +477,8 @@ ignoring case and underscores, and a single value given for a list is a list of 
 - numbers, booleans, strings, enums, lists (`ImmutableArray<T>`, `List<T>`, `IReadOnlyList<T>`, arrays) and
   `Vector`;
 - `SimpleBlockState` (`{"Name": ..., "Properties": {...}}`), `BlockSet` (blocks and `#` block tags), `BiomeSet`
-  (biomes and `#` biome tags) and `WeightedEntry<T>` (`{"data": ..., "weight": ...}`, in lists picked from with
-  `WeightedEntry<T>.Pick` like vanilla's weighted lists);
+  (biomes and `#` biome tags, resolved again whenever plugins' tags change) and `WeightedEntry<T>`
+  (`{"data": ..., "weight": ...}`, in lists picked from with `WeightedEntry<T>.Pick` like vanilla's weighted lists);
 - vanilla's kinds of worldgen values, which take any type of that kind by its `type`: `IIntProvider` (a number is a
   constant), `IFloatProvider`, `IHeightProvider` and `VerticalAnchor`, `IBlockStateProvider`, `IBlockPredicate` and
   `IRuleTest`; `ConfiguredFeatureBase` and `PlacedFeature`, by identifier or inline; and vanilla's tree parts,

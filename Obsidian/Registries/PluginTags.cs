@@ -47,11 +47,10 @@ internal static partial class PluginTags
         .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// How many times plugins' tags were applied, so a client can tell it has older tags.
+    /// How many times plugins' tags were applied (<see cref="TagsRegistry.Revision"/>), so a client can tell it has
+    /// older tags.
     /// </summary>
-    public static int Revision => Volatile.Read(ref revision);
-
-    private static int revision;
+    public static int Revision => TagsRegistry.Revision;
 
     // Vanilla's entries of the tags plugins changed, to restore when they no longer do.
     // By reference: a tag is a record, whose equality and hash change with its entries.
@@ -224,9 +223,9 @@ internal static partial class PluginTags
                 foreach (var (tag, entries) in vanillaEntries)
                     tag.SetEntries(entries);
 
-                TagsRegistry.SetPluginTags(new Dictionary<string, Tag[]>());
+                // Last, as it moves the revision on.
                 Volatile.Write(ref identifierTags, FrozenDictionary<(string, string), ImmutableArray<string>>.Empty);
-                Interlocked.Increment(ref revision);
+                TagsRegistry.SetPluginTags(new Dictionary<string, Tag[]>());
                 return;
             }
 
@@ -273,9 +272,8 @@ internal static partial class PluginTags
                 }
             }
 
-            TagsRegistry.SetPluginTags(pluginTags.ToDictionary(entry => entry.Key, entry => entry.Value.ToArray()));
             Volatile.Write(ref identifierTags, byIdentifier.ToFrozenDictionary());
-            Interlocked.Increment(ref revision);
+            TagsRegistry.SetPluginTags(pluginTags.ToDictionary(entry => entry.Key, entry => entry.Value.ToArray()));
         }
     }
 
