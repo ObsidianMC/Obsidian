@@ -1,6 +1,7 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.World.Generator;
+using Obsidian.API.World.Generator.RandomSources;
 using NoiseSetting = Obsidian.API.World.Generator.Noise.NoiseSetting;
 using Obsidian.Plugins;
 using Obsidian.WorldData.Generators.Mojang;
@@ -118,18 +119,29 @@ internal static class LevelStemData
     /// </summary>
     /// <remarks>
     /// Obsidian's terrain generator fills every cell of the noise settings, so they must lie in the build range;
-    /// vanilla clamps generation to it instead. Vanilla's own pairings all fit.
+    /// vanilla clamps generation to it instead. Like vanilla's, the lowest cell is the one holding <c>min_y</c>, so a
+    /// <c>min_y</c> that isn't a multiple of the cell height (<c>size_vertical</c> * 4) fills from below it: with
+    /// <c>size_vertical</c> 3, overworld settings fill from y -72. Vanilla's own pairings all fit.
     /// </remarks>
     /// <param name="name">The noise settings' name, for the message.</param>
     public static string? OutsideBuildRange(string name, NoiseSetting settings, DimensionCodec type)
     {
-        var cells = settings.Noise;
+        var noise = settings.Noise;
         var range = type.Element;
 
-        if (cells.MinY >= range.MinY && cells.MinY + cells.Height <= range.MinY + range.Height)
+        // The lowest filled block, as NoiseChunk.CellNoiseMinY rounds it; the highest is at most the noise's top.
+        var cellHeight = noise.SizeVertical * 4;
+        var lowest = Mth.FloorDiv(noise.MinY, cellHeight) * cellHeight;
+        var top = noise.MinY + noise.Height;
+
+        if (lowest >= range.MinY && top <= range.MinY + range.Height)
             return null;
 
-        return $"{name} generate from y {cells.MinY} to {cells.MinY + cells.Height - 1}, outside the build range of "
+        var rounded = lowest < noise.MinY
+            ? $" (min_y {noise.MinY} rounded down to a whole cell of {cellHeight} blocks)"
+            : "";
+
+        return $"{name} generate from y {lowest}{rounded} to {top - 1}, outside the build range of "
             + $"{type.Name} ({range.MinY} to {range.MinY + range.Height - 1})";
     }
 

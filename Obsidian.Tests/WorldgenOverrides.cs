@@ -3,6 +3,7 @@ using Obsidian.API.Registries;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.World.Features;
+using Obsidian.API.World.Generator.Noise;
 using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.Registries.Codecs;
@@ -279,6 +280,22 @@ public sealed class WorldgenOverrides : IDisposable
         Assert.Contains(
             "from y -64 to 319, outside the build range of minecraft:overworld (0 to 255)",
             LevelStemData.OutsideBuildRange("minecraft:overworld", settings, lower));
+
+        // Cells of 12 blocks: the lowest is the one holding y -64, which fills from -72, below the build range.
+        var tallCells = new NoiseSetting
+        {
+            Noise = new NoiseConfiguration
+            {
+                MinY = -64,
+                Height = 384,
+                SizeHorizontal = 1,
+                SizeVertical = 3
+            }
+        };
+
+        Assert.Contains(
+            "from y -72 (min_y -64 rounded down to a whole cell of 12 blocks) to 319",
+            LevelStemData.OutsideBuildRange("tall cells", tallCells, overworld));
     }
 
     private void Zip(string name, Dictionary<string, string> files)

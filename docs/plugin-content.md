@@ -873,7 +873,9 @@ The file is vanilla 1.21.11's level stem, read with vanilla's rules (see [What's
   since clients are sent them by name.
 - Not supported yet, and rejected with a message saying so: `minecraft:flat` and `minecraft:debug` generators, and
   noise settings that generate outside the dimension type's build range (vanilla clamps them; its own pairings all
-  fit).
+  fit). Generation fills whole cells of `size_vertical * 4` blocks from the cell holding `min_y`, so a `min_y` that
+  isn't a multiple of that fills from below it: the overworld's `min_y` -64 with `size_vertical` 3 fills from -72,
+  outside the overworld's build range.
 
 The dimension generates like a vanilla dimension with those settings: terrain, surface, aquifers and ore veins come
 from the noise settings, caves and canyons are carved like in the vanilla dimension using the same noise settings
