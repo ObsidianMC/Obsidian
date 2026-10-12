@@ -24,7 +24,7 @@ public interface IKeyBinding
     public string Key { get; }
 
     /// <summary>
-    /// Whether the key is held down after being pressed in game.
+    /// Whether the key that pressed it in game is still held down, even if the binding was rebound since.
     /// </summary>
     public bool IsDown { get; }
 

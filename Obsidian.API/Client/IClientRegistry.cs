@@ -3,9 +3,20 @@ using Obsidian.API.Networking;
 namespace Obsidian.API.Client;
 
 /// <summary>
-/// What a mod's <see cref="IClientPlugin.ConfigureClient"/> registers its client side with. Everything registered
-/// stays until the client exits.
+/// What a mod's <see cref="IClientPlugin.ConfigureClient"/> registers its client side with.
 /// </summary>
+/// <remarks>
+/// <para>
+/// What the mod registers takes effect when <see cref="IClientPlugin.ConfigureClient"/> returns and stays until the
+/// client exits; if it throws, none of it does. The registry is sealed then, since the client loads what depends on it
+/// afterwards: registering through it later throws <see cref="InvalidOperationException"/>, while
+/// <see cref="Connection"/> stays usable.
+/// </para>
+/// <para>
+/// Like the server's content, what the mod registers is its own: identifiers are in its namespace (its mod id) and
+/// valid by vanilla's rules (lowercase letters, digits and <c>_-./</c>, one <c>:</c>).
+/// </para>
+/// </remarks>
 public interface IClientRegistry
 {
     /// <summary>
@@ -22,6 +33,7 @@ public interface IClientRegistry
     /// <exception cref="ArgumentException">
     /// The mod didn't declare the channel, or declared it only for payloads sent to the server.
     /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
     public IClientRegistry HandlePayload<TPayload>(ClientPayloadHandler<TPayload> handler)
         where TPayload : ICustomPayload<TPayload>;
 
@@ -30,20 +42,22 @@ public interface IClientRegistry
     /// vanilla's.
     /// </summary>
     /// <param name="identifier">
-    /// The binding's identifier, like <c>examplemod:open_map</c>; its name, and translation key, is
-    /// <c>key.examplemod.open_map</c>.
+    /// The binding's identifier, in the mod's namespace, like <c>examplemod:open_map</c>; its name, and translation
+    /// key, is <c>key.examplemod.open_map</c>.
     /// </param>
     /// <param name="defaultKey">
     /// The key or mouse button it's bound to until the player rebinds it, in vanilla's names: <c>key.keyboard.g</c>,
     /// <c>key.keyboard.left.alt</c>, <c>key.mouse.middle</c>, or <c>key.keyboard.unknown</c> for none.
     /// </param>
     /// <param name="category">
-    /// The category's identifier, like <c>examplemod:main</c>; its translation key is
-    /// <c>key.category.examplemod.main</c>.
+    /// The category's identifier, like <c>examplemod:main</c>, in any namespace so mods can share one; its
+    /// translation key is <c>key.category.examplemod.main</c>.
     /// </param>
     /// <exception cref="ArgumentException">
-    /// A binding with the identifier exists, or the key isn't a keyboard key or mouse button name.
+    /// The identifier isn't valid or in the mod's namespace, the category isn't valid, a binding with the identifier
+    /// exists, or the key isn't a keyboard key or mouse button name.
     /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
     public IKeyBinding RegisterKeyBinding(string identifier, string defaultKey, string category);
 
     /// <summary>
@@ -51,17 +65,25 @@ public interface IClientRegistry
     /// its item's when the item's definition (<c>assets/&lt;ns&gt;/items/...</c>) gives the model no tints of its
     /// own.
     /// </summary>
-    /// <param name="block">The block's identifier, like <c>examplemod:mossy_bricks</c>.</param>
+    /// <param name="block">The identifier of a block the mod registered, like <c>examplemod:mossy_bricks</c>.</param>
     /// <param name="tint">The tint.</param>
-    /// <exception cref="ArgumentException">The identifier is a vanilla block's.</exception>
+    /// <exception cref="ArgumentException">
+    /// The block isn't one the mod registered, or the mod tinted it already.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
     public IClientRegistry RegisterBlockTint(string block, BlockTint tint);
 
     /// <summary>
     /// Draws a mod's entity type with a model and texture from its assets. Without one, the type's entities aren't
     /// drawn.
     /// </summary>
-    /// <param name="entityType">The entity type's identifier, like <c>examplemod:golem</c>.</param>
+    /// <param name="entityType">
+    /// The identifier of an entity type the mod registered, like <c>examplemod:golem</c>.
+    /// </param>
     /// <param name="renderer">The model and texture.</param>
-    /// <exception cref="ArgumentException">The identifier is a vanilla entity type's.</exception>
+    /// <exception cref="ArgumentException">
+    /// The entity type isn't one the mod registered, or the mod gave it a renderer already.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
     public IClientRegistry RegisterEntityRenderer(string entityType, EntityRendererProperties renderer);
 }

@@ -972,7 +972,15 @@ The rules:
 A mod whose side is `client` or `both` also runs on the Obsidian client, which registers its content like a server
 (see [mod-system.md](mod-system.md)). Its plugin class implements `IClientPlugin`, from `Obsidian.API.Client`, to
 register its client side. The client calls `ConfigureClient` once at startup, after `ConfigureRegistry`; servers never
-call it, so a `both` mod runs on a server without any client code. What it registers stays until the client exits.
+call it, so a `both` mod runs on a server without any client code.
+
+What `ConfigureClient` registers takes effect when it returns and stays until the client exits; if it throws, the
+mod fails to load and none of it does. The registry only takes registrations during `ConfigureClient`, since the
+client loads the assets that depend on them afterwards: registering later, through a registry the mod kept, throws
+`InvalidOperationException`. Its `Connection`, and sending payloads on it, stay usable for as long as the client
+runs. Like the server's content, key bindings, tints and renderers are the mod's own: their identifiers are in its
+namespace (its mod id) and valid by vanilla's rules, tints and renderers are for blocks and entity types it
+registered, and registering one twice throws `ArgumentException`.
 
 ```csharp
 public sealed class RubyMod : PluginBase, IClientPlugin
@@ -1014,24 +1022,27 @@ public sealed class RubyMod : PluginBase, IClientPlugin
   the current phase.
 - **Key bindings.** A binding `ruby:summon_golem` is named `key.ruby.summon_golem`, its translation key, and saved in
   `options.txt` as `key_key.ruby.summon_golem` like vanilla's; its category `ruby:golems` is translated from
-  `key.category.ruby.golems`. Mods' bindings are listed after vanilla's in the key binds screen, where players rebind
-  them. Keys use vanilla's names: `key.keyboard.r`, `key.keyboard.left.alt`, `key.mouse.middle`, or
-  `key.keyboard.unknown` for none. `Pressed` is raised on the game's thread when the key is pressed in game with no
-  screen open, `IsDown` stays true until it's released, and `Key` is the key it's bound to now. A key bound to a
-  vanilla binding and a mod's does both.
+  `key.category.ruby.golems` (a category can be in any namespace, so mods can share one). Mods' bindings are listed
+  after vanilla's in the key binds screen, where players rebind them. Keys use vanilla's names: `key.keyboard.r`,
+  `key.keyboard.left.alt`, `key.mouse.middle`, or `key.keyboard.unknown` for none. `Pressed` is raised on the
+  game's thread when the key is pressed in game with no screen open, `IsDown` stays true until the key that pressed
+  it is released (even if the binding is rebound meanwhile), and `Key` is the key it's bound to now. A key bound to a
+  vanilla binding and a mod's does both, the screenshot and fullscreen keys included.
 - **Block tints.** A tinted block's faces whose model gives them a `tintindex` are multiplied by the tint, like
   vanilla's block colours: the biome's grass, foliage, dry foliage or water colour, blended across nearby biomes with
   the player's biome blend (grass follows the swamp and dark forest modifiers), or `BlockTint.Fixed(0xRRGGBB)`. Its
-  item is tinted too unless its item definition gives the model `tints` of its own: with vanilla's grass block item
-  colour (the grass colormap at temperature 0.5 and downfall 1), its default foliage colour (`#48B518`), dry foliage
-  colour (`#5C3C32`) or water colour (`#3F76E4`), or the fixed colour.
+  item is tinted too, on every `tintindex`, unless its item definition gives the model `tints` of its own (which
+  then apply by index): with vanilla's grass block item colour (the grass colormap at temperature 0.5 and downfall
+  1), its default foliage colour (`#48B518`), dry foliage colour (`#5C3C32`) or water colour (`#3F76E4`), or the
+  fixed colour.
 - **Entity renderers.** A mod's entity type is drawn with a model layer from `assets/<ns>/models/entity/<path>.json`
-  (`Model = "<ns>:<path>"`) and a texture from `assets/<ns>/textures/entity/...` (`Texture = "<ns>:entity/..."`),
-  scaled by `Scale`, with a shadow of `ShadowRadius` blocks. Without a renderer, or with a model that's missing or
-  doesn't parse (which is logged), its entities aren't drawn. Entities are placed like vanilla's living entities:
-  turned to their body's yaw and tilted as they die or sleep. Parts named `head` turn to where the entity looks, and
-  parts whose names end in `leg` swing as it walks (left and right, and `front` and back, in opposite phases); other
-  parts stay as modelled.
+  (`Model = "<ns>:<path>"`) and a texture from `assets/<ns>/textures/entity/...` (`Texture = "<ns>:entity/..."`, or
+  `minecraft:entity/...` for vanilla's), scaled by `Scale`, with a shadow of `ShadowRadius` blocks. Without a
+  renderer, or with a model that's missing or doesn't parse (which is logged), its entities aren't drawn. Entities
+  are placed like vanilla's living entities: turned to their body's yaw and tilted as they die or sleep. Parts named
+  `head` turn to where the entity looks, and parts whose names end in `leg` swing as it walks (left and right, and
+  `front` and back, in opposite phases); other parts stay as modelled. Vanilla's rules hiding parts by name, like
+  `left_chest` without a chest, don't apply.
 
 A model layer has the shape of the layers in the client's `client_models.json`, which are vanilla's model layers:
 

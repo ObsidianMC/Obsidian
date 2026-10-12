@@ -274,7 +274,12 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         return item;
     }
 
-    private static void CheckIdentifier(PluginContainer container, string identifier)
+    /// <summary>
+    /// Checks that <paramref name="identifier"/> is in <paramref name="container"/>'s namespace and valid by vanilla's
+    /// rules; the Obsidian client checks its mods' client registrations with it too.
+    /// </summary>
+    /// <exception cref="ArgumentException">It isn't.</exception>
+    internal static void CheckIdentifier(PluginContainer container, string identifier)
     {
         // Like a NeoForge mod's, a plugin's content is in its own namespace, so plugins can't take each other's.
         if (!identifier.StartsWith($"{container.Info.Id}:", StringComparison.Ordinal))
