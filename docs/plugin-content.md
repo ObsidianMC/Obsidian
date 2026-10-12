@@ -554,8 +554,9 @@ made of, so unloading waits for chunks being generated. When such a plugin unloa
 generating new chunks, with a warning, and lets go of the plugin's code: chunks already generated still load and are
 saved. When the plugin loads again (a reload, or a later load), the dimension is read again from the level stem it was
 created with, with the plugin's new types, and the level generates again from its next chunk; chunks generated before
-stay as they are. A dimension whose stem, or the plugin noise files it uses, changed meanwhile stays stopped until a
-restart, with a warning, since generating it differently would mix two generators' chunks. A dimension made of
+stay as they are. A dimension whose stem, or the plugin data it reads (the noise files of its noise settings and
+biome source, and the biomes it names, through tags too), changed since it was added stays stopped until a restart,
+with a warning, since generating it differently would mix two generators' chunks. A dimension made of
 vanilla's types alone, with plugins' data, keeps generating. A level stem naming another plugin's density functions or
 noises, in its noise settings or biome source, generates with that plugin's types too, and resumes when that plugin
 reloads, without reloading the stem's own plugin.
@@ -642,9 +643,10 @@ The rules:
   vanilla runs them; raids, the end fight and portals stay with vanilla's levels for now.
 - A dimension's level stays until the server stops, even when its plugin unloads, with the noise settings it was
   created with. Its features come and go with their plugins like any features.
-- A reload changing a level stem, or the plugin noise settings, density functions and noises it uses, keeps the
-  dimension as it was, with a warning: the change applies after a restart, since changing a live level's generator
-  would mix two generators' chunks.
+- A reload changing a level stem, or the plugin data it reads (noise settings, density functions and noises, its
+  biome source's included, and the biomes it names), keeps the dimension as it was, with a warning: the change
+  applies after a restart, since changing a live level's generator would mix two generators' chunks. If the
+  dimension stops meanwhile, it stays stopped until then.
 - A dimension generating with a plugin's types stops generating new chunks when that plugin unloads, and generates
   again when it loads again (see [Noise types](#noise-types)); its generated chunks still load.
 - After a restart without the plugin, its dimension isn't loaded, and its folder is left alone. Players who were in it
@@ -690,11 +692,17 @@ The rules:
 
 - The identifier is in the plugin's namespace, and registering is only possible in `ConfigureRegistry`. Identifiers
   the host registered (`overworld`, `superflat`, ...) are the host's.
-- Each level using the generator gets its own instance, created with the plugin's services (constructor injection
-  works like for the plugin's other services), and its `Init` is called with the level. The level saves the
+- Each level using the generator gets its own instance, created in a service scope of its own (constructor
+  injection works like for the plugin's other services, scoped ones included), and its `Init` is called with the
+  level. Once the level stops using it (the plugin unloads, or the generator fails), the instance is disposed if
+  it's `IDisposable` or `IAsyncDisposable`, then its scope, after the calls using it end: release there what `Init`
+  subscribed to, or the plugin's code can't unload. The level saves the
   registered identifier as its generator (`generatorName` in its `level.dat`); the instance's own `Id` isn't used.
 - Every call into the generator (creating it, `Init`, `GenerateChunkAsync`, `FindSpawnPointAsync`, `LockChunkAsync`)
   is a call into the plugin, a chunk at a time, so unloading the plugin waits for chunks being generated.
+- Generating a chunk and saving it hold the level's own lock on that chunk, so a save never captures a chunk
+  mid-write, even while the generator stops or is replaced. A save also takes the generator's `LockChunkAsync` lock
+  while it's the level's generator: lock with it any chunk the generator writes into besides the one it generates.
 - When the plugin unloads, the level stops generating new chunks, with a warning, and lets go of the generator, so the
   plugin's code can unload. Chunks already generated still load and are saved; ones players reach meanwhile stay
   ungenerated. When the plugin loads again, the level gets a new instance of the plugin's new generator, and generates

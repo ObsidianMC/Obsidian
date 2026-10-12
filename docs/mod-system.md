@@ -136,15 +136,18 @@ client. This document describes the design and tracks its progress. The archive 
    - Done, slice 4c: plugins' level generators and reload-safe generators. `IPluginRegistry.RegisterGenerator`
      registers an `ILevelGenerator` type by identifier, in the plugin's namespace, which a world names as its
      `Generator` in `worlds.json` (or a child dimension by its name). The level keeps one generator for its life,
-     which saves the identifier and runs a new instance of the plugin's generator, created with the plugin's
-     services, holding a call into the plugin a chunk at a time. Unloading the plugin removes the registration,
-     stops the level and lets go of the instance (the reload test checks the load context is collected); loading it
-     again swaps in the new plugin's generator between chunks. Plugins' dimensions stopped by an unloading plugin
-     whose types they use are read again from the level stem they were created with once it loads again, and
-     resume without reloading their own plugin; one whose stem or plugin noise files changed waits for a restart.
+     which saves the identifier and runs a new instance of the plugin's generator, created in a service scope of
+     its own, holding a call into the plugin a chunk at a time. The level's own chunk locks keep saves from
+     capturing a chunk mid-write while generators stop and swap. Unloading the plugin removes the registration,
+     stops the level and disposes the instance and its scope once its calls end (the reload test checks the load
+     context is collected); loading it again swaps in the new plugin's generator between chunks. Plugins'
+     dimensions stopped by an unloading plugin whose types they use are read again from the level stem they were
+     created with once it loads again, and resume without reloading their own plugin; one whose stem, plugin noise
+     files (its biome source's included) or biomes changed stays stopped until a restart.
      A plugin generator throwing, like plugins' worldgen types failing, stops its level with an error until the
      plugin reloads. A saved world whose plugin generator is missing after a restart loads stopped, rather than
-     falling back to the overworld's generator; a new one isn't created (see
+     falling back to the overworld's generator; a new one isn't created, nor is a new dimension of an existing
+     world (see
      [plugin-content.md](plugin-content.md#level-generators)).
    - Phase 3 delivered: plugins' biomes, dimension types and damage types, synced to clients and kept by identifier;
      worldgen features and NeoForge's feature biome modifiers from data files, read like vanilla's and checked
