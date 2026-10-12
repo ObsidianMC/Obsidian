@@ -630,9 +630,10 @@ not at all. Vanilla's own placers, decorators and sizes stay in Obsidian.
 ### Structure processors
 
 Vanilla's `minecraft:fossil` feature runs its templates' blocks through processor lists, `fossil_processors` and
-`overlay_processors`: vanilla's lists by identifier, or lists defined inline, as `{"processors": [...]}` or a bare
-list. The `StructureProcessor` base class is in `Obsidian.API.World.Structures`, so a plugin can add processor types,
-which data names by their `processor_type`, and give its feature types properties of them:
+`overlay_processors`, as do template pools' elements (see [Structures](#structures)): lists by identifier, vanilla's
+or files', or lists defined inline, as `{"processors": [...]}` or a bare list. The `StructureProcessor` base class is
+in `Obsidian.API.World.Structures`, so a plugin can add processor types, which data names by their `processor_type`,
+and give its feature types properties of them:
 
 ```csharp
 using Obsidian.API.World.Structures;
@@ -666,8 +667,114 @@ public sealed class DecayProcessor : StructureProcessor
 `FinalizeProcessing` then sees every kept block at once. A processor whose result depends on the template's other
 blocks overrides `ProcessesWholeTemplate`, so the whole template is processed even where only part of it is placed.
 `TemplatePlacement.GetRandom` is vanilla's placement random: the placement's own, or one seeded from the position.
-Processors are shared between threads, so keep them stateless. Plugins can't add `worldgen/processor_list` files
-yet. Vanilla's own processors stay in Obsidian.
+Processors are shared between threads, so keep them stateless. Vanilla's own processors stay in Obsidian.
+
+A `data/<namespace>/worldgen/processor_list/<path>.json` file is a processor list, `{"processors": [...]}` or a bare
+list, which fossils and template pools name by identifier, like vanilla's (see [Structures](#structures)).
+
+## Structures
+
+Plugins add structures like a data pack, in vanilla 1.21.11's formats:
+
+- `data/<namespace>/worldgen/structure/<path>.json` is the structure `<namespace>:<path>`;
+- `data/<namespace>/worldgen/structure_set/<path>.json` is a structure set, the structures that share a placement;
+- `data/<namespace>/worldgen/template_pool/<path>.json` is a jigsaw template pool;
+- `data/<namespace>/worldgen/processor_list/<path>.json` is a processor list (see
+  [Structure processors](#structure-processors));
+- `data/<namespace>/structure/<path>.nbt` is the structure template `<namespace>:<path>`, gzipped NBT as a structure
+  block saves it.
+
+A tower of one piece, in the biomes of a tag of the plugin's:
+
+```json
+// data/ruby/worldgen/structure/tower.json
+{
+  "type": "minecraft:jigsaw",
+  "biomes": "#ruby:has_structure/tower",
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "beard_thin",
+  "start_pool": "ruby:tower/start",
+  "size": 1,
+  "start_height": { "absolute": 0 },
+  "project_start_to_heightmap": "WORLD_SURFACE_WG",
+  "max_distance_from_center": 80,
+  "use_expansion_hack": false
+}
+```
+
+```json
+// data/ruby/worldgen/template_pool/tower/start.json
+{
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "ruby:tower/base",
+        "processors": "minecraft:empty",
+        "projection": "rigid"
+      }
+    }
+  ]
+}
+```
+
+```json
+// data/ruby/worldgen/structure_set/towers.json
+{
+  "structures": [{ "structure": "ruby:tower", "weight": 1 }],
+  "placement": { "type": "minecraft:random_spread", "spacing": 32, "separation": 8, "salt": 1748312 }
+}
+```
+
+```json
+// data/ruby/tags/worldgen/biome/has_structure/tower.json
+{ "values": ["#minecraft:is_forest", "ruby:crystal_plains"] }
+```
+
+with the template saved by a structure block in `data/ruby/structure/tower/base.nbt`. Its jigsaw blocks name the pools
+the tower grows from, up to its `size`.
+
+- Structures are any of vanilla's data-driven types: `minecraft:jigsaw`, and the single-piece and generated ones,
+  whose fields are the same as in vanilla's own structure files (`minecraft:desert_pyramid`, `minecraft:igloo`,
+  `minecraft:shipwreck`, `minecraft:ocean_ruin`, `minecraft:ruined_portal`, `minecraft:mineshaft`, and so on). A jigsaw
+  structure's `max_distance_from_center` and `dimension_padding` are single numbers; their object forms aren't read
+  yet. Plugins can't add structure types in code yet.
+- Structure sets take `minecraft:random_spread` (with `spread_type`) and `minecraft:concentric_rings` placements, with
+  `salt`, `frequency`, `frequency_reduction_method`, `locate_offset` and an `exclusion_zone` naming another set. A set's
+  structures are named by identifier.
+- Pools take `minecraft:single_pool_element`, `minecraft:legacy_single_pool_element`, `minecraft:list_pool_element`,
+  `minecraft:feature_pool_element` (a placed feature, a plugin's too) and `minecraft:empty_pool_element`, with
+  `rigid` or `terrain_matching` projections, and a `fallback` pool.
+- Values are checked like vanilla's codecs check them (a jigsaw's `size` from 0 to 20, a pool element's `weight` from
+  1 to 150, a `spacing` larger than its `separation`, ...). Entries refer to each other by identifier, vanilla's or
+  any plugin's or data pack's; a file that can't be read is logged and left out, with the entries that need it.
+- Templates are read like a data pack's files, within its limits: at most 32 MiB each and 512 MiB together, once
+  decompressed. A template a pool names that no plugin, pack or vanilla has is empty, as in vanilla.
+
+Structures generate in every dimension whose biomes their `biomes` hold, vanilla's and plugins' (biome regions'
+biomes included), placed by their sets like vanilla's. All structures, vanilla's and plugins', are ordered like a
+vanilla data pack's registry, by path then namespace, which decides their seeds within their decoration step. A start
+is saved in its start chunk by its structure's identifier, with what its pieces placed, and found again from the
+seed.
+
+The rules:
+
+- Structures come and go with their plugin, like features: each plugin change reads them again, and the chunks not
+  generated yet get the new structure sets' structures, at starts not found yet, while chunks generated before stay
+  as they are. A structure partly generated when its plugin unloads isn't finished; its start's state stays saved,
+  and the rest of it is placed in the chunks generated once the plugin is back.
+- After a restart without the plugin, its starts load and stay saved as they were, and aren't placed.
+- Starting and placing a structure made of a plugin's types (a processor, a height provider or a feature type, in
+  the structure, its pools or the processor lists they name) is a call into the plugin, like placing its features.
+  One whose plugin unloads isn't started or placed, and its failing stops the dimension like a failing feature (see
+  [Noise types](#noise-types)). A jigsaw's pieces name pools by identifier, so every jigsaw structure counts the
+  plugins of every pool read from files.
+- Explorer maps and dolphins find vanilla's structures by vanilla's structure tags; plugins can't add structure
+  tags yet, so they don't find plugins' structures.
+
 
 ## Noise settings, density functions and noises
 
@@ -934,9 +1041,10 @@ overworld instead of vanilla's. The data comes from two places:
 - The server's `datapacks` folder, next to `plugins` (`Paths:DataPacks` sets another, like `Paths:Plugins`). Each
   folder or zip file in it with a `pack.mcmeta` is a vanilla data pack, read at startup in name order, after the
   plugins, so the operator's packs win. Obsidian reads the same files of a pack as of a plugin's `data/` folder:
-  biomes, dimension and damage types, features, carvers, noise settings, density functions, noises, parameter lists,
-  level stems and tags (blocks, items, entity types, biomes, placed features and configured carvers). Other files, like
-  recipes, loot tables or structures, are left out unread, and how many is logged. A pack's `filter` and `overlays`
+  biomes, dimension and damage types, features, carvers, processor lists, structures, structure sets, template pools,
+  structure templates, noise settings, density functions, noises, parameter lists, level stems and tags (blocks,
+  items, entity types, biomes, placed features and configured carvers). Other files, like recipes or loot tables, are
+  left out unread, and how many is logged. A pack's `filter` and `overlays`
   aren't applied, which is logged once for the pack. Data packs are read once: a change applies after a restart.
   Unlike vanilla, a pack has limits, so that it can't exhaust the server's memory: at most 65,536 files, and at most
   32 MiB per file and 512 MiB in all for the files Obsidian reads, decompressed. A pack over them, or a zip file with
@@ -955,8 +1063,13 @@ last file for an entry replaces it whole, and tag files merge (`"replace": true`
   features, carvers, spawners and spawn costs; [biome modifiers](#biome-modifiers) still apply on top.
 - configured and placed features and configured carvers. An overridden feature or carver replaces vanilla's in every
   biome placing it, and vanilla's features naming an overridden one, directly or through others, are read again from
-  vanilla's files with the runtime reader, so they use it, as vanilla's do by reference. Saplings, bone meal and
-  structures still use vanilla's own features.
+  vanilla's files with the runtime reader, so they use it, as vanilla's do by reference. Saplings and bone meal still
+  use vanilla's own features.
+- processor lists, structures, structure sets, template pools and structure templates. Vanilla's structures, sets and
+  pools naming an overridden one, or an overridden placed feature or processor list, are read again the same way, so
+  vanilla's structures use the overrides; a pool or template is used by identifier wherever it's named, so an
+  overridden one replaces vanilla's in every structure. A structure set override moves where vanilla's structures
+  start, in chunks not generated yet.
 - noise settings, density functions and noises, read again the same way through vanilla's entries naming them. The
   noises the surface builder reads by name (like `minecraft:surface` or the badlands' and icebergs' noises) stay
   vanilla's.
