@@ -23,10 +23,12 @@ public abstract class StructureProcessor
     /// <summary>
     /// Returns the block to place for <paramref name="current"/>, or <c>null</c> to skip it.
     /// </summary>
+    /// <param name="level">The level the template is placed in.</param>
     /// <param name="origin">World position of the template's origin.</param>
     /// <param name="pivot">World position of the rotation pivot.</param>
     /// <param name="original">The raw template block (template-relative position).</param>
     /// <param name="current">The block so far, at its world position.</param>
+    /// <param name="placement">How the template is placed.</param>
     public virtual StructureBlockInfo? ProcessBlock(
         IWorldGenLevel level,
         Vector origin,
