@@ -2,6 +2,7 @@
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Networking;
+using Obsidian.API.World.Features;
 
 namespace Obsidian.API.Plugins;
 public interface IPluginRegistry
@@ -104,6 +105,62 @@ public interface IPluginRegistry
     /// <param name="entries">The entries to add, like <c>myplugin:ruby_ore</c> or <c>#c:ores</c>.</param>
     /// <exception cref="ArgumentException">The registry isn't supported, or an identifier isn't valid.</exception>
     public IPluginRegistry AddToTag(string registry, string tag, params IEnumerable<string> entries);
+
+    /// <summary>
+    /// Registers a feature type, like a NeoForge mod's <c>Feature</c>: the plugin's configured feature files (and
+    /// other plugins') name it in their <c>type</c>, and its <c>config</c> object sets its properties.
+    /// </summary>
+    /// <typeparam name="TFeature">
+    /// The feature, a class with a parameterless constructor (public or not) whose
+    /// <see cref="ConfiguredFeatureBase.Type"/> returns <paramref name="identifier"/>.
+    /// </typeparam>
+    /// <param name="identifier">The type's identifier, in the plugin's namespace, like <c>myplugin:pillar</c>.</param>
+    /// <remarks>
+    /// Register worldgen types in <see cref="PluginBase.ConfigureRegistry"/>, before the plugin's data is read. They're
+    /// gone when the plugin unloads, with the features made of them, and a reload registers them again. Feature
+    /// configs are read like vanilla's: <c>snake_case</c> keys set the matching settable properties, and properties
+    /// typed as worldgen interfaces (<see cref="IIntProvider"/>, <see cref="IBlockStateProvider"/>,
+    /// <see cref="IBlockPredicate"/>, <see cref="IRuleTest"/>, ...) take any type of that kind, vanilla's or a
+    /// plugin's.
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// The identifier isn't in the plugin's namespace, or is already a feature type of the plugin; or the type can't be
+    /// created.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The plugin has already loaded, or is unloading.</exception>
+    public IPluginRegistry RegisterFeatureType<TFeature>(string identifier)
+        where TFeature : ConfiguredFeatureBase;
+
+    /// <summary>
+    /// Registers a placement modifier type, like a NeoForge mod's <c>PlacementModifierType</c>: placed feature files
+    /// name it in a <c>placement</c> entry's <c>type</c>, and the entry's other keys set its properties. The rules are
+    /// <see cref="RegisterFeatureType{TFeature}"/>'s.
+    /// </summary>
+    /// <typeparam name="TModifier">
+    /// The modifier, usually a <see cref="SinglePlacementModifierBase"/> or <see cref="PlacementFilterBase"/>.
+    /// </typeparam>
+    /// <param name="identifier">The type's identifier, in the plugin's namespace.</param>
+    public IPluginRegistry RegisterPlacementModifierType<TModifier>(string identifier)
+        where TModifier : PlacementModifierBase;
+
+    /// <summary>
+    /// Registers a type of another kind of worldgen value that data chooses by its <c>type</c> (or
+    /// <c>predicate_type</c>), like NeoForge's int provider or block state provider types: features' JSON can then name
+    /// it wherever a <typeparamref name="TBase"/> is expected. The rules are
+    /// <see cref="RegisterFeatureType{TFeature}"/>'s, and one identifier may name types of different kinds.
+    /// </summary>
+    /// <typeparam name="TBase">
+    /// The kind of value, an interface or abstract class: <see cref="IIntProvider"/>, <see cref="IFloatProvider"/>,
+    /// <see cref="IHeightProvider"/>, <see cref="IBlockStateProvider"/>, <see cref="IBlockPredicate"/>,
+    /// <see cref="IRuleTest"/>, or one of the plugin's own that its features' properties use.
+    /// </typeparam>
+    /// <typeparam name="TValue">The type to register.</typeparam>
+    /// <param name="identifier">The type's identifier, in the plugin's namespace.</param>
+    /// <exception cref="ArgumentException">
+    /// As for <see cref="RegisterFeatureType{TFeature}"/>, or <typeparamref name="TBase"/> is a concrete class.
+    /// </exception>
+    public IPluginRegistry RegisterWorldgenType<TBase, TValue>(string identifier)
+        where TValue : class, TBase;
 }
 
 

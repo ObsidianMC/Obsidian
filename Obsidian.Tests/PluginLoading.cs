@@ -10,6 +10,9 @@ using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.API.Plugins;
+using Obsidian.API.World.Features;
+using Obsidian.API.World.Generator;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Commands.Framework;
 using Obsidian.Entities;
 using Obsidian.Plugins;
@@ -23,6 +26,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -164,6 +168,25 @@ public sealed class PluginLoading : IDisposable
         var thrown = EntityNbt.Save(new PluginEntity(pebble) { Level = null! })!;
         Assert.IsType<PluginEntity>(EntityNbt.Load(thrown, null!));
 
+        // And its worldgen types: its feature files are read with the reloaded plugin's types, and a biome placing
+        // them calls into the reloaded plugin. Built here rather than read from PluginFeatures.Current, which other
+        // tests' servers replace.
+        var addPillar = PluginFeatures.Parse(
+            PluginFeatures.BiomeModifier,
+            "probe:add_pillar",
+            "test",
+            Encoding.UTF8.GetBytes(AddPillar));
+        var features = PluginFeatures.Build(
+            [.. reloaded.FeatureFiles, addPillar],
+            [],
+            reloaded.WorldgenTypes,
+            NullLogger.Instance);
+        var pillar = features.PlacedFeatures["probe:pillar"];
+
+        Assert.Same(reloaded.LoadContext, AssemblyLoadContext.GetLoadContext(pillar.Feature.GetType().Assembly));
+        Assert.Same(reloaded.LoadContext, AssemblyLoadContext.GetLoadContext(pillar.Placement[0].GetType().Assembly));
+        Assert.Same(reloaded, Assert.Single(features.Owners[pillar]));
+
         // Only the reloaded plugin's handler runs: unloading removed the old one.
         AppContext.SetData(ProbePlugin.CallsKey, 0);
         await dispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(server, new ServerStatus(server, "")));
@@ -192,7 +215,20 @@ public sealed class PluginLoading : IDisposable
         Assert.True(ore.Is(BlocksRegistry.Get(ore.DefaultState.GetHashCode())));
         Assert.False(await BlockBehaviors.UseAsync(blockContext));
         Assert.False(TagsRegistry.TryGet("block", "probe:ores", out _));
+
+        // Its features are gone with its types.
+        Assert.False(PluginFeatures.Current.PlacedFeatures.ContainsKey("probe:pillar"));
     }
+
+    // Adds the probe plugin's pillar to every overworld biome.
+    internal const string AddPillar = """
+        {
+          "type": "neoforge:add_features",
+          "biomes": "#minecraft:is_overworld",
+          "features": "probe:pillar",
+          "step": "underground_ores"
+        }
+        """;
 
     [Fact]
     public async Task UnloadFromItsOwnCall_ReleasesOnceTheCallEnds()
@@ -338,6 +374,16 @@ public sealed class ProbePlugin : PluginBase
 
         // Its blocks generated from data/probe/blocks.
         ProbeBlocks.Register(pluginRegistry);
+
+        // Its worldgen types, which data/probe/worldgen's features are made of. Vanilla's identifiers, and its own
+        // twice, are refused.
+        pluginRegistry.RegisterFeatureType<ProbePillarFeature>("probe:pillar");
+        pluginRegistry.RegisterPlacementModifierType<ProbeAtHeight>("probe:at_height");
+
+        Assert.Throws<ArgumentException>(
+            () => pluginRegistry.RegisterFeatureType<ProbePillarFeature>("minecraft:pillar"));
+        Assert.Throws<ArgumentException>(
+            () => pluginRegistry.RegisterPlacementModifierType<ProbeAtHeight>("probe:at_height"));
     }
 
     private sealed class OreBehavior : IBlockBehavior
@@ -386,4 +432,48 @@ public sealed class ProbeService(IServer server)
 /// </summary>
 public sealed class ProbeLampBehavior : IBlockBehavior
 {
+}
+
+/// <summary>
+/// <see cref="ProbePlugin"/>'s feature type, written with the API alone: a column of a block up from its origin,
+/// replacing only the blocks it may.
+/// </summary>
+public sealed class ProbePillarFeature : ConfiguredFeatureBase
+{
+    public override string Type => "probe:pillar";
+
+    public required SimpleBlockState State { get; init; }
+
+    public required IIntProvider Height { get; init; }
+
+    public required BlockSet Replaceable { get; init; }
+
+    public override bool Place(FeatureContext context)
+    {
+        var block = this.State.ToBlock();
+        var height = this.Height.Sample(context.Random);
+        var placed = false;
+
+        for (var y = 0; y < height; y++)
+        {
+            var position = context.Origin + new Vector(0, y, 0);
+            if (this.Replaceable.Contains(context.Level.GetBlock(position)))
+                placed |= context.Level.SetBlock(position, block);
+        }
+
+        return placed;
+    }
+}
+
+/// <summary>
+/// <see cref="ProbePlugin"/>'s placement modifier type: moves the position to a height.
+/// </summary>
+public sealed class ProbeAtHeight : SinglePlacementModifierBase
+{
+    public override string Type => "probe:at_height";
+
+    public required int Y { get; init; }
+
+    public override Vector? GetPosition(PlacementContext context, IRandomSource random, Vector position) =>
+        new Vector(position.X, this.Y, position.Z);
 }

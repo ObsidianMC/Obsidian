@@ -1,0 +1,7 @@
+{
+  "feature": "probe:pillar",
+  "placement": [
+    { "type": "probe:at_height", "y": -4 },
+    { "type": "minecraft:in_square" }
+  ]
+}

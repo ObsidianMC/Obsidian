@@ -8,7 +8,6 @@ using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using System.Collections.Frozen;
 using System.IO;
-using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
 using System.Threading;
@@ -137,15 +136,15 @@ internal static partial class PluginFeatures
     /// </summary>
     /// <param name="files">The loaded plugins' feature and biome modifier files, in load order.</param>
     /// <param name="biomes">The loaded plugins' codec files, in load order, whose biomes' features are added.</param>
-    /// <param name="assemblies">The loaded plugins' assemblies, whose worldgen types files can name.</param>
+    /// <param name="types">The worldgen types the loaded plugins registered, which files can name.</param>
     public static void Apply(
         IEnumerable<FeatureFile> files,
         IEnumerable<CodecFile> biomes,
-        IEnumerable<Assembly> assemblies,
+        IEnumerable<WorldgenTypeRegistration> types,
         ILogger logger)
     {
         lock (applying)
-            Volatile.Write(ref current, Build(files, biomes, assemblies, logger));
+            Volatile.Write(ref current, Build(files, biomes, types, logger));
     }
 
     /// <summary>
@@ -155,7 +154,7 @@ internal static partial class PluginFeatures
     public static WorldgenFeatureSet Build(
         IEnumerable<FeatureFile> files,
         IEnumerable<CodecFile> biomes,
-        IEnumerable<Assembly> assemblies,
+        IEnumerable<WorldgenTypeRegistration> types,
         ILogger logger)
     {
         // The first plugin in load order defining an entry wins.
@@ -174,7 +173,7 @@ internal static partial class PluginFeatures
             kept.Add(file);
         }
 
-        var resolver = new FeatureResolver(kept, WorldgenTypes.With(assemblies));
+        var resolver = new FeatureResolver(kept, WorldgenTypes.With(types));
 
         foreach (var file in kept.Where(file => file.Registry != BiomeModifier))
         {

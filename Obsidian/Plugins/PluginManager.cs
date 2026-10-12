@@ -695,7 +695,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         PluginFeatures.Apply(
             this.plugins.SelectMany(plugin => plugin.FeatureFiles),
             this.plugins.SelectMany(plugin => plugin.CodecFiles),
-            this.plugins.SelectMany(plugin => plugin.LoadContext?.Assemblies ?? []),
+            this.plugins.SelectMany(plugin => plugin.WorldgenTypes),
             this.logger);
 
         var levels = this.server.WorldManager.GetAvailableWorlds()

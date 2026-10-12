@@ -4,9 +4,10 @@ namespace Obsidian.WorldData.Features;
 
 /// <summary>
 /// The worldgen types data files name by their <c>type</c> (or <c>predicate_type</c>, <c>processor_type</c>,
-/// <c>element_type</c>): classes marked with <see cref="ConfiguredFeatureClassAttribute"/>,
+/// <c>element_type</c>): Obsidian's classes marked with <see cref="ConfiguredFeatureClassAttribute"/>,
 /// <see cref="ConfiguredFeaturePropertyAttribute"/>, <see cref="TreePropertyAttribute"/>,
-/// <see cref="ConfiguredFeatureAttribute"/> or <see cref="StructureTypeAttribute"/>, like the source generator finds.
+/// <see cref="ConfiguredFeatureAttribute"/> or <see cref="StructureTypeAttribute"/>, like the source generator finds,
+/// and the types plugins registered.
 /// </summary>
 /// <remarks>
 /// An identifier can name several types in different hierarchies (<c>minecraft:constant</c> is an int, float and height
@@ -14,76 +15,80 @@ namespace Obsidian.WorldData.Features;
 /// </remarks>
 internal sealed class WorldgenTypes
 {
-    private readonly Dictionary<string, List<Type>> types = [];
+    private readonly Dictionary<string, List<Type>> builtIn;
+    private readonly Dictionary<string, List<WorldgenTypeRegistration>> registered = [];
 
     /// <summary>
     /// The types of Obsidian and Obsidian.API.
     /// </summary>
-    public static WorldgenTypes BuiltIn { get; } = new(BuiltInAssemblies);
+    public static WorldgenTypes BuiltIn { get; } =
+        new(Scan([typeof(WorldgenTypes).Assembly, typeof(IFeature).Assembly]));
 
-    private static Assembly[] BuiltInAssemblies => [typeof(WorldgenTypes).Assembly, typeof(IFeature).Assembly];
-
-    private WorldgenTypes(IEnumerable<Assembly> assemblies) => this.Add(assemblies);
+    private WorldgenTypes(Dictionary<string, List<Type>> builtIn) => this.builtIn = builtIn;
 
     /// <summary>
-    /// The built-in types followed by the types of other assemblies, like plugins'. A built-in type wins over a
-    /// plugin's with the same identifier and base type.
+    /// The built-in types and the types plugins registered. Plugins' assemblies aren't scanned: their types are only
+    /// found when registered, so attributes on them don't count.
     /// </summary>
-    public static WorldgenTypes With(IEnumerable<Assembly> assemblies)
+    public static WorldgenTypes With(IEnumerable<WorldgenTypeRegistration> registrations)
     {
-        var extra = assemblies.Except(BuiltInAssemblies).ToArray();
-        if (extra.Length == 0)
-            return BuiltIn;
+        // Shares the built-in map, which is never changed once scanned.
+        var result = new WorldgenTypes(BuiltIn.builtIn);
 
-        var result = new WorldgenTypes(BuiltInAssemblies);
-        result.Add(extra);
-        return result;
+        foreach (var registration in registrations)
+        {
+            if (!result.registered.TryGetValue(registration.Identifier, out var list))
+                result.registered[registration.Identifier] = list = [];
+
+            list.Add(registration);
+        }
+
+        return result.registered.Count == 0 ? BuiltIn : result;
     }
 
     /// <summary>
-    /// The first concrete type with the identifier that can be assigned to <paramref name="target"/>, or null.
+    /// The first concrete type with the identifier that can be assigned to <paramref name="target"/>, or null. A
+    /// registered type is only found where its registered base type is expected.
     /// </summary>
-    public Type? Find(string identifier, Type target) =>
-        this.types.TryGetValue(identifier, out var candidates)
-            ? candidates.FirstOrDefault(candidate => !candidate.IsAbstract && candidate.IsAssignableTo(target))
-            : null;
-
-    private void Add(IEnumerable<Assembly> assemblies)
+    public Type? Find(string identifier, Type target)
     {
-        foreach (var assembly in assemblies)
+        if (this.builtIn.TryGetValue(identifier, out var candidates)
+            && candidates.FirstOrDefault(candidate => !candidate.IsAbstract && candidate.IsAssignableTo(target))
+                is Type type)
         {
-            foreach (var type in LoadableTypes(assembly))
+            return type;
+        }
+
+        return this.registered.TryGetValue(identifier, out var registrations)
+            ? registrations.FirstOrDefault(registration => registration.Base.IsAssignableTo(target))?.Type
+            : null;
+    }
+
+    private static Dictionary<string, List<Type>> Scan(IEnumerable<Assembly> assemblies)
+    {
+        var types = new Dictionary<string, List<Type>>();
+
+        foreach (var type in assemblies.SelectMany(assembly => assembly.GetTypes()))
+        {
+            if (!type.IsClass)
+                continue;
+
+            foreach (var identifier in Identifiers(type))
             {
-                if (!type.IsClass)
-                    continue;
+                if (!types.TryGetValue(identifier, out var list))
+                    types[identifier] = list = [];
 
-                foreach (var identifier in Identifiers(type))
-                {
-                    if (!this.types.TryGetValue(identifier, out var list))
-                        this.types[identifier] = list = [];
-
-                    if (!list.Contains(type))
-                        list.Add(type);
-                }
+                if (!list.Contains(type))
+                    list.Add(type);
             }
         }
+
+        return types;
     }
 
     private static IEnumerable<string> Identifiers(Type type)
     {
-        object[] attributes;
-
-        // A plugin's type whose attributes can't be loaded (a dependency missing, say) can't be named by data.
-        try
-        {
-            attributes = type.GetCustomAttributes(inherit: false);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            yield break;
-        }
-
-        foreach (var attribute in attributes)
+        foreach (var attribute in type.GetCustomAttributes(inherit: false))
         {
             var identifier = attribute switch
             {
@@ -99,16 +104,44 @@ internal sealed class WorldgenTypes
                 yield return identifier;
         }
     }
+}
 
-    private static IEnumerable<Type> LoadableTypes(Assembly assembly)
+/// <summary>
+/// A worldgen type a plugin registered: data names <see cref="Type"/> by <see cref="Identifier"/> where a
+/// <see cref="Base"/> (a feature, a placement modifier, an int provider, ...) is expected.
+/// </summary>
+internal sealed record WorldgenTypeRegistration(string Identifier, Type Base, Type Type)
+{
+    /// <summary>
+    /// Checks a registration against the rules and the plugin's earlier ones.
+    /// </summary>
+    /// <param name="registered">The plugin's registrations so far.</param>
+    /// <exception cref="ArgumentException">The identifier is vanilla's, or already names a type of the same base;
+    /// the base can't be chosen by a type name; or the type can't be created.</exception>
+    public static WorldgenTypeRegistration Create(
+        IEnumerable<WorldgenTypeRegistration> registered,
+        string identifier,
+        Type baseType,
+        Type type)
     {
-        try
+        if (identifier.StartsWith("minecraft:", StringComparison.Ordinal))
+            throw new ArgumentException($"{identifier} is vanilla's; plugins' types are in their own namespace.");
+
+        if (!baseType.IsInterface && !baseType.IsAbstract)
+            throw new ArgumentException($"{baseType.Name} isn't an abstract class or interface data can choose from.");
+
+        // The reader creates values with a parameterless constructor, public or not, and then sets their properties.
+        if (type.IsAbstract
+            || type.ContainsGenericParameters
+            || type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, [])
+                is null)
         {
-            return assembly.GetTypes();
+            throw new ArgumentException($"{type.Name} needs to be a concrete class with a parameterless constructor.");
         }
-        catch (ReflectionTypeLoadException ex)
-        {
-            return ex.Types.OfType<Type>();
-        }
+
+        if (registered.Any(other => other.Identifier == identifier && other.Base == baseType))
+            throw new ArgumentException($"{identifier} is already registered as a {baseType.Name} type.");
+
+        return new WorldgenTypeRegistration(identifier, baseType, type);
     }
 }

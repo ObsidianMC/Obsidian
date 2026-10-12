@@ -1,0 +1,8 @@
+{
+  "type": "probe:pillar",
+  "config": {
+    "state": { "Name": "minecraft:diamond_block" },
+    "height": 8,
+    "replaceable": ["minecraft:stone", "#minecraft:deepslate_ore_replaceables"]
+  }
+}

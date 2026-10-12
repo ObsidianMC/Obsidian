@@ -5,6 +5,7 @@ using Obsidian.API.Networking;
 using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
 using Obsidian.Services;
+using Obsidian.WorldData.Features;
 using System.Reflection;
 
 namespace Obsidian.Plugins;
@@ -159,6 +160,53 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         container.TagFiles.Add(PluginTags.FromEntries(registry, tag, $"{container.Info.Id} (code)", entries));
 
         return this;
+    }
+
+    public IPluginRegistry RegisterFeatureType<TFeature>(string identifier)
+        where TFeature : ConfiguredFeatureBase
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        RegisterWorldgenType(container, identifier, typeof(ConfiguredFeatureBase), typeof(TFeature));
+
+        return this;
+    }
+
+    public IPluginRegistry RegisterPlacementModifierType<TModifier>(string identifier)
+        where TModifier : PlacementModifierBase
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        RegisterWorldgenType(container, identifier, typeof(PlacementModifierBase), typeof(TModifier));
+
+        return this;
+    }
+
+    public IPluginRegistry RegisterWorldgenType<TBase, TValue>(string identifier)
+        where TValue : class, TBase
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        RegisterWorldgenType(container, identifier, typeof(TBase), typeof(TValue));
+
+        return this;
+    }
+
+    // The plugin's feature files are read once it configured its registry, with the types it registered by then, and
+    // read again whenever plugins change. Types registered later would only count from the next change, so they're
+    // refused instead.
+    private static void RegisterWorldgenType(PluginContainer container, string identifier, Type baseType, Type type)
+    {
+        CheckIdentifier(container, identifier);
+
+        if (container.Loaded || container.IsClosing)
+        {
+            throw new InvalidOperationException(
+                $"{container.Info.Name} can only register worldgen types in ConfigureRegistry.");
+        }
+
+        container.WorldgenTypes.Add(
+            WorldgenTypeRegistration.Create(container.WorldgenTypes, identifier, baseType, type));
     }
 
     private static Item RegisterItem(PluginContainer container, string identifier, ItemProperties properties)

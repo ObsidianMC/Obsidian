@@ -2,7 +2,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Registries;
+using Obsidian.API.World.Features;
 using Obsidian.Registries;
+using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Structures;
 using System;
@@ -203,6 +205,55 @@ public class PluginFeatureFiles
         Assert.False(HasDiamondBlocks(chunks.Get(8, 8)));
     }
 
+    [Fact(DisplayName = "A plugin's registered feature and placement modifier types generate, and go with it")]
+    public void PlacesRegisteredWorldgenTypes()
+    {
+        // The types the probe plugin registers, here from the test's own load context.
+        List<WorldgenTypeRegistration> types = [];
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:pillar",
+            typeof(ConfiguredFeatureBase),
+            typeof(ProbePillarFeature)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:at_height",
+            typeof(PlacementModifierBase),
+            typeof(ProbeAtHeight)));
+
+        FeatureFile[] files =
+        [
+            Parse(PluginFeatures.ConfiguredFeature, "probe:pillar", ProbeData("configured_feature/pillar.json")),
+            Parse(PluginFeatures.PlacedFeature, "probe:pillar", ProbeData("placed_feature/pillar.json")),
+            Parse(PluginFeatures.BiomeModifier, "probe:add_pillar", PluginLoading.AddPillar)
+        ];
+
+        var logger = new ListLogger();
+        var current = PluginFeatures.Build(files, [], types, logger);
+        Assert.Empty(logger.Messages);
+
+        // Their properties are read like vanilla types': a number is a constant int provider, and a block set a list
+        // of blocks and tags.
+        var pillar = current.PlacedFeatures["probe:pillar"];
+        var feature = Assert.IsType<ProbePillarFeature>(pillar.Feature);
+
+        Assert.Equal(8, feature.Height.MaxValue);
+        Assert.Equal(["minecraft:stone", "#minecraft:deepslate_ore_replaceables"], feature.Replaceable.Entries);
+        Assert.Equal(-4, Assert.IsType<ProbeAtHeight>(pillar.Placement[0]).Y);
+
+        var builder = new ChunkBuilder(MojangDimension.Overworld, 1234, generateStructures: false, () => current);
+        var chunks = new FullChunks(builder, MojangDimension.Overworld);
+        Assert.True(HasDiamondBlocks(chunks.Get(0, 0)));
+
+        // Once the plugin is gone, so are its types and the features made of them.
+        current = PluginFeatures.Build(files, [], [], logger);
+
+        Assert.Contains(logger.Messages, message => message.Contains("probe:pillar isn't a feature type"));
+        Assert.Empty(current.PlacedFeatures);
+        Assert.Same(BiomeFeatures.All, current.BiomeFeatures);
+        Assert.False(HasDiamondBlocks(chunks.Get(8, 8)));
+    }
+
     private sealed class ListLogger : ILogger
     {
         public List<string> Messages { get; } = [];
@@ -217,6 +268,9 @@ public class PluginFeatureFiles
 
     private static FeatureFile Parse(string registry, string identifier, string json) =>
         PluginFeatures.Parse(registry, identifier, "test", Encoding.UTF8.GetBytes(json));
+
+    private static string ProbeData(string path) =>
+        File.ReadAllText(Path.Join(AppContext.BaseDirectory, "data", "probe", "worldgen", path));
 
     private static bool HasDiamondBlocks(IChunk chunk) =>
         Enumerable.Range(0, 16 * 16 * 128).Any(i => chunk.GetBlock(i & 15, (i >> 8) - 64, (i >> 4) & 15)

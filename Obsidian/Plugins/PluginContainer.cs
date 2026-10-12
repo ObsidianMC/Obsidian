@@ -4,6 +4,7 @@ using Obsidian.API.Plugins;
 using Obsidian.Plugins.Archives;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
+using Obsidian.WorldData.Features;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading;
@@ -74,6 +75,11 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     /// The plugin's feature and biome modifier files, applied to world generation while it's loaded.
     /// </summary>
     internal ImmutableArray<FeatureFile> FeatureFiles { get; set; } = [];
+
+    /// <summary>
+    /// The worldgen types the plugin registered, which feature files can name while it's loaded.
+    /// </summary>
+    internal List<WorldgenTypeRegistration> WorldgenTypes { get; } = [];
 
     public bool Loaded { get; internal set; }
 
@@ -179,6 +185,7 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
                 this.ownServices = null;
                 this.ServiceScope = null!;
                 this.ExportedSingletons = [];
+                this.WorldgenTypes.Clear();
                 this.PluginAssembly = null;
                 this.LoadContext = null;
                 this.Plugin = null;
