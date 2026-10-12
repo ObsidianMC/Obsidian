@@ -69,6 +69,20 @@ internal static class DatagenAssets
         WriteJson(Path.Combine(outputDirectory, "fluids.json"), ProtocolIds("minecraft:fluid"));
         WriteJson(Path.Combine(outputDirectory, "command_parsers.json"), ProtocolIds("minecraft:command_argument_type"));
 
+        // Every built-in registry's entries in protocol id order, which the Obsidian client checks a NeoForge server's
+        // registry sync against.
+        var registryIds = new JsonObject();
+        foreach (var (registry, _) in registries)
+        {
+            var names = Entries(registry)
+                .OrderBy(entry => entry.Value!["protocol_id"]!.GetValue<int>())
+                .Select(entry => (JsonNode?)entry.Key);
+
+            registryIds[registry] = new JsonArray([.. names]);
+        }
+
+        WriteJson(Path.Combine(outputDirectory, "registry_ids.json"), registryIds);
+
         var enums = new JsonObject();
         foreach (var registry in enumRegistries)
             enums[registry] = Entries(registry).DeepClone();

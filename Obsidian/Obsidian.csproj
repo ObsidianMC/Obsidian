@@ -78,8 +78,8 @@
 	     at evaluation, when a fresh clone has none. -->
 	<Target Name="IncludeVanillaAssets" AfterTargets="ResolveProjectReferences">
 		<ItemGroup>
-			<!-- Biome parameter lists, configured carvers block physics and collision shapes are only read at runtime; keep them away from the source generators. -->
-			<AdditionalFiles Include="Assets\**\*.json" Exclude="Assets\biome_parameters\**;Assets\configured_carver\**;Assets\block_physics.json;Assets\collision_shapes.json" />
+			<!-- Biome parameter lists, configured carvers, block physics, collision shapes and registry ids are only read at runtime; keep them away from the source generators. -->
+			<AdditionalFiles Include="Assets\**\*.json" Exclude="Assets\biome_parameters\**;Assets\configured_carver\**;Assets\block_physics.json;Assets\collision_shapes.json;Assets\registry_ids.json" />
 			<EmbeddedResource Include="Assets\**\*.*" Exclude="Assets\.generated-*" />
 		</ItemGroup>
 	</Target>
