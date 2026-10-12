@@ -852,8 +852,9 @@ public sealed partial class PluginManager : IAsyncDisposable
     }
 
     // A plugin's or data pack's structure, structure set and template pool files, and its structure templates, read
-    // within a data pack's limits (see DataPackLimits): a template's NBT is gzipped, and could decompress to far more.
-    // A file that can't be read is left out; the plugin or pack loads without it.
+    // within its limits (see DataBudget): a template's NBT is gzipped, and could decompress to far more, so it counts
+    // decompressed, together with a data pack's other files. A file that can't be read is left out; the plugin or
+    // pack loads without it.
     private (ImmutableArray<StructureFile> Files, ImmutableArray<TemplateFile> Templates) ReadStructureFiles(
         DataFiles source)
     {
@@ -873,10 +874,9 @@ public sealed partial class PluginManager : IAsyncDisposable
         }
 
         var templates = ImmutableArray.CreateBuilder<TemplateFile>();
-        var limits = DataPackLimits.Default;
-        var size = 0L;
+        var budget = source.Budget;
 
-        foreach (var (path, identifier) in PluginStructures.FindTemplates(source.Paths).Take(limits.Files))
+        foreach (var (path, identifier) in PluginStructures.FindTemplates(source.Paths).Take(budget.Limits.Files))
         {
             try
             {
@@ -885,9 +885,9 @@ public sealed partial class PluginManager : IAsyncDisposable
                     identifier,
                     $"{source.Name}/{path}",
                     data,
-                    Math.Min(limits.FileSize, limits.TotalSize - size));
+                    budget.Available(path));
 
-                size += read;
+                budget.Charge(path, read);
                 templates.Add(template);
             }
             catch (InvalidDataException ex)

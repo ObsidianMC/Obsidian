@@ -104,7 +104,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         }
 
         var current = this.Structures?.Invoke() ?? Registries.PluginStructures.Current;
-        this.startCache?.Prune(current.Sets.Values.ToHashSet());
+        this.startCache?.Prune(current);
     }
 
     // The builder, for the steps of generation.
@@ -504,7 +504,8 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         await Task.WhenAll(carving);
 
-        // Found once, as the generator may have stopped by the time the pieces placed are kept.
+        // Found once, and placed as found, so that the starts placed are those restored, even if plugins change the
+        // structures meanwhile, and as the generator may have stopped by the time the pieces placed are kept.
         var starts = this.FindStartsReaching(cx, cz);
         await this.LoadStartChunksAsync(starts);
 
@@ -521,7 +522,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
                     area[(cx + dx, cz + dz)] = dx == 0 && dz == 0 ? chunk : await this.GetChunkAsync(cx + dx, cz + dz);
             }
 
-            this.Decorate(area, cx, cz);
+            this.Decorate(area, cx, cz, starts);
             chunk.SetChunkStatus(ChunkGenStage.features);
         }
 
@@ -535,11 +536,11 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// and the chunk counts as decorated without the features left: those placed wrote blocks, entities and ticks,
     /// into its neighbors too, which decorating it again would duplicate.
     /// </summary>
-    private void Decorate(Dictionary<(int X, int Z), IChunk> area, int cx, int cz)
+    private void Decorate(Dictionary<(int X, int Z), IChunk> area, int cx, int cz, ReachingStarts? starts)
     {
         try
         {
-            this.Running.Decorate(area, cx, cz);
+            this.Running.Decorate(area, cx, cz, structures: starts);
         }
         catch (Exception ex) when (ex is not GeneratorStoppedException && this.Contain(ex))
         {
@@ -583,16 +584,16 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         })).Value;
     }
 
-    // The structure starts reaching a chunk, which decorating it places. Finding them checks biomes and the terrain,
-    // which runs the generator's plugins' code.
-    private List<StructureStart> FindStartsReaching(int cx, int cz)
+    // The structure starts reaching a chunk, which decorating it places, or null without structures. Finding them
+    // checks biomes and the terrain, which runs the generator's plugins' code.
+    private ReachingStarts? FindStartsReaching(int cx, int cz)
     {
         var builder = this.Running;
         if (builder.Structures is not StructureManager structures)
-            return [];
+            return null;
 
         using (builder.EnterGenerator())
-            return [.. structures.GetStartsReaching(cx, cz)];
+            return structures.FindReaching(cx, cz);
     }
 
     /// <summary>
@@ -604,9 +605,12 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// Done without generation locks, since it may read chunks from disk. Every decoration does this before placing
     /// pieces, and a start is only restored once, so that happens before any of its pieces are placed in this session.
     /// </remarks>
-    private async ValueTask LoadStartChunksAsync(List<StructureStart> starts)
+    private async ValueTask LoadStartChunksAsync(ReachingStarts? starts)
     {
-        foreach (var start in starts)
+        if (starts is null)
+            return;
+
+        foreach (var start in starts.Starts)
         {
             var startChunk = await this.world.GetChunkAsync(start.ChunkX, start.ChunkZ, scheduleGeneration: false) as Chunk;
             StructureManager.RestoreStart(start, startChunk?.StructureStarts);

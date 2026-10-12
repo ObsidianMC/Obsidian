@@ -131,9 +131,10 @@ internal static partial class PluginStructures
     /// <param name="identifier">The template's identifier, like <c>ruby:ruins/tower</c>.</param>
     /// <param name="source">Where the file comes from, for messages.</param>
     /// <param name="maxSize">The most bytes the NBT may have, decompressed, like a data pack file's (see
-    /// <see cref="DataPackLimits"/>).</param>
+    /// <see cref="DataBudget"/>).</param>
     /// <returns>The template, and the size of its NBT, decompressed.</returns>
-    /// <exception cref="InvalidDataException">The file isn't a valid template, or is too large.</exception>
+    /// <exception cref="InvalidDataException">The file isn't a valid template, is too large, or declares more than
+    /// its data holds or a template may keep.</exception>
     public static (TemplateFile File, long Size) ParseTemplate(
         string identifier,
         string source,

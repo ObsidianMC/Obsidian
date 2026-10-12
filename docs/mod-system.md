@@ -252,8 +252,10 @@ client. This document describes the design and tracks its progress. The archive 
      them). Every data-driven vanilla structure type is available, jigsaw structures with every pool element type,
      both placements with exclusion zones and frequency reduction, and plugins' processor types in processor lists.
      Like features, they're applied again on every plugin change: a level's structures move to the new sets, whose
-     starts chunks not generated yet get, keeping the starts of the sets that stay; starts of a set that's gone are
-     dropped, so their plugin's code isn't kept, with their state saved and restored if it comes back. Starts are
+     starts chunks not generated yet get, keeping the starts of the sets that stay; starts of a set that's gone, and
+     starts made with a plugin that unloads, are dropped, so their plugin's code isn't kept, with their state saved
+     and restored if they come back. Decorating a chunk restores, places and saves one snapshot of the starts reaching
+     it, so a plugin change while it waits for start chunks doesn't place starts it didn't restore. Starts are
      saved by their structure's identifier, and one whose structure is gone after a restart loads and stays as saved.
      Starting and placing a structure made of plugins' types is a call into them, and its failure stops the dimension
      like a feature's. Overrides of vanilla's structures, sets, pools, processor lists and templates apply to vanilla's

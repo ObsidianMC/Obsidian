@@ -42,6 +42,12 @@ internal static class StructureRegistry
         Volatile.Write(ref overrides, files);
 
     /// <summary>
+    /// The templates of plugins' and data packs' files now, a new object whenever they change, for caches of what
+    /// templates give (see <see cref="WorldData.Structures.Pools.StructureTemplatePool.MaxSize"/>).
+    /// </summary>
+    public static object Overrides => Volatile.Read(ref overrides);
+
+    /// <summary>
     /// Gets a template by id: a plugin's or data pack's, or vanilla's, loaded on first use. Unknown ids get an empty
     /// template, like vanilla's <c>StructureTemplateManager.getOrCreate</c>.
     /// </summary>

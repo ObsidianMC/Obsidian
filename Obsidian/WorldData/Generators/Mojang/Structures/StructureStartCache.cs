@@ -1,5 +1,8 @@
 using Obsidian.Nbt;
+using Obsidian.Plugins;
+using Obsidian.Registries;
 using Obsidian.WorldData.Structures;
+using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Mojang.Structures;
 
@@ -15,71 +18,108 @@ namespace Obsidian.WorldData.Generators.Mojang.Structures;
 /// placed partly keep their state.
 /// </para>
 /// <para>
-/// Plugins' starts hold their code, so the starts of sets that are gone are dropped (see <see cref="Prune"/>), and
-/// the state of those placed in this session is kept as saved, to be saved and restored into the start made again if
-/// its structure comes back.
+/// Plugins' starts hold their code, so the starts of sets that are gone, and those made with plugins that unload, are
+/// dropped (see <see cref="Prune"/>): they aren't placed any more, and the state of those placed in this session is
+/// kept as saved, to be saved and restored into the start made again if its structure comes back.
+/// </para>
+/// <para>
+/// Starts are made without a lock, since that runs plugins' code, then published under one with the starts they
+/// replace dropped and their state handed on, so that no state is lost between them. Pruning takes the same lock, and
+/// starts made for a layout older than the one pruned for aren't published.
 /// </para>
 /// </remarks>
 internal sealed class StructureStartCache
 {
+    // Publishing a chunk's starts, pruning, and saving; reading a chunk's current starts doesn't take it.
+    private readonly Lock gate = new();
+
     private readonly ConcurrentDictionary<(int X, int Z), ChunkStarts> starts = new();
 
-    // The saved state of starts dropped with their structure set, by start chunk and structure identifier.
-    private readonly ConcurrentDictionary<(int X, int Z), ImmutableDictionary<string, NbtCompound>> dropped = new();
+    // The saved state of starts dropped, by start chunk and structure identifier. Under the gate.
+    private readonly Dictionary<(int X, int Z), ImmutableDictionary<string, NbtCompound>> dropped = [];
+
+    // The version of the structures last pruned for: starts made for older ones may hold what was pruned.
+    private long prunedVersion = long.MinValue;
+
+    /// <summary>
+    /// Creates the start of a structure set in a chunk, or gives null when the set has none there.
+    /// </summary>
+    /// <param name="refused">Set when the start couldn't be made since a plugin it runs is unloading; it's made
+    /// again once the starts are pruned.</param>
+    public delegate StructureStart? StartFactory(
+        StructureLayout layout,
+        StructureSet set,
+        int chunkX,
+        int chunkZ,
+        out bool refused);
 
     /// <summary>
     /// The starts of a chunk for the layout's structure sets, created by <paramref name="create"/> for the sets whose
-    /// starts weren't created yet. A chunk whose starts were made for a later layout keeps those.
+    /// starts weren't created yet. A chunk whose starts were made for a later layout keeps those, even when some of
+    /// that layout's are missing.
     /// </summary>
-    /// <param name="create">Creates the start of a set in the chunk, or gives null when the set has none there.
-    /// </param>
-    public StructureStart[] Get(
-        int chunkX,
-        int chunkZ,
-        StructureLayout layout,
-        Func<StructureLayout, StructureSet, int, int, StructureStart?> create)
+    /// <returns>The chunk's starts, or null when the starts were pruned for a later layout than this one: ask
+    /// again with the current layout.</returns>
+    public ChunkStarts? Get(int chunkX, int chunkZ, StructureLayout layout, StartFactory create)
     {
         var key = (chunkX, chunkZ);
 
         while (true)
         {
-            var found = this.starts.TryGetValue(key, out var previous);
-            if (found && previous!.Version >= layout.Version)
-                return previous.Starts;
+            // Starts made for a later layout aren't made again for an earlier one, which would drop the later's.
+            this.starts.TryGetValue(key, out var previous);
+            if (previous is not null
+                && (previous.Version > layout.Version || previous.Complete && previous.Version == layout.Version))
+            {
+                return previous;
+            }
 
-            var made = ChunkStarts.Make(layout, previous, set => create(layout, set, chunkX, chunkZ));
-            this.Adopt(key, made, previous);
+            if (layout.Version < Volatile.Read(ref this.prunedVersion))
+                return null;
 
-            var stored = found ? this.starts.TryUpdate(key, made, previous!) : this.starts.TryAdd(key, made);
-            if (!stored)
-                continue;
+            var made = ChunkStarts.Make(layout, previous, chunkX, chunkZ, create);
 
-            if (previous is not null)
-                this.Drop(key, previous, made);
+            lock (this.gate)
+            {
+                if (layout.Version < this.prunedVersion)
+                    return null;
 
-            if (this.dropped.TryGetValue(key, out var remaining))
-                this.Forget(key, remaining, made);
+                // Another thread published the chunk's starts meanwhile, or pruned them: start over from those.
+                this.starts.TryGetValue(key, out var current);
+                if (!ReferenceEquals(current, previous))
+                    continue;
 
-            return made.Starts;
+                if (previous is not null)
+                    this.Drop(key, previous, made);
+
+                this.Adopt(key, made, previous);
+                this.starts[key] = made;
+                return made;
+            }
         }
     }
 
     /// <summary>
-    /// Drops the starts of the structure sets not in <paramref name="live"/>, which may hold the code of plugins that
-    /// unload, keeping the state of those placed in this session as saved.
+    /// Drops the starts of the structure sets that aren't in <paramref name="structures"/>, and those made with a
+    /// plugin that's unloading, so that the plugins' code isn't kept; the sets that are still there get their starts
+    /// made again as they're asked for. The state of those placed in this session is kept as saved.
     /// </summary>
-    public void Prune(IReadOnlySet<StructureSet> live)
+    public void Prune(WorldgenStructures structures)
     {
-        foreach (var key in this.starts.Keys)
+        var live = structures.Sets.Values.ToHashSet();
+
+        lock (this.gate)
         {
-            while (this.starts.TryGetValue(key, out var entry) && !entry.Sets.All(live.Contains))
+            Volatile.Write(ref this.prunedVersion, Math.Max(this.prunedVersion, structures.Version));
+
+            foreach (var (key, entry) in this.starts)
             {
-                var kept = entry.Keep(live.Contains);
-                if (!this.starts.TryUpdate(key, kept, entry))
+                var kept = entry.Keep(live);
+                if (kept == entry)
                     continue;
 
                 this.Drop(key, entry, kept);
-                break;
+                this.starts[key] = kept;
             }
         }
     }
@@ -91,16 +131,23 @@ internal sealed class StructureStartCache
     /// </summary>
     /// <remarks>
     /// A start that wasn't restored hasn't been placed in this session, so what the chunk was loaded with is still
-    /// current.
+    /// current. Saving a start made of plugins' types is a call into them; one whose plugins are unloading keeps the
+    /// state it's saved with as it's dropped.
     /// </remarks>
     public NbtCompound? Save(int chunkX, int chunkZ, NbtCompound? loaded)
     {
         var key = (chunkX, chunkZ);
-        this.dropped.TryGetValue(key, out var states);
+        ImmutableDictionary<string, NbtCompound>? states;
+        StructureStart[] restored;
 
-        StructureStart[] restored = this.starts.TryGetValue(key, out var cached)
-            ? [.. cached.Starts.Where(start => start.IsStateRestored)]
-            : [];
+        // Taken together, so that a start being dropped is in one or the other.
+        lock (this.gate)
+        {
+            this.dropped.TryGetValue(key, out states);
+            restored = this.starts.TryGetValue(key, out var cached)
+                ? [.. cached.Starts.Where(start => start.IsStateRestored)]
+                : [];
+        }
 
         if (restored.Length == 0 && states is null)
             return loaded;
@@ -120,14 +167,21 @@ internal sealed class StructureStartCache
 
         foreach (var start in restored)
         {
-            result.Remove(start.Structure.Identifier);
-            result.Add(start.SaveState());
+            if (!GeneratorCalls.TryEnter(start.Owners, out var calls))
+                continue;
+
+            using (calls)
+            {
+                result.Remove(start.Structure.Identifier);
+                result.Add(start.SaveState());
+            }
         }
 
         return result;
     }
 
-    // Starts made again for a structure whose start was dropped in the chunk take its state, before any is placed.
+    // New starts of a structure whose start was dropped in the chunk take its state, before any is placed, and it's
+    // no longer kept. Under the gate.
     private void Adopt((int X, int Z) key, ChunkStarts made, ChunkStarts? previous)
     {
         if (!this.dropped.TryGetValue(key, out var states))
@@ -135,102 +189,119 @@ internal sealed class StructureStartCache
 
         foreach (var start in made.Starts)
         {
-            if (previous?.Starts.Contains(start) is not true
-                && states.TryGetValue(start.Structure.Identifier, out var state))
+            if (previous?.Starts.Contains(start) is true
+                || !states.TryGetValue(start.Structure.Identifier, out var state))
             {
-                start.RestoreState(state);
+                continue;
             }
+
+            start.RestoreState(state);
+            states = states.Remove(start.Structure.Identifier);
         }
+
+        if (states.IsEmpty)
+            this.dropped.Remove(key);
+        else
+            this.dropped[key] = states;
     }
 
-    // The starts that took a dropped start's state no longer need it kept.
-    private void Forget((int X, int Z) key, ImmutableDictionary<string, NbtCompound> states, ChunkStarts made)
-    {
-        var adopted = made.Starts
-            .Select(start => start.Structure.Identifier)
-            .Where(states.ContainsKey)
-            .ToList();
-
-        if (adopted.Count == 0)
-            return;
-
-        while (this.dropped.TryGetValue(key, out var current))
-        {
-            var rest = current.RemoveRange(adopted);
-            var updated = rest.IsEmpty
-                ? this.dropped.TryRemove(KeyValuePair.Create(key, current))
-                : this.dropped.TryUpdate(key, rest, current);
-
-            if (updated)
-                return;
-        }
-    }
-
-    // Keeps the state of the starts the chunk had placed in this session that it no longer has.
+    // Retires the starts the chunk had that it no longer has, keeping the state of those placed in this session.
+    // Under the gate.
     private void Drop((int X, int Z) key, ChunkStarts previous, ChunkStarts current)
     {
         foreach (var start in previous.Starts)
         {
-            if (current.Starts.Contains(start) || !start.IsStateRestored)
+            if (current.Starts.Contains(start) || start.Retire() is not NbtCompound state)
                 continue;
 
-            var state = (Id: start.Structure.Identifier, State: start.SaveState());
-            this.dropped.AddOrUpdate(
-                key,
-                static (_, state) => ImmutableDictionary<string, NbtCompound>.Empty.SetItem(state.Id, state.State),
-                static (_, states, state) => states.SetItem(state.Id, state.State),
-                state);
+            var states = this.dropped.GetValueOrDefault(key) ?? ImmutableDictionary<string, NbtCompound>.Empty;
+            this.dropped[key] = states.SetItem(start.Structure.Identifier, state);
         }
     }
 
-    // A chunk's starts, one or none for each structure set of the layout they were made for.
-    private sealed class ChunkStarts
+    /// <summary>
+    /// A chunk's starts, one or none for each structure set of the layout they were made for.
+    /// </summary>
+    internal sealed class ChunkStarts
     {
         private readonly StructureStart?[] perSet;
 
-        private ChunkStarts(long version, StructureSet[] sets, StructureStart?[] perSet)
+        private ChunkStarts(long version, StructureSet[] sets, StructureStart?[] perSet, bool complete)
         {
             this.Version = version;
             this.Sets = sets;
             this.perSet = perSet;
+            this.Complete = complete;
             this.Starts = [.. perSet.OfType<StructureStart>()];
         }
 
+        /// <summary>
+        /// The version of the layout the starts were made for.
+        /// </summary>
         public long Version { get; }
+
+        /// <summary>
+        /// Whether there's a start, or none, for every set of that layout; the others are made when asked for.
+        /// </summary>
+        public bool Complete { get; }
 
         public StructureSet[] Sets { get; }
 
-        // The starts in set order, which is the order vanilla creates them in.
+        /// <summary>
+        /// The starts in set order, which is the order vanilla creates them in.
+        /// </summary>
         public StructureStart[] Starts { get; }
 
-        // The starts of the sets the previous starts were made for are kept, so their state carries over.
+        // The starts of the sets the previous starts were made for are kept, so their state carries over. A set whose
+        // start was refused is left out, to be made again.
         public static ChunkStarts Make(
             StructureLayout layout,
             ChunkStarts? previous,
-            Func<StructureSet, StructureStart?> create)
+            int chunkX,
+            int chunkZ,
+            StartFactory create)
         {
-            var sets = layout.Sets.ToArray();
-            var perSet = new StructureStart?[sets.Length];
+            var sets = new List<StructureSet>(layout.Sets.Count);
+            var perSet = new List<StructureStart?>(layout.Sets.Count);
 
-            for (var i = 0; i < sets.Length; i++)
+            foreach (var set in layout.Sets)
             {
-                var reused = previous is null ? -1 : Array.IndexOf(previous.Sets, sets[i]);
-                perSet[i] = reused >= 0 ? previous!.perSet[reused] : create(sets[i]);
+                var reused = previous is null ? -1 : Array.IndexOf(previous.Sets, set);
+                if (reused >= 0)
+                {
+                    sets.Add(set);
+                    perSet.Add(previous!.perSet[reused]);
+                    continue;
+                }
+
+                var start = create(layout, set, chunkX, chunkZ, out var refused);
+                if (refused)
+                    continue;
+
+                sets.Add(set);
+                perSet.Add(start);
             }
 
-            return new ChunkStarts(layout.Version, sets, perSet);
+            return new ChunkStarts(layout.Version, [.. sets], [.. perSet], sets.Count == layout.Sets.Count);
         }
 
-        public ChunkStarts Keep(Func<StructureSet, bool> keep)
+        // The starts of the live sets not made with a plugin that's unloading; this, when that's all of them.
+        public ChunkStarts Keep(IReadOnlySet<StructureSet> live)
         {
             var indices = Enumerable.Range(0, this.Sets.Length)
-                .Where(i => keep(this.Sets[i]))
+                .Where(i => live.Contains(this.Sets[i]) && this.perSet[i]?.Owners.Any(IsUnloading) is not true)
                 .ToArray();
+
+            if (indices.Length == this.Sets.Length)
+                return this;
 
             return new ChunkStarts(
                 this.Version,
                 [.. indices.Select(i => this.Sets[i])],
-                [.. indices.Select(i => this.perSet[i])]);
+                [.. indices.Select(i => this.perSet[i])],
+                complete: false);
         }
+
+        private static bool IsUnloading(PluginContainer plugin) => plugin.IsClosing;
     }
 }

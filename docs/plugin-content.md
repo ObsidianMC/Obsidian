@@ -790,8 +790,11 @@ the tower grows from, up to its `size`.
 - Values are checked like vanilla's codecs check them (a jigsaw's `size` from 0 to 20, a pool element's `weight` from
   1 to 150, a `spacing` larger than its `separation`, ...). Entries refer to each other by identifier, vanilla's or
   any plugin's or data pack's; a file that can't be read is logged and left out, with the entries that need it.
-- Templates are read like a data pack's files, within its limits: at most 32 MiB each and 512 MiB together, once
-  decompressed. A template a pool names that no plugin, pack or vanilla has is empty, as in vanilla.
+- Templates are read like a data pack's files, within its limits: at most 32 MiB each and 512 MiB together with the
+  pack's other files, once decompressed. A template whose lists claim more than its data holds, that's nested deeper
+  than vanilla's NBT allows (512), or that would keep more than about four million entries (list elements, compound
+  fields, and the blocks of each palette) is left out. A template a pool names that no plugin, pack or vanilla has is
+  empty, as in vanilla.
 
 Structures generate in every dimension whose biomes their `biomes` hold, vanilla's and plugins' (biome regions'
 biomes included), placed by their sets like vanilla's. All structures, vanilla's and plugins', are ordered like a
@@ -810,7 +813,9 @@ The rules:
   the structure, its pools or the processor lists they name) is a call into the plugin, like placing its features.
   One whose plugin unloads isn't started or placed, and its failing stops the dimension like a failing feature (see
   [Noise types](#noise-types)). A jigsaw's pieces name pools by identifier, so every jigsaw structure counts the
-  plugins of every pool read from files.
+  plugins of every pool read from files. A start keeps the plugins it started with: once one unloads, the start isn't
+  placed any more, even if its structure set stays (a vanilla set whose overridden template reached the plugin's
+  pool, say), and the set starts again without the plugin in chunks not generated yet, with the state the start had.
 - Explorer maps and dolphins find vanilla's structures by vanilla's structure tags; plugins can't add structure
   tags yet, so they don't find plugins' structures.
 

@@ -1,5 +1,6 @@
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
+using Obsidian.Plugins;
 using System.Threading;
 
 namespace Obsidian.WorldData.Structures;
@@ -14,6 +15,9 @@ public sealed class StructureStart
     private readonly Lock stateLock = new();
 
     private bool stateRestored;
+
+    // See Retire.
+    private bool retired;
 
     internal StructureStart(Structure structure, int chunkX, int chunkZ, IReadOnlyList<StructurePiece> pieces)
     {
@@ -37,6 +41,12 @@ public sealed class StructureStart
     public int ChunkZ { get; }
 
     public IReadOnlyList<StructurePiece> Pieces { get; }
+
+    /// <summary>
+    /// The plugins whose code the start's pieces run, those its structure was made of when it started; none for
+    /// most. Placing and saving the start is a call into them.
+    /// </summary>
+    internal ImmutableArray<PluginContainer> Owners { get; set; } = [];
 
     /// <summary>
     /// How many times a search for unknown structures found this start (vanilla's <c>references</c>).
@@ -94,6 +104,8 @@ public sealed class StructureStart
             return;
 
         using var scope = this.stateLock.EnterScope();
+        if (this.retired)
+            return;
 
         // Pieces may orient themselves around the start piece's bottom center.
         var startBox = this.Pieces[0].BoundingBox;
@@ -128,16 +140,31 @@ public sealed class StructureStart
     /// </summary>
     internal NbtCompound SaveState()
     {
+        using var scope = this.stateLock.EnterScope();
+        return this.SaveStateLocked();
+    }
+
+    /// <summary>
+    /// Stops the start from being placed, once the structure cache dropped it (its structure set is gone, or a plugin
+    /// it runs is unloading), and gives its state to keep when it was restored. Taking the lock placing takes, it
+    /// waits for a placement in progress, so the state has every piece placed, and none is placed after.
+    /// </summary>
+    internal NbtCompound? Retire()
+    {
+        using var scope = this.stateLock.EnterScope();
+        this.retired = true;
+        return this.stateRestored ? this.SaveStateLocked() : null;
+    }
+
+    private NbtCompound SaveStateLocked()
+    {
         var children = new NbtList(NbtTagType.Compound, "Children");
 
-        using (this.stateLock.EnterScope())
+        foreach (var piece in this.Pieces)
         {
-            foreach (var piece in this.Pieces)
-            {
-                var child = new NbtCompound();
-                piece.SaveState(child);
-                children.Add(child);
-            }
+            var child = new NbtCompound();
+            piece.SaveState(child);
+            children.Add(child);
         }
 
         return new NbtCompound(this.Structure.Identifier)

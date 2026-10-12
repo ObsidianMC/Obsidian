@@ -19,6 +19,11 @@ internal sealed record DataFiles(
     IReadOnlyCollection<string> Paths,
     Func<string, byte[]?> Read)
 {
+    /// <summary>
+    /// What's left of the files' size limits as they're read; a data pack's counts the files read when it opened.
+    /// </summary>
+    public DataBudget Budget { get; init; } = new(Name, DataPackLimits.Default);
+
     public static DataFiles Of(PluginArchive archive) =>
         new(archive.Info.Id, archive.Source, [.. archive.Paths], archive.Read);
 }
@@ -37,6 +42,42 @@ internal sealed record DataPackLimits(int Files, long FileSize, long TotalSize)
     /// megabytes.
     /// </summary>
     public static DataPackLimits Default { get; } = new(65_536, 32L << 20, 512L << 20);
+}
+
+/// <summary>
+/// What's left of a plugin's or data pack's <see cref="DataPackLimits"/> as its files are read. Each file counts once,
+/// with the largest size read of it, so a structure template counts with its NBT decompressed rather than its gzipped
+/// bytes. Not thread-safe: a plugin's or pack's files are read one after another.
+/// </summary>
+internal sealed class DataBudget(string name, DataPackLimits limits)
+{
+    private readonly Dictionary<string, long> charged = new(StringComparer.Ordinal);
+    private long used;
+
+    public DataPackLimits Limits => limits;
+
+    /// <summary>
+    /// The most bytes a file may have: its own limit, or what's left of the total with what the file counts for.
+    /// </summary>
+    public long Available(string path) =>
+        Math.Min(limits.FileSize, limits.TotalSize - this.used + this.charged.GetValueOrDefault(path));
+
+    /// <summary>
+    /// Counts a file with <paramref name="size"/> bytes, unless it counts for more already.
+    /// </summary>
+    /// <exception cref="InvalidDataException">The files are larger than the total together.</exception>
+    public void Charge(string path, long size)
+    {
+        var previous = this.charged.GetValueOrDefault(path);
+        if (size <= previous)
+            return;
+
+        if (this.used - previous + size > limits.TotalSize)
+            throw new InvalidDataException($"{name}'s files are larger than {limits.TotalSize} bytes together.");
+
+        this.used += size - previous;
+        this.charged[path] = size;
+    }
 }
 
 /// <summary>
@@ -287,7 +328,7 @@ internal sealed partial class DataPack(DataFiles files)
     {
         private readonly HashSet<string> paths = new(StringComparer.Ordinal);
         private readonly Dictionary<string, byte[]> read = new(StringComparer.Ordinal);
-        private long size;
+        private readonly DataBudget budget = new(name, limits);
 
         // Counts a file, and gives whether it's to be read.
         public bool Add(string path, Func<string, bool> reads)
@@ -307,16 +348,12 @@ internal sealed partial class DataPack(DataFiles files)
                 throw new InvalidDataException($"{name}: {path} is larger than {limits.FileSize} bytes.");
 
             var data = ReadBounded(stream, $"{name}: {path}", limits.FileSize);
-
-            this.size += data.Length;
-            if (this.size > limits.TotalSize)
-                throw new InvalidDataException($"{name}'s files are larger than {limits.TotalSize} bytes together.");
-
+            this.budget.Charge(path, data.Length);
             this.read[path] = data;
         }
 
         public DataFiles ToFiles(string location) =>
-            new(name, location, this.paths, path => this.read.GetValueOrDefault(path));
+            new(name, location, this.paths, path => this.read.GetValueOrDefault(path)) { Budget = this.budget };
     }
 
     private static partial class Log

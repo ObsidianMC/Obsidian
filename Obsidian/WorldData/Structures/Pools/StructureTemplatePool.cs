@@ -10,7 +10,8 @@ public sealed class StructureTemplatePool
 {
     public const string EmptyId = "minecraft:empty";
 
-    private int maxSize = -1;
+    // MaxSize, with the template overrides it was computed with.
+    private MaxSizeCache? maxSize;
 
     /// <summary>The registry id, e.g. <c>minecraft:village/plains/houses</c>.</summary>
     public string Identifier { get; init; } = string.Empty;
@@ -29,22 +30,28 @@ public sealed class StructureTemplatePool
     /// <summary>
     /// Vanilla <c>getMaxSize</c>: the tallest element (by bounding box height), used by the expansion hack.
     /// </summary>
+    /// <remarks>
+    /// Elements look their templates up as they're used, and plugins and data packs may override them, so the value
+    /// is computed again once the overrides change (see <see cref="StructureRegistry.Overrides"/>).
+    /// </remarks>
     public int MaxSize
     {
         get
         {
-            // Computed once; racing threads compute the same value.
-            var value = System.Threading.Volatile.Read(ref this.maxSize);
-            if (value < 0)
-            {
-                value = this.Templates
-                    .Where(element => element is not EmptyPoolElement)
-                    .Select(element => element.GetBoundingBox(Vector.Zero, StructureRotation.None).YSpan)
-                    .DefaultIfEmpty(0)
-                    .Max();
-                System.Threading.Volatile.Write(ref this.maxSize, value);
-            }
+            // Racing threads compute the same value for the same overrides. Read first, so that overrides changing
+            // meanwhile compute it again next time.
+            var overrides = StructureRegistry.Overrides;
+            var cached = System.Threading.Volatile.Read(ref this.maxSize);
+            if (cached is not null && ReferenceEquals(cached.Overrides, overrides))
+                return cached.Value;
 
+            var value = this.Templates
+                .Where(element => element is not EmptyPoolElement)
+                .Select(element => element.GetBoundingBox(Vector.Zero, StructureRotation.None).YSpan)
+                .DefaultIfEmpty(0)
+                .Max();
+
+            System.Threading.Volatile.Write(ref this.maxSize, new MaxSizeCache(overrides, value));
             return value;
         }
     }
@@ -58,6 +65,8 @@ public sealed class StructureTemplatePool
     /// <see cref="StructureGenerationContext.Pools"/>, which has plugins' and data packs' pools too.
     /// </summary>
     public static StructureTemplatePool? Get(string id) => TemplatePools.All.GetValueOrDefault(id);
+
+    private sealed record MaxSizeCache(object Overrides, int Value);
 }
 
 /// <summary>
