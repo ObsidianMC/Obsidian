@@ -1,3 +1,4 @@
+using Obsidian.API.World.Structures;
 using Obsidian.Nbt;
 
 namespace Obsidian.WorldData.Structures.Processors;
@@ -11,8 +12,13 @@ public sealed class JigsawReplacementProcessor : StructureProcessor
 {
     public static JigsawReplacementProcessor Instance { get; } = new() { Type = "minecraft:jigsaw_replacement" };
 
-    public override StructureBlockInfo? ProcessBlock(IWorldGenLevel level, Vector origin, Vector pivot, StructureBlockInfo original,
-        StructureBlockInfo current, StructurePlaceSettings settings)
+    public override StructureBlockInfo? ProcessBlock(
+        IWorldGenLevel level,
+        Vector origin,
+        Vector pivot,
+        StructureBlockInfo original,
+        StructureBlockInfo current,
+        TemplatePlacement placement)
     {
         if (!current.Block.Is(BlockIds.Jigsaw) || current.Nbt is null)
             return current;

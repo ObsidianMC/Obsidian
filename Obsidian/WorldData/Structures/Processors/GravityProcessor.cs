@@ -1,3 +1,5 @@
+using Obsidian.API.World.Structures;
+
 namespace Obsidian.WorldData.Structures.Processors;
 
 /// <summary>
@@ -11,8 +13,13 @@ public sealed class GravityProcessor : StructureProcessor
 
     public int Offset { get; init; }
 
-    public override StructureBlockInfo? ProcessBlock(IWorldGenLevel level, Vector origin, Vector pivot, StructureBlockInfo original,
-        StructureBlockInfo current, StructurePlaceSettings settings)
+    public override StructureBlockInfo? ProcessBlock(
+        IWorldGenLevel level,
+        Vector origin,
+        Vector pivot,
+        StructureBlockInfo original,
+        StructureBlockInfo current,
+        TemplatePlacement placement)
     {
         var position = current.Position;
         var height = level.GetHeight(this.Heightmap, position.X, position.Z) + this.Offset;

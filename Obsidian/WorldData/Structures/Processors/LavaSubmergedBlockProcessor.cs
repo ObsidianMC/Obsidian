@@ -1,3 +1,5 @@
+using Obsidian.API.World.Structures;
+
 namespace Obsidian.WorldData.Structures.Processors;
 
 /// <summary>
@@ -11,8 +13,13 @@ public sealed class LavaSubmergedBlockProcessor : StructureProcessor
 
     private static readonly IBlock lava = BlocksRegistry.Lava;
 
-    public override StructureBlockInfo? ProcessBlock(IWorldGenLevel level, Vector origin, Vector pivot, StructureBlockInfo original,
-        StructureBlockInfo current, StructurePlaceSettings settings) =>
+    public override StructureBlockInfo? ProcessBlock(
+        IWorldGenLevel level,
+        Vector origin,
+        Vector pivot,
+        StructureBlockInfo original,
+        StructureBlockInfo current,
+        TemplatePlacement placement) =>
         level.GetBlock(current.Position).Is(BlockIds.Lava) && !StructureBlockShapes.IsShapeFullBlock(current.Block)
             ? current with { Block = lava }
             : current;

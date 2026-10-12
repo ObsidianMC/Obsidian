@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.API.World.Structures;
 
 namespace Obsidian.WorldData.Structures.Processors;
 
@@ -15,8 +16,13 @@ public sealed class CappedProcessor : StructureProcessor
 
     public override bool ProcessesWholeTemplate => true;
 
-    public override List<StructureBlockInfo> FinalizeProcessing(IWorldGenLevel level, Vector origin, Vector pivot,
-        IReadOnlyList<StructureBlockInfo> originals, List<StructureBlockInfo> processed, StructurePlaceSettings settings)
+    public override List<StructureBlockInfo> FinalizeProcessing(
+        IWorldGenLevel level,
+        Vector origin,
+        Vector pivot,
+        IReadOnlyList<StructureBlockInfo> originals,
+        List<StructureBlockInfo> processed,
+        TemplatePlacement placement)
     {
         if (this.Limit.MaxValue == 0 || processed.Count == 0 || originals.Count != processed.Count)
             return processed;
@@ -39,7 +45,7 @@ public sealed class CappedProcessor : StructureProcessor
         {
             var target = indices[index];
             var current = processed[target];
-            var result = this.Delegate.ProcessBlock(level, origin, pivot, originals[target], current, settings);
+            var result = this.Delegate.ProcessBlock(level, origin, pivot, originals[target], current, placement);
             if (result is null || IsSame(current, result.Value))
                 continue;
 

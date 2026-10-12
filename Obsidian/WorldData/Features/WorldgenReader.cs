@@ -1,5 +1,6 @@
 using Obsidian.API.World.Generator.DensityFunctions;
 using Obsidian.API.World.Generator.Noise;
+using Obsidian.API.World.Structures;
 using Obsidian.WorldData.Structures;
 using System.Globalization;
 using System.IO;

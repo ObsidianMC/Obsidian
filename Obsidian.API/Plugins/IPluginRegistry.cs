@@ -145,15 +145,19 @@ public interface IPluginRegistry
 
     /// <summary>
     /// Registers a type of another kind of worldgen value that data chooses by its <c>type</c> (or
-    /// <c>predicate_type</c>), like NeoForge's int provider, density function or biome source types: features', noise
-    /// settings' and level stems' JSON can then name it wherever a <typeparamref name="TBase"/> is expected. The rules
-    /// are <see cref="RegisterFeatureType{TFeature}"/>'s, and one identifier may name types of different kinds.
+    /// <c>predicate_type</c>, <c>processor_type</c>), like NeoForge's int provider, density function or biome source
+    /// types: features', noise settings' and level stems' JSON can then name it wherever a
+    /// <typeparamref name="TBase"/> is expected. The rules are <see cref="RegisterFeatureType{TFeature}"/>'s, and one
+    /// identifier may name types of different kinds.
     /// </summary>
     /// <typeparam name="TBase">
     /// The kind of value, an interface or abstract class: <see cref="IIntProvider"/>, <see cref="IFloatProvider"/>,
     /// <see cref="IHeightProvider"/>, <see cref="IBlockStateProvider"/>, <see cref="IBlockPredicate"/>,
-    /// <see cref="IRuleTest"/>, <see cref="IDensityFunction"/>, <see cref="ISurfaceRule"/> (for an
-    /// <see cref="ICustomSurfaceRule"/>), <see cref="ISurfaceCondition"/> (for an
+    /// <see cref="IRuleTest"/>, a tree part (<see cref="World.Features.Trees.TrunkPlacer"/>,
+    /// <see cref="World.Features.Trees.FoliagePlacer"/>, <see cref="World.Features.Trees.RootPlacer"/>,
+    /// <see cref="World.Features.Trees.TreeDecorator"/>, <see cref="World.Features.Trees.FeatureSize"/>),
+    /// <see cref="World.Structures.StructureProcessor"/>, <see cref="IDensityFunction"/>, <see cref="ISurfaceRule"/>
+    /// (for an <see cref="ICustomSurfaceRule"/>), <see cref="ISurfaceCondition"/> (for an
     /// <see cref="ICustomSurfaceCondition"/>), <see cref="World.Generator.BiomeSourceBase"/>, or one of the plugin's
     /// own that its features' properties use.
     /// </typeparam>

@@ -24,7 +24,7 @@ namespace Obsidian.Registries.Codecs;
 /// }
 /// </code>
 /// Biomes, features, carvers and entity types are sets: an identifier, a <c>#tag</c>, or a list mixing both. Features
-/// added may also be defined inline. References and tags are checked when the modifier is applied (see
+/// and carvers added may also be defined inline. References and tags are checked when the modifier is applied (see
 /// <see cref="PluginFeatures"/> and <see cref="PluginSpawns"/>), since they may be other plugins' entries, except
 /// entity types, which are registered by then. Unknown fields are errors, so typos don't go unnoticed.
 /// </remarks>
@@ -71,7 +71,7 @@ internal sealed record BiomeModifierData(
             additions = additions with { Spawners = ReadSpawners(spawners, Field(path, "spawners")) };
 
         if (TryGet(value, "carvers", out var carvers))
-            additions = additions with { Carvers = ReadSet(carvers, Field(path, "carvers")) };
+            additions = additions with { Carvers = ReadCarvers(carvers, Field(path, "carvers")) };
 
         if (TryGet(value, "spawn_costs", out var costs))
         {
@@ -143,6 +143,18 @@ internal sealed record BiomeModifierData(
         value.ValueKind == JsonValueKind.String && value.GetString()!.StartsWith('#')
             ? $"#{Tag(value, path)}"
             : Identifier(value, path);
+
+    // Carvers to add: identifiers, #tags or, kept as their JSON text, configured carvers defined inline.
+    private static ImmutableArray<string> ReadCarvers(JsonElement value, string path)
+    {
+        if (value.ValueKind != JsonValueKind.Array)
+            return [ReadCarver(value, path)];
+
+        return [.. value.EnumerateArray().Select((carver, i) => ReadCarver(carver, Index(path, i)))];
+    }
+
+    private static string ReadCarver(JsonElement value, string path) =>
+        value.ValueKind == JsonValueKind.Object ? value.GetRawText() : ReadSetEntry(value, path);
 
     // Entity types, which are registered before plugins' files are read, so they're checked here; tags aren't.
     private static ImmutableArray<string> ReadEntityTypes(JsonElement value, string path)
@@ -235,7 +247,7 @@ internal sealed record BiomeAdditions
     public ImmutableArray<SpawnerMob> Spawners { get; init; } = [];
 
     /// <summary>
-    /// Configured carvers: identifiers and <c>#tag</c>s.
+    /// Configured carvers: identifiers, <c>#tag</c>s, and carvers defined inline as their JSON text.
     /// </summary>
     public ImmutableArray<string> Carvers { get; init; } = [];
 

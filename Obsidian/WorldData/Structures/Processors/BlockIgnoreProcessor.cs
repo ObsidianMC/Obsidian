@@ -1,3 +1,4 @@
+using Obsidian.API.World.Structures;
 using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData.Structures.Processors;
@@ -22,8 +23,13 @@ public sealed class BlockIgnoreProcessor : StructureProcessor
 
     private BlockSet Ignored => field ??= new BlockSet([.. this.Blocks.Select(block => block.Name)]);
 
-    public override StructureBlockInfo? ProcessBlock(IWorldGenLevel level, Vector origin, Vector pivot, StructureBlockInfo original,
-        StructureBlockInfo current, StructurePlaceSettings settings) =>
+    public override StructureBlockInfo? ProcessBlock(
+        IWorldGenLevel level,
+        Vector origin,
+        Vector pivot,
+        StructureBlockInfo original,
+        StructureBlockInfo current,
+        TemplatePlacement placement) =>
         this.Ignored.Contains(current.Block) ? null : current;
 
     private static BlockIgnoreProcessor Create(params string[] blocks) =>
