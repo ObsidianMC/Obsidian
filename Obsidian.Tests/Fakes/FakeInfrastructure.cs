@@ -55,7 +55,9 @@ internal sealed class FakeEventDispatcher : IEventDispatcher
     public void Dispose() { }
 }
 
-internal sealed class FakeWorldManager(IWorld defaultWorld) : IWorldManager
+/// <param name="worldsLoaded">Whether the default world is loaded; during startup, before it is, no world is
+/// available.</param>
+internal sealed class FakeWorldManager(IWorld defaultWorld, bool worldsLoaded = true) : IWorldManager
 {
     public bool ReadyToJoin => true;
     public int GeneratingChunkCount => 0;
@@ -63,7 +65,7 @@ internal sealed class FakeWorldManager(IWorld defaultWorld) : IWorldManager
     public int RegionCount => 0;
     public IWorld DefaultWorld { get; } = defaultWorld;
 
-    public IReadOnlyCollection<IWorld> GetAvailableWorlds() => [this.DefaultWorld];
+    public IReadOnlyCollection<IWorld> GetAvailableWorlds() => worldsLoaded ? [this.DefaultWorld] : [];
 
     public Task FlushLoadedWorldsAsync() => Task.CompletedTask;
 
