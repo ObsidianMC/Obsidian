@@ -11,9 +11,9 @@ namespace Obsidian.Registries.Codecs;
 /// </summary>
 /// <remarks>
 /// Vanilla logs and drops a carver, feature or spawner it can't read; a plugin's file is rejected instead. Placed
-/// features are vanilla's or plugins' identifiers, a tag, or defined inline, which are kept as their JSON and read
-/// with the plugins' features (see <see cref="PluginFeatures"/>). Carvers are vanilla's or plugins' configured
-/// carvers, or a tag. Tags are resolved with the features, since they may be plugins' tags.
+/// features and configured carvers are vanilla's or plugins' identifiers, a tag, or defined inline, which are kept as
+/// their JSON and read with the plugins' features (see <see cref="PluginFeatures"/>). Tags are resolved with the
+/// features, since they may be plugins' tags.
 /// </remarks>
 internal sealed record BiomeData(
     bool HasPrecipitation,
@@ -61,7 +61,8 @@ internal sealed record BiomeData(
             Required(root, "", "carvers"),
             "carvers",
             "worldgen/configured_carver",
-            isConfiguredCarver ?? RegistryIds.IsConfiguredCarver);
+            isConfiguredCarver ?? RegistryIds.IsConfiguredCarver,
+            inline: true);
 
         return new BiomeData(
             HasPrecipitation: Bool(Required(root, "", "has_precipitation"), "has_precipitation"),

@@ -179,15 +179,34 @@ public class PluginFeatureFiles
         }
         """;
 
-    // A plugin biome with a placed feature defined inline, written leniently like data packs can be, and the plugin's
-    // ore.
+    // A plugin biome with a placed feature and a carver defined inline, written leniently like data packs can be, and
+    // the plugin's ore.
     private const string Marsh = """
         {
           "has_precipitation": true,
           "temperature": 0.5,
           "downfall": 0.5,
           "effects": { "water_color": "#3f76e4" },
-          "carvers": [],
+          "carvers": [
+            {
+              "type": "minecraft:cave",
+              "config": {
+                "probability": 0.5,
+                "y": {
+                  "type": "minecraft:uniform",
+                  "min_inclusive": { "above_bottom": 8 },
+                  "max_inclusive": { "absolute": 60 },
+                },
+                "yScale": 0.5,
+                "lava_level": { "above_bottom": 8 },
+                "replaceable": "#minecraft:overworld_carver_replaceables",
+                "horizontal_radius_multiplier": 1,
+                "vertical_radius_multiplier": 1,
+                "floor_level": -0.7
+              }
+            },
+            "minecraft:cave"
+          ],
           "features": [
             [],
             [
@@ -246,6 +265,14 @@ public class PluginFeatureFiles
         var marshSteps = current.BiomeFeatures["featurefiles:marsh"];
         Assert.Equal("minecraft:no_op", marshSteps[1][0].Feature.Type);
         Assert.Same(ore, marshSteps[1][1]);
+
+        // An inline carver is the biome's own; one by identifier is vanilla's.
+        var cave = ConfiguredCarvers.Vanilla("minecraft:cave");
+        var marshCarvers = current.BiomeCarvers["featurefiles:marsh"];
+
+        Assert.Equal(2, marshCarvers.Length);
+        Assert.NotSame(cave, marshCarvers[0]);
+        Assert.Same(cave, marshCarvers[1]);
 
         // Features are ordered once every modifier ran, and per dimension: removing a from forest resolves the
         // overworld's cycle, and the nether's order is its own.

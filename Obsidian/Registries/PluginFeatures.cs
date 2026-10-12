@@ -504,8 +504,9 @@ internal static partial class PluginFeatures
             return steps;
         }
 
-        // The biome file was read leniently, so a feature's JSON text can have comments and trailing commas.
-        private static JsonElement ParseInline(string json, string path)
+        // The biome file was read leniently, so a feature's or carver's JSON text can have comments and trailing
+        // commas.
+        public static JsonElement ParseInline(string json, string path)
         {
             try
             {
@@ -731,16 +732,33 @@ internal static partial class PluginFeatures
         public Dictionary<string, IConfiguredCarver> Plugins => plugins;
 
         /// <summary>
-        /// A holder set of configured carvers: identifiers, or a single <c>#tag</c>.
+        /// A holder set of configured carvers as <see cref="BiomeData.ReadHolderSet"/> reads it with inline entries:
+        /// identifiers and inline carvers' JSON text, or a single <c>#tag</c>. An inline carver is a new carver each
+        /// time.
         /// </summary>
-        /// <exception cref="InvalidDataException">A carver or the tag doesn't exist.</exception>
+        /// <exception cref="InvalidDataException">A carver or the tag doesn't exist, or an inline carver can't be
+        /// read.</exception>
         public List<IConfiguredCarver> Resolve(ImmutableArray<string> carvers, string path)
         {
-            var identifiers = carvers is [var only] && only.StartsWith('#')
+            var entries = carvers is [var only] && only.StartsWith('#')
                 ? TagEntries(ConfiguredCarver, only, path)
                 : carvers;
 
-            return [.. identifiers.Select(identifier => this.Find(identifier, path))];
+            return [.. entries.Select(entry => entry.StartsWith('{') ? Inline(entry, path) : this.Find(entry, path))];
+        }
+
+        private static IConfiguredCarver Inline(string json, string path)
+        {
+            var carver = FeatureResolver.ParseInline(json, path);
+
+            try
+            {
+                return ConfiguredCarvers.Read(carver);
+            }
+            catch (InvalidDataException ex)
+            {
+                throw new InvalidDataException($"{path}: {ex.Message}", ex);
+            }
         }
 
         private IConfiguredCarver Find(string identifier, string path)
