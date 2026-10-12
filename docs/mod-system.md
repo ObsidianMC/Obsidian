@@ -210,6 +210,24 @@ client. This document describes the design and tracks its progress. The archive 
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource
    packs, and answers NeoForge's handshake and registry sync.
+   - Slice 4a, mods on the client: the Obsidian client loads `.obby` mods whose side is `client` or `both` from its
+     `mods` folder, with the same archive, metadata and dependency rules as the server, and runs their
+     `ConfigureServices` and `ConfigureRegistry`, so a mod's blocks, items and entity types get the same ids as on a
+     server running it. In configuration it answers NeoForge's channel query with its mods' channels before the
+     handshake's pong, checks each `frozen_registry` snapshot against its own registries (a missing entry or a
+     different id disconnects with a message naming the mod content), sends its brand, and dispatches mods' payloads
+     in configuration and play. Reconfiguration resets what the previous configuration received. Mods come only
+     from the player's folder: servers can't send code.
+   - Slice 4b, mods' assets: each mod's `assets/` is a resource pack layered above vanilla's and below the player's
+     packs, and the asset loaders read every namespace (block states and models, textures and atlases, item
+     definitions, particles, translations), so mod blocks and items render with their models. Block models are baked
+     for every state, plugins' included. Biomes' tints come from the biome data the server sends, so plugin biomes
+     get their grass, foliage and water colours.
+   - Slice 4c, the client API: `Obsidian.API.Client` interfaces a mod's plugin implements (`IClientPlugin` with
+     `ConfigureClient(IClientRegistry)`) to register entity renderers (model layers and textures), particle
+     providers, key bindings, block and item tint sources, and screens for its menu types; only the Obsidian client
+     calls them, so a `both` mod runs on a server without client code. Client mods unload and reload with the
+     client's configuration like the server's plugins.
 
 ## Known gaps
 
