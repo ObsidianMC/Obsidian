@@ -1,8 +1,8 @@
 # Plugin blocks, entities, tags and data
 
-Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, add entity types in
-code, and add tags, biomes, dimension types, damage types, worldgen features and NeoForge biome modifiers with data
-pack files, like NeoForge and Fabric mods.
+Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, add entity types and
+worldgen feature types in code, and add tags, biomes, dimension types, damage types, worldgen features and NeoForge
+biome modifiers with data pack files, like NeoForge and Fabric mods.
 Clients need the matching mod for blocks, items and entity types: NeoForge and Fabric clients are sent those
 registries, so their ids agree with the server's. Biomes, dimension types and damage types are sent with their data,
 so vanilla clients can join too.
@@ -214,7 +214,8 @@ Plugins add configured and placed features, and change which features biomes pla
 
 Features are vanilla 1.21.11's format, read into the same objects as vanilla's features: a configured feature is
 `{"type": ..., "config": {...}}` and a placed feature `{"feature": ..., "placement": [...]}`. Every feature, placement
-modifier, provider, predicate and placer type vanilla's own features use is available, and `minecraft:no_op`. A
+modifier, provider, predicate and placer type vanilla's own features use is available, and `minecraft:no_op`, as
+are the types plugins register (see [Feature types](#feature-types)). A
 feature refers to vanilla's or plugins' features by identifier, or defines one inline. An ore that replaces stone
 with a plugin block, in every overworld biome:
 
@@ -297,11 +298,123 @@ The rules:
   resolves is fine. When a dimension's final lists would order features in a cycle (one placed both before and after
   another in its biomes, which vanilla can't generate), the error is logged and that dimension is generated without
   plugins' biome modifiers; other dimensions keep them.
-- Placing a feature made of a plugin's types (a feature type in its assembly, say) is a call into the plugin, like
-  its event handlers, so unloading waits for chunks being decorated with it. Chunks decorated while it unloads
-  leave its features out.
+- Placing a feature made of a plugin's types (its feature type, a placement modifier or a provider inside it) is a
+  call into the plugin, like its event handlers, so unloading waits for chunks being decorated with it. Chunks
+  decorated while it unloads leave its features out.
 - Features aren't sent to clients or saved, so they come and go with their plugin: when plugins load or unload, the
   features are read again and every world's generator moves to them for the chunks it decorates next. Chunks
   already generated keep what was placed. As in vanilla, adding features to a step can change the seeds of the
   features after them in that step.
 - Plugin biomes don't generate anywhere yet, so their features only matter once dimensions can place them.
+
+### Feature types
+
+Like a NeoForge mod's `Feature` and `PlacementModifierType`, a plugin can add feature and placement modifier types
+that its (and other plugins') feature files name in their `type`. Register them in `ConfigureRegistry`, with
+identifiers in the plugin's namespace:
+
+```csharp
+public override void ConfigureRegistry(IPluginRegistry registry)
+{
+    registry.RegisterFeatureType<PillarFeature>("ruby:pillar");
+    registry.RegisterPlacementModifierType<AtHeight>("ruby:at_height");
+}
+```
+
+A feature type extends `ConfiguredFeatureBase`, and a placement modifier type `PlacementModifierBase` (or
+`SinglePlacementModifierBase`, which gives one position or none, or `PlacementFilterBase`, which keeps or drops it).
+Both are classes with a parameterless constructor, public or not, whose `Type` returns their identifier:
+
+```csharp
+using Obsidian.API.World.Features;
+using Obsidian.API.World.Generator;
+using Obsidian.API.World.Generator.RandomSources;
+
+// A column of a block up from its origin, through the blocks it may replace.
+public sealed class PillarFeature : ConfiguredFeatureBase
+{
+    public override string Type => "ruby:pillar";
+
+    public required SimpleBlockState State { get; init; }
+
+    public required IIntProvider Height { get; init; }
+
+    public required BlockSet Replaceable { get; init; }
+
+    public override bool Place(FeatureContext context)
+    {
+        var block = this.State.ToBlock();
+        var height = this.Height.Sample(context.Random);
+        var placed = false;
+
+        for (var y = 0; y < height; y++)
+        {
+            var position = context.Origin + new Vector(0, y, 0);
+            if (this.Replaceable.Contains(context.Level.GetBlock(position)))
+                placed |= context.Level.SetBlock(position, block);
+        }
+
+        return placed;
+    }
+}
+
+// Moves the position to a height.
+public sealed class AtHeight : SinglePlacementModifierBase
+{
+    public override string Type => "ruby:at_height";
+
+    public required int Y { get; init; }
+
+    public override Vector? GetPosition(PlacementContext context, IRandomSource random, Vector position) =>
+        new Vector(position.X, this.Y, position.Z);
+}
+```
+
+```json
+// data/ruby/worldgen/configured_feature/pillar.json
+{
+  "type": "ruby:pillar",
+  "config": {
+    "state": { "Name": "ruby:ruby_block" },
+    "height": { "type": "minecraft:uniform", "min_inclusive": 2, "max_inclusive": 6 },
+    "replaceable": ["minecraft:stone", "#minecraft:deepslate_ore_replaceables"]
+  }
+}
+```
+
+```json
+// data/ruby/worldgen/placed_feature/pillar.json
+{
+  "feature": "ruby:pillar",
+  "placement": [{ "type": "ruby:at_height", "y": -4 }, { "type": "minecraft:in_square" }]
+}
+```
+
+A plugin type's JSON is read like vanilla's types: each `snake_case` key sets the property with the same name in
+PascalCase (`max_height` sets `MaxHeight`), unknown keys and missing `required` properties are errors, enums match
+ignoring case and underscores, and a single value given for a list is a list of it. Properties may be:
+
+- numbers, booleans, strings, enums, lists (`ImmutableArray<T>`, `List<T>`, `IReadOnlyList<T>`, arrays) and
+  `Vector`;
+- `SimpleBlockState` (`{"Name": ..., "Properties": {...}}`) and `BlockSet` (blocks and `#` block tags);
+- vanilla's kinds of worldgen values, which take any type of that kind by its `type`: `IIntProvider` (a number is a
+  constant), `IFloatProvider`, `IHeightProvider` and `VerticalAnchor`, `IBlockStateProvider`, `IBlockPredicate` and
+  `IRuleTest`; and `ConfiguredFeatureBase` and `PlacedFeature`, by identifier or inline;
+- the plugin's own classes, read as objects with the same rules.
+
+`RegisterWorldgenType<TBase, TValue>` registers a type of another of those kinds, like
+`RegisterWorldgenType<IIntProvider, MyProvider>("ruby:my_provider")`, or of an abstract class or interface of the
+plugin's own that its features' properties use. One identifier may name types of different kinds, as
+`minecraft:constant` does.
+
+The rules:
+
+- Identifiers are in the plugin's namespace; `minecraft:` ones, and one registered twice for the same kind, are
+  errors. Register in `ConfigureRegistry`: the plugin's files are read once it returns, and registering later throws.
+- Plugins' types are only found when registered; attributes like `ConfiguredFeatureClass` on them don't count.
+- The types are gone when the plugin unloads, and the features made of them are left out when features are read
+  again then (logged like any file that can't be read). A reload registers them again.
+- Not in the API yet: vanilla's tree parts (trunk, foliage and root placers, tree decorators), structure processors,
+  weighted lists (`WeightedEntry<T>`) and biome sets. Plugin types can't have properties of those types, and plugins
+  can't add placer or decorator types. Density function, surface rule and biome source types come with plugins'
+  dimensions.

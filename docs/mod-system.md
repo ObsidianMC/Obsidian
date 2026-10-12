@@ -101,10 +101,18 @@ client. This document describes the design and tracks its progress. The archive 
      their plugin: each plugin change builds a new feature set and every level's generator moves to it, sorting the
      features again like vanilla with the same data pack. Without plugins, worlds generate exactly as before; chunks
      already generated are kept.
-   - Next, slice 3: codec types registered by plugins (feature, placement modifier and density function types).
-     Worldgen types in plugins' assemblies are already found by their attributes, and placing features made of
-     them holds a call into their plugin, which unloading waits for; registering them isn't designed yet.
-   - Then slice 4: dimensions and reload-safe generators, with plugin biomes placed in dimensions.
+   - Done: worldgen types registered by plugins. `IPluginRegistry.RegisterFeatureType`,
+     `RegisterPlacementModifierType` and `RegisterWorldgenType<TBase, TValue>` (int, float and height providers,
+     block state providers, block predicates, rule tests, or a plugin's own kinds) add types that feature files name
+     in their `type`, read with vanilla's rules (see [plugin-content.md](plugin-content.md#feature-types)). Plugins'
+     types are only found when registered, in their own namespace; they're gone when the plugin unloads, with the
+     features made of them, and nothing keeps them (a reload test checks its load context is collected). Placing a
+     feature made of any of a plugin's types, nested ones included, holds a call into the plugin. `BlockSet` moved to
+     the API so plugin types can take block lists and tags. Vanilla's tree placers and decorators, structure
+     processors and weighted lists stay in Obsidian for now.
+   - Next, slice 4: dimensions and reload-safe generators, with plugin biomes placed in dimensions, runtime noise
+     settings, and plugins' density function, surface rule and biome source types, which only matter once plugins
+     define dimensions.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource
    packs, and answers NeoForge's handshake and registry sync.
