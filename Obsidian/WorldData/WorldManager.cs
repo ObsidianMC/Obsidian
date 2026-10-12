@@ -304,10 +304,19 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         {
             // Building the generator orders the features of the dimension's biomes, which fails when they can't be
             // ordered, as vanilla's would.
-            dimension = factory.CreateDimension(world, stem.Identifier, new LevelStemGenerator(stem));
-            dimension.Initialize(stem.DimensionType);
+            var generator = new LevelStemGenerator(stem);
+            dimension = factory.CreateDimension(world, stem.Identifier, generator);
 
-            if (!await dimension.LoadAsync(stem.DimensionType))
+            // The stem is a snapshot: a plugin may have unloaded, or a reload changed the files, since. The level
+            // generates with the dimension it took as it was created, or is left out when that one went; a later
+            // plugin load tries it again.
+            if (!generator.IsTaken)
+                return;
+
+            var type = generator.Dimension.DimensionType;
+            dimension.Initialize(type);
+
+            if (!await dimension.LoadAsync(type))
             {
                 Log.CreatingDimension(this.logger, stem.Identifier, world.Name);
                 await dimension.GenerateAsync(cancellationToken);

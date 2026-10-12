@@ -3,6 +3,7 @@ using Obsidian.API.Registries;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.World.Features;
+using Obsidian.API.World.Generator.Noise;
 using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.Registries.Codecs;
@@ -31,6 +32,17 @@ namespace Obsidian.Tests;
 public sealed class WorldgenOverrides : IDisposable
 {
     private const string PackMetadata = """{ "pack": { "pack_format": 94, "description": "" } }""";
+
+    private const string FixedPlainsStem = """
+        {
+          "type": "minecraft:overworld",
+          "generator": {
+            "type": "minecraft:noise",
+            "settings": "minecraft:overworld",
+            "biome_source": { "type": "minecraft:fixed", "biome": "minecraft:plains" }
+          }
+        }
+        """;
 
     private readonly string folder = Path.Join(Path.GetTempPath(), $"obsidian-data-packs-{Guid.NewGuid():N}");
 
@@ -263,6 +275,34 @@ public sealed class WorldgenOverrides : IDisposable
         Assert.Null(PluginDimensions.Find(identifier));
     }
 
+    [Fact(DisplayName = "A level can't take a dimension that went since its snapshot, which can still come back")]
+    public void TakingAGoneDimensionLeavesItUntaken()
+    {
+        const string identifier = "overridetest:gone";
+        var stem = Encoding.UTF8.GetBytes(FixedPlainsStem);
+        var logger = new PluginFeatureFiles.ListLogger();
+
+        try
+        {
+            PluginDimensions.Apply([PluginDimensions.Parse(identifier, "plugin", stem)], logger);
+            var snapshot = PluginDimensions.Find(identifier)!;
+
+            // The plugin unloads before the level is created: its dimension goes, released.
+            PluginDimensions.Apply([], logger);
+            Assert.Null(PluginDimensions.Take(snapshot));
+
+            // Back, it follows its file again, as nothing took it.
+            PluginDimensions.Apply([PluginDimensions.Parse(identifier, "plugin", stem)], logger);
+            Assert.False(PluginDimensions.Find(identifier)!.IsReleased);
+        }
+        finally
+        {
+            PluginDimensions.Apply([], NullLogger.Instance);
+        }
+
+        Assert.Null(PluginDimensions.Find(identifier));
+    }
+
     [Fact(DisplayName = "Noise settings generating outside a dimension type's build range are found")]
     public void FindsNoiseSettingsOutsideTheBuildRange()
     {
@@ -279,6 +319,22 @@ public sealed class WorldgenOverrides : IDisposable
         Assert.Contains(
             "from y -64 to 319, outside the build range of minecraft:overworld (0 to 255)",
             LevelStemData.OutsideBuildRange("minecraft:overworld", settings, lower));
+
+        // Cells of 12 blocks: the lowest is the one holding y -64, which fills from -72, below the build range.
+        var tallCells = new NoiseSetting
+        {
+            Noise = new NoiseConfiguration
+            {
+                MinY = -64,
+                Height = 384,
+                SizeHorizontal = 1,
+                SizeVertical = 3
+            }
+        };
+
+        Assert.Contains(
+            "from y -72 (min_y -64 rounded down to a whole cell of 12 blocks) to 319",
+            LevelStemData.OutsideBuildRange("tall cells", tallCells, overworld));
     }
 
     private void Zip(string name, Dictionary<string, string> files)

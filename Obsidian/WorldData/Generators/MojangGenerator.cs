@@ -45,6 +45,13 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// </summary>
     internal MojangDimension Dimension => Volatile.Read(ref this.dimension);
 
+    /// <summary>
+    /// Whether <see cref="Init"/> took the dimension for the level (see <see cref="PluginDimensions.Take"/>): false
+    /// when it went before, when the level can't generate and has to be left out, or before <see cref="Init"/>.
+    /// Once taken, the level must use <see cref="Dimension"/>'s dimension type.
+    /// </summary>
+    internal bool IsTaken { get; private set; }
+
     private ImmutableArray<PluginContainer> failedBy = [];
 
     /// <summary>
@@ -704,8 +711,13 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     {
         this.world = world;
 
-        // A dimension generates as data packs and plugins define it when its level starts, and keeps that.
-        Volatile.Write(ref this.dimension, PluginDimensions.Take(this.Dimension));
+        // A dimension generates as data packs and plugins define it when its level starts, and keeps that. One that
+        // went since its level's creator read it can't generate: the creator leaves the level out (see IsTaken).
+        if (PluginDimensions.Take(this.Dimension) is not MojangDimension taken)
+            return;
+
+        Volatile.Write(ref this.dimension, taken);
+        this.IsTaken = true;
 
         this.Start();
     }

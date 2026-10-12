@@ -873,7 +873,9 @@ The file is vanilla 1.21.11's level stem, read with vanilla's rules (see [What's
   since clients are sent them by name.
 - Not supported yet, and rejected with a message saying so: `minecraft:flat` and `minecraft:debug` generators, and
   noise settings that generate outside the dimension type's build range (vanilla clamps them; its own pairings all
-  fit).
+  fit). Generation fills whole cells of `size_vertical * 4` blocks from the cell holding `min_y`, so a `min_y` that
+  isn't a multiple of that fills from below it: the overworld's `min_y` -64 with `size_vertical` 3 fills from -72,
+  outside the overworld's build range.
 
 The dimension generates like a vanilla dimension with those settings: terrain, surface, aquifers and ore veins come
 from the noise settings, caves and canyons are carved like in the vanilla dimension using the same noise settings
@@ -886,10 +888,14 @@ The rules:
 - A file for one of vanilla's dimensions overrides how it generates (see
   [Data packs and overriding vanilla](#data-packs-and-overriding-vanilla)); the rest of this section is about new
   dimensions. When files define the same dimension, the last in order wins. A file that can't be read is logged and
-  left out; the plugin loads without it. Until its level is created, a dimension follows the files: its stem is read
-  again whenever plugins or data packs change, so at startup it sees the noise settings, parameter lists and types
-  later plugins and data packs override, and when the file winning goes, the one before it wins again. A dimension
-  whose biomes' features can't be ordered (vanilla can't generate it either) is logged and left out.
+  left out; the plugin loads without it. At startup, what a file names may come with a later plugin or data pack, or
+  change as vanilla's dimension types settle (see
+  [Data packs and overriding vanilla](#data-packs-and-overriding-vanilla)), so it's read again once startup has read
+  every plugin and pack, and only logged and left out if it still can't be. Until its level is created, a dimension
+  follows the files: its stem is read again whenever plugins or data packs change, so at startup it sees the noise
+  settings, parameter lists and types later plugins and data packs override, and when the file winning goes, the one
+  before it wins again. A dimension whose biomes' features can't be ordered (vanilla can't generate it either) is
+  logged and left out.
 - A file's path gives the dimension's identifier, and, as vanilla checks resource paths, one with an empty, `.` or
   `..` segment (like `data/ruby/dimension//world.json`) is refused. This holds for every plugin data file.
 - A dimension's level is created when its plugin loads, at startup or later, and is saved in the world's folder under
@@ -961,7 +967,9 @@ last file for an entry replaces it whole, and tag files merge (`"replace": true`
   must hold the noise settings its vanilla dimension generates with, as overridden: vanilla clamps generation to the
   build range, which Obsidian can't yet, so a type override that doesn't fit, like the overworld's at `min_y` 0 with
   vanilla's overworld noise settings from -64, is logged once startup has read every plugin and pack, and left out,
-  keeping vanilla's type. Override the noise settings to match it.
+  keeping vanilla's type. Override the noise settings to match it. Stems are then read against the types kept, so
+  one that couldn't be read with the type override, like an overworld stem using those noise settings, is read
+  again and applies.
 - tags, merged as above.
 
 Vanilla's entries nothing overrides keep their compiled code, so without overrides worlds generate exactly as before.

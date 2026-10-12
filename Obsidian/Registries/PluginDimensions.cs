@@ -196,15 +196,29 @@ internal static partial class PluginDimensions
     /// given, like vanilla's compiled one. It's kept from then on: later changes apply after a restart.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// The given dimension may be a stale snapshot of <see cref="Added"/>: a plugin unloading meanwhile may have
+    /// released it, or a reload replaced or removed it, which releases it too. Then, unless it's one of vanilla's,
+    /// whose levels always exist, nothing is taken and this is null, so that the dimension can still follow its files
+    /// and get a level once it's back.
+    /// </para>
+    /// <para>
     /// This is where vanilla's dimensions are built for their levels, so what changes how they generate as a whole,
     /// like a wrapper around their biome source, goes here or in <see cref="LevelStemData"/>.
+    /// </para>
     /// </remarks>
-    public static MojangDimension Take(MojangDimension dimension)
+    /// <returns>The dimension the level takes, whose dimension type it must use, or null when it's not
+    /// available.</returns>
+    public static MojangDimension? Take(MojangDimension dimension)
     {
         lock (applying)
         {
+            var current = Find(dimension.Identifier) ?? dimension;
+            if (current.IsReleased && !IsVanilla(dimension.Identifier))
+                return null;
+
             taken = taken.Add(dimension.Identifier);
-            return Find(dimension.Identifier) ?? dimension;
+            return current;
         }
     }
 
