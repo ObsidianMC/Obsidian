@@ -895,7 +895,8 @@ The rules:
   follows the files: its stem is read again whenever plugins or data packs change, so at startup it sees the noise
   settings, parameter lists and types later plugins and data packs override, and when the file winning goes, the one
   before it wins again. A dimension whose biomes' features can't be ordered (vanilla can't generate it either) is
-  logged and left out.
+  logged and left out; as its level was never created, it keeps following the files, so a reload correcting its stem
+  applies without a restart.
 - A file's path gives the dimension's identifier, and, as vanilla checks resource paths, one with an empty, `.` or
   `..` segment (like `data/ruby/dimension//world.json`) is refused. This holds for every plugin data file.
 - A dimension's level is created when its plugin loads, at startup or later, and is saved in the world's folder under
@@ -1076,7 +1077,8 @@ The rules:
 - Regions are part of a dimension's generator. A dimension takes the loaded plugins' regions when it starts
   generating (at startup for vanilla's, when it's added for a plugin's), and keeps them until the server stops, so
   that its chunks all generate with the same layout. A plugin loading, reloading or unloading later doesn't change
-  the regions of a dimension that generates already; the change is logged, and applies after a restart.
+  the regions of a dimension that generates already; the change is logged, and applies after a restart. A dimension
+  whose generator can't be built, and whose level is left out, lets go of its regions.
 - A region whose plugin unloads keeps generating with its biomes, which stay registered (see
   [Biomes](#biomes-dimension-types-and-damage-types)), without the plugin's features, which go with it. Regions are
   data, so they never keep a plugin's code loaded.

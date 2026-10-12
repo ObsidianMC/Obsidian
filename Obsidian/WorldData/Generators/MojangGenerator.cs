@@ -47,7 +47,8 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
     /// <summary>
     /// Whether <see cref="Init"/> took the dimension for the level (see <see cref="PluginDimensions.Take"/>): false
-    /// when it went before, when the level can't generate and has to be left out, or before <see cref="Init"/>.
+    /// when it went before, when the level can't generate and has to be left out, before <see cref="Init"/>, or when
+    /// building the generator threw and the dimension was given back (see <see cref="PluginDimensions.GiveBack"/>).
     /// Once taken, the level must use <see cref="Dimension"/>'s dimension type.
     /// </summary>
     internal bool IsTaken { get; private set; }
@@ -719,7 +720,19 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         Volatile.Write(ref this.dimension, taken);
         this.IsTaken = true;
 
-        this.Start();
+        // A generator that can't be built, like one whose biomes' features can't be ordered, fails its level's
+        // creation before anything generated: the dimension, and the biome regions building it fixed, are given back
+        // so that a corrected stem can be taken. One stopped by plugins' code failing keeps its level (see Start).
+        try
+        {
+            this.Start();
+        }
+        catch
+        {
+            this.IsTaken = false;
+            PluginDimensions.GiveBack(taken.Identifier);
+            throw;
+        }
     }
 
     // Builds the builder the steps run with, keeping the structure starts of the one before it, if any. Binding the
