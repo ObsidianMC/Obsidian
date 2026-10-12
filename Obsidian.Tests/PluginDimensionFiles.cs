@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Configuration;
 using Obsidian.API.Registries;
+using Obsidian.API.World.Features;
 using Obsidian.API.World.Generator;
 using Obsidian.Nbt;
 using Obsidian.Plugins;
@@ -16,7 +17,9 @@ using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -330,9 +333,35 @@ public sealed class PluginDimensionFiles : IDisposable
         {
             var failingGenerator = (LevelStemGenerator)failingLevel.Generator;
 
-            Assert.False((await failingGenerator.GenerateChunkAsync(0, 0)).IsGenerated);
+            // The noise failed partway, so the chunk is rewound to replay its steps from scratch.
+            Assert.True((await failingGenerator.GenerateChunkAsync(0, 0)).ChunkStatus < ChunkGenStage.biomes);
             Assert.Null(failingGenerator.Builder);
             Assert.Contains("stemfiles:failing stopped generating", Assert.Single(levelLogger.Messages));
+        }
+
+        // A plugin's feature failing stops the level too, but its chunk counts as decorated: what was placed stays,
+        // and isn't placed again after a restart.
+        var failingFeature = new PlacedFeature
+        {
+            Identifier = "probe:failing",
+            Feature = new FailingFeature()
+        };
+        var features = new WorldgenFeatureSet(
+            FrozenDictionary<string, ConfiguredFeatureBase>.Empty,
+            FrozenDictionary<string, PlacedFeature>.Empty,
+            BiomeFeatures.All.ToDictionary(
+                entry => entry.Key,
+                entry => (IReadOnlyList<IReadOnlyList<PlacedFeature>>)[[failingFeature], .. entry.Value.Skip(1)]),
+            new Dictionary<PlacedFeature, ImmutableArray<PluginContainer>> { [failingFeature] = [plugin] }
+                .ToFrozenDictionary());
+        var decoratingGenerator = new LevelStemGenerator(dimension) { Features = () => features };
+        await using (CreateLevel(this.CreateWorld(), dimension, generator: decoratingGenerator))
+        {
+            var decorated = await decoratingGenerator.GenerateChunkAsync(0, 0, stage: ChunkGenStage.features);
+
+            Assert.Equal(ChunkGenStage.features, decorated.ChunkStatus);
+            Assert.True(decorated.GetBlock(1, 100, 1).Is(BlockIds.DiamondBlock));
+            Assert.Null(decoratingGenerator.Builder);
         }
 
         // Unloading: the generator holds the plugin while a level is created with it, then refuses to generate.
@@ -431,6 +460,18 @@ public sealed class PluginDimensionFiles : IDisposable
             Argument = visitor.Map(this.Argument),
             Y = this.Y
         });
+    }
+
+    // A plugin's feature whose code fails after placing a block.
+    public sealed class FailingFeature : ConfiguredFeatureBase
+    {
+        public override string Type => "probe:failing";
+
+        public override bool Place(FeatureContext context)
+        {
+            context.Level.SetBlock(new Vector(1, 100, 1), BlocksRegistry.DiamondBlock);
+            throw new InvalidOperationException("probe failed");
+        }
     }
 
     // A plugin's density function whose code fails.
@@ -621,14 +662,18 @@ public sealed class PluginDimensionFiles : IDisposable
     }
 
     // The level the server creates for a plugin's dimension (see WorldManager.AddPluginDimensionsAsync).
-    private static Dimension CreateLevel(World world, MojangDimension dimension, ILogger<Dimension>? logger = null)
+    private static Dimension CreateLevel(
+        World world,
+        MojangDimension dimension,
+        ILogger<Dimension>? logger = null,
+        LevelStemGenerator? generator = null)
     {
         var level = new Dimension(
             logger ?? NullLogger<Dimension>.Instance,
             null!,
             new TestOptionsMonitor<ServerConfiguration>(new ServerConfiguration()),
             null!,
-            new LevelStemGenerator(dimension),
+            generator ?? new LevelStemGenerator(dimension),
             dimension.Identifier,
             world);
 

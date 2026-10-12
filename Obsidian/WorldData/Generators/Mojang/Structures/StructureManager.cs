@@ -34,7 +34,6 @@ internal sealed class StructureManager : IStructurePlacementState
     private readonly int minY;
     private readonly int height;
     private readonly IReadOnlyList<StructureSet> structureSets;
-    private readonly ConcurrentDictionary<(int X, int Z), StructureStart[]> starts = new();
     private readonly ConcurrentDictionary<ConcentricRingsStructurePlacement, Lazy<IReadOnlySet<(int X, int Z)>>> ringPositions = new();
 
     // The structures the beardifier reshapes terrain for, in the order it goes through them.
@@ -44,6 +43,11 @@ internal sealed class StructureManager : IStructurePlacementState
     private readonly ThreadLocal<ReachingStarts?> lastReachingStarts = new();
 
     public long Seed { get; }
+
+    /// <summary>
+    /// The starts created so far, which keep the state their pieces were placed with until it's saved.
+    /// </summary>
+    public StructureStartCache StartCache { get; } = new();
 
     /// <summary>
     /// The structure sets of the dimension, in registry order.
@@ -81,7 +85,7 @@ internal sealed class StructureManager : IStructurePlacementState
     /// The structures that start in a chunk (vanilla's structure starts status), at most one per structure set.
     /// </summary>
     public StructureStart[] GetStarts(int chunkX, int chunkZ) =>
-        this.starts.GetOrAdd((chunkX, chunkZ), static (key, manager) => manager.CreateStarts(key.X, key.Z), this);
+        this.StartCache.GetOrAdd(chunkX, chunkZ, this.CreateStarts);
 
     /// <summary>
     /// The starts of <paramref name="structure"/> whose box reaches the chunk, in the order vanilla places them.
@@ -185,35 +189,10 @@ internal sealed class StructureManager : IStructurePlacementState
         start.RestoreState(savedStarts is not null && savedStarts.TryGetTag<NbtCompound>(start.Structure.Identifier, out var saved) ? saved : null);
 
     /// <summary>
-    /// The structure starts to save in their start chunk (vanilla's <c>structures.starts</c>, keyed by structure id): those
-    /// the chunk was loaded with, where starts restored in this session replace theirs with their pieces' current state.
+    /// The structure starts to save in their start chunk (see <see cref="StructureStartCache.Save"/>).
     /// </summary>
-    /// <remarks>
-    /// A start that wasn't restored hasn't been placed in this session, so what the chunk was loaded with is still current.
-    /// </remarks>
-    public NbtCompound? SaveStarts(int chunkX, int chunkZ, NbtCompound? loaded)
-    {
-        if (!this.starts.TryGetValue((chunkX, chunkZ), out var cached) || !cached.Any(start => start.IsStateRestored))
-            return loaded;
-
-        var result = new NbtCompound("starts");
-        if (loaded is not null)
-        {
-            foreach (var (name, start) in loaded)
-                result.Add(name, start);
-        }
-
-        foreach (var start in cached)
-        {
-            if (!start.IsStateRestored)
-                continue;
-
-            result.Remove(start.Structure.Identifier);
-            result.Add(start.SaveState());
-        }
-
-        return result;
-    }
+    public NbtCompound? SaveStarts(int chunkX, int chunkZ, NbtCompound? loaded) =>
+        this.StartCache.Save(chunkX, chunkZ, loaded);
 
     /// <summary>
     /// Every start of a structure with terrain adaptation whose box reaches the chunk, for the beardifier.

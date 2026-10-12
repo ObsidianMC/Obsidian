@@ -369,5 +369,22 @@ public sealed class Chunk : IChunk
         }
     }
 
+    /// <summary>
+    /// Takes a chunk that isn't carved yet back to before its biomes, dropping its blocks, biomes, heightmaps and
+    /// post-processing marks, so its steps replay from scratch. Until a chunk is carved, only its own steps have
+    /// written into it; what it was loaded with, like its structure starts, stays.
+    /// </summary>
+    internal void RewindTerrain()
+    {
+        for (var i = 0; i < this.sections.Length; i++)
+            this.sections[i] = new ChunkSection(yBase: i + (this.MinY >> 4));
+
+        foreach (var type in this.Heightmaps.Keys.ToList())
+            this.Heightmaps[type] = new Heightmap(type, this);
+
+        this.PostProcessing.Clear();
+        this.ChunkStatus = ChunkGenStage.structure_references;
+    }
+
     private int SectionIndex(int y) => (y - this.MinY) >> 4;
 }

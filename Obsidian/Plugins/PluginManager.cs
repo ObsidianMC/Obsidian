@@ -803,30 +803,33 @@ public sealed partial class PluginManager : IAsyncDisposable
     // World generation places the loaded plugins' features, with their biome modifiers applied. Every level's
     // generator moves to them now, so none keeps the previous features (and the plugins they came from). Features
     // that a generating dimension can't order aren't applied: the previous ones stay (see PluginFeatures.Apply).
+    // A generator may stop (and drop its builder) at any time, so each builder is read once; refreshing one that
+    // stopped meanwhile is harmless.
     private void ApplyFeatures()
     {
-        var generators = this.server.WorldManager.GetAvailableWorlds()
+        var builders = this.server.WorldManager.GetAvailableWorlds()
             .OfType<WorldData.World>()
             .SelectMany(world => world.dimensions.Values.OfType<WorldData.AbstractLevel>().Prepend(world))
             .Select(level => level.Generator)
             .OfType<WorldData.Generators.MojangGenerator>()
-            .Where(generator => generator.Builder is not null)
+            .Select(generator => (generator.Dimension.Identifier, generator.Builder))
+            .Where(entry => entry.Builder is not null)
             .ToList();
 
         var applied = PluginFeatures.Apply(
             this.plugins.SelectMany(plugin => plugin.FeatureFiles),
             this.plugins.SelectMany(plugin => plugin.CodecFiles),
             this.plugins.SelectMany(plugin => plugin.WorldgenTypes),
-            generators.Select(generator => generator.Dimension.Identifier).ToHashSet(),
+            builders.Select(entry => entry.Identifier).ToHashSet(),
             this.logger);
 
         if (!applied)
             return;
 
-        foreach (var generator in generators)
+        foreach (var (dimension, builder) in builders)
         {
-            if (!generator.Builder.RefreshFeatures())
-                Log.KeptPreviousFeatures(this.logger, generator.Dimension.Identifier);
+            if (!builder!.RefreshFeatures())
+                Log.KeptPreviousFeatures(this.logger, dimension);
         }
     }
 

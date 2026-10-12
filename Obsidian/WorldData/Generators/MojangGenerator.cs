@@ -50,10 +50,19 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// </summary>
     internal ChunkBuilder? Builder => Volatile.Read(ref this.builder);
 
+    // The builder's structure starts, kept once it's dropped so the state of the pieces placed is still saved.
+    private StructureStartCache? startCache;
+
     /// <summary>
     /// The noise settings' sea level, which mobs use.
     /// </summary>
     internal int SeaLevel => this.Dimension.SeaLevel;
+
+    /// <summary>
+    /// The biomes' features, read before each chunk is decorated; <see cref="Registries.PluginFeatures.Current"/> when
+    /// null. Tests set them.
+    /// </summary>
+    internal Func<Registries.WorldgenFeatureSet>? Features { get; init; }
 
     // The builder, for the steps of generation.
     private ChunkBuilder Running => this.Builder
@@ -110,14 +119,20 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// <summary>
     /// Contains a failure of plugins' code, which would otherwise reach the level and end chunk management, or the
     /// server: it's logged with the plugins' names, and the generator stops like it does when they unload (see
-    /// <see cref="Stop"/>). Chunks keep the status of the steps they finished, so the failed ones generate after a
-    /// restart. The dimension isn't released, as its plugins are still loaded, and vanilla's are shared.
+    /// <see cref="Stop"/>). The dimension isn't released, as its plugins are still loaded, and vanilla's are shared.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// No step leaves a partial result that replaying it would build on: a step before decoration that fails
+    /// rewinds its chunk (see <see cref="GenerateUpToCarvers"/>), which generates again after a restart, while a
+    /// decoration that fails counts as done (see <see cref="Decorate"/>).
+    /// </para>
+    /// <para>
     /// A failure is plugins' when it's raised in a step of a dimension whose noise settings or biome source are made
     /// of their types (<see cref="MojangDimension.Plugins"/>), or placing a feature made of their types: their
     /// density functions run all through the noise, so where the failure was raised can't tell whose it is.
     /// Failures generating with Obsidian's types alone aren't contained.
+    /// </para>
     /// </remarks>
     /// <returns>Whether the caller goes on as if the generator had stopped: the failure was plugins', or the
     /// generator had stopped already.</returns>
@@ -160,7 +175,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// <summary>
     /// Stops generating, because a plugin the dimension generates with unloads: chunks already generated still load,
     /// and ones being generated finish, but no new step starts. The builder and the dimension's generator parts are
-    /// dropped, so that they don't keep the plugin's code loaded.
+    /// dropped, so that they don't keep the plugin's code loaded; the structure starts stay, and are still saved.
     /// </summary>
     internal void Stop()
     {
@@ -289,10 +304,30 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// Runs the stages up to and including carvers that <paramref name="stage"/> asks for.
     /// The caller must hold the chunk's lock.
     /// </summary>
+    /// <remarks>
+    /// A step that fails partway rewinds the chunk to before its biomes (see <see cref="Chunk.RewindTerrain"/>), so
+    /// its steps replay from scratch: they only write into the chunk, but they read what they wrote (the surface
+    /// replaces the noise's stone, carvers carve what the surface left) and add post-processing marks, so replaying
+    /// one over its partial result could differ.
+    /// </remarks>
     private void GenerateUpToCarvers(IChunk chunk, ChunkGenStage stage)
     {
         var builder = this.Running;
 
+        try
+        {
+            RunStepsUpToCarvers(builder, chunk, stage);
+        }
+        catch (Exception ex) when (ex is not GeneratorStoppedException && chunk is Chunk generated)
+        {
+            // A stopped generator refuses a step before it writes anything, which needs no rewinding.
+            generated.RewindTerrain();
+            throw;
+        }
+    }
+
+    private static void RunStepsUpToCarvers(ChunkBuilder builder, IChunk chunk, ChunkGenStage stage)
+    {
         chunk.SetChunkStatus(chunk.ChunkStatus == ChunkGenStage.empty ? ChunkGenStage.structure_references : chunk.ChunkStatus);
 
         if (ChunkGenStage.structure_starts <= stage && chunk.ChunkStatus < ChunkGenStage.structure_starts)
@@ -358,7 +393,10 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
             carving[i] = this.CarveAsync(cx + i / 3 - 1, cz + i % 3 - 1);
 
         await Task.WhenAll(carving);
-        await this.LoadStructureStartsAsync(cx, cz);
+
+        // Found once, as the generator may have stopped by the time the pieces placed are kept.
+        var starts = this.FindStartsReaching(cx, cz);
+        await this.LoadStartChunksAsync(starts);
 
         using (await this.LockAsync(cx, cz, 1))
         {
@@ -373,13 +411,32 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
                     area[(cx + dx, cz + dz)] = dx == 0 && dz == 0 ? chunk : await this.GetChunkAsync(cx + dx, cz + dz);
             }
 
-            this.Running.Decorate(area, cx, cz);
+            this.Decorate(area, cx, cz);
             chunk.SetChunkStatus(ChunkGenStage.features);
         }
 
         // The pieces placed may have changed, and a start chunk may have been unloaded meanwhile: loading them again keeps
         // each start's current state in a chunk that will be saved.
-        await this.LoadStructureStartsAsync(cx, cz);
+        await this.LoadStartChunksAsync(starts);
+    }
+
+    /// <summary>
+    /// Places a chunk's features. When plugins' code fails partway, the generator stops (see <see cref="Contain"/>)
+    /// and the chunk counts as decorated without the features left: those placed wrote blocks, entities and ticks,
+    /// into its neighbors too, which decorating it again would duplicate.
+    /// </summary>
+    private void Decorate(Dictionary<(int X, int Z), IChunk> area, int cx, int cz)
+    {
+        try
+        {
+            this.Running.Decorate(area, cx, cz);
+        }
+        catch (Exception ex) when (ex is not GeneratorStoppedException && this.Contain(ex))
+        {
+            // A stopped generator refuses before any feature is placed, so the chunk is decorated after a restart.
+            if (this.world is AbstractLevel level)
+                Log.DecorationCut(level.Logger, cx, cz, this.Dimension.Identifier);
+        }
     }
 
     /// <summary>
@@ -416,26 +473,29 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         })).Value;
     }
 
+    // The structure starts reaching a chunk, which decorating it places. Finding them checks biomes and the terrain,
+    // which runs the generator's plugins' code.
+    private List<StructureStart> FindStartsReaching(int cx, int cz)
+    {
+        var builder = this.Running;
+        if (builder.Structures is not StructureManager structures)
+            return [];
+
+        using (builder.EnterGenerator())
+            return [.. structures.GetStartsReaching(cx, cz)];
+    }
+
     /// <summary>
-    /// Loads the start chunk of every structure start reaching a chunk, restoring each start's saved state the first time,
-    /// so pieces placed before a restart aren't placed again. Like vanilla, each start lives in its start chunk: start
-    /// chunks are loaded, or created at the structure starts status, so they save the state again.
+    /// Loads the start chunk of every start, restoring each start's saved state the first time, so pieces placed
+    /// before a restart aren't placed again. Like vanilla, each start lives in its start chunk: start chunks are
+    /// loaded, or created at the structure starts status, so they save the state again.
     /// </summary>
     /// <remarks>
     /// Done without generation locks, since it may read chunks from disk. Every decoration does this before placing
     /// pieces, and a start is only restored once, so that happens before any of its pieces are placed in this session.
     /// </remarks>
-    private async ValueTask LoadStructureStartsAsync(int cx, int cz)
+    private async ValueTask LoadStartChunksAsync(List<StructureStart> starts)
     {
-        var builder = this.Running;
-        if (builder.Structures is not StructureManager structures)
-            return;
-
-        // Finding starts checks biomes and the terrain, which runs the generator's plugins' code.
-        List<StructureStart> starts;
-        using (builder.EnterGenerator())
-            starts = [.. structures.GetStartsReaching(cx, cz)];
-
         foreach (var start in starts)
         {
             var startChunk = await this.world.GetChunkAsync(start.ChunkX, start.ChunkZ, scheduleGeneration: false) as Chunk;
@@ -471,9 +531,12 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         }
     }
 
+    /// <remarks>
+    /// The starts are saved after the generator stopped too, with the pieces steps placed until then.
+    /// </remarks>
     public NbtCompound? SaveStructureStarts(int chunkX, int chunkZ, NbtCompound? loaded) =>
-        this.Builder?.Structures is StructureManager structures
-            ? structures.SaveStarts(chunkX, chunkZ, loaded)
+        this.startCache is StructureStartCache cache
+            ? cache.Save(chunkX, chunkZ, loaded)
             : loaded;
 
     /// <summary>
@@ -486,6 +549,8 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         if (chunk.ChunkStatus >= ChunkGenStage.initialize_light)
             return;
 
+        // Read once: the generator stopping between the calls would leave the chunk post-processed but unfinished.
+        var builder = this.Running;
         var area = new Dictionary<(int X, int Z), IChunk>();
         for (var dx = -1; dx <= 1; dx++)
         {
@@ -495,11 +560,11 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         // Post-processing ticks fluids, which may flow into complete neighbors that the level is ticking.
         if (this.world is AbstractLevel level)
-            level.Fluids.RunExclusive(() => this.Running.PostProcess(area, chunk.X, chunk.Z, level.Fluids.Rules));
+            level.Fluids.RunExclusive(() => builder.PostProcess(area, chunk.X, chunk.Z, level.Fluids.Rules));
         else
-            this.Running.PostProcess(area, chunk.X, chunk.Z);
+            builder.PostProcess(area, chunk.X, chunk.Z);
 
-        this.Running.UpdateFinalHeightmaps(chunk);
+        builder.UpdateFinalHeightmaps(chunk);
         chunk.SetChunkStatus(ChunkGenStage.initialize_light);
     }
 
@@ -567,7 +632,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         try
         {
-            builder = new ChunkBuilder(this.Dimension, RandomState.ParseSeed(world.Seed));
+            builder = new ChunkBuilder(this.Dimension, RandomState.ParseSeed(world.Seed), features: this.Features);
         }
         catch (Exception ex) when (this.Contain(ex))
         {
@@ -575,7 +640,10 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         }
 
         if (builder.Structures is StructureManager structures)
+        {
             structures.LoadStartChunk = this.LoadStartChunk;
+            this.startCache = structures.StartCache;
+        }
 
         Volatile.Write(ref this.builder, builder);
     }
@@ -585,6 +653,10 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         [LoggerMessage(Level = LogLevel.Error,
             Message = "{Level} stopped generating new chunks until a restart: generating with {Plugins} failed")]
         public static partial void PluginFailed(ILogger logger, Exception exception, string level, string plugins);
+
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "Chunk ({X}, {Z}) of {Level} is kept decorated without the features its failure left out")]
+        public static partial void DecorationCut(ILogger logger, int x, int z, string level);
     }
 
     private readonly struct ChunkLocks(SemaphoreSlim[] locks, SortedSet<int> stripes) : IDisposable
