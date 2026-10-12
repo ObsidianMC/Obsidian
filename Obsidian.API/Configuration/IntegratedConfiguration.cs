@@ -32,4 +32,10 @@ public sealed class IntegratedConfiguration
     /// (<c>Integrated__JoinSecret</c>) rather than on the command line.
     /// </summary>
     public string? JoinSecret { get; set; }
+
+    /// <summary>
+    /// The address the world listens on once it's opened to LAN: every interface by default, like vanilla. Tests set
+    /// <c>127.0.0.1</c>, which needs no firewall permission.
+    /// </summary>
+    public string? LanAddress { get; set; }
 }

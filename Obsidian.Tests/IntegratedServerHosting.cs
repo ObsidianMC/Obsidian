@@ -219,6 +219,9 @@ public sealed class IntegratedServerHosting : IDisposable
             $"--Integrated:LocalPlayerUuid={LocalPlayerUuid}",
             $"--Integrated:JoinSecret={JoinSecret}",
             "--Port=0",
+
+            // Opening to LAN then listens on loopback only, so the test host needs no firewall permission.
+            "--Integrated:LanAddress=127.0.0.1",
             "--OnlineMode=false",
             "--PregenerateChunkRange=1",
             "--SpawnChunkRadius=1",

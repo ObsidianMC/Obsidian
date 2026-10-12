@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Obsidian.API.Configuration;
 using Obsidian.Console;
 using Obsidian.Services;
 using Obsidian.Utilities;
@@ -20,6 +22,7 @@ public sealed partial class IntegratedServerService(
     IntegratedSession session,
     IntegratedEventWriter events,
     IHostApplicationLifetime lifetime,
+    IOptions<IntegratedConfiguration> configuration,
     ILogger<IntegratedServerService> logger) : BackgroundService, IConsoleCommandHandler
 {
     // Progress events go out at most this often.
@@ -166,7 +169,8 @@ public sealed partial class IntegratedServerService(
             int boundPort;
             try
             {
-                boundPort = await this.server.ListenAsync(new IPEndPoint(IPAddress.Any, port));
+                var address = configuration.Value.LanAddress is string lan ? IPAddress.Parse(lan) : IPAddress.Any;
+                boundPort = await this.server.ListenAsync(new IPEndPoint(address, port));
             }
             catch (Exception ex) when (ex is SocketException or InvalidOperationException)
             {
