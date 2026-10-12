@@ -694,7 +694,8 @@ The rules:
   the host registered (`overworld`, `superflat`, ...) are the host's.
 - Each level using the generator gets its own instance, created in a service scope of its own (constructor
   injection works like for the plugin's other services, scoped ones included), and its `Init` is called with the
-  level. Once the level stops using it (the plugin unloads, or the generator fails), the instance is disposed if
+  level. Once the level stops using it (the plugin unloads, the generator fails, or the level is disposed, which
+  stops it for good), the instance is disposed if
   it's `IDisposable` or `IAsyncDisposable`, then its scope, after the calls using it end: release there what `Init`
   subscribed to, or the plugin's code can't unload. The level saves the
   registered identifier as its generator (`generatorName` in its `level.dat`); the instance's own `Id` isn't used.
@@ -703,7 +704,9 @@ The rules:
 - Generating a chunk and saving it hold the level's own lock on that chunk, so a save never captures a chunk
   mid-write, even while the generator stops or is replaced. A save also takes the generator's `LockChunkAsync` lock
   while it's the level's generator: lock with it any chunk the generator writes into besides the one it generates.
-  Once it's stopped, replaced or failed, saves wait for its running calls to end instead.
+  Once it's stopped, replaced or failed, saves wait for its running calls to end instead. A newly started instance
+  (on load, reload or once its plugin loads) doesn't generate until the saves already in progress, which may not
+  have taken its lock, are done.
 - When the plugin unloads, the level stops generating new chunks, with a warning, and lets go of the generator, so the
   plugin's code can unload. Chunks already generated still load and are saved; ones players reach meanwhile stay
   ungenerated. When the plugin loads again, the level gets a new instance of the plugin's new generator, and generates
