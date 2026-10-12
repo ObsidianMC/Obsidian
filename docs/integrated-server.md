@@ -25,6 +25,7 @@ list. The process exits with code 0 after a graceful stop and 1 after a crash (s
 | `Paths:Root` | working directory | Root of every server-side path: `config/`, `logs/`, `persistentdata/`, `permissions/`, `plugins/`, `usercache.json`. Without `Integrated:WorldPath`, also `worlds/`. |
 | `Paths:Cache` | `<root>/cache` | Vanilla data extracted from Mojang's server jar (structure templates), downloaded once. Point every world's server at one shared folder. Two servers extracting into an empty cache at the same time can race, so start one first. |
 | `Paths:Logs` | `<root>/logs` | Log files, one per start. |
+| `Paths:Plugins` | `<root>/plugins` | Plugins (`.obby` files). The Obsidian client sets it to its `mods` folder, so a world runs the mods the client has. |
 | `Integrated:Enabled` | `false` | Runs as an integrated server. |
 | `Integrated:WorldPath` | none | The world folder (see [World](#world)). Without it, the worlds come from `config/worlds.json` as on a dedicated server. |
 | `Integrated:LocalPlayerName` | none | The client's player name, reserved for the client (see [Joining](#joining)). |

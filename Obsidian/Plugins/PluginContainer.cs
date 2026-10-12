@@ -99,6 +99,37 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
 
     public bool Loaded { get; internal set; }
 
+    /// <summary>
+    /// Creates the container of a plugin about to load, with a load context that resolves assemblies from the loaded
+    /// plugins it depends on.
+    /// </summary>
+    /// <param name="archive">The plugin's archive.</param>
+    /// <param name="loaded">The plugins already loaded.</param>
+    /// <param name="side">The side this runs on; dependencies declared for the other side are ignored.</param>
+    internal static PluginContainer Create(PluginArchive archive, IEnumerable<PluginContainer> loaded, PluginSide side)
+    {
+        var info = archive.Info;
+        var dependencies = loaded
+            .Where(plugin => info.Dependencies.Any(dependency => dependency.Id == plugin.Info.Id
+                && PluginDependencyResolver.AppliesTo(dependency, side)))
+            .ToImmutableArray();
+
+        var container = new PluginContainer
+        {
+            Info = info,
+            Archive = archive,
+            LoadContext = new PluginLoadContext(info.AssemblyName),
+            Dependencies = dependencies
+        };
+
+        container.LoadContext.Container = container;
+
+        foreach (var dependency in dependencies)
+            container.LoadContext.AddDependency(dependency.LoadContext);
+
+        return container;
+    }
+
     internal void Initialize()
     {
         this.Plugin!.Container = this;

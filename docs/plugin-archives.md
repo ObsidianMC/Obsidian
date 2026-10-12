@@ -50,7 +50,7 @@ first needed, so the file on disk can be replaced while the plugin runs, which r
 | `assembly` | | Required. The main assembly, without `.dll`. |
 | `displayName` | `modId` | The name shown to players and in logs. |
 | `apiVersion` | empty | The Obsidian.API version the plugin was built against. |
-| `side` | `both` | Where the plugin runs: `both`, `server` or `client`. A server skips `client` plugins. |
+| `side` | `both` | Where the plugin runs: `both`, `server` or `client`. A server skips `client` plugins, and the Obsidian client, which loads mods from its `mods` folder, skips `server` ones. |
 | `dependencies` | none | Other plugins, see below. |
 
 Each dependency has:

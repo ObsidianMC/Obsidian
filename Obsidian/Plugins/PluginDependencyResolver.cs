@@ -74,6 +74,21 @@ internal static class PluginDependencyResolver
     public static bool AppliesTo(PluginDependency dependency, PluginSide side) =>
         dependency.Side == PluginSide.Both || dependency.Side == side;
 
+    /// <summary>
+    /// Finds a required dependency of <paramref name="info"/> that isn't loaded, like one that failed to load after
+    /// <see cref="Resolve"/> accepted it.
+    /// </summary>
+    /// <returns>The missing dependency's id, or null if every required dependency on this side is loaded.</returns>
+    public static string? FindMissingDependency(PluginInfo info, IEnumerable<PluginInfo> loaded, PluginSide side)
+    {
+        var loadedIds = loaded.Select(plugin => plugin.Id).ToHashSet();
+
+        return info.Dependencies
+            .Where(dependency => dependency.Required && AppliesTo(dependency, side))
+            .Select(dependency => dependency.Id)
+            .FirstOrDefault(id => !loadedIds.Contains(id));
+    }
+
     // The candidate's own dependencies.
     private static string? Check(PluginInfo candidate, Dictionary<string, PluginInfo> present, PluginSide side,
         List<string> warnings)

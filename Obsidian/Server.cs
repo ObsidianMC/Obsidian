@@ -89,42 +89,8 @@ public sealed partial class Server : IServer
     /// there are any, and NeoForge and Fabric clients are sent them. Clients number block states from the block
     /// registry's order, so syncing it gives plugins' block states the same ids as on the server.
     /// </summary>
-    internal IReadOnlyList<Net.Payloads.SyncedRegistry> GetModdedRegistries()
-    {
-        var registries = new List<Net.Payloads.SyncedRegistry>();
-
-        if (BlocksRegistry.PluginBlocks.Count > 0)
-        {
-            var blocks = BlocksRegistry.ResourceIds
-                .Select((identifier, id) => (id, identifier))
-                .Concat(BlocksRegistry.PluginBlocks.Select(type => (type.Id, type.Identifier)))
-                .ToArray();
-
-            registries.Add(new Net.Payloads.SyncedRegistry("minecraft:block", blocks));
-        }
-
-        if (EntityDefinitionsRegistry.PluginDefinitions.Count > 0)
-        {
-            var entityTypes = Enum.GetValues<EntityType>()
-                .Select(type => ((int)type, Entities.EntityNbt.TypeId(type)))
-                .Concat(EntityDefinitionsRegistry.PluginDefinitions.Select(definition =>
-                    (definition.Id, definition.Identifier)))
-                .ToArray();
-
-            registries.Add(new Net.Payloads.SyncedRegistry("minecraft:entity_type", entityTypes));
-        }
-
-        if (ItemsRegistry.HasPluginItems)
-        {
-            var items = ItemsRegistry.All
-                .Select(item => ((int)item.Id, item.UnlocalizedName))
-                .ToArray();
-
-            registries.Add(new Net.Payloads.SyncedRegistry("minecraft:item", items));
-        }
-
-        return registries;
-    }
+    internal IReadOnlyList<Net.Payloads.SyncedRegistry> GetModdedRegistries() =>
+        Net.Payloads.SyncedRegistries.GetModded();
 
     /// <summary>
     /// What clients configure with that plugins change: the registries plugins added to, whose ids only grow, so their

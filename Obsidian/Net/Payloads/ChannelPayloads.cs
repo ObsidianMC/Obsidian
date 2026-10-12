@@ -154,6 +154,34 @@ internal static class ChannelPayloads
     }
 
     /// <summary>
+    /// Reads a <c>neoforge:network</c> payload; see <see cref="WriteNetworkSetup"/>.
+    /// </summary>
+    /// <returns>Per protocol, each agreed channel id with its version.</returns>
+    public static Dictionary<NetworkProtocol, Dictionary<string, string>> ReadNetworkSetup(INetStreamReader reader)
+    {
+        var setup = new Dictionary<NetworkProtocol, Dictionary<string, string>>();
+        var protocolCount = reader.ReadVarInt();
+
+        for (var i = 0; i < protocolCount; i++)
+        {
+            var protocol = (NetworkProtocol)reader.ReadVarInt();
+            var channelCount = reader.ReadVarInt();
+            var channels = new Dictionary<string, string>();
+
+            for (var j = 0; j < channelCount; j++)
+            {
+                reader.ReadString();
+                var id = reader.ReadString();
+                channels[id] = reader.ReadString();
+            }
+
+            setup[protocol] = channels;
+        }
+
+        return setup;
+    }
+
+    /// <summary>
     /// Writes a <c>neoforge:frozen_registry_sync_start</c> payload: the names of the registries about to be sent.
     /// </summary>
     public static void WriteRegistrySyncStart(INetStreamWriter writer, IReadOnlyList<SyncedRegistry> registries)
@@ -180,6 +208,43 @@ internal static class ChannelPayloads
         }
 
         writer.WriteVarInt(0);
+    }
+
+    /// <summary>
+    /// Reads a <c>neoforge:frozen_registry_sync_start</c> payload; see <see cref="WriteRegistrySyncStart"/>.
+    /// </summary>
+    public static List<string> ReadRegistrySyncStart(INetStreamReader reader)
+    {
+        var count = reader.ReadVarInt();
+        var names = new List<string>();
+
+        for (var i = 0; i < count; i++)
+            names.Add(reader.ReadString());
+
+        return names;
+    }
+
+    /// <summary>
+    /// Reads a <c>neoforge:frozen_registry</c> payload; see <see cref="WriteRegistrySnapshot"/>. Aliases, which name
+    /// an entry by another identifier, are skipped.
+    /// </summary>
+    public static SyncedRegistry ReadRegistrySnapshot(INetStreamReader reader)
+    {
+        var name = reader.ReadString();
+        var count = reader.ReadVarInt();
+        var entries = new List<(int Id, string Identifier)>();
+
+        for (var i = 0; i < count; i++)
+            entries.Add((reader.ReadVarInt(), reader.ReadString()));
+
+        var aliases = reader.ReadVarInt();
+        for (var i = 0; i < aliases; i++)
+        {
+            reader.ReadString();
+            reader.ReadString();
+        }
+
+        return new SyncedRegistry(name, entries);
     }
 
     /// <summary>
