@@ -416,8 +416,12 @@ public sealed partial class PluginManager : IAsyncDisposable
             this.ApplyTags();
             this.ApplyCodecs();
 
-            // Level stems name biomes and dimension types, the plugin's own included, so they're read once those are
-            // registered, and their dimensions take part in ordering the features.
+            // Noise settings name blocks, and the plugin's types, which are registered by now.
+            container.NoiseFiles = this.ReadNoiseFiles(archive);
+            this.ApplyNoise();
+
+            // Level stems name biomes, dimension types and noise settings, the plugin's own included, so they're read
+            // once those are registered, and their dimensions take part in ordering the features.
             container.DimensionFiles = this.ReadDimensionFiles(archive);
             this.ApplyDimensions();
             this.ApplyFeatures();
@@ -499,7 +503,9 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.plugins = this.plugins.Remove(pluginContainer);
         this.ApplyTags();
         this.ApplyCodecs();
+        this.ApplyNoise();
         this.ApplyFeatures();
+        this.StopGenerators(pluginContainer);
 
         var dependents = this.releases
             .Where(pair => pair.Key.Dependencies.Contains(pluginContainer))
@@ -657,6 +663,28 @@ public sealed partial class PluginManager : IAsyncDisposable
         return files.ToImmutable();
     }
 
+    // A plugin's noise settings, density function and noise files. A file that can't be read, or would override one
+    // of vanilla's entries, is left out; the plugin loads without it.
+    private ImmutableArray<NoiseFile> ReadNoiseFiles(PluginArchive archive)
+    {
+        var files = ImmutableArray.CreateBuilder<NoiseFile>();
+
+        foreach (var (path, registry, identifier) in PluginNoise.FindFiles(archive.Paths))
+        {
+            try
+            {
+                var data = archive.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
+                files.Add(PluginNoise.Parse(registry, identifier, $"{archive.Info.Id}/{path}", data));
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.CodecFileFailed(this.logger, ex, path, archive.Source);
+            }
+        }
+
+        return files.ToImmutable();
+    }
+
     // A plugin's configured feature, placed feature and biome modifier files. A file that can't be read is left out;
     // the plugin loads without it.
     private ImmutableArray<FeatureFile> ReadFeatureFiles(PluginArchive archive)
@@ -727,6 +755,35 @@ public sealed partial class PluginManager : IAsyncDisposable
     // The loaded plugins' entries are in their registries, in load order. Ones no plugin has any more stay.
     private void ApplyCodecs() =>
         PluginCodecs.Apply(this.plugins.SelectMany(plugin => plugin.CodecFiles), this.logger);
+
+    // Dimensions read from now on use the loaded plugins' noise settings, density functions and noises.
+    private void ApplyNoise() => PluginNoise.Apply(
+        this.plugins.SelectMany(plugin => plugin.NoiseFiles),
+        this.plugins.SelectMany(plugin => plugin.WorldgenTypes),
+        this.logger);
+
+    // A dimension whose generator is made of an unloading plugin's types can't call it any more: its level stops
+    // generating new chunks (a step running now finishes first, holding the plugin), and the generator drops its
+    // parts so the plugin's code can unload. Levels made of vanilla's types and plugins' data keep generating.
+    private void StopGenerators(PluginContainer plugin)
+    {
+        var generators = this.server.WorldManager.GetAvailableWorlds()
+            .OfType<WorldData.World>()
+            .SelectMany(world => world.dimensions.Values.OfType<WorldData.AbstractLevel>().Prepend(world))
+            .Select(level => level.Generator)
+            .OfType<WorldData.Generators.MojangGenerator>()
+            .Where(generator => generator.Dimension.Plugins.Contains(plugin));
+
+        foreach (var generator in generators)
+        {
+            if (generator.Builder is not null)
+                Log.GeneratorStopped(this.logger, generator.Dimension.Identifier, plugin.Info.Name);
+
+            generator.Stop();
+        }
+
+        PluginDimensions.Release(plugin);
+    }
 
     // The loaded plugins' dimensions are added. Ones no plugin has any more stay, with their levels.
     private void ApplyDimensions() =>
@@ -890,6 +947,11 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Disposing plugin {PluginName} failed")]
         public static partial void DisposeFailed(ILogger logger, Exception exception, string pluginName);
+
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "Dimension {Dimension} stopped generating new chunks until a restart: it generates with "
+                + "{PluginName}'s types, which unloaded")]
+        public static partial void GeneratorStopped(ILogger logger, string dimension, string pluginName);
     }
 }
 

@@ -1,14 +1,12 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Plugins;
-using Obsidian.Plugins.PluginProviders;
 using Obsidian.Registries.Codecs;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using System.Collections.Frozen;
 using System.IO;
-using System.Runtime.Loader;
 using System.Text.Json;
 using System.Threading;
 
@@ -72,7 +70,18 @@ internal static partial class PluginFeatures
     /// Finds the feature and biome modifier files in a plugin's files, by their paths.
     /// </summary>
     /// <returns>Each file's path, registry (one of <see cref="Registries"/>) and entry identifier.</returns>
-    public static IEnumerable<(string Path, string Registry, string Identifier)> FindFiles(IEnumerable<string> paths)
+    public static IEnumerable<(string Path, string Registry, string Identifier)> FindFiles(IEnumerable<string> paths) =>
+        FindFiles(paths, Registries);
+
+    /// <summary>
+    /// Finds the JSON files of some registries' folders in a plugin's files, by their paths:
+    /// <c>data/&lt;namespace&gt;/&lt;registry&gt;/&lt;path&gt;.json</c> is the entry
+    /// <c>&lt;namespace&gt;:&lt;path&gt;</c>.
+    /// </summary>
+    /// <returns>Each file's path, registry and entry identifier.</returns>
+    public static IEnumerable<(string Path, string Registry, string Identifier)> FindFiles(
+        IEnumerable<string> paths,
+        IEnumerable<string> registries)
     {
         foreach (var path in paths)
         {
@@ -80,7 +89,7 @@ internal static partial class PluginFeatures
             if (parts.Length < 3 || parts[0] != "data" || !path.EndsWith(".json", StringComparison.Ordinal))
                 continue;
 
-            foreach (var registry in Registries)
+            foreach (var registry in registries)
             {
                 var folder = $"{registry}/";
                 if (parts[2].Length > folder.Length + ".json".Length
@@ -297,8 +306,8 @@ internal static partial class PluginFeatures
         private readonly HashSet<FeatureFile> reading = new(ReferenceEqualityComparer.Instance);
         private readonly WorldgenReader reader;
 
-        // The plugins whose types each feature being read is made of so far, the innermost feature's last.
-        private readonly Stack<HashSet<PluginContainer>> owning = [];
+        // The plugins whose types each feature is made of.
+        private readonly WorldgenDependencies<PluginContainer> owners = new();
 
         public FeatureResolver(List<FeatureFile> files, WorldgenTypes types)
         {
@@ -321,8 +330,7 @@ internal static partial class PluginFeatures
         /// The plugins whose code each feature read runs: those whose types it, or a feature it refers to, is made
         /// of. Features made of Obsidian's types alone aren't in it.
         /// </summary>
-        public Dictionary<object, ImmutableArray<PluginContainer>> Owners { get; } =
-            new(ReferenceEqualityComparer.Instance);
+        public Dictionary<object, ImmutableArray<PluginContainer>> Owners => this.owners.Of;
 
         public ConfiguredFeatureBase Configured(string identifier)
         {
@@ -368,7 +376,7 @@ internal static partial class PluginFeatures
         public PlacedFeature Placed(JsonElement json, string path) =>
             json.ValueKind == JsonValueKind.String
                 ? this.Placed(json.GetString()!)
-                : this.Used(this.Track(() => this.reader.ReadPlacedFeature(json, null, path)));
+                : this.Used(this.owners.Track(() => this.reader.ReadPlacedFeature(json, null, path)));
 
         /// <summary>
         /// The features of a plugin biome's steps, given as identifiers or inline features' JSON text.
@@ -423,7 +431,7 @@ internal static partial class PluginFeatures
 
             try
             {
-                var feature = this.Track(read);
+                var feature = this.owners.Track(read);
                 features[file.Identifier] = feature;
                 return feature;
             }
@@ -438,48 +446,16 @@ internal static partial class PluginFeatures
             }
         }
 
-        // Reads a feature, noting the plugins whose types it's made of in Owners.
-        private T Track<T>(Func<T> read)
-            where T : class
-        {
-            var owners = new HashSet<PluginContainer>();
-            this.owning.Push(owners);
-
-            try
-            {
-                var feature = read();
-                if (owners.Count > 0)
-                    this.Owners[feature] = [.. owners];
-
-                return feature;
-            }
-            finally
-            {
-                this.owning.Pop();
-            }
-        }
-
         // A feature used by the one being read, if any, which then runs its plugins' code too.
         private T Used<T>(T feature)
-            where T : class
-        {
-            if (this.owning.TryPeek(out var user) && this.Owners.TryGetValue(feature, out var owners))
-                user.UnionWith(owners);
-
-            return feature;
-        }
+            where T : class =>
+            this.owners.Used(feature);
 
         // An object the reader created, which belongs to a plugin when its type is from the plugin's assembly.
         private void OnCreated(Type type)
         {
-            if (this.owning.TryPeek(out var owners)
-                && AssemblyLoadContext.GetLoadContext(type.Assembly) is PluginLoadContext
-                {
-                    Container: PluginContainer owner
-                })
-            {
-                owners.Add(owner);
-            }
+            if (WorldgenDependencies<PluginContainer>.Owner(type) is PluginContainer owner)
+                this.owners.Add(owner);
         }
     }
 

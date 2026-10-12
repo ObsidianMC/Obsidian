@@ -145,19 +145,30 @@ public interface IPluginRegistry
 
     /// <summary>
     /// Registers a type of another kind of worldgen value that data chooses by its <c>type</c> (or
-    /// <c>predicate_type</c>), like NeoForge's int provider or block state provider types: features' JSON can then name
-    /// it wherever a <typeparamref name="TBase"/> is expected. The rules are
-    /// <see cref="RegisterFeatureType{TFeature}"/>'s, and one identifier may name types of different kinds.
+    /// <c>predicate_type</c>), like NeoForge's int provider, density function or biome source types: features', noise
+    /// settings' and level stems' JSON can then name it wherever a <typeparamref name="TBase"/> is expected. The rules
+    /// are <see cref="RegisterFeatureType{TFeature}"/>'s, and one identifier may name types of different kinds.
     /// </summary>
     /// <typeparam name="TBase">
     /// The kind of value, an interface or abstract class: <see cref="IIntProvider"/>, <see cref="IFloatProvider"/>,
     /// <see cref="IHeightProvider"/>, <see cref="IBlockStateProvider"/>, <see cref="IBlockPredicate"/>,
-    /// <see cref="IRuleTest"/>, or one of the plugin's own that its features' properties use.
+    /// <see cref="IRuleTest"/>, <see cref="IDensityFunction"/>, <see cref="ISurfaceRule"/> (for an
+    /// <see cref="ICustomSurfaceRule"/>), <see cref="ISurfaceCondition"/> (for an
+    /// <see cref="ICustomSurfaceCondition"/>), <see cref="World.Generator.BiomeSourceBase"/>, or one of the plugin's
+    /// own that its features' properties use.
     /// </typeparam>
     /// <typeparam name="TValue">The type to register.</typeparam>
     /// <param name="identifier">The type's identifier, in the plugin's namespace.</param>
+    /// <remarks>
+    /// A density function whose properties hold density functions, noises or splines must implement
+    /// <see cref="IDensityFunction.MapAll"/> to map them, as vanilla's do: generation seeds noises and binds caches
+    /// through it.
+    /// </remarks>
     /// <exception cref="ArgumentException">
-    /// As for <see cref="RegisterFeatureType{TFeature}"/>, or <typeparamref name="TBase"/> is a concrete class.
+    /// As for <see cref="RegisterFeatureType{TFeature}"/>, or <typeparamref name="TBase"/> is a concrete class; a
+    /// surface rule or condition type doesn't implement <see cref="ICustomSurfaceRule"/> or
+    /// <see cref="ICustomSurfaceCondition"/>; or a density function with functions in it doesn't implement
+    /// <see cref="IDensityFunction.MapAll"/>.
     /// </exception>
     public IPluginRegistry RegisterWorldgenType<TBase, TValue>(string identifier)
         where TValue : class, TBase;

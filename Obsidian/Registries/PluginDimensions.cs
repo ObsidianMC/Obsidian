@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Obsidian.Plugins;
 using Obsidian.Registries.Codecs;
 using Obsidian.WorldData.Generators.Mojang;
 using System.IO;
@@ -14,9 +15,11 @@ namespace Obsidian.Registries;
 /// (see <see cref="LevelStemData"/>), generated in the default world as a level of that name.
 /// </summary>
 /// <remarks>
-/// A dimension added stays until the server stops, even once its plugin unloads: its level only uses vanilla's
-/// generator and data already in the server's registries, and changing a live level's generator would corrupt it.
-/// For the same reason a reload changing a stem keeps the dimension as it was, with a warning, until a restart.
+/// A dimension added stays until the server stops, even once its plugin unloads, with the noise settings it was read
+/// with: changing a live level's generator would mix two generators' chunks. For the same reason a reload changing a
+/// stem, or the plugin noise files it uses, keeps the dimension as it was, with a warning, until a restart. A
+/// dimension whose generator is made of a plugin's types can't outlive the plugin's code, though: when the plugin
+/// unloads, it's released (see <see cref="Release"/>) and its level stops generating new chunks until a restart.
 /// Vanilla's dimensions can't be overridden, and when plugins define the same dimension, the first in load order
 /// wins.
 /// </remarks>
@@ -68,15 +71,22 @@ internal static partial class PluginDimensions
     }
 
     /// <summary>
-    /// Reads a level stem file. The dimension types, biomes and biome tags it names must be registered.
+    /// Reads a level stem file. The dimension types, biomes, biome tags and noise settings it names must be
+    /// registered.
     /// </summary>
     /// <param name="identifier">The dimension's identifier, like <c>ruby:crystal_world</c>.</param>
     /// <param name="source">Where the file comes from, for messages.</param>
+    /// <param name="noise">The noise settings and worldgen types it can name; <see cref="PluginNoise.Current"/> by
+    /// default.</param>
     /// <exception cref="InvalidDataException">
     /// The file isn't valid, saying where and what's expected, or it's for a dimension in the <c>minecraft</c>
     /// namespace, which plugins can't override.
     /// </exception>
-    public static DimensionFile Parse(string identifier, string source, ReadOnlySpan<byte> json)
+    public static DimensionFile Parse(
+        string identifier,
+        string source,
+        ReadOnlySpan<byte> json,
+        WorldgenNoise? noise = null)
     {
         if (!PluginTags.IsFileIdentifier(identifier))
             throw new InvalidDataException($"{source}: {identifier} isn't a valid identifier.");
@@ -84,13 +94,18 @@ internal static partial class PluginDimensions
         if (identifier.StartsWith("minecraft:", StringComparison.Ordinal))
             throw new InvalidDataException($"{source} would override vanilla's {identifier}, which plugins can't.");
 
+        noise ??= PluginNoise.Current;
+
         try
         {
             var bytes = json.ToArray();
             using var document = JsonDocument.Parse(bytes, documentOptions);
-            var dimension = LevelStemData.Read(identifier, document.RootElement);
+            var dimension = LevelStemData.Read(identifier, document.RootElement, noise);
 
-            return new DimensionFile(identifier, source, Encoding.UTF8.GetString(bytes), dimension);
+            // A change to the plugin noise files it was read from is a change to the dimension too.
+            var text = Encoding.UTF8.GetString(bytes) + noise.Sources(dimension.Settings);
+
+            return new DimensionFile(identifier, source, text, dimension);
         }
         catch (Exception ex) when (ex is JsonException or InvalidDataException)
         {
@@ -110,6 +125,7 @@ internal static partial class PluginDimensions
         {
             var byIdentifier = new Dictionary<string, DimensionFile>();
             var current = added;
+            var changed = false;
 
             foreach (var file in files)
             {
@@ -123,15 +139,47 @@ internal static partial class PluginDimensions
 
                 var existing = current.FirstOrDefault(entry => entry.Identifier == file.Identifier);
                 if (existing is null)
+                {
                     current = current.Add(file);
+                    changed = true;
+                }
+                else if (existing.Dimension.IsReleased)
+                {
+                    // Released when its plugin unloaded: a level of it stays stopped until a restart, but one not
+                    // created yet can be, with the plugin loaded again.
+                    current = current.Replace(existing, file);
+                    changed = true;
+                }
                 else if (existing.Json != file.Json)
+                {
                     Log.ChangedUntilRestart(logger, file.Identifier, file.Source);
+                }
             }
 
-            var changed = current.Length != added.Length;
             added = current;
 
             return changed;
+        }
+    }
+
+    /// <summary>
+    /// Releases the dimensions whose generators are made of an unloading plugin's types (see
+    /// <see cref="MojangDimension.Release"/>), so that they don't keep its code loaded.
+    /// </summary>
+    /// <returns>The dimensions released.</returns>
+    public static IReadOnlyList<MojangDimension> Release(PluginContainer plugin)
+    {
+        lock (applying)
+        {
+            var released = added
+                .Select(file => file.Dimension)
+                .Where(dimension => !dimension.IsReleased && dimension.Plugins.Contains(plugin))
+                .ToList();
+
+            foreach (var dimension in released)
+                dimension.Release();
+
+            return released;
         }
     }
 
@@ -152,6 +200,7 @@ internal static partial class PluginDimensions
 /// </summary>
 /// <param name="Identifier">The dimension's identifier, like <c>ruby:crystal_world</c>.</param>
 /// <param name="Source">Where the file comes from, for messages.</param>
-/// <param name="Json">The file's text, to tell a changed file on reload.</param>
+/// <param name="Json">The file's text, with the plugin noise files it uses, to tell a changed dimension on
+/// reload.</param>
 /// <param name="Dimension">What the stem generates.</param>
 internal sealed record DimensionFile(string Identifier, string Source, string Json, MojangDimension Dimension);

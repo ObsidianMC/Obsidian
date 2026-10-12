@@ -1,3 +1,5 @@
+using Obsidian.API.World.Generator.DensityFunctions;
+using Obsidian.API.World.Generator.Noise;
 using Obsidian.WorldData.Structures;
 using System.Globalization;
 using System.IO;
@@ -7,12 +9,15 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using static Obsidian.Registries.Codecs.CodecJson;
+using SpawnTarget = Obsidian.API.World.Generator.Noise.ClimateParameter;
+using SurfaceAnchor = Obsidian.API.World.Generator.SurfaceConditions.VerticalAnchor;
 
 namespace Obsidian.WorldData.Features;
 
 /// <summary>
-/// Reads configured and placed features from data pack JSON at runtime, into the same objects Obsidian's source
-/// generator makes of vanilla's features (<c>WorldgenFeatureRegistryGenerator</c>).
+/// Reads configured and placed features, noise settings, density functions and noises from data pack JSON at
+/// runtime, into the same objects Obsidian's source generators make of vanilla's
+/// (<c>WorldgenFeatureRegistryGenerator</c> and <c>WorldgenNoiseRegistryGenerator</c>).
 /// </summary>
 /// <remarks>
 /// A value is read according to the type of the property it's assigned to:
@@ -23,7 +28,9 @@ namespace Obsidian.WorldData.Features;
 /// <c>minecraft:constant</c> and a bare vertical anchor a constant height provider;</item>
 /// <item>a single value given for a list is a list of it, and enums are matched ignoring case and underscores;</item>
 /// <item>configured features, placed features and processor lists given by identifier are looked up, others are
-/// read inline.</item>
+/// read inline;</item>
+/// <item>a density function is a number (a constant), an identifier or an object; a noise is an identifier, since
+/// vanilla seeds noises by their identifier; a spline value is a number (a constant) or a spline.</item>
 /// </list>
 /// What the generator wouldn't compile is an error here, thrown as an <see cref="InvalidDataException"/> naming the
 /// field: an unknown type, key or enum name, a required property missing, or a value of the wrong kind.
@@ -34,16 +41,26 @@ namespace Obsidian.WorldData.Features;
 /// <param name="placedFeature">Looks up a placed feature by identifier, or throws an
 /// <see cref="InvalidDataException"/>.</param>
 /// <param name="created">Called with the type of every object created, such as a plugin's feature type.</param>
-internal sealed class WorldgenReader(
+/// <param name="densityFunction">Looks up a density function by identifier, or throws an
+/// <see cref="InvalidDataException"/>; vanilla's by default.</param>
+/// <param name="noise">Looks up a noise by identifier, or throws an <see cref="InvalidDataException"/>; vanilla's by
+/// default.</param>
+internal sealed partial class WorldgenReader(
     WorldgenTypes types,
     Func<string, ConfiguredFeatureBase> configuredFeature,
     Func<string, PlacedFeature> placedFeature,
-    Action<Type>? created = null)
+    Action<Type>? created = null,
+    Func<string, IDensityFunction>? densityFunction = null,
+    Func<string, BaseNoise>? noise = null)
 {
     private static readonly string[] discriminators = ["type", "predicate_type", "processor_type", "element_type"];
 
     private static readonly MethodInfo asImmutableArray = typeof(ImmutableCollectionsMarshal)
         .GetMethod(nameof(ImmutableCollectionsMarshal.AsImmutableArray))!;
+
+    private readonly Func<string, IDensityFunction> densityFunction = densityFunction ?? VanillaDensityFunction;
+
+    private readonly Func<string, BaseNoise> noise = noise ?? VanillaNoise;
 
     /// <summary>
     /// Reads a configured feature, <c>{"type": ..., "config": {...}}</c>.
@@ -60,6 +77,14 @@ internal sealed class WorldgenReader(
     /// <param name="path">Where the value is in its file, for messages.</param>
     public PlacedFeature ReadPlacedFeature(JsonElement json, string? identifier = null, string path = "") =>
         Guard(path, () => this.ReadPlacedFeatureCore(json, identifier, path));
+
+    /// <summary>
+    /// Reads a value of <typeparamref name="T"/>, such as noise settings, a density function or a plugin's biome
+    /// source.
+    /// </summary>
+    /// <param name="path">Where the value is in its file, for messages.</param>
+    public T Read<T>(JsonElement json, string path = "") =>
+        Guard(path, () => (T)this.ReadValue(typeof(T), json, path)!);
 
     // Reading reflects over types, plugins' included, and runs their constructors and setters, which can fail in
     // more ways than the data's errors (a plugin type missing a dependency, an open generic type, ...). Any failure
@@ -171,6 +196,9 @@ internal sealed class WorldgenReader(
 
         if (target == typeof(StructureProcessorList))
             return this.ReadProcessorList(json, path);
+
+        if (this.ReadNoiseValue(target, json, path) is object noiseValue)
+            return noiseValue;
 
         if (target.IsAssignableTo(typeof(ConfiguredFeatureBase)))
             return this.ReadConfiguredFeatureValue(target, json, path);

@@ -82,6 +82,11 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     internal ImmutableArray<DimensionFile> DimensionFiles { get; set; } = [];
 
     /// <summary>
+    /// The plugin's noise settings, density function and noise files, which dimensions can use while it's loaded.
+    /// </summary>
+    internal ImmutableArray<NoiseFile> NoiseFiles { get; set; } = [];
+
+    /// <summary>
     /// The worldgen types the plugin registered, which feature files can name while it's loaded.
     /// </summary>
     internal List<WorldgenTypeRegistration> WorldgenTypes { get; } = [];

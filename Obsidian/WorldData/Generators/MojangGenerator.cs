@@ -3,6 +3,7 @@ using Obsidian.Nbt;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Lighting;
+using Obsidian.WorldData.Structures;
 using System.Threading;
 
 
@@ -39,20 +40,42 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// </summary>
     internal MojangDimension Dimension { get; }
 
-    private ChunkBuilder builder;
+    private ChunkBuilder? builder;
 
     /// <summary>
-    /// The builder generating the level's chunks, available once <see cref="Init"/> ran.
+    /// The builder generating the level's chunks, available once <see cref="Init"/> ran, and null once
+    /// <see cref="Stop"/> did.
     /// </summary>
-    internal ChunkBuilder Builder => this.builder;
+    internal ChunkBuilder? Builder => Volatile.Read(ref this.builder);
+
+    /// <summary>
+    /// The noise settings' sea level, which mobs use.
+    /// </summary>
+    internal int SeaLevel => this.Dimension.SeaLevel;
+
+    // The builder, for the steps of generation.
+    private ChunkBuilder Running => this.Builder
+        ?? throw new GeneratorStoppedException($"{this.Dimension.Identifier} stopped generating.");
+
     internal Vector? FindDolphinTreasure(Vector position)
     {
-        if (builder.Structures is not StructureManager manager)
+        if (this.Builder is not { Structures: StructureManager manager } builder)
             return null;
+
         var targets = manager.StructuresPerStep.SelectMany(step => step).Where(structure =>
             structure.Identifier is "minecraft:buried_treasure" or "minecraft:shipwreck" or "minecraft:ocean_ruin_cold" or "minecraft:ocean_ruin_warm").ToArray();
-        return new StructureLocator(manager).FindNearest(targets, position, 16, false);
+
+        try
+        {
+            using var calls = builder.EnterGenerator();
+            return new StructureLocator(manager).FindNearest(targets, position, 16, false);
+        }
+        catch (GeneratorStoppedException)
+        {
+            return null;
+        }
     }
+
     private ILevel world;
 
     private readonly SemaphoreSlim[] chunkLocks = [.. Enumerable.Range(0, LockStripeCount).Select(_ => new SemaphoreSlim(1, 1))];
@@ -60,8 +83,37 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     // Carving and decorating steps in flight, so requests that need the same step share it instead of queueing on its locks.
     private readonly ConcurrentDictionary<(int X, int Z, ChunkGenStage Stage), Lazy<Task>> steps = [];
 
-    public ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full) =>
-        this.GenerateChunkAsync(cx, cz, chunk, stage, decorateInOrder: false);
+    /// <remarks>
+    /// Once the generator stopped (see <see cref="Stop"/>), a chunk not generated yet is returned as it is: its level
+    /// keeps it, and generates it after a restart.
+    /// </remarks>
+    public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null,
+        ChunkGenStage stage = ChunkGenStage.full)
+    {
+        chunk ??= new Chunk(cx, cz, this.Dimension.MinY, this.Dimension.Height);
+
+        try
+        {
+            return await this.GenerateChunkAsync(cx, cz, chunk, stage, decorateInOrder: false);
+        }
+        catch (GeneratorStoppedException)
+        {
+            return chunk;
+        }
+    }
+
+    /// <summary>
+    /// Stops generating, because a plugin the dimension generates with unloads: chunks already generated still load,
+    /// and ones being generated finish, but no new step starts. The builder and the dimension's generator parts are
+    /// dropped, so that they don't keep the plugin's code loaded.
+    /// </summary>
+    internal void Stop()
+    {
+        Volatile.Write(ref this.builder, null);
+
+        if (!this.Dimension.IsReleased)
+            this.Dimension.Release();
+    }
 
     /// <param name="decorateInOrder">Whether the chunk's neighbors are decorated one after another in a fixed order, so the
     /// blocks they place where their features meet are the same every time (the spawn search), rather than concurrently.</param>
@@ -147,7 +199,7 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// </summary>
     public virtual async ValueTask<VectorD?> FindSpawnPointAsync()
     {
-        var (x, z) = this.builder.FindClimateSpawn();
+        var (x, z) = this.Running.FindClimateSpawn();
         var spawnChunkX = x >> 4;
         var spawnChunkZ = z >> 4;
         var spawn = new Vector((spawnChunkX << 4) + 8, SpawnFinder.DefaultSpawnHeight, (spawnChunkZ << 4) + 8);
@@ -172,6 +224,8 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// </summary>
     private void GenerateUpToCarvers(IChunk chunk, ChunkGenStage stage)
     {
+        var builder = this.Running;
+
         chunk.SetChunkStatus(chunk.ChunkStatus == ChunkGenStage.empty ? ChunkGenStage.structure_references : chunk.ChunkStatus);
 
         if (ChunkGenStage.structure_starts <= stage && chunk.ChunkStatus < ChunkGenStage.structure_starts)
@@ -189,28 +243,28 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
         if (ChunkGenStage.biomes <= stage && chunk.ChunkStatus < ChunkGenStage.biomes)
         {
             // Use multi-noise biome selection based on climate parameters
-            this.builder.PopulateBiomes(chunk);
+            builder.PopulateBiomes(chunk);
             chunk.SetChunkStatus(ChunkGenStage.biomes);
         }
 
         if (ChunkGenStage.noise <= stage && chunk.ChunkStatus < ChunkGenStage.noise)
         {
             // Generate terrain using 3D density sampling with aquifer support
-            this.builder.Generate3DTerrain(chunk);
+            builder.Generate3DTerrain(chunk);
             chunk.SetChunkStatus(ChunkGenStage.noise);
         }
 
         if (ChunkGenStage.surface <= stage && chunk.ChunkStatus < ChunkGenStage.surface)
         {
             // Apply surface rules to replace stone with grass, dirt, sand, etc.
-            this.builder.ApplySurfaceRules(chunk);
+            builder.ApplySurfaceRules(chunk);
             chunk.SetChunkStatus(ChunkGenStage.surface);
         }
 
         if (ChunkGenStage.carvers <= stage && chunk.ChunkStatus < ChunkGenStage.carvers)
         {
             // Carve classic caves and ravines
-            this.builder.ApplyCarvers(chunk);
+            builder.ApplyCarvers(chunk);
             chunk.SetChunkStatus(ChunkGenStage.carvers);
         }
     }
@@ -252,7 +306,7 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
                     area[(cx + dx, cz + dz)] = dx == 0 && dz == 0 ? chunk : await this.GetChunkAsync(cx + dx, cz + dz);
             }
 
-            this.builder.Decorate(area, cx, cz);
+            this.Running.Decorate(area, cx, cz);
             chunk.SetChunkStatus(ChunkGenStage.features);
         }
 
@@ -306,10 +360,16 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// </remarks>
     private async ValueTask LoadStructureStartsAsync(int cx, int cz)
     {
-        if (this.builder.Structures is not StructureManager structures)
+        var builder = this.Running;
+        if (builder.Structures is not StructureManager structures)
             return;
 
-        foreach (var start in structures.GetStartsReaching(cx, cz))
+        // Finding starts checks biomes and the terrain, which runs the generator's plugins' code.
+        List<StructureStart> starts;
+        using (builder.EnterGenerator())
+            starts = [.. structures.GetStartsReaching(cx, cz)];
+
+        foreach (var start in starts)
         {
             var startChunk = await this.world.GetChunkAsync(start.ChunkX, start.ChunkZ, scheduleGeneration: false) as Chunk;
             StructureManager.RestoreStart(start, startChunk?.StructureStarts);
@@ -323,18 +383,31 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
     internal bool IsInsideFortress(Vector position)
     {
-        if (this.builder.Structures is not StructureManager manager)
+        if (this.Builder is not { Structures: StructureManager manager } builder)
             return false;
         var fortress = manager.StructuresPerStep.SelectMany(step => step).FirstOrDefault(structure => structure.Identifier == "minecraft:fortress");
-        return fortress != null && manager.GetReferencingStarts(position.X >> 4, position.Z >> 4, fortress).Any(start =>
-            start.Pieces.Any(piece => piece.BoundingBox.IsInside(position)) ||
-            start.BoundingBox.IsInside(position) && this.world is AbstractLevel level &&
-            level.GetLoadedChunk(position.X >> 4, position.Z >> 4)
-                ?.GetBlock(position.X, position.Y - 1, position.Z).RegistryId == BlockIds.NetherBricks);
+        if (fortress is null)
+            return false;
+
+        try
+        {
+            using var calls = builder.EnterGenerator();
+            return manager.GetReferencingStarts(position.X >> 4, position.Z >> 4, fortress).Any(start =>
+                start.Pieces.Any(piece => piece.BoundingBox.IsInside(position)) ||
+                start.BoundingBox.IsInside(position) && this.world is AbstractLevel level &&
+                level.GetLoadedChunk(position.X >> 4, position.Z >> 4)
+                    ?.GetBlock(position.X, position.Y - 1, position.Z).RegistryId == BlockIds.NetherBricks);
+        }
+        catch (GeneratorStoppedException)
+        {
+            return false;
+        }
     }
 
     public NbtCompound? SaveStructureStarts(int chunkX, int chunkZ, NbtCompound? loaded) =>
-        this.builder.Structures is StructureManager structures ? structures.SaveStarts(chunkX, chunkZ, loaded) : loaded;
+        this.Builder?.Structures is StructureManager structures
+            ? structures.SaveStarts(chunkX, chunkZ, loaded)
+            : loaded;
 
     /// <summary>
     /// Every feature that can reach the chunk has run: post-processes its marked blocks and fluids (which reads and may
@@ -355,11 +428,11 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         // Post-processing ticks fluids, which may flow into complete neighbors that the level is ticking.
         if (this.world is AbstractLevel level)
-            level.Fluids.RunExclusive(() => this.builder.PostProcess(area, chunk.X, chunk.Z, level.Fluids.Rules));
+            level.Fluids.RunExclusive(() => this.Running.PostProcess(area, chunk.X, chunk.Z, level.Fluids.Rules));
         else
-            this.builder.PostProcess(area, chunk.X, chunk.Z);
+            this.Running.PostProcess(area, chunk.X, chunk.Z);
 
-        this.builder.UpdateFinalHeightmaps(chunk);
+        this.Running.UpdateFinalHeightmaps(chunk);
         chunk.SetChunkStatus(ChunkGenStage.initialize_light);
     }
 
@@ -421,10 +494,12 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     public void Init(ILevel world)
     {
         this.world = world;
-        this.builder = new ChunkBuilder(this.Dimension, RandomState.ParseSeed(world.Seed));
+        var builder = new ChunkBuilder(this.Dimension, RandomState.ParseSeed(world.Seed));
 
-        if (this.builder.Structures is StructureManager structures)
+        if (builder.Structures is StructureManager structures)
             structures.LoadStartChunk = this.LoadStartChunk;
+
+        Volatile.Write(ref this.builder, builder);
     }
 
     private readonly struct ChunkLocks(SemaphoreSlim[] locks, SortedSet<int> stripes) : IDisposable

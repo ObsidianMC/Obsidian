@@ -38,6 +38,9 @@ internal sealed class SurfaceBuilder
     private readonly BaseNoise surfaceSecondaryNoise;
     private readonly Func<SurfaceContext, IBlock?>? rule;
 
+    // The rules and conditions plugins' rules and conditions evaluate through their context, compiled on first use.
+    private readonly ConcurrentDictionary<object, Delegate> children = new(ReferenceEqualityComparer.Instance);
+
     // A build's buffers, kept by each thread for its next build. Taken while in use. They don't reference the builder, so
     // idle threads don't keep it alive.
     private readonly ThreadLocal<SurfaceBuffers?> freeBuffers = new();
@@ -384,6 +387,8 @@ internal sealed class SurfaceBuilder
                 return context => test(context) ? then(context) : null;
             case BandlandsSurfaceRule:
                 return context => this.GetBand(context.BlockX, context.BlockY, context.BlockZ);
+            case ICustomSurfaceRule custom:
+                return custom.Apply;
             default:
                 throw new NotSupportedException($"Unsupported surface rule '{rule.Type}'.");
         }
@@ -396,7 +401,7 @@ internal sealed class SurfaceBuilder
             case BiomeSurfaceCondition biome:
                 // Matches by registered biome id, which stands for the name, so blocks don't hash a string each. A
                 // biome plugins registered after the rule was compiled isn't one it names.
-                var names = biome.BiomeIs.ToHashSet();
+                var names = biome.BiomeIs.Select(name => name.Contains(':') ? name : $"minecraft:{name}").ToHashSet();
                 var registered = CodecRegistry.Biomes.All.Values;
                 var matches = new bool[registered.Max(codec => codec.Id) + 1];
                 foreach (var codec in registered)
@@ -404,7 +409,7 @@ internal sealed class SurfaceBuilder
 
                 return context => (uint)context.Biome.Id < (uint)matches.Length && matches[context.Biome.Id];
             case NoiseThresholdSurfaceCondition noiseThreshold:
-                var noise = this.randomState.GetOrCreateNoise(((BaseNoise)noiseThreshold.Noise).Key);
+                var noise = this.randomState.GetOrCreateNoise((BaseNoise)noiseThreshold.Noise);
                 return context =>
                 {
                     var value = noise.GetValue(context.BlockX, 0.0, context.BlockZ);
@@ -458,9 +463,33 @@ internal sealed class SurfaceBuilder
                 return context => context.Steep;
             case TemperatureSurfaceCondition:
                 return context => BiomeTemperature.ColdEnoughToSnow(context.Biome, context.BlockX, context.BlockY, context.BlockZ, this.seaLevel);
+            case ICustomSurfaceCondition custom:
+                return custom.Test;
             default:
                 throw new NotSupportedException($"Unsupported surface condition '{condition.Type}'.");
         }
+    }
+
+    // A rule a plugin's rule or condition evaluates through its context.
+    private IBlock? ApplyChild(ISurfaceRule rule, SurfaceContext context)
+    {
+        var compiled = (Func<SurfaceContext, IBlock?>)this.children.GetOrAdd(
+            rule,
+            static (rule, builder) => builder.CompileRule((ISurfaceRule)rule),
+            this);
+
+        return compiled(context);
+    }
+
+    // A condition a plugin's rule or condition tests through its context.
+    private bool TestChild(ISurfaceCondition condition, SurfaceContext context)
+    {
+        var compiled = (Func<SurfaceContext, bool>)this.children.GetOrAdd(
+            condition,
+            static (condition, builder) => builder.CompileCondition((ISurfaceCondition)condition),
+            this);
+
+        return compiled(context);
     }
 
     /// <summary>
@@ -513,7 +542,7 @@ internal sealed class SurfaceBuilder
     /// <summary>
     /// Per-chunk surface state: the current column and block, plus values vanilla caches per column or per block.
     /// </summary>
-    private sealed class SurfaceContext
+    private sealed class SurfaceContext : ISurfaceContext
     {
         private readonly SurfaceBuilder builder;
         private readonly IChunk chunk;
@@ -563,6 +592,12 @@ internal sealed class SurfaceBuilder
         }
 
         public BiomeCodec Biome => this.biome ??= this.BiomeManager.GetBiome(this.BlockX, this.BlockY, this.BlockZ);
+
+        string ISurfaceContext.Biome => this.Biome.Name;
+
+        public IBlock? Apply(ISurfaceRule rule) => this.builder.ApplyChild(rule, this);
+
+        public bool Test(ISurfaceCondition condition) => this.builder.TestChild(condition, this);
 
         public double SurfaceSecondary => this.surfaceSecondary ??= this.builder.GetSurfaceSecondary(this.BlockX, this.BlockZ);
 

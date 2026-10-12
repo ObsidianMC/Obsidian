@@ -265,7 +265,8 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         {
             foreach (var stem in PluginDimensions.Added)
             {
-                if (world.dimensions.ContainsKey(stem.Identifier))
+                // A released dimension can't generate until its plugin loads again.
+                if (stem.IsReleased || world.dimensions.ContainsKey(stem.Identifier))
                     continue;
 
                 await this.AddPluginDimensionAsync(world, stem, cancellationToken);

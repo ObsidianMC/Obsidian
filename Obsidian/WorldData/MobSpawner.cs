@@ -132,7 +132,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         var z = chunk.Z * 16 + random.Next(16);
         var top = GetSpawnHeight(chunk, x, z);
         var maxY = level.MinY + level.Height;
-        var seaLevel = level.Generator is MojangGenerator generator ? generator.Builder.RandomState.Settings.SeaLevel : 63;
+        var seaLevel = level.Generator is MojangGenerator generator ? generator.SeaLevel : 63;
         var y = category == "creature" ? top : category == "water_creature" ? random.Next(seaLevel - 23, seaLevel) :
             random.Next(level.MinY, Math.Clamp(top + 1, level.MinY + 1, maxY));
         var biome = chunk.GetBiome(x, Math.Clamp(y, level.MinY, maxY - 1), z);

@@ -6,8 +6,9 @@ namespace Obsidian.WorldData.Features;
 /// The worldgen types data files name by their <c>type</c> (or <c>predicate_type</c>, <c>processor_type</c>,
 /// <c>element_type</c>): Obsidian's classes marked with <see cref="ConfiguredFeatureClassAttribute"/>,
 /// <see cref="ConfiguredFeaturePropertyAttribute"/>, <see cref="TreePropertyAttribute"/>,
-/// <see cref="ConfiguredFeatureAttribute"/> or <see cref="StructureTypeAttribute"/>, like the source generator finds,
-/// and the types plugins registered.
+/// <see cref="ConfiguredFeatureAttribute"/>, <see cref="StructureTypeAttribute"/>,
+/// <see cref="DensityFunctionAttribute"/>, <see cref="SurfaceRuleAttribute"/> or
+/// <see cref="SurfaceConditionAttribute"/>, like the source generators find, and the types plugins registered.
 /// </summary>
 /// <remarks>
 /// An identifier can name several types in different hierarchies (<c>minecraft:constant</c> is an int, float and height
@@ -98,6 +99,9 @@ internal sealed class WorldgenTypes
                 TreePropertyAttribute tree => tree.ResourceLocation,
                 ConfiguredFeatureAttribute feature => feature.ResourceLocation,
                 StructureTypeAttribute structure => structure.Identifier,
+                DensityFunctionAttribute function => function.Type,
+                SurfaceRuleAttribute rule => rule.Identifier,
+                SurfaceConditionAttribute condition => condition.Identifier,
                 _ => null
             };
 
@@ -143,6 +147,42 @@ internal sealed record WorldgenTypeRegistration(string Identifier, Type Base, Ty
         if (registered.Any(other => other.Identifier == identifier && other.Base == baseType))
             throw new ArgumentException($"{identifier} is already registered as a {baseType.Name} type.");
 
+        CheckEvaluable(baseType, type);
+
         return new WorldgenTypeRegistration(identifier, baseType, type);
     }
+
+    // Generation evaluates surface rules and conditions itself, so plugins' need a way in; and binds a density
+    // function's noises and caches by rebuilding its tree with MapAll, which a function with children has to
+    // implement, or its children would stay unbound and evaluate wrongly without any error.
+    private static void CheckEvaluable(Type baseType, Type type)
+    {
+        if (baseType == typeof(ISurfaceRule) && !type.IsAssignableTo(typeof(ICustomSurfaceRule)))
+            throw new ArgumentException($"{type.Name} needs to implement {nameof(ICustomSurfaceRule)}.");
+
+        if (baseType == typeof(ISurfaceCondition) && !type.IsAssignableTo(typeof(ICustomSurfaceCondition)))
+            throw new ArgumentException($"{type.Name} needs to implement {nameof(ICustomSurfaceCondition)}.");
+
+        if (baseType != typeof(IDensityFunction) || !HasFunctionChildren(type))
+            return;
+
+        var map = type.GetInterfaceMap(typeof(IDensityFunction));
+        var mapAll = Array.FindIndex(map.InterfaceMethods, method => method.Name == nameof(IDensityFunction.MapAll));
+
+        if (map.TargetMethods[mapAll].DeclaringType == typeof(IDensityFunction))
+        {
+            throw new ArgumentException(
+                $"{type.Name} has density functions or noises, so it needs to implement MapAll to map them.");
+        }
+    }
+
+    private static bool HasFunctionChildren(Type type) => type
+        .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+        .Select(property => property.PropertyType)
+        .Select(propertyType => propertyType.IsArray
+            ? propertyType.GetElementType()!
+            : propertyType.IsGenericType ? propertyType.GenericTypeArguments[^1] : propertyType)
+        .Any(propertyType => propertyType.IsAssignableTo(typeof(IDensityFunction))
+            || propertyType.IsAssignableTo(typeof(INoise))
+            || propertyType.IsAssignableTo(typeof(ISpline)));
 }

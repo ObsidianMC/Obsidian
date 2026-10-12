@@ -77,7 +77,11 @@ internal sealed class ChunkBuilder
         Func<WorldgenFeatureSet>? features = null)
     {
         this.dimension = dimension;
-        this.settings = NoiseRegistry.NoiseSettings.All[dimension.NoiseSettings];
+        this.settings = dimension.Settings;
+
+        // Binding the noise router runs plugins' density functions' code.
+        using var calls = this.EnterGenerator();
+
         this.RandomState = new RandomState(this.settings, seed);
 
         this.terrainGenerator = new TerrainGenerator(this.RandomState);
@@ -94,11 +98,22 @@ internal sealed class ChunkBuilder
     }
 
     /// <summary>
+    /// Enters the plugins whose types the dimension's noise settings and biome source are made of, whose code every
+    /// step runs. Each public step of the builder does; other code using its parts, like structure searches, does it
+    /// around them. Steps are a chunk each, so plugins are entered once per chunk rather than per sample, and without
+    /// plugin types there's nothing to enter.
+    /// </summary>
+    /// <exception cref="GeneratorStoppedException">A plugin is unloading: don't generate.</exception>
+    public GeneratorCalls EnterGenerator() => GeneratorCalls.Enter(this.dimension);
+
+    /// <summary>
     /// Fills the chunk from the noise, reshaped around nearby structures. Fluids that need an update are added to the chunk's
     /// post-processing.
     /// </summary>
     public void Generate3DTerrain(IChunk chunk)
     {
+        using var calls = this.EnterGenerator();
+
         var beardifier = this.Structures is null
             ? Beardifier.Empty
             : Beardifier.ForStructuresInChunk(this.Structures.GetTerrainAdaptingStarts(chunk.X, chunk.Z), chunk.X, chunk.Z);
@@ -111,6 +126,8 @@ internal sealed class ChunkBuilder
     /// </summary>
     public void PopulateBiomes(IChunk chunk)
     {
+        using var calls = this.EnterGenerator();
+
         var sampler = this.GetNoiseChunk(chunk).ClimateSampler;
         var minQuartY = this.dimension.MinY >> 2;
         var maxQuartY = minQuartY + (this.dimension.Height >> 2);
@@ -130,6 +147,8 @@ internal sealed class ChunkBuilder
 
     public void ApplySurfaceRules(IChunk chunk)
     {
+        using var calls = this.EnterGenerator();
+
         this.surfaceBuilder.BuildSurface(chunk, this.GetNoiseChunk(chunk));
         WorldgenHeightmaps.Update(chunk, this.dimension.MinY, ChunkColumns.NonAirHeight(chunk, this.dimension.MinY, this.dimension.Height));
     }
@@ -139,6 +158,8 @@ internal sealed class ChunkBuilder
     /// </summary>
     public void ApplyCarvers(IChunk chunk)
     {
+        using var calls = this.EnterGenerator();
+
         var noiseChunk = this.GetNoiseChunk(chunk);
         this.carverStep.Apply(chunk, (chunk as Chunk)?.PostProcessing, noiseChunk);
         this.noiseChunks.Remove(chunk);
@@ -174,6 +195,9 @@ internal sealed class ChunkBuilder
     public void Decorate(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ,
         Action<int, int, PlacedFeature, bool>? onPlaced = null)
     {
+        // Features look biomes and structures up, which runs the generator's plugins' code too.
+        using var generatorCalls = this.EnterGenerator();
+
         var region = this.CreateRegion(area, chunkX, chunkZ, trackHeightmaps: true);
 
         // Like vanilla, only the 3x3 chunks around the decorated chunk contribute biomes.
@@ -307,12 +331,16 @@ internal sealed class ChunkBuilder
     /// </summary>
     public BiomeCodec GetBiome(int x, int y, int z)
     {
+        using var calls = this.EnterGenerator();
+
         lock (this.biomeLock)
             return this.BiomeManager.GetBiome(x, y, z);
     }
 
     public (int X, int Z) FindClimateSpawn()
     {
+        using var calls = this.EnterGenerator();
+
         var targets = this.settings.SpawnTarget.Select(target => new ParameterPoint(
             Quantize(target.Temperature),
             Quantize(target.Humidity),
@@ -338,6 +366,8 @@ internal sealed class ChunkBuilder
     {
         if (area[(chunkX, chunkZ)] is not Chunk chunk || chunk.PostProcessing.Count == 0)
             return;
+
+        using var calls = this.EnterGenerator();
 
         var region = this.CreateRegion(area, chunkX, chunkZ, trackHeightmaps: false);
         var minY = this.dimension.MinY;

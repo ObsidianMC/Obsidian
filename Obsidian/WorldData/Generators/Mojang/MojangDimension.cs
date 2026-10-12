@@ -1,5 +1,7 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.API.World.Generator.Noise;
+using Obsidian.Plugins;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -13,7 +15,7 @@ internal sealed class MojangDimension
     /// <summary>
     /// The overworld (dimension type <c>minecraft:overworld</c>, noise settings <c>minecraft:overworld</c>).
     /// </summary>
-    public static MojangDimension Overworld { get; } = new(
+    public static MojangDimension Overworld { get; } = VanillaDimension(
         "minecraft:overworld",
         "minecraft:overworld",
         "minecraft:overworld",
@@ -23,7 +25,7 @@ internal sealed class MojangDimension
     /// <summary>
     /// The nether (dimension type <c>minecraft:the_nether</c>, noise settings <c>minecraft:nether</c>).
     /// </summary>
-    public static MojangDimension Nether { get; } = new(
+    public static MojangDimension Nether { get; } = VanillaDimension(
         "minecraft:the_nether",
         "minecraft:the_nether",
         "minecraft:nether",
@@ -33,7 +35,7 @@ internal sealed class MojangDimension
     /// <summary>
     /// The end (dimension type <c>minecraft:the_end</c>, noise settings <c>minecraft:end</c>).
     /// </summary>
-    public static MojangDimension End { get; } = new(
+    public static MojangDimension End { get; } = VanillaDimension(
         "minecraft:the_end",
         "minecraft:the_end",
         "minecraft:end",
@@ -47,7 +49,10 @@ internal sealed class MojangDimension
 
     private readonly string dimensionType;
 
-    private readonly Func<IReadOnlyList<BiomeCodec>> possibleBiomes;
+    // Dropped by Release, with the plugin objects they hold.
+    private NoiseSetting? settings;
+    private Func<RandomState, IClimateBiomeSource>? createBiomeSource;
+    private Func<IReadOnlyList<BiomeCodec>> possibleBiomes;
 
     /// <summary>
     /// The dimension's identifier (its level stem's), which is also its level's name.
@@ -68,9 +73,20 @@ internal sealed class MojangDimension
         : throw new InvalidOperationException($"Unknown dimension type '{this.dimensionType}'.");
 
     /// <summary>
-    /// The noise settings key, one of <c>NoiseRegistry.NoiseSettings.All</c>.
+    /// The noise settings' identifier, vanilla's or a plugin's.
     /// </summary>
     public string NoiseSettings { get; }
+
+    /// <summary>
+    /// The noise settings the dimension generates with.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The dimension was released.</exception>
+    public NoiseSetting Settings => this.settings ?? throw this.Released();
+
+    /// <summary>
+    /// The noise settings' sea level, kept once the dimension is released.
+    /// </summary>
+    public int SeaLevel { get; }
 
     /// <summary>
     /// The dimension type's lowest block Y.
@@ -90,7 +106,19 @@ internal sealed class MojangDimension
     /// <summary>
     /// Creates the dimension's biome source for a world.
     /// </summary>
-    public Func<RandomState, IClimateBiomeSource> CreateBiomeSource { get; }
+    /// <exception cref="InvalidOperationException">The dimension was released.</exception>
+    public Func<RandomState, IClimateBiomeSource> CreateBiomeSource => this.createBiomeSource ?? throw this.Released();
+
+    /// <summary>
+    /// The plugins whose types the noise settings or the biome source are made of. Generating calls into them, so the
+    /// dimension can't generate once one unloads (see <see cref="Release"/>).
+    /// </summary>
+    public ImmutableArray<PluginContainer> Plugins { get; }
+
+    /// <summary>
+    /// Whether <see cref="Release"/> dropped the generator's parts.
+    /// </summary>
+    public bool IsReleased => this.settings is null;
 
     /// <summary>
     /// Configured carver names (in <c>Assets/configured_carver</c>), in the order the dimension's biomes list them.
@@ -98,29 +126,64 @@ internal sealed class MojangDimension
     /// <remarks>
     /// Vanilla picks the carvers of each start chunk's biome; every vanilla biome of a dimension lists the same ones,
     /// so one list per dimension gives the same result. A plugin's dimension carves like the vanilla dimension whose
-    /// noise settings it uses, whatever its biomes list.
+    /// noise settings it uses, whatever its biomes list, and like the overworld with a plugin's noise settings.
     /// </remarks>
     public IReadOnlyList<string> Carvers { get; }
 
     /// <param name="identifier">The level stem's identifier.</param>
     /// <param name="dimensionType">A registered dimension type.</param>
-    /// <param name="noiseSettings">One of vanilla's noise settings.</param>
+    /// <param name="noiseSettings">The noise settings' identifier.</param>
+    /// <param name="settings">The noise settings.</param>
     /// <param name="createBiomeSource">Creates the biome source for a world.</param>
     /// <param name="possibleBiomes">The biome source's possible biomes, without creating one.</param>
+    /// <param name="plugins">The plugins whose types the noise settings or the biome source are made of.</param>
     public MojangDimension(
         string identifier,
         string dimensionType,
         string noiseSettings,
+        NoiseSetting settings,
         Func<RandomState, IClimateBiomeSource> createBiomeSource,
-        Func<IReadOnlyList<BiomeCodec>> possibleBiomes)
+        Func<IReadOnlyList<BiomeCodec>> possibleBiomes,
+        ImmutableArray<PluginContainer> plugins = default)
     {
         this.Identifier = identifier;
         this.dimensionType = dimensionType;
         this.NoiseSettings = noiseSettings;
-        this.CreateBiomeSource = createBiomeSource;
+        this.settings = settings;
+        this.SeaLevel = settings.SeaLevel;
+        this.createBiomeSource = createBiomeSource;
         this.possibleBiomes = possibleBiomes;
+        this.Plugins = plugins.IsDefault ? [] : plugins;
         this.Carvers = CarversOf(noiseSettings);
     }
+
+    /// <summary>
+    /// Drops the noise settings and the biome source, so that the plugins they're made of can unload: the dimension
+    /// can't generate any more. Its possible biomes stay, as features are still ordered with them.
+    /// </summary>
+    public void Release()
+    {
+        IReadOnlyList<BiomeCodec> biomes = [.. this.possibleBiomes()];
+        this.possibleBiomes = () => biomes;
+        this.createBiomeSource = null;
+        this.settings = null;
+    }
+
+    private static MojangDimension VanillaDimension(
+        string identifier,
+        string dimensionType,
+        string noiseSettings,
+        Func<RandomState, IClimateBiomeSource> createBiomeSource,
+        Func<IReadOnlyList<BiomeCodec>> possibleBiomes) => new(
+        identifier,
+        dimensionType,
+        noiseSettings,
+        NoiseRegistry.NoiseSettings.All[noiseSettings],
+        createBiomeSource,
+        possibleBiomes);
+
+    private InvalidOperationException Released() =>
+        new($"{this.Identifier} was released when a plugin it generates with unloaded.");
 
     // The carvers vanilla's biomes of the dimension using these settings list.
     private static IReadOnlyList<string> CarversOf(string noiseSettings) => noiseSettings switch

@@ -2,10 +2,15 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Configuration;
 using Obsidian.API.Registries;
+using Obsidian.API.World.Generator;
 using Obsidian.Nbt;
+using Obsidian.Plugins;
+using Obsidian.Plugins.Archives;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Features;
@@ -206,6 +211,229 @@ public sealed class PluginDimensionFiles : IDisposable
         Assert.NotNull(saved);
         Assert.Same(gladeBiome, saved.GetBiome(0, 0, 0));
         Assert.True(PluginFeatureFiles.HasDiamondBlocks(saved));
+    }
+
+    [Fact(DisplayName = "A dimension generates with plugins' noise settings and types, and stops when they unload")]
+    public async Task GeneratesWithPluginNoiseSettingsAndTypes()
+    {
+        // The types a plugin registers, here from the test's own load context.
+        List<WorldgenTypeRegistration> types = [];
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:shelf",
+            typeof(IDensityFunction),
+            typeof(ShelfFunction)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:top",
+            typeof(ISurfaceRule),
+            typeof(TopRule)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:halves",
+            typeof(BiomeSourceBase),
+            typeof(HalvesSource)));
+
+        // A density function with functions in it has to map them, or they'd stay unseeded without any error.
+        Assert.Throws<ArgumentException>(() => WorldgenTypeRegistration.Create(
+            types,
+            "probe:unmapped",
+            typeof(IDensityFunction),
+            typeof(UnmappedFunction)));
+
+        Assert.Throws<InvalidDataException>(
+            () => PluginNoise.Parse(PluginNoise.Noise, "minecraft:bumps", "test", Bytes(Bumps)));
+
+        var logger = new PluginFeatureFiles.ListLogger();
+        var noise = PluginNoise.Build(
+            [
+                PluginNoise.Parse(PluginNoise.NoiseSettings, "probe:shelf_world", "test", Bytes(ShelfWorld)),
+                PluginNoise.Parse(PluginNoise.DensityFunction, "probe:ground", "test", Bytes(Ground)),
+                PluginNoise.Parse(PluginNoise.DensityFunction, "probe:loop", "test", Bytes("\"probe:loop\"")),
+                PluginNoise.Parse(PluginNoise.Noise, "probe:bumps", "test", Bytes(Bumps))
+            ],
+            types,
+            logger);
+
+        // A file referring back to itself is left out, and the others load.
+        Assert.Contains("probe:loop refers back to itself", Assert.Single(logger.Messages));
+
+        var settings = noise.NoiseSettings["probe:shelf_world"];
+        var shelf = Assert.IsType<ShelfFunction>(settings.NoiseRouter.FinalDensity);
+        Assert.Same(noise.DensityFunctions["probe:ground"], shelf.Argument);
+
+        var stem = FixedStem
+            .Replace("\"settings\": \"minecraft:overworld\"", "\"settings\": \"probe:shelf_world\"")
+            .Replace(
+                """{ "type": "minecraft:fixed", "biome": "stemfiles:glade" }""",
+                """{ "type": "probe:halves", "west": "minecraft:desert", "east": "minecraft:plains" }""");
+        var read = PluginDimensions.Parse("stemfiles:shelf", "test", Bytes(stem), noise).Dimension;
+
+        // The types are the test's, not a plugin's, so the plugin whose code the generator runs is given here.
+        var plugin = new PluginContainer
+        {
+            Info = new PluginInfo("probe"),
+            Archive = PluginArchive.Open(
+                "probe.obby",
+                PluginArchives.Zip(new Dictionary<string, byte[]>
+                {
+                    [PluginMetadata.FileName] = PluginArchives.Metadata("probe", "1.0.0", "Probe")
+                }))
+        };
+
+        var dimension = new MojangDimension(
+            read.Identifier,
+            "minecraft:overworld",
+            read.NoiseSettings,
+            read.Settings,
+            read.CreateBiomeSource,
+            () => read.PossibleBiomes,
+            [plugin]);
+
+        Assert.Equal(["minecraft:desert", "minecraft:plains"], dimension.PossibleBiomes.Select(biome => biome.Name));
+
+        // The plugin's function shapes a floor at y 40, which its rule tops with gold, in the source's biomes.
+        var builder = new ChunkBuilder(dimension, 1234, generateStructures: false, () => WorldgenFeatureSet.Vanilla);
+        var west = new Chunk(-1, 0);
+
+        builder.PopulateBiomes(west);
+        builder.Generate3DTerrain(west);
+        builder.ApplySurfaceRules(west);
+
+        Assert.Equal("minecraft:desert", west.GetBiome(0, 39, 0).Name);
+        Assert.True(west.GetBlock(3, 39, 5).Is(BlockIds.GoldBlock));
+        Assert.True(west.GetBlock(3, 38, 5).Is(BlockIds.Stone));
+        Assert.True(west.GetBlock(3, 40, 5).IsAir);
+
+        // Unloading: the generator holds the plugin while a level is created with it, then refuses to generate.
+        var world = this.CreateWorld();
+        await using var level = CreateLevel(world, dimension);
+        var generator = (LevelStemGenerator)level.Generator;
+
+        plugin.Close();
+
+        Assert.Throws<GeneratorStoppedException>(() => builder.PopulateBiomes(new Chunk(2, 0)));
+
+        var refused = await generator.GenerateChunkAsync(4, 4);
+        Assert.False(refused.IsGenerated);
+
+        // Stopped, it lets go of the plugin's objects, and generates nothing.
+        generator.Stop();
+
+        Assert.Null(generator.Builder);
+        Assert.True(dimension.IsReleased);
+        Assert.Equal(["minecraft:desert", "minecraft:plains"], dimension.PossibleBiomes.Select(biome => biome.Name));
+        Assert.False((await generator.GenerateChunkAsync(5, 5)).IsGenerated);
+    }
+
+    private const string Bumps = """{ "firstOctave": -4, "amplitudes": [1.0, 0.5] }""";
+
+    // Solid, from a plugin noise, at least 2.5 everywhere.
+    private const string Ground = """
+        {
+          "type": "minecraft:add",
+          "argument1": 4.0,
+          "argument2": { "type": "minecraft:noise", "noise": "probe:bumps", "xz_scale": 0.25, "y_scale": 0.0 }
+        }
+        """;
+
+    private const string ShelfWorld = """
+        {
+          "sea_level": -64,
+          "disable_mob_generation": false,
+          "aquifers_enabled": false,
+          "ore_veins_enabled": false,
+          "legacy_random_source": false,
+          "default_block": { "Name": "minecraft:stone" },
+          "default_fluid": { "Name": "minecraft:water", "Properties": { "level": "0" } },
+          "noise": { "min_y": -64, "height": 384, "size_horizontal": 1, "size_vertical": 2 },
+          "noise_router": {
+            "barrier": 0,
+            "fluid_level_floodedness": 0,
+            "fluid_level_spread": 0,
+            "lava": 0,
+            "temperature": 0,
+            "vegetation": 0,
+            "continents": 0,
+            "erosion": 0,
+            "depth": 0,
+            "ridges": 0,
+            "preliminary_surface_level": 0,
+            "final_density": { "type": "probe:shelf", "y": 40, "argument": "probe:ground" },
+            "vein_toggle": 0,
+            "vein_ridged": 0,
+            "vein_gap": 0
+          },
+          "spawn_target": [],
+          "surface_rule": {
+            "type": "minecraft:sequence",
+            "sequence": [{ "type": "probe:top", "block": { "Name": "minecraft:gold_block" }, "depth": 1 }]
+          }
+        }
+        """;
+
+    // A plugin's density function: its argument below a height, and air above.
+    public sealed class ShelfFunction : IDensityFunction
+    {
+        public string Type => "probe:shelf";
+
+        public required IDensityFunction Argument { get; init; }
+
+        public required int Y { get; init; }
+
+        public double MinValue => Math.Min(-1.0, this.Argument.MinValue);
+
+        public double MaxValue => Math.Max(-1.0, this.Argument.MaxValue);
+
+        public double GetValue(double x, double y, double z) => y < this.Y ? this.Argument.GetValue(x, y, z) : -1.0;
+
+        public IDensityFunction MapAll(IDensityFunctionVisitor visitor) => visitor.Apply(new ShelfFunction
+        {
+            Argument = visitor.Map(this.Argument),
+            Y = this.Y
+        });
+    }
+
+    // A density function that doesn't map the function in it.
+    public sealed class UnmappedFunction : IDensityFunction
+    {
+        public string Type => "probe:unmapped";
+
+        public required IDensityFunction Argument { get; init; }
+
+        public double MinValue => this.Argument.MinValue;
+
+        public double MaxValue => this.Argument.MaxValue;
+
+        public double GetValue(double x, double y, double z) => this.Argument.GetValue(x, y, z);
+    }
+
+    // A plugin's surface rule: a block for the top blocks of the default block.
+    public sealed class TopRule : ICustomSurfaceRule
+    {
+        public string Type => "probe:top";
+
+        public required SimpleBlockState Block { get; init; }
+
+        public required int Depth { get; init; }
+
+        public IBlock? Apply(ISurfaceContext context) =>
+            context.StoneDepthAbove <= this.Depth ? this.Block.ToBlock() : null;
+    }
+
+    // A plugin's biome source: one biome west of x 0, another east.
+    public sealed class HalvesSource : BiomeSourceBase
+    {
+        public override string Type => "probe:halves";
+
+        public required string West { get; init; }
+
+        public required string East { get; init; }
+
+        public override IReadOnlyList<string> PossibleBiomes => [this.West, this.East];
+
+        public override string GetBiome(int quartX, int quartY, int quartZ, IClimateSampler climate) =>
+            quartX < 0 ? this.West : this.East;
     }
 
     [Fact(DisplayName = "A file path giving an identifier with an empty, . or .. segment or namespace is refused")]

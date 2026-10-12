@@ -15,7 +15,7 @@ internal sealed class MobTerrain(ILevel level)
         if (level is not AbstractLevel concrete || concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4) is not { } chunk)
             return 0.5f;
         var seaLevel = concrete.Generator is Obsidian.WorldData.Generators.MojangGenerator generator
-            ? generator.Builder.RandomState.Settings.SeaLevel : 63;
+            ? generator.SeaLevel : 63;
         return Obsidian.WorldData.Generators.Mojang.BiomeTemperature.GetTemperature(
             chunk.GetBiome(position.X, position.Y, position.Z), position.X, position.Y, position.Z, seaLevel);
     }

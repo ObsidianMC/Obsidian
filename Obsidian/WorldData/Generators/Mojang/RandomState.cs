@@ -163,8 +163,17 @@ internal sealed class RandomState
     /// <summary>
     /// Gets the seeded instance of a registry noise, e.g. <c>minecraft:surface</c>.
     /// </summary>
-    public BaseNoise GetOrCreateNoise(string key) =>
-        this.noises.GetOrAdd(key, static (key, random) => NoiseRegistry.Noises.All[key].Bind(random), this.Random);
+    public BaseNoise GetOrCreateNoise(string key) => this.GetOrCreateNoise(NoiseRegistry.Noises.All[key]);
+
+    /// <summary>
+    /// Gets the seeded instance of a noise, vanilla's or a plugin's. Like vanilla's, it's seeded from its identifier,
+    /// so every noise of that identifier is the same.
+    /// </summary>
+    public BaseNoise GetOrCreateNoise(BaseNoise noise) =>
+        this.noises.GetOrAdd(
+            noise.Key,
+            static (_, state) => state.Noise.Bind(state.Random),
+            (Noise: noise, this.Random));
 
     /// <summary>
     /// Gets a positional random factory derived from the world seed and <paramref name="name"/>.
@@ -334,7 +343,7 @@ internal sealed class RandomState
                 }
             }
 
-            return this.state.GetOrCreateNoise(baseNoise.Key);
+            return this.state.GetOrCreateNoise(baseNoise);
         }
 
         public IDensityFunction Apply(IDensityFunction function) => function switch
