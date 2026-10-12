@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.API.World.Structures;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Structures.Processors;

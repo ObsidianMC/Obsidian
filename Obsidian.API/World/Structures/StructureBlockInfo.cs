@@ -1,6 +1,6 @@
 using Obsidian.Nbt;
 
-namespace Obsidian.WorldData.Structures;
+namespace Obsidian.API.World.Structures;
 
 /// <summary>
 /// One block of a structure template, like vanilla's <c>StructureTemplate.StructureBlockInfo</c>.

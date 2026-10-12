@@ -1,3 +1,4 @@
+using Obsidian.API.World.Structures;
 using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData.Structures.Processors;
@@ -11,7 +12,12 @@ public sealed class ProtectedBlocksProcessor : StructureProcessor
     /// <summary>The block tag that can't be replaced.</summary>
     public required BlockSet Value { get; init; }
 
-    public override StructureBlockInfo? ProcessBlock(IWorldGenLevel level, Vector origin, Vector pivot, StructureBlockInfo original,
-        StructureBlockInfo current, StructurePlaceSettings settings) =>
+    public override StructureBlockInfo? ProcessBlock(
+        IWorldGenLevel level,
+        Vector origin,
+        Vector pivot,
+        StructureBlockInfo original,
+        StructureBlockInfo current,
+        TemplatePlacement placement) =>
         this.Value.Contains(level.GetBlock(current.Position)) ? null : current;
 }

@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.API.World.Structures;
 using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData.Structures.Processors;
@@ -25,10 +26,15 @@ public sealed class BlockAgeProcessor : StructureProcessor
     /// <summary>The chance for replacements to be mossy rather than cracked or broken.</summary>
     public required float Mossiness { get; init; }
 
-    public override StructureBlockInfo? ProcessBlock(IWorldGenLevel level, Vector origin, Vector pivot, StructureBlockInfo original,
-        StructureBlockInfo current, StructurePlaceSettings settings)
+    public override StructureBlockInfo? ProcessBlock(
+        IWorldGenLevel level,
+        Vector origin,
+        Vector pivot,
+        StructureBlockInfo original,
+        StructureBlockInfo current,
+        TemplatePlacement placement)
     {
-        var random = settings.RentRandom(current.Position);
+        var random = placement.RentRandom(current.Position);
         try
         {
             var block = current.Block;
@@ -49,7 +55,7 @@ public sealed class BlockAgeProcessor : StructureProcessor
         }
         finally
         {
-            settings.ReturnRandom(random);
+            placement.ReturnRandom(random);
         }
     }
 

@@ -1,3 +1,5 @@
+using Obsidian.API.World.Structures;
+
 namespace Obsidian.WorldData.Structures.Processors;
 
 /// <summary>
