@@ -639,11 +639,20 @@ public sealed partial class Client : IClient
         }
 
         // The new join loads the player as they were saved when they left, and they leave again on their own: the
-        // earlier leave finished before the switch.
-        this.Player = this.CreatePlayer(player.Uuid, player.Username, this.Server.DefaultWorld);
-        this.Player.SkinProperties = player.SkinProperties;
+        // earlier leave finished before the switch. The player is replaced under the leave's lock, so that a leave
+        // starting meanwhile is the old player's or the new one's, never the old one's after the switch.
+        var fresh = this.CreatePlayer(player.Uuid, player.Username, this.Server.DefaultWorld);
+        fresh.SkinProperties = player.SkinProperties;
+
         lock (this.leavingLock)
+        {
+            // A connection closing meanwhile doesn't join again.
+            if (this.cancellationSource.IsCancellationRequested)
+                return;
+
+            this.Player = fresh;
             this.leaving = null;
+        }
 
         var concreteServer = (Server)this.Server;
         this.Channels = new ClientChannels(this, concreteServer.PayloadChannels, concreteServer.GetModdedRegistries);
@@ -671,15 +680,22 @@ public sealed partial class Client : IClient
     /// </summary>
     private Task LeaveAsync()
     {
-        if (this.Player is not Player player || raisingLeave.Value == this)
+        if (raisingLeave.Value == this)
             return Task.CompletedTask;
 
-        // The leave waits for a tick of the player under way, so a leave from inside one isn't waited for.
-        var inOwnTick = player.IsInOwnTick;
-
+        Player player;
+        bool inOwnTick;
         TaskCompletionSource leave;
         lock (this.leavingLock)
         {
+            if (this.Player is not Player current)
+                return Task.CompletedTask;
+
+            player = current;
+
+            // The leave waits for a tick of the player under way, so a leave from inside one isn't waited for.
+            inOwnTick = player.IsInOwnTick;
+
             if (this.leaving is TaskCompletionSource started)
                 return inOwnTick ? Task.CompletedTask : started.Task;
 
