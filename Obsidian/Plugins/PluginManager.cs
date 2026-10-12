@@ -774,23 +774,19 @@ public sealed partial class PluginManager : IAsyncDisposable
     // types and plugins' data keep generating.
     private void StopGenerators(PluginContainer plugin)
     {
+        // Levels not registered yet included, whose plugin generator may have started while the plugin was closing.
+        foreach (var level in WorldData.Generators.PluginLevelGenerator.StopAll(plugin))
+            Log.GeneratorStopped(this.logger, level, plugin.Info.Name);
+
         foreach (var level in this.Levels())
         {
-            switch (level.Generator)
+            if (level.Generator is WorldData.Generators.MojangGenerator generator
+                && generator.Dimension.Plugins.Contains(plugin))
             {
-                case WorldData.Generators.PluginLevelGenerator generator:
-                    if (generator.Stop(plugin))
-                        Log.GeneratorStopped(this.logger, level.Name, plugin.Info.Name);
+                if (generator.Builder is not null)
+                    Log.GeneratorStopped(this.logger, generator.Dimension.Identifier, plugin.Info.Name);
 
-                    break;
-
-                case WorldData.Generators.MojangGenerator generator
-                    when generator.Dimension.Plugins.Contains(plugin):
-                    if (generator.Builder is not null)
-                        Log.GeneratorStopped(this.logger, generator.Dimension.Identifier, plugin.Info.Name);
-
-                    generator.Stop();
-                    break;
+                generator.Stop();
             }
         }
 

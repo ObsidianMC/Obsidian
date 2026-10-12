@@ -248,6 +248,20 @@ public class Region : IRegion
     }
 
     /// <summary>
+    /// Stores <paramref name="replacement"/> in place of <paramref name="stored"/>, if that's the chunk stored at its
+    /// position. Generation replaces a chunk it failed on under the chunk's lock, so a save waiting for the lock
+    /// serializes the replacement (see <see cref="WriteChunkAsync"/>).
+    /// </summary>
+    internal void ReplaceChunk(IChunk stored, IChunk replacement)
+    {
+        var x = NumericsHelper.Modulo(stored.X, CubicRegionSize);
+        var z = NumericsHelper.Modulo(stored.Z, CubicRegionSize);
+
+        if (ReferenceEquals(this.loadedChunks[x, z], stored))
+            this.loadedChunks[x, z] = replacement;
+    }
+
+    /// <summary>
     /// Saves a chunk, and once it's complete, its entities to the entity region file.
     /// </summary>
     /// <param name="unloading">Whether the chunk is being unloaded: its saved entities are also taken out of the level.</param>
@@ -278,12 +292,18 @@ public class Region : IRegion
             using (this.LockChunk is null ? null : await this.LockChunk(chunk.X, chunk.Z))
             lock (this.FluidTickLock)
             {
-                var loadedStarts = (chunk as Chunk)?.StructureStarts;
-                var structureStarts = this.SaveStructureStarts is null ? loadedStarts : this.SaveStructureStarts(chunk.X, chunk.Z, loadedStarts);
+                // The chunk stored now, read under the lock: generation may have replaced the one this save was given
+                // while it waited (see ReplaceChunk). One no longer stored was unloaded and is saved as it was.
+                var current = this.loadedChunks[x, z] ?? chunk;
 
-                SerializeChunk(writer, chunk, structureStarts);
+                var loadedStarts = (current as Chunk)?.StructureStarts;
+                var structureStarts = this.SaveStructureStarts is null
+                    ? loadedStarts
+                    : this.SaveStructureStarts(current.X, current.Z, loadedStarts);
 
-                if (chunk.IsGenerated && chunk is Chunk complete)
+                SerializeChunk(writer, current, structureStarts);
+
+                if (current.IsGenerated && current is Chunk complete)
                     entities = this.CollectEntities(complete, unloading);
             }
 
