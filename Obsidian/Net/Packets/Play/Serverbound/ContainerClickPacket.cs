@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.API.Containers;
+using Obsidian.API.Inventory;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
@@ -79,55 +80,74 @@ public partial class ContainerClickPacket
             return;
         }
 
-        var baseContainer = player.OpenedContainer ?? player.Inventory;
+        var window = player.OpenedContainer ?? player.Inventory;
 
-        var (slot, forPlayer) = baseContainer.GetSlot(ClickedSlot);
+        // Players sharing a container take turns, so that two can't both take the same stack.
+        await window.TransactionLock.WaitAsync();
+        try
+        {
+            // It may have closed while another player's click went first.
+            if ((player.OpenedContainer ?? player.Inventory) != window)
+                return;
 
-        var container = (this.IsPlayerInventory || forPlayer) ? player.Inventory : baseContainer;
+            await this.HandleClickAsync(server, player, window);
+        }
+        finally
+        {
+            window.TransactionLock.Release();
+        }
+    }
+
+    private async ValueTask HandleClickAsync(IServer server, IClientPlayer player, BaseContainer window)
+    {
+        var (slot, forPlayer) = window.GetSlot(this.ClickedSlot);
+
+        var container = (this.IsPlayerInventory || forPlayer) ? player.Inventory : window;
 
         if (this.ClickedSlot != -999 && (this.ClickedSlot < 0 || slot < 0 || slot >= container.Size ||
             (!this.IsPlayerInventory && forPlayer && slot >= 45)))
             return;
 
-        if (this.IsPlayerInventory || baseContainer is CraftingTable { Type: InventoryType.Crafting })
-        {
-            if (this.ClickType == ClickType.QuickCraft && this.ClickedSlot == -999)
-                player.IsDragging = DraggingButtons.Contains(this.Button);
-
-            await server.EventDispatcher.ExecuteEventAsync(new ContainerClickEventArgs(player, server, container)
-            {
-                ClickedSlot = slot,
-                ClickType = this.ClickType,
-                Button = this.Button,
-                StateId = this.StateId,
-                ContainerId = this.ContainerId,
-            });
-            return;
-        }
-
-        if (this.ClickType == ClickType.QuickCraft && ClickedSlot == -999)
-            player.IsDragging = DraggingButtons.Contains(Button);
-
         await server.EventDispatcher.ExecuteEventAsync(new ContainerClickEventArgs(player, server, container)
         {
             ClickedSlot = slot,
+            WindowSlot = this.ClickedSlot,
             ClickType = this.ClickType,
             Button = this.Button,
             StateId = this.StateId,
             ContainerId = this.ContainerId,
         });
 
+        if (this.IsPlayerInventory || window is CraftingTable { Type: InventoryType.Crafting })
+            return;
+
         // Client slot hashes describe its prediction, not authoritative inventory changes.
-        var contents = baseContainer.ToList();
-        contents.AddRange(player.Inventory.Skip(9).Take(36));
-        await player.Client.QueuePacketAsync(new ContainerSetContentPacket(this.ContainerId, contents)
+        await player.Client.QueuePacketAsync(new ContainerSetContentPacket(this.ContainerId, Contents(window, player))
         {
             StateId = this.StateId + 1,
             CarriedItem = player.CarriedItem
         });
+
+        // The other players who have the container open see the change too.
+        foreach (var viewer in window.GetViewers())
+        {
+            if (viewer == player || viewer is not IClientPlayer other || other.OpenedContainer != window)
+                continue;
+
+            var contents = Contents(window, other);
+            await other.Client.QueuePacketAsync(new ContainerSetContentPacket(other.CurrentContainerId, contents)
+            {
+                CarriedItem = other.CarriedItem
+            });
+        }
     }
 
-    private static readonly sbyte[] DraggingButtons = [0, 4, 8];
+    // What a player's window shows: the container's slots, then the player's main inventory and hotbar.
+    private static List<ItemStack> Contents(BaseContainer window, IPlayer player)
+    {
+        var contents = window.ToList();
+        contents.AddRange(player.Inventory.Skip(9).Take(36));
 
+        return contents;
+    }
 }
-

@@ -56,6 +56,9 @@ public sealed class MenuDefinition
 /// <see cref="IPlayer.OpenInventoryAsync"/>. Players move items in and out of it like a chest's;
 /// <see cref="Events.ContainerClickEventArgs"/> lets the plugin cancel or handle their clicks.
 /// </summary>
+/// <remarks>
+/// Several players can have the same container open: their clicks take turns, and each sees the others' changes.
+/// </remarks>
 public sealed class MenuContainer : BaseContainer
 {
     /// <summary>

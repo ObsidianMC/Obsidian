@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Inventory;
 using System.Collections;
+using System.Threading;
 
 namespace Obsidian.API;
 
@@ -21,7 +22,18 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
     public Guid Uuid { get; } = Guid.NewGuid();
 
+    /// <summary>
+    /// The players who have the container open. The server keeps it as they open and close it.
+    /// </summary>
     public List<IPlayer> Viewers { get; } = [];
+
+    private SemaphoreSlim? transactionLock;
+
+    /// <summary>
+    /// Taken while a player's click changes the container, so that the clicks of players sharing it take turns.
+    /// </summary>
+    internal SemaphoreSlim TransactionLock =>
+        LazyInitializer.EnsureInitialized(ref this.transactionLock, () => new SemaphoreSlim(1, 1));
 
     public ItemStack? this[int index] { get => this.items[index]; set => this.items[index] = value; }
     public ReadOnlySpan<ItemStack?> this[Range range] => this.items.AsSpan(range);
@@ -137,6 +149,30 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         clickedSlot >= this.Size ? new((short)(clickedSlot - this.Size + 9), true) : new(clickedSlot, false);
 
     public virtual void Resize(int newSize) => Array.Resize(ref this.items, newSize);
+
+    internal void AddViewer(IPlayer player)
+    {
+        lock (this.Viewers)
+        {
+            if (!this.Viewers.Contains(player))
+                this.Viewers.Add(player);
+        }
+    }
+
+    internal void RemoveViewer(IPlayer player)
+    {
+        lock (this.Viewers)
+            this.Viewers.Remove(player);
+    }
+
+    /// <summary>
+    /// Copies <see cref="Viewers"/>, which players opening and closing the container change meanwhile.
+    /// </summary>
+    internal IPlayer[] GetViewers()
+    {
+        lock (this.Viewers)
+            return [.. this.Viewers];
+    }
 
     public bool HasItems() => this.items.Any(x => x is not null);
 

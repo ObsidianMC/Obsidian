@@ -55,6 +55,7 @@ public sealed class FakePlayer : IPlayer
 
     public PlayerAbility Abilities { get; set; }
     public bool IsDragging { get; set; }
+    public DraggingState DragStart { get; set; }
     public bool Sleeping { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public bool InHorseInventory { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public short AttackTime { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
