@@ -220,10 +220,11 @@ client. This document describes the design and tracks its progress. The archive 
      data packs' stems over level.dat's on every load, a vanilla dimension takes its overrides when its level starts,
      in every world, and keeps them until a restart; plugins' later changes to it apply after a restart, like a
      plugin dimension's. Until a level takes a dimension, its stem is read again as plugins and packs change, so it
-     sees overrides read after it; a stem startup can't read yet is kept and read once more when every plugin and
-     pack is read, and only then logged. A vanilla dimension type override its dimension's noise settings don't fit
-     (counting the whole cells generation fills) is left out, as Obsidian can't clamp generation to the build range
-     like vanilla, and data packs are read within file count and size limits (see
+     sees overrides read after it; a stem startup can't read yet is kept and read again when every plugin and pack
+     is read, before vanilla's dimension types are checked, and once more after, and only then logged. A vanilla
+     dimension type override its dimension's noise settings don't fit (counting the whole cells generation fills)
+     is left out, as Obsidian can't clamp generation to the build range like vanilla, and data packs are read within
+     file count and size limits (see
      [plugin-content.md](plugin-content.md#data-packs-and-overriding-vanilla)).
    - Phase 3.7, biome regions (done): several plugins add their biomes to the overworld's and nether's climate,
      or any other dimension's, without overriding each other, Obsidian's equivalent of TerraBlender. A

@@ -329,8 +329,8 @@ public sealed class PluginLoading : IDisposable
         return (manager, dispatcher, server);
     }
 
-    // The test assembly itself, whose only plugin type is ProbePlugin, packed as a plugin.
-    private static byte[] ProbeArchive(string version)
+    // The test assembly itself, whose only plugin type is ProbePlugin, packed as a plugin, with extra files.
+    internal static byte[] ProbeArchive(string version, IReadOnlyDictionary<string, byte[]>? extra = null)
     {
         var assembly = typeof(ProbePlugin).Assembly;
         var name = assembly.GetName().Name!;
@@ -345,6 +345,9 @@ public sealed class PluginLoading : IDisposable
         var output = Path.GetDirectoryName(assembly.Location)!;
         foreach (var file in Directory.EnumerateFiles(Path.Join(output, "data"), "*", SearchOption.AllDirectories))
             files[Path.GetRelativePath(output, file).Replace('\\', '/')] = File.ReadAllBytes(file);
+
+        foreach (var (path, contents) in extra ?? new Dictionary<string, byte[]>())
+            files[path] = contents;
 
         return PluginArchives.Zip(files);
     }

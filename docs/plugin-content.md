@@ -967,8 +967,10 @@ last file for an entry replaces it whole, and tag files merge (`"replace": true`
   must hold the noise settings its vanilla dimension generates with, as overridden: vanilla clamps generation to the
   build range, which Obsidian can't yet, so a type override that doesn't fit, like the overworld's at `min_y` 0 with
   vanilla's overworld noise settings from -64, is logged once startup has read every plugin and pack, and left out,
-  keeping vanilla's type. Override the noise settings to match it. Stems are then read against the types kept, so
-  one that couldn't be read with the type override, like an overworld stem using those noise settings, is read
+  keeping vanilla's type. Override the noise settings to match it. A stem startup couldn't read yet, like a
+  plugin's overworld stem naming noise settings a data pack adds, is read before the types are checked, so a type
+  is checked with the noise settings its dimension's stem names. Stems are then read against the types kept, so one
+  that couldn't be read with the type override, like an overworld stem using vanilla's noise settings, is read
   again and applies.
 - tags, merged as above.
 
