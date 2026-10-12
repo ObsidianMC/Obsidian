@@ -103,7 +103,8 @@ internal sealed record BiomeData(
         Carvers = this.Carvers,
         Features = this.Features,
         Spawners = this.Spawners,
-        SpawnCosts = this.SpawnCosts
+        SpawnCosts = this.SpawnCosts,
+        CreatureSpawnProbability = this.CreatureSpawnProbability
     };
 
     /// <summary>
@@ -285,8 +286,10 @@ internal sealed record BiomeData(
         };
     }
 
-    // Vanilla's spawn costs: {energy_budget, charge} by entity type.
-    private static Dictionary<string, SpawnCost> ReadSpawnCosts(JsonElement value, string path)
+    /// <summary>
+    /// Reads spawn costs like vanilla's: <c>{energy_budget, charge}</c> by entity type identifier.
+    /// </summary>
+    public static Dictionary<string, SpawnCost> ReadSpawnCosts(JsonElement value, string path)
     {
         Object(value, path);
 

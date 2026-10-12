@@ -90,7 +90,12 @@ internal sealed partial class MobSpawner(AbstractLevel level)
     internal void PopulateChunk(IChunk chunk)
     {
         if (level.Generator is MobTestGenerator || !level.LevelData.GetBooleanRule("spawn_mobs")) return;
-        while (random.NextSingle() < 0.1f)
+
+        // Like vanilla, the chance of each further group is that of the biome at the chunk's corner at the top.
+        var biome = chunk.GetBiome(chunk.X * 16, level.MinY + level.Height - 1, chunk.Z * 16);
+        var probability = PluginSpawns.Current.CreatureProbabilityOf(biome.Name);
+
+        while (random.NextSingle() < probability)
             SpawnGroup(chunk, "creature", [], 32, true);
     }
 
@@ -116,6 +121,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             .Where(mob => mob.Alive && level.IsMobTicking(mob.Position)).ToArray();
         var counts = mobs.Where(mob => !mob.PersistenceRequired && mob.CustomName == null)
             .GroupBy(SpawnCategory).ToDictionary(group => group.Key, group => group.Count());
+        var potential = this.Potential(mobs);
         foreach (var packed in chunks.OrderBy(_ => random.Next()))
         {
             NumericsHelper.LongToInts(packed, out var cx, out var cz);
@@ -135,7 +141,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 var cap = category.Cap * chunks.Count / 289;
                 var count = counts.GetValueOrDefault(category.Name);
                 if (count < cap)
-                    SpawnGroup(chunk, category.Name, players, cap - count, counts: counts);
+                    SpawnGroup(chunk, category.Name, players, cap - count, counts: counts, potential: potential);
             }
         }
         if (level.LevelData.GetBooleanRule("spawn_mobs"))
@@ -145,15 +151,45 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         }
     }
 
+    // The charges of the mobs that count against caps, whose biomes give their types spawn costs, like vanilla's
+    // NaturalSpawner.createState.
+    private SpawnPotential Potential(Mob[] mobs)
+    {
+        var spawns = PluginSpawns.Current;
+        var potential = new SpawnPotential();
+
+        foreach (var mob in mobs)
+        {
+            if (mob.PersistenceRequired || mob.CustomName is not null || SpawnCategory(mob) == "misc")
+                continue;
+
+            var position = (Vector)mob.Position;
+
+            if (level.GetLoadedChunk(position.X >> 4, position.Z >> 4) is not IChunk chunk)
+                continue;
+
+            var y = Math.Clamp(position.Y, level.MinY, level.MinY + level.Height - 1);
+            var biome = chunk.GetBiome(position.X, y, position.Z);
+            var type = EntityNbt.TypeId(mob);
+
+            if (spawns.CostOf(biome.Name, type) is SpawnCost cost)
+                potential.Add(position, cost.Charge);
+        }
+
+        return potential;
+    }
+
     // Counts, when given, each spawned mob against its own type's category, like vanilla's SpawnState.afterSpawn:
     // a mob a biome lists under another category (jungles' ocelots, listed as monsters) still counts as its own.
+    // With a potential, mobs whose biome gives their type a spawn cost spawn only within its energy budget.
     private int SpawnGroup(
         IChunk chunk,
         string category,
         IPlayer[] players,
         int remaining,
         bool generation = false,
-        Dictionary<string, int>? counts = null)
+        Dictionary<string, int>? counts = null,
+        SpawnPotential? potential = null)
     {
         var terrain = new MobTerrain(level);
         var x = chunk.X * 16 + random.Next(16);
@@ -308,6 +344,14 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 continue;
             if (type is EntityType.Husk or EntityType.Parched or EntityType.Stray && sky != 15)
                 continue;
+
+            var cost = potential is null
+                ? null
+                : PluginSpawns.Current.CostOf(candidateChunk.GetBiome(x, y, z).Name, choice.Type);
+
+            if (cost is not null && !potential!.Allows(new Vector(x, y, z), cost))
+                continue;
+
             mob.EntityId = Server.GetNextEntityId();
             mob.Position = position;
             mob.Yaw = random.Next(360);
@@ -324,6 +368,9 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 continue;
             level.SpawnEntity(mob);
             spawned++;
+
+            if (cost is not null)
+                potential!.Add(new Vector(x, y, z), cost.Charge);
 
             if (counts is not null)
             {

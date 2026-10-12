@@ -38,7 +38,7 @@ internal static class CodecAssets
         ["biomes"] =
         [
             "effects", "depth", "temperature", "scale", "downfall", "category", "has_precipitation", "temperature_modifier",
-            "player_spawn_friendly", "features", "carvers", "spawners", "spawn_costs"
+            "player_spawn_friendly", "features", "carvers", "creature_spawn_probability", "spawners", "spawn_costs"
         ],
         ["dimensions"] =
         [

@@ -52,47 +52,45 @@ public class PluginFeatureFiles
     // A placed feature tag in a modifier, and spawns added and removed with an entity type tag.
     private const string AddTaggedOres = """
         {
-          "type": "neoforge:add_features",
           "biomes": "minecraft:plains",
-          "features": "#featurefiles:ores",
-          "step": "underground_ores"
+          "add": { "features": { "underground_ores": "#featurefiles:ores" } }
         }
         """;
 
     // Bees are in no vanilla biome's spawners, so only their type says they're creatures.
     private const string AddPolarBears = """
         {
-          "type": "neoforge:add_spawns",
           "biomes": "minecraft:plains",
-          "spawners": [
-            { "type": "minecraft:polar_bear", "weight": 5, "minCount": 1, "maxCount": 2 },
-            { "type": "minecraft:bee", "weight": 5, "minCount": 1, "maxCount": 2 }
-          ]
+          "add": {
+            "spawners": [
+              { "type": "minecraft:polar_bear", "weight": 5, "minCount": 1, "maxCount": 2 },
+              { "type": "minecraft:bee", "weight": 5, "minCount": 1, "maxCount": 2 }
+            ],
+            "spawn_costs": { "minecraft:bee": { "energy_budget": 0.12, "charge": 1.0 } }
+          }
         }
         """;
 
     private const string RemoveSkeletons = """
         {
-          "type": "neoforge:remove_spawns",
-          "biomes": ["minecraft:plains", "minecraft:swamp"],
-          "entity_types": "#minecraft:skeletons"
+          "biomes": ["minecraft:plains", "minecraft:swamp", "#minecraft:is_nether"],
+          "exclude": "minecraft:warped_forest",
+          "remove": { "spawners": "#minecraft:skeletons", "spawn_costs": ["minecraft:enderman"] }
         }
         """;
 
     // Overworld biomes get the carver, except the deep dark, so start chunks' biomes decide.
     private const string AddCaves = """
         {
-          "type": "neoforge:add_carvers",
           "biomes": "#minecraft:is_overworld",
-          "carvers": "featurefiles:every_chunk_caves"
+          "add": { "carvers": "featurefiles:every_chunk_caves" }
         }
         """;
 
     private const string RemoveCaves = """
         {
-          "type": "neoforge:remove_carvers",
           "biomes": "minecraft:deep_dark",
-          "carvers": ["featurefiles:every_chunk_caves"]
+          "remove": { "carvers": ["featurefiles:every_chunk_caves"] }
         }
         """;
 
@@ -134,19 +132,15 @@ public class PluginFeatureFiles
 
     private const string AddOre = """
         {
-          "type": "neoforge:add_features",
           "biomes": "#minecraft:is_overworld",
-          "features": "featurefiles:ore_marker",
-          "step": "underground_ores"
+          "add": { "features": { "underground_ores": "featurefiles:ore_marker" } }
         }
         """;
 
     private const string RemoveCoal = """
         {
-          "type": "neoforge:remove_features",
           "biomes": ["minecraft:plains"],
-          "features": "minecraft:ore_coal_upper",
-          "steps": "underground_ores"
+          "remove": { "features": { "underground_ores": "minecraft:ore_coal_upper" } }
         }
         """;
 
@@ -155,27 +149,22 @@ public class PluginFeatureFiles
     // Plains places a before b, and forest and nether wastes b before a.
     private const string AddAB = """
         {
-          "type": "neoforge:add_features",
           "biomes": "minecraft:plains",
-          "features": ["featurefiles:a", "featurefiles:b"],
-          "step": "vegetal_decoration"
+          "add": { "features": { "vegetal_decoration": ["featurefiles:a", "featurefiles:b"] } }
         }
         """;
 
     private const string AddBA = """
         {
-          "type": "neoforge:add_features",
           "biomes": ["minecraft:forest", "minecraft:nether_wastes"],
-          "features": ["featurefiles:b", "featurefiles:a"],
-          "step": "vegetal_decoration"
+          "add": { "features": { "vegetal_decoration": ["featurefiles:b", "featurefiles:a"] } }
         }
         """;
 
     private const string RemoveA = """
         {
-          "type": "neoforge:remove_features",
           "biomes": "minecraft:forest",
-          "features": "featurefiles:a"
+          "remove": { "features": "featurefiles:a" }
         }
         """;
 
@@ -373,6 +362,15 @@ public class PluginFeatureFiles
             Assert.Contains(
                 spawns.Biomes["minecraft:forest"]["monster"],
                 spawner => spawner.Type == "minecraft:skeleton");
+            Assert.DoesNotContain(
+                spawns.Biomes["minecraft:soul_sand_valley"]["monster"],
+                spawner => spawner.Type == "minecraft:skeleton");
+
+            // Spawn costs are added, and removed from every biome but the excluded one.
+            Assert.Equal(0.12, spawns.CostOf("minecraft:plains", "minecraft:bee")?.EnergyBudget);
+            Assert.Null(spawns.CostOf("minecraft:soul_sand_valley", "minecraft:enderman"));
+            Assert.NotNull(spawns.CostOf("minecraft:warped_forest", "minecraft:enderman"));
+            Assert.Equal(0.07f, spawns.CreatureProbabilityOf("minecraft:snowy_plains"));
 
             // Each start chunk carves with its biome's carvers.
             var builder = new ChunkBuilder(MojangDimension.Overworld, 1234, generateStructures: false, () => current);

@@ -6,6 +6,7 @@ using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Carvers;
 using Obsidian.WorldData.Generators.Mojang.Features;
+using Obsidian.WorldData.Structures;
 using System.Collections.Frozen;
 using System.IO;
 using System.Text.Json;
@@ -15,7 +16,7 @@ namespace Obsidian.Registries;
 
 /// <summary>
 /// Adds plugins' configured and placed features and configured carvers from their data files, like a data pack's, and
-/// applies their NeoForge biome modifiers to the biomes' features and carvers.
+/// applies their biome modifiers to the biomes' features and carvers.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
@@ -25,7 +26,7 @@ namespace Obsidian.Registries;
 /// inline.</item>
 /// <item><c>worldgen/configured_carver/...</c> are configured carvers, read with <see cref="ConfiguredCarvers"/>.
 /// </item>
-/// <item><c>data/&lt;namespace&gt;/neoforge/biome_modifier/&lt;path&gt;.json</c> is a biome modifier (see
+/// <item><c>data/&lt;namespace&gt;/biome_modifier/&lt;path&gt;.json</c> is a biome modifier (see
 /// <see cref="BiomeModifierData"/>).</item>
 /// </list>
 /// Vanilla's entries can't be overridden, and when plugins define the same entry, the first in load order wins.
@@ -41,7 +42,7 @@ internal static partial class PluginFeatures
 
     public const string ConfiguredCarver = "worldgen/configured_carver";
 
-    public const string BiomeModifier = "neoforge/biome_modifier";
+    public const string BiomeModifier = "biome_modifier";
 
     /// <summary>
     /// The folders of plugins' feature, carver and biome modifier files.
@@ -259,33 +260,44 @@ internal static partial class PluginFeatures
             }
         }
 
-        // Like NeoForge, every modifier adding features or carvers runs before any removing them, each in load
-        // order. Spawn modifiers are PluginSpawns'.
-        var modifiers = kept
-            .Where(file => file.Modifier?.Type is BiomeModifierData.AddFeatures
-                or BiomeModifierData.RemoveFeatures
-                or BiomeModifierData.AddCarvers
-                or BiomeModifierData.RemoveCarvers)
-            .ToList();
-
-        var phases = modifiers
-            .Where(file => file.Modifier!.Adds)
-            .Concat(modifiers.Where(file => !file.Modifier!.Adds));
-
+        // Every modifier's additions are applied before any modifier's removals, each in load order, so a removal
+        // applies to what any plugin added. A modifier's features and carvers that can't be resolved are left out
+        // together, in both phases. Spawns and spawn costs are PluginSpawns'.
+        var modifiers = kept.Where(file => file.Modifier is not null).ToList();
+        var failed = new HashSet<FeatureFile>();
         var unmodified = biomeFeatures.Snapshot();
 
-        foreach (var file in phases)
+        foreach (var adding in (ReadOnlySpan<bool>)[true, false])
         {
-            try
+            foreach (var file in modifiers.Where(file => !failed.Contains(file)))
             {
-                if (file.Modifier!.Type is BiomeModifierData.AddCarvers or BiomeModifierData.RemoveCarvers)
-                    biomeCarvers.Modify(file.Modifier, carvers);
-                else
-                    biomeFeatures.Modify(file.Modifier, resolver);
-            }
-            catch (InvalidDataException ex)
-            {
-                Log.Invalid(logger, file.Source, ex.Message);
+                try
+                {
+                    var modifier = file.Modifier!;
+                    var changed = ResolveBiomes(modifier);
+
+                    if (adding)
+                    {
+                        var added = resolver.StepFeatures(modifier.Add.Features, "add.features");
+                        var addedCarvers = carvers.Resolve(modifier.Add.Carvers, "add.carvers");
+
+                        biomeFeatures.Add(changed, added);
+                        biomeCarvers.Add(changed, addedCarvers);
+                    }
+                    else
+                    {
+                        var removed = resolver.StepFeatures(modifier.Remove.Features, "remove.features");
+                        var removedCarvers = carvers.Resolve(modifier.Remove.Carvers, "remove.carvers");
+
+                        biomeFeatures.Remove(changed, removed);
+                        biomeCarvers.Remove(changed, removedCarvers);
+                    }
+                }
+                catch (InvalidDataException ex)
+                {
+                    failed.Add(file);
+                    Log.Invalid(logger, file.Source, ex.Message);
+                }
             }
         }
 
@@ -308,29 +320,43 @@ internal static partial class PluginFeatures
     }
 
     /// <summary>
-    /// A holder set of biomes to their identifiers: vanilla's or plugins' biomes, or a biome tag, vanilla's or a
-    /// plugin's (see <see cref="PluginTags"/>).
+    /// The biomes a modifier changes: its <c>biomes</c> less those it <c>exclude</c>s.
     /// </summary>
-    /// <exception cref="InvalidDataException">A biome or the tag doesn't exist.</exception>
-    public static List<string> ResolveBiomes(ImmutableArray<string> biomes)
+    /// <exception cref="InvalidDataException">A biome or tag doesn't exist.</exception>
+    public static List<string> ResolveBiomes(BiomeModifierData modifier)
     {
-        if (biomes is [var only] && only.StartsWith('#'))
+        var excluded = ResolveBiomes(modifier.Exclude, "exclude").ToHashSet();
+
+        return [.. ResolveBiomes(modifier.Biomes, "biomes").Where(biome => !excluded.Contains(biome)).Distinct()];
+    }
+
+    /// <summary>
+    /// A set of biomes to their identifiers: vanilla's or plugins' biomes, and biome tags, vanilla's or plugins'
+    /// (see <see cref="PluginTags"/>).
+    /// </summary>
+    /// <exception cref="InvalidDataException">A biome or tag doesn't exist.</exception>
+    public static IEnumerable<string> ResolveBiomes(ImmutableArray<string> biomes, string path)
+    {
+        foreach (var entry in biomes)
         {
-            if (!TagsRegistry.TryGet(PluginTags.Biome, only[1..], out var tag))
-                throw new InvalidDataException($"biomes: {only} isn't a biome tag");
+            if (!entry.StartsWith('#'))
+            {
+                yield return CodecRegistry.TryGetBiome(entry, out _)
+                    ? entry
+                    : throw new InvalidDataException($"{path}: {entry} isn't a biome");
 
-            return [.. tag.Entries
-                .Select(id => CodecRegistry.TryGetBiome(id, out var biome) ? biome!.Name : null)
-                .OfType<string>()];
+                continue;
+            }
+
+            if (!TagsRegistry.TryGet(PluginTags.Biome, entry[1..], out var tag))
+                throw new InvalidDataException($"{path}: {entry} isn't a biome tag");
+
+            foreach (var id in tag.Entries)
+            {
+                if (CodecRegistry.TryGetBiome(id, out var biome))
+                    yield return biome!.Name;
+            }
         }
-
-        foreach (var biome in biomes)
-        {
-            if (!CodecRegistry.TryGetBiome(biome, out _))
-                throw new InvalidDataException($"biomes: {biome} isn't a biome");
-        }
-
-        return [.. biomes.Distinct()];
     }
 
     // A tag's identifiers, for registries whose tags hold identifiers (placed features and configured carvers).
@@ -468,6 +494,28 @@ internal static partial class PluginFeatures
                 : [this.Placed(json, path)];
 
         /// <summary>
+        /// A biome modifier's features of each step it names.
+        /// </summary>
+        public List<(DecorationStep Step, List<PlacedFeature> Features)> StepFeatures(
+            ImmutableArray<ModifierFeatures> steps,
+            string path)
+        {
+            var result = new List<(DecorationStep Step, List<PlacedFeature> Features)>();
+
+            foreach (var step in steps)
+            {
+                var stepPath = $"{path}.{step.Step.ToString().ToSnakeCase()}";
+                var features = step.Features
+                    .SelectMany((feature, i) => this.PlacedSet(feature, $"{stepPath}[{i}]"))
+                    .ToList();
+
+                result.Add((step.Step, features));
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// A placed feature given as JSON: an identifier, or one defined inline, which is a new feature each time.
         /// </summary>
         public PlacedFeature Placed(JsonElement json, string path) =>
@@ -589,34 +637,24 @@ internal static partial class PluginFeatures
         }
 
         /// <summary>
-        /// Applies a biome modifier. Its features' order isn't checked here: a later modifier may still change it.
+        /// Adds features to the end of the biomes' steps. Their order isn't checked here: a later modifier may
+        /// still change it.
         /// </summary>
-        public void Modify(BiomeModifierData modifier, FeatureResolver resolver)
+        public void Add(List<string> biomes, List<(DecorationStep Step, List<PlacedFeature> Features)> added)
         {
-            var biomes = ResolveBiomes(modifier.Biomes);
-            var features = modifier.Features
-                .SelectMany((feature, i) => resolver.PlacedSet(feature, $"features[{i}]"))
-                .ToList();
-
-            var removed = features.ToHashSet(ReferenceEqualityComparer.Instance);
+            if (added.Count == 0)
+                return;
 
             foreach (var biome in biomes)
             {
-                var steps = this.lists.GetValueOrDefault(biome)?.Select(step => step.ToList()).ToList() ?? [];
+                var steps = this.Steps(biome);
 
-                foreach (var step in modifier.Steps.Select(step => (int)step))
+                foreach (var (step, features) in added)
                 {
-                    if (modifier.Type == BiomeModifierData.AddFeatures)
-                    {
-                        while (steps.Count <= step)
-                            steps.Add([]);
+                    while (steps.Count <= (int)step)
+                        steps.Add([]);
 
-                        steps[step].AddRange(features);
-                    }
-                    else if (step < steps.Count)
-                    {
-                        steps[step].RemoveAll(feature => removed.Contains(feature));
-                    }
+                    steps[(int)step].AddRange(features);
                 }
 
                 this.lists[biome] = steps;
@@ -624,6 +662,36 @@ internal static partial class PluginFeatures
 
             this.changed |= biomes.Count > 0;
         }
+
+        /// <summary>
+        /// Removes features from the biomes' steps.
+        /// </summary>
+        public void Remove(List<string> biomes, List<(DecorationStep Step, List<PlacedFeature> Features)> removed)
+        {
+            if (removed.Count == 0)
+                return;
+
+            foreach (var biome in biomes)
+            {
+                var steps = this.Steps(biome);
+
+                foreach (var (step, features) in removed)
+                {
+                    var set = features.ToHashSet(ReferenceEqualityComparer.Instance);
+
+                    if ((int)step < steps.Count)
+                        steps[(int)step].RemoveAll(set.Contains);
+                }
+
+                this.lists[biome] = steps;
+            }
+
+            this.changed |= biomes.Count > 0;
+        }
+
+        // A copy of the biome's steps to change.
+        private List<List<PlacedFeature>> Steps(string biome) =>
+            this.lists.GetValueOrDefault(biome)?.Select(step => step.ToList()).ToList() ?? [];
 
         /// <summary>
         /// The biomes' features as they are now, to <see cref="Revert"/> to.
@@ -731,16 +799,14 @@ internal static partial class PluginFeatures
         public Dictionary<string, IConfiguredCarver> Plugins => plugins;
 
         /// <summary>
-        /// A holder set of configured carvers: identifiers, or a single <c>#tag</c>.
+        /// A set of configured carvers: identifiers and <c>#tag</c>s.
         /// </summary>
-        /// <exception cref="InvalidDataException">A carver or the tag doesn't exist.</exception>
+        /// <exception cref="InvalidDataException">A carver or tag doesn't exist.</exception>
         public List<IConfiguredCarver> Resolve(ImmutableArray<string> carvers, string path)
         {
-            var identifiers = carvers is [var only] && only.StartsWith('#')
-                ? TagEntries(ConfiguredCarver, only, path)
-                : carvers;
-
-            return [.. identifiers.Select(identifier => this.Find(identifier, path))];
+            return [.. carvers
+                .SelectMany(entry => entry.StartsWith('#') ? TagEntries(ConfiguredCarver, entry, path) : [entry])
+                .Select(identifier => this.Find(identifier, path))];
         }
 
         private IConfiguredCarver Find(string identifier, string path)
@@ -778,23 +844,31 @@ internal static partial class PluginFeatures
         }
 
         /// <summary>
-        /// Applies a carver modifier: like NeoForge, <c>add_carvers</c> appends its carvers to each biome's, and
-        /// <c>remove_carvers</c> removes them.
+        /// Adds carvers to the end of the biomes' carvers.
         /// </summary>
-        public void Modify(BiomeModifierData modifier, CarverResolver resolver)
+        public void Add(List<string> biomes, List<IConfiguredCarver> added)
         {
-            var biomes = ResolveBiomes(modifier.Biomes);
-            var carvers = resolver.Resolve(modifier.Carvers, "carvers");
-            var removed = carvers.ToHashSet(ReferenceEqualityComparer.Instance);
+            if (added.Count == 0)
+                return;
 
             foreach (var biome in biomes)
-            {
-                var current = this.lists.GetValueOrDefault(biome, []);
+                this.lists[biome] = this.lists.GetValueOrDefault(biome, []).AddRange(added);
 
-                this.lists[biome] = modifier.Type == BiomeModifierData.AddCarvers
-                    ? current.AddRange(carvers)
-                    : current.RemoveAll(carver => removed.Contains(carver));
-            }
+            this.changed |= biomes.Count > 0;
+        }
+
+        /// <summary>
+        /// Removes carvers from the biomes' carvers.
+        /// </summary>
+        public void Remove(List<string> biomes, List<IConfiguredCarver> removed)
+        {
+            if (removed.Count == 0)
+                return;
+
+            var set = removed.ToHashSet(ReferenceEqualityComparer.Instance);
+
+            foreach (var biome in biomes)
+                this.lists[biome] = this.lists.GetValueOrDefault(biome, []).RemoveAll(set.Contains);
 
             this.changed |= biomes.Count > 0;
         }

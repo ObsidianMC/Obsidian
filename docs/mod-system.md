@@ -7,6 +7,10 @@ client. This document describes the design and tracks its progress. The archive 
 
 ## Principles
 
+- **Familiar, but Obsidian's own.** Obsidian's systems are close enough to NeoForge's that a NeoForge or Fabric mod's
+  author finds their way, but they're designed for Obsidian rather than copied. What mods share across loaders is
+  followed exactly: the protocol on the wire, vanilla's data formats, and the common namespace conventions, like the
+  shared `c:` tags. NeoForge-only formats, like its biome modifiers, have Obsidian equivalents instead.
 - **One system, both sides.** The public API lives in Obsidian.API and doesn't depend on the server. The server
   implements it; a client (the Obsidian client, or another) implements the client-facing parts, which are interfaces
   only. A plugin's `side` says where it runs.
@@ -188,6 +192,11 @@ client. This document describes the design and tracks its progress. The archive 
      from `worldgen/configured_carver` files. Tags of `worldgen/biome`, `worldgen/placed_feature` and
      `worldgen/configured_carver` from plugins' files work in biome modifiers and biomes; biome tags hold plugins'
      biomes and are sent to clients, vanilla's included (see [plugin-content.md](plugin-content.md#biome-modifiers)).
+   - Phase 3.6 (done): Obsidian's own biome modifiers replace NeoForge's. One `data/<namespace>/biome_modifier`
+     file names its `biomes` (identifiers and tags mixed) and those it `exclude`s, and what it `add`s and
+     `remove`s: features per step, spawners, carvers and spawn costs; every modifier's additions run before any
+     removal. The mob spawner now uses spawn costs, vanilla's soul sand valley's and warped forest's included, and
+     biomes' `creature_spawn_probability` (see [plugin-content.md](plugin-content.md#biome-modifiers)).
    - Next: Phase 4.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource

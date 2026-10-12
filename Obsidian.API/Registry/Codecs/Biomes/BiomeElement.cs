@@ -39,6 +39,12 @@ public sealed record class BiomeElement
     public Dictionary<string, SpawnerMob[]> Spawners { get; set; } = [];
 
     /// <summary>
+    /// The chance of each further group of creatures spawning when a chunk generates, like vanilla's
+    /// <c>creature_spawn_probability</c>.
+    /// </summary>
+    public float CreatureSpawnProbability { get; set; } = 0.1f;
+
+    /// <summary>
     /// The spawn costs by entity type identifier. Empty for vanilla's entries.
     /// </summary>
     public Dictionary<string, SpawnCost> SpawnCosts { get; set; } = [];

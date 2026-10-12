@@ -2,7 +2,7 @@
 
 Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, add entity types,
 worldgen types and level generators in code, and add tags, biomes, dimension types, damage types, worldgen features,
-NeoForge biome modifiers, noise settings and dimensions with data pack files, like NeoForge and Fabric mods.
+biome modifiers, noise settings and dimensions with data pack files, much like NeoForge and Fabric mods.
 Clients need the matching mod for blocks, items and entity types: NeoForge and Fabric clients are sent those
 registries, so their ids agree with the server's. Biomes, dimension types and damage types are sent with their data,
 so vanilla clients can join too.
@@ -88,8 +88,8 @@ they fall and rest where they land. Every kind calls the type's behaviour each t
 client mod's entity should be of the same kind, so that their data matches. Entities are saved with the type's
 identifier; while the plugin is gone, saved ones stay as they were.
 
-A mob's `Category` (a `MobCategory`, `Misc` by default) is its vanilla mob category. Biomes' `spawners` and NeoForge's
-`neoforge:add_spawns` modifiers (see [Biome modifiers](#biome-modifiers)) spawn a plugin's mobs naturally while the
+A mob's `Category` (a `MobCategory`, `Misc` by default) is its vanilla mob category. Biomes' `spawners` and biome
+modifiers adding spawners (see [Biome modifiers](#biome-modifiers)) spawn a plugin's mobs naturally while the
 plugin is loaded, and they count against their category's cap; misc mobs don't spawn naturally, since plugin mobs
 don't despawn. They spawn with the rules of the list they're chosen from: on grass in light as creatures, in water in
 the water categories, and in the dark otherwise.
@@ -220,12 +220,12 @@ The server's own gameplay doesn't apply attributes yet: they change what clients
 
 ## World generation features
 
-Plugins add configured and placed features, and change which features biomes place with NeoForge's biome modifiers:
+Plugins add configured and placed features, and change what biomes place and spawn with biome modifiers:
 
 - `data/<namespace>/worldgen/configured_feature/<path>.json` is the configured feature `<namespace>:<path>`;
 - `data/<namespace>/worldgen/placed_feature/<path>.json` is a placed feature;
 - `data/<namespace>/worldgen/configured_carver/<path>.json` is a configured carver;
-- `data/<namespace>/neoforge/biome_modifier/<path>.json` is a biome modifier.
+- `data/<namespace>/biome_modifier/<path>.json` is a biome modifier.
 
 Features are vanilla 1.21.11's format, read into the same objects as vanilla's features: a configured feature is
 `{"type": ..., "config": {...}}` and a placed feature `{"feature": ..., "placement": [...]}`. Every feature, placement
@@ -276,42 +276,47 @@ with a plugin block, in every overworld biome:
 ```
 
 ```json
-// data/ruby/neoforge/biome_modifier/add_ore_ruby.json
+// data/ruby/biome_modifier/ore_ruby.json
 {
-  "type": "neoforge:add_features",
-  "biomes": "#minecraft:is_overworld",
-  "features": "ruby:ore_ruby",
-  "step": "underground_ores"
+  "biomes": "#c:is_overworld",
+  "add": { "features": { "underground_ores": "ruby:ore_ruby" } }
 }
 ```
 
 ### Biome modifiers
 
-A biome modifier is NeoForge 1.21.11's:
+A biome modifier is Obsidian's own format, close to NeoForge's modifiers but one file for every change to a set of
+biomes. It has:
 
-- `neoforge:add_features` adds `features` to the end of a decoration `step` of each of the `biomes`;
-- `neoforge:remove_features` removes `features` from the `biomes`, in the given `steps` (one or a list) or in all;
-- `neoforge:add_spawns` adds `spawners`, one `{"type", "weight", "minCount", "maxCount"}` or a list of them, to the
-  `biomes`, each at the end of its entity type's category's list, like NeoForge. As in vanilla, weights are at least
-  0 and counts at least 1; a modifier that would make a list's weights add up to more than 2147483647 is logged and
-  left out;
-- `neoforge:remove_spawns` removes the `entity_types`' spawners from every category of the `biomes`;
-- `neoforge:add_carvers` adds `carvers` to the end of the `biomes`' carvers, and `neoforge:remove_carvers` removes
-  them (carvers have no steps any more, so a `steps` field is ignored, as NeoForge ignores it);
-- `neoforge:add_spawn_costs` (`entity_types`, `spawn_cost` with `energy_budget` and `charge`) and
-  `neoforge:remove_spawn_costs` (`entity_types`) are read, but change nothing: Obsidian's spawner doesn't use spawn
-  costs, vanilla's included;
-- `neoforge:none` does nothing.
+- `biomes`, the biomes it changes, and optionally `exclude`, biomes it leaves alone even when in `biomes`;
+- `add`, with any of:
+  - `features`, placed features to add to the end of each decoration step named, like
+    `{ "underground_ores": [...], "vegetal_decoration": "ruby:bush" }`; features added may be defined inline;
+  - `spawners`, one `{"type", "weight", "minCount", "maxCount"}` or a list of them, each added to the end of its
+    entity type's category's list. As in vanilla, weights are at least 0 and counts at least 1; a modifier that would
+    make a list's weights add up to more than 2147483647 is logged and its spawns left out;
+  - `carvers`, configured carvers to add to the end of the biomes' carvers;
+  - `spawn_costs`, `{"<entity type>": {"energy_budget", "charge"}}`, replacing those types' costs in the biomes;
+- `remove`, with any of:
+  - `features`, placed features to remove, from every step, or from the steps named, as in `add`;
+  - `spawners`, entity types whose spawners are removed from every category;
+  - `carvers`, configured carvers to remove;
+  - `spawn_costs`, entity types whose spawn costs are removed.
 
-`biomes`, `features`, `carvers` and `entity_types` are holder sets: an identifier, a list of them, or a tag like
-`#minecraft:is_overworld`, vanilla's or a plugin's. Biomes, placed features and configured carvers may be vanilla's or
-plugins', and features added may be defined inline. Entity types are vanilla's or a loaded plugin's; a vanilla type's
-category is vanilla's for the type (bees are creatures, guardians monsters), and a plugin type's is its `Category`.
-Removing vanilla's swamp bogged or desert parched keeps them removed: they're plain entries of those biomes' lists.
-Steps are vanilla's decoration steps: `raw_generation`, `lakes`, `local_modifications`, `underground_structures`,
-`surface_structures`, `strongholds`, `underground_ores`, `underground_decoration`, `fluid_springs`,
-`vegetal_decoration` and `top_layer_modification`. NeoForge's holder set types (`neoforge:any`, `neoforge:and`, ...)
-aren't supported yet, and leave the file out.
+Fields the format doesn't have are errors. `biomes`, `exclude`, features, carvers and entity types are sets: an
+identifier, a tag like `#c:is_overworld`, or a list mixing both. Biomes, placed features, configured carvers and
+their tags may be vanilla's, Obsidian's shared `c:` ones, or plugins'. Entity types are vanilla's or a loaded
+plugin's; a vanilla type's category is vanilla's for the type (bees are creatures, guardians monsters), and a plugin
+type's is its `Category`. Removing vanilla's swamp bogged or desert parched keeps them removed: they're plain
+entries of those biomes' lists. Steps are vanilla's decoration steps: `raw_generation`, `lakes`,
+`local_modifications`, `underground_structures`, `surface_structures`, `strongholds`, `underground_ores`,
+`underground_decoration`, `fluid_springs`, `vegetal_decoration` and `top_layer_modification`.
+
+A spawn cost, like vanilla's soul sand valley's, spreads a type's mobs out: each mob counting against a cap whose
+biome gives its type a cost has a charge, and a mob of a type with a cost only spawns where the charges around, each
+divided by its distance and the sum times the new mob's charge, stay within the cost's `energy_budget`. A biome's
+`creature_spawn_probability` (0.1 by default, lower in vanilla's snowy and badlands biomes) is the chance of each
+further group of creatures spawning when a chunk generates.
 
 A carver and a modifier adding it to a plugin's tag of biomes, and plains spawning the plugin's mob:
 
@@ -338,16 +343,20 @@ A carver and a modifier adding it to a plugin's tag of biomes, and plains spawni
 ```
 
 ```json
-// data/ruby/neoforge/biome_modifier/add_crystal_caves.json
-{ "type": "neoforge:add_carvers", "biomes": "#ruby:has_crystals", "carvers": "ruby:crystal_caves" }
+// data/ruby/biome_modifier/crystal_caves.json
+{ "biomes": "#ruby:has_crystals", "add": { "carvers": "ruby:crystal_caves" } }
 ```
 
 ```json
-// data/ruby/neoforge/biome_modifier/add_golems.json
+// data/ruby/biome_modifier/golems.json
 {
-  "type": "neoforge:add_spawns",
-  "biomes": "minecraft:plains",
-  "spawners": { "type": "ruby:golem", "weight": 10, "minCount": 1, "maxCount": 2 }
+  "biomes": ["minecraft:plains", "#c:is_savanna"],
+  "exclude": "minecraft:sunflower_plains",
+  "add": {
+    "spawners": { "type": "ruby:golem", "weight": 10, "minCount": 1, "maxCount": 2 },
+    "spawn_costs": { "ruby:golem": { "energy_budget": 0.12, "charge": 1.0 } }
+  },
+  "remove": { "spawners": "minecraft:creeper" }
 }
 ```
 
@@ -365,12 +374,12 @@ The rules:
   unknown types, fields, enum names and blocks, and missing required fields, are errors.
 - Features may refer to each other in any order and across plugins; a feature that refers back to itself is left
   out. Each feature is read once and shared, so a feature given by identifier is the same instance everywhere.
-- A biome's features are vanilla's, or a plugin biome's `features`, with every `add_features` modifier applied and
-  then every `remove_features` one, each in load order, like NeoForge's phases. Its carvers and spawners are its own
-  with the add and remove modifiers applied the same way. Features are ordered across a
+- A biome's features, carvers, spawners and spawn costs are vanilla's, or a plugin biome's own, with every
+  modifier's `add` applied and then every modifier's `remove`, each in load order, so a removal also removes what
+  other plugins added. A modifier whose features or carvers can't be resolved is logged and leaves out both, and one
+  whose spawners or spawn costs can't be applied leaves out both of those. Features are ordered across a
   dimension's biomes like vanilla orders them, which decides their random seeds, so a world generates like vanilla
-  with the same data pack. Like NeoForge, only the lists after every phase count: an add that a later removal
-  resolves is fine. When a dimension's final lists would order features in a cycle (one placed both before and after
+  with the same data pack. Only the lists after both phases count: an add that a later removal resolves is fine. When a dimension's final lists would order features in a cycle (one placed both before and after
   another in its biomes, which vanilla can't generate), the error is logged and that dimension's biomes get their own
   features back, without plugins' biome modifiers. Dimensions share biomes, so this repeats until every dimension's
   features can be ordered; other dimensions keep the modifiers where they can.

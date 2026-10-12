@@ -259,10 +259,8 @@ public sealed class PluginLoading : IDisposable
     // Adds the probe plugin's pillar to every overworld biome.
     internal const string AddPillar = """
         {
-          "type": "neoforge:add_features",
           "biomes": "#minecraft:is_overworld",
-          "features": "probe:pillar",
-          "step": "underground_ores"
+          "add": { "features": { "underground_ores": "probe:pillar" } }
         }
         """;
 

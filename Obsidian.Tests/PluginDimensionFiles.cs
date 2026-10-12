@@ -666,13 +666,11 @@ public sealed class PluginDimensionFiles : IDisposable
     // A modifier adding a feature to a biome's raw_generation step, or removing it from every step.
     private static FeatureFile Modifier(string identifier, string type, string biome, string feature)
     {
-        var step = type == "add" ? "\"step\": \"raw_generation\"," : "";
+        var features = type == "add" ? $$"""{ "raw_generation": "{{feature}}" }""" : $"\"{feature}\"";
         var json = $$"""
             {
-              {{step}}
-              "type": "neoforge:{{type}}_features",
               "biomes": "{{biome}}",
-              "features": "{{feature}}"
+              "{{type}}": { "features": {{features}} }
             }
             """;
 
