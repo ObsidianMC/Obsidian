@@ -568,36 +568,33 @@ public sealed class MainCommandModule : CommandModuleBase
     }
 
     [Command("dimension")]
-    [CommandInfo("Transfers you to another dimension.", "/dimension <overworld|nether|end>")]
+    [CommandInfo("Transfers you to another dimension.", "/dimension <overworld|nether|end|<dimension id>>")]
     [IssuerScope(CommandIssuers.Client)]
     public async Task DimensionAsync(string dimension)
     {
         if (Player is not Player player) return;
+
+        // A dimension's identifier, like a plugin's ruby:crystal_world, or a short name for vanilla's.
         var name = dimension.ToLowerInvariant() switch
         {
             "overworld" => "minecraft:overworld",
             "nether" => "minecraft:the_nether",
             "end" => "minecraft:the_end",
-            _ => null
+            var other => other.Contains(':') ? other : $"minecraft:{other}"
         };
-        if (name == null)
-        {
-            await player.SendMessageAsync(SendCommandUsage("/dimension <overworld|nether|end>"));
-            return;
-        }
-        var world = player.Level is IDimension child ? child.ParentWorld as World : player.Level as World;
-        ILevel? destination = world?.DimensionName == name ? world : world?.dimensions.GetValueOrDefault(name);
-        if (destination == null)
-        {
-            await player.SendMessageAsync("That dimension is not available in this world.");
-            return;
-        }
+
         if (!player.Alive || player.Respawning)
         {
             await player.SendMessageAsync("Respawn before changing dimensions.");
             return;
         }
-        await player.TransferDimensionAsync(destination);
+
+        if (!await player.TeleportToDimensionAsync(name))
+        {
+            await player.SendMessageAsync("That dimension is not available in this world.");
+            return;
+        }
+
         await player.SendMessageAsync($"Transferred to {dimension.ToLowerInvariant()}.");
     }
 

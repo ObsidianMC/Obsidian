@@ -11,7 +11,16 @@ public interface ILevel : IAsyncDisposable
     public string Name { get; }
     public string Seed { get; }
     public string FolderPath { get; }
+    /// <summary>
+    /// The level's name, which clients know it by: its dimension's identifier, like <c>minecraft:the_nether</c>.
+    /// </summary>
     public string DimensionName { get; }
+
+    /// <summary>
+    /// The level's dimension type. Vanilla's dimensions are named after theirs; plugins' dimensions may use any.
+    /// </summary>
+    public DimensionCodec DimensionType { get; }
+
     public string LevelDataFilePath { get; }
 
     public bool Loaded { get; }

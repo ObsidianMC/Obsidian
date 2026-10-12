@@ -108,6 +108,13 @@ public interface IPlayer : ILiving
     public Task RespawnAsync(DataKept dataKept = DataKept.Metadata);
 
     /// <summary>
+    /// Sends the player to the spawn of a dimension of their world, by its name: the world's own (like
+    /// <c>minecraft:overworld</c>), vanilla's other dimensions, or a plugin's, like <c>ruby:crystal_world</c>.
+    /// </summary>
+    /// <returns>Whether the player was sent: not when their world has no such dimension, or they're dead.</returns>
+    public Task<bool> TeleportToDimensionAsync(string dimension);
+
+    /// <summary>
     /// Sends a title message to the player.
     /// </summary>
     /// <param name="title">The title text</param>

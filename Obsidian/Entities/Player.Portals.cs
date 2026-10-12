@@ -190,9 +190,8 @@ public partial class Player
             var entranceBlock = await source.GetBlockAsync(entrance);
             var axis = entranceBlock?.GetProperty("axis") ?? "x";
             var sourceFrame = await LevelPortals.RectangleAsync(source.GetBlockAsync, entrance, axis);
-            CodecRegistry.TryGetDimension(source.DimensionName, out var sourceCodec);
-            CodecRegistry.TryGetDimension(destination.DimensionName, out var destinationCodec);
-            var scale = (sourceCodec?.Element.CoordinateScale ?? 1) / (destinationCodec?.Element.CoordinateScale ?? 1);
+            var scale = source.DimensionType.Element.CoordinateScale
+                / destination.DimensionType.Element.CoordinateScale;
             var target = new Vector((int)Math.Floor(Math.Clamp(this.Position.X * scale,
                 -LevelPortals.WorldBorderLimit + 1, LevelPortals.WorldBorderLimit - 2)),
                 (int)Math.Floor(this.Position.Y), (int)Math.Floor(Math.Clamp(this.Position.Z * scale,

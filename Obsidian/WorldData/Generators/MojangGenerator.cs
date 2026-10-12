@@ -16,12 +16,28 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     // Chunk locks are striped so their number stays bounded; stripes are always taken in ascending order.
     private const int LockStripeCount = 4096;
 
+    /// <summary>
+    /// Vanilla's overworld generator.
+    /// </summary>
+    public MojangGenerator()
+        : this(MojangDimension.Overworld)
+    {
+    }
+
+    /// <summary>
+    /// A generator of <paramref name="dimension"/>, which levels using it must have the build range of.
+    /// </summary>
+    protected internal MojangGenerator(MojangDimension dimension)
+    {
+        this.Dimension = dimension;
+    }
+
     public virtual string Id => "minecraft:mojang_generator";
 
     /// <summary>
     /// The dimension this generator builds; levels using it must have the dimension's build range.
     /// </summary>
-    protected virtual MojangDimension Dimension => MojangDimension.Overworld;
+    protected MojangDimension Dimension { get; }
 
     private ChunkBuilder builder;
 
@@ -139,7 +155,7 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
         foreach (var (dx, dz) in SpawnFinder.SpiralOffsets())
         {
             var chunk = await this.GenerateChunkAsync(spawnChunkX + dx, spawnChunkZ + dz, null, ChunkGenStage.full, decorateInOrder: true);
-            var found = SpawnFinder.FindSpawnInChunk(chunk, hasCeiling: false);
+            var found = SpawnFinder.FindSpawnInChunk(chunk, this.Dimension.DimensionType.Element.HasCeiling);
             if (found is not null)
             {
                 spawn = found.Value;
@@ -424,11 +440,9 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
 /// <summary>
 /// Vanilla's nether generator, used by the <c>minecraft:the_nether</c> dimension.
 /// </summary>
-internal sealed class MojangNetherGenerator : MojangGenerator
+internal sealed class MojangNetherGenerator() : MojangGenerator(MojangDimension.Nether)
 {
     public override string Id => "minecraft:the_nether";
-
-    protected override MojangDimension Dimension => MojangDimension.Nether;
 
     // Vanilla only searches a spawn in the overworld.
     public override ValueTask<VectorD?> FindSpawnPointAsync() => ValueTask.FromResult<VectorD?>(null);
@@ -437,12 +451,23 @@ internal sealed class MojangNetherGenerator : MojangGenerator
 /// <summary>
 /// Vanilla's end generator, used by the <c>minecraft:the_end</c> dimension.
 /// </summary>
-internal sealed class MojangEndGenerator : MojangGenerator
+internal sealed class MojangEndGenerator() : MojangGenerator(MojangDimension.End)
 {
     public override string Id => "minecraft:the_end";
 
-    protected override MojangDimension Dimension => MojangDimension.End;
-
     // Vanilla's ServerLevel.END_SPAWN_POINT, on the obsidian platform.
     public override ValueTask<VectorD?> FindSpawnPointAsync() => ValueTask.FromResult<VectorD?>(new VectorD(100.5, 50, 0.5));
+}
+
+/// <summary>
+/// The generator of a plugin's dimension, built from its level stem file
+/// (see <see cref="Registries.PluginDimensions"/>).
+/// </summary>
+/// <remarks>
+/// Its spawn is searched like the overworld's, with the dimension type's ceiling, so players sent there without a
+/// position land on the ground; vanilla doesn't search spawns outside the overworld.
+/// </remarks>
+internal sealed class LevelStemGenerator(MojangDimension dimension) : MojangGenerator(dimension)
+{
+    public override string Id => this.Dimension.Identifier;
 }

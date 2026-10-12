@@ -403,6 +403,24 @@ public sealed partial class Player : Avatar, IClientPlayer
     public async ValueTask KickAsync(string reason) => await this.Client.DisconnectAsync(reason);
     public async ValueTask KickAsync(ChatMessage reason) => await Client.DisconnectAsync(reason);
 
+    public async Task<bool> TeleportToDimensionAsync(string dimension)
+    {
+        var world = this.Level is IDimension child ? child.ParentWorld as World : this.Level as World;
+        ILevel? destination = world?.DimensionName == dimension
+            ? world
+            : world?.dimensions.GetValueOrDefault(dimension);
+
+        if (destination is null || !this.Alive || this.Respawning)
+            return false;
+
+        if (destination == this.Level)
+            await this.TeleportAsync(destination.LevelData.SpawnPosition);
+        else
+            await this.TransferDimensionAsync(destination);
+
+        return true;
+    }
+
     internal async Task TransferDimensionAsync(ILevel destination)
     {
         CancelEating();
@@ -518,8 +536,7 @@ public sealed partial class Player : Avatar, IClientPlayer
                 Level.TryAddEntity(this);
             }
 
-            CodecRegistry.TryGetDimension(Level.DimensionName, out var codec);
-            Debug.Assert(codec is not null); // TODO Handle missing codec
+            var codec = Level.DimensionType;
 
             Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
 

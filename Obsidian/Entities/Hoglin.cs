@@ -19,7 +19,7 @@ public sealed partial class Hoglin : FarmAnimal
     protected override int GetExperienceReward() => IsBaby ? 0 : 5;
     protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.CrimsonFungus };
     private bool IsConverting => !IsImmuneToZombification &&
-        (CodecRegistry.TryGetDimension(Level.DimensionName, out var dimension) ? !dimension.Element.PiglinSafe : Level.DimensionName != "minecraft:the_nether");
+        !Level.DimensionType.Element.PiglinSafe;
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {

@@ -77,6 +77,11 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     internal ImmutableArray<FeatureFile> FeatureFiles { get; set; } = [];
 
     /// <summary>
+    /// The plugin's level stem files, whose dimensions are added while it's loaded and stay until the server stops.
+    /// </summary>
+    internal ImmutableArray<DimensionFile> DimensionFiles { get; set; } = [];
+
+    /// <summary>
     /// The worldgen types the plugin registered, which feature files can name while it's loaded.
     /// </summary>
     internal List<WorldgenTypeRegistration> WorldgenTypes { get; } = [];

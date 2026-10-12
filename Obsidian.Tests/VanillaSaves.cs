@@ -267,7 +267,7 @@ public sealed class VanillaSaves : IDisposable
         var nether = new Dimension(NullLogger<Dimension>.Instance, null!, new FixedOptions(new ServerConfiguration()),
             null!, new EmptyWorldGenerator(), netherCodec!.Name, world);
         nether.Initialize(netherCodec);
-        world.RegisterDimension(netherCodec, nether);
+        world.RegisterDimension(nether);
         Assert.Equal(Difficulty.Peaceful, nether.LevelData.Difficulty);
 
         world.SetDifficulty(Difficulty.Hard, locked: true);

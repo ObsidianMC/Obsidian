@@ -159,8 +159,7 @@ internal sealed class LevelPortals(AbstractLevel level)
     {
         var step = axis == "x" ? new Vector(1, 0, 0) : new Vector(0, 0, 1);
         var normal = axis == "x" ? new Vector(0, 0, 1) : new Vector(1, 0, 0);
-        CodecRegistry.TryGetDimension(level.DimensionName, out var codec);
-        var top = Math.Min(level.MinY + level.Height - 1, level.MinY + (codec?.Element.LogicalHeight ?? level.Height));
+        var top = Math.Min(level.MinY + level.Height - 1, level.MinY + level.DimensionType.Element.LogicalHeight);
         Vector? best = null, fallback = null;
         var bestDistance = double.MaxValue;
         var fallbackDistance = double.MaxValue;

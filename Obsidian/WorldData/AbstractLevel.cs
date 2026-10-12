@@ -97,7 +97,15 @@ public abstract partial class AbstractLevel : ILevel
     public ServerConfiguration Configuration { get; private set; }
     public GameMode DefaultGamemode => LevelData.DefaultGamemode;
 
+    /// <summary>
+    /// The level's name, which clients know it by: its dimension's identifier, like <c>minecraft:the_nether</c>.
+    /// </summary>
     public string DimensionName { get; protected set; } = string.Empty;
+
+    /// <summary>
+    /// The level's dimension type. Vanilla's dimensions are named after theirs; plugins' dimensions may use any.
+    /// </summary>
+    public DimensionCodec DimensionType { get; private set; } = default!;
 
     /// <summary>
     /// The dimension's lowest block Y.
@@ -982,11 +990,12 @@ public abstract partial class AbstractLevel : ILevel
     public abstract void Initialize(DimensionCodec codec);
 
     /// <summary>
-    /// Takes the dimension's name and build range from its codec.
+    /// Sets the level's dimension name, and takes its build range from its dimension type.
     /// </summary>
-    protected void SetDimension(DimensionCodec codec)
+    protected void SetDimension(string dimensionName, DimensionCodec codec)
     {
-        this.DimensionName = codec.Name;
+        this.DimensionName = dimensionName;
+        this.DimensionType = codec;
         this.MinY = codec.Element.MinY;
         this.Height = codec.Element.Height;
         this.Fluids.Rules = FluidRules.ForDimension(codec.Name, codec.Element.Ultrawarm);

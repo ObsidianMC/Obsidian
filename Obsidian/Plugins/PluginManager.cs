@@ -415,7 +415,13 @@ public sealed partial class PluginManager : IAsyncDisposable
             container.CodecFiles = this.ReadCodecFiles(archive, container.FeatureFiles);
             this.ApplyTags();
             this.ApplyCodecs();
+
+            // Level stems name biomes and dimension types, the plugin's own included, so they're read once those are
+            // registered, and their dimensions take part in ordering the features.
+            container.DimensionFiles = this.ReadDimensionFiles(archive);
+            this.ApplyDimensions();
             this.ApplyFeatures();
+            await this.AddDimensionLevelsAsync();
             container.Loaded = true;
 
             await container.Plugin.OnLoadedAsync(this.server);
@@ -629,6 +635,28 @@ public sealed partial class PluginManager : IAsyncDisposable
         return files.ToImmutable();
     }
 
+    // A plugin's level stem files. A file that can't be read, or would override one of vanilla's dimensions, is left
+    // out; the plugin loads without it.
+    private ImmutableArray<DimensionFile> ReadDimensionFiles(PluginArchive archive)
+    {
+        var files = ImmutableArray.CreateBuilder<DimensionFile>();
+
+        foreach (var (path, identifier) in PluginDimensions.FindFiles(archive.Paths))
+        {
+            try
+            {
+                var data = archive.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
+                files.Add(PluginDimensions.Parse(identifier, $"{archive.Info.Id}/{path}", data));
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.CodecFileFailed(this.logger, ex, path, archive.Source);
+            }
+        }
+
+        return files.ToImmutable();
+    }
+
     // A plugin's configured feature, placed feature and biome modifier files. A file that can't be read is left out;
     // the plugin loads without it.
     private ImmutableArray<FeatureFile> ReadFeatureFiles(PluginArchive archive)
@@ -699,6 +727,18 @@ public sealed partial class PluginManager : IAsyncDisposable
     // The loaded plugins' entries are in their registries, in load order. Ones no plugin has any more stay.
     private void ApplyCodecs() =>
         PluginCodecs.Apply(this.plugins.SelectMany(plugin => plugin.CodecFiles), this.logger);
+
+    // The loaded plugins' dimensions are added. Ones no plugin has any more stay, with their levels.
+    private void ApplyDimensions() =>
+        PluginDimensions.Apply(this.plugins.SelectMany(plugin => plugin.DimensionFiles), this.logger);
+
+    // Once the worlds are loaded, a plugin's new dimensions get their levels as it loads; before, the worlds create
+    // them as they load.
+    private async Task AddDimensionLevelsAsync()
+    {
+        if (this.server.WorldManager is WorldData.WorldManager { ReadyToJoin: true } worldManager)
+            await worldManager.AddPluginDimensionsAsync();
+    }
 
     // World generation places the loaded plugins' features, with their biome modifiers applied. Every level's
     // generator moves to them now, so none keeps the previous features (and the plugins they came from).

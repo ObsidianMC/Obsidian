@@ -21,9 +21,10 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
     {
         this.FolderPath = this.UsesVanillaLayout
             ? Path.Combine(this.ParentWorld.FolderPath, VanillaFolder(this.Name))
-            : Path.Combine(ServerConstants.WorldsPath, ParentWorld.Name, "dimensions", this.Name.TrimResourceTag(true));
+            : Path.Combine(ServerConstants.WorldsPath, ParentWorld.Name, ObsidianFolder(this.Name));
 
-        this.SetDimension(codec);
+        // A dimension is named after its level stem, which plugins' dimensions don't share with their type.
+        this.SetDimension(this.Name, codec);
 
         this.LevelData = new LevelData
         {
@@ -60,6 +61,20 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
         var parts = id.Split(':', 2);
 
         return Path.Combine("dimensions", parts[0], parts[1]);
+    }
+
+    /// <summary>
+    /// A dimension's folder in Obsidian's layout: <c>dimensions/&lt;path&gt;</c> for vanilla's, and
+    /// <c>dimensions/&lt;namespace&gt;/&lt;path&gt;</c> for plugins', as vanilla stores data packs' dimensions.
+    /// </summary>
+    private static string ObsidianFolder(string dimension)
+    {
+        var id = dimension.Contains(':') ? dimension : $"minecraft:{dimension}";
+        var parts = id.Split(':', 2);
+
+        return parts[0] == "minecraft"
+            ? Path.Combine("dimensions", parts[1])
+            : Path.Combine("dimensions", parts[0], parts[1]);
     }
 
     public override async Task<bool> LoadAsync(DimensionCodec codec)

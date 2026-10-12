@@ -254,7 +254,7 @@ public class PluginFeatureFiles
         Assert.False(HasDiamondBlocks(chunks.Get(8, 8)));
     }
 
-    private sealed class ListLogger : ILogger
+    internal sealed class ListLogger : ILogger
     {
         public List<string> Messages { get; } = [];
 
@@ -272,7 +272,7 @@ public class PluginFeatureFiles
     private static string ProbeData(string path) =>
         File.ReadAllText(Path.Join(AppContext.BaseDirectory, "data", "probe", "worldgen", path));
 
-    private static bool HasDiamondBlocks(IChunk chunk) =>
+    internal static bool HasDiamondBlocks(IChunk chunk) =>
         Enumerable.Range(0, 16 * 16 * 128).Any(i => chunk.GetBlock(i & 15, (i >> 8) - 64, (i >> 4) & 15)
             .Is(BlockIds.DiamondBlock));
 }

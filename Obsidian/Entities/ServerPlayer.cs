@@ -188,6 +188,9 @@ public sealed partial class ServerPlayer : Avatar, IPlayer
 
     public Task<bool> UpdateChunksAsync(bool unloadAll = false, int distance = 0) => Task.FromResult(true);
 
+    // Without a connection there's no client to move to another level.
+    public Task<bool> TeleportToDimensionAsync(string dimension) => Task.FromResult(false);
+
     public Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
     {
         this.Health = 20f;

@@ -30,7 +30,7 @@ internal static class MapRenderer
         var centerZ = data.CenterZ;
         var playerX = (int)Math.Floor(player.Position.X - centerX) / scale + 64;
         var playerZ = (int)Math.Floor(player.Position.Z - centerZ) / scale + 64;
-        var hasCeiling = CodecRegistry.TryGetDimension(level.DimensionName, out var codec) && codec!.Element.HasCeiling;
+        var hasCeiling = level.DimensionType.Element.HasCeiling;
         var radius = MapData.Size / scale;
         if (hasCeiling)
             radius /= 2;

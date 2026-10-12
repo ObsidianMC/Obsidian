@@ -105,7 +105,7 @@ public sealed partial class Piglin : PathfinderMob
     protected override async ValueTask TickMobAsync()
     {
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
-        var safe = CodecRegistry.TryGetDimension(Level.DimensionName, out var dimension) ? dimension.Element.PiglinSafe : Level.DimensionName == "minecraft:the_nether";
+        var safe = Level.DimensionType.Element.PiglinSafe;
         if (safe || IsImmuneToZombification) TimeInOverworld = 0;
         else if (++TimeInOverworld > 300)
         {

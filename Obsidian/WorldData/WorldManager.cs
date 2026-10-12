@@ -5,6 +5,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.Hosting;
+using Obsidian.Registries;
+using Obsidian.WorldData.Generators;
+using Obsidian.WorldData.Generators.Mojang;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -25,6 +28,9 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     private readonly IServerEnvironment serverEnvironment = serverEnvironment;
     private readonly ILevelFactory levelFactory = levelFactory;
     private readonly IServiceScope serviceScope = serviceProvider.CreateScope();
+
+    // Plugins' dimensions are added one plugin at a time, so none is created twice.
+    private readonly SemaphoreSlim pluginDimensionLock = new(1, 1);
 
     // The lock on the single world's folder (see LoadSingleWorldAsync), held until the worlds are disposed.
     private SessionLock? sessionLock;
@@ -99,6 +105,8 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
         //No default world was defined so choose the first one to come up
         this.DefaultWorld ??= this.worlds.FirstOrDefault().Value;
+
+        await this.AddPluginDimensionsAsync(cancellationToken);
         if (this.worlds.Values.Any(world => world is AbstractLevel { Generator: Generators.MobTestGenerator }))
         {
             var commands = this.serviceScope.ServiceProvider.GetRequiredService<Obsidian.Commands.Framework.CommandHandler>();
@@ -155,7 +163,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
             var dimension = this.levelFactory.CreateDimension(world, codec.Name, dimensionName);
 
             dimension.Initialize(codec);
-            world.RegisterDimension(codec, dimension);
+            world.RegisterDimension(dimension);
 
             // A loaded world's dimensions are already generated: they read their own level data, if they saved any, and
             // their chunks load as they're needed.
@@ -237,6 +245,64 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         await this.LoadWorldAsync(world, serverWorld,
             createLevel: newWorld => newWorld.CreateVanillaLevel(VanillaLevelData.Create(settings, name, seed, generatorId)),
             cancellationToken);
+    }
+
+    /// <summary>
+    /// Creates the levels of plugins' dimensions (see <see cref="PluginDimensions"/>) the default world doesn't have
+    /// yet, loading the saved ones and generating the others. Their levels stay until the server stops.
+    /// </summary>
+    /// <remarks>
+    /// Only the default world has plugins' dimensions, like vanilla's single world has a data pack's. A level saved by
+    /// a plugin that isn't loaded any more isn't loaded, and its folder is left alone.
+    /// </remarks>
+    internal async Task AddPluginDimensionsAsync(CancellationToken cancellationToken = default)
+    {
+        if (this.DefaultWorld is not World world)
+            return;
+
+        await this.pluginDimensionLock.WaitAsync(cancellationToken);
+        try
+        {
+            foreach (var stem in PluginDimensions.Added)
+            {
+                if (world.dimensions.ContainsKey(stem.Identifier))
+                    continue;
+
+                await this.AddPluginDimensionAsync(world, stem, cancellationToken);
+            }
+        }
+        finally
+        {
+            this.pluginDimensionLock.Release();
+        }
+    }
+
+    private async Task AddPluginDimensionAsync(World world, MojangDimension stem, CancellationToken cancellationToken)
+    {
+        var factory = (LevelFactory)this.levelFactory;
+        IDimension dimension;
+
+        try
+        {
+            // Building the generator orders the features of the dimension's biomes, which fails when they can't be
+            // ordered, as vanilla's would.
+            dimension = factory.CreateDimension(world, stem.Identifier, new LevelStemGenerator(stem));
+        }
+        catch (InvalidOperationException ex)
+        {
+            Log.PluginDimensionFailed(this.logger, ex, stem.Identifier);
+            return;
+        }
+
+        dimension.Initialize(stem.DimensionType);
+        world.RegisterDimension(dimension);
+
+        if (!await dimension.LoadAsync(stem.DimensionType))
+        {
+            Log.CreatingDimension(this.logger, stem.Identifier, world.Name);
+            await dimension.GenerateAsync(cancellationToken);
+            await dimension.SaveAsync();
+        }
     }
 
     public IReadOnlyCollection<IWorld> GetAvailableWorlds() => this.worlds.Values.ToList().AsReadOnly();
@@ -322,5 +388,12 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
         [LoggerMessage(Level = LogLevel.Warning, Message = "Skipping unknown dimension {DimensionName} in world {WorldName}")]
         public static partial void UnknownDimension(ILogger logger, string dimensionName, string worldName);
+
+        [LoggerMessage(Level = LogLevel.Information,
+            Message = "Creating dimension {DimensionName} in world {WorldName}")]
+        public static partial void CreatingDimension(ILogger logger, string dimensionName, string worldName);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Can't generate dimension {DimensionName}; it's left out")]
+        public static partial void PluginDimensionFailed(ILogger logger, Exception exception, string dimensionName);
     }
 }

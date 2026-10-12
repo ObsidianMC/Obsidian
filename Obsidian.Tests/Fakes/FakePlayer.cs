@@ -171,6 +171,8 @@ public sealed class FakePlayer : IPlayer
     public ValueTask RemoveAsync() => throw new NotImplementedException();
     public void RemovePotionEffect(int effectId) => throw new NotImplementedException();
     public Task RespawnAsync(DataKept dataKept = DataKept.Metadata) => throw new NotImplementedException();
+
+    public Task<bool> TeleportToDimensionAsync(string dimension) => throw new NotImplementedException();
     public Task<bool> RevokePermissionAsync(string permission) => throw new NotImplementedException();
     public Task SaveAsync() => throw new NotImplementedException();
     public ValueTask SendActionBarAsync(string text) => throw new NotImplementedException();

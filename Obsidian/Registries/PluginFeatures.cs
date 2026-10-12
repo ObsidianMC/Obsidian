@@ -151,11 +151,15 @@ internal static partial class PluginFeatures
     /// Reads plugins' files into a feature set, without making it the current one. Files that can't be read are
     /// logged and left out, with the features and modifiers that need them.
     /// </summary>
+    /// <param name="dimensions">
+    /// The dimensions whose biomes' features must be ordered together; <see cref="PluginDimensions.All"/> by default.
+    /// </param>
     public static WorldgenFeatureSet Build(
         IEnumerable<FeatureFile> files,
         IEnumerable<CodecFile> biomes,
         IEnumerable<WorldgenTypeRegistration> types,
-        ILogger logger)
+        ILogger logger,
+        IEnumerable<MojangDimension>? dimensions = null)
     {
         // The first plugin in load order defining an entry wins.
         var kept = new List<FeatureFile>();
@@ -226,10 +230,11 @@ internal static partial class PluginFeatures
         // Vanilla's generator stops when it can't order the features of its biome source's possible biomes, which
         // happens when one is placed both before and after another in different biomes. NeoForge builds biomes once
         // every phase ran, so only the final lists count. A dimension whose lists can't be ordered is generated
-        // without the modifiers instead: its biomes are vanilla's, whose features vanilla orders.
+        // without the modifiers instead. Vanilla orders its biomes' own features; a plugin's dimension whose biomes'
+        // own features can't be ordered can't be generated (see WorldManager.AddPluginDimensionsAsync).
         if (modifiers.Count > 0)
         {
-            foreach (var dimension in MojangDimension.All)
+            foreach (var dimension in dimensions ?? PluginDimensions.All)
             {
                 if (!biomeFeatures.HasCycle(dimension))
                     continue;

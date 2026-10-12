@@ -52,6 +52,22 @@ internal sealed class MultiNoiseBiomeSource : IClimateBiomeSource
     public static MultiNoiseBiomeSource Nether(RandomState randomState) =>
         new(randomState, netherParameters.Value.Tree, netherParameters.Value.Biomes);
 
+    /// <summary>
+    /// Creates sources for a parameter list given inline, like a level stem's <c>biomes</c>, sharing one search tree.
+    /// </summary>
+    /// <param name="values">The list's entries in their order, which decides ties; mustn't be empty.</param>
+    /// <param name="possibleBiomes">The biomes in the order they first appear in the list.</param>
+    public static Func<RandomState, IClimateBiomeSource> FromList(
+        IReadOnlyList<(ParameterPoint Point, BiomeCodec Biome)> values,
+        out IReadOnlyList<BiomeCodec> possibleBiomes)
+    {
+        var biomes = values.Select(value => value.Biome).DistinctBy(biome => biome.Name).ToArray();
+        var tree = new Lazy<BiomeParameterTree<BiomeCodec>>(() => new BiomeParameterTree<BiomeCodec>(values));
+
+        possibleBiomes = biomes;
+        return randomState => new MultiNoiseBiomeSource(randomState, tree.Value, biomes);
+    }
+
     public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ) =>
         this.GetNoiseBiome(this.randomState.ClimateSampler, quartX, quartY, quartZ);
 

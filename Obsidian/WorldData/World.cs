@@ -303,17 +303,17 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         }
     }
 
-    public void RegisterDimension(DimensionCodec codec, IDimension dimension)
+    public void RegisterDimension(IDimension dimension)
     {
-        if (!dimensions.TryAdd(codec.Name, dimension))
-            throw new ArgumentException($"World already contains dimension with name: {codec.Name}");
+        if (!dimensions.TryAdd(dimension.DimensionName, dimension))
+            throw new ArgumentException($"World already contains dimension with name: {dimension.DimensionName}");
     }
 
     public override void Initialize(DimensionCodec codec)
     {
         this.FolderPath = this.vanillaFolder ?? Path.Combine(ServerConstants.WorldsPath, Name);
 
-        this.SetDimension(codec);
+        this.SetDimension(codec.Name, codec);
 
         this.LevelData = new LevelData
         {
