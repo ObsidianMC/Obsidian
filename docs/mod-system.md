@@ -240,8 +240,8 @@ client. This document describes the design and tracks its progress. The archive 
      their tints wait for slice 4c's tint sources. Biomes the client's registry lacks, like a server's plugin biomes,
      are tinted from the data the server sends for them (grass, foliage, dry foliage and water colours, the grass
      colour modifier, and temperature and downfall for the colormaps); vanilla's biomes keep the registry's colours
-     (see [plugin-archives.md](plugin-archives.md#assets)). The client's mods load before its assets, so their blocks are
-     baked from the start.
+     (see [plugin-archives.md](plugin-archives.md#assets)). The client's mods load before its assets, so their
+     blocks are baked from the start.
    - Slice 4c, the client API: `Obsidian.API.Client` interfaces a mod's plugin implements (`IClientPlugin` with
      `ConfigureClient(IClientRegistry)`) to register entity renderers (model layers and textures), particle
      providers, key bindings, block and item tint sources, and screens for its menu types; only the Obsidian client
