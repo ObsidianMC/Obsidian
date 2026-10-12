@@ -16,5 +16,6 @@ public sealed class TagMatchTest : IStateRuleTest
 
     public bool Test(IBlock block, IRandomSource random) => this.Blocks.Contains(block);
 
-    public bool Test(int stateId, IRandomSource random) => this.Blocks.ContainsState(stateId);
+    public bool Test(int stateId, IRandomSource random) =>
+        this.Blocks.ContainsRegistryId(BlocksRegistry.RegistryIdOf(stateId));
 }

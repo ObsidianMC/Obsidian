@@ -1,10 +1,14 @@
-namespace Obsidian.WorldData.Features;
+using Obsidian.API.Registries;
+using Obsidian.API.World.Generator;
+
+namespace Obsidian.API.World.Features;
 
 /// <summary>
 /// A set of blocks written as block ids and block tags (<c>#minecraft:logs</c>), like vanilla's HolderSet&lt;Block&gt;.
 /// </summary>
 /// <remarks>
-/// Feature data writes these as a single string or a list; the source generator emits <c>new BlockSet(...)</c>.
+/// Feature data writes these as a single string or a list; the source generator emits <c>new BlockSet(...)</c>, and
+/// plugins' feature types can have properties of this type too. Tags are resolved the first time the set is used.
 /// </remarks>
 public sealed class BlockSet
 {
@@ -21,11 +25,6 @@ public sealed class BlockSet
     /// Whether the block's type (any state) is in the set.
     /// </summary>
     public bool Contains(IBlock block) => this.ContainsRegistryId(block.RegistryId);
-
-    /// <summary>
-    /// Whether the block of a state (any of its states) is in the set.
-    /// </summary>
-    public bool ContainsState(int stateId) => this.ContainsRegistryId(BlocksRegistry.RegistryIdOf(stateId));
 
     /// <summary>
     /// Whether the block with the registry id (any of its states) is in the set.
@@ -51,7 +50,7 @@ public sealed class BlockSet
             }
             else
             {
-                ids.Add(BlocksRegistry.Get(entry).RegistryId);
+                ids.Add(new SimpleBlockState { Name = entry }.ToBlock().RegistryId);
             }
         }
 
