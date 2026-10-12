@@ -211,9 +211,6 @@ public class PluginFeatureFiles
     [Fact(DisplayName = "A plugin's ore added to vanilla biomes by a biome modifier generates, and goes with it")]
     public void AddsFeaturesWithBiomeModifiers()
     {
-        // Plugins can't replace vanilla's features.
-        Assert.Throws<InvalidDataException>(() => Parse(PluginFeatures.PlacedFeature, "minecraft:ore_iron", PlacedOre));
-
         FeatureFile[] files =
         [
             Parse(PluginFeatures.ConfiguredFeature, "featurefiles:ore_marker", Ore),

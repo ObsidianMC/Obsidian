@@ -344,6 +344,7 @@ public sealed partial class Server : IServer
         Directory.CreateDirectory(ServerConstants.PermissionPath);
         Directory.CreateDirectory(ServerConstants.PersistentDataPath);
         Directory.CreateDirectory(ServerConstants.PluginsPath);
+        Directory.CreateDirectory(ServerConstants.DataPacksPath);
 
         StartTime = DateTimeOffset.Now;
         this.Connections = new ConcurrentDictionary<int, IClient>(-1, this.MaxConnections);

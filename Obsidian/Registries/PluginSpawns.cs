@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API.Entities;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Entities;
@@ -54,10 +55,10 @@ internal static partial class PluginSpawns
         var probabilities = new Dictionary<string, float>(vanilla.CreatureProbabilities);
         var changed = false;
 
-        // The first plugin in load order defining a biome or modifier wins, as with features.
-        var pluginBiomes = biomes
-            .Where(file => file.Registry == PluginCodecs.Biome)
-            .DistinctBy(file => file.Identifier);
+        // The last file in order defining a biome or modifier wins, as with features; a file for one of vanilla's
+        // biomes replaces its spawners and spawn costs. PluginCodecs and PluginFeatures log the files replaced.
+        var pluginBiomes = PluginCodecs.Winners(biomes, NullLogger.Instance)
+            .Where(file => file.Registry == PluginCodecs.Biome);
 
         foreach (var biome in pluginBiomes)
         {
@@ -69,9 +70,12 @@ internal static partial class PluginSpawns
             changed = true;
         }
 
-        var modifiers = files
-            .Where(file => file.Registry == PluginFeatures.BiomeModifier)
-            .DistinctBy(file => file.Identifier)
+        var modifiers = VanillaOverrides
+            .LastWins(
+                files.Where(file => file.Registry == PluginFeatures.BiomeModifier),
+                file => (file.Registry, file.Identifier),
+                file => file.Source,
+                NullLogger.Instance)
             .Where(file => file.Modifier is not null)
             .ToList();
 

@@ -13,17 +13,19 @@ using System.Threading;
 namespace Obsidian.Registries;
 
 /// <summary>
-/// Plugins' noise settings, density functions and noises, from their data files like a data pack's:
-/// <c>data/&lt;namespace&gt;/worldgen/noise_settings/&lt;path&gt;.json</c>, <c>worldgen/density_function/...</c>
-/// and <c>worldgen/noise/...</c> are the entries <c>&lt;namespace&gt;:&lt;path&gt;</c>, read with
-/// <see cref="WorldgenReader"/> into the same objects the source generator makes of vanilla's.
+/// Plugins' and data packs' noise settings, density functions, noises and multi-noise parameter lists, from their data
+/// files: <c>data/&lt;namespace&gt;/worldgen/noise_settings/&lt;path&gt;.json</c>,
+/// <c>worldgen/density_function/...</c>, <c>worldgen/noise/...</c> and
+/// <c>worldgen/multi_noise_biome_source_parameter_list/...</c> are the entries <c>&lt;namespace&gt;:&lt;path&gt;</c>,
+/// read with <see cref="WorldgenReader"/> into the same objects the source generator makes of vanilla's.
 /// </summary>
 /// <remarks>
-/// Entries refer to vanilla's or plugins' entries by identifier, in any order; each is read once and shared, and one
-/// that refers back to itself is left out. Vanilla's entries can't be overridden, and when plugins define the same
-/// entry, the first in load order wins. Each <see cref="Apply"/> reads the loaded plugins' files into a new
-/// <see cref="WorldgenNoise"/>. A dimension keeps the noise settings it was read with (see
-/// <see cref="PluginDimensions"/>), so changes apply to dimensions added later, or after a restart.
+/// Entries refer to vanilla's or files' entries by identifier, in any order; each is read once and shared, and one
+/// that refers back to itself is left out. A file for one of vanilla's entries overrides it, and the vanilla entries
+/// naming it are read again from vanilla's files (see <see cref="VanillaOverrides"/>); when files define the same
+/// entry, the last in order wins. Each <see cref="Apply"/> reads the files into a new <see cref="WorldgenNoise"/>. A
+/// dimension keeps the noise settings it was read with (see <see cref="PluginDimensions"/>), so changes apply to
+/// dimensions added later, or after a restart.
 /// </remarks>
 internal static partial class PluginNoise
 {
@@ -33,10 +35,13 @@ internal static partial class PluginNoise
 
     public const string Noise = "worldgen/noise";
 
+    public const string ParameterList = "worldgen/multi_noise_biome_source_parameter_list";
+
     /// <summary>
-    /// The folders of plugins' noise settings, density function and noise files.
+    /// The folders of noise settings, density function, noise and parameter list files.
     /// </summary>
-    public static FrozenSet<string> Registries { get; } = FrozenSet.Create(NoiseSettings, DensityFunction, Noise);
+    public static FrozenSet<string> Registries { get; } =
+        FrozenSet.Create(NoiseSettings, DensityFunction, Noise, ParameterList);
 
     private static readonly Lock applying = new();
 
@@ -68,9 +73,7 @@ internal static partial class PluginNoise
     /// <param name="registry">One of <see cref="Registries"/>.</param>
     /// <param name="identifier">The entry's identifier, like <c>ruby:crystal</c>.</param>
     /// <param name="source">Where the file comes from, for messages.</param>
-    /// <exception cref="InvalidDataException">
-    /// The file isn't valid, or it's for an entry in the <c>minecraft</c> namespace, which plugins can't override.
-    /// </exception>
+    /// <exception cref="InvalidDataException">The file isn't valid.</exception>
     public static NoiseFile Parse(string registry, string identifier, string source, ReadOnlySpan<byte> json)
     {
         if (!Registries.Contains(registry))
@@ -79,16 +82,13 @@ internal static partial class PluginNoise
         if (!PluginTags.IsFileIdentifier(identifier))
             throw new InvalidDataException($"{source}: {identifier} isn't a valid identifier.");
 
-        if (identifier.StartsWith("minecraft:", StringComparison.Ordinal))
-            throw new InvalidDataException($"{source} would override vanilla's {identifier}, which plugins can't.");
-
         return Create(registry, identifier, source, json);
     }
 
     /// <summary>
     /// Makes the entries of the loaded plugins' files the <see cref="Current"/> ones.
     /// </summary>
-    /// <param name="files">The loaded plugins' files, in load order.</param>
+    /// <param name="files">The loaded plugins' files in load order, then data packs' files in theirs.</param>
     /// <param name="types">The worldgen types the loaded plugins registered, which files can name.</param>
     public static void Apply(
         IEnumerable<NoiseFile> files,
@@ -111,21 +111,14 @@ internal static partial class PluginNoise
         ILogger logger,
         bool builtIn = true)
     {
-        // The first plugin in load order defining an entry wins.
-        var kept = new List<NoiseFile>();
-        var byEntry = new Dictionary<(string Registry, string Identifier), NoiseFile>();
+        var kept = VanillaOverrides.LastWins(
+            files,
+            file => (file.Registry, file.Identifier),
+            file => file.Source,
+            logger);
 
-        foreach (var file in files)
-        {
-            if (byEntry.TryGetValue((file.Registry, file.Identifier), out var first))
-            {
-                Log.Duplicate(logger, file.Identifier, file.Source, first.Source);
-                continue;
-            }
-
-            byEntry.Add((file.Registry, file.Identifier), file);
-            kept.Add(file);
-        }
+        if (builtIn)
+            kept.AddRange(VanillaDependents(kept));
 
         var resolver = new NoiseResolver(kept, WorldgenTypes.With(types), builtIn);
 
@@ -142,6 +135,27 @@ internal static partial class PluginNoise
         }
 
         return resolver.Result();
+    }
+
+    // Vanilla's entries naming an overridden one, read again from vanilla's files so that they use the override.
+    private static IEnumerable<NoiseFile> VanillaDependents(List<NoiseFile> files)
+    {
+        // Parameter lists are only named by level stems.
+        var overridden = files
+            .Where(file => file.Registry != ParameterList)
+            .Select(file => (file.Registry, file.Identifier))
+            .ToHashSet();
+
+        if (!overridden.Any(entry => entry.Identifier.StartsWith("minecraft:", StringComparison.Ordinal)))
+            return [];
+
+        return VanillaOverrides.Dependents([NoiseSettings, DensityFunction, Noise], overridden)
+            .Select(entry => new NoiseFile(
+                entry.Registry,
+                entry.Identifier,
+                $"vanilla's {entry.Identifier}",
+                entry.Json,
+                entry.Json.GetRawText()));
     }
 
     /// <summary>
@@ -179,6 +193,7 @@ internal static partial class PluginNoise
         private readonly Dictionary<string, NoiseSetting> settings = [];
         private readonly Dictionary<string, IDensityFunction> functions = [];
         private readonly Dictionary<string, BaseNoise> noises = [];
+        private readonly Dictionary<string, ParameterListPreset> parameterLists = [];
         private readonly WorldgenTypes types;
         private readonly bool builtIn;
         private readonly WorldgenReader reader;
@@ -206,6 +221,7 @@ internal static partial class PluginNoise
             {
                 NoiseSettings => (object)this.Settings(file.Identifier),
                 DensityFunction => this.Function(file.Identifier),
+                ParameterList => this.ParameterListOf(file.Identifier),
                 _ => this.NoiseOf(file.Identifier)
             };
         }
@@ -216,11 +232,28 @@ internal static partial class PluginNoise
             this.noises.ToFrozenDictionary(),
             this.dependencies.Of.ToFrozenDictionary(ReferenceEqualityComparer.Instance),
             this.types,
-            this.builtIn);
+            this.builtIn)
+        {
+            ParameterLists = this.parameterLists.ToFrozenDictionary()
+        };
+
+        // Vanilla's compiled entry, unless a file overrides it or it was read again because it names an override.
+        private bool TryVanilla<T>(
+            IReadOnlyDictionary<string, T> vanilla,
+            string registry,
+            string identifier,
+            [NotNullWhen(true)] out T? entry)
+        {
+            entry = default;
+
+            return this.builtIn
+                && !this.files.ContainsKey((registry, identifier))
+                && vanilla.TryGetValue(identifier, out entry);
+        }
 
         private NoiseSetting Settings(string identifier)
         {
-            if (this.builtIn && NoiseRegistry.NoiseSettings.All.TryGetValue(identifier, out var vanilla))
+            if (this.TryVanilla(NoiseRegistry.NoiseSettings.All, NoiseSettings, identifier, out var vanilla))
                 return vanilla;
 
             return this.Entry(
@@ -233,7 +266,7 @@ internal static partial class PluginNoise
 
         private IDensityFunction Function(string identifier)
         {
-            if (this.builtIn && NoiseRegistry.DensityFunctions.All.TryGetValue(identifier, out var vanilla))
+            if (this.TryVanilla(NoiseRegistry.DensityFunctions.All, DensityFunction, identifier, out var vanilla))
                 return vanilla;
 
             return this.Entry(
@@ -246,7 +279,7 @@ internal static partial class PluginNoise
 
         private BaseNoise NoiseOf(string identifier)
         {
-            if (this.builtIn && NoiseRegistry.Noises.All.TryGetValue(identifier, out var vanilla))
+            if (this.TryVanilla(NoiseRegistry.Noises.All, Noise, identifier, out var vanilla))
                 return vanilla;
 
             return this.Entry(
@@ -255,6 +288,19 @@ internal static partial class PluginNoise
                 this.noises,
                 file => WorldgenReader.ReadNoise(file.Json, file.Identifier),
                 "a noise");
+        }
+
+        private ParameterListPreset ParameterListOf(string identifier)
+        {
+            if (this.TryVanilla(ParameterListPreset.Vanilla, ParameterList, identifier, out var vanilla))
+                return vanilla;
+
+            return this.Entry(
+                ParameterList,
+                identifier,
+                this.parameterLists,
+                file => ParameterListPreset.Read(file.Json),
+                "a parameter list");
         }
 
         private T Entry<T>(
@@ -320,17 +366,13 @@ internal static partial class PluginNoise
 
     private static partial class Log
     {
-        [LoggerMessage(Level = LogLevel.Warning,
-            Message = "Left out {Identifier} from {Source}: {First} defined it first")]
-        public static partial void Duplicate(ILogger logger, string identifier, string source, string first);
-
         [LoggerMessage(Level = LogLevel.Warning, Message = "Left out {Source}: {Message}")]
         public static partial void Invalid(ILogger logger, string source, string message);
     }
 }
 
 /// <summary>
-/// A plugin's noise settings, density function or noise file.
+/// A plugin's or data pack's noise settings, density function, noise or parameter list file.
 /// </summary>
 /// <param name="Registry">One of <see cref="PluginNoise.Registries"/>.</param>
 /// <param name="Identifier">The entry's identifier, like <c>ruby:crystal</c>.</param>
@@ -391,6 +433,12 @@ internal sealed class WorldgenNoise
     public FrozenDictionary<string, BaseNoise> Noises { get; }
 
     /// <summary>
+    /// The multi-noise parameter lists files define, vanilla's overridden ones included.
+    /// </summary>
+    public FrozenDictionary<string, ParameterListPreset> ParameterLists { get; init; } =
+        FrozenDictionary<string, ParameterListPreset>.Empty;
+
+    /// <summary>
     /// The worldgen types the entries were read with: Obsidian's and the loaded plugins'.
     /// </summary>
     public WorldgenTypes Types { get; }
@@ -405,6 +453,13 @@ internal sealed class WorldgenNoise
     /// <summary>
     /// The plugins whose types an entry is made of, counting the entries it refers to.
     /// </summary>
+    /// <summary>
+    /// Finds a multi-noise parameter list by identifier: a file's, or vanilla's.
+    /// </summary>
+    public bool TryGetParameterList(string identifier, [NotNullWhen(true)] out ParameterListPreset? list) =>
+        this.ParameterLists.TryGetValue(identifier, out list)
+        || this.builtIn && ParameterListPreset.Vanilla.TryGetValue(identifier, out list);
+
     public ImmutableArray<PluginContainer> Owners(object entry) =>
         [.. this.Dependencies(entry).OfType<PluginContainer>()];
 
@@ -471,5 +526,46 @@ internal sealed class WorldgenNoise
         }
 
         throw new InvalidDataException($"{identifier} isn't a noise");
+    }
+}
+
+/// <summary>
+/// A multi-noise parameter list (<c>worldgen/multi_noise_biome_source_parameter_list</c>), which in vanilla 1.21.11
+/// only names one of its built-in presets: <c>{"preset": "minecraft:overworld"}</c> or <c>minecraft:nether</c>.
+/// </summary>
+/// <param name="preset">The preset's identifier.</param>
+internal sealed class ParameterListPreset(string preset)
+{
+    /// <summary>
+    /// Vanilla's parameter lists, each its own preset.
+    /// </summary>
+    public static FrozenDictionary<string, ParameterListPreset> Vanilla { get; } =
+        new Dictionary<string, ParameterListPreset>
+        {
+            ["minecraft:overworld"] = new("minecraft:overworld"),
+            ["minecraft:nether"] = new("minecraft:nether")
+        }.ToFrozenDictionary();
+
+    /// <summary>
+    /// The preset's identifier, <c>minecraft:overworld</c> or <c>minecraft:nether</c>.
+    /// </summary>
+    public string Preset { get; } = preset;
+
+    /// <summary>
+    /// Reads a parameter list, given in a file or inline in a level stem, like vanilla's codec.
+    /// </summary>
+    /// <exception cref="InvalidDataException">It isn't <c>{"preset": ...}</c> naming a preset.</exception>
+    public static ParameterListPreset Read(JsonElement json, string path = "")
+    {
+        CodecJson.Object(json, path);
+
+        var presetPath = CodecJson.Field(path, "preset");
+        var preset = CodecJson.Identifier(CodecJson.Required(json, path, "preset"), presetPath);
+
+        return Vanilla.TryGetValue(preset, out var list)
+            ? new ParameterListPreset(list.Preset)
+            : throw CodecJson.Error(
+                presetPath,
+                $"{preset} isn't a parameter list preset: expected minecraft:overworld or minecraft:nether");
     }
 }

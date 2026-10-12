@@ -659,6 +659,11 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     public void Init(ILevel world)
     {
         this.world = world;
+
+        // Vanilla's dimensions generate as data packs and plugins override them when the level starts.
+        if (MojangDimension.Vanilla.Contains(this.Dimension))
+            Volatile.Write(ref this.dimension, PluginDimensions.TakeVanilla(this.Dimension));
+
         this.Start();
     }
 
