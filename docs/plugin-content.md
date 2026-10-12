@@ -886,8 +886,10 @@ The rules:
 - A file for one of vanilla's dimensions overrides how it generates (see
   [Data packs and overriding vanilla](#data-packs-and-overriding-vanilla)); the rest of this section is about new
   dimensions. When files define the same dimension, the last in order wins. A file that can't be read is logged and
-  left out; the plugin loads without it. A dimension whose biomes' features can't be ordered (vanilla can't generate
-  it either) is logged and left out.
+  left out; the plugin loads without it. Until its level is created, a dimension follows the files: its stem is read
+  again whenever plugins or data packs change, so at startup it sees the noise settings, parameter lists and types
+  later plugins and data packs override, and when the file winning goes, the one before it wins again. A dimension
+  whose biomes' features can't be ordered (vanilla can't generate it either) is logged and left out.
 - A file's path gives the dimension's identifier, and, as vanilla checks resource paths, one with an empty, `.` or
   `..` segment (like `data/ruby/dimension//world.json`) is refused. This holds for every plugin data file.
 - A dimension's level is created when its plugin loads, at startup or later, and is saved in the world's folder under
@@ -926,8 +928,11 @@ overworld instead of vanilla's. The data comes from two places:
   plugins, so the operator's packs win. Obsidian reads the same files of a pack as of a plugin's `data/` folder:
   biomes, dimension and damage types, features, carvers, noise settings, density functions, noises, parameter lists,
   level stems and tags (blocks, items, entity types, biomes, placed features and configured carvers). Other files, like
-  recipes, loot tables or structures, are left out, and how many is logged. A pack's `filter` and `overlays` aren't
-  applied, which is logged once for the pack. Data packs are read once: a change applies after a restart.
+  recipes, loot tables or structures, are left out unread, and how many is logged. A pack's `filter` and `overlays`
+  aren't applied, which is logged once for the pack. Data packs are read once: a change applies after a restart.
+  Unlike vanilla, a pack has limits, so that it can't exhaust the server's memory: at most 65,536 files, and at most
+  32 MiB per file and 512 MiB in all for the files Obsidian reads, decompressed. A pack over them, or a zip file with
+  a path leaving the pack (`..` or `\`), is logged and left out; symbolic links in a pack folder are skipped.
 - Plugins' own `data/minecraft/...` files, which override vanilla's entries like a data pack's.
 
 Data packs are the server's, not a world's: Obsidian's registries are shared by all its worlds, unlike vanilla's
@@ -952,7 +957,11 @@ last file for an entry replaces it whole, and tag files merge (`"replace": true`
 - level stems: `data/minecraft/dimension/overworld.json` (or `the_nether`, `the_end`) replaces how that dimension
   generates, read like any [dimension](#dimensions), with an inline `biomes` list, say. It must keep vanilla's
   dimension type (`minecraft:overworld`, `minecraft:the_nether`, `minecraft:the_end`), since Obsidian creates
-  vanilla's levels with those; override the type's file to change it.
+  vanilla's levels with those; override the type's file to change it. A type's build range (`min_y` and `height`)
+  must hold the noise settings its vanilla dimension generates with, as overridden: vanilla clamps generation to the
+  build range, which Obsidian can't yet, so a type override that doesn't fit, like the overworld's at `min_y` 0 with
+  vanilla's overworld noise settings from -64, is logged once startup has read every plugin and pack, and left out,
+  keeping vanilla's type. Override the noise settings to match it.
 - tags, merged as above.
 
 Vanilla's entries nothing overrides keep their compiled code, so without overrides worlds generate exactly as before.
@@ -969,8 +978,8 @@ starts, in every world, and keeps them until the server stops:
 - A plugin loaded, reloaded or unloaded later follows the plugin rules: its biomes, features, carvers, spawns, tags
   and damage types apply at once (players are sent through configuration when synced entries change), while a change
   to how a running vanilla dimension generates (its stem, the noise it reads, its parameter list) is logged and
-  applies after a restart, like a change to a plugin's dimension. A vanilla dimension type keeps its height once levels
-  exist.
+  applies after a restart, like a change to a plugin's dimension. A vanilla dimension type keeps its height from the end
+  of startup, when the worlds create their levels with it.
 - A vanilla dimension built with a plugin's types stops generating when the plugin unloads and resumes when it's
   back, like a plugin's dimension (see [Noise types](#noise-types)).
 

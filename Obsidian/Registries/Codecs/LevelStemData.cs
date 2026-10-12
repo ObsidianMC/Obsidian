@@ -1,4 +1,5 @@
 using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.World.Generator;
 using NoiseSetting = Obsidian.API.World.Generator.Noise.NoiseSetting;
 using Obsidian.Plugins;
@@ -77,20 +78,9 @@ internal static class LevelStemData
             plugins,
             entries);
 
-        // Obsidian's terrain generator fills every cell of the noise settings, so they must lie in the build range;
-        // vanilla would clamp them to it instead. Vanilla's own pairings all fit.
-        var cells = settings.Noise;
         CodecRegistry.TryGetDimension(dimensionType, out var codec);
-        var range = codec!.Element;
-
-        if (cells.MinY < range.MinY || cells.MinY + cells.Height > range.MinY + range.Height)
-        {
-            throw CodecJson.Error(
-                settingsPath,
-                $"{settingsId ?? "the inline noise settings"} generate from y {cells.MinY} to "
-                + $"{cells.MinY + cells.Height - 1}, outside the build range of {dimensionType} ({range.MinY} to "
-                + $"{range.MinY + range.Height - 1})");
-        }
+        if (OutsideBuildRange(settingsId ?? "the inline noise settings", settings, codec!) is string outside)
+            throw CodecJson.Error(settingsPath, outside);
 
         return new MojangDimension(
             identifier,
@@ -121,6 +111,26 @@ internal static class LevelStemData
                 settingsPath,
                 $"{id} isn't one of vanilla's noise settings ({vanilla}) or a loaded plugin's");
         }
+    }
+
+    /// <summary>
+    /// Says how noise settings generate outside a dimension type's build range, or gives null when they fit.
+    /// </summary>
+    /// <remarks>
+    /// Obsidian's terrain generator fills every cell of the noise settings, so they must lie in the build range;
+    /// vanilla clamps generation to it instead. Vanilla's own pairings all fit.
+    /// </remarks>
+    /// <param name="name">The noise settings' name, for the message.</param>
+    public static string? OutsideBuildRange(string name, NoiseSetting settings, DimensionCodec type)
+    {
+        var cells = settings.Noise;
+        var range = type.Element;
+
+        if (cells.MinY >= range.MinY && cells.MinY + cells.Height <= range.MinY + range.Height)
+            return null;
+
+        return $"{name} generate from y {cells.MinY} to {cells.MinY + cells.Height - 1}, outside the build range of "
+            + $"{type.Name} ({range.MinY} to {range.MinY + range.Height - 1})";
     }
 
     // A dimension type by identifier: vanilla's or a plugin's.
