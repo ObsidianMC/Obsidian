@@ -20,7 +20,11 @@ public partial record class CustomPayloadPacket
     public override void Populate(INetStreamReader reader)
     {
         Channel = reader.ReadString();
-        PluginData = reader.ReadUInt8Array((int)(reader.Size - reader.Offset));
+
+        // The payload is the rest of the packet, which may be empty (NeoForge's frozen_registry_sync_completed is);
+        // ReadUInt8Array reads a length prefix when asked for none.
+        var length = (int)(reader.Size - reader.Offset);
+        PluginData = length > 0 ? reader.ReadUInt8Array(length) : ReadOnlyMemory<byte>.Empty;
     }
 
     public override void Serialize(INetStreamWriter writer)

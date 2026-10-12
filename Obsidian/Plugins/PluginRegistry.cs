@@ -106,6 +106,26 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
     {
         var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
 
+        return RegisterBlock(container, identifier, properties);
+    }
+
+    public API.Entities.EntityDefinition RegisterEntity(
+        string identifier,
+        API.Entities.EntityProperties? properties = null)
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        return RegisterEntity(container, identifier, properties);
+    }
+
+    // The content registrations below are shared with the Obsidian client, which registers its mods' content the
+    // same way, so that it gets the same ids as a server running the same mods.
+
+    /// <summary>
+    /// Registers <paramref name="container"/>'s block, and the item that places it unless it has none.
+    /// </summary>
+    internal static BlockType RegisterBlock(PluginContainer container, string identifier, BlockProperties? properties)
+    {
         CheckIdentifier(container, identifier);
 
         properties ??= new BlockProperties();
@@ -133,12 +153,14 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         return block;
     }
 
-    public API.Entities.EntityDefinition RegisterEntity(
+    /// <summary>
+    /// Registers <paramref name="container"/>'s entity type.
+    /// </summary>
+    internal static API.Entities.EntityDefinition RegisterEntity(
+        PluginContainer container,
         string identifier,
-        API.Entities.EntityProperties? properties = null)
+        API.Entities.EntityProperties? properties)
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
-
         CheckIdentifier(container, identifier);
 
         properties ??= new API.Entities.EntityProperties();
@@ -234,7 +256,10 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         }
     }
 
-    private static Item RegisterItem(PluginContainer container, string identifier, ItemProperties properties)
+    /// <summary>
+    /// Registers <paramref name="container"/>'s item.
+    /// </summary>
+    internal static Item RegisterItem(PluginContainer container, string identifier, ItemProperties properties)
     {
         CheckIdentifier(container, identifier);
 

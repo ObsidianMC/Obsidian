@@ -346,12 +346,10 @@ public sealed partial class PluginManager : IAsyncDisposable
             var archive = byInfo[info];
 
             // A dependency that failed to load leaves its dependents waiting for it.
-            var missing = info.Dependencies.FirstOrDefault(dependency => dependency.Required
-                && PluginDependencyResolver.AppliesTo(dependency, this.Side)
-                && !this.plugins.Any(plugin => plugin.Info.Id == dependency.Id));
-            if (missing.Id is not null)
+            var loaded = this.plugins.Select(plugin => plugin.Info);
+            if (PluginDependencyResolver.FindMissingDependency(info, loaded, this.Side) is string missing)
             {
-                Log.Staged(this.logger, info.Name, $"its dependency '{missing.Id}' failed to load");
+                Log.Staged(this.logger, info.Name, $"its dependency '{missing}' failed to load");
                 this.stagedPlugins = this.stagedPlugins.Add(archive);
                 continue;
             }
@@ -365,23 +363,8 @@ public sealed partial class PluginManager : IAsyncDisposable
         var info = archive.Info;
         var stopwatch = Stopwatch.StartNew();
 
-        var dependencies = this.plugins
-            .Where(plugin => info.Dependencies.Any(dependency => dependency.Id == plugin.Info.Id
-                && PluginDependencyResolver.AppliesTo(dependency, this.Side)))
-            .ToImmutableArray();
-
-        var container = new PluginContainer
-        {
-            Info = info,
-            Archive = archive,
-            LoadContext = new PluginLoadContext(info.AssemblyName),
-            Dependencies = dependencies
-        };
-
-        container.LoadContext.Container = container;
-
-        foreach (var dependency in dependencies)
-            container.LoadContext.AddDependency(dependency.LoadContext);
+        var container = PluginContainer.Create(archive, this.plugins, this.Side);
+        var dependencies = container.Dependencies;
 
         try
         {

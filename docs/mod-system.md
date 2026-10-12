@@ -210,19 +210,28 @@ client. This document describes the design and tracks its progress. The archive 
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource
    packs, and answers NeoForge's handshake and registry sync.
-   - Slice 4a, mods on the client: the Obsidian client loads `.obby` mods whose side is `client` or `both` from its
-     `mods` folder, with the same archive, metadata and dependency rules as the server, and runs their
-     `ConfigureServices` and `ConfigureRegistry`, so a mod's blocks, items and entity types get the same ids as on a
-     server running it. In configuration it answers NeoForge's channel query with its mods' channels before the
-     handshake's pong, checks each `frozen_registry` snapshot against its own registries (a missing entry or a
-     different id disconnects with a message naming the mod content), sends its brand, and dispatches mods' payloads
-     in configuration and play. Reconfiguration resets what the previous configuration received. Mods come only
-     from the player's folder: servers can't send code.
+   - Slice 4a, mods on the client (done): the Obsidian client loads `.obby` mods whose side is `client` or `both`
+     from its `mods` folder at startup, with the server's archive, metadata and dependency rules (the same code, with
+     the client's side), and runs their `ConfigureServices` and `ConfigureRegistry`. Blocks, items and entity types
+     register exactly as on a server, so they get the same ids as on a server running the same mods; commands,
+     events, tags and worldgen are a server's and do nothing there, and the server's lifecycle callbacks aren't
+     called. A mod that fails to load is logged and skipped, with the mods that require it. Mods come only from the
+     player's folder: servers can't send code. In configuration the client sends its brand (`obsidian`), answers
+     NeoForge's channel query with its mods' `MapPayload` channels and NeoForge's registry sync channels before the
+     handshake's pong, registers the agreed channels it receives on with `minecraft:register`, and checks each
+     `frozen_registry` snapshot against its own registries before confirming the sync. A missing entry, an entry
+     only the client has or a different id disconnects it, naming the first few entries, as does a server that
+     syncs nothing while the client's mods added content. Mods' payloads are dispatched in configuration and play
+     on the agreed channels (on servers without NeoForge's handshake, on the channels they register), and sent with
+     `ClientSession.SendPayload`; the handlers' registration is internal until slice 4c's client API. A new
+     configuration forgets the previous one's registries, channels and sync. Singleplayer worlds run the client's
+     mods: the integrated server loads plugins from the client's `mods` folder (`Paths:Plugins`). An empty custom
+     payload, like NeoForge's sync confirmation, no longer fails to parse on the server, and an entity's particle
+     of a type the client doesn't know ends its metadata rather than disconnecting.
    - Done, slice 4b, mods' assets: each mod archive's `assets/` is a resource pack, one per mod in load order, above
      vanilla's assets and below the player's packs (and servers' and realms' above those), reloaded with them. An
      archive needs no `pack.mcmeta`, only its `assets/` are read, and resource packs' limits and read budgets apply.
-     Until slice 4a hands over the mods it loads, the client takes the `.obby` files in its `mods` folder by file
-     name. The asset loaders read every namespace like vanilla: block states and block and item models by identifier,
+     The asset loaders read every namespace like vanilla: block states and block and item models by identifier,
      atlases' directory sources in every namespace (sprites named `<ns>:<path>`), item definitions for vanilla's and
      plugins' items, GUI sprites, particle definitions (mods' by identifier, for slice 4c) and translations, merged per
      language across namespaces. Models are baked for every block state, plugins' after vanilla's, so plugin blocks
@@ -231,8 +240,8 @@ client. This document describes the design and tracks its progress. The archive 
      their tints wait for slice 4c's tint sources. Biomes the client's registry lacks, like a server's plugin biomes,
      are tinted from the data the server sends for them (grass, foliage, dry foliage and water colours, the grass
      colour modifier, and temperature and downfall for the colormaps); vanilla's biomes keep the registry's colours
-     (see [plugin-archives.md](plugin-archives.md#assets)). Blocks registered after the assets load, like an
-     integrated server's plugins' blocks, render after the next resource reload.
+     (see [plugin-archives.md](plugin-archives.md#assets)). The client's mods load before its assets, so their blocks are
+     baked from the start.
    - Slice 4c, the client API: `Obsidian.API.Client` interfaces a mod's plugin implements (`IClientPlugin` with
      `ConfigureClient(IClientRegistry)`) to register entity renderers (model layers and textures), particle
      providers, key bindings, block and item tint sources, and screens for its menu types; only the Obsidian client

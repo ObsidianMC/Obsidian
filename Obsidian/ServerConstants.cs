@@ -29,9 +29,10 @@ public static class ServerConstants
 
     public const int MaxPayloadLength = 1048576;
 
-    // Overrides of the cache and log folders; null keeps them under the root.
+    // Overrides of the cache, log and plugin folders; null keeps them under the root.
     private static string? cachePath;
     private static string? logsPath;
+    private static string? pluginsPath;
 
     /// <summary>
     /// The folder every server-side path resolves against: <c>Paths:Root</c>, by default the working directory.
@@ -53,17 +54,25 @@ public static class ServerConstants
     public static string WorldsPath => Path.Combine(RootPath, "worlds");
     public static string PersistentDataPath => Path.Combine(RootPath, "persistentdata");
     public static string PermissionPath => Path.Combine(RootPath, "permissions");
-    public static string PluginsPath => Path.Combine(RootPath, "plugins");
+
+    /// <summary>
+    /// Where plugins are loaded from: <c>Paths:Plugins</c>, by default <c>&lt;root&gt;/plugins</c>. The Obsidian
+    /// client points its integrated servers at its mods folder, so singleplayer worlds run the client's mods.
+    /// </summary>
+    public static string PluginsPath => pluginsPath ?? Path.Combine(RootPath, "plugins");
+
     public static string UserCacheFile => Path.Combine(RootPath, "usercache.json");
 
     /// <summary>
-    /// Resolves the server's paths from <c>Paths:Root</c>, <c>Paths:Cache</c> and <c>Paths:Logs</c>. Relative values are
-    /// relative to the working directory; missing ones keep their defaults under the root.
+    /// Resolves the server's paths from <c>Paths:Root</c>, <c>Paths:Cache</c>, <c>Paths:Logs</c> and
+    /// <c>Paths:Plugins</c>. Relative values are relative to the working directory; missing ones keep their defaults
+    /// under the root.
     /// </summary>
     public static void ConfigurePaths(IConfiguration configuration)
     {
         RootPath = Path.GetFullPath(configuration["Paths:Root"] is { Length: > 0 } root ? root : Directory.GetCurrentDirectory());
         cachePath = configuration["Paths:Cache"] is { Length: > 0 } cache ? Path.GetFullPath(cache) : null;
         logsPath = configuration["Paths:Logs"] is { Length: > 0 } logs ? Path.GetFullPath(logs) : null;
+        pluginsPath = configuration["Paths:Plugins"] is { Length: > 0 } plugins ? Path.GetFullPath(plugins) : null;
     }
 }
