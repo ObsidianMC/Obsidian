@@ -1,8 +1,8 @@
 # Plugin blocks, entities, tags and data
 
-Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, add entity types and
-worldgen types in code, and add tags, biomes, dimension types, damage types, worldgen features, NeoForge biome
-modifiers, noise settings and dimensions with data pack files, like NeoForge and Fabric mods.
+Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, add entity types,
+worldgen types and level generators in code, and add tags, biomes, dimension types, damage types, worldgen features,
+NeoForge biome modifiers, noise settings and dimensions with data pack files, like NeoForge and Fabric mods.
 Clients need the matching mod for blocks, items and entity types: NeoForge and Fabric clients are sent those
 registries, so their ids agree with the server's. Biomes, dimension types and damage types are sent with their data,
 so vanilla clients can join too.
@@ -303,8 +303,8 @@ The rules:
 - Placing a feature made of a plugin's types (its feature type, a placement modifier or a provider inside it) is a
   call into the plugin, like its event handlers, so unloading waits for chunks being decorated with it. Chunks
   decorated while it unloads leave its features out. When placing such a feature throws, the error is logged naming
-  the plugins, and the level stops generating new chunks until a restart. The chunk counts as decorated without the
-  features left, with a warning (see [Noise types](#noise-types)).
+  the plugins, and the level stops generating new chunks until those plugins reload or unload. The chunk counts as
+  decorated without the features left, with a warning (see [Noise types](#noise-types)).
 - Features aren't sent to clients or saved, so they come and go with their plugin: when plugins load or unload, the
   features are read again and every world's generator moves to them for the chunks it decorates next. Chunks
   already generated keep what was placed. As in vanilla, adding features to a step can change the seeds of the
@@ -551,28 +551,33 @@ public sealed class Crust : ICustomSurfaceRule
 Generating with a plugin's types is a call into the plugin, like placing its features: each step of a chunk (biomes,
 noise, surface, carvers, decoration) holds the plugins whose types the dimension's noise settings and biome source are
 made of, so unloading waits for chunks being generated. When such a plugin unloads, the dimension's level stops
-generating new chunks, with a warning: chunks already generated still load and are saved, and the rest generate after a
-restart with the plugin. A reload doesn't restart it yet. A dimension made of vanilla's types alone, with plugins'
-data, keeps generating. A level stem naming another plugin's density functions or noises, in its noise settings or
-biome source, generates with that plugin's types too.
+generating new chunks, with a warning, and lets go of the plugin's code: chunks already generated still load and are
+saved. When the plugin loads again (a reload, or a later load), the dimension is read again from the level stem it was
+created with, with the plugin's new types, and the level generates again from its next chunk; chunks generated before
+stay as they are. A dimension whose stem, or the plugin noise files it uses, changed meanwhile stays stopped until a
+restart, with a warning, since generating it differently would mix two generators' chunks. A dimension made of
+vanilla's types alone, with plugins' data, keeps generating. A level stem naming another plugin's density functions or
+noises, in its noise settings or biome source, generates with that plugin's types too, and resumes when that plugin
+reloads, without reloading the stem's own plugin.
 
 A plugin's code failing while a dimension generates with its types (an exception from a density function, surface
-rule or biome source) is logged as an error naming the plugins, and the level stops generating new chunks until a
-restart, as when the plugin unloads, rather than stopping chunk management or the server. Such a dimension's levels
+rule or biome source) is logged as an error naming the plugins, and the level stops generating new chunks, as when
+the plugin unloads, rather than stopping chunk management or the server. It generates again once those plugins
+reloaded (or unloaded, when only their features failed), or after a restart. Such a dimension's levels
 stop on any generation failure, since plugins' density functions run all through the noise and the failure can't be
 told apart from Obsidian's. Failures generating with vanilla's types alone still stop the server.
 
-A step that fails partway leaves nothing for a restart to build on:
+A step that fails partway leaves nothing for the level to build on when it generates again:
 
 - A step before decoration (biomes, noise, surface, carvers) only writes into its chunk, but reads what it wrote and
   marks blocks for post-processing, so running it again over its partial result could differ. The chunk goes back
-  to before its biomes, and those steps run again from scratch after a restart.
+  to before its biomes, and those steps run again from scratch.
 - Decoration writes into the chunk's neighbors and adds entities and scheduled ticks, which placing its features
   again would duplicate. The chunk counts as decorated, with a warning: it keeps the features placed before the
-  failure and lacks the rest. Later steps (post-processing, light) don't run plugins' features, and run after the
-  restart.
-- Structure pieces placed until the failure are saved with their start, so a restart doesn't place their entities
-  again.
+  failure and lacks the rest. Later steps (post-processing, light) don't run plugins' features, and run once the
+  level generates again.
+- Structure pieces placed until the failure are kept, and saved, with their start, so generating again doesn't place
+  their entities again.
 
 ## Dimensions
 
@@ -640,9 +645,8 @@ The rules:
 - A reload changing a level stem, or the plugin noise settings, density functions and noises it uses, keeps the
   dimension as it was, with a warning: the change applies after a restart, since changing a live level's generator
   would mix two generators' chunks.
-- A dimension generating with a plugin's types stops generating new chunks when that plugin unloads, until a restart
-  (see [Noise types](#noise-types)); its generated chunks still load. A level stem that another plugin's types
-  generate is read with them, so once they unload, the stem's own plugin is reloaded to add its dimension again.
+- A dimension generating with a plugin's types stops generating new chunks when that plugin unloads, and generates
+  again when it loads again (see [Noise types](#noise-types)); its generated chunks still load.
 - After a restart without the plugin, its dimension isn't loaded, and its folder is left alone. Players who were in it
   join at the world's spawn.
 
@@ -651,3 +655,55 @@ Players get there with `/dimension <id>`, like `/dimension ruby:crystal_world`, 
 clients see a plugin's dimension as a level of that name with its dimension type, sent in login and respawn with the
 build height of the type, and its plugin biomes in chunks by their registry ids. There are no portals to plugins'
 dimensions, and only the default world has them.
+
+## Level generators
+
+A plugin can generate a whole level in code, like the host's own generators: a class implementing `ILevelGenerator`,
+registered by identifier in `ConfigureRegistry`.
+
+```csharp
+public sealed class SkyIslandsGenerator : ILevelGenerator
+{
+    public string Id => "ruby:sky_islands";
+
+    public void Init(ILevel level)
+    {
+    }
+
+    public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null,
+        ChunkGenStage stage = ChunkGenStage.full)
+    {
+        // Fill the chunk's blocks and biomes, then mark it generated (full).
+    }
+}
+
+public override void ConfigureRegistry(IPluginRegistry registry) =>
+    registry.RegisterGenerator<SkyIslandsGenerator>("ruby:sky_islands");
+```
+
+A world uses it by naming it as its `Generator` in `worlds.json`, and a world's child dimension by its name there,
+which is also its dimension type (vanilla's or a plugin's), like `minecraft:the_nether` names the nether's generator.
+Plugins' level stems can't name a plugin generator as their `generator` yet: they're generated with vanilla's noise
+generator (see [Dimensions](#dimensions)).
+
+The rules:
+
+- The identifier is in the plugin's namespace, and registering is only possible in `ConfigureRegistry`. Identifiers
+  the host registered (`overworld`, `superflat`, ...) are the host's.
+- Each level using the generator gets its own instance, created with the plugin's services (constructor injection
+  works like for the plugin's other services), and its `Init` is called with the level. The level saves the
+  registered identifier as its generator (`generatorName` in its `level.dat`); the instance's own `Id` isn't used.
+- Every call into the generator (creating it, `Init`, `GenerateChunkAsync`, `FindSpawnPointAsync`, `LockChunkAsync`)
+  is a call into the plugin, a chunk at a time, so unloading the plugin waits for chunks being generated.
+- When the plugin unloads, the level stops generating new chunks, with a warning, and lets go of the generator, so the
+  plugin's code can unload. Chunks already generated still load and are saved; ones players reach meanwhile stay
+  ungenerated. When the plugin loads again, the level gets a new instance of the plugin's new generator, and generates
+  from its next chunk: a chunk being generated during the swap finishes with the generator it started with, and
+  chunks generated before stay as they are.
+- When the generator throws, the error is logged naming the plugin, the chunk is left ungenerated and empty (without
+  what the generator wrote into it), and the level stops generating until the plugin reloads, rather than stopping
+  chunk management or the server.
+- After a restart without the plugin, a world saved with its generator loads stopped, with a warning, rather than
+  generating with another generator; its chunks still load, and it generates again once a plugin registers the
+  generator. A new world or dimension can't be created without its generator: the server refuses to start it, saying
+  which generator is missing. An unknown generator identifier is never replaced by the overworld's.

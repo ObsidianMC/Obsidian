@@ -80,7 +80,7 @@ client. This document describes the design and tracks its progress. The archive 
      (`stack.Holder.Id is ItemIds.Bucket`, `block.Is(BlockIds.Stone)`). A block item places the block with its
      identifier, or a plugin item's block.
    - Next: Phase 3.
-3. **Data-driven content and world generation** (in progress): loading a mod's `data/` folder like a data pack
+3. **Data-driven content and world generation** (done): loading a mod's `data/` folder like a data pack
    (biomes, dimension types, damage types, tags, worldgen features), letting mods register codec types for
    data-driven objects (feature, density function and biome source types), and reload-safe world generators.
    - Done: biomes, dimension types and damage types from a plugin's `data/<namespace>/worldgen/biome`,
@@ -128,22 +128,51 @@ client. This document describes the design and tracks its progress. The archive 
      function, surface rule, surface condition and biome source types with `RegisterWorldgenType`
      (`IDensityFunction`, `ISurfaceRule` with `ICustomSurfaceRule`, `ISurfaceCondition` with
      `ICustomSurfaceCondition`, `BiomeSourceBase`). Each step of generating a chunk holds the plugins whose types
-     the dimension's generator is made of; when one unloads, the dimension stops generating new chunks until a
-     restart, and its generator lets go of the plugin's code. A plugin's code failing stops the level the same way,
-     with an error, rather than the server. Values are checked against vanilla's codecs' ranges. A dimension keeps
+     the dimension's generator is made of; when one unloads, the dimension stops generating new chunks, and its
+     generator lets go of the plugin's code (slice 4c resumes it). A plugin's code failing stops the level the same
+     way, with an error, rather than the server. Values are checked against vanilla's codecs' ranges. A dimension keeps
      the noise settings it was created with, and a reload changing them applies after a restart (see
      [plugin-content.md](plugin-content.md#noise-settings-density-functions-and-noises)).
-   - Next, slice 4c: plugin generator types (`ILevelGenerator`), and reload-safe generators, so that a reloaded
-     plugin's dimension generates again without a restart.
-   - Possible later: adding plugin biomes to vanilla's overworld and nether climate (like TerraBlender), rather than
-     only to plugins' own dimensions.
+   - Done, slice 4c: plugins' level generators and reload-safe generators. `IPluginRegistry.RegisterGenerator`
+     registers an `ILevelGenerator` type by identifier, in the plugin's namespace, which a world names as its
+     `Generator` in `worlds.json` (or a child dimension by its name). The level keeps one generator for its life,
+     which saves the identifier and runs a new instance of the plugin's generator, created with the plugin's
+     services, holding a call into the plugin a chunk at a time. Unloading the plugin removes the registration,
+     stops the level and lets go of the instance (the reload test checks the load context is collected); loading it
+     again swaps in the new plugin's generator between chunks. Plugins' dimensions stopped by an unloading plugin
+     whose types they use are read again from the level stem they were created with once it loads again, and
+     resume without reloading their own plugin; one whose stem or plugin noise files changed waits for a restart.
+     A plugin generator throwing, like plugins' worldgen types failing, stops its level with an error until the
+     plugin reloads. A saved world whose plugin generator is missing after a restart loads stopped, rather than
+     falling back to the overworld's generator; a new one isn't created (see
+     [plugin-content.md](plugin-content.md#level-generators)).
+   - Phase 3 delivered: plugins' biomes, dimension types and damage types, synced to clients and kept by identifier;
+     worldgen features and NeoForge's feature biome modifiers from data files, read like vanilla's and checked
+     against vanilla's own; worldgen types plugins register for features, placements, providers, density functions,
+     surface rules and biome sources; noise settings, density functions and noises from data files; dimensions from
+     level stems; and level generators in code. All of it comes and goes with its plugin: data is applied again on
+     every plugin change, plugins' code is only called holding a call into the plugin, and levels stop and resume
+     generating with their plugins rather than failing or keeping their code loaded.
+   - Possible later, gaps noted along the way (see [plugin-content.md](plugin-content.md)):
+     - adding plugin biomes to vanilla's overworld and nether climate (like TerraBlender), rather than only to
+       plugins' own dimensions;
+     - biome modifiers for spawns and carvers, NeoForge's holder set types, placed feature tags, and plugins' own
+       or inline configured carvers;
+     - in level stems: noise settings, dimension types and biomes defined inline, `minecraft:flat` and
+       `minecraft:debug` generators, and plugin level generators as a stem's `generator`;
+     - noises defined inline, a constant `spline`, and a range for a spawn target's `depth`;
+     - vanilla's tree placers and decorators, structure processors, weighted lists and biome sets in the API;
+     - environment attributes with particle options or rich bed rule messages, and the server applying more
+       attributes than `monsters_burn`;
+     - portals, raids and the end fight in plugins' dimensions, which only the default world has.
+   - Next: Phase 4.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource
    packs, and answers NeoForge's handshake and registry sync.
 
 ## Known gaps
 
-- World generators, dialogs and other registries that plugins fill through injected services are not yet removed when
-  their plugin unloads (phase 3 and 2). Plugins' worldgen features are, and plugins' dimensions generating with their
-  types stop until a restart (slice 4c).
+- Dialogs and other registries that plugins fill through injected services are not yet removed when their plugin
+  unloads (phase 2). Generators a plugin registers with `ILevelFactory.RegisterGenerator`, the host's method, stay
+  until the server stops; `IPluginRegistry.RegisterGenerator` is the reload-safe way.
 - Obsidian.MSBuild writes version 2 archives on its `feat/obby-v2` branch, which isn't released yet.
