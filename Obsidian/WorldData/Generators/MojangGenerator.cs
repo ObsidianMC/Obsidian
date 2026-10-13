@@ -111,7 +111,18 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     private ChunkBuilder Running => this.Builder
         ?? throw new GeneratorStoppedException($"{this.Dimension.Identifier} stopped generating.");
 
-    internal Vector? FindDolphinTreasure(Vector position)
+    // Vanilla's dolphins look for the structures of this tag.
+    internal Vector? FindDolphinTreasure(Vector position) =>
+        this.LocateStructure(locator => locator.Locate("minecraft:dolphin_located", position, 16, false))?.Position;
+
+    /// <summary>
+    /// Searches the level's structures, like vanilla's structure searches (<c>/locate</c>, eyes of ender, dolphins).
+    /// Searching runs the generator's plugins' code, so it's a call into them, and their failing stops the generator
+    /// like a failure generating.
+    /// </summary>
+    /// <returns>What the search found, or null when it found nothing, the generator stopped or the level doesn't
+    /// generate structures.</returns>
+    internal LocatedStructure? LocateStructure(Func<StructureLocator, LocatedStructure?> search)
     {
         if (this.Builder is not { Structures: StructureManager manager } builder)
             return null;
@@ -119,8 +130,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         try
         {
             using var calls = builder.EnterGenerator();
-            // Vanilla's dolphins look for the structures of this tag.
-            return new StructureLocator(manager).FindNearest("minecraft:dolphin_located", position, 16, false);
+            return search(new StructureLocator(manager));
         }
         catch (Exception ex) when (this.Contain(ex))
         {

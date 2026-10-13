@@ -295,8 +295,10 @@ client. This document describes the design and tracks its progress. The archive 
      structure files' `type` and template pools' `element_type`; Obsidian reads every structure's common fields and
      every element's projection, checks biomes, adapts terrain and places their pieces through a small context
      (`StructureStartContext`, `CustomPieceContext`), and they come and go with their plugin like feature types (see
-     [plugin-content.md](plugin-content.md#structure-and-pool-element-types)). Possible later: eyes of ender and a
-     `/locate` command; clamping generation to a dimension type's build range.
+     [plugin-content.md](plugin-content.md#structure-and-pool-element-types)). Vanilla's `/locate structure` (by
+     identifier or `#tag`, permission level 2, vanilla's search and messages) and eyes of ender, which fly toward the
+     nearest structure of `#minecraft:eye_of_ender_located`, find vanilla's and plugins' structures. Possible later:
+     `/locate biome` and `/locate poi`; clamping generation to a dimension type's build range.
    - Next: Phase 4.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource

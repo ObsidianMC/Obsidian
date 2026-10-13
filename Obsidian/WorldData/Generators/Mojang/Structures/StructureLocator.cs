@@ -9,8 +9,12 @@ namespace Obsidian.WorldData.Generators.Mojang.Structures;
 /// </summary>
 internal sealed class StructureLocator(StructureManager structures)
 {
-    // A structure tag's structures: vanilla's and plugins' tag files applied, or vanilla's own before tags are.
-    private static IReadOnlySet<string>? TagStructures(string tag)
+    /// <summary>
+    /// The structures of a structure tag: vanilla's and plugins' tag files applied, or vanilla's own before tags
+    /// are; null when there's no such tag.
+    /// </summary>
+    /// <param name="tag">The tag's identifier, without <c>#</c>.</param>
+    public static IReadOnlySet<string>? TagStructures(string tag)
     {
         if (PluginTags.TryGetIdentifiers(PluginTags.Structure, tag, out var identifiers))
             return identifiers.ToHashSet();
@@ -28,8 +32,14 @@ internal sealed class StructureLocator(StructureManager structures)
     /// <param name="tag">The tag's identifier, without <c>#</c>, like <c>minecraft:on_treasure_maps</c>.</param>
     /// <returns>The position, or <c>null</c> when the tag doesn't exist or none is found.</returns>
     public Vector? FindNearest(string tag, Vector position, int radius, bool skipKnownStructures) =>
+        this.Locate(tag, position, radius, skipKnownStructures)?.Position;
+
+    /// <summary>
+    /// Like <see cref="FindNearest(string, Vector, int, bool)"/>, with the structure found there.
+    /// </summary>
+    public LocatedStructure? Locate(string tag, Vector position, int radius, bool skipKnownStructures) =>
         TagStructures(tag) is IReadOnlySet<string> targets
-            ? this.FindNearest(targets, position, radius, skipKnownStructures)
+            ? this.Locate(targets, position, radius, skipKnownStructures)
             : null;
 
     /// <summary>
@@ -40,9 +50,18 @@ internal sealed class StructureLocator(StructureManager structures)
     /// may override them, like vanilla's tags hold a registry's entries by identifier.</param>
     /// <param name="radius">For spread placements, how many rings of placement regions to search around the position.</param>
     /// <param name="skipKnownStructures">Skips starts already found by an earlier search (they're found once each).</param>
-    public Vector? FindNearest(IReadOnlySet<string> targetIds, Vector position, int radius, bool skipKnownStructures)
-    {
+    public Vector? FindNearest(IReadOnlySet<string> targetIds, Vector position, int radius, bool skipKnownStructures) =>
+        this.Locate(targetIds, position, radius, skipKnownStructures)?.Position;
 
+    /// <summary>
+    /// Like <see cref="FindNearest(IReadOnlySet{string}, Vector, int, bool)"/>, with the structure found there.
+    /// </summary>
+    public LocatedStructure? Locate(
+        IReadOnlySet<string> targetIds,
+        Vector position,
+        int radius,
+        bool skipKnownStructures)
+    {
         // Each placement with the target structures it places, in structure set order.
         var placements = new List<(StructurePlacement Placement, Structure[] Structures)>();
         foreach (var set in structures.Sets)
@@ -58,7 +77,7 @@ internal sealed class StructureLocator(StructureManager structures)
         if (placements.Count == 0)
             return null;
 
-        Vector? best = null;
+        LocatedStructure? best = null;
         var bestDistance = double.MaxValue;
         var spreads = new List<(RandomSpreadStructurePlacement Placement, Structure[] Structures)>();
 
@@ -100,9 +119,9 @@ internal sealed class StructureLocator(StructureManager structures)
 
         return best;
 
-        void Consider(Vector found)
+        void Consider(LocatedStructure found)
         {
-            var distance = DistanceSquared(found, position);
+            var distance = DistanceSquared(found.Position, position);
             if (distance < bestDistance)
             {
                 bestDistance = distance;
@@ -114,9 +133,13 @@ internal sealed class StructureLocator(StructureManager structures)
     /// <summary>
     /// Vanilla <c>getNearestGeneratedStructure</c> for rings: the ring positions closest first, checked until one has a start.
     /// </summary>
-    private Vector? FindNearestInRings(Structure[] placed, Vector position, bool skipKnown, ConcentricRingsStructurePlacement placement)
+    private LocatedStructure? FindNearestInRings(
+        Structure[] placed,
+        Vector position,
+        bool skipKnown,
+        ConcentricRingsStructurePlacement placement)
     {
-        Vector? best = null;
+        LocatedStructure? best = null;
         var bestDistance = double.MaxValue;
         foreach (var (x, z) in structures.GetRingPositions(placement))
         {
@@ -139,7 +162,13 @@ internal sealed class StructureLocator(StructureManager structures)
     /// Vanilla <c>getNearestGeneratedStructure</c> for spread placements: the first start on the edge of the square of regions
     /// <paramref name="ring"/> away, west to east then north to south.
     /// </summary>
-    private Vector? FindInSpreadRing(Structure[] placed, int chunkX, int chunkZ, int ring, bool skipKnown, RandomSpreadStructurePlacement placement)
+    private LocatedStructure? FindInSpreadRing(
+        Structure[] placed,
+        int chunkX,
+        int chunkZ,
+        int ring,
+        bool skipKnown,
+        RandomSpreadStructurePlacement placement)
     {
         for (var dx = -ring; dx <= ring; dx++)
         {
@@ -162,7 +191,12 @@ internal sealed class StructureLocator(StructureManager structures)
     /// <summary>
     /// Vanilla <c>getStructureGeneratingAt</c>: the locate position of a target start in the chunk.
     /// </summary>
-    private Vector? FindStartAt(Structure[] placed, bool skipKnown, StructurePlacement placement, int chunkX, int chunkZ)
+    private LocatedStructure? FindStartAt(
+        Structure[] placed,
+        bool skipKnown,
+        StructurePlacement placement,
+        int chunkX,
+        int chunkZ)
     {
         if (!placement.IsStructureChunk(structures, chunkX, chunkZ))
             return null;
@@ -180,7 +214,9 @@ internal sealed class StructureLocator(StructureManager structures)
                     continue;
             }
 
-            return new Vector(chunkX << 4, 0, chunkZ << 4) + placement.LocateOffset;
+            return new LocatedStructure(
+                new Vector(chunkX << 4, 0, chunkZ << 4) + placement.LocateOffset,
+                start.Structure);
         }
 
         return null;
@@ -194,3 +230,9 @@ internal sealed class StructureLocator(StructureManager structures)
         return dx * dx + dy * dy + dz * dz;
     }
 }
+
+/// <summary>
+/// A structure a search found: its locate position (see <see cref="StructurePlacement.LocateOffset"/>) and which
+/// structure it is.
+/// </summary>
+internal readonly record struct LocatedStructure(Vector Position, Structure Structure);

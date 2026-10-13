@@ -908,8 +908,15 @@ The rules:
 - Structure tags, `data/<namespace>/tags/worldgen/structure/<path>.json`, merge with vanilla's like other tag
   files and may name plugins' and data packs' structures. Explorer maps and dolphins (`minecraft:dolphin_located`)
   find structures through them, so a plugin's structure added to `#minecraft:on_treasure_maps`, say, is found by
-  treasure maps. A tag file naming a structure that doesn't exist fails, and the tag keeps vanilla's entries. Obsidian
-  has no eyes of ender or `/locate` yet.
+  treasure maps. A tag file naming a structure that doesn't exist fails, and the tag keeps vanilla's entries.
+- `/locate structure <structure|#tag>` (permission level 2, like vanilla's) finds the nearest structure of a type or
+  tag, vanilla's or a plugin's, in the sender's dimension, searching like vanilla's: 100 rings of placement regions
+  for spread placements, nearest first, and every ring position for concentric rings. It answers with vanilla's
+  messages and a clickable position that suggests `/tp`. Eyes of ender fly toward the nearest structure of
+  `#minecraft:eye_of_ender_located`, searched the same way, so a plugin's structure added to that tag is found by
+  them; with none, or when the player looks at an end portal frame, using an eye does nothing and keeps it. Like
+  vanilla's, a thrown eye drops as an item four times in five and breaks otherwise; eyes aren't saved. Obsidian has
+  no `/locate biome` or `/locate poi`.
 
 ### Structure and pool element types
 
