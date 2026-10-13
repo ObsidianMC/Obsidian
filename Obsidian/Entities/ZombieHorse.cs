@@ -11,7 +11,7 @@ public sealed partial class ZombieHorse : AbstractHorse
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
-        if (Level.MonstersBurn() &&
+        if (Level.MonstersBurn((Vector)Position.Floor()) &&
             !Level.LevelData.Raining && !Level.LevelData.Thundering && !InWater &&
             Random.NextSingle() * 30 < 1.2f && Terrain.GetSkyLight((Vector)EyePosition.Floor()) == 15 &&
             GetEquipment(Obsidian.API.Inventory.EquipmentSlot.Body).IsAir)

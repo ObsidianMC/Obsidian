@@ -54,6 +54,14 @@ internal static class BlockEntityNbt
                 }
 
                 tag.Add(items);
+
+                // Vanilla's BrewingStandBlockEntity.saveAdditional: the brew's time left and the fuel left.
+                if (container is BrewingStand stand)
+                {
+                    tag.Add(new NbtTag<short>("BrewTime", (short)stand.BrewTime));
+                    tag.Add(new NbtTag<byte>("Fuel", (byte)stand.Fuel));
+                }
+
                 return tag;
             }
             default:
@@ -70,6 +78,16 @@ internal static class BlockEntityNbt
         if (tag.HasTag("Items") && !tag.HasTag("LootTable") && CreateContainer(id, position) is BaseContainer container)
         {
             LoadContents(tag, container);
+
+            if (container is BrewingStand stand)
+            {
+                if (tag.TryGetTag<NbtTag<short>>("BrewTime", out var brewTime))
+                    stand.BrewTime = brewTime.Value;
+
+                if (tag.TryGetTag<NbtTag<byte>>("Fuel", out var fuel))
+                    stand.Fuel = fuel.Value;
+            }
+
             return (IBlockEntity)container;
         }
 

@@ -1,14 +1,24 @@
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.Nbt;
 using Obsidian.Registries.Codecs;
 using System.Collections.Frozen;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// What a level's dimension type decides about its environment, where vanilla 1.21.11 reads it from the type's
+/// What a level's dimension type and biomes decide about its environment, where vanilla 1.21.11 reads it from their
 /// environment attributes and timelines rather than from which level it is. A plugin's level of the overworld's type
 /// behaves like the overworld.
 /// </summary>
+/// <remarks>
+/// Like vanilla's environment attribute system, an attribute at a position starts at its default, then the dimension
+/// type's map applies, then the biome's there. The maps of plugins' and data packs' types and biomes are attached to
+/// their elements as their files are read (see <see cref="Attach(DimensionElement, EnvironmentAttributeMap)"/>);
+/// vanilla's own entries' values, which the server's copies of them don't hold, are kept here.
+/// </remarks>
 internal static class LevelEnvironment
 {
     // Vanilla's dimension types' timelines (data/minecraft/dimension_type/*.json), which the server's copy of vanilla's
@@ -72,8 +82,27 @@ internal static class LevelEnvironment
     public const string SnowGolemMelts = "minecraft:gameplay/snow_golem_melts";
 
     /// <summary>
-    /// The boolean gameplay attributes the server applies for a dimension type, with vanilla's defaults
-    /// (EnvironmentAttributes). Biomes' values of them aren't applied.
+    /// Vanilla's <c>minecraft:gameplay/respawn_anchor_works</c>: whether respawn anchors set spawn points rather than
+    /// explode.
+    /// </summary>
+    public const string RespawnAnchorWorks = "minecraft:gameplay/respawn_anchor_works";
+
+    /// <summary>
+    /// Vanilla's <c>minecraft:gameplay/water_evaporates</c>: whether water poured from a bucket evaporates.
+    /// </summary>
+    public const string WaterEvaporates = "minecraft:gameplay/water_evaporates";
+
+    /// <summary>
+    /// Vanilla's <c>minecraft:gameplay/bed_rule</c>: when beds let players sleep and set their spawn, and whether
+    /// they explode.
+    /// </summary>
+    public const string BedRuleAttribute = "minecraft:gameplay/bed_rule";
+
+    private const string MonstersBurnAttribute = "minecraft:gameplay/monsters_burn";
+
+    /// <summary>
+    /// The boolean gameplay attributes the server applies, with vanilla's defaults (EnvironmentAttributes). All but
+    /// <see cref="FastLava"/> apply where they're asked about, with the biome's values there.
     /// </summary>
     public static readonly FrozenDictionary<string, bool> GameplayDefaults = new Dictionary<string, bool>
     {
@@ -81,7 +110,9 @@ internal static class LevelEnvironment
         [CanPillagerPatrolSpawn] = true,
         [FastLava] = false,
         [PiglinsZombify] = true,
-        [SnowGolemMelts] = false
+        [SnowGolemMelts] = false,
+        [RespawnAnchorWorks] = false,
+        [WaterEvaporates] = false
     }.ToFrozenDictionary();
 
     // Vanilla's types' own values of those attributes, where they aren't the defaults (the nether's
@@ -94,9 +125,108 @@ internal static class LevelEnvironment
                 [CanStartRaid] = false,
                 [FastLava] = true,
                 [PiglinsZombify] = false,
-                [SnowGolemMelts] = true
+                [SnowGolemMelts] = true,
+                [RespawnAnchorWorks] = true,
+                [WaterEvaporates] = true
             }.ToFrozenDictionary()
         }.ToFrozenDictionary();
+
+    // Vanilla's biomes' own values of the attributes the server applies (data/minecraft/worldgen/biome/*.json): hot
+    // biomes melt snow golems, and patrols don't spawn in mushroom fields.
+    private static readonly FrozenDictionary<string, FrozenDictionary<string, bool>> vanillaBiomeGameplay =
+        new Dictionary<string, FrozenDictionary<string, bool>>
+        {
+            ["minecraft:badlands"] = Melts(),
+            ["minecraft:desert"] = Melts(),
+            ["minecraft:eroded_badlands"] = Melts(),
+            ["minecraft:savanna"] = Melts(),
+            ["minecraft:savanna_plateau"] = Melts(),
+            ["minecraft:windswept_savanna"] = Melts(),
+            ["minecraft:wooded_badlands"] = Melts(),
+            ["minecraft:mushroom_fields"] = new Dictionary<string, bool>
+            {
+                [CanPillagerPatrolSpawn] = false
+            }.ToFrozenDictionary()
+        }.ToFrozenDictionary();
+
+    // Vanilla's types' bed rules: the overworld's is the default, and beds explode in the nether and the end.
+    private static readonly FrozenDictionary<string, BedRule> vanillaBedRules = new Dictionary<string, BedRule>
+    {
+        ["minecraft:the_nether"] = BedRule.Explodes,
+        ["minecraft:the_end"] = BedRule.Explodes
+    }.ToFrozenDictionary();
+
+    // The attribute maps of plugins' and data packs' dimension types and biomes, by their elements.
+    private static readonly ConditionalWeakTable<object, EnvironmentAttributeMap> attributeMaps = new();
+
+    /// <summary>
+    /// Attaches a dimension type's attribute map, read from its file, to its element.
+    /// </summary>
+    public static void Attach(DimensionElement element, EnvironmentAttributeMap attributes) =>
+        attributeMaps.AddOrUpdate(element, attributes);
+
+    /// <summary>
+    /// Attaches a biome's attribute map, read from its file, to its element.
+    /// </summary>
+    public static void Attach(BiomeElement element, EnvironmentAttributeMap attributes) =>
+        attributeMaps.AddOrUpdate(element, attributes);
+
+    /// <summary>
+    /// A boolean gameplay attribute of <see cref="GameplayDefaults"/> at <paramref name="position"/>: the dimension
+    /// type's value (see <see cref="Gameplay(DimensionCodec, string)"/>) with the biome's there applied, vanilla's or
+    /// a plugin's, like vanilla's <c>environmentAttributes().getValue(attribute, pos)</c>.
+    /// </summary>
+    public static bool Gameplay(this ILevel level, string attribute, Vector position)
+    {
+        var value = level.DimensionType.Gameplay(attribute);
+
+        return BiomeAt(level, position) is BiomeCodec biome ? ApplyBiome(biome, attribute, value) : value;
+    }
+
+    /// <summary>
+    /// The bed rule at <paramref name="position"/>: vanilla's default (sleep when it's dark, always set the spawn),
+    /// then the dimension type's, then the biome's there.
+    /// </summary>
+    public static BedRule BedRuleAt(this ILevel level, Vector position)
+    {
+        var type = level.DimensionType;
+        var rule = attributeMaps.TryGetValue(type.Element, out var typeMap)
+            ? BedRule.From(typeMap.Find(BedRuleAttribute)) ?? BedRule.Default
+            : vanillaBedRules.GetValueOrDefault(type.Name, BedRule.Default);
+
+        if (BiomeAt(level, position) is BiomeCodec biome && attributeMaps.TryGetValue(biome.Element, out var biomeMap))
+            rule = BedRule.From(biomeMap.Find(BedRuleAttribute)) ?? rule;
+
+        return rule;
+    }
+
+    /// <summary>
+    /// Whether it's dark outside, which beds with a <c>when_dark</c> rule need (vanilla's <c>Level.isDarkOutside</c>):
+    /// the level has a day cycle and the sky is darkened by 4 or more.
+    /// </summary>
+    public static bool IsDarkOutside(this ILevel level) => level.HasDayCycle() && level.SkyDarken() >= 4;
+
+    private static bool ApplyBiome(BiomeCodec biome, string attribute, bool value)
+    {
+        if (attributeMaps.TryGetValue(biome.Element, out var map))
+            return map.Apply(attribute, value);
+
+        return vanillaBiomeGameplay.TryGetValue(biome.Name, out var own) && own.TryGetValue(attribute, out var set)
+            ? set
+            : value;
+    }
+
+    // The biome at a loaded position, which the attributes there come from.
+    private static BiomeCodec? BiomeAt(ILevel level, Vector position)
+    {
+        if (level is not AbstractLevel concrete || concrete.IsOutsideBuildHeight(position.Y))
+            return null;
+
+        return concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetBiome(position);
+    }
+
+    private static FrozenDictionary<string, bool> Melts() =>
+        new Dictionary<string, bool> { [SnowGolemMelts] = true }.ToFrozenDictionary();
 
     private const float WeatherSkyLightLevel = 4f;
     private const float RainSkyLightAlpha = 0.3125f;
@@ -126,28 +256,40 @@ internal static class LevelEnvironment
     }
 
     /// <summary>
-    /// Whether piglins and hoglins stay as they are: the type's <see cref="PiglinsZombify"/> is false, or code set
-    /// its <see cref="DimensionElement.PiglinSafe"/>.
+    /// Whether piglins and hoglins stay as they are anywhere in the dimension type: the type's
+    /// <see cref="PiglinsZombify"/> is false, or code set its <see cref="DimensionElement.PiglinSafe"/>.
     /// </summary>
     public static bool PiglinsSafe(this DimensionCodec type) =>
         type.Element.PiglinSafe || !type.Gameplay(PiglinsZombify);
 
     /// <summary>
-    /// Whether undead mobs burn in daylight now: vanilla's <c>minecraft:gameplay/monsters_burn</c> attribute, set by
-    /// the dimension type itself or, with the day cycle, by day. The caller checks the sky and the weather, as
-    /// vanilla's <c>Mob.isSunBurnTick</c> does. Biomes' attributes aren't applied.
+    /// Whether piglins and hoglins stay as they are at <paramref name="position"/>: <see cref="PiglinsZombify"/> is
+    /// false there, or code set the type's <see cref="DimensionElement.PiglinSafe"/>.
     /// </summary>
-    public static bool MonstersBurn(this ILevel level)
+    public static bool PiglinsSafe(this ILevel level, Vector position) =>
+        level.DimensionType.Element.PiglinSafe || !level.Gameplay(PiglinsZombify, position);
+
+    /// <summary>
+    /// Whether undead mobs burn in daylight now at <paramref name="position"/>: vanilla's
+    /// <c>minecraft:gameplay/monsters_burn</c> attribute, set by the dimension type itself or, with the day cycle, by
+    /// day, then by the biome there. The caller checks the sky and the weather, as vanilla's <c>Mob.isSunBurnTick</c>
+    /// does.
+    /// </summary>
+    public static bool MonstersBurn(this ILevel level, Vector position)
     {
-        if (level.DimensionType.Element.MonstersBurn)
-            return true;
+        var burn = level.DimensionType.Element.MonstersBurn;
 
-        if (!level.HasDayCycle())
-            return false;
+        if (!burn && level.HasDayCycle())
+        {
+            var time = (level.DayTime % DayLength + DayLength) % DayLength;
+            burn = time is < MonstersStopBurning or >= MonstersStartBurning;
+        }
 
-        var time = (level.DayTime % DayLength + DayLength) % DayLength;
+        // Vanilla's biomes don't set it.
+        if (BiomeAt(level, position) is BiomeCodec biome && attributeMaps.TryGetValue(biome.Element, out var map))
+            burn = map.Apply(MonstersBurnAttribute, burn);
 
-        return time is < MonstersStopBurning or >= MonstersStartBurning;
+        return burn;
     }
 
     /// <summary>
@@ -227,4 +369,123 @@ internal static class LevelEnvironment
 
     private static string? Timelines(DimensionCodec type) =>
         type.Element.Timelines ?? vanillaTimelines.GetValueOrDefault(type.Name);
+}
+
+/// <summary>
+/// Vanilla's <c>BedRule</c>: when a bed lets players sleep and set their spawn (<c>always</c>, <c>when_dark</c> or
+/// <c>never</c>), whether it explodes instead, and what players are told when it doesn't let them sleep.
+/// </summary>
+internal sealed record BedRule(string CanSleep, string CanSetSpawn, bool Explode, ChatMessage? ErrorMessage)
+{
+    /// <summary>
+    /// Vanilla's default and the overworld's: sleep when it's dark, always set the spawn.
+    /// </summary>
+    public static BedRule Default { get; } = new(
+        "when_dark",
+        "always",
+        false,
+        new ChatMessage { Translate = "block.minecraft.bed.no_sleep" });
+
+    /// <summary>
+    /// The nether's and the end's: beds explode.
+    /// </summary>
+    public static BedRule Explodes { get; } = new("never", "never", true, null);
+
+    /// <summary>
+    /// Whether the rule lets a player sleep in <paramref name="level"/> now.
+    /// </summary>
+    public bool AllowsSleep(ILevel level) => this.CanSleep switch
+    {
+        "always" => true,
+        "when_dark" => level.IsDarkOutside(),
+        _ => false
+    };
+
+    /// <summary>
+    /// The rule an attribute map's entry holds, as <see cref="EnvironmentAttributes"/> reads it; null without one.
+    /// </summary>
+    public static BedRule? From(INbtTag? entry)
+    {
+        if (entry is not NbtCompound rule
+            || !rule.TryGetTag<NbtTag<string>>("can_sleep", out var canSleep)
+            || !rule.TryGetTag<NbtTag<string>>("can_set_spawn", out var canSetSpawn))
+        {
+            return null;
+        }
+
+        var explodes = rule.TryGetTag<NbtTag<byte>>("explodes", out var flag) && flag.Value != 0;
+        var message = rule.TryGetTag<NbtTag<string>>("error_message", out var json) ? Message(json.Value) : null;
+
+        return new BedRule(canSleep.Value, canSetSpawn.Value, explodes, message);
+    }
+
+    // A text component's JSON, as far as ChatMessage models it: a string, an object, or a list of them, the rest of
+    // which are extras of the first.
+    private static ChatMessage? Message(string json)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+
+            return Message(document.RootElement);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static ChatMessage? Message(JsonElement value)
+    {
+        switch (value.ValueKind)
+        {
+            case JsonValueKind.String:
+                return ChatMessage.Simple(value.GetString()!);
+            case JsonValueKind.Array when value.GetArrayLength() > 0 && Message(value[0]) is ChatMessage first:
+                return first.AddExtra(Messages(value.EnumerateArray().Skip(1)));
+            case JsonValueKind.Object:
+                break;
+            default:
+                return null;
+        }
+
+        // Its text or translation and its style flags; colours and events aren't shown.
+        var message = new ChatMessage
+        {
+            Text = String("text"),
+            Translate = String("translate"),
+            Bold = Flag("bold"),
+            Italic = Flag("italic"),
+            Underlined = Flag("underlined"),
+            Strikethrough = Flag("strikethrough"),
+            Obfuscated = Flag("obfuscated")
+        };
+
+        if (value.TryGetProperty("with", out var with) && with.ValueKind == JsonValueKind.Array)
+            message.AddChatComponent(Messages(with.EnumerateArray()));
+
+        if (value.TryGetProperty("extra", out var extra) && extra.ValueKind == JsonValueKind.Array)
+            message.AddExtra(Messages(extra.EnumerateArray()));
+
+        return message;
+
+        string? String(string name) =>
+            value.TryGetProperty(name, out var field) && field.ValueKind == JsonValueKind.String
+                ? field.GetString()
+                : null;
+
+        bool? Flag(string name) =>
+            value.TryGetProperty(name, out var field) && field.ValueKind is JsonValueKind.True or JsonValueKind.False
+                ? field.GetBoolean()
+                : null;
+    }
+
+    // A translation's arguments may be numbers and booleans too, which vanilla shows as text.
+    private static List<ChatMessage> Messages(IEnumerable<JsonElement> values) =>
+    [
+        .. values.Select(value => value.ValueKind is JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False
+            ? ChatMessage.Simple(value.GetRawText())
+            : Message(value))
+            .OfType<ChatMessage>()
+    ];
 }

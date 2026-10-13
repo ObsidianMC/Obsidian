@@ -16,9 +16,11 @@ namespace Obsidian.SourceGenerators.Plugins;
 /// <c>properties</c> maps each state property to its values (true and false make a bool property, two or more
 /// consecutive numbers an int one, anything else an enum one in the listed order); <c>default</c> gives the default
 /// state's values; and <c>hasCollision</c>, <c>opaque</c>, <c>hardness</c>, <c>explosionResistance</c>,
-/// <c>requiresCorrectTool</c>, <c>lightEmission</c>, <c>behavior</c> (an <c>IBlockBehavior</c> type's full name) and
-/// <c>item</c> (false for none, or <c>maxStackSize</c>, <c>maxDamage</c>, <c>enchantable</c> and <c>behavior</c>) set
-/// its <c>BlockProperties</c>. Tags are data pack tag files, which the server loads itself; only their keys are
+/// <c>requiresCorrectTool</c>, <c>lightEmission</c>, <c>behavior</c> (an <c>IBlockBehavior</c> type's full name),
+/// <c>treeGrower</c> (a sapling's <c>tree</c>, <c>secondaryTree</c>, <c>megaTree</c>, <c>secondaryMegaTree</c>,
+/// <c>flowers</c> and <c>secondaryFlowers</c> configured features and its <c>secondaryChance</c>) and <c>item</c>
+/// (false for none, or <c>maxStackSize</c>, <c>maxDamage</c>, <c>enchantable</c> and <c>behavior</c>) set its
+/// <c>BlockProperties</c>. Tags are data pack tag files, which the server loads itself; only their keys are
 /// generated. A file that's invalid, or whose generated names are taken, is reported and left out.
 /// </remarks>
 [Generator]
@@ -581,6 +583,7 @@ public sealed class PluginContentGenerator : IIncrementalGenerator
             AddBool(root, "requiresCorrectTool", "RequiresCorrectTool", settings);
             AddInt(root, "lightEmission", "LightEmission", settings);
             AddBehavior(root, settings);
+            AddTreeGrower(root, settings);
 
             List<string>? item = [];
             if (root.TryGetProperty("item", out var itemElement))
@@ -666,6 +669,38 @@ public sealed class PluginContentGenerator : IIncrementalGenerator
                 throw new InvalidOperationException($"{key} {value.GetRawText()} is too large.");
 
             settings.Add($"{member} = {number.ToString("R", CultureInfo.InvariantCulture)}f");
+        }
+
+        // A sapling's trees: TreeGrower's members, the features as identifiers.
+        private static void AddTreeGrower(JsonElement element, List<string> settings)
+        {
+            if (!element.TryGetProperty("treeGrower", out var value))
+                return;
+
+            if (value.ValueKind != JsonValueKind.Object)
+                throw new InvalidOperationException("treeGrower must be an object.");
+
+            var members = new List<string>();
+            AddFeature(value, "tree", "Tree", members);
+            AddFeature(value, "secondaryTree", "SecondaryTree", members);
+            AddFeature(value, "megaTree", "MegaTree", members);
+            AddFeature(value, "secondaryMegaTree", "SecondaryMegaTree", members);
+            AddFeature(value, "flowers", "Flowers", members);
+            AddFeature(value, "secondaryFlowers", "SecondaryFlowers", members);
+            AddFloat(value, "secondaryChance", "SecondaryChance", members);
+
+            settings.Add($"TreeGrower = new global::Obsidian.API.Blocks.TreeGrower {{ {string.Join(", ", members)} }}");
+        }
+
+        private static void AddFeature(JsonElement element, string key, string member, List<string> settings)
+        {
+            if (!element.TryGetProperty(key, out var value))
+                return;
+
+            if (value.ValueKind != JsonValueKind.String)
+                throw new InvalidOperationException($"{key} must be a configured feature's identifier.");
+
+            settings.Add($"{member} = {SymbolDisplay.FormatLiteral(value.GetString()!, quote: true)}");
         }
 
         private static void AddBehavior(JsonElement element, List<string> settings)

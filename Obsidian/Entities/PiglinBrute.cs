@@ -39,7 +39,7 @@ public sealed partial class PiglinBrute : PathfinderMob
     protected override async ValueTask TickMobAsync()
     {
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
-        var safe = Level.DimensionType.PiglinsSafe();
+        var safe = Level.PiglinsSafe((Vector)Position.Floor());
         if (safe || IsImmuneToZombification) { TimeInOverworld = 0; return; }
         if (++TimeInOverworld > 300)
         {

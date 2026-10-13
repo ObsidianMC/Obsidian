@@ -131,6 +131,17 @@ public partial class UseItemOnPacket
             }
         }
 
+        // Beds and respawn anchors, which explode where their environment attributes say they don't work.
+        if (!player.Sneaking
+            && player.GameMode != GameMode.Spectator
+            && player.Level is AbstractLevel useLevel
+            && (await useLevel.UseBedAsync(player, position, b)
+                || await useLevel.UseRespawnAnchorAsync(player, position, b, handSlot)))
+        {
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
+        }
+
         if (interactableBlocks.Contains(b.RegistryId) && !player.Sneaking)
         {
             await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)
@@ -214,6 +225,28 @@ public partial class UseItemOnPacket
             return;
         }
 
+        // Like vanilla's BoneMealItem.useOn: bone meal grows a block that takes it, and is used up unless the player
+        // is in creative mode. Adventure mode can't use items on blocks.
+        if (player.Level is AbstractLevel growLevel
+            && currentItem is { Count: > 0, Holder.Id: ItemIds.BoneMeal }
+            && player.GameMode is GameMode.Survival or GameMode.Creative
+            && growLevel.UseBoneMeal(position))
+        {
+            if (player.GameMode != GameMode.Creative)
+            {
+                player.Inventory.RemoveItem(handSlot, 1);
+                await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+                {
+                    ContainerId = 0,
+                    Slot = (short)handSlot,
+                    SlotData = player.Inventory.GetItem(handSlot)
+                });
+            }
+
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
+        }
+
         if (player is Obsidian.Entities.Player eatingPlayer)
             eatingPlayer.StartEating(Hand);
 
@@ -285,6 +318,15 @@ public partial class UseItemOnPacket
 
             default:
                 break;
+        }
+
+        // Like vanilla's buckets, water poured where it evaporates (the nether) hisses instead of being placed.
+        if (block.Is(BlockIds.Water)
+            && player.Level is AbstractLevel waterLevel
+            && waterLevel.Evaporates(player, position))
+        {
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
         }
 
         if (block.IsGravityAffected() && !BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out _))

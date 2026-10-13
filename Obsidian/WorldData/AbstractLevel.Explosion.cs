@@ -19,13 +19,24 @@ public abstract partial class AbstractLevel
         return JsonSerializer.Deserialize<Dictionary<string, float>>(stream)!;
     }
 
-    internal async ValueTask ExplodeAsync(Entity source, float radius, IEntity? owner = null)
+    internal ValueTask ExplodeAsync(Entity source, float radius, IEntity? owner = null) =>
+        ExplodeAsync(source.Position, radius, source, owner, fire: false);
+
+    /// <summary>
+    /// An explosion without an entity causing it, like a bed's or a respawn anchor's where they don't work. With
+    /// <paramref name="fire"/>, like vanilla's, a third of the air it reaches above a solid block catches fire.
+    /// </summary>
+    internal ValueTask ExplodeAsync(VectorD center, float radius, bool fire) =>
+        ExplodeAsync(center, radius, source: null, owner: null, fire);
+
+    private async ValueTask ExplodeAsync(VectorD center, float radius, Entity? source, IEntity? owner, bool fire)
     {
         // Capture the caller once, before awaited damage callbacks, rather than walking for each block drop.
         var spawner = PluginEntities.FindSpawner();
         var random = source is Mob mob ? mob.Random : Random.Shared;
         var terrain = new MobTerrain(this);
         var destroyed = new HashSet<Vector>();
+        var reached = new HashSet<Vector>();
         for (var x = 0; x < 16; x++)
         for (var y = 0; y < 16; y++)
         for (var z = 0; z < 16; z++)
@@ -34,7 +45,7 @@ public abstract partial class AbstractLevel
                 continue;
             var direction = new VectorD(x / 15f * 2 - 1, y / 15f * 2 - 1, z / 15f * 2 - 1);
             direction /= direction.Magnitude;
-            var point = source.Position;
+            var point = center;
             var strength = radius * (0.7f + random.NextSingle() * 0.6f);
             while (strength > 0)
             {
@@ -53,21 +64,29 @@ public abstract partial class AbstractLevel
                 }
                 if (strength > 0 && !block.IsAir)
                     destroyed.Add(position);
+
+                if (strength > 0 && fire)
+                    reached.Add(position);
                 point += direction * 0.3f;
                 strength -= 0.22500001f;
             }
         }
         var knockbacks = new Dictionary<int, VectorD>();
         var diameter = radius * 2;
-        foreach (var target in GetEntitiesInRange(source.Position, diameter + 1).OfType<Entity>().Where(entity => entity is Living or EndCrystal).ToArray())
+        var targets = GetEntitiesInRange(center, diameter + 1)
+            .OfType<Entity>()
+            .Where(entity => entity is Living or EndCrystal)
+            .ToArray();
+
+        foreach (var target in targets)
         {
             if (ReferenceEquals(target, source) || target.Health <= 0 ||
                 target is IPlayer player && player.GameMode == GameMode.Spectator)
                 continue;
-            var distance = (target.Position - source.Position).Magnitude / diameter;
+            var distance = (target.Position - center).Magnitude / diameter;
             if (distance > 1)
                 continue;
-            var direction = target.Position + new VectorD(0, target.Dimension.Height * 0.85f, 0) - source.Position;
+            var direction = target.Position + new VectorD(0, target.Dimension.Height * 0.85f, 0) - center;
             if (direction.Magnitude < 0.000001f)
                 continue;
             direction /= direction.Magnitude;
@@ -81,15 +100,16 @@ public abstract partial class AbstractLevel
             {
                 total++;
                 var sample = bounds.Min + (bounds.Max - bounds.Min) * new VectorD(a, b, c);
-                if (terrain.HasLineOfSight(sample, source.Position))
+                if (terrain.HasLineOfSight(sample, center))
                     visible++;
             }
             var exposure = (1 - distance) * visible / Math.Max(1, total);
             var damage = (float)Math.Floor((exposure * exposure + exposure) / 2 * 7 * diameter + 1);
+            var attacker = owner ?? source ?? (IEntity)target;
             if (target is Living living)
-                await living.DamageCombatAsync(owner ?? source, damage, CombatDamageKind.Explosion);
+                await living.DamageCombatAsync(attacker, damage, CombatDamageKind.Explosion);
             else
-                await target.DamageAsync(owner ?? source, damage);
+                await target.DamageAsync(attacker, damage);
             var knockback = direction * exposure * (1 - Math.Clamp(target.GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
             target.Motion += knockback;
             if (target is IPlayer)
@@ -119,14 +139,31 @@ public abstract partial class AbstractLevel
                 }
             }
         }
+        // Vanilla's ServerExplosion.createFire: each position reached, now air, catches fire a third of the time
+        // when the block below is solid.
+        foreach (var position in reached)
+        {
+            if (random.Next(3) == 0
+                && terrain.GetBlock(position)?.IsAir == true
+                && terrain.GetBlock(position + Vector.Down) is IBlock below
+                && below.IsSolid())
+            {
+                var flame = below.RegistryId is BlockIds.SoulSand or BlockIds.SoulSoil
+                    ? BlocksRegistry.SoulFire
+                    : BlocksRegistry.Fire;
+
+                await SetBlockAsync(position, flame, true);
+            }
+        }
+
         var sound = new SoundEffect { SoundId = "minecraft:entity.generic.explode", SoundCategory = SoundCategory.Blocks,
             Volume = 4, Pitch = 1, Seed = random.NextInt64() };
-        foreach (var player in GetPlayersInRange(source.Position, 64))
+        foreach (var player in GetPlayersInRange(center, 64))
         {
             var knockback = knockbacks.GetValueOrDefault(player.EntityId);
             await player.QueuePacketAsync(new ExplodePacket
             {
-                Center = source.Position, Radius = radius, BlockCount = destroyed.Count,
+                Center = center, Radius = radius, BlockCount = destroyed.Count,
                 PlayerKnockback = new Velocity(knockback.X, knockback.Y, knockback.Z),
                 ExplosionParticle = new ExplosionParticleData(), ExplosionSound = sound, ExplosionParticleInfo = []
             });

@@ -34,7 +34,7 @@ public sealed partial class Phantom : PathfinderMob
     }
     protected override ValueTask TickMobAsync()
     {
-        if (Level.MonstersBurn() &&
+        if (Level.MonstersBurn((Vector)Position.Floor()) &&
             !Level.LevelData.Raining && !InWater && Terrain.GetSkyLight((Vector)EyePosition.Floor()) == 15)
             Ignite(8);
         return default;

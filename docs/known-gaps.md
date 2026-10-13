@@ -56,6 +56,31 @@ lists of what furnaces and the smithing table accept, and its stonecutter recipe
   experience.
 - Add the stonecutter's and smithing table's result slots, like the crafting grid's.
 
+## Plant growth beyond saplings
+
+**Status:** open.
+
+Random ticks grow saplings and the mangrove propagule, and bone meal grows saplings, azaleas, crops, grass blocks and
+short grass and ferns (see [plugin content](plugin-content.md#saplings)). Crops don't grow on random ticks, and bone
+meal does nothing to vanilla's other plants (stems, berries, mushrooms, moss, nylium, cocoa, water plants and the
+like). Light isn't worked out again when blocks change while the server runs, so a sapling sees the light its spot
+had when the chunk was generated.
+
+**Where to start:** each plant is another case of `Growth` (its random tick, bone meal target, chance and growth),
+placing features through `LiveFeatureLevel`; crops' random ticks need vanilla's `CropBlock.getGrowthSpeed`.
+
+## Sleeping and spawn points
+
+**Status:** open.
+
+Beds and respawn anchors explode where their environment attributes say they don't work (see
+[plugin content](plugin-content.md#whats-checked)), but where they work, players can't sleep in a bed or set their
+spawn point with either: using one does nothing more, and players respawn at the world spawn. Unlike vanilla's, a
+respawn anchor next to water explodes like any other.
+
+**Where to start:** sleeping (vanilla's `Player.startSleepInBed` and the night skip) and players' respawn points,
+which `bed_rule`'s `can_sleep` and `can_set_spawn` and `respawn_anchor_works` then decide (see `LevelEnvironment`).
+
 ## Concurrent downloads into the shared test cache
 
 **Status:** open. Only hits a cold cache.

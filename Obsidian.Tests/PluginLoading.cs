@@ -555,11 +555,14 @@ public sealed class ProbePlugin : PluginBase
 
         pluginRegistry.MapEvent<IncomingChatMessageEventArgs>(this.OnChatAsync);
 
-        pluginRegistry.RegisterItem("probe:gem", new ItemProperties
+        var gem = pluginRegistry.RegisterItem("probe:gem", new ItemProperties
         {
             MaxStackSize = 16,
             Behavior = new GemBehavior()
         });
+
+        // Its gem brews awkward potions into potions of luck, which no vanilla mix makes.
+        pluginRegistry.AddPotionMix(Potion.Awkward, gem, Potion.Luck);
 
         pluginRegistry.RegisterBlock("probe:ore", new BlockProperties
         {

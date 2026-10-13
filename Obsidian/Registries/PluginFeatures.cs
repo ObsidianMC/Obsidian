@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Plugins;
 using Obsidian.Registries.Codecs;
 using Obsidian.WorldData.Features;
@@ -1144,6 +1145,15 @@ internal sealed record WorldgenFeatureSet(
         ?? global::Obsidian.Registries.ConfiguredFeatures.All.GetValueOrDefault(identifier);
 
     /// <summary>
+    /// Finds a placed feature by identifier, like <see cref="FindConfigured"/>: a plugin's or data pack's, an override
+    /// of vanilla's, or else vanilla's compiled one.
+    /// </summary>
+    /// <returns>The feature, or null when there's none of that identifier.</returns>
+    public PlacedFeature? FindPlaced(string identifier) =>
+        this.PlacedFeatures.GetValueOrDefault(identifier)
+        ?? global::Obsidian.Registries.PlacedFeatures.All.GetValueOrDefault(identifier);
+
+    /// <summary>
     /// Places a configured feature found by identifier (see <see cref="FindConfigured"/>), for what places a feature
     /// by name outside a biome's features, like the pale oak's moss decorator. Vanilla looks these up in its
     /// registry by key when they're placed, so files overriding them apply. A feature made of plugins' types is a
@@ -1151,12 +1161,36 @@ internal sealed record WorldgenFeatureSet(
     /// </summary>
     /// <returns>Whether the feature was found and placed something.</returns>
     /// <exception cref="PluginGenerationException">Placing a feature made of plugins' types failed.</exception>
-    public bool PlaceConfigured(string identifier, FeatureContext context)
-    {
-        if (this.FindConfigured(identifier) is not ConfiguredFeatureBase feature)
-            return false;
+    public bool PlaceConfigured(string identifier, FeatureContext context) =>
+        this.FindConfigured(identifier) is ConfiguredFeatureBase feature
+        && this.Place(feature, $"configured feature '{identifier}'", () => feature.Place(context));
 
-        var owners = this.EntryOwners.GetValueOrDefault(feature, []);
+    /// <summary>
+    /// Places a placed feature at <paramref name="origin"/>, through its placement modifiers, like
+    /// <see cref="PlaceConfigured"/>: a feature made of plugins' types is a call into those plugins, and isn't placed
+    /// while one unloads.
+    /// </summary>
+    /// <returns>Whether the feature placed something.</returns>
+    /// <exception cref="PluginGenerationException">Placing a feature made of plugins' types failed.</exception>
+    public bool PlacePlaced(
+        PlacedFeature feature,
+        IWorldGenLevel level,
+        WorldGenerationContext generation,
+        IRandomSource random,
+        Vector origin)
+    {
+        var name = feature.Identifier.Length > 0 ? $"placed feature '{feature.Identifier}'" : "a placed feature";
+
+        return this.Place(feature, name, () => feature.Place(level, generation, random, origin));
+    }
+
+    // Runs a placement holding a call into the plugins whose types the entry is made of.
+    private bool Place(object entry, string name, Func<bool> place)
+    {
+        var owners = this.EntryOwners.GetValueOrDefault(entry, []);
+        if (owners.IsEmpty && entry is PlacedFeature placed)
+            owners = this.Owners.GetValueOrDefault(placed, []);
+
         if (!GeneratorCalls.TryEnter(owners, out var calls))
             return false;
 
@@ -1164,14 +1198,11 @@ internal sealed record WorldgenFeatureSet(
         {
             try
             {
-                return feature.Place(context);
+                return place();
             }
             catch (Exception exception) when (!owners.IsEmpty && exception is not OutOfMemoryException)
             {
-                throw new PluginGenerationException(
-                    owners,
-                    $"Failed to place configured feature '{identifier}'.",
-                    exception);
+                throw new PluginGenerationException(owners, $"Failed to place {name}.", exception);
             }
         }
     }

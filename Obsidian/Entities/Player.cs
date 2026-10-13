@@ -321,6 +321,9 @@ public sealed partial class Player : Avatar, IClientPlayer
         if (container is EnchantmentTable)
             await RefreshEnchantingAsync();
 
+        if (container is BrewingStand stand)
+            await AbstractLevel.SendBrewingPropertiesAsync(this, stand);
+
         // A plugin's menu can close as it opens, when its plugin unloads; the screen that just opened closes too.
         if (this.CurrentContainerId == nextId && !ReferenceEquals(this.OpenedContainer, container))
             await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = nextId });

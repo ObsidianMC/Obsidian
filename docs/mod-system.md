@@ -91,6 +91,14 @@ client. This document describes the design and tracks its progress. The archive 
      the process, are synced to NeoForge and Fabric clients with the `minecraft:particle_type` and `minecraft:menu`
      registries (refusing vanilla clients once there are any), and have no behaviour to replace on reload; a menu's
      shape can't change until the server restarts.
+   - Done for brewing: brewing stands brew (fuel, 400-tick brews and vanilla's mixes) and route shift-clicks like
+     vanilla's, and `IPluginRegistry.AddPotionMix` and `AddContainerMix` add a plugin's mixes after vanilla's, removed
+     when it unloads (see [plugin-content.md](plugin-content.md#brewing)). Mixes aren't synced: clients know only
+     vanilla's, as vanilla's client builds them itself.
+   - Done for saplings: `BlockProperties.TreeGrower` makes a plugin's block a sapling that grows the configured
+     features it names, vanilla's or files', on random ticks and with bone meal like vanilla's saplings, 2x2 mega
+     trees included; the grower is the plugin's, like its behaviour (see
+     [plugin-content.md](plugin-content.md#saplings)). Vanilla's saplings grow, and bone meal grows crops and grass.
    - Next: Phase 3.
 3. **Data-driven content and world generation** (done): loading a mod's `data/` folder like a data pack
    (biomes, dimension types, damage types, tags, worldgen features), letting mods register codec types for
@@ -172,8 +180,8 @@ client. This document describes the design and tracks its progress. The archive 
      - in flat level stems: lakes, features and structure overrides (refused for now), which need the noise
        generator's decoration and structure steps to run over flat terrain;
      - particles' items with components in environment attributes;
-     - the server applying biomes' attributes, and those whose mechanics Obsidian lacks (beds, respawn anchors,
-       water evaporating); plugins build their own portals.
+     - attributes whose mechanics Obsidian lacks (sleeping and spawn points, which beds and respawn anchors set);
+       plugins build their own portals.
    - Done after Phase 3.8, level stems: dimension types and biomes defined inline become the plugin's or pack's
      entries, named for the stem (`<stem>/type`, `<stem>/biome_<n>`), so they get ids and are synced like files'.
      Stems may generate with `minecraft:flat` (layers and a biome, through the superflat generator, which now takes
@@ -194,6 +202,12 @@ client. This document describes the design and tracks its progress. The archive 
      other climate parameters, rather than a `double`: read `Depth[0]` and `Depth[1]`, and write a point as
      `[depth, depth]`. `SplineDensityFunction.Spline` is an `ISpline`, a multipoint `Spline` or a `SplineConstant`,
      rather than a `Spline`: assign either, and test for `Spline` before using a multipoint spline's members.
+   - Done after Phase 3.8, environment rules: the server applies biomes' attributes where they're asked about,
+     over the dimension type's (vanilla's own biomes' values included), for the attributes it applied before and
+     for `bed_rule` (beds explode where it says so), `respawn_anchor_works` (charged anchors explode where they don't
+     work) and `water_evaporates` (buckets of water evaporate). Plugins' dimension types and biomes get the same
+     from their files' `attributes`; a bed rule's message is shown to players (see
+     [plugin-content.md](plugin-content.md#whats-checked)).
    - Phase 3.5, part B (done): inline entries in plugins' level stems, and tree parts in the API. A stem's
      `generator.settings` may define noise settings inline, read like a plugin's noise settings file, with
      inline or named density functions; the plugins whose types they use, and the plugin entries they name, are
@@ -281,8 +295,8 @@ client. This document describes the design and tracks its progress. The archive 
      plugins or overrides, vanilla's compiled structures generate as before (see
      [plugin-content.md](plugin-content.md#structures)).
    - Worldgen gaps (done): what places a configured feature by identifier, like the pale oak's moss decorator,
-     finds it through the current features, overrides included, as vanilla's registry lookups do (Obsidian has no
-     sapling growth or bone meal yet, which would do the same). The surface builder's named noises follow
+     finds it through the current features, overrides included, as vanilla's registry lookups do (as do sapling
+     growth and bone meal, since). The surface builder's named noises follow
      overrides. Data packs' `overlays` for vanilla 1.21.11's format apply over their root, and their `filter` blocks
      earlier packs' files, like vanilla. A vanilla world made with a data pack changing its overworld opens as an
      integrated server when the same overworld stem is loaded, with a clear error otherwise. Biome regions can be

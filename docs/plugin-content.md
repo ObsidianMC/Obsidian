@@ -31,6 +31,38 @@ The block's identifier is in the plugin's namespace (its id). Unless `Item` is n
 places the block and is what it drops. A client mod has to declare the same block with the same properties and values
 in the same order: bool properties are `true, false`, int ones ascending, enum ones in the order given.
 
+### Saplings
+
+```csharp
+registry.RegisterBlock("ruby:ruby_sapling", new BlockProperties
+{
+    StateProperties = [StateProperty.Int("stage", 0, 1)],
+    HasCollision = false,
+    Opaque = false,
+    Hardness = 0,
+    TreeGrower = new TreeGrower
+    {
+        Tree = "ruby:ruby_tree",
+        MegaTree = "ruby:huge_ruby_tree",
+        SecondaryTree = "minecraft:fancy_oak",
+        SecondaryChance = 0.1f
+    }
+});
+```
+
+A block with a `TreeGrower` is a sapling, like vanilla's: on random ticks with a light level of 9 or more above it, one
+time in 7, and with bone meal 45% of the time, it grows a step. With a `stage` property the first step sets it to 1
+and the second grows the tree; without one, every step grows it. Its trees are configured features named by
+identifier: vanilla's, or a plugin's or data pack's from `worldgen/configured_feature` files (see
+[World generation features](#world-generation-features)), looked up as the sapling grows, so a reload or override
+applies at once. Like vanilla's, four saplings of the block in a square grow its `MegaTree` from their north-west
+corner, a flower within two blocks makes it grow its `Flowers` tree, and `SecondaryChance` picks the secondary tree
+of either; a sapling whose feature is missing, or can't be placed, stays a sapling. The grower belongs to the plugin
+like the block's behaviour: its saplings stop growing when it unloads, and a reload replaces it.
+
+Vanilla's saplings, azaleas and the mangrove propagule grow the same way into vanilla's trees, and bone meal grows
+crops, grass blocks (with vanilla's `minecraft:grass_bonemeal` and the biome's flowers) and short grass and ferns.
+
 ## Blocks from JSON
 
 Each `data/<namespace>/blocks/<name>.json` in the plugin's data folder is a block, shaped like an entry of vanilla's
@@ -53,7 +85,8 @@ blocks report:
 
 True and false make a bool property and consecutive numbers an int one; anything else is an enum property in the
 order listed. The other keys are `BlockProperties`' (`hasCollision`, `opaque`, `hardness`, `explosionResistance`,
-`requiresCorrectTool`, `lightEmission`), `behavior` is an `IBlockBehavior` type's full name, and `item` is false for a
+`requiresCorrectTool`, `lightEmission`), `behavior` is an `IBlockBehavior` type's full name, `treeGrower` makes a
+sapling (`{"tree": "ruby:ruby_tree"}`, with `TreeGrower`'s other members in camel case), and `item` is false for a
 block without an item.
 
 The generator makes a `RubyBlocks` class (from the namespace) in the plugin assembly's namespace, with a property per
@@ -223,6 +256,28 @@ vanilla recipes first and the rest after reconfiguration. A failed delivery does
 the next recipe change retries the affected player. Recipes are made of items, so a vanilla client sees a plugin's
 recipes of vanilla items.
 
+## Brewing
+
+```csharp
+public override void ConfigureRegistry(IPluginRegistry registry)
+{
+    var ruby = registry.RegisterItem("ruby:ruby");
+
+    registry.AddPotionMix(Potion.Awkward, ruby, Potion.Luck);
+    registry.AddContainerMix(ItemsRegistry.Potion, ruby, ItemsRegistry.LingeringPotion);
+}
+```
+
+Brewing stands brew like vanilla's: blaze powder (`#minecraft:brewing_fuel`) fuels 20 brews, a brew takes 400 ticks
+and mixes every bottle its ingredient brews, and shift-clicking sends fuel, ingredients and bottles to their slots in
+vanilla's order. A potion mix brews a bottle of one potion into the same kind of bottle of another, and a container
+mix one kind of bottle (a potion, splash or lingering potion) into another of the same potion, like gunpowder does.
+Vanilla's mixes are tried first, then plugins' in the order they were added, so a plugin can't change what vanilla
+brews; the result is a new bottle with only its potion, as in vanilla. A plugin's mixes are removed when it unloads
+and added again when it reloads; their ingredients may be the plugin's own items. Potions are vanilla's, as plugins
+can't add potions. Clients build vanilla's mixes themselves and aren't sent plugins', so a client predicts a click
+with a plugin's ingredient as if the slot refused it, and the window the server sends back corrects it.
+
 ## Tags
 
 Tags are data pack tag files: `data/<namespace>/tags/block/<path>.json`, `tags/item/...`, `tags/entity_type/...`,
@@ -383,12 +438,25 @@ vanilla's particle codecs and sent as they write them; their blocks and items ar
 plugins' ones, and an item is a name or `{"id": ...}` without components. A bed rule's `error_message` is any text
 component vanilla reads, checked for its content and nested components; clients aren't sent bed rules.
 
-The server applies a dimension type's attributes where Obsidian has the mechanics: `gameplay/monsters_burn` and
-`gameplay/sky_light_level` (with the overworld's day timeline), `gameplay/can_start_raid` (a bad omen in a village
-starts a raid), `gameplay/can_pillager_patrol_spawn` (patrols, which only spawn in the overworld, like vanilla's),
-`gameplay/fast_lava`, `gameplay/piglins_zombify` (piglins and hoglins) and `gameplay/snow_golem_melts` (everywhere,
-besides hot biomes). The rest change what clients show and play: Obsidian has no beds, respawn anchors, water
-evaporating, or the mechanics of the other attributes, and the server doesn't apply biomes' attributes.
+The server applies the attributes Obsidian has the mechanics of, like vanilla: a value starts at the attribute's
+default, then the dimension type's map applies, then the biome's where it's asked about, so a plugin's biome can
+change them in any dimension, and a plugin's dimension type everywhere in its levels (vanilla's own types and biomes
+apply their values too):
+
+- `gameplay/monsters_burn` and `gameplay/sky_light_level` (with the overworld's day timeline; a biome can't set the
+  sky light level), and `gameplay/fast_lava` (a whole dimension's);
+- `gameplay/can_start_raid` (a bad omen where the player is starts a raid in a village) and
+  `gameplay/can_pillager_patrol_spawn` (where a patrol would spawn, only in the overworld, like vanilla's);
+- `gameplay/piglins_zombify` (piglins and hoglins) and `gameplay/snow_golem_melts`;
+- `gameplay/bed_rule`: where it `explodes`, using a bed removes it and sets off an explosion of power 5 with fire, as
+  in vanilla's nether and end, showing its `error_message` above the hotbar; elsewhere a player who can't sleep now
+  is shown it;
+- `gameplay/respawn_anchor_works`: glowstone charges a respawn anchor anywhere, and a charged anchor explodes like a
+  bed where it doesn't work (everywhere but vanilla's nether);
+- `gameplay/water_evaporates`: water poured from a bucket hisses away instead of being placed.
+
+Players can't sleep or set their spawn with a bed or anchor yet, so where those work, using them does nothing more.
+The other attributes change what clients show and play.
 
 ## World generation features
 

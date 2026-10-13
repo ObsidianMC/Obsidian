@@ -245,9 +245,10 @@ public sealed class BlockType
 }
 
 /// <summary>
-/// The plugin that registered a block, and what the block does.
+/// The plugin that registered a block, and what the block does: its behaviour, and the trees it grows into when it's
+/// a sapling.
 /// </summary>
-internal sealed record BlockBinding(IPluginContainer Owner, IBlockBehavior? Behavior);
+internal sealed record BlockBinding(IPluginContainer Owner, IBlockBehavior? Behavior, TreeGrower? TreeGrower = null);
 
 /// <summary>
 /// The parts of a plugin block's <see cref="BlockProperties"/> the server keeps: plain values, so that keeping them

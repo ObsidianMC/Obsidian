@@ -93,6 +93,12 @@ internal sealed record EnvironmentAttributeMap(ImmutableArray<EnvironmentAttribu
         };
     }
 
+    /// <summary>
+    /// The value or modifier the map holds for <paramref name="attribute"/>, or null when it holds none.
+    /// </summary>
+    public INbtTag? Find(string attribute) =>
+        this.Entries.FirstOrDefault(entry => entry.Attribute == attribute)?.Value;
+
     // Vanilla's Mth.lerp for floats.
     internal static float Lerp(float delta, float start, float end) => start + delta * (end - start);
 
@@ -400,13 +406,14 @@ internal static class EnvironmentAttributes
         };
     }
 
-    // Vanilla's BedRule. Clients aren't sent bed rules, and Obsidian has no beds to show its error message with, so
-    // the message is checked but not kept.
+    // Vanilla's BedRule. Clients aren't sent bed rules, so its error message is kept as its JSON, which the server
+    // shows players (see BedRule).
     private static NbtCompound ReadBedRule(JsonElement value, string path, string name)
     {
         Object(value, path);
 
-        if (TryGet(value, "error_message", out var message))
+        var errorMessage = TryGet(value, "error_message", out var message) ? message.GetRawText() : null;
+        if (errorMessage is not null)
             TextComponentJson.Check(message, Field(path, "error_message"));
 
         var canSleep = Enum(Required(value, path, "can_sleep"), Field(path, "can_sleep"), bedRules);
@@ -420,6 +427,9 @@ internal static class EnvironmentAttributes
 
         if (TryGet(value, "explodes", out var explodes) && Bool(explodes, Field(path, "explodes")))
             rule.Add(Byte("explodes", true));
+
+        if (errorMessage is not null)
+            rule.Add(new NbtTag<string>("error_message", errorMessage));
 
         return rule;
     }

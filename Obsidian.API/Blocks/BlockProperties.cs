@@ -59,6 +59,13 @@ public sealed class BlockProperties
     public IBlockBehavior? Behavior { get; init; }
 
     /// <summary>
+    /// The trees the block grows into, which makes it a sapling: it grows in light on random ticks and with bone meal
+    /// like vanilla's saplings. Null for a block that doesn't grow. Like <see cref="Behavior"/>, it's the plugin's:
+    /// the block stops growing when the plugin unloads, and a reload replaces it.
+    /// </summary>
+    public TreeGrower? TreeGrower { get; init; }
+
+    /// <summary>
     /// The properties of the block's item, which has the block's identifier, places the block and is what the block
     /// drops; null for a block without an item.
     /// </summary>
