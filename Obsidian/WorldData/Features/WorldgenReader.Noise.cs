@@ -249,14 +249,18 @@ internal sealed partial class WorldgenReader
     // A noise defined inline, which vanilla's codec reads but its generator can't seed, as it seeds noises from their
     // identifiers. Obsidian seeds it from its parameters instead, so inline noises with the same parameters are one
     // noise, like noises of one identifier. The key isn't an identifier, so it never seeds like a registered noise.
+    // It's formatted invariantly, as the seeds must be the same whatever the server's culture.
     private static BaseNoise ReadInlineNoise(JsonElement json, string path)
     {
         var noise = ReadNoiseCore(json, "", path);
         var amplitudes = noise.Amplitudes.Select(amplitude => amplitude.ToString("R", CultureInfo.InvariantCulture));
+        var key = string.Create(
+            CultureInfo.InvariantCulture,
+            $"obsidian:inline noise {noise.FirstOctave} [{string.Join(',', amplitudes)}]");
 
         return new BaseNoise
         {
-            Key = $"obsidian:inline noise {noise.FirstOctave} [{string.Join(',', amplitudes)}]",
+            Key = key,
             FirstOctave = noise.FirstOctave,
             Amplitudes = noise.Amplitudes
         };
