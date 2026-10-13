@@ -404,6 +404,16 @@ internal static partial class PluginDimensions
         added.FirstOrDefault(file => file.Identifier == identifier)?.Dimension;
 
     /// <summary>
+    /// The level stem the added dimension <paramref name="identifier"/> was read from: a plugin's or data pack's
+    /// file, or vanilla's own stem for one of vanilla's dimensions whose noise is overridden. Null when there's none.
+    /// </summary>
+    /// <returns>Where the stem is from, for messages, and its JSON.</returns>
+    public static (string Source, byte[] Stem)? FindStem(string identifier) =>
+        added.FirstOrDefault(file => file.Identifier == identifier) is DimensionFile file
+            ? (file.Source, file.Stem)
+            : null;
+
+    /// <summary>
     /// The dimension types of vanilla's dimensions no level took yet whose build range, as a file overrides it, the
     /// dimension can't generate in, with why: Obsidian can't clamp generation to the build range, as vanilla does,
     /// so such a type has to stay vanilla's.

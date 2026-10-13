@@ -1,6 +1,7 @@
 using Obsidian.API.Configuration;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Generators.Mojang;
+using System.Text.Json;
 
 namespace Obsidian.WorldData;
 
@@ -91,16 +92,23 @@ internal static class VanillaLevelData
     /// <summary>
     /// Obsidian's generator for the overworld a level's <c>WorldGenSettings</c> describe.
     /// </summary>
+    /// <remarks>
+    /// A world made in vanilla with a data pack changing the overworld, like Terralith, saves that pack's level stem.
+    /// Vanilla reads the pack's stem over the saved one on every load, so such a world opens when a data pack or
+    /// plugin overrides the overworld's stem with the same generator (see <see cref="SavedLevelStem"/>).
+    /// </remarks>
+    /// <param name="overworld">The file overriding the overworld's level stem, if any: where it's from, for
+    /// messages, and its JSON.</param>
     /// <exception cref="NotSupportedException">
     /// Obsidian can't generate that overworld, including flat worlds with other layers or another biome than its superflat
     /// generator's: they'd silently get different terrain.
     /// </exception>
-    public static string GetGeneratorId(NbtCompound data)
+    public static string GetGeneratorId(NbtCompound data, (string Source, byte[] Stem)? overworld = null)
     {
         if (!data.TryGetTag<NbtCompound>("WorldGenSettings", out var worldGen)
             || !worldGen.TryGetTag<NbtCompound>("dimensions", out var dimensions)
-            || !dimensions.TryGetTag<NbtCompound>(Overworld, out var overworld)
-            || !overworld.TryGetTag<NbtCompound>("generator", out var generator))
+            || !dimensions.TryGetTag<NbtCompound>(Overworld, out var savedStem)
+            || !savedStem.TryGetTag<NbtCompound>("generator", out var generator))
             return MojangGeneratorId;
 
         var type = Get<string?>(generator, "type", null);
@@ -125,7 +133,35 @@ internal static class VanillaLevelData
         if (type == "minecraft:noise" && settings == Overworld && isMultiNoise && biomePreset == Overworld)
             return MojangGeneratorId;
 
-        throw new NotSupportedException($"Obsidian can't generate this world's overworld ({type}, {settings ?? "custom settings"}).");
+        var described = $"{type}, {settings ?? "custom settings"}, {biomePreset ?? "custom biomes"}";
+        if (type != "minecraft:noise")
+            throw new NotSupportedException($"Obsidian can't generate this world's overworld ({described}).");
+
+        if (overworld is not (string stemSource, byte[] stem))
+        {
+            throw new NotSupportedException(
+                $"This world's overworld ({described}) isn't vanilla's default. Obsidian generates it only with a "
+                + "data pack or plugin overriding the minecraft:overworld level stem with the same generator, like "
+                + "the data pack the world was made with in the data packs folder.");
+        }
+
+        var options = new JsonDocumentOptions
+        {
+            CommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true
+        };
+
+        using var document = JsonDocument.Parse(stem, options);
+
+        if (SavedLevelStem.FindDifference(savedStem, document.RootElement) is string difference)
+        {
+            throw new NotSupportedException(
+                $"This world's overworld was made with a data pack other than {stemSource}, whose "
+                + $"minecraft:overworld level stem differs at {(difference.Length == 0 ? "its root" : difference)}. "
+                + "Use the data pack the world was made with.");
+        }
+
+        return MojangGeneratorId;
     }
 
     /// <summary>

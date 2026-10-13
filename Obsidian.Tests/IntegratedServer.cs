@@ -100,4 +100,83 @@ public class VanillaLevelDataTests
 
         Assert.Throws<NotSupportedException>(() => VanillaLevelData.GetGeneratorId(data));
     }
+
+    /// <summary>
+    /// A world made in vanilla with a data pack changing the overworld saves the pack's stem: it opens when the same
+    /// stem overrides the overworld, read the way vanilla's codecs saved it (floats, climate pairs, short ids), and is
+    /// refused with where it differs otherwise.
+    /// </summary>
+    [Theory]
+    [InlineData(null, "isn't vanilla's default")]
+    [InlineData("plains", null)]
+    [InlineData("minecraft:desert", "differs at generator.biome_source.biomes[0].biome")]
+    public void DataPackOverworldsOpenWithTheirStem(string? biome, string? error)
+    {
+        var parameters = new NbtCompound("parameters")
+        {
+            Pair("temperature", -1f, 1f),
+            Pair("humidity", -1f, 1f),
+            Pair("continentalness", -1.2f, 1f),
+            Pair("erosion", -1f, 1f),
+            Pair("depth", 0f, 0f),
+            Pair("weirdness", -1f, 1f),
+            new NbtTag<float>("offset", 0.1f)
+        };
+
+        var entry = new NbtCompound
+        {
+            new NbtTag<string>("biome", "minecraft:plains"),
+            parameters
+        };
+
+        var data = VanillaLevelData.Create(new NewWorldConfiguration(), "Pack", 1, "minecraft:mojang_generator");
+        var dimensions = (NbtCompound)((NbtCompound)data["WorldGenSettings"])["dimensions"];
+        var generator = (NbtCompound)((NbtCompound)dimensions["minecraft:overworld"])["generator"];
+
+        generator.Remove("biome_source");
+        generator.Add(new NbtCompound("biome_source")
+        {
+            new NbtTag<string>("type", "minecraft:multi_noise"),
+            new NbtList(NbtTagType.Compound, "biomes") { entry }
+        });
+
+        var stem = $$"""
+            {
+              "type": "minecraft:overworld",
+              "generator": {
+                "type": "minecraft:noise",
+                "settings": "minecraft:overworld",
+                "biome_source": {
+                  "type": "minecraft:multi_noise",
+                  "biomes": [
+                    {
+                      "biome": "{{biome}}",
+                      "parameters": {
+                        "temperature": [-1, 1], "humidity": [-1, 1], "continentalness": [-1.2, 1],
+                        "erosion": [-1, 1], "depth": 0, "weirdness": [-1, 1], "offset": 0.1
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+            """;
+
+        (string, byte[])? overworld = biome is null ? null : ("test pack", Encoding.UTF8.GetBytes(stem));
+
+        if (error is null)
+        {
+            Assert.Equal("minecraft:mojang_generator", VanillaLevelData.GetGeneratorId(data, overworld));
+            return;
+        }
+
+        var exception = Assert.Throws<NotSupportedException>(() => VanillaLevelData.GetGeneratorId(data, overworld));
+        Assert.Contains(error, exception.Message);
+
+        static NbtList Pair(string name, float min, float max) => new(NbtTagType.Float, name)
+        {
+            new NbtTag<float>("", min),
+            new NbtTag<float>("", max)
+        };
+    }
 }
