@@ -132,7 +132,18 @@ public sealed partial class EventDispatcher : IEventDispatcher
         }
     }
 
-    public async ValueTask<EventResult> ExecuteEventAsync<TEventArgs>(TEventArgs eventArgs) where TEventArgs : BaseMinecraftEventArgs
+    public ValueTask<EventResult> ExecuteEventAsync<TEventArgs>(TEventArgs eventArgs)
+        where TEventArgs : BaseMinecraftEventArgs =>
+        this.ExecuteEventAsync(eventArgs, unloading: null);
+
+    /// <summary>
+    /// Runs the handlers of an event that <paramref name="unloading"/>'s unloading raises, like closing its menus. Its
+    /// handlers run too, although it takes no other calls.
+    /// </summary>
+    internal async ValueTask<EventResult> ExecuteEventAsync<TEventArgs>(
+        TEventArgs eventArgs,
+        PluginContainer? unloading)
+        where TEventArgs : BaseMinecraftEventArgs
     {
         var eventType = eventArgs.GetType();
         using var serviceScope = this.serviceProvider.CreateScope();
@@ -148,7 +159,7 @@ public sealed partial class EventDispatcher : IEventDispatcher
             // The snapshot can hold handlers of a plugin that started unloading; those are skipped, and releasing the
             // plugin waits for the ones that already run.
             var plugin = registration.Plugin as PluginContainer;
-            using var call = plugin?.TryEnter();
+            using var call = plugin is not null && plugin == unloading ? plugin.EnterUnloading() : plugin?.TryEnter();
             if (plugin is not null && call is null)
                 continue;
 

@@ -1,17 +1,25 @@
 using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Payloads;
+using Obsidian.Plugins;
+using Obsidian.Plugins.Archives;
 using Obsidian.Registries;
+using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Plugins' particle and menu types: numbered after vanilla's, synced to modded clients, and sent with their ids.
+/// Plugins' particle and menu types: numbered after vanilla's, synced to modded clients, and sent with their ids; and
+/// their menus closing as the plugin unloads.
 /// </summary>
 public sealed class PluginParticlesAndMenus
 {
@@ -70,6 +78,55 @@ public sealed class PluginParticlesAndMenus
         Assert.False(AbstractLevel.IsInParticleRange(player, new VectorD(0.5, 64, 0.5), 32));
         Assert.True(AbstractLevel.IsInParticleRange(player, new VectorD(0.5, 69, 0.5), 32));
         Assert.True(AbstractLevel.IsInParticleRange(player, new VectorD(0.5, 64, 0.5), 512));
+    }
+
+    [Fact(DisplayName = "An unloading plugin sees its menus close, which then don't open until it loads again",
+        Timeout = 10000)]
+    public async Task UnloadingClosesMenusForGood()
+    {
+        await using var context = TestServerFactory.CreateServer($"menu-unload-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Viewer");
+        context.Server.OnlinePlayers.TryAdd(player.Uuid, player);
+
+        var plugin = Plugin();
+        var bag = PluginRegistry.RegisterMenu(plugin, "unloadprobe:bag", 1, 9);
+        var closes = 0;
+        context.EventDispatcher.RegisterEvent(plugin, (Func<ContainerClosedEventArgs, ValueTask>)(_ =>
+        {
+            closes++;
+            return ValueTask.CompletedTask;
+        }));
+
+        await player.OpenInventoryAsync(new MenuContainer(bag, "Bag"));
+
+        // Like unloading: the plugin takes no more calls, but its close handler still sees its menu close.
+        plugin.Close();
+        await PluginManager.CloseMenusAsync(context.Server, plugin);
+
+        Assert.Equal(1, closes);
+        Assert.Null(player.OpenedContainer);
+        Assert.Single(((TestClient)player.Client).SentPackets.OfType<ContainerClosePacket>());
+
+        // Its calls still running can't open the type's menus again, nor register it.
+        await player.OpenInventoryAsync(new MenuContainer(bag, "Bag"));
+        Assert.Null(player.OpenedContainer);
+        Assert.Throws<InvalidOperationException>(() => PluginRegistry.RegisterMenu(plugin, "unloadprobe:bag", 1, 9));
+
+        // Once the plugin loads again, they open.
+        Assert.Same(bag, PluginRegistry.RegisterMenu(Plugin(), "unloadprobe:bag", 1, 9));
+        await player.OpenInventoryAsync(new MenuContainer(bag, "Bag"));
+        Assert.IsType<MenuContainer>(player.OpenedContainer);
+
+        static PluginContainer Plugin() => new()
+        {
+            Info = new PluginInfo("unloadprobe"),
+            Archive = PluginArchive.Open(
+                "unloadprobe.obby",
+                PluginArchives.Zip(new Dictionary<string, byte[]>
+                {
+                    [PluginMetadata.FileName] = PluginArchives.Metadata("unloadprobe", "1.0.0", "Unload probe")
+                }))
+        };
     }
 
     private static int VarIntSize(int value) => Write(writer => writer.WriteVarInt(value)).Length;

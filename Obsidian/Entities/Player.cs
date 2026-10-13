@@ -8,6 +8,8 @@ using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Scoreboard;
+using Obsidian.Plugins;
+using Obsidian.Services;
 using Obsidian.WorldData;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -281,40 +283,60 @@ public sealed partial class Player : Avatar, IClientPlayer
     {
         if (OpenedContainer is EnchantmentTable previousTable)
             await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, previousTable);
-        if (container is EnchantmentTable table)
-            container = new EnchantmentTable { BlockPosition = table.BlockPosition, Title = table.Title, CustomName = table.CustomName };
-        OpenedContainer = container;
 
-        var nextId = GetNextContainerId();
+        if (container is EnchantmentTable table)
+        {
+            container = new EnchantmentTable
+            {
+                BlockPosition = table.BlockPosition,
+                Title = table.Title,
+                CustomName = table.CustomName
+            };
+        }
+
+        if (this.TryShow(container) is not byte nextId)
+            return;
 
         await Client.QueuePacketAsync(new OpenScreenPacket(container, nextId));
 
         // Like vanilla's menus, a plugin's is sent whole, its slots then the player's inventory, so that clients know
-        // how many slots it has before the player clicks. The packet sets the cursor too, so it carries the player's.
-        if (container is CraftingTable { Type: InventoryType.Crafting } or MenuContainer)
+        // how many slots it has before the player clicks. The packet sets the cursor too, so it always goes, with the
+        // player's carried item, even for an empty container.
+        var contents = container is CraftingTable { Type: InventoryType.Crafting } or MenuContainer or EnchantmentTable
+            ? container.Concat(this.Inventory.Skip(9).Take(36)).ToList()
+            : container.ToList();
+
+        await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, contents)
         {
-            var contents = container.Concat(this.Inventory.Skip(9).Take(36)).ToList();
-            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, contents)
-            {
-                CarriedItem = this.CarriedItem
-            });
-        }
-        else if (container.HasItems())
-        {
-            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList())
-            {
-                CarriedItem = this.CarriedItem
-            });
-        }
+            CarriedItem = this.CarriedItem
+        });
 
         if (container is EnchantmentTable)
-        {
-            var contents = container.Concat(Inventory.Skip(9).Take(36)).ToList();
-            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, contents)
-            {
-                CarriedItem = this.CarriedItem
-            });
             await RefreshEnchantingAsync();
+
+        // A plugin's menu can close as it opens, when its plugin unloads; the screen that just opened closes too.
+        if (this.CurrentContainerId == nextId && !ReferenceEquals(this.OpenedContainer, container))
+            await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = nextId });
+    }
+
+    /// <summary>
+    /// Makes <paramref name="container"/> the open container and numbers its window, unless it's a menu whose type
+    /// doesn't open now (see <see cref="MenuDefinition.IsOpenable"/>).
+    /// </summary>
+    /// <returns>The window's id, or null when the menu doesn't open.</returns>
+    private byte? TryShow(BaseContainer container)
+    {
+        if (container is not MenuContainer menu)
+            return Show();
+
+        lock (menu.Menu.Gate)
+            return menu.Menu.IsOpenable ? Show() : null;
+
+        byte Show()
+        {
+            this.OpenedContainer = container;
+
+            return this.GetNextContainerId();
         }
     }
 
@@ -322,19 +344,31 @@ public sealed partial class Player : Avatar, IClientPlayer
     /// Closes the player's open container from the server, like the player closing it: the close event runs, then
     /// their screen closes. Unlike the player's close, cancelling the event doesn't keep it open.
     /// </summary>
-    internal async ValueTask CloseContainerAsync()
+    /// <param name="unloading">
+    /// The plugin whose unloading closes the container. Its handlers of the close event still run, although it no
+    /// longer takes other calls.
+    /// </param>
+    internal async ValueTask CloseContainerAsync(PluginContainer? unloading = null)
     {
         if (this.OpenedContainer is not BaseContainer container)
             return;
 
         var containerId = this.CurrentContainerId;
-        await this.EventDispatcher.ExecuteEventAsync(new ContainerClosedEventArgs(this, this.Server, container));
+        var closed = new ContainerClosedEventArgs(this, this.Server, container);
 
-        // A handler may have opened another container instead, which stays open.
-        if (!ReferenceEquals(this.OpenedContainer, container))
+        if (unloading is not null && this.EventDispatcher is EventDispatcher dispatcher)
+            await dispatcher.ExecuteEventAsync(closed, unloading);
+        else
+            await this.EventDispatcher.ExecuteEventAsync(closed);
+
+        // A handler may have opened another container instead, which stays open. The server's own handler has
+        // usually let go of the container already, so the window's id tells.
+        if (this.CurrentContainerId != containerId)
             return;
 
-        this.OpenedContainer = null;
+        if (ReferenceEquals(this.OpenedContainer, container))
+            this.OpenedContainer = null;
+
         await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = containerId });
     }
 

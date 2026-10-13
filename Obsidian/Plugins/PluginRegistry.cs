@@ -208,7 +208,17 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         CheckIdentifier(container, identifier);
 
         var menu = MenuTypesRegistry.Register(identifier, rows, columns);
-        menu.Owner = container;
+
+        // Checked inside the gate, so that an unloading plugin's menu type stays closed (see
+        // PluginManager.CloseMenusAsync).
+        lock (menu.Gate)
+        {
+            if (container.IsClosing)
+                throw new InvalidOperationException($"{container.Info.Name} is unloading.");
+
+            menu.Owner = container;
+            menu.IsOpenable = true;
+        }
 
         return menu;
     }
