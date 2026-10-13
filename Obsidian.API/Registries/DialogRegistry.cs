@@ -1,5 +1,6 @@
 using Obsidian.API.Registry.Codecs.Dialogs;
 using Obsidian.Nbt;
+using Obsidian.Nbt.Interfaces;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
@@ -25,7 +26,8 @@ public static class DialogRegistry
     private static readonly ConditionalWeakTable<AssemblyLoadContext, object> released = [];
 
     /// <summary>
-    /// Identifies the registered dialogs and their contents, so a client can tell it was configured with others.
+    /// Identifies the registered dialogs and the contents clients are sent (see <see cref="GetSerialized"/>), so a
+    /// client can tell it was configured with others. Empty when no dialog is registered.
     /// </summary>
     internal static string Fingerprint { get; private set; } = "";
 
@@ -110,6 +112,23 @@ public static class DialogRegistry
     }
 
     /// <summary>
+    /// The registered dialogs, by identifier, each serialized as clients are sent it when it was registered: the
+    /// contents <see cref="Fingerprint"/> identifies, which changing the dialog afterwards doesn't change.
+    /// </summary>
+    internal static ImmutableArray<SerializedDialog> GetSerialized()
+    {
+        lock (sync)
+        {
+            return
+            [
+                .. entries.Values
+                    .OrderBy(entry => entry.Registration.Id, StringComparer.Ordinal)
+                    .Select(entry => new SerializedDialog(entry.Registration, entry.Nbt))
+            ];
+        }
+    }
+
+    /// <summary>
     /// Removes the dialogs code from an unloading plugin's load context registered, and refuses its later ones.
     /// </summary>
     internal static void Release(AssemblyLoadContext owner)
@@ -135,6 +154,13 @@ public static class DialogRegistry
     // gives the same fingerprint, so clients only reconfigure for dialogs that changed.
     private static void Update()
     {
+        // The same with no dialog as before any was registered, so that clients don't reconfigure for nothing.
+        if (entries.Count == 0)
+        {
+            Fingerprint = "";
+            return;
+        }
+
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
         foreach (var (id, entry) in entries.OrderBy(pair => pair.Key, StringComparer.Ordinal))
@@ -154,6 +180,36 @@ public static class DialogRegistry
 
     // A registration, the plugin load context that registered it, if any, and the dialog as the client gets it.
     private sealed record Entry(DialogRegistration Registration, AssemblyLoadContext? Owner, byte[] Nbt);
+}
+
+/// <summary>
+/// A registered dialog with the dialog as it was registered, serialized as a registry element (a network compound)
+/// for clients. Nothing changes those bytes.
+/// </summary>
+internal sealed class SerializedDialog(DialogRegistration registration, byte[] element)
+{
+    public DialogRegistration Registration { get; } = registration;
+
+    /// <summary>
+    /// The dialog's registry entry with id <paramref name="id"/>, which writes the serialized dialog.
+    /// </summary>
+    public ICodec ToCodec(int id) => new Codec(this.Registration.Id, id, element);
+
+    private sealed class Codec(string name, int id, byte[] element) : ICodec
+    {
+        public string Name => name;
+
+        public int Id => id;
+
+        // The compound's tags, in the order the dialog wrote them.
+        public void WriteElement(INbtWriter writer)
+        {
+            var compound = (NbtCompound)NbtReader.ReadTag(element, readName: false, out _)!;
+
+            foreach (var (_, tag) in compound)
+                writer.WriteTag(tag);
+        }
+    }
 }
 
 /// <summary>

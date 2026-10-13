@@ -29,19 +29,38 @@ public sealed partial class Server
     internal (Dictionary<string, ICodec> Codecs, Dictionary<string, Tag[]> Tags) CreateDialogConfiguration()
     {
         var codecs = CodecRegistry.Dialog.All.Values.OrderBy(x => x.Id).ToDictionary(x => x.Name, x => (ICodec)x);
-        var registrations = DialogRegistry.GetRegistrations();
-        if (TryGetFeedbackWebhook(Configuration.FeedbackWebhookUrl, out _))
-            registrations = registrations.Add(new(FeedbackActionId, CreateFeedbackDialog(), true, false));
 
         var quickActions = new List<int>();
         var pauseScreen = new List<int>();
-        foreach (var registration in registrations)
+
+        // Plugins' dialogs as they were registered, the contents DialogRegistry.Fingerprint identifies.
+        foreach (var dialog in DialogRegistry.GetSerialized())
+        {
+            var registration = dialog.Registration;
+            var id = codecs.Count;
+
+            codecs.Add(registration.Id, dialog.ToCodec(id));
+
+            if (registration.QuickAction)
+                quickActions.Add(id);
+
+            if (registration.PauseScreen)
+                pauseScreen.Add(id);
+        }
+
+        if (TryGetFeedbackWebhook(Configuration.FeedbackWebhookUrl, out _))
         {
             var id = codecs.Count;
-            codecs.Add(registration.Id, new DialogCodec { Name = registration.Id, Id = id, Element = registration.Dialog });
-            if (registration.QuickAction) quickActions.Add(id);
-            if (registration.PauseScreen) pauseScreen.Add(id);
+
+            codecs.Add(FeedbackActionId, new DialogCodec
+            {
+                Name = FeedbackActionId,
+                Id = id,
+                Element = CreateFeedbackDialog()
+            });
+            quickActions.Add(id);
         }
+
         var tags = TagsRegistry.GetCategories();
         var dialogTags = tags.GetValueOrDefault("dialog") ?? [];
         tags["dialog"] = [.. dialogTags.Where(x => x.Name is not ("quick_actions" or "pause_screen_additions")),

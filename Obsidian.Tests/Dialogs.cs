@@ -211,4 +211,40 @@ public sealed class Dialogs
         }
         finally { DialogRegistry.Unregister(id); }
     }
+
+    [Fact]
+    public void Registration_SendsTheDialogAsRegistered()
+    {
+        const string id = "dialog_test:snapshot";
+
+        try
+        {
+            var registered = DialogBuilder.Notice("Before").Register(id);
+
+            // The registration shares the title with the dialog it returned; changing it changes nothing sent.
+            registered.Title.Text = "After";
+
+            var dialog = Assert.Single(DialogRegistry.GetSerialized(), dialog => dialog.Registration.Id == id);
+
+            var expected = Element(DialogBuilder.Notice("Before").Build().Write);
+
+            Assert.Equal(expected, Element(dialog.ToCodec(0).WriteElement));
+        }
+        finally
+        {
+            DialogRegistry.Unregister(id);
+        }
+
+        // Writes a registry element as NetworkBuffer.WriteCodec does.
+        static byte[] Element(Action<Obsidian.Nbt.Interfaces.INbtWriter> write)
+        {
+            using var writer = new RawNbtWriter(true);
+
+            write(writer);
+            writer.EndCompound();
+            writer.TryFinish();
+
+            return writer.Data.ToArray();
+        }
+    }
 }
