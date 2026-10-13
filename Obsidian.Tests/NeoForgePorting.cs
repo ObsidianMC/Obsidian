@@ -153,6 +153,20 @@ public sealed class NeoForgePorting
             null
         },
         {
+            "identifiers with and without the minecraft namespace are one entry",
+            """
+            {"type": "neoforge:remove_spawns", "entity_types": "minecraft:zombie",
+             "biomes": {"type": "neoforge:and", "values": ["#minecraft:is_overworld", {"type": "neoforge:or",
+               "values": [{"type": "neoforge:not", "value": "desert"},
+                          {"type": "neoforge:not", "value": "minecraft:desert"}]}]}}
+            """,
+            """
+            {"biomes": "#minecraft:is_overworld", "exclude": "desert",
+             "remove": {"spawners": "minecraft:zombie"}}
+            """,
+            null
+        },
+        {
             "a union of complements of different tags",
             """
             {"type": "neoforge:remove_spawns", "entity_types": "minecraft:zombie",

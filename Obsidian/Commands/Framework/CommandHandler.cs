@@ -131,8 +131,27 @@ public sealed class CommandHandler : ICommandHandler
         AddCommand(command);
     }
 
-    public bool TryAddArgumentParser<TValue>(BaseArgumentParser<TValue> parser) =>
-        _argumentParsers.TryAdd(typeof(TValue), parser);
+    /// <summary>
+    /// Adds a parser for a type unless one is registered. An unloading plugin's parser is refused, like its commands:
+    /// one added while the plugin closes is removed either by the unload or here.
+    /// </summary>
+    public bool TryAddArgumentParser<TValue>(BaseArgumentParser<TValue> parser)
+    {
+        var owner = PluginLoadContext.OwnerOf(parser.GetType().Assembly)
+            ?? PluginLoadContext.OwnerOf(typeof(TValue).Assembly);
+        owner?.ThrowIfClosing();
+
+        if (!_argumentParsers.TryAdd(typeof(TValue), parser))
+            return false;
+
+        if (owner is not { IsClosing: true })
+            return true;
+
+        _argumentParsers.TryRemove(new KeyValuePair<Type, BaseArgumentParser>(typeof(TValue), parser));
+        owner.ThrowIfClosing();
+
+        return false;
+    }
 
     /// <summary>
     /// Removes the argument parsers for, or from, a plugin's assemblies as the plugin unloads, including the enum

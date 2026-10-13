@@ -189,7 +189,21 @@ internal sealed record HolderSet(bool All, List<JsonNode> Entries, List<JsonNode
 
     private static List<JsonNode> Distinct(IEnumerable<JsonNode> entries) => [.. entries.DistinctBy(Key)];
 
-    private static string Key(JsonNode entry) => entry.ToJsonString();
+    // An entry's identity for set arithmetic: identifiers and tags compared as identifiers, so "desert" and
+    // "minecraft:desert" are one biome (a missing namespace is minecraft's); objects defined inline by their JSON.
+    private static string Key(JsonNode entry)
+    {
+        if (entry is not JsonValue value || !value.TryGetValue<string>(out var name))
+            return entry.ToJsonString();
+
+        var tag = name.StartsWith('#');
+        var identifier = tag ? name[1..] : name;
+
+        if (!identifier.Contains(':'))
+            identifier = $"minecraft:{identifier}";
+
+        return tag ? $"#{identifier}" : identifier;
+    }
 }
 
 /// <summary>
