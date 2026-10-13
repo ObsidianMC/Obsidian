@@ -120,9 +120,10 @@ public sealed partial class Player : Avatar, IClientPlayer
     public ItemStack? CarriedItem { get; set; }
 
     /// <summary>
-    /// Keeps the window contents clicks send the player in the order they were captured.
+    /// Keeps what the player is sent about their open window in order and current, through plugins' packet handlers.
+    /// Settable so that a test can stand in for the handlers.
     /// </summary>
-    internal Events.WindowSnapshots WindowSnapshots { get; } = new();
+    internal Events.WindowSnapshots WindowSnapshots { get; set; }
 
     public IBlock? LastClickedBlock { get; internal set; }
 
@@ -244,6 +245,7 @@ public sealed partial class Player : Avatar, IClientPlayer
         Health = 20f;
 
         this.Client = client;
+        this.WindowSnapshots = new(this.RunQueueHandlersAsync, this.QueueWithoutHandlers);
     }
 
     public ItemStack? GetHeldItem() => Inventory.GetItem(CurrentHeldItemSlot);

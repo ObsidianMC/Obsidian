@@ -368,6 +368,9 @@ public partial class Player
                 continue;
 
             bool remove;
+            TakeItemEntityPacket pickup;
+            BundledPacket update;
+            ClickWindowState state;
 
             // Taken like a click takes it, so that a click's check of the inventory and what it applies see the same
             // contents (see MainEventHandler.OnInventoryClick).
@@ -382,7 +385,7 @@ public partial class Player
                 var collected = originalCount - itemEntity.Item.Count;
                 if (collected == 0)
                     continue;
-                var pickup = new TakeItemEntityPacket
+                pickup = new TakeItemEntityPacket
                 {
                     CollectedEntityId = itemEntity.EntityId,
                     CollectorEntityId = this.EntityId,
@@ -399,14 +402,20 @@ public partial class Player
                     });
                 }
 
-                // In order with the window snapshots clicks send, which would otherwise overwrite it with what the
-                // inventory held before.
-                this.WindowSnapshots.Queue(this, new BundledPacket(packets));
+                update = new BundledPacket(packets);
+                state = ClickWindowState.Of(this);
                 this.PacketBroadcaster.QueuePacketToLevel(this.Level, pickup, this.EntityId);
                 remove = itemEntity.Removed = itemEntity.Item.Count == 0;
                 if (!remove)
                     itemEntity.SendItemUpdate();
             }
+
+            // In order with the window snapshots clicks send, which would otherwise overwrite it with what the
+            // inventory held before. When the inventory changed again first, its slots are sent later, with the whole
+            // window, and the pickup is shown now on its own.
+            if (await this.WindowSnapshots.SendChangeAsync(this, state, update))
+                await this.Client.QueuePacketAsync(pickup);
+
             if (remove)
                 await itemEntity.RemoveAsync();
         }

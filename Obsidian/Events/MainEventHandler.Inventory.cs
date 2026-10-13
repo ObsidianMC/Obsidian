@@ -18,9 +18,9 @@ public partial class MainEventHandler
     // The off hand, as vanilla's player inventory numbers it in the set-slot packet.
     private const int OffhandInventorySlot = 40;
 
-    // How many times a click's window is sent through plugins' packet handlers, captured again whenever it changed
-    // before being sent, until it's captured and queued in one step instead (see SendWindowAsync).
-    private const int MaxHandledSends = 2;
+    // How many times a click's window is sent, captured again whenever it changed before being sent, before it's
+    // left to the player's tick (see SendWindowAsync).
+    private const int MaxWindowSends = 2;
 
     /// <summary>
     /// Applies a player's click in their open window, after plugins' handlers had their say, and sends the window to
@@ -850,13 +850,13 @@ public partial class MainEventHandler
 
     /// <summary>
     /// Sends a click's captured window to its viewers, leaving out what's obsolete (see <see cref="WindowSnapshots"/>).
-    /// When a viewer's window changed before its contents were sent, the window is captured again, a few times at
-    /// most; then, inside the window's lock, it's captured and queued in one step, past plugins' packet handlers: the
-    /// last contents its viewers get must be current.
+    /// When a viewer's window changed before its contents went through plugins' packet handlers, the window is
+    /// captured again, a few times at most; after that, a window still changing is left stale, for the viewer's tick
+    /// to send (see <see cref="RefreshStaleWindowAsync"/>).
     /// </summary>
     private static async ValueTask SendWindowAsync(ContainerClickEventArgs args, BaseContainer window, WindowSync sync)
     {
-        for (var sends = 1; ; sends++)
+        for (var sends = 1; sends < MaxWindowSends; sends++)
         {
             if (!await sync.SendAsync())
                 return;
@@ -866,25 +866,41 @@ public partial class MainEventHandler
                 if (!IsOpen(args.Player, window, args.ContainerId))
                     return;
 
-                if (sends == MaxHandledSends)
-                {
-                    SendWindowNow(args, window);
-                    return;
-                }
-
                 sync = CaptureWindow(args, window);
             }
         }
+
+        await sync.SendAsync();
     }
 
-    // Captures and queues what the click's window shows each viewer in one step, inside the window's lock.
-    private static void SendWindowNow(ContainerClickEventArgs args, BaseContainer window)
+    /// <summary>
+    /// Sends <paramref name="player"/> their whole window, through plugins' packet handlers, if something about it
+    /// wasn't sent because it changed first (see <see cref="WindowSnapshots.IsStale"/>). The player's tick calls it,
+    /// once a tick: a window that changed again meanwhile stays stale until a later tick.
+    /// </summary>
+    internal static async ValueTask RefreshStaleWindowAsync(Player player)
     {
-        foreach (var viewer in WindowViewers(args.Player, window))
+        var order = player.WindowSnapshots;
+        if (!order.IsStale)
+            return;
+
+        var window = player.OpenedContainer ?? player.Inventory;
+        WindowSnapshot snapshot;
+
+        using (await BaseContainer.LockWindowAsync(window, player.Inventory))
         {
-            if (viewer is Player { WindowSnapshots: WindowSnapshots order })
-                order.SendNow(viewer, () => WindowPackets(args, viewer));
+            // Another window opened while the lock was taken: a later tick sends it.
+            if ((player.OpenedContainer ?? player.Inventory) != window)
+                return;
+
+            var state = ClickWindowState.Of(player);
+            var containerId = player.OpenedContainer is null ? 0 : player.CurrentContainerId;
+            var packets = WindowPackets(player, containerId, stateId: 0, withEnchanting: true);
+
+            snapshot = new WindowSnapshot(player, order.Next(), state, packets);
         }
+
+        await order.SendAsync(snapshot);
     }
 
     // The players a click's window is sent to: the clicking player, then the others viewing the same slots.
@@ -912,16 +928,25 @@ public partial class MainEventHandler
     /// numbers like its saved inventory. It's sent with every snapshot of such a window, not only after a swap with
     /// the off hand, so that it's corrected even when that click's snapshot is left out for a newer one.
     /// </remarks>
-    private static List<IClientboundPacket> WindowPackets(ContainerClickEventArgs args, IPlayer viewer)
+    private static List<IClientboundPacket> WindowPackets(ContainerClickEventArgs args, IPlayer viewer) =>
+        viewer == args.Player
+            ? WindowPackets(viewer, args.ContainerId, args.StateId + 1, withEnchanting: true)
+            : WindowPackets(viewer, viewer.CurrentContainerId, stateId: 0, withEnchanting: false);
+
+    // What the viewer's window shows, under the given id and state id, with the enchanting options of an enchanting
+    // table they have open when asked for.
+    private static List<IClientboundPacket> WindowPackets(
+        IPlayer viewer,
+        int containerId,
+        int stateId,
+        bool withEnchanting)
     {
-        var packets = new List<IClientboundPacket>();
+        var packets = new List<IClientboundPacket>
+        {
+            WindowContents(viewer, containerId, stateId)
+        };
 
-        if (viewer == args.Player)
-            packets.Add(WindowContents(viewer, args.ContainerId, args.StateId + 1));
-        else
-            packets.Add(WindowContents(viewer, viewer.CurrentContainerId, 0));
-
-        if (viewer == args.Player && viewer is Player { OpenedContainer: EnchantmentTable } enchanter)
+        if (withEnchanting && viewer is Player { OpenedContainer: EnchantmentTable } enchanter)
             packets.AddRange(enchanter.PrepareEnchantingProperties());
 
         if (viewer.OpenedContainer is not null)
