@@ -1,7 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Obsidian.API.Boss;
+using Obsidian.API.Commands;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
+using Obsidian.API.Events;
+using Obsidian.API.Plugins;
 using Obsidian.WorldData;
 using System.Diagnostics.CodeAnalysis;
 
@@ -13,11 +16,17 @@ namespace Obsidian.Plugins.ServiceProviders;
 /// unloading it removes them. The rest is the server's services.
 /// </summary>
 /// <remarks>
+/// <para>
 /// The plugin is known from the instance it calls rather than from the code that calls it, so what it adds is its own
 /// even when a library it uses, an async continuation or inlined code makes the call. The server's own code calls the
 /// server's instances, so what it adds stays.
+/// </para>
+/// <para>
+/// The services the plugin's <see cref="IServer"/> leads to are its own too: its command handler's
+/// <see cref="ICommandHandler.ServiceProvider"/> is this, and scopes created from this resolve the same instances.
+/// </para>
 /// </remarks>
-internal sealed class PluginHostServices : IServiceProvider
+internal sealed class PluginHostServices : IServiceProvider, IServiceScopeFactory
 {
     private readonly IServiceProvider serverServices;
 
@@ -27,7 +36,7 @@ internal sealed class PluginHostServices : IServiceProvider
     public PluginHostServices(PluginContainer plugin, IServer server, IServiceProvider serverServices)
     {
         this.serverServices = serverServices;
-        this.Server = server is Server concrete ? new PluginServer(concrete, plugin) : server;
+        this.Server = server is Server concrete ? new PluginServer(concrete, plugin, this) : server;
 
         if (serverServices.GetService<ILevelFactory>() is LevelFactory factory)
             this.LevelFactory = new PluginLevelFactory(factory, plugin);
@@ -43,16 +52,12 @@ internal sealed class PluginHostServices : IServiceProvider
     /// </summary>
     public ILevelFactory? LevelFactory { get; }
 
-    public object? GetService(Type serviceType)
-    {
-        if (serviceType == typeof(IServer))
-            return this.Server;
+    public object? GetService(Type serviceType) => this.Resolve(serviceType, this.serverServices, this);
 
-        if (serviceType == typeof(ILevelFactory) && this.LevelFactory is not null)
-            return this.LevelFactory;
-
-        return this.serverServices.GetService(serviceType);
-    }
+    /// <summary>
+    /// Creates a scope of the server's services that resolves the plugin's instances, like this.
+    /// </summary>
+    public IServiceScope CreateScope() => new Scope(this, this.serverServices.CreateAsyncScope());
 
     /// <summary>
     /// Adds the plugin's instances to its services, so that its own services get them too.
@@ -64,14 +69,100 @@ internal sealed class PluginHostServices : IServiceProvider
         if (this.LevelFactory is not null)
             services.AddSingleton(this.LevelFactory);
     }
+
+    // Resolves from the server's services, or a scope of them, with the plugin's instances in place of the server's.
+    private object? Resolve(Type serviceType, IServiceProvider services, IServiceProvider self)
+    {
+        if (serviceType == typeof(IServiceProvider))
+            return self;
+
+        if (serviceType == typeof(IServiceScopeFactory))
+            return this;
+
+        if (serviceType == typeof(IServer))
+            return this.Server;
+
+        if (serviceType == typeof(ILevelFactory) && this.LevelFactory is not null)
+            return this.LevelFactory;
+
+        return services.GetService(serviceType);
+    }
+
+    // A scope of the server's services, which disposing ends.
+    private sealed class Scope(PluginHostServices host, AsyncServiceScope scope)
+        : IServiceScope, IServiceProvider, IAsyncDisposable
+    {
+        public IServiceProvider ServiceProvider => this;
+
+        public object? GetService(Type serviceType) => host.Resolve(serviceType, scope.ServiceProvider, this);
+
+        public void Dispose() => scope.Dispose();
+
+        public ValueTask DisposeAsync() => scope.DisposeAsync();
+    }
+}
+
+/// <summary>
+/// A plugin's <see cref="ICommandHandler"/>: the server's, whose <see cref="ServiceProvider"/> is the plugin's host
+/// services, and which registers the plugin's commands when given no plugin.
+/// </summary>
+internal sealed class PluginCommandHandler(ICommandHandler handler, PluginContainer plugin, IServiceProvider services)
+    : ICommandHandler
+{
+    public IServiceProvider ServiceProvider => services;
+
+    public Task ProcessCommand(CommandContext ctx) => handler.ProcessCommand(ctx);
+
+    public Task<CommandCompletion> CompleteAsync(CommandContext ctx) => handler.CompleteAsync(ctx);
+
+    // Given no plugin, the server's handler registers the server's commands, again and for no plugin to remove.
+    public void RegisterCommands(IPluginContainer? pluginContainer = null) =>
+        handler.RegisterCommands(pluginContainer ?? plugin);
+
+    public bool IsValidArgumentType(Type type) => handler.IsValidArgumentType(type);
+
+    public BaseArgumentParser GetArgumentParser(Type type) => handler.GetArgumentParser(type);
+
+    public (int id, string mctype) FindMinecraftType(Type type) => handler.FindMinecraftType(type);
+
+    public Command[] GetAllCommands() => handler.GetAllCommands();
+}
+
+/// <summary>
+/// A plugin's <see cref="IEventDispatcher"/>: the server's, which registers the plugin's event handlers when given no
+/// plugin.
+/// </summary>
+internal sealed class PluginEventDispatcher(IEventDispatcher dispatcher, PluginContainer plugin) : IEventDispatcher
+{
+    public ValueTask<EventResult> ExecuteEventAsync<TEventArgs>(TEventArgs eventArgs)
+        where TEventArgs : BaseMinecraftEventArgs =>
+        dispatcher.ExecuteEventAsync(eventArgs);
+
+    // Given no plugin, the server's dispatcher registers the server's handlers, again and for no plugin to remove.
+    public void RegisterEvents(IPluginContainer? pluginContainer = null) =>
+        dispatcher.RegisterEvents(pluginContainer ?? plugin);
+
+    public void Dispose() => dispatcher.Dispose();
 }
 
 /// <summary>
 /// A plugin's <see cref="IServer"/>: the server, whose scoreboards, boss bars and recipes created through it are the
-/// plugin's.
+/// plugin's, and whose command handler and event dispatcher are the plugin's views of the server's.
 /// </summary>
-internal sealed class PluginServer(Server server, PluginContainer plugin) : IServer
+/// <remarks>
+/// What the server shares with everyone, such as its players, connections, worlds and the commands it lists, holds the
+/// server's instances (<see cref="IClient.Server"/>, <see cref="Command.CommandHandler"/>), as event arguments and
+/// command contexts do.
+/// </remarks>
+/// <param name="server">The server.</param>
+/// <param name="plugin">The plugin.</param>
+/// <param name="services">The plugin's host services, which its command handler resolves from.</param>
+internal sealed class PluginServer(Server server, PluginContainer plugin, IServiceProvider services) : IServer
 {
+    private readonly PluginCommandHandler commandHandler = new(server.CommandHandler, plugin, services);
+
+    private readonly PluginEventDispatcher eventDispatcher = new(server.EventDispatcher, plugin);
+
     private PluginScoreboardManager? scoreboards;
 
     public string Version => server.Version;
@@ -99,7 +190,7 @@ internal sealed class PluginServer(Server server, PluginContainer plugin) : ISer
 
     public ReadOnlyMemory<byte> BrandData => server.BrandData;
 
-    public ICommandHandler CommandHandler => server.CommandHandler;
+    public ICommandHandler CommandHandler => this.commandHandler;
 
     /// <summary>
     /// The server's scoreboards, of which those this creates are the plugin's. Null until the server is ready.
@@ -109,7 +200,7 @@ internal sealed class PluginServer(Server server, PluginContainer plugin) : ISer
             ? this.scoreboards ??= new PluginScoreboardManager(manager, plugin)
             : server.ScoreboardManager;
 
-    public IEventDispatcher EventDispatcher => server.EventDispatcher;
+    public IEventDispatcher EventDispatcher => this.eventDispatcher;
 
     public IWorldManager WorldManager => server.WorldManager;
 
