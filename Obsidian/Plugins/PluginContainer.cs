@@ -27,6 +27,10 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     private int activeCalls;
     private volatile bool closing;
 
+    // How to undo what host services added on the plugin's behalf (see TryTrack), null once they've been undone.
+    private List<Action>? hostAdditions = [];
+    private readonly Lock hostAdditionsGate = new();
+
     public IServiceScope ServiceScope { get; private set; } = default!;
 
     /// <summary>
@@ -248,6 +252,74 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     internal PluginServiceProvider CreateServiceScope() =>
         (this.ownServices ?? throw new InvalidOperationException($"{this.Info.Name} has no services."))
             .CreateScope();
+
+    /// <summary>
+    /// Records how to undo something a host service added on the plugin's behalf, like a recipe or a scoreboard, which
+    /// unloading the plugin undoes (see <see cref="UndoHostAdditions"/>).
+    /// </summary>
+    /// <param name="undo">Removes the addition; it may run on any thread.</param>
+    /// <returns>
+    /// False once the plugin's additions were undone: then undo this one too and refuse it, as the plugin unloaded.
+    /// </returns>
+    internal bool TryTrack(Action undo)
+    {
+        lock (this.hostAdditionsGate)
+        {
+            if (this.hostAdditions is null)
+                return false;
+
+            this.hostAdditions.Add(undo);
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Tracks something a host service just added for <paramref name="caller"/>, when that's a plugin's code, so that
+    /// unloading the plugin undoes it; the server's own additions aren't tracked.
+    /// </summary>
+    /// <param name="caller">The assembly that called the host service.</param>
+    /// <param name="undo">Removes the addition.</param>
+    /// <exception cref="InvalidOperationException">
+    /// The plugin is unloading; the addition was undone.
+    /// </exception>
+    internal static void TrackAddition(Assembly caller, Action undo)
+    {
+        if (PluginLoadContext.OwnerOf(caller) is not PluginContainer owner || owner.TryTrack(undo))
+            return;
+
+        undo();
+        throw new InvalidOperationException($"{owner.Info.Name} is unloading.");
+    }
+
+    /// <summary>
+    /// Undoes what host services added on the plugin's behalf, as it unloads, and refuses later additions.
+    /// </summary>
+    /// <returns>The failures of undoing, to log; the other additions are still undone.</returns>
+    internal List<Exception> UndoHostAdditions()
+    {
+        List<Action>? additions;
+        lock (this.hostAdditionsGate)
+        {
+            additions = this.hostAdditions;
+            this.hostAdditions = null;
+        }
+
+        var failures = new List<Exception>();
+
+        foreach (var undo in additions ?? [])
+        {
+            try
+            {
+                undo();
+            }
+            catch (Exception ex)
+            {
+                failures.Add(ex);
+            }
+        }
+
+        return failures;
+    }
 
     /// <summary>
     /// Refuses new calls into the plugin.

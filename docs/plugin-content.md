@@ -1372,7 +1372,9 @@ generator (see [Dimensions](#dimensions)).
 The rules:
 
 - The identifier is in the plugin's namespace, and registering is only possible in `ConfigureRegistry`. Identifiers
-  the host registered (`overworld`, `superflat`, ...) are the host's.
+  the host registered (`overworld`, `superflat`, ...) are the host's. A plugin's generator registered with the
+  host's `ILevelFactory.RegisterGenerator` instead is the plugin's too, under its `Id`, and follows these rules
+  except the namespace; it may also be registered in the plugin's load callbacks.
 - Each level using the generator gets its own instance, created in a service scope of its own (constructor
   injection works like for the plugin's other services, scoped ones included), and its `Init` is called with the
   level. Once the level stops using it (the plugin unloads, the generator fails, or the level is disposed, which

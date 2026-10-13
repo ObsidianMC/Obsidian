@@ -36,6 +36,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Obsidian\Obsidian.csproj" />
+		<ProjectReference Include="..\Obsidian.Porting\Obsidian.Porting.csproj" />
 	</ItemGroup>
 
 	<!-- The probe plugin is a plugin project too: its data folder is generated from, like a plugin's, and packed into

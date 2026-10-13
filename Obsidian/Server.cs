@@ -16,11 +16,14 @@ using Obsidian.Net;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
+using Obsidian.Plugins.PluginProviders;
 using Obsidian.Services;
 using Obsidian.WorldData;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Obsidian;
@@ -102,7 +105,8 @@ public sealed partial class Server : IServer
         var registries = $"{ItemsRegistry.All.Count}/{BlocksRegistry.PluginBlocks.Count}/"
             + $"{EntityDefinitionsRegistry.PluginDefinitions.Count}/{CodecRegistry.Biomes.All.Count}/"
             + $"{CodecRegistry.Dimensions.All.Count}/{CodecRegistry.DamageType.All.Count}/{PluginCodecs.Revision}/"
-            + $"{MenuTypesRegistry.PluginMenus.Count}/{ParticleTypesRegistry.PluginParticles.Count}";
+            + $"{MenuTypesRegistry.PluginMenus.Count}/{ParticleTypesRegistry.PluginParticles.Count}/"
+            + DialogRegistry.Fingerprint;
 
         Net.Payloads.NetworkProtocol[] protocols =
             [Net.Payloads.NetworkProtocol.Configuration, Net.Payloads.NetworkProtocol.Play];
@@ -250,10 +254,48 @@ public sealed partial class Server : IServer
     public static int GetNextEntityId() => Interlocked.Increment(ref EntityCounter);
     internal static int ReserveEntityIds(int count) => Interlocked.Add(ref EntityCounter, count) - count + 1;
 
+    /// <remarks>
+    /// A plugin's recipes are removed when it unloads.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public void RegisterRecipes(params IRecipe[] recipes)
     {
-        foreach (var recipe in recipes)
-            RecipesRegistry.Recipes.Add(recipe.Identifier.ToSnakeCase(), recipe);
+        var caller = Assembly.GetCallingAssembly();
+        var added = new List<(string Identifier, IRecipe Recipe)>();
+
+        try
+        {
+            lock (RecipesRegistry.Recipes)
+            {
+                foreach (var recipe in recipes)
+                {
+                    var identifier = recipe.Identifier.ToSnakeCase();
+
+                    RecipesRegistry.Recipes.Add(identifier, recipe);
+                    added.Add((identifier, recipe));
+                }
+            }
+        }
+        finally
+        {
+            PluginContainer.TrackAddition(caller, () => RemoveRecipes(added));
+        }
+    }
+
+    // Removes recipes a plugin added, unless another recipe took their identifier since.
+    private static void RemoveRecipes(List<(string Identifier, IRecipe Recipe)> added)
+    {
+        lock (RecipesRegistry.Recipes)
+        {
+            foreach (var (identifier, recipe) in added)
+            {
+                if (RecipesRegistry.Recipes.TryGetValue(identifier, out var current)
+                    && ReferenceEquals(current, recipe))
+                {
+                    RecipesRegistry.Recipes.Remove(identifier);
+                }
+            }
+        }
     }
 
     public bool IsPlayerOnline(string username) => this.UsernameToUuidMappings.ContainsKey(username);
@@ -427,8 +469,61 @@ public sealed partial class Server : IServer
         return true;
     }
 
-    public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) =>
-        ActivatorUtilities.CreateInstance<BossBar>(this.serviceProvider, title, health, color, divisionType, flags);
+    /// <remarks>
+    /// A plugin's boss bars are hidden from their players when it unloads.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public IBossBar CreateBossBar(
+        ChatMessage title,
+        float health,
+        BossBarColor color,
+        BossBarDivisionType divisionType,
+        BossBarFlags flags)
+    {
+        var bar = ActivatorUtilities.CreateInstance<BossBar>(
+            this.serviceProvider,
+            title,
+            health,
+            color,
+            divisionType,
+            flags);
+
+        if (PluginLoadContext.OwnerOf(Assembly.GetCallingAssembly()) is PluginContainer owner)
+        {
+            this.pluginBossBars.Add(bar, owner);
+
+            // Closed before its bars are hidden, so a bar added meanwhile is either hidden then or here.
+            if (owner.IsClosing)
+            {
+                this.HidePluginBossBars(owner);
+                throw new InvalidOperationException($"{owner.Info.Name} is unloading.");
+            }
+        }
+
+        return bar;
+    }
+
+    // The boss bars plugins created, by plugin. Weak, since a plugin may create many over time.
+    private readonly ConditionalWeakTable<BossBar, PluginContainer> pluginBossBars = [];
+
+    /// <summary>
+    /// Hides an unloading plugin's boss bars from the players they're shown to, so none stays on screen without it.
+    /// </summary>
+    internal void HidePluginBossBars(PluginContainer plugin)
+    {
+        var bars = this.pluginBossBars
+            .Where(pair => pair.Value == plugin)
+            .Select(pair => pair.Key)
+            .ToList();
+
+        foreach (var bar in bars)
+        {
+            this.pluginBossBars.Remove(bar);
+
+            foreach (var player in bar.Players.ToArray())
+                bar.RemovePlayer(player);
+        }
+    }
 
     public async Task ExecuteCommand(string input)
     {

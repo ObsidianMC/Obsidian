@@ -234,6 +234,8 @@ public sealed partial class PluginManager : IAsyncDisposable
 
             foreach (var pluginContainer in this.plugins)
                 await this.StartAsync(pluginContainer);
+
+            this.ResumeGenerators();
         });
 
         //THis only needs to be called once 😭😭
@@ -474,6 +476,9 @@ public sealed partial class PluginManager : IAsyncDisposable
 
             if (this.serverReady)
                 await this.StartAsync(container);
+
+            // Generators registered with the host's ILevelFactory from those callbacks count too.
+            this.ResumeGenerators();
         }
         catch (Exception ex)
         {
@@ -537,7 +542,17 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.eventDispatcher.UnregisterPluginEvents(pluginContainer);
 
         if (this.server is Server concreteServer)
+        {
             concreteServer.PayloadChannels.UnregisterPluginPayloads(pluginContainer);
+            concreteServer.HidePluginBossBars(pluginContainer);
+        }
+
+        // What the plugin added through the server's services, like dialogs, recipes and scoreboards.
+        if (pluginContainer.LoadContext is not null)
+            DialogRegistry.Release(pluginContainer.LoadContext);
+
+        foreach (var failure in pluginContainer.UndoHostAdditions())
+            Log.UndoFailed(this.logger, failure, pluginContainer.Info.Name);
 
         ItemsRegistry.ReleasePlugin(pluginContainer);
         BlocksRegistry.ReleasePlugin(pluginContainer);
@@ -1416,6 +1431,9 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Disposing plugin {PluginName} failed")]
         public static partial void DisposeFailed(ILogger logger, Exception exception, string pluginName);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Removing what {PluginName} added to the server failed")]
+        public static partial void UndoFailed(ILogger logger, Exception exception, string pluginName);
 
         [LoggerMessage(Level = LogLevel.Warning,
             Message = "{Level} stopped generating new chunks until {PluginName} loads again: it generates with its "

@@ -6,6 +6,7 @@
   <Project Path="Obsidian.AssetGenerator/Obsidian.AssetGenerator.csproj" />
   <Project Path="Obsidian.ConsoleApp/Obsidian.ConsoleApp.csproj" />
   <Project Path="Obsidian.Nbt/Nbt/Obsidian.Nbt.csproj" />
+  <Project Path="Obsidian.Porting/Obsidian.Porting.csproj" />
   <Project Path="Obsidian.SourceGenerators/Obsidian.SourceGenerators.csproj" />
   <Project Path="Obsidian.Tests/Obsidian.Tests.csproj" />
   <Project Path="Obsidian/Obsidian.csproj" />

@@ -1,6 +1,8 @@
 using Obsidian.API.Registry.Codecs.Dialogs;
 using Obsidian.API.Registries;
 using Obsidian.Nbt;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.API.Builders;
 
@@ -65,11 +67,19 @@ public sealed class DialogBuilder
         return result;
     }
 
-    /// <summary>Register before players connect; registry changes take effect on their next connection.</summary>
+    /// <summary>
+    /// Builds the dialog and registers it with
+    /// <see cref="DialogRegistry.Register(string, DialogElement, bool, bool)"/>.
+    /// </summary>
+    /// <remarks>
+    /// Register before players connect: players playing get changed dialogs when plugins load or unload. A plugin's
+    /// dialogs are removed when it unloads.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public DialogElement Register(string id, bool quickAction = false, bool pauseScreen = false)
     {
         var result = Build();
-        DialogRegistry.Register(id, result, quickAction, pauseScreen);
+        DialogRegistry.Register(id, result, quickAction, pauseScreen, Assembly.GetCallingAssembly());
         return result;
     }
 }

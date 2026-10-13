@@ -9,6 +9,7 @@ using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Commands.Builders;
 using Obsidian.Commands.Modules;
 using Obsidian.Plugins;
+using Obsidian.Plugins.PluginProviders;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -89,6 +90,9 @@ public sealed class CommandHandler : ICommandHandler
     {
         var method = commandDelegate.Method;
 
+        // A plugin's command is the plugin's, so unloading it removes the command, even when no container is given.
+        pluginContainer ??= PluginLoadContext.OwnerOf(method.Module.Assembly);
+
         var commandInfo = method.GetCustomAttribute<CommandInfoAttribute>();
         var checks = method.GetCustomAttributes<BaseExecutionCheckAttribute>();
         var issuers = method.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandHelpers.DefaultIssuerScope;
@@ -135,6 +139,8 @@ public sealed class CommandHandler : ICommandHandler
 
     public void RegisterCommandClass(IPluginContainer? plugin, Type moduleType)
     {
+        plugin ??= PluginLoadContext.OwnerOf(moduleType.Assembly);
+
         if (moduleType.GetCustomAttribute<CommandGroupAttribute>() is not null)
         {
             this.RegisterGroupCommand(moduleType, plugin, null);

@@ -1,4 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.Plugins;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian;
 
@@ -19,12 +22,41 @@ public sealed partial class ScoreboardManager : IScoreboardManager
         this.DefaultScoreboard = this.CreateScoreboard("default");
     }
 
+    /// <remarks>
+    /// A plugin's scoreboards are removed when it unloads: their objective and teams are removed from the players
+    /// they're shown to, and their names are free again.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public IScoreboard CreateScoreboard(string name)
     {
-        if (!this.scoreboards.Add(name))
+        bool added;
+        lock (this.scoreboards)
+            added = this.scoreboards.Add(name);
+
+        if (!added)
             Log.DuplicateScoreboard(this.logger, name);
 
-        return new Scoreboard(name, this.server.DefaultWorld.PacketBroadcaster);
+        var scoreboard = new Scoreboard(name, this.server.DefaultWorld.PacketBroadcaster);
+
+        PluginContainer.TrackAddition(Assembly.GetCallingAssembly(), () => this.Remove(scoreboard, name, added));
+
+        return scoreboard;
+    }
+
+    // Removes a plugin's scoreboard from its players, and frees its name unless it was taken already.
+    private void Remove(Scoreboard scoreboard, string name, bool ownsName)
+    {
+        if (scoreboard.Objective is not null)
+            scoreboard.RemoveObjective();
+
+        foreach (var team in scoreboard.Teams.ToArray())
+            team.Delete();
+
+        if (!ownsName)
+            return;
+
+        lock (this.scoreboards)
+            this.scoreboards.Remove(name);
     }
 
     private static partial class Log

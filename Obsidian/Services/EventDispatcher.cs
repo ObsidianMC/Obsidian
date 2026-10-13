@@ -7,6 +7,7 @@ using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Events;
 using Obsidian.Events.EventArgs;
 using Obsidian.Plugins;
+using Obsidian.Plugins.PluginProviders;
 using System.Collections.Frozen;
 using System.Reflection;
 
@@ -77,6 +78,9 @@ public sealed partial class EventDispatcher : IEventDispatcher
 
     public void RegisterEvent(IPluginContainer? pluginContainer, Delegate handler, Priority priority = Priority.Low)
     {
+        // A plugin's handler is the plugin's, so unloading it removes the handler, even when no container is given.
+        pluginContainer ??= PluginLoadContext.OwnerOf(handler.Method.Module.Assembly);
+
         var eventType = handler.Method.GetParameters().FirstOrDefault()?.ParameterType ??
             throw new InvalidOperationException("Missing parameter for event.");
 
@@ -106,6 +110,7 @@ public sealed partial class EventDispatcher : IEventDispatcher
 
         foreach (var eventModule in modules)
         {
+            var owner = pluginContainer ?? PluginLoadContext.OwnerOf(eventModule.Assembly);
             var eventModuleTypeInfo = eventModule.GetTypeInfo();
             var methods = eventModule.GetMethods().Where(x => x.CustomAttributes.Any(x => x.AttributeType == eventPriorityAttributeType));
 
@@ -118,11 +123,11 @@ public sealed partial class EventDispatcher : IEventDispatcher
                 if (!eventType.IsSubclassOf(baseMinecraftEventArgsType))
                     throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
 
-                this.Add(eventType, pluginContainer, new MinecraftEventExecutor
+                this.Add(eventType, owner, new MinecraftEventExecutor
                 {
                     EventType = eventType,
                     ModuleFactory = ActivatorUtilities.CreateFactory(eventModule, []),
-                    PluginContainer = pluginContainer,
+                    PluginContainer = owner,
                     Priority = eventPriorityAttribute.Priority,
                     MethodExecutor = ObjectMethodExecutor.Create(method, eventModuleTypeInfo),
                     ModuleType = eventModule,
