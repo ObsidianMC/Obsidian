@@ -69,7 +69,7 @@ public sealed partial class FinishConfigurationPacket
         // Like vanilla's PlayerList.placeNewPlayer, the player learns their permission level before the commands.
         var permissionLevel = ((OperatorList)server.Operators).GetPermissionLevel(player);
         await client.QueuePacketAsync(EntityEventPacket.PermissionLevel(player.EntityId, permissionLevel));
-        await client.QueuePacketAsync(CommandsRegistry.Packet);
+        await client.QueuePacketAsync(await CommandsRegistry.CreatePacketAsync(server, player));
         await client.QueuePacketAsync(new RecipeBookSettingsPacket());
         await client.QueuePacketAsync(new RecipeBookAddPacket());
 

@@ -1,12 +1,15 @@
-﻿namespace Obsidian.Commands;
+namespace Obsidian.Commands;
 
 /// <summary>
 /// https://wiki.vg/Command_Data
 /// </summary>
 public class CommandNode
 {
+    private CommandNode? redirect;
+
     public string? Name { get; set; }
 
+    /// <summary>The node's position in the packet, assigned when the tree is added to a <c>CommandsPacket</c>.</summary>
     public int Index { get; set; }
 
     public BaseArgumentParser? Parser { get; set; }
@@ -15,7 +18,26 @@ public class CommandNode
 
     public List<CommandNode> Children = [];
 
+    /// <summary>
+    /// The node parsing continues from after this one, as vanilla's command aliases do. Setting it sets
+    /// <see cref="CommandNodeType.HasRedirect"/>.
+    /// </summary>
+    public CommandNode? Redirect
+    {
+        get => this.redirect;
+        set
+        {
+            this.redirect = value;
+            this.Type = value is null ? this.Type & ~CommandNodeType.HasRedirect : this.Type | CommandNodeType.HasRedirect;
+        }
+    }
+
     public string? SuggestionType { get; set; }
+
+    /// <summary>
+    /// Identifies what an argument node reads, so that overloads whose leading parameters read the same share nodes.
+    /// </summary>
+    internal object? MergeKey { get; set; }
 
     public void CopyTo(INetStreamWriter writer)
     {
@@ -25,7 +47,7 @@ public class CommandNode
 
         if (Type.HasFlag(CommandNodeType.HasRedirect))
         {
-            writer.WriteVarInt(Index);
+            writer.WriteVarInt(Redirect!.Index);
         }
 
         if (Type.HasFlag(CommandNodeType.Literal) || Type.HasFlag(CommandNodeType.Argument))

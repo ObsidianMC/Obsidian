@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Commands;
+using Obsidian.API.Commands;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -202,7 +202,7 @@ public sealed class MainCommandModule : CommandModuleBase
     {
         if (this.Player is Player player)
         {
-            await player.Client.QueuePacketAsync(CommandsRegistry.Packet);
+            await player.Client.QueuePacketAsync(await CommandsRegistry.CreatePacketAsync(this.Server, player));
         }
     }
 

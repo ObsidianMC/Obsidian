@@ -1,107 +1,45 @@
-﻿using Obsidian.API.Commands;
-using Obsidian.API.Commands.ArgumentParsers;
-using Obsidian.API.Utilities.Interfaces;
+using Obsidian.API.Commands;
 using Obsidian.Commands;
+using Obsidian.Commands.Framework;
 using Obsidian.Net.Packets.Play.Clientbound;
-using System.Reflection;
 
 namespace Obsidian.Registries;
+
+/// <summary>
+/// Sends players the command tree their client completes and validates commands with. Like vanilla, each player gets
+/// a tree of only the commands they may run, so it is resent whenever that may change.
+/// </summary>
 public static class CommandsRegistry
 {
-    internal static CommandsPacket Packet = new();
-
-    public static void Register(Server server)
+    /// <summary>Builds the commands packet for <paramref name="player"/>.</summary>
+    public static async Task<CommandsPacket> CreatePacketAsync(IServer server, IPlayer player)
     {
-        Packet = new();
-        var index = 0;
-        var commands = server.CommandHandler.GetAllCommands()!;
+        var handler = (CommandHandler)server.CommandHandler;
+        var context = new CommandContext(string.Empty, new CommandSender(CommandIssuers.Client, player), player, server);
 
-        var rootNode = new CommandNode()
-        {
-            Type = CommandNodeType.Root,
-            Index = index
-        };
+        var packet = new CommandsPacket();
+        packet.AddNode(await handler.BuildCommandTreeAsync(context));
 
-        foreach (var cmd in commands)
-        {
-            //Don't register commands alone that have parents 
-            //This is very inconvenient and should be changed
-            if (cmd.Parent is not null)
-                continue;
-
-            Register(server, cmd, commands, rootNode, ref index);
-        }
-
-        Packet.AddNode(rootNode);
+        return packet;
     }
 
-    private static void Register(Server server, Command command, IEnumerable<Command> commands, CommandNode node, ref int index)
+    /// <summary>Sends <paramref name="player"/> the commands they may currently run.</summary>
+    public static async Task SendAsync(IServer server, IPlayer player) =>
+        await player.QueuePacketAsync(await CreatePacketAsync(server, player));
+
+    /// <summary>Resends the command tree to every online player, after commands were registered or removed.</summary>
+    public static async Task RefreshAsync(IServer server)
     {
-        var nodeType = command.Overloads.Any(overload => overload.GetParameters().Length == 0)
-            ? CommandNodeType.IsExecutable | CommandNodeType.Literal
-            : CommandNodeType.Literal;
-        var parentNode = new CommandNode()
+        foreach (var player in server.OnlinePlayers.Values)
         {
-            Index = ++index,
-            Name = command.Name,
-            Type = nodeType
-        };
-
-        foreach (var overload in command.Overloads)
-            RegisterChildNodeOverload(server, overload, parentNode, ref index);
-
-        foreach (var childrenCommand in commands.Where(x => x.Parent == command))
-            Register(server, childrenCommand, commands, parentNode, ref index);
-
-        node.AddChild(parentNode);
-    }
-
-    private static void RegisterChildNodeOverload(Server server, IExecutor<CommandContext> overload, CommandNode cmdNode, ref int index)
-    {
-        var args = overload.GetParameters();
-        if (args.Length == 0)
-            cmdNode.Type |= CommandNodeType.IsExecutable;
-
-        var prev = cmdNode;
-
-        foreach (var arg in args)
-        {
-            var argNode = new CommandNode()
+            try
             {
-                Index = ++index,
-                Name = arg.Name,
-                Type = CommandNodeType.Argument | CommandNodeType.IsExecutable
-            };
-
-            var type = arg.ParameterType;
-
-            var (id, mctype) = server.CommandHandler.FindMinecraftType(type);
-
-            //TODO make this better 
-            argNode.Parser = mctype switch
-            {
-                "brigadier:string" => new StringArgumentParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute))
-                    ? StringType.GreedyPhrase
-                    : StringType.QuotablePhrase),
-                "brigadier:double" => new DoubleArgumentParser(),
-                "brigadier:float" => new FloatArgumentParser(),
-                "brigadier:integer" => new UnsignedIntArgumentParser(),
-                "brigadier:long" => new UnsignedLongArgumentParser(),
-                "minecraft:time" => new MinecraftTimeArgumentParser(),
-                _ => new EmptyArgumentParser(id, mctype),
-            };
-
-            // The client sends a CommandSuggestionPacket for nodes with vanilla's ask_server provider.
-            if (arg.GetCustomAttribute<BaseSuggestionProviderAttribute>() is not null
-                || server.CommandHandler.GetArgumentParser(type) is ISuggestionProvider)
-            {
-                argNode.Type |= CommandNodeType.HasSuggestions;
-                argNode.SuggestionType = "minecraft:ask_server";
+                await SendAsync(server, player);
             }
-
-            prev.AddChild(argNode);
-
-            prev = argNode;
+            catch (OperationCanceledException)
+            {
+                // The player disconnected meanwhile.
+            }
         }
     }
 }

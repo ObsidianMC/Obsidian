@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -171,6 +171,7 @@ public sealed partial class PluginManager : IAsyncDisposable
     public async Task UnloadPluginAsync(PluginContainer pluginContainer)
     {
         this.commandHandler.UnregisterPluginCommands(pluginContainer);
+        await CommandsRegistry.RefreshAsync(this.server);
 
         var stopwatch = Stopwatch.StartNew();
 
@@ -211,8 +212,8 @@ public sealed partial class PluginManager : IAsyncDisposable
             await pluginContainer.Plugin.OnServerReadyAsync(this.server);
         }
 
-        //THis only needs to be called once 😭😭
-        CommandsRegistry.Register((Server)server);
+        // Plugins may have registered commands while getting ready.
+        await CommandsRegistry.RefreshAsync(this.server);
     }
 
     /// <summary>

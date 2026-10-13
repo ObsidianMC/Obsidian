@@ -1,4 +1,4 @@
-﻿namespace Obsidian.API.Commands.ArgumentParsers;
+namespace Obsidian.API.Commands.ArgumentParsers;
 
 [ArgumentParser("brigadier:string")]
 public sealed partial class StringArgumentParser(StringType type) : BaseArgumentParser<string>
@@ -33,12 +33,7 @@ public sealed partial class GuidArgumentParser(Guid guid) : BaseArgumentParser<G
         return Guid.TryParse(input, out result);
     }
 
-    public override void Write(INetStreamWriter writer)
-    {
-        base.Write(writer);
-
-        writer.WriteUuid(this.Guid);
-    }
+    // minecraft:uuid has no properties, so only the parser id is written.
 }
 
 public enum StringType : int

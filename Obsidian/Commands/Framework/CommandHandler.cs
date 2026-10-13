@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Commands;
@@ -14,7 +14,7 @@ using System.Reflection;
 
 namespace Obsidian.Commands.Framework;
 
-public sealed class CommandHandler : ICommandHandler
+public sealed partial class CommandHandler : ICommandHandler
 {
     // Vanilla's suggestion handler sends at most this many suggestions.
     private const int MaxSuggestions = 1000;

@@ -1,4 +1,4 @@
-﻿using Obsidian.Commands;
+using Obsidian.Commands;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
@@ -12,8 +12,13 @@ public partial class CommandsPacket
     [Field(1), VarLength]
     public int RootIndex { get; }
 
+    /// <summary>
+    /// Adds <paramref name="node"/> and its descendants, numbering each by its position in the packet. Add the root
+    /// first, as it is expected at <see cref="RootIndex"/>.
+    /// </summary>
     public void AddNode(CommandNode node)
     {
+        node.Index = Nodes.Count;
         Nodes.Add(node);
 
         foreach (var child in node.Children)

@@ -290,8 +290,6 @@ public sealed partial class Server : IServer
         if (!Configuration.OnlineMode)
             Log.OfflineMode(this.logger);
 
-        CommandsRegistry.Register(this);
-
         this.loopTask = LoopAsync();
         this.connectionLoopsTask = Task.WhenAll(KeepAliveLoopAsync(), ChunkLoopAsync());
 

@@ -1,8 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Commands;
 using Obsidian.API.Commands.ArgumentParsers;
+using Obsidian.Commands;
 using Obsidian.Commands.Framework;
 using System;
 using System.Collections.Generic;
@@ -68,7 +69,7 @@ public class Commands
 
     [Theory(DisplayName = "Command lines complete to subcommands and suggested argument values")]
     [InlineData("/sug", 1, 3, "suggest")]
-    [InlineData("/suggest ", 9, 0, "draw,g,give,mix,paint,say,set")] // not the denied locked and hidden groups
+    [InlineData("/suggest ", 9, 0, "draw,g,give,mix,paint,pong,say,set")] // not the denied locked and hidden groups
     [InlineData("/suggest set n", 13, 1, "night,noon")]
     [InlineData("/suggest set ", 13, 0, "day,midnight,night,noon")]
     [InlineData("suggest set N", 12, 1, "night,noon")] // command blocks omit the prefix
@@ -130,6 +131,103 @@ public class Commands
     [InlineData("/plain \"night time\" later", 9, 19)]
     public void FindsWordEnds(string input, int index, int end) =>
         Assert.Equal(end, Obsidian.Commands.Framework.CommandParser.FindWordEnd(input, index));
+
+    [Fact(DisplayName = "The command tree leaves out commands and overloads the sender may not run")]
+    public async Task TreeOmitsDeniedCommands()
+    {
+        var suggest = await this.BuildSuggestTreeAsync();
+
+        Assert.DoesNotContain(suggest.Children, x => x.Name is "locked" or "hidden");
+        Assert.Contains(suggest.Children, x => x.Name == "give");
+    }
+
+    [Fact(DisplayName = "Overloads share leading arguments, and only nodes where one ends are executable")]
+    public async Task TreeMergesOverloads()
+    {
+        var suggest = await this.BuildSuggestTreeAsync();
+
+        var mix = Child(suggest, "mix");
+        var text = Child(mix, "text");
+        var first = Child(mix, "first");
+
+        Assert.Equal(StringType.GreedyPhrase, Assert.IsType<StringArgumentParser>(text.Parser).Type);
+        Assert.Empty(text.Children);
+        Assert.True(text.Type.HasFlag(CommandNodeType.IsExecutable));
+        Assert.False(first.Type.HasFlag(CommandNodeType.IsExecutable));
+        Assert.True(Child(first, "second").Type.HasFlag(CommandNodeType.IsExecutable));
+        Assert.False(mix.Type.HasFlag(CommandNodeType.IsExecutable));
+
+        // Pong(int count) and Pong(int count, string note) share the count node.
+        var pong = Child(suggest, "pong");
+        var count = Assert.Single(pong.Children);
+        Assert.True(count.Type.HasFlag(CommandNodeType.IsExecutable));
+        Assert.True(Child(count, "note").Type.HasFlag(CommandNodeType.IsExecutable));
+    }
+
+    [Fact(DisplayName = "Same-named arguments of different types get their own names, as brigadier merges by name")]
+    public async Task TreeKeepsDistinctArgumentTypes()
+    {
+        var set = Child(await this.BuildSuggestTreeAsync(), "set");
+
+        Assert.Equal(2, set.Children.Count);
+        Assert.IsType<StringArgumentParser>(Child(set, "value").Parser);
+        Assert.IsType<SignedIntArgumentParser>(Child(set, "value_integer").Parser);
+        Assert.Equal("minecraft:ask_server", Child(set, "value").SuggestionType);
+        Assert.Null(Child(set, "value_integer").SuggestionType);
+    }
+
+    [Fact(DisplayName = "Aliases redirect to their command's node")]
+    public async Task TreeRedirectsAliases()
+    {
+        var suggest = await this.BuildSuggestTreeAsync();
+
+        var alias = Child(suggest, "g");
+        Assert.Same(Child(suggest, "give"), alias.Redirect);
+        Assert.True(alias.Type.HasFlag(CommandNodeType.HasRedirect));
+    }
+
+    [Fact(DisplayName = "Packet nodes are numbered in the order they are written, with redirects pointing at their target")]
+    public async Task PacketNumbersNodes()
+    {
+        var packet = new Obsidian.Net.Packets.Play.Clientbound.CommandsPacket();
+        packet.AddNode(await this.BuildTreeAsync());
+
+        Assert.Equal(0, packet.RootIndex);
+        Assert.All(packet.Nodes.Select((node, i) => (node, i)), x => Assert.Equal(x.i, x.node.Index));
+        Assert.All(packet.Nodes.Where(x => x.Redirect is not null), x => Assert.Contains(x.Redirect!, packet.Nodes));
+    }
+
+    [Theory(DisplayName = "Numbers parse regardless of culture, within the parser's bounds")]
+    [InlineData("1.5", true)]
+    [InlineData("-2", true)]
+    [InlineData("11", false)]
+    [InlineData("1,5", false)]
+    public void ParsesNumbersInvariantly(string input, bool parses)
+    {
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        System.Globalization.CultureInfo.CurrentCulture = new("de-DE");
+
+        try
+        {
+            Assert.Equal(parses, new DoubleArgumentParser(-10, 10).TryParseArgument(input, null!, out _));
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = culture;
+        }
+    }
+
+    private static CommandNode Child(CommandNode node, string name) => Assert.Single(node.Children, x => x.Name == name);
+
+    private async Task<CommandNode> BuildTreeAsync()
+    {
+        var handler = this.CreateSuggestionHandler();
+        var sender = new CommandSender(CommandIssuers.Client, player: null);
+
+        return await handler.BuildCommandTreeAsync(new CommandContext(string.Empty, sender, null, null));
+    }
+
+    private async Task<CommandNode> BuildSuggestTreeAsync() => Child(await this.BuildTreeAsync(), "suggest");
 
     private CommandHandler CreateSuggestionHandler()
     {
@@ -194,6 +292,12 @@ public class Commands
 
         [Command("draw")]
         public Task Draw(Shape shape) => Task.CompletedTask;
+
+        [Command("pong")]
+        public Task Pong(int count) => Task.CompletedTask;
+
+        [CommandOverload]
+        public Task Pong(int count, string note) => Task.CompletedTask;
 
         [CommandGroup("hidden")]
         public class Hidden : CommandModuleBase

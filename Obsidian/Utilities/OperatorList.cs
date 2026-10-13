@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Obsidian.Integrated;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Collections.Immutable;
@@ -131,7 +131,7 @@ public sealed partial class OperatorList : IOperatorList
         {
             var permissionLevel = this.GetPermissionLevel(player);
             await player.QueuePacketAsync(EntityEventPacket.PermissionLevel(player.EntityId, permissionLevel));
-            await player.QueuePacketAsync(CommandsRegistry.Packet);
+            await CommandsRegistry.SendAsync(this.server, player);
         }
         catch (OperationCanceledException)
         {

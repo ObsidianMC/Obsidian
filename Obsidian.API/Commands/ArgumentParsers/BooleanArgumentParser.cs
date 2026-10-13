@@ -1,4 +1,4 @@
-﻿namespace Obsidian.API.Commands.ArgumentParsers;
+namespace Obsidian.API.Commands.ArgumentParsers;
 
 [ArgumentParser("brigadier:bool")]
 public sealed partial class BoolArgumentParser(bool value) : BaseArgumentParser<bool>
@@ -10,10 +10,5 @@ public sealed partial class BoolArgumentParser(bool value) : BaseArgumentParser<
     public override bool TryParseArgument(string input, CommandContext ctx, out bool result)
         => bool.TryParse(input, out result);
 
-    public override void Write(INetStreamWriter writer)
-    {
-        base.Write(writer);
-
-        writer.WriteBoolean(this.Value);
-    }
+    // brigadier:bool has no properties, so only the parser id is written.
 }
