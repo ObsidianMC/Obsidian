@@ -824,7 +824,9 @@ the tower grows from, up to its `size`.
   `minecraft:shipwreck`, `minecraft:ocean_ruin`, `minecraft:ruined_portal`, `minecraft:mineshaft`, and so on). A jigsaw
   structure's `max_distance_from_center` is a number from 1 to 128 or `{"horizontal": 1 to 128, "vertical": 1 to
   4064}` (4064 by default), and its `dimension_padding` a number or `{"bottom": ..., "top": ...}` (0 by default, and
-  for values that aren't valid, as vanilla reads them leniently), like vanilla's. Plugins can't add structure or pool
+  for values that aren't valid, as vanilla reads them leniently), like vanilla's. As in vanilla, only an omitted
+  `dimension_padding` lets the start piece reach outside the world's height: an explicit one, even `0` or `{}`, keeps
+  it inside. Plugins can't add structure or pool
   element types in code: Obsidian's structure, piece and pool element bases work on its internal generation context,
   templates and jigsaw placement, which would need an API of their own, like the tree parts'.
 - Structure sets take `minecraft:random_spread` (with `spread_type`) and `minecraft:concentric_rings` placements, with
