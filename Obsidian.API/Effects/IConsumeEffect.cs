@@ -4,5 +4,6 @@ public interface IConsumeEffect
     public string Type { get; }
 
     public void Write(INetStreamWriter writer);
-    public void Read(INetStreamReader reader);
+    /// <summary>Reads a new effect without changing this value.</summary>
+    public IConsumeEffect Read(INetStreamReader reader);
 }

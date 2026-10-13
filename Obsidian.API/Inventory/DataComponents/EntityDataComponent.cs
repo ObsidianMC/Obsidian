@@ -7,24 +7,37 @@ public sealed record EntityDataComponent(DataComponentType ComponentType) : Data
 {
     public override DataComponentType Type => this.ComponentType;
     public override string Identifier => OpaqueDataComponent.GetIdentifier(this.Type);
-    public int RegistryId { get; set; }
-    public NbtCompound Data { get; set; } = new();
+    private int registryId;
+
+    public int RegistryId
+    {
+        get => this.registryId;
+        init => this.registryId = value;
+    }
+
+    private NbtCompound data = new();
+
+    public NbtCompound Data
+    {
+        get => ComponentCopies.Nbt(this.data)!;
+        init => this.data = ComponentCopies.Nbt(value)!;
+    }
 
     // The registry RegistryId belongs to: entity types, or block entity types for minecraft:block_entity_data.
     private string Registry => this.ComponentType == DataComponentType.BlockEntityData
         ? ComponentValueCodecs.BlockEntityTypes
         : ComponentValueCodecs.EntityTypes;
 
-    public override void Read(INetStreamReader reader)
+    protected override void ReadCore(INetStreamReader reader)
     {
-        this.RegistryId = reader.ReadRegistryId(this.Registry);
-        this.Data = reader.ReadNbtCompound();
+        this.registryId = reader.ReadRegistryId(this.Registry);
+        this.data = reader.ReadNbtCompound();
     }
 
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteRegistryId(this.Registry, this.RegistryId);
-        writer.WriteNbtCompound(this.Data);
+        writer.WriteNbtCompound(this.data);
     }
 }
 
@@ -32,19 +45,25 @@ public sealed record BeesDataComponent : DataComponent
 {
     public override DataComponentType Type => DataComponentType.Bees;
     public override string Identifier => "minecraft:bees";
-    public (EntityDataComponent Entity, int TicksInHive, int MinTicksInHive)[] Occupants { get; set; } = [];
+    private ImmutableArray<(EntityDataComponent Entity, int TicksInHive, int MinTicksInHive)> occupants = [];
 
-    public override void Read(INetStreamReader reader) => this.Occupants = reader.ReadLengthPrefixedArray(() =>
+    public ImmutableArray<(EntityDataComponent Entity, int TicksInHive, int MinTicksInHive)> Occupants
+    {
+        get => this.occupants;
+        init => this.occupants = value;
+    }
+
+    protected override void ReadCore(INetStreamReader reader) => this.occupants = reader.ReadLengthPrefixedArray(() =>
     {
         var entity = new EntityDataComponent(DataComponentType.EntityData);
-        entity.Read(reader);
+        entity = (EntityDataComponent)entity.Read(reader);
         return (entity, reader.ReadVarInt(), reader.ReadVarInt());
-    });
+    }).ToImmutableArray();
 
     public override void Write(INetStreamWriter writer) => writer.WriteLengthPrefixedArray(occupant =>
     {
         occupant.Entity.Write(writer);
         writer.WriteVarInt(occupant.TicksInHive);
         writer.WriteVarInt(occupant.MinTicksInHive);
-    }, this.Occupants);
+    }, this.Occupants.AsSpan());
 }

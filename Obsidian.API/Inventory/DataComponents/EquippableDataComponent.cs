@@ -1,61 +1,147 @@
 ﻿using Obsidian.API.Utilities;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 
 namespace Obsidian.API.Inventory.DataComponents;
+
 public sealed record class EquippableDataComponent : DataComponent
 {
     public override DataComponentType Type => DataComponentType.Equippable;
 
     public override string Identifier => "minecraft:equippable";
 
-    public required EquipmentSlot Slot { get; set; }
+    private EquipmentSlot slot;
 
-    public required SoundEvent EquipSound { get; set; }
+    public required EquipmentSlot Slot
+    {
+        get => this.slot;
+        init => this.slot = value;
+    }
 
-    public string? AssetIdentifier { get; set; }
-    public IdSet? AllowedEntitySet { get; set; }
-    public bool EquipOnInteract { get; set; }
-    public bool CanBeSheared { get; set; }
-    public SoundEvent ShearingSound { get; set; }
+    private SoundEvent equipSound;
 
-    public EquipmentAssets? AssetId { get; set; }
+    public required SoundEvent EquipSound
+    {
+        get => this.equipSound;
+        init => this.equipSound = value;
+    }
 
-    public string? CameraOverlay { get; set; }
+    private string? assetIdentifier;
 
-    public ImmutableArray<int>? AllowedEntities { get; set; }
+    public string? AssetIdentifier
+    {
+        get => this.assetIdentifier;
+        init => this.assetIdentifier = value;
+    }
 
-    public bool Dispensable { get; set; }
-    public bool Swappable { get; set; }
-    public bool DamageOnHurt { get; set; }
+    private IdSet? allowedEntitySet;
+
+    public IdSet? AllowedEntitySet
+    {
+        get => this.allowedEntitySet;
+        init => this.allowedEntitySet = value;
+    }
+
+    private bool equipOnInteract;
+
+    public bool EquipOnInteract
+    {
+        get => this.equipOnInteract;
+        init => this.equipOnInteract = value;
+    }
+
+    private bool canBeSheared;
+
+    public bool CanBeSheared
+    {
+        get => this.canBeSheared;
+        init => this.canBeSheared = value;
+    }
+
+    private SoundEvent shearingSound;
+
+    public SoundEvent ShearingSound
+    {
+        get => this.shearingSound;
+        init => this.shearingSound = value;
+    }
+
+    private EquipmentAssets? assetId;
+
+    public EquipmentAssets? AssetId
+    {
+        get => this.assetId;
+        init => this.assetId = value;
+    }
+
+    private string? cameraOverlay;
+
+    public string? CameraOverlay
+    {
+        get => this.cameraOverlay;
+        init => this.cameraOverlay = value;
+    }
+
+    private ImmutableArray<int>? allowedEntities;
+
+    public ImmutableArray<int>? AllowedEntities
+    {
+        get => this.allowedEntities;
+        init => this.allowedEntities = value;
+    }
+
+    private bool dispensable;
+
+    public bool Dispensable
+    {
+        get => this.dispensable;
+        init => this.dispensable = value;
+    }
+
+    private bool swappable;
+
+    public bool Swappable
+    {
+        get => this.swappable;
+        init => this.swappable = value;
+    }
+
+    private bool damageOnHurt;
+
+    public bool DamageOnHurt
+    {
+        get => this.damageOnHurt;
+        init => this.damageOnHurt = value;
+    }
 
     [SetsRequiredMembers]
     internal EquippableDataComponent() { }
 
-    public override void Read(INetStreamReader reader)
+    protected override void ReadCore(INetStreamReader reader)
     {
-        this.Slot = reader.ReadVarInt<EquipmentSlot>();
-        this.EquipSound = ComponentValueCodecs.ReadSoundHolder(reader);
-        this.AssetIdentifier = reader.ReadOptionalString();
-        this.AssetId = this.AssetIdentifier is string value
+        this.slot = reader.ReadVarInt<EquipmentSlot>();
+        this.equipSound = ComponentValueCodecs.ReadSoundHolder(reader);
+        this.assetIdentifier = reader.ReadOptionalString();
+        this.assetId = this.AssetIdentifier is string value
             && Enum.TryParse<EquipmentAssets>(value.TrimResourceTag().ToPascalCase(), true, out var asset)
                 ? asset
                 : null;
-        this.CameraOverlay = reader.ReadOptionalString();
+        this.cameraOverlay = reader.ReadOptionalString();
 
+        this.allowedEntitySet = null;
+        this.allowedEntities = null;
         var hasEntities = reader.ReadBoolean();
         if (hasEntities)
         {
-            this.AllowedEntitySet = reader.ReadIdSet(ComponentValueCodecs.EntityTypes);
-            this.AllowedEntities = this.AllowedEntitySet.Value.Ids;
+            this.allowedEntitySet = reader.ReadIdSet(ComponentValueCodecs.EntityTypes);
+            this.allowedEntities = this.AllowedEntitySet.Value.Ids;
         }
 
-        this.Dispensable = reader.ReadBoolean();
-        this.Swappable = reader.ReadBoolean();
-        this.DamageOnHurt = reader.ReadBoolean();
-        this.EquipOnInteract = reader.ReadBoolean();
-        this.CanBeSheared = reader.ReadBoolean();
-        this.ShearingSound = ComponentValueCodecs.ReadSoundHolder(reader);
+        this.dispensable = reader.ReadBoolean();
+        this.swappable = reader.ReadBoolean();
+        this.damageOnHurt = reader.ReadBoolean();
+        this.equipOnInteract = reader.ReadBoolean();
+        this.canBeSheared = reader.ReadBoolean();
+        this.shearingSound = ComponentValueCodecs.ReadSoundHolder(reader);
     }
 
     public override void Write(INetStreamWriter writer)

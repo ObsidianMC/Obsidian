@@ -1,13 +1,17 @@
 ﻿namespace Obsidian.API;
 public sealed record class JukeboxSong : INetworkSerializable<JukeboxSong>
 {
-    public SoundEvent SoundEvent { get; set; }
+    public SoundEvent SoundEvent { get; init; }
 
-    public ChatMessage Description { get; set; }
+    public ChatMessage Description
+    {
+        get => Inventory.DataComponents.ComponentCopies.Chat(field)!;
+        init => field = Inventory.DataComponents.ComponentCopies.Chat(value)!;
+    }
 
-    public float LengthInSeconds { get; set; }
+    public float LengthInSeconds { get; init; }
 
-    public int ComparatorOutput { get; set; }
+    public int ComparatorOutput { get; init; }
 
     public static JukeboxSong Read(INetStreamReader reader) => new()
     {

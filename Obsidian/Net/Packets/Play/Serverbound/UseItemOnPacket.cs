@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Obsidian.API.Blocks;
 using Obsidian.API.Events;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -318,8 +319,7 @@ public partial class UseItemOnPacket
                 player.Inventory.RemoveItem(slot, 1);
             else if (!item.Unbreakable && ShouldDamageTool(item))
             {
-                var damage = ComponentBuilder.Damage;
-                damage.Value = item.Damage + 1;
+                var damage = ComponentBuilder.Damage with { Value = item.Damage + 1 };
                 item[DataComponentType.Damage] = damage;
                 var maxDamage = item.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? item.Holder.MaxDamage;
                 if (damage.Value >= maxDamage)
@@ -336,7 +336,8 @@ public partial class UseItemOnPacket
 
     private static bool ShouldDamageTool(ItemStack item)
     {
-        var enchantments = item.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value;
+        var enchantments = item.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+            DataComponentType.Enchantments)?.Value;
         var unbreaking = enchantments?.FirstOrDefault(enchantment => enchantment.Id == EnchantmentsRegistry.Unbreaking.Id).Level ?? 0;
         return Globals.Random.NextDouble() < 1.0 / (Math.Max(0, unbreaking) + 1.0);
     }

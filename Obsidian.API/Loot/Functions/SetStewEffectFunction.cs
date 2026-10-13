@@ -26,7 +26,8 @@ public sealed class SetStewEffectFunction : LootFunction
         if (effect.Type is not (MobEffect.InstantHealth or MobEffect.InstantDamage or MobEffect.Saturation))
             duration *= 20;
 
-        var current = stack.GetComponent<SimpleDataComponent<SuspiciousStewEffect[]>>(DataComponentType.SuspiciousStewEffects)?.Value ?? [];
+        var current = stack.GetComponent<SimpleDataComponent<ImmutableArray<SuspiciousStewEffect>>>(
+            DataComponentType.SuspiciousStewEffects)?.Value ?? [];
         var added = new SuspiciousStewEffect { EffectId = (int)effect.Type, Duration = duration };
 
         LootItems.Set(stack, ComponentBuilder.SuspiciousStewEffects with { Value = [.. current, added] });

@@ -1,19 +1,26 @@
 ﻿using Obsidian.Nbt;
 
 namespace Obsidian.API.Inventory.DataComponents;
+
 public abstract record class BlockPredicatesDataComponent : DataComponent
 {
     public override DataComponentType Type { get; }
 
     public override string Identifier { get; }
 
-    public List<BlockPredicate> Predicates { get; set; } = [];
+    private ImmutableArray<BlockPredicate> predicates = [];
+
+    public ImmutableArray<BlockPredicate> Predicates
+    {
+        get => this.predicates;
+        init => this.predicates = value;
+    }
 
     public bool ShowInTooltip { get; init; }
 
-    public override void Read(INetStreamReader reader)
+    protected override void ReadCore(INetStreamReader reader)
     {
-        this.Predicates = reader.ReadLengthPrefixedArray(() => new BlockPredicate
+        this.predicates = reader.ReadLengthPrefixedArray(() => new BlockPredicate
         {
             Blocks = reader.ReadBoolean() ? reader.ReadIdSet(ComponentValueCodecs.Blocks) : null,
             Properties = reader.ReadBoolean() ? reader.ReadLengthPrefixedArray(() =>
@@ -29,13 +36,13 @@ public abstract record class BlockPredicatesDataComponent : DataComponent
                         MinValue = reader.ReadOptionalString(),
                         MaxValue = reader.ReadOptionalString()
                     };
-            }).ToList() : null,
+            }).ToImmutableArray() : null,
             Nbt = reader.ReadBoolean() ? reader.ReadNbtCompound() : null,
             ExactComponents = reader.ReadLengthPrefixedArray(() =>
             {
                 var type = (DataComponentType)reader.ReadRegistryId(ComponentValueCodecs.DataComponentTypes);
                 return reader.ReadDataComponent(type);
-            }),
+            }).ToImmutableArray(),
             PartialComponents = reader.ReadLengthPrefixedArray(() =>
             {
                 var isPredicateType = reader.ReadBoolean();
@@ -47,8 +54,8 @@ public abstract record class BlockPredicatesDataComponent : DataComponent
                         : reader.ReadRegistryId(ComponentValueCodecs.DataComponentTypes),
                     Value = reader.ReadNbtCompound()
                 };
-            })
-        }).ToList();
+            }).ToImmutableArray()
+        }).ToImmutableArray();
     }
 
     public override void Write(INetStreamWriter writer)
@@ -73,7 +80,7 @@ public abstract record class BlockPredicatesDataComponent : DataComponent
                         writer.WriteOptional(property.MinValue);
                         writer.WriteOptional(property.MaxValue);
                     }
-                }, predicate.Properties.ToArray());
+                }, predicate.Properties.Value.AsSpan());
             }
 
             writer.WriteBoolean(predicate.Nbt is not null);
@@ -84,7 +91,7 @@ public abstract record class BlockPredicatesDataComponent : DataComponent
             {
                 writer.WriteRegistryId(ComponentValueCodecs.DataComponentTypes, (int)component.Type);
                 writer.WriteDataComponent(component);
-            }, predicate.ExactComponents);
+            }, predicate.ExactComponents.AsSpan());
             writer.WriteLengthPrefixedArray(component =>
             {
                 writer.WriteBoolean(component.IsPredicateType);
@@ -94,7 +101,7 @@ public abstract record class BlockPredicatesDataComponent : DataComponent
                     writer.WriteRegistryId(ComponentValueCodecs.DataComponentTypes, component.TypeId);
 
                 writer.WriteNbtCompound(component.Value);
-            }, predicate.PartialComponents);
+            }, predicate.PartialComponents.AsSpan());
         }, this.Predicates.ToArray());
     }
 }
@@ -108,26 +115,34 @@ public readonly record struct ComponentPredicate
 {
     public required bool IsPredicateType { get; init; }
     public required int TypeId { get; init; }
-    public required NbtCompound Value { get; init; }
+    public required NbtCompound Value
+    {
+        get => ComponentCopies.Nbt(field)!;
+        init => field = ComponentCopies.Nbt(value)!;
+    }
 }
 
 public readonly record struct BlockPredicate
 {
     public BlockPredicate() { }
     public IdSet? Blocks { get; init; }
-    public DataComponent[] ExactComponents { get; init; } = [];
-    public ComponentPredicate[] PartialComponents { get; init; } = [];
-    public bool HasBlocks => this.Blocks.HasValue || this.BlockIds.Count > 0;
+    public ImmutableArray<DataComponent> ExactComponents { get; init; } = [];
+    public ImmutableArray<ComponentPredicate> PartialComponents { get; init; } = [];
+    public bool HasBlocks => this.Blocks.HasValue || this.BlockIds.Length > 0;
 
-    public List<string> BlockIds { get; init; } = [];
+    public ImmutableArray<string> BlockIds { get; init; } = [];
 
-    public bool HasProperties => this.Properties?.Count > 0;
+    public bool HasProperties => this.Properties?.Length > 0;
 
-    public List<BlockProperty>? Properties { get; init; }
+    public ImmutableArray<BlockProperty>? Properties { get; init; }
 
     public bool HasNbt => this.Nbt is not null;
 
-    public NbtCompound? Nbt { get; init; }
+    public NbtCompound? Nbt
+    {
+        get => ComponentCopies.Nbt(field);
+        init => field = ComponentCopies.Nbt(value);
+    }
 }
 
 public readonly record struct BlockProperty

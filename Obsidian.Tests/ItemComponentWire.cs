@@ -250,7 +250,8 @@ public class ItemComponentWire
         Assert.Equal(2, stack.Enchantments.Count);
         Assert.True(stack.HasEnchantmentGlint);
 
-        stack.GetComponent<SimpleDataComponent<int>>(DataComponentType.Damage)!.Value = 42;
+        var damage = stack.GetComponent<SimpleDataComponent<int>>(DataComponentType.Damage)!;
+        stack[DataComponentType.Damage] = damage with { Value = 42 };
         var writer = new NetworkBuffer();
         writer.WriteItemStack(stack);
         writer.Reset();

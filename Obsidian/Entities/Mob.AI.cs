@@ -188,8 +188,10 @@ public partial class Mob
         var maximum = item.GetComponent<Obsidian.API.Inventory.DataComponents.SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? 0;
         if (maximum <= 0)
             return;
-        var damage = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage;
-        damage.Value = item.Damage + amount;
+        var damage = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage with
+        {
+            Value = item.Damage + amount
+        };
         item[DataComponentType.Damage] = damage;
         if (damage.Value >= maximum)
             player.Inventory.SetItem(slot, null);

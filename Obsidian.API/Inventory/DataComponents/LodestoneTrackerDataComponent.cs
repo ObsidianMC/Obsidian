@@ -1,18 +1,31 @@
 ﻿namespace Obsidian.API.Inventory.DataComponents;
+
 public sealed record class LodestoneTrackerDataComponent : DataComponent
 {
     public override DataComponentType Type => DataComponentType.LodestoneTracker;
 
     public override string Identifier => "minecraft:lodestone_tracker";
 
-    public GlobalPos? Target { get; set; }
+    private GlobalPos? target;
 
-    public bool Tracked { get; set; }
-
-    public override void Read(INetStreamReader reader)
+    public GlobalPos? Target
     {
-        this.Target = reader.ReadOptional<GlobalPos>();
-        this.Tracked = reader.ReadBoolean();
+        get => this.target;
+        init => this.target = value;
+    }
+
+    private bool tracked;
+
+    public bool Tracked
+    {
+        get => this.tracked;
+        init => this.tracked = value;
+    }
+
+    protected override void ReadCore(INetStreamReader reader)
+    {
+        this.target = reader.ReadOptional<GlobalPos>();
+        this.tracked = reader.ReadBoolean();
     }
 
     public override void Write(INetStreamWriter writer)

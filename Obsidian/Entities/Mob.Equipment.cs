@@ -121,8 +121,7 @@ public partial class Mob
         var maximum = GetArmorStats(item, slot).Durability;
         if (maximum > 0 && !item.ContainsKey(DataComponentType.MaxDamage))
         {
-            var durability = ComponentBuilder.MaxDamage;
-            durability.Value = maximum;
+            var durability = ComponentBuilder.MaxDamage with { Value = maximum };
             item[DataComponentType.MaxDamage] = durability;
         }
         if (initialized)

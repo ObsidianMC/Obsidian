@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Obsidian.API;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
@@ -70,7 +71,8 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
         Assert.Equal("Edge", sword.CustomName!.Text);
 
         var book = chest[4]!;
-        var enchantment = Assert.Single(book.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.StoredEnchantments)!.Value!);
+        var enchantment = Assert.Single(book.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+            DataComponentType.StoredEnchantments)!.Value!);
         Assert.Equal(new Enchantment { Id = EnchantmentsRegistry.Sharpness.Id, Level = 3 }, enchantment);
 
         Assert.Equal(Potion.Swiftness, chest[13]!.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents)!.Potion);

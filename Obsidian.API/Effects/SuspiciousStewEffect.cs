@@ -3,9 +3,9 @@
 namespace Obsidian.API.Effects;
 public sealed class SuspiciousStewEffect : INetworkSerializable<SuspiciousStewEffect>
 {
-    public required int EffectId { get; set; }
+    public required int EffectId { get; init; }
 
-    public required int Duration { get; set; }
+    public required int Duration { get; init; }
 
     public static SuspiciousStewEffect Read(INetStreamReader reader) => new()
     {

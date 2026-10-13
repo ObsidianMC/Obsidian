@@ -1,12 +1,18 @@
 namespace Obsidian.API.Inventory.DataComponents;
 
 /// <summary>Banner layers with either a connection registry ID or inline pattern data.</summary>
-public sealed record BannerPatternsDataComponent() : SimpleDataComponent<BannerPatternLayer[]>(
+public sealed record BannerPatternsDataComponent() : SimpleDataComponent<ImmutableArray<BannerPatternLayer>>(
     DataComponentType.BannerPatterns, "minecraft:banner_patterns", (_, _) => { }, _ => [])
 {
-    public int?[] RegistryIds { get; set; } = [];
+    private ImmutableArray<int?> registryIds = [];
 
-    public override void Read(INetStreamReader reader)
+    public ImmutableArray<int?> RegistryIds
+    {
+        get => this.registryIds;
+        init => this.registryIds = value;
+    }
+
+    protected override void ReadCore(INetStreamReader reader)
     {
         var entries = reader.ReadLengthPrefixedArray(() =>
         {
@@ -17,9 +23,9 @@ public sealed record BannerPatternsDataComponent() : SimpleDataComponent<BannerP
                 TranslationKey = holder == 0 ? reader.ReadString() : "",
                 Color = reader.ReadVarInt<Dye>()
             });
-        });
-        this.Value = entries.Select(entry => entry.layer).ToArray();
-        this.RegistryIds = entries.Select(entry => entry.id).ToArray();
+        }).ToImmutableArray();
+        this.value = entries.Select(entry => entry.layer).ToImmutableArray();
+        this.registryIds = entries.Select(entry => entry.id).ToImmutableArray();
     }
 
     public override void Write(INetStreamWriter writer)

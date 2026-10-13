@@ -7,15 +7,19 @@ public sealed record class InstrumentData : INetworkSerializable<InstrumentData>
     /// The registry id of a vanilla instrument (e.g. <c>minecraft:ponder_goat_horn</c>), or null for a custom one.
     /// Vanilla instruments are sent by registry id; custom ones are sent with their data.
     /// </summary>
-    public string? Identifier { get; set; }
+    public string? Identifier { get; init; }
 
-    public SoundEvent SoundEvent { get; set; }
+    public SoundEvent SoundEvent { get; init; }
 
-    public float UseDuration { get; set; }
+    public float UseDuration { get; init; }
 
-    public float Range { get; set; }
+    public float Range { get; init; }
 
-    public ChatMessage Description { get; set; }
+    public ChatMessage Description
+    {
+        get => Inventory.DataComponents.ComponentCopies.Chat(field)!;
+        init => field = Inventory.DataComponents.ComponentCopies.Chat(value)!;
+    }
 
     // Vanilla's InstrumentComponent: an either (true = holder, false = resource key) of an instrument holder, which is
     // its registry id + 1, or 0 followed by the instrument. The registry id indexes the instrument registry sent during

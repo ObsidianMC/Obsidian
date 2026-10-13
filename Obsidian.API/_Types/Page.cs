@@ -4,10 +4,10 @@ namespace Obsidian.API;
 public sealed record class Page : INetworkSerializable<Page>
 {
     [MaxLength(1024)]
-    public required string RawContent { get; set; }
+    public required string RawContent { get; init; }
 
     [MaxLength(1024)]
-    public string? FilteredContent { get; set; }
+    public string? FilteredContent { get; init; }
 
     public static Page Read(INetStreamReader reader) => new()
     {

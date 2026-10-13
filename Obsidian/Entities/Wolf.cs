@@ -211,9 +211,12 @@ public sealed partial class Wolf : Animal
         if (OrderedToSit && armor.Is(ItemsRegistry.WolfArmor) && armor.Damage > 0 &&
             item is { Count: > 0, Holder.Id: ItemIds.ArmadilloScute })
         {
-            var maximum = armor.GetComponent<Obsidian.API.Inventory.DataComponents.SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? 64;
-            var damage = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage;
-            damage.Value = Math.Max(0, armor.Damage - (int)(maximum * 0.125f));
+            var maximum = armor.GetComponent<Obsidian.API.Inventory.DataComponents.SimpleDataComponent<int>>(
+                DataComponentType.MaxDamage)?.Value ?? 64;
+            var damage = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage with
+            {
+                Value = Math.Max(0, armor.Damage - (int)(maximum * 0.125f))
+            };
             armor[DataComponentType.Damage] = damage;
             SetEquipment(EquipmentSlot.Body, armor);
             await ConsumeInteractionItemAsync(player, hand);

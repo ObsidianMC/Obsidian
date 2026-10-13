@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Obsidian.API;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
@@ -113,7 +114,8 @@ public sealed class Combat
         var crossbow = new ItemStack(ItemsRegistry.Crossbow, 1,
             ComponentBuilder.ChargedProjectiles with { Value = [ammunition] });
         var restored = crossbow.ToNbt().ItemFromNbt()!;
-        var loaded = Assert.Single(restored.GetComponent<SimpleDataComponent<ItemStack[]>>(DataComponentType.ChargedProjectiles)!.Value!);
+        var loaded = Assert.Single(restored.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
+            DataComponentType.ChargedProjectiles)!.Value!);
         Assert.Same(ItemsRegistry.TippedArrow, loaded.Holder);
         Assert.Equal(Potion.StrongPoison, loaded.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents)!.Potion);
     }

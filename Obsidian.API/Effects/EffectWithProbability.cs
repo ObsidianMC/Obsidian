@@ -3,9 +3,9 @@ public sealed record class EffectWithProbability : IConsumeEffect
 {
     public string Type => "minecraf:apply_effects";
 
-    public PotionEffectData EffectData { get; set; }
+    public PotionEffectData EffectData { get; init; }
 
-    public float Probability { get; set; }
+    public float Probability { get; init; }
 
     public void Write(INetStreamWriter writer)
     {
@@ -13,9 +13,9 @@ public sealed record class EffectWithProbability : IConsumeEffect
         writer.WriteSingle(this.Probability);
     }
 
-    public void Read(INetStreamReader reader)
+    public IConsumeEffect Read(INetStreamReader reader) => new EffectWithProbability
     {
-        this.EffectData = reader.ReadPotionEffectData();
-        this.Probability = reader.ReadSingle();
-    }
+        EffectData = reader.ReadPotionEffectData(),
+        Probability = reader.ReadSingle()
+    };
 }

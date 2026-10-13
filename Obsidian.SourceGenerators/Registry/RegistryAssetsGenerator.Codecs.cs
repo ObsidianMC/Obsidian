@@ -108,7 +108,18 @@ public partial class RegistryAssetsGenerator
 
                 if (value.ValueKind == JsonValueKind.Object)
                 {
-                    builder.ParseProperty(value, ctx, name == "OverrideArmorAssets");
+                    if (name == "OverrideArmorAssets")
+                    {
+                        builder.Append("new Dictionary<string, string> { ");
+                        foreach (var entry in value.EnumerateObject())
+                            builder.Append(
+                                $"{{ {JsonSerializer.Serialize(entry.Name)}, {entry.Value.GetRawText()} }}, ");
+
+                        builder.Append("}, ");
+                        return;
+                    }
+
+                    builder.ParseProperty(value, ctx);
                     return;
                 }
 

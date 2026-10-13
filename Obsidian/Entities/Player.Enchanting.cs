@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
@@ -66,8 +67,10 @@ public partial class Player
         var random = new LegacyRandomSource(EnchantmentSeed);
         var shelves = CountBookshelves(table.BlockPosition);
         var enchantable = item is { Count: 1 } && !item.RemoveComponents.Contains(DataComponentType.Enchantable) &&
-            (item.GetComponent<SimpleDataComponent<int>>(DataComponentType.Enchantable)?.Value ?? item.Holder.Enchantable) > 0 &&
-            (item.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value?.Length ?? 0) == 0;
+            (item.GetComponent<SimpleDataComponent<int>>(
+                DataComponentType.Enchantable)?.Value ?? item.Holder.Enchantable) > 0 &&
+            (item.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+                DataComponentType.Enchantments)?.Value.Length ?? 0) == 0;
         for (var option = 0; option < 3; option++)
         {
             enchantmentCosts[option] = enchantable ? EnchantingCost(random, option, shelves) : 0;
