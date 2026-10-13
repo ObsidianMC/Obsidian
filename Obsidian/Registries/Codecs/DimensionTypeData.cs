@@ -83,7 +83,19 @@ internal sealed record DimensionTypeData(
         return data;
     }
 
-    public DimensionElement ToElement() => new()
+    /// <summary>
+    /// The type as the server keeps it, with its attribute map attached for the attributes the server applies at a
+    /// position (see <see cref="WorldData.LevelEnvironment"/>).
+    /// </summary>
+    public DimensionElement ToElement()
+    {
+        var element = this.CreateElement();
+        WorldData.LevelEnvironment.Attach(element, this.Attributes);
+
+        return element;
+    }
+
+    private DimensionElement CreateElement() => new()
     {
         HasSkylight = this.HasSkylight,
         HasCeiling = this.HasCeiling,

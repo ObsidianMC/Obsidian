@@ -26,9 +26,8 @@ public sealed partial class SnowGolem : PathfinderMob
     {
         var point = (Vector)Position.Floor();
         var temperature = Terrain.GetTemperature(point);
-        // Vanilla's hot biomes set snow_golem_melts, which Obsidian tells by their temperature, as it does vanilla's
-        // other biome attributes; a dimension type sets it everywhere.
-        if (temperature > 1 || Level.DimensionType.Gameplay(LevelEnvironment.SnowGolemMelts))
+        // Vanilla's snow_golem_melts, which its hot biomes and the nether set.
+        if (Level.Gameplay(LevelEnvironment.SnowGolemMelts, point))
             await DamageEnvironmentAsync(1);
         if (!Alive || temperature >= 0.8f || MobBitMask.HasFlag(MobBitmask.NoAi) || !Level.LevelData.GetBooleanRule("mob_griefing"))
             return;

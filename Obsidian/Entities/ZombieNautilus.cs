@@ -32,7 +32,7 @@ public sealed partial class ZombieNautilus : Nautilus
         if (Owner != Guid.Empty) AttackTarget = null;
         if (Level.LevelData.Difficulty == Difficulty.Peaceful && Owner == Guid.Empty)
         { await RemoveAsync(); return; }
-        if (!InWater && Level.MonstersBurn() &&
+        if (!InWater && Level.MonstersBurn((Vector)Position.Floor()) &&
             !Level.LevelData.Raining && Terrain.GetSkyLight((Vector)EyePosition.Floor()) == 15 && GetEquipment(EquipmentSlot.Body).IsAir)
             Ignite(8);
     }

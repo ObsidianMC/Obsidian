@@ -180,8 +180,8 @@ client. This document describes the design and tracks its progress. The archive 
      - in flat level stems: lakes, features and structure overrides (refused for now), which need the noise
        generator's decoration and structure steps to run over flat terrain;
      - particles' items with components in environment attributes;
-     - the server applying biomes' attributes, and those whose mechanics Obsidian lacks (beds, respawn anchors,
-       water evaporating); plugins build their own portals.
+     - attributes whose mechanics Obsidian lacks (sleeping and spawn points, which beds and respawn anchors set);
+       plugins build their own portals.
    - Done after Phase 3.8, level stems: dimension types and biomes defined inline become the plugin's or pack's
      entries, named for the stem (`<stem>/type`, `<stem>/biome_<n>`), so they get ids and are synced like files'.
      Stems may generate with `minecraft:flat` (layers and a biome, through the superflat generator, which now takes
@@ -202,6 +202,12 @@ client. This document describes the design and tracks its progress. The archive 
      other climate parameters, rather than a `double`: read `Depth[0]` and `Depth[1]`, and write a point as
      `[depth, depth]`. `SplineDensityFunction.Spline` is an `ISpline`, a multipoint `Spline` or a `SplineConstant`,
      rather than a `Spline`: assign either, and test for `Spline` before using a multipoint spline's members.
+   - Done after Phase 3.8, environment rules: the server applies biomes' attributes where they're asked about,
+     over the dimension type's (vanilla's own biomes' values included), for the attributes it applied before and
+     for `bed_rule` (beds explode where it says so), `respawn_anchor_works` (charged anchors explode where they don't
+     work) and `water_evaporates` (buckets of water evaporate). Plugins' dimension types and biomes get the same
+     from their files' `attributes`; a bed rule's message is shown to players (see
+     [plugin-content.md](plugin-content.md#whats-checked)).
    - Phase 3.5, part B (done): inline entries in plugins' level stems, and tree parts in the API. A stem's
      `generator.settings` may define noise settings inline, read like a plugin's noise settings file, with
      inline or named density functions; the plugins whose types they use, and the plugin entries they name, are

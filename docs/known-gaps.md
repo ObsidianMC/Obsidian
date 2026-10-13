@@ -69,6 +69,18 @@ had when the chunk was generated.
 **Where to start:** each plant is another case of `Growth` (its random tick, bone meal target, chance and growth),
 placing features through `LiveFeatureLevel`; crops' random ticks need vanilla's `CropBlock.getGrowthSpeed`.
 
+## Sleeping and spawn points
+
+**Status:** open.
+
+Beds and respawn anchors explode where their environment attributes say they don't work (see
+[plugin content](plugin-content.md#whats-checked)), but where they work, players can't sleep in a bed or set their
+spawn point with either: using one does nothing more, and players respawn at the world spawn. Unlike vanilla's, a
+respawn anchor next to water explodes like any other.
+
+**Where to start:** sleeping (vanilla's `Player.startSleepInBed` and the night skip) and players' respawn points,
+which `bed_rule`'s `can_sleep` and `can_set_spawn` and `respawn_anchor_works` then decide (see `LevelEnvironment`).
+
 ## Concurrent downloads into the shared test cache
 
 **Status:** open. Only hits a cold cache.

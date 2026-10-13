@@ -428,12 +428,25 @@ vanilla's particle codecs and sent as they write them; their blocks and items ar
 plugins' ones, and an item is a name or `{"id": ...}` without components. A bed rule's `error_message` is any text
 component vanilla reads, checked for its content and nested components; clients aren't sent bed rules.
 
-The server applies a dimension type's attributes where Obsidian has the mechanics: `gameplay/monsters_burn` and
-`gameplay/sky_light_level` (with the overworld's day timeline), `gameplay/can_start_raid` (a bad omen in a village
-starts a raid), `gameplay/can_pillager_patrol_spawn` (patrols, which only spawn in the overworld, like vanilla's),
-`gameplay/fast_lava`, `gameplay/piglins_zombify` (piglins and hoglins) and `gameplay/snow_golem_melts` (everywhere,
-besides hot biomes). The rest change what clients show and play: Obsidian has no beds, respawn anchors, water
-evaporating, or the mechanics of the other attributes, and the server doesn't apply biomes' attributes.
+The server applies the attributes Obsidian has the mechanics of, like vanilla: a value starts at the attribute's
+default, then the dimension type's map applies, then the biome's where it's asked about, so a plugin's biome can
+change them in any dimension, and a plugin's dimension type everywhere in its levels (vanilla's own types and biomes
+apply their values too):
+
+- `gameplay/monsters_burn` and `gameplay/sky_light_level` (with the overworld's day timeline; a biome can't set the
+  sky light level), and `gameplay/fast_lava` (a whole dimension's);
+- `gameplay/can_start_raid` (a bad omen where the player is starts a raid in a village) and
+  `gameplay/can_pillager_patrol_spawn` (where a patrol would spawn, only in the overworld, like vanilla's);
+- `gameplay/piglins_zombify` (piglins and hoglins) and `gameplay/snow_golem_melts`;
+- `gameplay/bed_rule`: where it `explodes`, using a bed removes it and sets off an explosion of power 5 with fire, as
+  in vanilla's nether and end, showing its `error_message` above the hotbar; elsewhere a player who can't sleep now
+  is shown it;
+- `gameplay/respawn_anchor_works`: glowstone charges a respawn anchor anywhere, and a charged anchor explodes like a
+  bed where it doesn't work (everywhere but vanilla's nether);
+- `gameplay/water_evaporates`: water poured from a bucket hisses away instead of being placed.
+
+Players can't sleep or set their spawn with a bed or anchor yet, so where those work, using them does nothing more.
+The other attributes change what clients show and play.
 
 ## World generation features
 

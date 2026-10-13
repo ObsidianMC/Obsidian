@@ -130,6 +130,17 @@ public partial class UseItemOnPacket
             }
         }
 
+        // Beds and respawn anchors, which explode where their environment attributes say they don't work.
+        if (!player.Sneaking
+            && player.GameMode != GameMode.Spectator
+            && player.Level is AbstractLevel useLevel
+            && (await useLevel.UseBedAsync(player, position, b)
+                || await useLevel.UseRespawnAnchorAsync(player, position, b, handSlot)))
+        {
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
+        }
+
         if (interactableBlocks.Contains(b.RegistryId) && !player.Sneaking)
         {
             await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)
@@ -306,6 +317,15 @@ public partial class UseItemOnPacket
 
             default:
                 break;
+        }
+
+        // Like vanilla's buckets, water poured where it evaporates (the nether) hisses instead of being placed.
+        if (block.Is(BlockIds.Water)
+            && player.Level is AbstractLevel waterLevel
+            && waterLevel.Evaporates(player, position))
+        {
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
         }
 
         if (block.IsGravityAffected() && !BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out _))

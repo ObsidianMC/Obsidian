@@ -86,7 +86,7 @@ public partial class Skeleton : PathfinderMob
                     SynchronizeMetadata();
             }
         }
-        if (BurnsInSun && Level.MonstersBurn() &&
+        if (BurnsInSun && Level.MonstersBurn((Vector)Position.Floor()) &&
             !Level.LevelData.Raining && !InWater && Random.NextSingle() * 30 < 1.2f && Terrain.GetSkyLight((Vector)EyePosition.Floor()) == 15)
         {
             if (GetEquipment(EquipmentSlot.Helmet).IsAir)

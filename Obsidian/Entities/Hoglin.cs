@@ -20,7 +20,7 @@ public sealed partial class Hoglin : FarmAnimal
     protected override int GetExperienceReward() => IsBaby ? 0 : 5;
     protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.CrimsonFungus };
     private bool IsConverting => !IsImmuneToZombification &&
-        !Level.DimensionType.PiglinsSafe();
+        !Level.PiglinsSafe((Vector)Position.Floor());
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {

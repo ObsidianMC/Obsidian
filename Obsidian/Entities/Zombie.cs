@@ -77,7 +77,7 @@ public partial class Zombie : PathfinderMob
             }
             else DrowningWaterTicks = -1;
         }
-        if (!Level.MonstersBurn() ||
+        if (!Level.MonstersBurn((Vector)Position.Floor()) ||
             Level.LevelData.Raining || Level.LevelData.Thundering || InWater || Random.NextSingle() * 30 >= 1.2f)
             return;
         var position = (Vector)EyePosition.Floor();

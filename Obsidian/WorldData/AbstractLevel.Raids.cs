@@ -39,18 +39,15 @@ public abstract partial class AbstractLevel
         if (Generator is Obsidian.WorldData.Generators.MobTestGenerator)
             return;
 
-        // Like vanilla, wandering traders and patrols only spawn in the overworld, while raids run in every level and
-        // start where its dimension type's can_start_raid allows (biomes' values of it aren't applied).
+        // Like vanilla, wandering traders and patrols only spawn in the overworld, where can_pillager_patrol_spawn
+        // allows, while raids run in every level and start where can_start_raid allows.
         if (DimensionName == "minecraft:overworld")
         {
             TickWanderingTraderSpawner();
-
-            if (DimensionType.Gameplay(LevelEnvironment.CanPillagerPatrolSpawn))
-                TickPatrolSpawner();
+            TickPatrolSpawner();
         }
 
-        var canStartRaid = DimensionType.Gameplay(LevelEnvironment.CanStartRaid);
-        if (!canStartRaid && raids.Count == 0)
+        if (raids.Count == 0 && !Players.Values.Any(CanStartRaidAt))
             return;
 
         if (LevelData.Difficulty == Difficulty.Peaceful || !LevelData.GetBooleanRule("raids"))
@@ -59,7 +56,7 @@ public abstract partial class AbstractLevel
         {
             var village = GetEntitiesInRange(player.Position, 64).OfType<Villager>().Where(villager => villager.Alive && villager.Home != null)
                 .MinBy(villager => (villager.Position - player.Position).MagnitudeSquared());
-            if (canStartRaid
+            if (CanStartRaidAt(player)
                 && village != null
                 && player.ActivePotionEffects.TryGetValue((int)PotionEffect.BadOmen - 1, out var omen))
             {
@@ -126,6 +123,10 @@ public abstract partial class AbstractLevel
         await ValueTask.CompletedTask;
     }
 
+    // Vanilla's can_start_raid where the player with a bad omen is.
+    private bool CanStartRaidAt(IPlayer player) =>
+        this.Gameplay(LevelEnvironment.CanStartRaid, (Vector)player.Position.Floor());
+
     private void TickPatrolSpawner()
     {
         if (LevelData.Difficulty == Difficulty.Peaceful || !LevelData.GetBooleanRule("spawn_patrols") || !LevelData.GetBooleanRule("spawn_mobs") || --patrolCountdown > 0) return;
@@ -136,7 +137,9 @@ public abstract partial class AbstractLevel
         var target = candidates[Random.Shared.Next(candidates.Length)];
         if (GetEntitiesInRange(target.Position, 48).OfType<Villager>().Any(villager => villager.Home != null)) return;
         var origin = FindRaidSpawn((Vector)target.Position.Floor(), 24 + Random.Shared.Next(24));
-        if (origin == null) return;
+        if (origin == null || !this.Gameplay(LevelEnvironment.CanPillagerPatrolSpawn, (Vector)origin.Value.Floor()))
+            return;
+
         for (var i = 0; i < 2 + (int)LevelData.Difficulty; i++)
         {
             var mob = EntitySpawner.CreateMob(this, EntityType.Pillager)!;

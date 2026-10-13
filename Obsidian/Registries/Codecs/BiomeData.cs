@@ -87,7 +87,19 @@ internal sealed record BiomeData(
             SpawnCosts: ReadSpawnCosts(Required(root, "", "spawn_costs"), "spawn_costs"));
     }
 
-    public BiomeElement ToElement() => new()
+    /// <summary>
+    /// The biome as the server keeps it, with its attribute map attached for the attributes the server applies where
+    /// it is (see <see cref="WorldData.LevelEnvironment"/>).
+    /// </summary>
+    public BiomeElement ToElement()
+    {
+        var element = this.CreateElement();
+        WorldData.LevelEnvironment.Attach(element, this.Attributes);
+
+        return element;
+    }
+
+    private BiomeElement CreateElement() => new()
     {
         HasPrecipitation = this.HasPrecipitation,
         Temperature = this.Temperature,
