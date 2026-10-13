@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Inventory;
+using Obsidian.API.Inventory;
 using System.Collections;
 using System.Threading;
 
@@ -29,14 +29,29 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
     private SemaphoreSlim? transactionLock;
 
+    private long revision;
+
     /// <summary>
     /// Taken while a player's click changes the container, so that the clicks of players sharing it take turns.
+    /// Take it with <see cref="LockAsync"/>, which also covers containers made of others.
     /// </summary>
     internal SemaphoreSlim TransactionLock =>
         LazyInitializer.EnsureInitialized(ref this.transactionLock, () => new SemaphoreSlim(1, 1));
 
-    public ItemStack? this[int index] { get => this.items[index]; set => this.items[index] = value; }
-    public ReadOnlySpan<ItemStack?> this[Range range] => this.items.AsSpan(range);
+    /// <summary>
+    /// Counts the container's changes: it grows whenever a slot is set, emptied or added to through the container's
+    /// methods. A click remembers it as it arrives, and the server applies the click only if it hasn't moved since,
+    /// so that the click, and what plugins' handlers decided about it, apply to the contents they saw.
+    /// </summary>
+    /// <remarks>
+    /// Changing a stack in place (its count, say) doesn't count: set it in its slot again with <see cref="SetItem"/>
+    /// afterwards.
+    /// </remarks>
+    public virtual long Revision => Interlocked.Read(ref this.revision);
+
+    public ItemStack? this[int index] { get => this.GetItem(index); set => this.SetItem(index, value); }
+
+    public ReadOnlySpan<ItemStack?> this[Range range] => this.GetItems().AsSpan(range);
 
     public BaseContainer(int size) : this(size, InventoryType.Custom) { }
 
@@ -53,7 +68,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
         for (int i = 0; i < this.Size; i++)
         {
-            var invItem = this.items[i];
+            var invItem = this.GetItem(i);
 
             if (invItem is not null && invItem.Holder == item.Holder)
             {
@@ -62,13 +77,14 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
                     continue;
 
                 invItem.Count += item.Count;
+                this.SetItem(i, invItem);
 
                 return i;
             }
 
             if (invItem == null)
             {
-                this.items[i] = item;
+                this.SetItem(i, item);
 
                 return i;
             }
@@ -77,13 +93,17 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         return -1;
     }
 
-    public virtual void SetItem(int slot, ItemStack? item) => this.items[slot] = item;
+    public virtual void SetItem(int slot, ItemStack? item)
+    {
+        this.items[slot] = item;
+        this.MarkChanged();
+    }
 
     public virtual ItemStack? GetItem(int slot) => this.items[slot];
 
     public virtual bool RemoveItem(int slot)
     {
-        if (this.items[slot] == null)
+        if (this.GetItem(slot) == null)
             return false;
 
         this.SetItem(slot, null);
@@ -93,21 +113,20 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
     public virtual bool RemoveItem(int slot, int amount)
     {
-        var item = this.items[slot];
+        var item = this.GetItem(slot);
 
         if (item == null)
             return false;
 
         item.Count -= amount;
-        if (item.Count <= 0)
-            this.SetItem(slot, null);
+        this.SetItem(slot, item.Count <= 0 ? null : item);
 
         return true;
     }
 
     public virtual bool RemoveItem(int slot, out ItemStack? removedItem)
     {
-        var item = this.items[slot];
+        var item = this.GetItem(slot);
 
         if (item == null)
         {
@@ -122,7 +141,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
     public virtual bool RemoveItem(int slot, int amount, out ItemStack? removedItem)
     {
-        var item = this.items[slot];
+        var item = this.GetItem(slot);
 
         if (item == null)
         {
@@ -148,9 +167,42 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     public virtual SlotDifference GetSlot(short clickedSlot) =>
         clickedSlot >= this.Size ? new((short)(clickedSlot - this.Size + 9), true) : new(clickedSlot, false);
 
-    public virtual void Resize(int newSize) => Array.Resize(ref this.items, newSize);
+    public virtual void Resize(int newSize)
+    {
+        Array.Resize(ref this.items, newSize);
+        this.MarkChanged();
+    }
 
-    internal void AddViewer(IPlayer player)
+    /// <summary>
+    /// Records a change to the container's slots (see <see cref="Revision"/>).
+    /// </summary>
+    internal void MarkChanged() => Interlocked.Increment(ref this.revision);
+
+    /// <summary>
+    /// Takes the container's <see cref="TransactionLock"/>, and those of the containers it's made of, until the
+    /// returned handle is disposed.
+    /// </summary>
+    internal virtual async ValueTask<IDisposable> LockAsync()
+    {
+        var gate = this.TransactionLock;
+        await gate.WaitAsync();
+
+        return new LockRelease(gate);
+    }
+
+    /// <summary>
+    /// Whether this container and <paramref name="other"/> show the same slots, like a double chest and its halves.
+    /// </summary>
+    internal virtual bool SharesSlotsWith(BaseContainer other) =>
+        ReferenceEquals(this, other)
+        || other is Containers.DoubleChestContainer chest && chest.SharesSlotsWith(this);
+
+    /// <summary>
+    /// The container's slots in order: its own array, or a copy for a container made of others.
+    /// </summary>
+    internal virtual ItemStack?[] GetItems() => this.items;
+
+    internal virtual void AddViewer(IPlayer player)
     {
         lock (this.Viewers)
         {
@@ -159,7 +211,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         }
     }
 
-    internal void RemoveViewer(IPlayer player)
+    internal virtual void RemoveViewer(IPlayer player)
     {
         lock (this.Viewers)
             this.Viewers.Remove(player);
@@ -168,20 +220,38 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     /// <summary>
     /// Copies <see cref="Viewers"/>, which players opening and closing the container change meanwhile.
     /// </summary>
-    internal IPlayer[] GetViewers()
+    internal virtual IPlayer[] GetViewers()
     {
         lock (this.Viewers)
             return [.. this.Viewers];
     }
 
-    public bool HasItems() => this.items.Any(x => x is not null);
+    public bool HasItems() => this.Any(x => x is not null);
 
-    public IEnumerator<ItemStack> GetEnumerator() => (this.items as IEnumerable<ItemStack>).GetEnumerator();
+    public IEnumerator<ItemStack> GetEnumerator()
+    {
+        for (var slot = 0; slot < this.Size; slot++)
+            yield return this.GetItem(slot)!;
+    }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
 public readonly record struct SlotDifference(short Slot, bool ForPlayer);
+
+/// <summary>
+/// Releases a container's lock (see <see cref="BaseContainer.LockAsync"/>) once.
+/// </summary>
+internal sealed class LockRelease(SemaphoreSlim gate) : IDisposable
+{
+    private int released;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref this.released, 1) == 0)
+            gate.Release();
+    }
+}
 
 public abstract class ResultContainer : BaseContainer
 {

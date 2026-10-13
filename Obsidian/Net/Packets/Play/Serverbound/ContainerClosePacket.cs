@@ -22,7 +22,9 @@ public partial class ContainerClosePacket
         if (player.OpenedContainer is Obsidian.Entities.MerchantContainer merchant)
         { await merchant.CloseAsync(player); return; }
 
-        await server.EventDispatcher.ExecuteEventAsync(new ContainerClosedEventArgs(player, server, player.OpenedContainer!));
+        var closed = new ContainerClosedEventArgs(player, server, player.OpenedContainer, this.ContainerId);
+
+        await server.EventDispatcher.ExecuteEventAsync(closed);
     }
 
     public override void Populate(INetStreamReader reader)

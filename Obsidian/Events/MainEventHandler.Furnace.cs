@@ -61,20 +61,19 @@ public partial class MainEventHandler
     /// <remarks>
     /// Like vanilla, a stack that the furnace cooks but whose ingredient slot is full stays, even if it burns too.
     /// </remarks>
-    private static void HandleFurnaceQuickMove(ContainerClickEventArgs args, SmeltingContainer furnace)
+    /// <returns>Whether anything moved.</returns>
+    private static bool MoveFurnaceItem(ContainerClickEventArgs args, SmeltingContainer furnace)
     {
-        var inventory = args.Player.Inventory;
+        var player = args.Player;
+        var inventory = player.Inventory;
         var slot = args.ClickedSlot;
-        var item = args.Item;
+        var item = args.SlotItem;
 
         if (item.IsNullOrAir())
-            return;
+            return false;
 
         if (args.Container == furnace)
-        {
-            MoveStack(furnace, slot, inventory, 9, 45, reverse: slot == 2);
-            return;
-        }
+            return MoveStack(player, furnace, slot, inventory, 9, 45, reverse: slot == 2);
 
         var recipeType = furnace.Type switch
         {
@@ -84,12 +83,13 @@ public partial class MainEventHandler
         };
 
         if (RecipesRegistry.IsCookingIngredient(recipeType, item))
-            MoveStack(inventory, slot, furnace, 0, 1, reverse: false);
-        else if (IsFuel(item))
-            MoveStack(inventory, slot, furnace, 1, 2, reverse: false);
-        else if (slot < 36)
-            MoveStack(inventory, slot, inventory, 36, 45, reverse: false);
-        else
-            MoveStack(inventory, slot, inventory, 9, 36, reverse: false);
+            return MoveStack(player, inventory, slot, furnace, 0, 1, reverse: false);
+
+        if (IsFuel(item))
+            return MoveStack(player, inventory, slot, furnace, 1, 2, reverse: false);
+
+        return slot < 36
+            ? MoveStack(player, inventory, slot, inventory, 36, 45, reverse: false)
+            : MoveStack(player, inventory, slot, inventory, 9, 36, reverse: false);
     }
 }

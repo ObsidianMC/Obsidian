@@ -101,6 +101,24 @@ internal static class CombatItems
             ? slot.GetString() switch { "head" => 5, "chest" => 6, "legs" => 7, "feet" => 8, _ => -1 } : -1;
     }
 
+    /// <summary>
+    /// Whether the item equips in the off hand, like a shield (its <c>equippable</c> component's slot).
+    /// </summary>
+    internal static bool IsOffhandItem(ItemStack? item)
+    {
+        if (item == null || item.RemoveComponents.Contains(DataComponentType.Equippable))
+            return false;
+
+        if (item.GetComponent<EquippableDataComponent>(DataComponentType.Equippable) is { } custom)
+            return custom.Slot == EquipmentSlot.OffHand;
+
+        var component = Component(item, "equippable");
+
+        return component.ValueKind == JsonValueKind.Object
+            && component.TryGetProperty("slot", out var slot)
+            && slot.GetString() == "offhand";
+    }
+
     internal static bool HurtItem(ItemStack item, int amount, bool armor = false)
     {
         var maximum = MaxDamage(item);
