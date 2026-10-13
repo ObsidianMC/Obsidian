@@ -18,24 +18,41 @@ internal static class PluginGenerators
         ImmutableDictionary<string, PluginGenerator>.Empty;
 
     /// <summary>
-    /// Registers <paramref name="type"/> as the generator <paramref name="identifier"/> of <paramref name="plugin"/>.
+    /// Registers <paramref name="type"/> as the generator <paramref name="identifier"/> of <paramref name="plugin"/>,
+    /// in one step, unless the identifier is taken.
     /// </summary>
     /// <remarks>
-    /// Identifiers are in their plugin's namespace, so one registered by another instance of the plugin, like the one
-    /// a reload replaces, is replaced.
+    /// The identifier is taken when a plugin registered it, unless that's another instance of the same plugin, like
+    /// the one a reload replaces: its generator is replaced. So the first plugin to register an identifier keeps it.
     /// </remarks>
-    /// <exception cref="ArgumentException">The plugin registered the identifier already.</exception>
-    public static void Register(PluginContainer plugin, string identifier, Type type)
+    /// <returns>Whether it was registered; false when the identifier is taken, by this plugin too.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// The plugin is unloading; nothing it registers stays.
+    /// </exception>
+    public static bool TryRegister(PluginContainer plugin, string identifier, Type type)
     {
+        plugin.ThrowIfClosing();
+
         var generator = new PluginGenerator(identifier, type, plugin);
+        var added = false;
 
         ImmutableInterlocked.Update(ref registered, current =>
         {
-            if (current.TryGetValue(identifier, out var existing) && existing.Plugin == plugin)
-                throw new ArgumentException($"{identifier} is already a generator of {plugin.Info.Name}.");
+            added = !current.TryGetValue(identifier, out var existing)
+                || (existing.Plugin != plugin && existing.Plugin.Info.Id == plugin.Info.Id);
 
-            return current.SetItem(identifier, generator);
+            return added ? current.SetItem(identifier, generator) : current;
         });
+
+        // Unloading closes the plugin before releasing its generators, so one registered meanwhile is released either
+        // then or here.
+        if (added && plugin.IsClosing)
+        {
+            Release(plugin);
+            plugin.ThrowIfClosing();
+        }
+
+        return added;
     }
 
     /// <summary>

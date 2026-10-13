@@ -409,24 +409,32 @@ A mod's Java code can't be converted. See [porting-from-neoforge.md](porting-fro
 ## What host services add
 
 Besides `IPluginRegistry`, plugins add to the server through its services, and unloading undoes that too, so a
-reloaded plugin starts clean and its code can unload. The plugin is the one whose code (its load context) made the
-call:
+reloaded plugin starts clean and its code can unload. Each plugin gets its own `IServer` and `ILevelFactory`, injected
+or from its services, and given to `OnLoadedAsync` and `OnServerReadyAsync`; what they add is that plugin's, whichever
+code makes the call (a library it uses, say). The server's own instances add for the server, and those are what
+event arguments and command contexts hold (`e.Server`), so a plugin adds through its own:
 
-- dialogs registered with `DialogRegistry.Register` or `DialogBuilder.Register` are removed. They're part of the
-  content clients are configured with, so a plugin change that changes the dialogs sends players back through
-  configuration, like other content; registering the same dialogs again, as a reload does, doesn't;
 - recipes registered with `IServer.RegisterRecipes` are removed;
-- scoreboards made with `IScoreboardManager.CreateScoreboard` remove their objective and teams from their players
-  and free their names, and boss bars made with `IServer.CreateBossBar` are hidden from their players;
+- scoreboards made with `IServer.ScoreboardManager.CreateScoreboard` and boss bars made with `IServer.CreateBossBar`
+  are retired: their objective, teams and bars are removed from their players' screens, their names are free again,
+  and changing them or showing them again throws `InvalidOperationException` (removing does nothing), so a handler
+  still running can't bring them back. A shown boss bar is retired even when the plugin no longer references it;
 - generators registered with `ILevelFactory.RegisterGenerator` are registered like
-  `IPluginRegistry.RegisterGenerator`'s (keyed by their `Id`, without the namespace rule; the first with an id keeps
-  it): unloading removes them and stops the levels using them, which resume when the plugin registers them again,
-  in `ConfigureRegistry` or its load callbacks. `IPluginRegistry.RegisterGenerator` stays the preferred way;
+  `IPluginRegistry.RegisterGenerator`'s (keyed by their `Id`, without the namespace rule): unloading removes them and
+  stops the levels using them, which resume when the plugin registers them again, in `ConfigureRegistry` or its load
+  callbacks. The server's generators come first, then the first plugin to register an id keeps it, unless that's
+  another instance of the same plugin, like the one a reload replaces. `IPluginRegistry.RegisterGenerator` stays the
+  preferred way;
+- dialogs registered with `DialogRegistry.Register` or `DialogBuilder.Register`, static APIs, are the plugin's whose
+  code (its load context) made the call, and are removed. They're part of the content clients are configured with,
+  as they were when registered, so a plugin change that changes the dialogs sends players back through
+  configuration, like other content; registering the same dialogs again, as a reload does, doesn't;
 - event handlers and commands registered on the server's `EventDispatcher` and `CommandHandler` without a plugin
-  container count as their plugin's, like those registered through `IPluginRegistry`.
+  container count as the plugin's whose code the handler is, like those registered through `IPluginRegistry`.
 
-Adding to an unloading plugin's dialogs, recipes, scoreboards, boss bars or generators throws
-`InvalidOperationException`, rather than keeping them after it unloads.
+Adding to an unloading plugin's dialogs, recipes, scoreboards, boss bars, generators, event handlers or commands
+throws `InvalidOperationException`, rather than keeping them after it unloads; one added while it starts unloading is
+removed as it throws.
 
 ## Known gaps
 

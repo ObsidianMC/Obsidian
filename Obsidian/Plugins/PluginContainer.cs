@@ -125,6 +125,13 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     public bool Loaded { get; internal set; }
 
     /// <summary>
+    /// The plugin's own instances of the host's services, whose additions are its own (see
+    /// <see cref="PluginHostServices"/>).
+    /// </summary>
+    [AllowNull]
+    internal PluginHostServices HostServices { get; set; }
+
+    /// <summary>
     /// Creates the container of a plugin about to load, with a load context that resolves assemblies from the loaded
     /// plugins it depends on.
     /// </summary>
@@ -274,21 +281,37 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     }
 
     /// <summary>
-    /// Tracks something a host service just added for <paramref name="caller"/>, when that's a plugin's code, so that
-    /// unloading the plugin undoes it; the server's own additions aren't tracked.
+    /// Tracks something a host service just added on the plugin's behalf, through the plugin's own instance of the
+    /// service (see <see cref="PluginHostServices"/>), so that unloading the plugin undoes it.
     /// </summary>
-    /// <param name="caller">The assembly that called the host service.</param>
     /// <param name="undo">Removes the addition.</param>
     /// <exception cref="InvalidOperationException">
     /// The plugin is unloading; the addition was undone.
     /// </exception>
-    internal static void TrackAddition(Assembly caller, Action undo)
+    internal void TrackAddition(Action undo)
     {
-        if (PluginLoadContext.OwnerOf(caller) is not PluginContainer owner || owner.TryTrack(undo))
+        if (this.TryTrack(undo))
             return;
 
         undo();
-        throw new InvalidOperationException($"{owner.Info.Name} is unloading.");
+        throw new InvalidOperationException($"{this.Info.Name} is unloading.");
+    }
+
+    /// <summary>
+    /// The boss bars the plugin created, which unloading it retires.
+    /// </summary>
+    internal PluginBossBars BossBars { get; } = new();
+
+    /// <summary>
+    /// Throws once the plugin started unloading, for a host service refusing what it would add on the plugin's
+    /// behalf. Check again once it's added, and undo it if the plugin started unloading meanwhile: unloading closes
+    /// the plugin before removing what it added.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The plugin is unloading.</exception>
+    internal void ThrowIfClosing()
+    {
+        if (this.closing)
+            throw new InvalidOperationException($"{this.Info.Name} is unloading.");
     }
 
     /// <summary>

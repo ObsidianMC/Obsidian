@@ -414,11 +414,14 @@ public sealed partial class PluginManager : IAsyncDisposable
         {
             PluginAssemblyLoader.Load(container);
 
-            // The plugin can use the server's services while it registers its own.
-            var serverOnly = new PluginServiceProvider(null, this.serverProvider);
+            // The plugin can use the server's services while it registers its own, with its own instances of those
+            // that add things on its behalf.
+            container.HostServices = new PluginHostServices(container, this.server, this.serverProvider);
+
+            var serverOnly = new PluginServiceProvider(null, container.HostServices);
             PluginServiceHandler.InjectServices(serverOnly, container.Plugin!, this.logger);
 
-            var services = this.CreatePluginServices(dependencies);
+            var services = this.CreatePluginServices(container.HostServices, dependencies);
             var baseServices = services.Count;
 
             container.Plugin!.ConfigureServices(services);
@@ -472,7 +475,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             await this.AddDimensionLevelsAsync();
             container.Loaded = true;
 
-            await container.Plugin.OnLoadedAsync(this.server);
+            await container.Plugin.OnLoadedAsync(container.HostServices.Server);
 
             if (this.serverReady)
                 await this.StartAsync(container);
@@ -495,7 +498,7 @@ public sealed partial class PluginManager : IAsyncDisposable
     {
         container.InjectServices(this.logger);
 
-        await container.Plugin!.OnServerReadyAsync(this.server);
+        await container.Plugin!.OnServerReadyAsync(container.HostServices.Server);
     }
 
     /// <summary>
@@ -542,12 +545,13 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.eventDispatcher.UnregisterPluginEvents(pluginContainer);
 
         if (this.server is Server concreteServer)
-        {
             concreteServer.PayloadChannels.UnregisterPluginPayloads(pluginContainer);
-            concreteServer.HidePluginBossBars(pluginContainer);
-        }
 
-        // What the plugin added through the server's services, like dialogs, recipes and scoreboards.
+        // What the plugin added through the server's services, like boss bars, dialogs, recipes and scoreboards. Its
+        // boss bars and scoreboards are retired, each in one step: hidden, and refusing changes from handlers still
+        // running, which would show them again.
+        pluginContainer.BossBars.Retire();
+
         if (pluginContainer.LoadContext is not null)
             DialogRegistry.Release(pluginContainer.LoadContext);
 
@@ -1321,9 +1325,12 @@ public sealed partial class PluginManager : IAsyncDisposable
     }
 
     /// <summary>
-    /// The services every plugin starts with, plus the singletons of the plugins it depends on.
+    /// The services every plugin starts with, its own instances of the host's among them, plus the singletons of the
+    /// plugins it depends on.
     /// </summary>
-    private ServiceCollection CreatePluginServices(ImmutableArray<PluginContainer> dependencies)
+    private ServiceCollection CreatePluginServices(
+        PluginHostServices hostServices,
+        ImmutableArray<PluginContainer> dependencies)
     {
         var services = new ServiceCollection();
 
@@ -1333,7 +1340,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             builder.AddConfiguration(this.configuration);
         });
 
-        services.AddSingleton(this.server);
+        hostServices.AddTo(services);
         services.AddSingleton(this.serverProvider.GetRequiredService<IOptionsMonitor<ServerConfiguration>>());
 
         // Added as instances, which the dependent's provider doesn't dispose: they belong to the dependency.

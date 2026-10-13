@@ -84,7 +84,23 @@ public sealed class CommandHandler : ICommandHandler
 
     public Command[] GetAllCommands() => _commands.ToArray();
 
-    private void AddCommand(Command command) => ImmutableInterlocked.Update(ref _commands, commands => commands.Add(command));
+    // Refuses an unloading plugin's command: unloading closes the plugin before removing its commands, so one added
+    // meanwhile is removed either then or here.
+    private void AddCommand(Command command)
+    {
+        var owner = command.PluginContainer as PluginContainer;
+        owner?.ThrowIfClosing();
+
+        ImmutableInterlocked.Update(ref _commands, commands => commands.Add(command));
+
+        if (owner is not { IsClosing: true })
+            return;
+
+        ImmutableInterlocked.Update(
+            ref _commands,
+            commands => commands.Remove(command, ReferenceEqualityComparer.Instance));
+        owner.ThrowIfClosing();
+    }
 
     public void RegisterCommand(PluginContainer? pluginContainer, string name, Delegate commandDelegate)
     {

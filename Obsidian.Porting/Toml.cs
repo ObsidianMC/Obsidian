@@ -355,17 +355,22 @@ public static class Toml
                 case 'u' or 'U':
                     var length = c == 'u' ? 4 : 8;
 
+                    // Exactly that many hex digits, without the signs or spaces other number styles allow.
                     if (this.position + length > text.Length
-                        || !int.TryParse(
+                        || !uint.TryParse(
                             text.AsSpan(this.position, length),
-                            NumberStyles.HexNumber,
+                            NumberStyles.AllowHexSpecifier,
                             CultureInfo.InvariantCulture,
                             out var code))
                     {
                         throw this.Error("expected a unicode escape");
                     }
 
-                    builder.Append(char.ConvertFromUtf32(code));
+                    // TOML only escapes Unicode scalar values: no surrogates, nothing past U+10FFFF.
+                    if (code > 0x10FFFF || code is >= 0xD800 and <= 0xDFFF)
+                        throw this.Error($"U+{code:X} isn't a Unicode scalar value");
+
+                    builder.Append(char.ConvertFromUtf32((int)code));
                     this.position += length;
                     break;
 

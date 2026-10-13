@@ -231,6 +231,12 @@ public sealed class PluginLoading : IDisposable
         Assert.Single(DialogRegistry.GetRegistrations(), registration => registration.Id == "probe:menu");
         Assert.Same(reloaded, PluginGenerators.Find("probe:host")?.Plugin);
 
+        // Through its services, what it adds is its own whichever code makes the call, like a library it uses: here
+        // the test's, which isn't in the plugin's load context, with a generator type that isn't either.
+        var levels = reloaded.ServiceProvider.GetRequiredService<ILevelFactory>();
+        levels.RegisterGenerator<HelperGenerator>();
+        Assert.Same(reloaded, PluginGenerators.Find("probe:helper")?.Plugin);
+
         // Only the reloaded plugin's handler runs: unloading removed the old one.
         AppContext.SetData(ProbePlugin.CallsKey, 0);
         await dispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(server, new ServerStatus(server, "")));
@@ -267,7 +273,12 @@ public sealed class PluginLoading : IDisposable
         Assert.Null(generator.Plugin);
         Assert.Null(PluginGenerators.Find("probe:flat"));
         Assert.Null(PluginGenerators.Find("probe:host"));
+        Assert.Null(PluginGenerators.Find("probe:helper"));
         Assert.DoesNotContain(DialogRegistry.GetRegistrations(), registration => registration.Id == "probe:menu");
+
+        // And it adds nothing more, unloaded.
+        Assert.Throws<InvalidOperationException>(levels.RegisterGenerator<HelperGenerator>);
+        Assert.Null(PluginGenerators.Find("probe:helper"));
         Assert.False((await generator.GenerateChunkAsync(2, 0)).IsGenerated);
         Assert.Equal("probe:flat", generator.Id);
     }
@@ -335,6 +346,7 @@ public sealed class PluginLoading : IDisposable
         var services = new ServiceCollection();
         services.AddOptions<ServerConfiguration>();
         services.AddSingleton<IServer>(server);
+        services.AddSingleton<ILevelFactory>(new LevelFactory(null!));
         var provider = services.BuildServiceProvider();
 
         var dispatcher = new EventDispatcher(NullLogger<EventDispatcher>.Instance, provider);
@@ -403,6 +415,10 @@ public sealed class ProbePlugin : PluginBase
     [Inject]
     public ILogger<ProbePlugin>? Logger { get; set; }
 
+    // The plugin's own instance of the host's level factory.
+    [Inject]
+    public ILevelFactory? Levels { get; set; }
+
     public override void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<ProbeService>();
@@ -446,9 +462,9 @@ public sealed class ProbePlugin : PluginBase
         pluginRegistry.RegisterGenerator<ProbeGenerator>("probe:flat");
 
         // A dialog and a generator added through the host's services rather than the registry, which unloading
-        // removes too.
+        // removes too. Some tests' servers have no level factory.
         DialogBuilder.Notice("Probe").Register("probe:menu", quickAction: true);
-        new LevelFactory(null!).RegisterGenerator<ProbeHostGenerator>();
+        this.Levels?.RegisterGenerator<ProbeHostGenerator>();
 
         // Its biome regions, defined in code rather than in biome_region files.
         pluginRegistry.RegisterBiomeRegion(
@@ -573,6 +589,23 @@ public sealed class ProbeGenerator(ProbeScopedService scoped) : ILevelGenerator,
 public sealed class ProbeHostGenerator : ILevelGenerator
 {
     public string Id => "probe:host";
+
+    public void Init(ILevel level)
+    {
+    }
+
+    public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null,
+        ChunkGenStage stage = ChunkGenStage.full) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>
+/// A generator the test registers through <see cref="ProbePlugin"/>'s <see cref="ILevelFactory"/>, as a library the
+/// plugin uses would; it's never run.
+/// </summary>
+public sealed class HelperGenerator : ILevelGenerator
+{
+    public string Id => "probe:helper";
 
     public void Init(ILevel level)
     {
