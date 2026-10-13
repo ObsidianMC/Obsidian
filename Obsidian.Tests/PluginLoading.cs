@@ -413,6 +413,8 @@ public sealed class PluginLoading : IDisposable
         var services = host.Server.CommandHandler.ServiceProvider;
 
         Assert.Same(host.Server, services.GetRequiredService<IServer>());
+        Assert.Same(host.Server, Assert.Single(services.GetServices<IServer>()));
+        Assert.Same(host.LevelFactory, Assert.Single(services.GetServices<ILevelFactory>()));
 
         using (var scope = services.CreateScope())
             Assert.Same(host.Server, scope.ServiceProvider.GetRequiredService<IServer>());

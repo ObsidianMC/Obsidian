@@ -77,46 +77,27 @@ public sealed class PluginHostUi
     }
 
     [Fact]
-    public async Task Display_RacingRetirement_LeavesTheObjectiveRemoved()
+    public void Display_ThenRetire_QueuesTheRemovalAfterTheDisplay()
     {
         var broadcaster = new Recorder();
         var scoreboard = new Scoreboard("kills", broadcaster);
-        var queued = new List<IClientboundPacket>();
 
         scoreboard.CreateOrUpdateObjective("Kills");
         scoreboard.AddPlayer(1);
 
-        // Shown without a race, the player gets the objective and where it shows.
-        await scoreboard.DisplayAsync(1, DisplaySlot.Sidebar, _ => ValueTask.FromResult(true), queued.Add);
-
-        Assert.Equal(ScoreboardMode.Create, Assert.IsType<SetObjectivePacket>(queued[0]).Mode);
-        Assert.IsType<SetDisplayObjectivePacket>(queued[^1]);
-
-        // Shown again while a plugin's packet handler pauses, during which the scoreboard's plugin unloads: its
-        // removal goes out, and the display, resuming after it, doesn't show the objective again.
-        queued.Clear();
-        var paused = new TaskCompletionSource();
-        var resume = new TaskCompletionSource<bool>();
-
-        var display = scoreboard.DisplayAsync(
-            1,
-            DisplaySlot.Sidebar,
-            async _ =>
-            {
-                paused.TrySetResult();
-                return await resume.Task;
-            },
-            queued.Add);
-
-        await paused.Task;
+        // Displays and removals share the broadcaster's queue, so the player gets them in the order they happened.
+        scoreboard.Display(1, DisplaySlot.Sidebar);
         scoreboard.Retire();
-        resume.SetResult(true);
-        await display;
 
-        Assert.Empty(queued);
-        var (removal, to) = broadcaster.Sent[^1];
-        Assert.Equal(ScoreboardMode.Remove, Assert.IsType<SetObjectivePacket>(removal).Mode);
-        Assert.Equal([1], to);
+        var packets = broadcaster.Sent
+            .Where(sent => sent.To.SequenceEqual([1]))
+            .Select(sent => sent.Packet)
+            .ToList();
+
+        Assert.Equal(ScoreboardMode.Create, Assert.IsType<SetObjectivePacket>(packets[0]).Mode);
+        Assert.IsType<SetDisplayObjectivePacket>(packets[^2]);
+        Assert.Equal(ScoreboardMode.Remove, Assert.IsType<SetObjectivePacket>(packets[^1]).Mode);
+        Assert.Throws<InvalidOperationException>(() => scoreboard.Display(1, DisplaySlot.Sidebar));
     }
 
     [Fact]

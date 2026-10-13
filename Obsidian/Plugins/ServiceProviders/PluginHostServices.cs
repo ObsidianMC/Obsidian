@@ -85,7 +85,16 @@ internal sealed class PluginHostServices : IServiceProvider, IServiceScopeFactor
         if (serviceType == typeof(ILevelFactory) && this.LevelFactory is not null)
             return this.LevelFactory;
 
-        return services.GetService(serviceType);
+        // GetServices<T>() asks for IEnumerable<T>: the plugin's instances stand in there too.
+        if (serviceType == typeof(IEnumerable<IServer>))
+            return new[] { this.Server };
+
+        if (serviceType == typeof(IEnumerable<ILevelFactory>) && this.LevelFactory is not null)
+            return new[] { this.LevelFactory };
+
+        // The server's provider caches every type asked for, even ones it lacks, which would keep a plugin's types,
+        // and so its load context, alive after it unloads.
+        return PluginServiceProvider.IsCollectible(serviceType) ? null : services.GetService(serviceType);
     }
 
     // A scope of the server's services, which disposing ends.
