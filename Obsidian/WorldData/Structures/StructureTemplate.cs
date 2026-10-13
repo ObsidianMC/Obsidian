@@ -745,8 +745,9 @@ public sealed class StructureTemplate
     /// <summary>
     /// Bounds what reading a template's fields allocates, so that a small file can't make the reader allocate far
     /// more than its size: each count is checked against the bytes left before anything is allocated for it, nesting
-    /// is limited like vanilla's NBT reader limits it, and the entries kept (list elements, compound fields, and each
-    /// palette's copy of the blocks) count against <see cref="MaxEntries"/>.
+    /// is limited like vanilla's NBT reader limits it, and the entries kept (list elements, compound fields, arrays'
+    /// bytes, and each palette's copy of the blocks) count against <see cref="MaxEntries"/>, before the palettes are
+    /// built.
     /// </summary>
     private sealed class ReadLimits(Stream stream)
     {
@@ -761,6 +762,12 @@ public sealed class StructureTemplate
         public const int MaxDepth = 512;
 
         /// <summary>
+        /// The array bytes counted as one entry: less than a tag holds, so arrays are bounded at least as tightly
+        /// (at most 64 MiB of them, counting each palette's copies).
+        /// </summary>
+        public const int BytesPerEntry = 16;
+
+        /// <summary>
         /// The entries counted so far.
         /// </summary>
         public long Entries { get; private set; }
@@ -772,6 +779,13 @@ public sealed class StructureTemplate
             if (this.Entries > MaxEntries)
                 throw new InvalidDataException($"A structure template has more than {MaxEntries} entries.");
         }
+
+        /// <summary>
+        /// Charges an array's payload as entries, one per <see cref="BytesPerEntry"/> bytes, so that the arrays
+        /// kept, and copied for each palette, count against <see cref="MaxEntries"/> for the memory they hold.
+        /// </summary>
+        /// <exception cref="InvalidDataException">The template has more than <see cref="MaxEntries"/>.</exception>
+        public void ChargeBytes(long bytes) => this.Charge((bytes + BytesPerEntry - 1) / BytesPerEntry);
 
         /// <summary>
         /// Checks a list's or array's element count against the bytes left, which each element needs at least
@@ -1028,13 +1042,13 @@ public sealed class StructureTemplate
                 stream.Seek(8, SeekOrigin.Current);
                 break;
             case NbtTagType.ByteArray:
-                stream.Seek(limits.Count(reader.ReadInt32(), 1), SeekOrigin.Current);
+                SkipArray(reader, limits, 1);
                 break;
             case NbtTagType.IntArray:
-                stream.Seek(limits.Count(reader.ReadInt32(), 4) * 4L, SeekOrigin.Current);
+                SkipArray(reader, limits, 4);
                 break;
             case NbtTagType.LongArray:
-                stream.Seek(limits.Count(reader.ReadInt32(), 8) * 8L, SeekOrigin.Current);
+                SkipArray(reader, limits, 8);
                 break;
             case NbtTagType.String:
                 stream.Seek(Math.Max((int)reader.ReadInt16(), 0), SeekOrigin.Current);
@@ -1065,6 +1079,14 @@ public sealed class StructureTemplate
             default:
                 throw new InvalidDataException($"Unknown NBT tag type {type}.");
         }
+    }
+
+    // Skips an array's payload, charging what a copy of it holds (see ReadLimits.ChargeBytes).
+    private static void SkipArray(NbtReader reader, ReadLimits limits, int elementSize)
+    {
+        var bytes = limits.Count(reader.ReadInt32(), elementSize) * (long)elementSize;
+        limits.ChargeBytes(bytes);
+        reader.BaseStream.Seek(bytes, SeekOrigin.Current);
     }
 
     /// <summary>A block entry of a template: its position, palette index and block entity data.</summary>

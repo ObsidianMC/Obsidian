@@ -268,6 +268,46 @@ public class PluginStructureFiles
         }
     }
 
+    [Fact(DisplayName = "A template's block data counts once for each palette, which copies it, before it's copied")]
+    public void RejectsTemplatesCopyingLargeDataPerPalette()
+    {
+        // A block holding 1 MiB of data, which a hundred palettes would copy a hundred times.
+        Assert.Throws<InvalidDataException>(() => ParseLargeDataTemplate(palettes: 100));
+
+        // One copy is within the budget.
+        ParseLargeDataTemplate(palettes: 1);
+
+        static TemplateFile ParseLargeDataTemplate(int palettes)
+        {
+            var blocks = new NbtList(NbtTagType.Compound, "blocks")
+            {
+                new NbtCompound
+                {
+                    Ints("pos", 0, 0, 0),
+                    new NbtTag<int>("state", 0),
+                    new NbtCompound("nbt") { new NbtArray<byte>("data", new byte[1 << 20]) }
+                }
+            };
+
+            var paletteList = new NbtList(NbtTagType.List, "palettes");
+            for (var i = 0; i < palettes; i++)
+                paletteList.Add(new NbtList(NbtTagType.Compound));
+
+            using var stream = new MemoryStream();
+            using (var writer = new NbtWriterStream(stream, NbtCompression.GZip, ""))
+            {
+                writer.WriteTag(Ints("size", 1, 1, 1));
+                writer.WriteTag(paletteList);
+                writer.WriteTag(blocks);
+                writer.EndCompound();
+                writer.TryFinish();
+            }
+
+            return PluginStructures.ParseTemplate(Tower, "test", stream.ToArray(), DataPackLimits.Default.FileSize)
+                .File;
+        }
+    }
+
     [Fact(DisplayName = "A template declaring more than its data holds, or nested too deeply, is rejected unread")]
     public void RejectsHostileTemplates()
     {

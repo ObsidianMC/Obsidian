@@ -796,8 +796,8 @@ the tower grows from, up to its `size`.
 - Templates are read like a data pack's files, within its limits: at most 32 MiB each and 512 MiB together with the
   pack's other files, once decompressed. A template whose lists claim more than its data holds, that's nested deeper
   than vanilla's NBT allows (512), or that would keep more than about four million entries (list elements, compound
-  fields, and the blocks of each palette) is left out. A template a pool names that no plugin, pack or vanilla has is
-  empty, as in vanilla.
+  fields, arrays at one entry per 16 bytes, and each palette's copy of the blocks and their data) is left out. A
+  template a pool names that no plugin, pack or vanilla has is empty, as in vanilla.
 
 Structures generate in every dimension whose biomes their `biomes` hold, vanilla's and plugins' (biome regions'
 biomes included), placed by their sets like vanilla's. All structures, vanilla's and plugins', are ordered like a
