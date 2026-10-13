@@ -1105,7 +1105,8 @@ The file is vanilla 1.21.11's level stem, read with vanilla's rules (see [What's
   Obsidian's extension of the stem; the generator object's other fields are its settings, like
   `{"type": "ruby:sky_islands", "island_size": 12}`. A generator implementing `IConfigurableLevelGenerator` gets the
   whole object in `Configure` before each new instance's `Init`; others ignore it. The level stops when the plugin
-  unloads and resumes, configured again, when it loads, like a world generating with it.
+  unloads and resumes, configured again, when it loads, like a world generating with it. A reload changing the stem
+  keeps the level stopped until a restart, logged, rather than configuring the new instance with the settings it took.
 - Not supported yet, and rejected with a message saying so: noise settings that generate outside the dimension
   type's build range (vanilla clamps them; its own pairings all fit). Generation fills whole cells of
   `size_vertical * 4` blocks from the cell holding `min_y`, so a `min_y` that isn't a multiple of that fills from

@@ -59,6 +59,14 @@ internal abstract class LevelStem
     public virtual bool IsReleased => false;
 
     /// <summary>
+    /// Whether the stem left <see cref="Registries.PluginDimensions.Added"/>, as no file defines it any more or a
+    /// reload replaced it, so that a level can't take it from an earlier snapshot (see
+    /// <see cref="Registries.PluginDimensions.Take"/>). Unlike <see cref="IsReleased"/>, it's set for every kind of
+    /// stem, including those holding no plugin's code. Set by <see cref="Registries.PluginDimensions"/>.
+    /// </summary>
+    public bool IsRemoved { get; set; }
+
+    /// <summary>
     /// Drops what the generator is made of of <see cref="Plugins"/>, so that they can unload: the dimension can't
     /// generate any more. Stems made of none have nothing to drop.
     /// </summary>
@@ -92,7 +100,8 @@ internal interface IStemGenerator : ILevelGenerator
 /// </summary>
 /// <remarks>
 /// The stem holds no plugin's types, so it's never released: its level generates with the plugin's generator while
-/// the plugin is loaded, and stops and resumes with it (see <see cref="PluginLevelGenerator"/>).
+/// the plugin is loaded, and stops and resumes with it (see <see cref="PluginLevelGenerator"/>), unless the stem
+/// changed meanwhile: then it stays stopped until a restart.
 /// </remarks>
 /// <param name="identifier">The level stem's identifier.</param>
 /// <param name="dimensionType">A registered dimension type.</param>
