@@ -6,6 +6,6 @@ namespace Obsidian.API.Loot;
 /// </summary>
 internal static class LootPending
 {
-    public static NotSupportedException Evaluation(string type, int milestone) =>
-        new($"{type} is loaded but not evaluated yet: it needs block loot context from milestone {milestone} of docs/item-drops-implementation-plan.md.");
+    public static NotSupportedException Evaluation(string type) =>
+        new($"{type} is loaded but not evaluated yet: its block loot context isn't implemented.");
 }

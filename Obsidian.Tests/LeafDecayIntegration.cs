@@ -9,8 +9,8 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Leaf decay, vanilla <c>LeavesBlock</c>. The rules are checked against the vanilla bytecode (see
-/// docs/item-drops-implementation-plan.md); the live-world tests call the same entry points the level tick uses.
+/// Leaf decay, vanilla <c>LeavesBlock</c>. The rules are checked against the vanilla bytecode; the live-world tests call
+/// the same entry points the level tick uses.
 /// </summary>
 public class LeafDecayIntegration
 {

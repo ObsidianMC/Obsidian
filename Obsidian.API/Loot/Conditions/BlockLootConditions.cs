@@ -142,6 +142,6 @@ public sealed class EntityPropertiesCondition : ILootCondition
     public bool Test(LootContext context) => this.Entity switch
     {
         "this" => context.ThisEntity is not null,
-        _ => throw LootPending.Evaluation($"minecraft:entity_properties for '{this.Entity}'", 3),
+        _ => throw LootPending.Evaluation($"minecraft:entity_properties for '{this.Entity}'"),
     };
 }
