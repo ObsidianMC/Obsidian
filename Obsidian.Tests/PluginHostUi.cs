@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -73,6 +74,49 @@ public sealed class PluginHostUi
         team.Delete();
 
         Assert.Equal(sent, broadcaster.Sent.Count + broadcaster.Everyone.Count);
+    }
+
+    [Fact]
+    public async Task Display_RacingRetirement_LeavesTheObjectiveRemoved()
+    {
+        var broadcaster = new Recorder();
+        var scoreboard = new Scoreboard("kills", broadcaster);
+        var queued = new List<IClientboundPacket>();
+
+        scoreboard.CreateOrUpdateObjective("Kills");
+        scoreboard.AddPlayer(1);
+
+        // Shown without a race, the player gets the objective and where it shows.
+        await scoreboard.DisplayAsync(1, DisplaySlot.Sidebar, _ => ValueTask.FromResult(true), queued.Add);
+
+        Assert.Equal(ScoreboardMode.Create, Assert.IsType<SetObjectivePacket>(queued[0]).Mode);
+        Assert.IsType<SetDisplayObjectivePacket>(queued[^1]);
+
+        // Shown again while a plugin's packet handler pauses, during which the scoreboard's plugin unloads: its
+        // removal goes out, and the display, resuming after it, doesn't show the objective again.
+        queued.Clear();
+        var paused = new TaskCompletionSource();
+        var resume = new TaskCompletionSource<bool>();
+
+        var display = scoreboard.DisplayAsync(
+            1,
+            DisplaySlot.Sidebar,
+            async _ =>
+            {
+                paused.TrySetResult();
+                return await resume.Task;
+            },
+            queued.Add);
+
+        await paused.Task;
+        scoreboard.Retire();
+        resume.SetResult(true);
+        await display;
+
+        Assert.Empty(queued);
+        var (removal, to) = broadcaster.Sent[^1];
+        Assert.Equal(ScoreboardMode.Remove, Assert.IsType<SetObjectivePacket>(removal).Mode);
+        Assert.Equal([1], to);
     }
 
     [Fact]

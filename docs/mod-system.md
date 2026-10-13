@@ -425,7 +425,8 @@ event arguments and command contexts hold (`e.Server`), so a plugin adds through
 - scoreboards made with `IServer.ScoreboardManager.CreateScoreboard` and boss bars made with `IServer.CreateBossBar`
   are retired: their objective, teams and bars are removed from their players' screens, their names are free again,
   and changing them or showing them again throws `InvalidOperationException` (removing does nothing), so a handler
-  still running can't bring them back. A shown boss bar is retired even when the plugin no longer references it;
+  still running can't bring them back; a scoreboard being shown while packet handlers run isn't shown once they
+  finish, if it retired meanwhile. A shown boss bar is retired even when the plugin no longer references it;
 - generators registered with `ILevelFactory.RegisterGenerator` are registered like
   `IPluginRegistry.RegisterGenerator`'s (keyed by their `Id`, without the namespace rule): unloading removes them and
   stops the levels using them, which resume when the plugin registers them again, in `ConfigureRegistry` or its load
