@@ -111,8 +111,9 @@ with partly transparent ones. Version 1 archives have no assets.
 
 Changing a plugin's file reloads the plugin; deleting it unloads it. The plugins that depend on it reload, or wait,
 with it, since they use its types. Unloading removes everything the plugin registered (commands, event handlers,
-services, payload channels, argument parsers), so its assemblies, which load into a collectible load context, can be
-freed. Unloading stops new calls into the plugin (its event and payload handlers, commands and command suggestions),
+services, payload channels, argument parsers), and what it added through the server's services (dialogs, recipes,
+scoreboards, boss bars, generators; see [mod-system.md](mod-system.md#what-host-services-add)), so its assemblies,
+which load into a collectible load context, can be freed. Unloading stops new calls into the plugin (its event and payload handlers, commands and command suggestions),
 and the plugin is released (its unloading callback runs, and its services are disposed) once the running ones end,
 after the plugins that depend on it. A plugin may reload itself from one of its own commands.
 

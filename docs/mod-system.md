@@ -388,9 +388,38 @@ client. This document describes the design and tracks its progress. The archive 
      ones) and animations a server triggers beyond arm swings for mods' entities; client lifecycle events (joining
      and leaving a server).
 
+## Porting from NeoForge
+
+Obsidian.Porting, a console tool in this repository, converts a NeoForge mod's data and metadata to Obsidian's
+formats: its `neoforge/biome_modifier` files to Obsidian's biome modifiers and its `neoforge.mods.toml` to
+`obsidian.mod.json`, copying the data and assets in vanilla's formats and reporting what has no Obsidian equivalent.
+A mod's Java code can't be converted. See [porting-from-neoforge.md](porting-from-neoforge.md).
+
+## What host services add
+
+Besides `IPluginRegistry`, plugins add to the server through its services, and unloading undoes that too, so a
+reloaded plugin starts clean and its code can unload. The plugin is the one whose code (its load context) made the
+call:
+
+- dialogs registered with `DialogRegistry.Register` or `DialogBuilder.Register` are removed. They're part of the
+  content clients are configured with, so a plugin change that changes the dialogs sends players back through
+  configuration, like other content; registering the same dialogs again, as a reload does, doesn't;
+- recipes registered with `IServer.RegisterRecipes` are removed;
+- scoreboards made with `IScoreboardManager.CreateScoreboard` remove their objective and teams from their players
+  and free their names, and boss bars made with `IServer.CreateBossBar` are hidden from their players;
+- generators registered with `ILevelFactory.RegisterGenerator` are registered like
+  `IPluginRegistry.RegisterGenerator`'s (keyed by their `Id`, without the namespace rule; the first with an id keeps
+  it): unloading removes them and stops the levels using them, which resume when the plugin registers them again,
+  in `ConfigureRegistry` or its load callbacks. `IPluginRegistry.RegisterGenerator` stays the preferred way;
+- event handlers and commands registered on the server's `EventDispatcher` and `CommandHandler` without a plugin
+  container count as their plugin's, like those registered through `IPluginRegistry`.
+
+Adding to an unloading plugin's dialogs, recipes, scoreboards, boss bars or generators throws
+`InvalidOperationException`, rather than keeping them after it unloads.
+
 ## Known gaps
 
-- Dialogs and other registries that plugins fill through injected services are not yet removed when their plugin
-  unloads (phase 2). Generators a plugin registers with `ILevelFactory.RegisterGenerator`, the host's method, stay
-  until the server stops; `IPluginRegistry.RegisterGenerator` is the reload-safe way.
+- Recipes plugins register with `IServer.RegisterRecipes` are kept (and removed when they unload) but not used for
+  crafting or the recipe book, which are built from vanilla's recipes at startup.
+- Entities and server players a plugin spawned stay in their worlds when it unloads.
 - Obsidian.MSBuild writes version 2 archives on its `feat/obby-v2` branch, which isn't released yet.
