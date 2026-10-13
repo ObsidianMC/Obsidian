@@ -86,6 +86,11 @@ internal static class BlockEntityNbt
 
                 if (tag.TryGetTag<NbtTag<byte>>("Fuel", out var fuel))
                     stand.Fuel = fuel.Value;
+
+                // Like vanilla's loadAdditional, a brew in progress takes its unsaved ingredient from the ingredient
+                // slot, so it goes on after a reload instead of stopping and spending another fuel use.
+                if (stand.BrewTime > 0)
+                    stand.BrewingIngredient = stand.GetItem(BrewingStand.IngredientSlot)?.Holder;
             }
 
             return (IBlockEntity)container;
