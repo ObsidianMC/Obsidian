@@ -291,10 +291,15 @@ client. This document describes the design and tracks its progress. The archive 
      and jigsaw structures read the object forms of `max_distance_from_center` and `dimension_padding`. A vanilla
      dimension type override its noise settings don't fit is still left out: vanilla clamps generation to the build
      range, which every generation step would have to follow, without a vanilla capture to check it against.
-   - Possible later, for structures: structure types and pool element types in code (the structure, piece and pool
-     element bases work on Obsidian's internal generation context, templates and jigsaw placement, and would need an
-     API like the tree parts'), eyes of ender, and a `/locate` command; clamping generation to a dimension type's
-     build range.
+   - Done: structure types and pool element types in code. `CustomStructure`, `CustomStructurePiece` and
+     `CustomPoolElement` in `Obsidian.API.World.Structures`, registered with `RegisterWorldgenType`, are named by
+     structure files' `type` and template pools' `element_type`; Obsidian reads every structure's common fields and
+     every element's projection, checks biomes, adapts terrain and places their pieces through a small context
+     (`StructureStartContext`, `CustomPieceContext`), and they come and go with their plugin like feature types (see
+     [plugin-content.md](plugin-content.md#structure-and-pool-element-types)). Vanilla's `/locate structure` (by
+     identifier or `#tag`, permission level 2, vanilla's search and messages) and eyes of ender, which fly toward the
+     nearest structure of `#minecraft:eye_of_ender_located`, find vanilla's and plugins' structures. Possible later:
+     `/locate biome` and `/locate poi`; clamping generation to a dimension type's build range.
    - Next: Phase 4.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource

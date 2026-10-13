@@ -15,6 +15,13 @@ internal sealed partial class WorldgenReader
     // Vanilla's StructureSettings codec requires these of every structure, whatever its type.
     private static readonly string[] structureFields = ["biomes", "spawn_overrides", "step"];
 
+    // What Obsidian reads of a structure of a plugin's type: its type and vanilla's StructureSettings.
+    private static readonly string[] customStructureFields =
+        ["type", "biomes", "spawn_overrides", "step", "terrain_adaptation"];
+
+    // What Obsidian reads of a pool element of a plugin's type: its type and its projection.
+    private static readonly string[] poolElementFields = ["element_type", "projection"];
+
     /// <summary>
     /// Reads a structure, <c>{"type": ..., "biomes": ..., "step": ..., ...}</c>.
     /// </summary>
@@ -65,10 +72,84 @@ internal sealed partial class WorldgenReader
             Required(json, path, field);
 
         var name = Reference(Required(json, path, "type"), Field(path, "type"));
-        var type = types.Find(name, typeof(Structure))
+        if (types.Find(name, typeof(Structure)) is Type type)
+            return (Structure)this.ReadObject(type, json, "type", identifier, path);
+
+        var custom = types.Find(name, typeof(CustomStructure))
             ?? throw Error(Field(path, "type"), $"{name} isn't a structure type");
 
-        return (Structure)this.ReadObject(type, json, "type", identifier, path);
+        // A plugin's type: Obsidian's own structure reads the fields every structure has, and the plugin's the rest.
+        var structure = (PluginStructure)this.ReadObject(
+            typeof(PluginStructure),
+            Subset(json, customStructureFields, keep: true),
+            "type",
+            identifier,
+            path);
+
+        structure.Definition = (CustomStructure)this.ReadObject(
+            custom,
+            Subset(json, customStructureFields, keep: false),
+            null,
+            null,
+            path);
+
+        return structure;
+    }
+
+    // A pool element of a plugin's type, or null for Obsidian's types. Like a plugin's structure, Obsidian's element
+    // reads the fields every element has, and the plugin's the rest.
+    private PluginPoolElement? ReadCustomPoolElement(JsonElement json, string path)
+    {
+        if (json.ValueKind != JsonValueKind.Object
+            || !json.TryGetProperty("element_type", out var typeName)
+            || typeName.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var name = Reference(typeName, Field(path, "element_type"));
+        if (types.Find(name, typeof(StructurePoolElement)) is not null
+            || types.Find(name, typeof(CustomPoolElement)) is not Type custom)
+        {
+            return null;
+        }
+
+        var element = (PluginPoolElement)this.ReadObject(
+            typeof(PluginPoolElement),
+            Subset(json, poolElementFields, keep: true),
+            "element_type",
+            null,
+            path);
+
+        element.Element = (CustomPoolElement)this.ReadObject(
+            custom,
+            Subset(json, poolElementFields, keep: false),
+            null,
+            null,
+            path);
+
+        return element;
+    }
+
+    // The fields of an object that are among the names, or those that aren't.
+    private static JsonElement Subset(JsonElement json, string[] names, bool keep)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            writer.WriteStartObject();
+
+            foreach (var property in json.EnumerateObject())
+            {
+                if (names.Contains(property.Name) == keep)
+                    property.WriteTo(writer);
+            }
+
+            writer.WriteEndObject();
+        }
+
+        using var document = JsonDocument.Parse(stream.ToArray());
+        return document.RootElement.Clone();
     }
 
     // The structure entries data names by identifier, or defines inline where vanilla's codecs allow.
@@ -89,6 +170,12 @@ internal sealed partial class WorldgenReader
             return json.ValueKind == JsonValueKind.String
                 ? Lookup(this.structures.FindSet, Reference(json, path), path)
                 : this.ReadObject(target, json, null, null, path);
+        }
+
+        if (target == typeof(StructurePoolElement)
+            && this.ReadCustomPoolElement(json, path) is PluginPoolElement custom)
+        {
+            return custom;
         }
 
         if (target == typeof(JigsawMaxDistance))

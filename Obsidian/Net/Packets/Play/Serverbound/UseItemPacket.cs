@@ -44,7 +44,16 @@ public partial class UseItemPacket
                 return;
         }
 
-        if (player is Obsidian.Entities.Player concrete)
-            await concrete.StartUsingItemAsync(Hand);
+        if (player is not Obsidian.Entities.Player concrete)
+            return;
+
+        // Eyes of ender fly toward the nearest structure they find, or do nothing.
+        if (args.Item is { Count: > 0 } eye && eye.Is(ItemsRegistry.EnderEye))
+        {
+            await Obsidian.Entities.EyeOfEnder.ThrowAsync(concrete, this.Hand, eye);
+            return;
+        }
+
+        await concrete.StartUsingItemAsync(Hand);
     }
 }

@@ -877,15 +877,14 @@ the tower grows from, up to its `size`.
   4064}` (4064 by default), and its `dimension_padding` a number or `{"bottom": ..., "top": ...}` (0 by default, and
   for values that aren't valid, as vanilla reads them leniently), like vanilla's. As in vanilla, only an omitted
   `dimension_padding` lets the start piece reach outside the world's height: an explicit one, even `0` or `{}`, keeps
-  it inside. Plugins can't add structure or pool
-  element types in code: Obsidian's structure, piece and pool element bases work on its internal generation context,
-  templates and jigsaw placement, which would need an API of their own, like the tree parts'.
+  it inside. Plugins add structure and pool element types of their own in code (see
+  [Structure and pool element types](#structure-and-pool-element-types)).
 - Structure sets take `minecraft:random_spread` (with `spread_type`) and `minecraft:concentric_rings` placements, with
   `salt`, `frequency`, `frequency_reduction_method`, `locate_offset` and an `exclusion_zone` naming another set. A set's
   structures are named by identifier.
 - Pools take `minecraft:single_pool_element`, `minecraft:legacy_single_pool_element`, `minecraft:list_pool_element`,
-  `minecraft:feature_pool_element` (a placed feature, a plugin's too) and `minecraft:empty_pool_element`, with
-  `rigid` or `terrain_matching` projections, and a `fallback` pool.
+  `minecraft:feature_pool_element` (a placed feature, a plugin's too), `minecraft:empty_pool_element` and plugins'
+  element types, with `rigid` or `terrain_matching` projections, and a `fallback` pool.
 - Values are checked like vanilla's codecs check them (a jigsaw's `size` from 0 to 20, a pool element's `weight` from
   1 to 150, a `spacing` larger than its `separation`, ...). Entries refer to each other by identifier, vanilla's or
   any plugin's or data pack's; a file that can't be read is logged and left out, with the entries that need it.
@@ -919,8 +918,121 @@ The rules:
 - Structure tags, `data/<namespace>/tags/worldgen/structure/<path>.json`, merge with vanilla's like other tag
   files and may name plugins' and data packs' structures. Explorer maps and dolphins (`minecraft:dolphin_located`)
   find structures through them, so a plugin's structure added to `#minecraft:on_treasure_maps`, say, is found by
-  treasure maps. A tag file naming a structure that doesn't exist fails, and the tag keeps vanilla's entries. Obsidian
-  has no eyes of ender or `/locate` yet.
+  treasure maps. A tag file naming a structure that doesn't exist fails, and the tag keeps vanilla's entries.
+- `/locate structure <structure|#tag>` (permission level 2, like vanilla's) finds the nearest structure of a type or
+  tag, vanilla's or a plugin's, in the sender's dimension, searching like vanilla's: 100 rings of placement regions
+  for spread placements, nearest first, and every ring position for concentric rings. It answers with vanilla's
+  messages and a clickable position that suggests `/tp`. Eyes of ender fly toward the nearest structure of
+  `#minecraft:eye_of_ender_located`, searched the same way, so a plugin's structure added to that tag is found by
+  them; with none, or when the player looks at an end portal frame, using an eye does nothing and keeps it. Like
+  vanilla's, a thrown eye drops as an item four times in five and breaks otherwise; eyes aren't saved. Obsidian has
+  no `/locate biome` or `/locate poi`.
+
+### Structure and pool element types
+
+Like a NeoForge mod's structure types and pool element types, a plugin can add structure logic and jigsaw pieces in
+code, which its (and other plugins') files name in their `type` and `element_type`. Register them in
+`ConfigureRegistry`, with identifiers in the plugin's namespace:
+
+```csharp
+using Obsidian.API.World.Generator;
+using Obsidian.API.World.Structures;
+
+public override void ConfigureRegistry(IPluginRegistry registry)
+{
+    registry.RegisterWorldgenType<CustomStructure, CrystalSpire>("ruby:crystal_spire");
+    registry.RegisterWorldgenType<CustomPoolElement, CrystalCluster>("ruby:crystal_cluster");
+}
+
+// A spire of ruby blocks in the middle of its chunk, as tall as its height provider says.
+public sealed class CrystalSpire : CustomStructure
+{
+    public required IIntProvider Height { get; init; }
+
+    public override Vector? FindStart(StructureStartContext context)
+    {
+        var x = (context.ChunkX << 4) + 8;
+        var z = (context.ChunkZ << 4) + 8;
+        return new Vector(x, context.GetBaseHeight(x, z, HeightmapType.WorldSurfaceWG), z);
+    }
+
+    public override void AddPieces(
+        StructureStartContext context,
+        Vector start,
+        ICollection<CustomStructurePiece> pieces)
+    {
+        var height = this.Height.Sample(context.Random);
+        pieces.Add(new SpirePiece(new BlockArea(start, start + new Vector(0, height - 1, 0))));
+    }
+}
+
+public sealed class SpirePiece(BlockArea bounds) : CustomStructurePiece(bounds)
+{
+    public override void Place(CustomPieceContext context)
+    {
+        var block = new SimpleBlockState { Name = "ruby:ruby_block" }.ToBlock();
+        for (var y = 0; y <= this.Bounds.Max.Y - this.Bounds.Min.Y; y++)
+            context.SetBlock(new Vector(0, y, 0), block);
+    }
+}
+
+// A 3 by 3 crystal cluster, hanging off any jigsaw that targets minecraft:bottom, like vanilla's feature elements.
+public sealed class CrystalCluster : CustomPoolElement
+{
+    public override Vector Size => new(3, 2, 3);
+
+    public override IReadOnlyList<PoolJigsaw> GetJigsaws() =>
+        [new(new Vector(1, 0, 1), "down_south", "minecraft:bottom")];
+
+    public override bool Place(CustomPieceContext context)
+    {
+        var block = new SimpleBlockState { Name = "minecraft:amethyst_block" }.ToBlock();
+        context.SetBlock(new Vector(1, 0, 1), block);
+        context.SetBlock(new Vector(1, 1, 1), block);
+        context.SetBlock(new Vector(0, 0, 1), block);
+        return true;
+    }
+}
+```
+
+```json
+// data/ruby/worldgen/structure/crystal_spire.json
+{
+  "type": "ruby:crystal_spire",
+  "biomes": "#ruby:has_structure/crystal_spire",
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "beard_thin",
+  "height": { "type": "minecraft:uniform", "min_inclusive": 6, "max_inclusive": 12 }
+}
+```
+
+```json
+// an element of a template pool
+{ "weight": 1, "element": { "element_type": "ruby:crystal_cluster", "projection": "rigid" } }
+```
+
+- Obsidian reads what every structure has, `biomes`, `spawn_overrides`, `step` and `terrain_adaptation`, and every
+  pool element's `projection` (`rigid` when it's left out); the file's other keys set the type's properties, read
+  like a [feature type's](#feature-types). Obsidian checks the structure's `biomes` at the start `FindStart` gives,
+  adapts the terrain around its pieces, and places them: each chunk a piece's `Bounds` reach places its own part, the
+  context's `Box`. `CustomPieceContext.SetBlock` places at an offset from the piece's lowest corner, or from a pool
+  element's origin turned with the element (its block turned too), and only inside `Box`; `Level` reaches the world.
+- Starts aren't saved with their pieces: like Obsidian's own structures, they're made again from the seed when a chunk
+  needs them, also after a restart, and only each piece's box is saved. So `FindStart`, `AddPieces` and `Place` must
+  depend only on their context (its random is seeded for the chunk). Types are shared between threads; keep them
+  stateless.
+- A pool element's `Size` is the blocks it may place from its origin, which jigsaw assembly keeps apart from other
+  pieces, and its jigsaws (`PoolJigsaw`, like the jigsaw blocks a structure block saves: a position, the
+  `orientation`, `name`, `target`, `pool` and joint) connect it; by default it has one, facing down at its origin,
+  named `minecraft:bottom`.
+- The types come and go with their plugin, like feature types: a structure or pool element naming a type that isn't
+  registered is left out, logged like any file that can't be read (`ruby:crystal_spire isn't a structure type`), with
+  the entries that need it (the sets placing the structure, the structures starting from the pool). Starting and
+  placing a structure made of them is a call into the plugin, and its failing stops the dimension like a failing
+  feature. A start made with the plugin isn't placed once it unloads, and keeps its saved state; after a restart
+  without the plugin, its starts load and stay as they were saved, rather than being dropped as vanilla drops starts
+  of unknown structures, so the structure carries on when the plugin is back.
 
 
 ## Noise settings, density functions and noises

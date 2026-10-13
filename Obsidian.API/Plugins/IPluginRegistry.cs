@@ -191,7 +191,9 @@ public interface IPluginRegistry
     /// <see cref="IRuleTest"/>, a tree part (<see cref="World.Features.Trees.TrunkPlacer"/>,
     /// <see cref="World.Features.Trees.FoliagePlacer"/>, <see cref="World.Features.Trees.RootPlacer"/>,
     /// <see cref="World.Features.Trees.TreeDecorator"/>, <see cref="World.Features.Trees.FeatureSize"/>),
-    /// <see cref="World.Structures.StructureProcessor"/>, <see cref="IDensityFunction"/>, <see cref="ISurfaceRule"/>
+    /// <see cref="World.Structures.StructureProcessor"/>, a structure type
+    /// (<see cref="World.Structures.CustomStructure"/>), a pool element type
+    /// (<see cref="World.Structures.CustomPoolElement"/>), <see cref="IDensityFunction"/>, <see cref="ISurfaceRule"/>
     /// (for an <see cref="ICustomSurfaceRule"/>), <see cref="ISurfaceCondition"/> (for an
     /// <see cref="ICustomSurfaceCondition"/>), <see cref="World.Generator.BiomeSourceBase"/>, or one of the plugin's
     /// own that its features' properties use.
