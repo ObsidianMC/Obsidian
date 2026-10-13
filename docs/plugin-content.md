@@ -449,16 +449,18 @@ default, then the dimension type's map applies, then the biome's where it's aske
 change them in any dimension, and a plugin's dimension type everywhere in its levels (vanilla's own types and biomes
 apply their values too):
 
-- `gameplay/monsters_burn` and `gameplay/sky_light_level` (with the overworld's day timeline; a biome can't set the
-  sky light level), and `gameplay/fast_lava` (a whole dimension's);
+- `gameplay/monsters_burn` and `gameplay/sky_light_level` (the overworld's day timeline applies after the biome, so
+  a biome can't stop monsters burning by day; a biome can't set the sky light level), and `gameplay/fast_lava` (a
+  whole dimension's);
 - `gameplay/can_start_raid` (a bad omen where the player is starts a raid in a village) and
   `gameplay/can_pillager_patrol_spawn` (where a patrol would spawn, only in the overworld, like vanilla's);
 - `gameplay/piglins_zombify` (piglins and hoglins) and `gameplay/snow_golem_melts`;
 - `gameplay/bed_rule`: where it `explodes`, using a bed removes it and sets off an explosion of power 5 with fire, as
   in vanilla's nether and end, showing its `error_message` above the hotbar; elsewhere a player who can't sleep now
-  is shown it;
-- `gameplay/respawn_anchor_works`: glowstone charges a respawn anchor anywhere, and a charged anchor explodes like a
-  bed where it doesn't work (everywhere but vanilla's nether);
+  is shown it (`when_dark` is when the type's time isn't fixed and the sky is darkened by 4 or more);
+- `gameplay/respawn_anchor_works`: glowstone in either hand charges a respawn anchor anywhere, and a charged anchor
+  explodes like a bed where it doesn't work (everywhere but vanilla's nether). Like other block explosions, their
+  drops follow `block_explosion_drop_decay`;
 - `gameplay/water_evaporates`: water poured from a bucket hisses away instead of being placed.
 
 Players can't sleep or set their spawn with a bed or anchor yet, so where those work, using them does nothing more.

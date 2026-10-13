@@ -7,8 +7,10 @@ using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
+using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework;
 using Obsidian.Events;
+using Obsidian.Nbt;
 using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
@@ -182,6 +184,32 @@ public sealed class BrewingStands : IDisposable
         Assert.Equal(18, stand.Fuel);
     }
 
+    [Fact(DisplayName = "A brew loaded part way through finishes without spending more fuel")]
+    public void LoadedBrewFinishes()
+    {
+        var items = new NbtList(NbtTagType.Compound, "Items")
+        {
+            Slotted(Potion(ItemsRegistry.Potion, API.Potion.Water), 0),
+            Slotted(new ItemStack(ItemsRegistry.NetherWart, 1), BrewingStand.IngredientSlot)
+        };
+
+        var tag = new NbtCompound
+        {
+            items,
+            new NbtTag<short>("BrewTime", 100),
+            new NbtTag<byte>("Fuel", 5)
+        };
+
+        var stand = (BrewingStand)BlockEntityNbt.Load(tag, "minecraft:brewing_stand", Vector.Zero);
+
+        for (var tick = 1; tick < 100; tick++)
+            Assert.False(Brewing.Tick(stand).Brewed);
+
+        Assert.True(Brewing.Tick(stand).Brewed);
+        Assert.Equal(API.Potion.Awkward, PotionOf(stand.GetItem(0)));
+        Assert.Equal(5, stand.Fuel);
+    }
+
     [Fact(DisplayName = "A plugin's potion mix brews until the plugin unloads",
         Timeout = TestServerFactory.TestTimeout)]
     public async Task PluginMixBrewsUntilUnloaded()
@@ -235,6 +263,14 @@ public sealed class BrewingStands : IDisposable
 
     private static ItemStack Potion(Item bottle, API.Potion potion) =>
         new(bottle, 1, new PotionContentsDataComponent { Potion = potion });
+
+    private static NbtCompound Slotted(ItemStack item, int slot)
+    {
+        var tag = item.ToNbt();
+        tag.Add(new NbtTag<byte>("Slot", (byte)slot));
+
+        return tag;
+    }
 
     private static API.Potion? PotionOf(ItemStack? bottle) =>
         bottle?.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents)?.Potion;

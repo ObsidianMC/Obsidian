@@ -13,7 +13,21 @@ public partial class Living : Entity, ILiving
     internal IEntity? IncomingDirectSource { get; private set; }
     internal int AcceptedDamageCount { get; set; }
 
-    internal virtual async ValueTask DamageCombatAsync(IEntity source, float amount, CombatDamageKind kind, ItemStack? weapon = null, IEntity? directSource = null)
+    /// <summary>
+    /// Damages the entity as <paramref name="kind"/> of damage that <paramref name="source"/> deals, through
+    /// <paramref name="directSource"/> (a projectile, say) when that isn't the source itself.
+    /// </summary>
+    /// <param name="sourcePosition">
+    /// Where the damage comes from when that isn't the direct source's position, like an explosion's centre; players
+    /// block with shields facing it (vanilla's <c>DamageSource.getSourcePosition</c>).
+    /// </param>
+    internal virtual async ValueTask DamageCombatAsync(
+        IEntity source,
+        float amount,
+        CombatDamageKind kind,
+        ItemStack? weapon = null,
+        IEntity? directSource = null,
+        VectorD? sourcePosition = null)
     {
         var previousKind = IncomingDamageKind;
         var previousWeapon = IncomingWeapon;

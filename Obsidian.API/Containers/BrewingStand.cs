@@ -39,7 +39,7 @@ public sealed class BrewingStand : ResultContainer, IBlockEntity
 
     /// <summary>
     /// The ingredient the brew in progress started with, which it stops without (vanilla's <c>ingredient</c>, which
-    /// isn't saved either).
+    /// isn't saved either: loading a brew in progress takes it from the ingredient slot).
     /// </summary>
     internal Item? BrewingIngredient { get; set; }
 

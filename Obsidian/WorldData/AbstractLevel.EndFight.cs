@@ -98,7 +98,13 @@ public abstract partial class AbstractLevel
         resurrectionTicks = -1;
         resurrectionCrystals = [];
         foreach (var crystal in entities.OfType<EndCrystal>()) { crystal.Invulnerable = false; crystal.SetBeam(null); }
-        foreach (var crystal in ritual) { await crystal.RemoveAsync(); await ExplodeAsync(crystal, 6, crystal); }
+        // Like vanilla's DragonRespawnAnimation, the ritual's crystals explode without breaking blocks.
+        foreach (var crystal in ritual)
+        {
+            await crystal.RemoveAsync();
+            await ExplodeAsync(crystal, 6, crystal, ExplosionInteraction.None);
+        }
+
         dragonKilled = false;
         CreateFightDragon();
     }
@@ -255,7 +261,7 @@ public abstract partial class AbstractLevel
                 await SetBlockAsync(new Vector(spike.CenterX + x, spike.Height + y, spike.CenterZ + z), BlocksRegistry.Air, true);
             var blast = new EndCrystal { Level = this, EntityId = Server.GetNextEntityId(),
                 Position = new VectorD(spike.CenterX + 0.5, spike.Height, spike.CenterZ + 0.5) };
-            await ExplodeAsync(blast, 5, blast);
+            await ExplodeAsync(blast, 5, blast, ExplosionInteraction.Block);
         }
         var radius = spike.Radius;
         for (var x = -radius; x <= radius; x++)
