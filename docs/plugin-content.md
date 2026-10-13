@@ -127,11 +127,14 @@ A plugin's menu type is a grid of 1 to 6 rows of 1 to 9 slots above the player's
 followed by the player's inventory like vanilla's menus. The server opens it with its id and moves items in it like a
 chest's; a `ContainerClickEventArgs` handler cancels or handles players' clicks, and the plugin reads and changes the
 container's slots. Several players can have the same container open: their clicks take turns, so two can't take the
-same stack, and each sees the others' changes. A NeoForge or Fabric mod's menu type with the same identifier and slots
-shows it, made without extra data (vanilla's open screen packet carries none). The type keeps its id and shape across
-reloads and stays registered until the server stops; registering it again with another shape throws. When the plugin
-unloads (or reloads), its menus close for the players who have them open, with a `ContainerClosedEventArgs` the plugin
-still handles.
+same stack, and each sees the others' changes. Click handlers run before the server applies the click and outside its
+turn, so a handler may wait for something another viewer does; the server then checks that the menu is still open
+before it applies the click. A NeoForge or Fabric mod's menu type with the same identifier and slots shows it, made
+without extra data (vanilla's open screen packet carries none). The type keeps its id and shape across reloads and stays
+registered until the server stops; registering it again with another shape throws. When the plugin unloads (or
+reloads), its menus close for the players who have them open, with a `ContainerClosedEventArgs` the plugin still
+handles although it takes no other calls. From then until a loaded plugin registers the type again, opening one of its
+menus does nothing.
 
 ## Tags
 

@@ -9,10 +9,43 @@ public partial class MainEventHandler
 {
     private const int OutsideInventory = -999;
 
+    /// <summary>
+    /// Applies a player's click in their open window, after plugins' handlers had their say.
+    /// </summary>
+    /// <remarks>
+    /// Players sharing a container take turns: the click is applied inside the window's lock, which plugins' handlers
+    /// run without, so the window is checked again inside it, as it may have closed or changed meanwhile.
+    /// </remarks>
     [EventPriority(Priority = Priority.Internal)]
     public async ValueTask OnInventoryClick(ContainerClickEventArgs args)
     {
         if (args.IsCancelled)
+            return;
+
+        var player = args.Player;
+        var window = player.OpenedContainer ?? player.Inventory;
+
+        await window.TransactionLock.WaitAsync();
+        try
+        {
+            var openId = player.OpenedContainer is null ? 0 : player.CurrentContainerId;
+            var current = (player.OpenedContainer ?? player.Inventory) == window
+                && args.ContainerId == openId
+                && (args.Container == window || args.Container == player.Inventory);
+
+            if (current)
+                await ApplyClickAsync(args);
+        }
+        finally
+        {
+            window.TransactionLock.Release();
+        }
+    }
+
+    private static async ValueTask ApplyClickAsync(ContainerClickEventArgs args)
+    {
+        // Before any window's own handling, so that crafting and enchanting follow the same drag rules.
+        if (CancelsDrag(args))
             return;
 
         if (args.Container == args.Player.Inventory && args.ClickedSlot is >= 5 and <= 8 &&
@@ -47,12 +80,8 @@ public partial class MainEventHandler
     /// <param name="dropThrown">Whether items thrown from a slot drop in the world.</param>
     private static void HandleClick(ContainerClickEventArgs args, bool dropThrown)
     {
-        // Like vanilla, any other click while dragging only cancels the drag.
-        if (args.ClickType != ClickType.QuickCraft && args.Player.IsDragging)
-        {
-            ResetDrag(args.Player);
+        if (CancelsDrag(args))
             return;
-        }
 
         switch (args.ClickType)
         {
@@ -90,8 +119,15 @@ public partial class MainEventHandler
         if (args.Item.IsNullOrAir())
             return;
 
-        // Like vanilla's chest menu: the container's stack goes to the player's main inventory and hotbar, filling
-        // from the hotbar's last slot, and the player's goes to the container, filling from its first slot.
+        if (player.OpenedContainer is SmeltingContainer furnace && IsFurnace(furnace))
+        {
+            HandleFurnaceQuickMove(args, furnace);
+            return;
+        }
+
+        // Like vanilla's chest, hopper and dispenser menus: the container's stack goes to the player's main inventory
+        // and hotbar, filling from the hotbar's last slot, and the player's goes to the container, filling from its
+        // first slot. The brewing stand, whose slots take particular items, is treated as a chest too for now.
         if (source != player.Inventory)
             MoveStack(source, args.ClickedSlot, player.Inventory, 9, 45, reverse: true);
         else if (player.OpenedContainer is BaseContainer opened && opened != player.Inventory)
@@ -301,7 +337,7 @@ public partial class MainEventHandler
                 && TryGetDragTarget(player, slots[0], carried, out var container, out var slot))
             {
                 var button = (sbyte)(start == DraggingState.StartLeft ? 0 : 1);
-                HandlePickup(ContainerClickEventArgs.Create(
+                var click = ContainerClickEventArgs.Create(
                     player,
                     args.Server,
                     container,
@@ -309,7 +345,13 @@ public partial class MainEventHandler
                     slot,
                     button,
                     args.StateId,
-                    ClickType.Pickup));
+                    ClickType.Pickup);
+
+                // The crafting and enchanting windows' pickup keeps their slots' limits, like an armour slot's one.
+                if (HasLimitedSlots(player))
+                    HandleCraftingPickup(click);
+                else
+                    HandlePickup(click);
             }
 
             return;
@@ -334,7 +376,7 @@ public partial class MainEventHandler
 
             var target = container.GetItem(slot);
             var existing = target.IsNullOrAir() ? 0 : target.Count;
-            var count = Math.Min(share + existing, carried.MaxStackSize);
+            var count = Math.Min(share + existing, SlotLimit(player, container, slot, carried));
 
             remaining -= count - existing;
             container.SetItem(slot, new ItemStack(carried, count));
@@ -348,7 +390,7 @@ public partial class MainEventHandler
 
     /// <summary>
     /// Finds a dragged-over slot, as the open window numbers it, in its container, if the carried stack can be
-    /// dragged onto it: the slot is empty or holds the same item.
+    /// dragged onto it: the slot takes the item (see <see cref="SlotAccepts"/>) and is empty or holds the same item.
     /// </summary>
     private static bool TryGetDragTarget(
         IPlayer player,
@@ -362,12 +404,86 @@ public partial class MainEventHandler
         container = forPlayer ? player.Inventory : window;
 
         // A container's window shows the player's main inventory and hotbar, not their armour or crafting grid.
-        if (windowSlot < 0 || slot < 0 || slot >= container.Size || forPlayer && slot is < 9 or >= 45)
+        if (windowSlot < 0
+            || slot < 0
+            || slot >= container.Size
+            || forPlayer && slot is < 9 or >= 45
+            || !SlotAccepts(player, container, slot, carried))
+        {
             return false;
+        }
 
         var target = container.GetItem(slot);
 
         return target.IsNullOrAir() || target == carried;
+    }
+
+    /// <summary>
+    /// Whether the player can put <paramref name="item"/> in <paramref name="slot"/> of <paramref name="container"/>,
+    /// like vanilla's slots allow: not in a result slot, armour only in its own slot, lapis lazuli only in the
+    /// enchanting table's second slot, and only fuel (or a bucket) in a furnace's fuel slot.
+    /// </summary>
+    private static bool SlotAccepts(IPlayer player, BaseContainer container, int slot, ItemStack item)
+    {
+        if (container == player.Inventory)
+        {
+            return slot switch
+            {
+                0 => false,
+                >= 5 and <= 8 => CombatItems.PlayerArmorSlot(item) == slot,
+                _ => true
+            };
+        }
+
+        return container switch
+        {
+            CraftingTable { Type: InventoryType.Crafting } => slot != 0,
+            EnchantmentTable => slot != 1 || item.Is(ItemsRegistry.LapisLazuli),
+            SmeltingContainer furnace when IsFurnace(furnace) => slot switch
+            {
+                1 => IsFuel(item) || item.Is(ItemsRegistry.Bucket),
+                2 => false,
+                _ => true
+            },
+            _ => true
+        };
+    }
+
+    /// <summary>
+    /// How many of <paramref name="item"/> <paramref name="slot"/> of <paramref name="container"/> holds, like
+    /// vanilla's slots: one in an armour slot, in the enchanting table's first slot and, for a bucket, in a furnace's
+    /// fuel slot.
+    /// </summary>
+    private static int SlotLimit(IPlayer player, BaseContainer container, int slot, ItemStack item)
+    {
+        var single = container == player.Inventory && slot is >= 5 and <= 8
+            || container is EnchantmentTable && slot == 0
+            || container is SmeltingContainer furnace
+                && IsFurnace(furnace)
+                && slot == 1
+                && item.Is(ItemsRegistry.Bucket);
+
+        return single ? 1 : item.MaxStackSize;
+    }
+
+    // Whether the player's window has slots with limits of their own (see SlotLimit) that its pickup keeps: their
+    // inventory's, a crafting table's or an enchanting table's.
+    private static bool HasLimitedSlots(IPlayer player) =>
+        player.OpenedContainer is null or CraftingTable { Type: InventoryType.Crafting } or EnchantmentTable;
+
+    /// <summary>
+    /// Cancels the player's drag if <paramref name="args"/> isn't part of it: like vanilla, any other click while
+    /// dragging only cancels the drag.
+    /// </summary>
+    /// <returns>Whether the click cancelled a drag, and does nothing else.</returns>
+    private static bool CancelsDrag(ContainerClickEventArgs args)
+    {
+        if (args.ClickType == ClickType.QuickCraft || !args.Player.IsDragging)
+            return false;
+
+        ResetDrag(args.Player);
+
+        return true;
     }
 
     private static void ResetDrag(IPlayer player)

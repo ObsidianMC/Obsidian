@@ -920,6 +920,20 @@ public abstract partial class AbstractLevel : ILevel
         c?.SetBlockEntity(x, y, z, tileEntityData);
     }
 
+    /// <summary>
+    /// Stores <paramref name="blockEntity"/> at <paramref name="blockPosition"/> unless a block entity is there
+    /// already, in one step (see <see cref="Chunk.GetOrAddBlockEntity"/>).
+    /// </summary>
+    /// <returns>The stored block entity, or null when the chunk isn't loaded.</returns>
+    internal async ValueTask<IBlockEntity?> GetOrAddBlockEntityAsync(Vector blockPosition, IBlockEntity blockEntity)
+    {
+        var chunk = await GetChunkAsync(blockPosition.X.ToChunkCoord(), blockPosition.Z.ToChunkCoord(), false);
+
+        return chunk is Chunk loaded
+            ? loaded.GetOrAddBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, blockEntity)
+            : null;
+    }
+
     public IEntity SpawnEntity(VectorD position, EntityType type)
     {
         if (type == EntityType.FallingBlock)

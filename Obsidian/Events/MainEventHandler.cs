@@ -354,17 +354,12 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 //TODO open lectern??
             }
 
-            if (container is IBlockEntity containerTileEntity)
+            if (container is IBlockEntity containerTileEntity && player.Level is AbstractLevel level)
             {
-                var tileEntity = await player.Level.GetBlockEntityAsync(blockPosition);
+                // Stored and looked up in one step, so that players opening a new chest at once share one container.
+                var tileEntity = await level.GetOrAddBlockEntityAsync(blockPosition, containerTileEntity);
 
-                if (tileEntity is null)
-                {
-                    tileEntity = containerTileEntity.Clone();
-
-                    await player.Level.SetBlockEntity(blockPosition, tileEntity);
-                }
-                else if (tileEntity is BaseContainer tileEntityContainer)
+                if (tileEntity is BaseContainer tileEntityContainer)
                 {
                     // The stored container itself is opened, so changes reach the block entity that's saved with the chunk.
                     container = tileEntityContainer;

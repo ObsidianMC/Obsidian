@@ -181,6 +181,16 @@ public sealed class Chunk : IChunk
     public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData) =>
         this.BlockEntities[this.BlockEntityKey(x, y, z)] = tileEntityData;
 
+    /// <summary>
+    /// Stores <paramref name="blockEntity"/> at the position unless a block entity is there already, in one step, so
+    /// that callers racing to create one all get the same.
+    /// </summary>
+    /// <returns>
+    /// The block entity stored at the position: the existing one, or else <paramref name="blockEntity"/>.
+    /// </returns>
+    internal IBlockEntity GetOrAddBlockEntity(int x, int y, int z, IBlockEntity blockEntity) =>
+        this.BlockEntities.GetOrAdd(this.BlockEntityKey(x, y, z), blockEntity);
+
     public void RemoveBlockEntity(int x, int y, int z) => this.BlockEntities.TryRemove(this.BlockEntityKey(x, y, z), out _);
 
     public IReadOnlyCollection<IBlockEntity> GetBlockEntities() => [.. this.BlockEntities.Values];

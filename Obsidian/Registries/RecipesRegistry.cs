@@ -80,6 +80,15 @@ public static partial class RecipesRegistry
         return null;
     }
 
+    /// <summary>
+    /// Whether a recipe of <paramref name="type"/> (smelting, blasting or smoking) cooks <paramref name="item"/>, which
+    /// a furnace of that type then takes as its ingredient.
+    /// </summary>
+    internal static bool IsCookingIngredient(CraftingType type, ItemStack item) =>
+        Recipes.Values.Any(recipe => recipe is SmeltingRecipe cooking
+            && cooking.Type == type
+            && MatchesIngredient(cooking.Ingredient, item));
+
     private static bool MatchesShaped(BaseContainer grid, int width, int minX, int minY, ShapedRecipe recipe, bool mirrored)
     {
         for (int y = 0; y < recipe.Pattern.Count; y++)
