@@ -57,7 +57,7 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     /// <summary>
     /// Saved components Obsidian doesn't model (e.g. <c>minecraft:custom_data</c>), kept as they were loaded so saving the
-    /// stack again doesn't drop them. Copies of the stack share the compound, so it's never changed.
+    /// stack again doesn't drop them. Copies of the stack own an isolated compound.
     /// </summary>
     /// <remarks>
     /// They aren't sent to clients, but take part in <see cref="Equals(ItemStack?)"/>, so stacks that differ only in
@@ -78,7 +78,7 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         foreach (var type in item.RemoveComponents)
             this.Remove(type);
 
-        this.UnmodeledComponents = item.UnmodeledComponents;
+        this.UnmodeledComponents = ComponentCopies.Nbt(item.UnmodeledComponents);
     }
 
     /// <summary>
@@ -87,7 +87,10 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     /// </summary>
     public ItemStack TransmuteCopy(Item holder)
     {
-        var copy = new ItemStack(holder, this.Count, this.Patch) { UnmodeledComponents = this.UnmodeledComponents };
+        var copy = new ItemStack(holder, this.Count, this.Patch)
+        {
+            UnmodeledComponents = ComponentCopies.Nbt(this.UnmodeledComponents)
+        };
         foreach (var type in this.RemoveComponents)
             copy.Remove(type);
 
@@ -140,7 +143,16 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public static bool operator !=(ItemStack? left, ItemStack? right) => !(left == right);
 
-    public override int GetHashCode() => HashCode.Combine(this.Holder, this.InternalStorage);
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(this.Holder);
+        foreach (var component in this.InternalStorage)
+            hash.Add(component);
+
+        hash.Add(new ComponentValueKey(this.UnmodeledComponents));
+        return hash.ToHashCode();
+    }
 
     private void InitializeComponents(params IEnumerable<DataComponent> components)
     {
