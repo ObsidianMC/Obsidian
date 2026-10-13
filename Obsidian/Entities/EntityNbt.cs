@@ -239,5 +239,5 @@ internal static class EntityNbt
     // Players have their own files; Obsidian can't restore falling blocks (they need their block state) or experience
     // orbs, and vanilla never saves fishing bobbers or lightning.
     private static bool IsSaved(EntityType type) => type is not (EntityType.Player or EntityType.FallingBlock
-        or EntityType.ExperienceOrb or EntityType.FishingBobber or EntityType.LightningBolt or EntityType.EyeOfEnder);
+        or EntityType.ExperienceOrb or EntityType.FishingBobber or EntityType.LightningBolt);
 }

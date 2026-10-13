@@ -930,9 +930,10 @@ The rules:
   for spread placements, nearest first, and every ring position for concentric rings. It answers with vanilla's
   messages and a clickable position that suggests `/tp`. Eyes of ender fly toward the nearest structure of
   `#minecraft:eye_of_ender_located`, searched the same way, so a plugin's structure added to that tag is found by
-  them; with none, or when the player looks at an end portal frame, using an eye does nothing and keeps it. Like
-  vanilla's, a thrown eye drops as an item four times in five and breaks otherwise; eyes aren't saved. Obsidian has
-  no `/locate biome` or `/locate poi`.
+  them; with none, or when the player aims at an end portal frame within reach, using an eye does nothing and keeps
+  it. Like vanilla's, a thrown eye drops as an item four times in five and breaks otherwise, and is saved with its
+  item but not where it heads, so one loaded again flies on as it moved and breaks. Obsidian has no `/locate biome`
+  or `/locate poi`, and keeps no statistics, so throws don't count toward the eye's `minecraft:used`.
 
 ### Structure and pool element types
 

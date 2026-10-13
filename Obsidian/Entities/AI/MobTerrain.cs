@@ -163,6 +163,64 @@ internal sealed class MobTerrain(ILevel level)
     public bool HasLineOfSight(VectorD start, VectorD end)
     {
         var direction = end - start;
+        var target = (Vector)end.Floor();
+
+        foreach (var cell in CellsAlong(start, end))
+        {
+            var block = GetBlock(cell);
+            if (block == null)
+                return false;
+
+            foreach (var shape in BlockCollisionShapes.Get(block))
+            {
+                if (IntersectsSegment(shape.OffsetBy((VectorD)cell), start, direction))
+                    return false;
+            }
+
+            if (cell == target)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Like vanilla's <c>Level.clip</c> with outline shapes and no fluids, which is what a player aims at: the first
+    /// block whose outline shape the segment from <paramref name="start"/> to <paramref name="end"/> crosses, or
+    /// <c>null</c> when it crosses none before it ends or reaches an unloaded chunk.
+    /// </summary>
+    public (Vector Position, IBlock Block)? ClipOutlines(VectorD start, VectorD end)
+    {
+        var direction = end - start;
+
+        foreach (var cell in CellsAlong(start, end))
+        {
+            if (GetBlock(cell) is not IBlock block)
+                return null;
+
+            var state = block.GetHashCode();
+            var (offsetX, offsetY, offsetZ) = BlockPhysics.ShapeOffset(state, cell.X, cell.Z);
+            var corner = new VectorD(cell.X + offsetX, cell.Y + offsetY, cell.Z + offsetZ);
+
+            foreach (var box in BlockPhysics.OutlineBoxes(state))
+            {
+                var shape = new BoundingBox(
+                    corner + new VectorD(box[0], box[1], box[2]),
+                    corner + new VectorD(box[3], box[4], box[5]));
+
+                if (IntersectsSegment(shape, start, direction))
+                    return (cell, block);
+            }
+        }
+
+        return null;
+    }
+
+    // The cells the segment from start to end passes through, in order, from start's to end's: a voxel walk that
+    // skips none.
+    private static IEnumerable<Vector> CellsAlong(VectorD start, VectorD end)
+    {
+        var direction = end - start;
         var cell = (Vector)start.Floor();
         var target = (Vector)end.Floor();
         var stepX = Math.Sign(direction.X);
@@ -178,18 +236,10 @@ internal sealed class MobTerrain(ILevel level)
         var maxSteps = Math.Abs(target.X - cell.X) + Math.Abs(target.Y - cell.Y) + Math.Abs(target.Z - cell.Z) + 4;
         for (var i = 0; i < maxSteps; i++)
         {
-            var block = GetBlock(cell);
-            if (block == null)
-                return false;
-
-            foreach (var shape in BlockCollisionShapes.Get(block))
-            {
-                if (IntersectsSegment(shape.OffsetBy((VectorD)cell), start, direction))
-                    return false;
-            }
+            yield return cell;
 
             if (cell == target)
-                return true;
+                yield break;
 
             if (nextX <= nextY && nextX <= nextZ)
             {
@@ -207,11 +257,10 @@ internal sealed class MobTerrain(ILevel level)
                 nextZ += deltaZ;
             }
         }
-
-        return false;
     }
 
-    private static bool IntersectsSegment(BoundingBox box, VectorD start, VectorD direction) => RayIntersection(box, start, direction) != null;
+    private static bool IntersectsSegment(BoundingBox box, VectorD start, VectorD direction) =>
+        RayIntersection(box, start, direction) != null;
 
     internal static double? RayIntersection(BoundingBox box, VectorD start, VectorD direction)
     {
