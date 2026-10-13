@@ -120,6 +120,15 @@ public sealed class LookAtPlayerGoal(Mob mob, float range) : Goal
 {
     private IPlayer? player;
     private long endTick;
+    internal override bool ForgetEvictedEntities(HashSet<IEntity> removed)
+    {
+        if (player is null || !removed.Contains(player))
+            return false;
+
+        player = null;
+        return true;
+    }
+
     public override GoalFlags Flags => GoalFlags.Look;
     public override bool CanUse()
     {
@@ -166,6 +175,15 @@ public sealed class TemptGoal(Animal pig, Func<Obsidian.API.Inventory.ItemStack?
 {
     private IPlayer? player;
     private long cooldownEnd;
+    internal override bool ForgetEvictedEntities(HashSet<IEntity> removed)
+    {
+        if (player is null || !removed.Contains(player))
+            return false;
+
+        player = null;
+        return true;
+    }
+
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool CanUse()
     {
@@ -200,6 +218,15 @@ public sealed class FollowParentGoal(Animal pig) : NavigationGoal(pig, 1.1f)
 {
     private Animal? parent;
     private long nextPathTick;
+    internal override bool ForgetEvictedEntities(HashSet<IEntity> removed)
+    {
+        if (parent is null || !removed.Contains(parent))
+            return false;
+
+        parent = null;
+        return true;
+    }
+
     public override GoalFlags Flags => GoalFlags.None;
     public override bool CanUse()
     {
@@ -238,6 +265,15 @@ public sealed class BreedGoal(Animal pig) : NavigationGoal(pig, 1)
 {
     private Animal? mate;
     private long startTick;
+    internal override bool ForgetEvictedEntities(HashSet<IEntity> removed)
+    {
+        if (mate is null || !removed.Contains(mate))
+            return false;
+
+        mate = null;
+        return true;
+    }
+
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
     public override bool CanUse()
@@ -269,6 +305,15 @@ public sealed class NearestAttackableTargetGoal(PathfinderMob zombie, Func<IEnti
 {
     private IEntity? candidate;
     private int unseenTicks;
+    internal override bool ForgetEvictedEntities(HashSet<IEntity> removed)
+    {
+        if (candidate is null || !removed.Contains(candidate))
+            return false;
+
+        candidate = null;
+        return true;
+    }
+
     public override GoalFlags Flags => GoalFlags.Target;
     public override bool CanUse()
     {
@@ -304,6 +349,15 @@ public sealed class HurtByTargetGoal(PathfinderMob zombie) : Goal
 {
     private long handledHurtTick = -100;
     private IEntity? candidate;
+    internal override bool ForgetEvictedEntities(HashSet<IEntity> removed)
+    {
+        if (candidate is null || !removed.Contains(candidate))
+            return false;
+
+        candidate = null;
+        return true;
+    }
+
     public override GoalFlags Flags => GoalFlags.Target;
     public override bool CanUse()
     {

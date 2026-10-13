@@ -20,6 +20,10 @@ namespace Obsidian.Plugins;
 /// </remarks>
 public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
 {
+    internal PluginOwnership Ownership { get; }
+
+    public PluginContainer() => this.Ownership = new PluginOwnership(this);
+
     private PluginServiceProvider? ownServices;
     private PluginServiceProvider? scope;
 

@@ -209,20 +209,33 @@ public class Region : IRegion
         if (!keepSaved || entity is not Entity concrete || local is not Chunk { X: var x, Z: var z } chunk
             || (x, z) != (chunkX, chunkZ))
         {
-            return this.Entities.TryRemove(entry);
-        }
-
-        // Under the chunk's entity lock, so a save of the chunk finds the entity either in the level or kept.
-        using (chunk.EntityLock.EnterScope())
-        {
             if (!this.Entities.TryRemove(entry))
                 return false;
-
-            if (!chunk.EntitiesUnloaded && EntityNbt.Save(concrete) is NbtCompound saved)
-                chunk.UnspawnableEntities.Add(saved);
-
-            return true;
         }
+        else
+        {
+            // Under the chunk's entity lock, so a save finds the entity either in the level or kept.
+            using (chunk.EntityLock.EnterScope())
+            {
+                if (!this.Entities.TryRemove(entry))
+                    return false;
+
+                if (!chunk.EntitiesUnloaded && EntityNbt.Save(concrete) is NbtCompound saved)
+                    chunk.UnspawnableEntities.Add(saved);
+            }
+        }
+
+        if (entity is Mob mob)
+            mob.DetachForPluginUnload();
+
+        if (entity is Entity host)
+        {
+            host.Navigator = null;
+            host.GoalController = null;
+            host.SpawnedBy = null;
+        }
+
+        return true;
     }
 
     /// <summary>

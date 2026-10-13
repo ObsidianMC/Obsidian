@@ -704,6 +704,10 @@ public sealed partial class Server : IServer, IPluginScopedServer
             var result = await this.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(player, this, DateTimeOffset.Now));
             if (result != EventResult.Completed)
                 throw new InvalidOperationException($"Joining server-side player '{username}' failed with result {result}.");
+
+            plugin?.ThrowIfClosing();
+            if (!player.CompleteJoin())
+                throw new InvalidOperationException($"Joining server-side player '{username}' was cancelled.");
         }
         catch
         {
@@ -713,16 +717,11 @@ public sealed partial class Server : IServer, IPluginScopedServer
             }
             finally
             {
+                player.CancelJoin();
+                player.Level.TryRemovePlayer(player);
                 this.RemovePlayer(player);
             }
             throw;
-        }
-
-        // Unloading closes the plugin before removing its players, so one that joined meanwhile leaves here.
-        if (plugin is { IsClosing: true })
-        {
-            await this.RemoveServerPlayerAsync(player);
-            plugin.ThrowIfClosing();
         }
 
         return player;
@@ -784,8 +783,11 @@ public sealed partial class Server : IServer, IPluginScopedServer
     public async Task<bool> RemoveServerPlayerAsync(IPlayer player)
     {
         // Claiming the registration first means concurrent removals run the leave lifecycle only once.
-        if (player is not ServerPlayer || !this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
+        if (player is not ServerPlayer serverPlayer
+            || !this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
             return false;
+
+        serverPlayer.CancelJoin();
 
         var result = EventResult.Failed;
         try

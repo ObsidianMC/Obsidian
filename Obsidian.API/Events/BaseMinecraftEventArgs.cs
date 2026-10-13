@@ -11,7 +11,7 @@ public abstract class BaseMinecraftEventArgs : AsyncEventArgs
     /// Server this event took place in.
     /// </summary>
     /// <remarks>
-    /// A plugin's handler gets the plugin's own <see cref="IServer"/>, whose scoreboards, boss bars, recipes and server
+    /// A plugin's handler gets its own <see cref="IServer"/>, whose scoreboards, boss bars, recipes and server
     /// players are the plugin's, so that unloading it removes them. The arguments themselves are shared by every
     /// handler: what one sets, like cancelling the event, the next sees.
     /// </remarks>

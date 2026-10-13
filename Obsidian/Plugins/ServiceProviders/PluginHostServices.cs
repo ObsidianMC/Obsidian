@@ -161,14 +161,17 @@ internal sealed class PluginEventDispatcher(IEventDispatcher dispatcher, PluginC
 /// <remarks>
 /// The server hands it out in the plugin's calls too, where shared objects give the server: event arguments, command
 /// and payload contexts, and connections (<see cref="IClient.Server"/>; see <see cref="IPluginScopedServer"/>). What
-/// the server keeps for everyone, like the commands it lists (<see cref="Command.CommandHandler"/>), holds the server's
+/// the server keeps for everyone, like its listed commands (<see cref="Command.CommandHandler"/>), holds the server's
 /// instances.
 /// </remarks>
 /// <param name="server">The server.</param>
 /// <param name="plugin">The plugin.</param>
 /// <param name="services">The plugin's host services, which its command handler resolves from.</param>
-internal sealed class PluginServer(Server server, PluginContainer plugin, IServiceProvider services) : IServer
+internal sealed class PluginServer(Server server, PluginContainer plugin, IServiceProvider services)
+    : IServer, IPluginScopedServer
 {
+    IServer IPluginScopedServer.ForCurrentCall() => ((IPluginScopedServer)server).ForCurrentCall();
+
     private readonly PluginCommandHandler commandHandler = new(server.CommandHandler, plugin, services);
 
     private readonly PluginEventDispatcher eventDispatcher = new(server.EventDispatcher, plugin);

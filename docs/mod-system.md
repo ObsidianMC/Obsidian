@@ -473,6 +473,21 @@ commands the server lists keep the server's handler (`Command.CommandHandler`). 
   spawn: so they're kept in their chunk as they were saved, and spawn again once the plugin is loaded again (on the
   level's next tick) or when their chunk loads with it. The other entities a plugin spawned are gone.
 
+Ownership lasts beyond a handler's return: background work inherits a weak token for that particular load of the
+plugin, so it neither keeps collectible code alive nor becomes host work after unloading. It cannot add entities
+once that generation closes. Contexts constructed with a plugin's server still resolve through the host, giving
+each subsequent handler its own server and host handlers the host server.
+
+Entities remember the generation of their registered type when inserted. Deferred cleanup can therefore save and
+remove the old generation even if a reload has already rebound the shared type definition; the next tick restores
+that saved state for the new generation. Cleanup dismounts players, sends the passenger and removal packets, marks
+mobs removed, and drops their AI objects and host AI references without running plugin callbacks. A server player
+whose join was cancelled during unloading rolls back any level registration made by the delayed join handlers.
+
+Natural spawning and chunk restoration explicitly insert for the host. XP and explosion block-drop batches resolve
+the spawning plugin once per batch. Shared spawn and block-break APIs retain stack attribution because a plugin may
+call them, including another plugin's helper inside an ambient plugin call.
+
 Adding to an unloading plugin's dialogs, recipes, scoreboards, boss bars, generators, event handlers, commands, server
 players or entities throws `InvalidOperationException`, rather than keeping them after it unloads; one added while it
 starts unloading is removed as it throws. An entity of a plugin's type whose plugin is unloaded or unloading isn't

@@ -1,6 +1,7 @@
 using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Plugins;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
@@ -20,6 +21,8 @@ public abstract partial class AbstractLevel
 
     internal async ValueTask ExplodeAsync(Entity source, float radius, IEntity? owner = null)
     {
+        // Capture the caller once, before awaited damage callbacks, rather than walking for each block drop.
+        var spawner = PluginEntities.FindSpawner();
         var random = source is Mob mob ? mob.Random : Random.Shared;
         var terrain = new MobTerrain(this);
         var destroyed = new HashSet<Vector>();
@@ -102,7 +105,17 @@ public abstract partial class AbstractLevel
                 if (BlocksRegistry.TryGetItem(block, out var holder))
                 {
                     var item = new Obsidian.API.Inventory.ItemStack(holder, 1);
-                    SpawnEntity(new ItemEntity { Level = this, EntityId = Server.GetNextEntityId(), Position = (VectorD)position + 0.5f, Item = item });
+                    var drop = new ItemEntity
+                    {
+                        Level = this,
+                        EntityId = Server.GetNextEntityId(),
+                        Position = (VectorD)position + 0.5f,
+                        Item = item,
+                        SpawnedBy = spawner
+                    };
+
+                    if (!this.TrySpawnEntity(drop, hostOwned: true))
+                        throw new InvalidOperationException($"Could not register entity {drop.EntityId}.");
                 }
             }
         }
