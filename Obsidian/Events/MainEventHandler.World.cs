@@ -1,6 +1,11 @@
 using Obsidian.API.Events;
+using Obsidian.API.Inventory;
+using Obsidian.API.Loot;
+using Obsidian.API.Registries;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Registries;
+using Obsidian.WorldData;
 
 namespace Obsidian.Events;
 
@@ -26,6 +31,13 @@ public partial class MainEventHandler
             return;
         }
 
+        // The drops are decided from the block, its state and the held tool as they are before the block is removed.
+        // Creative players get no drops, like vanilla, where breaking doesn't call playerDestroy.
+        var tool = player.GetHeldItem() ?? ItemStack.Air;
+        var drops = player.GameMode == GameMode.Creative || world is not AbstractLevel dropLevel
+            ? []
+            : await BlockDrops.ForPlayerBreakAsync(dropLevel, block, (VectorD)location, tool, player);
+
         await world.SetBlockAsync(location, BlocksRegistry.Air, true);
         if (world is Obsidian.WorldData.AbstractLevel gameEvents)
         {
@@ -43,43 +55,37 @@ public partial class MainEventHandler
             DestroyStage = -1
         }, player.EntityId);
 
-        var droppedMaterial = block.Material;
-        if (block.UnlocalizedName.StartsWith("minecraft:infested_", StringComparison.Ordinal))
+        // Infested blocks release a silverfish unless broken with Silk Touch; that's a behaviour of the block, not of its loot.
+        if (block.UnlocalizedName.StartsWith("minecraft:infested_", StringComparison.Ordinal) && player.GameMode != GameMode.Creative)
         {
-            if (player.GameMode == GameMode.Creative)
-                return;
-            var silkTouch = player.GetHeldItem() is { } tool && Obsidian.API.Loot.EnchantmentHelper.GetEnchantments(tool).Any(enchantment =>
-                enchantment.Id == Obsidian.API.Registries.EnchantmentsRegistry.SilkTouch.Id && enchantment.Level > 0);
+            var silkTouch = EnchantmentHelper.GetLevel(tool, EnchantmentsRegistry.SilkTouch) > 0;
             if (!silkTouch)
             {
                 if (world is Obsidian.WorldData.AbstractLevel level)
                     level.EnqueueEntityAction(() => { Silverfish.SpawnFromBlock(world, location); return default; });
                 else
                     Silverfish.SpawnFromBlock(world, location);
-                return;
             }
-            if (Obsidian.WorldData.Structures.BlockStateParser.TryParse(block.UnlocalizedName.Replace("infested_", "", StringComparison.Ordinal)) is { } normal)
-                droppedMaterial = normal.Material;
         }
-        var droppedItem = ItemsRegistry.GetSingleItem(droppedMaterial);
 
-        if (droppedItem.Type == Material.Air)
-            return;
+        foreach (var stack in drops)
+            BlockDrops.SpawnDrop(world, () => Server.GetNextEntityId(), location, stack);
 
-        var item = new ItemEntity
+        // The held tool wears after its loot is decided, as vanilla's Item.mineBlock does. Creative tools don't wear, and
+        // a block with zero hardness (instant to break) doesn't cost durability.
+        if (player is Player wearer && wearer.GameMode != GameMode.Creative && !tool.IsAir &&
+            BlockPhysics.MiningHardness(block.StateId()) != 0 && BlockDrops.EffectiveTool(tool) is { DamagePerBlock: > 0 } wear)
         {
-            EntityId = Server.GetNextEntityId(),
-            Item = droppedItem,
-            Level = player.Level,
-            Position = (VectorD)location + 0.5,
-        };
-
-        player.Level.TryAddEntity(item);
-
-        var power = GetRandDropVelocity();
-        var direction = Globals.Random.NextSingle() * 6.2f;
-
-        item.SpawnEntity(new Velocity(-Math.Sin(direction) * power, 0.2f, Math.Cos(direction) * power));
+            var broke = CombatItems.HurtItem(tool, wear.DamagePerBlock);
+            var slot = wearer.CurrentHeldItemSlot;
+            wearer.Inventory.SetItem(slot, broke ? ItemStack.Air : tool);
+            wearer.SendPacket(new ContainerSetSlotPacket
+            {
+                Slot = slot,
+                StateId = wearer.Inventory.StateId++,
+                SlotData = wearer.Inventory.GetItem(slot)
+            });
+        }
     }
 
     private static float GetRandDropVelocity()

@@ -137,9 +137,14 @@ public class VanillaFluids(VanillaFluids.ScenarioFixture fixture) : IClassFixtur
     /// <summary>
     /// An empty world like the harness's: chunks from Y 0 to 31 created on first use, every chunk ticking.
     /// </summary>
-    private sealed class ScenarioWorld : IFluidLevelAccess
+    internal sealed class ScenarioWorld : IFluidLevelAccess
     {
         private readonly Dictionary<(int X, int Z), Chunk> chunks = [];
+
+        /// <summary>The blocks fluids destroyed (vanilla <c>Block.dropResources</c> callers), in order.</summary>
+        public List<(Vector Position, IBlock Block)> Destroyed { get; } = [];
+
+        public void OnBlockDestroyed(Vector position, IBlock block) => this.Destroyed.Add((position, block));
 
         public ScenarioWorld(FluidRules rules)
         {

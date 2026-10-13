@@ -19,6 +19,17 @@ public sealed record class ToolDataComponent : DataComponent
     [SetsRequiredMembers]
     internal ToolDataComponent() { }
 
+    /// <summary>
+    /// Creates a tool component from its rules, like the tool defaults vanilla generates from item components.
+    /// </summary>
+    public static ToolDataComponent Create(ImmutableArray<ToolRule> rules, float defaultMiningSpeed, int damagePerBlock, bool canDestroyBlocksInCreative = true) => new()
+    {
+        Rules = rules,
+        DefaultMiningSpeed = defaultMiningSpeed,
+        DamagePerBlock = damagePerBlock,
+        CanDestroyBlocksInCreative = canDestroyBlocksInCreative,
+    };
+
     public override void Read(INetStreamReader reader)
     {
         this.Rules = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(() => new ToolRule()

@@ -14,6 +14,25 @@ internal static class FixtureDumper
             server.MappingsPath, Path.Combine(output, $"client-entity-metadata-{server.Version}.json"));
         await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("ScreenFixtures.java"),
             server.MappingsPath, Path.Combine(output, $"client-screens-{server.Version}.json"));
+        await DumpBlockLootAsync(server, classpath, output);
+    }
+
+    // The block loot dumper is several source files, so it's compiled first (javac finds its sources through -sourcepath).
+    // The launcher loads the compiled classes with its own class loader, which avoids a signer conflict with the server's jars.
+    private static async Task DumpBlockLootAsync(VanillaServer server, string classpath, string output)
+    {
+        var classes = Path.Combine(server.Directory, "block-loot-classes");
+        if (Directory.Exists(classes))
+            Directory.Delete(classes, recursive: true);
+        Directory.CreateDirectory(classes);
+
+        await VanillaServer.RunJavacAsync(server.Directory, "-nowarn", "-d", classes, "-cp", classpath,
+            "-sourcepath", Path.GetDirectoryName(Source("BlockLootFixtures.java"))!, Source("BlockLootFixtures.java"));
+        // The vanilla loot tables the dumper reads are generated into the server's data directory.
+        await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("BlockLootLauncher.java"), classes,
+            server.MappingsPath, Source("block-loot-fixture-input.json"),
+            Path.Combine(server.GeneratedDirectory, "data", "minecraft", "loot_table", "blocks"),
+            Path.Combine(output, $"block-loot-fixtures-{server.Version}.json"));
     }
 
     public static async Task DumpClientAsync(VanillaServer server, IReadOnlyList<string> classpath, string mappings, string output)

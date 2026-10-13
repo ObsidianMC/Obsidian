@@ -7,6 +7,7 @@
   <Project Path="Obsidian.ConsoleApp/Obsidian.ConsoleApp.csproj" />
   <Project Path="Obsidian.Nbt/Nbt/Obsidian.Nbt.csproj" />
   <Project Path="Obsidian.SourceGenerators/Obsidian.SourceGenerators.csproj" />
+  <Project Path="Obsidian.SourceGenerators.Tests/Obsidian.SourceGenerators.Tests.csproj" />
   <Project Path="Obsidian.Tests/Obsidian.Tests.csproj" />
   <Project Path="Obsidian/Obsidian.csproj" />
   <Project Path="Obsidian.WorldgenBench/Obsidian.WorldgenBench.csproj" />

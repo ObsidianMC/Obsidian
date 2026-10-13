@@ -69,6 +69,12 @@ public interface ILevel : IAsyncDisposable
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block);
 
     public ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate);
+
+    /// <summary>
+    /// Vanilla <c>destroyBlock</c>: destroys the block at <paramref name="location"/>, dropping its loot when <paramref name="drop"/>
+    /// is set. Returns false for air.
+    /// </summary>
+    public ValueTask<bool> DestroyBlockAsync(Vector location, IEntity? cause, bool drop);
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate);
     public bool TryRemovePlayer(IPlayer player);
     public ValueTask<bool> HandleBlockUpdateAsync(IBlockUpdate update);

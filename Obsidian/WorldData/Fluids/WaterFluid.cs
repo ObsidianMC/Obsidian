@@ -31,9 +31,9 @@ internal sealed class WaterFluid : FlowingFluid
     protected override bool CanConvertToSource(FluidLevel level) => level.Rules.WaterSourceConversion;
 
     /// <remarks>
-    /// Vanilla drops the destroyed block's loot here; Obsidian doesn't spawn block drops for fluids yet.
+    /// Vanilla <c>WaterFluid.beforeDestroyingBlock</c> calls <c>Block.dropResources</c>, so water that flows into a block
+    /// drops its loot. Lava only fizzes (see <see cref="LavaFluid"/>).
     /// </remarks>
-    protected override void BeforeDestroyingBlock(FluidLevel level, Vector position, IBlock block)
-    {
-    }
+    protected override void BeforeDestroyingBlock(FluidLevel level, Vector position, IBlock block) =>
+        level.DropDestroyedBlock(position, block);
 }

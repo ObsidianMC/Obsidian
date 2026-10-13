@@ -21,6 +21,8 @@ internal sealed class LevelFluids : IFluidLevelAccess
     private readonly Dictionary<long, Chunk> chunks = [];
     private readonly Lock sync = new();
     private readonly FluidLevel fluidLevel;
+    private readonly List<DestroyedBlock> destroyedBlocks = [];
+    private readonly List<RemovedContainer> removedContainers = [];
 
     public LevelFluids(AbstractLevel level)
     {
@@ -129,14 +131,68 @@ internal sealed class LevelFluids : IFluidLevelAccess
 
         chunk.SetBlock(position.X, position.Y, position.Z, block);
 
-        // Generated block entity data doesn't carry over to another block, like AbstractLevel.SetBlockUntrackedAsync.
+        // Generated block entity data doesn't carry over to another block, like AbstractLevel.SetBlockUntrackedAsync. A removed
+        // container spills its contents, queued for the level's tick (see BlockDrops.SpillContainer).
         if (chunk.GetBlockEntity(position.X, position.Y, position.Z) is DataBlockEntity data && data.Id != block.BlockEntityType())
+        {
+            this.removedContainers.Add(new RemovedContainer(position, data));
             chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
+        }
 
         this.level.BroadcastBlockChange(block, position);
         this.level.Portals.OnBlockChanged(position);
         return true;
     }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Keeps the block and a snapshot of its block entity, because replacing the block removes the entity.
+    /// <see cref="AbstractLevel"/> spawns the drops after the fluid tick.
+    /// </remarks>
+    public void OnBlockDestroyed(Vector position, IBlock block)
+    {
+        lock (this.sync)
+        {
+            var blockEntity = this.chunks.TryGetValue(FluidTickScheduler.ChunkKey(position), out var chunk)
+                ? chunk.GetBlockEntity((int)position.X, (int)position.Y, (int)position.Z)
+                : null;
+            this.destroyedBlocks.Add(new DestroyedBlock(position, block, blockEntity));
+        }
+    }
+
+    /// <summary>
+    /// The blocks fluids and lost supports destroyed since the last call, in the order they were destroyed.
+    /// </summary>
+    public List<DestroyedBlock> TakeDestroyedBlocks()
+    {
+        lock (this.sync)
+        {
+            var taken = this.destroyedBlocks.ToList();
+            this.destroyedBlocks.Clear();
+            return taken;
+        }
+    }
+
+    /// <summary>
+    /// The containers fluids and other replacements removed since the last call, with their block entities.
+    /// </summary>
+    public List<RemovedContainer> TakeRemovedContainers()
+    {
+        lock (this.sync)
+        {
+            var taken = this.removedContainers.ToList();
+            this.removedContainers.Clear();
+            return taken;
+        }
+    }
+
+    /// <summary>A container block entity removed by a fluid, with its contents still in it.</summary>
+    public readonly record struct RemovedContainer(Vector Position, IBlockEntity BlockEntity);
+
+    /// <summary>
+    /// A block destroyed by a fluid or a lost support, with its block entity as it was when destroyed.
+    /// </summary>
+    public readonly record struct DestroyedBlock(Vector Position, IBlock Block, IBlockEntity? BlockEntity);
 
     /// <inheritdoc/>
     public void LevelEvent(int type, Vector position, int data) => this.level.BroadcastLevelEvent(type, position, data);
@@ -145,6 +201,16 @@ internal sealed class LevelFluids : IFluidLevelAccess
     /// <remarks>
     /// Like vanilla, ticks for chunks that aren't loaded are dropped.
     /// </remarks>
+    /// <summary>
+    /// Schedules the fluid tick a shape update asks for (see <see cref="FluidLevel.ScheduleShapeTick"/>).
+    /// </summary>
+    public void ScheduleShapeTick(Vector position)
+    {
+        lock (this.sync)
+            this.fluidLevel.ScheduleShapeTick(position);
+    }
+
+    /// <inheritdoc/>
     public void ScheduleFluidTick(Vector position, FluidKind fluid, int delay)
     {
         if (this.chunks.TryGetValue(FluidTickScheduler.ChunkKey(position), out var chunk))

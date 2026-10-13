@@ -55,12 +55,28 @@ internal sealed record VanillaServer(string Version, string Directory, IReadOnly
     }
 
     /// <summary>Runs <c>java</c> (from <c>JAVA_HOME</c> when set) in <paramref name="workingDirectory"/>.</summary>
-    public static async Task RunJavaAsync(string workingDirectory, params string[] arguments)
+    public static Task RunJavaAsync(string workingDirectory, params string[] arguments) =>
+        RunToolAsync(JavaPath, "java", workingDirectory, arguments);
+
+    /// <summary>Runs <c>javac</c> (from <c>JAVA_HOME</c> when set) in <paramref name="workingDirectory"/>.</summary>
+    public static Task RunJavacAsync(string workingDirectory, params string[] arguments) =>
+        RunToolAsync(JavacPath, "javac", workingDirectory, arguments);
+
+    private static async Task RunToolAsync(string path, string name, string workingDirectory, string[] arguments)
     {
-        using var process = StartJava(new ProcessStartInfo(JavaPath, arguments) { WorkingDirectory = workingDirectory });
+        using var process = StartJava(new ProcessStartInfo(path, arguments) { WorkingDirectory = workingDirectory });
         await process.WaitForExitAsync();
         if (process.ExitCode != 0)
-            throw new InvalidOperationException($"java {string.Join(' ', arguments)} exited with code {process.ExitCode}.");
+            throw new InvalidOperationException($"{name} {string.Join(' ', arguments)} exited with code {process.ExitCode}.");
+    }
+
+    private static string JavacPath
+    {
+        get
+        {
+            var javaHome = Environment.GetEnvironmentVariable("JAVA_HOME");
+            return string.IsNullOrEmpty(javaHome) ? "javac" : Path.Combine(javaHome, "bin", "javac");
+        }
     }
 
     private static string JavaPath

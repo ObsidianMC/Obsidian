@@ -146,6 +146,12 @@ public abstract partial class AbstractLevel : ILevel
 
     internal void EnqueueEntityAction(Func<ValueTask> action) => entityActions.Enqueue(action);
 
+    /// <summary>
+    /// Records a block whose loot needs data that isn't modelled yet. Its drops are left out, and the log says why.
+    /// </summary>
+    internal void ReportUnsupportedLoot(IBlock block, Exception exception) =>
+        this.Logger.LogError(exception, "No drops for {Block} at this position: its loot needs unsupported data", block.UnlocalizedName);
+
     internal void QueueChunkPopulation(IChunk chunk) => EnqueueEntityAction(() =>
     {
         if (ReferenceEquals(GetLoadedChunk(chunk.X, chunk.Z), chunk))
@@ -366,7 +372,10 @@ public abstract partial class AbstractLevel : ILevel
     public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) =>
         SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 
-    public async ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false)
+    public ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false) =>
+        SetBlockUntrackedAsync(x, y, z, block, doBlockUpdate, ShapeUpdateLimit);
+
+    internal async ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate, int updateLimit)
     {
         if (this.IsOutsideBuildHeight(y))
             return;
@@ -380,16 +389,25 @@ public abstract partial class AbstractLevel : ILevel
         if (c is null)
             return;
 
+        var previous = c.GetBlock(x, y, z);
         c.SetBlock(x, y, z, block);
 
-        // Generated block entity data (e.g. a dungeon chest's loot) doesn't carry over to another block.
+        // Generated block entity data (e.g. a dungeon chest's loot) doesn't carry over to another block. A removed container
+        // spills its contents, as vanilla's preRemoveSideEffects does.
         if (c.GetBlockEntity(x, y, z) is DataBlockEntity data && data.Id != block.BlockEntityType())
+        {
+            BlockDrops.SpillContainer(this, () => Server.GetNextEntityId(), new Vector(x, y, z), data);
             c.RemoveBlockEntity(x, y, z);
+        }
 
         if (doBlockUpdate)
         {
             this.Fluids.OnBlockChanged(new Vector(x, y, z), block);
             this.Portals.OnBlockChanged(new Vector(x, y, z));
+
+            // Vanilla updates the neighbors' shapes once the block has changed; setting the same state changes nothing.
+            if (!previous.IsSameState(block))
+                await this.UpdateNeighbourShapesAsync(new Vector(x, y, z), updateLimit);
         }
     }
 
@@ -529,6 +547,7 @@ public abstract partial class AbstractLevel : ILevel
 
         // Like vanilla, fluid ticks run before entities tick.
         this.Fluids.Tick();
+        await BlockDrops.SpawnDestroyedByFluidsAsync(this, () => Server.GetNextEntityId());
 
         await this.Portals.TickAsync();
 
