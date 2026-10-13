@@ -1432,7 +1432,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         [LoggerMessage(Level = LogLevel.Error, Message = "Disposing plugin {PluginName} failed")]
         public static partial void DisposeFailed(ILogger logger, Exception exception, string pluginName);
 
-        [LoggerMessage(Level = LogLevel.Error, Message = "Failed to remove something {PluginName} added to the server")]
+        [LoggerMessage(Level = LogLevel.Error, Message = "Removing what {PluginName} added to the server failed")]
         public static partial void UndoFailed(ILogger logger, Exception exception, string pluginName);
 
         [LoggerMessage(Level = LogLevel.Warning,

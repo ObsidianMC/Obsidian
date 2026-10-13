@@ -68,7 +68,8 @@ public sealed class DialogBuilder
     }
 
     /// <summary>
-    /// Builds the dialog and registers it with <see cref="DialogRegistry.Register(string, DialogElement, bool, bool)"/>.
+    /// Builds the dialog and registers it with
+    /// <see cref="DialogRegistry.Register(string, DialogElement, bool, bool)"/>.
     /// </summary>
     /// <remarks>
     /// Register before players connect: players playing get changed dialogs when plugins load or unload. A plugin's
