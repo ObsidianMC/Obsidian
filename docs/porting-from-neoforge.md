@@ -1,4 +1,4 @@
-# Porting from NeoForge
+# Porting from NeoForge and Forge
 
 Obsidian's mod system is close to NeoForge's (see [mod-system.md](mod-system.md)), and a mod's data in vanilla's
 formats works on Obsidian as it is. Obsidian.Porting converts what NeoForge reads differently, so a mod's data and
@@ -17,6 +17,7 @@ with an error when it could write nothing:
 | --- | --- |
 | `META-INF/neoforge.mods.toml` (or `mods.toml`) | `obsidian.mod.json` |
 | `data/<ns>/neoforge/biome_modifier/*.json` | `data/<ns>/biome_modifier/*.json`, Obsidian's biome modifiers |
+| `data/<ns>/forge/biome_modifier/*.json` | Same conversion for Forge and early NeoForge mods |
 | Other `data/` and `assets/` files | Copied unchanged |
 | Data only NeoForge reads, Java code, everything else | Left out and reported |
 
@@ -26,7 +27,7 @@ with an error when it could write nothing:
 `modId`, `version`, `displayName`, `authors` (split at commas), `description` and `displayURL` (as `projectUrl`).
 A version of `${file.jarVersion}` takes the jar's `Implementation-Version`; another placeholder is reported and
 written as `1.0.0`. Its `[[dependencies.<modId>]]` keep their `modId`, `type` (or the older `mandatory`),
-`versionRange`, `ordering` and `side`, except those on `neoforge` and `minecraft`, which Obsidian is. `assembly`,
+`versionRange`, `ordering` and `side`, except those on `neoforge`, `forge` and `minecraft`, which Obsidian is. `assembly`,
 which NeoForge doesn't have, is the mod id in Pascal case: make it the C# plugin's assembly. Other fields, like
 `license`, `logoFile` or `[[mixins]]`, are reported.
 
@@ -46,6 +47,22 @@ Every NeoForge biome modifier type converts to an Obsidian modifier (see
 | `neoforge:remove_spawn_costs` (`entity_types`) | `remove.spawn_costs` |
 | `neoforge:none` | Left out: it does nothing |
 
+Forge-era types use the same converter and fields:
+
+| Forge | Equivalent NeoForge type |
+| --- | --- |
+| `forge:add_features` (`features`, `step`) | `neoforge:add_features` |
+| `forge:remove_features` (`features`, optional `steps`) | `neoforge:remove_features` |
+| `forge:add_spawns` (`spawners`, with `minCount`/`maxCount`) | `neoforge:add_spawns` |
+| `forge:remove_spawns` (`entity_types`) | `neoforge:remove_spawns` |
+| `forge:none` | `neoforge:none` |
+| `forge:any`, `forge:and`, `forge:or`, `forge:not` | Corresponding `neoforge:` holder sets, with the limits below |
+
+`remove_features.steps` accepts one step, a list, or no value for every step. Spawners may be a single object
+or a list; their older `minCount`/`maxCount` fields are preserved. `META-INF/mods.toml` and the older dependency
+`mandatory` flag are already supported. Resource IDs and tags keep their namespaces. Unknown modifier and holder
+set types are reported, as are Forge's own data folders and load conditions with no Obsidian equivalent.
+
 `biomes` becomes Obsidian's `biomes` and `exclude`. Identifiers, tags and lists stay as they are; `neoforge:or`
 becomes a list, each entry once, `neoforge:and` of one set and `neoforge:not`s becomes that set less the others, and
 `neoforge:not` inside an `and` becomes `exclude`. An `or` of `not`s is every biome less what they all exclude and
@@ -64,7 +81,8 @@ the report notes each one: list every biome the costs should change in to match 
 NeoForge applies every modifier's additions, in identifier order, before any removal, like Obsidian does, so
 consecutive modifiers (in identifier order, in one namespace) with the same biomes merge into one file, named after
 the first: what they generate stays the same, features keeping their order in each step. Modifiers with
-`neoforge:conditions` are left out and reported, since Obsidian doesn't read load conditions.
+`neoforge:conditions`, `forge:conditions` or legacy `conditions` are left out and reported, since Obsidian doesn't
+read load conditions.
 
 ## What's left out
 
@@ -72,8 +90,9 @@ the first: what they generate stays the same, features keeping their order in ea
   blocks, items, entities, menus, events, commands and network payloads are written again as an Obsidian plugin (see
   [plugin-content.md](plugin-content.md)). The report counts the `.class` files.
 - NeoForge's own data: data maps (`data_maps/`), global loot modifiers (`loot_modifiers/`), structure modifiers
-  (`neoforge/structure_modifier/`) and anything else under `data/<ns>/neoforge/` or `data/neoforge/`.
-- Data files with `neoforge:conditions`.
+  (`neoforge/structure_modifier/`) and anything else under `data/<ns>/neoforge/` or `data/neoforge/`, including
+  their Forge counterparts under `data/<ns>/forge/` or `data/forge/`.
+- Data files with `neoforge:conditions`, `forge:conditions` or legacy `conditions`.
 - Everything outside `data/` and `assets/`: `pack.mcmeta`, mixin configs, access transformers, logos.
 
 Tags need nothing: Obsidian reads NeoForge's `remove` lists and the shared `c:` tags. Copied files Obsidian doesn't

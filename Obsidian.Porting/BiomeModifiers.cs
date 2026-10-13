@@ -19,6 +19,9 @@ public static class BiomeModifiers
     /// </summary>
     public const string NeoForgeFolder = "neoforge/biome_modifier/";
 
+    /// <summary>Where Forge and early NeoForge biome modifiers live under <c>data/&lt;ns&gt;/</c>.</summary>
+    public const string ForgeFolder = "forge/biome_modifier/";
+
     // Vanilla's decoration steps, in order, as both formats name them.
     internal static readonly string[] Steps =
     [
@@ -73,7 +76,7 @@ public static class BiomeModifiers
 
                 if (Convert(root) is not Modifier modifier)
                 {
-                    report.Skip(path, "a neoforge:none modifier does nothing, so it was left out");
+                    report.Skip(path, $"a {root["type"]} modifier does nothing, so it was left out");
                     continue;
                 }
 
@@ -130,10 +133,10 @@ public static class BiomeModifiers
     /// <exception cref="UnsupportedException">It can't be converted; the message says why.</exception>
     internal static Modifier? Convert(JsonObject root)
     {
-        if (root.ContainsKey("neoforge:conditions"))
-            throw new UnsupportedException("it has NeoForge load conditions, which Obsidian doesn't read");
+        if (HasConditions(root))
+            throw new UnsupportedException("it has Forge/NeoForge load conditions, which Obsidian doesn't read");
 
-        var type = String(root, "type");
+        var type = NormalizeType(String(root, "type"));
 
         if (type == "neoforge:none")
             return null;
@@ -198,6 +201,16 @@ public static class BiomeModifiers
         return modifier;
     }
 
+    // The Forge-era built-ins use the same fields, including steps and minCount/maxCount in spawners.
+    // Normalize only type discriminators: resource identifiers and tags must keep their original namespace.
+    internal static string NormalizeType(string type) => type.StartsWith("forge:", StringComparison.Ordinal)
+        ? "neoforge:" + type["forge:".Length..]
+        : type;
+
+    internal static bool HasConditions(JsonObject root) => root.ContainsKey("neoforge:conditions")
+        || root.ContainsKey("forge:conditions")
+        || root.ContainsKey("conditions");
+
     // The steps remove_features removes from: "steps", one or a list, or every step.
     private static IEnumerable<string> RemovedSteps(JsonObject root) => root["steps"] switch
     {
@@ -255,12 +268,12 @@ public static class BiomeModifiers
             ? text
             : throw new UnsupportedException($"its '{field}' isn't a string");
 
-    // data/<ns>/neoforge/biome_modifier/<name>: the namespace and the name, with its extension.
+    // data/<ns>/{neoforge,forge}/biome_modifier/<name>: preserve nested paths and the extension.
     private static (string Namespace, string Name) Split(string path)
     {
-        var parts = path.Split('/', 3);
+        var parts = path.Split('/', 5);
 
-        return (parts[1], parts[2][NeoForgeFolder.Length..]);
+        return (parts[1], parts[4]);
     }
 
     private static string Identifier(string path)

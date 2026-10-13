@@ -34,8 +34,9 @@ internal sealed record HolderSet(bool All, List<JsonNode> Entries, List<JsonNode
 
             case JsonObject set when set["type"] is JsonValue type
                 && type.TryGetValue<string>(out var name)
-                && name.StartsWith("neoforge:", StringComparison.Ordinal):
-                return name switch
+                && (name.StartsWith("neoforge:", StringComparison.Ordinal)
+                    || name.StartsWith("forge:", StringComparison.Ordinal)):
+                return BiomeModifiers.NormalizeType(name) switch
                 {
                     "neoforge:any" => new HolderSet(true, [], []),
                     "neoforge:or" => Union(Values(set)),

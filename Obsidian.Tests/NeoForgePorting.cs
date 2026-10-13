@@ -268,6 +268,57 @@ public sealed class NeoForgePorting
         BiomeModifierData.Read(JsonDocument.Parse(output[OutputPath]).RootElement);
     }
 
+    [Fact]
+    public void ForgeEraMod_UsesTheSharedModifierAndMetadataConverters()
+    {
+        foreach (var row in Modifiers)
+        {
+            var json = (string)row[1];
+            if (json.Contains("spawn_costs") || json.Contains("carvers"))
+                continue;
+
+            var path = "data/test/forge/biome_modifier/nested/modifier.json";
+            var (output, report) = ModPorter.Port(new Dictionary<string, byte[]>
+            {
+                [path] = Encoding.UTF8.GetBytes(json.Replace("neoforge:", "forge:"))
+            });
+            var destination = "data/test/biome_modifier/nested/modifier.json";
+
+            if (row[2] is string expected)
+            {
+                Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), JsonNode.Parse(output[destination])));
+                BiomeModifierData.Read(JsonDocument.Parse(output[destination]).RootElement);
+            }
+            else
+            {
+                Assert.False(output.ContainsKey(destination));
+                Assert.Contains(report.NotConverted, entry => entry.Path == path);
+            }
+
+            Assert.False(output.ContainsKey(path));
+        }
+
+        var (metadata, _) = ModPorter.Port(new Dictionary<string, byte[]>
+        {
+            ["META-INF/mods.toml"] = Encoding.UTF8.GetBytes("""
+                [[mods]]
+                modId = "legacy"
+                version = "1.0.0"
+                [[dependencies.legacy]]
+                modId = "forge"
+                mandatory = true
+                [[dependencies.legacy]]
+                modId = "library"
+                mandatory = false
+                """)
+        });
+        var info = PluginMetadata.Parse(metadata["obsidian.mod.json"]).ToPluginInfo();
+        Assert.Equal("legacy", info.Id);
+        var dependency = Assert.Single(info.Dependencies);
+        Assert.Equal("library", dependency.Id);
+        Assert.Equal(PluginDependencyType.Optional, dependency.Type);
+    }
+
     [Theory]
     [InlineData("\\u00e9", "é")]
     [InlineData("\\U0001F600", "😀")]

@@ -157,13 +157,14 @@ public static class ModPorter
         .Select(line => line["Implementation-Version:".Length..].Trim())
         .FirstOrDefault();
 
-    // data/<ns>/neoforge/biome_modifier/<path>.json
+    // data/<ns>/{neoforge,forge}/biome_modifier/<path>.json
     private static bool IsBiomeModifier(string path)
     {
         var parts = path.Split('/', 3);
 
         return parts is ["data", _, var rest]
-            && rest.StartsWith(BiomeModifiers.NeoForgeFolder, StringComparison.Ordinal)
+            && (rest.StartsWith(BiomeModifiers.NeoForgeFolder, StringComparison.Ordinal)
+                || rest.StartsWith(BiomeModifiers.ForgeFolder, StringComparison.Ordinal))
             && path.EndsWith(".json", StringComparison.Ordinal);
     }
 
@@ -173,7 +174,7 @@ public static class ModPorter
         if (path.Split('/') is not ["data", var ns, var folder, var subfolder, ..])
             return null;
 
-        if (ns == "neoforge" || folder == "loot_modifiers")
+        if (ns is "neoforge" or "forge" || folder == "loot_modifiers")
         {
             return folder switch
             {
@@ -186,7 +187,7 @@ public static class ModPorter
         if (folder == "data_maps")
             return "NeoForge's data maps have no Obsidian equivalent";
 
-        if (folder != "neoforge")
+        if (folder is not ("neoforge" or "forge"))
             return null;
 
         return subfolder == "structure_modifier"
@@ -203,7 +204,7 @@ public static class ModPorter
         try
         {
             return JsonNode.Parse(Utf8(data), documentOptions: documentOptions) is JsonObject root
-                && root.ContainsKey("neoforge:conditions");
+                && BiomeModifiers.HasConditions(root);
         }
         catch (JsonException)
         {
