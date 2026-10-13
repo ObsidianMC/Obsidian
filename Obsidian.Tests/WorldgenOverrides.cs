@@ -134,6 +134,36 @@ public sealed class WorldgenOverrides : IDisposable
         Assert.Contains(
             PlacedFeatures.All["minecraft:ore_coal_upper"],
             features.BiomeFeatures["minecraft:plains"].SelectMany(step => step));
+
+        // What places a feature by identifier, like the pale oak's moss decorator, finds the override too.
+        Assert.Same(placed.Feature, features.FindConfigured("minecraft:ore_diamond_small"));
+        Assert.Same(
+            ConfiguredFeatures.All["minecraft:pale_moss_patch"],
+            features.FindConfigured("minecraft:pale_moss_patch"));
+    }
+
+    [Fact(DisplayName = "The noises the surface builder reads by name follow overrides")]
+    public void SurfaceNoisesFollowOverrides()
+    {
+        var logger = new PluginFeatureFiles.ListLogger();
+        var file = PluginNoise.Parse(
+            PluginNoise.Noise,
+            "minecraft:badlands_pillar",
+            "test",
+            """{ "firstOctave": -3, "amplitudes": [1] }"""u8);
+
+        var noise = PluginNoise.Build([file], [], logger);
+        Assert.Empty(logger.Messages);
+
+        // No vanilla file names it, but the overworld is read at runtime to take it.
+        var overworld = PluginDimensions.ReadVanilla("minecraft:overworld", noise)!.Dimension;
+        var pillar = new RandomState(overworld.Settings, 1234, overworld.Noises)
+            .GetOrCreateNoise("minecraft:badlands_pillar");
+        var vanilla = new RandomState(overworld.Settings, 1234).GetOrCreateNoise("minecraft:badlands_pillar");
+
+        Assert.Equal(-3, pillar.FirstOctave);
+        Assert.Equal(vanilla.Key, pillar.Key);
+        Assert.NotEqual(vanilla.FirstOctave, pillar.FirstOctave);
     }
 
     [Fact(DisplayName = "An overridden vanilla synced entry is sent with its data, and by name once not overridden")]

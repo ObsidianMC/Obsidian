@@ -72,6 +72,13 @@ internal static class LevelStemData
         var (settingsId, settings) = NoiseSettings(CodecJson.Required(generator, "generator", "settings"));
         entries?.Add(settings);
 
+        // The noises the surface builder reads by name are read too, as the dimension keeps the files' ones.
+        foreach (var name in SurfaceBuilder.NamedNoises)
+        {
+            if (noise.Noises.TryGetValue(name, out var named))
+                entries?.Add(named);
+        }
+
         var (createSource, possibleBiomes) = BiomeSource(
             CodecJson.Required(generator, "generator", "biome_source"),
             "generator.biome_source",
@@ -90,7 +97,8 @@ internal static class LevelStemData
             settings,
             createSource,
             possibleBiomes,
-            [.. plugins]);
+            [.. plugins],
+            noise.Noises);
 
         // Noise settings by identifier, vanilla's or a plugin's, or defined inline like vanilla's registry file codec
         // allows: read like a plugin's noise_settings file, whose density functions may be named or inline too.

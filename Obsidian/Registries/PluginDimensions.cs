@@ -174,7 +174,8 @@ internal static partial class PluginDimensions
 
     /// <summary>
     /// Reads one of vanilla's dimensions from vanilla's stem at runtime when a file overrides the noise settings or
-    /// parameter list it names; otherwise its compiled dimension stays, and this is null.
+    /// parameter list it names, or a noise its surface builder reads by name; otherwise its compiled dimension stays,
+    /// and this is null.
     /// </summary>
     /// <param name="identifier">One of vanilla's dimensions, like <c>minecraft:overworld</c>.</param>
     /// <param name="noise">The noise entries files define.</param>
@@ -184,8 +185,11 @@ internal static partial class PluginDimensions
         var (stem, parameterList) = vanillaStems[identifier];
         var compiled = MojangDimension.Vanilla.First(dimension => dimension.Identifier == identifier);
 
+        // The surface builder's named noises aren't in vanilla's files, so overriding one doesn't read the noise
+        // settings again: the dimension is read at runtime to take the files' noises.
         var overridden = noise.NoiseSettings.ContainsKey(compiled.NoiseSettings!)
-            || parameterList is not null && noise.ParameterLists.ContainsKey(parameterList);
+            || parameterList is not null && noise.ParameterLists.ContainsKey(parameterList)
+            || SurfaceBuilder.NamedNoises.Any(noise.Noises.ContainsKey);
 
         return overridden
             ? Parse(identifier, $"vanilla's {identifier}", Encoding.UTF8.GetBytes(stem), noise)

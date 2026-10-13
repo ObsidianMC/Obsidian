@@ -1133,4 +1133,46 @@ internal sealed record WorldgenFeatureSet(
     /// </summary>
     public ImmutableArray<PluginContainer> Plugins { get; } =
         [.. Owners.Values.SelectMany(owners => owners).Distinct()];
+
+    /// <summary>
+    /// Finds a configured feature by identifier, as vanilla's registry holds it: a plugin's or data pack's, an
+    /// override of vanilla's, a vanilla feature read again around an override, or else vanilla's compiled one.
+    /// </summary>
+    /// <returns>The feature, or null when there's none of that identifier.</returns>
+    public ConfiguredFeatureBase? FindConfigured(string identifier) =>
+        this.ConfiguredFeatures.GetValueOrDefault(identifier)
+        ?? global::Obsidian.Registries.ConfiguredFeatures.All.GetValueOrDefault(identifier);
+
+    /// <summary>
+    /// Places a configured feature found by identifier (see <see cref="FindConfigured"/>), for what places a feature
+    /// by name outside a biome's features, like the pale oak's moss decorator. Vanilla looks these up in its
+    /// registry by key when they're placed, so files overriding them apply. A feature made of plugins' types is a
+    /// call into those plugins, and isn't placed while one unloads.
+    /// </summary>
+    /// <returns>Whether the feature was found and placed something.</returns>
+    /// <exception cref="PluginGenerationException">Placing a feature made of plugins' types failed.</exception>
+    public bool PlaceConfigured(string identifier, FeatureContext context)
+    {
+        if (this.FindConfigured(identifier) is not ConfiguredFeatureBase feature)
+            return false;
+
+        var owners = this.EntryOwners.GetValueOrDefault(feature, []);
+        if (!GeneratorCalls.TryEnter(owners, out var calls))
+            return false;
+
+        using (calls)
+        {
+            try
+            {
+                return feature.Place(context);
+            }
+            catch (Exception exception) when (!owners.IsEmpty && exception is not OutOfMemoryException)
+            {
+                throw new PluginGenerationException(
+                    owners,
+                    $"Failed to place configured feature '{identifier}'.",
+                    exception);
+            }
+        }
+    }
 }

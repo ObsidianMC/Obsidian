@@ -35,7 +35,8 @@ public sealed class PaleMossDecorator : TreeDecorator
 
         if (random.NextFloat() < this.GroundProbability)
         {
-            ConfiguredFeatures.Vegetation.PaleMossPatch.Place(new FeatureContext
+            // By identifier, like vanilla's registry lookup, so a file overriding the patch applies.
+            PluginFeatures.Current.PlaceConfigured("minecraft:pale_moss_patch", new FeatureContext
             {
                 Level = context.Level,
                 Origin = lowest + Vector.Up,

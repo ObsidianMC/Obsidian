@@ -20,6 +20,23 @@ internal sealed class SurfaceBuilder
 {
     private const int WayBelowMinY = -32512;
 
+    /// <summary>
+    /// The noises the surface builder reads by identifier, through the dimension's noises (see
+    /// <see cref="RandomState.GetOrCreateNoise(string)"/>), so that files overriding them apply like in vanilla.
+    /// </summary>
+    public static ImmutableArray<string> NamedNoises { get; } =
+    [
+        "minecraft:clay_bands_offset",
+        "minecraft:surface",
+        "minecraft:surface_secondary",
+        "minecraft:badlands_pillar",
+        "minecraft:badlands_pillar_roof",
+        "minecraft:badlands_surface",
+        "minecraft:iceberg_pillar",
+        "minecraft:iceberg_pillar_roof",
+        "minecraft:iceberg_surface"
+    ];
+
     private readonly RandomState randomState;
     private readonly IBiomeSource biomeSource;
     private readonly IBlock defaultBlock;
