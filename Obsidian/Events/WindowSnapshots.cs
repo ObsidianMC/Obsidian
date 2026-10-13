@@ -4,12 +4,12 @@ namespace Obsidian.Events;
 
 /// <summary>
 /// What a player's open window showed, captured inside its lock to be sent after it: the packets, the window's state
-/// they show (see <see cref="WindowState"/>) and the order it was captured in among the player's snapshots.
+/// they show (see <see cref="ClickWindowState"/>) and the order it was captured in among the player's snapshots.
 /// </summary>
 internal sealed record WindowSnapshot(
     IPlayer Player,
     long Sequence,
-    WindowState State,
+    ClickWindowState State,
     IReadOnlyList<IClientboundPacket> Packets);
 
 /// <summary>

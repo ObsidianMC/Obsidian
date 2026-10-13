@@ -596,7 +596,7 @@ public sealed class MenuClicks
         Assert.Same(changed.Packets[0], client.SentPackets.Last());
 
         WindowSnapshot Snapshot(long sequence) =>
-            new(player, sequence, WindowState.Of(player), [new SetPlayerInventoryPacket { Slot = 0, Contents = null }]);
+            new(player, sequence, ClickWindowState.Of(player), [new SetPlayerInventoryPacket { Slot = 0, Contents = null }]);
     }
 
     private static async Task<T> OpenAsync<T>(Obsidian.Entities.Player player, T container) where T : BaseContainer

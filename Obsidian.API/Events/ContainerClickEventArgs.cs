@@ -81,7 +81,7 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     /// <summary>
     /// What the player's window showed when the click arrived: the server applies the click only if it's still current.
     /// </summary>
-    internal WindowState ArrivalState { get; private set; }
+    internal ClickWindowState ArrivalState { get; private set; }
 
     /// <summary>
     /// The changes plugins registered with <see cref="ApplyWithClick"/>, in order.
@@ -124,7 +124,7 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     /// </param>
     internal void Arrive(Func<ItemStack, ItemStack> copy)
     {
-        this.ArrivalState = WindowState.Of(this.Player);
+        this.ArrivalState = ClickWindowState.Of(this.Player);
         this.arrivalItem = this.SlotItem is ItemStack item ? copy(item) : null;
         this.copy = copy;
         this.arrived = true;

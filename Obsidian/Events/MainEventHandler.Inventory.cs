@@ -838,7 +838,7 @@ public partial class MainEventHandler
         var sync = new WindowSync();
 
         // Taken before the contents, so that a change made while they're read leaves it behind.
-        var state = WindowState.Of(player);
+        var state = ClickWindowState.Of(player);
         var packets = new List<IClientboundPacket>
         {
             WindowContents(player, args.ContainerId, args.StateId + 1)
@@ -869,7 +869,7 @@ public partial class MainEventHandler
                 continue;
             }
 
-            var viewerState = WindowState.Of(viewer);
+            var viewerState = ClickWindowState.Of(viewer);
 
             sync.Add(viewer, viewerState, [WindowContents(viewer, viewer.CurrentContainerId, 0)]);
         }
@@ -927,7 +927,7 @@ public partial class MainEventHandler
         private readonly List<WindowSnapshot> snapshots = [];
 
         // Numbers the viewer's snapshot as it's captured, so that it's never sent after a newer one.
-        public void Add(IPlayer viewer, WindowState state, IReadOnlyList<IClientboundPacket> packets)
+        public void Add(IPlayer viewer, ClickWindowState state, IReadOnlyList<IClientboundPacket> packets)
         {
             var sequence = viewer is Player { WindowSnapshots: WindowSnapshots order } ? order.Next() : 0;
 

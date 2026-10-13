@@ -11,7 +11,7 @@ namespace Obsidian.API;
 /// Take it before reading the contents it describes: contents read afterwards are then at least as new, and a change
 /// made while they were read leaves the state behind.
 /// </remarks>
-internal readonly struct WindowState
+internal readonly struct ClickWindowState
 {
     private readonly BaseContainer? window;
 
@@ -25,7 +25,7 @@ internal readonly struct WindowState
 
     private readonly long cursorVersion;
 
-    private WindowState(IPlayer player)
+    private ClickWindowState(IPlayer player)
     {
         this.window = player.OpenedContainer ?? player.Inventory;
         this.containerId = player.OpenedContainer is null ? 0 : player.CurrentContainerId;
@@ -38,7 +38,7 @@ internal readonly struct WindowState
     /// <summary>
     /// The state of <paramref name="player"/>'s open window now.
     /// </summary>
-    public static WindowState Of(IPlayer player) => new(player);
+    public static ClickWindowState Of(IPlayer player) => new(player);
 
     /// <summary>
     /// Whether <paramref name="player"/>'s open window still shows this state: the same window, under the same id,
@@ -46,7 +46,7 @@ internal readonly struct WindowState
     /// </summary>
     public bool IsCurrent(IPlayer player)
     {
-        var now = new WindowState(player);
+        var now = new ClickWindowState(player);
 
         return ReferenceEquals(this.window, now.window)
             && this.containerId == now.containerId
