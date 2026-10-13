@@ -3,6 +3,7 @@ using Obsidian.API.World.Generator.DensityFunctions;
 using Obsidian.API.World.Generator.Noise;
 using Obsidian.API.World.Generator.RandomSources;
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -19,6 +20,7 @@ internal sealed class RandomState
 {
     private readonly ConcurrentDictionary<string, BaseNoise> noises = new();
     private readonly ConcurrentDictionary<string, IPositionalRandomFactory> positionalRandoms = new();
+    private readonly IReadOnlyDictionary<string, BaseNoise> namedNoises;
     private readonly NoiseWiringVisitor wiring;
     private readonly ThreadLocal<ClimateSampler> climateSamplers;
     private readonly ConcurrentDictionary<IDensityFunction, bool> yIndependence = new(ReferenceEqualityComparer.Instance);
@@ -53,10 +55,13 @@ internal sealed class RandomState
     /// </summary>
     public FluidPicker GlobalFluidPicker { get; }
 
-    public RandomState(NoiseSetting settings, long seed)
+    /// <param name="noises">The noises files define, by identifier, which <see cref="GetOrCreateNoise(string)"/>
+    /// finds before vanilla's; none by default.</param>
+    public RandomState(NoiseSetting settings, long seed, IReadOnlyDictionary<string, BaseNoise>? noises = null)
     {
         this.Seed = seed;
         this.Settings = settings;
+        this.namedNoises = noises ?? FrozenDictionary<string, BaseNoise>.Empty;
 
         IRandomSource worldRandom = settings.LegacyRandomSource ? new LegacyRandomSource(seed) : new XoroshiroRandomSource(seed);
         this.Random = worldRandom.ForkPositional();
@@ -161,9 +166,12 @@ internal sealed class RandomState
     public IDensityFunction Bind(IDensityFunction function) => this.wiring.Map(function);
 
     /// <summary>
-    /// Gets the seeded instance of a registry noise, e.g. <c>minecraft:surface</c>.
+    /// Gets the seeded instance of a registry noise by identifier, e.g. <c>minecraft:surface</c>: the files' noise of
+    /// that identifier, as the state was created with, or else vanilla's. Vanilla's surface system looks its noises up
+    /// in the registry by key, so a data pack overriding one changes the surface.
     /// </summary>
-    public BaseNoise GetOrCreateNoise(string key) => this.GetOrCreateNoise(NoiseRegistry.Noises.All[key]);
+    public BaseNoise GetOrCreateNoise(string key) =>
+        this.GetOrCreateNoise(this.namedNoises.GetValueOrDefault(key) ?? NoiseRegistry.Noises.All[key]);
 
     /// <summary>
     /// Gets the seeded instance of a noise, vanilla's or a plugin's. Like vanilla's, it's seeded from its identifier,

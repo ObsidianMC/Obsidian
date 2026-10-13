@@ -186,6 +186,38 @@ public class PluginTagFiles
         Assert.False(TagsRegistry.Contains("block", "c:ores", 9));
     }
 
+    [Fact(DisplayName = "Structure tags hold vanilla's structures, and plugins' and data packs' files add theirs")]
+    public void StructureTags()
+    {
+        const string treasure = "minecraft:on_treasure_maps";
+
+        try
+        {
+            PluginTags.Apply([], NullLogger.Instance);
+            Assert.True(PluginTags.TryGetIdentifiers(PluginTags.Structure, treasure, out var vanilla));
+            Assert.Equal(["minecraft:buried_treasure"], vanilla.AsEnumerable());
+
+            // A file naming a plugin's structure, which explorer maps then find, and one naming a missing one, which
+            // fails and keeps vanilla's entries.
+            PluginTags.Apply(
+                [
+                    File(PluginTags.Structure, treasure, """{ "values": ["ruby:tower"] }"""),
+                    File(PluginTags.Structure, "minecraft:village", """{ "values": ["ruby:missing"] }""")
+                ],
+                NullLogger.Instance,
+                [(PluginTags.Structure, "ruby:tower")]);
+
+            Assert.True(PluginTags.TryGetIdentifiers(PluginTags.Structure, treasure, out var added));
+            Assert.Equal(["minecraft:buried_treasure", "ruby:tower"], added.AsEnumerable());
+            Assert.True(PluginTags.TryGetIdentifiers(PluginTags.Structure, "minecraft:village", out var village));
+            Assert.Contains("minecraft:village_plains", village);
+        }
+        finally
+        {
+            PluginTags.Apply([], NullLogger.Instance);
+        }
+    }
+
     private static TagFile File(string registry, string identifier, string json) =>
         PluginTags.Parse(registry, identifier, "test", Encoding.UTF8.GetBytes(json));
 }

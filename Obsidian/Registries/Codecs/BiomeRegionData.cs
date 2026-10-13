@@ -48,7 +48,7 @@ internal static class BiomeRegionData
 
         return (hasReplace, hasBiomes) switch
         {
-            (true, false) => new ReplacingRegion(identifier, dimension, weight, Replacements(replace, "replace")),
+            (true, false) => Replacing(identifier, dimension, weight, replace, "replace"),
             (false, true) => new ParameterListRegion(
                 identifier,
                 dimension,
@@ -59,29 +59,51 @@ internal static class BiomeRegionData
         };
     }
 
-    // {"<biome>": "<biome>", ...}, not empty.
-    private static FrozenDictionary<string, BiomeCodec> Replacements(JsonElement value, string path)
+    // {"<biome or #tag>": "<biome>", ...}, not empty. A tag's biomes are found when the region generates, as tags
+    // may name biomes of plugins and data packs read later.
+    private static ReplacingRegion Replacing(
+        string identifier,
+        string dimension,
+        int weight,
+        JsonElement value,
+        string path)
     {
         Object(value, path);
 
         var replacements = new Dictionary<string, BiomeCodec>();
+        var tags = ImmutableArray.CreateBuilder<(string Tag, BiomeCodec Biome)>();
 
         foreach (var property in value.EnumerateObject())
         {
             var entryPath = Field(path, property.Name);
+            var isTag = property.Name.StartsWith('#');
 
-            if (!TryParseIdentifier(property.Name, out var replaced))
-                throw Error(entryPath, $"{property.Name} isn't an identifier");
+            if (!TryParseIdentifier(isTag ? property.Name[1..] : property.Name, out var replaced))
+                throw Error(entryPath, $"{property.Name} isn't an identifier or a tag");
+
+            var biome = Biome(property.Value, entryPath);
+
+            if (isTag)
+            {
+                tags.Add((replaced, biome));
+                continue;
+            }
 
             if (!CodecRegistry.TryGetBiome(replaced, out _))
                 throw Error(entryPath, $"{replaced} isn't a biome");
 
-            replacements[replaced] = Biome(property.Value, entryPath);
+            replacements[replaced] = biome;
         }
 
-        return replacements.Count > 0
-            ? replacements.ToFrozenDictionary()
-            : throw Error(path, "can't be empty");
+        if (replacements.Count == 0 && tags.Count == 0)
+            throw Error(path, "can't be empty");
+
+        return new ReplacingRegion(
+            identifier,
+            dimension,
+            weight,
+            replacements.ToFrozenDictionary(),
+            tags.ToImmutable());
     }
 
     private static BiomeCodec Biome(JsonElement value, string path)

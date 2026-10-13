@@ -443,6 +443,9 @@ public sealed partial class PluginManager : IAsyncDisposable
             container.FeatureFiles = this.ReadFeatureFiles(files);
             container.CodecFiles = this.ReadCodecFiles(files, container.FeatureFiles);
 
+            // Read before tags, which may name the plugin's structures; they're applied with the features.
+            (container.StructureFiles, container.StructureTemplates) = this.ReadStructureFiles(files);
+
             // Biome tags name the plugin's biomes, so they're applied once the biomes have ids.
             this.ApplyCodecs();
             this.ApplyTags();
@@ -458,11 +461,10 @@ public sealed partial class PluginManager : IAsyncDisposable
             this.ResumeGenerators();
 
             // Biome regions name biomes, and add to dimensions' biomes, whose features are ordered together.
-            container.BiomeRegionFiles = this.ReadBiomeRegionFiles(archive);
+            container.BiomeRegionFiles = this.ReadBiomeRegionFiles(archive, container);
             this.ApplyBiomeRegions();
 
             // Structures name features and processor lists, so they're applied with them.
-            (container.StructureFiles, container.StructureTemplates) = this.ReadStructureFiles(files);
             this.ApplyFeatures();
             this.ApplySpawns();
             await this.AddDimensionLevelsAsync();
@@ -808,8 +810,9 @@ public sealed partial class PluginManager : IAsyncDisposable
         return joined;
     }
 
-    // A plugin's biome region files. A file that can't be read is left out; the plugin loads without it.
-    private ImmutableArray<BiomeRegionFile> ReadBiomeRegionFiles(PluginArchive archive)
+    // A plugin's biome region files, then the regions it registered in code. A region that can't be read is left
+    // out; the plugin loads without it.
+    private ImmutableArray<BiomeRegionFile> ReadBiomeRegionFiles(PluginArchive archive, PluginContainer container)
     {
         var files = ImmutableArray.CreateBuilder<BiomeRegionFile>();
 
@@ -823,6 +826,18 @@ public sealed partial class PluginManager : IAsyncDisposable
             catch (InvalidDataException ex)
             {
                 Log.CodecFileFailed(this.logger, ex, path, archive.Source);
+            }
+        }
+
+        foreach (var (identifier, json) in container.RegisteredBiomeRegions)
+        {
+            try
+            {
+                files.Add(PluginBiomeRegions.Parse(identifier, $"{archive.Info.Id}'s registered {identifier}", json));
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.CodecFileFailed(this.logger, ex, identifier, archive.Source);
             }
         }
 
@@ -944,6 +959,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         {
             pack.TagFiles.AddRange(this.ReadTagFiles(pack.Files));
             pack.FeatureFiles = this.ReadFeatureFiles(pack.Files);
+            (pack.StructureFiles, pack.StructureTemplates) = this.ReadStructureFiles(pack.Files);
         }
 
         // Biomes may name any pack's features.
@@ -963,7 +979,6 @@ public sealed partial class PluginManager : IAsyncDisposable
         foreach (var pack in packs)
         {
             pack.DimensionFiles = this.ReadDimensionFiles(pack.Files, pack);
-            (pack.StructureFiles, pack.StructureTemplates) = this.ReadStructureFiles(pack.Files);
         }
 
         this.ApplyDimensions();
@@ -1048,13 +1063,15 @@ public sealed partial class PluginManager : IAsyncDisposable
         }
     }
 
-    // The tags hold vanilla's entries and the loaded plugins' and data packs' tag files, in order. Placed feature and
-    // configured carver tags may name their entries.
+    // The tags hold vanilla's entries and the loaded plugins' and data packs' tag files, in order. Placed feature,
+    // configured carver and structure tags may name their entries.
     private void ApplyTags() => PluginTags.Apply(
         this.DataFilesOf(plugin => plugin.TagFiles, pack => pack.TagFiles),
         this.logger,
         this.DataFilesOf(plugin => plugin.FeatureFiles, pack => pack.FeatureFiles)
-            .Select(file => (file.Registry, file.Identifier)));
+            .Select(file => (file.Registry, file.Identifier))
+            .Concat(this.DataFilesOf(plugin => plugin.StructureFiles, pack => pack.StructureFiles)
+                .Select(file => (file.Registry, file.Identifier))));
 
     // The loaded plugins' and data packs' entries are in their registries, the last file of each winning. Plugins'
     // entries no file has any more stay; vanilla's are vanilla's again. Vanilla's dimension types keep their height

@@ -408,6 +408,47 @@ public class PluginStructureFiles
         Assert.Single(features.ProcessorLists["structuretest:decay"].Processors);
     }
 
+    [Theory(DisplayName = "A jigsaw's max distance and dimension padding are read in vanilla's number and object forms")]
+    [InlineData("16", null, 16, 16, 0, 0)]
+    [InlineData("""{ "horizontal": 16 }""", """{ "bottom": 8 }""", 16, 4064, 8, 0)]
+    [InlineData("""{ "horizontal": 16, "vertical": 40 }""", "5", 16, 40, 5, 5)]
+    [InlineData("16", """{ "bottom": 2, "top": -1 }""", 16, 16, 2, 0)]
+    [InlineData("""{ "vertical": 40 }""", null, 0, 0, 0, 0)]
+    [InlineData("""{ "horizontal": 129 }""", null, 0, 0, 0, 0)]
+    [InlineData("16", "-1", 0, 0, 0, 0)]
+    public void ReadsJigsawDistanceForms(
+        string distance,
+        string? padding,
+        int horizontal,
+        int vertical,
+        int bottom,
+        int top)
+    {
+        var json = TowerStructure.Replace(
+            "\"max_distance_from_center\": 16",
+            $"\"max_distance_from_center\": {distance}"
+                + (padding is null ? "" : $", \"dimension_padding\": {padding}"));
+
+        StructureFile[] files =
+        [
+            Parse(PluginStructures.Structure, Tower, json),
+            Parse(PluginStructures.TemplatePool, "structuretest:tower/start", TowerPool)
+        ];
+
+        var structures = Build(files);
+
+        // An invalid form is logged and left out.
+        if (horizontal == 0)
+        {
+            Assert.False(structures.Structures.ContainsKey(Tower));
+            return;
+        }
+
+        var tower = Assert.IsType<WorldData.Structures.Pools.JigsawStructure>(structures.Structures[Tower]);
+        Assert.Equal(new(horizontal, vertical), tower.MaxDistanceFromCenter);
+        Assert.Equal(new(bottom, top), tower.DimensionPadding);
+    }
+
     private static WorldgenStructures Build(StructureFile[] files) => PluginStructures.Build(
         files,
         files.Length == 0 ? [] : [Template()],

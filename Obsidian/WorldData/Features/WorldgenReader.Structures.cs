@@ -91,6 +91,12 @@ internal sealed partial class WorldgenReader
                 : this.ReadObject(target, json, null, null, path);
         }
 
+        if (target == typeof(JigsawMaxDistance))
+            return ReadMaxDistance(json, path);
+
+        if (target == typeof(DimensionPadding))
+            return ReadPadding(json, path);
+
         if (target == typeof(Structure))
         {
             // Vanilla's codec allows a structure inline, but starts are saved by their structure's identifier.
@@ -101,6 +107,58 @@ internal sealed partial class WorldgenReader
         }
 
         return null;
+    }
+
+    // Vanilla's MaxDistance codec: a number from 1 to 128, both distances, or {"horizontal": 1 to 128, "vertical":
+    // 1 to 4064}, whose vertical defaults to 4064.
+    private static JigsawMaxDistance ReadMaxDistance(JsonElement json, string path)
+    {
+        if (json.ValueKind != JsonValueKind.Object)
+            return Distance(json, path, JigsawMaxDistance.MaxHorizontal);
+
+        foreach (var property in json.EnumerateObject())
+        {
+            if (property.Name is not ("horizontal" or "vertical"))
+                throw Error(Field(path, property.Name), "isn't a field of a max distance");
+        }
+
+        var horizontal = json.TryGetProperty("horizontal", out var value)
+            ? Distance(value, Field(path, "horizontal"), JigsawMaxDistance.MaxHorizontal)
+            : throw Error(Field(path, "horizontal"), "is missing");
+
+        var vertical = json.TryGetProperty("vertical", out var verticalValue)
+            ? Distance(verticalValue, Field(path, "vertical"), JigsawMaxDistance.MaxVertical)
+            : JigsawMaxDistance.MaxVertical;
+
+        return new JigsawMaxDistance(horizontal, vertical);
+
+        static int Distance(JsonElement value, string path, int max) =>
+            value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var distance) && distance >= 1
+            && distance <= max
+                ? distance
+                : throw Error(path, $"expected a number from 1 to {max}");
+    }
+
+    // Vanilla's DimensionPadding codec: a non-negative number, both paddings, or {"bottom": ..., "top": ...}, whose
+    // fields default to 0, also when they aren't valid (vanilla reads them leniently).
+    private static DimensionPadding ReadPadding(JsonElement json, string path)
+    {
+        if (json.ValueKind != JsonValueKind.Object)
+        {
+            return json.ValueKind == JsonValueKind.Number && json.TryGetInt32(out var padding) && padding >= 0
+                ? padding
+                : throw Error(path, "expected a non-negative number or {\"bottom\": ..., \"top\": ...}");
+        }
+
+        return new DimensionPadding(Lenient("bottom"), Lenient("top"));
+
+        int Lenient(string name) =>
+            json.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+            && value.TryGetInt32(out var padding)
+            && padding >= 0
+                ? padding
+                : 0;
     }
 
     // A processor list is an identifier, {"processors": [...]} or, as vanilla's codec allows, a bare list.
@@ -130,14 +188,9 @@ internal sealed partial class WorldgenReader
         {
             case JigsawStructure jigsaw:
                 CheckRange(jigsaw.Size, 0, 20, path, "size");
-                CheckRange(jigsaw.MaxDistanceFromCenter, 1, 128, path, "max_distance_from_center");
-
-                if (jigsaw.DimensionPadding < 0)
-                    throw Error(Field(path, "dimension_padding"), $"{jigsaw.DimensionPadding} is negative");
-
                 // Vanilla's verifyRange: terrain adaptation reaches 12 blocks beyond the pieces.
                 var adaptation = jigsaw.TerrainAdaptation == TerrainAdjustment.None ? 0 : 12;
-                if (jigsaw.MaxDistanceFromCenter + adaptation > 128)
+                if (jigsaw.MaxDistanceFromCenter.Horizontal + adaptation > 128)
                 {
                     throw Error(
                         path,

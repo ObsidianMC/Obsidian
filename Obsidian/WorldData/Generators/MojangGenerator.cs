@@ -116,13 +116,11 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         if (this.Builder is not { Structures: StructureManager manager } builder)
             return null;
 
-        var targets = manager.StructuresPerStep.SelectMany(step => step).Where(structure =>
-            structure.Identifier is "minecraft:buried_treasure" or "minecraft:shipwreck" or "minecraft:ocean_ruin_cold" or "minecraft:ocean_ruin_warm").ToArray();
-
         try
         {
             using var calls = builder.EnterGenerator();
-            return new StructureLocator(manager).FindNearest(targets, position, 16, false);
+            // Vanilla's dolphins look for the structures of this tag.
+            return new StructureLocator(manager).FindNearest("minecraft:dolphin_located", position, 16, false);
         }
         catch (Exception ex) when (this.Contain(ex))
         {

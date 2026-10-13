@@ -168,8 +168,6 @@ client. This document describes the design and tracks its progress. The archive 
      every plugin change, plugins' code is only called holding a call into the plugin, and levels stop and resume
      generating with their plugins rather than failing or keeping their code loaded.
    - Possible later, gaps noted along the way (see [plugin-content.md](plugin-content.md)):
-     - biome regions defined in code, and biome tags as a region's `replace` keys (Phase 3.7 added plugin biomes
-       to vanilla's overworld and nether climate, like TerraBlender, with regions from data files);
      - in level stems: dimension types and biomes defined inline, `minecraft:flat` and `minecraft:debug`
        generators, and plugin level generators as a stem's `generator`;
      - noises defined inline, a constant `spline`, and a range for a spawn target's `depth`;
@@ -263,10 +261,21 @@ client. This document describes the design and tracks its progress. The archive 
      structures, which are read again where they name them, as are those naming overridden placed features. Without
      plugins or overrides, vanilla's compiled structures generate as before (see
      [plugin-content.md](plugin-content.md#structures)).
-   - Possible later, for structures: structure types and pool element types in code (the structure and piece bases
-     are Obsidian's own, and would need an API like the tree parts'), structure tags from plugins (explorer maps and
-     dolphins use vanilla's), the object forms of a jigsaw's `max_distance_from_center` and `dimension_padding`, and
-     a `/locate` command.
+   - Worldgen gaps (done): what places a configured feature by identifier, like the pale oak's moss decorator,
+     finds it through the current features, overrides included, as vanilla's registry lookups do (Obsidian has no
+     sapling growth or bone meal yet, which would do the same). The surface builder's named noises follow
+     overrides. Data packs' `overlays` for vanilla 1.21.11's format apply over their root, and their `filter` blocks
+     earlier packs' files, like vanilla. A vanilla world made with a data pack changing its overworld opens as an
+     integrated server when the same overworld stem is loaded, with a clear error otherwise. Biome regions can be
+     registered in code (`IPluginRegistry.RegisterBiomeRegion`, read like a region file), and take biome tags as
+     `replace` keys. Structure tags come from plugins' and data packs' files (explorer maps and dolphins use them),
+     and jigsaw structures read the object forms of `max_distance_from_center` and `dimension_padding`. A vanilla
+     dimension type override its noise settings don't fit is still left out: vanilla clamps generation to the build
+     range, which every generation step would have to follow, without a vanilla capture to check it against.
+   - Possible later, for structures: structure types and pool element types in code (the structure, piece and pool
+     element bases work on Obsidian's internal generation context, templates and jigsaw placement, and would need an
+     API like the tree parts'), eyes of ender, and a `/locate` command; clamping generation to a dimension type's
+     build range.
    - Next: Phase 4.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource

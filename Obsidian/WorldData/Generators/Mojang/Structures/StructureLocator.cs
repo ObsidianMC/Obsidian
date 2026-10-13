@@ -9,17 +9,39 @@ namespace Obsidian.WorldData.Generators.Mojang.Structures;
 /// </summary>
 internal sealed class StructureLocator(StructureManager structures)
 {
+    // A structure tag's structures: vanilla's and plugins' tag files applied, or vanilla's own before tags are.
+    private static IReadOnlySet<string>? TagStructures(string tag)
+    {
+        if (PluginTags.TryGetIdentifiers(PluginTags.Structure, tag, out var identifiers))
+            return identifiers.ToHashSet();
+
+        return StructureTags.All.TryGetValue(tag, out var vanilla)
+            ? vanilla.Select(structure => structure.Identifier).ToHashSet()
+            : null;
+    }
+
+    /// <summary>
+    /// The locate position of the nearest start of a structure tag's structures (see
+    /// <see cref="FindNearest(IReadOnlySet{string}, Vector, int, bool)"/>), like vanilla's lookups by tag: the tag
+    /// as plugins' and data packs' tag files change it.
+    /// </summary>
+    /// <param name="tag">The tag's identifier, without <c>#</c>, like <c>minecraft:on_treasure_maps</c>.</param>
+    /// <returns>The position, or <c>null</c> when the tag doesn't exist or none is found.</returns>
+    public Vector? FindNearest(string tag, Vector position, int radius, bool skipKnownStructures) =>
+        TagStructures(tag) is IReadOnlySet<string> targets
+            ? this.FindNearest(targets, position, radius, skipKnownStructures)
+            : null;
+
     /// <summary>
     /// The locate position (<see cref="StructurePlacement.LocateOffset"/> from the start chunk's corner) of the nearest start of
-    /// <paramref name="targets"/>, or <c>null</c> when none is found.
+    /// <paramref name="targetIds"/>, or <c>null</c> when none is found.
     /// </summary>
+    /// <param name="targetIds">The structures' identifiers. They're matched by identifier, as plugins and data packs
+    /// may override them, like vanilla's tags hold a registry's entries by identifier.</param>
     /// <param name="radius">For spread placements, how many rings of placement regions to search around the position.</param>
     /// <param name="skipKnownStructures">Skips starts already found by an earlier search (they're found once each).</param>
-    public Vector? FindNearest(IReadOnlyCollection<Structure> targets, Vector position, int radius, bool skipKnownStructures)
+    public Vector? FindNearest(IReadOnlySet<string> targetIds, Vector position, int radius, bool skipKnownStructures)
     {
-        // Targets are matched by identifier, as plugins and data packs may override them, like vanilla's tags hold
-        // a registry's entries by identifier.
-        var targetIds = targets.Select(target => target.Identifier).ToHashSet();
 
         // Each placement with the target structures it places, in structure set order.
         var placements = new List<(StructurePlacement Placement, Structure[] Structures)>();

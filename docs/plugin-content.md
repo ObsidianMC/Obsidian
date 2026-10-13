@@ -818,8 +818,11 @@ the tower grows from, up to its `size`.
 - Structures are any of vanilla's data-driven types: `minecraft:jigsaw`, and the single-piece and generated ones,
   whose fields are the same as in vanilla's own structure files (`minecraft:desert_pyramid`, `minecraft:igloo`,
   `minecraft:shipwreck`, `minecraft:ocean_ruin`, `minecraft:ruined_portal`, `minecraft:mineshaft`, and so on). A jigsaw
-  structure's `max_distance_from_center` and `dimension_padding` are single numbers; their object forms aren't read
-  yet. Plugins can't add structure types in code yet.
+  structure's `max_distance_from_center` is a number from 1 to 128 or `{"horizontal": 1 to 128, "vertical": 1 to
+  4064}` (4064 by default), and its `dimension_padding` a number or `{"bottom": ..., "top": ...}` (0 by default, and
+  for values that aren't valid, as vanilla reads them leniently), like vanilla's. Plugins can't add structure or pool
+  element types in code: Obsidian's structure, piece and pool element bases work on its internal generation context,
+  templates and jigsaw placement, which would need an API of their own, like the tree parts'.
 - Structure sets take `minecraft:random_spread` (with `spread_type`) and `minecraft:concentric_rings` placements, with
   `salt`, `frequency`, `frequency_reduction_method`, `locate_offset` and an `exclusion_zone` naming another set. A set's
   structures are named by identifier.
@@ -856,8 +859,11 @@ The rules:
   plugins of every pool read from files. A start keeps the plugins it started with: once one unloads, the start isn't
   placed any more, even if its structure set stays (a vanilla set whose overridden template reached the plugin's
   pool, say), and the set starts again without the plugin in chunks not generated yet, with the state the start had.
-- Explorer maps and dolphins find vanilla's structures by vanilla's structure tags; plugins can't add structure
-  tags yet, so they don't find plugins' structures.
+- Structure tags, `data/<namespace>/tags/worldgen/structure/<path>.json`, merge with vanilla's like other tag
+  files and may name plugins' and data packs' structures. Explorer maps and dolphins (`minecraft:dolphin_located`)
+  find structures through them, so a plugin's structure added to `#minecraft:on_treasure_maps`, say, is found by
+  treasure maps. A tag file naming a structure that doesn't exist fails, and the tag keeps vanilla's entries. Obsidian
+  has no eyes of ender or `/locate` yet.
 
 
 ## Noise settings, density functions and noises
@@ -1128,8 +1134,12 @@ overworld instead of vanilla's. The data comes from two places:
   biomes, dimension and damage types, features, carvers, processor lists, structures, structure sets, template pools,
   structure templates, noise settings, density functions, noises, parameter lists, level stems and tags (blocks,
   items, entity types, biomes, placed features and configured carvers). Other files, like recipes or loot tables, are
-  left out unread, and how many is logged. A pack's `filter` and `overlays`
-  aren't applied, which is logged once for the pack. Data packs are read once: a change applies after a restart.
+  left out unread, and how many is logged. Like vanilla, a pack's `overlays` whose formats include vanilla
+  1.21.11's data pack format (94.1) are applied over its root, the last listed winning, with vanilla's checks of
+  `min_format`, `max_format` and `formats` (an overlays section that fails them is logged and not applied), and its
+  `filter` blocks the files of the packs before it whose namespace and path match its patterns (vanilla's rule: any
+  pattern's `namespace` and any pattern's `path`, matched anywhere in the text). Plugins' files and vanilla's own
+  entries aren't filtered. Data packs are read once: a change applies after a restart.
   Unlike vanilla, a pack has limits, so that it can't exhaust the server's memory: at most 65,536 files, and at most
   32 MiB per file and 512 MiB in all for the files Obsidian reads, decompressed. A pack over them, or a zip file with
   a path leaving the pack (`..` or `\`), is logged and left out; symbolic links in a pack folder are skipped.
@@ -1147,16 +1157,19 @@ last file for an entry replaces it whole, and tag files merge (`"replace": true`
   features, carvers, spawners and spawn costs; [biome modifiers](#biome-modifiers) still apply on top.
 - configured and placed features and configured carvers. An overridden feature or carver replaces vanilla's in every
   biome placing it, and vanilla's features naming an overridden one, directly or through others, are read again from
-  vanilla's files with the runtime reader, so they use it, as vanilla's do by reference. Saplings and bone meal still
-  use vanilla's own features.
+  vanilla's files with the runtime reader, so they use it, as vanilla's do by reference. What places a configured
+  feature by identifier, like the pale oak's moss decorator placing `minecraft:pale_moss_patch`, finds it through the
+  current features, overrides included, as vanilla looks it up in its registry. Obsidian doesn't grow saplings,
+  mushrooms or fungi, or apply bone meal, yet; when it does, they'll find their features the same way.
 - processor lists, structures, structure sets, template pools and structure templates. Vanilla's structures, sets and
   pools naming an overridden one, or an overridden placed feature or processor list, are read again the same way, so
   vanilla's structures use the overrides; a pool or template is used by identifier wherever it's named, so an
   overridden one replaces vanilla's in every structure. A structure set override moves where vanilla's structures
   start, in chunks not generated yet.
 - noise settings, density functions and noises, read again the same way through vanilla's entries naming them. The
-  noises the surface builder reads by name (like `minecraft:surface` or the badlands' and icebergs' noises) stay
-  vanilla's.
+  noises the surface builder reads by name (`minecraft:surface` and `surface_secondary`, the badlands' and icebergs'
+  pillar, roof and surface noises, and `minecraft:clay_bands_offset`) follow overrides too: overriding one reads the
+  vanilla dimension's stem at runtime, so that it generates with the file's noise.
 - parameter lists: `data/minecraft/worldgen/multi_noise_biome_source_parameter_list/overworld.json` with
   `{"preset": "minecraft:nether"}` makes the overworld pick nether biomes from its climate.
 - level stems: `data/minecraft/dimension/overworld.json` (or `the_nether`, `the_end`) replaces how that dimension
@@ -1164,9 +1177,12 @@ last file for an entry replaces it whole, and tag files merge (`"replace": true`
   dimension type (`minecraft:overworld`, `minecraft:the_nether`, `minecraft:the_end`), since Obsidian creates
   vanilla's levels with those; override the type's file to change it. A type's build range (`min_y` and `height`)
   must hold the noise settings its vanilla dimension generates with, as overridden: vanilla clamps generation to the
-  build range, which Obsidian can't yet, so a type override that doesn't fit, like the overworld's at `min_y` 0 with
-  vanilla's overworld noise settings from -64, is logged once startup has read every plugin and pack, and left out,
-  keeping vanilla's type. Override the noise settings to match it. A stem startup couldn't read yet, like a
+  build range (`NoiseSettings.clampToHeightAccessor`), which Obsidian doesn't yet, as every step reading the noise
+  settings' range (terrain fill, base heights, aquifers, surface, carvers, structures) would have to clamp the same
+  way, and vanilla's carvers can then reach past the build range, where vanilla's chunks quietly ignore writes;
+  vanilla's own pairings never clamp, so there's no capture to check it against. A type override that doesn't fit, like the
+  overworld's at `min_y` 0 with vanilla's overworld noise settings from -64, is logged once startup has read every
+  plugin and pack, and left out, keeping vanilla's type. Override the noise settings to match it. A stem startup couldn't read yet, like a
   plugin's overworld stem naming noise settings a data pack adds, is read before the types are checked, so a type
   is checked with the noise settings its dimension's stem names. Stems are then read against the types kept, so one
   that couldn't be read with the type override, like an overworld stem using vanilla's noise settings, is read
@@ -1182,6 +1198,14 @@ on every load, and named noise settings and biomes too: a pack added to an exist
 generates from then on, while chunks already generated stay, with borders between them. Obsidian saves no stems
 (`worlds.json` and level.dat only name the generator), so a vanilla dimension takes its overrides when its level
 starts, in every world, and keeps them until the server stops:
+
+A world made in vanilla with a data pack changing its overworld, like Terralith, saves the pack's overworld level
+stem in its level.dat. Opened as an integrated server, such a world loads when a loaded data pack or plugin overrides
+`minecraft:overworld`'s level stem with the same stem, compared the way vanilla's codecs saved it (numbers at the
+precision saved, climate parameters as one number or a pair, identifiers with or without `minecraft:`); vanilla
+would read the pack's stem over the saved one anyway. Without an override, or with one that differs, it's refused
+with an error saying to add the data pack, or where the stems differ. The nether's and the end's saved stems aren't
+compared.
 
 - Data packs, and plugins loaded at startup, apply to every world as it loads.
 - A plugin loaded, reloaded or unloaded later follows the plugin rules: its biomes, features, carvers, spawns, tags
@@ -1246,11 +1270,31 @@ or a parameter list of its own, picked from the climate like a `multi_noise` bio
 - `weight`, from 1 to 1000, is how often the region is picked, against the dimension's other regions and its own
   layout, which weighs 10 (like TerraBlender's vanilla regions).
 - `replace` maps biomes of the dimension to the biomes generated instead; biomes the dimension doesn't generate are
-  never replaced. `biomes` is a parameter list, the dimension's whole layout where the region is: every climate
-  should find a fitting biome, oceans and caves included. A region has one of the two.
+  never replaced. A key may be a biome tag, `"#c:is_plains": "ruby:crystal_plains"`, which replaces each of the
+  tag's biomes, as the tag holds them when the dimension starts generating (a tag that doesn't exist then replaces
+  nothing); a biome named itself, or by a tag written before, keeps that replacement. `biomes` is a parameter list,
+  the dimension's whole layout where the region is: every climate should find a fitting biome, oceans and caves
+  included. A region has one of the two.
 - Biomes are vanilla's or plugins' registered ones, the plugin's own or those of plugins loaded before it. Fields the
   format doesn't have are errors. A file that can't be read is logged and left out, and the plugin loads without it.
   When two plugins define the same region, the last in load order wins, as for other entries.
+
+Regions can be defined in code too, in `ConfigureRegistry`, with `IPluginRegistry.RegisterBiomeRegion`: the
+identifier (in the plugin's namespace), the dimension, the weight, and either the `replace` map or the `biomes` as
+`ClimateBiome` entries (a biome and its climate ranges, a single value being a range of one). A region registered so
+is read exactly like a file, once the plugin's biomes are registered, and follows the same rules; one that can't be
+read is logged and left out.
+
+```csharp
+public override void ConfigureRegistry(IPluginRegistry registry)
+{
+    registry.RegisterBiomeRegion(
+        "ruby:crystal_plains",
+        "minecraft:overworld",
+        2,
+        new Dictionary<string, string> { ["#c:is_plains"] = "ruby:crystal_plains" });
+}
+```
 
 Each column's region is picked from the world seed and the dimension: the dimension is split into irregular cells
 about 1024 blocks across, each of which picks a region, or the dimension's own layout, at random by weight. A world

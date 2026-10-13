@@ -1,4 +1,5 @@
 using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.Registries;
 using System.Collections.Frozen;
 
 namespace Obsidian.WorldData.Generators.Mojang.Regions;
@@ -36,23 +37,66 @@ internal abstract class BiomeRegion(string identifier, string dimension, int wei
         int quartX,
         int quartY,
         int quartZ);
+
+    /// <summary>
+    /// The region with the biome tags it names resolved to their biomes as they are now, to generate with.
+    /// </summary>
+    public virtual BiomeRegion Resolve() => this;
 }
 
 /// <summary>
 /// A region that keeps the dimension's own layout with some of its biomes swapped for others.
 /// </summary>
 /// <param name="replacements">The biome given instead of each biome, by the replaced biome's identifier.</param>
+/// <param name="tagReplacements">The biome given instead of each biome of a tag, by the tag's identifier, in the
+/// order they're written: a biome named itself, or by an earlier tag, keeps that replacement. Generating uses the
+/// region <see cref="Resolve"/>d.</param>
 internal sealed class ReplacingRegion(
     string identifier,
     string dimension,
     int weight,
-    FrozenDictionary<string, BiomeCodec> replacements) : BiomeRegion(identifier, dimension, weight)
+    FrozenDictionary<string, BiomeCodec> replacements,
+    ImmutableArray<(string Tag, BiomeCodec Biome)> tagReplacements = default)
+    : BiomeRegion(identifier, dimension, weight)
 {
+    private readonly ImmutableArray<(string Tag, BiomeCodec Biome)> tagReplacements =
+        tagReplacements.IsDefault ? [] : tagReplacements;
+
+    /// <summary>
+    /// The biome given instead of each biome named, without the biomes of tags until resolved.
+    /// </summary>
     public FrozenDictionary<string, BiomeCodec> Replacements { get; } = replacements;
 
     // A biome the dimension never gives is never replaced, so its replacement isn't possible.
-    public override IEnumerable<BiomeCodec> Biomes(IReadOnlyList<BiomeCodec> dimensionBiomes) => dimensionBiomes
-        .Select(biome => this.Replacements.GetValueOrDefault(biome.Name) ?? biome);
+    public override IEnumerable<BiomeCodec> Biomes(IReadOnlyList<BiomeCodec> dimensionBiomes)
+    {
+        var replacements = ((ReplacingRegion)this.Resolve()).Replacements;
+
+        return dimensionBiomes.Select(biome => replacements.GetValueOrDefault(biome.Name) ?? biome);
+    }
+
+    // A tag that doesn't exist (yet) replaces nothing.
+    public override BiomeRegion Resolve()
+    {
+        if (this.tagReplacements.IsEmpty)
+            return this;
+
+        var resolved = new Dictionary<string, BiomeCodec>(this.Replacements);
+
+        foreach (var (tag, biome) in this.tagReplacements)
+        {
+            if (!TagsRegistry.TryGet(PluginTags.Biome, tag, out var found))
+                continue;
+
+            foreach (var id in found.Entries)
+            {
+                if (CodecRegistry.TryGetBiome(id, out var replaced))
+                    resolved.TryAdd(replaced!.Name, biome);
+            }
+        }
+
+        return new ReplacingRegion(this.Identifier, this.Dimension, this.Weight, resolved.ToFrozenDictionary());
+    }
 
     // Swapping biomes leaves the parameter list's points as they are, so the nearest point is the dimension's own.
     public override BiomeCodec GetNoiseBiome(

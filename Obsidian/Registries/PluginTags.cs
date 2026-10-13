@@ -16,8 +16,9 @@ namespace Obsidian.Registries;
 /// <c>values</c> add entries (identifiers, <c>#</c> tag references, or <c>{"id": ..., "required": false}</c>),
 /// <c>replace</c> drops what came before it, and NeoForge's <c>remove</c> takes entries out. A tag whose required entry
 /// is missing fails like in vanilla, but keeps vanilla's entries rather than disappearing, since server code holds
-/// vanilla's tags. Block, item, entity type and biome tags are supported, and placed feature and configured carver
-/// tags, which name entries by identifier since those registries have no ids (see <see cref="TryGetIdentifiers"/>).
+/// vanilla's tags. Block, item, entity type and biome tags are supported, and placed feature, configured carver and
+/// structure tags, which name entries by identifier since those registries have no ids (see
+/// <see cref="TryGetIdentifiers"/>).
 /// </remarks>
 internal static partial class PluginTags
 {
@@ -28,15 +29,23 @@ internal static partial class PluginTags
     public const string ConfiguredCarver = "worldgen/configured_carver";
 
     /// <summary>
+    /// Structure tags, like <c>minecraft:on_treasure_maps</c>, which explorer maps and dolphins look structures up
+    /// with.
+    /// </summary>
+    public const string Structure = "worldgen/structure";
+
+    /// <summary>
     /// The registries plugins' tags may be for.
     /// </summary>
     public static FrozenSet<string> Registries { get; } =
-        FrozenSet.Create("block", "item", "entity_type", Biome, PlacedFeature, ConfiguredCarver);
+        FrozenSet.Create("block", "item", "entity_type", Biome, PlacedFeature, ConfiguredCarver, Structure);
 
     // Worldgen registries that aren't synced and have no ids: their tags hold identifiers, and aren't sent to clients.
-    private static readonly FrozenSet<string> identifierRegistries = FrozenSet.Create(PlacedFeature, ConfiguredCarver);
+    private static readonly FrozenSet<string> identifierRegistries =
+        FrozenSet.Create(PlacedFeature, ConfiguredCarver, Structure);
 
-    // The tags of identifierRegistries, vanilla's (none in 1.21.11) and plugins', by registry and tag identifier.
+    // The tags of identifierRegistries, vanilla's (structure tags alone in 1.21.11) and plugins', by registry and tag
+    // identifier.
     private static FrozenDictionary<(string Registry, string Identifier), ImmutableArray<string>> identifierTags =
         FrozenDictionary<(string Registry, string Identifier), ImmutableArray<string>>.Empty;
 
@@ -199,9 +208,11 @@ internal static partial class PluginTags
     }
 
     /// <summary>
-    /// Finds a placed feature or configured carver tag's entries, which are identifiers: those registries have no ids.
+    /// Finds a placed feature, configured carver or structure tag's entries, which are identifiers: those registries
+    /// have no ids.
     /// </summary>
-    /// <param name="registry"><see cref="PlacedFeature"/> or <see cref="ConfiguredCarver"/>.</param>
+    /// <param name="registry"><see cref="PlacedFeature"/>, <see cref="ConfiguredCarver"/> or
+    /// <see cref="Structure"/>.</param>
     public static bool TryGetIdentifiers(string registry, string identifier, out ImmutableArray<string> entries) =>
         Volatile.Read(ref identifierTags).TryGetValue((registry, identifier), out entries);
 
@@ -211,8 +222,8 @@ internal static partial class PluginTags
     /// makes the convention tags.
     /// </summary>
     /// <param name="worldgenEntries">
-    /// The loaded plugins' placed features and configured carvers, by registry (<see cref="PlacedFeature"/> or
-    /// <see cref="ConfiguredCarver"/>) and identifier, which tags may name besides vanilla's.
+    /// The loaded plugins' and data packs' placed features, configured carvers and structures, by registry (like
+    /// <see cref="PlacedFeature"/>) and identifier, which tags may name besides vanilla's.
     /// </param>
     public static void Apply(
         IEnumerable<TagFile> files,
@@ -246,6 +257,8 @@ internal static partial class PluginTags
                 {
                     if (entries is ImmutableArray<int> named)
                         byIdentifier[key] = [.. named.Select(ids.Identifier)];
+                    else if (key.Registry == Structure && StructureTags.All.TryGetValue(key.Identifier, out var own))
+                        byIdentifier[key] = [.. own.Select(structure => structure.Identifier)];
                 }
                 else if (TagsRegistry.TryGetVanilla(key.Registry, key.Identifier, out var vanilla))
                 {
@@ -521,9 +534,13 @@ internal static partial class PluginTags
             }
 
             var exists = worldgenEntries.Contains((registry, identifier))
-                || (registry == PlacedFeature
-                    ? Codecs.RegistryIds.IsPlacedFeature(identifier)
-                    : Codecs.RegistryIds.IsConfiguredCarver(identifier));
+                || registry switch
+                {
+                    PlacedFeature => Codecs.RegistryIds.IsPlacedFeature(identifier),
+                    ConfiguredCarver => Codecs.RegistryIds.IsConfiguredCarver(identifier),
+                    Structure => Structures.All.ContainsKey(identifier),
+                    _ => false
+                };
 
             if (!exists)
                 return null;

@@ -83,6 +83,9 @@ public sealed class BiomeRegions
     [InlineData(
         """{ "dimension": "minecraft:overworld", "weight": 1, "replace": { "minecraft:plains": "test:none" } }""",
         "test:none isn't a biome")]
+    [InlineData(
+        """{ "dimension": "minecraft:overworld", "weight": 1, "replace": { "#Bad Tag": "minecraft:plains" } }""",
+        "isn't an identifier or a tag")]
     public void InvalidRegionsAreRejected(string json, string message)
     {
         var error = Assert.Throws<InvalidDataException>(

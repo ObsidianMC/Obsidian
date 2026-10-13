@@ -47,11 +47,12 @@ internal sealed class ExplorationMaps(AbstractLevel level, MojangGenerator gener
     {
         var structures = builder.Structures;
         var tag = request.Destination.StartsWith('#') ? request.Destination[1..] : request.Destination;
-        if (structures is null || !StructureTags.All.TryGetValue(tag, out var targets))
+        if (structures is null)
             return null;
 
         var origin = new Vector((int)Math.Floor(request.Origin.X), (int)Math.Floor(request.Origin.Y), (int)Math.Floor(request.Origin.Z));
-        var found = new StructureLocator(structures).FindNearest(targets, origin, request.SearchRadius, request.SkipKnownStructures);
+        var found = new StructureLocator(structures)
+            .FindNearest(tag, origin, request.SearchRadius, request.SkipKnownStructures);
         if (found is null)
             return null;
 

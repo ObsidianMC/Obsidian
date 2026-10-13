@@ -87,7 +87,7 @@ internal sealed class ChunkBuilder
         // Binding the noise router runs plugins' density functions' code.
         using var calls = this.EnterGenerator();
 
-        this.RandomState = new RandomState(this.settings, seed);
+        this.RandomState = new RandomState(this.settings, seed, dimension.Noises);
 
         this.terrainGenerator = new TerrainGenerator(this.RandomState);
         this.biomeSource = dimension.CreateBiomeSource(this.RandomState);
@@ -244,6 +244,11 @@ internal sealed class ChunkBuilder
         {
             // A feature made of plugins' types ran their code: the failure is theirs.
             throw new PluginGenerationException(owners, ex.Message, ex);
+        }
+        catch (FeaturePlacementException ex) when (ex.InnerException is PluginGenerationException inner)
+        {
+            // A feature placed one by identifier made of plugins' types (see WorldgenFeatureSet.PlaceConfigured).
+            throw new PluginGenerationException(inner.Plugins, ex.Message, ex);
         }
         finally
         {

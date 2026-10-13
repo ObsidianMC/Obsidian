@@ -174,7 +174,8 @@ internal static partial class PluginDimensions
 
     /// <summary>
     /// Reads one of vanilla's dimensions from vanilla's stem at runtime when a file overrides the noise settings or
-    /// parameter list it names; otherwise its compiled dimension stays, and this is null.
+    /// parameter list it names, or a noise its surface builder reads by name; otherwise its compiled dimension stays,
+    /// and this is null.
     /// </summary>
     /// <param name="identifier">One of vanilla's dimensions, like <c>minecraft:overworld</c>.</param>
     /// <param name="noise">The noise entries files define.</param>
@@ -184,8 +185,11 @@ internal static partial class PluginDimensions
         var (stem, parameterList) = vanillaStems[identifier];
         var compiled = MojangDimension.Vanilla.First(dimension => dimension.Identifier == identifier);
 
+        // The surface builder's named noises aren't in vanilla's files, so overriding one doesn't read the noise
+        // settings again: the dimension is read at runtime to take the files' noises.
         var overridden = noise.NoiseSettings.ContainsKey(compiled.NoiseSettings!)
-            || parameterList is not null && noise.ParameterLists.ContainsKey(parameterList);
+            || parameterList is not null && noise.ParameterLists.ContainsKey(parameterList)
+            || SurfaceBuilder.NamedNoises.Any(noise.Noises.ContainsKey);
 
         return overridden
             ? Parse(identifier, $"vanilla's {identifier}", Encoding.UTF8.GetBytes(stem), noise)
@@ -398,6 +402,16 @@ internal static partial class PluginDimensions
     /// </summary>
     public static MojangDimension? Find(string identifier) =>
         added.FirstOrDefault(file => file.Identifier == identifier)?.Dimension;
+
+    /// <summary>
+    /// The level stem the added dimension <paramref name="identifier"/> was read from: a plugin's or data pack's
+    /// file, or vanilla's own stem for one of vanilla's dimensions whose noise is overridden. Null when there's none.
+    /// </summary>
+    /// <returns>Where the stem is from, for messages, and its JSON.</returns>
+    public static (string Source, byte[] Stem)? FindStem(string identifier) =>
+        added.FirstOrDefault(file => file.Identifier == identifier) is DimensionFile file
+            ? (file.Source, file.Stem)
+            : null;
 
     /// <summary>
     /// The dimension types of vanilla's dimensions no level took yet whose build range, as a file overrides it, the

@@ -235,7 +235,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         {
             var hasName = data.TryGetTagValue<string>("LevelName", out var levelName) && !string.IsNullOrEmpty(levelName);
             name = hasName ? levelName! : Path.GetFileName(folder);
-            generatorId = VanillaLevelData.GetGeneratorId(data);
+            generatorId = VanillaLevelData.GetGeneratorId(data, PluginDimensions.FindStem("minecraft:overworld"));
             seed = VanillaLevelData.Read(data).RandomSeed;
         }
         else if (root is not null)

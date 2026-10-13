@@ -3,10 +3,13 @@ using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Networking;
 using Obsidian.API.Plugins;
+using Obsidian.API.World.Generator;
 using Obsidian.Commands.Framework;
 using Obsidian.Services;
 using Obsidian.WorldData.Features;
+using System.IO;
 using System.Reflection;
+using System.Text.Json;
 
 namespace Obsidian.Plugins;
 public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher eventDispatcher, 
@@ -282,6 +285,106 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         }
 
         return this;
+    }
+
+    public IPluginRegistry RegisterBiomeRegion(
+        string identifier,
+        string dimension,
+        int weight,
+        IReadOnlyDictionary<string, string> replace)
+    {
+        ArgumentNullException.ThrowIfNull(replace);
+
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        RegisterBiomeRegion(container, identifier, dimension, weight, writer =>
+        {
+            writer.WriteStartObject("replace");
+
+            foreach (var (replaced, biome) in replace)
+                writer.WriteString(replaced, biome);
+
+            writer.WriteEndObject();
+        });
+
+        return this;
+    }
+
+    public IPluginRegistry RegisterBiomeRegion(
+        string identifier,
+        string dimension,
+        int weight,
+        IEnumerable<ClimateBiome> biomes)
+    {
+        ArgumentNullException.ThrowIfNull(biomes);
+
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        RegisterBiomeRegion(container, identifier, dimension, weight, writer =>
+        {
+            writer.WriteStartArray("biomes");
+
+            foreach (var entry in biomes)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("biome", entry.Biome);
+                writer.WriteStartObject("parameters");
+                Range("temperature", entry.Temperature);
+                Range("humidity", entry.Humidity);
+                Range("continentalness", entry.Continentalness);
+                Range("erosion", entry.Erosion);
+                Range("depth", entry.Depth);
+                Range("weirdness", entry.Weirdness);
+                writer.WriteNumber("offset", entry.Offset);
+                writer.WriteEndObject();
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
+
+            void Range(string name, ClimateRange range)
+            {
+                writer.WriteStartArray(name);
+                writer.WriteNumberValue(range.Min);
+                writer.WriteNumberValue(range.Max);
+                writer.WriteEndArray();
+            }
+        });
+
+        return this;
+    }
+
+    // A region registered in code is kept as the JSON of a region file, and read with the plugin's region files once
+    // its biomes are registered, so that it's checked and generates exactly like one.
+    private static void RegisterBiomeRegion(
+        PluginContainer container,
+        string identifier,
+        string dimension,
+        int weight,
+        Action<Utf8JsonWriter> writeLayout)
+    {
+        CheckIdentifier(container, identifier);
+
+        using var json = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(json))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("dimension", dimension);
+            writer.WriteNumber("weight", weight);
+            writeLayout(writer);
+            writer.WriteEndObject();
+        }
+
+        lock (container.WorldgenTypes)
+        {
+            if (!container.RegisteringWorldgenTypes || container.IsClosing)
+            {
+                throw new InvalidOperationException(
+                    $"{container.Info.Name} can only register biome regions in ConfigureRegistry.");
+            }
+
+            container.RegisteredBiomeRegions.Add((identifier, json.ToArray()));
+        }
     }
 
     // The plugin's feature files are read once it configured its registry, with the types it registered by then, and

@@ -3,6 +3,7 @@ using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.World.Generator.Noise;
 using Obsidian.Plugins;
 using Obsidian.Registries;
+using System.Collections.Frozen;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -124,6 +125,13 @@ internal sealed class MojangDimension
     public ImmutableArray<PluginContainer> Plugins { get; }
 
     /// <summary>
+    /// The noises files define that the dimension reads by identifier, like the surface builder's
+    /// <c>minecraft:surface</c> (see <see cref="RandomState.GetOrCreateNoise(string)"/>); vanilla's are found
+    /// otherwise.
+    /// </summary>
+    public IReadOnlyDictionary<string, BaseNoise> Noises { get; }
+
+    /// <summary>
     /// Whether <see cref="Release"/> dropped the generator's parts.
     /// </summary>
     public bool IsReleased => this.settings is null;
@@ -135,6 +143,7 @@ internal sealed class MojangDimension
     /// <param name="createBiomeSource">Creates the biome source for a world.</param>
     /// <param name="possibleBiomes">The biome source's possible biomes, without creating one.</param>
     /// <param name="plugins">The plugins whose types the noise settings or the biome source are made of.</param>
+    /// <param name="noises">The noises files define, read by identifier before vanilla's; none by default.</param>
     public MojangDimension(
         string identifier,
         string dimensionType,
@@ -142,7 +151,8 @@ internal sealed class MojangDimension
         NoiseSetting settings,
         Func<RandomState, IClimateBiomeSource> createBiomeSource,
         Func<IReadOnlyList<BiomeCodec>> possibleBiomes,
-        ImmutableArray<PluginContainer> plugins = default)
+        ImmutableArray<PluginContainer> plugins = default,
+        IReadOnlyDictionary<string, BaseNoise>? noises = null)
     {
         this.Identifier = identifier;
         this.dimensionType = dimensionType;
@@ -153,6 +163,7 @@ internal sealed class MojangDimension
         this.createBiomeSource = PluginBiomeRegions.Wrap(identifier, createBiomeSource);
         this.possibleBiomes = possibleBiomes;
         this.Plugins = plugins.IsDefault ? [] : plugins;
+        this.Noises = noises ?? FrozenDictionary<string, BaseNoise>.Empty;
     }
 
     /// <summary>

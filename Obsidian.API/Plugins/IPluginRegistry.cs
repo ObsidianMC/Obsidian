@@ -231,6 +231,49 @@ public interface IPluginRegistry
     /// <exception cref="InvalidOperationException">The plugin has already loaded, or is unloading.</exception>
     public IPluginRegistry RegisterGenerator<TGenerator>(string identifier)
         where TGenerator : class, ILevelGenerator;
+
+    /// <summary>
+    /// Registers a biome region that swaps some of a dimension's biomes for others, like a
+    /// <c>data/&lt;namespace&gt;/biome_region</c> file with <c>replace</c>, which it's read as once the plugin's
+    /// biomes are registered.
+    /// </summary>
+    /// <param name="identifier">The region's identifier, in the plugin's namespace.</param>
+    /// <param name="dimension">The dimension's level stem, like <c>minecraft:overworld</c>.</param>
+    /// <param name="weight">How often the region is picked, from 1 to 1000, against the dimension's own layout's
+    /// 10.</param>
+    /// <param name="replace">The biome generated instead of each biome, or of each biome of a tag
+    /// (<c>#c:is_plains</c>).</param>
+    /// <remarks>
+    /// Register regions in <see cref="PluginBase.ConfigureRegistry"/>. A region that can't be read, like one naming a
+    /// biome that doesn't exist, is logged and left out, as a file would be. Servers that don't generate worlds,
+    /// like the Obsidian client, ignore regions.
+    /// </remarks>
+    /// <exception cref="ArgumentException">The identifier isn't in the plugin's namespace.</exception>
+    /// <exception cref="InvalidOperationException">The plugin has already loaded, or is unloading.</exception>
+    public IPluginRegistry RegisterBiomeRegion(
+        string identifier,
+        string dimension,
+        int weight,
+        IReadOnlyDictionary<string, string> replace) => this;
+
+    /// <summary>
+    /// Registers a biome region with a parameter list of its own, like a <c>data/&lt;namespace&gt;/biome_region</c>
+    /// file with <c>biomes</c>, which it's read as once the plugin's biomes are registered: where the region is, its
+    /// biomes are picked from the climate, so every climate should find a fitting biome, oceans and caves included.
+    /// </summary>
+    /// <param name="identifier">The region's identifier, in the plugin's namespace.</param>
+    /// <param name="dimension">The dimension's level stem, like <c>minecraft:overworld</c>.</param>
+    /// <param name="weight">How often the region is picked, from 1 to 1000, against the dimension's own layout's
+    /// 10.</param>
+    /// <param name="biomes">The region's biomes and their climates, in order, which decides ties.</param>
+    /// <remarks>The rules are those of the other overload.</remarks>
+    /// <exception cref="ArgumentException">The identifier isn't in the plugin's namespace.</exception>
+    /// <exception cref="InvalidOperationException">The plugin has already loaded, or is unloading.</exception>
+    public IPluginRegistry RegisterBiomeRegion(
+        string identifier,
+        string dimension,
+        int weight,
+        IEnumerable<World.Generator.ClimateBiome> biomes) => this;
 }
 
 
