@@ -4,12 +4,13 @@ namespace Obsidian.Registries;
 
 /// <summary>
 /// Level generator types plugins registered with
-/// <see cref="API.Plugins.IPluginRegistry.RegisterGenerator{TGenerator}"/>,
-/// which worlds and dimensions name by identifier (see <see cref="WorldData.Generators.PluginLevelGenerator"/>).
+/// <see cref="API.Plugins.IPluginRegistry.RegisterGenerator{TGenerator}"/>, or with the host's
+/// <see cref="WorldData.LevelFactory.RegisterGenerator{T}"/>, which worlds and dimensions name by identifier (see
+/// <see cref="WorldData.Generators.PluginLevelGenerator"/>).
 /// </summary>
 /// <remarks>
-/// Unlike the host's generators (<see cref="WorldData.LevelFactory.RegisterGenerator{T}"/>), a plugin's are removed
-/// when it unloads, so that nothing keeps its types, and registered again when it loads.
+/// Unlike the server's own generators, a plugin's are removed when it unloads, so that nothing keeps its types, and
+/// registered again when it loads.
 /// </remarks>
 internal static class PluginGenerators
 {

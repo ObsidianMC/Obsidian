@@ -13,6 +13,13 @@ public sealed class PluginLoadContext(string name) : AssemblyLoadContext(name: n
     /// </summary>
     internal PluginContainer? Container { get; set; }
 
+    /// <summary>
+    /// The plugin whose load context <paramref name="assembly"/> lives in, or null for the server's own code, so that
+    /// what a host service adds on a plugin's behalf can be tracked and removed when the plugin unloads.
+    /// </summary>
+    internal static PluginContainer? OwnerOf(Assembly assembly) =>
+        (GetLoadContext(assembly) as PluginLoadContext)?.Container;
+
     public Assembly? LoadAssembly(byte[] mainBytes, byte[]? pbdBytes = null)
     {
         using var mainStream = new MemoryStream(mainBytes, false);

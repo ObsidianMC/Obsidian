@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Obsidian.Plugins;
+using Obsidian.Plugins.PluginProviders;
 using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData;
@@ -77,15 +79,41 @@ public sealed class LevelFactory(IServiceScopeFactory serviceScopeFactory) : ILe
     }
 
     /// <summary>
-    /// Registers a world generator of the server, which stays until it stops. Plugins register theirs with
-    /// <see cref="API.Plugins.IPluginRegistry.RegisterGenerator{TGenerator}"/> instead, which unloading removes.
+    /// Registers a world generator by its <see cref="ILevelGenerator.Id"/>. The server's own stay until it stops.
     /// </summary>
+    /// <remarks>
+    /// A plugin's generator type is registered like
+    /// <see cref="API.Plugins.IPluginRegistry.RegisterGenerator{TGenerator}"/> registers it, without its namespace
+    /// rule (the first plugin generator with an id keeps it, and the server's own come first), so unloading the
+    /// plugin removes it and stops the levels using it until the plugin loads again. Plugins should register theirs
+    /// in <c>ConfigureRegistry</c> or their load callbacks, after which the levels waiting for them resume.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// The generator has no id, or it's a plugin's and the plugin is unloading.
+    /// </exception>
     public void RegisterGenerator<T>() where T : ILevelGenerator, new()
     {
         var gen = new T();
         if (string.IsNullOrWhiteSpace(gen.Id))
             throw new InvalidOperationException($"Failed to get id for generator: {gen.Id}");
 
-        this.LevelGenerators.TryAdd(gen.Id, typeof(T));
+        if (PluginLoadContext.OwnerOf(typeof(T).Assembly) is not PluginContainer plugin)
+        {
+            this.LevelGenerators.TryAdd(gen.Id, typeof(T));
+            return;
+        }
+
+        // As with the server's own, the first generator registered with an id keeps it.
+        if (PluginGenerators.Find(gen.Id) is not null)
+            return;
+
+        PluginGenerators.Register(plugin, gen.Id, typeof(T));
+
+        // Closed before its generators are released, so one registered meanwhile is either released then or here.
+        if (plugin.IsClosing)
+        {
+            PluginGenerators.Release(plugin);
+            throw new InvalidOperationException($"{plugin.Info.Name} is unloading.");
+        }
     }
 }

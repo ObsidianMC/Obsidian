@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Blocks;
+using Obsidian.API.Builders;
 using Obsidian.API.Entities;
 using Obsidian.API.Configuration;
 using Obsidian.API.Events;
@@ -225,6 +226,11 @@ public sealed class PluginLoading : IDisposable
         Assert.Same(reloaded.LoadContext, AssemblyLoadContext.GetLoadContext(pillar.Placement[0].GetType().Assembly));
         Assert.Same(reloaded, Assert.Single(features.Owners[pillar]));
 
+        // What it added through the host's services is the reloaded plugin's: unloading removed the old plugin's
+        // dialog, which it couldn't register again otherwise, and its generator registered with ILevelFactory.
+        Assert.Single(DialogRegistry.GetRegistrations(), registration => registration.Id == "probe:menu");
+        Assert.Same(reloaded, PluginGenerators.Find("probe:host")?.Plugin);
+
         // Only the reloaded plugin's handler runs: unloading removed the old one.
         AppContext.SetData(ProbePlugin.CallsKey, 0);
         await dispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(server, new ServerStatus(server, "")));
@@ -260,6 +266,8 @@ public sealed class PluginLoading : IDisposable
         // Its world stops generating, and keeps the generator's identifier to save.
         Assert.Null(generator.Plugin);
         Assert.Null(PluginGenerators.Find("probe:flat"));
+        Assert.Null(PluginGenerators.Find("probe:host"));
+        Assert.DoesNotContain(DialogRegistry.GetRegistrations(), registration => registration.Id == "probe:menu");
         Assert.False((await generator.GenerateChunkAsync(2, 0)).IsGenerated);
         Assert.Equal("probe:flat", generator.Id);
     }
@@ -437,6 +445,11 @@ public sealed class ProbePlugin : PluginBase
         // Its level generator, which worlds name by its identifier.
         pluginRegistry.RegisterGenerator<ProbeGenerator>("probe:flat");
 
+        // A dialog and a generator added through the host's services rather than the registry, which unloading
+        // removes too.
+        DialogBuilder.Notice("Probe").Register("probe:menu", quickAction: true);
+        new LevelFactory(null!).RegisterGenerator<ProbeHostGenerator>();
+
         // Its biome regions, defined in code rather than in biome_region files.
         pluginRegistry.RegisterBiomeRegion(
             "probe:frozen_forests",
@@ -552,6 +565,22 @@ public sealed class ProbeGenerator(ProbeScopedService scoped) : ILevelGenerator,
 
         return ValueTask.FromResult<IChunk>(generated);
     }
+}
+
+/// <summary>
+/// A generator <see cref="ProbePlugin"/> registers with the host's <see cref="ILevelFactory"/>; it's never run.
+/// </summary>
+public sealed class ProbeHostGenerator : ILevelGenerator
+{
+    public string Id => "probe:host";
+
+    public void Init(ILevel level)
+    {
+    }
+
+    public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null,
+        ChunkGenStage stage = ChunkGenStage.full) =>
+        throw new NotSupportedException();
 }
 
 /// <summary>
