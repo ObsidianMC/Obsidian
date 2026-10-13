@@ -55,6 +55,27 @@ public abstract class StructurePoolElement
     public abstract bool Place(StructurePieceContext context, Vector position, Vector pivot, StructureRotation rotation, BlockBox box,
         IRandomSource random, LiquidSettings liquidSettings, bool keepJigsaws);
 
+    /// <summary>
+    /// Vanilla's order of a template's jigsaws: shuffled, then highest selection priority first.
+    /// </summary>
+    internal static void ShuffleJigsaws(List<JigsawBlockInfo> destination, IRandomSource random)
+    {
+        var jigsaws = CollectionsMarshal.AsSpan(destination);
+        FeatureHelpers.Shuffle(jigsaws, random);
+
+        // Java's List.sort is stable: an insertion sort by descending selection priority keeps the shuffled order
+        // of ties.
+        for (var i = 1; i < jigsaws.Length; i++)
+        {
+            var jigsaw = jigsaws[i];
+            var j = i - 1;
+            for (; j >= 0 && jigsaws[j].SelectionPriority < jigsaw.SelectionPriority; j--)
+                jigsaws[j + 1] = jigsaws[j];
+
+            jigsaws[j + 1] = jigsaw;
+        }
+    }
+
     /// <summary>Vanilla <c>setProjection</c>, which list elements use to pass their projection on.</summary>
     internal virtual void SetProjection(Projection value) => this.projection = value;
 
@@ -98,19 +119,7 @@ public class SinglePoolElement : StructurePoolElement
     {
         destination.Clear();
         this.Template.AddJigsaws(destination, position, rotation);
-        var jigsaws = CollectionsMarshal.AsSpan(destination);
-        FeatureHelpers.Shuffle(jigsaws, random);
-
-        // Java's List.sort is stable: an insertion sort by descending selection priority keeps the shuffled order of ties.
-        for (var i = 1; i < jigsaws.Length; i++)
-        {
-            var jigsaw = jigsaws[i];
-            var j = i - 1;
-            for (; j >= 0 && jigsaws[j].SelectionPriority < jigsaw.SelectionPriority; j--)
-                jigsaws[j + 1] = jigsaws[j];
-
-            jigsaws[j + 1] = jigsaw;
-        }
+        ShuffleJigsaws(destination, random);
     }
 
     public override BlockBox GetBoundingBox(Vector position, StructureRotation rotation) => this.Template.GetBoundingBox(position, rotation);
