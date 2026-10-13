@@ -156,19 +156,24 @@ public ValueTask OnClick(ContainerClickEventArgs click)
 
 Click handlers, like every container's (chests, furnaces, the player's inventory), run before the server applies the
 click and outside the container's lock, so a handler may wait, even for something another viewer does. The server's
-own handler runs last: inside the lock it checks that the window is still open and that neither the container nor the
-player's inventory changed since the click arrived, then applies the click unless it's cancelled, and sends the
-window's contents and the cursor to its viewers.
+own handler runs last: inside the lock it checks that the window is still open and that neither the container, the
+player's inventory nor the cursor changed since the click arrived (a slot set, or a stack in one changing its count or
+components), then applies the click unless it's cancelled, and sends the window's contents and the cursor to its
+viewers.
 
-- `Item` is a copy of what the clicked slot held as the click arrived; changing it changes nothing.
+- `Item` is a copy of what the clicked slot held as the click arrived, made each time it's read; it shares nothing with
+  the slot's stack, components included, so changing it changes nothing.
 - A click whose slots changed while handlers decided isn't applied, so a handler's decision never applies to contents
-  it didn't see. Like a cancelled click, it's corrected: the player's window and cursor are sent again.
+  it didn't see. Like a cancelled click, it's corrected: the player's window and cursor are sent again. In a crafting
+  window, a click whose result slot no longer shows what the grid crafts (the grid or the recipes changed without the
+  result following) is corrected the same way, rather than taking a result worked out again.
 - To change slots with the click, register the change with `ApplyWithClick`: it runs inside the lock right after the
-  click (or in its place, when cancelled), only if the click isn't stale, and the viewers see its result. It must not
-  block or wait.
+  click (or in its place, when cancelled), only if the click isn't stale, and the viewers see its result, a crafting
+  result following the grid included. It must not block or wait.
 - A handler may change the container directly, through its methods (`SetItem`, `RemoveItem`), but that change isn't
-  part of the click: it makes the click itself stale, and may race other viewers' clicks. Changing a stack in place
-  (its count) isn't seen as a change at all until it's set in its slot again.
+  part of the click: it makes the click itself stale, and may race other viewers' clicks. So does changing a stack it
+  holds (its count, or a component set with the stack's indexer, `Add` or `Remove`); changing a component's value in
+  place isn't seen as a change at all until the component, or the stack, is set again.
 - A `ContainerClosedEventArgs` handler may open another container for the player; the server then closes only the
   window the event is about.
 

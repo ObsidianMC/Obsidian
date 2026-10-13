@@ -9,7 +9,19 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 {
     public static readonly ItemStack Air = new(ItemsRegistry.Air, 0);
 
-    public int Count { get; set; }
+    // A change moves the stack's Version on, so that the container holding it sees it (see BaseContainer.Revision).
+    public int Count
+    {
+        get;
+        set
+        {
+            if (field == value)
+                return;
+
+            field = value;
+            this.MarkChanged();
+        }
+    }
 
     public Item Holder { get; }
 

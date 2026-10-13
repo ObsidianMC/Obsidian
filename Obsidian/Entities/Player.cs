@@ -120,6 +120,11 @@ public sealed partial class Player : Avatar, IClientPlayer
 
     public ItemStack? CarriedItem { get; set; }
 
+    /// <summary>
+    /// Keeps the window contents clicks send the player in the order they were captured.
+    /// </summary>
+    internal Events.WindowSnapshots WindowSnapshots { get; } = new();
+
     public IBlock? LastClickedBlock { get; internal set; }
 
     public GameMode GameMode
