@@ -243,6 +243,62 @@ public sealed class WorldgenOverrides : IDisposable
         Assert.Contains(logger.Messages, message => message.Contains("big.zip") && message.Contains("1024 bytes"));
     }
 
+    [Fact(DisplayName = "A data pack's overlays apply over its root, and its filter blocks earlier packs' files")]
+    public void DataPacksApplyOverlaysAndFilters()
+    {
+        var earlier = Path.Join(this.folder, "a_earlier", "data");
+        Directory.CreateDirectory(Path.Join(earlier, "minecraft", "worldgen", "noise"));
+        Directory.CreateDirectory(Path.Join(earlier, "ruby", "worldgen", "noise"));
+        File.WriteAllText(Path.Join(this.folder, "a_earlier", "pack.mcmeta"), PackMetadata);
+        File.WriteAllText(Path.Join(earlier, "minecraft", "worldgen", "noise", "blocked.json"), "{}");
+        File.WriteAllText(Path.Join(earlier, "ruby", "worldgen", "noise", "kept.json"), "{}");
+
+        this.Zip("b_later.zip", new()
+        {
+            ["pack.mcmeta"] = """
+                {
+                  "pack": { "pack_format": 94, "description": "" },
+                  "filter": { "block": [{ "namespace": "^minecraft$", "path": "noise/block" }] },
+                  "overlays": {
+                    "entries": [
+                      { "directory": "current", "min_format": [94, 1], "max_format": 94 },
+                      { "directory": "older", "min_format": 82, "max_format": 93 }
+                    ]
+                  }
+                }
+                """,
+            ["data/ruby/worldgen/noise/x.json"] = "root",
+            ["current/data/ruby/worldgen/noise/x.json"] = "current",
+            ["older/data/ruby/worldgen/noise/x.json"] = "older",
+            ["older/data/ruby/worldgen/noise/older.json"] = "older"
+        });
+
+        var logger = new PluginFeatureFiles.ListLogger();
+        var packs = DataPack.OpenAll(this.folder, _ => true, logger);
+
+        Assert.Equal(["data/ruby/worldgen/noise/kept.json"], packs[0].Files.Paths);
+        Assert.Equal(["data/ruby/worldgen/noise/x.json"], packs[1].Files.Paths);
+        Assert.Equal("current"u8.ToArray(), packs[1].Files.Read("data/ruby/worldgen/noise/x.json"));
+    }
+
+    [Theory(DisplayName = "Overlays apply for vanilla's data pack format, checked like vanilla's codec checks them")]
+    [InlineData("""{ "directory": "d", "min_format": 94, "max_format": 94 }""", true)]
+    [InlineData("""{ "directory": "d", "min_format": [94, 2], "max_format": 95 }""", false)]
+    [InlineData("""{ "directory": "d", "formats": [48, 81] }""", false)]
+    [InlineData("""{ "directory": "d", "min_format": 80, "max_format": 94, "formats": [80, 81] }""", true)]
+    [InlineData("""{ "directory": "d", "min_format": 80, "max_format": 94 }""", false)]
+    [InlineData("""{ "directory": "d", "min_format": 82, "max_format": 94, "formats": [82, 94] }""", false)]
+    [InlineData("""{ "directory": "d", "min_format": 94 }""", false)]
+    [InlineData("""{ "directory": "..", "min_format": 94, "max_format": 94 }""", false)]
+    public void OverlaysFollowVanillasFormats(string entry, bool applied)
+    {
+        var json = $$"""{ "pack": { "pack_format": 94 }, "overlays": { "entries": [{{entry}}] } }""";
+        var metadata = DataPackMetadata.Read("test", Encoding.UTF8.GetBytes(json), NullLogger.Instance);
+
+        string[] expected = applied ? ["d"] : [];
+        Assert.Equal(expected, metadata.Overlays);
+    }
+
     [Fact(DisplayName = "A dimension follows later overrides of the data its stem names, and its files, until taken")]
     public void DimensionsFollowTheirFilesUntilTaken()
     {

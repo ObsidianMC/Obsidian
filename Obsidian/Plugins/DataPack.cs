@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using Obsidian.Plugins.Archives;
 using System.IO;
 using System.IO.Compression;
-using System.Text.Json;
 
 namespace Obsidian.Plugins;
 
@@ -87,19 +86,14 @@ internal sealed class DataBudget(string name, DataPackLimits limits)
 /// </summary>
 /// <remarks>
 /// Only the files Obsidian reads from plugins are applied (worldgen, structures and their templates, biomes, dimension
-/// and damage types, and tags); others, like recipes or loot tables, are left out unread. A pack's <c>filter</c> and
-/// <c>overlays</c> aren't applied.
+/// and damage types, and tags); others, like recipes or loot tables, are left out unread. Like vanilla, a pack's
+/// <c>overlays</c> for the current data pack format are applied over its root, and its <c>filter</c> blocks files
+/// of the packs before it (see <see cref="DataPackMetadata"/>); plugins' files and vanilla's own entries aren't
+/// filtered.
 /// </remarks>
 internal sealed partial class DataPack(DataFiles files)
 {
     private const string Metadata = "pack.mcmeta";
-
-    // Gson reads pack.mcmeta leniently, so comments and trailing commas are fine.
-    private static readonly JsonDocumentOptions documentOptions = new()
-    {
-        CommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true
-    };
 
     /// <summary>
     /// The pack's files.
@@ -164,8 +158,14 @@ internal sealed partial class DataPack(DataFiles files)
         {
             try
             {
-                if (Open(path, reads, limits, logger) is DataFiles opened)
+                if (Open(path, reads, limits, logger) is (DataFiles opened, DataPackMetadata metadata))
+                {
+                    // Like vanilla's, a pack's filter blocks the files of the packs before it, not its own.
+                    foreach (var before in packs)
+                        before.Block(metadata, logger);
+
                     packs.Add(new DataPack(opened));
+                }
             }
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
             {
@@ -181,8 +181,30 @@ internal sealed partial class DataPack(DataFiles files)
     /// </summary>
     public void DropContents() => this.Files = this.Files with { Read = static _ => null };
 
-    // A folder or zip file holding a pack, or null for another file.
-    private static DataFiles? Open(string path, Func<string, bool> reads, DataPackLimits limits, ILogger logger)
+    // Leaves out the files a later pack's filter blocks.
+    private void Block(DataPackMetadata metadata, ILogger logger)
+    {
+        var blocked = this.Files.Paths.Where(metadata.Blocks).ToHashSet(StringComparer.Ordinal);
+        if (blocked.Count == 0)
+            return;
+
+        var read = this.Files.Read;
+
+        this.Files = this.Files with
+        {
+            Paths = [.. this.Files.Paths.Where(path => !blocked.Contains(path))],
+            Read = path => blocked.Contains(path) ? null : read(path)
+        };
+
+        Log.Blocked(logger, this.Files.Name, blocked.Count);
+    }
+
+    // A folder or zip file holding a pack, with its metadata, or null for another file.
+    private static (DataFiles, DataPackMetadata)? Open(
+        string path,
+        Func<string, bool> reads,
+        DataPackLimits limits,
+        ILogger logger)
     {
         var name = Path.GetFileName(path);
 
@@ -197,7 +219,7 @@ internal sealed partial class DataPack(DataFiles files)
     }
 
     // Symbolic links and junctions in the pack are skipped, so that what's read stays in its folder.
-    private static DataFiles OpenFolder(
+    private static (DataFiles, DataPackMetadata) OpenFolder(
         string name,
         string folder,
         Func<string, bool> reads,
@@ -208,24 +230,29 @@ internal sealed partial class DataPack(DataFiles files)
         if (!metadata.Exists || metadata.LinkTarget is not null)
             throw new InvalidDataException($"{name} has no {Metadata}.");
 
+        DataPackMetadata packMetadata;
         using (var stream = metadata.OpenRead())
-            CheckMetadata(name, ReadBounded(stream, Metadata, limits.FileSize), logger);
+            packMetadata = DataPackMetadata.Read(name, ReadBounded(stream, Metadata, limits.FileSize), logger);
 
         var contents = new PackContents(name, limits);
-        var data = new DirectoryInfo(Path.Join(folder, "data"));
-
-        if (data.Exists && data.LinkTarget is null)
+        var options = new EnumerationOptions
         {
-            var options = new EnumerationOptions
-            {
-                RecurseSubdirectories = true,
-                AttributesToSkip = FileAttributes.ReparsePoint
-            };
+            RecurseSubdirectories = true,
+            AttributesToSkip = FileAttributes.ReparsePoint
+        };
+
+        foreach (var layer in Layers(packMetadata))
+        {
+            var root = new DirectoryInfo(Path.Join(folder, layer));
+            var data = new DirectoryInfo(Path.Join(root.FullName, "data"));
+            if (!data.Exists || data.LinkTarget is not null || layer.Length > 0 && root.LinkTarget is not null)
+                continue;
 
             foreach (var file in data.EnumerateFiles("*", options))
             {
-                var path = Path.GetRelativePath(folder, file.FullName).Replace('\\', '/');
-                if (!contents.Add(path, reads))
+                var stored = Path.GetRelativePath(folder, file.FullName).Replace('\\', '/');
+                var path = Path.GetRelativePath(root.FullName, file.FullName).Replace('\\', '/');
+                if (!contents.Add(stored, path, reads))
                     continue;
 
                 using var stream = file.OpenRead();
@@ -233,11 +260,16 @@ internal sealed partial class DataPack(DataFiles files)
             }
         }
 
-        return contents.ToFiles(folder);
+        return (contents.ToFiles(folder), packMetadata);
     }
 
+    // The folders whose data/ files a pack holds, those whose files win first: its overlays from the last listed,
+    // then its root, like vanilla's composite pack resources.
+    private static IEnumerable<string> Layers(DataPackMetadata metadata) =>
+        Enumerable.Reverse(metadata.Overlays).Append("");
+
     // The metadata is checked before any data file is read.
-    private static DataFiles OpenZip(
+    private static (DataFiles, DataPackMetadata) OpenZip(
         string name,
         string file,
         Func<string, bool> reads,
@@ -252,30 +284,37 @@ internal sealed partial class DataPack(DataFiles files)
         if (metadata.Length > limits.FileSize)
             throw new InvalidDataException($"{name}'s {Metadata} is larger than {limits.FileSize} bytes.");
 
+        DataPackMetadata packMetadata;
         using (var stream = metadata.Open())
-            CheckMetadata(name, ReadBounded(stream, Metadata, limits.FileSize), logger);
+            packMetadata = DataPackMetadata.Read(name, ReadBounded(stream, Metadata, limits.FileSize), logger);
 
         var contents = new PackContents(name, limits);
 
-        foreach (var entry in zip.Entries)
+        foreach (var layer in Layers(packMetadata))
         {
-            // Folders have entries of their own in some zip files; only files matter.
-            var path = entry.FullName;
-            if (path.EndsWith('/') || !path.StartsWith("data/", StringComparison.Ordinal))
-                continue;
+            var prefix = layer.Length == 0 ? "data/" : $"{layer}/data/";
 
-            // Like a plugin archive's paths, none may leave the pack.
-            if (path.Contains('\\') || path.Split('/').Contains(".."))
-                throw new InvalidDataException($"{name} has an invalid path '{path}'.");
+            foreach (var entry in zip.Entries)
+            {
+                // Folders have entries of their own in some zip files; only files matter.
+                var stored = entry.FullName;
+                if (stored.EndsWith('/') || !stored.StartsWith(prefix, StringComparison.Ordinal))
+                    continue;
 
-            if (!contents.Add(path, reads))
-                continue;
+                // Like a plugin archive's paths, none may leave the pack.
+                if (stored.Contains('\\') || stored.Split('/').Contains(".."))
+                    throw new InvalidDataException($"{name} has an invalid path '{stored}'.");
 
-            using var stream = entry.Open();
-            contents.Read(path, stream, entry.Length);
+                var path = stored[(prefix.Length - "data/".Length)..];
+                if (!contents.Add(stored, path, reads))
+                    continue;
+
+                using var stream = entry.Open();
+                contents.Read(path, stream, entry.Length);
+            }
         }
 
-        return contents.ToFiles(file);
+        return (contents.ToFiles(file), packMetadata);
     }
 
     // Reads a stream to its end, failing once it has more than the limit: a zip entry's stated size can't be trusted.
@@ -296,50 +335,25 @@ internal sealed partial class DataPack(DataFiles files)
         return memory.ToArray();
     }
 
-    // Vanilla requires a pack object; what Obsidian doesn't apply is logged once per pack.
-    private static void CheckMetadata(string name, byte[] metadata, ILogger logger)
-    {
-        try
-        {
-            using var document = JsonDocument.Parse(metadata, documentOptions);
-            var root = document.RootElement;
-
-            if (root.ValueKind != JsonValueKind.Object
-                || !root.TryGetProperty("pack", out var pack)
-                || pack.ValueKind != JsonValueKind.Object)
-            {
-                throw new InvalidDataException($"{name}'s {Metadata} has no pack object.");
-            }
-
-            foreach (var section in (ReadOnlySpan<string>)["filter", "overlays"])
-            {
-                if (root.TryGetProperty(section, out _))
-                    Log.Unsupported(logger, name, section);
-            }
-        }
-        catch (JsonException ex)
-        {
-            throw new InvalidDataException($"{name}'s {Metadata} isn't valid JSON: {ex.Message}", ex);
-        }
-    }
-
-    // A pack's data files as they're read, within its limits.
+    // A pack's data files as they're read, within its limits. Every file stored counts, overlays' included.
     private sealed class PackContents(string name, DataPackLimits limits)
     {
+        private readonly HashSet<string> stored = new(StringComparer.Ordinal);
         private readonly HashSet<string> paths = new(StringComparer.Ordinal);
         private readonly Dictionary<string, byte[]> read = new(StringComparer.Ordinal);
         private readonly DataBudget budget = new(name, limits);
 
-        // Counts a file, and gives whether it's to be read.
-        public bool Add(string path, Func<string, bool> reads)
+        // Counts a file stored at a path in the pack, which is the file at path (data/...) unless an overlay added
+        // before holds that path, and gives whether it's to be read.
+        public bool Add(string storedPath, string path, Func<string, bool> reads)
         {
-            if (!this.paths.Add(path))
-                throw new InvalidDataException($"{name} has '{path}' more than once.");
+            if (!this.stored.Add(storedPath))
+                throw new InvalidDataException($"{name} has '{storedPath}' more than once.");
 
-            if (this.paths.Count > limits.Files)
+            if (this.stored.Count > limits.Files)
                 throw new InvalidDataException($"{name} has more than {limits.Files} files.");
 
-            return reads(path);
+            return this.paths.Add(path) && reads(path);
         }
 
         public void Read(string path, Stream stream, long length)
@@ -365,8 +379,8 @@ internal sealed partial class DataPack(DataFiles files)
             Message = "Left out {Name} in the data packs folder: a data pack is a folder or a zip file")]
         public static partial void NotAPack(ILogger logger, string name);
 
-        [LoggerMessage(Level = LogLevel.Warning,
-            Message = "Data pack {Name} has a {Section} section, which Obsidian doesn't apply")]
-        public static partial void Unsupported(ILogger logger, string name, string section);
+        [LoggerMessage(Level = LogLevel.Information,
+            Message = "A later data pack's filter left out {Count} files of data pack {Name}")]
+        public static partial void Blocked(ILogger logger, string name, int count);
     }
 }
