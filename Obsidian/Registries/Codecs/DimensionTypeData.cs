@@ -123,6 +123,7 @@ internal sealed record DimensionTypeData(
         // The attributes' defaults are false and 15; the dimension type's map applies first, as in vanilla.
         MonstersBurn = this.Attributes.Apply("minecraft:gameplay/monsters_burn", false),
         SkyLightLevel = this.Attributes.Apply("minecraft:gameplay/sky_light_level", 15f),
+        HasFixedTime = this.HasFixedTime,
         GameplayAttributes = WorldData.LevelEnvironment.GameplayDefaults.ToFrozenDictionary(
             attribute => attribute.Key,
             attribute => this.Attributes.Apply(attribute.Key, attribute.Value))

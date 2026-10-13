@@ -149,6 +149,10 @@ internal static class LevelEnvironment
             }.ToFrozenDictionary()
         }.ToFrozenDictionary();
 
+    // Vanilla's types whose has_fixed_time is true (data/minecraft/dimension_type/*.json).
+    private static readonly FrozenSet<string> vanillaFixedTime =
+        new[] { "minecraft:the_nether", "minecraft:the_end" }.ToFrozenSet();
+
     // Vanilla's types' bed rules: the overworld's is the default, and beds explode in the nether and the end.
     private static readonly FrozenDictionary<string, BedRule> vanillaBedRules = new Dictionary<string, BedRule>
     {
@@ -202,9 +206,20 @@ internal static class LevelEnvironment
 
     /// <summary>
     /// Whether it's dark outside, which beds with a <c>when_dark</c> rule need (vanilla's <c>Level.isDarkOutside</c>):
-    /// the level has a day cycle and the sky is darkened by 4 or more.
+    /// the dimension type's time isn't fixed and the sky is darkened by 4 or more.
     /// </summary>
-    public static bool IsDarkOutside(this ILevel level) => level.HasDayCycle() && level.SkyDarken() >= 4;
+    public static bool IsDarkOutside(this ILevel level) => !level.HasFixedTime() && level.SkyDarken() >= 4;
+
+    /// <summary>
+    /// Whether the dimension type's time is fixed (its <c>has_fixed_time</c>): a plugin's type's own flag, or
+    /// vanilla's, which only the nether's and the end's set.
+    /// </summary>
+    public static bool HasFixedTime(this ILevel level)
+    {
+        var type = level.DimensionType;
+
+        return type.Element.HasFixedTime ?? vanillaFixedTime.Contains(type.Name);
+    }
 
     private static bool ApplyBiome(BiomeCodec biome, string attribute, bool value)
     {
@@ -271,23 +286,27 @@ internal static class LevelEnvironment
 
     /// <summary>
     /// Whether undead mobs burn in daylight now at <paramref name="position"/>: vanilla's
-    /// <c>minecraft:gameplay/monsters_burn</c> attribute, set by the dimension type itself or, with the day cycle, by
-    /// day, then by the biome there. The caller checks the sky and the weather, as vanilla's <c>Mob.isSunBurnTick</c>
-    /// does.
+    /// <c>minecraft:gameplay/monsters_burn</c> attribute, set by the dimension type itself, then by the biome there,
+    /// then, with the day cycle, by day. The caller checks the sky and the weather, as vanilla's
+    /// <c>Mob.isSunBurnTick</c> does.
     /// </summary>
+    /// <remarks>
+    /// The order is vanilla's environment attribute layers' (dimension, biome, timelines), which decides that a biome
+    /// can't stop monsters burning by day: the day timeline's <c>or</c> applies after it.
+    /// </remarks>
     public static bool MonstersBurn(this ILevel level, Vector position)
     {
         var burn = level.DimensionType.Element.MonstersBurn;
+
+        // Vanilla's biomes don't set it.
+        if (BiomeAt(level, position) is BiomeCodec biome && attributeMaps.TryGetValue(biome.Element, out var map))
+            burn = map.Apply(MonstersBurnAttribute, burn);
 
         if (!burn && level.HasDayCycle())
         {
             var time = (level.DayTime % DayLength + DayLength) % DayLength;
             burn = time is < MonstersStopBurning or >= MonstersStartBurning;
         }
-
-        // Vanilla's biomes don't set it.
-        if (BiomeAt(level, position) is BiomeCodec biome && attributeMaps.TryGetValue(biome.Element, out var map))
-            burn = map.Apply(MonstersBurnAttribute, burn);
 
         return burn;
     }

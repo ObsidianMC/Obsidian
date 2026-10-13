@@ -19,17 +19,31 @@ public abstract partial class AbstractLevel
         return JsonSerializer.Deserialize<Dictionary<string, float>>(stream)!;
     }
 
-    internal ValueTask ExplodeAsync(Entity source, float radius, IEntity? owner = null) =>
-        ExplodeAsync(source.Position, radius, source, owner, fire: false);
+    /// <summary>
+    /// An explosion at <paramref name="source"/>, which <paramref name="owner"/> caused if it has one. By default it's
+    /// a mob's, like a creeper's or a fireball's; <paramref name="interaction"/> says how else it breaks blocks.
+    /// </summary>
+    internal ValueTask ExplodeAsync(
+        Entity source,
+        float radius,
+        IEntity? owner = null,
+        ExplosionInteraction interaction = ExplosionInteraction.Mob) =>
+        ExplodeAsync(source.Position, radius, source, owner, fire: false, interaction);
 
     /// <summary>
     /// An explosion without an entity causing it, like a bed's or a respawn anchor's where they don't work. With
     /// <paramref name="fire"/>, like vanilla's, a third of the air it reaches above a solid block catches fire.
     /// </summary>
-    internal ValueTask ExplodeAsync(VectorD center, float radius, bool fire) =>
-        ExplodeAsync(center, radius, source: null, owner: null, fire);
+    internal ValueTask ExplodeAsync(VectorD center, float radius, bool fire, ExplosionInteraction interaction) =>
+        ExplodeAsync(center, radius, source: null, owner: null, fire, interaction);
 
-    private async ValueTask ExplodeAsync(VectorD center, float radius, Entity? source, IEntity? owner, bool fire)
+    private async ValueTask ExplodeAsync(
+        VectorD center,
+        float radius,
+        Entity? source,
+        IEntity? owner,
+        bool fire,
+        ExplosionInteraction interaction)
     {
         // Capture the caller once, before awaited damage callbacks, rather than walking for each block drop.
         var spawner = PluginEntities.FindSpawner();
@@ -105,9 +119,12 @@ public abstract partial class AbstractLevel
             }
             var exposure = (1 - distance) * visible / Math.Max(1, total);
             var damage = (float)Math.Floor((exposure * exposure + exposure) / 2 * 7 * diameter + 1);
+            // Without an entity behind it, the victim stands in as the attacker the damage handling needs; the centre
+            // is where the damage comes from either way (an explosion's source position in vanilla), which shields
+            // block by.
             var attacker = owner ?? source ?? (IEntity)target;
             if (target is Living living)
-                await living.DamageCombatAsync(attacker, damage, CombatDamageKind.Explosion);
+                await living.DamageCombatAsync(attacker, damage, CombatDamageKind.Explosion, sourcePosition: center);
             else
                 await target.DamageAsync(attacker, damage);
             var knockback = direction * exposure * (1 - Math.Clamp(target.GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
@@ -115,12 +132,23 @@ public abstract partial class AbstractLevel
             if (target is IPlayer)
                 knockbacks[target.EntityId] = knockback;
         }
-        if ((source is Mob || owner is Mob) && !LevelData.GetBooleanRule("mob_griefing")) destroyed.Clear();
+        // Vanilla's ServerLevel.explode: which blocks break, and which rule decays their drops, depend on what kind of
+        // explosion it is. Mobs' break nothing without mob_griefing.
+        var keepsBlocks = interaction == ExplosionInteraction.None
+            || interaction == ExplosionInteraction.Mob && !LevelData.GetBooleanRule("mob_griefing");
+
+        if (keepsBlocks)
+            destroyed.Clear();
+
+        var dropDecay = LevelData.GetBooleanRule(interaction == ExplosionInteraction.Block
+            ? "block_explosion_drop_decay"
+            : "mob_explosion_drop_decay");
+
         foreach (var position in destroyed)
         {
             var block = terrain.GetBlock(position)!;
             await SetBlockAsync(position, BlocksRegistry.Air, true);
-            if (!LevelData.GetBooleanRule("mob_explosion_drop_decay") || random.NextSingle() <= 1 / radius)
+            if (!dropDecay || random.NextSingle() <= 1 / radius)
             {
                 if (BlocksRegistry.TryGetItem(block, out var holder))
                 {
@@ -168,6 +196,25 @@ public abstract partial class AbstractLevel
                 ExplosionParticle = new ExplosionParticleData(), ExplosionSound = sound, ExplosionParticleInfo = []
             });
         }
+    }
+
+    /// <summary>
+    /// How an explosion breaks blocks, like vanilla's <c>Level.ExplosionInteraction</c>: the kinds of explosion
+    /// Obsidian has.
+    /// </summary>
+    internal enum ExplosionInteraction
+    {
+        /// <summary>Breaks nothing, like an end crystal's at the end of the dragon's resurrection.</summary>
+        None,
+
+        /// <summary>A block's or an end crystal's: <c>block_explosion_drop_decay</c> decays its drops.</summary>
+        Block,
+
+        /// <summary>
+        /// A mob's, or its projectile's: breaks blocks only with <c>mob_griefing</c>, and
+        /// <c>mob_explosion_drop_decay</c> decays its drops.
+        /// </summary>
+        Mob
     }
 
     private sealed class ExplosionParticleData : ParticleData

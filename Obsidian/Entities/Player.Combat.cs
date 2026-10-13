@@ -20,12 +20,22 @@ public partial class Player
     public override ValueTask DamageAsync(IEntity source, float amount = 1)
         => DamageCombatAsync(source, amount, ReferenceEquals(source, this) ? CombatDamageKind.Magic : CombatDamageKind.Melee);
 
-    internal override async ValueTask DamageCombatAsync(IEntity source, float amount, CombatDamageKind kind, ItemStack? weapon = null, IEntity? directSource = null)
+    internal override async ValueTask DamageCombatAsync(
+        IEntity source,
+        float amount,
+        CombatDamageKind kind,
+        ItemStack? weapon = null,
+        IEntity? directSource = null,
+        VectorD? sourcePosition = null)
     {
         if (!float.IsFinite(amount) || amount <= 0 || !Alive || Respawning || source.Level != Level ||
             GameMode is GameMode.Creative or GameMode.Spectator || Abilities.HasFlag(PlayerAbility.Invulnerable)) return;
         if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact && HasPotionEffect((int)PotionEffect.FireResistance - 1)) return;
-        if (await TryBlockDamageAsync(source, amount, kind, weapon, directSource)) return;
+
+        var incomingFrom = sourcePosition ?? (directSource ?? source).Position;
+        if (await TryBlockDamageAsync(source, amount, kind, weapon, incomingFrom))
+            return;
+
         var incoming = amount;
         if (damageCooldown > 0)
         {

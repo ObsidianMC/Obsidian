@@ -105,6 +105,12 @@ public sealed record class DimensionElement : INbtSerializable
     public float? SkyLightLevel { get; set; }
 
     /// <summary>
+    /// Whether the type's time is fixed (its <c>has_fixed_time</c>), so it's never dark outside for beds; null for
+    /// vanilla's types, which the server knows. Not written, like <see cref="Timelines"/>.
+    /// </summary>
+    public bool? HasFixedTime { get; set; }
+
+    /// <summary>
     /// The boolean <c>minecraft:gameplay/...</c> attributes the server applies, by identifier, as the type's own map
     /// sets them (its values applied to the attributes' defaults); null for vanilla's types, which the server knows.
     /// Not written, like <see cref="Timelines"/>.

@@ -34,7 +34,8 @@ public sealed partial class EndCrystal : Entity
         if (Level is AbstractLevel level)
         {
             await level.AbortDragonResurrectionAsync(this);
-            await level.ExplodeAsync(this, 6, source);
+            // Like vanilla's, a block explosion: it breaks blocks without mob_griefing.
+            await level.ExplodeAsync(this, 6, source, AbstractLevel.ExplosionInteraction.Block);
         }
     }
 

@@ -11,6 +11,9 @@ public abstract partial class AbstractLevel
 
     private const int MaxAnchorCharges = 4;
 
+    // The player inventory's offhand slot.
+    private const int OffhandSlot = 45;
+
     /// <summary>
     /// A player using a bed, like vanilla's <c>BedBlock.useWithoutItem</c>: where the bed rule there says beds
     /// explode (the nether's and the end's), the bed is removed and explodes, with the rule's message if it has one;
@@ -51,7 +54,11 @@ public abstract partial class AbstractLevel
             if (GameEventBlock(foot)?.RegistryId == block.RegistryId)
                 await SetBlockAsync(foot, BlocksRegistry.Air, true);
 
-            await ExplodeAsync((VectorD)head + new VectorD(0.5, 0.5, 0.5), BadRespawnPointPower, fire: true);
+            await ExplodeAsync(
+                (VectorD)head + new VectorD(0.5, 0.5, 0.5),
+                BadRespawnPointPower,
+                fire: true,
+                ExplosionInteraction.Block);
             return true;
         }
 
@@ -77,7 +84,10 @@ public abstract partial class AbstractLevel
     /// Players can't set their spawn with a working anchor yet: using one does nothing more. Unlike vanilla, an anchor
     /// next to water explodes like any other.
     /// </remarks>
-    /// <returns>Whether the use is done with; an empty anchor lets the held item be used instead.</returns>
+    /// <returns>
+    /// Whether the use is done with; an empty anchor, the offhand without glowstone, and the main hand while the
+    /// offhand's glowstone can charge the anchor let the held item be used instead.
+    /// </returns>
     internal async ValueTask<bool> UseRespawnAnchorAsync(IPlayer player, Vector position, IBlock block, int handSlot)
     {
         if (!block.Is(BlockIds.RespawnAnchor))
@@ -115,13 +125,27 @@ public abstract partial class AbstractLevel
             return true;
         }
 
+        // Like vanilla's useItemOn and ServerPlayerGameMode: only the main hand uses the anchor empty-handed, and not
+        // while glowstone in the offhand could charge it instead, so the offhand's use that follows does. Without
+        // this, a pickaxe in the main hand would explode a partly charged anchor that offhand glowstone should charge.
+        if (handSlot == OffhandSlot)
+            return false;
+
+        var offhand = player.Inventory.GetItem(OffhandSlot);
+        if (offhand is { Count: > 0, Holder.Id: ItemIds.Glowstone } && charges < MaxAnchorCharges)
+            return false;
+
         if (charges == 0)
             return false;
 
         if (!this.Gameplay(LevelEnvironment.RespawnAnchorWorks, position))
         {
             await SetBlockAsync(position, BlocksRegistry.Air, true);
-            await ExplodeAsync((VectorD)position + new VectorD(0.5, 0.5, 0.5), BadRespawnPointPower, fire: true);
+            await ExplodeAsync(
+                (VectorD)position + new VectorD(0.5, 0.5, 0.5),
+                BadRespawnPointPower,
+                fire: true,
+                ExplosionInteraction.Block);
         }
 
         return true;
