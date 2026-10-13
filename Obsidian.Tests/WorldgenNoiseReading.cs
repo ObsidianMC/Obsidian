@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Registries;
+using Obsidian.API.World.Generator.DensityFunctions;
 using Obsidian.API.World.Generator.Noise;
 using Obsidian.Registries;
 using System;
@@ -9,6 +10,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -46,6 +49,69 @@ public class WorldgenNoiseReading
         Assert.Equal(NoiseRegistry.Noises.All.Count, read.Noises.Count);
         Assert.Equal(NoiseRegistry.DensityFunctions.All.Count, read.DensityFunctions.Count);
         Assert.Equal(NoiseRegistry.NoiseSettings.All.Count, read.NoiseSettings.Count);
+    }
+
+    [Fact(DisplayName = "Inline noises, constant splines and spawn target depth ranges read like vanilla's codecs")]
+    public void ReadsInlineNoisesConstantSplinesAndDepthRanges()
+    {
+        const string twoNoises = """
+            {
+              "type": "minecraft:add",
+              "argument1": { "type": "noise", "noise": { "firstOctave": -4, "amplitudes": [1, 0.5] }, "xz_scale": 1,
+                "y_scale": 0 },
+              "argument2": { "type": "noise", "noise": { "firstOctave": -4, "amplitudes": [1, 0.5] }, "xz_scale": 2,
+                "y_scale": 0 }
+            }
+            """;
+
+        var settings = Regex.Replace(
+            Encoding.UTF8.GetString(Assets("noise_settings", "overworld")),
+            @"""depth"":\s*0(\.0)?(?=\s*[,}])",
+            "\"depth\": [-0.5, 0.25]");
+
+        var logger = new PluginFeatureFiles.ListLogger();
+        var noise = PluginNoise.Build(
+            [
+                PluginNoise.Parse(
+                    PluginNoise.DensityFunction,
+                    "probe:two_noises",
+                    "test",
+                    Encoding.UTF8.GetBytes(twoNoises)),
+                PluginNoise.Parse(
+                    PluginNoise.DensityFunction,
+                    "probe:flat_spline",
+                    "test",
+                    """{ "type": "minecraft:spline", "spline": 0.25 }"""u8),
+                PluginNoise.Parse(PluginNoise.NoiseSettings, "probe:spawn", "test", Encoding.UTF8.GetBytes(settings))
+            ],
+            [],
+            logger);
+
+        Assert.Empty(logger.Messages);
+
+        // Inline noises with the same parameters are one noise, seeded from them: vanilla can't seed them at all.
+        var add = Assert.IsType<AddDensityFunction>(noise.DensityFunctions["probe:two_noises"]);
+        var first = Assert.IsType<BaseNoise>(Assert.IsType<NoiseDensityFunction>(add.Argument1).Noise);
+        var second = Assert.IsType<BaseNoise>(Assert.IsType<NoiseDensityFunction>(add.Argument2).Noise);
+        Assert.Equal(first.Key, second.Key);
+        Assert.DoesNotContain(first.Key, NoiseRegistry.Noises.All.Keys);
+
+        var spline = Assert.IsType<SplineDensityFunction>(noise.DensityFunctions["probe:flat_spline"]);
+        Assert.Equal(0.25, spline.GetValue(0, 0, 0));
+
+        Assert.All(
+            noise.NoiseSettings["probe:spawn"].SpawnTarget,
+            target => Assert.Equal([-0.5, 0.25], target.Depth.ToArray()));
+    }
+
+    private static byte[] Assets(string registry, string path)
+    {
+        var assembly = typeof(PluginNoise).Assembly;
+        using var stream = assembly.GetManifestResourceStream($"Obsidian.Assets.worldgen.{registry}.{path}.json")!;
+        using var memory = new MemoryStream();
+        stream.CopyTo(memory);
+
+        return memory.ToArray();
     }
 
     /// <summary>

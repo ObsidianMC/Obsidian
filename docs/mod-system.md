@@ -172,7 +172,6 @@ client. This document describes the design and tracks its progress. The archive 
        to vanilla's overworld and nether climate, like TerraBlender, with regions from data files);
      - in level stems: dimension types and biomes defined inline, `minecraft:flat` and `minecraft:debug`
        generators, and plugin level generators as a stem's `generator`;
-     - noises defined inline, a constant `spline`, and a range for a spawn target's `depth`;
      - environment attributes with particle options or rich bed rule messages, and the server applying more
        attributes than `monsters_burn`;
      - raids and the end fight in plugins' dimensions, which only the default world has (plugins build their own

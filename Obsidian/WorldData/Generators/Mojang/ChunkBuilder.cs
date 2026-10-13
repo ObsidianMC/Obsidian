@@ -377,7 +377,7 @@ internal sealed class ChunkBuilder
             Quantize(target.Humidity),
             Quantize(target.Continentalness),
             Quantize(target.Erosion),
-            new ClimateParameter(Climate.Quantize((float)target.Depth), Climate.Quantize((float)target.Depth)),
+            Quantize(target.Depth),
             Quantize(target.Weirdness),
             Climate.Quantize((float)target.Offset))).ToArray();
 

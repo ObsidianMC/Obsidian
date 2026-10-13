@@ -1,6 +1,7 @@
 using Obsidian.API.World.Generator.DensityFunctions;
 using Obsidian.API.World.Generator.Noise;
 using Obsidian.API.World.Generator.SurfaceConditions;
+using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using static Obsidian.Registries.Codecs.CodecJson;
@@ -64,11 +65,9 @@ internal sealed partial class WorldgenReader
 
         if (target == typeof(INoise) || target == typeof(BaseNoise))
         {
-            // Vanilla wires a density function's noise by its identifier, and fails on one defined inline.
-            if (json.ValueKind != JsonValueKind.String)
-                throw Error(path, "expected a noise's identifier: noises are seeded by it, so they can't be inline");
-
-            return Lookup(this.noise, Reference(json, path), path);
+            return json.ValueKind == JsonValueKind.Object
+                ? ReadInlineNoise(json, path)
+                : Lookup(this.noise, Reference(json, path), path);
         }
 
         if (target == typeof(ISpline))
@@ -113,11 +112,12 @@ internal sealed partial class WorldgenReader
         return (IDensityFunction)this.ReadPolymorphic(typeof(IDensityFunction), json, path);
     }
 
-    // A multipoint spline. Vanilla also takes a number for a constant one, which a spline function can't be here.
+    // A multipoint spline. Vanilla also takes a number for a constant one, which an ISpline can be (a spline
+    // function's spline, or a point's value), but not a property typed Spline, which plugins' types may have.
     private Spline ReadSpline(JsonElement json, string path)
     {
         if (json.ValueKind == JsonValueKind.Number)
-            throw Error(path, "a constant spline isn't supported here: use a constant density function");
+            throw Error(path, "expected a multipoint spline, not a constant");
 
         var spline = (Spline)this.ReadObject(typeof(Spline), json, null, null, path);
 
@@ -246,6 +246,22 @@ internal sealed partial class WorldgenReader
         };
     }
 
+    // A noise defined inline, which vanilla's codec reads but its generator can't seed, as it seeds noises from their
+    // identifiers. Obsidian seeds it from its parameters instead, so inline noises with the same parameters are one
+    // noise, like noises of one identifier. The key isn't an identifier, so it never seeds like a registered noise.
+    private static BaseNoise ReadInlineNoise(JsonElement json, string path)
+    {
+        var noise = ReadNoiseCore(json, "", path);
+        var amplitudes = noise.Amplitudes.Select(amplitude => amplitude.ToString("R", CultureInfo.InvariantCulture));
+
+        return new BaseNoise
+        {
+            Key = $"obsidian:inline noise {noise.FirstOctave} [{string.Join(',', amplitudes)}]",
+            FirstOctave = noise.FirstOctave,
+            Amplitudes = noise.Amplitudes
+        };
+    }
+
     // Vanilla's VerticalAnchor codec: exactly one of its three forms, in the range dimension types can have.
     private static SurfaceAnchor ReadSurfaceAnchor(JsonElement json, string path)
     {
@@ -268,7 +284,7 @@ internal sealed partial class WorldgenReader
     }
 
     // A spawn target, vanilla's Climate.ParameterPoint: each parameter a number from -2 to 2 or a range, [min, max]
-    // or {"min": ..., "max": ...}, and an offset from 0 to 1. Obsidian keeps the depth as one value.
+    // or {"min": ..., "max": ...}, and an offset from 0 to 1.
     private static SpawnTarget ReadSpawnTarget(JsonElement json, string path)
     {
         Object(json, path);
@@ -282,18 +298,13 @@ internal sealed partial class WorldgenReader
         ImmutableArray<double> Range(string name) =>
             ReadClimateRange(Required(json, path, name), Field(path, name));
 
-        var depthPath = Field(path, "depth");
-        var depth = ReadClimateRange(Required(json, path, "depth"), depthPath);
-        if (depth[0] != depth[1])
-            throw Error(depthPath, "a spawn target's depth can only be one value");
-
         return new SpawnTarget
         {
             Temperature = Range("temperature"),
             Humidity = Range("humidity"),
             Continentalness = Range("continentalness"),
             Erosion = Range("erosion"),
-            Depth = depth[0],
+            Depth = Range("depth"),
             Weirdness = Range("weirdness"),
             Offset = Double(Required(json, path, "offset"), Field(path, "offset"), 0.0, 1.0)
         };

@@ -875,8 +875,9 @@ files at runtime, compares them with the generated ones, and generates vanilla's
 have every field vanilla's have: `sea_level`, `default_block`, `default_fluid`, `noise` (the cells' `min_y`, `height`,
 `size_horizontal`, `size_vertical`, checked like vanilla), the 15 functions of the `noise_router`, `spawn_target`,
 the flags and `surface_rule`, whose rules and conditions are inline as in vanilla. A density function is a number (a
-constant), an identifier, or an object with a `type`; a noise is always named by its identifier, since noises are
-seeded from it. Plugins' dimensions use plugins' noise settings (see [Dimensions](#dimensions)). Ground rolling
+constant), an identifier, or an object with a `type`; a noise is an identifier or defined inline (see below). A spline
+function's `spline` is a multipoint spline or a number, for a constant one, and a spawn target's parameters, its
+`depth` included, are a number or a range, as in a multi-noise biome source. Plugins' dimensions use plugins' noise settings (see [Dimensions](#dimensions)). Ground rolling
 around y 64 with a plugin's noise:
 
 ```json
@@ -909,9 +910,11 @@ The rules:
 - A dimension keeps the noise settings it was created with until the server stops: a reload that changes them, or
   the density functions and noises they use, keeps the dimension as it was, with a warning, and the change applies
   after a restart.
-- Not supported: noises defined inline (vanilla can't seed them either), a constant number for a spline function's
-  `spline`, and a range for a spawn target's `depth`. Noise settings may be defined inline in a level stem (see
-  [Dimensions](#dimensions)).
+- Vanilla seeds a noise from its identifier, so its codec reads a noise defined inline, like
+  `"noise": { "firstOctave": -4, "amplitudes": [1, 0.5] }`, but generating with it fails. Obsidian seeds an inline
+  noise from its parameters instead: inline noises with the same `firstOctave` and `amplitudes` are the same noise,
+  like noises of one identifier, so name a noise file to have two different noises of the same parameters. Noise
+  settings may be defined inline in a level stem (see [Dimensions](#dimensions)).
 
 ### Noise types
 
