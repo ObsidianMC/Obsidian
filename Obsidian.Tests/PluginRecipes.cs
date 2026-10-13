@@ -229,7 +229,6 @@ public sealed class PluginRecipes
 
         recipe.Key['B'].Add(new ItemStack(ItemsRegistry.Barrier));
         result.Count = 15;
-        damage.Value = 9;
         saved.Add(new NbtTag<int>("probe:later", 8));
         var grid = new Container(5);
 

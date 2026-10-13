@@ -98,19 +98,22 @@ public static partial class RecipesRegistry
     // data on nested stacks, since a plugin may retain the NBT it originally loaded the result from.
     private static ItemStack CopySavedComponents(ItemStack copy)
     {
+        // Components are immutable, so a nested stack's copy goes in as a new component, after the enumeration.
+        var components = new List<DataComponent>();
+
         foreach (var component in copy)
+            components.Add(component);
+
+        foreach (var component in components)
         {
             if (component is SimpleDataComponent<ItemStack> { Value: ItemStack nested } single)
             {
-                single.Value = CopySavedComponents(nested);
+                copy[single.Type] = single with { Value = CopySavedComponents(nested) };
             }
-            else if (component is SimpleDataComponent<ItemStack[]> { Value: ItemStack[] items })
+            else if (component is SimpleDataComponent<ImmutableArray<ItemStack>> { Value: var items } many
+                && !items.IsDefaultOrEmpty)
             {
-                for (var i = 0; i < items.Length; i++)
-                {
-                    if (items[i] is ItemStack item)
-                        items[i] = CopySavedComponents(item);
-                }
+                copy[many.Type] = many with { Value = [.. items.Select(CopySavedComponents)] };
             }
         }
 
