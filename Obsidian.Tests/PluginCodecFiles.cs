@@ -268,7 +268,9 @@ public class PluginCodecFiles
             {
               "minecraft:visual/ambient_particles": [
                 { "particle": { "type": "dust", "color": [1, 0, 0], "scale": 0.5 }, "probability": 0.1 },
-                { "particle": { "type": "effect", "color": -1, "power": 1 }, "probability": 0.1 }
+                { "particle": { "type": "effect", "color": -1, "power": 1 }, "probability": 0.1 },
+                { "particle": { "type": "dragon_breath", "power": 1 }, "probability": 0.1 },
+                { "particle": { "type": "dragon_breath" }, "probability": 0.1 }
               ]
             }
             """;
@@ -283,6 +285,13 @@ public class PluginCodecFiles
 
         var effect = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[1])["particle"]);
         Assert.Equal(["type"], effect.Select(tag => tag.Key));
+
+        // Vanilla compares dragon breath's default by reference: only an omitted power is left out.
+        var breath = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[2])["particle"]);
+        Assert.Equal(1f, Assert.IsType<NbtTag<float>>(breath["power"]).Value);
+
+        var defaultBreath = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[3])["particle"]);
+        Assert.Equal(["type"], defaultBreath.Select(tag => tag.Key));
     }
 
     [Fact(DisplayName = "The server applies a dimension type's gameplay attributes, and vanilla's nether's")]
