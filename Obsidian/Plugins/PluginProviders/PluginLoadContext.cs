@@ -1,25 +1,34 @@
 ﻿using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Threading;
 
 namespace Obsidian.Plugins.PluginProviders;
 
 public sealed class PluginLoadContext : AssemblyLoadContext
 {
-    // How many plugin load contexts exist and haven't started unloading.
-    private static int live;
+    // Unload begins before escaped plugin tasks finish. Keep looking while their contexts are still reachable.
+    private static readonly List<WeakReference<PluginLoadContext>> contexts = [];
 
     public PluginLoadContext(string name) : base(name: name, isCollectible: true)
     {
-        Interlocked.Increment(ref live);
-        this.Unloading += _ => Interlocked.Decrement(ref live);
+        lock (contexts)
+            contexts.Add(new WeakReference<PluginLoadContext>(this));
     }
 
     /// <summary>
     /// Whether any plugin's code may be loaded, so that it's worth looking for it, as on a call stack.
     /// </summary>
-    internal static bool AnyLoaded => Volatile.Read(ref live) > 0;
+    internal static bool AnyLoaded
+    {
+        get
+        {
+            lock (contexts)
+            {
+                contexts.RemoveAll(reference => !reference.TryGetTarget(out _));
+                return contexts.Count > 0;
+            }
+        }
+    }
 
     public List<PluginLoadContext> Dependencies { get; } = [];
 

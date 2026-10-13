@@ -561,11 +561,11 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         ItemsRegistry.ReleasePlugin(pluginContainer);
         BlocksRegistry.ReleasePlugin(pluginContainer);
-        var entityTypes = EntityDefinitionsRegistry.ReleasePlugin(pluginContainer);
+        EntityDefinitionsRegistry.ReleasePlugin(pluginContainer);
         PluginGenerators.Release(pluginContainer);
 
         // Once its handlers and its types' behaviours are gone, so that nothing of the plugin's runs as they go.
-        await this.RemoveEntitiesAsync(pluginContainer, entityTypes);
+        await this.RemoveEntitiesAsync(pluginContainer);
 
         if (pluginContainer.LoadContext is not null)
             this.commandHandler.UnregisterArgumentParsers(pluginContainer.LoadContext);
@@ -648,7 +648,7 @@ public sealed partial class PluginManager : IAsyncDisposable
     /// Each level's entities are removed between its ticks. Inside a call into a plugin, which a tick may be waiting
     /// for, or when a tick doesn't end in time, they're removed on the level's next tick instead.
     /// </remarks>
-    private async Task RemoveEntitiesAsync(PluginContainer plugin, ImmutableArray<API.Entities.EntityDefinition> types)
+    private async Task RemoveEntitiesAsync(PluginContainer plugin)
     {
         if (this.server is Server concrete)
         {
@@ -673,7 +673,7 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         foreach (var level in this.Levels())
         {
-            void Remove() => PluginEntities.RemoveFrom(level, plugin, types);
+            void Remove() => PluginEntities.RemoveFrom(level, plugin);
 
             if (!PluginCall.InsideAny && await level.TryRunBetweenTicksAsync(Remove, drainTimeout))
                 continue;

@@ -3,6 +3,7 @@ using Obsidian.API.Inventory;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Obsidian.Entities;
 
@@ -15,6 +16,13 @@ public sealed partial class ServerPlayer : Avatar, IPlayer
 {
     private readonly HashSet<string> permissions = new(StringComparer.OrdinalIgnoreCase);
     private IScoreboard? currentScoreboard;
+
+    // Joining, joined, or removed. A leave can finish while a join handler is awaiting; that join must roll back.
+    private int lifecycle;
+
+    internal bool CompleteJoin() => Interlocked.CompareExchange(ref this.lifecycle, 1, 0) == 0;
+
+    internal void CancelJoin() => Interlocked.Exchange(ref this.lifecycle, 2);
 
     [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
     public ServerPlayer(Guid uuid, string username, IServer server, IWorld world)

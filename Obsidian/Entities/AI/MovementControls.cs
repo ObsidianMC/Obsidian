@@ -14,7 +14,9 @@ public class MoveControl(Mob mob)
         speedModifier = speed;
     }
 
-    public virtual void Stop()
+    public virtual void Stop() => this.ClearForUnload();
+
+    internal void ClearForUnload()
     {
         wantedPosition = null;
         strafe = null;

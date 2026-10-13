@@ -26,6 +26,9 @@ public abstract class Goal : IGoal
     public virtual void Stop() { }
     public virtual ValueTask TickAsync() => default;
 
+    // Host goals can drop cached targets without Stop callbacks; external plugin goals cannot override this.
+    internal virtual bool ForgetEvictedEntities(HashSet<IEntity> removed) => false;
+
     // Preserve the synchronous plugin entry point; the simulation uses TickAsync.
     public void Run() => TickAsync().AsTask().GetAwaiter().GetResult();
 }
@@ -66,6 +69,8 @@ public sealed class GoalSelector : IGoalController
             entry.Running = false;
             goals.Remove(entry);
         }
+
+        conflicts.Clear();
     }
 
     public void RemoveGoal(IGoal goal)
@@ -88,6 +93,23 @@ public sealed class GoalSelector : IGoalController
     {
         Cancel();
         goals.Clear();
+    }
+
+    internal void Discard()
+    {
+        goals.Clear();
+        conflicts.Clear();
+    }
+
+    internal void ForgetEvictedEntities(HashSet<IEntity> removed)
+    {
+        foreach (var entry in goals)
+        {
+            if (entry.Goal.ForgetEvictedEntities(removed))
+                entry.Running = false;
+        }
+
+        conflicts.Clear();
     }
 
     public void Cancel()

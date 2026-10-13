@@ -372,7 +372,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 continue;
 
             // A plugin's mob doesn't spawn once its plugin started unloading.
-            if (!level.TrySpawnEntity(mob))
+            if (!level.TrySpawnEntity(mob, hostOwned: true))
                 continue;
 
             spawned++;

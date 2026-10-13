@@ -2,9 +2,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
+using Obsidian.API.Commands;
 using Obsidian.API.Events;
+using Obsidian.API.Networking;
 using Obsidian.API.Registries;
 using Obsidian.Commands.Framework;
+using Obsidian.Entities;
+using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
@@ -139,6 +143,197 @@ public sealed class PluginUnloading : IDisposable
         await manager.UnloadPluginAsync(container);
 
         Assert.Throws<InvalidOperationException>(() => bar.AddPlayer(human.EntityId));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task Reload_InsidePluginCall_PreservesOldGenerationState()
+    {
+        await using var context = TestServerFactory.CreateServer($"probe-reload-{Guid.NewGuid():N}");
+        var chunk = AddEmptyChunk(context.World);
+        await using var manager = CreateManager(context);
+        var path = Path.Join(this.folder, "probe.obby");
+        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0"));
+        var old = (await manager.LoadPluginAsync(path))!;
+        Assert.True(EntityDefinitionsRegistry.TryGet("probe:golem", out var definition));
+
+        // One entity is plugin-credited; the other follows the chunk-loading path with no spawning plugin.
+        Entity credited;
+        using (old.TryEnter())
+            credited = (Entity)context.World.SpawnEntity(position, definition);
+
+        credited.Health = 13;
+        credited.CustomName = "credited";
+        var saved = EntityNbt.Save(credited)!;
+        var restored = EntityNbt.Load(saved, context.World)!;
+        restored.Uuid = Guid.NewGuid();
+        restored.CustomName = "restored";
+        Assert.True(context.World.TrySpawnEntity(restored, hostOwned: true));
+        Assert.Null(restored.SpawnedBy);
+
+        using (old.TryEnter())
+            Assert.NotNull(await manager.LoadPluginAsync(path));
+
+        // An entity of the replacement generation must survive the old generation's delayed cleanup.
+        var replacement = context.World.SpawnEntity(position, definition);
+        await context.World.DoWorldTickAsync();
+
+        var entities = context.World.Regions.Values.SelectMany(region => region.Entities.Values).ToList();
+        foreach (var original in new[] { credited, restored })
+        {
+            var respawned = Assert.Single(entities, entity => entity.Uuid == original.Uuid);
+            Assert.NotSame(original, respawned);
+            Assert.Equal(13, respawned.Health);
+            Assert.Equal(original.CustomName, respawned.CustomName);
+        }
+
+        Assert.Contains(replacement, entities);
+        Assert.DoesNotContain(chunk.UnspawnableEntities, IsGolem);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task Unload_DismountsRidersAndClearsHostAiReferences()
+    {
+        await using var context = TestServerFactory.CreateServer($"probe-rider-{Guid.NewGuid():N}");
+        AddEmptyChunk(context.World);
+        var human = await JoinAsync(context);
+        await using var manager = CreateManager(context);
+        var path = Path.Join(this.folder, "probe.obby");
+        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0"));
+        var plugin = (await manager.LoadPluginAsync(path))!;
+
+        Horse horse;
+        using (plugin.TryEnter())
+            horse = (Horse)context.World.SpawnEntity(position, EntityType.Horse);
+
+        await horse.FeedAsync(human, InteractionHand.MainHand);
+        Assert.Same(horse, human.Vehicle);
+        var zombie = (Zombie)context.World.SpawnEntity(position, EntityType.Zombie);
+        zombie.AttackTarget = horse;
+        zombie.AlertedTarget = horse;
+        var navigator = Assert.IsType<Navigator>(zombie.Navigator);
+        navigator.NavigateTo(horse);
+        var client = (TestClient)human.Client;
+        client.ClearPackets();
+
+        await manager.UnloadPluginAsync(plugin);
+
+        Assert.Null(human.Vehicle);
+        Assert.True(horse.IsRemoved);
+        Assert.Null(horse.GoalController);
+        Assert.Null(horse.Navigator);
+        Assert.Null(zombie.AttackTarget);
+        Assert.Null(zombie.AlertedTarget);
+        Assert.Null(navigator.Target);
+        Assert.False(navigator.IsNavigating);
+        Assert.Contains(client.SentPackets.OfType<SetPassengersPacket>(),
+            packet => packet.EntityId == horse.EntityId && packet.Passengers.Length == 0);
+        Assert.Contains(client.SentPackets.OfType<RemoveEntitiesPacket>(),
+            packet => packet.Entities.Contains(horse.EntityId));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ContextsBuiltWithPluginServer_ResolveForAnotherPluginAndHost()
+    {
+        await using var context = TestServerFactory.CreateServer($"probe-context-{Guid.NewGuid():N}");
+        var human = await JoinAsync(context);
+        await using var manager = CreateManager(context);
+        var path = Path.Join(this.folder, "probe.obby");
+        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0"));
+        var first = (await manager.LoadPluginAsync(path))!;
+        var own = first.HostServices.Server;
+        var chat = new IncomingChatMessageEventArgs(human, own, "hello", "");
+        var command = new CommandContext("/plugins", new CommandSender(CommandIssuers.Console, null), null, own);
+        var payload = new PayloadContext
+        {
+            Client = human.Client,
+            Player = human,
+            Server = own,
+            Phase = PayloadPhase.Play
+        };
+
+        // A second loaded generation has a different server wrapper, while the contexts retain the first one.
+        var second = (await manager.LoadPluginAsync(path))!;
+        using (second.TryEnter())
+        {
+            Assert.Same(second.HostServices.Server, chat.Server);
+            Assert.Same(second.HostServices.Server, command.Server);
+            Assert.Same(second.HostServices.Server, payload.Server);
+
+            using (PluginCall.EnterHost())
+            {
+                Assert.Same(context.Server, chat.Server);
+                Assert.Same(context.Server, command.Server);
+                Assert.Same(context.Server, payload.Server);
+            }
+        }
+
+        Assert.Same(context.Server, chat.Server);
+        Assert.Same(context.Server, command.Server);
+        Assert.Same(context.Server, payload.Server);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task BackgroundWork_KeepsOwnershipAfterCallAndRejectsSpawningAfterUnload()
+    {
+        await using var context = TestServerFactory.CreateServer($"probe-background-{Guid.NewGuid():N}");
+        AddEmptyChunk(context.World);
+        var human = await JoinAsync(context);
+        await using var manager = CreateManager(context);
+        var path = Path.Join(this.folder, "probe.obby");
+        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0"));
+        var plugin = (await manager.LoadPluginAsync(path))!;
+        var chat = new IncomingChatMessageEventArgs(human, context.Server, "hello", "");
+        var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var spawned = new TaskCompletionSource<IEntity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var unloaded = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task background;
+        using (plugin.TryEnter())
+        {
+            background = Task.Run(async () =>
+            {
+                await resume.Task;
+                Assert.Same(plugin.HostServices.Server, chat.Server);
+                spawned.SetResult(context.World.SpawnEntity(position, EntityType.Squid));
+                await unloaded.Task;
+                Assert.Throws<InvalidOperationException>(
+                    () => context.World.SpawnEntity(position, EntityType.Squid));
+            });
+        }
+
+        resume.SetResult();
+        var entity = await spawned.Task;
+        await manager.UnloadPluginAsync(plugin);
+        unloaded.SetResult();
+        await background;
+        Assert.DoesNotContain(entity, context.World.Regions.Values.SelectMany(region => region.Entities.Values));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task Unload_DuringJoin_RollsBackLateLevelRegistration()
+    {
+        await using var context = TestServerFactory.CreateServer($"probe-join-{Guid.NewGuid():N}");
+        AddEmptyChunk(context.World);
+        await using var manager = CreateManager(context);
+        var path = Path.Join(this.folder, "probe.obby");
+        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0"));
+        var plugin = (await manager.LoadPluginAsync(path))!;
+        var entered = new TaskCompletionSource<IPlayer>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.EventDispatcher.RegisterEvent(null, (Func<PlayerJoinEventArgs, ValueTask>)(async args =>
+        {
+            entered.SetResult(args.Player);
+            await resume.Task;
+        }));
+
+        var join = plugin.HostServices.Server.AddServerPlayerAsync(Guid.NewGuid(), "JoiningBot", context.World);
+        var player = await entered.Task;
+        await manager.UnloadPluginAsync(plugin);
+        resume.SetResult();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => join);
+
+        Assert.False(context.Server.IsPlayerOnline(player.Uuid));
+        Assert.DoesNotContain(player.Uuid, context.World.Players.Keys);
+        Assert.DoesNotContain(player, context.World.Regions.Values.SelectMany(region => region.Entities.Values));
     }
 
     // A connected player at the test's position, to see what the plugin's entities do.

@@ -19,9 +19,10 @@ namespace Obsidian.Plugins;
 /// </remarks>
 internal sealed class PluginCall : IDisposable
 {
-    // The innermost call the current async flow is in. A task started during a call inherits it, but sees it end, so
-    // it doesn't count as being inside the call afterwards.
+    // A child task inherits ownership, but does not keep an ended call active or retain collectible code.
     private static readonly AsyncLocal<PluginCall?> current = new();
+
+    private readonly PluginOwnership? ownership;
 
     private readonly PluginCall? outer;
 
@@ -37,6 +38,7 @@ internal sealed class PluginCall : IDisposable
     private PluginCall(PluginContainer? plugin, PluginCall? outer, bool host)
     {
         this.plugin = plugin;
+        this.ownership = plugin?.Ownership;
         this.outer = outer;
         this.host = host;
     }
@@ -60,24 +62,12 @@ internal sealed class PluginCall : IDisposable
     }
 
     /// <summary>
-    /// The plugin whose call the current async flow is in, innermost first; null outside any, and in the server's
-    /// handlers and commands run inside one (see <see cref="EnterHost"/>).
+    /// The plugin owning the current flow, including background work after its original call ended; null outside
+    /// plugin work and in the server's handlers and commands (see <see cref="EnterHost"/>).
     /// </summary>
-    public static PluginContainer? CurrentPlugin
-    {
-        get
-        {
-            for (var call = current.Value; call is not null; call = call.outer)
-            {
-                if (Volatile.Read(ref call.ended) != 0)
-                    continue;
+    public static PluginContainer? CurrentPlugin => CurrentOwnership?.Resolve();
 
-                return call.host ? null : Volatile.Read(ref call.plugin);
-            }
-
-            return null;
-        }
-    }
+    internal static PluginOwnership? CurrentOwnership => current.Value?.ownership;
 
     // Called by PluginContainer.TryEnter once it counted the call. Setting the async local here, in a synchronous
     // method, sets it for the caller's flow.
@@ -88,7 +78,7 @@ internal sealed class PluginCall : IDisposable
     /// longer the plugin's code (see <see cref="CurrentPlugin"/>).
     /// </summary>
     /// <returns>The host call, to dispose when the handler ends, or null outside any plugin's call.</returns>
-    internal static PluginCall? EnterHost() => InsideAny ? Push(null, host: true) : null;
+    internal static PluginCall? EnterHost() => current.Value is not null ? Push(null, host: true) : null;
 
     public void Dispose()
     {

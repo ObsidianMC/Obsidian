@@ -534,8 +534,6 @@ public abstract partial class AbstractLevel : ILevel
         LevelData.Time += this.Configuration.TimeTickSpeedMultiplier;
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
-        this.SpawnPendingEntities();
-
         // Like vanilla, fluid ticks run before entities tick.
         this.Fluids.Tick();
 
@@ -550,6 +548,9 @@ public abstract partial class AbstractLevel : ILevel
             TickStage = $"entity action {index + 1}/{actionCount}";
             await action();
         }
+
+        // Deferred unloads keep old-generation state first; a rebound type can respawn it in this same tick.
+        this.SpawnPendingEntities();
 
         await TickEndFightAsync();
 
@@ -636,7 +637,7 @@ public abstract partial class AbstractLevel : ILevel
                         !this.Regions.Values.Any(region => region.Entities.Values.Any(existing => existing.Uuid == entity.Uuid)))
                     {
                         // One whose plugin type started unloading since it was loaded stays as saved.
-                        if (!this.TrySpawnEntity(entity))
+                        if (!this.TrySpawnEntity(entity, hostOwned: true))
                             chunk.UnspawnableEntities.Add(tag);
                     }
                 }
@@ -981,7 +982,7 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     /// <returns>Whether the entity spawned.</returns>
     /// <exception cref="InvalidOperationException">The plugin spawning the entity is unloading.</exception>
-    internal bool TrySpawnEntity(IEntity entity)
+    internal bool TrySpawnEntity(IEntity entity, bool hostOwned = false)
     {
         if (entity is EnderDragon dragon) dragon.EnsureMultipartIds();
         if (entity is Mob mob)
@@ -990,7 +991,7 @@ public abstract partial class AbstractLevel : ILevel
             // Summoned vexes, offspring and slime splits inherit the enclosure they spawn in.
             if (Generator is MobTestGenerator testWorld) testWorld.AssignPen(mob);
         }
-        if (!TryAddEntity(entity))
+        if (!TryAddEntity(entity, hostOwned))
             return false;
         entity.SpawnEntity();
         return true;
@@ -998,10 +999,24 @@ public abstract partial class AbstractLevel : ILevel
 
     public void SpawnExperienceOrbs(VectorD position, short count = 1)
     {
+        // Resolve once for the batch. An empty ambient call does not prove there is no plugin caller.
+        var spawner = count > 0 ? PluginEntities.FindSpawner() : null;
+
         while (count > 0)
         {
             var value = ExperienceOrb.SplitValue(count);
-            SpawnEntity(new ExperienceOrb { Level = this, EntityId = Server.GetNextEntityId(), Position = position, Value = value });
+            var orb = new ExperienceOrb
+            {
+                Level = this,
+                EntityId = Server.GetNextEntityId(),
+                Position = position,
+                Value = value,
+                SpawnedBy = spawner
+            };
+
+            if (!this.TrySpawnEntity(orb, hostOwned: true))
+                throw new InvalidOperationException($"Could not register entity {orb.EntityId}.");
+
             count -= (short)value;
         }
     }
@@ -1282,9 +1297,15 @@ public abstract partial class AbstractLevel : ILevel
     /// plugin's entity type whose plugin is unloaded or unloading.
     /// </returns>
     /// <exception cref="InvalidOperationException">The plugin adding the entity is unloading.</exception>
-    public bool TryAddEntity(IEntity entity)
+    public bool TryAddEntity(IEntity entity) => this.TryAddEntity(entity, hostOwned: false);
+
+    // Only known host paths or batches that already credited their caller may bypass the attribution stack walk.
+    private bool TryAddEntity(IEntity entity, bool hostOwned)
     {
-        var spawner = PluginEntities.Credit(entity);
+        if (!PluginEntities.HasLoadedType(entity))
+            return false;
+
+        var spawner = PluginEntities.Credit(entity, hostOwned);
 
         if (!PluginEntities.HasLoadedType(entity))
             return false;
