@@ -21,12 +21,12 @@ public partial class NetworkBuffer
         var bytes = this.data.AsSpan(start, this.offset - start).ToArray();
         var component = ComponentBuilder.Create(type);
         if (component is null)
-            return new OpaqueDataComponent(type, bytes);
+            return new OpaqueDataComponent(type, [.. bytes]);
 
         try
         {
             var reader = new NetworkBuffer(bytes) { componentDepth = this.componentDepth, IdMaps = this.IdMaps };
-            component.Read(reader);
+            component = component.Read(reader);
             if (reader.Offset != bytes.Length)
                 throw new InvalidDataException($"The {type} model consumed {reader.Offset} of {bytes.Length} bytes.");
 
@@ -40,7 +40,7 @@ public partial class NetworkBuffer
         {
             // E.g. valid custom NBT with empty compound keys cannot be expressed by the public NBT model.
             // Framing has already been checked. Retain the complete value instead of rejecting the enclosing packet.
-            return new OpaqueDataComponent(type, bytes);
+            return new OpaqueDataComponent(type, [.. bytes]);
         }
     }
 

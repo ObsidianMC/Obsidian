@@ -162,7 +162,7 @@ components), then applies the click unless it's cancelled, and sends the window'
 viewers.
 
 - `Item` is a copy of what the clicked slot held as the click arrived, made each time it's read; it shares nothing with
-  the slot's stack, components included, so changing it changes nothing.
+  the slot's mutable stack state. Immutable component values can be shared safely; changing the copy changes nothing.
 - A click whose slots changed while handlers decided isn't applied, so a handler's decision never applies to contents
   it didn't see. Like a cancelled click, it's corrected: the player's window and cursor are sent again. In a crafting
   window, a click whose result slot no longer shows what the grid crafts (the grid or the recipes changed without the
@@ -172,8 +172,13 @@ viewers.
   result following the grid included. It must not block or wait.
 - A handler may change the container directly, through its methods (`SetItem`, `RemoveItem`), but that change isn't
   part of the click: it makes the click itself stale, and may race other viewers' clicks. So does changing a stack it
-  holds (its count, or a component set with the stack's indexer, `Add` or `Remove`); changing a component's value in
-  place isn't seen as a change at all until the component, or the stack, is set again.
+  holds (its count, or a component set with the stack's indexer, `Add` or `Remove`). Component values have init-only
+  properties and immutable collections. Replace a value with `stack[food.Type] = food with { Nutrition = 5 };`.
+  For a collection, assign a new collection, such as `model with { Floats = model.Floats.Add(1f) }`, through the
+  stack's indexer. The container's revision advances without replacing the stack or polling its component values.
+  Legacy mutable payloads (NBT, chat messages and nested stacks) are defensive copies when set or retrieved;
+  after editing such a copy, assign it in a replacement component. `DataComponent.Read(reader)` also returns a
+  new value: use its return value. Custom component types must keep their payloads immutable too.
 - A `ContainerClosedEventArgs` handler may open another container for the player; the server then closes only the
   window the event is about.
 - What the server sends about a window (a click's contents, the slots an item or arrow picked up fills) goes through

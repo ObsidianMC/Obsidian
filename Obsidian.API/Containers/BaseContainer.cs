@@ -46,8 +46,8 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     /// and what plugins' handlers decided about it, apply to the contents they saw.
     /// </summary>
     /// <remarks>
-    /// Changing a component's value in place doesn't count: set the component on the stack again, or the stack in its
-    /// slot with <see cref="SetItem"/>.
+    /// Component values are immutable. Assign a replacement through the stack's component indexer, for example
+    /// <c>stack[food.Type] = food with { Nutrition = 5 }</c>; the slot's revision then advances automatically.
     /// </remarks>
     public virtual long Revision
     {

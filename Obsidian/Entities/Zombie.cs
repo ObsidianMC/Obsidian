@@ -121,8 +121,7 @@ public partial class Zombie : PathfinderMob
             _ => ItemsRegistry.IronShovel
         };
         var item = ItemsRegistry.GetSingleItem(weapon);
-        var durability = Obsidian.API.Inventory.DataComponents.ComponentBuilder.MaxDamage;
-        durability.Value = 250;
+        var durability = Obsidian.API.Inventory.DataComponents.ComponentBuilder.MaxDamage with { Value = 250 };
         item[DataComponentType.MaxDamage] = durability;
         SetEquipment(Obsidian.API.Inventory.EquipmentSlot.MainHand, item);
     }

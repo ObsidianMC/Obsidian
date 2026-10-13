@@ -1,25 +1,37 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 
 namespace Obsidian.API.Inventory.DataComponents;
+
 public sealed record class FireworksDataComponent : DataComponent
 {
     public override DataComponentType Type => DataComponentType.Fireworks;
 
     public override string Identifier => "minecraft:fireworks";
 
-    public required int FlightDuration { get; set; }
+    private int flightDuration;
 
-    public required ImmutableArray<FireworkExplosion> Explosions { get; set; }
+    public required int FlightDuration
+    {
+        get => this.flightDuration;
+        init => this.flightDuration = value;
+    }
+
+    private ImmutableArray<FireworkExplosion> explosions;
+
+    public required ImmutableArray<FireworkExplosion> Explosions
+    {
+        get => this.explosions;
+        init => this.explosions = value;
+    }
 
     [SetsRequiredMembers]
     internal FireworksDataComponent() { }
 
-    public override void Read(INetStreamReader reader)
+    protected override void ReadCore(INetStreamReader reader)
     {
-        this.FlightDuration = reader.ReadVarInt();
-        this.Explosions = ImmutableCollectionsMarshal.AsImmutableArray(
-            reader.ReadLengthPrefixedArray(() => ComponentValueCodecs.ReadExplosion(reader)));
+        this.flightDuration = reader.ReadVarInt();
+        this.explosions = reader.ReadLengthPrefixedArray(() => ComponentValueCodecs.ReadExplosion(reader))
+            .ToImmutableArray();
     }
 
     public override void Write(INetStreamWriter writer)

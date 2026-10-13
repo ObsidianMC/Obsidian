@@ -10,8 +10,8 @@ public abstract class DataComponentsStorage
 
     /// <summary>
     /// Components that only stand in for the item's own defaults (see <see cref="ComponentBuilder.DefaultItemComponents"/>),
-    /// as they were when added. A placeholder isn't part of <see cref="Patch"/> until its value changes; setting or
-    /// removing a component of the type drops it.
+    /// as they were when added. Immutable placeholders aren't part of <see cref="Patch"/>; setting or removing a
+    /// component of the type drops its placeholder.
     /// </summary>
     protected Dictionary<DataComponentType, DataComponent> Placeholders { get; } = [];
 
@@ -23,8 +23,9 @@ public abstract class DataComponentsStorage
 
     /// <summary>
     /// The <see cref="ChangeStamp"/> of the storage's last change: a component set, added or removed through its
-    /// methods, or, for a stack, its count. Changing a component's value in place, or <see cref="RemoveComponents"/>
-    /// directly, doesn't count.
+    /// methods, or, for a stack, its count. Component values are immutable: use a <c>with</c> expression and assign
+    /// the replacement through the indexer to record a change. Editing <see cref="RemoveComponents"/> directly
+    /// doesn't count.
     /// </summary>
     internal long Version => Volatile.Read(ref this.version);
 
@@ -104,7 +105,8 @@ public abstract class DataComponentsStorage
     public TComponent? GetComponent<TComponent>(DataComponentType type) where TComponent : DataComponent =>
         this.InternalStorage.GetValueOrDefault(type) as TComponent;
 
-    public bool TryGetComponent<TComponent>(DataComponentType componentType, out DataComponent component) where TComponent : DataComponent =>
+    public bool TryGetComponent<TComponent>(
+        DataComponentType componentType, out DataComponent component) where TComponent : DataComponent =>
         this.InternalStorage.TryGetValue(componentType, out component);
 
     public bool TryGetComponent(DataComponentType componentType, out DataComponent component) =>

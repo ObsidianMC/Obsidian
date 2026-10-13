@@ -11,20 +11,38 @@ public sealed record class FoodDataComponent : DataComponent
 
     public override string Identifier => "minecraft:food";
 
-    public required int Nutrition { get; set; }
+    private int nutrition;
 
-    public required float SaturationModifier { get; set; }
+    public required int Nutrition
+    {
+        get => this.nutrition;
+        init => this.nutrition = value;
+    }
 
-    public required bool CanAlwaysEat { get; set; }
+    private float saturationModifier;
+
+    public required float SaturationModifier
+    {
+        get => this.saturationModifier;
+        init => this.saturationModifier = value;
+    }
+
+    private bool canAlwaysEat;
+
+    public required bool CanAlwaysEat
+    {
+        get => this.canAlwaysEat;
+        init => this.canAlwaysEat = value;
+    }
 
     [SetsRequiredMembers]
     internal FoodDataComponent() { }
 
-    public override void Read(INetStreamReader reader)
+    protected override void ReadCore(INetStreamReader reader)
     {
-        this.Nutrition = reader.ReadVarInt();
-        this.SaturationModifier = reader.ReadSingle();
-        this.CanAlwaysEat = reader.ReadBoolean();
+        this.nutrition = reader.ReadVarInt();
+        this.saturationModifier = reader.ReadSingle();
+        this.canAlwaysEat = reader.ReadBoolean();
     }
 
     public override void Write(INetStreamWriter writer)

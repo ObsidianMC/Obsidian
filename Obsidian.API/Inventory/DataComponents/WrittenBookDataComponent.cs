@@ -4,21 +4,67 @@ public sealed record WrittenBookDataComponent : DataComponent
 {
     public override DataComponentType Type => DataComponentType.WrittenBookContent;
     public override string Identifier => "minecraft:written_book_content";
-    public string Title { get; set; } = "";
-    public string? FilteredTitle { get; set; }
-    public string Author { get; set; } = "";
-    public int Generation { get; set; }
-    public (ChatMessage Raw, ChatMessage? Filtered)[] Pages { get; set; } = [];
-    public bool Resolved { get; set; }
+    private string title = "";
 
-    public override void Read(INetStreamReader reader)
+    public string Title
     {
-        this.Title = reader.ReadString();
-        this.FilteredTitle = reader.ReadOptionalString();
-        this.Author = reader.ReadString();
-        this.Generation = reader.ReadVarInt();
-        this.Pages = reader.ReadLengthPrefixedArray(() => (reader.ReadChat(), reader.ReadBoolean() ? reader.ReadChat() : null));
-        this.Resolved = reader.ReadBoolean();
+        get => this.title;
+        init => this.title = value;
+    }
+
+    private string? filteredTitle;
+
+    public string? FilteredTitle
+    {
+        get => this.filteredTitle;
+        init => this.filteredTitle = value;
+    }
+
+    private string author = "";
+
+    public string Author
+    {
+        get => this.author;
+        init => this.author = value;
+    }
+
+    private int generation;
+
+    public int Generation
+    {
+        get => this.generation;
+        init => this.generation = value;
+    }
+
+    private ImmutableArray<(ChatMessage Raw, ChatMessage? Filtered)> pages = [];
+
+    public ImmutableArray<(ChatMessage Raw, ChatMessage? Filtered)> Pages
+    {
+        get => this.pages
+            .Select(page => (ComponentCopies.Chat(page.Raw)!, ComponentCopies.Chat(page.Filtered)))
+            .ToImmutableArray();
+        init => this.pages = value
+            .Select(page => (ComponentCopies.Chat(page.Raw)!, ComponentCopies.Chat(page.Filtered)))
+            .ToImmutableArray();
+    }
+
+    private bool resolved;
+
+    public bool Resolved
+    {
+        get => this.resolved;
+        init => this.resolved = value;
+    }
+
+    protected override void ReadCore(INetStreamReader reader)
+    {
+        this.title = reader.ReadString();
+        this.filteredTitle = reader.ReadOptionalString();
+        this.author = reader.ReadString();
+        this.generation = reader.ReadVarInt();
+        this.pages = reader.ReadLengthPrefixedArray(() =>
+            (reader.ReadChat(), reader.ReadBoolean() ? reader.ReadChat() : null)).ToImmutableArray();
+        this.resolved = reader.ReadBoolean();
     }
 
     public override void Write(INetStreamWriter writer)
@@ -33,7 +79,7 @@ public sealed record WrittenBookDataComponent : DataComponent
             writer.WriteBoolean(page.Filtered is not null);
             if (page.Filtered is not null)
                 writer.WriteChat(page.Filtered);
-        }, this.Pages);
+        }, this.pages.AsSpan());
         writer.WriteBoolean(this.Resolved);
     }
 }

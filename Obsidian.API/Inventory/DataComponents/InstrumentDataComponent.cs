@@ -6,28 +6,45 @@ namespace Obsidian.API.Inventory.DataComponents;
 public sealed record InstrumentDataComponent() : SimpleDataComponent<InstrumentData>(
     DataComponentType.Instrument, "minecraft:instrument", (_, _) => { }, _ => new())
 {
-    public int? RegistryId { get; set; }
-    public bool IsResourceKey { get; set; }
+    private int? registryId;
 
-    public override void Read(INetStreamReader reader)
+    public int? RegistryId
     {
-        this.IsResourceKey = !reader.ReadBoolean();
-        this.Value = new();
+        get => this.registryId;
+        init => this.registryId = value;
+    }
+
+    private bool isResourceKey;
+
+    public bool IsResourceKey
+    {
+        get => this.isResourceKey;
+        init => this.isResourceKey = value;
+    }
+
+    protected override void ReadCore(INetStreamReader reader)
+    {
+        this.registryId = null;
+        this.isResourceKey = !reader.ReadBoolean();
+        this.value = new();
         if (this.IsResourceKey)
         {
-            this.Value.Identifier = reader.ReadString();
+            this.value = new() { Identifier = reader.ReadString() };
             return;
         }
 
         var holder = reader.ReadVarInt();
-        this.RegistryId = holder == 0 ? null : holder - 1;
+        this.registryId = holder == 0 ? null : holder - 1;
         if (holder != 0)
             return;
 
-        this.Value.SoundEvent = ComponentValueCodecs.ReadSoundHolder(reader);
-        this.Value.UseDuration = reader.ReadSingle();
-        this.Value.Range = reader.ReadSingle();
-        this.Value.Description = reader.ReadChat();
+        this.value = new()
+        {
+            SoundEvent = ComponentValueCodecs.ReadSoundHolder(reader),
+            UseDuration = reader.ReadSingle(),
+            Range = reader.ReadSingle(),
+            Description = reader.ReadChat()
+        };
     }
 
     public override void Write(INetStreamWriter writer)

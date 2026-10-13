@@ -162,13 +162,15 @@ public partial class Extensions
             // Vanilla's Unit codec: an empty compound.
             SimpleDataComponent<bool> when component.Type == DataComponentType.Unbreakable => new NbtCompound(name),
             SimpleDataComponent<ChatMessage> text when text.Value is not null => text.Value.ToNbt(name),
-            SimpleDataComponent<Enchantment[]> enchantments => EnchantmentsToNbt(name, enchantments.Value ?? []),
-            SimpleDataComponent<SuspiciousStewEffect[]> effects => StewEffectsToNbt(name, effects.Value ?? []),
+            SimpleDataComponent<ImmutableArray<Enchantment>> enchantments =>
+                EnchantmentsToNbt(name, enchantments.Value),
+            SimpleDataComponent<ImmutableArray<SuspiciousStewEffect>> effects => StewEffectsToNbt(name, effects.Value),
             SimpleDataComponent<InstrumentData> instrument when instrument.Value?.Identifier is not null =>
                 new NbtTag<string>(name, instrument.Value.Identifier),
             PotionContentsDataComponent potion => PotionContentsToNbt(name, potion),
-            SimpleDataComponent<ItemStack[]> projectiles when component.Type == DataComponentType.ChargedProjectiles =>
-                ChargedProjectilesToNbt(name, projectiles.Value ?? []),
+            SimpleDataComponent<ImmutableArray<ItemStack>> projectiles
+                when component.Type == DataComponentType.ChargedProjectiles =>
+                ChargedProjectilesToNbt(name, projectiles.Value),
             FireworksDataComponent fireworks => FireworksToNbt(name, fireworks),
             BucketEntityDataComponent bucket => CopyBucketData(name, bucket.Value),
             _ => null
@@ -197,11 +199,11 @@ public partial class Extensions
             case "minecraft:item_name" when tag.TextFromNbt() is ChatMessage itemName:
                 return ComponentBuilder.ItemName with { Value = itemName };
             case "minecraft:enchantments" when tag is NbtCompound enchantments:
-                return ComponentBuilder.Enchantments with { Value = EnchantmentsFromNbt(enchantments) };
+                return ComponentBuilder.Enchantments with { Value = [.. EnchantmentsFromNbt(enchantments)] };
             case "minecraft:stored_enchantments" when tag is NbtCompound stored:
-                return ComponentBuilder.StoredEnchantments with { Value = EnchantmentsFromNbt(stored) };
+                return ComponentBuilder.StoredEnchantments with { Value = [.. EnchantmentsFromNbt(stored)] };
             case "minecraft:suspicious_stew_effects" when tag is NbtList effects:
-                return ComponentBuilder.SuspiciousStewEffects with { Value = StewEffectsFromNbt(effects) };
+                return ComponentBuilder.SuspiciousStewEffects with { Value = [.. StewEffectsFromNbt(effects)] };
             case "minecraft:instrument" when tag is NbtTag<string> instrument:
                 var registered = InstrumentsRegistry.All.FirstOrDefault(entry => entry.Identifier == instrument.Value);
                 return ComponentBuilder.Instrument with
@@ -211,8 +213,11 @@ public partial class Extensions
             case "minecraft:potion_contents":
                 return PotionContentsFromNbt(tag);
             case "minecraft:charged_projectiles" when tag is NbtList projectiles:
-                return ComponentBuilder.ChargedProjectiles with { Value = projectiles.OfType<NbtCompound>()
-                    .Select(projectile => projectile.ItemFromNbt()).OfType<ItemStack>().ToArray() };
+                return ComponentBuilder.ChargedProjectiles with
+                {
+                    Value = projectiles.OfType<NbtCompound>()
+                    .Select(projectile => projectile.ItemFromNbt()).OfType<ItemStack>().ToImmutableArray()
+                };
             case "minecraft:fireworks" when tag is NbtCompound fireworks:
                 return FireworksFromNbt(fireworks);
             default:
@@ -220,7 +225,7 @@ public partial class Extensions
         }
     }
 
-    private static NbtList ChargedProjectilesToNbt(string name, ItemStack[] projectiles)
+    private static NbtList ChargedProjectilesToNbt(string name, ImmutableArray<ItemStack> projectiles)
     {
         var list = new NbtList(NbtTagType.Compound, name);
         foreach (var projectile in projectiles) list.Add(projectile.ToNbt());
@@ -265,7 +270,7 @@ public partial class Extensions
         return copy;
     }
 
-    private static NbtCompound EnchantmentsToNbt(string name, Enchantment[] enchantments)
+    private static NbtCompound EnchantmentsToNbt(string name, ImmutableArray<Enchantment> enchantments)
     {
         var compound = new NbtCompound(name);
         foreach (var enchantment in enchantments)
@@ -287,7 +292,7 @@ public partial class Extensions
         return [.. enchantments];
     }
 
-    private static NbtList StewEffectsToNbt(string name, SuspiciousStewEffect[] effects)
+    private static NbtList StewEffectsToNbt(string name, ImmutableArray<SuspiciousStewEffect> effects)
     {
         var list = new NbtList(NbtTagType.Compound, name);
         foreach (var effect in effects)
@@ -363,11 +368,11 @@ public partial class Extensions
 
         var contents = new PotionContentsDataComponent();
         if (compound.TryGetTag<NbtTag<string>>("potion", out var id) && TryParseEnumId<Potion>(id.Value, out var potion))
-            contents.Potion = potion;
+            contents = contents with { Potion = potion };
         if (compound.TryGetTag<NbtTag<int>>("custom_color", out var color))
-            contents.CustomColor = color.Value;
+            contents = contents with { CustomColor = color.Value };
         if (compound.TryGetTag<NbtTag<string>>("custom_name", out var customName))
-            contents.CustomName = customName.Value;
+            contents = contents with { CustomName = customName.Value };
 
         if (compound.TryGetTag<NbtList>("custom_effects", out var effects))
         {
@@ -388,7 +393,7 @@ public partial class Extensions
                 });
             }
 
-            contents.CustomEffects = [.. customEffects];
+            contents = contents with { CustomEffects = [.. customEffects] };
         }
 
         return contents;

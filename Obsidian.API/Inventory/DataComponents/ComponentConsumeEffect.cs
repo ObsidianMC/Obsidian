@@ -3,22 +3,55 @@ using Obsidian.API.Effects;
 namespace Obsidian.API.Inventory.DataComponents;
 
 /// <summary>The five 1.21.11 consume-effect payloads, selected by their registry ID.</summary>
-public sealed class ComponentConsumeEffect : IConsumeEffect
+public sealed record ComponentConsumeEffect : IConsumeEffect
 {
     private static readonly string[] Names = ["apply_effects", "remove_effects", "clear_all_effects", "teleport_randomly", "play_sound"];
     public int Id { get; init; }
     public string Type => "minecraft:" + Names[this.Id];
-    public PotionEffectData[] Effects { get; set; } = [];
-    public float Probability { get; set; } = 1;
-    public IdSet RemovedEffects { get; set; }
-    public float Diameter { get; set; } = 16;
-    public SoundEvent Sound { get; set; }
+    private ImmutableArray<PotionEffectData> effects = [];
+
+    public ImmutableArray<PotionEffectData> Effects
+    {
+        get => this.effects;
+        init => this.effects = value;
+    }
+
+    private float probability = 1;
+
+    public float Probability
+    {
+        get => this.probability;
+        init => this.probability = value;
+    }
+
+    private IdSet removedEffects;
+
+    public IdSet RemovedEffects
+    {
+        get => this.removedEffects;
+        init => this.removedEffects = value;
+    }
+
+    private float diameter = 16;
+
+    public float Diameter
+    {
+        get => this.diameter;
+        init => this.diameter = value;
+    }
+
+    private SoundEvent sound;
+
+    public SoundEvent Sound
+    {
+        get => this.sound;
+        init => this.sound = value;
+    }
 
     internal static ComponentConsumeEffect ReadValue(INetStreamReader reader)
     {
         var value = new ComponentConsumeEffect { Id = reader.ReadVarInt() };
-        value.Read(reader);
-        return value;
+        return (ComponentConsumeEffect)value.Read(reader);
     }
 
     internal static void WriteValue(IConsumeEffect effect, INetStreamWriter writer)
@@ -38,24 +71,32 @@ public sealed class ComponentConsumeEffect : IConsumeEffect
             effect.Write(writer);
     }
 
-    public void Read(INetStreamReader reader)
+    public IConsumeEffect Read(INetStreamReader reader)
+    {
+        var result = this with { };
+        result.ReadCore(reader);
+        return result;
+    }
+
+    private void ReadCore(INetStreamReader reader)
     {
         switch (this.Id)
         {
             case 0:
-                this.Effects = reader.ReadLengthPrefixedArray(() => ComponentValueCodecs.ReadEffect(reader));
-                this.Probability = reader.ReadSingle();
+                this.effects = reader.ReadLengthPrefixedArray(() => ComponentValueCodecs.ReadEffect(reader))
+                    .ToImmutableArray();
+                this.probability = reader.ReadSingle();
                 break;
             case 1:
-                this.RemovedEffects = reader.ReadIdSet(ComponentValueCodecs.MobEffects);
+                this.removedEffects = reader.ReadIdSet(ComponentValueCodecs.MobEffects);
                 break;
             case 2:
                 break;
             case 3:
-                this.Diameter = reader.ReadSingle();
+                this.diameter = reader.ReadSingle();
                 break;
             case 4:
-                this.Sound = ComponentValueCodecs.ReadSoundHolder(reader);
+                this.sound = ComponentValueCodecs.ReadSoundHolder(reader);
                 break;
             default:
                 throw new System.IO.InvalidDataException("Unknown consume effect.");
@@ -67,7 +108,8 @@ public sealed class ComponentConsumeEffect : IConsumeEffect
         switch (this.Id)
         {
             case 0:
-                writer.WriteLengthPrefixedArray(value => ComponentValueCodecs.WriteEffect(value, writer), this.Effects);
+                writer.WriteLengthPrefixedArray(
+                    value => ComponentValueCodecs.WriteEffect(value, writer), this.Effects.AsSpan());
                 writer.WriteSingle(this.Probability);
                 break;
             case 1:

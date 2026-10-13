@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Obsidian.API;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
@@ -497,8 +498,8 @@ public sealed class MenuClicks
         var changed = false;
         context.EventDispatcher.RegisterEvent(null, (Func<ContainerClickEventArgs, ValueTask>)(click =>
         {
-            // Changing the copy's component in place reaches neither the slot nor the next read.
-            click.Item!.GetComponent<SimpleDataComponent<int>>(DataComponentType.Damage)!.Value = 100;
+            // Replacing a component on the copy reaches neither the slot nor the next read.
+            click.Item![DataComponentType.Damage] = ComponentBuilder.Damage with { Value = 100 };
             Assert.Equal(3, click.Item.Damage);
 
             // A pickup tops up the held stack in place while the handler decides.
@@ -515,6 +516,53 @@ public sealed class MenuClicks
         Assert.Same(sword, chest.GetItem(0));
         Assert.Equal(3, sword.Damage);
         Assert.Equal(11, player.Inventory.GetItem(36)?.Count);
+    }
+
+    [Fact(DisplayName = "Replacing a slot's component advances its revision and corrects an in-flight click",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task ReplacingComponentInvalidatesClickAndReachesViewer()
+    {
+        await using var context = TestServerFactory.CreateServer($"component-click-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Clicker");
+        var food = new FoodDataComponent
+        {
+            Nutrition = 1,
+            SaturationModifier = 0.5f,
+            CanAlwaysEat = false
+        };
+        var stack = new ItemStack(ItemsRegistry.Apple, 1, food);
+        var chest = new Container();
+        chest.SetItem(0, stack);
+        await OpenAsync(player, chest);
+        var revision = chest.Revision;
+        var client = (TestClient)player.Client;
+        var sent = client.SentPackets.Count;
+        var applied = false;
+
+        context.EventDispatcher.RegisterEvent(null, (Func<ContainerClickEventArgs, ValueTask>)(click =>
+        {
+            stack[DataComponentType.Food] = food with { Nutrition = 5 };
+            click.ApplyWithClick(() => applied = true);
+            return ValueTask.CompletedTask;
+        }), Priority.Normal);
+
+        await ClickAsync(context.Server, player, 0, 0, ClickType.Pickup);
+
+        Assert.True(chest.Revision > revision);
+        Assert.False(applied);
+        Assert.Null(player.CarriedItem);
+        Assert.Same(stack, chest.GetItem(0));
+        Assert.Equal(1, food.Nutrition);
+        var shown = client.SentPackets.Skip(sent).OfType<ContainerSetContentPacket>().Last();
+        var updated = shown.Items[0]!.GetComponent<FoodDataComponent>(DataComponentType.Food)!;
+        Assert.Equal(5, updated.Nutrition);
+
+        // The actual wire value and a captured packet remain independent of subsequent replacements.
+        stack[DataComponentType.Food] = food with { Nutrition = 9 };
+        var wire = new NetworkBuffer();
+        wire.WriteItemStack(shown.Items[0]);
+        wire.Reset();
+        Assert.Equal(5, wire.ReadItemStack()!.GetComponent<FoodDataComponent>(DataComponentType.Food)!.Nutrition);
     }
 
     [Fact(DisplayName = "A crafting click whose result no longer follows the grid is corrected, not applied",
@@ -621,7 +669,8 @@ public sealed class MenuClicks
         };
         click.Arrive(NetworkBuffer.SnapshotItemStack);
 
-        var contents = click.Item!.GetComponent<SimpleDataComponent<ItemStack[]>>(DataComponentType.BundleContents)!;
+        var contents = click.Item!.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
+            DataComponentType.BundleContents)!;
         var copy = Assert.Single(contents.Value!);
         Assert.NotSame(gem, copy);
         Assert.Same(customData, copy.UnmodeledComponents);

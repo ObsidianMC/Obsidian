@@ -199,8 +199,10 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 var boosted = player.Vehicle switch { Pig pig => pig.Boost(player), Strider strider => strider.Boost(player), _ => false };
                 if (!boosted || player.GameMode == GameMode.Creative)
                     return;
-                var component = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage;
-                component.Value = item.Damage + (player.Vehicle is Strider ? 1 : 7);
+                var component = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage with
+                {
+                    Value = item.Damage + (player.Vehicle is Strider ? 1 : 7)
+                };
                 item[DataComponentType.Damage] = component;
                 var slot = e.Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
                 if (component.Value >= (player.Vehicle is Strider ? 100 : 25))

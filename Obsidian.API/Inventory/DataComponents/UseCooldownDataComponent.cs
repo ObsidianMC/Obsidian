@@ -1,23 +1,36 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
+
 public sealed record class UseCooldownDataComponent : DataComponent
 {
     public override DataComponentType Type => DataComponentType.UseCooldown;
 
     public override string Identifier => "minecraft:use_cooldown";
 
-    public required float Seconds { get; set; }
+    private float seconds;
 
-    public string? CooldownGroup { get; set; }
+    public required float Seconds
+    {
+        get => this.seconds;
+        init => this.seconds = value;
+    }
+
+    private string? cooldownGroup;
+
+    public string? CooldownGroup
+    {
+        get => this.cooldownGroup;
+        init => this.cooldownGroup = value;
+    }
 
     [SetsRequiredMembers]
     internal UseCooldownDataComponent() { }
 
-    public override void Read(INetStreamReader reader)
+    protected override void ReadCore(INetStreamReader reader)
     {
-        this.Seconds = reader.ReadSingle();
-        this.CooldownGroup = reader.ReadOptionalString();
+        this.seconds = reader.ReadSingle();
+        this.cooldownGroup = reader.ReadOptionalString();
     }
 
     public override void Write(INetStreamWriter writer)

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot;
@@ -27,7 +28,7 @@ internal static class CombatItems
 
     internal static int EnchantmentLevel(ItemStack? item, EnchantmentDefinition enchantment)
         => item is { Count: > 0 } && enchantment.CanEnchant(item)
-            ? item.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value?
+            ? item.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(DataComponentType.Enchantments)?.Value
                 .Where(entry => entry.Id == enchantment.Id).Select(entry => entry.Level).DefaultIfEmpty().Max() ?? 0
             : 0;
 
@@ -44,7 +45,7 @@ internal static class CombatItems
             else if (operation == "add_multiplied_total") totalMultiplier *= 1 + value;
         }
         if (item.Patch.FirstOrDefault(component => component.Type == DataComponentType.AttributeModifiers) is
-            SimpleDataComponent<AttributeModifier[]> custom)
+            SimpleDataComponent<ImmutableArray<AttributeModifier>> custom)
         {
             // Protocol ids from the 1.21.11 vanilla attribute registry.
             var id = name switch
@@ -53,7 +54,7 @@ internal static class CombatItems
                 "attack_speed" => 4, "entity_interaction_range" => 10, "fall_damage_multiplier" => 11,
                 "knockback_resistance" => 16, "safe_fall_distance" => 24, "sweeping_damage_ratio" => 30, _ => -1
             };
-            foreach (var modifier in custom.Value ?? [])
+            foreach (var modifier in custom.Value)
             {
                 if (modifier.Id != id || !MatchesSlot(modifier.Slot.ToString().ToLowerInvariant(), slot)) continue;
                 Apply((float)modifier.Value, modifier.Operation switch

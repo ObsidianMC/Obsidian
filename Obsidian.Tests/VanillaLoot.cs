@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Obsidian.API;
 using Obsidian.API.Effects;
 using Obsidian.API.Inventory;
@@ -72,21 +73,25 @@ public class VanillaLoot
         if (stack.Damage != 0)
             builder.Append($",damage={stack.Damage}");
 
-        var enchantments = stack.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value;
-        if (enchantments is not null && enchantments.Length > 0)
-            builder.Append($",enchantments={DescribeEnchantments(enchantments)}");
+        var enchantments = stack.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+            DataComponentType.Enchantments)?.Value;
+        if (enchantments is not null && enchantments.Value.Length > 0)
+            builder.Append($",enchantments={DescribeEnchantments(enchantments.Value.ToArray())}");
 
-        var stored = stack.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.StoredEnchantments)?.Value;
-        if (stored is not null && stored.Length > 0)
-            builder.Append($",stored={DescribeEnchantments(stored)}");
+        var stored = stack.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+            DataComponentType.StoredEnchantments)?.Value;
+        if (stored is not null && stored.Value.Length > 0)
+            builder.Append($",stored={DescribeEnchantments(stored.Value.ToArray())}");
 
         var potion = stack.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents)?.Potion;
         if (potion is not null)
             builder.Append($",potion={potion.Value.ToString().ToSnakeCase()}");
 
-        var stew = stack.GetComponent<SimpleDataComponent<SuspiciousStewEffect[]>>(DataComponentType.SuspiciousStewEffects)?.Value;
+        var stew = stack.GetComponent<SimpleDataComponent<ImmutableArray<SuspiciousStewEffect>>>(
+            DataComponentType.SuspiciousStewEffects)?.Value;
         if (stew is not null)
-            builder.Append($",stew={string.Join("/", stew.Select(effect => $"{effect.EffectId}:{effect.Duration}"))}");
+            builder.Append(
+                $",stew={string.Join("/", stew.Value.Select(effect => $"{effect.EffectId}:{effect.Duration}"))}");
 
         if (stack.ItemName is not null)
             builder.Append($",item_name={stack.ItemName.Translate}");

@@ -1,36 +1,60 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 
 namespace Obsidian.API.Inventory.DataComponents;
+
 public sealed record class ToolDataComponent : DataComponent
 {
     public override DataComponentType Type => DataComponentType.Tool;
 
     public override string Identifier => "minecraft:tool";
 
-    public required ImmutableArray<ToolRule> Rules { get; set; }
+    private ImmutableArray<ToolRule> rules;
 
-    public required float DefaultMiningSpeed { get; set; }
+    public required ImmutableArray<ToolRule> Rules
+    {
+        get => this.rules;
+        init => this.rules = value;
+    }
 
-    public required int DamagePerBlock { get; set; }
+    private float defaultMiningSpeed;
 
-    public bool CanDestroyBlocksInCreative { get; set; } = true;
+    public required float DefaultMiningSpeed
+    {
+        get => this.defaultMiningSpeed;
+        init => this.defaultMiningSpeed = value;
+    }
+
+    private int damagePerBlock;
+
+    public required int DamagePerBlock
+    {
+        get => this.damagePerBlock;
+        init => this.damagePerBlock = value;
+    }
+
+    private bool canDestroyBlocksInCreative = true;
+
+    public bool CanDestroyBlocksInCreative
+    {
+        get => this.canDestroyBlocksInCreative;
+        init => this.canDestroyBlocksInCreative = value;
+    }
 
     [SetsRequiredMembers]
     internal ToolDataComponent() { }
 
-    public override void Read(INetStreamReader reader)
+    protected override void ReadCore(INetStreamReader reader)
     {
-        this.Rules = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(() => new ToolRule()
+        this.rules = reader.ReadLengthPrefixedArray(() => new ToolRule()
         {
             Blocks = reader.ReadIdSet(ComponentValueCodecs.Blocks),
             Speed = reader.ReadOptionalFloat(),
             CorrectDropForBlocks = reader.ReadOptionalBoolean()
-        }));
+        }).ToImmutableArray();
 
-        this.DefaultMiningSpeed = reader.ReadSingle();
-        this.DamagePerBlock = reader.ReadVarInt();
-        this.CanDestroyBlocksInCreative = reader.ReadBoolean();
+        this.defaultMiningSpeed = reader.ReadSingle();
+        this.damagePerBlock = reader.ReadVarInt();
+        this.canDestroyBlocksInCreative = reader.ReadBoolean();
     }
 
     public override void Write(INetStreamWriter writer)

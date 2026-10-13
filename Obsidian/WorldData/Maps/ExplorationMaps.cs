@@ -66,7 +66,16 @@ internal sealed class ExplorationMaps(AbstractLevel level, MojangGenerator gener
         var type = Enum.Parse<MapDecorationType>(request.Decoration.Replace("minecraft:", string.Empty).ToPascalCase(), true);
         map[DataComponentType.MapDecorations] = new MapDecorationDataComponent
         {
-            Decorations = new() { ["+"] = new MapDecoration { Type = type, X = position.X, Z = position.Z, Rotation = 180.0f } }
+            Decorations = new Dictionary<string, MapDecoration>
+            {
+                ["+"] = new MapDecoration
+                {
+                    Type = type,
+                    X = position.X,
+                    Z = position.Z,
+                    Rotation = 180.0f
+                }
+            }
         };
 
         if (decorationColors.TryGetValue(type, out var color))

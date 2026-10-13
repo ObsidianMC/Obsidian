@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
@@ -35,7 +36,8 @@ public partial class Player
             await SyncInventorySlotAsync(armorSlot);
             return;
         }
-        var charged = item.GetComponent<SimpleDataComponent<ItemStack[]>>(DataComponentType.ChargedProjectiles);
+        var charged = item.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
+            DataComponentType.ChargedProjectiles);
         if (item.Is(ItemsRegistry.Crossbow) && charged?.Value is { Length: > 0 } loaded)
         {
             if (await ShootCrossbowAsync(item, loaded))
@@ -186,7 +188,7 @@ public partial class Player
         return true;
     }
 
-    private ValueTask<bool> ShootCrossbowAsync(ItemStack weapon, ItemStack[] ammunition)
+    private ValueTask<bool> ShootCrossbowAsync(ItemStack weapon, ImmutableArray<ItemStack> ammunition)
     {
         var fired = false;
         for (var index = 0; index < ammunition.Length; index++)
@@ -235,7 +237,7 @@ public partial class Player
             if (ammunition == null) { CancelWeaponUse(); return; }
             var count = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Multishot) > 0 ? 3 : 1;
             item[DataComponentType.ChargedProjectiles] = ComponentBuilder.ChargedProjectiles with
-            { Value = Enumerable.Range(0, count).Select(_ => new ItemStack(ammunition)).ToArray() };
+            { Value = Enumerable.Range(0, count).Select(_ => new ItemStack(ammunition)).ToImmutableArray() };
             if (GameMode != GameMode.Creative && slot >= 0) { Inventory.RemoveItem(slot, 1); await SyncInventorySlotAsync(slot); }
             await SyncInventorySlotAsync(weaponSlot);
             CancelWeaponUse();

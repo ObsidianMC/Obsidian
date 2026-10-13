@@ -87,8 +87,10 @@ public static class EnchantmentHelper
     public static Enchantment[] GetEnchantments(ItemStack stack)
     {
         var enchantments = LootItems.Is(stack, ItemsRegistry.EnchantedBook)
-            ? stack.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.StoredEnchantments)?.Value
-            : stack.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value;
+            ? stack.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+                DataComponentType.StoredEnchantments)?.Value
+            : stack.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+                DataComponentType.Enchantments)?.Value;
 
         return enchantments is null ? [] : [.. enchantments];
     }
@@ -99,9 +101,9 @@ public static class EnchantmentHelper
     public static void SetEnchantments(ItemStack stack, Enchantment[] enchantments)
     {
         if (LootItems.Is(stack, ItemsRegistry.EnchantedBook))
-            LootItems.Set(stack, ComponentBuilder.StoredEnchantments with { Value = enchantments });
+            LootItems.Set(stack, ComponentBuilder.StoredEnchantments with { Value = [.. enchantments] });
         else
-            LootItems.Set(stack, ComponentBuilder.Enchantments with { Value = enchantments });
+            LootItems.Set(stack, ComponentBuilder.Enchantments with { Value = [.. enchantments] });
     }
 
     /// <summary>

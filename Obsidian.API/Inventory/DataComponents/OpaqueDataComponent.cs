@@ -3,7 +3,7 @@ using Obsidian.API.Utilities;
 namespace Obsidian.API.Inventory.DataComponents;
 
 /// <summary>A component's complete network value, excluding its type ID and any untrusted-codec length prefix.</summary>
-public sealed record OpaqueDataComponent(DataComponentType ComponentType, byte[] Data) : DataComponent
+public sealed record OpaqueDataComponent(DataComponentType ComponentType, ImmutableArray<byte> Data) : DataComponent
 {
     public override DataComponentType Type => this.ComponentType;
     public override string Identifier => GetIdentifier(this.Type);

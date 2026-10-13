@@ -20,8 +20,10 @@ public sealed partial class Mooshroom : Cow
             var item = ItemsRegistry.GetSingleItem(stew);
             if (StewEffect is { } effect)
             {
-                var component = Obsidian.API.Inventory.DataComponents.ComponentBuilder.SuspiciousStewEffects;
-                component.Value = [effect];
+                var component = Obsidian.API.Inventory.DataComponents.ComponentBuilder.SuspiciousStewEffects with
+                {
+                    Value = [effect]
+                };
                 item[DataComponentType.SuspiciousStewEffects] = component;
                 StewEffect = null;
             }

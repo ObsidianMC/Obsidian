@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.Nbt;
 using System.Diagnostics.CodeAnalysis;
@@ -35,10 +35,13 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public int MaxDamage => this.RemoveComponents.Contains(DataComponentType.MaxDamage) ? 0 :
         this.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? this.Holder.MaxDamage;
-    public IReadOnlyList<ChatMessage> Lore => this.GetComponent<SimpleDataComponent<ChatMessage[]>>(DataComponentType.Lore)?.Value ?? [];
+    public IReadOnlyList<ChatMessage> Lore => this.GetComponent<SimpleDataComponent<ImmutableArray<ChatMessage>>>(
+        DataComponentType.Lore)?.Value ?? [];
     public IReadOnlyList<Enchantment> Enchantments =>
-        this.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value ?? [];
-    public bool HasEnchantmentGlint => this.GetComponent<SimpleDataComponent<bool>>(DataComponentType.EnchantmentGlintOverride)?.Value ??
+        this.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+            DataComponentType.Enchantments)?.Value ?? [];
+    public bool HasEnchantmentGlint => this.GetComponent<SimpleDataComponent<bool>>(
+        DataComponentType.EnchantmentGlintOverride)?.Value ??
         (!this.RemoveComponents.Contains(DataComponentType.EnchantmentGlintOverride) &&
             this.Holder.Id is ItemIds.EnchantedBook or ItemIds.EnchantedGoldenApple or ItemIds.ExperienceBottle
                 or ItemIds.WrittenBook or ItemIds.NetherStar or ItemIds.EndCrystal or ItemIds.DebugStick ||
@@ -150,8 +153,8 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
             this.Add(placeholder);
 
-            // A copy, so changing the placeholder's value puts it in the patch.
-            this.Placeholders[placeholder.Type] = placeholder with { };
+            // Immutable defaults can be shared until a component is explicitly replaced.
+            this.Placeholders[placeholder.Type] = placeholder;
         }
 
         foreach (var component in components)
