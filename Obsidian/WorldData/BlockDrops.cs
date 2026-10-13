@@ -104,23 +104,24 @@ internal static class BlockDrops
         foreach (var dy in PrefetchedOffsetsY)
             neighbours[(x, y + dy, z)] = await level.GetBlockAsync(x, y + dy, z);
 
-        var context = new LootContext
-        {
-            Random = table.CreateRandom(0, LevelLoot.Sequences(level)),
-            Origin = new VectorD(x + 0.5, y + 0.5, z + 0.5),
-            ThisEntity = breaker,
-            Block = block,
-            Tool = tool,
-            ExplosionRadius = explosionRadius,
-            BlockProperty = (candidate, name) => candidate.GetProperty(name),
-            BlockAt = (bx, by, bz) => neighbours.TryGetValue((bx, by, bz), out var found)
-                ? found
-                : throw new InvalidOperationException($"Block {bx},{by},{bz} wasn't prefetched for loot."),
-            BlockEntityComponent = BlockEntityComponents.For(blockEntity),
-        };
-
         try
         {
+            // Built inside the try: BlockEntityComponents.For throws NotSupportedException for unmodelled block entities.
+            var context = new LootContext
+            {
+                Random = table.CreateRandom(0, LevelLoot.Sequences(level)),
+                Origin = new VectorD(x + 0.5, y + 0.5, z + 0.5),
+                ThisEntity = breaker,
+                Block = block,
+                Tool = tool,
+                ExplosionRadius = explosionRadius,
+                BlockProperty = (candidate, name) => candidate.GetProperty(name),
+                BlockAt = (bx, by, bz) => neighbours.TryGetValue((bx, by, bz), out var found)
+                    ? found
+                    : throw new InvalidOperationException($"Block {bx},{by},{bz} wasn't prefetched for loot."),
+                BlockEntityComponent = BlockEntityComponents.For(blockEntity),
+            };
+
             return table.GetRandomItems(context).Where(stack => stack.Count > 0).ToList();
         }
         catch (NotSupportedException exception)

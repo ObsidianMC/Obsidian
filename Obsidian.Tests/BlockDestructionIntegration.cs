@@ -509,6 +509,36 @@ public class BlockDestructionIntegration
         Assert.Empty(SpawnedItems(context));
     }
 
+    [Fact]
+    public async Task UnmodelledBlockEntityBreaksWithNoDropsInsteadOfThrowing()
+    {
+        await using var context = TestServerFactory.CreateServer("unmodelled-block-entity");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Unmodelled");
+        // Dirt needs no tool, so the loot is built (stone would return early for bare hands).
+        var block = BlocksRegistry.Get("minecraft:dirt");
+        await context.World.SetBlockAsync(Spot, block, true);
+        await context.World.SetBlockEntity(Spot, new UnmodelledBlockEntity { BlockPosition = Spot });
+
+        // The block entity has no component mapping, so the loot can't be built; the break still removes the block.
+        await new MainEventHandler().OnBlockBreak(BlockBreakIntegration.CreateArgs(context, player, block, Spot));
+
+        Assert.True((await context.World.GetBlockAsync(Spot))!.IsAir);
+        Assert.Empty(SpawnedItems(context));
+    }
+
+    private sealed class UnmodelledBlockEntity : IBlockEntity
+    {
+        public string Id => "minecraft:unmodelled";
+
+        public Vector BlockPosition { get; init; }
+
+        public void ToNbt() { }
+
+        public void FromNbt() { }
+
+        public IBlockEntity Clone() => new UnmodelledBlockEntity { BlockPosition = BlockPosition };
+    }
+
     private static List<ItemStack> SpawnedItems(RealServerContext context) =>
         context.World.GetEntitiesInRange(new VectorD(Spot.X + 0.5, Spot.Y + 0.5, Spot.Z + 0.5), 4f)
             .OfType<ItemEntity>()
