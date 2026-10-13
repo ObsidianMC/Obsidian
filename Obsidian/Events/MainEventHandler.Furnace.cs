@@ -82,7 +82,7 @@ public partial class MainEventHandler
             _ => CraftingType.Smelting
         };
 
-        if (RecipesRegistry.IsCookingIngredient(recipeType, item))
+        if (PlayerRecipes(player).IsCookingIngredient(recipeType, item))
             return MoveStack(player, inventory, slot, furnace, 0, 1, reverse: false);
 
         if (IsFuel(item))

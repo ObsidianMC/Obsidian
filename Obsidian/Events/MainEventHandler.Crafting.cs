@@ -2,6 +2,7 @@ using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.API.Inventory;
+using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Diagnostics;
 
@@ -9,6 +10,10 @@ namespace Obsidian.Events;
 
 public partial class MainEventHandler
 {
+    internal static RecipeSet PlayerRecipes(IPlayer player) => player is Player { Server: Server server }
+        ? server.RecipeRegistry.Current
+        : RecipesRegistry.Current;
+
     /// <summary>
     /// Handles a click in a window with a crafting grid, the player's inventory or a crafting table: its result slot
     /// crafts, the others work like any window's. The result shown is the one taken, as the click is applied only if
@@ -59,7 +64,8 @@ public partial class MainEventHandler
     /// craft now. It doesn't when something changed the grid without refreshing it, or the recipes changed.
     /// </summary>
     private static bool CraftingResultFollowsGrid(IPlayer player) =>
-        !TryGetCraftingGrid(player, out var grid, out var width) || ShowsResult(grid, CraftingResult(grid, width));
+        !TryGetCraftingGrid(player, out var grid, out var width)
+        || ShowsResult(grid, CraftingResult(player, grid, width));
 
     /// <summary>
     /// Sets the result slot of the player's open crafting grid, if they have one open, to what its ingredients craft.
@@ -67,13 +73,13 @@ public partial class MainEventHandler
     private static void RefreshCraftingResult(IPlayer player)
     {
         if (TryGetCraftingGrid(player, out var grid, out var width))
-            RefreshCraftingResult(grid, width);
+            RefreshCraftingResult(player, grid, width);
     }
 
     /// <summary>
     /// Sets the result slot of the player's open crafting grid to what its ingredients craft with the current recipes,
-    /// and sends the window to the players viewing it if that changed the result. The server calls it when the
-    /// recipes change (a plugin's recipes registered or removed), so that no grid keeps showing a result whose recipe
+    /// and sends the window to its viewers. Sending it even when unchanged lets a failed delivery catch up on the
+    /// next recipe change (a plugin's recipes registered or removed), so no grid keeps showing a result whose recipe
     /// is gone, or misses one just added.
     /// </summary>
     internal static async ValueTask RefreshCraftingResultAsync(Player player)
@@ -84,13 +90,12 @@ public partial class MainEventHandler
         {
             // Another window opened while the lock was taken: it shows its own result already.
             if ((player.OpenedContainer ?? player.Inventory) != window
-                || !TryGetCraftingGrid(player, out var grid, out var width)
-                || ShowsResult(grid, CraftingResult(grid, width)))
+                || !TryGetCraftingGrid(player, out var grid, out var width))
             {
                 return;
             }
 
-            RefreshCraftingResult(grid, width);
+            RefreshCraftingResult(player, grid, width);
         }
 
         foreach (var viewer in WindowViewers(player, window))
@@ -100,19 +105,23 @@ public partial class MainEventHandler
         }
     }
 
-    private static void RefreshCraftingResult(BaseContainer grid, int width)
+    private static void RefreshCraftingResult(IPlayer player, BaseContainer grid, int width)
     {
-        var result = CraftingResult(grid, width);
+        var result = CraftingResult(player, grid, width);
 
         // Setting the same result again would count as a change to the grid (see BaseContainer.Revision).
         if (!ShowsResult(grid, result))
-            grid.SetItem(0, result is null ? null : new ItemStack(result, result.Count));
+            grid.SetItem(0, result is null ? null : NetworkBuffer.SnapshotItemStack(result));
     }
 
     // What the grid's ingredients craft, as the recipe holds it: copy it to put it in a slot.
-    private static ItemStack? CraftingResult(BaseContainer grid, int width)
+    private static ItemStack? CraftingResult(IPlayer player, BaseContainer grid, int width)
     {
-        var result = RecipesRegistry.FindRecipe(grid, width)?.Result.FirstOrDefault();
+        var recipes = PlayerRecipes(player);
+        if (!RecipeBookSync.CanSend(player, recipes))
+            recipes = RecipesRegistry.Current;
+
+        var result = recipes.FindRecipe(grid, width)?.Result.FirstOrDefault();
         Debug.Assert(result is null || (result.Count > 0 && result.Count <= result.MaxStackSize),
             "Generated crafting results must fit in one stack.");
 
@@ -150,7 +159,7 @@ public partial class MainEventHandler
 
         while (grid.GetItem(0) is ItemStack result && !result.IsAir && result.Holder == crafted)
         {
-            var stack = new ItemStack(result, result.Count);
+            var stack = NetworkBuffer.SnapshotItemStack(result);
 
             switch (args.ClickType)
             {
@@ -187,7 +196,7 @@ public partial class MainEventHandler
 
             // Like vanilla's shift-click, what didn't fit drops.
             SpawnThrownItem(player, stack.Count > 0 && args.ClickType == ClickType.QuickMove ? stack : null);
-            RefreshCraftingResult(grid, width);
+            RefreshCraftingResult(player, grid, width);
 
             if (!repeats)
                 return;

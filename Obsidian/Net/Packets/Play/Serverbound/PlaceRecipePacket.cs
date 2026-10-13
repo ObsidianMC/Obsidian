@@ -13,7 +13,7 @@ public partial class PlaceRecipePacket
     [VarLength]
     public int RecipeDisplayId { get; private set; }
 
-    public string RecipeId => RecipesRegistry.Current.GetBookEntry(RecipeDisplayId)?.Recipe.Identifier ?? string.Empty;
+    public string RecipeId => RecipesRegistry.BookIdentifier(RecipeDisplayId);
 
     [Field(2)]
     public bool MakeAll { get; private set; }

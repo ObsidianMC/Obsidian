@@ -194,7 +194,9 @@ server.RegisterRecipes(ShapedRecipeBuilder.Create(CraftingBookCategory.Building)
     .Build());
 ```
 
-Recipes registered with a plugin's `IServer.RegisterRecipes` join vanilla's, in the same recipe set:
+Recipes registered with a plugin's `IServer.RegisterRecipes` join vanilla's in that server's recipe set. Other
+servers in the same process do not share the additions. Registration copies ingredients and result stacks, so
+changing the original recipe afterward has no effect:
 
 - Crafting tables and the player's 2x2 grid craft shaped and shapeless ones. Vanilla's recipes are tried first, then
   the others in the order they were first registered, so a plugin's recipe can't take over a vanilla pattern.
@@ -211,7 +213,10 @@ matching, are removed from the books with vanilla's remove packet, and a grid sh
 out again. A recipe keeps its recipe book id for the life of the process, so a reloaded plugin's recipes come back
 under the ids the books had. A player whose client goes back through configuration for the same plugin change (for
 new items, say) gets the whole book when they join again instead, as the recipes may show items their client doesn't
-know yet. Recipes are made of items, so a vanilla client sees a plugin's recipes of vanilla items.
+know yet. This check also applies during the initial join if content changed during its handshake; the client gets
+vanilla recipes first and the rest after reconfiguration. A failed delivery does not stop other players syncing;
+the next recipe change retries the affected player. Recipes are made of items, so a vanilla client sees a plugin's
+recipes of vanilla items.
 
 ## Tags
 

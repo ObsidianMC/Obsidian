@@ -425,9 +425,10 @@ given no plugin. The server's own instances add for the server, and they're the 
 event arguments and command contexts (`e.Server`), players' connections (`IClient.Server`) and the commands it lists
 (`Command.CommandHandler`). So a plugin adds through its own:
 
-- recipes registered with `IServer.RegisterRecipes`, which crafting and the recipe book use like vanilla's, are
-  removed: they stop matching, leave online players' recipe books and crafting results, and come back under the same
-  recipe book ids when the plugin registers them again (see [plugin-content.md](plugin-content.md#recipes));
+- recipes registered with `IServer.RegisterRecipes` belong to that server and are copied at registration. Crafting
+  and the recipe book use them like vanilla's. On unload they stop matching, leave online players' books and
+  crafting results, and come back under the same recipe book ids when registered again
+  (see [plugin-content.md](plugin-content.md#recipes));
 - scoreboards made with `IServer.ScoreboardManager.CreateScoreboard` and boss bars made with `IServer.CreateBossBar`
   are retired: their objective, teams and bars are removed from their players' screens, their names are free again,
   and changing them or showing them again throws `InvalidOperationException` (removing does nothing), so a handler
