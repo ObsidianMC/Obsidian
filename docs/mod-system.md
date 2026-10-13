@@ -3,7 +3,8 @@
 Obsidian's plugins are growing into a mod system modelled on NeoForge: a mod is a plugin that, besides commands and
 events, adds content (blocks, items, entities, biomes, world generation, codecs) and can talk to the same mod on the
 client. This document describes the design and tracks its progress. The archive format is in
-[plugin-archives.md](plugin-archives.md).
+[plugin-archives.md](plugin-archives.md), and the plan for the runtime systems mods build on (block entities,
+inventories, menus, rendering and more) is in [engine-foundations.md](engine-foundations.md).
 
 ## Principles
 
