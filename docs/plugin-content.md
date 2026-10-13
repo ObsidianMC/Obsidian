@@ -31,6 +31,38 @@ The block's identifier is in the plugin's namespace (its id). Unless `Item` is n
 places the block and is what it drops. A client mod has to declare the same block with the same properties and values
 in the same order: bool properties are `true, false`, int ones ascending, enum ones in the order given.
 
+### Saplings
+
+```csharp
+registry.RegisterBlock("ruby:ruby_sapling", new BlockProperties
+{
+    StateProperties = [StateProperty.Int("stage", 0, 1)],
+    HasCollision = false,
+    Opaque = false,
+    Hardness = 0,
+    TreeGrower = new TreeGrower
+    {
+        Tree = "ruby:ruby_tree",
+        MegaTree = "ruby:huge_ruby_tree",
+        SecondaryTree = "minecraft:fancy_oak",
+        SecondaryChance = 0.1f
+    }
+});
+```
+
+A block with a `TreeGrower` is a sapling, like vanilla's: on random ticks with a light level of 9 or more above it, one
+time in 7, and with bone meal 45% of the time, it grows a step. With a `stage` property the first step sets it to 1
+and the second grows the tree; without one, every step grows it. Its trees are configured features named by
+identifier: vanilla's, or a plugin's or data pack's from `worldgen/configured_feature` files (see
+[World generation features](#world-generation-features)), looked up as the sapling grows, so a reload or override
+applies at once. Like vanilla's, four saplings of the block in a square grow its `MegaTree` from their north-west
+corner, a flower within two blocks makes it grow its `Flowers` tree, and `SecondaryChance` picks the secondary tree
+of either; a sapling whose feature is missing, or can't be placed, stays a sapling. The grower belongs to the plugin
+like the block's behaviour: its saplings stop growing when it unloads, and a reload replaces it.
+
+Vanilla's saplings, azaleas and the mangrove propagule grow the same way into vanilla's trees, and bone meal grows
+crops, grass blocks (with vanilla's `minecraft:grass_bonemeal` and the biome's flowers) and short grass and ferns.
+
 ## Blocks from JSON
 
 Each `data/<namespace>/blocks/<name>.json` in the plugin's data folder is a block, shaped like an entry of vanilla's
@@ -53,7 +85,8 @@ blocks report:
 
 True and false make a bool property and consecutive numbers an int one; anything else is an enum property in the
 order listed. The other keys are `BlockProperties`' (`hasCollision`, `opaque`, `hardness`, `explosionResistance`,
-`requiresCorrectTool`, `lightEmission`), `behavior` is an `IBlockBehavior` type's full name, and `item` is false for a
+`requiresCorrectTool`, `lightEmission`), `behavior` is an `IBlockBehavior` type's full name, `treeGrower` makes a
+sapling (`{"tree": "ruby:ruby_tree"}`, with `TreeGrower`'s other members in camel case), and `item` is false for a
 block without an item.
 
 The generator makes a `RubyBlocks` class (from the namespace) in the plugin assembly's namespace, with a property per

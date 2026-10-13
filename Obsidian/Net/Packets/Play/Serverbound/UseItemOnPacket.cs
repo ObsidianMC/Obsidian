@@ -213,6 +213,28 @@ public partial class UseItemOnPacket
             return;
         }
 
+        // Like vanilla's BoneMealItem.useOn: bone meal grows a block that takes it, and is used up unless the player
+        // is in creative mode. Adventure mode can't use items on blocks.
+        if (player.Level is AbstractLevel growLevel
+            && currentItem is { Count: > 0, Holder.Id: ItemIds.BoneMeal }
+            && player.GameMode is GameMode.Survival or GameMode.Creative
+            && growLevel.UseBoneMeal(position))
+        {
+            if (player.GameMode != GameMode.Creative)
+            {
+                player.Inventory.RemoveItem(handSlot, 1);
+                await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+                {
+                    ContainerId = 0,
+                    Slot = (short)handSlot,
+                    SlotData = player.Inventory.GetItem(handSlot)
+                });
+            }
+
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
+        }
+
         if (player is Obsidian.Entities.Player eatingPlayer)
             eatingPlayer.StartEating(Hand);
 

@@ -556,6 +556,10 @@ public abstract partial class AbstractLevel : ILevel
         TickStage = "natural spawning";
         (mobSpawner ??= new MobSpawner(this)).Tick();
 
+        // Like vanilla's chunk ticks, with natural spawning and before entities.
+        TickStage = "random ticks";
+        this.TickRandomBlocks();
+
         // Snapshot once so crossing a region boundary cannot tick an entity twice.
         var entities = Regions.Values.SelectMany(region => region.Entities.Values)
             .DistinctBy(entity => entity.EntityId).OrderBy(entity => entity.EntityId).ToArray();

@@ -1,0 +1,9 @@
+{
+  "properties": {
+    "stage": ["0", "1"]
+  },
+  "hasCollision": false,
+  "opaque": false,
+  "hardness": 0,
+  "treeGrower": { "tree": "probe:sapling_tree" }
+}

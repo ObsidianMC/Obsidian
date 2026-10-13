@@ -95,6 +95,10 @@ client. This document describes the design and tracks its progress. The archive 
      vanilla's, and `IPluginRegistry.AddPotionMix` and `AddContainerMix` add a plugin's mixes after vanilla's, removed
      when it unloads (see [plugin-content.md](plugin-content.md#brewing)). Mixes aren't synced: clients know only
      vanilla's, as vanilla's client builds them itself.
+   - Done for saplings: `BlockProperties.TreeGrower` makes a plugin's block a sapling that grows the configured
+     features it names, vanilla's or files', on random ticks and with bone meal like vanilla's saplings, 2x2 mega
+     trees included; the grower is the plugin's, like its behaviour (see
+     [plugin-content.md](plugin-content.md#saplings)). Vanilla's saplings grow, and bone meal grows crops and grass.
    - Next: Phase 3.
 3. **Data-driven content and world generation** (done): loading a mod's `data/` folder like a data pack
    (biomes, dimension types, damage types, tags, worldgen features), letting mods register codec types for
@@ -285,8 +289,8 @@ client. This document describes the design and tracks its progress. The archive 
      plugins or overrides, vanilla's compiled structures generate as before (see
      [plugin-content.md](plugin-content.md#structures)).
    - Worldgen gaps (done): what places a configured feature by identifier, like the pale oak's moss decorator,
-     finds it through the current features, overrides included, as vanilla's registry lookups do (Obsidian has no
-     sapling growth or bone meal yet, which would do the same). The surface builder's named noises follow
+     finds it through the current features, overrides included, as vanilla's registry lookups do (as do sapling
+     growth and bone meal, since). The surface builder's named noises follow
      overrides. Data packs' `overlays` for vanilla 1.21.11's format apply over their root, and their `filter` blocks
      earlier packs' files, like vanilla. A vanilla world made with a data pack changing its overworld opens as an
      integrated server when the same overworld stem is loaded, with a clear error otherwise. Biome regions can be
