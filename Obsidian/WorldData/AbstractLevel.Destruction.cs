@@ -1,3 +1,4 @@
+using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.WorldData.Fluids;
 
@@ -9,6 +10,16 @@ namespace Obsidian.WorldData;
 /// </summary>
 public abstract partial class AbstractLevel
 {
+    /// <inheritdoc/>
+    public async ValueTask<List<ItemStack>> GetBlockDropsAsync(Vector location, ItemStack? tool = null, IEntity? breaker = null)
+    {
+        var block = await this.GetBlockAsync(location);
+        if (block is null || block.IsAir)
+            return [];
+
+        return await BlockDrops.ForPlayerBreakAsync(this, block, (VectorD)location, tool ?? ItemStack.Air, breaker);
+    }
+
     /// <summary>
     /// Vanilla <c>destroyBlock(pos, drop, cause)</c>: when <paramref name="drop"/> is set, the block's loot spawns (with
     /// <paramref name="cause"/> as the entity in the loot context). The position takes the fluid there, with block updates, as
