@@ -1314,16 +1314,18 @@ The rules:
 
 A mod whose side is `client` or `both` also runs on the Obsidian client, which registers its content like a server
 (see [mod-system.md](mod-system.md)). Its plugin class implements `IClientPlugin`, from `Obsidian.API.Client`, to
-register its client side. The client calls `ConfigureClient` once at startup, after `ConfigureRegistry`; servers never
-call it, so a `both` mod runs on a server without any client code.
+register its client side. The client calls `ConfigureClient` when it loads its mods, after `ConfigureRegistry`: at
+startup, and on a new instance of the plugin when the player reloads them (see below); servers never call it, so a
+`both` mod runs on a server without any client code.
 
-What `ConfigureClient` registers takes effect when it returns and stays until the client exits; if it throws, the
-mod fails to load and none of it does. The registry only takes registrations during `ConfigureClient`, since the
-client loads the assets that depend on them afterwards: registering later, through a registry the mod kept, throws
-`InvalidOperationException`. Its `Connection`, and sending payloads on it, stay usable for as long as the client
-runs. Like the server's content, key bindings, tints, renderers, particle providers and menu screens are the mod's
-own: their identifiers are in its namespace (its mod id) and valid by vanilla's rules, they're for blocks, entity
-types, particle types and menu types it registered, and registering one twice throws `ArgumentException`.
+What `ConfigureClient` registers takes effect when it returns and stays until the client exits or reloads its mods;
+if it throws, the mod fails to load and none of it does. The registry only takes registrations during
+`ConfigureClient`, since the client loads the assets that depend on them afterwards: registering later, through a
+registry the mod kept, throws `InvalidOperationException`. Its `Connection`, and sending payloads on it, stay usable
+for as long as the client runs. Like the server's content, key bindings, tints, renderers, particle providers and
+menu screens are the mod's own: their identifiers are in its namespace (its mod id) and valid by vanilla's rules,
+they're for blocks, entity types, particle types and menu types it registered, and registering one twice throws
+`ArgumentException`.
 
 ```csharp
 public sealed class RubyMod : PluginBase, IClientPlugin
@@ -1347,12 +1349,23 @@ public sealed class RubyMod : PluginBase, IClientPlugin
         var summon = registry.RegisterKeyBinding("ruby:summon_golem", "key.keyboard.r", "ruby:golems");
         summon.Pressed += () => registry.Connection.SendPayload(new SummonGolem());
 
+        var held = 0;
+        registry.OnTick(() =>
+        {
+            // Every client tick, on the game's thread: holding the key for five seconds summons another.
+            held = summon.IsDown ? held + 1 : 0;
+            if (held == 100)
+                registry.Connection.SendPayload(new SummonGolem());
+        });
+
         registry.RegisterBlockTint("ruby:mossy_ruby", BlockTint.Foliage);
         registry.RegisterEntityRenderer("ruby:golem", new EntityRendererProperties
         {
             Model = "ruby:golem",
             Texture = "ruby:entity/golem",
-            ShadowRadius = 0.7f
+            ShadowRadius = 0.7f,
+            IdleAnimation = "ruby:golem/idle",
+            WalkAnimation = "ruby:golem/walk"
         });
         registry.RegisterParticleProvider("ruby:spark", new ParticleProviderProperties
         {
@@ -1383,6 +1396,9 @@ public sealed class RubyMod : PluginBase, IClientPlugin
   game's thread when the key is pressed in game with no screen open, `IsDown` stays true until the key that pressed
   it is released (even if the binding is rebound meanwhile), and `Key` is the key it's bound to now. A key bound to a
   vanilla binding and a mod's does both, the screenshot and fullscreen keys included.
+- **Ticks.** `OnTick` runs a handler on the game's thread every client tick, 20 times a second, in menus as in game,
+  like NeoForge's client tick event: for client logic such as polling `IsDown`. `Connection.Phase` says whether the
+  client is playing on a server. A handler that throws is logged and not run again.
 - **Block tints.** A tinted block's faces whose model gives them a `tintindex` are multiplied by the tint, like
   vanilla's block colours: the biome's grass, foliage, dry foliage or water colour, blended across nearby biomes with
   the player's biome blend (grass follows the swamp and dark forest modifiers), or `BlockTint.Fixed(0xRRGGBB)`. Its
@@ -1410,7 +1426,15 @@ public sealed class RubyMod : PluginBase, IClientPlugin
   are placed like vanilla's living entities: turned to their body's yaw and tilted as they die or sleep. Parts named
   `head` turn to where the entity looks, and parts whose names end in `leg` swing as it walks (left and right, and
   `front` and back, in opposite phases); other parts stay as modelled. Vanilla's rules hiding parts by name, like
-  `left_chest` without a chest, don't apply.
+  `left_chest` without a chest, don't apply. Keyframed animations from `assets/<ns>/animations/entity/<path>.json`
+  (`"<ns>:<path>"`, format below) move parts on top of that: `IdleAnimation` plays from the entity's spawn,
+  `WalkAnimation` advances with the distance it walks and blends in with its speed like vanilla's walking animations
+  (and replaces the leg swing), and `AttackAnimation` plays once each time it swings its arm, which servers show as
+  mobs attack. A missing or malformed animation is logged and not played. What the server says the entity holds is
+  drawn in the hands of parts named `right_arm` and `left_arm`, and vanilla's armour it wears on the parts vanilla's
+  humanoid armour covers (`head`, `body`, `right_arm`, `left_arm`, `right_leg`, `left_leg`), following their poses;
+  a model without such a part doesn't show what goes on it. The entity type's registered `Width` and `Height` are its
+  hitbox, for picking and hitting it, its name tag's height and its eye height (85% of its height, vanilla's default).
 
 A model layer has the shape of the layers in the client's `client_models.json`, which are vanilla's model layers:
 
@@ -1439,3 +1463,41 @@ parent's), its rotation in radians and its scale, its cubes, and its child parts
 and a face four vertices `[x, y, z, u, v]`: a position in pixels from the part's pivot and a texture coordinate as a
 fraction of the texture's width and height. Model space is vanilla's: 16 pixels to a block, Y pointing down, and the
 entity's feet at Y 24.
+
+An animation has the shape of the animations in `client_models.json`, which are vanilla's keyframed entity
+animations:
+
+```json
+{
+  "length": 2,
+  "loop": true,
+  "channels": [
+    {
+      "bone": "head",
+      "target": "ROTATION",
+      "keys": [
+        { "time": 0, "pre": [0, 0, 0] },
+        { "time": 1, "pre": [0.5, 0, 0], "cubic": true },
+        { "time": 2, "pre": [0, 0, 0], "cubic": true }
+      ]
+    }
+  ]
+}
+```
+
+`length` is in seconds, and a looping animation (`loop`, false if left out) repeats after it, while one that doesn't
+holds its last pose. Each channel moves the part named `bone` by its `target`: `POSITION` in pixels (Y down, as in
+the model), `ROTATION` in radians, or `SCALE`, added to the part's scale of 1. Its `keys`, in time order, give the
+value reached at `time` seconds (`pre`), and, for a jump, the value leaving it (`post`, `pre` if left out); the curve
+to a key is linear, or Catmull-Rom with `cubic`. Like vanilla's, channels add to the part's pose, and time is
+sampled to the millisecond.
+
+The title screen's Reload Mods button reloads the client's mods without restarting: it unloads them and loads the
+`mods` folder again, then the assets. It's only on the title screen, so mods never reload while the client is
+connected to a server or running a world, whose channels and ids must stay as agreed. Unloading takes back
+everything mods registered in `ConfigureClient` (payload and tick handlers, key bindings, tints, renderers, particle
+providers, menu screens) and their payload channels, disposes their plugins and unloads their code; loading runs
+`ConfigureRegistry` and `ConfigureClient` again on new instances. Like a server's plugin reload, content (blocks,
+items, entity types, particle types, menu types) stays registered for the process with its ids, so a reload can
+change what mods do and how they draw, but content a mod adds needs a restart. Keys players bound mods' bindings to
+stay in `options.txt`.

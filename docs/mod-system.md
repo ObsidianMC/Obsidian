@@ -355,12 +355,21 @@ client. This document describes the design and tracks its progress. The archive 
      or as an `IClientRegistry.RegisterParticleProvider` says (lifetime, gravity, friction, scale, the server's
      velocity kept or randomised, animated sprites). Mods' menus show like a chest with their slots centred, or with
      the background and slot positions an `IClientRegistry.RegisterMenuScreen` gives.
+   - Done, client ticks, mods' entity animations, equipment and sizes, and reloading: `IClientRegistry.OnTick` runs
+     a mod's handler on the game's thread every client tick. Mods' entity renderers play keyframed animations from
+     `assets/<ns>/animations/entity/`, in the shape of `client_models.json`'s (an idle one, a walk one advancing with
+     the distance walked, which replaces the leg swing, and an attack one on arm swings, which servers send as mobs
+     attack), and draw held items on parts named `right_arm` and `left_arm` and vanilla's humanoid armour on the parts
+     it covers. Plugin entity types take their registered size for hitboxes, picking, name tags and eye height. The
+     title screen's Reload Mods button unloads the client's mods (their client registrations, payload channels,
+     content behaviour and load contexts, like the server's plugin unloading) and loads the folder again, then the
+     assets. It's only there while the client isn't connected, and content stays registered with its ids, so content
+     a mod adds needs a restart.
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
      move or draw unlike a sprite; menus beyond a grid of slots (other slot shapes, data slots, buttons, NeoForge's
-     extra open data) and screens drawing more than their background; unloading and reloading client mods while the
-     client runs, with its configuration, like the server's plugins (they load once at startup now); keyframed entity
-     animations, entity render layers and held items for mods' entities; a client tick event, so mods can poll
-     `IsDown` and do per-frame work.
+     extra open data) and screens drawing more than their background; entity render layers (emissive and translucent
+     ones) and animations a server triggers beyond arm swings for mods' entities; client lifecycle events (joining
+     and leaving a server).
 
 ## Known gaps
 

@@ -8,9 +8,9 @@ namespace Obsidian.API.Client;
 /// <remarks>
 /// <para>
 /// What the mod registers takes effect when <see cref="IClientPlugin.ConfigureClient"/> returns and stays until the
-/// client exits; if it throws, none of it does. The registry is sealed then, since the client loads what depends on it
-/// afterwards: registering through it later throws <see cref="InvalidOperationException"/>, while
-/// <see cref="Connection"/> stays usable.
+/// client exits or the player reloads its mods; if it throws, none of it does. The registry is sealed then, since the
+/// client loads what depends on it afterwards: registering through it later throws
+/// <see cref="InvalidOperationException"/>, while <see cref="Connection"/> stays usable.
 /// </para>
 /// <para>
 /// Like the server's content, what the mod registers is its own: identifiers are in its namespace (its mod id) and
@@ -36,6 +36,15 @@ public interface IClientRegistry
     /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
     public IClientRegistry HandlePayload<TPayload>(ClientPayloadHandler<TPayload> handler)
         where TPayload : ICustomPayload<TPayload>;
+
+    /// <summary>
+    /// Runs <paramref name="handler"/> on the game's thread every client tick, 20 times a second, in menus as in game,
+    /// for the mod's own client logic, like polling <see cref="IKeyBinding.IsDown"/>. <see cref="Connection"/>'s
+    /// <see cref="IClientConnection.Phase"/> says whether the client is playing on a server. A handler that throws is
+    /// logged and not run again.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+    public IClientRegistry OnTick(Action handler);
 
     /// <summary>
     /// Registers a key binding, listed in the key binds screen under its category and saved in <c>options.txt</c> like
