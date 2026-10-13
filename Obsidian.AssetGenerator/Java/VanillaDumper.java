@@ -399,6 +399,8 @@ public final class VanillaDumper {
         var emptyContext = Mojang.call(mojang.method("net.minecraft.world.phys.shapes.CollisionContext", "empty"), null);
         var destroySpeed = mojang.method(STATE_BASE, "getDestroySpeed", BLOCK_GETTER, BLOCK_POS);
         var correctTool = mojang.method(STATE_BASE, "requiresCorrectToolForDrops");
+        var isRandomlyTicking = mojang.method(STATE_BASE, "isRandomlyTicking");
+        var isFluidRandomlyTicking = mojang.method(FLUID_STATE, "isRandomlyTicking");
         var shapeBoxes = new Indexer<List<double[]>>(shape -> shape.stream().map(Arrays::toString).toList());
         var collisionShapes = new int[states.size()];
         var visualShapes = new int[states.size()];
@@ -407,6 +409,7 @@ public final class VanillaDumper {
         var shapeOffsets = new double[states.size()][];
         var hardness = new double[states.size()];
         var requiresTool = new ArrayList<Boolean>();
+        var randomTicking = new ArrayList<Integer>();
         var flags = new int[states.size()];
         var fluidFlags = new int[states.size()];
         var faces = new Indexer<List<double[]>>(face -> face.stream().map(Arrays::toString).toList());
@@ -429,6 +432,10 @@ public final class VanillaDumper {
             }
             hardness[id] = (float) Mojang.call(destroySpeed, state, emptyLevel, origin);
             requiresTool.add((boolean) Mojang.call(correctTool, state));
+            // What a chunk section counts to decide whether random ticks sample it: the block or its fluid ticks.
+            var blockTicks = (boolean) Mojang.call(isRandomlyTicking, state);
+            if (blockTicks || (boolean) Mojang.call(isFluidRandomlyTicking, fluidState))
+                randomTicking.add(id);
 
             var bits = 0;
             bits |= bit(0, Mojang.call(isAir, state));
@@ -492,6 +499,7 @@ public final class VanillaDumper {
         json.put("shapeOffsets", Arrays.asList(shapeOffsets));
         json.put("hardness", hardness);
         json.put("requiresTool", requiresTool);
+        json.put("randomTicking", randomTicking);
         Json.write(output.resolve("block_physics.json"), json, false);
     }
 

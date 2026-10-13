@@ -389,11 +389,16 @@ public abstract partial class AbstractLevel : ILevel
         if (c is null)
             return;
 
-        c.SetBlock(x, y, z, block);
+        // Under the lock fluid ticks and growth hold, so that neither reads a block, has it changed here, and then
+        // writes what it worked out from the old block over the change.
+        lock (this.Fluids.TickLock)
+        {
+            c.SetBlock(x, y, z, block);
 
-        // Generated block entity data (e.g. a dungeon chest's loot) doesn't carry over to another block.
-        if (c.GetBlockEntity(x, y, z) is DataBlockEntity data && data.Id != block.BlockEntityType())
-            c.RemoveBlockEntity(x, y, z);
+            // Generated block entity data (e.g. a dungeon chest's loot) doesn't carry over to another block.
+            if (c.GetBlockEntity(x, y, z) is DataBlockEntity data && data.Id != block.BlockEntityType())
+                c.RemoveBlockEntity(x, y, z);
+        }
 
         if (doBlockUpdate)
         {

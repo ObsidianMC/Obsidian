@@ -18,8 +18,9 @@ namespace Obsidian.WorldData;
 /// <remarks>
 /// Growing a plant draws from the random it's given in vanilla's order (the chance, then which tree, then the tree's
 /// own draws), and places the features vanilla places, found by identifier like vanilla's registry lookups, so that
-/// plugins' and data packs' overrides apply. Call it on the level's tick, which places the features in the level's
-/// chunks (see <see cref="LiveFeatureLevel"/>).
+/// plugins' and data packs' overrides apply. Call it on the level's tick, holding the level's
+/// <see cref="Fluids.LevelFluids.TickLock"/> from reading the block to growing it, which places the features in the
+/// level's chunks (see <see cref="LiveFeatureLevel"/>).
 /// </remarks>
 internal static partial class Growth
 {
@@ -228,6 +229,10 @@ internal static partial class Growth
     /// corner, else the sapling grows its tree, or the flowers' tree with a flower nearby. The saplings make way for
     /// the tree, and come back when it can't grow.
     /// </summary>
+    /// <remarks>
+    /// A tree that reaches a chunk that isn't loaded and complete doesn't grow, rather than grow cut off there: vanilla
+    /// would have loaded the chunk.
+    /// </remarks>
     /// <returns>Whether a tree grew.</returns>
     private static bool GrowTree(
         AbstractLevel level,
@@ -236,63 +241,75 @@ internal static partial class Growth
         TreeGrower grower,
         IRandomSource random)
     {
-        var features = PluginFeatures.Current;
         var live = new LiveFeatureLevel(level);
+        var grew = PlaceTree(live, position, block, grower, random);
 
-        try
+        if (live.ReachedUnloaded)
         {
-            if (MegaTree(grower, random) is string mega && features.FindConfigured(mega) is not null)
+            live.Rollback();
+            grew = false;
+        }
+
+        live.Commit();
+        return grew;
+    }
+
+    private static bool PlaceTree(
+        LiveFeatureLevel live,
+        Vector position,
+        IBlock block,
+        TreeGrower grower,
+        IRandomSource random)
+    {
+        var features = PluginFeatures.Current;
+
+        if (MegaTree(grower, random) is string mega && features.FindConfigured(mega) is not null)
+        {
+            for (var dx = 0; dx >= -1; dx--)
             {
-                for (var dx = 0; dx >= -1; dx--)
+                for (var dz = 0; dz >= -1; dz--)
                 {
-                    for (var dz = 0; dz >= -1; dz--)
-                    {
-                        if (!IsTwoByTwo(live, block, position, dx, dz))
-                            continue;
+                    if (!IsTwoByTwo(live, block, position, dx, dz))
+                        continue;
 
-                        var corner = position + new Vector(dx, 0, dz);
-                        Vector[] saplings =
-                        [
-                            corner,
-                            corner + Vector.East,
-                            corner + Vector.South,
-                            corner + new Vector(1, 0, 1)
-                        ];
+                    var corner = position + new Vector(dx, 0, dz);
+                    Vector[] saplings =
+                    [
+                        corner,
+                        corner + Vector.East,
+                        corner + Vector.South,
+                        corner + new Vector(1, 0, 1)
+                    ];
 
-                        foreach (var sapling in saplings)
-                            live.SetBlock(sapling, BlocksRegistry.Air);
+                    foreach (var sapling in saplings)
+                        live.SetBlock(sapling, BlocksRegistry.Air);
 
-                        if (Place(features, mega, live, corner, random))
-                            return true;
+                    if (Place(features, mega, live, corner, random))
+                        return true;
 
-                        foreach (var sapling in saplings)
-                            live.SetBlock(sapling, block);
+                    foreach (var sapling in saplings)
+                        live.SetBlock(sapling, block);
 
-                        return false;
-                    }
+                    return false;
                 }
             }
+        }
 
-            if (Tree(grower, random, HasFlowers(live, position)) is not string tree
-                || features.FindConfigured(tree) is null)
-            {
-                return false;
-            }
-
-            // The sapling's fluid stays where the tree grows, as a waterlogged propagule's water does.
-            var fluid = block.GetProperty("waterlogged") == "true" ? BlocksRegistry.Water : BlocksRegistry.Air;
-            live.SetBlock(position, fluid);
-
-            if (Place(features, tree, live, position, random))
-                return true;
-
-            live.SetBlock(position, block);
+        if (Tree(grower, random, HasFlowers(live, position)) is not string tree
+            || features.FindConfigured(tree) is null)
+        {
             return false;
         }
-        finally
-        {
-            live.Commit();
-        }
+
+        // The sapling's fluid stays where the tree grows, as a waterlogged propagule's water does.
+        var fluid = block.GetProperty("waterlogged") == "true" ? BlocksRegistry.Water : BlocksRegistry.Air;
+        live.SetBlock(position, fluid);
+
+        if (Place(features, tree, live, position, random))
+            return true;
+
+        live.SetBlock(position, block);
+        return false;
     }
 
     // Places a tree, which fails rather than stopping the level when a plugin's feature throws.

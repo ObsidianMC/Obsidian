@@ -9,7 +9,7 @@ namespace Obsidian.Registries;
 /// </summary>
 /// <remarks>
 /// Loaded from <c>Assets/block_physics.json</c>, which was dumped from vanilla 1.21.11 for every block state, along with
-/// each block's vanilla class, block entity type and whether it's a signal source.
+/// each block's vanilla class, block entity type and whether it's a signal source, and the states that random-tick.
 /// Each state packs its flags into one int:
 /// bit 0 air, 1 blocks motion, 2 solid, 3 replaceable, 4 liquid, 5 fluid source, 6 full collision cube,
 /// 7 sturdy center (up), 8 sturdy rigid (up), 9 redstone conductor, 10 block entity, 11-16 sturdy full faces
@@ -348,6 +348,24 @@ internal static class BlockPhysics
         return BlocksRegistry.TryGetPluginBlock(state, out var type) ? type.Settings.Hardness : 0;
     }
 
+    /// <summary>
+    /// Whether a state counts toward a chunk section's random ticks, like vanilla's per-section count: its block
+    /// (vanilla's <c>BlockState.isRandomlyTicking</c>) or its fluid (lava) ticks on random ticks. Random ticks only
+    /// sample sections that hold such a state.
+    /// </summary>
+    /// <remarks>
+    /// Plugin blocks always count: whether one grows on random ticks (a plugin's sapling) changes when its plugin
+    /// reloads, which sections don't hear about. Vanilla worlds hold none, so their random ticks stay vanilla's.
+    /// </remarks>
+    public static bool IsRandomlyTicking(int stateId)
+    {
+        var ticking = data.Value.RandomTicking;
+        if ((uint)stateId < (uint)ticking.Length)
+            return ticking[stateId];
+
+        return BlocksRegistry.TryGetPluginBlock(stateId, out _);
+    }
+
     public static bool RequiresCorrectTool(int state)
     {
         if ((uint)state < (uint)Tables.Flags.Length)
@@ -385,13 +403,23 @@ internal static class BlockPhysics
                 .Select(value => value.EnumerateArray().Select(number => number.GetDouble()).ToArray())
                 .ToArray(),
             root.GetProperty("hardness").EnumerateArray().Select(value => value.GetSingle()).ToArray(),
-            root.GetProperty("requiresTool").EnumerateArray().Select(value => value.GetBoolean()).ToArray());
+            root.GetProperty("requiresTool").EnumerateArray().Select(value => value.GetBoolean()).ToArray(),
+            RandomTickingStates(root));
+    }
+
+    private static bool[] RandomTickingStates(JsonElement root)
+    {
+        var ticking = new bool[root.GetProperty("flags").GetArrayLength()];
+        foreach (var state in root.GetProperty("randomTicking").EnumerateArray())
+            ticking[state.GetInt32()] = true;
+
+        return ticking;
     }
 
     private sealed record PhysicsData(int[] Flags, Dictionary<string, string> BlockClasses, Dictionary<string, string> BlockEntityTypes,
         Dictionary<string, int> BlockEntityTypeIds, HashSet<string> SignalSources, int[] FluidFlags, int[][] CollisionFaceSets,
         double[][][] CollisionFaces, double[][][] ShapeBoxes, int[] CollisionShapes, int[] VisualShapes, int[] OutlineShapes, bool[] Suffocating,
-        double[][] ShapeOffsets, float[] Hardness, bool[] RequiresTool)
+        double[][] ShapeOffsets, float[] Hardness, bool[] RequiresTool, bool[] RandomTicking)
     {
         // Like vanilla's occlusion cache in FlowingFluid: the same pairs of partial blocks come up again and again.
         public ConcurrentDictionary<(int From, int To, BlockFace Direction), bool> FaceOcclusion { get; } = new();

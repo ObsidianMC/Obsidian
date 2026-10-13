@@ -63,11 +63,15 @@ identifier: vanilla's, or a plugin's or data pack's from `worldgen/configured_fe
 [World generation features](#world-generation-features)), looked up as the sapling grows, so a reload or override
 applies at once. Like vanilla's, four saplings of the block in a square grow its `MegaTree` from their north-west
 corner, a flower within two blocks makes it grow its `Flowers` tree, and `SecondaryChance` picks the secondary tree
-of either; a sapling whose feature is missing, or can't be placed, stays a sapling. The grower belongs to the plugin
-like the block's behaviour: its saplings stop growing when it unloads, and a reload replaces it.
+of either; a sapling whose feature is missing, or can't be placed, stays a sapling. Like vanilla's, random ticks only
+reach chunks near players whose neighbours are loaded, and a tree that would reach a chunk that isn't loaded doesn't
+grow. The grower belongs to the plugin like the block's behaviour: its saplings stop growing when it unloads, and a
+reload replaces it.
 
 Vanilla's saplings, azaleas and the mangrove propagule grow the same way into vanilla's trees, and bone meal grows
 crops, grass blocks (with vanilla's `minecraft:grass_bonemeal` and the biome's flowers) and short grass and ferns.
+Bone meal is used on the level's next tick, on the block there then: it's used up (outside creative mode) only if
+that block still takes it.
 
 ## Blocks from JSON
 
