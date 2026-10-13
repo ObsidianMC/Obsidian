@@ -38,14 +38,20 @@ internal static class StructureRegistry
     /// <summary>
     /// Sets the templates of plugins' and data packs' files, by id, which replace vanilla's of the same id.
     /// </summary>
-    public static void SetOverrides(FrozenDictionary<string, StructureTemplate> files) =>
+    public static void SetOverrides(FrozenDictionary<string, StructureTemplate> files)
+    {
         Volatile.Write(ref overrides, files);
+        Interlocked.Increment(ref overridesVersion);
+    }
+
+    private static long overridesVersion;
 
     /// <summary>
-    /// The templates of plugins' and data packs' files now, a new object whenever they change, for caches of what
-    /// templates give (see <see cref="WorldData.Structures.Pools.StructureTemplatePool.MaxSize"/>).
+    /// Changes once the templates of plugins' and data packs' files change, after they did, for caches of what
+    /// templates give (see <see cref="WorldData.Structures.Pools.StructureTemplatePool.MaxSize"/>). Unlike the
+    /// templates, it doesn't keep them: vanilla's pools, which live as long as the server, cache against it.
     /// </summary>
-    public static object Overrides => Volatile.Read(ref overrides);
+    public static long OverridesVersion => Interlocked.Read(ref overridesVersion);
 
     /// <summary>
     /// Gets a template by id: a plugin's or data pack's, or vanilla's, loaded on first use. Unknown ids get an empty
