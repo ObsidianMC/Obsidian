@@ -35,7 +35,7 @@ public sealed class VanillaDimensionTypesCollection
 [Collection(VanillaDimensionTypesCollection.Name)]
 public sealed class DataPackStartup : IDisposable
 {
-    private const string PackMetadata = """{ "pack": { "pack_format": 94, "description": "" } }""";
+    private const string PackMetadata = """{ "pack": { "description": "", "min_format": 94, "max_format": 94 } }""";
 
     private readonly string folder = Path.Join(Path.GetTempPath(), $"obsidian-startup-packs-{Guid.NewGuid():N}");
 

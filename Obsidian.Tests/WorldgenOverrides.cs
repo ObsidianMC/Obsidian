@@ -19,6 +19,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Nodes;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -33,7 +34,7 @@ namespace Obsidian.Tests;
 [Collection(nameof(PluginTagFiles))]
 public sealed class WorldgenOverrides : IDisposable
 {
-    private const string PackMetadata = """{ "pack": { "pack_format": 94, "description": "" } }""";
+    private const string PackMetadata = """{ "pack": { "description": "", "min_format": 94, "max_format": 94 } }""";
 
     private const string FixedPlainsStem = """
         {
@@ -257,7 +258,7 @@ public sealed class WorldgenOverrides : IDisposable
         {
             ["pack.mcmeta"] = """
                 {
-                  "pack": { "pack_format": 94, "description": "" },
+                  "pack": { "description": "", "min_format": 94, "max_format": 94 },
                   "filter": { "block": [{ "namespace": "^minecraft$", "path": "noise/block" }] },
                   "overlays": {
                     "entries": [
@@ -292,11 +293,76 @@ public sealed class WorldgenOverrides : IDisposable
     [InlineData("""{ "directory": "..", "min_format": 94, "max_format": 94 }""", false)]
     public void OverlaysFollowVanillasFormats(string entry, bool applied)
     {
-        var json = $$"""{ "pack": { "pack_format": 94 }, "overlays": { "entries": [{{entry}}] } }""";
+        var json = $$"""
+            { "pack": { "description": "", "min_format": 94, "max_format": 94 },
+              "overlays": { "entries": [{{entry}}] } }
+            """;
         var metadata = DataPackMetadata.Read("test", Encoding.UTF8.GetBytes(json), NullLogger.Instance);
 
         string[] expected = applied ? ["d"] : [];
         Assert.Equal(expected, metadata.Overlays);
+    }
+
+    [Theory(DisplayName = "A pack loads with a valid description, and its formats are checked like vanilla's")]
+    [InlineData("""{ "description": "", "min_format": 94, "max_format": [94, 1] }""", true, false)]
+    [InlineData(
+        """
+        { "description": "", "pack_format": 48, "supported_formats": [48, 94], "min_format": 48, "max_format": 94 }
+        """,
+        true,
+        false)]
+    [InlineData("""{ "description": "", "pack_format": 94 }""", true, true)]
+    [InlineData("""{ "description": "", "min_format": 94 }""", true, true)]
+    [InlineData("""{ "pack_format": 94, "min_format": 94, "max_format": 94 }""", false, false)]
+    [InlineData("""{ "description": { "bold": true }, "min_format": 94, "max_format": 94 }""", false, false)]
+    public void PacksNeedAValidDescription(string section, bool loaded, bool warned)
+    {
+        var json = $$"""
+            { "pack": {{section}}, "filter": { "block": [{ "namespace": "minecraft" }] } }
+            """;
+        var bytes = Encoding.UTF8.GetBytes(json);
+        var logger = new PluginFeatureFiles.ListLogger();
+
+        // Like vanilla, a pack without a valid description isn't loaded, so its filter doesn't block earlier packs.
+        if (!loaded)
+        {
+            Assert.Throws<InvalidDataException>(() => DataPackMetadata.Read("test", bytes, logger));
+            return;
+        }
+
+        // One whose formats aren't valid is loaded, filter included, as vanilla's server enables it all the same.
+        var metadata = DataPackMetadata.Read("test", bytes, logger);
+
+        Assert.True(metadata.Blocks("data/minecraft/worldgen/noise/a.json"));
+        Assert.Equal(warned, logger.Messages.Any(message => message.Contains("formats aren't valid")));
+    }
+
+    [Theory(DisplayName = "Filter patterns are read as Java's: quoted text and possessive quantifiers")]
+    [InlineData(@"\Qminecraft\E", @"^\Qworldgen/noise/\E", true)]
+    [InlineData(@"^mine\Q.\E", null, false)]
+    [InlineData(@"^[a-z]++$", @"[.]json$", true)]
+    [InlineData(null, @"^.*+json", false)]
+    [InlineData(@"(craft)++", @"noise/(a|b)\.json", true)]
+    public void FiltersReadJavaPatterns(string? namespacePattern, string? pathPattern, bool blocked)
+    {
+        var entry = new JsonObject();
+        if (namespacePattern is not null)
+            entry["namespace"] = namespacePattern;
+
+        if (pathPattern is not null)
+            entry["path"] = pathPattern;
+
+        var json = new JsonObject
+        {
+            ["pack"] = JsonNode.Parse("""{ "description": "", "min_format": 94, "max_format": 94 }"""),
+            ["filter"] = new JsonObject { ["block"] = new JsonArray(entry) }
+        };
+
+        var logger = new PluginFeatureFiles.ListLogger();
+        var metadata = DataPackMetadata.Read("test", Encoding.UTF8.GetBytes(json.ToJsonString()), logger);
+
+        Assert.Empty(logger.Messages);
+        Assert.Equal(blocked, metadata.Blocks("data/minecraft/worldgen/noise/a.json"));
     }
 
     [Fact(DisplayName = "A dimension follows later overrides of the data its stem names, and its files, until taken")]
