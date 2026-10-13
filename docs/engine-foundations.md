@@ -91,10 +91,10 @@ pushes them into a hopper below.
 - **Server menus.** A plugin menu type with its own slot layout and per-slot rules, a quick-move (shift-click) hook,
   data slots synced to the client (like a furnace's progress), button clicks, and extra data sent when opened (like
   NeoForge's `openMenu` with a buffer). A menu can be bound to a block entity and closes when it's removed.
-- **Client screens in code.** Mods ship screens as C# against a public client UI API: the client's widgets (buttons,
-  text fields, scroll bars, slots, item grids, tooltips) and a way to open a screen for a menu type or on its own.
-  Mods are .NET assemblies already, so this exposes the client's Razor component model rather than inventing a
-  layout format. `MenuScreenProperties` stays for simple menus.
+- **Client screens in code.** A mod builds its screens in its own client side, in C#, from UI building blocks
+  `Obsidian.API.Client` gains: widgets (buttons, text fields, scroll bars, slots, item grids, tooltips) and a way to
+  open a screen for a menu type or on its own. The client implements them with its own UI, as it does the rest of
+  the client API. `MenuScreenProperties` stays for simple menus.
 - **HUD overlays.** Mods register overlays drawn with the same UI API.
 - **Creative tabs.** Mods' items in creative tabs, registered on both sides.
 - **Client queries.** Mods read the client's world: block states, their block entities' synced data, entities and
@@ -185,7 +185,7 @@ the rest of AE2. Phase 5 and the rest of phase 4 follow, with Aether II as the s
 
 **Licences.** AE2's code is LGPLv3, which can be combined with Obsidian's GPLv3, and the reimplementation is a
 derivative of it, so it stays LGPLv3 with credit. Its assets' CC BY-NC-SA licence doesn't fit GPLv3, so the test mod
-lives in its own repository, with its assets, and none of it goes into Obsidian. The engine itself contains no AE2
+is kept locally, outside version control, and none of it goes into Obsidian. The engine itself contains no AE2
 code.
 
 ## What isn't planned
