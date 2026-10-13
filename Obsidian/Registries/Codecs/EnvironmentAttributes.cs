@@ -120,8 +120,8 @@ internal sealed record EnvironmentAttributeEntry(string Attribute, bool Syncable
 /// range and modifiers of each of vanilla's attributes (EnvironmentAttributes, AttributeTypes, AttributeModifier).
 /// </summary>
 /// <remarks>
-/// Two kinds of value can't be read yet, and a file that sets one is rejected: particles that take options (like
-/// <c>minecraft:dust</c>), and a bed rule's <c>error_message</c> beyond plain or translated text.
+/// Particles take their options (see <see cref="ParticleOptions"/>), and a bed rule's <c>error_message</c> any text
+/// component.
 /// </remarks>
 internal static class EnvironmentAttributes
 {
@@ -209,6 +209,19 @@ internal static class EnvironmentAttributes
     ];
 
     private static readonly string[] bedRules = ["always", "when_dark", "never"];
+
+    // Vanilla 1.21.11's text contents (ComponentSerialization), each found by its key, in the order vanilla tries
+    // them, or named by its type.
+    private static readonly (string Key, string Type)[] textContents =
+    [
+        ("text", "text"),
+        ("translate", "translatable"),
+        ("score", "score"),
+        ("selector", "selector"),
+        ("keybind", "keybind"),
+        ("nbt", "nbt"),
+        ("object", "object")
+    ];
 
     private static readonly string[] musicFields = ["default", "creative", "underwater"];
 
@@ -406,7 +419,7 @@ internal static class EnvironmentAttributes
         Object(value, path);
 
         if (TryGet(value, "error_message", out var message))
-            CheckPlainText(message, Field(path, "error_message"));
+            CheckText(message, Field(path, "error_message"));
 
         var canSleep = Enum(Required(value, path, "can_sleep"), Field(path, "can_sleep"), bedRules);
         var canSetSpawn = Enum(Required(value, path, "can_set_spawn"), Field(path, "can_set_spawn"), bedRules);
@@ -423,38 +436,77 @@ internal static class EnvironmentAttributes
         return rule;
     }
 
-    // The text components vanilla's ComponentSerialization.CODEC reads that are only text: a string, {"text": ...},
-    // or {"translate": ..., "fallback": ...}. Vanilla takes richer components too, which can't be read yet.
-    private static void CheckPlainText(JsonElement value, string path)
+    // A text component as vanilla's ComponentSerialization.CODEC reads it: a string, a non-empty list whose first
+    // component has the rest as extras, or an object with one of vanilla's contents (by its key, or named by "type")
+    // and optional "extra" components. A translation's "with" arguments are components or plain values. Styles
+    // aren't checked: clients aren't sent bed rules, and Obsidian has no beds to show the message with.
+    private static void CheckText(JsonElement value, string path)
     {
-        const string expected = "plugins can only give a string, {\"text\": ...} or {\"translate\": ...} here yet";
-
-        if (value.ValueKind == JsonValueKind.String)
-            return;
-
-        if (value.ValueKind != JsonValueKind.Object)
-            throw Error(path, expected);
-
-        var names = value.EnumerateObject()
-            .Select(property => property.Name)
-            .ToHashSet();
-
-        if (names.SetEquals(["text"]))
+        switch (value.ValueKind)
         {
-            String(value.GetProperty("text"), Field(path, "text"));
-            return;
+            case JsonValueKind.String:
+                return;
+            case JsonValueKind.Array:
+                CheckTextList(value, path);
+                return;
+            case JsonValueKind.Object:
+                break;
+            default:
+                throw Error(path, "expected a text component: a string, a list or an object");
         }
 
-        if (!names.Contains("translate") || !names.IsSubsetOf(["translate", "fallback"]))
-            throw Error(path, expected);
+        var content = textContents.FirstOrDefault(entry => value.TryGetProperty(entry.Key, out _)).Type;
+        if (TryGet(value, "type", out var type))
+        {
+            var typePath = Field(path, "type");
+            var named = String(type, typePath);
+            if (textContents.All(entry => entry.Type != named))
+                throw Error(typePath, $"{named} isn't a text content type");
 
-        String(value.GetProperty("translate"), Field(path, "translate"));
+            content = named;
+        }
 
-        if (value.TryGetProperty("fallback", out var fallback))
-            String(fallback, Field(path, "fallback"));
+        if (content is null)
+        {
+            var keys = string.Join(", ", textContents.Select(entry => entry.Key));
+            throw Error(path, $"expected one of a text component's contents: {keys}");
+        }
+
+        if (content == "text")
+            String(Required(value, path, "text"), Field(path, "text"));
+
+        if (content == "translatable")
+            String(Required(value, path, "translate"), Field(path, "translate"));
+
+        if (TryGet(value, "extra", out var extra))
+            CheckTextList(extra, Field(path, "extra"));
+
+        if (!TryGet(value, "with", out var with))
+            return;
+
+        var withPath = Field(path, "with");
+        var index = 0;
+
+        foreach (var argument in Array(with, withPath).EnumerateArray())
+        {
+            var argumentPath = Index(withPath, index++);
+            if (argument.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+                CheckText(argument, argumentPath);
+        }
     }
 
-    // Vanilla's ParticleTypes.CODEC: {"type": particle type, ...its options}. Only types without options are read.
+    private static void CheckTextList(JsonElement value, string path)
+    {
+        if (Array(value, path).GetArrayLength() == 0)
+            throw Error(path, "a list of text components can't be empty");
+
+        var index = 0;
+        foreach (var component in value.EnumerateArray())
+            CheckText(component, Index(path, index++));
+    }
+
+    // Vanilla's ParticleTypes.CODEC: {"type": particle type, ...its options}, written as vanilla's codecs write the
+    // options they read, which is what clients decode.
     private static NbtCompound ReadParticle(JsonElement value, string path, string name)
     {
         Object(value, path);
@@ -465,13 +517,15 @@ internal static class EnvironmentAttributes
         if (!RegistryIds.IsParticleType(type))
             throw Error(typePath, $"{type} isn't a particle type");
 
-        if (RegistryIds.HasOptions(type))
-            throw Error(typePath, $"{type} takes options, which plugins can't set yet");
-
-        return new NbtCompound(name)
+        var particle = new NbtCompound(name)
         {
             new NbtTag<string>("type", type)
         };
+
+        if (RegistryIds.HasOptions(type))
+            ParticleOptions.Read(type, value, path, particle);
+
+        return particle;
     }
 
     // A list of {"particle": particle, "probability": 0 to 1}.

@@ -1066,7 +1066,7 @@ public abstract partial class AbstractLevel : ILevel
         this.DimensionType = codec;
         this.MinY = codec.Element.MinY;
         this.Height = codec.Element.Height;
-        this.Fluids.Rules = FluidRules.ForDimension(codec.Name, codec.Element.Ultrawarm);
+        this.Fluids.Rules = FluidRules.ForDimension(codec);
     }
 
     /// <summary>

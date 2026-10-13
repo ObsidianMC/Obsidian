@@ -36,16 +36,32 @@ public abstract partial class AbstractLevel
 
     internal async ValueTask TickRaidsAsync()
     {
-        if (DimensionName != "minecraft:overworld" || Generator is Obsidian.WorldData.Generators.MobTestGenerator) return;
-        TickWanderingTraderSpawner();
-        TickPatrolSpawner();
+        if (Generator is Obsidian.WorldData.Generators.MobTestGenerator)
+            return;
+
+        // Like vanilla, wandering traders and patrols only spawn in the overworld, while raids run in every level and
+        // start where its dimension type's can_start_raid allows (biomes' values of it aren't applied).
+        if (DimensionName == "minecraft:overworld")
+        {
+            TickWanderingTraderSpawner();
+
+            if (DimensionType.Gameplay(LevelEnvironment.CanPillagerPatrolSpawn))
+                TickPatrolSpawner();
+        }
+
+        var canStartRaid = DimensionType.Gameplay(LevelEnvironment.CanStartRaid);
+        if (!canStartRaid && raids.Count == 0)
+            return;
+
         if (LevelData.Difficulty == Difficulty.Peaceful || !LevelData.GetBooleanRule("raids"))
         { foreach (var raid in raids) ClearRaidBar(raid); raids.Clear(); pendingRaids.Clear(); return; }
         foreach (var player in Players.Values.OfType<Player>())
         {
             var village = GetEntitiesInRange(player.Position, 64).OfType<Villager>().Where(villager => villager.Alive && villager.Home != null)
                 .MinBy(villager => (villager.Position - player.Position).MagnitudeSquared());
-            if (village != null && player.ActivePotionEffects.TryGetValue((int)PotionEffect.BadOmen - 1, out var omen))
+            if (canStartRaid
+                && village != null
+                && player.ActivePotionEffects.TryGetValue((int)PotionEffect.BadOmen - 1, out var omen))
             {
                 player.RemovePotionEffect((int)PotionEffect.BadOmen - 1);
                 player.AddPotionEffect((int)PotionEffect.RaidOmen - 1, 600, omen.EffectData.Amplifier);

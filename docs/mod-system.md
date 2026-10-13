@@ -172,10 +172,15 @@ client. This document describes the design and tracks its progress. The archive 
        to vanilla's overworld and nether climate, like TerraBlender, with regions from data files);
      - in level stems: dimension types and biomes defined inline, `minecraft:flat` and `minecraft:debug`
        generators, and plugin level generators as a stem's `generator`;
-     - environment attributes with particle options or rich bed rule messages, and the server applying more
-       attributes than `monsters_burn`;
-     - raids and the end fight in plugins' dimensions, which only the default world has (plugins build their own
-       portals).
+     - particles' items with components in environment attributes;
+     - the server applying biomes' attributes, and those whose mechanics Obsidian lacks (beds, respawn anchors,
+       water evaporating); plugins build their own portals.
+   - Done after Phase 3.8: environment attributes take particles with options, sent as vanilla's codecs write
+     them, and bed rules any text component as their message. The server applies dimension types' `can_start_raid`, `can_pillager_patrol_spawn`,
+     `fast_lava`, `piglins_zombify` and `snow_golem_melts` attributes (vanilla's nether's too, which Obsidian's copy
+     of vanilla's types lacked, so piglins no longer zombify there), and raids run in every level, starting where the
+     dimension type allows, like vanilla's. The end fight stays with `minecraft:the_end`, as vanilla only fights the
+     dragon there.
    - Phase 3.5, part B (done): inline entries in plugins' level stems, and tree parts in the API. A stem's
      `generator.settings` may define noise settings inline, read like a plugin's noise settings file, with
      inline or named density functions; the plugins whose types they use, and the plugin entries they name, are

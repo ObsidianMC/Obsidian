@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -19,7 +20,7 @@ public sealed partial class Hoglin : FarmAnimal
     protected override int GetExperienceReward() => IsBaby ? 0 : 5;
     protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.CrimsonFungus };
     private bool IsConverting => !IsImmuneToZombification &&
-        !Level.DimensionType.Element.PiglinSafe;
+        !Level.DimensionType.PiglinsSafe();
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {

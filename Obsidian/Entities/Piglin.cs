@@ -5,6 +5,7 @@ using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -105,7 +106,7 @@ public sealed partial class Piglin : PathfinderMob
     protected override async ValueTask TickMobAsync()
     {
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
-        var safe = Level.DimensionType.Element.PiglinSafe;
+        var safe = Level.DimensionType.PiglinsSafe();
         if (safe || IsImmuneToZombification) TimeInOverworld = 0;
         else if (++TimeInOverworld > 300)
         {
