@@ -466,8 +466,13 @@ public partial class NetworkBuffer : INetStreamWriter
     // An item's and a data component type's id, in the connection's numbering (see IdMaps).
     private int RemoteItemId(int id) => this.IdMaps is RegistryIdMaps maps ? maps.Item.ToRemote(id) : id;
 
+    // A component type the connection lacks throws, like any registry entry (see ToRemoteId).
     private void WriteComponentType(DataComponentType type) =>
-        this.WriteVarInt(this.IdMaps is RegistryIdMaps maps ? maps.DataComponentType.ToRemote((int)type) : (int)type);
+        this.WriteVarInt(this.ToRemoteId(RegistryIdMaps.DataComponentTypes, (int)type));
+
+    // Whether the connection has the component type, which an item stack can only be written with if it does.
+    private bool HasComponentType(DataComponentType type) =>
+        this.IdMaps is not RegistryIdMaps maps || maps.DataComponentType.ToRemote((int)type) >= 0;
 
     public void WriteRegistryId(string registry, int id) => this.WriteVarInt(this.ToRemoteId(registry, id));
 

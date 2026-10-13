@@ -56,9 +56,14 @@ public partial class NetworkBuffer
     /// <summary>Writes a click prediction. Unsupported hashes are omitted; vanilla then resynchronizes the slot.</summary>
     public void WriteHashedItemStack(ItemStack? stack)
     {
-        // Like WriteItemStack, an item the connection lacks is written as an empty stack.
+        // Like WriteItemStack, an item or removed component type the connection lacks makes an empty stack. A patched
+        // component of a type it lacks is left out like one that can't be hashed: vanilla resynchronizes the slot.
         var itemId = stack is null ? -1 : this.RemoteItemId(stack.Holder.Id);
-        if (stack is null || stack.IsAir || stack.Count <= 0 || itemId < 0)
+        if (stack is null
+            || stack.IsAir
+            || stack.Count <= 0
+            || itemId < 0
+            || !stack.RemoveComponents.All(this.HasComponentType))
         {
             this.WriteBoolean(false);
             return;
@@ -67,7 +72,7 @@ public partial class NetworkBuffer
         var hashes = new List<(DataComponentType Type, int Hash)>();
         foreach (var component in stack.Patch)
         {
-            if (this.TryHashDataComponent(component, out var hash))
+            if (this.HasComponentType(component.Type) && this.TryHashDataComponent(component, out var hash))
                 hashes.Add((component.Type, hash));
         }
 
@@ -90,14 +95,20 @@ public partial class NetworkBuffer
     public void WriteHashedItemStack(IHashedItemStack? stack)
     {
         var itemId = stack is null ? -1 : this.RemoteItemId(stack.Holder.Id);
-        this.WriteBoolean(itemId >= 0);
-        if (stack is null || itemId < 0)
+        var writable = stack is not null
+            && itemId >= 0
+            && stack.ComponentsToRemove.All(this.HasComponentType);
+
+        this.WriteBoolean(writable);
+        if (!writable)
             return;
+
+        var hashes = stack!.HashedComponents.Where(entry => this.HasComponentType(entry.Key)).ToList();
 
         this.WriteVarInt(itemId);
         this.WriteVarInt(stack.Count);
-        this.WriteVarInt(stack.HashedComponents.Count);
-        foreach (var (type, hash) in stack.HashedComponents)
+        this.WriteVarInt(hashes.Count);
+        foreach (var (type, hash) in hashes)
         {
             this.WriteComponentType(type);
             this.WriteInt(hash);
