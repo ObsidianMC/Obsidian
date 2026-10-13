@@ -10,7 +10,8 @@ dotnet run --project Obsidian.Porting -- <mod folder or jar> <output folder>
 
 The input is the mod's jar, or a folder laid out like it (say, `src/main/resources`). The output folder, which must
 be new or empty, gets the files an Obsidian plugin ships besides its assembly (see
-[plugin-archives.md](plugin-archives.md)), and `porting-report.txt`, which the tool also prints:
+[plugin-archives.md](plugin-archives.md)), and `porting-report.txt`, which the tool also prints. The tool exits
+with an error when it could write nothing:
 
 | Mod's file | Output |
 | --- | --- |
@@ -46,11 +47,19 @@ Every NeoForge biome modifier type converts to an Obsidian modifier (see
 | `neoforge:none` | Left out: it does nothing |
 
 `biomes` becomes Obsidian's `biomes` and `exclude`. Identifiers, tags and lists stay as they are; `neoforge:or`
-becomes a list, `neoforge:and` of one set and `neoforge:not`s becomes that set less the others, and `neoforge:not`
-inside an `and` becomes `exclude`. What Obsidian's sets can't say is reported and left out: every biome
-(`neoforge:any`, or a `not` on its own), an intersection of two listed sets, and other holder set types. Features,
-carvers and entity types must be listed sets; spawn costs can't be given to an entity type tag, since Obsidian keys
+becomes a list, each entry once, `neoforge:and` of one set and `neoforge:not`s becomes that set less the others, and
+`neoforge:not` inside an `and` becomes `exclude`. An `or` of `not`s is every biome less what they all exclude and
+the `or` doesn't list. The tool doesn't know what tags hold, so a set is only converted when that doesn't matter:
+`or[not #a, not #b]` (every biome less what both tags hold) or `or[not #a, minecraft:plains]` can't be listed
+without it. What Obsidian's sets can't say is reported and left out: every biome (`neoforge:any`, or a `not` on its
+own), an intersection of two listed sets, sets like those, and other holder set types. Features, carvers and entity
+types must be listed sets, and added features and carvers can't join a tag with other entries, which may share
+entries NeoForge adds once and Obsidian twice; spawn costs can't be given to an entity type tag, since Obsidian keys
 them by type.
+
+NeoForge 1.21.11's `add_spawn_costs` and `remove_spawn_costs` change the costs in every biome, whatever their
+`biomes` say. Obsidian's modifiers have no "every biome", so the converted costs keep to the modifier's biomes and
+the report notes each one: list every biome the costs should change in to match NeoForge.
 
 NeoForge applies every modifier's additions, in identifier order, before any removal, like Obsidian does, so
 consecutive modifiers (in identifier order, in one namespace) with the same biomes merge into one file, named after

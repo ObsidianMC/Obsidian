@@ -27,23 +27,14 @@ if (Directory.Exists(destination) && Directory.EnumerateFileSystemEntries(destin
 }
 
 var (output, report) = ModPorter.Port(ModPorter.ReadMod(source));
-var root = Path.GetFullPath(destination) + Path.DirectorySeparatorChar;
-
-foreach (var (path, data) in output)
-{
-    var file = Path.GetFullPath(Path.Join(root, path));
-
-    // A jar's entry names are untrusted: none may write outside the output folder.
-    if (!file.StartsWith(root, StringComparison.Ordinal))
-    {
-        Console.Error.WriteLine($"Left out {path}: it points outside the output folder.");
-        continue;
-    }
-
-    Directory.CreateDirectory(Path.GetDirectoryName(file)!);
-    File.WriteAllBytes(file, data);
-}
+var written = ModPorter.Write(output, destination, Console.Error);
 
 Console.Write(report);
+
+if (written == 0)
+{
+    Console.Error.WriteLine($"Nothing could be written to {destination}.");
+    return 1;
+}
 
 return 0;

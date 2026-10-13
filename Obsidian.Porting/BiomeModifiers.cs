@@ -71,10 +71,22 @@ public static class BiomeModifiers
                 var root = JsonNode.Parse(ModPorter.Utf8(data), documentOptions: documentOptions) as JsonObject
                     ?? throw new UnsupportedException("a biome modifier must be a JSON object");
 
-                if (Convert(root) is Modifier modifier)
-                    converted.Add((ns, name, path, modifier));
-                else
+                if (Convert(root) is not Modifier modifier)
+                {
                     report.Skip(path, "a neoforge:none modifier does nothing, so it was left out");
+                    continue;
+                }
+
+                converted.Add((ns, name, path, modifier));
+
+                // NeoForge 1.21.11's spawn cost modifiers ignore their biomes; Obsidian's format has no "every
+                // biome", so the converted costs keep to the biomes given, and the author decides.
+                if (modifier.AddSpawnCosts.Count > 0 || modifier.RemoveSpawnCosts.Count > 0)
+                {
+                    report.Notes.Add(
+                        $"{path}: NeoForge changes spawn costs in every biome, whatever the modifier's biomes, but "
+                        + "Obsidian only in its biomes: list every biome the costs should change in");
+                }
             }
             catch (Exception ex) when (ex is UnsupportedException or JsonException or InvalidOperationException)
             {
@@ -139,7 +151,7 @@ public static class BiomeModifiers
         switch (type)
         {
             case "neoforge:add_features":
-                modifier.AddFeatures[Step(String(root, "step"))] = Set(root, "features", "features");
+                modifier.AddFeatures[Step(String(root, "step"))] = Set(root, "features", "features", additive: true);
                 break;
 
             case "neoforge:remove_features":
@@ -160,7 +172,7 @@ public static class BiomeModifiers
 
             // Carving steps are gone since 1.21.2, which is what Obsidian generates; a "step" is ignored.
             case "neoforge:add_carvers":
-                modifier.AddCarvers.AddRange(Set(root, "carvers", "carvers"));
+                modifier.AddCarvers.AddRange(Set(root, "carvers", "carvers", additive: true));
                 break;
 
             case "neoforge:remove_carvers":
@@ -231,8 +243,9 @@ public static class BiomeModifiers
             ? name!
             : throw new UnsupportedException($"'{name}' isn't a decoration step");
 
-    private static List<JsonNode> Set(JsonObject root, string field, string what) =>
-        HolderSet.Read(Required(root, field)).Listed(what);
+    // A set that has to be listed; additive when each entry is added (see HolderSet.Listed).
+    private static List<JsonNode> Set(JsonObject root, string field, string what, bool additive = false) =>
+        HolderSet.Read(Required(root, field)).Listed(what, additive);
 
     private static JsonNode Required(JsonObject root, string field) =>
         root[field] ?? throw new UnsupportedException($"it has no '{field}'");

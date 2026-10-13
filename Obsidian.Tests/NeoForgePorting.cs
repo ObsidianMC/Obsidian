@@ -23,7 +23,8 @@ public sealed class NeoForgePorting
 
     private const string OutputPath = "data/test/biome_modifier/modifier.json";
 
-    // Name, NeoForge's modifier, and Obsidian's modifier it becomes, or what the report says when it can't.
+    // Name, NeoForge's modifier, and Obsidian's modifier it becomes, or what the report says when it can't, or what
+    // its note says when it converts with one.
     public static TheoryData<string, string, string, string> Modifiers => new()
     {
         {
@@ -115,7 +116,7 @@ public sealed class NeoForgePorting
               "minecraft:zombie": {"energy_budget": 0.12, "charge": 1.0},
               "minecraft:husk": {"energy_budget": 0.12, "charge": 1.0}}}}
             """,
-            null
+            "in every biome"
         },
         {
             "remove spawn costs",
@@ -124,7 +125,62 @@ public sealed class NeoForgePorting
              "entity_types": "minecraft:skeleton"}
             """,
             """{"biomes": "minecraft:soul_sand_valley", "remove": {"spawn_costs": "minecraft:skeleton"}}""",
+            "in every biome"
+        },
+        {
+            "a union's entries once",
+            """
+            {"type": "neoforge:remove_spawns", "entity_types": "minecraft:drowned",
+             "biomes": {"type": "neoforge:or", "values": ["#minecraft:is_ocean",
+               {"type": "neoforge:or", "values": ["minecraft:beach", "#minecraft:is_ocean"]}]}}
+            """,
+            """{"biomes": ["#minecraft:is_ocean", "minecraft:beach"], "remove": {"spawners": "minecraft:drowned"}}""",
             null
+        },
+        {
+            "a union of complements, less what it lists",
+            """
+            {"type": "neoforge:remove_spawns", "entity_types": "minecraft:zombie",
+             "biomes": {"type": "neoforge:and", "values": ["#minecraft:is_overworld", {"type": "neoforge:or",
+               "values": [{"type": "neoforge:not", "value": ["minecraft:desert", "minecraft:badlands"]},
+                          {"type": "neoforge:not", "value": ["minecraft:desert", "minecraft:savanna"]},
+                          "minecraft:savanna"]}]}}
+            """,
+            """
+            {"biomes": "#minecraft:is_overworld", "exclude": "minecraft:desert",
+             "remove": {"spawners": "minecraft:zombie"}}
+            """,
+            null
+        },
+        {
+            "a union of complements of different tags",
+            """
+            {"type": "neoforge:remove_spawns", "entity_types": "minecraft:zombie",
+             "biomes": {"type": "neoforge:and", "values": ["#minecraft:is_overworld", {"type": "neoforge:or",
+               "values": [{"type": "neoforge:not", "value": "#c:is_hot"},
+                          {"type": "neoforge:not", "value": "#c:is_mushroom"}]}]}}
+            """,
+            null,
+            "excluding different tags"
+        },
+        {
+            "a complement with an entry its tag may hold",
+            """
+            {"type": "neoforge:remove_spawns", "entity_types": "minecraft:zombie",
+             "biomes": {"type": "neoforge:and", "values": ["#minecraft:is_overworld", {"type": "neoforge:or",
+               "values": [{"type": "neoforge:not", "value": "#c:is_hot"}, "minecraft:desert"]}]}}
+            """,
+            null,
+            "may share"
+        },
+        {
+            "features of tags that may overlap",
+            """
+            {"type": "neoforge:add_features", "biomes": "minecraft:plains", "step": "underground_ores",
+             "features": {"type": "neoforge:or", "values": ["#test:ores", "minecraft:ore_diamond"]}}
+            """,
+            null,
+            "may share entries"
         },
         {
             "every biome",
@@ -191,8 +247,54 @@ public sealed class NeoForgePorting
 
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), JsonNode.Parse(output[OutputPath])), name);
 
+        if (reason is not null)
+            Assert.Contains(report.Notes, note => note.StartsWith(ModifierPath) && note.Contains(reason));
+
         // Obsidian reads what the tool writes.
         BiomeModifierData.Read(JsonDocument.Parse(output[OutputPath]).RootElement);
+    }
+
+    [Theory]
+    [InlineData("\\u00e9", "é")]
+    [InlineData("\\U0001F600", "😀")]
+    [InlineData("\\uD800", null)]
+    [InlineData("\\U00110000", null)]
+    [InlineData("\\UFFFFFFFF", null)]
+    [InlineData("\\u 0e9", null)]
+    [InlineData("\\u+0e9", null)]
+    public void Toml_ReadsUnicodeScalarEscapesOnly(string escape, string expected)
+    {
+        var document = $"name = \"{escape}\"";
+
+        if (expected is null)
+            Assert.Throws<FormatException>(() => Toml.Parse(document));
+        else
+            Assert.Equal(expected, Toml.Parse(document)["name"]);
+    }
+
+    [Fact]
+    public void Write_AcceptsATrailingSeparatorAndCountsWhatItWrote()
+    {
+        var folder = Path.Join(Path.GetTempPath(), $"obsidian-porting-{Guid.NewGuid():N}");
+        var output = new Dictionary<string, byte[]>
+        {
+            ["obsidian.mod.json"] = [1],
+            ["../outside.json"] = [2]
+        };
+
+        try
+        {
+            using var errors = new StringWriter();
+
+            Assert.Equal(1, ModPorter.Write(output, folder + Path.DirectorySeparatorChar, errors));
+            Assert.True(File.Exists(Path.Join(folder, "obsidian.mod.json")));
+            Assert.Contains("../outside.json", errors.ToString());
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, recursive: true);
+        }
     }
 
     [Fact]

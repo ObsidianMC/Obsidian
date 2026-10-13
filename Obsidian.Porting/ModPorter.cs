@@ -212,6 +212,39 @@ public static class ModPorter
     }
 
     /// <summary>
+    /// Writes the output of <see cref="Port"/> to a folder, leaving out any file whose path points outside it.
+    /// </summary>
+    /// <param name="output">The output's files by path.</param>
+    /// <param name="destination">The folder, with or without a trailing separator.</param>
+    /// <param name="errors">Gets a line for each file left out.</param>
+    /// <returns>How many files were written.</returns>
+    public static int Write(IReadOnlyDictionary<string, byte[]> output, string destination, TextWriter errors)
+    {
+        // One separator at the end, so that the check below only accepts paths inside the folder.
+        var folder = Path.GetFullPath(destination);
+        var root = Path.EndsInDirectorySeparator(folder) ? folder : folder + Path.DirectorySeparatorChar;
+        var written = 0;
+
+        foreach (var (path, data) in output)
+        {
+            var file = Path.GetFullPath(Path.Join(root, path));
+
+            // A jar's entry names are untrusted: none may write outside the output folder.
+            if (!file.StartsWith(root, StringComparison.Ordinal))
+            {
+                errors.WriteLine($"Left out {path}: it points outside the output folder.");
+                continue;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            File.WriteAllBytes(file, data);
+            written++;
+        }
+
+        return written;
+    }
+
+    /// <summary>
     /// A file's bytes without a UTF-8 byte order mark, which JSON readers refuse.
     /// </summary>
     internal static ReadOnlySpan<byte> Utf8(byte[] data) =>
