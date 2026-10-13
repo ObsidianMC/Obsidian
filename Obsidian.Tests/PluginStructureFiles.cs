@@ -268,6 +268,88 @@ public class PluginStructureFiles
         }
     }
 
+    [Fact(DisplayName = "An unloading plugin's start is saved with the state it retires with, even before it's pruned")]
+    public void SavesStartsOfUnloadingPlugins()
+    {
+        var plugin = new PluginContainer
+        {
+            Info = new PluginInfo("structuresaver"),
+            Archive = PluginArchive.Open(
+                "structuresaver.obby",
+                PluginArchives.Zip(new Dictionary<string, byte[]>
+                {
+                    [PluginMetadata.FileName] = PluginArchives.Metadata("structuresaver", "1.0.0", "Saver")
+                }))
+        };
+
+        var built = Only(Build(TowerFiles()), "structuretest:towers");
+        var tower = built.Structures[Tower];
+        var structures = built with
+        {
+            Owners = new Dictionary<Structure, ImmutableArray<PluginContainer>> { [tower] = [plugin] }
+                .ToFrozenDictionary()
+        };
+
+        var manager = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => structures).Structures!;
+        var start = manager.GetStarts(0, 0).Single(candidate => candidate.Structure == tower);
+        StructureManager.RestoreStart(start, null);
+        Assert.True(start.TryAddReference());
+
+        // The plugin starts unloading, and the chunk is saved before the starts are pruned: the start can't be
+        // entered, but its state is still saved, and pruning keeps the same.
+        plugin.Close();
+        var saved = manager.SaveStarts(0, 0, null);
+        Assert.Equal(1, References(saved));
+
+        structures = built with { Version = built.Version + 1 };
+        manager.Refresh();
+
+        Assert.Equal(1, References(manager.SaveStarts(0, 0, null)));
+        Assert.Equal(1, manager.GetStarts(0, 0).Single(candidate => candidate.Structure == tower).References);
+
+        static int References(NbtCompound starts) => ((NbtCompound)starts[Tower]).GetInt("references");
+    }
+
+    [Fact(DisplayName = "A template's block data counts once for each palette, which copies it, before it's copied")]
+    public void RejectsTemplatesCopyingLargeDataPerPalette()
+    {
+        // A block holding 1 MiB of data, which a hundred palettes would copy a hundred times.
+        Assert.Throws<InvalidDataException>(() => ParseLargeDataTemplate(palettes: 100));
+
+        // One copy is within the budget.
+        ParseLargeDataTemplate(palettes: 1);
+
+        static TemplateFile ParseLargeDataTemplate(int palettes)
+        {
+            var blocks = new NbtList(NbtTagType.Compound, "blocks")
+            {
+                new NbtCompound
+                {
+                    Ints("pos", 0, 0, 0),
+                    new NbtTag<int>("state", 0),
+                    new NbtCompound("nbt") { new NbtArray<byte>("data", new byte[1 << 20]) }
+                }
+            };
+
+            var paletteList = new NbtList(NbtTagType.List, "palettes");
+            for (var i = 0; i < palettes; i++)
+                paletteList.Add(new NbtList(NbtTagType.Compound));
+
+            using var stream = new MemoryStream();
+            using (var writer = new NbtWriterStream(stream, NbtCompression.GZip, ""))
+            {
+                writer.WriteTag(Ints("size", 1, 1, 1));
+                writer.WriteTag(paletteList);
+                writer.WriteTag(blocks);
+                writer.EndCompound();
+                writer.TryFinish();
+            }
+
+            return PluginStructures.ParseTemplate(Tower, "test", stream.ToArray(), DataPackLimits.Default.FileSize)
+                .File;
+        }
+    }
+
     [Fact(DisplayName = "A template declaring more than its data holds, or nested too deeply, is rejected unread")]
     public void RejectsHostileTemplates()
     {

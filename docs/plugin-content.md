@@ -796,8 +796,8 @@ the tower grows from, up to its `size`.
 - Templates are read like a data pack's files, within its limits: at most 32 MiB each and 512 MiB together with the
   pack's other files, once decompressed. A template whose lists claim more than its data holds, that's nested deeper
   than vanilla's NBT allows (512), or that would keep more than about four million entries (list elements, compound
-  fields, and the blocks of each palette) is left out. A template a pool names that no plugin, pack or vanilla has is
-  empty, as in vanilla.
+  fields, arrays at one entry per 16 bytes, and each palette's copy of the blocks and their data) is left out. A
+  template a pool names that no plugin, pack or vanilla has is empty, as in vanilla.
 
 Structures generate in every dimension whose biomes their `biomes` hold, vanilla's and plugins' (biome regions'
 biomes included), placed by their sets like vanilla's. All structures, vanilla's and plugins', are ordered like a
@@ -810,7 +810,8 @@ The rules:
 - Structures come and go with their plugin, like features: each plugin change reads them again, and the chunks not
   generated yet get the new structure sets' structures, at starts not found yet, while chunks generated before stay
   as they are. A structure partly generated when its plugin unloads isn't finished; its start's state stays saved,
-  and the rest of it is placed in the chunks generated once the plugin is back.
+  and the rest of it is placed in the chunks generated once the plugin is back. Unloading doesn't wait for a piece
+  being placed: the start's state is kept once it's placed, and the plugin is released after that.
 - After a restart without the plugin, its starts load and stay saved as they were, and aren't placed.
 - Starting and placing a structure made of a plugin's types (a processor, a height provider or a feature type, in
   the structure, its pools or the processor lists they name) is a call into the plugin, like placing its features.

@@ -23,9 +23,15 @@ namespace Obsidian.WorldData.Generators.Mojang.Structures;
 /// kept as saved, to be saved and restored into the start made again if its structure comes back.
 /// </para>
 /// <para>
-/// Starts are made without a lock, since that runs plugins' code, then published under one with the starts they
-/// replace dropped and their state handed on, so that no state is lost between them. Pruning takes the same lock, and
-/// starts made for a layout older than the one pruned for aren't published.
+/// Starts are made without a lock, since that runs plugins' code, then published under one, taking the state of the
+/// starts dropped before them, so that no state is lost between them. Pruning takes the same lock, and starts made for
+/// a layout older than the one pruned for aren't published.
+/// </para>
+/// <para>
+/// Dropping a start doesn't wait for it to be placed, since it's done under that lock, and while plugins change, which
+/// a placement may wait for: the start is retired, so it isn't placed again, and its state is captured once its
+/// placement ends (see <see cref="Settle"/>), with its plugins held until then. Until it is, the chunk's starts aren't
+/// made again, and saving the chunk waits for it.
 /// </para>
 /// </remarks>
 internal sealed class StructureStartCache
@@ -37,6 +43,10 @@ internal sealed class StructureStartCache
 
     // The saved state of starts dropped, by start chunk and structure identifier. Under the gate.
     private readonly Dictionary<(int X, int Z), ImmutableDictionary<string, NbtCompound>> dropped = [];
+
+    // The starts dropped whose state isn't in dropped yet, by start chunk, in the order they were dropped. Changed
+    // under the gate; read without it to tell whether a chunk has any.
+    private readonly ConcurrentDictionary<(int X, int Z), ImmutableList<Retirement>> retiring = new();
 
     // The version of the structures last pruned for: starts made for older ones may hold what was pruned.
     private long prunedVersion = long.MinValue;
@@ -77,6 +87,23 @@ internal sealed class StructureStartCache
             if (layout.Version < Volatile.Read(ref this.prunedVersion))
                 return null;
 
+            // New starts take the state of those dropped, so it's captured first.
+            if (this.retiring.ContainsKey(key))
+            {
+                this.Settle(key);
+                continue;
+            }
+
+            // The starts of sets the layout doesn't have are dropped first, for the same reason.
+            if (previous is not null
+                && previous.Version < layout.Version
+                && previous.KeepSets(layout.SetLookup) is var kept
+                && kept != previous)
+            {
+                this.Replace(key, previous, kept);
+                continue;
+            }
+
             var made = ChunkStarts.Make(layout, previous, chunkX, chunkZ, create);
 
             lock (this.gate)
@@ -86,12 +113,10 @@ internal sealed class StructureStartCache
 
                 // Another thread published the chunk's starts meanwhile, or pruned them: start over from those.
                 this.starts.TryGetValue(key, out var current);
-                if (!ReferenceEquals(current, previous))
+                if (!ReferenceEquals(current, previous) || this.retiring.ContainsKey(key))
                     continue;
 
-                if (previous is not null)
-                    this.Drop(key, previous, made);
-
+                // The previous starts are all of the layout's sets (see above), so the new ones keep every one.
                 this.Adopt(key, made, previous);
                 this.starts[key] = made;
                 return made;
@@ -99,11 +124,32 @@ internal sealed class StructureStartCache
         }
     }
 
+    // Replaces the chunk's starts with those kept of them, unless they changed meanwhile, and captures the state of
+    // those dropped.
+    private void Replace((int X, int Z) key, ChunkStarts previous, ChunkStarts kept)
+    {
+        lock (this.gate)
+        {
+            this.starts.TryGetValue(key, out var current);
+            if (!ReferenceEquals(current, previous))
+                return;
+
+            this.Drop(key, previous, kept);
+            this.starts[key] = kept;
+        }
+
+        this.Settle(key);
+    }
+
     /// <summary>
     /// Drops the starts of the structure sets that aren't in <paramref name="structures"/>, and those made with a
     /// plugin that's unloading, so that the plugins' code isn't kept; the sets that are still there get their starts
     /// made again as they're asked for. The state of those placed in this session is kept as saved.
     /// </summary>
+    /// <remarks>
+    /// This doesn't wait for the starts dropped to be placed: their state is captured in the background once they
+    /// are, which keeps their plugins from being released until then.
+    /// </remarks>
     public void Prune(WorldgenStructures structures)
     {
         var live = structures.Sets.Values.ToHashSet();
@@ -122,6 +168,9 @@ internal sealed class StructureStartCache
                 this.starts[key] = kept;
             }
         }
+
+        if (!this.retiring.IsEmpty)
+            _ = Task.Run(this.SettleAll);
     }
 
     /// <summary>
@@ -131,25 +180,31 @@ internal sealed class StructureStartCache
     /// </summary>
     /// <remarks>
     /// A start that wasn't restored hasn't been placed in this session, so what the chunk was loaded with is still
-    /// current. Saving a start made of plugins' types is a call into them; one whose plugins are unloading keeps the
-    /// state it's saved with as it's dropped.
+    /// current. Saving a start made of plugins' types is a call into them; one whose plugins are unloading is retired
+    /// (as pruning does next), and saved with the state its retirement keeps. Saving waits for the placements of the
+    /// starts being retired.
     /// </remarks>
     public NbtCompound? Save(int chunkX, int chunkZ, NbtCompound? loaded)
     {
         var key = (chunkX, chunkZ);
         ImmutableDictionary<string, NbtCompound>? states;
-        StructureStart[] restored;
+        ImmutableList<Retirement>? pending;
+        ChunkStarts? cached;
 
-        // Taken together, so that a start being dropped is in one or the other.
+        // Taken together, so that a start being dropped is in one of them.
         lock (this.gate)
         {
             this.dropped.TryGetValue(key, out states);
-            restored = this.starts.TryGetValue(key, out var cached)
-                ? [.. cached.Starts.Where(start => start.IsStateRestored)]
-                : [];
+            this.retiring.TryGetValue(key, out pending);
+            this.starts.TryGetValue(key, out cached);
         }
 
-        if (restored.Length == 0 && states is null)
+        // Outside the gate, since telling waits for a placement in progress.
+        StructureStart[] restored = cached is not null
+            ? [.. cached.Starts.Where(start => start.IsStateRestored)]
+            : [];
+
+        if (restored.Length == 0 && states is null && pending is null)
             return loaded;
 
         var result = new NbtCompound("starts");
@@ -165,19 +220,43 @@ internal sealed class StructureStartCache
             result.Add(state);
         }
 
+        // Retirements hold their plugins until their state is captured, and give the same state after.
+        foreach (var retirement in pending ?? [])
+            Put(result, RetiredState(retirement.Start));
+
         foreach (var start in restored)
         {
-            if (!GeneratorCalls.TryEnter(start.Owners, out var calls))
-                continue;
-
-            using (calls)
+            if (GeneratorCalls.TryEnter(start.Owners, out var calls))
             {
-                result.Remove(start.Structure.Identifier);
-                result.Add(start.SaveState());
+                using (calls)
+                    Put(result, start.SaveState());
+
+                continue;
+            }
+
+            var holds = Hold(start);
+            try
+            {
+                start.Retire();
+                Put(result, RetiredState(start));
+            }
+            finally
+            {
+                Release(holds);
             }
         }
 
         return result;
+    }
+
+    // Puts a start's state in place of what the chunk was saved with.
+    private static void Put(NbtCompound starts, NbtCompound? state)
+    {
+        if (state is null)
+            return;
+
+        starts.Remove(state.Name!);
+        starts.Add(state);
     }
 
     // New starts of a structure whose start was dropped in the chunk take its state, before any is placed, and it's
@@ -205,17 +284,100 @@ internal sealed class StructureStartCache
             this.dropped[key] = states;
     }
 
-    // Retires the starts the chunk had that it no longer has, keeping the state of those placed in this session.
-    // Under the gate.
+    // Retires the starts the chunk had that it no longer has; their state is kept once captured (see Settle). Under
+    // the gate, so it doesn't wait for anything.
     private void Drop((int X, int Z) key, ChunkStarts previous, ChunkStarts current)
     {
         foreach (var start in previous.Starts)
         {
-            if (current.Starts.Contains(start) || start.Retire() is not NbtCompound state)
+            if (current.Starts.Contains(start))
                 continue;
 
-            var states = this.dropped.GetValueOrDefault(key) ?? ImmutableDictionary<string, NbtCompound>.Empty;
-            this.dropped[key] = states.SetItem(start.Structure.Identifier, state);
+            start.Retire();
+            var pending = this.retiring.GetValueOrDefault(key) ?? [];
+            this.retiring[key] = pending.Add(new Retirement(start));
+        }
+    }
+
+    /// <summary>
+    /// Captures the state of the starts dropped in the chunk, waiting for their placements to end, and keeps that of
+    /// those placed in this session, to be saved and handed to the starts made again. Not under the gate.
+    /// </summary>
+    private void Settle((int X, int Z) key)
+    {
+        if (!this.retiring.TryGetValue(key, out var pending))
+            return;
+
+        foreach (var retirement in pending)
+        {
+            var state = RetiredState(retirement.Start);
+
+            lock (this.gate)
+            {
+                // Settled by another thread meanwhile.
+                if (!this.retiring.TryGetValue(key, out var current) || !current.Contains(retirement))
+                    continue;
+
+                current = current.Remove(retirement);
+                if (current.IsEmpty)
+                    this.retiring.TryRemove(key, out _);
+                else
+                    this.retiring[key] = current;
+
+                if (state is not null)
+                {
+                    var states = this.dropped.GetValueOrDefault(key) ?? ImmutableDictionary<string, NbtCompound>.Empty;
+                    this.dropped[key] = states.SetItem(retirement.Start.Structure.Identifier, state);
+                }
+            }
+
+            retirement.Release();
+        }
+    }
+
+    // A retired start's state, or null when it wasn't restored, or when its plugin's code fails to save it: then it
+    // keeps the state it was loaded with, rather than failing what retires or saves it.
+    private static NbtCompound? RetiredState(StructureStart start)
+    {
+        try
+        {
+            return start.RetiredState();
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            return null;
+        }
+    }
+
+    // Settles every chunk's dropped starts, after pruning.
+    private void SettleAll()
+    {
+        foreach (var key in this.retiring.Keys)
+            this.Settle(key);
+    }
+
+    // Keeps the start's plugins from being released while its state is saved, even though they're unloading.
+    private static IDisposable[] Hold(StructureStart start) =>
+        start.Owners.IsDefaultOrEmpty ? [] : [.. start.Owners.Select(owner => owner.HoldUnloading())];
+
+    private static void Release(IDisposable[] holds)
+    {
+        foreach (var hold in holds)
+            hold.Dispose();
+    }
+
+    // A start dropped whose state isn't captured yet, holding its plugins until it is.
+    private sealed class Retirement(StructureStart start)
+    {
+        private IDisposable[]? holds = Hold(start);
+
+        public StructureStart Start { get; } = start;
+
+        // Once, by whoever settles it.
+        public void Release()
+        {
+            if (Interlocked.Exchange(ref this.holds, null) is IDisposable[] holds)
+                StructureStartCache.Release(holds);
         }
     }
 
@@ -286,10 +448,17 @@ internal sealed class StructureStartCache
         }
 
         // The starts of the live sets not made with a plugin that's unloading; this, when that's all of them.
-        public ChunkStarts Keep(IReadOnlySet<StructureSet> live)
+        public ChunkStarts Keep(IReadOnlySet<StructureSet> live) =>
+            this.Keep(i => live.Contains(this.Sets[i]) && this.perSet[i]?.Owners.Any(IsUnloading) is not true);
+
+        // The starts of the live sets, even those made with a plugin that's unloading, which aren't placed until
+        // they're pruned; this, when that's all of them.
+        public ChunkStarts KeepSets(IReadOnlySet<StructureSet> live) => this.Keep(i => live.Contains(this.Sets[i]));
+
+        private ChunkStarts Keep(Func<int, bool> kept)
         {
             var indices = Enumerable.Range(0, this.Sets.Length)
-                .Where(i => live.Contains(this.Sets[i]) && this.perSet[i]?.Owners.Any(IsUnloading) is not true)
+                .Where(kept)
                 .ToArray();
 
             if (indices.Length == this.Sets.Length)

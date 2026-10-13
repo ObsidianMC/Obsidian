@@ -224,6 +224,18 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     }
 
     /// <summary>
+    /// Keeps the plugin from being released, like <see cref="TryHold"/>, for work its unloading leaves to finish
+    /// later, such as saving the state of its structures once their placements end.
+    /// </summary>
+    /// <returns>The hold, to dispose once the work is done.</returns>
+    internal IDisposable HoldUnloading()
+    {
+        Interlocked.Increment(ref this.activeCalls);
+
+        return new Hold(this);
+    }
+
+    /// <summary>
     /// Creates a scope of the plugin's services, still falling back to the server's, for something of the plugin's
     /// that lives longer than a call; dispose it once that's done, before the plugin is released.
     /// </summary>

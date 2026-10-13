@@ -46,6 +46,11 @@ internal sealed class StructureLayout
     public IReadOnlyList<StructureSet> Sets { get; }
 
     /// <summary>
+    /// <see cref="Sets"/>, to look sets up in.
+    /// </summary>
+    public IReadOnlySet<StructureSet> SetLookup => field ??= this.Sets.ToHashSet();
+
+    /// <summary>
     /// Every structure of each decoration step in registry order, which decides their feature seed index.
     /// </summary>
     public IReadOnlyList<IReadOnlyList<Structure>> StructuresPerStep { get; }

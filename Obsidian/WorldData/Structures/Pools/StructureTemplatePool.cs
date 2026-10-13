@@ -10,7 +10,7 @@ public sealed class StructureTemplatePool
 {
     public const string EmptyId = "minecraft:empty";
 
-    // MaxSize, with the template overrides it was computed with.
+    // MaxSize, with the version of the template overrides it was computed with.
     private MaxSizeCache? maxSize;
 
     /// <summary>The registry id, e.g. <c>minecraft:village/plains/houses</c>.</summary>
@@ -32,7 +32,7 @@ public sealed class StructureTemplatePool
     /// </summary>
     /// <remarks>
     /// Elements look their templates up as they're used, and plugins and data packs may override them, so the value
-    /// is computed again once the overrides change (see <see cref="StructureRegistry.Overrides"/>).
+    /// is computed again once the overrides change (see <see cref="StructureRegistry.OverridesVersion"/>).
     /// </remarks>
     public int MaxSize
     {
@@ -40,9 +40,9 @@ public sealed class StructureTemplatePool
         {
             // Racing threads compute the same value for the same overrides. Read first, so that overrides changing
             // meanwhile compute it again next time.
-            var overrides = StructureRegistry.Overrides;
+            var version = StructureRegistry.OverridesVersion;
             var cached = System.Threading.Volatile.Read(ref this.maxSize);
-            if (cached is not null && ReferenceEquals(cached.Overrides, overrides))
+            if (cached is not null && cached.Version == version)
                 return cached.Value;
 
             var value = this.Templates
@@ -51,7 +51,7 @@ public sealed class StructureTemplatePool
                 .DefaultIfEmpty(0)
                 .Max();
 
-            System.Threading.Volatile.Write(ref this.maxSize, new MaxSizeCache(overrides, value));
+            System.Threading.Volatile.Write(ref this.maxSize, new MaxSizeCache(version, value));
             return value;
         }
     }
@@ -66,7 +66,7 @@ public sealed class StructureTemplatePool
     /// </summary>
     public static StructureTemplatePool? Get(string id) => TemplatePools.All.GetValueOrDefault(id);
 
-    private sealed record MaxSizeCache(object Overrides, int Value);
+    private sealed record MaxSizeCache(long Version, int Value);
 }
 
 /// <summary>

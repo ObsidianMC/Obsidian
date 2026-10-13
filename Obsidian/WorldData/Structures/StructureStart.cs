@@ -16,8 +16,13 @@ public sealed class StructureStart
 
     private bool stateRestored;
 
-    // See Retire.
-    private bool retired;
+    // See Retire; set without the lock, read under it.
+    private volatile bool retired;
+
+    // The state captured once retired, which every reader of it gets (see RetiredState).
+    private NbtCompound? retiredState;
+
+    private bool retiredStateTaken;
 
     internal StructureStart(Structure structure, int chunkX, int chunkZ, IReadOnlyList<StructurePiece> pieces)
     {
@@ -146,14 +151,32 @@ public sealed class StructureStart
 
     /// <summary>
     /// Stops the start from being placed, once the structure cache dropped it (its structure set is gone, or a plugin
-    /// it runs is unloading), and gives its state to keep when it was restored. Taking the lock placing takes, it
-    /// waits for a placement in progress, so the state has every piece placed, and none is placed after.
+    /// it runs is unloading). A placement in progress still ends; <see cref="RetiredState"/> waits for it. This
+    /// doesn't wait, so that it can be called under locks that placements may wait for.
     /// </summary>
-    internal NbtCompound? Retire()
+    internal void Retire() => this.retired = true;
+
+    /// <summary>
+    /// The state to keep of a retired start, when it was restored, or null. Taking the lock placing takes, it waits
+    /// for a placement in progress, so the state has every piece placed; the first call captures it, and later ones
+    /// give the same state, so that whoever saves the start keeps what its retirement keeps.
+    /// </summary>
+    /// <remarks>
+    /// Saving the state of pieces made of plugins' types is a call into them: hold the plugins meanwhile.
+    /// </remarks>
+    internal NbtCompound? RetiredState()
     {
         using var scope = this.stateLock.EnterScope();
-        this.retired = true;
-        return this.stateRestored ? this.SaveStateLocked() : null;
+        if (!this.retired)
+            throw new InvalidOperationException("The start isn't retired.");
+
+        if (!this.retiredStateTaken)
+        {
+            this.retiredState = this.stateRestored ? this.SaveStateLocked() : null;
+            this.retiredStateTaken = true;
+        }
+
+        return this.retiredState;
     }
 
     private NbtCompound SaveStateLocked()
