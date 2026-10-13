@@ -1119,6 +1119,10 @@ public abstract partial class AbstractLevel : ILevel
         stopwatch.Start();
         Log.Generating(this.Logger, startChunks, this.Name);
 
+        // Generating starts with the staging below, which does most of the work of a noise generator's chunks, so a
+        // listener hears of it now rather than once the staging is done.
+        this.GenerationProgress?.Invoke(0, startChunks);
+
         // Most of the work is staged across every core first, without the lock waits of completing chunks one by one, so the
         // jobs below only complete the chunks.
         if (this.Generator is MojangGenerator mojang)
