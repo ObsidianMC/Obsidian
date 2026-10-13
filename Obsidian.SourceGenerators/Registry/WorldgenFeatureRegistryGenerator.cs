@@ -749,6 +749,11 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                     }
                 case "VerticalAnchor":
                     return EmitVerticalAnchor(json);
+                case "JigsawMaxDistance":
+                    // A number is both distances; the object form's vertical defaults to 4064, like vanilla's.
+                    return EmitPair(target, json, "horizontal", "vertical", 4064);
+                case "DimensionPadding":
+                    return EmitPair(target, json, "bottom", "top", 0);
             }
 
             if (SymbolEqualityComparer.Default.Equals(target, this.placedFeature))
@@ -908,6 +913,19 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
             var entries = properties.EnumerateObject().Select(property => $"{{ {Literal(property.Name)}, {Literal(property.Value.GetString()!)} }}");
             return $"new global::Obsidian.API.SimpleBlockState {{ Name = {name}, Properties = new() {{ {string.Join(", ", entries)} }} }}";
+        }
+
+        // A pair of ints written as one number for both, or an object of the two whose missing ones take a default.
+        private static string EmitPair(ITypeSymbol type, JsonElement json, string first, string second, int fallback)
+        {
+            int Value(string name) => json.TryGetProperty(name, out var value) ? value.GetInt32() : fallback;
+
+            var (a, b) = json.ValueKind == JsonValueKind.Number
+                ? (json.GetInt32(), json.GetInt32())
+                : (Value(first), Value(second));
+
+            var values = $"{a.ToString(CultureInfo.InvariantCulture)}, {b.ToString(CultureInfo.InvariantCulture)}";
+            return $"new {FullName(type)}({values})";
         }
 
         private static string EmitVerticalAnchor(JsonElement json)

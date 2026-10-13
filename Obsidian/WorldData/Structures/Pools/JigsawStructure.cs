@@ -25,16 +25,16 @@ public sealed class JigsawStructure : Structure
     public HeightmapType? ProjectStartToHeightmap { get; init; }
 
     /// <summary>
-    /// How far pieces may reach from the start's center, horizontally and vertically (vanilla's single-number form).
+    /// How far pieces may reach from the start's center, horizontally and vertically.
     /// </summary>
-    public required int MaxDistanceFromCenter { get; init; }
+    public required JigsawMaxDistance MaxDistanceFromCenter { get; init; }
 
     public ImmutableArray<PoolAliasBinding> PoolAliases { get; init; } = [];
 
     /// <summary>
-    /// Blocks pieces keep from the bottom and top of the world, or <c>null</c> when unset (vanilla's single-number form).
+    /// Blocks pieces keep from the bottom and top of the world; none by default.
     /// </summary>
-    public int? DimensionPadding { get; init; }
+    public DimensionPadding DimensionPadding { get; init; }
 
     public LiquidSettings LiquidSettings { get; init; } = LiquidSettings.ApplyWaterlogging;
 
