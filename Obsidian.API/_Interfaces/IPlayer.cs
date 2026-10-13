@@ -104,6 +104,15 @@ public interface IPlayer : ILiving
     public ValueTask KickAsync(ChatMessage reason);
     public ValueTask KickAsync(string reason);
     public ValueTask OpenInventoryAsync(BaseContainer container);
+    /// <summary>
+    /// Shows <paramref name="scoreboard"/>'s objective and scores to the player in <paramref name="position"/>. The
+    /// player must have been added to the scoreboard first.
+    /// </summary>
+    /// <remarks>
+    /// The packets are queued with the scoreboard's other updates and removals, which the player gets in order, and
+    /// sent shortly after this returns. A packet sent to the player directly afterwards may arrive first, so change
+    /// the scoreboard through <see cref="IScoreboard"/> rather than with packets of your own.
+    /// </remarks>
     public ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot position);
 
     [EditorBrowsable(EditorBrowsableState.Advanced)]

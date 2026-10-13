@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Boss;
 using Obsidian.API.World;
@@ -6,13 +5,10 @@ using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Scoreboard;
 using Obsidian.Plugins;
-using Obsidian.Services;
-using Obsidian.Tests.Fakes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -81,7 +77,7 @@ public sealed class PluginHostUi
     }
 
     [Fact]
-    public async Task Display_ThenRetire_QueuesTheRemovalAfterTheDisplay()
+    public void Display_ThenRetire_QueuesTheRemovalAfterTheDisplay()
     {
         var broadcaster = new Recorder();
         var scoreboard = new Scoreboard("kills", broadcaster);
@@ -90,7 +86,7 @@ public sealed class PluginHostUi
         scoreboard.AddPlayer(1);
 
         // Displays and removals share the broadcaster's queue, so the player gets them in the order they happened.
-        await scoreboard.DisplayAsync(1, DisplaySlot.Sidebar);
+        scoreboard.Display(1, DisplaySlot.Sidebar);
         scoreboard.Retire();
 
         var packets = broadcaster.Sent
@@ -101,50 +97,7 @@ public sealed class PluginHostUi
         Assert.Equal(ScoreboardMode.Create, Assert.IsType<SetObjectivePacket>(packets[0]).Mode);
         Assert.IsType<SetDisplayObjectivePacket>(packets[^2]);
         Assert.Equal(ScoreboardMode.Remove, Assert.IsType<SetObjectivePacket>(packets[^1]).Mode);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => scoreboard.DisplayAsync(1, DisplaySlot.Sidebar));
-    }
-
-    [Fact]
-    public async Task Display_CompletesOnceThePacketsAreInThePlayersQueue()
-    {
-        var player = new FakePlayer { Uuid = Guid.NewGuid() };
-        var server = new FakeServer();
-        server.OnlinePlayers.TryAdd(player.Uuid, player);
-
-        var broadcaster = new PacketBroadcaster(
-            server,
-            NullLogger<PacketBroadcaster>.Instance,
-            new FakeServerEnvironment());
-        var scoreboard = new Scoreboard("kills", broadcaster);
-
-        scoreboard.CreateOrUpdateObjective("Kills");
-        scoreboard.AddPlayer(player.EntityId);
-
-        // Whatever the caller sends the player directly after awaiting goes after the display.
-        await broadcaster.StartAsync(CancellationToken.None);
-        await scoreboard.DisplayAsync(player.EntityId, DisplaySlot.Sidebar).WaitAsync(TimeSpan.FromSeconds(10));
-
-        Assert.IsType<SetDisplayObjectivePacket>(player.Queued[^1]);
-
-        // A packet handler the broadcaster runs can display it too, without waiting on the broadcaster itself.
-        var marker = new SetDisplayObjectivePacket
-        {
-            ObjectiveName = "marker",
-            DisplaySlot = DisplaySlot.List
-        };
-
-        player.OnQueue = async packet =>
-        {
-            if (packet == marker)
-                await scoreboard.DisplayAsync(player.EntityId, DisplaySlot.Sidebar);
-        };
-
-        await broadcaster.QueuePacketToAsync(marker, player.EntityId).WaitAsync(TimeSpan.FromSeconds(10));
-        player.OnQueue = null;
-
-        // Once the broadcaster stops, a display doesn't wait for packets it will never send.
-        await broadcaster.StopAsync(CancellationToken.None);
-        await scoreboard.DisplayAsync(player.EntityId, DisplaySlot.Sidebar).WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Throws<InvalidOperationException>(() => scoreboard.Display(1, DisplaySlot.Sidebar));
     }
 
     [Fact]

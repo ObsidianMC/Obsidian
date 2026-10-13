@@ -1,6 +1,5 @@
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Scoreboard;
-using Obsidian.Services;
 using System.Threading;
 
 namespace Obsidian;
@@ -20,7 +19,7 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster) : ISc
     private bool retired;
 
     /// <summary>
-    /// Taken by every change of the scoreboard and its teams, and by showing it (see <see cref="DisplayAsync"/>),
+    /// Taken by every change of the scoreboard and its teams, and by showing it (see <see cref="Display"/>),
     /// which send their packets before letting go, so none is sent after <see cref="Retire"/> removed them.
     /// </summary>
     internal Lock Gate { get; } = new();
@@ -263,15 +262,15 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster) : ISc
     /// <see cref="Gate"/> like the removals of <see cref="Retire"/>, <see cref="RemoveObjective"/> and
     /// <see cref="RemovePlayer"/>. So the player gets them in the order they happened: a removal is never overtaken
     /// by an earlier display, and never overtakes a later one.
+    /// <para>
+    /// It returns once they're queued, not sent: waiting for the broadcaster to send them could wait on the caller
+    /// itself, as the broadcaster waits on the packet handlers it runs, and through them on whatever they wait for.
+    /// </para>
     /// </remarks>
     /// <param name="entityId">The player's entity id.</param>
     /// <param name="slot">Where the objective shows.</param>
-    /// <returns>
-    /// A task completed once the packets are in the player's own queue, so that what the caller sends the player
-    /// next, directly, goes after them.
-    /// </returns>
     /// <exception cref="InvalidOperationException">The scoreboard is retired or has no objective.</exception>
-    internal Task DisplayAsync(int entityId, DisplaySlot slot)
+    internal void Display(int entityId, DisplaySlot slot)
     {
         lock (this.Gate)
         {
@@ -282,7 +281,7 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster) : ISc
                     "You must create an objective for the scoreboard before displaying it.");
 
             if (!this.Players.Contains(entityId))
-                return Task.CompletedTask;
+                return;
 
             // An array, as a lone int would be taken for the priority of QueuePacketTo's other overload.
             int[] to = [entityId];
@@ -305,20 +304,11 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster) : ISc
                 }, to);
             }
 
-            var display = new SetDisplayObjectivePacket
+            this.packetBroadcaster.QueuePacketTo(new SetDisplayObjectivePacket
             {
                 ObjectiveName = this.name,
                 DisplaySlot = slot
-            };
-
-            // The packets are sent in order, so the last one's delivery stands for all of them. A broadcaster that
-            // isn't the server's (a test's) delivers as it's called.
-            if (this.packetBroadcaster is PacketBroadcaster broadcaster)
-                return broadcaster.QueuePacketToAsync(display, to);
-
-            this.packetBroadcaster.QueuePacketTo(display, to);
-
-            return Task.CompletedTask;
+            }, to);
         }
     }
 
