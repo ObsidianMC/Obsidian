@@ -38,6 +38,10 @@ public partial class MainEventHandler
             ? []
             : await BlockDrops.ForPlayerBreakAsync(dropLevel, block, (VectorD)location, tool, player);
 
+        // Creative breaks run vanilla's preventDropFromBottomPart: a double plant's lower half goes without a drop.
+        if (player.GameMode == GameMode.Creative && world is Obsidian.WorldData.AbstractLevel creativeLevel)
+            await Obsidian.WorldData.DoublePlants.PreventDropFromBottomPartAsync(creativeLevel, block, location);
+
         await world.SetBlockAsync(location, BlocksRegistry.Air, true);
         if (world is Obsidian.WorldData.AbstractLevel gameEvents)
         {

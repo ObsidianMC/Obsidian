@@ -360,6 +360,12 @@ Audit of runtime block-to-air and replacement sites (`SetBlockAsync(..., Air)` /
 
 Delivered: water-flow and support-loss drops (queued from the fluid tick), with lava verified silent.
 
+Two-block plants (vanilla `DoublePlantBlock`, bytecode-verified): `DoublePlants.cs`.
+- Creative break of the upper half runs `preventDropFromBottomPart`: the lower half goes with no drop. This was a bug: the lower half's shape-update removal dropped the flower.
+- Survival: the upper half drops nothing (its loot needs `half=lower`). The lower half is removed by its shape update and drops the flower, so one flower drops. Lower-half breaks drop one flower in both modes.
+- Tests in `DoublePlantBreakIntegration` (sunflower and lilac, four cases).
+- Gap: player placement of two-block plants places only the lower half (`UseItemOnPacket` places the item's block state). Vanilla places both halves. Not changed here; it is placement, not drops.
+
 Leaf decay (vanilla `LeavesBlock`, bytecode-verified): `LeafDecay.cs` and `AbstractLevel.RandomTicks.cs`.
 - `randomTick` decays a leaf that is not persistent and has distance 7: its loot drops with no tool, and the fluid there replaces it (`SetBlockAsync(…, true)`).
 - `tick` recomputes the distance from the nearest log plus one, capped at 7.
