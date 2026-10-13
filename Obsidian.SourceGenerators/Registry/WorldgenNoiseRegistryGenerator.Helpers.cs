@@ -47,6 +47,13 @@ public partial class WorldgenNoiseRegistryGenerator
                     break;
                 }
 
+                // A spawn target's depth is a range, which vanilla's files give as one value.
+                if (elementName == "depth")
+                {
+                    builder.Line($"Depth = [{element}, {element}],");
+                    break;
+                }
+
                 builder.Line($"{elementName.ToPascalCase()} = {element},");
                 break;
             case JsonValueKind.Array:
@@ -134,8 +141,9 @@ public partial class WorldgenNoiseRegistryGenerator
     private static bool TryAppendSplineProperty(CleanedNoises cleanedNoises, string? elementName, JsonElement element,
         CodeBuilder builder, bool appendName = true)
     {
+        // A spline function's spline is an ISpline, which vanilla's files always give as a multipoint one.
         if (appendName)
-            builder.Type($"{elementName!.ToPascalCase()} = new()");
+            builder.Type($"{elementName!.ToPascalCase()} = new Spline()");
 
         var passed = true;
         foreach (var childProperty in element.EnumerateObject())

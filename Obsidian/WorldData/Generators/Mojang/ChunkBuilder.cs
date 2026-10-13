@@ -382,7 +382,7 @@ internal sealed class ChunkBuilder
             Quantize(target.Humidity),
             Quantize(target.Continentalness),
             Quantize(target.Erosion),
-            new ClimateParameter(Climate.Quantize((float)target.Depth), Climate.Quantize((float)target.Depth)),
+            Quantize(target.Depth),
             Quantize(target.Weirdness),
             Climate.Quantize((float)target.Offset))).ToArray();
 
@@ -409,7 +409,7 @@ internal sealed class ChunkBuilder
         var minY = this.dimension.MinY;
 
         // Vanilla post-processes on the live level, whose random only varies lava's spread delay; any seed will do.
-        var rules = fluidRules ?? FluidRules.ForDimension(this.dimension.DimensionType.Name, this.dimension.DimensionType.Element.Ultrawarm);
+        var rules = fluidRules ?? FluidRules.ForDimension(this.dimension.DimensionType);
         var fluids = new FluidLevel(new WorldGenFluidAccess(region, rules, new Random(chunkX * 31 + chunkZ)));
 
         // Vanilla walks the marks section by section, in the order they were added.

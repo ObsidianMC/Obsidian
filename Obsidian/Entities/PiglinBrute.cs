@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -38,7 +39,7 @@ public sealed partial class PiglinBrute : PathfinderMob
     protected override async ValueTask TickMobAsync()
     {
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
-        var safe = Level.DimensionType.Element.PiglinSafe;
+        var safe = Level.DimensionType.PiglinsSafe();
         if (safe || IsImmuneToZombification) { TimeInOverworld = 0; return; }
         if (++TimeInOverworld > 300)
         {

@@ -1,11 +1,14 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API.Registries;
+using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Configuration.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Registries.Codecs;
+using Obsidian.WorldData;
+using Obsidian.WorldData.Fluids;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -143,6 +146,53 @@ public class PluginCodecFiles
         PluginCodecs.DimensionType,
         true,
         """{ "monster_spawn_light_level": { "type": "minecraft:constant", "value": 7 } }""")]
+    [InlineData(
+        PluginCodecs.Biome,
+        false,
+        """
+        { "attributes": { "minecraft:visual/ambient_particles": [
+        { "particle": { "type": "dust", "color": 255, "scale": 5 }, "probability": 0.1 }] } }
+        """)]
+    [InlineData(
+        PluginCodecs.Biome,
+        false,
+        """
+        { "attributes": { "minecraft:visual/ambient_particles": [
+        { "particle": { "type": "block", "block_state": "codecfiles:missing" }, "probability": 0.1 }] } }
+        """)]
+    [InlineData(
+        PluginCodecs.Biome,
+        false,
+        """
+        { "attributes": { "minecraft:visual/default_dripstone_particle": {
+        "type": "vibration", "destination": { "type": "entity", "source_entity": [0, 0, 0, 0] },
+        "arrival_in_ticks": 5 } } }
+        """)]
+    [InlineData(
+        PluginCodecs.Biome,
+        true,
+        """
+        { "attributes": { "minecraft:visual/ambient_particles": [
+        { "particle": { "type": "item", "item": { "id": "diamond" } }, "probability": 0.1 },
+        { "particle": { "type": "block_crumble", "block_state": { "Name": "stone" } }, "probability": 0.1 },
+        { "particle": { "type": "trail", "target": [0, 64, 0], "color": [0, 1, 0], "duration": 20 },
+        "probability": 0.1 }] } }
+        """)]
+    [InlineData(
+        PluginCodecs.DimensionType,
+        false,
+        """
+        { "attributes": { "minecraft:gameplay/bed_rule": {
+        "can_sleep": "never", "can_set_spawn": "never", "error_message": { "bold": true } } } }
+        """)]
+    [InlineData(
+        PluginCodecs.DimensionType,
+        true,
+        """
+        { "attributes": { "minecraft:gameplay/bed_rule": {
+        "can_sleep": "never", "can_set_spawn": "never", "explodes": true, "error_message": {
+        "translate": "codecfiles.too_hot", "with": [{ "text": "here", "bold": true }, 3], "extra": ["!"] } } } }
+        """)]
     public void ValidatesLikeVanilla(string registry, bool valid, string patch)
     {
         var bytes = Patched(registry == PluginCodecs.Biome ? MinimalBiome : MinimalDimension, patch);
@@ -193,6 +243,62 @@ public class PluginCodecFiles
         int[] expected = [5, 7, 0, 7, 6, 0, 7, 0];
 
         Assert.Equal(expected, expected.Select(_ => provider.Sample(random)));
+    }
+
+    [Fact(DisplayName = "Particle options are sent as vanilla's codecs write them, defaults left out")]
+    public void EncodesParticleOptionsLikeVanilla()
+    {
+        var json = """
+            {
+              "minecraft:visual/ambient_particles": [
+                { "particle": { "type": "dust", "color": [1, 0, 0], "scale": 0.5 }, "probability": 0.1 },
+                { "particle": { "type": "effect", "color": -1, "power": 1 }, "probability": 0.1 }
+              ]
+            }
+            """;
+
+        using var document = JsonDocument.Parse(json);
+        var map = EnvironmentAttributes.Read(document.RootElement, "attributes", onlyPositional: true);
+        var particles = Assert.IsType<NbtList>(Assert.Single(map.Entries).Value);
+
+        var dust = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[0])["particle"]);
+        Assert.Equal(unchecked((int)0xFFFF0000), Assert.IsType<NbtTag<int>>(dust["color"]).Value);
+        Assert.Equal(0.5f, Assert.IsType<NbtTag<float>>(dust["scale"]).Value);
+
+        var effect = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[1])["particle"]);
+        Assert.Equal(["type"], effect.Select(tag => tag.Key));
+    }
+
+    [Fact(DisplayName = "The server applies a dimension type's gameplay attributes, and vanilla's nether's")]
+    public void AppliesGameplayAttributes()
+    {
+        var patch = """
+            {
+              "attributes": {
+                "minecraft:gameplay/can_start_raid": false,
+                "minecraft:gameplay/piglins_zombify": { "modifier": "and", "argument": false }
+              }
+            }
+            """;
+
+        using var document = JsonDocument.Parse(Patched(MinimalDimension, patch));
+        var type = new DimensionCodec
+        {
+            Name = "codecfiles:gameplay",
+            Id = -1,
+            Element = DimensionTypeData.Read(document.RootElement).ToElement()
+        };
+
+        Assert.False(type.Gameplay(LevelEnvironment.CanStartRaid));
+        Assert.True(type.PiglinsSafe());
+        Assert.False(FluidRules.ForDimension(type).FastLava);
+
+        // The server's copy of vanilla's types has no attributes, so it knows the nether's.
+        var nether = CodecRegistry.Dimensions.All["minecraft:the_nether"];
+        Assert.False(nether.Gameplay(LevelEnvironment.CanStartRaid));
+        Assert.True(nether.PiglinsSafe());
+        Assert.True(FluidRules.ForDimension(nether).FastLava);
+        Assert.True(CodecRegistry.Dimensions.All["minecraft:the_end"].Gameplay(LevelEnvironment.CanStartRaid));
     }
 
     // A file with a patch's fields merged in, objects into objects.

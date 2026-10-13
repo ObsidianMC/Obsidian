@@ -1,3 +1,5 @@
+using Obsidian.API.Registry.Codecs.Dimensions;
+
 namespace Obsidian.WorldData.Fluids;
 
 /// <summary>
@@ -17,4 +19,11 @@ internal sealed record FluidRules(bool FastLava, bool WaterSourceConversion = tr
     /// </remarks>
     public static FluidRules ForDimension(string dimensionType, bool ultrawarm = false) =>
         new(ultrawarm || dimensionType == "minecraft:the_nether");
+
+    /// <summary>
+    /// Vanilla's defaults for a dimension type, with its <c>fast_lava</c> attribute as a plugin's or data pack's type
+    /// sets it (see <see cref="LevelEnvironment.Gameplay"/>).
+    /// </summary>
+    public static FluidRules ForDimension(DimensionCodec type) =>
+        new(type.Element.Ultrawarm || type.Gameplay(LevelEnvironment.FastLava));
 }

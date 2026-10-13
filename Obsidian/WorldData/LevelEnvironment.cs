@@ -46,6 +46,58 @@ internal static class LevelEnvironment
         (22330, 0.26666668f)
     ];
 
+    /// <summary>
+    /// Vanilla's <c>minecraft:gameplay/can_start_raid</c>: whether a bad omen starts raids.
+    /// </summary>
+    public const string CanStartRaid = "minecraft:gameplay/can_start_raid";
+
+    /// <summary>
+    /// Vanilla's <c>minecraft:gameplay/can_pillager_patrol_spawn</c>: whether pillager patrols spawn.
+    /// </summary>
+    public const string CanPillagerPatrolSpawn = "minecraft:gameplay/can_pillager_patrol_spawn";
+
+    /// <summary>
+    /// Vanilla's <c>minecraft:gameplay/fast_lava</c>: whether lava flows faster and further.
+    /// </summary>
+    public const string FastLava = "minecraft:gameplay/fast_lava";
+
+    /// <summary>
+    /// Vanilla's <c>minecraft:gameplay/piglins_zombify</c>: whether piglins and hoglins turn into zombified ones.
+    /// </summary>
+    public const string PiglinsZombify = "minecraft:gameplay/piglins_zombify";
+
+    /// <summary>
+    /// Vanilla's <c>minecraft:gameplay/snow_golem_melts</c>: whether snow golems take damage.
+    /// </summary>
+    public const string SnowGolemMelts = "minecraft:gameplay/snow_golem_melts";
+
+    /// <summary>
+    /// The boolean gameplay attributes the server applies for a dimension type, with vanilla's defaults
+    /// (EnvironmentAttributes). Biomes' values of them aren't applied.
+    /// </summary>
+    public static readonly FrozenDictionary<string, bool> GameplayDefaults = new Dictionary<string, bool>
+    {
+        [CanStartRaid] = true,
+        [CanPillagerPatrolSpawn] = true,
+        [FastLava] = false,
+        [PiglinsZombify] = true,
+        [SnowGolemMelts] = false
+    }.ToFrozenDictionary();
+
+    // Vanilla's types' own values of those attributes, where they aren't the defaults (the nether's
+    // data/minecraft/dimension_type/the_nether.json): the server's copy of vanilla's types doesn't hold attributes.
+    private static readonly FrozenDictionary<string, FrozenDictionary<string, bool>> vanillaGameplay =
+        new Dictionary<string, FrozenDictionary<string, bool>>
+        {
+            ["minecraft:the_nether"] = new Dictionary<string, bool>
+            {
+                [CanStartRaid] = false,
+                [FastLava] = true,
+                [PiglinsZombify] = false,
+                [SnowGolemMelts] = true
+            }.ToFrozenDictionary()
+        }.ToFrozenDictionary();
+
     private const float WeatherSkyLightLevel = 4f;
     private const float RainSkyLightAlpha = 0.3125f;
     private const float ThunderSkyLightAlpha = 0.52734375f;
@@ -56,6 +108,29 @@ internal static class LevelEnvironment
     /// </summary>
     public static bool HasDayCycle(this ILevel level) =>
         Timelines(level.DimensionType) == "#minecraft:in_overworld";
+
+    /// <summary>
+    /// A boolean gameplay attribute of <see cref="GameplayDefaults"/> as the dimension type sets it: a plugin's or
+    /// data pack's type's own value, vanilla's type's, or the attribute's default.
+    /// </summary>
+    /// <param name="attribute">The attribute, like <see cref="CanStartRaid"/>.</param>
+    public static bool Gameplay(this DimensionCodec type, string attribute)
+    {
+        if (type.Element.GameplayAttributes?.TryGetValue(attribute, out var own) == true)
+            return own;
+
+        if (vanillaGameplay.TryGetValue(type.Name, out var vanilla) && vanilla.TryGetValue(attribute, out var value))
+            return value;
+
+        return GameplayDefaults[attribute];
+    }
+
+    /// <summary>
+    /// Whether piglins and hoglins stay as they are: the type's <see cref="PiglinsZombify"/> is false, or code set
+    /// its <see cref="DimensionElement.PiglinSafe"/>.
+    /// </summary>
+    public static bool PiglinsSafe(this DimensionCodec type) =>
+        type.Element.PiglinSafe || !type.Gameplay(PiglinsZombify);
 
     /// <summary>
     /// Whether undead mobs burn in daylight now: vanilla's <c>minecraft:gameplay/monsters_burn</c> attribute, set by

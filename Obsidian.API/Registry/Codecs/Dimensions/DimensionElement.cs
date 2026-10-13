@@ -105,6 +105,13 @@ public sealed record class DimensionElement : INbtSerializable
     public float? SkyLightLevel { get; set; }
 
     /// <summary>
+    /// The boolean <c>minecraft:gameplay/...</c> attributes the server applies, by identifier, as the type's own map
+    /// sets them (its values applied to the attributes' defaults); null for vanilla's types, which the server knows.
+    /// Not written, like <see cref="Timelines"/>.
+    /// </summary>
+    public IReadOnlyDictionary<string, bool>? GameplayAttributes { get; set; }
+
+    /// <summary>
     /// Writes the fields this element models as vanilla's DimensionType.NETWORK_CODEC does. Clients get vanilla's
     /// dimension types by name, and plugins' with the data their files decode to, attributes included.
     /// </summary>

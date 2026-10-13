@@ -327,13 +327,17 @@ or `gameplay/bed_rule`. Older fields such as `effects.sky_color` or a dimension 
 ignored, as vanilla ignores them. Plugins can set all of vanilla's attributes, as a value or as
 `{"modifier": ..., "argument": ...}`, with vanilla's ranges and modifiers; a biome can't set the ones that apply to a
 whole dimension (`gameplay/fast_lava` and `gameplay/sky_light_level`). Clients are sent the attributes vanilla syncs.
-Two kinds of attribute value can't be read yet, so a file with them is left out:
+Particles take their options, like `{"type": "minecraft:dust", "color": [1, 0, 0], "scale": 1}`, checked like
+vanilla's particle codecs and sent as they write them; their blocks and items are vanilla's, since clients don't know
+plugins' ones, and an item is a name or `{"id": ...}` without components. A bed rule's `error_message` is any text
+component vanilla reads, checked for its content and nested components; clients aren't sent bed rules.
 
-- particles that take options, like `minecraft:dust` or `minecraft:block` (ones without options, like
-  `minecraft:white_ash`, are fine);
-- a bed rule's `error_message` other than a string, `{"text": ...}` or `{"translate": ..., "fallback": ...}`.
-
-The server's own gameplay doesn't apply attributes yet: they change what clients show and play.
+The server applies a dimension type's attributes where Obsidian has the mechanics: `gameplay/monsters_burn` and
+`gameplay/sky_light_level` (with the overworld's day timeline), `gameplay/can_start_raid` (a bad omen in a village
+starts a raid), `gameplay/can_pillager_patrol_spawn` (patrols, which only spawn in the overworld, like vanilla's),
+`gameplay/fast_lava`, `gameplay/piglins_zombify` (piglins and hoglins) and `gameplay/snow_golem_melts` (everywhere,
+besides hot biomes). The rest change what clients show and play: Obsidian has no beds, respawn anchors, water
+evaporating, or the mechanics of the other attributes, and the server doesn't apply biomes' attributes.
 
 ## World generation features
 
@@ -881,8 +885,9 @@ files at runtime, compares them with the generated ones, and generates vanilla's
 have every field vanilla's have: `sea_level`, `default_block`, `default_fluid`, `noise` (the cells' `min_y`, `height`,
 `size_horizontal`, `size_vertical`, checked like vanilla), the 15 functions of the `noise_router`, `spawn_target`,
 the flags and `surface_rule`, whose rules and conditions are inline as in vanilla. A density function is a number (a
-constant), an identifier, or an object with a `type`; a noise is always named by its identifier, since noises are
-seeded from it. Plugins' dimensions use plugins' noise settings (see [Dimensions](#dimensions)). Ground rolling
+constant), an identifier, or an object with a `type`; a noise is an identifier or defined inline (see below). A spline
+function's `spline` is a multipoint spline or a number, for a constant one, and a spawn target's parameters, its
+`depth` included, are a number or a range, as in a multi-noise biome source. Plugins' dimensions use plugins' noise settings (see [Dimensions](#dimensions)). Ground rolling
 around y 64 with a plugin's noise:
 
 ```json
@@ -915,9 +920,11 @@ The rules:
 - A dimension keeps the noise settings it was created with until the server stops: a reload that changes them, or
   the density functions and noises they use, keeps the dimension as it was, with a warning, and the change applies
   after a restart.
-- Not supported: noises defined inline (vanilla can't seed them either), a constant number for a spline function's
-  `spline`, and a range for a spawn target's `depth`. Noise settings may be defined inline in a level stem (see
-  [Dimensions](#dimensions)).
+- Vanilla seeds a noise from its identifier, so its codec reads a noise defined inline, like
+  `"noise": { "firstOctave": -4, "amplitudes": [1, 0.5] }`, but generating with it fails. Obsidian seeds an inline
+  noise from its parameters instead: inline noises with the same `firstOctave` and `amplitudes` are the same noise,
+  like noises of one identifier, so name a noise file to have two different noises of the same parameters. Noise
+  settings may be defined inline in a level stem (see [Dimensions](#dimensions)).
 
 ### Noise types
 
@@ -1103,8 +1110,12 @@ The rules:
   dimensions' levels too, created after those of the plugins loaded before.
 - Gameplay follows the dimension type, as in vanilla: monsters spawn with its monster light limits, and undead mobs
   burn by day in a type with the overworld's timelines (`#minecraft:in_overworld`) or its own
-  `minecraft:gameplay/monsters_burn`. Patrols, wandering traders and phantom spawns stay in the overworld, where
-  vanilla runs them; raids, the end fight and portals stay with vanilla's levels for now.
+  `minecraft:gameplay/monsters_burn`. Raids start where its type's `minecraft:gameplay/can_start_raid` allows, as
+  in vanilla, which defaults to true (vanilla's nether sets it false). Patrols, wandering traders and phantom spawns
+  stay in the overworld, where vanilla runs them. Like vanilla, which only fights the dragon in the level
+  `minecraft:the_end` of the end's dimension type (and saves one fight per world in level.dat), a plugin's
+  dimension has no end fight, even with the end's type, noise settings and biome source. There are no portals to
+  plugins' dimensions.
 - A dimension's level stays until the server stops, even when its plugin unloads, with the noise settings it was
   created with. Its features come and go with their plugins like any features.
 - A reload changing a level stem, or the plugin data it reads (noise settings, density functions and noises, its

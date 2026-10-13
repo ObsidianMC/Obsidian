@@ -5,7 +5,11 @@ public sealed class SplineDensityFunction : IDensityFunction
 {
     public string Type => "minecraft:spline";
 
-    public required Spline Spline { get; init; }
+    /// <summary>
+    /// The spline: a multipoint <see cref="World.Spline"/>, or a <see cref="SplineConstant"/>, as vanilla's codec
+    /// takes a number for a constant one.
+    /// </summary>
+    public required ISpline Spline { get; init; }
 
     public double MinValue => this.Spline.MinValue;
 

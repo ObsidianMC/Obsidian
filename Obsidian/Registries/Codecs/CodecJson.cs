@@ -211,6 +211,17 @@ internal static class CodecJson
     };
 
     /// <summary>
+    /// Reads an ARGB colour like vanilla's ExtraCodecs.ARGB_COLOR_CODEC: an int, or a list of 4 floats (red, green,
+    /// blue, alpha).
+    /// </summary>
+    public static int ArgbIntColor(JsonElement value, string path) => value.ValueKind switch
+    {
+        JsonValueKind.Number => Int(value, path),
+        JsonValueKind.Array => FloatColor(value, path, channels: 4),
+        _ => throw Error(path, "expected a colour: an int or a list of 4 floats")
+    };
+
+    /// <summary>
     /// An RGB colour as vanilla's STRING_RGB_COLOR writes it: <c>#rrggbb</c> in lower case, without alpha.
     /// </summary>
     public static string FormatRgb(int color) => $"#{color & 0xFFFFFF:x6}";
