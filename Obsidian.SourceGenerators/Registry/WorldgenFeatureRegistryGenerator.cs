@@ -73,11 +73,10 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         if (normalized.EndsWith("/Assets/tags.json", StringComparison.Ordinal))
             return "tags";
 
-        var index = normalized.IndexOf("/worldgen/", StringComparison.Ordinal);
-        if (index < 0 || !normalized.EndsWith(".json", StringComparison.Ordinal))
+        var relative = AssetPaths.GetWorldgenRelativePath(normalized);
+        if (relative is null || !relative.EndsWith(".json", StringComparison.Ordinal))
             return null;
 
-        var relative = normalized.Substring(index + "/worldgen/".Length);
         return relative.Substring(0, relative.Length - ".json".Length);
     }
 
