@@ -193,6 +193,22 @@ public class PluginCodecFiles
         "can_sleep": "never", "can_set_spawn": "never", "explodes": true, "error_message": {
         "translate": "codecfiles.too_hot", "with": [{ "text": "here", "bold": true }, 3], "extra": ["!"] } } } }
         """)]
+    [InlineData(
+        PluginCodecs.DimensionType,
+        true,
+        """
+        { "attributes": { "minecraft:gameplay/bed_rule": {
+        "can_sleep": "never", "can_set_spawn": "never", "error_message": ["Too hot ", { "sprite": "item/blaze_powder" },
+        { "player": { "name": "Steve", "id": [1, 2, 3, 4] }, "hat": false },
+        { "type": "object", "object": "player", "player": "Alex" }] } } }
+        """)]
+    [InlineData(
+        PluginCodecs.DimensionType,
+        false,
+        """
+        { "attributes": { "minecraft:gameplay/bed_rule": {
+        "can_sleep": "never", "can_set_spawn": "never", "error_message": { "player": "not a player name" } } } }
+        """)]
     public void ValidatesLikeVanilla(string registry, bool valid, string patch)
     {
         var bytes = Patched(registry == PluginCodecs.Biome ? MinimalBiome : MinimalDimension, patch);
