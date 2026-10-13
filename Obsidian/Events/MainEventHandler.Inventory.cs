@@ -4,6 +4,7 @@ using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 
 namespace Obsidian.Events;
 
@@ -161,7 +162,7 @@ public partial class MainEventHandler
     /// <summary>
     /// Moves the clicked stack once, the way the open window routes it (vanilla's <c>quickMoveStack</c>).
     /// </summary>
-    /// <returns>Whether anything moved.</returns>
+    /// <returns>Whether anything moved and the routing goes on (see <see cref="MoveBrewingItem"/>).</returns>
     private static bool QuickMoveOnce(ContainerClickEventArgs args)
     {
         var player = args.Player;
@@ -177,11 +178,13 @@ public partial class MainEventHandler
                 return MoveCraftingTableItem(player, table, source, slot);
             case EnchantmentTable table:
                 return MoveEnchantingItem(player, table, source, slot);
+            case BrewingStand stand:
+                return MoveBrewingItem(args, stand);
         }
 
         // Like vanilla's chest, hopper and dispenser menus: the container's stack goes to the player's main inventory
         // and hotbar, filling from the hotbar's last slot, and the player's goes to the container, filling from its
-        // first slot. The brewing stand, whose slots take particular items, is treated as a chest too for now.
+        // first slot.
         if (source != inventory)
             return MoveStack(player, source, slot, inventory, 9, 45, reverse: true);
 
@@ -531,7 +534,8 @@ public partial class MainEventHandler
     /// <summary>
     /// Whether the player can put <paramref name="item"/> in <paramref name="slot"/> of <paramref name="container"/>,
     /// like vanilla's slots allow: not in a result slot, armour only in its own slot, lapis lazuli only in the
-    /// enchanting table's second slot, and only fuel (or a bucket) in a furnace's fuel slot.
+    /// enchanting table's second slot, only fuel (or a bucket) in a furnace's fuel slot, and only what each of a
+    /// brewing stand's slots takes (see <see cref="Brewing.SlotAccepts"/>).
     /// </summary>
     private static bool SlotAccepts(IPlayer player, BaseContainer container, int slot, ItemStack item)
     {
@@ -549,6 +553,7 @@ public partial class MainEventHandler
         {
             CraftingTable { Type: InventoryType.Crafting } => slot != 0,
             EnchantmentTable => slot != 1 || item.Is(ItemsRegistry.LapisLazuli),
+            BrewingStand => Brewing.SlotAccepts(slot, item),
             SmeltingContainer furnace when IsFurnace(furnace) => slot switch
             {
                 1 => IsFuel(item) || item.Is(ItemsRegistry.Bucket),
@@ -561,13 +566,14 @@ public partial class MainEventHandler
 
     /// <summary>
     /// How many of <paramref name="item"/> <paramref name="slot"/> of <paramref name="container"/> holds, like
-    /// vanilla's slots: one in an armour slot, in the enchanting table's first slot and, for a bucket, in a furnace's
-    /// fuel slot.
+    /// vanilla's slots: one in an armour slot, in the enchanting table's first slot, in a brewing stand's bottle slots
+    /// and, for a bucket, in a furnace's fuel slot.
     /// </summary>
     private static int SlotLimit(IPlayer player, BaseContainer container, int slot, ItemStack item)
     {
         var single = container == player.Inventory && slot is >= 5 and <= 8
             || container is EnchantmentTable && slot == 0
+            || container is BrewingStand && slot < BrewingStand.IngredientSlot
             || container is SmeltingContainer furnace
                 && IsFurnace(furnace)
                 && slot == 1
@@ -894,6 +900,23 @@ public partial class MainEventHandler
         // Other windows' clicks are checked against what they saw as they arrived, not against the state id, which
         // is 0 here like in the snapshots a click sends the window's other viewers.
         await RefreshWindowAsync(player, player.OpenedContainer ?? player.Inventory, stateId: 0);
+    }
+
+    /// <summary>
+    /// Sends the players who have <paramref name="container"/> open their whole window, after the server changed its
+    /// slots outside a click, like a brewing stand finishing a brew. Don't hold the container's lock: this takes it.
+    /// </summary>
+    internal static async ValueTask RefreshViewersAsync(BaseContainer container)
+    {
+        foreach (var viewer in container.GetViewers())
+        {
+            if (viewer is Player player
+                && player.OpenedContainer is BaseContainer shown
+                && shown.SharesSlotsWith(container))
+            {
+                await RefreshWindowAsync(player, shown, stateId: 0);
+            }
+        }
     }
 
     // Captures the player's whole window, inside its lock, under the given state id, and sends it unless it changed

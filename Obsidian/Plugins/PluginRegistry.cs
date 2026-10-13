@@ -356,6 +356,30 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         return this;
     }
 
+    public IPluginRegistry AddPotionMix(Potion from, Item ingredient, Potion to)
+    {
+        ArgumentNullException.ThrowIfNull(ingredient);
+
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        BrewingRegistry.Add(container, new PotionMix(from, ingredient, to), () => container.IsClosing);
+
+        return this;
+    }
+
+    public IPluginRegistry AddContainerMix(Item from, Item ingredient, Item to)
+    {
+        ArgumentNullException.ThrowIfNull(from);
+        ArgumentNullException.ThrowIfNull(ingredient);
+        ArgumentNullException.ThrowIfNull(to);
+
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        BrewingRegistry.Add(container, new ContainerMix(from, ingredient, to), () => container.IsClosing);
+
+        return this;
+    }
+
     // A region registered in code is kept as the JSON of a region file, and read with the plugin's region files once
     // its biomes are registered, so that it's checked and generates exactly like one.
     private static void RegisterBiomeRegion(

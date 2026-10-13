@@ -91,6 +91,10 @@ client. This document describes the design and tracks its progress. The archive 
      the process, are synced to NeoForge and Fabric clients with the `minecraft:particle_type` and `minecraft:menu`
      registries (refusing vanilla clients once there are any), and have no behaviour to replace on reload; a menu's
      shape can't change until the server restarts.
+   - Done for brewing: brewing stands brew (fuel, 400-tick brews and vanilla's mixes) and route shift-clicks like
+     vanilla's, and `IPluginRegistry.AddPotionMix` and `AddContainerMix` add a plugin's mixes after vanilla's, removed
+     when it unloads (see [plugin-content.md](plugin-content.md#brewing)). Mixes aren't synced: clients know only
+     vanilla's, as vanilla's client builds them itself.
    - Next: Phase 3.
 3. **Data-driven content and world generation** (done): loading a mod's `data/` folder like a data pack
    (biomes, dimension types, damage types, tags, worldgen features), letting mods register codec types for

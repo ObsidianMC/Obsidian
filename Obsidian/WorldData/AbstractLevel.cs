@@ -574,6 +574,9 @@ public abstract partial class AbstractLevel : ILevel
         await TickMobGameEventsAsync();
         await TickMobEggsAsync();
 
+        TickStage = "brewing stands";
+        await TickBrewingStandsAsync();
+
         foreach (var region in Regions.Values)
         {
             if (region is Region concrete)

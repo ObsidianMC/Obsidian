@@ -276,6 +276,31 @@ public interface IPluginRegistry
         string dimension,
         int weight,
         IEnumerable<World.Generator.ClimateBiome> biomes) => this;
+
+    /// <summary>
+    /// Adds a potion mix to brewing stands, like NeoForge's brewing recipes: <paramref name="ingredient"/> brews a
+    /// bottle of <paramref name="from"/> (a potion, splash or lingering potion) into the same kind of bottle of
+    /// <paramref name="to"/>. The ingredient slot takes the ingredient, and shift-clicking sends it there.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla's mixes are tried first, then plugins' in the order they were added, so a plugin can't change what one
+    /// of vanilla's brews. The mix is removed when the plugin unloads; a reload adds it again. Servers that don't brew,
+    /// like the Obsidian client, ignore mixes.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">The plugin is unloading.</exception>
+    public IPluginRegistry AddPotionMix(Potion from, Item ingredient, Potion to) => this;
+
+    /// <summary>
+    /// Adds a container mix to brewing stands: <paramref name="ingredient"/> brews a <paramref name="from"/> bottle
+    /// into a <paramref name="to"/> bottle of the same potion, like gunpowder brews potions into splash potions. The
+    /// rules are <see cref="AddPotionMix"/>'s.
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="from"/> or <paramref name="to"/> isn't a potion, splash potion or lingering potion, the bottles
+    /// brewing stands take.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The plugin is unloading.</exception>
+    public IPluginRegistry AddContainerMix(Item from, Item ingredient, Item to) => this;
 }
 
 

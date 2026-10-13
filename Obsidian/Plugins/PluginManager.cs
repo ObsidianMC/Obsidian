@@ -561,6 +561,7 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         ItemsRegistry.ReleasePlugin(pluginContainer);
         BlocksRegistry.ReleasePlugin(pluginContainer);
+        BrewingRegistry.ReleasePlugin(pluginContainer);
         var entityTypes = EntityDefinitionsRegistry.ReleasePlugin(pluginContainer);
         PluginGenerators.Release(pluginContainer);
 

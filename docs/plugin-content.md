@@ -213,6 +213,28 @@ under the ids the books had. A player whose client goes back through configurati
 new items, say) gets the whole book when they join again instead, as the recipes may show items their client doesn't
 know yet. Recipes are made of items, so a vanilla client sees a plugin's recipes of vanilla items.
 
+## Brewing
+
+```csharp
+public override void ConfigureRegistry(IPluginRegistry registry)
+{
+    var ruby = registry.RegisterItem("ruby:ruby");
+
+    registry.AddPotionMix(Potion.Awkward, ruby, Potion.Luck);
+    registry.AddContainerMix(ItemsRegistry.Potion, ruby, ItemsRegistry.LingeringPotion);
+}
+```
+
+Brewing stands brew like vanilla's: blaze powder (`#minecraft:brewing_fuel`) fuels 20 brews, a brew takes 400 ticks
+and mixes every bottle its ingredient brews, and shift-clicking sends fuel, ingredients and bottles to their slots in
+vanilla's order. A potion mix brews a bottle of one potion into the same kind of bottle of another, and a container
+mix one kind of bottle (a potion, splash or lingering potion) into another of the same potion, like gunpowder does.
+Vanilla's mixes are tried first, then plugins' in the order they were added, so a plugin can't change what vanilla
+brews; the result is a new bottle with only its potion, as in vanilla. A plugin's mixes are removed when it unloads
+and added again when it reloads; their ingredients may be the plugin's own items. Potions are vanilla's, as plugins
+can't add potions. Clients build vanilla's mixes themselves and aren't sent plugins', so a client predicts a click
+with a plugin's ingredient as if the slot refused it, and the window the server sends back corrects it.
+
 ## Tags
 
 Tags are data pack tag files: `data/<namespace>/tags/block/<path>.json`, `tags/item/...`, `tags/entity_type/...`,
