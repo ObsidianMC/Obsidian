@@ -12,8 +12,9 @@ namespace Obsidian.API.Client;
 public interface IClientPlugin
 {
     /// <summary>
-    /// Registers the mod's client side. Called once, when the client loads its mods at startup; what it registers
-    /// takes effect when it returns, after which <paramref name="registry"/> takes no more registrations.
+    /// Registers the mod's client side. Called when the client loads its mods: at startup, and again on a new
+    /// instance of the plugin when the player reloads them. What it registers takes effect when it returns, after
+    /// which <paramref name="registry"/> takes no more registrations, and is dropped when the mods reload.
     /// </summary>
     public void ConfigureClient(IClientRegistry registry);
 }
