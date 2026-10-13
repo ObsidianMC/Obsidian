@@ -81,7 +81,7 @@ public sealed class PluginParticlesAndMenus
     }
 
     [Fact(DisplayName = "An unloading plugin sees its menus close, which then don't open until it loads again",
-        Timeout = 10000)]
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task UnloadingClosesMenusForGood()
     {
         await using var context = TestServerFactory.CreateServer($"menu-unload-{Guid.NewGuid():N}");

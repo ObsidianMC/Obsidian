@@ -203,6 +203,12 @@ internal sealed class RealServerContext : IAsyncDisposable
 
 internal static class TestServerFactory
 {
+    /// <summary>
+    /// The timeout, in milliseconds, of a test running a server: a guard against hangs, with room for the slowdown
+    /// of the whole suite running at once, under which a test taking a fraction of a second alone can take several.
+    /// </summary>
+    public const int TestTimeout = 30_000;
+
     public static RealServerContext CreateServer(string worldName)
     {
         var configuration = new ServerConfiguration

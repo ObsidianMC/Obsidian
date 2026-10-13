@@ -11,7 +11,7 @@ namespace Obsidian.Tests;
 
 public sealed class EntityRangeQueries
 {
-    [Fact(Timeout = 5000)]
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task UnboundedQueryFindsLoadedEntitiesAndMissingOwners()
     {
         await using var context = TestServerFactory.CreateServer($"entity-range-{Guid.NewGuid():N}");
@@ -39,7 +39,7 @@ public sealed class EntityRangeQueries
         Assert.Same(near, Assert.Single(context.World.GetNonPlayerEntitiesInRange(origin, distance)));
     }
 
-    [Fact(Timeout = 5000)]
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task RestoredArrowWithAbsentOwnerCompletesItsTick()
     {
         await using var context = TestServerFactory.CreateServer($"arrow-owner-{Guid.NewGuid():N}");

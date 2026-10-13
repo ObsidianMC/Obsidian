@@ -96,7 +96,8 @@ public sealed class MenuClicks
         Assert.Equal(named, menu.GetItem(0));
     }
 
-    [Fact(DisplayName = "Viewers of a shared menu take turns and see each other's clicks", Timeout = 10000)]
+    [Fact(DisplayName = "Viewers of a shared menu take turns and see each other's clicks",
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task SharedMenuClicksTakeTurns()
     {
         await using var context = TestServerFactory.CreateServer($"menu-clicks-{Guid.NewGuid():N}");
@@ -168,7 +169,8 @@ public sealed class MenuClicks
         Assert.Equal(5, player.Inventory.GetItem(44)?.Count);
     }
 
-    [Fact(DisplayName = "Drags in the player's inventory follow vanilla's drag order and slot rules", Timeout = 10000)]
+    [Fact(DisplayName = "Drags in the player's inventory follow vanilla's drag order and slot rules",
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task InventoryDragNeedsAStartAndKeepsSlotRules()
     {
         await using var context = TestServerFactory.CreateServer($"inventory-drag-{Guid.NewGuid():N}");
@@ -203,7 +205,7 @@ public sealed class MenuClicks
     }
 
     [Fact(DisplayName = "Opening a container syncs the cursor, and closing it from the server closes the screen",
-        Timeout = 10000)]
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task OpenSyncsCursorAndForcedCloseClosesScreen()
     {
         await using var context = TestServerFactory.CreateServer($"menu-close-{Guid.NewGuid():N}");
@@ -227,7 +229,8 @@ public sealed class MenuClicks
         Assert.Equal(id, closed.ContainerId);
     }
 
-    [Fact(DisplayName = "Players opening a new chest at once share its one stored container", Timeout = 10000)]
+    [Fact(DisplayName = "Players opening a new chest at once share its one stored container",
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task FirstOpenOfAChestSharesOneContainer()
     {
         await using var context = TestServerFactory.CreateServer($"chest-open-{Guid.NewGuid():N}");
@@ -351,7 +354,7 @@ public sealed class MenuClicks
 
     public static TheoryData<string> ClickRows => [.. clickRows.Keys];
 
-    [Theory(DisplayName = "Clicks move items like vanilla's menus", Timeout = 10000)]
+    [Theory(DisplayName = "Clicks move items like vanilla's menus", Timeout = TestServerFactory.TestTimeout)]
     [MemberData(nameof(ClickRows))]
     public async Task ClicksMoveItemsLikeVanilla(string row)
     {
@@ -363,7 +366,7 @@ public sealed class MenuClicks
     }
 
     [Fact(DisplayName = "A click whose slots changed while plugins decided isn't applied, and is corrected",
-        Timeout = 10000)]
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task StaleOrCancelledClicksAreCorrected()
     {
         await using var context = TestServerFactory.CreateServer($"stale-click-{Guid.NewGuid():N}");
@@ -410,7 +413,8 @@ public sealed class MenuClicks
         Assert.Null(shown.CarriedItem);
     }
 
-    [Fact(DisplayName = "Creative slot packets need creative mode and set the player's inventory", Timeout = 10000)]
+    [Fact(DisplayName = "Creative slot packets need creative mode and set the player's inventory",
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task CreativeSlotsNeedCreativeMode()
     {
         await using var context = TestServerFactory.CreateServer($"creative-slot-{Guid.NewGuid():N}");
@@ -432,7 +436,7 @@ public sealed class MenuClicks
     }
 
     [Fact(DisplayName = "A double chest opens as one 54-slot window over both halves, which viewers share",
-        Timeout = 10000)]
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task DoubleChestSharesBothHalves()
     {
         await using var context = TestServerFactory.CreateServer($"double-chest-{Guid.NewGuid():N}");
@@ -479,7 +483,7 @@ public sealed class MenuClicks
     }
 
     [Fact(DisplayName = "An item picked up while plugins decide makes the click stale, and Item shares nothing",
-        Timeout = 10000)]
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task PickupWhileDecidingRejectsTheClick()
     {
         await using var context = TestServerFactory.CreateServer($"pickup-click-{Guid.NewGuid():N}");
@@ -514,7 +518,7 @@ public sealed class MenuClicks
     }
 
     [Fact(DisplayName = "A crafting click whose result no longer follows the grid is corrected, not applied",
-        Timeout = 10000)]
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task StaleCraftingResultIsCorrected()
     {
         await RecipesRegistry.InitializeAsync();
@@ -550,7 +554,7 @@ public sealed class MenuClicks
     }
 
     [Fact(DisplayName = "A number-key swap with the off hand in a container corrects it in the player's inventory",
-        Timeout = 10000)]
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task OffhandSwapIsCorrectedInThePlayerInventory()
     {
         await using var context = TestServerFactory.CreateServer($"offhand-swap-{Guid.NewGuid():N}");
@@ -570,7 +574,8 @@ public sealed class MenuClicks
         Assert.DoesNotContain(packets, packet => packet is ContainerSetSlotPacket);
     }
 
-    [Fact(DisplayName = "Every snapshot of a container's window sets its viewers' off hand", Timeout = 10000)]
+    [Fact(DisplayName = "Every snapshot of a container's window sets its viewers' off hand",
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task ContainerSnapshotsCarryTheOffhand()
     {
         await using var context = TestServerFactory.CreateServer($"offhand-viewer-{Guid.NewGuid():N}");
@@ -622,7 +627,8 @@ public sealed class MenuClicks
         Assert.Same(customData, copy.UnmodeledComponents);
     }
 
-    [Fact(DisplayName = "A window snapshot isn't sent after a newer one, nor once the window changed", Timeout = 10000)]
+    [Fact(DisplayName = "A window snapshot isn't sent after a newer one, nor once the window changed",
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task ObsoleteSnapshotsAreNotSent()
     {
         await using var context = TestServerFactory.CreateServer($"snapshots-{Guid.NewGuid():N}");
@@ -651,7 +657,8 @@ public sealed class MenuClicks
             new(player, sequence, ClickWindowState.Of(player), [new SetPlayerInventoryPacket { Slot = 0, Contents = null }]);
     }
 
-    [Fact(DisplayName = "A picked-up arrow's slot goes through plugins' packet handlers", Timeout = 10000)]
+    [Fact(DisplayName = "A picked-up arrow's slot goes through plugins' packet handlers",
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task PickupGoesThroughPacketHandlers()
     {
         await using var context = TestServerFactory.CreateServer($"pickup-handlers-{Guid.NewGuid():N}");
@@ -677,7 +684,7 @@ public sealed class MenuClicks
     }
 
     [Fact(DisplayName = "A window that keeps changing while handlers decide is sent later, through them, as it is",
-        Timeout = 10000)]
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task StaleWindowIsSentLaterThroughHandlers()
     {
         await using var context = TestServerFactory.CreateServer($"stale-window-{Guid.NewGuid():N}");
@@ -724,7 +731,7 @@ public sealed class MenuClicks
     }
 
     [Fact(DisplayName = "A picked-up item's animation and slots each go through plugins' packet handlers",
-        Timeout = 10000)]
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task ItemPickupPacketsEachGoThroughPacketHandlers()
     {
         await using var context = TestServerFactory.CreateServer($"item-pickup-{Guid.NewGuid():N}");
@@ -764,7 +771,7 @@ public sealed class MenuClicks
     }
 
     [Fact(DisplayName = "A merchant's window sent after a stale pickup keeps its state id, so the next click applies",
-        Timeout = 10000)]
+        Timeout = TestServerFactory.TestTimeout)]
     public async Task StaleMerchantWindowKeepsItsStateId()
     {
         await using var context = TestServerFactory.CreateServer($"stale-merchant-{Guid.NewGuid():N}");
