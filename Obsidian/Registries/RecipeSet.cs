@@ -1,0 +1,194 @@
+using Obsidian.API.Containers;
+using Obsidian.API.Crafting;
+using Obsidian.API.Inventory;
+using System.Collections.Frozen;
+
+namespace Obsidian.Registries;
+
+/// <summary>
+/// The recipes at one moment, vanilla's and those registered since (plugins' among them): what crafting grids and
+/// furnaces match, and what players' recipe books show. A set never changes; each change to the recipes publishes a
+/// new one (see <see cref="RecipesRegistry.Current"/>), so code that reads one set sees the same recipes throughout.
+/// </summary>
+internal sealed class RecipeSet
+{
+    public static readonly RecipeSet Empty = new(FrozenDictionary<string, IRecipe>.Empty, []);
+
+    private readonly FrozenDictionary<int, List<ShapedRecipe>> shapedRecipes;
+
+    private readonly FrozenDictionary<int, List<ShapelessRecipe>> shapelessRecipes;
+
+    private readonly SmeltingRecipe[] cookingRecipes;
+
+    /// <param name="recipes">Every recipe, by identifier.</param>
+    /// <param name="book">The recipe book's entries by display id, <c>null</c> where an id's recipe is gone.</param>
+    public RecipeSet(FrozenDictionary<string, IRecipe> recipes, IReadOnlyList<RecipeBookEntry?> book)
+    {
+        this.Recipes = recipes;
+        this.Book = book;
+
+        // Grids try crafting recipes in display id order, so vanilla's come first and a plugin's recipe keeps its
+        // place across reloads.
+        var crafting = book
+            .Where(entry => entry is not null)
+            .Select(entry => entry!.Recipe)
+            .ToList();
+
+        this.shapedRecipes = crafting
+            .OfType<ShapedRecipe>()
+            .GroupBy(recipe => recipe.Pattern.Sum(row => row.Count(symbol => symbol != ' ')))
+            .ToFrozenDictionary(group => group.Key, group => group.ToList());
+        this.shapelessRecipes = crafting
+            .OfType<ShapelessRecipe>()
+            .GroupBy(recipe => recipe.Ingredients.Count)
+            .ToFrozenDictionary(group => group.Key, group => group.ToList());
+        this.cookingRecipes = [.. recipes.Values.OfType<SmeltingRecipe>()];
+    }
+
+    /// <summary>
+    /// Every recipe, by identifier.
+    /// </summary>
+    public FrozenDictionary<string, IRecipe> Recipes { get; }
+
+    /// <summary>
+    /// The recipe book's entries by display id: the crafting recipes, which every player knows. An id stays its
+    /// recipe's for the life of the process, so the slot of a recipe that's gone (its plugin unloaded) is
+    /// <c>null</c>, and the recipe gets it back when it's registered again.
+    /// </summary>
+    public IReadOnlyList<RecipeBookEntry?> Book { get; }
+
+    /// <summary>
+    /// The recipe book's entry with <paramref name="displayId"/>, or <c>null</c> if there's none now.
+    /// </summary>
+    public RecipeBookEntry? GetBookEntry(int displayId) =>
+        displayId >= 0 && displayId < this.Book.Count ? this.Book[displayId] : null;
+
+    /// <summary>
+    /// The recipe the ingredients in slots 1 to <paramref name="width"/>² of <paramref name="grid"/> craft, shaped
+    /// recipes first (mirrored too), or <c>null</c>.
+    /// </summary>
+    public IRecipeWithResult? FindRecipe(BaseContainer grid, int width)
+    {
+        var occupiedSlots = Enumerable.Range(1, width * width)
+            .Where(slot => !grid[slot].IsNullOrAir() && grid[slot]!.Count > 0)
+            .ToList();
+        if (occupiedSlots.Count == 0)
+            return null;
+
+        if (this.shapedRecipes.TryGetValue(occupiedSlots.Count, out var shapedRecipes))
+        {
+            int minX = occupiedSlots.Min(slot => (slot - 1) % width);
+            int minY = occupiedSlots.Min(slot => (slot - 1) / width);
+            int maxX = occupiedSlots.Max(slot => (slot - 1) % width);
+            int maxY = occupiedSlots.Max(slot => (slot - 1) / width);
+
+            foreach (var recipe in shapedRecipes)
+            {
+                if (recipe.Pattern.Count != maxY - minY + 1 || recipe.Pattern[0].Length != maxX - minX + 1)
+                    continue;
+
+                if (MatchesShaped(grid, width, minX, minY, recipe, false)
+                    || MatchesShaped(grid, width, minX, minY, recipe, true))
+                {
+                    return recipe;
+                }
+            }
+        }
+
+        if (this.shapelessRecipes.TryGetValue(occupiedSlots.Count, out var shapelessRecipes))
+        {
+            var items = occupiedSlots.Select(slot => grid[slot]!).ToList();
+            foreach (var recipe in shapelessRecipes)
+            {
+                if (MatchesShapeless(items, recipe.Ingredients, 0, new bool[items.Count]))
+                    return recipe;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Whether a recipe of <paramref name="type"/> (smelting, blasting or smoking) cooks <paramref name="item"/>, which
+    /// a furnace of that type then takes as its ingredient.
+    /// </summary>
+    public bool IsCookingIngredient(CraftingType type, ItemStack item) =>
+        this.cookingRecipes.Any(recipe => recipe.Type == type && MatchesIngredient(recipe.Ingredient, item));
+
+    private static bool MatchesShaped(
+        BaseContainer grid,
+        int width,
+        int minX,
+        int minY,
+        ShapedRecipe recipe,
+        bool mirrored)
+    {
+        for (int y = 0; y < recipe.Pattern.Count; y++)
+        {
+            var row = recipe.Pattern[y];
+            for (int x = 0; x < row.Length; x++)
+            {
+                char symbol = row[mirrored ? row.Length - x - 1 : x];
+                var item = grid[1 + (minY + y) * width + minX + x];
+                if (symbol == ' ')
+                {
+                    if (!item.IsNullOrAir() && item!.Count > 0)
+                        return false;
+                }
+                else if (item.IsNullOrAir() || item!.Count <= 0 || !MatchesIngredient(recipe.Key[symbol], item))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static bool MatchesIngredient(Ingredient ingredient, ItemStack item) =>
+        ingredient.Any(candidate => candidate.Holder == item.Holder);
+
+    private static bool MatchesShapeless(
+        List<ItemStack> items,
+        IReadOnlyList<Ingredient> ingredients,
+        int index,
+        bool[] used)
+    {
+        if (index == ingredients.Count)
+            return true;
+
+        // Backtrack because overlapping tags may need the same item assigned to a different ingredient.
+        for (int i = 0; i < items.Count; i++)
+        {
+            if (used[i] || !MatchesIngredient(ingredients[index], items[i]))
+                continue;
+
+            used[i] = true;
+            if (MatchesShapeless(items, ingredients, index + 1, used))
+                return true;
+
+            used[i] = false;
+        }
+
+        return false;
+    }
+}
+
+/// <summary>
+/// A crafting recipe as the recipe book shows it.
+/// </summary>
+/// <param name="DisplayId">The id the client knows it by, in the recipe book packets and when placing it.</param>
+/// <param name="Recipe">The shaped or shapeless recipe.</param>
+/// <param name="Group">
+/// The id of its group, which the client shows as one entry, or <c>null</c> when it has none. Recipes with the same
+/// group name share the id, whoever registered them, like vanilla's.
+/// </param>
+internal sealed record RecipeBookEntry(int DisplayId, IRecipeWithResult Recipe, int? Group)
+{
+    /// <summary>
+    /// The recipe book tab the recipe shows in.
+    /// </summary>
+    public CraftingBookCategory Category => this.Recipe is ShapedRecipe shaped
+        ? shaped.Category
+        : ((ShapelessRecipe)this.Recipe).Category;
+}

@@ -70,6 +70,36 @@ public partial class MainEventHandler
             RefreshCraftingResult(grid, width);
     }
 
+    /// <summary>
+    /// Sets the result slot of the player's open crafting grid to what its ingredients craft with the current recipes,
+    /// and sends the window to the players viewing it if that changed the result. The server calls it when the
+    /// recipes change (a plugin's recipes registered or removed), so that no grid keeps showing a result whose recipe
+    /// is gone, or misses one just added.
+    /// </summary>
+    internal static async ValueTask RefreshCraftingResultAsync(Player player)
+    {
+        var window = player.OpenedContainer ?? player.Inventory;
+
+        using (await BaseContainer.LockWindowAsync(window, player.Inventory))
+        {
+            // Another window opened while the lock was taken: it shows its own result already.
+            if ((player.OpenedContainer ?? player.Inventory) != window
+                || !TryGetCraftingGrid(player, out var grid, out var width)
+                || ShowsResult(grid, CraftingResult(grid, width)))
+            {
+                return;
+            }
+
+            RefreshCraftingResult(grid, width);
+        }
+
+        foreach (var viewer in WindowViewers(player, window))
+        {
+            if (viewer is Player shown)
+                await RefreshWindowAsync(shown, shown.OpenedContainer ?? shown.Inventory, stateId: 0);
+        }
+    }
+
     private static void RefreshCraftingResult(BaseContainer grid, int width)
     {
         var result = CraftingResult(grid, width);

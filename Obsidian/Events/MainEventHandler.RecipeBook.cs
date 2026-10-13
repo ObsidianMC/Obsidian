@@ -10,9 +10,15 @@ public partial class MainEventHandler
 {
     internal static async ValueTask PlaceBookRecipeAsync(IPlayer player, int containerId, int displayId, bool makeAll)
     {
-        if (containerId != (player.OpenedContainer is null ? 0 : player.CurrentContainerId) ||
-            displayId < 0 || displayId >= RecipesRegistry.RecipeBookRecipes.Count)
+        // The same recipes throughout, even if they change meanwhile.
+        var recipes = RecipesRegistry.Current;
+
+        // A recipe that's gone (its plugin unloaded) may still be in a book whose removal the client hasn't had yet.
+        if (containerId != (player.OpenedContainer is null ? 0 : player.CurrentContainerId)
+            || recipes.GetBookEntry(displayId) is not RecipeBookEntry entry)
+        {
             return;
+        }
 
         BaseContainer grid;
         int width;
@@ -29,7 +35,7 @@ public partial class MainEventHandler
         else
             return;
 
-        var recipe = RecipesRegistry.RecipeBookRecipes[displayId];
+        var recipe = entry.Recipe;
         var ingredients = RecipeBookAddPacket.GetIngredients(recipe);
         if (ingredients.Count == 0 || ingredients.Count > width * width ||
             (recipe is ShapedRecipe shaped && (shaped.Pattern.Count > width || shaped.Pattern[0].Length > width)))
@@ -67,7 +73,7 @@ public partial class MainEventHandler
         }
 
         int amount = makeAll ? maximum : Math.Min(1, maximum);
-        if (!makeAll && maximum > 0 && RecipesRegistry.FindRecipe(grid, width)?.Identifier == recipe.Identifier)
+        if (!makeAll && maximum > 0 && recipes.FindRecipe(grid, width) == recipe)
             amount = Math.Min(maximum, gridItems.Where(item => !item.IsNullOrAir()).Min(item => item!.Count) + 1);
 
         var placedItems = new List<ItemStack>();
@@ -149,7 +155,7 @@ public partial class MainEventHandler
             CarriedItem = player.CarriedItem
         });
         if (amount == 0)
-            await player.QueuePacketAsync(new PlaceGhostRecipePacket(containerId, recipe.Identifier));
+            await player.QueuePacketAsync(new PlaceGhostRecipePacket(containerId, recipe));
     }
 
     private static void AddRecipeStock(List<ItemStack> stock, ItemStack item)

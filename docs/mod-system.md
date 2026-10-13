@@ -425,7 +425,9 @@ given no plugin. The server's own instances add for the server, and they're the 
 event arguments and command contexts (`e.Server`), players' connections (`IClient.Server`) and the commands it lists
 (`Command.CommandHandler`). So a plugin adds through its own:
 
-- recipes registered with `IServer.RegisterRecipes` are removed;
+- recipes registered with `IServer.RegisterRecipes`, which crafting and the recipe book use like vanilla's, are
+  removed: they stop matching, leave online players' recipe books and crafting results, and come back under the same
+  recipe book ids when the plugin registers them again (see [plugin-content.md](plugin-content.md#recipes));
 - scoreboards made with `IServer.ScoreboardManager.CreateScoreboard` and boss bars made with `IServer.CreateBossBar`
   are retired: their objective, teams and bars are removed from their players' screens, their names are free again,
   and changing them or showing them again throws `InvalidOperationException` (removing does nothing), so a handler
@@ -450,7 +452,5 @@ removed as it throws.
 
 ## Known gaps
 
-- Recipes plugins register with `IServer.RegisterRecipes` are kept (and removed when they unload) but not used for
-  crafting or the recipe book, which are built from vanilla's recipes at startup.
 - Entities and server players a plugin spawned stay in their worlds when it unloads.
 - Obsidian.MSBuild writes version 2 archives on its `feat/obby-v2` branch, which isn't released yet.

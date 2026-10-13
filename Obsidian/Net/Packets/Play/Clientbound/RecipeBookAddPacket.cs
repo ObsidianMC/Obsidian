@@ -2,43 +2,58 @@ using Obsidian.API.Crafting;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
+/// <summary>
+/// Adds recipes to the client's recipe book, or replaces its whole book with them.
+/// </summary>
 public partial class RecipeBookAddPacket
 {
+    /// <param name="entries">The recipes, which the client knows by their display ids from now on.</param>
+    /// <param name="replace">Whether the client forgets the recipes it had first, as when the player joins.</param>
+    internal RecipeBookAddPacket(IReadOnlyList<RecipeBookEntry> entries, bool replace)
+    {
+        this.Entries = entries;
+        this.Replace = replace;
+    }
+
+    internal IReadOnlyList<RecipeBookEntry> Entries { get; }
+
+    public bool Replace { get; }
+
     public override void Serialize(INetStreamWriter writer)
     {
-        var recipes = RecipesRegistry.RecipeBookRecipes;
-        var groups = new Dictionary<(CraftingBookCategory, string), int>();
-        writer.WriteVarInt(recipes.Count);
-        for (int id = 0; id < recipes.Count; id++)
+        writer.WriteVarInt(this.Entries.Count);
+
+        foreach (var entry in this.Entries)
         {
-            var recipe = recipes[id];
-            var category = recipe is ShapedRecipe shaped ? shaped.Category : ((ShapelessRecipe)recipe).Category;
-            writer.WriteVarInt(id);
+            var recipe = entry.Recipe;
+
+            writer.WriteVarInt(entry.DisplayId);
             WriteRecipeDisplay(writer, recipe);
 
             // OPTIONAL_VAR_INT encodes an absent group as 0 and a present group as its ID + 1.
-            int group = -1;
-            if (!string.IsNullOrEmpty(recipe.Group) && !groups.TryGetValue((category, recipe.Group), out group))
-            {
-                group = groups.Count;
-                groups.Add((category, recipe.Group), group);
-            }
-            writer.WriteVarInt(group + 1);
-            writer.WriteVarInt((int)category);
+            writer.WriteVarInt(entry.Group is int group ? group + 1 : 0);
+            writer.WriteVarInt((int)entry.Category);
             writer.WriteBoolean(true);
+
             var ingredients = GetIngredients(recipe);
             writer.WriteVarInt(ingredients.Count);
+
             foreach (var ingredient in ingredients)
             {
                 var items = ingredient.Select(item => item.Holder.Id).Distinct().ToList();
+
                 // Direct holder sets use count + 1; 0 is reserved for a named tag.
                 writer.WriteVarInt(items.Count + 1);
+
                 foreach (var itemId in items)
                     writer.WriteVarInt(itemId);
             }
+
+            // Neither a notification nor a highlight: the recipe is content the server has, not one just unlocked.
             writer.WriteByte(0);
         }
-        writer.WriteBoolean(true);
+
+        writer.WriteBoolean(this.Replace);
     }
 
     internal static IReadOnlyList<Ingredient> GetIngredients(IRecipeWithResult recipe) => recipe switch
