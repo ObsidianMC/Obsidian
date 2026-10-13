@@ -69,7 +69,8 @@ client. This document describes the design and tracks its progress. The archive 
      NeoForge and Fabric clients with the `minecraft:entity_type` registry. Its entities are mobs (a `PathfinderMob`
      with the type's size, health and speed, no goals of its own), projectiles (flying with gravity and drag, hitting
      the first block or living entity in their way) or objects (falling and resting where they land), and call its
-     `IEntityBehavior`; they're saved by the type's identifier, and kept as saved when the plugin is gone.
+     `IEntityBehavior`; they're saved by the type's identifier. Unloading the plugin takes them out of the levels
+     and keeps them in their chunks as saved (see [What host services add](#what-host-services-add)).
      `IEntity.Type` is null for them, and `IEntity.Definition` names their type. Goals, navigators and goal
      controllers plugins give mobs through the API are dropped when the plugin unloads.
    - Done: connected players follow plugin changes. A client configured with other registries (plugins' items,
@@ -421,9 +422,16 @@ or from its services, and given to `OnLoadedAsync` and `OnServerReadyAsync`; wha
 code makes the call (a library it uses, say). The services its `IServer` leads to are its own too: its
 `CommandHandler.ServiceProvider`, and the scopes created from it, resolve its `IServer` and `ILevelFactory`, and its
 `CommandHandler.RegisterCommands` and `EventDispatcher.RegisterEvents` register its own commands and handlers when
-given no plugin. The server's own instances add for the server, and they're the ones held by what the server shares:
-event arguments and command contexts (`e.Server`), players' connections (`IClient.Server`) and the commands it lists
-(`Command.CommandHandler`). So a plugin adds through its own:
+given no plugin.
+
+What the server shares hands each plugin its own `IServer` too: event arguments (`e.Server`), command and payload
+contexts, and players' connections (`IClient.Server`) give the plugin's instance while its code runs in a call into it
+(its event handlers, commands and their checks, payload handlers, behaviours and goals), and the server's otherwise.
+The arguments aren't copied or changed per handler: the property reads the plugin of the call the current async flow
+is in, which is the flow's own, so concurrent events and a handler's background tasks each see their own plugin, and
+what a handler sets on the shared arguments, like cancelling, the handlers after it see. The server's own handlers and
+commands, even when an event a plugin raised runs them, see the server's instance, which adds for the server. Only the
+commands the server lists keep the server's handler (`Command.CommandHandler`). So a plugin adds through its own:
 
 - recipes registered with `IServer.RegisterRecipes` are removed;
 - scoreboards made with `IServer.ScoreboardManager.CreateScoreboard` and boss bars made with `IServer.CreateBossBar`
@@ -442,15 +450,28 @@ event arguments and command contexts (`e.Server`), players' connections (`IClien
   as they were when registered, so a plugin change that changes the dialogs sends players back through
   configuration, like other content; registering the same dialogs again, as a reload does, doesn't;
 - event handlers and commands registered on the server's `EventDispatcher` and `CommandHandler` without a plugin
-  container count as the plugin's whose code the handler is, like those registered through `IPluginRegistry`.
+  container count as the plugin's whose code the handler is, like those registered through `IPluginRegistry`;
+- server players added with `IServer.AddServerPlayerAsync` leave when it unloads, like other players do (other
+  plugins' handlers see them leave);
+- entities are the plugin's whose code adds them to a level, whichever way: `ILevel.SpawnEntity`, `TryAddEntity`,
+  spawners, or server code the plugin's code calls, like breaking a block dropping items. The innermost plugin code
+  on the call stack decides, as from its ready callback or a task of its own, or else the plugin whose call the async
+  flow is in, as when server code a handler awaits continues. Entities are spawned through objects every plugin
+  shares (levels reached from players, entities and event arguments), so the plugin's own `IServer` can't stand in
+  for them. Unloading removes them from their levels, between the levels' ticks, and players are sent their removal;
+  nothing of the plugin's runs as they go, and no event is raised. Entities of the plugin's entity types go too,
+  whoever spawned them, those loaded from saved chunks included. Unlike vanilla, which drops entities of unknown types
+  as it loads them, Obsidian keeps those in their chunk's saved entities, as it does for every saved entity it can't
+  spawn: so they're kept in their chunk as they were saved, and spawn again once the plugin is loaded again (on the
+  level's next tick) or when their chunk loads with it. The other entities a plugin spawned are gone.
 
-Adding to an unloading plugin's dialogs, recipes, scoreboards, boss bars, generators, event handlers or commands
-throws `InvalidOperationException`, rather than keeping them after it unloads; one added while it starts unloading is
-removed as it throws.
+Adding to an unloading plugin's dialogs, recipes, scoreboards, boss bars, generators, event handlers, commands, server
+players or entities throws `InvalidOperationException`, rather than keeping them after it unloads; one added while it
+starts unloading is removed as it throws. An entity of a plugin's type whose plugin is unloaded or unloading isn't
+added to a level (`TryAddEntity` returns false).
 
 ## Known gaps
 
 - Recipes plugins register with `IServer.RegisterRecipes` are kept (and removed when they unload) but not used for
   crafting or the recipe book, which are built from vanilla's recipes at startup.
-- Entities and server players a plugin spawned stay in their worlds when it unloads.
 - Obsidian.MSBuild writes version 2 archives on its `feat/obby-v2` branch, which isn't released yet.

@@ -10,6 +10,8 @@ public delegate ValueTask PayloadHandler<TPayload>(TPayload payload, PayloadCont
 /// </summary>
 public sealed class PayloadContext
 {
+    private readonly IServer server = null!;
+
     /// <summary>
     /// The connection the payload arrived on.
     /// </summary>
@@ -20,7 +22,15 @@ public sealed class PayloadContext
     /// </summary>
     public IPlayer? Player { get; init; }
 
-    public required IServer Server { get; init; }
+    /// <summary>
+    /// The server. A plugin's handler gets the plugin's own <see cref="IServer"/>, whose additions are the plugin's
+    /// (see <see cref="Events.BaseMinecraftEventArgs.Server"/>).
+    /// </summary>
+    public required IServer Server
+    {
+        get => ServerScope.Resolve(this.server);
+        init => this.server = value;
+    }
 
     /// <summary>
     /// The phase the connection was in when the payload arrived.

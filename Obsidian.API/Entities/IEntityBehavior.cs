@@ -4,8 +4,8 @@ namespace Obsidian.API.Entities;
 /// What the entities of a plugin's entity type do. Implement the methods the entity needs.
 /// </summary>
 /// <remarks>
-/// The behaviour belongs to the plugin and is dropped when the plugin unloads, while its entities stay in the world,
-/// so keep state on the entity or in the plugin, not here.
+/// The behaviour belongs to the plugin and is dropped when the plugin unloads, while its entities are kept in their
+/// chunks as saved until it's loaded again, so keep state on the entity or in the plugin, not here.
 /// </remarks>
 public interface IEntityBehavior
 {

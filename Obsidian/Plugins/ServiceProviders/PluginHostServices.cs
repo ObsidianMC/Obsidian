@@ -12,8 +12,8 @@ namespace Obsidian.Plugins.ServiceProviders;
 
 /// <summary>
 /// The host services a plugin is given, as instances of its own: <see cref="IServer"/> and
-/// <see cref="ILevelFactory"/>, whose scoreboards, boss bars, recipes and generators are the plugin's, so that
-/// unloading it removes them. The rest is the server's services.
+/// <see cref="ILevelFactory"/>, whose scoreboards, boss bars, recipes, server players and generators are the plugin's,
+/// so that unloading it removes them. The rest is the server's services.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -155,13 +155,14 @@ internal sealed class PluginEventDispatcher(IEventDispatcher dispatcher, PluginC
 }
 
 /// <summary>
-/// A plugin's <see cref="IServer"/>: the server, whose scoreboards, boss bars and recipes created through it are the
-/// plugin's, and whose command handler and event dispatcher are the plugin's views of the server's.
+/// A plugin's <see cref="IServer"/>: the server, whose scoreboards, boss bars, recipes and server players created
+/// through it are the plugin's, and whose command handler and event dispatcher are the plugin's views of the server's.
 /// </summary>
 /// <remarks>
-/// What the server shares with everyone, such as its players, connections, worlds and the commands it lists, holds the
-/// server's instances (<see cref="IClient.Server"/>, <see cref="Command.CommandHandler"/>), as event arguments and
-/// command contexts do.
+/// The server hands it out in the plugin's calls too, where shared objects give the server: event arguments, command
+/// and payload contexts, and connections (<see cref="IClient.Server"/>; see <see cref="IPluginScopedServer"/>). What
+/// the server keeps for everyone, like the commands it lists (<see cref="Command.CommandHandler"/>), holds the server's
+/// instances.
 /// </remarks>
 /// <param name="server">The server.</param>
 /// <param name="plugin">The plugin.</param>
@@ -200,6 +201,11 @@ internal sealed class PluginServer(Server server, PluginContainer plugin, IServi
     public ReadOnlyMemory<byte> BrandData => server.BrandData;
 
     public ICommandHandler CommandHandler => this.commandHandler;
+
+    /// <summary>
+    /// Whether this is the plugin's instance of <paramref name="other"/>.
+    /// </summary>
+    public bool Wraps(Server other) => ReferenceEquals(server, other);
 
     /// <summary>
     /// The server's scoreboards, of which those this creates are the plugin's. Null until the server is ready.
@@ -249,7 +255,7 @@ internal sealed class PluginServer(Server server, PluginContainer plugin, IServi
     public bool RemovePlayer(IPlayer player) => server.RemovePlayer(player);
 
     public Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null) =>
-        server.AddServerPlayerAsync(uuid, username, world);
+        server.AddServerPlayerAsync(uuid, username, world, plugin);
 
     public Task<bool> RemoveServerPlayerAsync(IPlayer player) => server.RemoveServerPlayerAsync(player);
 

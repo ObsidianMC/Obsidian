@@ -590,11 +590,16 @@ public sealed class CommandHandler : ICommandHandler
     /// Starts a call into a command's plugin, which releasing the plugin waits for.
     /// </summary>
     /// <param name="refused">Whether the plugin is unloading, so the command mustn't run.</param>
-    /// <returns>The call to end, or null for a command of the server or a refused one.</returns>
+    /// <remarks>
+    /// The call gives the command's context its plugin's own server, and a server's command run inside a plugin's call
+    /// the server's (see <see cref="PluginCall.EnterHost"/>).
+    /// </remarks>
+    /// <returns>The call to end, or null for a refused command or a server's command run outside any plugin.</returns>
     private static PluginCall? TryEnter(Command command, out bool refused)
     {
-        var call = (command.PluginContainer as PluginContainer)?.TryEnter();
-        refused = command.PluginContainer is PluginContainer && call is null;
+        var plugin = command.PluginContainer as PluginContainer;
+        var call = plugin is null ? PluginCall.EnterHost() : plugin.TryEnter();
+        refused = plugin is not null && call is null;
 
         return call;
     }

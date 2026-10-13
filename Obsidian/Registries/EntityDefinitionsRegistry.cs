@@ -87,17 +87,25 @@ internal static class EntityDefinitionsRegistry
 
     /// <summary>
     /// Drops the behaviour of every entity type <paramref name="plugin"/> registered, as the plugin unloads. The types
-    /// stay registered, with their ids and properties, for their entities in the world.
+    /// stay registered, with their ids and properties, for their entities saved in the world.
     /// </summary>
-    public static void ReleasePlugin(IPluginContainer plugin)
+    /// <returns>The plugin's types, whose entities unloading removes from the levels.</returns>
+    public static ImmutableArray<EntityDefinition> ReleasePlugin(IPluginContainer plugin)
     {
+        var released = ImmutableArray.CreateBuilder<EntityDefinition>();
+
         lock (registering)
         {
             foreach (var definition in definitions)
             {
-                if (definition.Binding?.Owner == plugin)
-                    definition.Binding = null;
+                if (definition.Binding?.Owner != plugin)
+                    continue;
+
+                definition.Binding = null;
+                released.Add(definition);
             }
         }
+
+        return released.ToImmutable();
     }
 }

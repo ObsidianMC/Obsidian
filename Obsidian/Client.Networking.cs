@@ -189,13 +189,14 @@ public partial class Client
                 case ClientState.Status: // Server ping/list
                     if (packetData.Id == 0x00)
                     {
-                        var status = new ServerStatus(this.Server, ServerConstants.ServerIcon)
+                        var status = new ServerStatus(this.HostServer, ServerConstants.ServerIcon)
                         {
-                            IsModded = ((Server)this.Server).PayloadChannels.HasChannels
-                                || ((Server)this.Server).GetModdedRegistries().Count > 0
+                            IsModded = ((Server)this.HostServer).PayloadChannels.HasChannels
+                                || ((Server)this.HostServer).GetModdedRegistries().Count > 0
                         };
 
-                        await this.eventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.Server, status));
+                        var request = new ServerStatusRequestEventArgs(this.HostServer, status);
+                        await this.eventDispatcher.ExecuteEventAsync(request);
 
                         SendPacket(new StatusResponsePacket(status));
                     }
@@ -221,7 +222,7 @@ public partial class Client
                     Debug.Assert(Player is not null);
 
                     var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player,
-                        this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
+                        this.HostServer, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
 
                     if (result == EventResult.Cancelled)
                         return;
@@ -232,7 +233,7 @@ public partial class Client
                     Debug.Assert(Player is not null);
 
                     result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player,
-                        this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
+                        this.HostServer, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
 
                     if (result == EventResult.Cancelled)
                         return;

@@ -9,6 +9,7 @@ using Obsidian.Entities;
 using Obsidian.Entities.Factories;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Plugins;
 using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Portals;
@@ -633,7 +634,11 @@ public abstract partial class AbstractLevel : ILevel
                         chunk.UnspawnableEntities.Add(tag);
                     else if ((entity is not Mob { HasAi: true, Alive: false } || entity is EnderDragon) &&
                         !this.Regions.Values.Any(region => region.Entities.Values.Any(existing => existing.Uuid == entity.Uuid)))
-                        this.SpawnEntity(entity);
+                    {
+                        // One whose plugin type started unloading since it was loaded stays as saved.
+                        if (!this.TrySpawnEntity(entity))
+                            chunk.UnspawnableEntities.Add(tag);
+                    }
                 }
 
                 chunk.PendingEntities.Clear();
@@ -965,6 +970,19 @@ public abstract partial class AbstractLevel : ILevel
 
     public IEntity SpawnEntity(IEntity entity)
     {
+        if (!this.TrySpawnEntity(entity))
+            throw new InvalidOperationException($"Could not register entity {entity.EntityId}.");
+
+        return entity;
+    }
+
+    /// <summary>
+    /// Spawns an entity, unless it can't be added to the level (see <see cref="TryAddEntity"/>).
+    /// </summary>
+    /// <returns>Whether the entity spawned.</returns>
+    /// <exception cref="InvalidOperationException">The plugin spawning the entity is unloading.</exception>
+    internal bool TrySpawnEntity(IEntity entity)
+    {
         if (entity is EnderDragon dragon) dragon.EnsureMultipartIds();
         if (entity is Mob mob)
         {
@@ -973,9 +991,9 @@ public abstract partial class AbstractLevel : ILevel
             if (Generator is MobTestGenerator testWorld) testWorld.AssignPen(mob);
         }
         if (!TryAddEntity(entity))
-            throw new InvalidOperationException($"Could not register entity {entity.EntityId}.");
+            return false;
         entity.SpawnEntity();
-        return entity;
+        return true;
     }
 
     public void SpawnExperienceOrbs(VectorD position, short count = 1)
@@ -1255,13 +1273,69 @@ public abstract partial class AbstractLevel : ILevel
         Log.SpawnNotFound(this.Logger, this.Name);
     }
 
+    /// <summary>
+    /// Adds an entity to the level, credited to the plugin whose code adds it, if any, so that unloading the plugin
+    /// removes it (see <see cref="PluginEntities"/>).
+    /// </summary>
+    /// <returns>
+    /// Whether the entity was added: not when its region isn't loaded, an entity with its id is in it, or it's of a
+    /// plugin's entity type whose plugin is unloaded or unloading.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">The plugin adding the entity is unloading.</exception>
     public bool TryAddEntity(IEntity entity)
     {
+        var spawner = PluginEntities.Credit(entity);
+
+        if (!PluginEntities.HasLoadedType(entity))
+            return false;
+
         var (chunkX, chunkZ) = Region.ChunkOf(entity.Position);
 
         var region = GetRegionForChunk(chunkX, chunkZ);
 
-        return region is not null && region.Entities.TryAdd(entity.EntityId, entity);
+        if (region is null || !region.Entities.TryAdd(entity.EntityId, entity))
+            return false;
+
+        // Unloading closes a plugin before removing its entities, so one added meanwhile is removed there or here.
+        if (spawner is { IsClosing: true } || !PluginEntities.HasLoadedType(entity))
+        {
+            region.Entities.TryRemove(new KeyValuePair<int, IEntity>(entity.EntityId, entity));
+            spawner?.ThrowIfClosing();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Runs <paramref name="action"/> between the level's ticks, once the tick running now ends.
+    /// </summary>
+    /// <param name="action">What to run.</param>
+    /// <param name="timeout">How long to wait for the tick to end.</param>
+    /// <returns>Whether the action ran: not if the tick didn't end in time, or the level was disposed.</returns>
+    internal async Task<bool> TryRunBetweenTicksAsync(Action action, TimeSpan timeout)
+    {
+        try
+        {
+            if (!await simulationGate.WaitAsync(timeout))
+                return false;
+        }
+        catch (ObjectDisposedException)
+        {
+            return false;
+        }
+
+        try
+        {
+            action();
+        }
+        finally
+        {
+            simulationGate.Release();
+        }
+
+        return true;
     }
 
     protected void BroadcastTime() =>

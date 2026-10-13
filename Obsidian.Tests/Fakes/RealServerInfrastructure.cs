@@ -240,6 +240,9 @@ internal static class TestServerFactory
         services.AddSingleton<IServerEnvironment, FakeServerEnvironment>();
         services.AddSingleton(eventDispatcher);
         services.AddSingleton(commandHandler);
+
+        // Boss bars the server creates send through it.
+        services.AddSingleton<IPacketBroadcaster>(broadcaster);
         var provider = services.BuildServiceProvider();
 
         var server = new Server(

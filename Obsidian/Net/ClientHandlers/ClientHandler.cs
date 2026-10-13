@@ -6,7 +6,7 @@ using Obsidian.Utilities.Collections;
 namespace Obsidian.Net.ClientHandlers;
 internal abstract partial class ClientHandler
 {
-    protected Server Server => (Server)this.Client.Server;
+    protected Server Server => (Server)this.Client.HostServer;
     protected ILogger Logger => this.Client.Logger;
     protected Player? Player => (Player)this.Client.Player;
 

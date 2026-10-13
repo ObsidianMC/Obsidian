@@ -162,9 +162,15 @@ public sealed partial class EventDispatcher : IEventDispatcher
         foreach (var registration in events.Registrations)
         {
             // The snapshot can hold handlers of a plugin that started unloading; those are skipped, and releasing the
-            // plugin waits for the ones that already run.
+            // plugin waits for the ones that already run. The call also gives the handler its plugin's own server in
+            // the arguments (e.Server), and the server's handlers the server's, without changing the shared arguments.
             var plugin = registration.Plugin as PluginContainer;
-            using var call = plugin is not null && plugin == unloading ? plugin.EnterUnloading() : plugin?.TryEnter();
+            using var call = plugin is null
+                ? PluginCall.EnterHost()
+                : plugin == unloading
+                    ? plugin.EnterUnloading()
+                    : plugin.TryEnter();
+
             if (plugin is not null && call is null)
                 continue;
 

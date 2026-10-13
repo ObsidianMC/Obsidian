@@ -189,6 +189,91 @@ public class Region : IRegion
 
     internal IChunk? GetLoadedChunk(int x, int z) => loadedChunks[x, z] is { IsGenerated: true } chunk ? chunk : null;
 
+    /// <summary>
+    /// Takes an entity out of the region as the plugin owning it unloads (see <see cref="Plugins.PluginEntities"/>).
+    /// </summary>
+    /// <param name="entity">The entity.</param>
+    /// <param name="keepSaved">
+    /// Whether to keep the entity in its chunk as it would be saved, among the saved entities the server can't spawn,
+    /// when the chunk is loaded.
+    /// </param>
+    /// <returns>Whether the entity was in the region.</returns>
+    internal bool Evict(IEntity entity, bool keepSaved)
+    {
+        var entry = new KeyValuePair<int, IEntity>(entity.EntityId, entity);
+        var (chunkX, chunkZ) = ChunkOf(entity.Position);
+        var local = this.GetLoadedChunk(
+            NumericsHelper.Modulo(chunkX, CubicRegionSize),
+            NumericsHelper.Modulo(chunkZ, CubicRegionSize));
+
+        if (!keepSaved || entity is not Entity concrete || local is not Chunk { X: var x, Z: var z } chunk
+            || (x, z) != (chunkX, chunkZ))
+        {
+            return this.Entities.TryRemove(entry);
+        }
+
+        // Under the chunk's entity lock, so a save of the chunk finds the entity either in the level or kept.
+        using (chunk.EntityLock.EnterScope())
+        {
+            if (!this.Entities.TryRemove(entry))
+                return false;
+
+            if (!chunk.EntitiesUnloaded && EntityNbt.Save(concrete) is NbtCompound saved)
+                chunk.UnspawnableEntities.Add(saved);
+
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Spawns again the entities kept in the loaded chunks whose plugin entity types are loaded again (see
+    /// <see cref="Evict"/>), on the level's next tick.
+    /// </summary>
+    internal void RespawnKeptEntities(AbstractLevel level)
+    {
+        foreach (var chunk in this.loadedChunks.OfType<Chunk>())
+        {
+            if (!chunk.IsGenerated)
+                continue;
+
+            var respawning = false;
+
+            using (chunk.EntityLock.EnterScope())
+            {
+                // An unloaded chunk saved its kept entities; they spawn when it's loaded again.
+                if (chunk.EntitiesUnloaded)
+                    continue;
+
+                var stillKept = new List<NbtCompound>();
+
+                foreach (var kept in chunk.UnspawnableEntities)
+                {
+                    if (HasBoundPluginType(kept) && EntityNbt.ToGeneratedEntity(kept) is GeneratedEntity pending)
+                        chunk.PendingEntities.Add(pending);
+                    else
+                        stillKept.Add(kept);
+                }
+
+                respawning = stillKept.Count != chunk.UnspawnableEntities.Count;
+
+                if (respawning)
+                {
+                    chunk.UnspawnableEntities.Clear();
+                    chunk.UnspawnableEntities.AddRange(stillKept);
+                }
+            }
+
+            if (respawning)
+                level.QueueEntitySpawn(chunk);
+        }
+    }
+
+    // Whether a saved entity is of a plugin's entity type whose plugin is loaded.
+    private static bool HasBoundPluginType(NbtCompound saved) =>
+        saved.TryGetTagValue<string>("id", out var id)
+        && EntityDefinitionsRegistry.TryGet(id, out var definition)
+        && definition.Binding is not null;
+
     private async Task<Chunk?> GetChunkFromFileAsync(int x, int z)
     {
         if (await ReadCompoundAsync(this.regionFile, x, z) is not NbtCompound chunkCompound)
