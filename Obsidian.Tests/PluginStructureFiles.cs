@@ -413,6 +413,8 @@ public class PluginStructureFiles
     [InlineData("""{ "horizontal": 16 }""", """{ "bottom": 8 }""", 16, 4064, 8, 0)]
     [InlineData("""{ "horizontal": 16, "vertical": 40 }""", "5", 16, 40, 5, 5)]
     [InlineData("16", """{ "bottom": 2, "top": -1 }""", 16, 16, 2, 0)]
+    [InlineData("16", "0", 16, 16, 0, 0)]
+    [InlineData("16", "{}", 16, 16, 0, 0)]
     [InlineData("""{ "vertical": 40 }""", null, 0, 0, 0, 0)]
     [InlineData("""{ "horizontal": 129 }""", null, 0, 0, 0, 0)]
     [InlineData("16", "-1", 0, 0, 0, 0)]
@@ -446,7 +448,12 @@ public class PluginStructureFiles
 
         var tower = Assert.IsType<WorldData.Structures.Pools.JigsawStructure>(structures.Structures[Tower]);
         Assert.Equal(new(horizontal, vertical), tower.MaxDistanceFromCenter);
-        Assert.Equal(new(bottom, top), tower.DimensionPadding);
+
+        // Like vanilla, an omitted padding differs from an explicit zero: only the latter checks the start's height.
+        if (padding is null)
+            Assert.Null(tower.DimensionPadding);
+        else
+            Assert.Equal(new WorldData.Structures.Pools.DimensionPadding(bottom, top), tower.DimensionPadding);
     }
 
     private static WorldgenStructures Build(StructureFile[] files) => PluginStructures.Build(

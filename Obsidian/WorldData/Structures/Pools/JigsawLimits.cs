@@ -24,15 +24,10 @@ public readonly record struct JigsawMaxDistance(int Horizontal, int Vertical)
 
 /// <summary>
 /// Blocks a jigsaw structure's pieces keep from the bottom and top of the world, like vanilla's
-/// <c>DimensionPadding</c>: a single number is both. Without padding, the start piece isn't checked against the
-/// world's height at all.
+/// <c>DimensionPadding</c>: a single number is both. A structure without padding doesn't check its start piece
+/// against the world's height at all, while one with explicit padding, even of zero, does.
 /// </summary>
 public readonly record struct DimensionPadding(int Bottom, int Top)
 {
-    /// <summary>
-    /// No padding, vanilla's default.
-    /// </summary>
-    public static DimensionPadding Zero => default;
-
     public static implicit operator DimensionPadding(int padding) => new(padding, padding);
 }

@@ -19,10 +19,13 @@ internal static class JigsawPlacement
     /// <param name="maxDepth">How many pieces away from the start the structure may grow.</param>
     /// <param name="projectStartToHeightmap">Moves the start onto this heightmap, offset by <paramref name="position"/>'s Y.</param>
     /// <param name="maxDistance">How far from the start's center pieces may reach, horizontally and vertically.</param>
-    /// <param name="dimensionPadding">Blocks kept free at the bottom and top of the world.</param>
+    /// <param name="dimensionPadding">
+    /// Blocks kept free at the bottom and top of the world. Without it, none are and the start piece may reach outside
+    /// the world's height.
+    /// </param>
     public static StructureStub? AddPieces(StructureGenerationContext context, StructureTemplatePool startPool, string? startJigsawName,
         int maxDepth, Vector position, bool useExpansionHack, HeightmapType? projectStartToHeightmap,
-        JigsawMaxDistance maxDistance, PoolAliasLookup aliases, DimensionPadding dimensionPadding,
+        JigsawMaxDistance maxDistance, PoolAliasLookup aliases, DimensionPadding? dimensionPadding,
         LiquidSettings liquidSettings)
     {
         var random = context.Random;
@@ -67,12 +70,13 @@ internal static class JigsawPlacement
                 // Vanilla's free space: the max distance around the center, within the padded world height.
                 var horizontal = maxDistance.Horizontal;
                 var vertical = maxDistance.Vertical;
+                var padding = dimensionPadding ?? default;
                 var limits = BlockBox.Create(
                     centerX - horizontal,
-                    Math.Max(centerY - vertical, context.MinY + dimensionPadding.Bottom),
+                    Math.Max(centerY - vertical, context.MinY + padding.Bottom),
                     centerZ - horizontal,
                     centerX + horizontal,
-                    Math.Min(centerY + vertical + 1, context.MinY + context.Height - dimensionPadding.Top) - 1,
+                    Math.Min(centerY + vertical + 1, context.MinY + context.Height - padding.Top) - 1,
                     centerZ + horizontal);
                 var free = new FreeSpace(limits);
                 free.Remove(start.BoundingBox);
@@ -89,12 +93,17 @@ internal static class JigsawPlacement
     /// <summary>
     /// Vanilla <c>isStartTooCloseToWorldHeightLimits</c>: with padding, the start piece must stay inside the padded range.
     /// </summary>
+    /// <remarks>
+    /// Vanilla skips the check only for its default padding instance, compared by reference, so it matters whether the
+    /// padding was omitted: an explicit zero, as a number or as <c>{}</c>, still keeps the start inside the world.
+    /// </remarks>
     private static bool IsStartTooCloseToWorldHeightLimits(
         StructureGenerationContext context,
-        DimensionPadding padding,
+        DimensionPadding? padding,
         BlockBox box) =>
-        padding != DimensionPadding.Zero
-        && (box.MinY < context.MinY + padding.Bottom || box.MaxY > context.MinY + context.Height - 1 - padding.Top);
+        padding is DimensionPadding explicitPadding
+        && (box.MinY < context.MinY + explicitPadding.Bottom
+            || box.MaxY > context.MinY + context.Height - 1 - explicitPadding.Top);
 
     /// <summary>
     /// The space pieces may still take, like vanilla's free <c>VoxelShape</c>: a box minus the boxes of placed pieces.

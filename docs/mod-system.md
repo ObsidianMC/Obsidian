@@ -178,7 +178,14 @@ client. This document describes the design and tracks its progress. The archive 
      `can_start_raid`, `can_pillager_patrol_spawn`, `fast_lava`, `piglins_zombify` and `snow_golem_melts` attributes
      (vanilla's nether's too, which Obsidian's copy of vanilla's types lacked, so piglins no longer zombify there),
      and raids run in every level, starting where the dimension type allows, like vanilla's. The end fight stays
-     with `minecraft:the_end`, as vanilla only fights the dragon there.
+     with `minecraft:the_end`, as vanilla only fights the dragon there. Noise files take noises defined inline
+     (seeded from their parameters, as vanilla can't seed them), a number as a spline function's `spline`, and a
+     range as a spawn target's `depth`.
+     Migration: this changes two members of `Obsidian.API`, breaking source and binary compatibility, so plugins
+     using them must be rebuilt. `ClimateParameter.Depth` is an `ImmutableArray<double>` range `[min, max]`, like the
+     other climate parameters, rather than a `double`: read `Depth[0]` and `Depth[1]`, and write a point as
+     `[depth, depth]`. `SplineDensityFunction.Spline` is an `ISpline`, a multipoint `Spline` or a `SplineConstant`,
+     rather than a `Spline`: assign either, and test for `Spline` before using a multipoint spline's members.
    - Phase 3.5, part B (done): inline entries in plugins' level stems, and tree parts in the API. A stem's
      `generator.settings` may define noise settings inline, read like a plugin's noise settings file, with
      inline or named density functions; the plugins whose types they use, and the plugin entries they name, are

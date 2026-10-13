@@ -11,6 +11,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -178,5 +179,77 @@ public class VanillaLevelDataTests
             new NbtTag<float>("", min),
             new NbtTag<float>("", max)
         };
+    }
+
+    private const string SavedMultiNoise = """
+        { "type": "minecraft:multi_noise", "biomes": [{ "biome": "minecraft:plains", "parameters": {
+          "temperature": [-1.0, 1.0], "humidity": 0.5, "continentalness": 0.1, "erosion": 0, "depth": 0,
+          "weirdness": 0, "offset": 0.1 } }] }
+        """;
+
+    /// <summary>
+    /// A saved biome source (numbers with a decimal point are saved as floats) and a file's compare as vanilla's
+    /// codecs read them: climate values quantized in any of their forms, and a checkerboard's defaults and single
+    /// biome.
+    /// </summary>
+    [Theory]
+    [InlineData(
+        SavedMultiNoise,
+        """
+        { "type": "multi_noise", "biomes": [{ "biome": "plains", "parameters": {
+          "temperature": { "min": -1, "max": 1 }, "humidity": [0.5, 0.5], "continentalness": 0.10004, "erosion": 0,
+          "depth": [0, 0], "weirdness": { "min": 0, "max": 0 }, "offset": 0.10004 } }] }
+        """,
+        null)]
+    [InlineData(
+        SavedMultiNoise,
+        """
+        { "type": "multi_noise", "biomes": [{ "biome": "plains", "parameters": {
+          "temperature": [-1, 1], "humidity": 0.5, "continentalness": 0.1001, "erosion": 0, "depth": 0,
+          "weirdness": 0, "offset": 0.1 } }] }
+        """,
+        "generator.biome_source.biomes[0].parameters.continentalness")]
+    [InlineData(
+        """{ "type": "minecraft:checkerboard", "biomes": "minecraft:plains", "scale": 2 }""",
+        """{ "type": "checkerboard", "biomes": ["plains"] }""",
+        null)]
+    [InlineData(
+        """{ "type": "minecraft:checkerboard", "biomes": ["minecraft:plains"], "scale": 3 }""",
+        """{ "type": "checkerboard", "biomes": "plains" }""",
+        "generator.biome_source.scale")]
+    public void SavedStemsCompareAsVanillaReadsThem(string savedSource, string fileSource, string? difference)
+    {
+        using var saved = JsonDocument.Parse($$"""{ "generator": { "biome_source": {{savedSource}} } }""");
+        using var file = JsonDocument.Parse($$"""{ "generator": { "biome_source": {{fileSource}} } }""");
+
+        Assert.Equal(difference, SavedLevelStem.FindDifference(Nbt("", saved.RootElement), file.RootElement));
+
+        static INbtTag Nbt(string name, JsonElement value) => value.ValueKind switch
+        {
+            JsonValueKind.Object => Compound(name, value),
+            JsonValueKind.Array => List(name, value),
+            JsonValueKind.String => new NbtTag<string>(name, value.GetString()!),
+            _ when value.GetRawText().Contains('.') => new NbtTag<float>(name, value.GetSingle()),
+            _ => new NbtTag<int>(name, value.GetInt32())
+        };
+
+        static NbtCompound Compound(string name, JsonElement value)
+        {
+            var compound = new NbtCompound(name);
+            foreach (var property in value.EnumerateObject())
+                compound.Add(Nbt(property.Name, property.Value));
+
+            return compound;
+        }
+
+        static NbtList List(string name, JsonElement value)
+        {
+            var elements = value.EnumerateArray().Select(element => Nbt("", element)).ToList();
+            var list = new NbtList(elements.Count == 0 ? NbtTagType.End : elements[0].Type, name);
+            foreach (var element in elements)
+                list.Add(element);
+
+            return list;
+        }
     }
 }

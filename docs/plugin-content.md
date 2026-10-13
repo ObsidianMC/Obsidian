@@ -829,7 +829,9 @@ the tower grows from, up to its `size`.
   `minecraft:shipwreck`, `minecraft:ocean_ruin`, `minecraft:ruined_portal`, `minecraft:mineshaft`, and so on). A jigsaw
   structure's `max_distance_from_center` is a number from 1 to 128 or `{"horizontal": 1 to 128, "vertical": 1 to
   4064}` (4064 by default), and its `dimension_padding` a number or `{"bottom": ..., "top": ...}` (0 by default, and
-  for values that aren't valid, as vanilla reads them leniently), like vanilla's. Plugins can't add structure or pool
+  for values that aren't valid, as vanilla reads them leniently), like vanilla's. As in vanilla, only an omitted
+  `dimension_padding` lets the start piece reach outside the world's height: an explicit one, even `0` or `{}`, keeps
+  it inside. Plugins can't add structure or pool
   element types in code: Obsidian's structure, piece and pool element bases work on its internal generation context,
   templates and jigsaw placement, which would need an API of their own, like the tree parts'.
 - Structure sets take `minecraft:random_spread` (with `spread_type`) and `minecraft:concentric_rings` placements, with
@@ -1154,8 +1156,13 @@ overworld instead of vanilla's. The data comes from two places:
   1.21.11's data pack format (94.1) are applied over its root, the last listed winning, with vanilla's checks of
   `min_format`, `max_format` and `formats` (an overlays section that fails them is logged and not applied), and its
   `filter` blocks the files of the packs before it whose namespace and path match its patterns (vanilla's rule: any
-  pattern's `namespace` and any pattern's `path`, matched anywhere in the text). Plugins' files and vanilla's own
-  entries aren't filtered. Data packs are read once: a change applies after a restart.
+  pattern's `namespace` and any pattern's `path`, matched anywhere in the text). Patterns are Java regular
+  expressions, with `\Q...\E` quoting and possessive quantifiers; Java-only constructs .NET lacks otherwise, like
+  POSIX classes (`\p{Lower}`), make the filter fail to read, which is logged and leaves it out. As in vanilla, a pack
+  needs a `pack` section with a valid text component `description`, or it isn't loaded at all; formats
+  (`pack_format`, `min_format`, `max_format`, `supported_formats`) that fail vanilla's checks are logged, and the
+  pack is still loaded, as vanilla's server loads it. Plugins' files and vanilla's own entries aren't filtered. Data
+  packs are read once: a change applies after a restart.
   Unlike vanilla, a pack has limits, so that it can't exhaust the server's memory: at most 65,536 files, and at most
   32 MiB per file and 512 MiB in all for the files Obsidian reads, decompressed. A pack over them, or a zip file with
   a path leaving the pack (`..` or `\`), is logged and left out; symbolic links in a pack folder are skipped.

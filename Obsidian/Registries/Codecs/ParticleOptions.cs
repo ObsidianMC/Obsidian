@@ -54,10 +54,10 @@ internal static class ParticleOptions
                     particle.Add(new NbtTag<int>("color", rgb));
                 }
 
-                AddPower(value, path, particle);
+                AddPower(value, path, particle, keepExplicitDefault: false);
                 break;
             case "minecraft:dragon_breath":
-                AddPower(value, path, particle);
+                AddPower(value, path, particle, keepExplicitDefault: true);
                 break;
             case "minecraft:sculk_charge":
                 particle.Add(new NbtTag<float>("roll", Float(Required(value, path, "roll"), Field(path, "roll"))));
@@ -93,10 +93,16 @@ internal static class ParticleOptions
     private static NbtTag<float> Scale(JsonElement value, string path) =>
         new("scale", Float(Required(value, path, "scale"), Field(path, "scale"), 0.01f, 4f));
 
-    // An optional power, 1 by default, which vanilla's optional field leaves out when it's the default.
-    private static void AddPower(JsonElement value, string path, NbtCompound particle)
+    // An optional power, 1 by default. Vanilla's optional field leaves out a value equal to its default: for effect
+    // particles, a power of 1, but for dragon breath, whose default is an options object compared by reference, only
+    // an omitted power, so an explicit 1 is kept there.
+    private static void AddPower(JsonElement value, string path, NbtCompound particle, bool keepExplicitDefault)
     {
-        if (TryGet(value, "power", out var power) && Float(power, Field(path, "power")) is var read and not 1f)
+        if (!TryGet(value, "power", out var power))
+            return;
+
+        var read = Float(power, Field(path, "power"));
+        if (keepExplicitDefault || read != 1f)
             particle.Add(new NbtTag<float>("power", read));
     }
 

@@ -32,9 +32,10 @@ public sealed class JigsawStructure : Structure
     public ImmutableArray<PoolAliasBinding> PoolAliases { get; init; } = [];
 
     /// <summary>
-    /// Blocks pieces keep from the bottom and top of the world; none by default.
+    /// Blocks pieces keep from the bottom and top of the world. Without it, vanilla's default, pieces keep none and the
+    /// start piece isn't checked against the world's height; with it, even zero, the start piece is checked.
     /// </summary>
-    public DimensionPadding DimensionPadding { get; init; }
+    public DimensionPadding? DimensionPadding { get; init; }
 
     public LiquidSettings LiquidSettings { get; init; } = LiquidSettings.ApplyWaterlogging;
 

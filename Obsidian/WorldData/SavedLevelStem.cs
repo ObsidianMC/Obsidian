@@ -1,5 +1,8 @@
 using Obsidian.Nbt;
+using Obsidian.Registries.Codecs;
+using Obsidian.WorldData.Generators.Mojang;
 using System.Globalization;
+using System.IO;
 using System.Text.Json;
 
 namespace Obsidian.WorldData;
@@ -11,11 +14,24 @@ namespace Obsidian.WorldData;
 /// <remarks>
 /// Vanilla's codecs write the stem's values into NBT with their own types, so the comparison allows for how they differ
 /// from a file's JSON: numbers are compared at the precision saved (a float holds a file's <c>0.1</c> as a float),
-/// booleans are bytes, an identifier may leave out <c>minecraft:</c>, and a climate parameter is either one number or a
-/// <c>[min, max]</c> pair of equal numbers. Everything else must be the same, fields included.
+/// booleans are bytes and an identifier may leave out <c>minecraft:</c>. The biome source is compared as vanilla's
+/// codecs read it: climate parameters and offsets quantized, in any of their forms (a number, <c>[min, max]</c> or
+/// <c>{"min": ..., "max": ...}</c>), a checkerboard's <c>scale</c> defaulting to 2 and its biomes a single biome or a
+/// list. Everything else must be the same, fields included.
 /// </remarks>
 internal static class SavedLevelStem
 {
+    private const string BiomeSourcePath = "generator.biome_source";
+
+    private static readonly string[] climateParameters =
+        ["temperature", "humidity", "continentalness", "erosion", "depth", "weirdness"];
+
+    /// <summary>
+    /// Compares the field <paramref name="name"/> of a saved object with a file's, either of them possibly absent.
+    /// </summary>
+    /// <returns>The path of the first difference, or null when they're the same.</returns>
+    private delegate string? FieldComparison(string name, INbtTag? saved, JsonElement? file, string path);
+
     /// <summary>
     /// Finds where a saved stem differs from a file's.
     /// </summary>
@@ -25,28 +41,23 @@ internal static class SavedLevelStem
 
     private static string? Difference(INbtTag saved, JsonElement file, string path)
     {
-        if (IsPair(saved, file) is bool pair)
-            return pair ? null : path;
-
         switch (file.ValueKind)
         {
             case JsonValueKind.Object when saved is NbtCompound compound:
             {
-                var names = file.EnumerateObject().Select(property => property.Name).ToHashSet(StringComparer.Ordinal);
-                if (compound.Select(child => child.Key).FirstOrDefault(name => !names.Contains(name)) is string extra)
-                    return Join(path, extra);
+                if (path != BiomeSourcePath)
+                    return FieldsDifference(compound, file, path, SameField);
 
-                foreach (var property in file.EnumerateObject())
-                {
-                    var child = Join(path, property.Name);
-                    if (!compound.TryGetTag(property.Name, out var value))
-                        return child;
+                var type = file.TryGetProperty("type", out var value) && value.ValueKind == JsonValueKind.String
+                    ? Identifier(value.GetString()!)
+                    : null;
 
-                    if (Difference(value, property.Value, child) is string difference)
-                        return difference;
-                }
-
-                return null;
+                return FieldsDifference(
+                    compound,
+                    file,
+                    path,
+                    (name, savedField, fileField, fieldPath) =>
+                        BiomeSourceField(type, name, savedField, fileField, fieldPath));
             }
             case JsonValueKind.Array when Elements(saved) is IReadOnlyList<INbtTag> elements:
             {
@@ -76,26 +87,146 @@ internal static class SavedLevelStem
         }
     }
 
-    // A climate parameter: one number on one side, a [min, max] pair of the same number on the other. Null when the
-    // values aren't of these shapes.
-    private static bool? IsPair(INbtTag saved, JsonElement file)
+    // Compares the fields both sides have, and those only one has, with compare.
+    private static string? FieldsDifference(
+        NbtCompound saved,
+        JsonElement file,
+        string path,
+        FieldComparison compare)
     {
-        if (file.ValueKind == JsonValueKind.Number
-            && Elements(saved) is [var min, var max])
+        var names = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var property in file.EnumerateObject())
         {
-            return NumberEquals(min, file) && NumberEquals(max, file);
+            names.Add(property.Name);
+
+            var value = saved.TryGetTag(property.Name, out var tag) ? tag : null;
+            if (compare(property.Name, value, property.Value, Join(path, property.Name)) is string difference)
+                return difference;
         }
 
-        if (file.ValueKind == JsonValueKind.Array
-            && file.GetArrayLength() == 2
-            && file[0].ValueKind == JsonValueKind.Number
-            && file[1].ValueKind == JsonValueKind.Number
-            && IsNumber(saved))
+        foreach (var (name, tag) in saved)
         {
-            return NumberEquals(saved, file[0]) && NumberEquals(saved, file[1]);
+            if (!names.Contains(name) && compare(name, tag, null, Join(path, name)) is string difference)
+                return difference;
         }
 
         return null;
+    }
+
+    // A field without a default: both sides must have it, the same.
+    private static string? SameField(string name, INbtTag? saved, JsonElement? file, string path) =>
+        saved is not null && file is JsonElement value ? Difference(saved, value, path) : path;
+
+    // Vanilla's biome source codecs: a checkerboard's scale defaults to 2 and its biomes may be a single biome, and
+    // a multi-noise source's inline biomes have climate parameters in several forms.
+    private static string? BiomeSourceField(
+        string? type,
+        string name,
+        INbtTag? saved,
+        JsonElement? file,
+        string path) =>
+        (type, name) switch
+        {
+            ("minecraft:checkerboard", "scale") => CheckerboardScale(saved) == CheckerboardScale(file) ? null : path,
+            ("minecraft:checkerboard", "biomes") => BiomesDifference(saved, file, path),
+            ("minecraft:multi_noise", "biomes") => ParameterListDifference(saved, file, path),
+            _ => SameField(name, saved, file, path)
+        };
+
+    private static int CheckerboardScale(INbtTag? saved) =>
+        LevelStemData.Scale(saved is null ? null : ToJson(saved));
+
+    private static int CheckerboardScale(JsonElement? file) => LevelStemData.Scale(file);
+
+    // A biome holder set: one biome, a list of them or a tag. Vanilla saves a list of one biome as the biome.
+    private static string? BiomesDifference(INbtTag? saved, JsonElement? file, string path)
+    {
+        if (saved is null || file is not JsonElement value)
+            return path;
+
+        var savedBiomes = Biomes(ToJson(saved));
+        var fileBiomes = Biomes(value);
+
+        return savedBiomes is not null && fileBiomes is not null && savedBiomes.SequenceEqual(fileBiomes)
+            ? null
+            : path;
+
+        static List<string>? Biomes(JsonElement value) => value.ValueKind switch
+        {
+            JsonValueKind.String => [Identifier(value.GetString()!)],
+            JsonValueKind.Array when value.EnumerateArray().All(biome => biome.ValueKind == JsonValueKind.String) =>
+                [.. value.EnumerateArray().Select(biome => Identifier(biome.GetString()!))],
+            _ => null
+        };
+    }
+
+    // A multi-noise source's inline biomes: {"biome": ..., "parameters": ...} entries.
+    private static string? ParameterListDifference(INbtTag? saved, JsonElement? file, string path)
+    {
+        if (saved is null
+            || Elements(saved) is not IReadOnlyList<INbtTag> entries
+            || file is not JsonElement { ValueKind: JsonValueKind.Array } list
+            || entries.Count != list.GetArrayLength())
+        {
+            return path;
+        }
+
+        for (var i = 0; i < entries.Count; i++)
+        {
+            var entryPath = $"{path}[{i}]";
+            if (entries[i] is not NbtCompound entry || list[i].ValueKind != JsonValueKind.Object)
+                return entryPath;
+
+            if (FieldsDifference(entry, list[i], entryPath, EntryField) is string difference)
+                return difference;
+        }
+
+        return null;
+
+        static string? EntryField(string name, INbtTag? saved, JsonElement? file, string path) =>
+            name == "parameters" ? ParameterPointDifference(saved, file, path) : SameField(name, saved, file, path);
+    }
+
+    private static string? ParameterPointDifference(INbtTag? saved, JsonElement? file, string path)
+    {
+        if (saved is not NbtCompound point || file is not JsonElement { ValueKind: JsonValueKind.Object } value)
+            return path;
+
+        return FieldsDifference(point, value, path, PointField);
+
+        static string? PointField(string name, INbtTag? saved, JsonElement? file, string path)
+        {
+            if (name == "offset")
+                return SameQuantized(saved, file, path, Offset);
+
+            return climateParameters.Contains(name)
+                ? SameQuantized(saved, file, path, LevelStemData.Parameter)
+                : SameField(name, saved, file, path);
+        }
+
+        static long Offset(JsonElement value, string path) => Climate.Quantize(CodecJson.Float(value, path, 0f, 1f));
+    }
+
+    // Vanilla keeps climate values quantized, so values in other forms, or that only differ below the quantization's
+    // precision, generate the same.
+    private static string? SameQuantized<T>(
+        INbtTag? saved,
+        JsonElement? file,
+        string path,
+        Func<JsonElement, string, T> read)
+    {
+        if (saved is null || file is not JsonElement value)
+            return path;
+
+        try
+        {
+            return EqualityComparer<T>.Default.Equals(read(ToJson(saved), path), read(value, path)) ? null : path;
+        }
+        catch (InvalidDataException)
+        {
+            return path;
+        }
     }
 
     private static IReadOnlyList<INbtTag>? Elements(INbtTag tag) => tag switch
@@ -106,9 +237,6 @@ internal static class SavedLevelStem
         NbtArray<byte> bytes => [.. bytes.GetArray().Select(value => new NbtTag<byte>("", value))],
         _ => null
     };
-
-    private static bool IsNumber(INbtTag tag) =>
-        tag is NbtTag<byte> or NbtTag<short> or NbtTag<int> or NbtTag<long> or NbtTag<float> or NbtTag<double>;
 
     // At the saved value's precision: a float compares with the file's number read as a float.
     private static bool NumberEquals(INbtTag saved, JsonElement file) => saved switch
@@ -122,7 +250,74 @@ internal static class SavedLevelStem
         _ => false
     };
 
-    private static string Identifier(string value) => value.Contains(':') ? value : $"minecraft:{value}";
+    /// <summary>
+    /// Writes a saved value as JSON, for reading it like a file's: numbers keep their saved precision.
+    /// </summary>
+    private static JsonElement ToJson(INbtTag tag)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+            Write(writer, tag);
+
+        using var document = JsonDocument.Parse(stream.ToArray());
+        return document.RootElement.Clone();
+
+        static void Write(Utf8JsonWriter writer, INbtTag tag)
+        {
+            switch (tag)
+            {
+                case NbtCompound compound:
+                    writer.WriteStartObject();
+
+                    foreach (var (name, child) in compound)
+                    {
+                        writer.WritePropertyName(name);
+                        Write(writer, child);
+                    }
+
+                    writer.WriteEndObject();
+                    break;
+                case NbtTag<string> text:
+                    writer.WriteStringValue(text.Value);
+                    break;
+                case NbtTag<float> value:
+                    writer.WriteNumberValue(value.Value);
+                    break;
+                case NbtTag<double> value:
+                    writer.WriteNumberValue(value.Value);
+                    break;
+                case NbtTag<byte> value:
+                    writer.WriteNumberValue(value.Value);
+                    break;
+                case NbtTag<short> value:
+                    writer.WriteNumberValue(value.Value);
+                    break;
+                case NbtTag<int> value:
+                    writer.WriteNumberValue(value.Value);
+                    break;
+                case NbtTag<long> value:
+                    writer.WriteNumberValue(value.Value);
+                    break;
+                default:
+                    writer.WriteStartArray();
+
+                    foreach (var element in Elements(tag) ?? [])
+                        Write(writer, element);
+
+                    writer.WriteEndArray();
+                    break;
+            }
+        }
+    }
+
+    // Defaults the namespace to minecraft, also for a tag's (#name).
+    private static string Identifier(string value)
+    {
+        if (value.StartsWith('#'))
+            return $"#{Identifier(value[1..])}";
+
+        return value.Contains(':') ? value : $"minecraft:{value}";
+    }
 
     private static string Join(string path, string name) =>
         path.Length == 0 ? name : string.Create(CultureInfo.InvariantCulture, $"{path}.{name}");

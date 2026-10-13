@@ -7,6 +7,7 @@ using Obsidian.Registries;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -69,23 +70,42 @@ public class WorldgenNoiseReading
             @"""depth"":\s*0(\.0)?(?=\s*[,}])",
             "\"depth\": [-0.5, 0.25]");
 
+        // Read with a culture whose minus sign isn't '-': inline noises' seeds mustn't depend on the server's culture.
+        var culture = CultureInfo.CurrentCulture;
+        var minus = (CultureInfo)CultureInfo.InvariantCulture.Clone();
+        minus.NumberFormat.NegativeSign = "−";
+        CultureInfo.CurrentCulture = minus;
+
         var logger = new PluginFeatureFiles.ListLogger();
-        var noise = PluginNoise.Build(
-            [
-                PluginNoise.Parse(
-                    PluginNoise.DensityFunction,
-                    "probe:two_noises",
-                    "test",
-                    Encoding.UTF8.GetBytes(twoNoises)),
-                PluginNoise.Parse(
-                    PluginNoise.DensityFunction,
-                    "probe:flat_spline",
-                    "test",
-                    """{ "type": "minecraft:spline", "spline": 0.25 }"""u8),
-                PluginNoise.Parse(PluginNoise.NoiseSettings, "probe:spawn", "test", Encoding.UTF8.GetBytes(settings))
-            ],
-            [],
-            logger);
+        WorldgenNoise noise;
+
+        try
+        {
+            noise = PluginNoise.Build(
+                [
+                    PluginNoise.Parse(
+                        PluginNoise.DensityFunction,
+                        "probe:two_noises",
+                        "test",
+                        Encoding.UTF8.GetBytes(twoNoises)),
+                    PluginNoise.Parse(
+                        PluginNoise.DensityFunction,
+                        "probe:flat_spline",
+                        "test",
+                        """{ "type": "minecraft:spline", "spline": 0.25 }"""u8),
+                    PluginNoise.Parse(
+                        PluginNoise.NoiseSettings,
+                        "probe:spawn",
+                        "test",
+                        Encoding.UTF8.GetBytes(settings))
+                ],
+                [],
+                logger);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = culture;
+        }
 
         Assert.Empty(logger.Messages);
 
@@ -93,6 +113,7 @@ public class WorldgenNoiseReading
         var add = Assert.IsType<AddDensityFunction>(noise.DensityFunctions["probe:two_noises"]);
         var first = Assert.IsType<BaseNoise>(Assert.IsType<NoiseDensityFunction>(add.Argument1).Noise);
         var second = Assert.IsType<BaseNoise>(Assert.IsType<NoiseDensityFunction>(add.Argument2).Noise);
+        Assert.Equal("obsidian:inline noise -4 [1,0.5]", first.Key);
         Assert.Equal(first.Key, second.Key);
         Assert.DoesNotContain(first.Key, NoiseRegistry.Noises.All.Keys);
 
