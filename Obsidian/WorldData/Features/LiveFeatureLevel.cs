@@ -10,14 +10,25 @@ namespace Obsidian.WorldData.Features;
 /// and writes go to the level's loaded chunks, and <see cref="Commit"/> shows the players what changed.
 /// </summary>
 /// <remarks>
-/// Positions in chunks that aren't loaded read as air and can't be written, as are positions outside the build range.
-/// Use it on the level's tick, which no other write to its chunks races. Light isn't worked out again, as for blocks
+/// Positions in chunks that aren't loaded and complete read as a barrier and can't be written (see
+/// <see cref="ReachedUnloaded"/>); positions outside the build range read as void air and can't be written. Use it on
+/// the level's tick while holding the level's <see cref="Fluids.LevelFluids.TickLock"/>, which players' block writes
+/// take too, so that what a feature reads is still there when it writes. Light isn't worked out again, as for blocks
 /// players place.
 /// </remarks>
 internal sealed class LiveFeatureLevel(AbstractLevel level) : IWorldGenLevel
 {
+    // What chunks that aren't there read as: a block nothing grows into, rather than air a tree would take.
+    private static readonly IBlock unloaded = BlocksRegistry.Barrier;
+
     // The block each written position had before its first write, in the order they were first written.
     private readonly Dictionary<Vector, IBlock> originals = [];
+
+    /// <summary>
+    /// Whether a read or write reached a chunk that isn't loaded and complete, where vanilla would have loaded it: a
+    /// feature placed here may be missing what it would have put there (see <see cref="Rollback"/>).
+    /// </summary>
+    public bool ReachedUnloaded { get; private set; }
 
     public long Seed => level.LevelData.RandomSeed;
 
@@ -44,7 +55,13 @@ internal sealed class LiveFeatureLevel(AbstractLevel level) : IWorldGenLevel
         if (level.IsOutsideBuildHeight(position.Y))
             return BlocksRegistry.VoidAir;
 
-        return ChunkAt(position)?.GetBlock(position) ?? BlocksRegistry.Air;
+        if (ChunkAt(position) is not IChunk chunk)
+        {
+            this.ReachedUnloaded = true;
+            return unloaded;
+        }
+
+        return chunk.GetBlock(position);
     }
 
     public bool SetBlock(Vector position, IBlock block)
@@ -61,13 +78,27 @@ internal sealed class LiveFeatureLevel(AbstractLevel level) : IWorldGenLevel
         return true;
     }
 
-    public bool EnsureCanWrite(Vector position) =>
-        !level.IsOutsideBuildHeight(position.Y) && ChunkAt(position) is not null;
+    public bool EnsureCanWrite(Vector position)
+    {
+        if (level.IsOutsideBuildHeight(position.Y))
+            return false;
+
+        if (ChunkAt(position) is null)
+        {
+            this.ReachedUnloaded = true;
+            return false;
+        }
+
+        return true;
+    }
 
     public int GetHeight(HeightmapType type, int x, int z)
     {
         if (ChunkAt(new Vector(x, 0, z)) is not IChunk chunk)
+        {
+            this.ReachedUnloaded = true;
             return this.MinY;
+        }
 
         for (var y = this.MinY + this.Height - 1; y >= this.MinY; y--)
         {
@@ -114,6 +145,22 @@ internal sealed class LiveFeatureLevel(AbstractLevel level) : IWorldGenLevel
 
             level.BroadcastBlockChange(block, position);
             level.TrackMobEgg(position, block);
+        }
+
+        this.originals.Clear();
+    }
+
+    /// <summary>
+    /// Puts back the blocks written since the level was made, for a feature that can't be placed whole. Players were
+    /// never told about them, as long as <see cref="Commit"/> wasn't called in between.
+    /// </summary>
+    public void Rollback()
+    {
+        foreach (var (position, original) in this.originals)
+        {
+            var chunk = ChunkAt(position)!;
+            chunk.SetBlock(position, original);
+            DataBlockEntity.ApplyBlockChange(chunk, position, original);
         }
 
         this.originals.Clear();

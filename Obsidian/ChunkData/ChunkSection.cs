@@ -18,6 +18,33 @@ public sealed class ChunkSection : IChunkSection
 
     public bool IsEmpty { get; private set; } = true;
 
+    /// <summary>
+    /// Whether the section holds a state that random-ticks (see <see cref="BlockPhysics.IsRandomlyTicking(int)"/>),
+    /// like vanilla's per-section ticking block and fluid counts: random ticks skip sections that don't, without
+    /// drawing a position for them.
+    /// </summary>
+    /// <remarks>
+    /// Worked out when read after the blocks changed, rather than counted on every write, so generation's writes
+    /// don't pay for it. A write racing the read leaves it to be worked out again on the next read.
+    /// </remarks>
+    internal bool IsRandomlyTicking
+    {
+        get
+        {
+            if (this.randomTickingStale)
+            {
+                this.randomTickingStale = false;
+                this.randomlyTicking = this.FindRandomlyTicking();
+            }
+
+            return this.randomlyTicking;
+        }
+    }
+
+    private volatile bool randomTickingStale = true;
+
+    private bool randomlyTicking;
+
     private static readonly byte[] FullSkyLight = new byte[2048];
 
     // SetBlock counts a section empty until it holds a block other than air (only plain air).
@@ -52,10 +79,13 @@ public sealed class ChunkSection : IChunkSection
     }
 
     /// <summary>
-    /// Recomputes <see cref="IsEmpty"/> from the blocks, for sections whose block storage was filled directly (loading).
+    /// Recomputes <see cref="IsEmpty"/> (and <see cref="IsRandomlyTicking"/> when next read) from the blocks, for
+    /// sections whose block storage was filled directly (loading).
     /// </summary>
     public void RecalculateEmpty()
     {
+        this.randomTickingStale = true;
+
         for (var y = 0; y < 16; y++)
         {
             for (var z = 0; z < 16; z++)
@@ -74,6 +104,38 @@ public sealed class ChunkSection : IChunkSection
         this.IsEmpty = true;
     }
 
+    // A state that random-ticks must be in the palette, which holds every state in the section (and maybe some that
+    // were overwritten), so most sections are ruled out without reading their blocks.
+    private bool FindRandomlyTicking()
+    {
+        if (this.BlockStateContainer.Palette is IndirectBlockPalette palette)
+        {
+            var inPalette = false;
+            for (var index = 0; index < palette.Count && !inPalette; index++)
+            {
+                if (palette.TryGetStateId(index, out var stateId))
+                    inPalette = BlockPhysics.IsRandomlyTicking(stateId);
+            }
+
+            if (!inPalette)
+                return false;
+        }
+
+        for (var y = 0; y < 16; y++)
+        {
+            for (var z = 0; z < 16; z++)
+            {
+                for (var x = 0; x < 16; x++)
+                {
+                    if (BlockPhysics.IsRandomlyTicking(this.GetStateId(x, y, z)))
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public IBlock GetBlock(int x, int y, int z) => this.BlockStateContainer.Get(x, y, z);
 
     public BiomeCodec GetBiome(int x, int y, int z) => this.BiomeContainer.Get(x, y, z);
@@ -83,6 +145,7 @@ public sealed class ChunkSection : IChunkSection
             IsEmpty = false;
 
         this.BlockStateContainer.Set(x, y, z, block);
+        this.randomTickingStale = true;
     }
     /// <summary>
     /// Sets the blocks of layer <paramref name="y"/>: entry <c>z * 16 + x</c> of <paramref name="layer"/> indexes
@@ -106,6 +169,7 @@ public sealed class ChunkSection : IChunkSection
         if (this.BlockStateContainer is BlockStateContainer container)
         {
             container.SetLayer(y, layer, blocks);
+            this.randomTickingStale = true;
             return;
         }
 
@@ -114,6 +178,8 @@ public sealed class ChunkSection : IChunkSection
             if (blocks[layer[i]] is { } block)
                 this.BlockStateContainer.Set(i & 15, y, i >> 4, block);
         }
+
+        this.randomTickingStale = true;
     }
 
     public void SetBiome(int x, int y, int z, BiomeCodec biome) => this.BiomeContainer.Set(x, y, z, biome);
@@ -132,6 +198,7 @@ public sealed class ChunkSection : IChunkSection
             IsEmpty = false;
 
         ((BlockStateContainer)this.BlockStateContainer).SetStateId(x, y, z, stateId);
+        this.randomTickingStale = true;
     }
     public void SetLightLevel(int x, int y, int z, LightType lt, int level)
     {

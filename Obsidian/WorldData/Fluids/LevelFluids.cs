@@ -97,8 +97,11 @@ internal sealed class LevelFluids : IFluidLevelAccess
     }
 
     /// <summary>
-    /// The lock fluid ticks and fluid block changes run under. Holding it keeps them from running, for code that reads a
-    /// complete chunk's blocks and ticks together (saving it). Take it after generation's chunk locks, never before.
+    /// The lock fluid ticks and fluid block changes run under, which random ticks and bone meal grow plants under and
+    /// the level's block writes (<see cref="AbstractLevel.SetBlockUntrackedAsync(int, int, int, IBlock, bool)"/>) take,
+    /// so that none of them writes over a change made between its read and its write. Holding it keeps them from
+    /// running, for code that reads a complete chunk's blocks and ticks together (saving it). Take it after
+    /// generation's chunk locks, never before, and don't wait on anything while holding it.
     /// </summary>
     public Lock TickLock => this.sync;
 
