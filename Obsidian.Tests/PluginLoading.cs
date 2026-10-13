@@ -19,6 +19,7 @@ using Obsidian.Commands.Framework;
 using Obsidian.Entities;
 using Obsidian.Plugins;
 using Obsidian.Plugins.Archives;
+using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Registries;
 using Obsidian.Services;
 using Obsidian.Tests.Fakes;
@@ -326,6 +327,39 @@ public sealed class PluginLoading : IDisposable
             await Task.Delay(20);
 
         Assert.Null(container.Plugin);
+    }
+
+    [Fact]
+    public async Task ServicesReachedFromThePluginsServer_AreItsOwn()
+    {
+        var (manager, _, _) = this.CreateManager();
+        var path = Path.Join(this.folder, "probe.obby");
+
+        await File.WriteAllBytesAsync(path, ProbeArchive("1.0.0"));
+        var container = (await manager.LoadPluginAsync(path))!;
+
+        // The plugin's instances of an Obsidian server's services; the test's manager runs on a fake server.
+        await using var context = TestServerFactory.CreateServer($"probe-host-{Guid.NewGuid():N}");
+        await using var serverServices = new ServiceCollection()
+            .AddSingleton<ILevelFactory>(new LevelFactory(null!))
+            .BuildServiceProvider();
+        var host = new PluginHostServices(container, context.Server, serverServices);
+
+        // Its command handler's services, and their scopes, give the plugin's instances.
+        var services = host.Server.CommandHandler.ServiceProvider;
+
+        Assert.Same(host.Server, services.GetRequiredService<IServer>());
+
+        using (var scope = services.CreateScope())
+            Assert.Same(host.Server, scope.ServiceProvider.GetRequiredService<IServer>());
+
+        services.GetRequiredService<ILevelFactory>().RegisterGenerator<HelperGenerator>();
+        Assert.Same(container, PluginGenerators.Find("probe:helper")?.Plugin);
+
+        // So unloading the plugin removes what it added through them.
+        await manager.UnloadPluginAsync(container);
+
+        Assert.Null(PluginGenerators.Find("probe:helper"));
     }
 
     // Kept out of the test method so that no local keeps the first load alive.

@@ -7,7 +7,6 @@ using Obsidian.API.Inventory;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Net.Scoreboard;
 using Obsidian.Plugins;
 using Obsidian.Services;
 using Obsidian.WorldData;
@@ -259,29 +258,23 @@ public sealed partial class Player : Avatar, IClientPlayer
 
         CurrentScoreboard = actualBoard;
 
-        await Client.QueuePacketAsync(new SetObjectivePacket
-        {
-            ObjectiveName = actualBoard.name,
-            Mode = ScoreboardMode.Create,
-            Value = actualBoard.Objective.Value,
-            Type = actualBoard.Objective.DisplayType
-        });
+        // Queued in order with the scoreboard's removal, so a plugin unloading meanwhile can't leave it shown.
+        await actualBoard.DisplayAsync(this.EntityId, slot, this.RunQueueHandlersAsync, this.QueueWithoutHandlers);
+    }
 
-        foreach (var (_, score) in actualBoard.scores)
-        {
-            await Client.QueuePacketAsync(new SetScorePacket
-            {
-                EntityName = score.DisplayText,
-                ObjectiveName = actualBoard.name,
-                Value = score.Value,
-            });
-        }
+    // The two steps of queueing a packet, for a caller that checks what it sends in between. A connection that isn't
+    // a server's (a test's, say) runs no handlers and has no queue, so its packets are sent.
+    private ValueTask<bool> RunQueueHandlersAsync(IClientboundPacket packet) =>
+        this.Client is Client client
+            ? client.RunQueueHandlersAsync(packet)
+            : ValueTask.FromResult(true);
 
-        await Client.QueuePacketAsync(new SetDisplayObjectivePacket
-        {
-            ObjectiveName = actualBoard.name,
-            DisplaySlot = slot
-        });
+    private void QueueWithoutHandlers(IClientboundPacket packet)
+    {
+        if (this.Client is Client client)
+            client.QueueWithoutHandlers(packet);
+        else
+            this.Client.SendPacket(packet);
     }
 
     public async ValueTask OpenInventoryAsync(BaseContainer container)

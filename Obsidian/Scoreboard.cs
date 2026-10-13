@@ -19,8 +19,8 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster) : ISc
     private bool retired;
 
     /// <summary>
-    /// Taken by every change of the scoreboard and its teams, which send their packets before letting go, so none is
-    /// sent after <see cref="Retire"/> removed them.
+    /// Taken by every change of the scoreboard and its teams, and by showing it (see <see cref="DisplayAsync"/>),
+    /// which send their packets before letting go, so none is sent after <see cref="Retire"/> removed them.
     /// </summary>
     internal Lock Gate { get; } = new();
 
@@ -250,6 +250,81 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster) : ISc
             this.Teams.Clear();
             this.Players.Clear();
             this.retired = true;
+        }
+    }
+
+    /// <summary>
+    /// Shows the objective and its scores to a player shown the scoreboard (see <see cref="AddPlayer"/>), in
+    /// <paramref name="slot"/>, through plugins' packet handlers.
+    /// </summary>
+    /// <remarks>
+    /// The packets are queued once the handlers ran, under <see cref="Gate"/>, and only if the player is still shown
+    /// the same objective of a scoreboard that isn't retired. So a removal sent meanwhile, by <see cref="Retire"/>,
+    /// <see cref="RemoveObjective"/> or <see cref="RemovePlayer"/>, isn't followed by the objective showing again,
+    /// and one sent later, under the lock and through the broadcaster, goes out after these packets.
+    /// </remarks>
+    /// <param name="entityId">The player's entity id.</param>
+    /// <param name="slot">Where the objective shows.</param>
+    /// <param name="runHandlers">Runs plugins' handlers for a packet; returns whether it's still to be queued.</param>
+    /// <param name="queue">Queues a packet to the player without running the handlers.</param>
+    /// <exception cref="InvalidOperationException">The scoreboard is retired or has no objective.</exception>
+    internal async ValueTask DisplayAsync(
+        int entityId,
+        DisplaySlot slot,
+        Func<IClientboundPacket, ValueTask<bool>> runHandlers,
+        Action<IClientboundPacket> queue)
+    {
+        ScoreboardObjective objective;
+        var packets = new List<IClientboundPacket>();
+
+        lock (this.Gate)
+        {
+            this.ThrowIfRetired();
+
+            objective = this.Objective
+                ?? throw new InvalidOperationException(
+                    "You must create an objective for the scoreboard before displaying it.");
+
+            packets.Add(new SetObjectivePacket
+            {
+                ObjectiveName = this.name,
+                Mode = ScoreboardMode.Create,
+                Value = objective.Value,
+                Type = objective.DisplayType
+            });
+
+            foreach (var (_, score) in this.scores)
+            {
+                packets.Add(new SetScorePacket
+                {
+                    EntityName = score.DisplayText,
+                    ObjectiveName = this.name,
+                    Value = score.Value,
+                });
+            }
+
+            packets.Add(new SetDisplayObjectivePacket
+            {
+                ObjectiveName = this.name,
+                DisplaySlot = slot
+            });
+        }
+
+        var passed = new List<IClientboundPacket>(packets.Count);
+
+        foreach (var packet in packets)
+        {
+            if (await runHandlers(packet))
+                passed.Add(packet);
+        }
+
+        lock (this.Gate)
+        {
+            if (this.retired || this.Objective != objective || !this.Players.Contains(entityId))
+                return;
+
+            foreach (var packet in passed)
+                queue(packet);
         }
     }
 

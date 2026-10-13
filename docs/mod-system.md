@@ -418,14 +418,19 @@ A mod's Java code can't be converted. See [porting-from-neoforge.md](porting-fro
 Besides `IPluginRegistry`, plugins add to the server through its services, and unloading undoes that too, so a
 reloaded plugin starts clean and its code can unload. Each plugin gets its own `IServer` and `ILevelFactory`, injected
 or from its services, and given to `OnLoadedAsync` and `OnServerReadyAsync`; what they add is that plugin's, whichever
-code makes the call (a library it uses, say). The server's own instances add for the server, and those are what
-event arguments and command contexts hold (`e.Server`), so a plugin adds through its own:
+code makes the call (a library it uses, say). The services its `IServer` leads to are its own too: its
+`CommandHandler.ServiceProvider`, and the scopes created from it, resolve its `IServer` and `ILevelFactory`, and its
+`CommandHandler.RegisterCommands` and `EventDispatcher.RegisterEvents` register its own commands and handlers when
+given no plugin. The server's own instances add for the server, and they're the ones held by what the server shares:
+event arguments and command contexts (`e.Server`), players' connections (`IClient.Server`) and the commands it lists
+(`Command.CommandHandler`). So a plugin adds through its own:
 
 - recipes registered with `IServer.RegisterRecipes` are removed;
 - scoreboards made with `IServer.ScoreboardManager.CreateScoreboard` and boss bars made with `IServer.CreateBossBar`
   are retired: their objective, teams and bars are removed from their players' screens, their names are free again,
   and changing them or showing them again throws `InvalidOperationException` (removing does nothing), so a handler
-  still running can't bring them back. A shown boss bar is retired even when the plugin no longer references it;
+  still running can't bring them back; a scoreboard being shown while packet handlers run isn't shown once they
+  finish, if it retired meanwhile. A shown boss bar is retired even when the plugin no longer references it;
 - generators registered with `ILevelFactory.RegisterGenerator` are registered like
   `IPluginRegistry.RegisterGenerator`'s (keyed by their `Id`, without the namespace rule): unloading removes them and
   stops the levels using them, which resume when the plugin registers them again, in `ConfigureRegistry` or its load
