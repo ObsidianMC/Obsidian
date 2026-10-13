@@ -100,7 +100,7 @@ internal sealed class StructureStartCache
                 && previous.KeepSets(layout.SetLookup) is var kept
                 && kept != previous)
             {
-                this.Replace(key, previous, kept);
+                this.Replace(key, previous, kept, layout.Version);
                 continue;
             }
 
@@ -124,14 +124,14 @@ internal sealed class StructureStartCache
         }
     }
 
-    // Replaces the chunk's starts with those kept of them, unless they changed meanwhile, and captures the state of
-    // those dropped.
-    private void Replace((int X, int Z) key, ChunkStarts previous, ChunkStarts kept)
+    // Replaces the chunk's starts with those kept of them, unless they changed meanwhile or the layout asking is older
+    // than one pruned for since (which may keep starts this layout drops), and captures the state of those dropped.
+    private void Replace((int X, int Z) key, ChunkStarts previous, ChunkStarts kept, long version)
     {
         lock (this.gate)
         {
             this.starts.TryGetValue(key, out var current);
-            if (!ReferenceEquals(current, previous))
+            if (!ReferenceEquals(current, previous) || version < this.prunedVersion)
                 return;
 
             this.Drop(key, previous, kept);
@@ -309,30 +309,34 @@ internal sealed class StructureStartCache
             return;
 
         foreach (var retirement in pending)
+            this.Settle(key, retirement);
+    }
+
+    // Captures a dropped start's state once its placement ends, and lets its plugins go.
+    private void Settle((int X, int Z) key, Retirement retirement)
+    {
+        var state = RetiredState(retirement.Start);
+
+        lock (this.gate)
         {
-            var state = RetiredState(retirement.Start);
+            // Settled by another thread meanwhile.
+            if (!this.retiring.TryGetValue(key, out var current) || !current.Contains(retirement))
+                return;
 
-            lock (this.gate)
+            current = current.Remove(retirement);
+            if (current.IsEmpty)
+                this.retiring.TryRemove(key, out _);
+            else
+                this.retiring[key] = current;
+
+            if (state is not null)
             {
-                // Settled by another thread meanwhile.
-                if (!this.retiring.TryGetValue(key, out var current) || !current.Contains(retirement))
-                    continue;
-
-                current = current.Remove(retirement);
-                if (current.IsEmpty)
-                    this.retiring.TryRemove(key, out _);
-                else
-                    this.retiring[key] = current;
-
-                if (state is not null)
-                {
-                    var states = this.dropped.GetValueOrDefault(key) ?? ImmutableDictionary<string, NbtCompound>.Empty;
-                    this.dropped[key] = states.SetItem(retirement.Start.Structure.Identifier, state);
-                }
+                var states = this.dropped.GetValueOrDefault(key) ?? ImmutableDictionary<string, NbtCompound>.Empty;
+                this.dropped[key] = states.SetItem(retirement.Start.Structure.Identifier, state);
             }
-
-            retirement.Release();
         }
+
+        retirement.Release();
     }
 
     // A retired start's state, or null when it wasn't restored, or when its plugin's code fails to save it: then it
@@ -349,11 +353,15 @@ internal sealed class StructureStartCache
         }
     }
 
-    // Settles every chunk's dropped starts, after pruning.
+    // Settles every chunk's dropped starts, after pruning, each on its own: one whose placement hangs in a plugin's
+    // code doesn't keep the others' plugins from being released.
     private void SettleAll()
     {
-        foreach (var key in this.retiring.Keys)
-            this.Settle(key);
+        foreach (var (key, pending) in this.retiring)
+        {
+            foreach (var retirement in pending)
+                _ = Task.Run(() => this.Settle(key, retirement));
+        }
     }
 
     // Keeps the start's plugins from being released while its state is saved, even though they're unloading.
