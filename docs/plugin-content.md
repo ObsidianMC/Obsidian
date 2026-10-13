@@ -31,6 +31,12 @@ The block's identifier is in the plugin's namespace (its id). Unless `Item` is n
 places the block and is what it drops. A client mod has to declare the same block with the same properties and values
 in the same order: bool properties are `true, false`, int ones ascending, enum ones in the order given.
 
+Structures turn and mirror the block, in templates and pool elements, by its properties named like vanilla's: a
+`facing` of `north`, `east`, `south`, `west`, `up` or `down` turns, an `axis` of `x`, `y` or `z` swaps `x` and `z` on a
+quarter turn, a `rotation` from 0 to 15 turns like a standing sign's, and `north`, `east`, `south` and `west`
+properties (a fence's connections) trade values. Other properties are kept, and a block whose turned state it doesn't
+have (a `facing` without `east`, say) stays as it is.
+
 ## Blocks from JSON
 
 Each `data/<namespace>/blocks/<name>.json` in the plugin's data folder is a block, shaped like an entry of vanilla's
@@ -1017,7 +1023,8 @@ public sealed class CrystalCluster : CustomPoolElement
   like a [feature type's](#feature-types). Obsidian checks the structure's `biomes` at the start `FindStart` gives,
   adapts the terrain around its pieces, and places them: each chunk a piece's `Bounds` reach places its own part, the
   context's `Box`. `CustomPieceContext.SetBlock` places at an offset from the piece's lowest corner, or from a pool
-  element's origin turned with the element (its block turned too), and only inside `Box`; `Level` reaches the world.
+  element's origin turned with the element (its block turned too, a plugin's by its
+  [properties](#blocks-in-code)), and only inside `Box`; `Level` reaches the world.
 - Starts aren't saved with their pieces: like Obsidian's own structures, they're made again from the seed when a chunk
   needs them, also after a restart, and only each piece's box is saved. So `FindStart`, `AddPieces` and `Place` must
   depend only on their context (its random is seeded for the chunk). Types are shared between threads; keep them
