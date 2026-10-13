@@ -93,7 +93,7 @@ public sealed class DataPackStartup : IDisposable
 
             Assert.Equal(-64, CodecRegistry.Dimensions.All["minecraft:overworld"].Element.MinY);
 
-            var dimension = PluginDimensions.Find("startuptest:plains")!;
+            var dimension = PluginDimensions.Find("startuptest:plains").Noise();
             Assert.Equal("minecraft:plains", Assert.Single(dimension.PossibleBiomes).Name);
 
             Assert.Contains(logger.Messages, message => message.Contains("Kept vanilla's dimension type"));
@@ -195,7 +195,7 @@ public sealed class DataPackStartup : IDisposable
             manager.FinishStartup(Path.Join(this.folder, "packs"));
 
             Assert.Equal(0, CodecRegistry.Dimensions.All["minecraft:overworld"].Element.MinY);
-            Assert.Equal("startuptest:tall", PluginDimensions.Find("minecraft:overworld")!.NoiseSettings);
+            Assert.Equal("startuptest:tall", PluginDimensions.Find("minecraft:overworld").Noise().NoiseSettings);
 
             Assert.DoesNotContain(logger.Messages, message => message.Contains("Kept vanilla's dimension type"));
             Assert.DoesNotContain(logger.Messages, message => message.Contains("Left out"));

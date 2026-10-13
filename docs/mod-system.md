@@ -168,11 +168,18 @@ client. This document describes the design and tracks its progress. The archive 
      every plugin change, plugins' code is only called holding a call into the plugin, and levels stop and resume
      generating with their plugins rather than failing or keeping their code loaded.
    - Possible later, gaps noted along the way (see [plugin-content.md](plugin-content.md)):
-     - in level stems: dimension types and biomes defined inline, `minecraft:flat` and `minecraft:debug`
-       generators, and plugin level generators as a stem's `generator`;
+     - in flat level stems: lakes, features and structure overrides (refused for now), which need the noise
+       generator's decoration and structure steps to run over flat terrain;
      - particles' items with components in environment attributes;
      - the server applying biomes' attributes, and those whose mechanics Obsidian lacks (beds, respawn anchors,
        water evaporating); plugins build their own portals.
+   - Done after Phase 3.8, level stems: dimension types and biomes defined inline become the plugin's or pack's
+     entries, named for the stem (`<stem>/type`, `<stem>/biome_<n>`), so they get ids and are synced like files'.
+     Stems may generate with `minecraft:flat` (layers and a biome, through the superflat generator, which now takes
+     settings and any build range), `minecraft:debug` (vanilla's grid of every block state, plugins' included) or a
+     loaded plugin's level generator, which gets the stem's generator object through the optional
+     `IConfigurableLevelGenerator` (new in `Obsidian.API`, additive) and stops and resumes with its plugin. Vanilla's
+     own dimensions keep `minecraft:noise`: other generators there are refused.
    - Done after Phase 3.8: environment attributes take particles with options, sent as vanilla's codecs write
      them, and bed rules any text component as their message. The server applies dimension types'
      `can_start_raid`, `can_pillager_patrol_spawn`, `fast_lava`, `piglins_zombify` and `snow_golem_melts` attributes

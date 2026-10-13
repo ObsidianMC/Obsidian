@@ -40,7 +40,10 @@ namespace Obsidian.WorldData.Generators;
 /// </para>
 /// </remarks>
 /// <param name="identifier">The generator's identifier, which the level saves.</param>
-internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGenerator, IDisposable
+/// <param name="stem">The level stem naming the generator, for a level of a stem's dimension, or null. Its settings
+/// configure each instance of the plugin's generator (see <see cref="IConfigurableLevelGenerator"/>).</param>
+internal sealed partial class PluginLevelGenerator(string identifier, PluginGeneratorStem? stem = null)
+    : IStemGenerator, IDisposable
 {
     // Chunk locks are striped so their number stays bounded.
     private const int LockStripeCount = 1024;
@@ -78,6 +81,12 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
     public string Id { get; } = identifier;
 
     /// <summary>
+    /// The level stem <see cref="Init"/> took for the level, whose settings configure the plugin's generator, or null
+    /// for a level that isn't a stem's, or when the stem went or names another generator since this was created.
+    /// </summary>
+    public LevelStem? Taken { get; private set; }
+
+    /// <summary>
     /// The plugin generating the level, or null when it's stopped.
     /// </summary>
     internal PluginContainer? Plugin => this.instances.Running?.Plugin;
@@ -107,10 +116,31 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
     {
         this.level = level;
 
+        // A level stem's level generates as the files define the stem when it starts, and keeps that (see
+        // PluginDimensions.Take); one that went since its level's creator read it leaves the level out.
+        if (stem is not null && !this.TakeStem(stem))
+            return;
+
         if (PluginGenerators.Find(this.Id) is PluginGenerator registered)
             this.Start(registered);
         else
             Log.Missing(this.Logger, this.LevelName, this.Id);
+    }
+
+    private bool TakeStem(PluginGeneratorStem snapshot)
+    {
+        if (PluginDimensions.Take(snapshot) is not PluginGeneratorStem taken)
+            return false;
+
+        // This generator's identifier is the one the level saves, so a stem naming another one since is left out too.
+        if (taken.Generator != this.Id)
+        {
+            PluginDimensions.GiveBack(taken.Identifier);
+            return false;
+        }
+
+        this.Taken = taken;
+        return true;
     }
 
     /// <summary>
@@ -155,6 +185,11 @@ internal sealed partial class PluginLevelGenerator(string identifier) : ILevelGe
         try
         {
             generator = (ILevelGenerator)ActivatorUtilities.CreateInstance(services, registered.Type);
+
+            // A level stem's settings go to each new instance before it starts.
+            if (this.Taken is PluginGeneratorStem taken && generator is IConfigurableLevelGenerator configurable)
+                configurable.Configure(taken.Settings);
+
             generator.Init(this.level);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)

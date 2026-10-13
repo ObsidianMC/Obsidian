@@ -9,20 +9,16 @@ namespace Obsidian.SourceGenerators.Registry;
 [Generator]
 public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerator
 {
-    private static readonly int WorldGenLength = "worldgen".Length;
-
     public void Initialize(IncrementalGeneratorInitializationContext ctx)
     {
         var jsonFiles = ctx.AdditionalTextsProvider
-           .Where(file => file.Path.Contains("worldgen") && file.Path.EndsWith(".json"))
-           .Select(static (file, ct) =>
+           .Select(static (file, _) => (relative: AssetPaths.GetWorldgenRelativePath(file.Path), file))
+           .Where(static entry => entry.relative is not null
+               && entry.relative.EndsWith(".json", StringComparison.Ordinal))
+           .Select(static (entry, ct) =>
            {
-               var index = file.Path.IndexOf("worldgen");
-
-               var name = file.Path.Substring(index + WorldGenLength + 1)
-                   .Replace(".json", "")
-                   .Replace('\\', '/');
-               var content = file.GetText(ct)!.ToString();
+               var name = entry.relative!.Substring(0, entry.relative.Length - ".json".Length);
+               var content = entry.file.GetText(ct)!.ToString();
 
                return (name, content);
            });

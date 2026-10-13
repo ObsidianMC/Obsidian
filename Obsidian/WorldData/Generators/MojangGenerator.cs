@@ -845,7 +845,9 @@ internal sealed class MojangEndGenerator() : MojangGenerator(MojangDimension.End
 /// Its spawn is searched like the overworld's, with the dimension type's ceiling, so players sent there without a
 /// position land on the ground; vanilla doesn't search spawns outside the overworld.
 /// </remarks>
-internal sealed class LevelStemGenerator(MojangDimension dimension) : MojangGenerator(dimension)
+internal sealed class LevelStemGenerator(MojangDimension dimension) : MojangGenerator(dimension), IStemGenerator
 {
     public override string Id => this.Dimension.Identifier;
+
+    public LevelStem? Taken => this.IsTaken ? this.Dimension : null;
 }

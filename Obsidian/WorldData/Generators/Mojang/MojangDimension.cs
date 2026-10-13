@@ -12,7 +12,7 @@ namespace Obsidian.WorldData.Generators.Mojang;
 /// whose biomes give the carvers. Vanilla's world preset's dimensions are the statics; plugins' are read from their
 /// level stem files (see <see cref="Registries.Codecs.LevelStemData"/>).
 /// </summary>
-internal sealed class MojangDimension
+internal sealed class MojangDimension : LevelStem
 {
     /// <summary>
     /// The overworld (dimension type <c>minecraft:overworld</c>, noise settings <c>minecraft:overworld</c>).
@@ -49,17 +49,10 @@ internal sealed class MojangDimension
     /// </summary>
     public static IReadOnlyList<MojangDimension> Vanilla { get; } = [Overworld, Nether, End];
 
-    private readonly string dimensionType;
-
     // Dropped by Release, with the plugin objects they hold.
     private NoiseSetting? settings;
     private Func<RandomState, IClimateBiomeSource>? createBiomeSource;
     private Func<IReadOnlyList<BiomeCodec>> possibleBiomes;
-
-    /// <summary>
-    /// The dimension's identifier (its level stem's), which is also its level's name.
-    /// </summary>
-    public string Identifier { get; }
 
     /// <summary>
     /// The biomes the dimension's biome source can return, in vanilla's possibleBiomes order, followed by those its
@@ -72,14 +65,7 @@ internal sealed class MojangDimension
     /// <summary>
     /// The possible biomes of the dimension's own biome source, without those of plugins' biome regions.
     /// </summary>
-    public IReadOnlyList<BiomeCodec> SourceBiomes => this.possibleBiomes();
-
-    /// <summary>
-    /// The dimension type's codec, which decides the build range and sky light.
-    /// </summary>
-    public DimensionCodec DimensionType => field ??= CodecRegistry.TryGetDimension(this.dimensionType, out var codec)
-        ? codec!
-        : throw new InvalidOperationException($"Unknown dimension type '{this.dimensionType}'.");
+    public override IReadOnlyList<BiomeCodec> SourceBiomes => this.possibleBiomes();
 
     /// <summary>
     /// The noise settings' identifier, vanilla's or a plugin's, or null for ones defined inline in the level stem.
@@ -119,12 +105,6 @@ internal sealed class MojangDimension
     public Func<RandomState, IClimateBiomeSource> CreateBiomeSource => this.createBiomeSource ?? throw this.Released();
 
     /// <summary>
-    /// The plugins whose types the noise settings or the biome source are made of. Generating calls into them, so the
-    /// dimension can't generate once one unloads (see <see cref="Release"/>).
-    /// </summary>
-    public ImmutableArray<PluginContainer> Plugins { get; }
-
-    /// <summary>
     /// The noises files define that the dimension reads by identifier, like the surface builder's
     /// <c>minecraft:surface</c> (see <see cref="RandomState.GetOrCreateNoise(string)"/>); vanilla's are found
     /// otherwise.
@@ -134,7 +114,7 @@ internal sealed class MojangDimension
     /// <summary>
     /// Whether <see cref="Release"/> dropped the generator's parts.
     /// </summary>
-    public bool IsReleased => this.settings is null;
+    public override bool IsReleased => this.settings is null;
 
     /// <param name="identifier">The level stem's identifier.</param>
     /// <param name="dimensionType">A registered dimension type.</param>
@@ -153,16 +133,14 @@ internal sealed class MojangDimension
         Func<IReadOnlyList<BiomeCodec>> possibleBiomes,
         ImmutableArray<PluginContainer> plugins = default,
         IReadOnlyDictionary<string, BaseNoise>? noises = null)
+        : base(identifier, dimensionType, plugins)
     {
-        this.Identifier = identifier;
-        this.dimensionType = dimensionType;
         this.NoiseSettings = noiseSettings;
         this.settings = settings;
         this.SeaLevel = settings.SeaLevel;
         // Plugins' biome regions join the dimension's biome source as it's created.
         this.createBiomeSource = PluginBiomeRegions.Wrap(identifier, createBiomeSource);
         this.possibleBiomes = possibleBiomes;
-        this.Plugins = plugins.IsDefault ? [] : plugins;
         this.Noises = noises ?? FrozenDictionary<string, BaseNoise>.Empty;
     }
 
@@ -170,7 +148,7 @@ internal sealed class MojangDimension
     /// Drops the noise settings and the biome source, so that the plugins they're made of can unload: the dimension
     /// can't generate any more. Its possible biomes stay, as features are still ordered with them.
     /// </summary>
-    public void Release()
+    public override void Release()
     {
         IReadOnlyList<BiomeCodec> biomes = [.. this.possibleBiomes()];
         this.possibleBiomes = () => biomes;
@@ -190,6 +168,8 @@ internal sealed class MojangDimension
         NoiseRegistry.NoiseSettings.All[noiseSettings],
         createBiomeSource,
         possibleBiomes);
+
+    public override IStemGenerator CreateGenerator() => new LevelStemGenerator(this);
 
     private InvalidOperationException Released() =>
         new($"{this.Identifier} was released when a plugin it generates with unloaded.");
