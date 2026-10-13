@@ -405,7 +405,8 @@ public partial class NetworkBuffer : INetStreamWriter
             return;
         }
 
-        // A stack whose components name an entry the connection lacks is written as nothing, like a missing item.
+        // A stack whose components name an entry the connection lacks is written as nothing, like a missing item, and
+        // so is one whose components hold such a required stack (a bundle's items, a use remainder), which can't be.
         var encoded = new NetworkBuffer { IdMaps = this.IdMaps };
         try
         {
@@ -474,7 +475,7 @@ public partial class NetworkBuffer : INetStreamWriter
         this.WriteVarInt(id is int value ? this.ToRemoteId(registry, value) + 1 : 0);
 
     // The connection's id of this process's id of the registry (see IdMaps). An entry the connection lacks throws, and
-    // WriteItemStack then writes the stack as nothing.
+    // the enclosing optional stack (WriteItemStack) is then written as nothing.
     private int ToRemoteId(string registry, int id)
     {
         if (this.IdMaps is not RegistryIdMaps maps)
@@ -486,12 +487,24 @@ public partial class NetworkBuffer : INetStreamWriter
 
     public void WriteUntrustedItemStack(ItemStack? value) => this.WriteItemStack(value, true);
 
+    /// <summary>
+    /// Writes a stack that can't be empty, like vanilla's <c>ItemStack.STREAM_CODEC</c>.
+    /// </summary>
+    /// <remarks>
+    /// Unlike an optional stack, it can't be written as nothing when it names an entry the connection lacks. That
+    /// throws instead, so the enclosing optional stack (<see cref="WriteItemStack(ItemStack?)"/>) is written as
+    /// nothing.
+    /// </remarks>
     public void WriteRequiredItemStack(ItemStack value)
     {
         if (value is null || value.IsAir || value.Count <= 0)
             throw new ArgumentException("Expected a nonempty stack.", nameof(value));
 
-        this.WriteItemStack(value);
+        var item = value.AsItem();
+        if (this.RemoteItemId(item.Id) < 0)
+            throw new MissingRegistryEntryException(RegistryIdMaps.Items, item.Id);
+
+        this.WriteItemStackPatch(value, false);
     }
 
     public void WriteItemStackList(params ReadOnlySpan<ItemStack?> values) => this.WriteLengthPrefixedArray(this.WriteItemStack, values);
