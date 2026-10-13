@@ -78,7 +78,7 @@ public sealed class WorldgenOverrides : IDisposable
         // Without overrides, the overworld keeps its compiled dimension.
         Assert.Null(PluginDimensions.ReadVanilla("minecraft:overworld", WorldgenNoise.Vanilla));
 
-        var overworld = PluginDimensions.ReadVanilla("minecraft:overworld", noise)!.Dimension;
+        var overworld = PluginDimensions.ReadVanilla("minecraft:overworld", noise)!.Dimension.Noise();
         Assert.Equal(MultiNoiseBiomeSource.NetherBiomes, overworld.PossibleBiomes);
         Assert.Same(MojangDimension.Overworld.Settings, overworld.Settings);
 
@@ -157,7 +157,7 @@ public sealed class WorldgenOverrides : IDisposable
         Assert.Empty(logger.Messages);
 
         // No vanilla file names it, but the overworld is read at runtime to take it.
-        var overworld = PluginDimensions.ReadVanilla("minecraft:overworld", noise)!.Dimension;
+        var overworld = PluginDimensions.ReadVanilla("minecraft:overworld", noise)!.Dimension.Noise();
         var pillar = new RandomState(overworld.Settings, 1234, overworld.Noises)
             .GetOrCreateNoise("minecraft:badlands_pillar");
         var vanilla = new RandomState(overworld.Settings, 1234).GetOrCreateNoise("minecraft:badlands_pillar");
@@ -403,7 +403,7 @@ public sealed class WorldgenOverrides : IDisposable
             PluginNoise.Apply([pluginList, packList], [], logger);
             PluginDimensions.Apply([file], logger);
 
-            Assert.Equal(MultiNoiseBiomeSource.NetherBiomes, PluginDimensions.Find(identifier)!.PossibleBiomes);
+            Assert.Equal(MultiNoiseBiomeSource.NetherBiomes, PluginDimensions.Find(identifier).Noise().PossibleBiomes);
 
             // Another plugin's stem wins, then that plugin unloads: the first stem wins again, read from its bytes.
             var fixedStem = stem.Replace(
@@ -412,10 +412,11 @@ public sealed class WorldgenOverrides : IDisposable
             var other = PluginDimensions.Parse(identifier, "other", Encoding.UTF8.GetBytes(fixedStem));
 
             PluginDimensions.Apply([file, other], logger);
-            Assert.Equal("minecraft:plains", Assert.Single(PluginDimensions.Find(identifier)!.PossibleBiomes).Name);
+            var fixedBiome = Assert.Single(PluginDimensions.Find(identifier).Noise().PossibleBiomes);
+            Assert.Equal("minecraft:plains", fixedBiome.Name);
 
             PluginDimensions.Apply([file], logger);
-            var dimension = PluginDimensions.Find(identifier)!;
+            var dimension = PluginDimensions.Find(identifier).Noise();
 
             Assert.False(dimension.IsReleased);
             Assert.Equal(MultiNoiseBiomeSource.NetherBiomes, dimension.PossibleBiomes);
@@ -440,7 +441,7 @@ public sealed class WorldgenOverrides : IDisposable
         try
         {
             PluginDimensions.Apply([PluginDimensions.Parse(identifier, "plugin", stem)], logger);
-            var snapshot = PluginDimensions.Find(identifier)!;
+            var snapshot = PluginDimensions.Find(identifier).Noise();
 
             // The plugin unloads before the level is created: its dimension goes, released.
             PluginDimensions.Apply([], logger);
@@ -448,7 +449,7 @@ public sealed class WorldgenOverrides : IDisposable
 
             // Back, it follows its file again, as nothing took it.
             PluginDimensions.Apply([PluginDimensions.Parse(identifier, "plugin", stem)], logger);
-            Assert.False(PluginDimensions.Find(identifier)!.IsReleased);
+            Assert.False(PluginDimensions.Find(identifier).Noise().IsReleased);
         }
         finally
         {
@@ -483,7 +484,7 @@ public sealed class WorldgenOverrides : IDisposable
 
             // Building the generator fails after its biome source fixed the regions, before anything generated, as
             // when its biomes' features can't be ordered: its level isn't created.
-            var generator = new LevelStemGenerator(PluginDimensions.Find(identifier)!)
+            var generator = new LevelStemGenerator(PluginDimensions.Find(identifier).Noise())
             {
                 Features = () => throw new InvalidDataException("The features can't be ordered.")
             };
@@ -502,7 +503,7 @@ public sealed class WorldgenOverrides : IDisposable
                 [PluginDimensions.Parse(identifier, "plugin", Encoding.UTF8.GetBytes(desert))],
                 logger);
 
-            var dimension = PluginDimensions.Find(identifier)!;
+            var dimension = PluginDimensions.Find(identifier).Noise();
             Assert.Equal("minecraft:desert", Assert.Single(dimension.PossibleBiomes).Name);
             Assert.DoesNotContain(logger.Messages, message => message.Contains("restart"));
         }

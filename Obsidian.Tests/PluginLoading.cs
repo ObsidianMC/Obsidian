@@ -33,6 +33,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -112,8 +113,12 @@ public sealed class PluginLoading : IDisposable
     [Fact]
     public async Task Reload_ReplacesHandlersAndFreesTheOldLoadContext()
     {
-        // A world generating with the plugin's generator, stopped until a plugin registers it.
-        var generator = new PluginLevelGenerator("probe:flat");
+        // A world generating with the plugin's generator, stopped until a plugin registers it. A level stem names it,
+        // whose settings configure each instance.
+        var settings = JsonDocument.Parse("""{ "type": "probe:flat", "marker": 7 }""").RootElement;
+        var stem = new PluginGeneratorStem("probe:configured", "minecraft:overworld", "probe:flat", settings);
+        var generator = new PluginLevelGenerator("probe:flat", stem);
+        AppContext.SetData(ProbeGenerator.ConfiguredKey, "");
         var world = TestWorldFactory.Create($"probe-{Guid.NewGuid():N}", generator);
         var (manager, dispatcher, server) = this.CreateManager(world);
         var path = Path.Join(this.folder, "probe.obby");
@@ -134,7 +139,13 @@ public sealed class PluginLoading : IDisposable
         // reloaded plugin's generator, built with a scoped service. It stops when that fails, without what it wrote
         // into the chunk, and disposes it too.
         Assert.Equal(1, AppContext.GetData(ProbeGenerator.DisposedKey));
+        Assert.Equal("7;7;", AppContext.GetData(ProbeGenerator.ConfiguredKey));
         Assert.Same(reloaded, generator.Plugin);
+
+        // A stem file naming the loaded plugin's generator reads into such a stem, keeping its settings.
+        const string stemFile = """{ "type": "overworld", "generator": { "type": "probe:flat", "marker": 7 } }""";
+        var read = PluginDimensions.Parse("probe:configured", "test", Encoding.UTF8.GetBytes(stemFile)).Dimension;
+        Assert.Equal(7, Assert.IsType<PluginGeneratorStem>(read).Settings.GetProperty("marker").GetInt32());
         Assert.Same(reloaded.LoadContext, AssemblyLoadContext.GetLoadContext(generator.Generator!.GetType().Assembly));
         Assert.True((await generator.GenerateChunkAsync(1, 0)).IsGenerated);
 
@@ -536,17 +547,24 @@ public sealed class ProbeScopedService
 /// The probe plugin's level generator: a bedrock block in each chunk, and a failure in chunks at
 /// <see cref="FailingChunk"/>. It counts its disposals in <see cref="AppContext"/> data.
 /// </summary>
-public sealed class ProbeGenerator(ProbeScopedService scoped) : ILevelGenerator, IDisposable
+public sealed class ProbeGenerator(ProbeScopedService scoped) : IConfigurableLevelGenerator, IDisposable
 {
     public const int FailingChunk = 99;
 
     public const string DisposedKey = "Obsidian.Tests.ProbeGenerator.Disposed";
+
+    // The markers of the level stem settings each instance was configured with, as "7;7;".
+    public const string ConfiguredKey = "Obsidian.Tests.ProbeGenerator.Configured";
 
     public string Id => "probe:flat";
 
     public ProbeScopedService Scoped { get; } = scoped;
 
     public void Dispose() => AppContext.SetData(DisposedKey, (int)(AppContext.GetData(DisposedKey) ?? 0) + 1);
+
+    public void Configure(JsonElement settings) => AppContext.SetData(
+        ConfiguredKey,
+        $"{AppContext.GetData(ConfiguredKey)}{settings.GetProperty("marker").GetInt32()};");
 
     public void Init(ILevel level)
     {

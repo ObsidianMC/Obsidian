@@ -163,16 +163,18 @@ public sealed class PluginDimensionFiles : IDisposable
         Assert.Throws<InvalidDataException>(() => Parse("minecraft:the_nether", FixedStem));
         var flat = Assert.Throws<InvalidDataException>(() => Parse(
             "stemfiles:flat",
-            """{ "type": "overworld", "generator": { "type": "flat", "settings": {} } }"""));
-        Assert.Contains("minecraft:flat", flat.Message);
+            """
+            { "type": "overworld", "generator": { "type": "flat", "settings": { "layers": [], "lakes": true } } }
+            """));
+        Assert.Contains("lakes", flat.Message);
         Assert.Throws<InvalidDataException>(() => Parse(
             "stemfiles:other",
             FixedStem.Replace("\"settings\": \"minecraft:overworld\"", "\"settings\": \"stemfiles:settings\"")));
 
-        var multiNoise = Parse("stemfiles:meadow", MultiNoiseStem).Dimension;
+        var multiNoise = Parse("stemfiles:meadow", MultiNoiseStem).Dimension.Noise();
         Assert.Equal(["stemfiles:glade", "minecraft:plains"], multiNoise.PossibleBiomes.Select(biome => biome.Name));
 
-        var dimension = Parse("stemfiles:glade_world", FixedStem).Dimension;
+        var dimension = Parse("stemfiles:glade_world", FixedStem).Dimension.Noise();
         Assert.Equal("stemfiles:glade_world", dimension.Identifier);
         Assert.Same(CodecRegistry.Dimensions.All["minecraft:overworld"], dimension.DimensionType);
 
@@ -278,7 +280,7 @@ public sealed class PluginDimensionFiles : IDisposable
             .Replace(
                 """{ "type": "minecraft:fixed", "biome": "stemfiles:glade" }""",
                 """{ "type": "probe:halves", "west": "minecraft:desert", "east": "minecraft:plains" }""");
-        var read = PluginDimensions.Parse("stemfiles:shelf", "test", Bytes(stem), noise).Dimension;
+        var read = PluginDimensions.Parse("stemfiles:shelf", "test", Bytes(stem), noise).Dimension.Noise();
 
         // The types are the test's, not a plugin's, so the plugin whose code the generator runs is given here.
         var plugin = new PluginContainer
@@ -322,11 +324,11 @@ public sealed class PluginDimensionFiles : IDisposable
             "test",
             Bytes(stem.Replace("\"probe:shelf_world\"", ShelfWorld)),
             noise);
-        Assert.Null(inlineFile.Dimension.NoiseSettings);
+        Assert.Null(inlineFile.Dimension.Noise().NoiseSettings);
         Assert.Contains($"{PluginNoise.DensityFunction} probe:ground", inlineFile.Json);
 
         var inlineBuilder = new ChunkBuilder(
-            inlineFile.Dimension,
+            inlineFile.Dimension.Noise(),
             1234,
             generateStructures: false,
             () => WorldgenFeatureSet.Vanilla);
@@ -617,8 +619,12 @@ public sealed class PluginDimensionFiles : IDisposable
 
         // With every modifier, a = [y, z] and b = [y, x] order in the first dimension, but a and c = [z, y] don't in
         // the second. Reverting the second gives a back [x, y], which breaks the first, so it's reverted too.
-        var first = Parse("stemfiles:roll_first", Checkerboard("stemfiles:roll_a", "stemfiles:roll_b")).Dimension;
-        var second = Parse("stemfiles:roll_second", Checkerboard("stemfiles:roll_a", "stemfiles:roll_c")).Dimension;
+        var first = Parse("stemfiles:roll_first", Checkerboard("stemfiles:roll_a", "stemfiles:roll_b"))
+            .Dimension
+            .Noise();
+        var second = Parse("stemfiles:roll_second", Checkerboard("stemfiles:roll_a", "stemfiles:roll_c"))
+            .Dimension
+            .Noise();
 
         FeatureFile[] files =
         [

@@ -747,6 +747,31 @@ public sealed partial class PluginManager : IAsyncDisposable
             }
         }
 
+        // The dimension types and biomes level stems define inline are entries too (see LevelStemInline).
+        foreach (var (path, stem) in PluginDimensions.FindFiles(source.Paths))
+        {
+            try
+            {
+                var data = source.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
+                var name = $"{source.Name}/{path}";
+
+                foreach (var entry in Registries.Codecs.LevelStemInline.Extract(stem, data).Entries)
+                {
+                    files.Add(PluginCodecs.Parse(
+                        entry.Registry,
+                        entry.Identifier,
+                        name,
+                        entry.Json,
+                        IsPlacedFeature,
+                        IsConfiguredCarver));
+                }
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.CodecFileFailed(this.logger, ex, path, source.Location);
+            }
+        }
+
         return files.ToImmutable();
     }
 
@@ -1207,7 +1232,8 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         // A dimension built from a stem is read again once released; vanilla's compiled ones are never released.
         var current = generator.Dimension;
-        var dimension = PluginDimensions.Find(current.Identifier) ?? current;
+        var dimension = PluginDimensions.Find(current.Identifier) as WorldData.Generators.Mojang.MojangDimension
+            ?? current;
         if (dimension.IsReleased)
             return;
 

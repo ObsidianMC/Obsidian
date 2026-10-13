@@ -4,6 +4,7 @@ using Obsidian.API.World.Generator;
 using Obsidian.API.World.Generator.RandomSources;
 using NoiseSetting = Obsidian.API.World.Generator.Noise.NoiseSetting;
 using Obsidian.Plugins;
+using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Mojang;
 using System.IO;
 using System.Text.Json;
@@ -15,18 +16,28 @@ namespace Obsidian.Registries.Codecs;
 /// reads it, into the dimension its generator builds.
 /// </summary>
 /// <remarks>
-/// A stem is <c>{"type": dimension type, "generator": {...}}</c>. Only vanilla's <c>minecraft:noise</c> generator is
-/// supported, with vanilla's or plugins' noise settings and any of vanilla's biome sources:
-/// <c>minecraft:multi_noise</c> (an inline <c>biomes</c> list or a <c>preset</c>), <c>minecraft:fixed</c>,
-/// <c>minecraft:checkerboard</c> and <c>minecraft:the_end</c>, or the biome source types plugins registered.
-/// Noise settings and parameter lists may be named or defined inline; dimension types and biomes are named.
+/// <para>
+/// A stem is <c>{"type": dimension type, "generator": {...}}</c>. The generator is one of vanilla's:
+/// <c>minecraft:noise</c>, with vanilla's or plugins' noise settings and any of vanilla's biome sources
+/// (<c>minecraft:multi_noise</c>, an inline <c>biomes</c> list or a <c>preset</c>, <c>minecraft:fixed</c>,
+/// <c>minecraft:checkerboard</c> and <c>minecraft:the_end</c>) or the biome source types plugins registered;
+/// <c>minecraft:flat</c>, with its layers and biome; or <c>minecraft:debug</c>. As Obsidian's extension, it may also
+/// name a loaded plugin's level generator (see <see cref="PluginGenerators"/>).
+/// </para>
+/// <para>
+/// Noise settings and parameter lists may be named or defined inline. Dimension types and biomes are named here:
+/// those a stem defines inline are entries of their own, named for the stem (see <see cref="LevelStemInline"/>).
 /// Values are checked like vanilla's codecs check them, and references must exist; a stem vanilla would accept but
 /// Obsidian can't generate is rejected with a message saying so.
+/// </para>
 /// </remarks>
 internal static class LevelStemData
 {
     private const string ExpectedParameter =
         "expected a number from -2 to 2, [min, max] or {\"min\": ..., \"max\": ...}";
+
+    // Vanilla's DimensionType.Y_SIZE, the most a flat generator's layers may add up to.
+    private const int MaxLayerHeight = 4064;
 
     /// <summary>
     /// Reads a level stem.
@@ -36,7 +47,7 @@ internal static class LevelStemData
     /// <param name="entries">Gets the noise entries the stem reads: its noise settings, and the density functions
     /// and noises its biome source and inline noise settings name.</param>
     /// <exception cref="InvalidDataException">The stem isn't valid, or Obsidian can't generate it.</exception>
-    public static MojangDimension Read(
+    public static LevelStem Read(
         string identifier,
         JsonElement root,
         WorldgenNoise noise,
@@ -51,11 +62,104 @@ internal static class LevelStemData
         return type switch
         {
             "minecraft:noise" => Noise(identifier, dimensionType, generator, noise, entries),
-            "minecraft:flat" or "minecraft:debug" => throw CodecJson.Error(
+            "minecraft:flat" => new FlatStem(identifier, dimensionType, Flat(generator)),
+            "minecraft:debug" => new DebugStem(identifier, dimensionType),
+            _ when PluginGenerators.Find(type) is not null =>
+                new PluginGeneratorStem(identifier, dimensionType, type, generator.Clone()),
+            _ => throw CodecJson.Error(
                 "generator.type",
-                $"{type} generators aren't supported yet: use minecraft:noise"),
-            _ => throw CodecJson.Error("generator.type", $"{type} isn't a generator type: expected minecraft:noise")
+                $"{type} isn't a generator type: expected minecraft:noise, minecraft:flat, minecraft:debug or a "
+                + "loaded plugin's level generator")
         };
+    }
+
+    // Vanilla's FlatLevelGeneratorSettings codec. Lakes, features and structures aren't generated in flat dimensions
+    // yet, so settings asking for them are refused rather than generated without them.
+    private static FlatLevelSettings Flat(JsonElement generator)
+    {
+        const string path = "generator.settings";
+        var settings = CodecJson.Object(CodecJson.Required(generator, "generator", "settings"), path);
+
+        var layersPath = CodecJson.Field(path, "layers");
+        var layers = CodecJson.Array(CodecJson.Required(settings, path, "layers"), layersPath);
+        var blocks = ImmutableArray.CreateBuilder<IBlock>();
+        var index = 0;
+
+        foreach (var layer in layers.EnumerateArray())
+        {
+            var layerPath = CodecJson.Index(layersPath, index++);
+            CodecJson.Object(layer, layerPath);
+
+            var heightPath = CodecJson.Field(layerPath, "height");
+            var height = CodecJson.Int(CodecJson.Required(layer, layerPath, "height"), heightPath, 0, MaxLayerHeight);
+            if (blocks.Count + height > MaxLayerHeight)
+                throw CodecJson.Error(layersPath, $"the layers' heights add up to more than {MaxLayerHeight}");
+
+            var block = LayerBlock(layer);
+            for (var i = 0; i < height; i++)
+                blocks.Add(block);
+        }
+
+        // Like vanilla's Codec.BOOL.fieldOf(...).orElse(false), only true asks for them.
+        foreach (var flag in (ReadOnlySpan<string>)["lakes", "features"])
+        {
+            if (CodecJson.TryGet(settings, flag, out var value) && value.ValueKind == JsonValueKind.True)
+            {
+                throw CodecJson.Error(
+                    CodecJson.Field(path, flag),
+                    $"flat dimensions don't generate {flag} yet: use false");
+            }
+        }
+
+        // Missing or invalid, vanilla places every structure set; only an empty list places none.
+        var placesNoStructures = CodecJson.TryGet(settings, "structure_overrides", out var structures)
+            && structures.ValueKind == JsonValueKind.Array
+            && structures.GetArrayLength() == 0;
+
+        if (!placesNoStructures)
+        {
+            throw CodecJson.Error(
+                CodecJson.Field(path, "structure_overrides"),
+                "flat dimensions don't generate structures yet: use [] (when it's missing, vanilla places every "
+                + "structure set)");
+        }
+
+        return new FlatLevelSettings(blocks.ToImmutable(), FlatBiome(settings));
+    }
+
+    // A layer's block. Vanilla reads it with orElse(air), so a missing, invalid or unknown block is air.
+    private static IBlock LayerBlock(JsonElement layer)
+    {
+        if (!CodecJson.TryGet(layer, "block", out var value)
+            || value.ValueKind != JsonValueKind.String
+            || !CodecJson.TryParseIdentifier(value.GetString()!, out var identifier))
+        {
+            return BlocksRegistry.Air;
+        }
+
+        try
+        {
+            return BlocksRegistry.Get(identifier);
+        }
+        catch (InvalidOperationException)
+        {
+            return BlocksRegistry.Air;
+        }
+    }
+
+    // The flat generator's biome. Vanilla reads it leniently, so a missing or unknown biome is plains (which vanilla
+    // logs).
+    private static BiomeCodec FlatBiome(JsonElement settings)
+    {
+        if (CodecJson.TryGet(settings, "biome", out var value)
+            && value.ValueKind == JsonValueKind.String
+            && CodecJson.TryParseIdentifier(value.GetString()!, out var identifier)
+            && CodecRegistry.TryGetBiome(identifier, out var biome))
+        {
+            return biome!;
+        }
+
+        return CodecRegistry.Biomes.Plains;
     }
 
     private static MojangDimension Noise(
@@ -153,12 +257,9 @@ internal static class LevelStemData
             + $"{type.Name} ({range.MinY} to {range.MinY + range.Height - 1})";
     }
 
-    // A dimension type by identifier: vanilla's or a plugin's.
+    // A dimension type by identifier: vanilla's or a plugin's, or one the stem defined inline (see LevelStemInline).
     private static string DimensionType(JsonElement value, string path)
     {
-        if (value.ValueKind == JsonValueKind.Object)
-            throw CodecJson.Error(path, "dimension types defined inline aren't supported: name a dimension_type file");
-
         var identifier = CodecJson.Identifier(value, path);
 
         return CodecRegistry.TryGetDimension(identifier, out _)
@@ -378,12 +479,9 @@ internal static class LevelStemData
         return new ClimateParameter(Climate.Quantize(min), Climate.Quantize(max));
     }
 
-    // A biome by identifier: vanilla's or a plugin's.
+    // A biome by identifier: vanilla's or a plugin's, or one the stem defined inline (see LevelStemInline).
     private static BiomeCodec Biome(JsonElement value, string path)
     {
-        if (value.ValueKind == JsonValueKind.Object)
-            throw CodecJson.Error(path, "biomes defined inline aren't supported: name a worldgen/biome file");
-
         var identifier = CodecJson.Identifier(value, path);
 
         return CodecRegistry.TryGetBiome(identifier, out var biome)

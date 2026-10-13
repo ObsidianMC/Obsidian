@@ -317,7 +317,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         }
     }
 
-    private async Task AddPluginDimensionAsync(World world, MojangDimension stem, CancellationToken cancellationToken)
+    private async Task AddPluginDimensionAsync(World world, LevelStem stem, CancellationToken cancellationToken)
     {
         var factory = (LevelFactory)this.levelFactory;
         IDimension? dimension = null;
@@ -327,18 +327,18 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         // doesn't tick, before then. One that fails is left out and disposed; a later plugin load tries it again.
         try
         {
-            // Building the generator orders the features of the dimension's biomes, which fails when they can't be
-            // ordered, as vanilla's would.
-            var generator = new LevelStemGenerator(stem);
+            // Building a noise generator orders the features of the dimension's biomes, which fails when they can't
+            // be ordered, as vanilla's would.
+            var generator = stem.CreateGenerator();
             dimension = factory.CreateDimension(world, stem.Identifier, generator);
 
             // The stem is a snapshot: a plugin may have unloaded, or a reload changed the files, since. The level
             // generates with the dimension it took as it was created, or is left out when that one went; a later
             // plugin load tries it again.
-            if (!generator.IsTaken)
+            if (generator.Taken is not LevelStem taken)
                 return;
 
-            var type = generator.Dimension.DimensionType;
+            var type = taken.DimensionType;
             dimension.Initialize(type);
 
             if (!await dimension.LoadAsync(type))
