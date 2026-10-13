@@ -211,6 +211,31 @@ internal sealed class MerchantContainer : BaseContainer
         await player.QueuePacketAsync(new ContainerSetContentPacket(0, player.Inventory.ToList()) { CarriedItem = player.CarriedItem });
     }
 
+    /// <summary>
+    /// Runs <paramref name="send"/> in turn with the customer's clicks, unless the window closed, with the state id
+    /// their client last got, which their next click must carry to be applied (see <see cref="HandleClickAsync"/>).
+    /// </summary>
+    /// <remarks>
+    /// For a whole window sent outside a click (see MainEventHandler.RefreshStaleWindowAsync). Vanilla advances the id
+    /// with every whole update, but its client takes whatever id it's sent, so resending the current one keeps the
+    /// client and the server agreeing even when the update is left out as obsolete or a plugin cancels it.
+    /// </remarks>
+    internal async ValueTask SendInTurnAsync(Func<int, ValueTask> send)
+    {
+        await clicks.WaitAsync();
+        try
+        {
+            if (closed)
+                return;
+
+            await send(state);
+        }
+        finally
+        {
+            clicks.Release();
+        }
+    }
+
     internal async ValueTask SyncAsync()
     {
         items[2] = CanTrade(offers[selected]) ? new ItemStack(offers[selected].Output, offers[selected].Output.Count) : null;

@@ -1,3 +1,5 @@
+using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Play.Clientbound;
 using System.Threading;
 
 namespace Obsidian.Events;
@@ -99,41 +101,61 @@ internal sealed class WindowSnapshots(
     }
 
     /// <summary>
-    /// Sends <paramref name="packet"/>, which shows a change made to <paramref name="player"/>'s inventory outside a
+    /// Sends <paramref name="changes"/>, which show a change made to <paramref name="player"/>'s inventory outside a
     /// click (an item picked up, say), through plugins' packet handlers, unless the window changed since
     /// <paramref name="state"/>, taken right after the change.
     /// </summary>
+    /// <param name="player">The player whose inventory changed.</param>
+    /// <param name="state">The player's window right after the change.</param>
+    /// <param name="changes">The packets showing the change.</param>
+    /// <param name="lead">
+    /// A packet that goes first, bundled with the changes so that the client handles them in the same tick (an item
+    /// pickup's animation, say), or <c>null</c>. It's sent on its own when the changes are obsolete.
+    /// </param>
     /// <returns>
-    /// Whether it wasn't sent because the window changed; the window is then <see cref="IsStale"/>, and sent whole
-    /// later.
+    /// Whether the changes weren't sent because the window changed; the window is then <see cref="IsStale"/>, and sent
+    /// whole later.
     /// </returns>
     /// <remarks>
-    /// It doesn't take a later whole snapshot's place, which may show more than the change, so it isn't numbered: a
-    /// snapshot checked before the change is queued ahead of it, and one checked after it shows the change too.
+    /// The handlers run for each packet, not for the bundle, so that they see the same packets as when each is
+    /// queued on its own. The changes don't take a later whole snapshot's place, which may show more than them, so
+    /// they aren't numbered: a snapshot checked before the change is queued ahead of them, and one checked after it
+    /// shows the change too.
     /// </remarks>
-    public async ValueTask<bool> SendChangeAsync(IPlayer player, ClickWindowState state, IClientboundPacket packet)
+    public async ValueTask<bool> SendChangeAsync(
+        IPlayer player,
+        ClickWindowState state,
+        IReadOnlyList<ClientboundPacket> changes,
+        ClientboundPacket? lead = null)
     {
-        var packets = await this.RunHandlersAsync([packet]);
+        var approvedLead = lead is not null && await runHandlers(lead) ? lead : null;
+        var approved = await this.RunHandlersAsync(changes);
 
         lock (this.gate)
         {
-            if (!state.IsCurrent(player))
+            var obsolete = !state.IsCurrent(player);
+            if (obsolete)
             {
                 this.stale = true;
-                return true;
+                approved.Clear();
             }
 
-            foreach (var approved in packets)
-                queue(approved);
+            if (approvedLead is not null)
+                approved.Insert(0, approvedLead);
 
-            return false;
+            if (approved.Count == 1)
+                queue(approved[0]);
+            else if (approved.Count > 1)
+                queue(new BundledPacket(approved));
+
+            return obsolete;
         }
     }
 
     // The packets no handler cancelled, in their order.
-    private async ValueTask<List<IClientboundPacket>> RunHandlersAsync(IReadOnlyList<IClientboundPacket> packets)
+    private async ValueTask<List<T>> RunHandlersAsync<T>(IReadOnlyList<T> packets) where T : IClientboundPacket
     {
-        var approved = new List<IClientboundPacket>(packets.Count);
+        var approved = new List<T>(packets.Count);
 
         foreach (var packet in packets)
         {

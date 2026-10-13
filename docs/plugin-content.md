@@ -177,7 +177,8 @@ viewers.
 - A `ContainerClosedEventArgs` handler may open another container for the player; the server then closes only the
   window the event is about.
 - What the server sends about a window (a click's contents, the slots an item or arrow picked up fills) goes through
-  `QueuePacketEventArgs` handlers like any packet. One that the window outdated while they ran isn't sent; the window
+  `QueuePacketEventArgs` handlers like any packet, each packet on its own even when it's then bundled with others
+  (an item pickup's animation with its slots). One that the window outdated while they ran isn't sent; the window
   is captured again instead, and if it keeps changing, the player's next ticks send it whole, through the handlers
   too, once it holds still.
 

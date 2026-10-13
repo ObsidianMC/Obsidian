@@ -385,7 +385,7 @@ public partial class Player
             return false;
 
         // Through plugins' packet handlers, after the lock; a slot changed meanwhile is sent later, with the window.
-        await WindowSnapshots.SendChangeAsync(this, state, update);
+        await WindowSnapshots.SendChangeAsync(this, state, [update]);
 
         return true;
     }
