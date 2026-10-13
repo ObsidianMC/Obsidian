@@ -50,6 +50,12 @@ public class Entity : IEquatable<Entity>, IEntity
     public virtual API.Entities.EntityDefinition? Definition => null;
 
     /// <summary>
+    /// The plugin whose code spawned the entity, which unloading the plugin removes it for, or null for the server's
+    /// (see <see cref="Plugins.PluginEntities"/>).
+    /// </summary>
+    internal Plugins.PluginContainer? SpawnedBy { get; set; }
+
+    /// <summary>
     /// The entity's type's id in the entity type registry, which clients are sent: its vanilla type's, or its plugin
     /// type's.
     /// </summary>

@@ -16,6 +16,7 @@ using Obsidian.Net;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
+using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Services;
 using Obsidian.WorldData;
 using System.Diagnostics;
@@ -25,7 +26,7 @@ using System.Threading;
 
 namespace Obsidian;
 
-public sealed partial class Server : IServer
+public sealed partial class Server : IServer, IPluginScopedServer
 {
     private static int EntityCounter;
 
@@ -672,9 +673,27 @@ public sealed partial class Server : IServer
         return false;
     }
 
-    public async Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null)
+    public Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null) =>
+        this.AddServerPlayerAsync(uuid, username, world, PluginEntities.FindSpawner());
+
+    /// <summary>
+    /// Adds a server-side player for <paramref name="plugin"/>, which unloading the plugin removes, or for the server.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// The player is online already, joining failed, or <paramref name="plugin"/> is unloading.
+    /// </exception>
+    internal async Task<IPlayer> AddServerPlayerAsync(
+        Guid uuid,
+        string username,
+        IWorld? world,
+        PluginContainer? plugin)
     {
-        var player = new ServerPlayer(uuid, username, this, world ?? this.DefaultWorld);
+        plugin?.ThrowIfClosing();
+
+        var player = new ServerPlayer(uuid, username, this, world ?? this.DefaultWorld)
+        {
+            SpawnedBy = plugin
+        };
         await player.LoadAsync();
 
         if (!this.AddPlayer(player))
@@ -686,8 +705,6 @@ public sealed partial class Server : IServer
             var result = await this.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(player, this, DateTimeOffset.Now));
             if (result != EventResult.Completed)
                 throw new InvalidOperationException($"Joining server-side player '{username}' failed with result {result}.");
-
-            return player;
         }
         catch
         {
@@ -701,7 +718,24 @@ public sealed partial class Server : IServer
             }
             throw;
         }
+
+        // Unloading closes the plugin before removing its players, so one that joined meanwhile leaves here.
+        if (plugin is { IsClosing: true })
+        {
+            await this.RemoveServerPlayerAsync(player);
+            plugin.ThrowIfClosing();
+        }
+
+        return player;
     }
+
+    /// <summary>
+    /// The server as the code running now sees it: a plugin's own instance during the plugin's calls (see
+    /// <see cref="PluginCall.CurrentPlugin"/>), so that event arguments, command contexts and connections hand each
+    /// plugin its own.
+    /// </summary>
+    IServer IPluginScopedServer.ForCurrentCall() =>
+        PluginCall.CurrentPlugin?.HostServices?.Server is PluginServer own && own.Wraps(this) ? own : this;
 
     /// <summary>
     /// Keeps track of a player leaving after their connection closed, whose save stopping the server, and the player

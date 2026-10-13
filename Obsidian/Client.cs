@@ -151,7 +151,15 @@ public sealed partial class Client : IClient
 
     public IPlayer? Player { get; private set; }
 
-    public IServer Server { get; }
+    /// <summary>
+    /// The server, or a plugin's own instance of it during the plugin's calls (see <see cref="IPluginScopedServer"/>).
+    /// </summary>
+    public IServer Server => ServerScope.Resolve(this.HostServer);
+
+    /// <summary>
+    /// The server itself, whoever's code runs: the one the connection's own code uses.
+    /// </summary>
+    internal IServer HostServer { get; }
 
     public string? Brand { get; set; }
 
@@ -181,7 +189,7 @@ public sealed partial class Client : IClient
         ServerMetrics serverMetrics, IServiceProvider serviceProvider, ObjectPool<SocketAsyncEventArgs> pool)
     {
         this.eventDispatcher = eventDispatcher;
-        this.Server = server;
+        this.HostServer = server;
         this.loggerFactory = loggerFactory;
         this.userCache = playerCache;
         this.serverMetrics = serverMetrics;
@@ -215,7 +223,7 @@ public sealed partial class Client : IClient
 
             return false;
         }
-        else if (this.Server.Configuration.Whitelist && !this.Server.IsWhitelisted(this.profile.Uuid))
+        else if (this.HostServer.Configuration.Whitelist && !this.HostServer.IsWhitelisted(this.profile.Uuid))
         {
             await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
 
@@ -317,7 +325,7 @@ public sealed partial class Client : IClient
 
         try
         {
-            var args = new QueuePacketEventArgs(this.Server, this, packet);
+            var args = new QueuePacketEventArgs(this.HostServer, this, packet);
             var result = await this.eventDispatcher.ExecuteEventAsync(args);
             if (result == EventResult.Cancelled)
             {
@@ -382,7 +390,7 @@ public sealed partial class Client : IClient
     /// </summary>
     private void EnableCompression()
     {
-        var threshold = this.Server.Configuration.Network.CompressionThreshold;
+        var threshold = this.HostServer.Configuration.Network.CompressionThreshold;
         if (threshold < 0 || this.CompressionEnabled)
             return;
 
@@ -469,10 +477,10 @@ public sealed partial class Client : IClient
         this.pool.Return(this.receiveEvent);
         this.pool.Return(this.sendEvent);
 
-        var removed = this.Server.Connections.Remove(this.Id, out _);
+        var removed = this.HostServer.Connections.Remove(this.Id, out _);
 
         if (this.Player != null)
-            this.Server.RemovePlayer(this.Player);
+            this.HostServer.RemovePlayer(this.Player);
 
         try
         {
@@ -559,11 +567,11 @@ public sealed partial class Client : IClient
             if (this.disconnected)
                 return;
 
-            this.Server.Connections.Remove(this.Id, out _);
+            this.HostServer.Connections.Remove(this.Id, out _);
 
             this.Id = Obsidian.Server.GetNextEntityId();
 
-            this.Server.Connections.TryAdd(this.Id, this);
+            this.HostServer.Connections.TryAdd(this.Id, this);
 
             this.Logger = this.loggerFactory.CreateLogger($"Client({this.Id})");
         }
@@ -587,7 +595,7 @@ public sealed partial class Client : IClient
     internal ValueTask CheckReconfigurationTimeoutAsync()
     {
         var waited = Environment.TickCount64 - this.reconfigurationStarted;
-        if (waited > this.Server.Configuration.Network.KeepAliveTimeoutInterval)
+        if (waited > this.HostServer.Configuration.Network.KeepAliveTimeoutInterval)
             return this.DisconnectAsync("Timed out..");
 
         return ValueTask.CompletedTask;
@@ -627,7 +635,7 @@ public sealed partial class Client : IClient
         // being online, so that the player joining again elsewhere waits for it.
         var leave = this.LeaveAsync();
 
-        this.Server.RemovePlayer(player);
+        this.HostServer.RemovePlayer(player);
         await player.StopSendingChunksAsync();
         await leave;
         await this.QueuePacketAsync(new Net.Packets.Play.Clientbound.StartConfigurationPacket());
@@ -639,7 +647,7 @@ public sealed partial class Client : IClient
     /// </summary>
     internal void StartConfiguration()
     {
-        this.ConfiguredContent = ((Server)this.Server).GetContentVersion();
+        this.ConfiguredContent = ((Server)this.HostServer).GetContentVersion();
         this.Channels.StartConfiguration();
     }
 
@@ -674,7 +682,7 @@ public sealed partial class Client : IClient
         // The new join loads the player as they were saved when they left, and they leave again on their own: the
         // earlier leave finished before the switch. The player is replaced under the leave's lock, so that a leave
         // starting meanwhile is the old player's or the new one's, never the old one's after the switch.
-        var fresh = this.CreatePlayer(player.Uuid, player.Username, this.Server.DefaultWorld);
+        var fresh = this.CreatePlayer(player.Uuid, player.Username, this.HostServer.DefaultWorld);
         fresh.SkinProperties = player.SkinProperties;
 
         lock (this.leavingLock)
@@ -687,7 +695,7 @@ public sealed partial class Client : IClient
             this.leaving = null;
         }
 
-        var concreteServer = (Server)this.Server;
+        var concreteServer = (Server)this.HostServer;
         this.Channels = new ClientChannels(this, concreteServer.PayloadChannels, concreteServer.GetModdedRegistries);
         ((ConfigurationClientHandler)this.handlers[ClientState.Configuration]).Reset();
 
@@ -699,7 +707,7 @@ public sealed partial class Client : IClient
         Server = this.serviceProvider.GetRequiredService<IServer>(),
 
         // Vanilla's isSingleplayerOwner: an integrated server's local player.
-        IsSingleplayerOwner = this.Server is Server { Integrated: IntegratedSession integrated }
+        IsSingleplayerOwner = this.HostServer is Server { Integrated: IntegratedSession integrated }
             && uuid == integrated.Configuration.LocalPlayerUuid
             && integrated.IsLocalPlayer(username)
     };
@@ -736,7 +744,7 @@ public sealed partial class Client : IClient
             this.leaving = leave;
 
             // Tracked before it starts, so a shutdown, or the player joining again, that begins meanwhile waits for it.
-            if (this.Server is Server server)
+            if (this.HostServer is Server server)
                 server.TrackLeave(leave.Task, player.Username);
         }
 
@@ -762,7 +770,8 @@ public sealed partial class Client : IClient
                 await player.StopTickingAsync();
                 player.Level.TryRemovePlayer(player);
 
-                result = await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this.Server, DateTimeOffset.Now));
+                var leaving = new PlayerLeaveEventArgs(player, this.HostServer, DateTimeOffset.Now);
+                result = await this.eventDispatcher.ExecuteEventAsync(leaving);
             }
             catch (Exception ex)
             {
@@ -771,7 +780,7 @@ public sealed partial class Client : IClient
             }
 
             // Leaving saves the player, so a failed leave may have lost their data; it's reported like a failed save.
-            if (result == EventResult.Failed && this.Server is Server server)
+            if (result == EventResult.Failed && this.HostServer is Server server)
                 server.ReportPlayerSaveFailed(player.Username);
         }
         finally

@@ -17,6 +17,11 @@ public interface IClient : IDisposable
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public long? LastKeepAliveId { get; set; }
 
+    /// <summary>
+    /// The server. During a plugin's calls, like its event handlers, commands and behaviours, it's the plugin's own
+    /// <see cref="IServer"/>, whose additions are the plugin's
+    /// (see <see cref="Events.BaseMinecraftEventArgs.Server"/>).
+    /// </summary>
     public IServer Server { get; }
 
     public ClientState State { get; }

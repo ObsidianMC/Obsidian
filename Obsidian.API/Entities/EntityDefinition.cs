@@ -44,7 +44,7 @@ public sealed class EntityDefinition
     // unloads.
     internal EntityBinding? Binding { get; set; }
 
-    // The server's copy of the plugin's properties, kept when the plugin unloads since its entities stay in the world.
+    // The server's copy of the plugin's properties, kept when the plugin unloads since its entities stay saved.
     internal EntitySettings Settings { get; set; } = EntitySettings.From(new EntityProperties());
 
     public override string ToString() => this.Identifier;

@@ -29,8 +29,8 @@ namespace Obsidian.Plugins;
 /// tried again whenever the loaded plugins change.
 /// </para>
 /// <para>
-/// Everything a plugin registers (commands, events, payload channels, services) is removed when it unloads, so that its
-/// collectible load context can unload too.
+/// Everything a plugin registers (commands, events, payload channels, services) is removed when it unloads, with the
+/// entities and server players it spawned, so that its collectible load context can unload too.
 /// </para>
 /// </remarks>
 public sealed partial class PluginManager : IAsyncDisposable
@@ -473,6 +473,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             this.ApplyFeatures();
             this.ApplySpawns();
             await this.AddDimensionLevelsAsync();
+            this.RespawnKeptEntities();
             container.Loaded = true;
 
             await container.Plugin.OnLoadedAsync(container.HostServices.Server);
@@ -560,8 +561,11 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         ItemsRegistry.ReleasePlugin(pluginContainer);
         BlocksRegistry.ReleasePlugin(pluginContainer);
-        EntityDefinitionsRegistry.ReleasePlugin(pluginContainer);
+        var entityTypes = EntityDefinitionsRegistry.ReleasePlugin(pluginContainer);
         PluginGenerators.Release(pluginContainer);
+
+        // Once its handlers and its types' behaviours are gone, so that nothing of the plugin's runs as they go.
+        await this.RemoveEntitiesAsync(pluginContainer, entityTypes);
 
         if (pluginContainer.LoadContext is not null)
             this.commandHandler.UnregisterArgumentParsers(pluginContainer.LoadContext);
@@ -633,6 +637,63 @@ public sealed partial class PluginManager : IAsyncDisposable
                 if (ReferenceEquals(menu.Owner, pluginContainer))
                     menu.Owner = null;
             }
+        }
+    }
+
+    /// <summary>
+    /// Removes the server players <paramref name="plugin"/> added, and the entities it owns from every level (see
+    /// <see cref="PluginEntities"/>), as it unloads.
+    /// </summary>
+    /// <remarks>
+    /// Each level's entities are removed between its ticks. Inside a call into a plugin, which a tick may be waiting
+    /// for, or when a tick doesn't end in time, they're removed on the level's next tick instead.
+    /// </remarks>
+    private async Task RemoveEntitiesAsync(PluginContainer plugin, ImmutableArray<API.Entities.EntityDefinition> types)
+    {
+        if (this.server is Server concrete)
+        {
+            var players = concrete.OnlinePlayers.Values
+                .OfType<ServerPlayer>()
+                .Where(player => player.SpawnedBy == plugin)
+                .ToList();
+
+            // They leave like other players; the plugin's handlers of that are gone already.
+            foreach (var player in players)
+            {
+                try
+                {
+                    await concrete.RemoveServerPlayerAsync(player);
+                }
+                catch (Exception ex)
+                {
+                    Log.EntityRemovalFailed(this.logger, ex, plugin.Info.Name);
+                }
+            }
+        }
+
+        foreach (var level in this.Levels())
+        {
+            void Remove() => PluginEntities.RemoveFrom(level, plugin, types);
+
+            if (!PluginCall.InsideAny && await level.TryRunBetweenTicksAsync(Remove, drainTimeout))
+                continue;
+
+            level.EnqueueEntityAction(() =>
+            {
+                Remove();
+                return default;
+            });
+        }
+    }
+
+    // Spawns again the entities of plugins' types kept in loaded chunks while their plugins were unloaded, once their
+    // types are loaded again.
+    private void RespawnKeptEntities()
+    {
+        foreach (var level in this.Levels())
+        {
+            foreach (var region in level.Regions.Values.OfType<WorldData.Region>())
+                region.RespawnKeptEntities(level);
         }
     }
 
@@ -1459,6 +1520,10 @@ public sealed partial class PluginManager : IAsyncDisposable
         [LoggerMessage(Level = LogLevel.Information,
             Message = "Unloaded plugin {PluginName} in {ElapsedMilliseconds}ms")]
         public static partial void Unloaded(ILogger logger, string pluginName, long elapsedMilliseconds);
+
+        [LoggerMessage(Level = LogLevel.Error,
+            Message = "Couldn't remove a server player of unloading plugin {PluginName}")]
+        public static partial void EntityRemovalFailed(ILogger logger, Exception exception, string pluginName);
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginName} failed while unloading")]
         public static partial void UnloadingFailed(ILogger logger, Exception exception, string pluginName);

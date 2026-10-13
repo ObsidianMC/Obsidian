@@ -370,7 +370,11 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             if (!terrain.IsFree(mob.Dimension.CreateBBFromPosition(position)) || level.GetEntitiesInRange(position, 2)
                 .Any(entity => MobTerrain.Overlaps(mob.Dimension.CreateBBFromPosition(position), entity.Dimension.CreateBBFromPosition(entity.Position))))
                 continue;
-            level.SpawnEntity(mob);
+
+            // A plugin's mob doesn't spawn once its plugin started unloading.
+            if (!level.TrySpawnEntity(mob))
+                continue;
+
             spawned++;
 
             if (cost is not null)

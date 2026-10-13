@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Blocks;
+using Obsidian.API.Boss;
 using Obsidian.API.Builders;
 using Obsidian.API.Entities;
 using Obsidian.API.Configuration;
@@ -520,6 +521,14 @@ public sealed class ProbePlugin : PluginBase
 {
     public const string CallsKey = "Obsidian.Tests.ProbePlugin.Calls";
 
+    // The chat messages its handler acts on, and the AppContext data it records what it did in.
+    public const string SpawnMessage = "probe:spawn";
+    public const string ServerMessage = "probe:server";
+    public const string BatKey = "Obsidian.Tests.ProbePlugin.Bat";
+    public const string BotKey = "Obsidian.Tests.ProbePlugin.Bot";
+    public const string ServerKey = "Obsidian.Tests.ProbePlugin.Server";
+    public const string BossBarKey = "Obsidian.Tests.ProbePlugin.BossBar";
+
     [Inject]
     public ProbeService? Service { get; set; }
 
@@ -543,6 +552,8 @@ public sealed class ProbePlugin : PluginBase
             AppContext.SetData(CallsKey, (int)(AppContext.GetData(CallsKey) ?? 0) + 1);
             return ValueTask.CompletedTask;
         });
+
+        pluginRegistry.MapEvent<IncomingChatMessageEventArgs>(this.OnChatAsync);
 
         pluginRegistry.RegisterItem("probe:gem", new ItemProperties
         {
@@ -603,6 +614,44 @@ public sealed class ProbePlugin : PluginBase
         Assert.Throws<ArgumentException>(
             () => pluginRegistry.RegisterPlacementModifierType<ProbeAtHeight>("probe:at_height"));
     }
+
+    // What PluginUnloading's tests have the plugin do from a handler: spawn a bat and a server player, or record the
+    // server it's given and add a boss bar through it. The test reads them from AppContext data.
+    private async ValueTask OnChatAsync(IncomingChatMessageEventArgs e)
+    {
+        if (e.Message == SpawnMessage)
+        {
+            var bat = e.Player.Level.SpawnEntity(e.Player.Position, EntityType.Bat);
+            var bot = await e.Server.AddServerPlayerAsync(Guid.NewGuid(), "ProbeBot", (IWorld)e.Player.Level);
+
+            AppContext.SetData(BatKey, bat.EntityId);
+            AppContext.SetData(BotKey, bot.Uuid);
+        }
+        else if (e.Message == ServerMessage)
+        {
+            AppContext.SetData(ServerKey, e.Server);
+
+            var bar = e.Server.CreateBossBar(
+                "Probe",
+                1,
+                BossBarColor.Red,
+                BossBarDivisionType.None,
+                BossBarFlags.None);
+            AppContext.SetData(BossBarKey, bar);
+        }
+        else
+        {
+            return;
+        }
+
+        // The arguments are shared: the server's handler after this one sees the message cancelled.
+        e.Cancel();
+    }
+
+    /// <summary>
+    /// Spawns a bat, for a test to call as the plugin's code running outside any call into it, like its own task.
+    /// </summary>
+    public IEntity SpawnBat(ILevel level, VectorD position) => level.SpawnEntity(position, EntityType.Bat);
 
     private sealed class OreBehavior : IBlockBehavior
     {
