@@ -458,7 +458,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             this.ResumeGenerators();
 
             // Biome regions name biomes, and add to dimensions' biomes, whose features are ordered together.
-            container.BiomeRegionFiles = this.ReadBiomeRegionFiles(archive);
+            container.BiomeRegionFiles = this.ReadBiomeRegionFiles(archive, container);
             this.ApplyBiomeRegions();
 
             // Structures name features and processor lists, so they're applied with them.
@@ -808,8 +808,9 @@ public sealed partial class PluginManager : IAsyncDisposable
         return joined;
     }
 
-    // A plugin's biome region files. A file that can't be read is left out; the plugin loads without it.
-    private ImmutableArray<BiomeRegionFile> ReadBiomeRegionFiles(PluginArchive archive)
+    // A plugin's biome region files, then the regions it registered in code. A region that can't be read is left
+    // out; the plugin loads without it.
+    private ImmutableArray<BiomeRegionFile> ReadBiomeRegionFiles(PluginArchive archive, PluginContainer container)
     {
         var files = ImmutableArray.CreateBuilder<BiomeRegionFile>();
 
@@ -823,6 +824,18 @@ public sealed partial class PluginManager : IAsyncDisposable
             catch (InvalidDataException ex)
             {
                 Log.CodecFileFailed(this.logger, ex, path, archive.Source);
+            }
+        }
+
+        foreach (var (identifier, json) in container.RegisteredBiomeRegions)
+        {
+            try
+            {
+                files.Add(PluginBiomeRegions.Parse(identifier, $"{archive.Info.Id}'s registered {identifier}", json));
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.CodecFileFailed(this.logger, ex, identifier, archive.Source);
             }
         }
 

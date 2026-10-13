@@ -97,6 +97,12 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     internal ImmutableArray<BiomeRegionFile> BiomeRegionFiles { get; set; } = [];
 
     /// <summary>
+    /// The biome regions the plugin registered in code, as the JSON of a region file, read after its files. Changed
+    /// under <see cref="WorldgenTypes"/>' lock while it configures its registry.
+    /// </summary>
+    internal List<(string Identifier, byte[] Json)> RegisteredBiomeRegions { get; } = [];
+
+    /// <summary>
     /// The plugin's noise settings, density function and noise files, which dimensions can use while it's loaded.
     /// </summary>
     internal ImmutableArray<NoiseFile> NoiseFiles { get; set; } = [];

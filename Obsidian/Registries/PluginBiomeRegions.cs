@@ -173,7 +173,8 @@ internal static partial class PluginBiomeRegions
         {
             if (!fixedRegions.TryGetValue(dimension, out var fixedSet))
             {
-                fixedSet = loaded.GetValueOrDefault(dimension) ?? RegionSet.Empty;
+                // The biomes of the tags regions replace are those the tags hold as the dimension starts generating.
+                fixedSet = (loaded.GetValueOrDefault(dimension) ?? RegionSet.Empty).Resolve();
                 fixedRegions = fixedRegions.Add(dimension, fixedSet);
             }
 
@@ -201,6 +202,17 @@ internal static partial class PluginBiomeRegions
             this.Regions = [.. ordered.Select(file => file.Region)];
             this.Fingerprint = string.Join('\n', ordered.Select(file => $"{file.Identifier}\n{file.Json}"));
         }
+
+        private RegionSet(ImmutableArray<BiomeRegion> regions, string fingerprint)
+        {
+            this.Regions = regions;
+            this.Fingerprint = fingerprint;
+        }
+
+        /// <summary>
+        /// The regions with the tags they name resolved (see <see cref="BiomeRegion.Resolve"/>).
+        /// </summary>
+        public RegionSet Resolve() => new([.. this.Regions.Select(region => region.Resolve())], this.Fingerprint);
     }
 
     private static partial class Log

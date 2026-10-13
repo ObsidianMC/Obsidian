@@ -24,6 +24,7 @@ using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
+using Obsidian.WorldData.Generators.Mojang.Regions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -197,6 +198,13 @@ public sealed class PluginLoading : IDisposable
         Assert.True(EntityDefinitionsRegistry.TryGet("probe:pebble", out var pebble));
         var thrown = EntityNbt.Save(new PluginEntity(pebble) { Level = null! })!;
         Assert.IsType<PluginEntity>(EntityNbt.Load(thrown, null!));
+
+        // Its biome regions registered in code are read like region files, a tag key replacing the tag's biomes.
+        var frozen = Assert.Single(reloaded.BiomeRegionFiles, file => file.Identifier == "probe:frozen_forests");
+        var replacing = Assert.IsType<ReplacingRegion>(frozen.Region.Resolve());
+        Assert.Equal("minecraft:snowy_plains", replacing.Replacements["minecraft:birch_forest"].Name);
+        Assert.IsType<ParameterListRegion>(
+            Assert.Single(reloaded.BiomeRegionFiles, file => file.Identifier == "probe:frost_lands").Region);
 
         // And its worldgen types: its feature files are read with the reloaded plugin's types, and a biome placing
         // them calls into the reloaded plugin. Built here rather than read from PluginFeatures.Current, which other
@@ -428,6 +436,27 @@ public sealed class ProbePlugin : PluginBase
 
         // Its level generator, which worlds name by its identifier.
         pluginRegistry.RegisterGenerator<ProbeGenerator>("probe:flat");
+
+        // Its biome regions, defined in code rather than in biome_region files.
+        pluginRegistry.RegisterBiomeRegion(
+            "probe:frozen_forests",
+            "minecraft:overworld",
+            2,
+            new Dictionary<string, string> { ["#minecraft:is_forest"] = "minecraft:snowy_plains" });
+        pluginRegistry.RegisterBiomeRegion(
+            "probe:frost_lands",
+            "minecraft:overworld",
+            1,
+            [
+                new ClimateBiome(
+                    "minecraft:snowy_plains",
+                    Temperature: new(-1, 1),
+                    Humidity: new(-1, 1),
+                    Continentalness: new(-1.2f, 1),
+                    Erosion: new(-1, 1),
+                    Depth: 0,
+                    Weirdness: new(-1, 1))
+            ]);
 
         Assert.Throws<ArgumentException>(
             () => pluginRegistry.RegisterFeatureType<ProbePillarFeature>("minecraft:pillar"));
