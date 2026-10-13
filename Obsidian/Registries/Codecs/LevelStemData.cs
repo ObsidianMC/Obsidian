@@ -191,7 +191,8 @@ internal static class LevelStemData
             case "minecraft:checkerboard":
             {
                 var biomes = BiomeList(CodecJson.Required(value, path, "biomes"), CodecJson.Field(path, "biomes"));
-                var source = new CheckerboardBiomeSource(biomes, Scale(value, CodecJson.Field(path, "scale")));
+                var scale = CodecJson.TryGet(value, "scale", out var scaleValue) ? scaleValue : (JsonElement?)null;
+                var source = new CheckerboardBiomeSource(biomes, Scale(scale));
                 return (_ => source, () => source.PossibleBiomes);
             }
             case "minecraft:multi_noise":
@@ -345,7 +346,7 @@ internal static class LevelStemData
 
     // Vanilla's Climate.Parameter codec: a value from -2 to 2, or a range as [min, max] or {"min": ..., "max": ...},
     // quantized like vanilla since the parameters decide which biome generates where.
-    private static ClimateParameter Parameter(JsonElement value, string path)
+    internal static ClimateParameter Parameter(JsonElement value, string path)
     {
         float min;
         float max;
@@ -417,15 +418,18 @@ internal static class LevelStemData
         return biomes.Count > 0 ? biomes : throw CodecJson.Error(path, "can't be empty");
     }
 
-    // Vanilla reads scale with intRange(0, 62).orElse(2): a missing or invalid scale is 2.
-    private static int Scale(JsonElement source, string path)
+    /// <summary>
+    /// Reads a checkerboard biome source's <c>scale</c> like vanilla, with <c>intRange(0, 62).orElse(2)</c>: a missing
+    /// or invalid scale is 2.
+    /// </summary>
+    internal static int Scale(JsonElement? scale)
     {
-        if (!CodecJson.TryGet(source, "scale", out var value))
+        if (scale is not JsonElement { ValueKind: not JsonValueKind.Null } value)
             return 2;
 
         try
         {
-            return CodecJson.Int(value, path, 0, 62);
+            return CodecJson.Int(value, "scale", 0, 62);
         }
         catch (InvalidDataException)
         {
