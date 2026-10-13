@@ -159,8 +159,9 @@ internal sealed partial class PluginLevelGenerator(string identifier, PluginGene
 
     /// <summary>
     /// Starts generating with <paramref name="registered"/>, a new instance of the plugin's generator, unless it's
-    /// generating already, the plugin is closing, or the plugin's generator failed and the plugin hasn't reloaded
-    /// since.
+    /// generating already, the plugin is closing, the plugin's generator failed and the plugin hasn't reloaded since,
+    /// or the level stem it took changed since (see <see cref="PluginDimensions.RequiresRestart"/>), which applies
+    /// after a restart.
     /// </summary>
     /// <returns>Whether it generates with it.</returns>
     internal bool Start(PluginGenerator registered)
@@ -170,6 +171,13 @@ internal sealed partial class PluginLevelGenerator(string identifier, PluginGene
 
         if (this.instances.Running is Instance current)
             return current.Plugin == registered.Plugin;
+
+        // A new instance would be configured with the stem's old settings, mixing chunks of the old and new stem.
+        if (this.Taken is LevelStem changed && PluginDimensions.RequiresRestart(changed.Identifier))
+        {
+            Log.StemChanged(this.Logger, this.LevelName, changed.Identifier);
+            return false;
+        }
 
         using var call = registered.Plugin.TryEnter();
         if (call is null)
@@ -728,6 +736,10 @@ internal sealed partial class PluginLevelGenerator(string identifier, PluginGene
         [LoggerMessage(Level = LogLevel.Error,
             Message = "{Level} stopped generating new chunks until {Plugin} reloads: its generator failed")]
         public static partial void Failed(ILogger logger, Exception exception, string level, string plugin);
+
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "{Level} stays stopped until a restart: its level stem {Stem} changed since it started")]
+        public static partial void StemChanged(ILogger logger, string level, string stem);
 
         [LoggerMessage(Level = LogLevel.Warning, Message = "Disposing a generator of {Plugin} failed")]
         public static partial void DisposeFailed(ILogger logger, Exception exception, string plugin);

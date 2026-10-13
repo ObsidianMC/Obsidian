@@ -1203,7 +1203,8 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     // Levels that stopped generating start again once they can, from their next chunk: a level whose plugin generator
     // a loaded plugin registers, and a dimension whose generator's parts are back (read again from its stem, see
-    // PluginDimensions.Apply). One stopped by plugins' code failing waits until those plugins reloaded or unloaded.
+    // PluginDimensions.Apply). One stopped by plugins' code failing waits until those plugins reloaded or unloaded,
+    // and one whose level stem changed meanwhile waits for a restart.
     private void ResumeGenerators()
     {
         foreach (var level in this.Levels())

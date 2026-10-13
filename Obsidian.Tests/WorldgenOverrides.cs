@@ -431,25 +431,34 @@ public sealed class WorldgenOverrides : IDisposable
         Assert.Null(PluginDimensions.Find(identifier));
     }
 
-    [Fact(DisplayName = "A level can't take a dimension that went since its snapshot, which can still come back")]
-    public void TakingAGoneDimensionLeavesItUntaken()
+    // A noise stem is released as it goes; a debug stem holds no plugin's code to release.
+    [Theory(DisplayName = "A level can't take a dimension that went since its snapshot, which can still come back")]
+    [InlineData(FixedPlainsStem)]
+    [InlineData("""{ "type": "minecraft:overworld", "generator": { "type": "minecraft:debug" } }""")]
+    public void TakingAGoneDimensionLeavesItUntaken(string json)
     {
         const string identifier = "overridetest:gone";
-        var stem = Encoding.UTF8.GetBytes(FixedPlainsStem);
+        var stem = Encoding.UTF8.GetBytes(json);
         var logger = new PluginFeatureFiles.ListLogger();
 
         try
         {
             PluginDimensions.Apply([PluginDimensions.Parse(identifier, "plugin", stem)], logger);
-            var snapshot = PluginDimensions.Find(identifier).Noise();
+            var snapshot = PluginDimensions.Find(identifier)!;
 
-            // The plugin unloads before the level is created: its dimension goes, released.
+            // The plugin unloads before the level is created: its dimension goes.
             PluginDimensions.Apply([], logger);
+            Assert.True(snapshot.IsRemoved);
             Assert.Null(PluginDimensions.Take(snapshot));
 
-            // Back, it follows its file again, as nothing took it.
+            // Back, it follows its file again, as nothing took it: a taken one would be kept until a restart.
             PluginDimensions.Apply([PluginDimensions.Parse(identifier, "plugin", stem)], logger);
-            Assert.False(PluginDimensions.Find(identifier).Noise().IsReleased);
+            var back = PluginDimensions.Find(identifier);
+
+            Assert.NotNull(back);
+            Assert.False(back.IsReleased);
+            Assert.False(back.IsRemoved);
+            Assert.DoesNotContain(logger.Messages, message => message.Contains("restart"));
         }
         finally
         {

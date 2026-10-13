@@ -295,6 +295,70 @@ public sealed class PluginLoading : IDisposable
         Assert.Equal("probe:flat", generator.Id);
     }
 
+    [Fact]
+    public async Task Reload_KeepsALevelWhoseGeneratorStemChangedStopped()
+    {
+        const string identifier = "probe:restarting";
+        var (manager, _, server) = this.CreateManager();
+        var world = (World)server.DefaultWorld;
+        var path = Path.Join(this.folder, "probe.obby");
+
+        try
+        {
+            await File.WriteAllBytesAsync(path, ProbeArchive("1.0.0", GeneratorStem(7)));
+            await manager.LoadPluginAsync(path);
+
+            // A level of the plugin's stem, as the server creates it, takes the stem and generates with its settings.
+            AppContext.SetData(ProbeGenerator.ConfiguredKey, "");
+            var stem = Assert.IsType<PluginGeneratorStem>(PluginDimensions.Find(identifier));
+            var generator = Assert.IsType<PluginLevelGenerator>(stem.CreateGenerator());
+            var level = new WorldData.Dimension(
+                NullLogger<WorldData.Dimension>.Instance,
+                null!,
+                new TestOptionsMonitor<ServerConfiguration>(new ServerConfiguration()),
+                null!,
+                generator,
+                identifier,
+                world);
+            world.RegisterDimension(level);
+
+            Assert.NotNull(generator.Plugin);
+
+            // Reloaded with the same stem, it resumes with it.
+            await File.WriteAllBytesAsync(path, ProbeArchive("1.1.0", GeneratorStem(7)));
+            var reloaded = await manager.LoadPluginAsync(path);
+
+            Assert.Same(reloaded, generator.Plugin);
+            Assert.Equal("7;7;", AppContext.GetData(ProbeGenerator.ConfiguredKey));
+
+            // Reloaded with other settings, it stays stopped rather than configured with the settings it took.
+            await File.WriteAllBytesAsync(path, ProbeArchive("1.2.0", GeneratorStem(8)));
+            await manager.LoadPluginAsync(path);
+
+            Assert.True(PluginDimensions.RequiresRestart(identifier));
+            Assert.Null(generator.Plugin);
+            Assert.Equal("7;7;", AppContext.GetData(ProbeGenerator.ConfiguredKey));
+        }
+        finally
+        {
+            await manager.DisposeAsync();
+
+            // As after a restart, the stem no level holds goes with its plugin.
+            PluginDimensions.GiveBack(identifier);
+            PluginDimensions.Apply([], NullLogger.Instance);
+        }
+
+        Assert.Null(PluginDimensions.Find(identifier));
+    }
+
+    // The probe plugin's level stem probe:restarting, naming its generator with a marker its instances record.
+    private static Dictionary<string, byte[]> GeneratorStem(int marker) => new()
+    {
+        ["data/probe/dimension/restarting.json"] = Encoding.UTF8.GetBytes($$"""
+            { "type": "overworld", "generator": { "type": "probe:flat", "marker": {{marker}} } }
+            """)
+    };
+
     // Adds the probe plugin's pillar to every overworld biome.
     internal const string AddPillar = """
         {
