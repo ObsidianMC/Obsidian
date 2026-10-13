@@ -42,7 +42,7 @@ public partial class Extensions
         foreach (var type in item.RemoveComponents)
             components.Add(new NbtCompound($"!{OpaqueDataComponent.GetIdentifier(type)}"));
 
-        foreach (var (componentName, tag) in item.UnmodeledComponents ?? [])
+        foreach (var (componentName, tag) in ComponentCopies.Nbt(item.UnmodeledComponents) ?? [])
         {
             if (!components.HasTag(componentName))
                 components.Add(componentName, tag);
@@ -100,7 +100,7 @@ public partial class Extensions
 
         var stack = new ItemStack(holder, count, components)
         {
-            UnmodeledComponents = unmodeled.Count > 0 ? unmodeled : null
+            UnmodeledComponents = unmodeled.Count > 0 ? ComponentCopies.Nbt(unmodeled) : null
         };
         foreach (var type in removed)
             stack.Remove(type);

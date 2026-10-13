@@ -12,7 +12,7 @@ internal static class ComponentCopies
             return null;
 
         using var stream = new MemoryStream();
-        var writer = new NbtWriterStream(stream);
+        using var writer = new NbtWriterStream(stream);
         writer.WriteTag(value);
         writer.TryFinish();
         stream.Position = 0;

@@ -11,7 +11,21 @@ public record class SimpleDataComponent<TValue> : DataComponent
 
     private readonly Func<TValue, TValue>? copy;
 
-    protected TValue? value = default!;
+    private ComponentValueKey? comparison;
+
+    // Derived decoders use this property so a record copy never retains its previous comparison key.
+    protected TValue? value
+    {
+        get;
+        set
+        {
+            field = value;
+            this.comparison = null;
+        }
+    } = default!;
+
+    private ComponentValueKey Comparison => this.comparison ??= new(
+        EqualityComparer<TValue>.Default.Equals(this.value, default) ? null : this.value);
 
     public TValue? Value
     {
@@ -35,7 +49,23 @@ public record class SimpleDataComponent<TValue> : DataComponent
         this.reader = reader ?? throw new ArgumentNullException(nameof(reader));
     }
 
-    protected override void ReadCore(INetStreamReader reader) => this.value = this.reader.Invoke(reader);
+    public virtual bool Equals(SimpleDataComponent<TValue>? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Type == other.Type
+            && this.Identifier == other.Identifier && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Type, this.Identifier, this.Comparison);
+
+    protected override void ReadCore(INetStreamReader reader)
+    {
+        var decoded = this.reader(reader);
+        this.value = this.copy is null ? decoded : this.copy(decoded);
+    }
+
+    /// <summary>Writes the stored value without allocating another defensive copy.</summary>
+    /// <remarks>
+    /// The writer delegate and stream writer must neither mutate nor retain mutable payload arguments.
+    /// </remarks>
     public override void Write(INetStreamWriter writer) => this.writer(writer, this.value);
 }
 

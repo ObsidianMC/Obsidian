@@ -32,6 +32,52 @@ public sealed class MenuClicks
     // One row of five slots, so the window's slot 5 is the player's inventory slot 9.
     private static readonly MenuDefinition pouch = MenuTypesRegistry.Register("clicks:pouch", 1, 5);
 
+    [Fact]
+    public void EqualCustomDataStacksMerge()
+    {
+        var first = ComponentBuilder.CustomData with
+        {
+            Value = new NbtCompound
+            {
+                new NbtTag<int>("level", 7),
+                new NbtTag<string>("owner", "Alex")
+            }
+        };
+        var second = ComponentBuilder.CustomData with
+        {
+            Value = new NbtCompound
+            {
+                new NbtTag<string>("owner", "Alex"),
+                new NbtTag<int>("level", 7)
+            }
+        };
+        var stored = new ItemStack(ItemsRegistry.Stone, 5, first);
+        var carried = new ItemStack(ItemsRegistry.Stone, 3, second);
+        Assert.Equal(first, first with { Value = first.Value });
+        Assert.Equal(stored, carried);
+        Assert.Equal(stored.GetHashCode(), carried.GetHashCode());
+
+        var menu = new MenuContainer(pouch, "Pouch");
+        menu.SetItem(0, stored);
+        var player = new FakePlayer
+        {
+            OpenedContainer = menu,
+            CarriedItem = carried
+        };
+
+        Click(player, 0, 0, ClickType.Pickup);
+
+        Assert.Equal(8, menu.GetItem(0)?.Count);
+        Assert.Null(player.CarriedItem);
+        Assert.All(menu.Skip(1), Assert.Null);
+
+        var different = new ItemStack(ItemsRegistry.Stone, 3, ComponentBuilder.CustomData with
+        {
+            Value = new NbtCompound { new NbtTag<int>("level", 8) }
+        });
+        Assert.NotEqual(stored, different);
+    }
+
     [Fact(DisplayName = "A survival player's full-stack drag creates no items")]
     public void SurvivalMiddleDragCreatesNothing()
     {
@@ -673,7 +719,11 @@ public sealed class MenuClicks
             DataComponentType.BundleContents)!;
         var copy = Assert.Single(contents.Value!);
         Assert.NotSame(gem, copy);
-        Assert.Same(customData, copy.UnmodeledComponents);
+        Assert.NotSame(customData, copy.UnmodeledComponents);
+        Assert.Equal(gem, copy);
+        customData.Clear();
+        Assert.Equal("ruby", Assert.IsType<NbtCompound>(
+            copy.UnmodeledComponents!["minecraft:custom_data"]).GetString("gem"));
     }
 
     [Fact(DisplayName = "A window snapshot isn't sent after a newer one, nor once the window changed",
