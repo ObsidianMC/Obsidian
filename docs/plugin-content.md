@@ -810,7 +810,8 @@ The rules:
 - Structures come and go with their plugin, like features: each plugin change reads them again, and the chunks not
   generated yet get the new structure sets' structures, at starts not found yet, while chunks generated before stay
   as they are. A structure partly generated when its plugin unloads isn't finished; its start's state stays saved,
-  and the rest of it is placed in the chunks generated once the plugin is back.
+  and the rest of it is placed in the chunks generated once the plugin is back. Unloading doesn't wait for a piece
+  being placed: the start's state is kept once it's placed, and the plugin is released after that.
 - After a restart without the plugin, its starts load and stay saved as they were, and aren't placed.
 - Starting and placing a structure made of a plugin's types (a processor, a height provider or a feature type, in
   the structure, its pools or the processor lists they name) is a call into the plugin, like placing its features.

@@ -268,6 +268,48 @@ public class PluginStructureFiles
         }
     }
 
+    [Fact(DisplayName = "An unloading plugin's start is saved with the state it retires with, even before it's pruned")]
+    public void SavesStartsOfUnloadingPlugins()
+    {
+        var plugin = new PluginContainer
+        {
+            Info = new PluginInfo("structuresaver"),
+            Archive = PluginArchive.Open(
+                "structuresaver.obby",
+                PluginArchives.Zip(new Dictionary<string, byte[]>
+                {
+                    [PluginMetadata.FileName] = PluginArchives.Metadata("structuresaver", "1.0.0", "Saver")
+                }))
+        };
+
+        var built = Only(Build(TowerFiles()), "structuretest:towers");
+        var tower = built.Structures[Tower];
+        var structures = built with
+        {
+            Owners = new Dictionary<Structure, ImmutableArray<PluginContainer>> { [tower] = [plugin] }
+                .ToFrozenDictionary()
+        };
+
+        var manager = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => structures).Structures!;
+        var start = manager.GetStarts(0, 0).Single(candidate => candidate.Structure == tower);
+        StructureManager.RestoreStart(start, null);
+        Assert.True(start.TryAddReference());
+
+        // The plugin starts unloading, and the chunk is saved before the starts are pruned: the start can't be
+        // entered, but its state is still saved, and pruning keeps the same.
+        plugin.Close();
+        var saved = manager.SaveStarts(0, 0, null);
+        Assert.Equal(1, References(saved));
+
+        structures = built with { Version = built.Version + 1 };
+        manager.Refresh();
+
+        Assert.Equal(1, References(manager.SaveStarts(0, 0, null)));
+        Assert.Equal(1, manager.GetStarts(0, 0).Single(candidate => candidate.Structure == tower).References);
+
+        static int References(NbtCompound starts) => ((NbtCompound)starts[Tower]).GetInt("references");
+    }
+
     [Fact(DisplayName = "A template's block data counts once for each palette, which copies it, before it's copied")]
     public void RejectsTemplatesCopyingLargeDataPerPalette()
     {
