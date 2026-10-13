@@ -99,10 +99,10 @@ public partial class ContainerClickPacket
             ContainerId = this.ContainerId,
         };
 
-        // What the click applies to: the server applies it only if the window and the player's inventory are
-        // unchanged when its turn comes. Read in turn with other clicks, so it's never half of one.
-        using (await window.LockAsync())
-            click.Arrive(window);
+        // What the click applies to: the server applies it only if the window, the player's inventory and the cursor
+        // are unchanged when its turn comes. Read in turn with other clicks, so it's never half of one.
+        using (await BaseContainer.LockWindowAsync(window, player.Inventory))
+            click.Arrive(NetworkBuffer.SnapshotItemStack);
 
         // Plugins' handlers run without the container's lock, so that one can wait for another player's click; the
         // server's own handler, which runs last, takes it to apply the click and sends the window to its viewers,

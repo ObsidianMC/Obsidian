@@ -1,4 +1,7 @@
+using System.Threading;
+
 namespace Obsidian.API.Inventory.DataComponents;
+
 public abstract class DataComponentsStorage
 {
     protected Dictionary<DataComponentType, DataComponent> InternalStorage { get; } = [];
@@ -15,6 +18,15 @@ public abstract class DataComponentsStorage
     public List<DataComponentType> RemoveComponents { get; } = [];
 
     public int TotalComponents => this.InternalStorage.Count;
+
+    private long version;
+
+    /// <summary>
+    /// The <see cref="ChangeStamp"/> of the storage's last change: a component set, added or removed through its
+    /// methods, or, for a stack, its count. Changing a component's value in place, or <see cref="RemoveComponents"/>
+    /// directly, doesn't count.
+    /// </summary>
+    internal long Version => Volatile.Read(ref this.version);
 
     /// <summary>
     /// The components that were set on this storage, as opposed to placeholders for the item's defaults. Like vanilla's
@@ -41,6 +53,7 @@ public abstract class DataComponentsStorage
             this.InternalStorage[type] = value;
             this.RemoveComponents.Remove(type);
             this.Placeholders.Remove(type);
+            this.MarkChanged();
         }
     }
 
@@ -50,6 +63,8 @@ public abstract class DataComponentsStorage
             return false;
 
         this.RemoveComponents.Remove(component.Type);
+        this.MarkChanged();
+
         return true;
     }
 
@@ -76,8 +91,15 @@ public abstract class DataComponentsStorage
         if (!this.RemoveComponents.Contains(type))
             this.RemoveComponents.Add(type);
 
+        this.MarkChanged();
+
         return this.InternalStorage.Remove(type);
     }
+
+    /// <summary>
+    /// Records a change to the storage (see <see cref="Version"/>).
+    /// </summary>
+    private protected void MarkChanged() => Volatile.Write(ref this.version, ChangeStamp.Next());
 
     public TComponent? GetComponent<TComponent>(DataComponentType type) where TComponent : DataComponent =>
         this.InternalStorage.GetValueOrDefault(type) as TComponent;

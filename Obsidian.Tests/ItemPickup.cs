@@ -45,7 +45,7 @@ public sealed class ItemPickup
         inventory.SetItem(9, new ItemStack(ItemsRegistry.Stone, 60));
         var picked = new ItemStack(ItemsRegistry.Stone, 10);
 
-        var changed = PlayerEntity.AddPickedUpItem(inventory, heldSlot, picked);
+        var changed = PlayerEntity.AddToInventory(inventory, heldSlot, picked);
 
         Assert.Equal([45, 9, 36], changed);
         Assert.Equal(0, picked.Count);
@@ -66,7 +66,7 @@ public sealed class ItemPickup
             inventory.SetItem(slot, new ItemStack(ItemsRegistry.Dirt, 64));
         var picked = new ItemStack(ItemsRegistry.Stone, 10);
 
-        var changed = PlayerEntity.AddPickedUpItem(inventory, 36, picked, infiniteMaterials);
+        var changed = PlayerEntity.AddToInventory(inventory, 36, picked, infiniteMaterials);
 
         Assert.Empty(changed);
         Assert.Equal(expectedLeft, picked.Count);

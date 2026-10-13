@@ -11,28 +11,14 @@ public partial class MainEventHandler
 {
     /// <summary>
     /// Handles a click in a window with a crafting grid, the player's inventory or a crafting table: its result slot
-    /// crafts, the others work like any window's; the result follows the grid.
+    /// crafts, the others work like any window's. The result shown is the one taken, as the click is applied only if
+    /// it follows the grid (see <see cref="CraftingResultFollowsGrid"/>); it's refreshed after the click.
     /// </summary>
     /// <returns>Whether the window has a crafting grid, so that the click is handled.</returns>
     private static bool HandleCrafting(ContainerClickEventArgs args)
     {
-        var player = args.Player;
-        BaseContainer grid;
-        int width;
-        if (args.ContainerId == 0)
-        {
-            grid = player.Inventory;
-            width = 2;
-        }
-        else if (player.OpenedContainer is CraftingTable { Type: InventoryType.Crafting } table)
-        {
-            grid = table;
-            width = 3;
-        }
-        else
+        if (!TryGetCraftingGrid(args.Player, out var grid, out var width))
             return false;
-
-        RefreshCraftingResult(grid, width);
 
         // Drags follow the same rules as in any window, the slots' limits included; the result slot takes none.
         if (args.Container == grid && args.ClickedSlot == 0 && args.ClickType != ClickType.QuickCraft)
@@ -40,25 +26,77 @@ public partial class MainEventHandler
         else
             HandleClick(args, dropThrown: true);
 
-        RefreshCraftingResult(grid, width);
-
         return true;
     }
 
+    /// <summary>
+    /// Finds the crafting grid the player's open window shows: their inventory's 2x2 one, or a crafting table's.
+    /// </summary>
+    private static bool TryGetCraftingGrid(IPlayer player, out BaseContainer grid, out int width)
+    {
+        switch (player.OpenedContainer)
+        {
+            case null:
+                grid = player.Inventory;
+                width = 2;
+
+                return true;
+            case CraftingTable { Type: InventoryType.Crafting } table:
+                grid = table;
+                width = 3;
+
+                return true;
+            default:
+                grid = player.Inventory;
+                width = 0;
+
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// Whether the result slot of the player's open crafting grid, if they have one open, shows what its ingredients
+    /// craft now. It doesn't when something changed the grid without refreshing it, or the recipes changed.
+    /// </summary>
+    private static bool CraftingResultFollowsGrid(IPlayer player) =>
+        !TryGetCraftingGrid(player, out var grid, out var width) || ShowsResult(grid, CraftingResult(grid, width));
+
+    /// <summary>
+    /// Sets the result slot of the player's open crafting grid, if they have one open, to what its ingredients craft.
+    /// </summary>
+    private static void RefreshCraftingResult(IPlayer player)
+    {
+        if (TryGetCraftingGrid(player, out var grid, out var width))
+            RefreshCraftingResult(grid, width);
+    }
+
     private static void RefreshCraftingResult(BaseContainer grid, int width)
+    {
+        var result = CraftingResult(grid, width);
+
+        // Setting the same result again would count as a change to the grid (see BaseContainer.Revision).
+        if (!ShowsResult(grid, result))
+            grid.SetItem(0, result is null ? null : new ItemStack(result, result.Count));
+    }
+
+    // What the grid's ingredients craft, as the recipe holds it: copy it to put it in a slot.
+    private static ItemStack? CraftingResult(BaseContainer grid, int width)
     {
         var result = RecipesRegistry.FindRecipe(grid, width)?.Result.FirstOrDefault();
         Debug.Assert(result is null || (result.Count > 0 && result.Count <= result.MaxStackSize),
             "Generated crafting results must fit in one stack.");
 
+        return result;
+    }
+
+    // Whether the grid's result slot holds the result.
+    private static bool ShowsResult(BaseContainer grid, ItemStack? result)
+    {
         var current = grid.GetItem(0);
-        var unchanged = result is null
+
+        return result is null
             ? current is null
             : current is not null && current == result && current.Count == result.Count;
-
-        // Setting the same result again would count as a change to the grid (see BaseContainer.Revision).
-        if (!unchanged)
-            grid.SetItem(0, result is null ? null : new ItemStack(result, result.Count));
     }
 
     /// <summary>

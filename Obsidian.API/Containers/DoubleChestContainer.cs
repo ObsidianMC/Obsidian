@@ -27,8 +27,8 @@ internal sealed class DoubleChestContainer : BaseContainer
 
     public BaseContainer Second { get; }
 
-    // Grows whenever either half does.
-    public override long Revision => this.First.Revision + this.Second.Revision;
+    // Grows whenever either half does: the halves' revisions are stamps from one sequence (see ChangeStamp).
+    public override long Revision => Math.Max(this.First.Revision, this.Second.Revision);
 
     public override ItemStack? GetItem(int slot) => this.Half(slot, out var local).GetItem(local);
 
@@ -55,7 +55,7 @@ internal sealed class DoubleChestContainer : BaseContainer
         {
             var second = await this.Second.LockAsync();
 
-            return new Both(first, second);
+            return new LockPair(first, second);
         }
         catch
         {
@@ -100,14 +100,5 @@ internal sealed class DoubleChestContainer : BaseContainer
         local = slot - this.First.Size;
 
         return this.Second;
-    }
-
-    private sealed class Both(IDisposable first, IDisposable second) : IDisposable
-    {
-        public void Dispose()
-        {
-            second.Dispose();
-            first.Dispose();
-        }
     }
 }

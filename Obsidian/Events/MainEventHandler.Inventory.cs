@@ -2,6 +2,7 @@ using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
+using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Events;
@@ -14,7 +15,10 @@ public partial class MainEventHandler
     // the armour (5 to 8), the main inventory (9 to 35), the hotbar (36 to 44) and the off hand.
     private const int OffhandSlot = 45;
 
-    // How many times a click's window is sent again when it changed while being sent (see SendWindowAsync).
+    // The off hand, as vanilla's player inventory numbers it in the set-slot packet.
+    private const int OffhandInventorySlot = 40;
+
+    // How many times a click's window is captured again when it changed before being sent (see SendWindowAsync).
     private const int MaxResends = 2;
 
     /// <summary>
@@ -22,11 +26,12 @@ public partial class MainEventHandler
     /// its viewers.
     /// </summary>
     /// <remarks>
-    /// Players sharing a container take turns: the click is applied inside the window's lock, which plugins' handlers
-    /// run without, so the window is checked again inside it, as it may have closed or changed meanwhile. A click
-    /// whose slots changed since it arrived, or that a handler cancelled, isn't applied; either way the player's
-    /// window and cursor are sent again, so that the client's prediction is corrected. The packets are captured
-    /// inside the lock and sent after it, since sending them runs plugins' packet handlers.
+    /// Players sharing a container take turns: the click is applied inside the window's lock and the player's
+    /// inventory's, which plugins' handlers run without, so the window is checked again inside them, as it may have
+    /// closed or changed meanwhile. A click whose slots or cursor changed since it arrived, or whose crafting result no
+    /// longer follows its grid, or that a handler cancelled, isn't applied; either way the player's window and cursor
+    /// are sent again, so that the client's prediction is corrected. The packets are captured inside the lock and sent
+    /// after it, since sending them runs plugins' packet handlers.
     /// </remarks>
     [EventPriority(Priority = Priority.Internal)]
     public async ValueTask OnInventoryClick(ContainerClickEventArgs args)
@@ -35,7 +40,7 @@ public partial class MainEventHandler
         var window = player.OpenedContainer ?? player.Inventory;
         WindowSync sync;
 
-        using (await window.LockAsync())
+        using (await BaseContainer.LockWindowAsync(window, player.Inventory))
         {
             if (!IsOpen(player, window, args.ContainerId)
                 || args.Container != window && args.Container != player.Inventory)
@@ -43,7 +48,8 @@ public partial class MainEventHandler
                 return;
             }
 
-            var stale = IsStale(args, window);
+            // The result handlers saw is the one the click takes: it's never worked out again in between.
+            var stale = !args.ArrivalState.IsCurrent(player) || !CraftingResultFollowsGrid(player);
 
             // The client ends its drag on the correction, so the server's ends too.
             if (stale || args.IsCancelled)
@@ -56,6 +62,10 @@ public partial class MainEventHandler
                 foreach (var change in args.Changes)
                     change();
             }
+
+            // After the click and the changes registered with it, whatever they did to the grid, and before the
+            // window is captured, so that its viewers see the result that follows.
+            RefreshCraftingResult(player);
 
             sync = CaptureWindow(args, window);
         }
@@ -70,10 +80,6 @@ public partial class MainEventHandler
 
         return (player.OpenedContainer ?? player.Inventory) == window && containerId == openId;
     }
-
-    // Whether the window or the player's inventory changed since the click arrived.
-    private static bool IsStale(ContainerClickEventArgs args, BaseContainer window) =>
-        args.WindowRevision != window.Revision || args.InventoryRevision != args.Player.Inventory.Revision;
 
     private static void ApplyClick(ContainerClickEventArgs args)
     {
@@ -750,7 +756,8 @@ public partial class MainEventHandler
     /// Swaps a slot with a hotbar slot (buttons 0 to 8) or the off hand (40), like vanilla's swap: a slot gives its
     /// stack only if it may be taken from, and takes the other stack only if it accepts it, up to its limit. When the
     /// slot holds less than the other stack, the rest stays; when that happens with a stack on both sides, the slot's
-    /// stack goes to the player's inventory, or drops if it doesn't fit.
+    /// stack goes to the player's inventory like a picked-up item (see <see cref="Player.AddToInventory"/>), and what
+    /// doesn't fit drops.
     /// </summary>
     private static void HandleSwap(ContainerClickEventArgs args)
     {
@@ -811,7 +818,7 @@ public partial class MainEventHandler
             source.Count -= limit;
             inventory.SetItem(sourceSlot, source);
 
-            StoreCraftingItem(inventory, item, 9, 45);
+            Player.AddToInventory(inventory, player.CurrentHeldItemSlot, item, player.GameMode == GameMode.Creative);
             SpawnThrownItem(player, item);
         }
         else
@@ -828,26 +835,30 @@ public partial class MainEventHandler
     private static WindowSync CaptureWindow(ContainerClickEventArgs args, BaseContainer window)
     {
         var player = args.Player;
-        var sync = new WindowSync(window.Revision, player.Inventory.Revision);
+        var sync = new WindowSync();
 
-        sync.Add(player, WindowContents(player, args.ContainerId, args.StateId + 1));
+        // Taken before the contents, so that a change made while they're read leaves it behind.
+        var state = WindowState.Of(player);
+        var packets = new List<IClientboundPacket>
+        {
+            WindowContents(player, args.ContainerId, args.StateId + 1)
+        };
 
         if (player is Player { OpenedContainer: EnchantmentTable } enchanter)
-        {
-            foreach (var property in enchanter.PrepareEnchantingProperties())
-                sync.Add(player, property);
-        }
+            packets.AddRange(enchanter.PrepareEnchantingProperties());
 
-        // A container's window doesn't show the off hand.
-        if (window != player.Inventory && args.ClickType == ClickType.Swap && args.Button == 40)
+        // A container's window doesn't show the off hand, so it's set in the player's inventory, which vanilla's
+        // client numbers like its saved inventory.
+        if (window != player.Inventory && args.ClickType == ClickType.Swap && args.Button == OffhandInventorySlot)
         {
-            sync.Add(player, new ContainerSetSlotPacket
+            packets.Add(new SetPlayerInventoryPacket
             {
-                ContainerId = -2,
-                Slot = OffhandSlot,
-                SlotData = Copy(player.Inventory.GetItem(OffhandSlot))
+                Slot = OffhandInventorySlot,
+                Contents = Copy(player.Inventory.GetItem(OffhandSlot))
             });
         }
+
+        sync.Add(player, state, packets);
 
         foreach (var viewer in window.GetViewers())
         {
@@ -858,27 +869,27 @@ public partial class MainEventHandler
                 continue;
             }
 
-            sync.Add(viewer, WindowContents(viewer, viewer.CurrentContainerId, 0));
+            var viewerState = WindowState.Of(viewer);
+
+            sync.Add(viewer, viewerState, [WindowContents(viewer, viewer.CurrentContainerId, 0)]);
         }
 
         return sync;
     }
 
     /// <summary>
-    /// Sends a click's captured window, and sends it again, a few times at most, if the window changed while it was
-    /// being sent: another click's packets may have gone out first, and the last contents its viewers get must be
-    /// current.
+    /// Sends a click's captured window to its viewers, leaving out what's obsolete (see <see cref="WindowSnapshots"/>).
+    /// When a viewer's window changed before its contents were sent, the window is captured again, a few times at
+    /// most, then sent whatever changed: the last contents its viewers get must be current.
     /// </summary>
     private static async ValueTask SendWindowAsync(ContainerClickEventArgs args, BaseContainer window, WindowSync sync)
     {
         for (var resend = 0; ; resend++)
         {
-            await sync.SendAsync();
-
-            if (resend == MaxResends || sync.IsCurrent(window, args.Player.Inventory))
+            if (!await sync.SendAsync(force: resend == MaxResends))
                 return;
 
-            using (await window.LockAsync())
+            using (await BaseContainer.LockWindowAsync(window, args.Player.Inventory))
             {
                 if (!IsOpen(args.Player, window, args.ContainerId))
                     return;
@@ -905,26 +916,46 @@ public partial class MainEventHandler
         };
     }
 
-    // A copy of a stack to send, which later changes to the stack don't reach.
-    private static ItemStack? Copy(ItemStack? item) => item is null ? null : new ItemStack(item, item.Count);
+    // A copy of a stack to send, which later changes to the stack, its components included, don't reach.
+    private static ItemStack? Copy(ItemStack? item) => item is null ? null : NetworkBuffer.SnapshotItemStack(item);
 
     /// <summary>
-    /// The packets a click's window is sent with, captured inside the window's lock, and the revisions they show.
+    /// The packets a click's window is sent with, captured inside the window's lock: a snapshot for each viewer.
     /// </summary>
-    private sealed class WindowSync(long windowRevision, long inventoryRevision)
+    private sealed class WindowSync
     {
-        private readonly List<(IPlayer Player, IClientboundPacket Packet)> packets = [];
+        private readonly List<WindowSnapshot> snapshots = [];
 
-        public void Add(IPlayer player, IClientboundPacket packet) => this.packets.Add((player, packet));
-
-        // Whether nothing changed the window or the player's inventory since the packets were captured.
-        public bool IsCurrent(BaseContainer window, BaseContainer inventory) =>
-            window.Revision == windowRevision && inventory.Revision == inventoryRevision;
-
-        public async ValueTask SendAsync()
+        // Numbers the viewer's snapshot as it's captured, so that it's never sent after a newer one.
+        public void Add(IPlayer viewer, WindowState state, IReadOnlyList<IClientboundPacket> packets)
         {
-            foreach (var (player, packet) in this.packets)
-                await player.QueuePacketAsync(packet);
+            var sequence = viewer is Player { WindowSnapshots: WindowSnapshots order } ? order.Next() : 0;
+
+            this.snapshots.Add(new WindowSnapshot(viewer, sequence, state, packets));
+        }
+
+        /// <summary>
+        /// Sends each viewer's snapshot unless it's obsolete.
+        /// </summary>
+        /// <param name="force">Whether to send the snapshots whose viewer's window changed since their capture.</param>
+        /// <returns>Whether a viewer's window changed since its snapshot's capture, so that it wasn't sent.</returns>
+        public async ValueTask<bool> SendAsync(bool force)
+        {
+            var outdated = false;
+
+            foreach (var snapshot in this.snapshots)
+            {
+                if (snapshot.Player is Player { WindowSnapshots: WindowSnapshots order })
+                {
+                    outdated |= await order.SendAsync(snapshot, force);
+                    continue;
+                }
+
+                foreach (var packet in snapshot.Packets)
+                    await snapshot.Player.QueuePacketAsync(packet);
+            }
+
+            return outdated;
         }
     }
 

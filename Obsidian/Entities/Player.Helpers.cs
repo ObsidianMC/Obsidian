@@ -283,27 +283,35 @@ public partial class Player
 
     /// <summary>
     /// Moves as much of <paramref name="item"/> into a player <paramref name="inventory"/> as fits, taking it off the
-    /// stack's count, and returns the container slots that changed.
+    /// stack's count, like vanilla's <c>Inventory.add</c>, and returns the container slots that changed.
     /// </summary>
     /// <remarks>
     /// Like vanilla, it tops up matching stacks first (the held slot, the offhand, the hotbar, then the main inventory)
     /// and only then fills empty slots, hotbar first. The held slot has no priority among empty slots, so which slot a
-    /// picked-up item lands in matches the client's expectations. With <paramref name="infiniteMaterials"/> (creative
-    /// mode), a stack none of which fits is used up anyway, as vanilla does; a stack that partly fits keeps the rest.
+    /// picked-up item lands in matches the client's expectations. Damaged stacks don't stack, so they only fill an
+    /// empty slot. With <paramref name="infiniteMaterials"/> (creative mode), what doesn't fit is used up anyway, as
+    /// vanilla does.
     /// </remarks>
-    internal static List<int> AddPickedUpItem(Container inventory, int heldSlot, ItemStack item, bool infiniteMaterials = false)
+    internal static List<int> AddToInventory(
+        Container inventory,
+        int heldSlot,
+        ItemStack item,
+        bool infiniteMaterials = false)
     {
         var changed = new List<int>();
         foreach (var slot in (int[])[heldSlot, 45, .. hotbarThenMainSlots])
         {
             if (item.Count <= 0)
                 break;
+
             var existing = inventory.GetItem(slot);
-            if (existing.IsNullOrAir() || existing.Count <= 0 || existing != item)
+            if (existing.IsNullOrAir() || existing.Count <= 0 || existing != item || !IsStackable(existing))
                 continue;
+
             var count = Math.Min(item.Count, item.MaxStackSize - existing.Count);
             if (count <= 0)
                 continue;
+
             existing.Count += count;
             item.Count -= count;
             changed.Add(slot);
@@ -313,19 +321,26 @@ public partial class Player
         {
             if (item.Count <= 0)
                 break;
+
             var existing = inventory.GetItem(slot);
             if (!existing.IsNullOrAir() && existing.Count > 0)
                 continue;
+
             var count = Math.Min(item.Count, item.MaxStackSize);
             inventory.SetItem(slot, new ItemStack(item, count));
             item.Count -= count;
             changed.Add(slot);
         }
 
-        if (changed.Count == 0 && infiniteMaterials)
+        if (infiniteMaterials)
             item.Count = 0;
+
         return changed;
     }
+
+    // Like vanilla's isStackable: more than one fits in a slot, and it isn't a damaged item.
+    private static bool IsStackable(ItemStack item) =>
+        item.MaxStackSize > 1 && (item.MaxDamage <= 0 || item.Unbreakable || item.Damage <= 0);
 
     /// <summary>
     /// Collects the item entities in the player's pickup area. The world tick calls it once a tick, like vanilla's player
@@ -352,12 +367,16 @@ public partial class Player
                 continue;
 
             bool remove;
+
+            // Taken like a click takes it, so that a click's check of the inventory and what it applies see the same
+            // contents (see MainEventHandler.OnInventoryClick).
+            using (await this.Inventory.LockAsync())
             lock (ItemEntity.TransferLock)
             {
                 if (itemEntity.Removed || !itemEntity.CanPickup || itemEntity.Item.Count <= 0)
                     continue;
                 var originalCount = itemEntity.Item.Count;
-                var changed = AddPickedUpItem(this.Inventory, this.CurrentHeldItemSlot, itemEntity.Item,
+                var changed = AddToInventory(this.Inventory, this.CurrentHeldItemSlot, itemEntity.Item,
                     this.GameMode == GameMode.Creative);
                 var collected = originalCount - itemEntity.Item.Count;
                 if (collected == 0)

@@ -29,7 +29,8 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
     private SemaphoreSlim? transactionLock;
 
-    private long revision;
+    // The stamp of the last time a slot was set (see MarkChanged); the stacks keep their own (see Revision).
+    private long slotsChanged;
 
     /// <summary>
     /// Taken while a player's click changes the container, so that the clicks of players sharing it take turns.
@@ -39,15 +40,30 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         LazyInitializer.EnsureInitialized(ref this.transactionLock, () => new SemaphoreSlim(1, 1));
 
     /// <summary>
-    /// Counts the container's changes: it grows whenever a slot is set, emptied or added to through the container's
-    /// methods. A click remembers it as it arrives, and the server applies the click only if it hasn't moved since,
-    /// so that the click, and what plugins' handlers decided about it, apply to the contents they saw.
+    /// Grows whenever the container's contents change: a slot set, emptied or added to through the container's
+    /// methods, or a stack it holds changing its count or components (see <see cref="ChangeStamp"/>). A click
+    /// remembers it as it arrives, and the server applies the click only if it hasn't moved since, so that the click,
+    /// and what plugins' handlers decided about it, apply to the contents they saw.
     /// </summary>
     /// <remarks>
-    /// Changing a stack in place (its count, say) doesn't count: set it in its slot again with <see cref="SetItem"/>
-    /// afterwards.
+    /// Changing a component's value in place doesn't count: set the component on the stack again, or the stack in its
+    /// slot with <see cref="SetItem"/>.
     /// </remarks>
-    public virtual long Revision => Interlocked.Read(ref this.revision);
+    public virtual long Revision
+    {
+        get
+        {
+            var revision = Volatile.Read(ref this.slotsChanged);
+
+            foreach (var item in this.items)
+            {
+                if (item is not null)
+                    revision = Math.Max(revision, item.Version);
+            }
+
+            return revision;
+        }
+    }
 
     public ItemStack? this[int index] { get => this.GetItem(index); set => this.SetItem(index, value); }
 
@@ -176,7 +192,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     /// <summary>
     /// Records a change to the container's slots (see <see cref="Revision"/>).
     /// </summary>
-    internal void MarkChanged() => Interlocked.Increment(ref this.revision);
+    internal void MarkChanged() => Volatile.Write(ref this.slotsChanged, ChangeStamp.Next());
 
     /// <summary>
     /// Takes the container's <see cref="TransactionLock"/>, and those of the containers it's made of, until the
@@ -188,6 +204,31 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         await gate.WaitAsync();
 
         return new LockRelease(gate);
+    }
+
+    /// <summary>
+    /// Takes the locks a click in a player's open <paramref name="window"/> needs: the window's, then the player's
+    /// <paramref name="inventory"/>'s, which the window shows too, until the returned handle is disposed. Always in
+    /// that order, so that clicks sharing a container, and other changes to the player's inventory, take turns without
+    /// deadlocking.
+    /// </summary>
+    internal static async ValueTask<IDisposable> LockWindowAsync(BaseContainer window, BaseContainer inventory)
+    {
+        var first = await window.LockAsync();
+        if (window.SharesSlotsWith(inventory))
+            return first;
+
+        try
+        {
+            var second = await inventory.LockAsync();
+
+            return new LockPair(first, second);
+        }
+        catch
+        {
+            first.Dispose();
+            throw;
+        }
     }
 
     /// <summary>
@@ -250,6 +291,18 @@ internal sealed class LockRelease(SemaphoreSlim gate) : IDisposable
     {
         if (Interlocked.Exchange(ref this.released, 1) == 0)
             gate.Release();
+    }
+}
+
+/// <summary>
+/// Releases two locks taken in turn, the second first.
+/// </summary>
+internal sealed class LockPair(IDisposable first, IDisposable second) : IDisposable
+{
+    public void Dispose()
+    {
+        second.Dispose();
+        first.Dispose();
     }
 }
 
