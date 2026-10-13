@@ -31,21 +31,31 @@ public interface INetStreamReader : INetStream
 
     /// <summary>
     /// Reads an id of the built-in registry <paramref name="registry"/> (e.g. <c>minecraft:block</c>), in this
-    /// process's numbering where the connection numbers the registry differently.
+    /// process's numbering where the connection numbers the registry differently. The default implementation, for
+    /// streams that don't translate ids, reads it as it is.
     /// </summary>
     /// <exception cref="InvalidOperationException">This process lacks the connection's entry.</exception>
-    public int ReadRegistryId(string registry);
+    public int ReadRegistryId(string registry) => this.ReadVarInt();
 
     /// <summary>
     /// Reads a holder of the registry <paramref name="registry"/> like vanilla's <c>ByteBufCodecs.holder</c>: its id
     /// (see <see cref="ReadRegistryId"/>), or null for a value written inline, which the caller reads next.
     /// </summary>
-    public int? ReadRegistryHolder(string registry);
+    public int? ReadRegistryHolder(string registry)
+    {
+        var id = this.ReadVarInt();
+        return id == 0 ? null : id - 1;
+    }
 
     /// <summary>
     /// Reads an ID set of the registry <paramref name="registry"/> (see <see cref="ReadRegistryId"/>).
     /// </summary>
-    public IdSet ReadIdSet(string registry);
+    public IdSet ReadIdSet(string registry) => IdSet.Read(this, registry);
+
+    /// <summary>Reads an ID set without translating its ids.</summary>
+    [Obsolete("Name the set's registry with ReadIdSet(string), so its ids are translated across a connection.")]
+    public IdSet ReadIdSet() => IdSet.Read(this);
+
     public SoundEvent ReadSoundEvent();
 
     public TValue[] ReadLengthPrefixedArray<TValue>(Func<TValue> read);

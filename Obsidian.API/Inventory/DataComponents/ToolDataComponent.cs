@@ -69,7 +69,7 @@ public readonly record struct ToolRule : INetworkSerializable<ToolRule>
 /// A set of a registry's entries, like vanilla's <c>HolderSet</c> stream codec: a tag, or ids that a connection may
 /// number differently (<see cref="INetStreamReader.ReadRegistryId"/>).
 /// </summary>
-public readonly record struct IdSet
+public readonly record struct IdSet : INetworkSerializable<IdSet>
 {
     /// <summary>
     /// Value used to determine the data that follows. 
@@ -97,7 +97,22 @@ public readonly record struct IdSet
     public ImmutableArray<int>? Ids { get; init; }
 
     /// <summary>Reads a set of the registry <paramref name="registry"/>, e.g. <c>minecraft:block</c>.</summary>
-    public static IdSet Read(INetStreamReader reader, string registry)
+    public static IdSet Read(INetStreamReader reader, string registry) => ReadSet(reader, registry);
+
+    /// <summary>Reads a set without translating its ids.</summary>
+    [Obsolete("Name the set's registry with Read(reader, registry), so its ids are translated across a connection.")]
+    public static IdSet Read(INetStreamReader reader) => ReadSet(reader, null);
+
+    /// <summary>Writes a set of the registry <paramref name="registry"/>, e.g. <c>minecraft:block</c>.</summary>
+    public static void Write(IdSet value, INetStreamWriter writer, string registry) =>
+        WriteSet(value, writer, registry);
+
+    /// <summary>Writes a set without translating its ids.</summary>
+    [Obsolete("Name the set's registry with Write(value, writer, registry), so its ids are translated.")]
+    public static void Write(IdSet value, INetStreamWriter writer) => WriteSet(value, writer, null);
+
+    // A null registry keeps the ids as they are, for the obsolete overloads.
+    private static IdSet ReadSet(INetStreamReader reader, string? registry)
     {
         var type = reader.ReadVarInt();
 
@@ -106,20 +121,19 @@ public readonly record struct IdSet
             : new() { Type = type, Ids = ReadIds(reader, type - 1, registry) };
     }
 
-    private static ImmutableArray<int> ReadIds(INetStreamReader reader, int count, string registry)
+    private static ImmutableArray<int> ReadIds(INetStreamReader reader, int count, string? registry)
     {
         if (count < 0 || count > 65536)
             throw new System.IO.InvalidDataException("Invalid ID set size.");
 
         var ids = ImmutableArray.CreateBuilder<int>(count);
         for (var i = 0; i < count; i++)
-            ids.Add(reader.ReadRegistryId(registry));
+            ids.Add(registry is null ? reader.ReadVarInt() : reader.ReadRegistryId(registry));
 
         return ids.MoveToImmutable();
     }
 
-    /// <summary>Writes a set of the registry <paramref name="registry"/>, e.g. <c>minecraft:block</c>.</summary>
-    public static void Write(IdSet value, INetStreamWriter writer, string registry)
+    private static void WriteSet(IdSet value, INetStreamWriter writer, string? registry)
     {
         writer.WriteVarInt(value.Type == 0 ? 0 : value.Ids!.Value.Length + 1);
         if (value.Type == 0)
@@ -137,6 +151,11 @@ public readonly record struct IdSet
         var ids = value.Ids.Value;
 
         foreach (var id in ids)
-            writer.WriteRegistryId(registry, id);
+        {
+            if (registry is null)
+                writer.WriteVarInt(id);
+            else
+                writer.WriteRegistryId(registry, id);
+        }
     }
 }
