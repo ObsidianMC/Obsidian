@@ -251,7 +251,7 @@ public sealed partial class Player : Avatar, IClientPlayer
     public ItemStack? GetHeldItem() => Inventory.GetItem(CurrentHeldItemSlot);
     public ItemStack? GetOffHandItem() => Inventory.GetItem(45);
 
-    public ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot slot)//TODO implement new features
+    public async ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot slot)//TODO implement new features
     {
         var actualBoard = (Scoreboard)scoreboard;
 
@@ -261,9 +261,7 @@ public sealed partial class Player : Avatar, IClientPlayer
         CurrentScoreboard = actualBoard;
 
         // Queued in order with the scoreboard's removal, so a plugin unloading meanwhile can't leave it shown.
-        actualBoard.Display(this.EntityId, slot);
-
-        return ValueTask.CompletedTask;
+        await actualBoard.DisplayAsync(this.EntityId, slot);
     }
 
     // The two steps of queueing a packet, for a caller that checks what it sends in between. A connection that isn't

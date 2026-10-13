@@ -16,10 +16,21 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
     private readonly Lock queueLock = new();
     private long nextOrder;
 
+    // Set once the service stopped sending, after which nothing queued is delivered. Read under queueLock.
+    private bool stopped;
+
     private void Enqueue(QueuedPacket packet, int priority)
     {
         lock (queueLock)
+        {
+            if (stopped)
+            {
+                packet.Delivered?.TrySetResult();
+                return;
+            }
+
             priorityQueue.Enqueue(packet, (priority, nextOrder++));
+        }
     }
 
     private QueuedPacket[] TakeBatch()
@@ -36,6 +47,28 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
     public void QueuePacketTo(IClientboundPacket packet, params int[] ids)
     {
         this.Enqueue(new() { Packet = packet, IncludedIds = ids }, 1);
+    }
+
+    /// <summary>
+    /// Queues <paramref name="packet"/> to the players <paramref name="ids"/>, in order with the packets queued
+    /// before it, like <c>QueuePacketTo</c>.
+    /// </summary>
+    /// <returns>
+    /// A task completed once the packet is in the players' own queues, after plugins' handlers ran for it, so that
+    /// whatever the caller sends a player next goes after it. It also completes if the service stops first.
+    /// </returns>
+    internal Task QueuePacketToAsync(IClientboundPacket packet, params int[] ids)
+    {
+        var delivered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        this.Enqueue(new()
+        {
+            Packet = packet,
+            IncludedIds = ids,
+            Delivered = delivered
+        }, 1);
+
+        return delivered.Task;
     }
 
     public void QueuePacketTo(IClientboundPacket packet, int priority, params int[] ids)
@@ -122,10 +155,17 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
             {
                 foreach (var queuedPacket in this.TakeBatch())
                 {
-                    var players = queuedPacket.ToLevel is AbstractLevel toLevel
-                        ? toLevel.Players.Values : this.server.OnlinePlayers.Values;
-                    foreach (var player in players.Where(player => ShouldGetPacket(player, queuedPacket)))
-                        await player.QueuePacketAsync(queuedPacket.Packet);
+                    try
+                    {
+                        var players = queuedPacket.ToLevel is AbstractLevel toLevel
+                            ? toLevel.Players.Values : this.server.OnlinePlayers.Values;
+                        foreach (var player in players.Where(player => ShouldGetPacket(player, queuedPacket)))
+                            await player.QueuePacketAsync(queuedPacket.Packet);
+                    }
+                    finally
+                    {
+                        queuedPacket.Delivered?.TrySetResult();
+                    }
                 }
             }
         }
@@ -138,6 +178,22 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
         {
             logger.LogError(e, "Packet broadcasting failed");
             await this.environment.OnServerCrashAsync(e);
+        }
+        finally
+        {
+            this.Stop();
+        }
+    }
+
+    // Releases whoever waits on a packet that will now never be sent.
+    private void Stop()
+    {
+        lock (queueLock)
+        {
+            stopped = true;
+
+            while (priorityQueue.TryDequeue(out var packet, out _))
+                packet.Delivered?.TrySetResult();
         }
     }
 
@@ -157,5 +213,8 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
         public int[]? IncludedIds { get; init; }
 
         public ILevel? ToLevel { get; init; }
+
+        // Completed once the packet is in the players' queues (see QueuePacketToAsync).
+        public TaskCompletionSource? Delivered { get; init; }
     }
 }
