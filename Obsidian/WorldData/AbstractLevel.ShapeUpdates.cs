@@ -47,7 +47,12 @@ public abstract partial class AbstractLevel
             var neighbor = snapshot.GetBlock(neighborPosition);
             var updated = ShapeUpdater.UpdateShape(snapshot, neighbor, neighborPosition, face.Opposite(), changed);
             if (updated.IsSameState(neighbor))
+            {
+                // Vanilla's updateShape schedules a leaf's distance tick under the same condition (see LeafDecay).
+                if (LeafDecay.IsLeaves(neighbor) && LeafDecay.ShouldScheduleTick(neighbor, changed))
+                    await ScheduleBlockUpdateAsync(new BlockUpdate(this, neighborPosition));
                 continue;
+            }
 
             if (updated.IsAir)
             {

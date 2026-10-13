@@ -584,6 +584,9 @@ public abstract partial class AbstractLevel : ILevel
         await TickMobGameEventsAsync();
         await TickMobEggsAsync();
 
+        TickStage = "random ticks";
+        await TickRandomBlocksAsync();
+
         foreach (var region in Regions.Values)
         {
             if (region is Region concrete)
@@ -968,6 +971,13 @@ public abstract partial class AbstractLevel : ILevel
     {
         if (update.Block is not IBlock block)
             return false;
+
+        // A leaf's scheduled tick recomputes its distance from the logs (see LeafDecay).
+        if (LeafDecay.IsLeaves(block))
+        {
+            await LeafDecay.TickAsync(this, update.Position);
+            return false;
+        }
 
         // Fluids react to block changes through their scheduled ticks instead (see LevelFluids).
         if (block.IsGravityAffected())

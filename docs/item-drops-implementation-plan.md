@@ -349,7 +349,7 @@ Audit of runtime block-to-air and replacement sites (`SetBlockAsync(..., Air)` /
 | `UseItemOnPacket.cs` (gravity block under the placed block) | Falling-block placement | Silent: the block becomes a falling-block entity, not a drop. Not verified against vanilla. |
 | `BlockUpdates.HandleFallingBlock` | Falling-block start | Same as above, silent |
 | `AbstractLevel.MobBlocks.cs` (wither-skull structure) | Wither spawn structure removal | Silent (not verified against vanilla) |
-| `Sheep.cs` (grass eating) | Mob | Not audited |
+| `Sheep.cs` (grass eating) | Mob | Silent, by vanilla bytecode (`EatBlockGoal` uses `destroyBlock(pos, false)`) |
 | `Silverfish.cs`, `Enderman.cs`, `Ravager.cs`, `Wither.cs`, `EnderDragon.DestroyBlocksAsync`, `BreakDoorGoal.cs`, `MobSpawner.Lifecycles.cs` | Mob destruction | Not audited. Vanilla drops for mob griefing need verification per mob. Silent for now. |
 | `AbstractLevel.Eggs.cs` | Turtle eggs | Not audited |
 | `Player.Portals.cs`, `LevelPortals.cs` | Portal frame and portal block | Not audited |
@@ -360,6 +360,18 @@ Audit of runtime block-to-air and replacement sites (`SetBlockAsync(..., Air)` /
 
 Delivered: water-flow and support-loss drops (queued from the fluid tick), with lava verified silent.
 
+Leaf decay (vanilla `LeavesBlock`, bytecode-verified): `LeafDecay.cs` and `AbstractLevel.RandomTicks.cs`.
+- `randomTick` decays a leaf that is not persistent and has distance 7: its loot drops with no tool, and the fluid there replaces it (`SetBlockAsync(…, true)`).
+- `tick` recomputes the distance from the nearest log plus one, capped at 7.
+- `updateShape` schedules that tick under vanilla's condition (`ShouldScheduleTick`). `AbstractLevel.ShapeUpdates.cs` calls it for leaf neighbours.
+- The random tick samples `randomTickSpeed` positions per section of mob-ticking chunks (`TickRandomBlocksAsync`, run in `TickLevelAsync`). It is the first random tick in Obsidian; only leaves react to it.
+- Tests in `LeafDecayIntegration`: the scheduling and decay rules (logic), persistent and log-adjacent leaves, the scheduled distance tick, and log removal scheduling a tick that leads to decay.
+
+Deviations and gaps for leaf decay:
+- `HandleBlockUpdateAsync` runs the leaf's distance tick for any block update that reaches a leaf, not only the scheduled ones vanilla queues. The distance comes out the same, only earlier.
+- The random-tick sampler is not tested end-to-end: the test world has no players, so `IsMobTicking` is false and the sampler never runs. Only the decay call is tested.
+- Water-logged leaves become water when they decay (`CreateLegacyBlock`), and the water is not spread by a test.
+
 Deviations and gaps:
 - Drops for fluid-destroyed blocks are evaluated after the fluid tick, so the neighbour reads used by location checks see the state after the fluid changed. Vanilla reads them at destruction time. Matters only for location-checked blocks next to a fluid change.
 - The queue-to-spawn path (`LevelFluids` → `SpawnDestroyedByFluidsAsync`) has no end-to-end test: the test world doesn't track generated chunks, so fluids never tick there. Tests cover the fluid decision (`ScenarioWorld` records destroyed blocks) and the loot (`ForDestroyedAsync`).
@@ -367,4 +379,4 @@ Deviations and gaps:
 - The mob rows are not audited, so their drops are still missing. Explicit `DestroyBlockAsync(cause, ...)` is not introduced.
 - XP is separate, as the plan requires; not implemented here.
 
-Status: **milestone 5 partly done** (explosions, water and lava flow, fluid-triggered support loss). Mob destruction, live-level support loss, and the end-to-end queue test are open. Milestone 6 is not started.
+Status: **milestone 5 partly done** (explosions, water and lava flow, support loss from live and fluid changes, leaf decay). Mob destruction is partly done (Wither, Ravager, Silverfish drop; the rest is audited as silent). The end-to-end queue test and `SuppressDrops` on live changes are open. Milestone 6 is not started.
