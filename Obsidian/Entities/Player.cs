@@ -125,6 +125,11 @@ public sealed partial class Player : Avatar, IClientPlayer
     /// </summary>
     internal Events.WindowSnapshots WindowSnapshots { get; set; }
 
+    /// <summary>
+    /// Keeps the player's recipe book up to date with the server's recipes.
+    /// </summary>
+    internal Events.RecipeBookSync RecipeBookSync { get; } = new();
+
     public IBlock? LastClickedBlock { get; internal set; }
 
     public GameMode GameMode

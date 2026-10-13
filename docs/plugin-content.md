@@ -182,6 +182,37 @@ viewers.
   is captured again instead, and if it keeps changing, the player's next ticks send it whole, through the handlers
   too, once it holds still.
 
+## Recipes
+
+```csharp
+server.RegisterRecipes(ShapedRecipeBuilder.Create(CraftingBookCategory.Building)
+    .WithKey('R', new ItemStack(ruby, 1))
+    .WithPattern("RRR", "RRR", "RRR")
+    .HasNoGroup()
+    .WithIdentifier("ruby:ruby_block")
+    .WithResult(new ItemStack(rubyBlock, 1))
+    .Build());
+```
+
+Recipes registered with a plugin's `IServer.RegisterRecipes` join vanilla's, in the same recipe set:
+
+- Crafting tables and the player's 2x2 grid craft shaped and shapeless ones. Vanilla's recipes are tried first, then
+  the others in the order they were first registered, so a plugin's recipe can't take over a vanilla pattern.
+- Every player's recipe book shows them, and placing one from the book fills the grid, or shows its ghost when the
+  player lacks the items. Obsidian has no recipe unlocking: every player knows every crafting recipe.
+- Furnaces, blast furnaces and smokers take a smelting, blasting or smoking recipe's ingredient when it's
+  shift-clicked into them. Obsidian doesn't cook yet, nor use stonecutting, smithing or campfire recipes, vanilla's
+  or plugins': those are kept but unused.
+
+An identifier (in snake case) names one recipe: registering a taken one throws. Players online follow changes without
+reconnecting. Registered recipes are added to their books with vanilla's recipe book packet (without the new-recipe
+toast), and an open crafting grid that now crafts something shows it. When the plugin unloads its recipes stop
+matching, are removed from the books with vanilla's remove packet, and a grid showing one of their results is worked
+out again. A recipe keeps its recipe book id for the life of the process, so a reloaded plugin's recipes come back
+under the ids the books had. A player whose client goes back through configuration for the same plugin change (for
+new items, say) gets the whole book when they join again instead, as the recipes may show items their client doesn't
+know yet. Recipes are made of items, so a vanilla client sees a plugin's recipes of vanilla items.
+
 ## Tags
 
 Tags are data pack tag files: `data/<namespace>/tags/block/<path>.json`, `tags/item/...`, `tags/entity_type/...`,

@@ -88,6 +88,13 @@ public interface IServer : IDisposable
     /// <returns>True if a player is found, false if not.</returns>
     public bool TryGetPlayer(int entityId, [NotNullWhen(true)] out IPlayer? player);
 
+    /// <summary>
+    /// Registers recipes, which crafting grids, furnaces and players' recipe books use like vanilla's from now on;
+    /// online players' books follow. Those a plugin registers through its own server are removed when it unloads.
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// A recipe's identifier, in snake case, is taken; the recipes before it were registered.
+    /// </exception>
     public void RegisterRecipes(params IRecipe[] recipes);
 
     public bool AddPlayer(IPlayer player);

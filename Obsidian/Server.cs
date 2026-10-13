@@ -257,47 +257,78 @@ public sealed partial class Server : IServer
     public void RegisterRecipes(params IRecipe[] recipes) => this.RegisterRecipes(recipes, owner: null);
 
     /// <summary>
-    /// Registers recipes for <paramref name="owner"/>, whose unloading removes them, or for the server.
+    /// Registers recipes for <paramref name="owner"/>, whose unloading removes them, or for the server. They're used
+    /// like vanilla's from now on, and online players' recipe books follow (see <see cref="SyncRecipesAsync"/>).
     /// </summary>
     /// <exception cref="InvalidOperationException">The owner is unloading; the recipes were removed.</exception>
     internal void RegisterRecipes(IRecipe[] recipes, PluginContainer? owner)
     {
-        var added = new List<(string Identifier, IRecipe Recipe)>();
+        var added = new List<IRecipe>();
 
         try
         {
-            lock (RecipesRegistry.Recipes)
-            {
-                foreach (var recipe in recipes)
-                {
-                    var identifier = recipe.Identifier.ToSnakeCase();
-
-                    RecipesRegistry.Recipes.Add(identifier, recipe);
-                    added.Add((identifier, recipe));
-                }
-            }
+            RecipesRegistry.Register(recipes, added);
         }
         finally
         {
-            owner?.TrackAddition(() => RemoveRecipes(added));
+            if (added.Count > 0)
+                this.OnRecipesChanged();
+
+            owner?.TrackAddition(() => this.RemoveRecipes(added));
         }
     }
 
     // Removes recipes a plugin added, unless another recipe took their identifier since.
-    private static void RemoveRecipes(List<(string Identifier, IRecipe Recipe)> added)
+    private void RemoveRecipes(List<IRecipe> added)
     {
-        lock (RecipesRegistry.Recipes)
+        RecipesRegistry.Unregister(added);
+        this.OnRecipesChanged();
+    }
+
+    // Players catch up with the recipes without the change (a plugin unloading, say) waiting for them.
+    private void OnRecipesChanged() => _ = this.SyncRecipesAsync();
+
+    /// <summary>
+    /// Has online players catch up with the current recipes: their recipe books get the recipes added and removed
+    /// since they were last sent theirs, and an open crafting grid's result is worked out again. Players whose client
+    /// goes back through configuration for other content are left out; they get the whole book when they join again,
+    /// as the new recipes may show items their client doesn't know yet.
+    /// </summary>
+    /// <remarks>
+    /// Runs one at a time, so that awaiting it after a change also waits for the sync the change started.
+    /// </remarks>
+    internal async Task SyncRecipesAsync()
+    {
+        await this.recipeSync.WaitAsync();
+        try
         {
-            foreach (var (identifier, recipe) in added)
+            ContentVersion? content = null;
+
+            foreach (var player in this.OnlinePlayers.Values.OfType<Player>())
             {
-                if (RecipesRegistry.Recipes.TryGetValue(identifier, out var current)
-                    && ReferenceEquals(current, recipe))
+                if (player.Client is Client client)
                 {
-                    RecipesRegistry.Recipes.Remove(identifier);
+                    content ??= this.GetContentVersion();
+
+                    if (client.AwaitingReconfiguration || client.NeedsReconfiguration(content.Value))
+                        continue;
                 }
+
+                await player.RecipeBookSync.SendChangesAsync(player);
+                await MainEventHandler.RefreshCraftingResultAsync(player);
             }
         }
+        catch (Exception ex)
+        {
+            Log.RecipeSyncFailed(this.logger, ex);
+        }
+        finally
+        {
+            this.recipeSync.Release();
+        }
     }
+
+    private readonly SemaphoreSlim recipeSync = new(1, 1);
 
     public bool IsPlayerOnline(string username) => this.UsernameToUuidMappings.ContainsKey(username);
 
@@ -1087,5 +1118,8 @@ public sealed partial class Server : IServer
 
         [LoggerMessage(Level = LogLevel.Information, Message = "Rejected {Ip}: not whitelisted")]
         public static partial void NotWhitelisted(ILogger logger, string ip);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Sending players the changed recipes failed")]
+        public static partial void RecipeSyncFailed(ILogger logger, Exception exception);
     }
 }

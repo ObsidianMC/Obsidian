@@ -69,7 +69,9 @@ public sealed partial class FinishConfigurationPacket
         await client.QueuePacketAsync(EntityEventPacket.PermissionLevel(player.EntityId, permissionLevel));
         await client.QueuePacketAsync(CommandsRegistry.Packet);
         await client.QueuePacketAsync(new RecipeBookSettingsPacket());
-        await client.QueuePacketAsync(new RecipeBookAddPacket());
+
+        if (player is Entities.Player joined)
+            await joined.RecipeBookSync.SendInitialAsync(player);
 
         await player.UpdatePlayerInfoAsync();
         await player.SendPlayerInfoAsync();
