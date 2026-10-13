@@ -117,7 +117,9 @@ internal static partial class JavaRegex
         {
             atom = output.Length;
 
-            if (!char.IsAsciiLetterOrDigit(c))
+            // Escaped ASCII punctuation is literal, in a class too; .NET refuses escaped word characters, and
+            // characters past ASCII never mean anything special.
+            if (char.IsAscii(c) && !char.IsAsciiLetterOrDigit(c) && c != '_')
                 output.Append('\\');
 
             output.Append(c);

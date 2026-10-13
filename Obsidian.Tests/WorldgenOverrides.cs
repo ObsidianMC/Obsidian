@@ -340,6 +340,7 @@ public sealed class WorldgenOverrides : IDisposable
     [Theory(DisplayName = "Filter patterns are read as Java's: quoted text and possessive quantifiers")]
     [InlineData(@"\Qminecraft\E", @"^\Qworldgen/noise/\E", true)]
     [InlineData(@"^mine\Q.\E", null, false)]
+    [InlineData(@"^[\Q_]\Em]inecraft", null, true)]
     [InlineData(@"^[a-z]++$", @"[.]json$", true)]
     [InlineData(null, @"^.*+json", false)]
     [InlineData(@"(craft)++", @"noise/(a|b)\.json", true)]
