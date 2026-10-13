@@ -723,6 +723,102 @@ public sealed class MenuClicks
         }
     }
 
+    [Fact(DisplayName = "A picked-up item's animation and slots each go through plugins' packet handlers",
+        Timeout = 10000)]
+    public async Task ItemPickupPacketsEachGoThroughPacketHandlers()
+    {
+        await using var context = TestServerFactory.CreateServer($"item-pickup-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Collector");
+        var client = (TestClient)player.Client;
+        var handled = new List<IClientboundPacket>();
+        player.WindowSnapshots = new WindowSnapshots(Redact, packet => client.SendPacket(packet));
+        var item = new Obsidian.Entities.ItemEntity
+        {
+            Level = context.World,
+            EntityId = Server.GetNextEntityId(),
+            Position = player.Position,
+            Item = new ItemStack(ItemsRegistry.Diamond, 3),
+            CanPickup = true
+        };
+        Assert.True(context.World.TryAddEntity(item));
+        var sent = client.SentPackets.Count;
+
+        await player.PickupNearbyItemsAsync();
+
+        Assert.Equal(3, player.Inventory.GetItem(36)?.Count);
+        Assert.Collection(
+            handled,
+            packet => Assert.IsType<TakeItemEntityPacket>(packet),
+            packet => Assert.IsType<SetPlayerInventoryPacket>(packet));
+
+        // Only the animation is left, so it isn't bundled.
+        Assert.IsType<TakeItemEntityPacket>(Assert.Single(client.SentPackets.Skip(sent)));
+
+        // Stands in for a plugin's queue handler that cancels the inventory's slot updates.
+        ValueTask<bool> Redact(IClientboundPacket packet)
+        {
+            handled.Add(packet);
+
+            return ValueTask.FromResult(packet is not SetPlayerInventoryPacket);
+        }
+    }
+
+    [Fact(DisplayName = "A merchant's window sent after a stale pickup keeps its state id, so the next click applies",
+        Timeout = 10000)]
+    public async Task StaleMerchantWindowKeepsItsStateId()
+    {
+        await using var context = TestServerFactory.CreateServer($"stale-merchant-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Customer");
+        var client = (TestClient)player.Client;
+        player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Emerald, 5));
+        var villager = new Obsidian.Entities.Villager
+        {
+            Level = context.World,
+            EntityId = Server.GetNextEntityId(),
+            Position = player.Position,
+            Health = 20
+        };
+        var offer = new TradeEntry
+        {
+            FirstInput = new TradeItem(ItemsRegistry.Emerald.Id, 1, []),
+            SecondInput = new TradeItem(0, 0, []),
+            Output = new ItemStack(ItemsRegistry.Bread),
+            MaxCount = 12
+        };
+        await Obsidian.Entities.MerchantTrading.OpenAsync(villager, player, [offer], 1, 0, canRestock: true);
+        Assert.IsType<Obsidian.Entities.MerchantContainer>(player.OpenedContainer);
+        var stateId = client.SentPackets.OfType<ContainerSetContentPacket>().Last().StateId;
+
+        // The emeralds grow while handlers decide on a picked-up arrow's slot, which is then left out.
+        var changing = true;
+        player.WindowSnapshots = new WindowSnapshots(Decide, packet => client.SendPacket(packet));
+        Assert.True(await player.ReceiveProjectileAsync(new ItemStack(ItemsRegistry.Arrow), creativeOnly: false));
+        Assert.True(player.WindowSnapshots.IsStale);
+
+        changing = false;
+        var sent = client.SentPackets.Count;
+        await MainEventHandler.RefreshStaleWindowAsync(player);
+
+        var shown = client.SentPackets.Skip(sent).OfType<ContainerSetContentPacket>().Single();
+        Assert.Equal(6, shown.Items[3]?.Count);
+        Assert.Equal(stateId, shown.StateId);
+        Assert.False(player.WindowSnapshots.IsStale);
+
+        // The client clicks with the id it was sent last: the click picks the emeralds up.
+        await ClickAsync(context.Server, player, 3, 0, ClickType.Pickup, shown.StateId);
+
+        Assert.Equal(6, player.CarriedItem?.Count);
+        Assert.Null(player.Inventory.GetItem(9));
+
+        ValueTask<bool> Decide(IClientboundPacket packet)
+        {
+            if (changing)
+                player.Inventory.GetItem(9)!.Count++;
+
+            return ValueTask.FromResult(true);
+        }
+    }
+
     private static async Task<T> OpenAsync<T>(Obsidian.Entities.Player player, T container) where T : BaseContainer
     {
         await player.OpenInventoryAsync(container);
@@ -730,17 +826,18 @@ public sealed class MenuClicks
         return container;
     }
 
-    // Clicks a slot of the player's open window through the click packet.
+    // Clicks a slot of the player's open window through the click packet, carrying the given state id.
     private static async Task ClickAsync(
         Server server,
         Obsidian.Entities.Player player,
         short slot,
         sbyte button,
-        ClickType type)
+        ClickType type,
+        int stateId = 0)
     {
         var containerId = player.OpenedContainer is null ? 0 : player.CurrentContainerId;
 
-        await Packet(containerId, slot, button, type).HandleAsync(server, player);
+        await Packet(containerId, slot, button, type, stateId).HandleAsync(server, player);
     }
 
     private static SetCreativeModeSlotPacket CreativeSlot(short slot, ItemStack item)
@@ -773,11 +870,16 @@ public sealed class MenuClicks
         });
     }
 
-    private static ContainerClickPacket Packet(int containerId, short slot, sbyte button, ClickType type)
+    private static ContainerClickPacket Packet(
+        int containerId,
+        short slot,
+        sbyte button,
+        ClickType type,
+        int stateId = 0)
     {
         using var writer = new NetworkBuffer();
         writer.WriteVarInt(containerId);
-        writer.WriteVarInt(0);
+        writer.WriteVarInt(stateId);
         writer.WriteShort(slot);
         writer.WriteByte(button);
         writer.WriteVarInt((int)type);

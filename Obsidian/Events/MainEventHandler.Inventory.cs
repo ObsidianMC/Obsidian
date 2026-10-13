@@ -880,11 +880,27 @@ public partial class MainEventHandler
     /// </summary>
     internal static async ValueTask RefreshStaleWindowAsync(Player player)
     {
-        var order = player.WindowSnapshots;
-        if (!order.IsStale)
+        if (!player.WindowSnapshots.IsStale)
             return;
 
-        var window = player.OpenedContainer ?? player.Inventory;
+        // A merchant's clicks are applied only with the state id its client last got, so its window is sent in turn
+        // with them, with that id.
+        if (player.OpenedContainer is MerchantContainer merchant)
+        {
+            await merchant.SendInTurnAsync(stateId => RefreshWindowAsync(player, merchant, stateId));
+            return;
+        }
+
+        // Other windows' clicks are checked against what they saw as they arrived, not against the state id, which
+        // is 0 here like in the snapshots a click sends the window's other viewers.
+        await RefreshWindowAsync(player, player.OpenedContainer ?? player.Inventory, stateId: 0);
+    }
+
+    // Captures the player's whole window, inside its lock, under the given state id, and sends it unless it changed
+    // or another window opened meanwhile.
+    private static async ValueTask RefreshWindowAsync(Player player, BaseContainer window, int stateId)
+    {
+        var order = player.WindowSnapshots;
         WindowSnapshot snapshot;
 
         using (await BaseContainer.LockWindowAsync(window, player.Inventory))
@@ -895,7 +911,7 @@ public partial class MainEventHandler
 
             var state = ClickWindowState.Of(player);
             var containerId = player.OpenedContainer is null ? 0 : player.CurrentContainerId;
-            var packets = WindowPackets(player, containerId, stateId: 0, withEnchanting: true);
+            var packets = WindowPackets(player, containerId, stateId, withEnchanting: true);
 
             snapshot = new WindowSnapshot(player, order.Next(), state, packets);
         }

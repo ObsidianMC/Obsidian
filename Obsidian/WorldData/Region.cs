@@ -810,6 +810,12 @@ public class Region : IRegion
 
     public async ValueTask DisposeAsync()
     {
+        // Loading a region starts reading its headers without waiting (see AbstractLevel.LoadRegion). Closing the
+        // files under that read can leave them open until it ends, after the level is disposed, so it's waited out.
+        // A failed read fails the region's other operations, which wait for it too, not its disposal.
+        if (this.initialization.IsValueCreated)
+            await this.initialization.Value.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+
         await regionFile.DisposeAsync();
         await this.entityRegionFile.DisposeAsync();
     }
