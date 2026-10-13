@@ -11,8 +11,11 @@ namespace Obsidian.Net;
 public partial class NetworkBuffer
 {
     /// <summary>
-    /// Resolves a connection's registry ID to its resource location for component hashing. Supply this for a client
-    /// connected to another server; dynamic registry IDs are not universal. Missing names produce an omitted hash.
+    /// Resolves a connection's registry ID to its resource location for component hashing, or null if it doesn't know
+    /// it. Supply this for a client connected to another server, naming the entries of the server's datapack
+    /// registries (its RegistryData): their IDs are the server's own, so an enchantment, banner pattern or armor trim
+    /// it doesn't name produces an omitted hash. Built-in registries' entries it doesn't name take this process's
+    /// names.
     /// </summary>
     public Func<string, int, string?>? ComponentRegistryName { get; set; }
 
@@ -132,11 +135,12 @@ public partial class NetworkBuffer
 
     private string RegistryName(string registry, int id)
     {
-        if (this.ComponentRegistryName is not null)
-            return this.ComponentRegistryName(registry, id) ?? throw new UnsupportedComponentHashException();
+        if (this.ComponentRegistryName?.Invoke(registry, id) is string name)
+            return name;
 
-        // Built-in registries have fixed IDs; dynamic registries must come from the connection. The names are this
-        // process's, so a connection's ID is translated first (see IdMaps).
+        // Built-in registries have fixed entries, named here by this process's names, so a connection's ID is
+        // translated first (see IdMaps). Datapack registries' entries are the connection's own: only without a
+        // resolver, when this process is the server, are they this process's (vanilla's) enchantments.
         var local = this.IdMaps is RegistryIdMaps maps ? maps.Get(registry).ToLocal(id) : id;
         if (local < 0)
             throw new UnsupportedComponentHashException();
@@ -148,8 +152,9 @@ public partial class NetworkBuffer
             "minecraft:mob_effect" when Enum.IsDefined((MobEffect)local) =>
                 "minecraft:" + ((MobEffect)local).ToString().ToSnakeCase(),
             "minecraft:item" => ItemsRegistry.Get(local).UnlocalizedName,
-            "minecraft:enchantment" when local < EnchantmentsRegistry.All.Count =>
-                EnchantmentsRegistry.All[local].Identifier,
+            "minecraft:enchantment"
+                when this.ComponentRegistryName is null
+                && local < EnchantmentsRegistry.All.Count => EnchantmentsRegistry.All[local].Identifier,
             _ => throw new UnsupportedComponentHashException()
         };
     }

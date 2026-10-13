@@ -540,6 +540,10 @@ public partial class NetworkBuffer : INetStreamReader
 
     public IdSet ReadIdSet(string registry) => IdSet.Read(this, registry);
 
+    /// <inheritdoc cref="INetStreamReader.ReadIdSet()"/>
+    [Obsolete("Name the set's registry with ReadIdSet(string), so its ids are translated across a connection.")]
+    public IdSet ReadIdSet() => IdSet.Read(this);
+
     // The local id of the connection's id of the registry (see IdMaps). An entry this process lacks throws, so a
     // component naming it keeps its bytes (ReadDataComponent).
     private int ToLocalId(string registry, int id)

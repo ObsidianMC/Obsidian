@@ -297,9 +297,16 @@ client. This document describes the design and tracks its progress. The archive 
      consumables' and death protection's effects and sounds, potion contents' and suspicious stews' effects, entity,
      bee and block entity data types, and block predicates' component types; components the client doesn't model,
      or whose ids don't translate, keep the server's bytes, and a stack naming an entry the server lacks is written
-     empty), component hashes (which name the client's entries), beacon effects (menu data and `SetBeacon`), entity
-     types, particle types, menus, mob effects, sound events, attributes, command argument types, slot displays, tags
-     and statistics. A mod's payload serialized before the maps change is dropped rather than sent with stale ids.
+     empty, as is one whose components hold a required stack, like a bundle's items, naming one), component hashes
+     (which name built-in registries' entries by the client's names and datapack registries' entries, like
+     enchantments, by the names the server's RegistryData listed, omitting a hash it can't name), beacon effects
+     (menu data and `SetBeacon`), entity types, particle types, menus, mob effects, sound events, attributes, command
+     argument types, slot displays, tags and statistics. A mod's payload serialized before the maps change is dropped
+     rather than sent with stale ids. Migration: components name the registry of the ids they read and write
+     (`ReadRegistryId`, `WriteRegistryId`, the holder variants, `IdSet.Read(reader, registry)`), so they translate;
+     custom `INetStreamReader`/`INetStreamWriter` implementations keep compiling, since those methods default to
+     passing ids through, and the old `IdSet.Read(reader)`, `IdSet.Write(value, writer)` and `ReadIdSet()` remain,
+     obsolete and untranslated.
      Block states aren't synced: like NeoForge, they're numbered from the
      server's block order, each block with the states the client registered it with. So a server running the same
      mods in another order, or that reloaded plugins, is accepted. A NeoForge or Obsidian server numbers vanilla's
