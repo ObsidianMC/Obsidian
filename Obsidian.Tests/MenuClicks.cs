@@ -645,15 +645,82 @@ public sealed class MenuClicks
 
         Assert.True(await order.SendAsync(changed));
         Assert.Single(client.SentPackets.Skip(sent));
-
-        // Captured and queued in one step, a snapshot is current, and those captured before it are left out.
-        var current = new SetPlayerInventoryPacket { Slot = 0, Contents = null };
-        order.SendNow(player, () => [current]);
-        Assert.False(await order.SendAsync(changed));
-        Assert.Same(current, client.SentPackets.Last());
+        Assert.True(order.IsStale);
 
         WindowSnapshot Snapshot(long sequence) =>
             new(player, sequence, ClickWindowState.Of(player), [new SetPlayerInventoryPacket { Slot = 0, Contents = null }]);
+    }
+
+    [Fact(DisplayName = "A picked-up arrow's slot goes through plugins' packet handlers", Timeout = 10000)]
+    public async Task PickupGoesThroughPacketHandlers()
+    {
+        await using var context = TestServerFactory.CreateServer($"pickup-handlers-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Collector");
+        var client = (TestClient)player.Client;
+        var handled = new List<IClientboundPacket>();
+        player.WindowSnapshots = new WindowSnapshots(Redact, packet => client.SendPacket(packet));
+        var sent = client.SentPackets.Count;
+
+        Assert.True(await player.ReceiveProjectileAsync(new ItemStack(ItemsRegistry.Arrow), creativeOnly: false));
+
+        Assert.True(player.Inventory.GetItem(36)?.Is(ItemsRegistry.Arrow));
+        Assert.IsType<ContainerSetSlotPacket>(Assert.Single(handled));
+        Assert.Empty(client.SentPackets.Skip(sent));
+
+        // Stands in for a plugin's queue handler that cancels the inventory's slot updates.
+        ValueTask<bool> Redact(IClientboundPacket packet)
+        {
+            handled.Add(packet);
+
+            return ValueTask.FromResult(packet is not ContainerSetSlotPacket);
+        }
+    }
+
+    [Fact(DisplayName = "A window that keeps changing while handlers decide is sent later, through them, as it is",
+        Timeout = 10000)]
+    public async Task StaleWindowIsSentLaterThroughHandlers()
+    {
+        await using var context = TestServerFactory.CreateServer($"stale-window-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Viewer");
+        var client = (TestClient)player.Client;
+        player.Inventory.SetItem(36, new ItemStack(ItemsRegistry.Stone));
+        var handled = new List<IClientboundPacket>();
+        var changing = true;
+        player.WindowSnapshots = new WindowSnapshots(Decide, packet => client.SendPacket(packet));
+        var sent = client.SentPackets.Count;
+
+        // Each snapshot the click sends meets a change, so none is sent, and the window is left stale.
+        await ClickAsync(context.Server, player, 9, 0, ClickType.Pickup);
+
+        Assert.Equal(2, handled.Count);
+        Assert.Empty(client.SentPackets.Skip(sent));
+        Assert.True(player.WindowSnapshots.IsStale);
+
+        // A tick tries once, not again and again while the window keeps changing.
+        await MainEventHandler.RefreshStaleWindowAsync(player);
+
+        Assert.Equal(3, handled.Count);
+        Assert.Empty(client.SentPackets.Skip(sent));
+
+        // Once it holds still, the window is sent as it is now, through the handlers.
+        changing = false;
+        await MainEventHandler.RefreshStaleWindowAsync(player);
+
+        var shown = Assert.IsType<ContainerSetContentPacket>(Assert.Single(client.SentPackets.Skip(sent)));
+        Assert.Contains(shown, handled);
+        Assert.Equal(4, shown.Items[36]?.Count);
+        Assert.False(player.WindowSnapshots.IsStale);
+
+        // Stands in for a plugin's queue handler during which the held stack grows, as a pickup would grow it.
+        ValueTask<bool> Decide(IClientboundPacket packet)
+        {
+            handled.Add(packet);
+
+            if (changing)
+                player.Inventory.GetItem(36)!.Count++;
+
+            return ValueTask.FromResult(true);
+        }
     }
 
     private static async Task<T> OpenAsync<T>(Obsidian.Entities.Player player, T container) where T : BaseContainer

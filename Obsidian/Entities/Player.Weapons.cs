@@ -345,6 +345,9 @@ public partial class Player
         if (creativeOnly)
             return true;
 
+        ContainerSetSlotPacket? update = null;
+        ClickWindowState state = default;
+
         // Taken like an item pickup takes it, which the slot is sent in order with too (see PickupNearbyItemsAsync).
         using (await Inventory.LockAsync())
         {
@@ -362,19 +365,28 @@ public partial class Player
                     else
                         existing.Count++;
 
-                    WindowSnapshots.Queue(this, new ContainerSetSlotPacket
+                    update = new ContainerSetSlotPacket
                     {
                         ContainerId = 0,
                         Slot = (short)slot,
                         SlotData = NetworkBuffer.SnapshotItemStack(Inventory.GetItem(slot)!),
                         StateId = Inventory.StateId++
-                    });
-
-                    return true;
+                    };
+                    state = ClickWindowState.Of(this);
+                    break;
                 }
+
+                if (update is not null)
+                    break;
             }
         }
 
-        return false;
+        if (update is null)
+            return false;
+
+        // Through plugins' packet handlers, after the lock; a slot changed meanwhile is sent later, with the window.
+        await WindowSnapshots.SendChangeAsync(this, state, update);
+
+        return true;
     }
 }
