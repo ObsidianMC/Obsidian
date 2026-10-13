@@ -15,7 +15,7 @@ public sealed class PluginLoadContext(string name) : AssemblyLoadContext(name: n
 
     /// <summary>
     /// The plugin whose load context <paramref name="assembly"/> lives in, or null for the server's own code, so that
-    /// what a host service adds on a plugin's behalf can be tracked and removed when the plugin unloads.
+    /// an event handler or command registered without a container counts as the plugin's whose code it is.
     /// </summary>
     internal static PluginContainer? OwnerOf(Assembly assembly) =>
         (GetLoadContext(assembly) as PluginLoadContext)?.Container;

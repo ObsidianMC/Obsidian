@@ -226,7 +226,9 @@ public interface IPluginRegistry
     /// Each call into the generator holds a call into the plugin, a chunk at a time.
     /// </remarks>
     /// <exception cref="ArgumentException">
-    /// The identifier isn't in the plugin's namespace, or is already a generator of the plugin.
+    /// The identifier isn't in the plugin's namespace, or is already a generator: of the plugin, or of another plugin
+    /// that registered it with <see cref="World.ILevelFactory"/>. Another instance of the plugin's, like the one a
+    /// reload replaces, is replaced instead.
     /// </exception>
     /// <exception cref="InvalidOperationException">The plugin has already loaded, or is unloading.</exception>
     public IPluginRegistry RegisterGenerator<TGenerator>(string identifier)

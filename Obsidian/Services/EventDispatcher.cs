@@ -205,10 +205,17 @@ public sealed partial class EventDispatcher : IEventDispatcher
             handlers.Registrations = [];
     }
 
+    // Refuses an unloading plugin's handler: unloading closes the plugin before removing its handlers, so one added
+    // meanwhile is removed either then or here.
     private void Add(Type eventType, IPluginContainer? plugin, IEventExecutor executor)
     {
         if (!this.registeredEvents.TryGetValue(this.eventNames[eventType], out var handlers))
             return;
+
+        var owner = plugin as PluginContainer;
+        owner?.ThrowIfClosing();
+
+        var registration = new EventRegistration(executor, plugin);
 
         // Inserted after the handlers of the same priority, so handlers of one priority run in registration order.
         ImmutableInterlocked.Update(ref handlers.Registrations, registrations =>
@@ -217,8 +224,16 @@ public sealed partial class EventDispatcher : IEventDispatcher
             while (index < registrations.Length && registrations[index].Executor.Priority <= executor.Priority)
                 index++;
 
-            return registrations.Insert(index, new EventRegistration(executor, plugin));
+            return registrations.Insert(index, registration);
         });
+
+        if (owner is not { IsClosing: true })
+            return;
+
+        ImmutableInterlocked.Update(
+            ref handlers.Registrations,
+            registrations => registrations.Remove(registration, ReferenceEqualityComparer.Instance));
+        owner.ThrowIfClosing();
     }
 
     private sealed class EventHandlers
@@ -226,7 +241,8 @@ public sealed partial class EventDispatcher : IEventDispatcher
         public ImmutableArray<EventRegistration> Registrations = [];
     }
 
-    private readonly record struct EventRegistration(IEventExecutor Executor, IPluginContainer? Plugin);
+    // A class, so that a registration that raced its plugin's unloading is removed by reference, alone.
+    private sealed record EventRegistration(IEventExecutor Executor, IPluginContainer? Plugin);
 
     private static partial class Log
     {

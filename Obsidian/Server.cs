@@ -16,14 +16,11 @@ using Obsidian.Net;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
-using Obsidian.Plugins.PluginProviders;
 using Obsidian.Services;
 using Obsidian.WorldData;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Obsidian;
@@ -255,12 +252,16 @@ public sealed partial class Server : IServer
     internal static int ReserveEntityIds(int count) => Interlocked.Add(ref EntityCounter, count) - count + 1;
 
     /// <remarks>
-    /// A plugin's recipes are removed when it unloads.
+    /// Recipes registered through a plugin's <see cref="IServer"/> are the plugin's, which unloading removes.
     /// </remarks>
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public void RegisterRecipes(params IRecipe[] recipes)
+    public void RegisterRecipes(params IRecipe[] recipes) => this.RegisterRecipes(recipes, owner: null);
+
+    /// <summary>
+    /// Registers recipes for <paramref name="owner"/>, whose unloading removes them, or for the server.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The owner is unloading; the recipes were removed.</exception>
+    internal void RegisterRecipes(IRecipe[] recipes, PluginContainer? owner)
     {
-        var caller = Assembly.GetCallingAssembly();
         var added = new List<(string Identifier, IRecipe Recipe)>();
 
         try
@@ -278,7 +279,7 @@ public sealed partial class Server : IServer
         }
         finally
         {
-            PluginContainer.TrackAddition(caller, () => RemoveRecipes(added));
+            owner?.TrackAddition(() => RemoveRecipes(added));
         }
     }
 
@@ -470,15 +471,28 @@ public sealed partial class Server : IServer
     }
 
     /// <remarks>
-    /// A plugin's boss bars are hidden from their players when it unloads.
+    /// Boss bars created through a plugin's <see cref="IServer"/> are the plugin's: unloading it hides them and
+    /// refuses their later changes.
     /// </remarks>
-    [MethodImpl(MethodImplOptions.NoInlining)]
     public IBossBar CreateBossBar(
         ChatMessage title,
         float health,
         BossBarColor color,
         BossBarDivisionType divisionType,
-        BossBarFlags flags)
+        BossBarFlags flags) =>
+        this.CreateBossBar(title, health, color, divisionType, flags, owner: null);
+
+    /// <summary>
+    /// Creates a boss bar for <paramref name="owner"/>, whose unloading retires it, or for the server.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The owner is unloading.</exception>
+    internal BossBar CreateBossBar(
+        ChatMessage title,
+        float health,
+        BossBarColor color,
+        BossBarDivisionType divisionType,
+        BossBarFlags flags,
+        PluginContainer? owner)
     {
         var bar = ActivatorUtilities.CreateInstance<BossBar>(
             this.serviceProvider,
@@ -488,41 +502,10 @@ public sealed partial class Server : IServer
             divisionType,
             flags);
 
-        if (PluginLoadContext.OwnerOf(Assembly.GetCallingAssembly()) is PluginContainer owner)
-        {
-            this.pluginBossBars.Add(bar, owner);
-
-            // Closed before its bars are hidden, so a bar added meanwhile is either hidden then or here.
-            if (owner.IsClosing)
-            {
-                this.HidePluginBossBars(owner);
-                throw new InvalidOperationException($"{owner.Info.Name} is unloading.");
-            }
-        }
+        if (owner is not null && !owner.BossBars.TryAdd(bar))
+            throw new InvalidOperationException($"{owner.Info.Name} is unloading.");
 
         return bar;
-    }
-
-    // The boss bars plugins created, by plugin. Weak, since a plugin may create many over time.
-    private readonly ConditionalWeakTable<BossBar, PluginContainer> pluginBossBars = [];
-
-    /// <summary>
-    /// Hides an unloading plugin's boss bars from the players they're shown to, so none stays on screen without it.
-    /// </summary>
-    internal void HidePluginBossBars(PluginContainer plugin)
-    {
-        var bars = this.pluginBossBars
-            .Where(pair => pair.Value == plugin)
-            .Select(pair => pair.Key)
-            .ToList();
-
-        foreach (var bar in bars)
-        {
-            this.pluginBossBars.Remove(bar);
-
-            foreach (var player in bar.Players.ToArray())
-                bar.RemovePlayer(player);
-        }
     }
 
     public async Task ExecuteCommand(string input)

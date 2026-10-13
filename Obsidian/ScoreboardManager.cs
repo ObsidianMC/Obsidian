@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.Plugins;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace Obsidian;
 
@@ -23,11 +21,16 @@ public sealed partial class ScoreboardManager : IScoreboardManager
     }
 
     /// <remarks>
-    /// A plugin's scoreboards are removed when it unloads: their objective and teams are removed from the players
-    /// they're shown to, and their names are free again.
+    /// Scoreboards created through a plugin's <see cref="IServer"/> are the plugin's: unloading it retires them (see
+    /// <see cref="Scoreboard.Retire"/>) and frees their names.
     /// </remarks>
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public IScoreboard CreateScoreboard(string name)
+    public IScoreboard CreateScoreboard(string name) => this.CreateScoreboard(name, owner: null);
+
+    /// <summary>
+    /// Creates a scoreboard for <paramref name="owner"/>, whose unloading retires it, or for the server.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The owner is unloading; the scoreboard was retired.</exception>
+    internal Scoreboard CreateScoreboard(string name, PluginContainer? owner)
     {
         bool added;
         lock (this.scoreboards)
@@ -38,19 +41,15 @@ public sealed partial class ScoreboardManager : IScoreboardManager
 
         var scoreboard = new Scoreboard(name, this.server.DefaultWorld.PacketBroadcaster);
 
-        PluginContainer.TrackAddition(Assembly.GetCallingAssembly(), () => this.Remove(scoreboard, name, added));
+        owner?.TrackAddition(() => this.Remove(scoreboard, name, added));
 
         return scoreboard;
     }
 
-    // Removes a plugin's scoreboard from its players, and frees its name unless it was taken already.
+    // Retires a plugin's scoreboard, and frees its name unless it was taken already.
     private void Remove(Scoreboard scoreboard, string name, bool ownsName)
     {
-        if (scoreboard.Objective is not null)
-            scoreboard.RemoveObjective();
-
-        foreach (var team in scoreboard.Teams.ToArray())
-            team.Delete();
+        scoreboard.Retire();
 
         if (!ownsName)
             return;

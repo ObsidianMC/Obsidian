@@ -281,7 +281,9 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
                     $"{container.Info.Name} can only register generators in ConfigureRegistry.");
             }
 
-            PluginGenerators.Register(container, identifier, typeof(TGenerator));
+            // Taken by this plugin, or by another through ILevelFactory, which has no namespace rule.
+            if (!PluginGenerators.TryRegister(container, identifier, typeof(TGenerator)))
+                throw new ArgumentException($"{identifier} is already a registered generator.");
         }
 
         return this;
