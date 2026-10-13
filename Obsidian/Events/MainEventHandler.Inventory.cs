@@ -2,6 +2,7 @@ using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Events;
 
@@ -9,72 +10,85 @@ public partial class MainEventHandler
 {
     private const int OutsideInventory = -999;
 
+    // The player's inventory numbers its slots like vanilla's inventory menu: the crafting result, the 2x2 grid,
+    // the armour (5 to 8), the main inventory (9 to 35), the hotbar (36 to 44) and the off hand.
+    private const int OffhandSlot = 45;
+
+    // How many times a click's window is sent again when it changed while being sent (see SendWindowAsync).
+    private const int MaxResends = 2;
+
     /// <summary>
-    /// Applies a player's click in their open window, after plugins' handlers had their say.
+    /// Applies a player's click in their open window, after plugins' handlers had their say, and sends the window to
+    /// its viewers.
     /// </summary>
     /// <remarks>
     /// Players sharing a container take turns: the click is applied inside the window's lock, which plugins' handlers
-    /// run without, so the window is checked again inside it, as it may have closed or changed meanwhile.
+    /// run without, so the window is checked again inside it, as it may have closed or changed meanwhile. A click
+    /// whose slots changed since it arrived, or that a handler cancelled, isn't applied; either way the player's
+    /// window and cursor are sent again, so that the client's prediction is corrected. The packets are captured
+    /// inside the lock and sent after it, since sending them runs plugins' packet handlers.
     /// </remarks>
     [EventPriority(Priority = Priority.Internal)]
     public async ValueTask OnInventoryClick(ContainerClickEventArgs args)
     {
-        if (args.IsCancelled)
-            return;
-
         var player = args.Player;
         var window = player.OpenedContainer ?? player.Inventory;
+        WindowSync sync;
 
-        await window.TransactionLock.WaitAsync();
-        try
+        using (await window.LockAsync())
         {
-            var openId = player.OpenedContainer is null ? 0 : player.CurrentContainerId;
-            var current = (player.OpenedContainer ?? player.Inventory) == window
-                && args.ContainerId == openId
-                && (args.Container == window || args.Container == player.Inventory);
+            if (!IsOpen(player, window, args.ContainerId)
+                || args.Container != window && args.Container != player.Inventory)
+            {
+                return;
+            }
 
-            if (current)
-                await ApplyClickAsync(args);
+            var stale = IsStale(args, window);
+
+            // The client ends its drag on the correction, so the server's ends too.
+            if (stale || args.IsCancelled)
+                ResetDrag(player);
+            else
+                ApplyClick(args);
+
+            if (!stale)
+            {
+                foreach (var change in args.Changes)
+                    change();
+            }
+
+            sync = CaptureWindow(args, window);
         }
-        finally
-        {
-            window.TransactionLock.Release();
-        }
+
+        await SendWindowAsync(args, window, sync);
     }
 
-    private static async ValueTask ApplyClickAsync(ContainerClickEventArgs args)
+    // Whether the player still has the window open, under the click's id.
+    private static bool IsOpen(IPlayer player, BaseContainer window, int containerId)
     {
-        // Before any window's own handling, so that crafting and enchanting follow the same drag rules.
+        var openId = player.OpenedContainer is null ? 0 : player.CurrentContainerId;
+
+        return (player.OpenedContainer ?? player.Inventory) == window && containerId == openId;
+    }
+
+    // Whether the window or the player's inventory changed since the click arrived.
+    private static bool IsStale(ContainerClickEventArgs args, BaseContainer window) =>
+        args.WindowRevision != window.Revision || args.InventoryRevision != args.Player.Inventory.Revision;
+
+    private static void ApplyClick(ContainerClickEventArgs args)
+    {
+        // Before any window's own handling, so that crafting follows the same drag rules.
         if (CancelsDrag(args))
             return;
 
-        if (args.Container == args.Player.Inventory && args.ClickedSlot is >= 5 and <= 8 &&
-            args.ClickType != ClickType.Clone)
-        {
-            var equipped = args.Item;
-            var locked = args.Player.GameMode != GameMode.Creative && args.Player.Alive &&
-                CombatItems.EnchantmentLevel(equipped, EnchantmentsRegistry.BindingCurse) > 0;
-            var incoming = args.ClickType == ClickType.Pickup ? args.Player.CarriedItem :
-                args.ClickType == ClickType.Swap && args.Button is >= 0 and <= 8 ? args.Player.Inventory.GetItem(36 + args.Button) :
-                args.ClickType == ClickType.Swap && args.Button == 40 ? args.Player.GetOffHandItem() : null;
-            if (locked || !incoming.IsNullOrAir() && CombatItems.PlayerArmorSlot(incoming) != args.ClickedSlot)
-            {
-                await args.Player.QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetContentPacket(0, args.Player.Inventory.ToList())
-                { StateId = args.StateId + 1, CarriedItem = args.Player.CarriedItem });
-                return;
-            }
-        }
-
-        if (await HandleEnchantingClickAsync(args)) return;
-
-        if (await HandleCraftingAsync(args))
+        if (HandleCrafting(args))
             return;
 
         HandleClick(args, dropThrown: true);
     }
 
     /// <summary>
-    /// Handles a click in a container without special slots, like a chest's or a plugin's menu.
+    /// Handles a click in any window but a crafting grid's result slot, like vanilla's container menus.
     /// </summary>
     /// <param name="args">The click.</param>
     /// <param name="dropThrown">Whether items thrown from a slot drop in the world.</param>
@@ -111,38 +125,106 @@ public partial class MainEventHandler
         }
     }
 
+    /// <summary>
+    /// Shift-clicks a slot like vanilla: the window's own routing moves the stack, again while it moves something and
+    /// the slot still holds the same item. A click outside the window drops the cursor like a pickup.
+    /// </summary>
     private static void HandleQuickMove(ContainerClickEventArgs args)
     {
         var player = args.Player;
-        var source = args.Container;
 
-        if (args.Item.IsNullOrAir())
-            return;
-
-        if (player.OpenedContainer is SmeltingContainer furnace && IsFurnace(furnace))
+        if (args.ClickedSlot == OutsideInventory)
         {
-            HandleFurnaceQuickMove(args, furnace);
+            if (args.Button is 0 or 1)
+                SpawnThrownItem(player, ThrowItem(player, args.Container, args.ClickedSlot, args.Button, true));
+
             return;
+        }
+
+        if (args.ClickedSlot < 0 || !SlotMayPickup(player, args.Container, args.ClickedSlot))
+            return;
+
+        while (args.SlotItem is ItemStack before && !before.IsAir && QuickMoveOnce(args))
+        {
+            if (args.SlotItem is not ItemStack after || after.IsAir || after.Holder != before.Holder)
+                return;
+        }
+    }
+
+    /// <summary>
+    /// Moves the clicked stack once, the way the open window routes it (vanilla's <c>quickMoveStack</c>).
+    /// </summary>
+    /// <returns>Whether anything moved.</returns>
+    private static bool QuickMoveOnce(ContainerClickEventArgs args)
+    {
+        var player = args.Player;
+        var inventory = player.Inventory;
+        var source = args.Container;
+        var slot = args.ClickedSlot;
+
+        switch (player.OpenedContainer)
+        {
+            case SmeltingContainer furnace when IsFurnace(furnace):
+                return MoveFurnaceItem(args, furnace);
+            case CraftingTable { Type: InventoryType.Crafting } table:
+                return MoveCraftingTableItem(player, table, source, slot);
+            case EnchantmentTable table:
+                return MoveEnchantingItem(player, table, source, slot);
         }
 
         // Like vanilla's chest, hopper and dispenser menus: the container's stack goes to the player's main inventory
         // and hotbar, filling from the hotbar's last slot, and the player's goes to the container, filling from its
         // first slot. The brewing stand, whose slots take particular items, is treated as a chest too for now.
-        if (source != player.Inventory)
-            MoveStack(source, args.ClickedSlot, player.Inventory, 9, 45, reverse: true);
-        else if (player.OpenedContainer is BaseContainer opened && opened != player.Inventory)
-            MoveStack(source, args.ClickedSlot, opened, 0, opened.Size, reverse: false);
+        if (source != inventory)
+            return MoveStack(player, source, slot, inventory, 9, 45, reverse: true);
+
+        if (player.OpenedContainer is BaseContainer opened && opened != inventory)
+            return MoveStack(player, inventory, slot, opened, 0, opened.Size, reverse: false);
+
+        return MoveInventoryItem(player, slot);
+    }
+
+    /// <summary>
+    /// Moves a stack within the player's own inventory window like vanilla's inventory menu: from the grid and armour
+    /// to the main inventory and hotbar; armour and off-hand items to their empty slot; otherwise between the main
+    /// inventory and the hotbar.
+    /// </summary>
+    private static bool MoveInventoryItem(IPlayer player, int slot)
+    {
+        var inventory = player.Inventory;
+        var item = inventory.GetItem(slot);
+        var armorSlot = CombatItems.PlayerArmorSlot(item);
+
+        if (slot is >= 1 and <= 8)
+            return MoveStack(player, inventory, slot, inventory, 9, 45, reverse: false);
+
+        if (armorSlot >= 5 && inventory.GetItem(armorSlot).IsNullOrAir())
+            return MoveStack(player, inventory, slot, inventory, armorSlot, armorSlot + 1, reverse: false);
+
+        if (CombatItems.IsOffhandItem(item)
+            && OffhandSlot < inventory.Size
+            && inventory.GetItem(OffhandSlot).IsNullOrAir())
+        {
+            return MoveStack(player, inventory, slot, inventory, OffhandSlot, OffhandSlot + 1, reverse: false);
+        }
+
+        return slot switch
+        {
+            >= 9 and < 36 => MoveStack(player, inventory, slot, inventory, 36, 45, reverse: false),
+            >= 36 and < 45 => MoveStack(player, inventory, slot, inventory, 9, 36, reverse: false),
+            _ => MoveStack(player, inventory, slot, inventory, 9, 45, reverse: false)
+        };
     }
 
     /// <summary>
     /// Moves the stack in <paramref name="fromSlot"/> into slots <paramref name="start"/> (inclusive) to
-    /// <paramref name="end"/> (exclusive) of <paramref name="to"/>, like vanilla's <c>moveItemStackTo</c>: it tops up
-    /// the stacks of the same item first, then takes the first empty slot, walking the range backwards when
-    /// <paramref name="reverse"/>. What doesn't fit stays.
+    /// <paramref name="end"/> (exclusive) of <paramref name="to"/>. What doesn't fit stays.
     /// </summary>
-    private static void MoveStack(
+    /// <returns>Whether anything moved.</returns>
+    private static bool MoveStack(
+        IPlayer player,
         BaseContainer from,
-        short fromSlot,
+        int fromSlot,
         BaseContainer to,
         int start,
         int end,
@@ -150,9 +232,32 @@ public partial class MainEventHandler
     {
         var stack = from.GetItem(fromSlot);
         if (stack.IsNullOrAir())
-            return;
+            return false;
 
-        var slots = Enumerable.Range(start, end - start);
+        var moved = MoveItemStackTo(player, stack, to, start, end, reverse);
+
+        from.SetItem(fromSlot, stack.Count > 0 ? stack : null);
+
+        return moved;
+    }
+
+    /// <summary>
+    /// Moves what fits of <paramref name="stack"/>, which shrinks, into slots <paramref name="start"/> (inclusive) to
+    /// <paramref name="end"/> (exclusive) of <paramref name="to"/>, like vanilla's <c>moveItemStackTo</c>: it tops up
+    /// the stacks of the same item first, then fills the first empty slot that takes it, walking the range backwards
+    /// when <paramref name="reverse"/>. The slots' rules and limits apply (see <see cref="SlotAccepts"/>).
+    /// </summary>
+    /// <returns>Whether anything moved.</returns>
+    private static bool MoveItemStackTo(
+        IPlayer player,
+        ItemStack stack,
+        BaseContainer to,
+        int start,
+        int end,
+        bool reverse)
+    {
+        var moved = false;
+        var slots = Enumerable.Range(start, Math.Max(0, Math.Min(end, to.Size) - start));
         if (reverse)
             slots = slots.Reverse();
 
@@ -160,110 +265,123 @@ public partial class MainEventHandler
         {
             foreach (var slot in slots)
             {
+                if (stack.Count == 0)
+                    break;
+
                 var target = to.GetItem(slot);
-                if (target.IsNullOrAir() || target != stack || target.Count >= stack.MaxStackSize)
+                if (target.IsNullOrAir() || target != stack)
                     continue;
 
-                var moved = Math.Min(stack.MaxStackSize - target.Count, stack.Count);
-                target.Count += moved;
-                stack.Count -= moved;
-                to.SetItem(slot, target);
+                var limit = SlotLimit(player, to, slot, target);
+                var added = Math.Min(stack.Count, limit - target.Count);
+                if (added <= 0)
+                    continue;
 
-                if (stack.Count == 0)
-                {
-                    from.RemoveItem(fromSlot);
-                    return;
-                }
+                target.Count += added;
+                stack.Count -= added;
+                to.SetItem(slot, target);
+                moved = true;
             }
         }
 
+        if (stack.Count == 0)
+            return moved;
+
+        // Vanilla's merge fills one empty slot, then stops.
         foreach (var slot in slots)
         {
-            if (!to.GetItem(slot).IsNullOrAir())
+            if (!to.GetItem(slot).IsNullOrAir() || !SlotAccepts(player, to, slot, stack))
                 continue;
 
-            // The stack itself moves, with its components.
-            to.SetItem(slot, stack);
-            from.RemoveItem(fromSlot);
-            return;
+            var count = Math.Min(stack.Count, SlotLimit(player, to, slot, stack));
+            to.SetItem(slot, new ItemStack(stack, count));
+            stack.Count -= count;
+
+            return true;
         }
 
-        from.SetItem(fromSlot, stack);
+        return moved;
     }
 
     private static void HandleClone(ContainerClickEventArgs args)
     {
         var player = args.Player;
-        var clickedItem = args.Item;
+        var clickedItem = args.SlotItem;
 
-        if (player.GameMode != GameMode.Creative || clickedItem.IsNullOrAir())
+        if (player.GameMode != GameMode.Creative || !player.CarriedItem.IsNullOrAir() || clickedItem.IsNullOrAir())
             return;
 
         player.CarriedItem = new ItemStack(clickedItem, clickedItem.MaxStackSize);
     }
 
+    /// <summary>
+    /// Double-click collecting, like vanilla's: with a stack on the cursor and the clicked slot empty (or one it can't
+    /// be taken from), the cursor fills up from the window's slots of the same item, partial stacks first, then full
+    /// ones. The left button walks the window from its first slot, the right one from its last; result slots of
+    /// crafting grids are skipped.
+    /// </summary>
     private static void HandlePickupAll(ContainerClickEventArgs args)
     {
-        var container = args.Container;
         var player = args.Player;
-        var carriedItem = player.CarriedItem;
+        var carried = player.CarriedItem;
 
-        if (carriedItem.IsNullOrAir() || carriedItem.Count >= carriedItem.MaxStackSize)
+        if (args.ClickedSlot < 0 || carried.IsNullOrAir())
             return;
 
-        int amountNeeded = carriedItem.MaxStackSize - carriedItem.Count;
-        if (amountNeeded == 0)
+        if (!args.SlotItem.IsNullOrAir() && SlotMayPickup(player, args.Container, args.ClickedSlot))
             return;
 
-        for (int i = 0; i < container.Size; i++)
+        var slots = WindowSlots(player);
+        var step = args.Button == 0 ? 1 : -1;
+        var first = args.Button == 0 ? 0 : slots.Length - 1;
+
+        for (var pass = 0; pass < 2; pass++)
         {
-            if (i == 0 && (container is CraftingTable || container == player.Inventory))
-                continue;
-            ItemStack? item = container[i];
-            if (container == player.Inventory && i is >= 5 and <= 8 && player.GameMode != GameMode.Creative &&
-                CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.BindingCurse) > 0) continue;
-            if (item != carriedItem)
-                continue;
-
-            int amountTaken = Math.Min(item.Count, amountNeeded);
-            item -= amountTaken;
-
-            if (item.Count == 0)
-                container.RemoveItem(i);
-
-            carriedItem += amountTaken;
-            amountNeeded -= amountTaken;
-
-            if (amountNeeded == 0)
-                break;
-        }
-
-        //Try the player inventory
-        if (amountNeeded > 0 && !args.IsPlayerInventory)
-        {
-            for (int i = 0; i < player.Inventory.Size; i++)
+            for (var index = first; index >= 0 && index < slots.Length; index += step)
             {
-                if (i == 0)
+                if (carried.Count >= carried.MaxStackSize)
+                    return;
+
+                var (container, slot) = slots[index];
+                var item = container.GetItem(slot);
+
+                if (item.IsNullOrAir()
+                    || item != carried
+                    || pass == 0 && item.Count == item.MaxStackSize
+                    || IsResultSlot(player, container, slot)
+                    || !SlotMayPickup(player, container, slot))
+                {
                     continue;
-                var item = player.Inventory.GetItem(i);
-                if (i is >= 5 and <= 8 && player.GameMode != GameMode.Creative &&
-                    CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.BindingCurse) > 0) continue;
-                if (item != carriedItem)
+                }
+
+                var room = carried.MaxStackSize - carried.Count;
+
+                // Like vanilla, a slot that takes nothing (a furnace's result) gives its stack only whole.
+                if (!SlotAccepts(player, container, slot, item) && room < item.Count)
                     continue;
 
-                int amountTaken = Math.Min(item.Count, amountNeeded);
-                item -= amountTaken;
-
-                if (item.Count == 0)
-                    player.Inventory.RemoveItem(i);
-
-                carriedItem += amountTaken;
-                amountNeeded -= amountTaken;
-
-                if (amountNeeded == 0)
-                    break;
+                var taken = Math.Min(item.Count, room);
+                container.RemoveItem(slot, taken);
+                carried.Count += taken;
             }
         }
+    }
+
+    /// <summary>
+    /// The open window's slots, in the order the window numbers them: the open container's slots then the player's
+    /// main inventory and hotbar, or the player's whole inventory when no container is open.
+    /// </summary>
+    private static (BaseContainer Container, int Slot)[] WindowSlots(IPlayer player)
+    {
+        var inventory = player.Inventory;
+
+        if (player.OpenedContainer is not BaseContainer window || window == inventory)
+            return [.. Enumerable.Range(0, inventory.Size).Select(slot => ((BaseContainer)inventory, slot))];
+
+        var own = Enumerable.Range(0, window.Size).Select(slot => (window, slot));
+        var players = Enumerable.Range(9, 36).Select(slot => ((BaseContainer)inventory, slot));
+
+        return [.. own.Concat(players)];
     }
 
     /// <summary>
@@ -319,12 +437,11 @@ public partial class MainEventHandler
             return;
         }
 
-        EndDrag(args, carried);
+        EndDrag(player, carried);
     }
 
-    private static void EndDrag(ContainerClickEventArgs args, ItemStack carried)
+    private static void EndDrag(IPlayer player, ItemStack carried)
     {
-        var player = args.Player;
         var start = player.DragStart;
         var slots = player.DraggedSlots.ToArray();
 
@@ -332,26 +449,12 @@ public partial class MainEventHandler
 
         if (slots.Length == 1)
         {
-            // Like vanilla, a drag over one slot is a click on it, which places nothing for full stacks.
+            // Like vanilla, a drag over one slot is a click on it, which keeps the slot's rules and limits and places
+            // nothing for full stacks.
             if (start != DraggingState.StartMiddle
                 && TryGetDragTarget(player, slots[0], carried, out var container, out var slot))
             {
-                var button = (sbyte)(start == DraggingState.StartLeft ? 0 : 1);
-                var click = ContainerClickEventArgs.Create(
-                    player,
-                    args.Server,
-                    container,
-                    args.ContainerId,
-                    slot,
-                    button,
-                    args.StateId,
-                    ClickType.Pickup);
-
-                // The crafting and enchanting windows' pickup keeps their slots' limits, like an armour slot's one.
-                if (HasLimitedSlots(player))
-                    HandleCraftingPickup(click);
-                else
-                    HandlePickup(click);
+                PickupSlot(player, container, slot, primary: start == DraggingState.StartLeft);
             }
 
             return;
@@ -466,10 +569,20 @@ public partial class MainEventHandler
         return single ? 1 : item.MaxStackSize;
     }
 
-    // Whether the player's window has slots with limits of their own (see SlotLimit) that its pickup keeps: their
-    // inventory's, a crafting table's or an enchanting table's.
-    private static bool HasLimitedSlots(IPlayer player) =>
-        player.OpenedContainer is null or CraftingTable { Type: InventoryType.Crafting } or EnchantmentTable;
+    /// <summary>
+    /// Whether the player can take the stack in <paramref name="slot"/> of <paramref name="container"/>: like
+    /// vanilla's armour slots, not armour cursed with binding, unless the player is in creative mode.
+    /// </summary>
+    private static bool SlotMayPickup(IPlayer player, BaseContainer container, int slot) =>
+        container != player.Inventory
+        || slot is < 5 or > 8
+        || player.GameMode == GameMode.Creative
+        || !player.Alive
+        || CombatItems.EnchantmentLevel(container.GetItem(slot), EnchantmentsRegistry.BindingCurse) == 0;
+
+    // Whether the slot is a crafting grid's result, which double-click collecting skips.
+    private static bool IsResultSlot(IPlayer player, BaseContainer container, int slot) =>
+        slot == 0 && (container == player.Inventory || container is CraftingTable { Type: InventoryType.Crafting });
 
     /// <summary>
     /// Cancels the player's drag if <paramref name="args"/> isn't part of it: like vanilla, any other click while
@@ -492,17 +605,21 @@ public partial class MainEventHandler
         player.DraggedSlots.Clear();
     }
 
+    // Like vanilla, the Q key throws from a slot only with an empty cursor, and not what the slot keeps.
     private static void HandleThrow(ContainerClickEventArgs args, bool test = false)
     {
         var clickedSlot = args.ClickedSlot;
         var container = args.Container;
         var player = args.Player;
-        var button = args.Button;
 
-        if (clickedSlot == OutsideInventory)
+        if (clickedSlot < 0
+            || !player.CarriedItem.IsNullOrAir()
+            || !SlotMayPickup(player, container, clickedSlot))
+        {
             return;
+        }
 
-        var thrownItem = ThrowItem(player, container, clickedSlot, button);
+        var thrownItem = ThrowItem(player, container, clickedSlot, args.Button);
 
         if (test)
             return;
@@ -541,121 +658,274 @@ public partial class MainEventHandler
 
     private static void HandlePickup(ContainerClickEventArgs args)
     {
-        var clickedSlot = args.ClickedSlot;
-        var container = args.Container;
         var player = args.Player;
-        var clickedItem = args.Item;
-        var button = args.Button;
 
-        if (!player.CarriedItem.IsNullOrAir())
+        if (args.Button is not (0 or 1))
+            return;
+
+        if (args.ClickedSlot == OutsideInventory)
         {
-            if (button == 0)
+            SpawnThrownItem(player, ThrowItem(player, args.Container, args.ClickedSlot, args.Button, true));
+            return;
+        }
+
+        if (args.ClickedSlot >= 0)
+            PickupSlot(player, args.Container, args.ClickedSlot, primary: args.Button == 0);
+    }
+
+    /// <summary>
+    /// Clicks a slot like vanilla's pickup, for every window and slot but a crafting grid's result, keeping the slot's
+    /// rules and limits (see <see cref="SlotAccepts"/>, <see cref="SlotLimit"/> and <see cref="SlotMayPickup"/>).
+    /// </summary>
+    /// <remarks>
+    /// With an empty cursor, the left button takes the stack and the right one half of it, rounded up. With a stack
+    /// on the cursor, an empty slot or one of the same item takes all of it (left) or one (right), up to its limit;
+    /// a slot of another item swaps with the cursor if it takes the cursor's stack whole. A slot that takes nothing
+    /// gives its stack to a cursor of the same item if it fits whole.
+    /// </remarks>
+    private static void PickupSlot(IPlayer player, BaseContainer container, int slot, bool primary)
+    {
+        var item = container.GetItem(slot);
+        var carried = player.CarriedItem;
+
+        if (item.IsNullOrAir())
+        {
+            if (!carried.IsNullOrAir())
+                InsertCarried(player, container, slot, primary ? carried.Count : 1);
+
+            return;
+        }
+
+        if (!SlotMayPickup(player, container, slot))
+            return;
+
+        if (carried.IsNullOrAir())
+        {
+            var count = primary ? item.Count : (item.Count + 1) / 2;
+            player.CarriedItem = new ItemStack(item, count);
+            container.RemoveItem(slot, count);
+        }
+        else if (SlotAccepts(player, container, slot, carried))
+        {
+            if (item == carried)
+                InsertCarried(player, container, slot, primary ? carried.Count : 1);
+            else if (carried.Count <= SlotLimit(player, container, slot, carried))
             {
-                if (clickedSlot == OutsideInventory)
-                {
-                    var thrownItem = ThrowItem(player, container, clickedSlot, button, true);
-                    SpawnThrownItem(player, thrownItem);
-                    return;
-                }
-
-                if (HandlePickupDirectItem(container, clickedSlot, player))
-                    return;
-
-
-                container.SetItem(clickedSlot, player.CarriedItem);
-                player.CarriedItem = clickedItem;
-            }
-            else if (button == 1)
-            {
-                if (clickedSlot == OutsideInventory)
-                {
-                    var thrownItem = ThrowItem(player, container, clickedSlot, button, true);
-                    SpawnThrownItem(player, thrownItem);
-                    return;
-                }
-
-                var itemInSlot = container.GetItem(clickedSlot);
-
-                if (itemInSlot.IsNullOrAir())
-                {
-                    container.SetItem(clickedSlot, new(player.CarriedItem, 1));
-                    player.CarriedItem -= 1;
-                }
-                else if (itemInSlot == player.CarriedItem && itemInSlot.Count < itemInSlot.MaxStackSize)
-                {
-                    itemInSlot += 1;
-                    player.CarriedItem -= 1;
-                }
+                container.SetItem(slot, carried);
+                player.CarriedItem = item;
             }
         }
-        else if (!clickedItem.IsNullOrAir())
+        else if (item == carried && item.Count <= carried.MaxStackSize - carried.Count)
         {
-            player.CarriedItem = clickedItem;
-            container.RemoveItem(clickedSlot);
+            carried.Count += item.Count;
+            container.RemoveItem(slot);
         }
     }
 
     /// <summary>
-    /// Handles merging a carried item stack with a stack in a container slot.
+    /// Puts up to <paramref name="count"/> of the cursor's stack in <paramref name="slot"/>, which is empty or holds
+    /// the same item, like vanilla's <c>safeInsert</c>.
     /// </summary>
-    /// <returns>True if the items were successfully merged, false otherwise.</returns>
-    private static bool HandlePickupDirectItem(BaseContainer container, short clickedSlot, IPlayer player)
+    private static void InsertCarried(IPlayer player, BaseContainer container, int slot, int count)
     {
-        var clickedItem = container.GetItem(clickedSlot);
-        var carriedItem = player.CarriedItem;
+        var carried = player.CarriedItem!;
+        if (!SlotAccepts(player, container, slot, carried))
+            return;
 
-        if (clickedItem.IsNullOrAir() || carriedItem.IsNullOrAir() || clickedItem != carriedItem)
-            return false;
+        var target = container.GetItem(slot);
+        var existing = target.IsNullOrAir() ? 0 : target.Count;
+        var moved = Math.Min(Math.Min(count, carried.Count), SlotLimit(player, container, slot, carried) - existing);
 
-        int spaceAvailable = clickedItem.MaxStackSize - clickedItem.Count;
-        if (spaceAvailable <= 0)
-            return false;
+        if (moved <= 0 || existing > 0 && target != carried)
+            return;
 
-        int amountToTransfer = Math.Min(spaceAvailable, carriedItem.Count);
+        container.SetItem(slot, new ItemStack(carried, existing + moved));
+        carried.Count -= moved;
 
-        if (amountToTransfer > 0)
-        {
-            clickedItem += amountToTransfer;
-            carriedItem -= amountToTransfer;
-
-            if (carriedItem.Count <= 0)
-                player.CarriedItem = null;
-
-            return true;
-        }
-
-        return false;
+        if (carried.Count == 0)
+            player.CarriedItem = null;
     }
 
+    /// <summary>
+    /// Swaps a slot with a hotbar slot (buttons 0 to 8) or the off hand (40), like vanilla's swap: a slot gives its
+    /// stack only if it may be taken from, and takes the other stack only if it accepts it, up to its limit. When the
+    /// slot holds less than the other stack, the rest stays; when that happens with a stack on both sides, the slot's
+    /// stack goes to the player's inventory, or drops if it doesn't fit.
+    /// </summary>
     private static void HandleSwap(ContainerClickEventArgs args)
     {
-        var carriedItem = args.Item;
-        var clickedSlot = args.ClickedSlot;
-        var container = args.Container;
         var player = args.Player;
-        var button = args.Button;
+        var container = args.Container;
+        var slot = args.ClickedSlot;
+        var inventory = player.Inventory;
 
-        var localSlot = button == 40 ? 45 : button + 36;
-        if (button is not (>= 0 and <= 8 or 40))
+        if (slot < 0 || args.Button is not (>= 0 and <= 8 or 40))
             return;
 
-        var currentItem = player.Inventory.GetItem(localSlot);
+        var sourceSlot = args.Button == 40 ? OffhandSlot : args.Button + 36;
+        if (sourceSlot >= inventory.Size)
+            return;
 
-        if (!carriedItem.IsNullOrAir())
+        var source = inventory.GetItem(sourceSlot);
+        var item = container.GetItem(slot);
+
+        if (source.IsNullOrAir())
         {
-            if (currentItem.IsNullOrAir())
-                container.RemoveItem(clickedSlot);
-            else
-                container.SetItem(clickedSlot, currentItem);
+            if (item.IsNullOrAir() || !SlotMayPickup(player, container, slot))
+                return;
 
-            player.Inventory.SetItem(localSlot, carriedItem);
+            container.RemoveItem(slot);
+            inventory.SetItem(sourceSlot, item);
 
             return;
         }
 
-        container.SetItem(clickedSlot, currentItem);
+        if (!SlotAccepts(player, container, slot, source))
+            return;
 
-        player.Inventory.RemoveItem(localSlot);
+        var limit = SlotLimit(player, container, slot, source);
+
+        if (item.IsNullOrAir())
+        {
+            if (source.Count > limit)
+            {
+                container.SetItem(slot, new ItemStack(source, limit));
+                source.Count -= limit;
+                inventory.SetItem(sourceSlot, source);
+            }
+            else
+            {
+                inventory.RemoveItem(sourceSlot);
+                container.SetItem(slot, source);
+            }
+
+            return;
+        }
+
+        if (!SlotMayPickup(player, container, slot))
+            return;
+
+        if (source.Count > limit)
+        {
+            container.SetItem(slot, new ItemStack(source, limit));
+            source.Count -= limit;
+            inventory.SetItem(sourceSlot, source);
+
+            StoreCraftingItem(inventory, item, 9, 45);
+            SpawnThrownItem(player, item);
+        }
+        else
+        {
+            inventory.SetItem(sourceSlot, item);
+            container.SetItem(slot, source);
+        }
+    }
+
+    /// <summary>
+    /// Captures, inside the window's lock, what the click's window shows: its contents and the cursor for the
+    /// clicking player, and for the other players viewing the same slots, so that they can be sent after the lock.
+    /// </summary>
+    private static WindowSync CaptureWindow(ContainerClickEventArgs args, BaseContainer window)
+    {
+        var player = args.Player;
+        var sync = new WindowSync(window.Revision, player.Inventory.Revision);
+
+        sync.Add(player, WindowContents(player, args.ContainerId, args.StateId + 1));
+
+        if (player is Player { OpenedContainer: EnchantmentTable } enchanter)
+        {
+            foreach (var property in enchanter.PrepareEnchantingProperties())
+                sync.Add(player, property);
+        }
+
+        // A container's window doesn't show the off hand.
+        if (window != player.Inventory && args.ClickType == ClickType.Swap && args.Button == 40)
+        {
+            sync.Add(player, new ContainerSetSlotPacket
+            {
+                ContainerId = -2,
+                Slot = OffhandSlot,
+                SlotData = Copy(player.Inventory.GetItem(OffhandSlot))
+            });
+        }
+
+        foreach (var viewer in window.GetViewers())
+        {
+            if (viewer == player
+                || viewer.OpenedContainer is not BaseContainer shown
+                || !shown.SharesSlotsWith(window))
+            {
+                continue;
+            }
+
+            sync.Add(viewer, WindowContents(viewer, viewer.CurrentContainerId, 0));
+        }
+
+        return sync;
+    }
+
+    /// <summary>
+    /// Sends a click's captured window, and sends it again, a few times at most, if the window changed while it was
+    /// being sent: another click's packets may have gone out first, and the last contents its viewers get must be
+    /// current.
+    /// </summary>
+    private static async ValueTask SendWindowAsync(ContainerClickEventArgs args, BaseContainer window, WindowSync sync)
+    {
+        for (var resend = 0; ; resend++)
+        {
+            await sync.SendAsync();
+
+            if (resend == MaxResends || sync.IsCurrent(window, args.Player.Inventory))
+                return;
+
+            using (await window.LockAsync())
+            {
+                if (!IsOpen(args.Player, window, args.ContainerId))
+                    return;
+
+                sync = CaptureWindow(args, window);
+            }
+        }
+    }
+
+    /// <summary>
+    /// What <paramref name="player"/>'s open window shows, copied: the open container's slots then their main
+    /// inventory and hotbar, or their whole inventory; and their cursor.
+    /// </summary>
+    private static ContainerSetContentPacket WindowContents(IPlayer player, int containerId, int stateId)
+    {
+        IEnumerable<ItemStack> shown = player.OpenedContainer is BaseContainer window
+            ? window.Concat(player.Inventory.Skip(9).Take(36))
+            : player.Inventory;
+
+        return new ContainerSetContentPacket(containerId, [.. shown.Select(item => Copy(item)!)])
+        {
+            StateId = stateId,
+            CarriedItem = Copy(player.CarriedItem)
+        };
+    }
+
+    // A copy of a stack to send, which later changes to the stack don't reach.
+    private static ItemStack? Copy(ItemStack? item) => item is null ? null : new ItemStack(item, item.Count);
+
+    /// <summary>
+    /// The packets a click's window is sent with, captured inside the window's lock, and the revisions they show.
+    /// </summary>
+    private sealed class WindowSync(long windowRevision, long inventoryRevision)
+    {
+        private readonly List<(IPlayer Player, IClientboundPacket Packet)> packets = [];
+
+        public void Add(IPlayer player, IClientboundPacket packet) => this.packets.Add((player, packet));
+
+        // Whether nothing changed the window or the player's inventory since the packets were captured.
+        public bool IsCurrent(BaseContainer window, BaseContainer inventory) =>
+            window.Revision == windowRevision && inventory.Revision == inventoryRevision;
+
+        public async ValueTask SendAsync()
+        {
+            foreach (var (player, packet) in this.packets)
+                await player.QueuePacketAsync(packet);
+        }
     }
 
     internal static void OnInventoryClickTest(ContainerClickEventArgs args) => HandleClick(args, dropThrown: false);

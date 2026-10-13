@@ -50,7 +50,18 @@ public partial class Player
 
     internal async ValueTask RefreshEnchantingAsync()
     {
-        if (OpenedContainer is not EnchantmentTable table) return;
+        foreach (var property in this.PrepareEnchantingProperties())
+            await Client.QueuePacketAsync(property);
+    }
+
+    /// <summary>
+    /// Works out the open enchanting table's offers from its item, and the window properties that show them, without
+    /// sending them, so that a click can capture them inside the table's lock and send them after it.
+    /// </summary>
+    internal List<ContainerSetDataPacket> PrepareEnchantingProperties()
+    {
+        var properties = new List<ContainerSetDataPacket>();
+        if (OpenedContainer is not EnchantmentTable table) return properties;
         var item = table.GetItem(0);
         var random = new LegacyRandomSource(EnchantmentSeed);
         var shelves = CountBookshelves(table.BlockPosition);
@@ -62,7 +73,7 @@ public partial class Player
             enchantmentCosts[option] = enchantable ? EnchantingCost(random, option, shelves) : 0;
             if (enchantmentCosts[option] < option + 1) enchantmentCosts[option] = 0;
         }
-        await SetEnchantingPropertyAsync(3, (short)(EnchantmentSeed & ~15));
+        properties.Add(EnchantingProperty(3, (short)(EnchantmentSeed & ~15)));
         for (var option = 0; option < 3; option++)
         {
             var cost = enchantmentCosts[option];
@@ -78,17 +89,19 @@ public partial class Player
                     level = chosen.Level;
                 }
             }
-            await SetEnchantingPropertyAsync(option, (short)cost);
-            await SetEnchantingPropertyAsync(option + 4, (short)clue);
-            await SetEnchantingPropertyAsync(option + 7, (short)level);
+            properties.Add(EnchantingProperty(option, (short)cost));
+            properties.Add(EnchantingProperty(option + 4, (short)clue));
+            properties.Add(EnchantingProperty(option + 7, (short)level));
         }
+
+        return properties;
     }
 
-    private ValueTask SetEnchantingPropertyAsync(int property, short value) => Client.QueuePacketAsync(new ContainerSetDataPacket
+    private ContainerSetDataPacket EnchantingProperty(int property, short value) => new()
     {
         ContainerId = CurrentContainerId,
         WindowProperty = new EnchantmentTableWindowProperty((EnchantmentTableProperty)property, value)
-    });
+    };
 
     internal async ValueTask EnchantAsync(int containerId, int option)
     {

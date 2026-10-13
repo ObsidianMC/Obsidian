@@ -97,14 +97,22 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         if (e.Container is EnchantmentTable enchantingTable)
             await ReturnEnchantingItemsAsync(player, enchantingTable);
 
-        //Player successfully exited container
-        player.OpenedContainer = null;
+        // Only the window that is closing: a plugin's handler may have opened another one in its place.
+        if (ReferenceEquals(player.OpenedContainer, e.Container) && player.CurrentContainerId == e.WindowId)
+            player.OpenedContainer = null;
 
-        if (e.Container is not IBlockEntity blockEntity)
-            return;
+        // A double chest's halves both close.
+        BaseContainer[] parts = e.Container is DoubleChestContainer chest
+            ? [chest.First, chest.Second]
+            : [e.Container];
 
-        var position = blockEntity.BlockPosition;
-        var block = await e.Player.Level.GetBlockAsync(position);
+        foreach (var blockEntity in parts.OfType<IBlockEntity>())
+            await AnimateCloseAsync(player, blockEntity.BlockPosition);
+    }
+
+    private static async ValueTask AnimateCloseAsync(Player player, Vector position)
+    {
+        var block = await player.Level.GetBlockAsync(position);
 
         if (block is null)
             return;
@@ -256,15 +264,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 _ => null
             };
             //TODO check if container is cached if so get that container
-            if (type is BlockIds.Chest or BlockIds.TrappedChest) // TODO check if chest its next to another single chest
+            if (type is BlockIds.Chest or BlockIds.TrappedChest)
             {
-                container = new Container
-                {
-                    Owner = player.Uuid,
-                    Title = "Chest",
-                    BlockPosition = blockPosition,
-                    Id = "chest"
-                };
+                container = NewChest(player, blockPosition);
 
                 // The inventory opens below, once the chest's contents (and loot) are in place.
                 await player.Client.QueuePacketAsync(new BlockEventPacket
@@ -354,35 +356,12 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 //TODO open lectern??
             }
 
-            if (container is IBlockEntity containerTileEntity && player.Level is AbstractLevel level)
+            if (container is not null && player.Level is AbstractLevel level)
             {
-                // Stored and looked up in one step, so that players opening a new chest at once share one container.
-                var tileEntity = await level.GetOrAddBlockEntityAsync(blockPosition, containerTileEntity);
+                container = await StoredContainerAsync(player, level, blockPosition, container);
 
-                if (tileEntity is BaseContainer tileEntityContainer)
-                {
-                    // The stored container itself is opened, so changes reach the block entity that's saved with the chunk.
-                    container = tileEntityContainer;
-                }
-                else if (tileEntity is DataBlockEntity dataBlockEntity)
-                {
-                    // A container from world generation: fill it once, then keep it as the block entity. Players opening it
-                    // before it's stored get the first one's container, so its loot isn't generated twice.
-                    lock (generatedContainers)
-                    {
-                        if (generatedContainers.TryGetValue(dataBlockEntity, out var generated))
-                        {
-                            container = generated;
-                        }
-                        else
-                        {
-                            FillGeneratedContainer(dataBlockEntity, container, player);
-                            generatedContainers.Add(dataBlockEntity, container);
-                        }
-                    }
-
-                    await player.Level.SetBlockEntity(blockPosition, (IBlockEntity)container);
-                }
+                if (type is BlockIds.Chest or BlockIds.TrappedChest)
+                    container = await DoubleChestAsync(player, level, block, blockPosition, container);
             }
 
             await player.OpenInventoryAsync(container);
@@ -391,6 +370,126 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         {
             //TODO check for other
         }
+    }
+
+    private static Container NewChest(Player player, Vector position) => new()
+    {
+        Owner = player.Uuid,
+        Title = "Chest",
+        BlockPosition = position,
+        Id = "chest"
+    };
+
+    /// <summary>
+    /// The container stored at <paramref name="position"/>, or <paramref name="fresh"/>, which is stored there if
+    /// none is; a container from world generation gets its loot first. Containers that aren't block entities are
+    /// returned as they are.
+    /// </summary>
+    private static async ValueTask<BaseContainer> StoredContainerAsync(
+        Player player,
+        AbstractLevel level,
+        Vector position,
+        BaseContainer fresh)
+    {
+        if (fresh is not IBlockEntity freshEntity)
+            return fresh;
+
+        // Stored and looked up in one step, so that players opening a new chest at once share one container.
+        var tileEntity = await level.GetOrAddBlockEntityAsync(position, freshEntity);
+
+        // The stored container itself is opened, so changes reach the block entity that's saved with the chunk.
+        if (tileEntity is BaseContainer stored)
+            return stored;
+
+        if (tileEntity is not DataBlockEntity dataBlockEntity)
+            return fresh;
+
+        // A container from world generation: fill it once, then keep it as the block entity. Players opening it
+        // before it's stored get the first one's container, so its loot isn't generated twice.
+        var container = fresh;
+        lock (generatedContainers)
+        {
+            if (generatedContainers.TryGetValue(dataBlockEntity, out var generated))
+            {
+                container = generated;
+            }
+            else
+            {
+                FillGeneratedContainer(dataBlockEntity, container, player);
+                generatedContainers.Add(dataBlockEntity, container);
+            }
+        }
+
+        await player.Level.SetBlockEntity(position, (IBlockEntity)container);
+
+        return container;
+    }
+
+    /// <summary>
+    /// Joins a chest's container with its other half's, when the chest is half of a double chest, like vanilla: the
+    /// neighbour its type and facing point to must be the same block, facing the same way, with the other type. The
+    /// half whose type is <c>right</c> comes first.
+    /// </summary>
+    /// <returns>The double chest's container, or <paramref name="container"/> for a single chest.</returns>
+    private static async ValueTask<BaseContainer> DoubleChestAsync(
+        Player player,
+        AbstractLevel level,
+        IBlock block,
+        Vector position,
+        BaseContainer container)
+    {
+        var chestType = block.GetProperty("type");
+        var facing = block.GetProperty("facing");
+        if (chestType is not ("left" or "right") || ConnectedOffset(chestType, facing) is not Vector offset)
+            return container;
+
+        var neighbourPosition = position + offset;
+        var neighbour = await level.GetBlockAsync(neighbourPosition);
+        var neighbourType = neighbour?.GetProperty("type");
+
+        if (neighbour is null
+            || neighbour.RegistryId != block.RegistryId
+            || neighbour.GetProperty("facing") != facing
+            || neighbourType is not ("left" or "right")
+            || neighbourType == chestType)
+        {
+            return container;
+        }
+
+        var other = await StoredContainerAsync(player, level, neighbourPosition, NewChest(player, neighbourPosition));
+
+        await player.Client.QueuePacketAsync(new BlockEventPacket
+        {
+            Position = neighbourPosition,
+            ActionId = 1,
+            ActionParam = 1,
+            BlockType = neighbour.RegistryId
+        });
+
+        var (first, second) = chestType == "right" ? (container, other) : (other, container);
+        var title = first.CustomName ?? second.CustomName ?? "Large Chest";
+
+        return new DoubleChestContainer(first, second, title);
+    }
+
+    // Where a half of a double chest finds its other half: a left half clockwise of its facing, a right half
+    // counter-clockwise, seen from above, like vanilla's ChestBlock.getConnectedDirection.
+    private static Vector? ConnectedOffset(string chestType, string? facing)
+    {
+        string[] clockwise = ["north", "east", "south", "west"];
+        var index = Array.IndexOf(clockwise, facing);
+        if (index < 0)
+            return null;
+
+        var turn = chestType == "left" ? 1 : 3;
+
+        return clockwise[(index + turn) % 4] switch
+        {
+            "north" => new Vector(0, 0, -1),
+            "east" => new Vector(1, 0, 0),
+            "south" => new Vector(0, 0, 1),
+            _ => new Vector(-1, 0, 0)
+        };
     }
 
     [EventPriority(Priority = Priority.Internal)]

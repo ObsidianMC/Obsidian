@@ -89,9 +89,7 @@ public partial class ContainerClickPacket
             (!this.IsPlayerInventory && forPlayer && slot >= 45)))
             return;
 
-        // Plugins' handlers run without the container's lock, so that one can wait for another player's click; the
-        // server's own handler, which runs last, takes it to apply the click (see MainEventHandler.OnInventoryClick).
-        await server.EventDispatcher.ExecuteEventAsync(new ContainerClickEventArgs(player, server, container)
+        var click = new ContainerClickEventArgs(player, server, container)
         {
             ClickedSlot = slot,
             WindowSlot = this.ClickedSlot,
@@ -99,56 +97,17 @@ public partial class ContainerClickPacket
             Button = this.Button,
             StateId = this.StateId,
             ContainerId = this.ContainerId,
-        });
+        };
 
-        if (this.IsPlayerInventory || window is CraftingTable { Type: InventoryType.Crafting })
-            return;
+        // What the click applies to: the server applies it only if the window and the player's inventory are
+        // unchanged when its turn comes. Read in turn with other clicks, so it's never half of one.
+        using (await window.LockAsync())
+            click.Arrive(window);
 
-        await window.TransactionLock.WaitAsync();
-        try
-        {
-            // It may have closed meanwhile.
-            if (player.OpenedContainer != window)
-                return;
-
-            await this.SyncAsync(player, window);
-        }
-        finally
-        {
-            window.TransactionLock.Release();
-        }
-    }
-
-    // Sends the container's contents to the clicking player and its other viewers, in turn with the other clicks.
-    private async ValueTask SyncAsync(IClientPlayer player, BaseContainer window)
-    {
-        // Client slot hashes describe its prediction, not authoritative inventory changes.
-        await player.Client.QueuePacketAsync(new ContainerSetContentPacket(this.ContainerId, Contents(window, player))
-        {
-            StateId = this.StateId + 1,
-            CarriedItem = player.CarriedItem
-        });
-
-        // The other players who have the container open see the change too.
-        foreach (var viewer in window.GetViewers())
-        {
-            if (viewer == player || viewer is not IClientPlayer other || other.OpenedContainer != window)
-                continue;
-
-            var contents = Contents(window, other);
-            await other.Client.QueuePacketAsync(new ContainerSetContentPacket(other.CurrentContainerId, contents)
-            {
-                CarriedItem = other.CarriedItem
-            });
-        }
-    }
-
-    // What a player's window shows: the container's slots, then the player's main inventory and hotbar.
-    private static List<ItemStack> Contents(BaseContainer window, IPlayer player)
-    {
-        var contents = window.ToList();
-        contents.AddRange(player.Inventory.Skip(9).Take(36));
-
-        return contents;
+        // Plugins' handlers run without the container's lock, so that one can wait for another player's click; the
+        // server's own handler, which runs last, takes it to apply the click and sends the window to its viewers,
+        // even when the click is cancelled (see MainEventHandler.OnInventoryClick). Client slot hashes describe its
+        // prediction, not authoritative inventory changes, so they're not used.
+        await server.EventDispatcher.ExecuteEventAsync(click);
     }
 }

@@ -10,7 +10,9 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
+using Obsidian.WorldData;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -245,6 +247,248 @@ public sealed class MenuClicks
         var stored = Assert.IsAssignableFrom<BaseContainer>(await context.World.GetBlockEntityAsync(position));
         Assert.All(players, player => Assert.Same(stored, player.OpenedContainer));
         Assert.Equal(2, stored.Viewers.Count);
+    }
+
+    // Rows of vanilla's click behaviour, each a click sequence on a fresh player, played through the click packet.
+    private static readonly Dictionary<string, Func<Server, Obsidian.Entities.Player, Task>> clickRows = new()
+    {
+        ["Right-click with an empty cursor takes half the stack, rounded up"] = async (server, player) =>
+        {
+            var chest = await OpenAsync(player, new Container());
+            chest.SetItem(0, new ItemStack(ItemsRegistry.Dirt, 5));
+
+            await ClickAsync(server, player, 0, 1, ClickType.Pickup);
+
+            Assert.Equal(3, player.CarriedItem?.Count);
+            Assert.Equal(2, chest.GetItem(0)?.Count);
+        },
+        ["Right-click with another item swaps it with the slot's"] = async (server, player) =>
+        {
+            var chest = await OpenAsync(player, new Container());
+            chest.SetItem(0, new ItemStack(ItemsRegistry.Dirt, 5));
+            player.CarriedItem = new ItemStack(ItemsRegistry.Stone, 3);
+
+            await ClickAsync(server, player, 0, 1, ClickType.Pickup);
+
+            Assert.True(chest.GetItem(0)?.Is(ItemsRegistry.Stone));
+            Assert.Equal(3, chest.GetItem(0)?.Count);
+            Assert.True(player.CarriedItem?.Is(ItemsRegistry.Dirt));
+            Assert.Equal(5, player.CarriedItem?.Count);
+        },
+        ["A number key puts only armour in an armour slot"] = async (server, player) =>
+        {
+            player.Inventory.SetItem(36, new ItemStack(ItemsRegistry.Dirt, 5));
+            player.Inventory.SetItem(37, new ItemStack(ItemsRegistry.DiamondHelmet));
+
+            await ClickAsync(server, player, 5, 0, ClickType.Swap);
+            Assert.Null(player.Inventory.GetItem(5));
+            Assert.Equal(5, player.Inventory.GetItem(36)?.Count);
+
+            await ClickAsync(server, player, 5, 1, ClickType.Swap);
+            Assert.True(player.Inventory.GetItem(5)?.Is(ItemsRegistry.DiamondHelmet));
+            Assert.Null(player.Inventory.GetItem(37));
+        },
+        ["A number key fills a furnace's fuel slot with one bucket"] = async (server, player) =>
+        {
+            var furnace = await OpenAsync(player, new SmeltingContainer(InventoryType.Furnace, 3, "furnace"));
+            player.Inventory.SetItem(36, new ItemStack(ItemsRegistry.Bucket, 3));
+
+            await ClickAsync(server, player, 1, 0, ClickType.Swap);
+
+            Assert.Equal(1, furnace.GetItem(1)?.Count);
+            Assert.Equal(2, player.Inventory.GetItem(36)?.Count);
+        },
+        ["Double-click collects partial stacks first, from the window's first slot"] = async (server, player) =>
+        {
+            var chest = await OpenAsync(player, new Container());
+            chest.SetItem(0, new ItemStack(ItemsRegistry.Stone, 64));
+            chest.SetItem(1, new ItemStack(ItemsRegistry.Stone, 10));
+            player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Stone, 20));
+            player.CarriedItem = new ItemStack(ItemsRegistry.Stone, 1);
+
+            await ClickAsync(server, player, 2, 0, ClickType.PickupAll);
+
+            Assert.Equal(64, player.CarriedItem?.Count);
+            Assert.Null(chest.GetItem(1));
+            Assert.Null(player.Inventory.GetItem(9));
+            Assert.Equal(31, chest.GetItem(0)?.Count);
+        },
+        ["Shift-crafting moves what fits, drops the rest and stops when nothing fits"] = async (server, player) =>
+        {
+            for (var slot = 9; slot < 44; slot++)
+                player.Inventory.SetItem(slot, new ItemStack(ItemsRegistry.Dirt, 64));
+
+            player.Inventory.SetItem(44, new ItemStack(ItemsRegistry.OakPlanks, 58));
+            player.Inventory.SetItem(1, new ItemStack(ItemsRegistry.OakLog, 3));
+
+            // Four planks fit, then two of the next four, then none.
+            await ClickAsync(server, player, 0, 0, ClickType.QuickMove);
+
+            Assert.Equal(64, player.Inventory.GetItem(44)?.Count);
+            Assert.Equal(1, player.Inventory.GetItem(1)?.Count);
+        }
+    };
+
+    public static TheoryData<string> ClickRows => [.. clickRows.Keys];
+
+    [Theory(DisplayName = "Clicks move items like vanilla's menus", Timeout = 10000)]
+    [MemberData(nameof(ClickRows))]
+    public async Task ClicksMoveItemsLikeVanilla(string row)
+    {
+        await RecipesRegistry.InitializeAsync();
+        await using var context = TestServerFactory.CreateServer($"clicks-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Clicker");
+
+        await clickRows[row](context.Server, player);
+    }
+
+    [Fact(DisplayName = "A click whose slots changed while plugins decided isn't applied, and is corrected",
+        Timeout = 10000)]
+    public async Task StaleOrCancelledClicksAreCorrected()
+    {
+        await using var context = TestServerFactory.CreateServer($"stale-click-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Clicker");
+        var client = (TestClient)player.Client;
+        var menu = await OpenAsync(player, new MenuContainer(pouch, "Pouch"));
+        menu.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 10));
+
+        var interfere = true;
+        var changed = false;
+        context.EventDispatcher.RegisterEvent(null, (Func<ContainerClickEventArgs, ValueTask>)(click =>
+        {
+            if (interfere)
+            {
+                // Another change lands while the handler decides; its change, registered with the click, mustn't run.
+                menu.SetItem(0, new ItemStack(ItemsRegistry.Stone, 1));
+                click.ApplyWithClick(() => changed = true);
+            }
+            else
+            {
+                click.Cancel();
+                click.ApplyWithClick(() => menu.SetItem(1, new ItemStack(ItemsRegistry.GoldIngot, 2)));
+            }
+
+            return ValueTask.CompletedTask;
+        }), Priority.Normal);
+
+        await ClickAsync(context.Server, player, 0, 0, ClickType.Pickup);
+
+        Assert.Null(player.CarriedItem);
+        Assert.False(changed);
+        Assert.True(menu.GetItem(0)?.Is(ItemsRegistry.Stone));
+        Assert.True(client.SentPackets.OfType<ContainerSetContentPacket>().Last().Items[0]?.Is(ItemsRegistry.Stone));
+
+        // A cancelled click applies only the change registered with it, and the window is sent all the same.
+        interfere = false;
+        var sent = client.SentPackets.Count;
+        await ClickAsync(context.Server, player, 0, 0, ClickType.Pickup);
+
+        Assert.Null(player.CarriedItem);
+        Assert.Equal(2, menu.GetItem(1)?.Count);
+        var shown = client.SentPackets.Skip(sent).OfType<ContainerSetContentPacket>().Single();
+        Assert.Equal(2, shown.Items[1]?.Count);
+        Assert.Null(shown.CarriedItem);
+    }
+
+    [Fact(DisplayName = "Creative slot packets need creative mode and set the player's inventory", Timeout = 10000)]
+    public async Task CreativeSlotsNeedCreativeMode()
+    {
+        await using var context = TestServerFactory.CreateServer($"creative-slot-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Builder");
+        var chest = await OpenAsync(player, new Container());
+        player.GameMode = GameMode.Survival;
+
+        await CreativeSlot(36, new ItemStack(ItemsRegistry.Diamond, 3)).HandleAsync(context.Server, player);
+        Assert.Null(player.Inventory.GetItem(36));
+
+        // In creative mode it sets the inventory's slot, whatever window is open, but not with an oversized stack.
+        player.GameMode = GameMode.Creative;
+        await CreativeSlot(36, new ItemStack(ItemsRegistry.Diamond, 3)).HandleAsync(context.Server, player);
+        await CreativeSlot(37, new ItemStack(ItemsRegistry.Diamond, 65)).HandleAsync(context.Server, player);
+
+        Assert.Equal(3, player.Inventory.GetItem(36)?.Count);
+        Assert.Null(player.Inventory.GetItem(37));
+        Assert.All(chest, Assert.Null);
+    }
+
+    [Fact(DisplayName = "A double chest opens as one 54-slot window over both halves, which viewers share",
+        Timeout = 10000)]
+    public async Task DoubleChestSharesBothHalves()
+    {
+        await using var context = TestServerFactory.CreateServer($"double-chest-{Guid.NewGuid():N}");
+        var chunk = new Chunk(0, 0);
+        chunk.SetChunkStatus(ChunkGenStage.full);
+        context.World.LoadRegionByChunk(0, 0).SetChunk(chunk);
+
+        // Facing north, a left half's other half is east of it; the right half's slots come first.
+        var left = BlocksRegistry.Chest.WithProperty("facing", "north").WithProperty("type", "left");
+        var right = BlocksRegistry.Chest.WithProperty("facing", "north").WithProperty("type", "right");
+        chunk.SetBlock(0, 64, 0, left);
+        chunk.SetBlock(1, 64, 0, right);
+
+        var first = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "First");
+        var second = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Second");
+        await InteractAsync(first, left, new Vector(0, 64, 0));
+        await InteractAsync(second, right, new Vector(1, 64, 0));
+
+        var leftHalf = await context.World.GetBlockEntityAsync(new Vector(0, 64, 0));
+        var rightHalf = await context.World.GetBlockEntityAsync(new Vector(1, 64, 0));
+        foreach (var player in new[] { first, second })
+        {
+            var window = Assert.IsType<DoubleChestContainer>(player.OpenedContainer);
+            Assert.Equal(54, window.Size);
+            Assert.Same(rightHalf, window.First);
+            Assert.Same(leftHalf, window.Second);
+        }
+
+        // A click in the left half reaches its block entity and the other viewer's window.
+        first.CarriedItem = new ItemStack(ItemsRegistry.Diamond, 3);
+        await ClickAsync(context.Server, first, 27, 0, ClickType.Pickup);
+
+        Assert.Equal(3, ((BaseContainer)leftHalf).GetItem(0)?.Count);
+        var shown = ((TestClient)second.Client).SentPackets.OfType<ContainerSetContentPacket>().Last();
+        Assert.Equal(second.CurrentContainerId, shown.ContainerId);
+        Assert.Equal(3, shown.Items[27]?.Count);
+
+        async Task InteractAsync(Obsidian.Entities.Player player, IBlock block, Vector position) =>
+            await context.Server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, context.Server)
+            {
+                Block = block,
+                BlockLocation = position
+            });
+    }
+
+    private static async Task<T> OpenAsync<T>(Obsidian.Entities.Player player, T container) where T : BaseContainer
+    {
+        await player.OpenInventoryAsync(container);
+
+        return container;
+    }
+
+    // Clicks a slot of the player's open window through the click packet.
+    private static async Task ClickAsync(
+        Server server,
+        Obsidian.Entities.Player player,
+        short slot,
+        sbyte button,
+        ClickType type)
+    {
+        var containerId = player.OpenedContainer is null ? 0 : player.CurrentContainerId;
+
+        await Packet(containerId, slot, button, type).HandleAsync(server, player);
+    }
+
+    private static SetCreativeModeSlotPacket CreativeSlot(short slot, ItemStack item)
+    {
+        using var writer = new NetworkBuffer();
+        writer.WriteShort(slot);
+        writer.WriteItemStack(item, delimitedComponents: true);
+
+        using var reader = new NetworkBuffer(writer.AsSpan(0, writer.Size).ToArray());
+        var packet = new SetCreativeModeSlotPacket();
+        packet.Populate(reader);
+
+        return packet;
     }
 
     // Clicks a slot as the window numbers it, found in the menu or the player's inventory like the click packet does.

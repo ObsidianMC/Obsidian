@@ -63,13 +63,14 @@ public sealed class Container : BaseContainer, IBlockEntity
                     continue;
 
                 invItem.Count += item.Count;
+                this.MarkChanged();
 
                 return i;
             }
 
             if (invItem == null)
             {
-                this.items[i] = item;
+                this.SetItem(i, item);
 
                 return i;
             }

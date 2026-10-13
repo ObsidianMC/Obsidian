@@ -354,7 +354,7 @@ public sealed partial class Player : Avatar, IClientPlayer
             return;
 
         var containerId = this.CurrentContainerId;
-        var closed = new ContainerClosedEventArgs(this, this.Server, container);
+        var closed = new ContainerClosedEventArgs(this, this.Server, container, containerId);
 
         if (unloading is not null && this.EventDispatcher is EventDispatcher dispatcher)
             await dispatcher.ExecuteEventAsync(closed, unloading);
@@ -370,6 +370,32 @@ public sealed partial class Player : Avatar, IClientPlayer
             this.OpenedContainer = null;
 
         await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = containerId });
+    }
+
+    // Vanilla's creative drop throttle: each drop counts 20, each tick (50 ms here) takes one off, and drops stop
+    // from 1480 on. Only the player's own packets, which are handled in turn, count drops.
+    private const int CreativeDropCost = 20;
+    private const int CreativeDropLimit = 1480;
+
+    private int creativeDrops;
+    private long creativeDropsTick;
+
+    /// <summary>
+    /// Counts a drop from the creative inventory screen, unless the player is dropping too fast.
+    /// </summary>
+    /// <returns>Whether the drop happens.</returns>
+    internal bool CountCreativeDrop()
+    {
+        var tick = Environment.TickCount64 / 50;
+        this.creativeDrops = (int)Math.Max(0, this.creativeDrops - (tick - this.creativeDropsTick));
+        this.creativeDropsTick = tick;
+
+        if (this.creativeDrops >= CreativeDropLimit)
+            return false;
+
+        this.creativeDrops += CreativeDropCost;
+
+        return true;
     }
 
     public async override ValueTask TeleportAsync(VectorD pos)

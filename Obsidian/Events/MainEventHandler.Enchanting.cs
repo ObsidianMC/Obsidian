@@ -1,68 +1,36 @@
 using Obsidian.API.Containers;
-using Obsidian.API.Events;
 using Obsidian.API.Inventory;
-using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Events;
 
 public partial class MainEventHandler
 {
-    private static async ValueTask<bool> HandleEnchantingClickAsync(ContainerClickEventArgs args)
+    /// <summary>
+    /// Shift-clicks a stack in an enchanting table's window like vanilla's enchantment menu: from the table to the
+    /// player's inventory, filling from the hotbar's last slot; lapis lazuli to the table's second slot; anything
+    /// else, one item, to its empty first slot.
+    /// </summary>
+    private static bool MoveEnchantingItem(IPlayer player, EnchantmentTable table, BaseContainer source, int slot)
     {
-        if (args.Player.OpenedContainer is not EnchantmentTable table || args.Player is not Player player) return false;
-        bool Accepts(int slot, ItemStack? item) => item.IsNullOrAir()
-            || slot == 0 && item.Count == 1
-            || slot == 1 && item.Is(ItemsRegistry.LapisLazuli);
+        var inventory = player.Inventory;
 
-        if (args.ClickType == ClickType.QuickMove && args.ClickedSlot >= 0)
-        {
-            var item = args.Item;
-            if (item is { Count: > 0 })
-            {
-                if (args.Container == table)
-                {
-                    StoreCraftingItem(player.Inventory, item, 9, 45);
-                    if (item.Count <= 0) table.RemoveItem(args.ClickedSlot);
-                }
-                else
-                {
-                    var slot = item.Is(ItemsRegistry.LapisLazuli) ? 1 : 0;
-                    var existing = table.GetItem(slot);
-                    var empty = existing.IsNullOrAir();
-                    var room = slot == 0 ? empty ? 1 : 0 : empty ? item.MaxStackSize : existing == item ? existing.MaxStackSize - existing.Count : 0;
-                    var count = Math.Min(item.Count, room);
-                    if (count > 0)
-                    {
-                        table.SetItem(slot, new ItemStack(item, count + (empty ? 0 : existing.Count)));
-                        args.Container.RemoveItem(args.ClickedSlot, count);
-                    }
-                }
-            }
-        }
-        else if (args.ClickType == ClickType.Pickup)
-        {
-            if (args.Container != table || args.ClickedSlot < 0 || player.CarriedItem.IsNullOrAir() ||
-                Accepts(args.ClickedSlot, new ItemStack(player.CarriedItem, args.Button == 1 ? 1 : player.CarriedItem.Count)))
-                HandleCraftingPickup(args);
-            else if (args.ClickedSlot == 0 && table.GetItem(0).IsNullOrAir())
-            {
-                table.SetItem(0, new ItemStack(player.CarriedItem));
-                if (--player.CarriedItem.Count == 0) player.CarriedItem = null;
-            }
-        }
-        else if (args.ClickType == ClickType.Swap && args.ClickedSlot >= 0)
-        {
-            var sourceSlot = args.Button == 40 ? 45 : args.Button is >= 0 and <= 8 ? 36 + args.Button : -1;
-            if (sourceSlot >= 0 && (args.Container != table || Accepts(args.ClickedSlot, player.Inventory.GetItem(sourceSlot)))) HandleSwap(args);
-        }
-        else if (args.ClickType == ClickType.Throw) HandleCraftingThrow(args);
-        else if (args.ClickType == ClickType.Clone) HandleClone(args);
-        else if (args.ClickType == ClickType.PickupAll) HandlePickupAll(args);
-        else if (args.ClickType == ClickType.QuickCraft) HandleQuickCraft(args);
-        await player.RefreshEnchantingAsync();
-        await player.QueuePacketAsync(new ContainerSetContentPacket(args.ContainerId,
-            table.Concat(player.Inventory.Skip(9).Take(36)).ToList()) { StateId = args.StateId + 1, CarriedItem = player.CarriedItem });
+        if (source == table)
+            return MoveStack(player, table, slot, inventory, 9, 45, reverse: true);
+
+        var item = inventory.GetItem(slot);
+        if (item.IsNullOrAir())
+            return false;
+
+        if (item.Is(ItemsRegistry.LapisLazuli))
+            return MoveStack(player, inventory, slot, table, 1, 2, reverse: true);
+
+        if (!table.GetItem(0).IsNullOrAir())
+            return false;
+
+        table.SetItem(0, new ItemStack(item, 1));
+        inventory.RemoveItem(slot, 1);
+
         return true;
     }
 

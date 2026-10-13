@@ -18,7 +18,7 @@ public sealed class EnchantmentTable : BaseContainer, IBlockEntity
         if (slot > this.Size - 1 || slot < 0)
             throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
 
-        this.items[slot] = item;
+        base.SetItem(slot, item);
     }
 
     public void ToNbt() => throw new NotImplementedException();

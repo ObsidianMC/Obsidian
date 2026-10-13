@@ -127,14 +127,50 @@ A plugin's menu type is a grid of 1 to 6 rows of 1 to 9 slots above the player's
 followed by the player's inventory like vanilla's menus. The server opens it with its id and moves items in it like a
 chest's; a `ContainerClickEventArgs` handler cancels or handles players' clicks, and the plugin reads and changes the
 container's slots. Several players can have the same container open: their clicks take turns, so two can't take the
-same stack, and each sees the others' changes. Click handlers run before the server applies the click and outside its
-turn, so a handler may wait for something another viewer does; the server then checks that the menu is still open
-before it applies the click. A NeoForge or Fabric mod's menu type with the same identifier and slots shows it, made
-without extra data (vanilla's open screen packet carries none). The type keeps its id and shape across reloads and stays
-registered until the server stops; registering it again with another shape throws. When the plugin unloads (or
-reloads), its menus close for the players who have them open, with a `ContainerClosedEventArgs` the plugin still
-handles although it takes no other calls. From then until a loaded plugin registers the type again, opening one of its
-menus does nothing.
+same stack, and each sees the others' changes. A NeoForge or Fabric mod's menu type with the same identifier and slots
+shows it, made without extra data (vanilla's open screen packet carries none). The type keeps its id and shape across
+reloads and stays registered until the server stops; registering it again with another shape throws. When the plugin
+unloads (or reloads), its menus close for the players who have them open, with a `ContainerClosedEventArgs` the plugin
+still handles although it takes no other calls. From then until a loaded plugin registers the type again, opening one
+of its menus does nothing.
+
+### Click handlers
+
+```csharp
+[EventPriority(Priority = Priority.Normal)]
+public ValueTask OnClick(ContainerClickEventArgs click)
+{
+    if (click.Container is not MenuContainer { Menu.Identifier: "ruby:pouch" } pouch || click.ClickedSlot != 0)
+        return ValueTask.CompletedTask;
+
+    // Selling the diamonds in the first slot: decided on what the slot held as the click arrived.
+    if (click.Item?.Is(ItemsRegistry.Diamond) == true)
+    {
+        click.Cancel();
+        click.ApplyWithClick(() => pouch.SetItem(0, new ItemStack(ItemsRegistry.Emerald, click.Item.Count)));
+    }
+
+    return ValueTask.CompletedTask;
+}
+```
+
+Click handlers, like every container's (chests, furnaces, the player's inventory), run before the server applies the
+click and outside the container's lock, so a handler may wait, even for something another viewer does. The server's
+own handler runs last: inside the lock it checks that the window is still open and that neither the container nor the
+player's inventory changed since the click arrived, then applies the click unless it's cancelled, and sends the
+window's contents and the cursor to its viewers.
+
+- `Item` is a copy of what the clicked slot held as the click arrived; changing it changes nothing.
+- A click whose slots changed while handlers decided isn't applied, so a handler's decision never applies to contents
+  it didn't see. Like a cancelled click, it's corrected: the player's window and cursor are sent again.
+- To change slots with the click, register the change with `ApplyWithClick`: it runs inside the lock right after the
+  click (or in its place, when cancelled), only if the click isn't stale, and the viewers see its result. It must not
+  block or wait.
+- A handler may change the container directly, through its methods (`SetItem`, `RemoveItem`), but that change isn't
+  part of the click: it makes the click itself stale, and may race other viewers' clicks. Changing a stack in place
+  (its count) isn't seen as a change at all until it's set in its slot again.
+- A `ContainerClosedEventArgs` handler may open another container for the player; the server then closes only the
+  window the event is about.
 
 ## Tags
 

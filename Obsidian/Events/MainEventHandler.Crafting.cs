@@ -9,7 +9,12 @@ namespace Obsidian.Events;
 
 public partial class MainEventHandler
 {
-    private static async ValueTask<bool> HandleCraftingAsync(ContainerClickEventArgs args)
+    /// <summary>
+    /// Handles a click in a window with a crafting grid, the player's inventory or a crafting table: its result slot
+    /// crafts, the others work like any window's; the result follows the grid.
+    /// </summary>
+    /// <returns>Whether the window has a crafting grid, so that the click is handled.</returns>
+    private static bool HandleCrafting(ContainerClickEventArgs args)
     {
         var player = args.Player;
         BaseContainer grid;
@@ -30,50 +35,13 @@ public partial class MainEventHandler
         RefreshCraftingResult(grid, width);
 
         // Drags follow the same rules as in any window, the slots' limits included; the result slot takes none.
-        if (args.ClickType == ClickType.QuickCraft)
-            HandleQuickCraft(args);
-        else if (args.Container == grid && args.ClickedSlot == 0)
+        if (args.Container == grid && args.ClickedSlot == 0 && args.ClickType != ClickType.QuickCraft)
             TakeCraftingResult(args, grid, width);
-        else if (args.ClickType == ClickType.QuickMove)
-            MoveCraftingItem(args, grid, width);
         else
-        {
-            switch (args.ClickType)
-            {
-                case ClickType.Pickup:
-                    HandleCraftingPickup(args);
-                    break;
-                case ClickType.Swap when args.ClickedSlot >= 0:
-                    HandleSwap(args);
-                    break;
-                case ClickType.Throw:
-                    HandleCraftingThrow(args);
-                    break;
-                case ClickType.PickupAll:
-                    HandlePickupAll(args);
-                    break;
-                case ClickType.Clone:
-                    HandleClone(args);
-                    break;
-            }
-        }
+            HandleClick(args, dropThrown: true);
 
         RefreshCraftingResult(grid, width);
-        var items = grid.ToList();
-        if (width == 3)
-            items.AddRange(player.Inventory.Skip(9).Take(36));
-        await player.QueuePacketAsync(new ContainerSetContentPacket(args.ContainerId, items)
-        {
-            StateId = args.StateId + 1,
-            CarriedItem = player.CarriedItem
-        });
-        if (width == 3 && args.ClickType == ClickType.Swap && args.Button == 40)
-            await player.QueuePacketAsync(new ContainerSetSlotPacket
-            {
-                ContainerId = -2,
-                Slot = 45,
-                SlotData = player.Inventory.GetItem(45)
-            });
+
         return true;
     }
 
@@ -82,66 +50,24 @@ public partial class MainEventHandler
         var result = RecipesRegistry.FindRecipe(grid, width)?.Result.FirstOrDefault();
         Debug.Assert(result is null || (result.Count > 0 && result.Count <= result.MaxStackSize),
             "Generated crafting results must fit in one stack.");
-        grid.SetItem(0, result is null ? null : new ItemStack(result, result.Count));
+
+        var current = grid.GetItem(0);
+        var unchanged = result is null
+            ? current is null
+            : current is not null && current == result && current.Count == result.Count;
+
+        // Setting the same result again would count as a change to the grid (see BaseContainer.Revision).
+        if (!unchanged)
+            grid.SetItem(0, result is null ? null : new ItemStack(result, result.Count));
     }
 
-    private static void HandleCraftingPickup(ContainerClickEventArgs args)
-    {
-        if (args.Button is not (0 or 1))
-            return;
-        var player = args.Player;
-        var carried = player.CarriedItem;
-        if (args.ClickedSlot == OutsideInventory)
-        {
-            if (carried.IsNullOrAir() || carried.Count <= 0)
-                return;
-            int count = args.Button == 0 ? carried.Count : 1;
-            SpawnThrownItem(player, new ItemStack(carried, count));
-            carried.Count -= count;
-            if (carried.Count == 0)
-                player.CarriedItem = null;
-            return;
-        }
-
-        var clicked = args.Item;
-        if (carried.IsNullOrAir() || carried.Count <= 0)
-        {
-            if (clicked.IsNullOrAir() || clicked.Count <= 0)
-                return;
-            int count = args.Button == 0 ? clicked.Count : (clicked.Count + 1) / 2;
-            player.CarriedItem = new ItemStack(clicked, count);
-            args.Container.RemoveItem(args.ClickedSlot, count);
-        }
-        else if (clicked.IsNullOrAir() || clicked.Count <= 0 || clicked == carried)
-        {
-            var maximum = args.Container == player.Inventory && args.ClickedSlot is >= 5 and <= 8 ||
-                args.Container is EnchantmentTable && args.ClickedSlot == 0 ? 1 : carried.MaxStackSize;
-            int count = Math.Min(args.Button == 0 ? carried.Count : 1,
-                maximum - (clicked?.Count ?? 0));
-            if (count <= 0)
-                return;
-            args.Container.SetItem(args.ClickedSlot, new ItemStack(carried, (clicked?.Count ?? 0) + count));
-            carried.Count -= count;
-            if (carried.Count == 0)
-                player.CarriedItem = null;
-        }
-        else if (carried.Count <= (args.Container == player.Inventory && args.ClickedSlot is >= 5 and <= 8 ? 1 : carried.MaxStackSize))
-        {
-            args.Container.SetItem(args.ClickedSlot, carried);
-            player.CarriedItem = clicked;
-        }
-    }
-
-    private static void HandleCraftingThrow(ContainerClickEventArgs args)
-    {
-        if (args.ClickedSlot < 0 || args.Button is not (0 or 1) || args.Item.IsNullOrAir())
-            return;
-        var item = args.Item!;
-        int count = args.Button == 0 ? 1 : item.Count;
-        SpawnThrownItem(args.Player, new ItemStack(item, count));
-        args.Container.RemoveItem(args.ClickedSlot, count);
-    }
-
+    /// <summary>
+    /// Takes the crafting result like vanilla's result slot, which gives its whole stack and takes nothing: a pickup
+    /// moves it to the cursor (or onto a cursor of the same item, if it fits whole), a swap to an empty hotbar slot or
+    /// the off hand, a throw drops it, and each crafts once. A shift-click crafts again while the result stays the
+    /// same item and some of it fits in the player's inventory, filling from the hotbar's last slot and dropping
+    /// what doesn't fit; throwing with the right button crafts again too.
+    /// </summary>
     private static void TakeCraftingResult(ContainerClickEventArgs args, BaseContainer grid, int width)
     {
         var player = args.Player;
@@ -151,47 +77,53 @@ public partial class MainEventHandler
             return;
         }
 
-        var initialResult = grid.GetItem(0);
-        do
+        var repeats = args.ClickType == ClickType.QuickMove || args.ClickType == ClickType.Throw && args.Button == 1;
+        var crafted = grid.GetItem(0)?.Holder;
+
+        while (grid.GetItem(0) is ItemStack result && !result.IsAir && result.Holder == crafted)
         {
-            var result = grid.GetItem(0);
-            if (result.IsNullOrAir() || result.Count <= 0 || result != initialResult)
-                return;
+            var stack = new ItemStack(result, result.Count);
 
             switch (args.ClickType)
             {
                 case ClickType.Pickup when args.Button is 0 or 1:
-                    if (!player.CarriedItem.IsNullOrAir())
-                    {
-                        if (player.CarriedItem != result || player.CarriedItem.Count + result.Count > player.CarriedItem.MaxStackSize)
-                            return;
-                        player.CarriedItem.Count += result.Count;
-                    }
+                    var carried = player.CarriedItem;
+                    if (carried.IsNullOrAir())
+                        player.CarriedItem = stack;
+                    else if (carried == stack && carried.Count + stack.Count <= carried.MaxStackSize)
+                        carried.Count += stack.Count;
                     else
-                        player.CarriedItem = new ItemStack(result, result.Count);
+                        return;
+
                     break;
                 case ClickType.QuickMove:
-                    if (!CanStoreCraftingItem(player.Inventory, result, 9, 45))
+                    if (!MoveItemStackTo(player, stack, player.Inventory, 9, 45, reverse: true))
                         return;
-                    StoreCraftingItem(player.Inventory, new ItemStack(result, result.Count), 9, 45);
+
                     break;
                 case ClickType.Swap when args.Button is >= 0 and <= 8 or 40:
-                    int slot = args.Button == 40 ? 45 : args.Button + 36;
-                    var target = player.Inventory.GetItem(slot);
-                    if (!target.IsNullOrAir() && (target != result || target.Count + result.Count > target.MaxStackSize))
+                    var slot = args.Button == 40 ? OffhandSlot : args.Button + 36;
+                    if (!player.Inventory.GetItem(slot).IsNullOrAir())
                         return;
-                    player.Inventory.SetItem(slot, new ItemStack(result, (target?.Count ?? 0) + result.Count));
+
+                    player.Inventory.SetItem(slot, stack);
                     break;
-                case ClickType.Throw when args.Button is 0 or 1:
-                    SpawnThrownItem(player, new ItemStack(result, result.Count));
+                case ClickType.Throw when args.Button is 0 or 1 && player.CarriedItem.IsNullOrAir():
+                    SpawnThrownItem(player, stack);
                     break;
                 default:
                     return;
             }
 
             ConsumeCraftingIngredients(player, grid, width);
+
+            // Like vanilla's shift-click, what didn't fit drops.
+            SpawnThrownItem(player, stack.Count > 0 && args.ClickType == ClickType.QuickMove ? stack : null);
             RefreshCraftingResult(grid, width);
-        } while (args.ClickType == ClickType.QuickMove);
+
+            if (!repeats)
+                return;
+        }
     }
 
     private static void ConsumeCraftingIngredients(IPlayer player, BaseContainer grid, int width)
@@ -223,55 +155,29 @@ public partial class MainEventHandler
         }
     }
 
-    private static void MoveCraftingItem(ContainerClickEventArgs args, BaseContainer grid, int width)
+    /// <summary>
+    /// Shift-clicks a stack in a crafting table's window like vanilla's crafting menu: from the player's inventory to
+    /// the grid, else between the main inventory and the hotbar; from the grid to the player's inventory.
+    /// </summary>
+    private static bool MoveCraftingTableItem(IPlayer player, CraftingTable table, BaseContainer source, int slot)
     {
-        var item = args.Item;
-        if (item.IsNullOrAir() || args.ClickedSlot < 0)
-            return;
+        var inventory = player.Inventory;
 
-        var armorSlot = CombatItems.PlayerArmorSlot(item);
-        if (args.Container == args.Player.Inventory && args.ClickedSlot >= 9 && armorSlot >= 0 && args.Player.Inventory.GetItem(armorSlot).IsNullOrAir())
-        {
-            args.Player.Inventory.SetItem(armorSlot, new ItemStack(item));
-            args.Container.RemoveItem(args.ClickedSlot, 1);
-            return;
-        }
+        if (source != inventory)
+            return MoveStack(player, table, slot, inventory, 9, 45, reverse: false);
 
-        if (width == 3 && args.Container == args.Player.Inventory)
-        {
-            int before = item.Count;
-            StoreCraftingItem(grid, item, 1, 10);
-            if (item.Count == before)
-            {
-                bool fromMain = args.ClickedSlot >= 9 && args.ClickedSlot < 36;
-                StoreCraftingItem(args.Player.Inventory, item, fromMain ? 36 : 9, fromMain ? 45 : 36);
-            }
-        }
-        else
-        {
-            int start = args.ClickedSlot >= 9 && args.ClickedSlot < 36 && args.Container == args.Player.Inventory ? 36 : 9;
-            StoreCraftingItem(args.Player.Inventory, item, start,
-                args.Container == grid && args.ClickedSlot <= width * width ? 45 : start == 36 ? 45 : 36);
-        }
+        if (MoveStack(player, inventory, slot, table, 1, 10, reverse: false))
+            return true;
 
-        if (item.Count == 0)
-            args.Container.RemoveItem(args.ClickedSlot);
+        return slot < 36
+            ? MoveStack(player, inventory, slot, inventory, 36, 45, reverse: false)
+            : MoveStack(player, inventory, slot, inventory, 9, 36, reverse: false);
     }
 
-    private static bool CanStoreCraftingItem(BaseContainer container, ItemStack item, int start, int end)
-    {
-        int space = 0;
-        for (int slot = start; slot < end; slot++)
-        {
-            var target = container.GetItem(slot);
-            if (target.IsNullOrAir())
-                space += item.MaxStackSize;
-            else if (target == item)
-                space += Math.Max(0, target.MaxStackSize - target.Count);
-        }
-        return space >= item.Count;
-    }
-
+    /// <summary>
+    /// Adds <paramref name="item"/>, which shrinks, to slots <paramref name="start"/> to <paramref name="end"/> of
+    /// <paramref name="container"/>: stacks of the same item first, then empty slots.
+    /// </summary>
     private static void StoreCraftingItem(BaseContainer container, ItemStack item, int start, int end)
     {
         for (int pass = 0; pass < 2 && item.Count > 0; pass++)
@@ -282,13 +188,12 @@ public partial class MainEventHandler
                 if (pass == 0 ? target.IsNullOrAir() || target != item : !target.IsNullOrAir())
                     continue;
 
-                int amount = Math.Min(item.Count, target.IsNullOrAir() ? item.MaxStackSize : target.MaxStackSize - target.Count);
+                var room = target.IsNullOrAir() ? item.MaxStackSize : target.MaxStackSize - target.Count;
+                int amount = Math.Min(item.Count, room);
                 if (amount <= 0)
                     continue;
-                if (target.IsNullOrAir())
-                    container.SetItem(slot, new ItemStack(item, amount));
-                else
-                    target.Count += amount;
+
+                container.SetItem(slot, new ItemStack(item, (target?.Count ?? 0) + amount));
                 item.Count -= amount;
             }
         }

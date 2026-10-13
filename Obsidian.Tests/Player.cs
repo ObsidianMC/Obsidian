@@ -165,35 +165,4 @@ public sealed class Player
         Assert.Equal(droppedCount, dropped.Count);
         Assert.Equal(remainingCount, player.CarriedItem?.Count ?? 0);
     }
-
-    [Fact]
-    public void PickupAll_ShouldMergeStacks()
-    {
-        var player = new FakePlayer();
-
-        var container = new Container(9);
-        var carried = new ItemStack(ItemsRegistry.OakPlanks, 10);
-        var stack1 = new ItemStack(ItemsRegistry.OakPlanks, 20);
-        var stack2 = new ItemStack(ItemsRegistry.OakPlanks, 15);
-
-        player.CarriedItem = carried;
-        container.SetItem(0, stack1);
-        container.SetItem(1, stack2);
-
-        var args = ContainerClickEventArgs.Create(
-            player,
-            server,
-            container,
-            containerId: 1,
-            clickedSlot: 0,
-            button: 0,
-            stateId: 0,
-            clickType: ClickType.PickupAll
-        );
-
-        MainEventHandler.OnInventoryClickTest(args);
-
-        Assert.True(player.CarriedItem.Count > 10);
-        Assert.True(container.GetItem(0) == null || container.GetItem(0).Count < 20);
-    }
 }
