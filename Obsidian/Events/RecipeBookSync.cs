@@ -1,40 +1,34 @@
+using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Threading;
 
 namespace Obsidian.Events;
 
 /// <summary>
-/// Keeps a player's recipe book up to date with the server's recipes (see <see cref="RecipesRegistry.Current"/>):
-/// the whole book as they join, then, when the recipes change, the recipes added and removed since. Every player
-/// knows every crafting recipe, as Obsidian has no recipe unlocking.
+/// Sends the initial book and later differences in order. Remembered ids and registration revisions contain no
+/// recipe objects, so a player's book cannot keep an unloaded plugin alive.
 /// </summary>
-/// <remarks>
-/// It remembers the recipes the player was last sent, so the changes are sent once and in order, whichever comes
-/// first of the join and a change made meanwhile. Nothing is sent before the join's book, as the client has no recipe
-/// book until it joins.
-/// </remarks>
 internal sealed class RecipeBookSync
 {
     private readonly SemaphoreSlim gate = new(1, 1);
+    private Dictionary<int, long>? sent;
 
-    private RecipeSet? sent;
-
-    /// <summary>
-    /// Sends <paramref name="player"/> the whole recipe book, replacing their client's, as they join.
-    /// </summary>
+    /// <summary>Sends the full book that this client's configured content can safely display.</summary>
     public async ValueTask SendInitialAsync(IPlayer player)
     {
         await this.gate.WaitAsync();
         try
         {
-            var recipes = RecipesRegistry.Current;
-            var entries = recipes.Book
-                .Where(entry => entry is not null)
-                .Select(entry => entry!)
-                .ToList();
+            var recipes = MainEventHandler.PlayerRecipes(player);
 
+            // A plugin may have added items since this client's handshake started. Its next configuration join
+            // delivers those recipes; vanilla's book is safe in the meantime.
+            if (!CanSend(player, recipes))
+                recipes = RecipesRegistry.Current;
+
+            var entries = Entries(recipes);
             await player.QueuePacketAsync(new RecipeBookAddPacket(entries, replace: true));
-            this.sent = recipes;
+            this.sent = Identities(entries);
         }
         finally
         {
@@ -42,36 +36,28 @@ internal sealed class RecipeBookSync
         }
     }
 
-    /// <summary>
-    /// Sends <paramref name="player"/> what changed in the recipe book since they were last sent it: the recipes gone
-    /// and those added or registered again. Nothing, before the join's book.
-    /// </summary>
-    public async ValueTask SendChangesAsync(IPlayer player)
+    /// <summary>Sends the difference since the last completed book delivery, once the initial book was sent.</summary>
+    /// <returns>Whether the client's content is ready for crafting results from the selected recipe set.</returns>
+    public async ValueTask<bool> SendChangesAsync(IPlayer player)
     {
         await this.gate.WaitAsync();
         try
         {
-            if (this.sent is not RecipeSet previous)
-                return;
+            // Select and validate inside the same per-player gate. Never validate content before waiting here.
+            var recipes = MainEventHandler.PlayerRecipes(player);
+            if (!CanSend(player, recipes))
+                return false;
 
-            var recipes = RecipesRegistry.Current;
-            var removed = new List<int>();
-            var added = new List<RecipeBookEntry>();
+            if (this.sent is null)
+                return true;
 
-            for (var displayId = 0; displayId < recipes.Book.Count; displayId++)
-            {
-                var before = previous.GetBookEntry(displayId);
-                var now = recipes.Book[displayId];
-
-                if (ReferenceEquals(before?.Recipe, now?.Recipe))
-                    continue;
-
-                // A recipe replaced under the same id is added over the old one, as the client keys its book by id.
-                if (now is not null)
-                    added.Add(now);
-                else
-                    removed.Add(displayId);
-            }
+            var entries = Entries(recipes);
+            var identities = Identities(entries);
+            var removed = this.sent.Keys.Where(id => !identities.ContainsKey(id)).ToList();
+            var added = entries
+                .Where(entry => !this.sent.TryGetValue(entry.DisplayId, out var revision)
+                    || revision != entry.Revision)
+                .ToList();
 
             if (removed.Count > 0)
                 await player.QueuePacketAsync(new RecipeBookRemovePacket(removed));
@@ -79,11 +65,37 @@ internal sealed class RecipeBookSync
             if (added.Count > 0)
                 await player.QueuePacketAsync(new RecipeBookAddPacket(added, replace: false));
 
-            this.sent = recipes;
+            // Only acknowledge the complete delivery. A failure is retried on the next recipe change.
+            this.sent = identities;
+
+            return true;
         }
         finally
         {
             this.gate.Release();
         }
     }
+
+    internal static bool CanSend(IPlayer player, RecipeSet recipes)
+    {
+        if (player is not Player { Client: Client client, Server: Server server })
+            return true;
+
+        if (client.AwaitingReconfiguration || client.ConfiguredContent is null)
+            return false;
+
+        // The stamp belongs to this immutable set. A client may also have configured newer content since it
+        // was published; reading the live version after selecting the set safely recognizes that case.
+        return recipes.RequiredContent is not ContentVersion required
+            || !client.NeedsReconfiguration(required)
+            || !client.NeedsReconfiguration(server.GetContentVersion());
+    }
+
+    private static List<RecipeBookEntry> Entries(RecipeSet recipes) => recipes.Book
+        .Where(entry => entry is not null)
+        .Select(entry => entry!)
+        .ToList();
+
+    private static Dictionary<int, long> Identities(IEnumerable<RecipeBookEntry> entries) =>
+        entries.ToDictionary(entry => entry.DisplayId, entry => entry.Revision);
 }

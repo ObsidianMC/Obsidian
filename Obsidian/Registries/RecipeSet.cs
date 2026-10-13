@@ -8,15 +8,13 @@ namespace Obsidian.Registries;
 /// <summary>
 /// The recipes at one moment, vanilla's and those registered since (plugins' among them): what crafting grids and
 /// furnaces match, and what players' recipe books show. A set never changes; each change to the recipes publishes a
-/// new one (see <see cref="RecipesRegistry.Current"/>), so code that reads one set sees the same recipes throughout.
+/// new one (see <see cref="ServerRecipeRegistry.Current"/>), so reading one set keeps a consistent view.
 /// </summary>
 internal sealed class RecipeSet
 {
     public static readonly RecipeSet Empty = new(FrozenDictionary<string, IRecipe>.Empty, []);
 
-    private readonly FrozenDictionary<int, List<ShapedRecipe>> shapedRecipes;
-
-    private readonly FrozenDictionary<int, List<ShapelessRecipe>> shapelessRecipes;
+    private readonly FrozenDictionary<int, List<IRecipeWithResult>> craftingRecipes;
 
     private readonly SmeltingRecipe[] cookingRecipes;
 
@@ -34,13 +32,10 @@ internal sealed class RecipeSet
             .Select(entry => entry!.Recipe)
             .ToList();
 
-        this.shapedRecipes = crafting
-            .OfType<ShapedRecipe>()
-            .GroupBy(recipe => recipe.Pattern.Sum(row => row.Count(symbol => symbol != ' ')))
-            .ToFrozenDictionary(group => group.Key, group => group.ToList());
-        this.shapelessRecipes = crafting
-            .OfType<ShapelessRecipe>()
-            .GroupBy(recipe => recipe.Ingredients.Count)
+        this.craftingRecipes = crafting
+            .GroupBy(recipe => recipe is ShapedRecipe shaped
+                ? shaped.Pattern.Sum(row => row.Count(symbol => symbol != ' '))
+                : ((ShapelessRecipe)recipe).Ingredients.Count)
             .ToFrozenDictionary(group => group.Key, group => group.ToList());
         this.cookingRecipes = [.. recipes.Values.OfType<SmeltingRecipe>()];
     }
@@ -49,6 +44,9 @@ internal sealed class RecipeSet
     /// Every recipe, by identifier.
     /// </summary>
     public FrozenDictionary<string, IRecipe> Recipes { get; }
+
+    /// <summary>The configured content when this set was published; null for vanilla's shared set.</summary>
+    internal ContentVersion? RequiredContent { get; init; }
 
     /// <summary>
     /// The recipe book's entries by display id: the crafting recipes, which every player knows. An id stays its
@@ -65,7 +63,7 @@ internal sealed class RecipeSet
 
     /// <summary>
     /// The recipe the ingredients in slots 1 to <paramref name="width"/>² of <paramref name="grid"/> craft, shaped
-    /// recipes first (mirrored too), or <c>null</c>.
+    /// and shapeless recipes in display id order (shaped recipes mirrored too), or <c>null</c>.
     /// </summary>
     public IRecipeWithResult? FindRecipe(BaseContainer grid, int width)
     {
@@ -75,33 +73,32 @@ internal sealed class RecipeSet
         if (occupiedSlots.Count == 0)
             return null;
 
-        if (this.shapedRecipes.TryGetValue(occupiedSlots.Count, out var shapedRecipes))
-        {
-            int minX = occupiedSlots.Min(slot => (slot - 1) % width);
-            int minY = occupiedSlots.Min(slot => (slot - 1) / width);
-            int maxX = occupiedSlots.Max(slot => (slot - 1) % width);
-            int maxY = occupiedSlots.Max(slot => (slot - 1) / width);
+        if (!this.craftingRecipes.TryGetValue(occupiedSlots.Count, out var candidates))
+            return null;
 
-            foreach (var recipe in shapedRecipes)
+        int minX = occupiedSlots.Min(slot => (slot - 1) % width);
+        int minY = occupiedSlots.Min(slot => (slot - 1) / width);
+        int maxX = occupiedSlots.Max(slot => (slot - 1) % width);
+        int maxY = occupiedSlots.Max(slot => (slot - 1) / width);
+        var items = occupiedSlots.Select(slot => grid[slot]!).ToList();
+
+        foreach (var recipe in candidates)
+        {
+            if (recipe is ShapedRecipe shaped)
             {
-                if (recipe.Pattern.Count != maxY - minY + 1 || recipe.Pattern[0].Length != maxX - minX + 1)
+                if (shaped.Pattern.Count != maxY - minY + 1 || shaped.Pattern[0].Length != maxX - minX + 1)
                     continue;
 
-                if (MatchesShaped(grid, width, minX, minY, recipe, false)
-                    || MatchesShaped(grid, width, minX, minY, recipe, true))
+                if (MatchesShaped(grid, width, minX, minY, shaped, false)
+                    || MatchesShaped(grid, width, minX, minY, shaped, true))
                 {
                     return recipe;
                 }
             }
-        }
-
-        if (this.shapelessRecipes.TryGetValue(occupiedSlots.Count, out var shapelessRecipes))
-        {
-            var items = occupiedSlots.Select(slot => grid[slot]!).ToList();
-            foreach (var recipe in shapelessRecipes)
+            else if (recipe is ShapelessRecipe shapeless
+                && MatchesShapeless(items, shapeless.Ingredients, 0, new bool[items.Count]))
             {
-                if (MatchesShapeless(items, recipe.Ingredients, 0, new bool[items.Count]))
-                    return recipe;
+                return recipe;
             }
         }
 
@@ -109,8 +106,8 @@ internal sealed class RecipeSet
     }
 
     /// <summary>
-    /// Whether a recipe of <paramref name="type"/> (smelting, blasting or smoking) cooks <paramref name="item"/>, which
-    /// a furnace of that type then takes as its ingredient.
+    /// Whether a recipe of <paramref name="type"/> cooks <paramref name="item"/>, which a furnace of that type
+    /// takes as its ingredient.
     /// </summary>
     public bool IsCookingIngredient(CraftingType type, ItemStack item) =>
         this.cookingRecipes.Any(recipe => recipe.Type == type && MatchesIngredient(recipe.Ingredient, item));
@@ -185,9 +182,10 @@ internal sealed class RecipeSet
 /// </param>
 internal sealed record RecipeBookEntry(int DisplayId, IRecipeWithResult Recipe, int? Group)
 {
-    /// <summary>
-    /// The recipe book tab the recipe shows in.
-    /// </summary>
+    /// <summary>The registration's revision, used to detect replacement without keeping old recipes alive.</summary>
+    public long Revision { get; init; }
+
+    /// <summary>The recipe book tab the recipe shows in.</summary>
     public CraftingBookCategory Category => this.Recipe is ShapedRecipe shaped
         ? shaped.Category
         : ((ShapelessRecipe)this.Recipe).Category;

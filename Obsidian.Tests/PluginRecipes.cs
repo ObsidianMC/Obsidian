@@ -1,10 +1,15 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.API.Containers;
 using Obsidian.API.Crafting;
 using Obsidian.API.Crafting.Builders;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.Events;
+using Obsidian.Events.EventArgs;
+using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
@@ -16,6 +21,8 @@ using Obsidian.Tests.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -26,8 +33,7 @@ namespace Obsidian.Tests;
 /// they're gone, from both, when the plugin unloads.
 /// </summary>
 /// <remarks>
-/// The recipes are the process's, so the tests' recipes take ingredients no vanilla recipe or other test uses
-/// (bedrock and barriers), under identifiers of their own.
+/// Plugin recipes belong to their server; test recipes use bedrock and barriers to avoid vanilla matches.
 /// </remarks>
 public sealed class PluginRecipes
 {
@@ -61,7 +67,8 @@ public sealed class PluginRecipes
             Assert.True(player.Inventory.GetItem(0)?.Is(ItemsRegistry.Diamond));
             var added = Assert.Single(client.SentPackets.OfType<RecipeBookAddPacket>(), packet => !packet.Replace);
             var entry = Assert.Single(added.Entries);
-            Assert.Same(recipe, entry.Recipe);
+            Assert.Equal(recipe.Identifier, entry.Recipe.Identifier);
+            Assert.NotSame(recipe, entry.Recipe);
 
             // Taking the result crafts it.
             await Click(0, 0, ClickType.Pickup).HandleAsync(server, player);
@@ -82,7 +89,7 @@ public sealed class PluginRecipes
             Assert.Null(client.SentPackets.OfType<ContainerSetContentPacket>().Last().Items[0]);
             var removed = Assert.Single(client.SentPackets.OfType<RecipeBookRemovePacket>());
             Assert.Equal(new[] { entry.DisplayId }, removed.DisplayIds);
-            Assert.Null(RecipesRegistry.FindRecipe(player.Inventory, 2));
+            Assert.Null(server.RecipeRegistry.Current.FindRecipe(player.Inventory, 2));
         }
         finally
         {
@@ -109,7 +116,7 @@ public sealed class PluginRecipes
             var client = (TestClient)player.Client;
             var book = Assert.Single(client.SentPackets.OfType<RecipeBookAddPacket>());
             Assert.True(book.Replace);
-            var entry = Assert.Single(book.Entries, candidate => candidate.Recipe == recipe);
+            var entry = Assert.Single(book.Entries, candidate => candidate.Recipe.Identifier == recipe.Identifier);
 
             // Placing it from the book moves the ingredients into the table's grid, centred, and shows the result.
             var table = new CraftingTable();
@@ -143,6 +150,263 @@ public sealed class PluginRecipes
             plugin.UndoHostAdditions();
             reloaded.UndoHostAdditions();
         }
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ServersOwnTheirRecipeBooksAndCrafting()
+    {
+        await using var first = TestServerFactory.CreateServer($"recipes-first-{Guid.NewGuid():N}");
+        await using var second = TestServerFactory.CreateServer($"recipes-second-{Guid.NewGuid():N}");
+        var identifier = $"probe:isolated_{Guid.NewGuid():N}";
+        var plugin = Plugin();
+        first.Server.RegisterRecipes([Shaped(identifier)], plugin);
+        var a = await JoinAsync(first, "First");
+        var b = await JoinAsync(second, "Second");
+
+        foreach (var player in new[] { a, b })
+        {
+            foreach (var slot in new[] { 1, 2, 3, 4 })
+                player.Inventory.SetItem(slot, new ItemStack(ItemsRegistry.Bedrock));
+
+            await MainEventHandler.RefreshCraftingResultAsync(player);
+        }
+
+        Assert.True(a.Inventory.GetItem(0)?.Is(ItemsRegistry.Diamond));
+        Assert.Null(b.Inventory.GetItem(0));
+        Assert.DoesNotContain(((TestClient)b.Client).SentPackets.OfType<RecipeBookAddPacket>()
+            .SelectMany(packet => packet.Entries), entry => entry.Recipe.Identifier == identifier);
+
+        // The same identifier is independently registrable on B and survives A's unload.
+        second.Server.RegisterRecipes(Shaped(identifier));
+        await second.Server.SyncRecipesAsync();
+        plugin.UndoHostAdditions();
+        await first.Server.SyncRecipesAsync();
+        Assert.Null(a.Inventory.GetItem(0));
+        Assert.True(b.Inventory.GetItem(0)?.Is(ItemsRegistry.Diamond));
+        Assert.Empty(((TestClient)b.Client).SentPackets.OfType<RecipeBookRemovePacket>());
+        Assert.False(RecipesRegistry.Recipes.ContainsKey(identifier));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ShapedRecipesCannotShadowEarlierShapelessRecipes()
+    {
+        await using var context = TestServerFactory.CreateServer($"recipe-order-{Guid.NewGuid():N}");
+        var grid = new CraftingTable();
+        grid.SetItem(1, new ItemStack(ItemsRegistry.OakLog));
+        var vanilla = RecipesRegistry.Current.FindRecipe(grid, 3);
+        Assert.IsType<ShapelessRecipe>(vanilla);
+        var plugin = ShapedRecipeBuilder.Create(CraftingBookCategory.Misc)
+            .WithKey('L', new ItemStack(ItemsRegistry.OakLog))
+            .WithPattern("L")
+            .HasNoGroup()
+            .WithIdentifier($"probe:shadow_{Guid.NewGuid():N}")
+            .WithResult(new ItemStack(ItemsRegistry.Diamond))
+            .Build();
+        context.Server.RegisterRecipes(plugin);
+
+        Assert.Same(vanilla, context.Server.RecipeRegistry.Current.FindRecipe(grid, 3));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task RegistrationCopiesIngredientsResultsAndComponents()
+    {
+        await using var context = TestServerFactory.CreateServer($"recipe-copy-{Guid.NewGuid():N}");
+        var recipe = Shaped($"probe:copy_{Guid.NewGuid():N}");
+        var saved = new NbtCompound
+        {
+            new NbtTag<int>("probe:saved", 7)
+        };
+        var original = recipe.Result.First();
+        var result = new ItemStack(original, original.Count)
+        {
+            UnmodeledComponents = saved
+        };
+        recipe.Result.Remove(original);
+        recipe.Result.Add(result);
+        var damage = ComponentBuilder.Damage with { Value = 2 };
+        result[DataComponentType.Damage] = damage;
+        context.Server.RegisterRecipes(recipe);
+
+        recipe.Key['B'].Add(new ItemStack(ItemsRegistry.Barrier));
+        result.Count = 15;
+        damage.Value = 9;
+        saved.Add(new NbtTag<int>("probe:later", 8));
+        var grid = new Container(5);
+
+        foreach (var slot in new[] { 1, 2, 3, 4 })
+            grid.SetItem(slot, new ItemStack(ItemsRegistry.Bedrock));
+
+        var stored = context.Server.RecipeRegistry.Current.FindRecipe(grid, 2)!;
+        Assert.Equal(3, stored.Result.First().Count);
+        Assert.Equal(2, stored.Result.First().Damage);
+        Assert.Single(stored.Result.First().UnmodeledComponents!);
+        grid.SetItem(1, new ItemStack(ItemsRegistry.Barrier));
+        Assert.Null(context.Server.RecipeRegistry.Current.FindRecipe(grid, 2));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task DelayedPlacementCannotRestoreAnUnloadedResult()
+    {
+        await using var context = TestServerFactory.CreateServer($"recipe-placement-race-{Guid.NewGuid():N}");
+        var plugin = Plugin();
+        var recipe = Shaped($"probe:delayed_{Guid.NewGuid():N}");
+        context.Server.RegisterRecipes([recipe], plugin);
+        var player = await JoinAsync(context, "Placer");
+        var client = (TestClient)player.Client;
+        player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Bedrock, 4));
+        var entry = context.Server.RecipeRegistry.Current.Book
+            .Single(entry => entry?.Recipe.Identifier == recipe.Identifier)!;
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var delayed = false;
+        player.WindowSnapshots = new WindowSnapshots(async packet =>
+        {
+            if (!delayed && packet is ContainerSetContentPacket)
+            {
+                delayed = true;
+                entered.SetResult();
+                await resume.Task;
+            }
+
+            return true;
+        }, packet => client.SendPacket(packet));
+
+        var placement = MainEventHandler.PlaceBookRecipeAsync(player, 0, entry.DisplayId, false).AsTask();
+        await entered.Task;
+
+        try
+        {
+            plugin.UndoHostAdditions();
+            await context.Server.SyncRecipesAsync();
+            Assert.Null(player.Inventory.GetItem(0));
+        }
+        finally
+        {
+            resume.SetResult();
+        }
+
+        await placement;
+        Assert.Null(client.SentPackets.OfType<ContainerSetContentPacket>().Last().Items[0]);
+        Assert.Equal(4, Enumerable.Range(1, 4).Sum(slot => player.Inventory.GetItem(slot)?.Count ?? 0));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task FailedPlayerDoesNotSkipOthersAndCatchesUpOnNextChange()
+    {
+        await using var context = TestServerFactory.CreateServer($"recipe-failure-{Guid.NewGuid():N}");
+        await JoinAsync(context, "First");
+        await JoinAsync(context, "Second");
+        var players = context.Server.OnlinePlayers.Values.Cast<Entities.Player>().ToArray();
+        var failing = players[0];
+        var healthy = players[1];
+        var client = (TestClient)failing.Client;
+        client.ClearPackets();
+        var fail = true;
+        failing.WindowSnapshots = new WindowSnapshots(packet =>
+        {
+            if (fail)
+                throw new InvalidOperationException("Test packet handler failure.");
+
+            return ValueTask.FromResult(true);
+        }, packet => client.SendPacket(packet));
+
+        foreach (var player in players)
+        {
+            foreach (var slot in new[] { 1, 2, 3, 4 })
+                player.Inventory.SetItem(slot, new ItemStack(ItemsRegistry.Bedrock));
+        }
+
+        context.Server.RegisterRecipes(Shaped($"probe:failure_{Guid.NewGuid():N}"));
+        await context.Server.SyncRecipesAsync();
+        Assert.True(healthy.Inventory.GetItem(0)?.Is(ItemsRegistry.Diamond));
+        Assert.True(((TestClient)healthy.Client).SentPackets.OfType<ContainerSetContentPacket>()
+            .Last().Items[0]?.Is(ItemsRegistry.Diamond));
+        Assert.Empty(client.SentPackets.OfType<ContainerSetContentPacket>());
+        fail = false;
+
+        context.Server.RegisterRecipes(Shaped($"probe:retry_{Guid.NewGuid():N}"));
+        await context.Server.SyncRecipesAsync();
+        Assert.True(client.SentPackets.OfType<ContainerSetContentPacket>().Last().Items[0]?.Is(ItemsRegistry.Diamond));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task InitialAndWaitingBookSyncDeferUnconfiguredContent()
+    {
+        await using var context = TestServerFactory.CreateServer($"recipe-content-{Guid.NewGuid():N}");
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        using var peer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        await peer.ConnectAsync(listener.LocalEndpoint);
+        using var socket = await listener.AcceptSocketAsync();
+        using var client = new Client(
+            context.EventDispatcher, context.Server, NullLoggerFactory.Instance,
+            new FakeUserCache(), null!, context.Provider, null!);
+
+        // Exercise the real queue handlers without starting the socket send/receive loops.
+        typeof(Client).GetProperty(nameof(Client.Socket))!.SetValue(client, socket);
+        client.SetState(ClientState.Play);
+        var player = new Entities.Player(Guid.NewGuid(), "Configuring", client, context.World)
+        {
+            Server = context.Server
+        };
+        var first = Shaped($"probe:configured_{Guid.NewGuid():N}");
+        context.Server.RegisterRecipes(first);
+        var packets = new List<RecipeBookAddPacket>();
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var delay = false;
+        context.EventDispatcher.RegisterEvent(null, (Func<QueuePacketEventArgs, ValueTask>)(async args =>
+        {
+            if (args.Packet is RecipeBookAddPacket book)
+            {
+                packets.Add(book);
+
+                if (delay && book.Replace)
+                {
+                    entered.TrySetResult();
+                    await resume.Task;
+                }
+            }
+
+            args.Cancel();
+        }), Priority.Critical);
+
+        var current = context.Server.GetContentVersion();
+        var older = current with { Registries = "before-the-new-items" };
+        client.ConfiguredContent = older;
+        await player.RecipeBookSync.SendInitialAsync(player);
+        Assert.DoesNotContain(packets.Last().Entries, entry => entry.Recipe.Identifier == first.Identifier);
+
+        client.ConfiguredContent = current;
+        await player.RecipeBookSync.SendInitialAsync(player);
+        Assert.Contains(packets.Last().Entries, entry => entry.Recipe.Identifier == first.Identifier);
+
+        delay = true;
+        var initial = player.RecipeBookSync.SendInitialAsync(player).AsTask();
+        await entered.Task;
+        var waiting = player.RecipeBookSync.SendChangesAsync(player).AsTask();
+        Assert.False(waiting.IsCompleted);
+        var second = Shaped($"probe:while_waiting_{Guid.NewGuid():N}");
+
+        try
+        {
+            context.Server.RegisterRecipes(second);
+            client.ConfiguredContent = older;
+        }
+        finally
+        {
+            resume.SetResult();
+        }
+
+        await initial;
+        Assert.False(await waiting);
+        Assert.DoesNotContain(packets.SelectMany(packet => packet.Entries),
+            entry => entry.Recipe.Identifier == second.Identifier);
+
+        client.ConfiguredContent = context.Server.GetContentVersion();
+        Assert.True(await player.RecipeBookSync.SendChangesAsync(player));
+        Assert.False(packets.Last().Replace);
+        Assert.Equal(second.Identifier, Assert.Single(packets.Last().Entries).Recipe.Identifier);
     }
 
     // A player who joined and got their recipe book, as the join does.

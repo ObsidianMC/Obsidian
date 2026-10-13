@@ -8,7 +8,7 @@ public partial class RecipeBookSeenRecipePacket
     [VarLength]
     public int RecipeDisplayId { get; private set; }
 
-    public string RecipeId => RecipesRegistry.Current.GetBookEntry(RecipeDisplayId)?.Recipe.Identifier ?? string.Empty;
+    public string RecipeId => RecipesRegistry.BookIdentifier(RecipeDisplayId);
 
     public override void Populate(INetStreamReader reader)
     {

@@ -9,13 +9,9 @@ using System.Threading;
 namespace Obsidian.Registries;
 
 /// <summary>
-/// The server's recipes: vanilla's, loaded first, then those registered with <see cref="IServer.RegisterRecipes"/>
-/// (plugins' among them), which can be removed again. Crafting, furnaces and the recipe book all use the same set
-/// (see <see cref="Current"/>).
+/// Shared vanilla recipes and process-stable book identities. Each server keeps its own registered recipes in
+/// <see cref="ServerRecipeRegistry"/>; static lookups contain vanilla only.
 /// </summary>
-/// <remarks>
-/// The recipes are static, so a server started again in the same process keeps the loaded ones.
-/// </remarks>
 public static partial class RecipesRegistry
 {
     // Guards the registration state below; readers use the published set without it.
@@ -36,12 +32,12 @@ public static partial class RecipesRegistry
     private static volatile RecipeSet current = RecipeSet.Empty;
 
     /// <summary>
-    /// Every recipe, by identifier: vanilla's and those registered since.
+    /// Vanilla recipes, by identifier.
     /// </summary>
     public static IReadOnlyDictionary<string, IRecipe> Recipes => Current.Recipes;
 
     /// <summary>
-    /// The current recipes. Read it once for work that has to see the same recipes throughout.
+    /// The shared vanilla recipe set.
     /// </summary>
     internal static RecipeSet Current
     {
@@ -68,61 +64,11 @@ public static partial class RecipesRegistry
     internal static IRecipeWithResult? FindRecipe(BaseContainer grid, int width) => Current.FindRecipe(grid, width);
 
     /// <summary>
-    /// Whether a recipe of <paramref name="type"/> (smelting, blasting or smoking) cooks <paramref name="item"/>, which
-    /// a furnace of that type then takes as its ingredient.
+    /// Whether a recipe of <paramref name="type"/> cooks <paramref name="item"/>, which a furnace of that type
+    /// takes as its ingredient.
     /// </summary>
     internal static bool IsCookingIngredient(CraftingType type, ItemStack item) =>
         Current.IsCookingIngredient(type, item);
-
-    /// <summary>
-    /// Adds <paramref name="recipes"/>, keyed by their identifiers in snake case, and publishes the new set. Those
-    /// added are listed in <paramref name="added"/>, also when one fails.
-    /// </summary>
-    /// <exception cref="ArgumentException">
-    /// A recipe's identifier is taken; the recipes before it were added.
-    /// </exception>
-    internal static void Register(IEnumerable<IRecipe> recipes, List<IRecipe> added)
-    {
-        EnsureVanillaLoaded();
-
-        lock (gate)
-        {
-            try
-            {
-                foreach (var recipe in recipes)
-                {
-                    Add(Key(recipe), recipe);
-                    added.Add(recipe);
-                }
-            }
-            finally
-            {
-                Publish();
-            }
-        }
-    }
-
-    /// <summary>
-    /// Removes <paramref name="recipes"/>, added with <see cref="Register"/>, unless another recipe took their
-    /// identifier since, and publishes the new set. Their display ids stay reserved for them.
-    /// </summary>
-    internal static void Unregister(IEnumerable<IRecipe> recipes)
-    {
-        lock (gate)
-        {
-            foreach (var recipe in recipes)
-            {
-                var key = Key(recipe);
-
-                if (registered.TryGetValue(key, out var existing) && ReferenceEquals(existing, recipe))
-                    registered.Remove(key);
-            }
-
-            Publish();
-        }
-    }
-
-    private static string Key(IRecipe recipe) => recipe.Identifier.ToSnakeCase();
 
     // Loads vanilla's recipes before any other, so that theirs are the first display ids, in vanilla's data order.
     private static void EnsureVanillaLoaded()
@@ -166,7 +112,7 @@ public static partial class RecipesRegistry
             if (!registered.TryGetValue(key, out var recipe) || recipe is not IRecipeWithResult crafting)
                 continue;
 
-            // A recipe registered again under the same identifier may be of another kind, which the book doesn't show.
+            // Only shaped and shapeless recipes have book displays.
             if (crafting is not (ShapedRecipe or ShapelessRecipe))
                 continue;
 
@@ -174,6 +120,43 @@ public static partial class RecipesRegistry
         }
 
         current = new RecipeSet(registered.ToFrozenDictionary(), book);
+    }
+
+    // Identities contain no plugin objects and stay stable across servers and reloads.
+    internal static RecipeSet BuildSet(
+        IReadOnlyDictionary<string, IRecipe> recipes,
+        IReadOnlyDictionary<string, long> revisions,
+        ContentVersion content)
+    {
+        lock (gate)
+        {
+            foreach (var (key, recipe) in recipes)
+            {
+                if (recipe is ShapedRecipe or ShapelessRecipe)
+                    displayIds.TryAdd(key, displayIds.Count);
+            }
+
+            var book = new RecipeBookEntry?[displayIds.Count];
+
+            foreach (var (key, id) in displayIds)
+            {
+                if (recipes.TryGetValue(key, out var recipe) && recipe is ShapedRecipe or ShapelessRecipe)
+                {
+                    book[id] = new RecipeBookEntry(id, (IRecipeWithResult)recipe, GroupId(recipe.Group))
+                    {
+                        Revision = revisions.GetValueOrDefault(key)
+                    };
+                }
+            }
+
+            return new RecipeSet(recipes.ToFrozenDictionary(), book) { RequiredContent = content };
+        }
+    }
+
+    internal static string BookIdentifier(int displayId)
+    {
+        lock (gate)
+            return displayIds.FirstOrDefault(pair => pair.Value == displayId).Key ?? string.Empty;
     }
 
     // Under the gate.

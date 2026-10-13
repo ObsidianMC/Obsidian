@@ -252,6 +252,11 @@ public sealed partial class Server : IServer, IPluginScopedServer
     public static int GetNextEntityId() => Interlocked.Increment(ref EntityCounter);
     internal static int ReserveEntityIds(int count) => Interlocked.Add(ref EntityCounter, count) - count + 1;
 
+    private ServerRecipeRegistry? recipeRegistry;
+
+    internal ServerRecipeRegistry RecipeRegistry => LazyInitializer.EnsureInitialized(
+        ref this.recipeRegistry, () => new ServerRecipeRegistry(this.GetContentVersion));
+
     /// <remarks>
     /// Recipes registered through a plugin's <see cref="IServer"/> are the plugin's, which unloading removes.
     /// </remarks>
@@ -268,7 +273,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
         try
         {
-            RecipesRegistry.Register(recipes, added);
+            this.RecipeRegistry.Register(recipes, added);
         }
         finally
         {
@@ -282,7 +287,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
     // Removes recipes a plugin added, unless another recipe took their identifier since.
     private void RemoveRecipes(List<IRecipe> added)
     {
-        RecipesRegistry.Unregister(added);
+        this.RecipeRegistry.Unregister(added);
         this.OnRecipesChanged();
     }
 
@@ -303,25 +308,19 @@ public sealed partial class Server : IServer, IPluginScopedServer
         await this.recipeSync.WaitAsync();
         try
         {
-            ContentVersion? content = null;
-
             foreach (var player in this.OnlinePlayers.Values.OfType<Player>())
             {
-                if (player.Client is Client client)
+                try
                 {
-                    content ??= this.GetContentVersion();
-
-                    if (client.AwaitingReconfiguration || client.NeedsReconfiguration(content.Value))
-                        continue;
+                    if (await player.RecipeBookSync.SendChangesAsync(player))
+                        await MainEventHandler.RefreshCraftingResultAsync(player);
                 }
-
-                await player.RecipeBookSync.SendChangesAsync(player);
-                await MainEventHandler.RefreshCraftingResultAsync(player);
+                catch (Exception ex)
+                {
+                    // A failed book keeps its last-sent identities; the next change also resends the window.
+                    Log.RecipeSyncFailed(this.logger, ex, player.Username);
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            Log.RecipeSyncFailed(this.logger, ex);
         }
         finally
         {
@@ -1153,7 +1152,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
         [LoggerMessage(Level = LogLevel.Information, Message = "Rejected {Ip}: not whitelisted")]
         public static partial void NotWhitelisted(ILogger logger, string ip);
 
-        [LoggerMessage(Level = LogLevel.Error, Message = "Sending players the changed recipes failed")]
-        public static partial void RecipeSyncFailed(ILogger logger, Exception exception);
+        [LoggerMessage(Level = LogLevel.Error, Message = "Sending changed recipes to {Username} failed")]
+        public static partial void RecipeSyncFailed(ILogger logger, Exception exception, string username);
     }
 }
