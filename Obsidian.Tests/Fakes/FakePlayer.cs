@@ -153,10 +153,17 @@ public sealed class FakePlayer : IPlayer
     /// </summary>
     public List<IClientboundPacket> Queued { get; } = [];
 
-    public ValueTask QueuePacketAsync(IClientboundPacket packet)
+    /// <summary>
+    /// Run for each packet queued to the player, before it's recorded, as a plugin's packet handler would be.
+    /// </summary>
+    public Func<IClientboundPacket, Task>? OnQueue { get; set; }
+
+    public async ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
+        if (this.OnQueue is not null)
+            await this.OnQueue(packet);
+
         this.Queued.Add(packet);
-        return ValueTask.CompletedTask;
     }
     public ValueTask DisconnectAsync(ChatMessage reason) => throw new NotImplementedException();
     public ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot position) => throw new NotImplementedException();

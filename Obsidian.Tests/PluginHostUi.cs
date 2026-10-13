@@ -126,6 +126,22 @@ public sealed class PluginHostUi
 
         Assert.IsType<SetDisplayObjectivePacket>(player.Queued[^1]);
 
+        // A packet handler the broadcaster runs can display it too, without waiting on the broadcaster itself.
+        var marker = new SetDisplayObjectivePacket
+        {
+            ObjectiveName = "marker",
+            DisplaySlot = DisplaySlot.List
+        };
+
+        player.OnQueue = async packet =>
+        {
+            if (packet == marker)
+                await scoreboard.DisplayAsync(player.EntityId, DisplaySlot.Sidebar);
+        };
+
+        await broadcaster.QueuePacketToAsync(marker, player.EntityId).WaitAsync(TimeSpan.FromSeconds(10));
+        player.OnQueue = null;
+
         // Once the broadcaster stops, a display doesn't wait for packets it will never send.
         await broadcaster.StopAsync(CancellationToken.None);
         await scoreboard.DisplayAsync(player.EntityId, DisplaySlot.Sidebar).WaitAsync(TimeSpan.FromSeconds(10));
