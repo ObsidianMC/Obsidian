@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API.Inventory;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
+using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -394,10 +395,13 @@ public partial class Player
                     packets.Add(new SetPlayerInventoryPacket
                     {
                         Slot = slot == 45 ? 40 : slot >= 36 ? slot - 36 : slot,
-                        Contents = new ItemStack(stack, stack.Count)
+                        Contents = NetworkBuffer.SnapshotItemStack(stack)
                     });
                 }
-                this.Client.SendPacket(new BundledPacket(packets));
+
+                // In order with the window snapshots clicks send, which would otherwise overwrite it with what the
+                // inventory held before.
+                this.WindowSnapshots.Queue(this, new BundledPacket(packets));
                 this.PacketBroadcaster.QueuePacketToLevel(this.Level, pickup, this.EntityId);
                 remove = itemEntity.Removed = itemEntity.Item.Count == 0;
                 if (!remove)

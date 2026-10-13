@@ -292,12 +292,27 @@ public sealed partial class Client : IClient
 
     public async ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
+        if (await this.RunQueueHandlersAsync(packet))
+            this.QueueWithoutHandlers(packet);
+    }
+
+    /// <summary>
+    /// The first step of <see cref="QueuePacketAsync"/>: runs plugins' handlers for queueing <paramref name="packet"/>,
+    /// without queueing it.
+    /// </summary>
+    /// <returns>Whether it's still to be queued: the client can receive it and no handler cancelled it.</returns>
+    /// <remarks>
+    /// With <see cref="QueueWithoutHandlers"/>, a caller can check what it sends after the handlers, which may take
+    /// a while, and queue it right after the check.
+    /// </remarks>
+    internal async ValueTask<bool> RunQueueHandlersAsync(IClientboundPacket packet)
+    {
         if (this.disposed
             || this.cancellationSource.IsCancellationRequested
             || !this.Connected
             || !this.Accepts(packet))
         {
-            return;
+            return false;
         }
 
         try
@@ -306,18 +321,31 @@ public sealed partial class Client : IClient
             var result = await this.eventDispatcher.ExecuteEventAsync(args);
             if (result == EventResult.Cancelled)
             {
-                Logger.LogDebug("Packet {PacketId} was sent to the queue, however an event handler has cancelled it.", args.Packet.Id);
-                return;
+                Logger.LogDebug(
+                    "Packet {PacketId} was sent to the queue, however an event handler has cancelled it.",
+                    args.Packet.Id);
+                return false;
             }
 
-            if (this.disposed || this.cancellationSource.IsCancellationRequested)
-                return;
-            this.packetQueue.Writer.TryWrite(packet);
+            return true;
         }
         catch (OperationCanceledException) when (this.cancellationSource.IsCancellationRequested)
         {
             // A disconnect cancels this client's send, not the world tick awaiting it.
+            return false;
         }
+    }
+
+    /// <summary>
+    /// Queues <paramref name="packet"/> behind the packets queued already, without running plugins' handlers: the
+    /// second step of <see cref="QueuePacketAsync"/> (see <see cref="RunQueueHandlersAsync"/>).
+    /// </summary>
+    internal void QueueWithoutHandlers(IClientboundPacket packet)
+    {
+        if (this.disposed || this.cancellationSource.IsCancellationRequested)
+            return;
+
+        this.packetQueue.Writer.TryWrite(packet);
     }
 
     public bool SendPacket(IClientboundPacket packet) => this.SendAsync(packet);

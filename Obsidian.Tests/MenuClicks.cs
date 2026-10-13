@@ -5,6 +5,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.Events;
+using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
@@ -569,6 +570,58 @@ public sealed class MenuClicks
         Assert.DoesNotContain(packets, packet => packet is ContainerSetSlotPacket);
     }
 
+    [Fact(DisplayName = "Every snapshot of a container's window sets its viewers' off hand", Timeout = 10000)]
+    public async Task ContainerSnapshotsCarryTheOffhand()
+    {
+        await using var context = TestServerFactory.CreateServer($"offhand-viewer-{Guid.NewGuid():N}");
+        var first = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "First");
+        var second = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Second");
+        var chest = new Container();
+        chest.SetItem(0, new ItemStack(ItemsRegistry.Diamond));
+        await first.OpenInventoryAsync(chest);
+        await second.OpenInventoryAsync(chest);
+
+        // As left by a swap with the off hand whose snapshot is left out for a newer one: another viewer's click.
+        first.Inventory.SetItem(45, new ItemStack(ItemsRegistry.Shield));
+        var client = (TestClient)first.Client;
+        var sent = client.SentPackets.Count;
+
+        await ClickAsync(context.Server, second, 0, 0, ClickType.Pickup);
+
+        var offhand = Assert.Single(client.SentPackets.Skip(sent).OfType<SetPlayerInventoryPacket>());
+        Assert.Equal(40, offhand.Slot);
+        Assert.True(offhand.Contents?.Is(ItemsRegistry.Shield));
+    }
+
+    [Fact(DisplayName = "A click's Item keeps the saved components of the stacks nested in it")]
+    public void ClickItemKeepsNestedUnmodeledComponents()
+    {
+        var customData = new NbtCompound
+        {
+            new NbtCompound("minecraft:custom_data") { new NbtTag<string>("gem", "ruby") }
+        };
+        var gem = new ItemStack(ItemsRegistry.Diamond) { UnmodeledComponents = customData };
+        var bundle = new ItemStack(ItemsRegistry.Bundle);
+        bundle[DataComponentType.BundleContents] = ComponentBuilder.BundleContents with { Value = [gem] };
+        var chest = new Container();
+        chest.SetItem(0, bundle);
+
+        var click = new ContainerClickEventArgs(new FakePlayer(), server, chest)
+        {
+            ContainerId = 1,
+            ClickedSlot = 0,
+            Button = 0,
+            StateId = 0,
+            ClickType = ClickType.Pickup
+        };
+        click.Arrive(NetworkBuffer.SnapshotItemStack);
+
+        var contents = click.Item!.GetComponent<SimpleDataComponent<ItemStack[]>>(DataComponentType.BundleContents)!;
+        var copy = Assert.Single(contents.Value!);
+        Assert.NotSame(gem, copy);
+        Assert.Same(customData, copy.UnmodeledComponents);
+    }
+
     [Fact(DisplayName = "A window snapshot isn't sent after a newer one, nor once the window changed", Timeout = 10000)]
     public async Task ObsoleteSnapshotsAreNotSent()
     {
@@ -582,18 +635,22 @@ public sealed class MenuClicks
         var older = Snapshot(order.Next());
         var newer = Snapshot(order.Next());
 
-        Assert.False(await order.SendAsync(newer, force: false));
-        Assert.False(await order.SendAsync(older, force: false));
+        Assert.False(await order.SendAsync(newer));
+        Assert.False(await order.SendAsync(older));
         Assert.Same(newer.Packets[0], Assert.Single(client.SentPackets.Skip(sent)));
 
-        // The held stack changed in place since it was captured: a newer snapshot is needed, unless it's forced.
+        // The held stack changed in place since it was captured: a newer snapshot is needed.
         var changed = Snapshot(order.Next());
         player.Inventory.GetItem(36)!.Count++;
 
-        Assert.True(await order.SendAsync(changed, force: false));
+        Assert.True(await order.SendAsync(changed));
         Assert.Single(client.SentPackets.Skip(sent));
-        Assert.False(await order.SendAsync(changed, force: true));
-        Assert.Same(changed.Packets[0], client.SentPackets.Last());
+
+        // Captured and queued in one step, a snapshot is current, and those captured before it are left out.
+        var current = new SetPlayerInventoryPacket { Slot = 0, Contents = null };
+        order.SendNow(player, () => [current]);
+        Assert.False(await order.SendAsync(changed));
+        Assert.Same(current, client.SentPackets.Last());
 
         WindowSnapshot Snapshot(long sequence) =>
             new(player, sequence, ClickWindowState.Of(player), [new SetPlayerInventoryPacket { Slot = 0, Contents = null }]);

@@ -18,8 +18,9 @@ public partial class MainEventHandler
     // The off hand, as vanilla's player inventory numbers it in the set-slot packet.
     private const int OffhandInventorySlot = 40;
 
-    // How many times a click's window is captured again when it changed before being sent (see SendWindowAsync).
-    private const int MaxResends = 2;
+    // How many times a click's window is sent through plugins' packet handlers, captured again whenever it changed
+    // before being sent, until it's captured and queued in one step instead (see SendWindowAsync).
+    private const int MaxHandledSends = 2;
 
     /// <summary>
     /// Applies a player's click in their open window, after plugins' handlers had their say, and sends the window to
@@ -829,49 +830,19 @@ public partial class MainEventHandler
     }
 
     /// <summary>
-    /// Captures, inside the window's lock, what the click's window shows: its contents and the cursor for the
-    /// clicking player, and for the other players viewing the same slots, so that they can be sent after the lock.
+    /// Captures, inside the window's lock, what the click's window shows its viewers (see <see cref="WindowPackets"/>):
+    /// the clicking player and the other players viewing the same slots, so that it can be sent after the lock.
     /// </summary>
     private static WindowSync CaptureWindow(ContainerClickEventArgs args, BaseContainer window)
     {
-        var player = args.Player;
         var sync = new WindowSync();
 
-        // Taken before the contents, so that a change made while they're read leaves it behind.
-        var state = ClickWindowState.Of(player);
-        var packets = new List<IClientboundPacket>
+        foreach (var viewer in WindowViewers(args.Player, window))
         {
-            WindowContents(player, args.ContainerId, args.StateId + 1)
-        };
+            // Taken before the contents, so that a change made while they're read leaves it behind.
+            var state = ClickWindowState.Of(viewer);
 
-        if (player is Player { OpenedContainer: EnchantmentTable } enchanter)
-            packets.AddRange(enchanter.PrepareEnchantingProperties());
-
-        // A container's window doesn't show the off hand, so it's set in the player's inventory, which vanilla's
-        // client numbers like its saved inventory.
-        if (window != player.Inventory && args.ClickType == ClickType.Swap && args.Button == OffhandInventorySlot)
-        {
-            packets.Add(new SetPlayerInventoryPacket
-            {
-                Slot = OffhandInventorySlot,
-                Contents = Copy(player.Inventory.GetItem(OffhandSlot))
-            });
-        }
-
-        sync.Add(player, state, packets);
-
-        foreach (var viewer in window.GetViewers())
-        {
-            if (viewer == player
-                || viewer.OpenedContainer is not BaseContainer shown
-                || !shown.SharesSlotsWith(window))
-            {
-                continue;
-            }
-
-            var viewerState = ClickWindowState.Of(viewer);
-
-            sync.Add(viewer, viewerState, [WindowContents(viewer, viewer.CurrentContainerId, 0)]);
+            sync.Add(viewer, state, WindowPackets(args, viewer));
         }
 
         return sync;
@@ -880,13 +851,14 @@ public partial class MainEventHandler
     /// <summary>
     /// Sends a click's captured window to its viewers, leaving out what's obsolete (see <see cref="WindowSnapshots"/>).
     /// When a viewer's window changed before its contents were sent, the window is captured again, a few times at
-    /// most, then sent whatever changed: the last contents its viewers get must be current.
+    /// most; then, inside the window's lock, it's captured and queued in one step, past plugins' packet handlers: the
+    /// last contents its viewers get must be current.
     /// </summary>
     private static async ValueTask SendWindowAsync(ContainerClickEventArgs args, BaseContainer window, WindowSync sync)
     {
-        for (var resend = 0; ; resend++)
+        for (var sends = 1; ; sends++)
         {
-            if (!await sync.SendAsync(force: resend == MaxResends))
+            if (!await sync.SendAsync())
                 return;
 
             using (await BaseContainer.LockWindowAsync(window, args.Player.Inventory))
@@ -894,9 +866,74 @@ public partial class MainEventHandler
                 if (!IsOpen(args.Player, window, args.ContainerId))
                     return;
 
+                if (sends == MaxHandledSends)
+                {
+                    SendWindowNow(args, window);
+                    return;
+                }
+
                 sync = CaptureWindow(args, window);
             }
         }
+    }
+
+    // Captures and queues what the click's window shows each viewer in one step, inside the window's lock.
+    private static void SendWindowNow(ContainerClickEventArgs args, BaseContainer window)
+    {
+        foreach (var viewer in WindowViewers(args.Player, window))
+        {
+            if (viewer is Player { WindowSnapshots: WindowSnapshots order })
+                order.SendNow(viewer, () => WindowPackets(args, viewer));
+        }
+    }
+
+    // The players a click's window is sent to: the clicking player, then the others viewing the same slots.
+    private static IEnumerable<IPlayer> WindowViewers(IPlayer player, BaseContainer window)
+    {
+        yield return player;
+
+        foreach (var viewer in window.GetViewers())
+        {
+            if (viewer != player
+                && viewer.OpenedContainer is BaseContainer shown
+                && shown.SharesSlotsWith(window))
+            {
+                yield return viewer;
+            }
+        }
+    }
+
+    /// <summary>
+    /// What <paramref name="viewer"/>'s window shows after the click: its contents and their cursor, the enchanting
+    /// options of an enchanting table the clicking player has open, and the off hand of a viewer with a container open.
+    /// </summary>
+    /// <remarks>
+    /// A container's window doesn't show the off hand, so it's set in the player's inventory, which vanilla's client
+    /// numbers like its saved inventory. It's sent with every snapshot of such a window, not only after a swap with
+    /// the off hand, so that it's corrected even when that click's snapshot is left out for a newer one.
+    /// </remarks>
+    private static List<IClientboundPacket> WindowPackets(ContainerClickEventArgs args, IPlayer viewer)
+    {
+        var packets = new List<IClientboundPacket>();
+
+        if (viewer == args.Player)
+            packets.Add(WindowContents(viewer, args.ContainerId, args.StateId + 1));
+        else
+            packets.Add(WindowContents(viewer, viewer.CurrentContainerId, 0));
+
+        if (viewer == args.Player && viewer is Player { OpenedContainer: EnchantmentTable } enchanter)
+            packets.AddRange(enchanter.PrepareEnchantingProperties());
+
+        if (viewer.OpenedContainer is not null)
+        {
+            packets.Add(new SetPlayerInventoryPacket
+            {
+                Slot = OffhandInventorySlot,
+                Contents = Copy(viewer.Inventory.GetItem(OffhandSlot))
+            });
+        }
+
+        return packets;
     }
 
     /// <summary>
@@ -937,9 +974,8 @@ public partial class MainEventHandler
         /// <summary>
         /// Sends each viewer's snapshot unless it's obsolete.
         /// </summary>
-        /// <param name="force">Whether to send the snapshots whose viewer's window changed since their capture.</param>
         /// <returns>Whether a viewer's window changed since its snapshot's capture, so that it wasn't sent.</returns>
-        public async ValueTask<bool> SendAsync(bool force)
+        public async ValueTask<bool> SendAsync()
         {
             var outdated = false;
 
@@ -947,7 +983,7 @@ public partial class MainEventHandler
             {
                 if (snapshot.Player is Player { WindowSnapshots: WindowSnapshots order })
                 {
-                    outdated |= await order.SendAsync(snapshot, force);
+                    outdated |= await order.SendAsync(snapshot);
                     continue;
                 }
 

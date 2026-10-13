@@ -2,6 +2,7 @@ using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Entities.AI;
+using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Text.Json;
 
@@ -338,19 +339,42 @@ public partial class Player
 
     internal async ValueTask<bool> ReceiveProjectileAsync(ItemStack item, bool creativeOnly)
     {
-        if (!Alive || Respawning || GameMode == GameMode.Spectator || creativeOnly && GameMode != GameMode.Creative) return false;
-        if (creativeOnly) return true;
-        for (var pass = 0; pass < 2; pass++)
-            foreach (var slot in Enumerable.Range(36, 9).Concat(Enumerable.Range(9, 27)))
+        if (!Alive || Respawning || GameMode == GameMode.Spectator || creativeOnly && GameMode != GameMode.Creative)
+            return false;
+
+        if (creativeOnly)
+            return true;
+
+        // Taken like an item pickup takes it, which the slot is sent in order with too (see PickupNearbyItemsAsync).
+        using (await Inventory.LockAsync())
+        {
+            for (var pass = 0; pass < 2; pass++)
             {
-                var existing = Inventory.GetItem(slot);
-                var empty = existing.IsNullOrAir() || existing.Count <= 0;
-                if (pass == 0 ? empty || existing != item || existing.Count >= existing.MaxStackSize : !empty) continue;
-                if (empty) Inventory.SetItem(slot, new ItemStack(item));
-                else existing.Count++;
-                await SyncInventorySlotAsync(slot);
-                return true;
+                foreach (var slot in Enumerable.Range(36, 9).Concat(Enumerable.Range(9, 27)))
+                {
+                    var existing = Inventory.GetItem(slot);
+                    var empty = existing.IsNullOrAir() || existing.Count <= 0;
+                    if (pass == 0 ? empty || existing != item || existing.Count >= existing.MaxStackSize : !empty)
+                        continue;
+
+                    if (empty)
+                        Inventory.SetItem(slot, new ItemStack(item));
+                    else
+                        existing.Count++;
+
+                    WindowSnapshots.Queue(this, new ContainerSetSlotPacket
+                    {
+                        ContainerId = 0,
+                        Slot = (short)slot,
+                        SlotData = NetworkBuffer.SnapshotItemStack(Inventory.GetItem(slot)!),
+                        StateId = Inventory.StateId++
+                    });
+
+                    return true;
+                }
             }
+        }
+
         return false;
     }
 }
