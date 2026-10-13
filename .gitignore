@@ -343,3 +343,9 @@ cache/
 Obsidian/Assets/
 Obsidian/Assets.tmp/
 AGENTS.md
+Obsidian/WorldData
+.pi
+worlds/
+config/
+usercache.json
+persistentdata/
