@@ -1,4 +1,5 @@
 using Obsidian.API.Plugins;
+using System.Threading;
 
 namespace Obsidian.API;
 
@@ -51,7 +52,21 @@ public sealed class MenuDefinition
     /// <summary>
     /// The plugin that registered the menu type last, while it's loaded; its menus close when it unloads.
     /// </summary>
+    /// <remarks>Change it, and <see cref="IsOpenable"/>, inside <see cref="Gate"/>.</remarks>
     internal IPluginContainer? Owner { get; set; }
+
+    /// <summary>
+    /// Whether players can open the type's menus: not from when the plugin that registered it starts unloading until
+    /// a loaded plugin registers it again, so that none opens after its menus closed.
+    /// </summary>
+    /// <remarks>Read it, and open a menu, inside <see cref="Gate"/>.</remarks>
+    internal bool IsOpenable { get; set; } = true;
+
+    /// <summary>
+    /// Taken to change the type's owner or whether it's openable, and to open one of its menus, so that a menu can't
+    /// open as its plugin's menus close.
+    /// </summary>
+    internal Lock Gate { get; } = new();
 
     public override string ToString() => this.Identifier;
 }
@@ -64,7 +79,7 @@ public sealed class MenuDefinition
 /// <remarks>
 /// Several players can have the same container open: their clicks take turns, and each sees the others' changes. It
 /// closes for its viewers, with <see cref="Events.ContainerClosedEventArgs"/>, when the plugin that registered its
-/// menu type unloads.
+/// menu type unloads; from then until a plugin registers the type again, opening one of its menus does nothing.
 /// </remarks>
 public sealed class MenuContainer : BaseContainer
 {

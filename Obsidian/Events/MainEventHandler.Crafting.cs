@@ -28,7 +28,11 @@ public partial class MainEventHandler
             return false;
 
         RefreshCraftingResult(grid, width);
-        if (args.Container == grid && args.ClickedSlot == 0)
+
+        // Drags follow the same rules as in any window, the slots' limits included; the result slot takes none.
+        if (args.ClickType == ClickType.QuickCraft)
+            HandleQuickCraft(args);
+        else if (args.Container == grid && args.ClickedSlot == 0)
             TakeCraftingResult(args, grid, width);
         else if (args.ClickType == ClickType.QuickMove)
             MoveCraftingItem(args, grid, width);
@@ -44,9 +48,6 @@ public partial class MainEventHandler
                     break;
                 case ClickType.Throw:
                     HandleCraftingThrow(args);
-                    break;
-                case ClickType.QuickCraft:
-                    HandleCraftingDrag(args, grid);
                     break;
                 case ClickType.PickupAll:
                     HandlePickupAll(args);
@@ -139,61 +140,6 @@ public partial class MainEventHandler
         int count = args.Button == 0 ? 1 : item.Count;
         SpawnThrownItem(args.Player, new ItemStack(item, count));
         args.Container.RemoveItem(args.ClickedSlot, count);
-    }
-
-    private static void HandleCraftingDrag(ContainerClickEventArgs args, BaseContainer grid)
-    {
-        var player = args.Player;
-        var carried = player.CarriedItem;
-        if (args.Button is 0 or 4 or 8)
-        {
-            player.DraggedSlots.Clear();
-            return;
-        }
-        if (carried.IsNullOrAir() || carried.Count <= 0 ||
-            (args.Button >= 8 && player.GameMode != GameMode.Creative))
-            return;
-
-        if (args.Button is 1 or 5 or 9)
-        {
-            if (args.ClickedSlot < 0 || (args.Container == grid && args.ClickedSlot == 0))
-                return;
-            var item = args.Item;
-            if (args.Container == player.Inventory && args.ClickedSlot is >= 5 and <= 8 &&
-                (CombatItems.PlayerArmorSlot(carried) != args.ClickedSlot || !item.IsNullOrAir())) return;
-            if (!item.IsNullOrAir() && (item != carried || item.Count >= item.MaxStackSize))
-                return;
-            short slot = args.Container == grid ? args.ClickedSlot : (short)(grid.Size + args.ClickedSlot - 9);
-            if (!player.DraggedSlots.Contains(slot))
-                player.DraggedSlots.Add(slot);
-            return;
-        }
-        if (args.Button is not (2 or 6 or 10) || player.DraggedSlots.Count == 0)
-            return;
-
-        int perSlot = args.Button == 2 ? carried.Count / player.DraggedSlots.Count : 1;
-        foreach (short slot in player.DraggedSlots)
-        {
-            var targetContainer = slot < grid.Size ? grid : player.Inventory;
-            int targetSlot = slot < grid.Size ? slot : slot - grid.Size + 9;
-            var target = targetContainer.GetItem(targetSlot);
-            if (targetContainer == player.Inventory && targetSlot is >= 5 and <= 8 &&
-                (CombatItems.PlayerArmorSlot(carried) != targetSlot || !target.IsNullOrAir())) continue;
-            if (!target.IsNullOrAir() && target != carried)
-                continue;
-            var maximum = targetContainer == player.Inventory && targetSlot is >= 5 and <= 8 ? 1 : carried.MaxStackSize;
-            int count = Math.Min(args.Button == 10 ? maximum : Math.Min(perSlot, carried.Count),
-                maximum - (target?.Count ?? 0));
-            if (count <= 0)
-                continue;
-            targetContainer.SetItem(targetSlot, new ItemStack(carried, (target?.Count ?? 0) + count));
-            if (args.Button != 10)
-                carried.Count -= count;
-        }
-        if (carried.Count == 0)
-            player.CarriedItem = null;
-        player.DraggedSlots.Clear();
-        player.IsDragging = false;
     }
 
     private static void TakeCraftingResult(ContainerClickEventArgs args, BaseContainer grid, int width)

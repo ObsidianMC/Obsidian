@@ -1,4 +1,5 @@
 using Obsidian.API;
+using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
@@ -17,7 +18,8 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Clicks in a plugin's menu, which numbers its own slots then the player's inventory like vanilla's menus.
+/// Clicks in menus, which number their own slots then the player's inventory like vanilla's: a plugin's, a furnace's
+/// and the player's own inventory; and opening and closing them.
 /// </summary>
 public sealed class MenuClicks
 {
@@ -125,6 +127,124 @@ public sealed class MenuClicks
             var click = Packet(player.CurrentContainerId, 0, 0, ClickType.Pickup);
             await click.HandleAsync(context.Server, player);
         }
+    }
+
+    [Fact(DisplayName = "Shift-clicking in a furnace routes stacks like vanilla's furnace menu")]
+    public async Task FurnaceQuickMoveRoutesLikeVanilla()
+    {
+        await RecipesRegistry.InitializeAsync();
+
+        var furnace = new SmeltingContainer(InventoryType.Furnace, 3, "furnace");
+        var player = new FakePlayer { OpenedContainer = furnace };
+
+        // The window numbers the furnace's ingredient, fuel and result 0 to 2, then the player's inventory from 9.
+        player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.RawIron, 4));
+        player.Inventory.SetItem(10, new ItemStack(ItemsRegistry.Coal, 2));
+        player.Inventory.SetItem(11, new ItemStack(ItemsRegistry.Dirt, 3));
+        player.Inventory.SetItem(12, new ItemStack(ItemsRegistry.OakLog, 1));
+        furnace.SetItem(2, new ItemStack(ItemsRegistry.IronIngot, 5));
+
+        Click(player, 3, 0, ClickType.QuickMove);
+        Click(player, 4, 0, ClickType.QuickMove);
+        Click(player, 5, 0, ClickType.QuickMove);
+
+        Assert.Equal(4, furnace.GetItem(0)?.Count);
+        Assert.Equal(2, furnace.GetItem(1)?.Count);
+        Assert.True(furnace.GetItem(1)?.Is(ItemsRegistry.Coal));
+
+        // What neither cooks nor burns goes from the main inventory to the hotbar.
+        Assert.Equal(3, player.Inventory.GetItem(36)?.Count);
+
+        // A log cooks into charcoal, so it waits for the ingredient slot even though it burns.
+        Click(player, 6, 0, ClickType.QuickMove);
+        Assert.Equal(1, player.Inventory.GetItem(12)?.Count);
+
+        // The result goes to the hotbar's last slot first.
+        Click(player, 2, 0, ClickType.QuickMove);
+        Assert.Null(furnace.GetItem(2));
+        Assert.Equal(5, player.Inventory.GetItem(44)?.Count);
+    }
+
+    [Fact(DisplayName = "Drags in the player's inventory follow vanilla's drag order and slot rules", Timeout = 10000)]
+    public async Task InventoryDragNeedsAStartAndKeepsSlotRules()
+    {
+        await using var context = TestServerFactory.CreateServer($"inventory-drag-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Dragger");
+        player.CarriedItem = new ItemStack(ItemsRegistry.Dirt, 4);
+
+        // Slots added and a drag ended without starting one place nothing.
+        await ClickAsync(1, 1);
+        await ClickAsync(2, 1);
+        await ClickAsync(-999, 2);
+
+        Assert.Null(player.Inventory.GetItem(1));
+        Assert.Null(player.Inventory.GetItem(2));
+        Assert.Equal(4, player.CarriedItem?.Count);
+
+        // A started drag skips the crafting result and the armour slots, which don't take dirt.
+        await ClickAsync(-999, 0);
+        await ClickAsync(0, 1);
+        await ClickAsync(5, 1);
+        await ClickAsync(1, 1);
+        await ClickAsync(2, 1);
+        await ClickAsync(-999, 2);
+
+        Assert.Equal(2, player.Inventory.GetItem(1)?.Count);
+        Assert.Equal(2, player.Inventory.GetItem(2)?.Count);
+        Assert.Null(player.Inventory.GetItem(5));
+        Assert.Null(player.CarriedItem);
+        Assert.False(player.IsDragging);
+
+        async Task ClickAsync(short slot, sbyte button) =>
+            await Packet(0, slot, button, ClickType.QuickCraft).HandleAsync(context.Server, player);
+    }
+
+    [Fact(DisplayName = "Opening a container syncs the cursor, and closing it from the server closes the screen",
+        Timeout = 10000)]
+    public async Task OpenSyncsCursorAndForcedCloseClosesScreen()
+    {
+        await using var context = TestServerFactory.CreateServer($"menu-close-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Closer");
+        var client = (TestClient)player.Client;
+        player.CarriedItem = new ItemStack(ItemsRegistry.Stone, 3);
+
+        // Even an empty chest's contents are sent, as they carry the cursor.
+        await player.OpenInventoryAsync(new Container());
+        var id = player.CurrentContainerId;
+
+        var contents = client.SentPackets.OfType<ContainerSetContentPacket>().Last();
+        Assert.Equal(id, contents.ContainerId);
+        Assert.Equal(3, contents.CarriedItem?.Count);
+
+        // The server's close handler lets go of the container, but the client's screen still closes.
+        await player.CloseContainerAsync();
+
+        Assert.Null(player.OpenedContainer);
+        var closed = client.SentPackets.OfType<Net.Packets.Play.Clientbound.ContainerClosePacket>().Single();
+        Assert.Equal(id, closed.ContainerId);
+    }
+
+    [Fact(DisplayName = "Players opening a new chest at once share its one stored container", Timeout = 10000)]
+    public async Task FirstOpenOfAChestSharesOneContainer()
+    {
+        await using var context = TestServerFactory.CreateServer($"chest-open-{Guid.NewGuid():N}");
+        Obsidian.Entities.Player[] players =
+        [
+            TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "First"),
+            TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Second")
+        ];
+        var position = new Vector(0, 64, 0);
+
+        await Task.WhenAll(players.Select(player => Task.Run(async () =>
+            await context.Server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, context.Server)
+            {
+                Block = BlocksRegistry.Chest,
+                BlockLocation = position
+            }))));
+
+        var stored = Assert.IsAssignableFrom<BaseContainer>(await context.World.GetBlockEntityAsync(position));
+        Assert.All(players, player => Assert.Same(stored, player.OpenedContainer));
+        Assert.Equal(2, stored.Viewers.Count);
     }
 
     // Clicks a slot as the window numbers it, found in the menu or the player's inventory like the click packet does.

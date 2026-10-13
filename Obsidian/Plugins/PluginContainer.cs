@@ -192,7 +192,19 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
         return null;
     }
 
-    // Ends a call started with TryEnter; PluginCall.Dispose calls it.
+    /// <summary>
+    /// Starts a call into the plugin that its unloading makes, such as running its handlers of its menus closing, even
+    /// though the plugin no longer takes other calls.
+    /// </summary>
+    /// <returns>The call, to dispose when it ends.</returns>
+    internal PluginCall EnterUnloading()
+    {
+        Interlocked.Increment(ref this.activeCalls);
+
+        return PluginCall.Start(this);
+    }
+
+    // Ends a call started with TryEnter or EnterUnloading; PluginCall.Dispose calls it.
     internal void Exit() => Interlocked.Decrement(ref this.activeCalls);
 
     /// <summary>

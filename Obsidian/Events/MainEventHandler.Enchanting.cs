@@ -59,53 +59,11 @@ public partial class MainEventHandler
         else if (args.ClickType == ClickType.Throw) HandleCraftingThrow(args);
         else if (args.ClickType == ClickType.Clone) HandleClone(args);
         else if (args.ClickType == ClickType.PickupAll) HandlePickupAll(args);
-        else if (args.ClickType == ClickType.QuickCraft) HandleEnchantingDrag(args, table);
+        else if (args.ClickType == ClickType.QuickCraft) HandleQuickCraft(args);
         await player.RefreshEnchantingAsync();
         await player.QueuePacketAsync(new ContainerSetContentPacket(args.ContainerId,
             table.Concat(player.Inventory.Skip(9).Take(36)).ToList()) { StateId = args.StateId + 1, CarriedItem = player.CarriedItem });
         return true;
-    }
-
-    private static void HandleEnchantingDrag(ContainerClickEventArgs args, EnchantmentTable table)
-    {
-        var player = args.Player;
-        var carried = player.CarriedItem;
-        if (args.Button is 0 or 4 or 8) { player.DraggedSlots.Clear(); return; }
-        if (carried is not { Count: > 0 } || args.Button >= 8 && player.GameMode != GameMode.Creative) return;
-        if (args.Button is 1 or 5 or 9)
-        {
-            if (args.ClickedSlot < 0
-                || args.Container == table
-                && (args.ClickedSlot == 1 && !carried.Is(ItemsRegistry.LapisLazuli)
-                    || args.ClickedSlot == 0 && !args.Item.IsNullOrAir()))
-            {
-                return;
-            }
-
-            var item = args.Item;
-            if (!item.IsNullOrAir() && (item != carried || item.Count >= item.MaxStackSize)) return;
-            var slot = args.Container == table ? args.ClickedSlot : (short)(table.Size + args.ClickedSlot - 9);
-            if (!player.DraggedSlots.Contains(slot)) player.DraggedSlots.Add(slot);
-            return;
-        }
-        if (args.Button is not (2 or 6 or 10) || player.DraggedSlots.Count == 0) return;
-        var perSlot = args.Button == 2 ? carried.Count / player.DraggedSlots.Count : 1;
-        foreach (var slot in player.DraggedSlots)
-        {
-            var container = slot < table.Size ? (BaseContainer)table : player.Inventory;
-            var index = slot < table.Size ? slot : slot - table.Size + 9;
-            if (index < 0 || index >= container.Size || container == player.Inventory && index is < 9 or >= 45) continue;
-            if (container == table && index == 1 && !carried.Is(ItemsRegistry.LapisLazuli)) continue;
-            var target = container.GetItem(index);
-            if (!target.IsNullOrAir() && target != carried) continue;
-            var maximum = container == table && index == 0 ? 1 : carried.MaxStackSize;
-            var count = Math.Min(args.Button == 10 ? maximum : Math.Min(perSlot, carried.Count), maximum - (target?.Count ?? 0));
-            if (count <= 0) continue;
-            container.SetItem(index, new ItemStack(carried, count + (target?.Count ?? 0)));
-            if (args.Button != 10) carried.Count -= count;
-        }
-        if (carried.Count == 0) player.CarriedItem = null;
-        player.DraggedSlots.Clear();
     }
 
     internal static async ValueTask ReturnEnchantingItemsAsync(IPlayer player, EnchantmentTable table)

@@ -81,25 +81,6 @@ public partial class ContainerClickPacket
         }
 
         var window = player.OpenedContainer ?? player.Inventory;
-
-        // Players sharing a container take turns, so that two can't both take the same stack.
-        await window.TransactionLock.WaitAsync();
-        try
-        {
-            // It may have closed while another player's click went first.
-            if ((player.OpenedContainer ?? player.Inventory) != window)
-                return;
-
-            await this.HandleClickAsync(server, player, window);
-        }
-        finally
-        {
-            window.TransactionLock.Release();
-        }
-    }
-
-    private async ValueTask HandleClickAsync(IServer server, IClientPlayer player, BaseContainer window)
-    {
         var (slot, forPlayer) = window.GetSlot(this.ClickedSlot);
 
         var container = (this.IsPlayerInventory || forPlayer) ? player.Inventory : window;
@@ -108,6 +89,8 @@ public partial class ContainerClickPacket
             (!this.IsPlayerInventory && forPlayer && slot >= 45)))
             return;
 
+        // Plugins' handlers run without the container's lock, so that one can wait for another player's click; the
+        // server's own handler, which runs last, takes it to apply the click (see MainEventHandler.OnInventoryClick).
         await server.EventDispatcher.ExecuteEventAsync(new ContainerClickEventArgs(player, server, container)
         {
             ClickedSlot = slot,
@@ -121,6 +104,24 @@ public partial class ContainerClickPacket
         if (this.IsPlayerInventory || window is CraftingTable { Type: InventoryType.Crafting })
             return;
 
+        await window.TransactionLock.WaitAsync();
+        try
+        {
+            // It may have closed meanwhile.
+            if (player.OpenedContainer != window)
+                return;
+
+            await this.SyncAsync(player, window);
+        }
+        finally
+        {
+            window.TransactionLock.Release();
+        }
+    }
+
+    // Sends the container's contents to the clicking player and its other viewers, in turn with the other clicks.
+    private async ValueTask SyncAsync(IClientPlayer player, BaseContainer window)
+    {
         // Client slot hashes describe its prediction, not authoritative inventory changes.
         await player.Client.QueuePacketAsync(new ContainerSetContentPacket(this.ContainerId, Contents(window, player))
         {

@@ -527,8 +527,9 @@ public sealed partial class PluginManager : IAsyncDisposable
         // Closed first, so that whatever the plugin registers meanwhile is refused rather than kept after unloading.
         pluginContainer.Close();
 
-        // Before its handlers go, so that the plugin sees its menus close (to keep their contents, say).
-        await this.CloseMenusAsync(pluginContainer);
+        // Before its handlers go, so that the plugin sees its menus close (to keep their contents, say). Its handlers
+        // of that still run, although it's closed.
+        await CloseMenusAsync(this.server, pluginContainer);
 
         this.commandHandler.UnregisterPluginCommands(pluginContainer);
         this.eventDispatcher.UnregisterPluginEvents(pluginContainer);
@@ -578,18 +579,39 @@ public sealed partial class PluginManager : IAsyncDisposable
     /// Closes the menus of <paramref name="pluginContainer"/>'s menu types that players have open, so that none stays
     /// interactive without the plugin, and disowns the types.
     /// </summary>
-    private async Task CloseMenusAsync(PluginContainer pluginContainer)
+    /// <remarks>
+    /// The types stop opening first: the plugin's calls still running as it unloads may end after the sweep, and could
+    /// otherwise open its menus again. The types open again once a plugin registers them again.
+    /// </remarks>
+    internal static async Task CloseMenusAsync(IServer server, PluginContainer pluginContainer)
     {
-        foreach (var player in this.server.OnlinePlayers.Values.OfType<Player>())
-        {
-            if (player.OpenedContainer is MenuContainer menu && ReferenceEquals(menu.Menu.Owner, pluginContainer))
-                await player.CloseContainerAsync();
-        }
+        var owned = new List<MenuDefinition>();
 
         foreach (var menu in MenuTypesRegistry.PluginMenus)
         {
-            if (ReferenceEquals(menu.Owner, pluginContainer))
-                menu.Owner = null;
+            lock (menu.Gate)
+            {
+                if (!ReferenceEquals(menu.Owner, pluginContainer))
+                    continue;
+
+                menu.IsOpenable = false;
+                owned.Add(menu);
+            }
+        }
+
+        foreach (var player in server.OnlinePlayers.Values.OfType<Player>())
+        {
+            if (player.OpenedContainer is MenuContainer open && owned.Contains(open.Menu))
+                await player.CloseContainerAsync(pluginContainer);
+        }
+
+        foreach (var menu in owned)
+        {
+            lock (menu.Gate)
+            {
+                if (ReferenceEquals(menu.Owner, pluginContainer))
+                    menu.Owner = null;
+            }
         }
     }
 
