@@ -1,5 +1,7 @@
 using Obsidian.API.Inventory;
 using Obsidian.Commands.Modules;
+using Obsidian.Entities.AI;
+using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
@@ -13,7 +15,8 @@ namespace Obsidian.Entities;
 /// then drops as an item or breaks.
 /// </summary>
 /// <remarks>
-/// Eyes aren't saved: they live four seconds, and where they head isn't kept, so one loaded again couldn't fly on.
+/// Like vanilla's, an eye is saved with its item but not where it heads: one loaded again flies on as it moved for
+/// four more seconds, then breaks.
 /// </remarks>
 [MinecraftEntity("minecraft:eye_of_ender")]
 public sealed partial class EyeOfEnder : Entity
@@ -31,7 +34,7 @@ public sealed partial class EyeOfEnder : Entity
 
     private const double Rise = 8.0;
 
-    private VectorD target;
+    private VectorD? target;
 
     private int life;
 
@@ -40,9 +43,9 @@ public sealed partial class EyeOfEnder : Entity
     public EyeOfEnder() => this.Type = EntityType.EyeOfEnder;
 
     /// <summary>
-    /// The eye item it drops, which clients show.
+    /// The eye item it drops, which clients show; an eye of ender unless thrown with another, like vanilla's.
     /// </summary>
-    public ItemStack? Item { get; internal set; }
+    public ItemStack? Item { get; internal set; } = new(ItemsRegistry.EnderEye, 1);
 
     /// <summary>
     /// Vanilla <c>EyeOfEnder.use</c>: throws an eye from <paramref name="player"/> toward the nearest structure eyes
@@ -56,7 +59,7 @@ public sealed partial class EyeOfEnder : Entity
         if (player.GameMode == GameMode.Spectator
             || player.Level is not AbstractLevel level
             || level.Generator is not MojangGenerator generator
-            || await LooksAtPortalFrameAsync(player, level))
+            || LooksAtPortalFrame(player, level))
         {
             return false;
         }
@@ -102,6 +105,7 @@ public sealed partial class EyeOfEnder : Entity
             await player.SyncInventorySlotAsync(slot);
         }
 
+        // Vanilla awards the item's minecraft:used statistic here; Obsidian keeps no statistics.
         return true;
     }
 
@@ -135,8 +139,10 @@ public sealed partial class EyeOfEnder : Entity
         if (this.Level is not AbstractLevel level || !level.IsMobTicking(this.Position))
             return;
 
+        // An eye loaded from a save has no target, and keeps its motion like vanilla's.
         var next = this.Position + this.Motion;
-        this.Motion = Steer(this.Motion, next, this.target);
+        if (this.target is VectorD target)
+            this.Motion = Steer(this.Motion, next, target);
 
         if (!level.TryMoveEntity(this, this.Position, next))
             return;
@@ -166,6 +172,24 @@ public sealed partial class EyeOfEnder : Entity
 
         writer.WriteEntityMetadataType(8, EntityMetadataType.Slot);
         writer.WriteItemStack(this.Item);
+    }
+
+    // Vanilla saves only the item; where the eye heads, its age and whether it drops start over when it's loaded.
+    internal override void WriteNbt(NbtCompound tag)
+    {
+        base.WriteNbt(tag);
+
+        tag.SetOrRemove("Item", this.Item?.ToNbt("Item"));
+    }
+
+    // Like vanilla's, an eye saved without its item gets an eye of ender.
+    internal override void ReadNbt(NbtCompound tag)
+    {
+        base.ReadNbt(tag);
+
+        this.Item = tag.TryGetTag<NbtCompound>("Item", out var item) && item.ItemFromNbt() is ItemStack stack
+            ? new ItemStack(stack, 1)
+            : new ItemStack(ItemsRegistry.EnderEye, 1);
     }
 
     // Vanilla's steering, which decides the path clients see: the horizontal speed eases toward the distance left,
@@ -222,29 +246,15 @@ public sealed partial class EyeOfEnder : Entity
         this.PacketBroadcaster.QueuePacketToLevelInRange(level, this.Position, breaking);
     }
 
-    // Vanilla leaves an eye used on an end portal frame to the frame: the first block the player looks at within
-    // reach, fluids aside, stepping along the look in tenths of a block.
-    private static async ValueTask<bool> LooksAtPortalFrameAsync(Player player, AbstractLevel level)
+    // Vanilla leaves an eye used on an end portal frame to the frame: the block the player aims at within their block
+    // interaction range, by outline shapes, fluids aside.
+    private static bool LooksAtPortalFrame(Player player, AbstractLevel level)
     {
-        var reach = player.GameMode == GameMode.Creative ? 5.0 : 4.5;
-        var look = player.GetLookDirection();
         var eye = new VectorD(player.Position.X, player.HeadY, player.Position.Z);
-        Vector? last = null;
+        var look = player.GetLookDirection();
+        var range = player.BlockInteractionRange;
+        var end = eye + new VectorD(look.X * range, look.Y * range, look.Z * range);
 
-        for (var step = 0.0; step <= reach; step += 0.1)
-        {
-            var position = (Vector)(eye + new VectorD(look.X * step, look.Y * step, look.Z * step)).Floor();
-            if (position == last)
-                continue;
-
-            last = position;
-
-            if (await level.GetBlockAsync(position) is not IBlock block || block.IsAir || block.IsLiquid)
-                continue;
-
-            return block.Is(BlockIds.EndPortalFrame);
-        }
-
-        return false;
+        return new MobTerrain(level).ClipOutlines(eye, end) is (_, IBlock block) && block.Is(BlockIds.EndPortalFrame);
     }
 }

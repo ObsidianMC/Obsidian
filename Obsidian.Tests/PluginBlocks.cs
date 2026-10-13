@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.Blocks;
 using Obsidian.Registries;
+using Obsidian.WorldData.Structures;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -119,6 +120,85 @@ public class PluginBlocks
             StateProperties = [.. Enumerable.Range(0, 31).Select(i => StateProperty.Bool($"flag_{i}"))]
         };
         Assert.Throws<ArgumentException>(() => BlocksRegistry.Register("blocks:too_many", tooMany));
+    }
+
+    [Fact(DisplayName = "Plugin blocks turn and mirror by their properties, as vanilla's blocks with them do")]
+    public void PluginBlocksTurnLikeVanilla()
+    {
+        StructureRotation[] rotations =
+        [
+            StructureRotation.Clockwise90,
+            StructureRotation.Clockwise180,
+            StructureRotation.CounterClockwise90
+        ];
+
+        // The property rules match vanilla's table for blocks whose transforms are only these properties: facing,
+        // axis, a standing sign's rotation, and fence, wall, pane, vine and wire connections.
+        using var stream = typeof(BlocksRegistry).Assembly.GetManifestResourceStream("Obsidian.Assets.blocks.json")!;
+        using var report = JsonDocument.Parse(stream);
+        string[] vanilla =
+        [
+            "minecraft:furnace",
+            "minecraft:observer",
+            "minecraft:oak_log",
+            "minecraft:oak_sign",
+            "minecraft:oak_fence",
+            "minecraft:cobblestone_wall",
+            "minecraft:glass_pane",
+            "minecraft:vine",
+            "minecraft:redstone_wire"
+        ];
+
+        foreach (var name in vanilla)
+        {
+            foreach (var entry in report.RootElement.GetProperty(name).GetProperty("states").EnumerateArray())
+            {
+                var state = BlocksRegistry.Get(entry.GetProperty("id").GetInt32());
+
+                foreach (var rotation in rotations)
+                    Assert.Equal(state.Rotate(rotation), ByProperties(name, state, rotation, StructureMirror.None));
+
+                foreach (var mirror in new[] { StructureMirror.LeftRight, StructureMirror.FrontBack })
+                    Assert.Equal(state.Mirror(mirror), ByProperties(name, state, StructureRotation.None, mirror));
+            }
+        }
+
+        // A plugin's block, which the table doesn't cover, keeps its identity and turns its facing.
+        var properties = new BlockProperties
+        {
+            StateProperties =
+            [
+                StateProperty.Enum("facing", "north", "east", "south", "west"),
+                StateProperty.Enum("axis", "x", "y", "z"),
+                StateProperty.Bool("lit")
+            ]
+        };
+
+        var lantern = BlocksRegistry.Register("blocks:turning_lantern", properties);
+        var north = lantern.GetState(new Dictionary<string, string>
+        {
+            ["facing"] = "north",
+            ["axis"] = "x",
+            ["lit"] = "true"
+        });
+
+        var turned = north.Rotate(StructureRotation.Clockwise90);
+        Assert.True(lantern.Is(turned));
+        Assert.Equal(
+            new Dictionary<string, string> { ["axis"] = "z", ["facing"] = "east", ["lit"] = "true" },
+            turned.GetProperties());
+        Assert.Equal("west", lantern.GetValue(north.Rotate(StructureRotation.CounterClockwise90), "facing"));
+        Assert.Equal("south", lantern.GetValue(north.Mirror(StructureMirror.LeftRight), "facing"));
+        Assert.Equal(north, north.Mirror(StructureMirror.FrontBack));
+
+        static IBlock ByProperties(string name, IBlock state, StructureRotation rotation, StructureMirror mirror)
+        {
+            var values = new Dictionary<string, string>(state.GetProperties());
+            foreach (var (property, value) in BlockTransforms.TransformProperties(values, rotation, mirror))
+                values[property] = value;
+
+            return BlockStateProperties.GetState(name, values);
+        }
     }
 
     private sealed class FakePluginContainer : API.Plugins.IPluginContainer

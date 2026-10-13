@@ -30,6 +30,22 @@ public partial class Player
     internal bool IsSingleplayerOwner { get; init; }
 
     /// <summary>
+    /// Vanilla <c>Player.blockInteractionRange</c>: how far the player reaches blocks, the
+    /// <c>minecraft:block_interaction_range</c> attribute (vanilla's base 4.5 when it isn't set), half a block farther in
+    /// creative, as vanilla's creative modifier adds.
+    /// </summary>
+    internal double BlockInteractionRange
+    {
+        get
+        {
+            const string attribute = "minecraft:block_interaction_range";
+            var range = this.HasAttribute(attribute) ? this.GetAttributeValue(attribute) : 4.5;
+
+            return this.GameMode == GameMode.Creative ? range + 0.5 : range;
+        }
+    }
+
+    /// <summary>
     /// Saves the player in vanilla's shape to the world's <c>playerdata/&lt;uuid&gt;.dat</c> (and for the singleplayer
     /// owner of a vanilla-shaped world, to its level.dat's <c>Data.Player</c> too), and the world they're in to
     /// <see cref="PersistentDataFile"/>.
