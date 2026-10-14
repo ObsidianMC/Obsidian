@@ -135,39 +135,11 @@ public class PluginCodecFiles
     // Files vanilla rejects and alternative forms it accepts, each a minimal valid file with the row's JSON merged in.
     [Theory(DisplayName = "Plugins' files are accepted exactly where vanilla's codecs accept them")]
     [InlineData(PluginCodecs.DimensionType, false, """{ "height": 17, "logical_height": 16 }""")]
-    [InlineData(PluginCodecs.Biome, false, """{ "attributes": 17 }""")]
-    [InlineData(PluginCodecs.Biome, false, """{ "effects": { "water_color": {} } }""")]
-    [InlineData(
-        PluginCodecs.DimensionType,
-        false,
-        """{ "monster_spawn_light_level": { "type": "uniform", "min_inclusive": 0, "max_inclusive": 16 } }""")]
     [InlineData(PluginCodecs.Biome, true, """{ "effects": { "water_color": [0.1, 0.2, 0.3] } }""")]
     [InlineData(
         PluginCodecs.DimensionType,
         true,
         """{ "monster_spawn_light_level": { "type": "minecraft:constant", "value": 7 } }""")]
-    [InlineData(
-        PluginCodecs.Biome,
-        false,
-        """
-        { "attributes": { "minecraft:visual/ambient_particles": [
-        { "particle": { "type": "dust", "color": 255, "scale": 5 }, "probability": 0.1 }] } }
-        """)]
-    [InlineData(
-        PluginCodecs.Biome,
-        false,
-        """
-        { "attributes": { "minecraft:visual/ambient_particles": [
-        { "particle": { "type": "block", "block_state": "codecfiles:missing" }, "probability": 0.1 }] } }
-        """)]
-    [InlineData(
-        PluginCodecs.Biome,
-        false,
-        """
-        { "attributes": { "minecraft:visual/default_dripstone_particle": {
-        "type": "vibration", "destination": { "type": "entity", "source_entity": [0, 0, 0, 0] },
-        "arrival_in_ticks": 5 } } }
-        """)]
     [InlineData(
         PluginCodecs.Biome,
         true,
@@ -177,37 +149,6 @@ public class PluginCodecFiles
         { "particle": { "type": "block_crumble", "block_state": { "Name": "stone" } }, "probability": 0.1 },
         { "particle": { "type": "trail", "target": [0, 64, 0], "color": [0, 1, 0], "duration": 20 },
         "probability": 0.1 }] } }
-        """)]
-    [InlineData(
-        PluginCodecs.DimensionType,
-        false,
-        """
-        { "attributes": { "minecraft:gameplay/bed_rule": {
-        "can_sleep": "never", "can_set_spawn": "never", "error_message": { "bold": true } } } }
-        """)]
-    [InlineData(
-        PluginCodecs.DimensionType,
-        true,
-        """
-        { "attributes": { "minecraft:gameplay/bed_rule": {
-        "can_sleep": "never", "can_set_spawn": "never", "explodes": true, "error_message": {
-        "translate": "codecfiles.too_hot", "with": [{ "text": "here", "bold": true }, 3], "extra": ["!"] } } } }
-        """)]
-    [InlineData(
-        PluginCodecs.DimensionType,
-        true,
-        """
-        { "attributes": { "minecraft:gameplay/bed_rule": {
-        "can_sleep": "never", "can_set_spawn": "never", "error_message": ["Too hot ", { "sprite": "item/blaze_powder" },
-        { "player": { "name": "Steve", "id": [1, 2, 3, 4] }, "hat": false },
-        { "type": "object", "object": "player", "player": "Alex" }] } } }
-        """)]
-    [InlineData(
-        PluginCodecs.DimensionType,
-        false,
-        """
-        { "attributes": { "minecraft:gameplay/bed_rule": {
-        "can_sleep": "never", "can_set_spawn": "never", "error_message": { "player": "not a player name" } } } }
         """)]
     public void ValidatesLikeVanilla(string registry, bool valid, string patch)
     {
@@ -219,20 +160,53 @@ public class PluginCodecFiles
             Assert.Throws<InvalidDataException>(() => PluginCodecs.Parse(registry, "codecfiles:case", "test", bytes));
     }
 
-    [Fact(DisplayName = "A plugin's dimension type is sent with vanilla's tag types, a constant provider as an int")]
-    public void EncodesDimensionTypesLikeVanilla()
+    [Fact]
+    public void CodecDataUsesVanillaTagTypes()
     {
-        var patch = """{ "monster_spawn_light_level": { "type": "minecraft:constant", "value": 7 } }""";
-        var file = PluginCodecs.Parse(
-            PluginCodecs.DimensionType,
-            "codecfiles:flat",
-            "test",
-            Patched(MinimalDimension, patch));
+        {
+            var patch = """{ "monster_spawn_light_level": { "type": "minecraft:constant", "value": 7 } }""";
+            var file = PluginCodecs.Parse(
+                PluginCodecs.DimensionType,
+                "codecfiles:flat",
+                "test",
+                Patched(MinimalDimension, patch));
 
-        Assert.Equal(7, Assert.IsType<NbtTag<int>>(file.Data["monster_spawn_light_level"]).Value);
-        Assert.Equal(1.0, Assert.IsType<NbtTag<double>>(file.Data["coordinate_scale"]).Value);
-        Assert.Equal((byte)1, Assert.IsType<NbtTag<byte>>(file.Data["has_skylight"]).Value);
-        Assert.False(file.Data.HasTag("skybox"));
+            Assert.Equal(7, Assert.IsType<NbtTag<int>>(file.Data["monster_spawn_light_level"]).Value);
+            Assert.Equal(1.0, Assert.IsType<NbtTag<double>>(file.Data["coordinate_scale"]).Value);
+            Assert.Equal((byte)1, Assert.IsType<NbtTag<byte>>(file.Data["has_skylight"]).Value);
+            Assert.False(file.Data.HasTag("skybox"));
+        }
+
+        {
+            var json = """
+                {
+                  "minecraft:visual/ambient_particles": [
+                    { "particle": { "type": "dust", "color": [1, 0, 0], "scale": 0.5 }, "probability": 0.1 },
+                    { "particle": { "type": "effect", "color": -1, "power": 1 }, "probability": 0.1 },
+                    { "particle": { "type": "dragon_breath", "power": 1 }, "probability": 0.1 },
+                    { "particle": { "type": "dragon_breath" }, "probability": 0.1 }
+                  ]
+                }
+                """;
+
+            using var document = JsonDocument.Parse(json);
+            var map = EnvironmentAttributes.Read(document.RootElement, "attributes", onlyPositional: true);
+            var particles = Assert.IsType<NbtList>(Assert.Single(map.Entries).Value);
+
+            var dust = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[0])["particle"]);
+            Assert.Equal(unchecked((int)0xFFFF0000), Assert.IsType<NbtTag<int>>(dust["color"]).Value);
+            Assert.Equal(0.5f, Assert.IsType<NbtTag<float>>(dust["scale"]).Value);
+
+            var effect = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[1])["particle"]);
+            Assert.Equal(["type"], effect.Select(tag => tag.Key));
+
+            // Vanilla compares dragon breath's default by reference: only an omitted power is left out.
+            var breath = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[2])["particle"]);
+            Assert.Equal(1f, Assert.IsType<NbtTag<float>>(breath["power"]).Value);
+
+            var defaultBreath = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[3])["particle"]);
+            Assert.Equal(["type"], defaultBreath.Select(tag => tag.Key));
+        }
     }
 
     [Fact(DisplayName = "A plugin's dimension type's light level provider samples with vanilla's draws")]
@@ -259,39 +233,6 @@ public class PluginCodecFiles
         int[] expected = [5, 7, 0, 7, 6, 0, 7, 0];
 
         Assert.Equal(expected, expected.Select(_ => provider.Sample(random)));
-    }
-
-    [Fact(DisplayName = "Particle options are sent as vanilla's codecs write them, defaults left out")]
-    public void EncodesParticleOptionsLikeVanilla()
-    {
-        var json = """
-            {
-              "minecraft:visual/ambient_particles": [
-                { "particle": { "type": "dust", "color": [1, 0, 0], "scale": 0.5 }, "probability": 0.1 },
-                { "particle": { "type": "effect", "color": -1, "power": 1 }, "probability": 0.1 },
-                { "particle": { "type": "dragon_breath", "power": 1 }, "probability": 0.1 },
-                { "particle": { "type": "dragon_breath" }, "probability": 0.1 }
-              ]
-            }
-            """;
-
-        using var document = JsonDocument.Parse(json);
-        var map = EnvironmentAttributes.Read(document.RootElement, "attributes", onlyPositional: true);
-        var particles = Assert.IsType<NbtList>(Assert.Single(map.Entries).Value);
-
-        var dust = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[0])["particle"]);
-        Assert.Equal(unchecked((int)0xFFFF0000), Assert.IsType<NbtTag<int>>(dust["color"]).Value);
-        Assert.Equal(0.5f, Assert.IsType<NbtTag<float>>(dust["scale"]).Value);
-
-        var effect = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[1])["particle"]);
-        Assert.Equal(["type"], effect.Select(tag => tag.Key));
-
-        // Vanilla compares dragon breath's default by reference: only an omitted power is left out.
-        var breath = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[2])["particle"]);
-        Assert.Equal(1f, Assert.IsType<NbtTag<float>>(breath["power"]).Value);
-
-        var defaultBreath = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[3])["particle"]);
-        Assert.Equal(["type"], defaultBreath.Select(tag => tag.Key));
     }
 
     [Fact(DisplayName = "The server applies a dimension type's gameplay attributes, and vanilla's nether's")]

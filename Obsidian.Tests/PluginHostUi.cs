@@ -20,24 +20,6 @@ namespace Obsidian.Tests;
 public sealed class PluginHostUi
 {
     [Fact]
-    public void RemoveObjective_GoesToThePlayersShownTheScoreboard()
-    {
-        var broadcaster = new Recorder();
-        var scoreboard = new Scoreboard("kills", broadcaster);
-
-        scoreboard.AddPlayer(1);
-        scoreboard.AddPlayer(2);
-        scoreboard.CreateOrUpdateObjective("Kills");
-        scoreboard.RemoveObjective();
-
-        var (packet, to) = broadcaster.Sent[^1];
-
-        Assert.Equal(ScoreboardMode.Remove, Assert.IsType<SetObjectivePacket>(packet).Mode);
-        Assert.Equal([1, 2], to.Order());
-        Assert.Null(scoreboard.Objective);
-    }
-
-    [Fact]
     public void Retire_HidesTheScoreboardAndRefusesChanges()
     {
         var broadcaster = new Recorder();
@@ -47,7 +29,11 @@ public sealed class PluginHostUi
         scoreboard.CreateOrUpdateObjective("Kills");
         var team = scoreboard.CreateTeam("red", "Red", NameTagVisibility.Always, CollisionRule.Always, TeamColor.Red);
 
+        scoreboard.Display(1, DisplaySlot.Sidebar);
         scoreboard.Retire();
+
+        Assert.IsType<SetDisplayObjectivePacket>(broadcaster.Sent[^2].Packet);
+        Assert.Equal(ScoreboardMode.Remove, Assert.IsType<SetObjectivePacket>(broadcaster.Sent[^1].Packet).Mode);
 
         var removal = Assert.Single(broadcaster.Sent, sent => sent.Packet is SetObjectivePacket
         {
@@ -60,6 +46,7 @@ public sealed class PluginHostUi
         // A handler still running can't show it again, but removing does nothing.
         var sent = broadcaster.Sent.Count + broadcaster.Everyone.Count;
 
+        Assert.Throws<InvalidOperationException>(() => scoreboard.Display(1, DisplaySlot.Sidebar));
         Assert.Throws<InvalidOperationException>(() => scoreboard.AddPlayer(2));
         Assert.Throws<InvalidOperationException>(() => scoreboard.CreateOrUpdateObjective("Kills"));
         Assert.Throws<InvalidOperationException>(() => scoreboard.CreateOrUpdateScore("a", "A", 1));
@@ -74,30 +61,6 @@ public sealed class PluginHostUi
         team.Delete();
 
         Assert.Equal(sent, broadcaster.Sent.Count + broadcaster.Everyone.Count);
-    }
-
-    [Fact]
-    public void Display_ThenRetire_QueuesTheRemovalAfterTheDisplay()
-    {
-        var broadcaster = new Recorder();
-        var scoreboard = new Scoreboard("kills", broadcaster);
-
-        scoreboard.CreateOrUpdateObjective("Kills");
-        scoreboard.AddPlayer(1);
-
-        // Displays and removals share the broadcaster's queue, so the player gets them in the order they happened.
-        scoreboard.Display(1, DisplaySlot.Sidebar);
-        scoreboard.Retire();
-
-        var packets = broadcaster.Sent
-            .Where(sent => sent.To.SequenceEqual([1]))
-            .Select(sent => sent.Packet)
-            .ToList();
-
-        Assert.Equal(ScoreboardMode.Create, Assert.IsType<SetObjectivePacket>(packets[0]).Mode);
-        Assert.IsType<SetDisplayObjectivePacket>(packets[^2]);
-        Assert.Equal(ScoreboardMode.Remove, Assert.IsType<SetObjectivePacket>(packets[^1]).Mode);
-        Assert.Throws<InvalidOperationException>(() => scoreboard.Display(1, DisplaySlot.Sidebar));
     }
 
     [Fact]

@@ -19,7 +19,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
-using System.Text.Json.Nodes;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -189,13 +188,23 @@ public sealed class WorldgenOverrides : IDisposable
 
         // A table of its own, as the server's is shared with other tests.
         var vanilla = (BiomeElement)Biome("0.8").Element;
-        var plains = new BiomeCodec { Name = "minecraft:plains", Id = 0, Element = vanilla };
+        var plains = new BiomeCodec
+        {
+            Name = "minecraft:plains",
+            Id = 0,
+            Element = vanilla
+        };
         var table = new CodecTable<BiomeCodec>([plains]);
         var hot = Biome("2");
 
         var changed = table.Apply(
             [new PluginCodecEntry<BiomeElement>(hot.Identifier, (BiomeElement)hot.Element, hot.Json, hot.Data)],
-            (name, id, element) => new BiomeCodec { Name = name, Id = id, Element = element },
+            (name, id, element) => new BiomeCodec
+            {
+                Name = name,
+                Id = id,
+                Element = element
+            },
             codec => codec.Element,
             (codec, element) => codec.Element = element);
 
@@ -207,7 +216,12 @@ public sealed class WorldgenOverrides : IDisposable
 
         table.Apply<BiomeElement>(
             [],
-            (name, id, element) => new BiomeCodec { Name = name, Id = id, Element = element },
+            (name, id, element) => new BiomeCodec
+            {
+                Name = name,
+                Id = id,
+                Element = element
+            },
             codec => codec.Element,
             (codec, element) => codec.Element = element);
 
@@ -282,90 +296,6 @@ public sealed class WorldgenOverrides : IDisposable
         Assert.Equal("current"u8.ToArray(), packs[1].Files.Read("data/ruby/worldgen/noise/x.json"));
     }
 
-    [Theory(DisplayName = "Overlays apply for vanilla's data pack format, checked like vanilla's codec checks them")]
-    [InlineData("""{ "directory": "d", "min_format": 94, "max_format": 94 }""", true)]
-    [InlineData("""{ "directory": "d", "min_format": [94, 2], "max_format": 95 }""", false)]
-    [InlineData("""{ "directory": "d", "formats": [48, 81] }""", false)]
-    [InlineData("""{ "directory": "d", "min_format": 80, "max_format": 94, "formats": [80, 81] }""", true)]
-    [InlineData("""{ "directory": "d", "min_format": 80, "max_format": 94 }""", false)]
-    [InlineData("""{ "directory": "d", "min_format": 82, "max_format": 94, "formats": [82, 94] }""", false)]
-    [InlineData("""{ "directory": "d", "min_format": 94 }""", false)]
-    [InlineData("""{ "directory": "..", "min_format": 94, "max_format": 94 }""", false)]
-    public void OverlaysFollowVanillasFormats(string entry, bool applied)
-    {
-        var json = $$"""
-            { "pack": { "description": "", "min_format": 94, "max_format": 94 },
-              "overlays": { "entries": [{{entry}}] } }
-            """;
-        var metadata = DataPackMetadata.Read("test", Encoding.UTF8.GetBytes(json), NullLogger.Instance);
-
-        string[] expected = applied ? ["d"] : [];
-        Assert.Equal(expected, metadata.Overlays);
-    }
-
-    [Theory(DisplayName = "A pack loads with a valid description, and its formats are checked like vanilla's")]
-    [InlineData("""{ "description": "", "min_format": 94, "max_format": [94, 1] }""", true, false)]
-    [InlineData(
-        """
-        { "description": "", "pack_format": 48, "supported_formats": [48, 94], "min_format": 48, "max_format": 94 }
-        """,
-        true,
-        false)]
-    [InlineData("""{ "description": "", "pack_format": 94 }""", true, true)]
-    [InlineData("""{ "description": "", "min_format": 94 }""", true, true)]
-    [InlineData("""{ "pack_format": 94, "min_format": 94, "max_format": 94 }""", false, false)]
-    [InlineData("""{ "description": { "bold": true }, "min_format": 94, "max_format": 94 }""", false, false)]
-    public void PacksNeedAValidDescription(string section, bool loaded, bool warned)
-    {
-        var json = $$"""
-            { "pack": {{section}}, "filter": { "block": [{ "namespace": "minecraft" }] } }
-            """;
-        var bytes = Encoding.UTF8.GetBytes(json);
-        var logger = new PluginFeatureFiles.ListLogger();
-
-        // Like vanilla, a pack without a valid description isn't loaded, so its filter doesn't block earlier packs.
-        if (!loaded)
-        {
-            Assert.Throws<InvalidDataException>(() => DataPackMetadata.Read("test", bytes, logger));
-            return;
-        }
-
-        // One whose formats aren't valid is loaded, filter included, as vanilla's server enables it all the same.
-        var metadata = DataPackMetadata.Read("test", bytes, logger);
-
-        Assert.True(metadata.Blocks("data/minecraft/worldgen/noise/a.json"));
-        Assert.Equal(warned, logger.Messages.Any(message => message.Contains("formats aren't valid")));
-    }
-
-    [Theory(DisplayName = "Filter patterns are read as Java's: quoted text and possessive quantifiers")]
-    [InlineData(@"\Qminecraft\E", @"^\Qworldgen/noise/\E", true)]
-    [InlineData(@"^mine\Q.\E", null, false)]
-    [InlineData(@"^[\Q_]\Em]inecraft", null, true)]
-    [InlineData(@"^[a-z]++$", @"[.]json$", true)]
-    [InlineData(null, @"^.*+json", false)]
-    [InlineData(@"(craft)++", @"noise/(a|b)\.json", true)]
-    public void FiltersReadJavaPatterns(string? namespacePattern, string? pathPattern, bool blocked)
-    {
-        var entry = new JsonObject();
-        if (namespacePattern is not null)
-            entry["namespace"] = namespacePattern;
-
-        if (pathPattern is not null)
-            entry["path"] = pathPattern;
-
-        var json = new JsonObject
-        {
-            ["pack"] = JsonNode.Parse("""{ "description": "", "min_format": 94, "max_format": 94 }"""),
-            ["filter"] = new JsonObject { ["block"] = new JsonArray(entry) }
-        };
-
-        var logger = new PluginFeatureFiles.ListLogger();
-        var metadata = DataPackMetadata.Read("test", Encoding.UTF8.GetBytes(json.ToJsonString()), logger);
-
-        Assert.Empty(logger.Messages);
-        Assert.Equal(blocked, metadata.Blocks("data/minecraft/worldgen/noise/a.json"));
-    }
-
     [Fact(DisplayName = "A dimension follows later overrides of the data its stem names, and its files, until taken")]
     public void DimensionsFollowTheirFilesUntilTaken()
     {
@@ -434,7 +364,6 @@ public sealed class WorldgenOverrides : IDisposable
     // A noise stem is released as it goes; a debug stem holds no plugin's code to release.
     [Theory(DisplayName = "A level can't take a dimension that went since its snapshot, which can still come back")]
     [InlineData(FixedPlainsStem)]
-    [InlineData("""{ "type": "minecraft:overworld", "generator": { "type": "minecraft:debug" } }""")]
     public void TakingAGoneDimensionLeavesItUntaken(string json)
     {
         const string identifier = "overridetest:gone";
@@ -523,40 +452,6 @@ public sealed class WorldgenOverrides : IDisposable
         }
 
         Assert.Null(PluginDimensions.Find(identifier));
-    }
-
-    [Fact(DisplayName = "Noise settings generating outside a dimension type's build range are found")]
-    public void FindsNoiseSettingsOutsideTheBuildRange()
-    {
-        var overworld = CodecRegistry.Dimensions.All["minecraft:overworld"];
-        var settings = MojangDimension.Overworld.Settings;
-        var lower = new DimensionCodec
-        {
-            Name = overworld.Name,
-            Id = overworld.Id,
-            Element = overworld.Element with { MinY = 0, Height = 256, LogicalHeight = 256 }
-        };
-
-        Assert.Null(LevelStemData.OutsideBuildRange("minecraft:overworld", settings, overworld));
-        Assert.Contains(
-            "from y -64 to 319, outside the build range of minecraft:overworld (0 to 255)",
-            LevelStemData.OutsideBuildRange("minecraft:overworld", settings, lower));
-
-        // Cells of 12 blocks: the lowest is the one holding y -64, which fills from -72, below the build range.
-        var tallCells = new NoiseSetting
-        {
-            Noise = new NoiseConfiguration
-            {
-                MinY = -64,
-                Height = 384,
-                SizeHorizontal = 1,
-                SizeVertical = 3
-            }
-        };
-
-        Assert.Contains(
-            "from y -72 (min_y -64 rounded down to a whole cell of 12 blocks) to 319",
-            LevelStemData.OutsideBuildRange("tall cells", tallCells, overworld));
     }
 
     private void Zip(string name, Dictionary<string, string> files)

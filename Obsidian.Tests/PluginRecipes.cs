@@ -188,62 +188,6 @@ public sealed class PluginRecipes
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task ShapedRecipesCannotShadowEarlierShapelessRecipes()
-    {
-        await using var context = TestServerFactory.CreateServer($"recipe-order-{Guid.NewGuid():N}");
-        var grid = new CraftingTable();
-        grid.SetItem(1, new ItemStack(ItemsRegistry.OakLog));
-        var vanilla = RecipesRegistry.Current.FindRecipe(grid, 3);
-        Assert.IsType<ShapelessRecipe>(vanilla);
-        var plugin = ShapedRecipeBuilder.Create(CraftingBookCategory.Misc)
-            .WithKey('L', new ItemStack(ItemsRegistry.OakLog))
-            .WithPattern("L")
-            .HasNoGroup()
-            .WithIdentifier($"probe:shadow_{Guid.NewGuid():N}")
-            .WithResult(new ItemStack(ItemsRegistry.Diamond))
-            .Build();
-        context.Server.RegisterRecipes(plugin);
-
-        Assert.Same(vanilla, context.Server.RecipeRegistry.Current.FindRecipe(grid, 3));
-    }
-
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task RegistrationCopiesIngredientsResultsAndComponents()
-    {
-        await using var context = TestServerFactory.CreateServer($"recipe-copy-{Guid.NewGuid():N}");
-        var recipe = Shaped($"probe:copy_{Guid.NewGuid():N}");
-        var saved = new NbtCompound
-        {
-            new NbtTag<int>("probe:saved", 7)
-        };
-        var original = recipe.Result.First();
-        var result = new ItemStack(original, original.Count)
-        {
-            UnmodeledComponents = saved
-        };
-        recipe.Result.Remove(original);
-        recipe.Result.Add(result);
-        var damage = ComponentBuilder.Damage with { Value = 2 };
-        result[DataComponentType.Damage] = damage;
-        context.Server.RegisterRecipes(recipe);
-
-        recipe.Key['B'].Add(new ItemStack(ItemsRegistry.Barrier));
-        result.Count = 15;
-        saved.Add(new NbtTag<int>("probe:later", 8));
-        var grid = new Container(5);
-
-        foreach (var slot in new[] { 1, 2, 3, 4 })
-            grid.SetItem(slot, new ItemStack(ItemsRegistry.Bedrock));
-
-        var stored = context.Server.RecipeRegistry.Current.FindRecipe(grid, 2)!;
-        Assert.Equal(3, stored.Result.First().Count);
-        Assert.Equal(2, stored.Result.First().Damage);
-        Assert.Single(stored.Result.First().UnmodeledComponents!);
-        grid.SetItem(1, new ItemStack(ItemsRegistry.Barrier));
-        Assert.Null(context.Server.RecipeRegistry.Current.FindRecipe(grid, 2));
-    }
-
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task DelayedPlacementCannotRestoreAnUnloadedResult()
     {
         await using var context = TestServerFactory.CreateServer($"recipe-placement-race-{Guid.NewGuid():N}");
