@@ -32,6 +32,21 @@ public interface IClientRegistry
         Func<IReadOnlyDictionary<string, object?>, BlockShapes?> provider);
 
     /// <summary>
+    /// Adds model parts from a block entity type's synced data to its blocks' models as the world is meshed, like
+    /// cable connections and facades. A new update meshes the block again.
+    /// </summary>
+    /// <param name="blockEntityType">
+    /// The identifier of a block entity type the mod registered, like <c>examplemod:cable_bus</c>.
+    /// </param>
+    /// <param name="model">The models the parts may name, and the provider choosing them.</param>
+    /// <exception cref="ArgumentException">
+    /// The block entity type isn't one the mod registered, a model isn't a valid identifier, or the mod gave the type
+    /// a model already.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+    public IClientRegistry RegisterBlockEntityModel(string blockEntityType, BlockEntityModelProperties model);
+
+    /// <summary>
     /// The client's connection to the server it's playing on, to send the mod's payloads from outside a payload
     /// handler, like when one of its keys is pressed.
     /// </summary>

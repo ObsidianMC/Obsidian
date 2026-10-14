@@ -2584,8 +2584,8 @@ if it throws, the mod fails to load and none of it does. The registry only takes
 `ConfigureClient`, since the client loads the assets that depend on them afterwards: registering later, through a
 registry the mod kept, throws `InvalidOperationException`. Its `Connection`, and sending payloads on it, stay usable
 for as long as the client runs. Like the server's content, key bindings, tints, renderers, particle providers,
-block entity shape providers and menu screens are the mod's own: their identifiers are in its namespace (its mod
-id) and valid by vanilla's rules, they're for content it registered, and registering one twice throws
+block entity shape and model providers and menu screens are the mod's own: their identifiers are in its namespace
+(its mod id) and valid by vanilla's rules, they're for content it registered, and registering one twice throws
 `ArgumentException`.
 
 `IClientRegistry.RegisterBlockEntityShapes(string blockEntityType,
@@ -2612,6 +2612,61 @@ registry.RegisterBlockEntityShapes("ruby:cable_bus", data =>
 ```
 
 Use the same pure shape-building helper in the server's `GetShapes` and the client provider to keep them equal.
+
+`IClientRegistry.RegisterBlockEntityModel(string blockEntityType, BlockEntityModelProperties model)` adds model
+parts from a block entity's synced data to its block's model as the world is meshed, like NeoForge's model data:
+a cable's arms, the parts on its sides, facades. `Models` declares the block models the parts may name (for
+example `ruby:part/cable_side` for `assets/ruby/models/part/cable_side.json`), which the client reads with the
+block models; `Provider` receives the same plain NBT values as a shape provider and the block's `IBlock` state,
+and returns a `BlockModelData`, or null for the block state's model alone:
+
+- `Parts`: `BlockModelPart(Model, X, Y, UvLock)`, a declared model turned like a blockstate file's model (quarter
+  turns, X then Y, its cull faces turning with it).
+- `Faces`: `BlockModelFace(From, To, Face, Texture)`, one face of a box in sixteenths of a block, like a model
+  element's face without `uv`, with any block texture (`minecraft:block/stone`), an optional `CullFace`,
+  `TintIndex` and `Shade`. They're for textures chosen by data, like a facade showing another block's texture.
+- `ReplacesBlockModel`: the parts and faces replace the block state's model rather than adding to it, for a block
+  drawn entirely from its data, or whose own model a facade covers.
+
+The parts and faces are meshed like the block's own model: lit with smooth lighting and ambient occlusion, shaded
+by direction, tinted by the block's tint where they have a tint index, put in the render layer of their texture,
+and culled where their cull face's neighbour is opaque. They don't change how the block culls its neighbours,
+which stays the block state's. The provider runs on a meshing thread inside the mod's call guard, at most once per
+update and block state, so keep it pure; a part naming an undeclared model or a rotation that isn't a quarter turn
+counts as a failure, which is logged and draws the block state's model. Each new update meshes the block's section
+again. The provider sees only its own block: a model that follows its neighbours, like a cable connecting to
+them, has the server work out the connections, put them in `GetUpdateData` (or in block state properties) and
+`SendUpdate` when they change, as the shapes do.
+
+```csharp
+string[] sides = ["north", "east", "south", "west"];
+registry.RegisterBlockEntityModel("ruby:cable_bus", new BlockEntityModelProperties
+{
+    Models = ["ruby:part/cable_core", "ruby:part/cable_side"],
+    Provider = (data, block) =>
+    {
+        // The server's update data says which sides connect, and which side has a facade of which texture.
+        var parts = new List<BlockModelPart> { new("ruby:part/cable_core") };
+        for (var i = 0; i < sides.Length; i++)
+        {
+            if (data.TryGetValue(sides[i], out var value) && value is byte connected && connected != 0)
+                parts.Add(new("ruby:part/cable_side", Y: i * 90));
+        }
+
+        BlockModelFace[] faces = data.TryGetValue("facade", out var facade) && facade is string texture
+            ? [new(new VectorF(0, 0, 0), new VectorF(16, 16, 1), BlockFace.North, texture)
+                { CullFace = BlockFace.North }]
+            : [];
+
+        return new BlockModelData
+        {
+            Parts = parts,
+            Faces = faces,
+            ReplacesBlockModel = true
+        };
+    }
+});
+```
 
 ```csharp
 public sealed class RubyMod : PluginBase, IClientPlugin

@@ -479,6 +479,13 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      they name), paged ten to a page like NeoForge's, and the search tab from every tab's items like vanilla's. Servers
      only check the registrations: tabs aren't synced, and the creative slot packet accepts any item. A mod's tabs and
      additions go when it unloads. See [plugin-content.md](plugin-content.md#creative-tabs).
+   - Done, engine phase 4 model data: `IClientRegistry.RegisterBlockEntityModel` gives a mod's block entity type
+     a provider that, from its synced update data and block state, adds declared block models (turned like a
+     blockstate's, with `uvlock`) and textured faces to its block's model, or replaces it, like NeoForge's model
+     data. The mesher culls, lights and tints them like the block's own parts; each update meshes the section again,
+     the provider's result is cached per snapshot and block state, and it runs in the mod's call guard, falling back
+     to the block state's model when it fails. Neighbour-dependent models (cable connections) come from the server's
+     update data. See [plugin-content.md](plugin-content.md#client).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
      move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine, and screens in code
      (widgets, mods reading their menus' extra data and data slots, buttons); entity render layers (emissive and
