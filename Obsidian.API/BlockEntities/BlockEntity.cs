@@ -1,5 +1,6 @@
 using Obsidian.API.Plugins;
 using Obsidian.API.Blocks;
+using Obsidian.API.Inventory;
 using Obsidian.Nbt;
 using System.Threading;
 
@@ -22,10 +23,10 @@ namespace Obsidian.API.BlockEntities;
 /// The server saves what <see cref="Save"/> writes as of the last time the block entity called
 /// <see cref="SetChanged"/>, taken at the end of the level's tick: call it whenever its saved data changes, like
 /// vanilla's <c>setChanged</c>. The server calls <see cref="Load"/>, <see cref="Save"/>, <see cref="TickAsync"/>,
-/// <see cref="GetUpdateData"/>, <see cref="GetShapes"/> and <see cref="OnRemoved"/> on the level's tick, one at a time,
-/// besides creating a new one for a block set elsewhere; code that changes it on the level's tick needs no locking.
-/// Chunks are saved and
-/// sent from copies of what those calls returned.
+/// <see cref="GetUpdateData"/>, <see cref="GetShapes"/>, <see cref="CollectComponents"/> and <see cref="OnRemoved"/>
+/// on the level's tick (or between two ticks), one at a time, besides creating a new one for a block set elsewhere,
+/// which <see cref="ApplyComponents"/> initializes; code that changes it on the level's tick needs no locking. Chunks
+/// are saved and sent from copies of what those calls returned.
 /// </para>
 /// </remarks>
 public abstract class BlockEntity : IBlockEntity
@@ -44,6 +45,14 @@ public abstract class BlockEntity : IBlockEntity
     /// generated), or it was created but not placed.
     /// </summary>
     public ILevel? Level => this.Host?.Level;
+
+    /// <summary>
+    /// The server as the code running now sees it, like event arguments' <c>Server</c>: in the calls into the block
+    /// entity's plugin, such as <see cref="TickAsync"/>, the plugin's own <see cref="IServer"/>, which finds its
+    /// recipes (<see cref="IServer.FindRecipe"/>) and keeps what's added through it the plugin's. Null while the block
+    /// entity isn't in a level, and for the server's own block entities.
+    /// </summary>
+    public IServer? Server => this.Host?.ServerOf(this) is IServer server ? ServerScope.Resolve(server) : null;
 
     /// <summary>
     /// Whether the block entity was removed from its level: its block changed to one without its type, or its
@@ -155,6 +164,44 @@ public abstract class BlockEntity : IBlockEntity
     protected internal virtual BlockShapes? GetShapes() => null;
 
     /// <summary>
+    /// Copies the block entity's data that its block's item keeps into <paramref name="item"/>, like vanilla's
+    /// <c>collectImplicitComponents</c>: set values of the plugin's own component types on it (see
+    /// <see cref="ItemStack.Set"/>), which <see cref="ApplyComponents"/> reads back when the item is placed again.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Called as the block breaks (by a player or an explosion), before it's removed, on the level's tick or between
+    /// two ticks. What it sets goes to the block's loot, like a vanilla block entity's components: a plugin block
+    /// without a loot table drops its item with the plugin's component values it set, and a loot table copies them
+    /// with <c>minecraft:copy_components</c> (<c>"source": "block_entity"</c>). Not called once the plugin started
+    /// unloading.
+    /// </para>
+    /// <para>
+    /// Keep it to reading the block entity's own state: what a container holds still drops as its items. A call that
+    /// throws is logged, and the item gets none of the block entity's data.
+    /// </para>
+    /// </remarks>
+    /// <param name="item">A stack of the block's item, to set components on.</param>
+    protected internal virtual void CollectComponents(ItemStack item)
+    {
+    }
+
+    /// <summary>
+    /// Reads back what <see cref="CollectComponents"/> copied into the item a player places the block with, like
+    /// vanilla's <c>applyImplicitComponents</c>: read the plugin's component values with
+    /// <see cref="ItemStack.TryGet"/> and set the block entity's fields from them. The server saves the block entity
+    /// afterwards.
+    /// </summary>
+    /// <remarks>
+    /// Called on the new block entity before anything else can reach it, as the block is placed, on any thread;
+    /// <see cref="Level"/> is null then. A call that throws is logged, and the block is placed without the data.
+    /// </remarks>
+    /// <param name="item">A copy of one of the stack the block is placed with.</param>
+    protected internal virtual void ApplyComponents(ItemStack item)
+    {
+    }
+
+    /// <summary>
     /// Called when the block entity's block is removed from the level, before what a container holds drops, like
     /// vanilla's <c>preRemoveSideEffects</c>: drop what it holds, say. Not called when its chunk unloads, or its plugin
     /// does. Runs on the level's tick after the removal, which may come from elsewhere; <see cref="IsRemoved"/> is
@@ -199,6 +246,11 @@ internal abstract class BlockEntityHost
     /// The level.
     /// </summary>
     public abstract ILevel Level { get; }
+
+    /// <summary>
+    /// The server <paramref name="blockEntity"/>'s plugin was given, or null for the server's own block entities.
+    /// </summary>
+    public abstract IServer? ServerOf(BlockEntity blockEntity);
 
     /// <summary>
     /// Queues a block entity whose data changed, so that the level takes the change in at the end of its tick.

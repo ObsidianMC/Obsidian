@@ -69,10 +69,12 @@ internal static partial class BlockLoot
         {
             if (snapshot.Table is not LootTable table)
             {
-                // Only plugin blocks without an explicit table keep the legacy self-item fallback.
+                // Only plugin blocks without an explicit table keep the legacy self-item fallback, which carries the
+                // values of plugins' component types their block entity collected (BlockEntity.CollectComponents).
+                var collected = blockEntityComponents?.OfType<PluginDataComponent>() ?? [];
                 return snapshot.SelfDrop && BlocksRegistry.TryGetItem(block, out var item)
                     && (explosionRadius is not float radius || random.NextFloat() <= 1 / radius)
-                    ? [new ItemStack(item)] : [];
+                    ? [new ItemStack(item, 1, collected)] : [];
             }
 
             return table.GetRandomItems(new LootContext

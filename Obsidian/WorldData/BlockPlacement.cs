@@ -32,7 +32,7 @@ internal sealed class BlockPlacement(IPlayer player, int slot, ItemStack item)
 
         try
         {
-            BlockEntityComponents.Apply(entity, new ItemStack(item, 1));
+            BlockEntityComponents.Apply(entity, new ItemStack(item, 1), logger);
             return new Prepared(entity, call);
         }
         catch

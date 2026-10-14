@@ -122,7 +122,9 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      other types stay data kept as saved. Unloading the plugin keeps its block entities in their chunks as saved and
      a reload creates them again (see [plugin-content.md](plugin-content.md#block-entities)). Plugins' block entity
      code runs only on the level's tick, their open containers close and stop taking clicks as they unload, and broken
-     block entities give block loot their components and dynamic drops (a shulker box drops holding its items). The
+     block entities give block loot their components and dynamic drops (a shulker box drops holding its items). A
+     plugin's block entity keeps its data on its block's item in the plugin's component types
+     (`CollectComponents`, `ApplyComponents`), and reaches its plugin's `IServer` through `Server`. The
      Obsidian client registers a mod's block entity types too, keeps a live instance of its class for each of its
      block entities the server sends, loaded from their update data, and ticks it with `ClientTick` (see
      [plugin-content.md](plugin-content.md#block-entities)).

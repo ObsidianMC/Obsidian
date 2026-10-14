@@ -37,8 +37,8 @@ public sealed class SamplePlugin : IDisposable
 
     public void Dispose() => Directory.Delete(this.folder, recursive: true);
 
-    [Fact(DisplayName = "Phase 1: the tick counter faces its placer, counts while powered, lights, reloads and drops",
-        Timeout = TestServerFactory.TestTimeout)]
+    [Fact(DisplayName = "Phase 1: the tick counter faces its placer, counts while powered, lights, reloads and drops "
+        + "with its count", Timeout = TestServerFactory.TestTimeout)]
     public async Task TickCounter()
     {
         await using var context = TestServerFactory.CreateServer($"sample-{Guid.NewGuid():N}");
@@ -142,7 +142,8 @@ public sealed class SamplePlugin : IDisposable
         Assert.Equal(0, chunk.GetLightLevel(position.X, position.Y + 1, position.Z, LightType.Block));
         Assert.Equal(counted, Ticks(chunk, position));
 
-        // Broken by the player looking at it, it drops itself through its loot table.
+        // Broken by the player looking at it, on the level's tick, it drops itself through its loot table, which
+        // copies the count its block entity gave the item.
         player.Yaw = 0;
         player.Pitch = 32;
         var state = chunk.GetBlock(position);
@@ -152,9 +153,29 @@ public sealed class SamplePlugin : IDisposable
 
         Assert.True(chunk.GetBlock(position).IsAir);
         Assert.Null(chunk.GetBlockEntity(4, position.Y, 4));
-        var drop = Assert.Single(world.GetNonPlayerEntitiesInRange((VectorD)position, 4).OfType<ItemEntity>()).Item;
+        var dropped = Assert.Single(world.GetNonPlayerEntitiesInRange((VectorD)position, 4).OfType<ItemEntity>());
+        var drop = dropped.Item;
         Assert.True(drop.Is(counter.Item!));
         Assert.Equal(1, drop.Count);
+        Assert.Equal(counted, CountOnItem(drop));
+
+        // Placed again, it reads the count back and saves it.
+        await dropped.RemoveAsync();
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(drop, 1));
+        await BlockUpdates.UseOn(position + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
+        await world.DoWorldTickAsync();
+
+        Assert.Equal(counted, Ticks(chunk, position));
+
+        // An explosion off the level's tick collects the count between two ticks.
+        world.LevelData.GameRules["block_explosion_drop_decay"] = "false";
+        await world.ExplodeAsync((VectorD)position + 0.5, 2, false, AbstractLevel.ExplosionInteraction.Block);
+
+        Assert.True(chunk.GetBlock(position).IsAir);
+        var blown = Assert.Single(
+            world.GetNonPlayerEntitiesInRange((VectorD)position, 4).OfType<ItemEntity>(),
+            item => item.Item.Is(counter.Item!));
+        Assert.Equal(counted, CountOnItem(blown.Item));
 
         // The removed block entity's OnRemoved runs on the next tick, which its plugin waits for before it's released.
         await world.DoWorldTickAsync();
@@ -240,6 +261,14 @@ public sealed class SamplePlugin : IDisposable
     // What the block entity at position saved at the end of the last tick.
     private static NbtCompound Saved(World world, Vector position) =>
         BlockEntityNbt.Save(world.GetBlockEntityAsync(position).AsTask().GetAwaiter().GetResult()!)!;
+
+    // The tick counter's count on its item, in sample:ticks.
+    private static int CountOnItem(ItemStack item)
+    {
+        Assert.True(item.ToNbt().TryGetTag<NbtCompound>("components", out var components));
+
+        return components.GetInt("sample:ticks");
+    }
 
     // The ticks the block entity at position counted, as it saved them at the end of the last tick.
     private static int Ticks(IChunk chunk, Vector position) =>

@@ -393,9 +393,10 @@ first `container` item and queue their initial client data. Removing a decorated
 from the pot or sherd drops, like vanilla; its loot table copies only decorations. A failed shulker loot evaluation
 restores retirement while the box is still standing; malformed `limit_count` bounds are rejected when the table is
 loaded.
-Banner patterns, bees and skull profiles aren't taken yet, and neither is a plugin's block entity data: plugin
-[component types](#item-components) can hold it, but block entities have no hook to fill them on drop yet (see
-[known-gaps.md](known-gaps.md#plugin-block-entity-data-on-items)).
+Banner patterns, bees and skull profiles aren't taken yet. A plugin's block entity adds what its
+`CollectComponents` sets, in the plugin's [component types](#item-components), and reads it back in
+`ApplyComponents` (see [Block entities](#block-entities)); a plugin block without a loot table drops its item with
+those values.
 
 ## Items
 
@@ -552,6 +553,8 @@ type is never an item's default, so removing it just takes it off the stack.
   `InvalidOperationException`. Use the new handle after reload. Once the plugin is back, its codecs read the values
   again. A value saved before its type's first registration is projected as a modeled component for networking,
   equality and hashing once registered, without mutating the saved stack.
+- **Block entities.** A plugin's block entity keeps its data on its block's item in the plugin's own types through
+  `CollectComponents` and `ApplyComponents` (see [Block entities](#block-entities)).
 
 ## Entities
 
@@ -646,11 +649,28 @@ type and its update data from chunk packets and `BlockEntityData`, and remapping
   `Load` receives its own copies of update arrays, including nested arrays. Removing and recreating a block entity
   creates a fresh live instance even when both packets arrive between client ticks; a data update retains the
   instance.
-- **Threads.** The server calls `Load`, `Save`, `TickAsync`, `GetUpdateData` and `OnRemoved` on the level's tick,
-  one at a time, inside calls into the plugin: a block removed from elsewhere (a player's break) runs `OnRemoved` on
-  the next tick. Only a new block entity for a block set elsewhere is constructed there. Chunks are saved and sent
-  from copies of what those calls returned last, so the block entity's code needs no locks of its own, and changing a
-  compound it handed over changes nothing saved or sent.
+- **Items.** Like vanilla's `collectImplicitComponents` and `applyImplicitComponents`, a block entity can keep its
+  data on its block's item: `CollectComponents(ItemStack item)` sets values of the plugin's own component types (see
+  [Item components](#item-components)) on a stack of the block's item as the block breaks, by a player or an
+  explosion, and `ApplyComponents(ItemStack item)` reads them back when a player places the block with that item.
+  What `CollectComponents` sets goes to the block's loot like a vanilla block entity's components: a block without a
+  loot table drops its item with the plugin's component values, and a loot table copies them with
+  `copy_components` (`"source": "block_entity"`, `"include": ["ruby:ticks"]`), as the engine sample's tick counter
+  does. `ApplyComponents` runs on the new block entity before anything else reaches it, on the placing thread, with
+  `Level` still null; the server saves the block entity after it (like vanilla's `setChanged` there). A hook that
+  throws is logged, and the drop or the block goes without the data. Neither runs once the plugin starts unloading:
+  a block entity kept as saved data while its plugin is gone gives its item nothing, and keeps its data. A
+  container's items still drop as its items. Creative pick-block with data and `block_entity_data` aren't supported.
+- **Server.** `Server` is the plugin's own `IServer` in the calls into the plugin, resolved like event arguments'
+  `Server`: a machine finds its plugin's recipes with `this.Server?.FindRecipe(type, inputs)`. It's null while the
+  block entity isn't in a level (in `ApplyComponents`, say).
+- **Threads.** The server calls `Load`, `Save`, `TickAsync`, `GetUpdateData`, `CollectComponents` and `OnRemoved`
+  on the level's tick, one at a time, inside calls into the plugin: a block removed from elsewhere (a player's break)
+  runs `OnRemoved` on the next tick, and a break elsewhere (an explosion a player sets off with a bed, say) runs
+  `CollectComponents` between two ticks, once the running tick ends. Only a new block entity for a block set
+  elsewhere is constructed and given its item (`ApplyComponents`) there. Chunks are saved and sent from copies of what
+  those calls returned last, so the block entity's code needs no locks of its own, and changing a compound it handed
+  over changes nothing saved or sent.
 - **Generation.** In chunks still generating, and in chunks being loaded, a plugin's block entities are kept as
   their saved data: the level creates the plugin's objects on its next tick once the chunk is complete.
 
@@ -1043,8 +1063,8 @@ public override void ConfigureRegistry(IPluginRegistry registry)
     pressRecipes = registry.RegisterRecipeType("ruby:press", new PressRecipeSerializer());
 }
 
-// On the machine's tick, using the plugin's IServer and copies of its input stacks:
-var recipe = server.FindRecipe(pressRecipes, new ItemStack?[] { ingredient });
+// On the machine's tick, in its block entity, using the plugin's IServer and copies of its input stacks:
+var recipe = this.Server?.FindRecipe(pressRecipes, new ItemStack?[] { ingredient });
 ```
 
 Implement `IRecipeSerializer<TRecipe>.Read(string identifier, JsonElement json)` and

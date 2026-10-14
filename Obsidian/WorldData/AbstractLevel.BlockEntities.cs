@@ -586,6 +586,9 @@ public abstract partial class AbstractLevel
 
         public override ILevel Level => level;
 
+        public override IServer? ServerOf(BlockEntity blockEntity) =>
+            (blockEntity.Owner as PluginContainer)?.HostServices?.Server;
+
         public override void OnChanged(BlockEntity blockEntity) => this.Changed.Enqueue(blockEntity);
 
         public bool HoldsTickLock => level.HoldsTickLock;
