@@ -59,7 +59,7 @@ The base every mod needs: blocks with state that save, tick, react and sync.
 - **Shapes from data.** (done) A block entity can give its block's collision and outline shapes, and the hooks get where
   on the block a player clicked, so one block can hold several parts (AE2's cable bus holds a cable and a part on
   each side, each selected and broken on its own).
-- **Drops.** Block drops from loot tables (vanilla's and a plugin's `data/<ns>/loot_table`), with tool checks,
+- **Drops.** (done) Block drops from loot tables (vanilla's and a plugin's `data/<ns>/loot_table`), with tool checks,
   silk touch and fortune, and container contents dropped on break.
 - **Runtime light.** (done) The light engine's decrease pass, so placing and breaking blocks relights the area. This
   closes the plant-growth light gap in [known-gaps.md](known-gaps.md) too.
