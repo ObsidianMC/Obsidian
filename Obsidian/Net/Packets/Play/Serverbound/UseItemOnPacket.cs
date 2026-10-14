@@ -200,6 +200,9 @@ public partial class UseItemOnPacket
             }
         }
 
+        if (await this.TryUseSpawnEggAsync(player, handSlot, currentItem, b))
+            return;
+
         if (player.Level is AbstractLevel level && currentItem is { Count: > 0 } &&
             (currentItem.Holder.Id is ItemIds.EnderEye or ItemIds.FlintAndSteel or ItemIds.FireCharge
                 || level.Portals.HasIgniter(currentItem)))

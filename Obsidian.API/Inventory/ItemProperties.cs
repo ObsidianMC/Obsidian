@@ -65,6 +65,12 @@ public sealed class ItemProperties
     public ImmutableArray<AttributeModifier> AttributeModifiers { get; init; } = [];
 
     /// <summary>
+    /// Default entity data for a spawn egg: the registry id identifies the mob, and Data holds extra saved fields.
+    /// Using an item with this component on a block spawns it or configures a spawner.
+    /// </summary>
+    public EntityDataComponent? EntityData { get; init; }
+
+    /// <summary>
     /// What the item does when used.
     /// </summary>
     public IItemBehavior? Behavior { get; init; }
@@ -76,6 +82,14 @@ public sealed class ItemProperties
     internal ImmutableArray<DataComponent> BuildDefaultComponents()
     {
         var components = ImmutableArray.CreateBuilder<DataComponent>();
+
+        if (this.EntityData is not null)
+        {
+            if (this.EntityData.Type != DataComponentType.EntityData)
+                throw new ArgumentException("Spawn eggs require an entity_data component.", nameof(this.EntityData));
+
+            components.Add(this.EntityData);
+        }
 
         if (this.Tool is not null)
             components.Add(this.Tool);

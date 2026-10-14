@@ -1068,7 +1068,18 @@ on. Its context has the mob, the attacker and the player who hurt it in the last
 that holds it up, no fluid at its feet), `InWater` (in water, with water or air above), `InLava` or `NoRestrictions`,
 each with its hitbox free. Natural spawning then skips the spawn list's light and floor rules and asks the
 behaviour's `CanSpawn(level, position)`, which can check light, blocks or anything else, on the level's tick. Without
-a placement a mob follows its spawn list's rules, as above. Spawn eggs for plugin mobs aren't provided.
+a placement a mob follows its spawn list's rules, as above.
+
+Set `EntityProperties.SpawnEgg = true` when registering a mob to register `<namespace>:<path>_spawn_egg` too.
+`EntityDefinition.SpawnEgg` is its item; put it in a `CreativeTabProperties.Items` list. Both sides register it, so
+its item id and default `minecraft:entity_data` component agree. Supply `assets/<ns>/items/<path>_spawn_egg.json`,
+its model and its texture, just as for any item: vanilla 1.21.11 eggs have individual textures. The engine sample's
+moth demonstrates all three and a creative tab. For an explicitly registered item, `ItemProperties.EntityData`
+sets the same component; its `RegistryId` is the mob type's id and `Data` holds additional saved fields.
+
+Using the egg on a block spawns that type beside it, with those fields, and consumes one outside creative mode.
+Using it on a spawner changes its `SpawnData.entity.id` and clears old spawn potentials; spawners can spawn loaded
+plugin mob types. An unloaded type keeps its saved spawner data and resumes when its plugin returns.
 
 ## Movement
 

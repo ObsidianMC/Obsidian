@@ -2,5 +2,6 @@
   "container.sample.grinder": "Grinder",
   "sample.grinder.pulls.off": "Pull from above: Off",
   "sample.grinder.pulls.on": "Pull from above: On",
-  "sample.grinder.search": "Search"
+  "sample.grinder.search": "Search",
+  "item.sample.moth_spawn_egg": "Moth Spawn Egg"
 }

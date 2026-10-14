@@ -315,7 +315,6 @@ mob's equipment.
 - Vanilla's mobs still drop hard-coded items rather than their `entities/` loot tables; entity loot tables can't use
   `furnace_smelt` or `entity_properties` predicates other than the empty `this` one yet. Damage sources name the
   vanilla damage type closest to Obsidian's damage kinds.
-- Plugin mobs have no spawn eggs.
 
 **Where to start:** `ClientVehicleControl` checks moves for any mob; giving vanilla's mounts the same client control
 needs their server steering to match the client's `VehicleControl`, as `MountSteering` does for plugin mobs.

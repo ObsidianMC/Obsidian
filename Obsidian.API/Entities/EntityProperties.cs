@@ -12,6 +12,13 @@ public sealed class EntityProperties
     public EntityKind Kind { get; init; } = EntityKind.Mob;
 
     /// <summary>
+    /// Registers an item named <c>&lt;entity path&gt;_spawn_egg</c> with this entity's data component.
+    /// Supply its item model and texture in the plugin's assets and add <see cref="EntityDefinition.SpawnEgg"/>
+    /// to a creative tab. Only mob types may request an egg.
+    /// </summary>
+    public bool SpawnEgg { get; init; }
+
+    /// <summary>
     /// The width of the entity's hitbox, in blocks.
     /// </summary>
     public float Width { get; init; } = 0.6f;
