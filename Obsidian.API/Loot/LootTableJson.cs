@@ -96,6 +96,19 @@ public static partial class LootTableJson
             };
         }
 
+        if (type == "minecraft:tag")
+        {
+            return new TagEntry
+            {
+                Name = Qualify(Text(json, "name")),
+                Expanded = json.TryGetProperty("expand", out var expand) && expand.GetBoolean(),
+                Weight = json.TryGetProperty("weight", out var tagWeight) ? tagWeight.GetInt32() : 1,
+                Quality = json.TryGetProperty("quality", out var tagQuality) ? tagQuality.GetInt32() : 0,
+                Conditions = conditions,
+                Functions = ReadFunctions(json)
+            };
+        }
+
         if (type is not ("minecraft:item" or "minecraft:empty" or "minecraft:loot_table" or "minecraft:dynamic"))
             throw new InvalidDataException($"Unsupported loot entry {type}.");
 
@@ -158,6 +171,48 @@ public static partial class LootTableJson
             }
 
             return this.Kind != "minecraft:alternatives";
+        }
+    }
+
+    private sealed class TagEntry : LootPoolSingletonEntry
+    {
+        public required string Name { get; init; }
+        public bool Expanded { get; init; }
+
+        private IEnumerable<Item> Items() => TagsRegistry.TryGet("item", this.Name, out var tag)
+            ? tag.Entries.Select(ItemsRegistry.Get)
+            : [];
+
+        public override bool Expand(LootContext context, Action<LootPoolSingletonEntry> output)
+        {
+            if (!ILootCondition.TestAll(this.Conditions, context))
+                return false;
+
+            if (!this.Expanded)
+            {
+                output(this);
+                return true;
+            }
+
+            // Vanilla TagEntry expands in registry tag order before the pool makes its single weighted draw.
+            foreach (var item in this.Items())
+            {
+                output(new ItemEntry
+                {
+                    Name = item,
+                    Weight = this.Weight,
+                    Quality = this.Quality,
+                    Functions = this.Functions
+                });
+            }
+
+            return true;
+        }
+
+        protected override void CreateItems(Action<ItemStack> output, LootContext context)
+        {
+            foreach (var item in this.Items())
+                output(new ItemStack(item));
         }
     }
 

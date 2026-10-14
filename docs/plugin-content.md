@@ -1046,11 +1046,19 @@ or set `damage.Cancelled`. `damage.Source` is a `DamageSource`: vanilla's damage
 `DiedAsync(entity, source)` runs when it dies, before its loot drops. Both run inside a call into the plugin, never
 after it unloads.
 
-A dying plugin mob drops its type's loot table, `data/<namespace>/loot_table/entities/<path>.json` for
+A dying plugin mob (and the migrated vanilla mobs listed in [known-gaps.md](known-gaps.md#plugin-entities)) drops
+its type's loot table, `data/<namespace>/loot_table/entities/<path>.json` for
 `<namespace>:<path>` (a data pack can override it), like vanilla's `dropFromLootTable`, when the `mob_drops` rule is
 on. Its context has the mob, the attacker and the player who hurt it in the last 100 ticks, whose luck counts, so
 `minecraft:killed_by_player`, `minecraft:random_chance_with_enchanted_bonus` and
-`minecraft:enchanted_count_increase` (looting, from the killing weapon) work like vanilla's.
+`minecraft:enchanted_count_increase` (looting, from the attacker's current applicable equipment) work like vanilla's.
+`entity_properties` tests `this`, `attacker`, `direct_attacker` or `attacking_player`: an empty predicate requires
+that entity, `type` accepts an id, list or tag, `flags` supports `is_on_fire`, `is_sneaking`, `is_sprinting`,
+`is_swimming`, `is_flying`, `is_on_ground` and `is_baby`, and `equipment` supports the normal equipment slots with
+item predicates. `vehicle` tests a player's mount. `furnace_smelt` uses the level's current furnace recipes and
+preserves the stack count; it works for burning meat and `#minecraft:smelts_loot` enchantments. Custom loot callers
+can supply `LootContext.SmeltItem`. Tag entries expand in tag order, as creeper music-disc drops require. Normal
+deaths draw from the level's named table sequence; an explicit loot seed keeps vanilla's random draw order.
 
 ```json
 { "type": "minecraft:entity", "pools": [{

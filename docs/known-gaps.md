@@ -306,15 +306,24 @@ mob's equipment.
 
 ## Plugin entities
 
-**Status:** open, deliberately deferred.
+**Status:** plugin entity foundations complete; remaining vanilla mount and loot parity is deferred.
 
 - The server reads `MoveVehicle` only for plugin mobs. Vanilla's mounts (horses, pigs, striders, camels, happy
   ghasts, nautiluses) still move on the server from the rider's `PlayerInput`, while the Obsidian client predicts
   boats, horses, pigs and striders on its own, and neither corrects the other. The Obsidian client's prediction of a
   mod's mount leaves out fluid currents, which the server's checks absorb.
-- Vanilla's mobs still drop hard-coded items rather than their `entities/` loot tables; entity loot tables can't use
-  `furnace_smelt` or `entity_properties` predicates other than the empty `this` one yet. Damage sources name the
-  vanilla damage type closest to Obsidian's damage kinds.
+- Vanilla table loot is enabled for zombies, husks, drowned, zombie villagers, skeletons, strays, bogged, parched,
+  wither skeletons, spiders, cave spiders, creepers, endermen, blazes, breezes, witches, zombified piglins, cows,
+  mooshrooms, pigs, chickens, rabbits, hoglins and zoglins. Every other type keeps its previous death handler.
+  The remaining hard-coded item drops are sheep, fish, dolphins, guardians and elder guardians, squid and glow
+  squid, ghasts, slimes and magma cubes, turtles, polar bears, parrots, phantoms, shulkers, snow and iron golems,
+  pillagers, vindicators, evokers, ravagers, piglins and piglin brutes, striders, wardens and withers.
+  Horses and their relatives, happy ghasts, nautiluses, allays and copper golems keep their equipment or special
+  drops; the dragon keeps its separate death sequence. `Mob.Loot.cs` holds the explicit migrated type list.
+- Loot `entity_properties` supports flags, type/tag, equipment and player vehicle predicates. Sheep components and
+  type-specific predicates (sheep, slime and raider), and `damage_source_properties`, remain unsupported; the
+  generator excludes sheep, slime, magma cube, pillager, ghast and turtle root tables rather than relaxing their
+  conditions. Damage sources still name the vanilla damage type closest to Obsidian's damage kinds.
 
 **Where to start:** `ClientVehicleControl` checks moves for any mob; giving vanilla's mounts the same client control
 needs their server steering to match the client's `VehicleControl`, as `MountSteering` does for plugin mobs.

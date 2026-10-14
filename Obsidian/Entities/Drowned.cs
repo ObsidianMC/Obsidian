@@ -52,10 +52,14 @@ public sealed partial class Drowned : Zombie
     protected override ValueTask OnHurtAsync(IEntity source) => default;
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(ItemsRegistry.RottenFlesh, Random.Next(3));
-        if (source is IPlayer && Random.NextSingle() < 0.11f) DropItem(ItemsRegistry.CopperIngot);
-        foreach (var slot in Enum.GetValues<EquipmentSlot>())
-            if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot)) DropItem(GetEquipment(slot));
+        this.DropVanillaLoot(source);
+        foreach (var slot in Enum.GetValues<Obsidian.API.Inventory.EquipmentSlot>())
+        {
+            var item = this.GetEquipment(slot);
+            if (!item.IsAir && this.Random.NextSingle() < this.GetEquipmentDropChance(slot))
+                this.DropItem(item);
+        }
+
         return default;
     }
 }

@@ -35,11 +35,7 @@ public partial class Cow : FarmAnimal
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (!IsBaby)
-        {
-            DropItem(ItemsRegistry.Leather, Random.Next(3));
-            DropItem(Burning ? ItemsRegistry.CookedBeef : ItemsRegistry.Beef, Random.Next(1, 4));
-        }
+        this.DropVanillaLoot(source);
         return default;
     }
 

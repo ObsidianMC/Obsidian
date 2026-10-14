@@ -83,18 +83,7 @@ public sealed partial class Creeper : PathfinderMob
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(ItemsRegistry.Gunpowder, Random.Next(3));
-        if (source is Skeleton)
-        {
-            Item[] discs =
-            [
-                ItemsRegistry.MusicDisc13, ItemsRegistry.MusicDiscCat, ItemsRegistry.MusicDiscBlocks,
-                ItemsRegistry.MusicDiscChirp, ItemsRegistry.MusicDiscFar, ItemsRegistry.MusicDiscMall,
-                ItemsRegistry.MusicDiscMellohi, ItemsRegistry.MusicDiscStal, ItemsRegistry.MusicDiscStrad,
-                ItemsRegistry.MusicDiscWard, ItemsRegistry.MusicDisc11, ItemsRegistry.MusicDiscWait
-            ];
-            DropItem(discs[Random.Next(discs.Length)]);
-        }
+        this.DropVanillaLoot(source);
         return default;
     }
 

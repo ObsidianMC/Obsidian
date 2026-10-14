@@ -166,7 +166,7 @@ public sealed partial class Enderman : PathfinderMob
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(ItemsRegistry.EnderPearl, Random.Next(2));
+        this.DropVanillaLoot(source);
 
         // The carried block drops as its item, a plugin block's too if it has one.
         if (CarriedBlock is { } carried && BlocksRegistry.TryGetItem(carried, out var item))

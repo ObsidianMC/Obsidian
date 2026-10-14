@@ -146,6 +146,10 @@ public sealed class PluginMobs
         Assert.True(drake.Position.Z > start.Z + 0.1);
         Assert.True(drake.Position.Y > start.Y + 0.05);
         Assert.True(player.Position.Y > drake.Position.Y);
+        drake.SetAttributeModifier("minecraft:scale", "pluginmobs:size", 1, AttributeOperation.Add);
+        await drake.TickAsync();
+        Assert.Equal(1.4, player.Position.Y - drake.Position.Y, 5);
+        drake.RemoveAttributeModifier("minecraft:scale", "pluginmobs:size");
         Assert.Contains(client.SentPackets, packet => packet is SetEntityDataPacket data && data.EntityId == drake.EntityId);
 
         // Once the rider's client sends where it moved the mob, the client moves it: the server takes a move it can

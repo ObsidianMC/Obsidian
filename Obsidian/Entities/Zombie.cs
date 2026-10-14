@@ -160,21 +160,14 @@ public partial class Zombie : PathfinderMob
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(ItemsRegistry.RottenFlesh, Random.Next(3));
-        if (source is IPlayer && Random.NextSingle() < 0.025f)
-            DropItem(Random.Next(3) switch
-            {
-                0 => ItemsRegistry.IronIngot,
-                1 => ItemsRegistry.Carrot,
-                _ => ItemsRegistry.Potato
-            });
-
+        this.DropVanillaLoot(source);
         foreach (var slot in Enum.GetValues<Obsidian.API.Inventory.EquipmentSlot>())
         {
-            var item = GetEquipment(slot);
-            if (!item.IsAir && Random.NextSingle() < GetEquipmentDropChance(slot))
-                DropItem(item);
+            var item = this.GetEquipment(slot);
+            if (!item.IsAir && this.Random.NextSingle() < this.GetEquipmentDropChance(slot))
+                this.DropItem(item);
         }
+
         return default;
     }
 

@@ -35,7 +35,9 @@ internal sealed partial class MobSpawner
         var terrain = new MobTerrain(level);
         for (var attempt = 0; attempt < count; attempt++)
         {
-            if (level.GetEntitiesInRange(position, range * 2 + 2).Count(entity => (entity.Definition?.Identifier ?? (entity.Type is EntityType vanilla ? EntityNbt.TypeId(vanilla) : null)) == id) >= maximum)
+            if (level.GetEntitiesInRange(position, range * 2 + 2).Count(entity => plugin is null
+                ? entity.Type == type
+                : ReferenceEquals(entity.Definition, plugin)) >= maximum)
             { ResetSpawner(spawner); return; }
             var point = position + new VectorD((random.NextSingle() - random.NextSingle()) * range,
                 random.Next(-1, 2) - 0.5f, (random.NextSingle() - random.NextSingle()) * range);

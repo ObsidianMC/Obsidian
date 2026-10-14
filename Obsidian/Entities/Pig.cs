@@ -33,10 +33,10 @@ public sealed partial class Pig : Animal
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (!IsBaby)
-            DropItem(Burning ? ItemsRegistry.CookedPorkchop : ItemsRegistry.Porkchop, Random.Next(1, 4));
-        if (HasSaddle)
-            DropItem(ItemsRegistry.Saddle);
+        this.DropVanillaLoot(source);
+        if (this.HasSaddle)
+            this.DropItem(ItemsRegistry.Saddle);
+
         return default;
     }
     protected override void RegisterGoals(AI.GoalSelector actionGoals, AI.GoalSelector targetGoals)

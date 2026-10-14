@@ -44,6 +44,18 @@ public sealed class LootContext
     /// </summary>
     public IEntity? AttackingEntity { get; init; }
 
+    /// <summary>The projectile or entity that dealt the final hit, for direct_attacker predicates.</summary>
+    public IEntity? DirectAttackingEntity { get; init; }
+
+    /// <summary>
+    /// Resolves a furnace recipe. Return its result stack, or null when the input cannot be smelted.
+    /// </summary>
+    public Func<ItemStack, ItemStack?>? SmeltItem { get; init; }
+
+    internal Func<IEntity, string, ItemStack?>? EntityEquipment { get; init; }
+    internal Func<IEntity, bool>? EntityIsOnFire { get; init; }
+    internal Func<IEntity, bool>? EntityIsBaby { get; init; }
+
     /// <summary>
     /// The player who hurt the entity whose loot this is lately (vanilla's <c>last_damage_player</c>), which
     /// <c>killed_by_player</c> conditions require.

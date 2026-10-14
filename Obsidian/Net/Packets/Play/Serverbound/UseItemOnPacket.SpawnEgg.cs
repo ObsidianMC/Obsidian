@@ -26,6 +26,7 @@ public partial class UseItemOnPacket
             return false;
         }
 
+        player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
         if (player.Level is not AbstractLevel level
             || !Plugins.ItemBehaviors.CanUseItems(player)
             || player.GameMode == GameMode.Adventure
@@ -94,7 +95,6 @@ public partial class UseItemOnPacket
             });
         }
 
-        player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
         return true;
     }
 }

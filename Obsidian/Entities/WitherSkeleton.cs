@@ -35,13 +35,14 @@ public sealed partial class WitherSkeleton : Skeleton
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(ItemsRegistry.Bone, Random.Next(3));
-        DropItem(ItemsRegistry.Coal, Math.Max(0, Random.Next(3) - 1));
-        if (source is IPlayer && Random.NextSingle() < 0.025f)
-            DropItem(ItemsRegistry.WitherSkeletonSkull);
-        foreach (var slot in Enum.GetValues<EquipmentSlot>())
-            if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot))
-                DropItem(GetEquipment(slot));
+        this.DropVanillaLoot(source);
+        foreach (var slot in Enum.GetValues<Obsidian.API.Inventory.EquipmentSlot>())
+        {
+            var item = this.GetEquipment(slot);
+            if (!item.IsAir && this.Random.NextSingle() < this.GetEquipmentDropChance(slot))
+                this.DropItem(item);
+        }
+
         return default;
     }
 }

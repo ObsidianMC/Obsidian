@@ -56,7 +56,7 @@ public sealed partial class ZombifiedPiglin : Zombie
             AttackTarget = null;
             SetAggressive(false);
             return default;
-        }
+    }
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return default;
         if (AiTick >= angrySoundTick)
         {
@@ -75,11 +75,14 @@ public sealed partial class ZombifiedPiglin : Zombie
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(ItemsRegistry.RottenFlesh, Random.Next(2));
-        DropItem(ItemsRegistry.GoldNugget, Random.Next(2));
-        if (source is IPlayer && Random.NextSingle() < 0.025f) DropItem(ItemsRegistry.GoldIngot);
-        foreach (var slot in Enum.GetValues<EquipmentSlot>())
-            if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot)) DropItem(GetEquipment(slot));
+        this.DropVanillaLoot(source);
+        foreach (var slot in Enum.GetValues<Obsidian.API.Inventory.EquipmentSlot>())
+        {
+            var item = this.GetEquipment(slot);
+            if (!item.IsAir && this.Random.NextSingle() < this.GetEquipmentDropChance(slot))
+                this.DropItem(item);
+        }
+
         return default;
     }
 }
