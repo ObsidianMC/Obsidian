@@ -262,6 +262,7 @@ public partial class Player
                 visiblePlayers.Add(player);
 
                 player.SpawnEntity();
+                this.ResetVisiblePlayerAttachments(player.EntityId);
             }
         }
 

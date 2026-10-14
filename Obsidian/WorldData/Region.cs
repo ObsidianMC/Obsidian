@@ -258,6 +258,8 @@ public class Region : IRegion
             NumericsHelper.Modulo(chunkX, CubicRegionSize),
             NumericsHelper.Modulo(chunkZ, CubicRegionSize));
 
+        API.Data.AttachmentStorage.For(entity).Retire();
+
         if (!keepSaved || entity is not Entity concrete || local is not Chunk { X: var x, Z: var z } chunk
             || (x, z) != (chunkX, chunkZ))
         {
@@ -459,6 +461,9 @@ public class Region : IRegion
 
     private void RetireBlockAccess(IChunk chunk)
     {
+        if (chunk is not null)
+            API.Data.AttachmentStorage.For(chunk).Retire();
+
         if (this.retiredBlockAccess.Add(chunk))
         {
             this.LightUnloaded?.Invoke(chunk);
@@ -592,6 +597,9 @@ public class Region : IRegion
             {
                 if (entity is not Entity levelEntity || ChunkOf(levelEntity.Position) != (chunk.X, chunk.Z))
                     continue;
+
+                if (unloading && levelEntity is not IPlayer)
+                    API.Data.AttachmentStorage.For(levelEntity).Retire();
 
                 if (EntityNbt.Save(levelEntity) is not NbtCompound saved)
                 {

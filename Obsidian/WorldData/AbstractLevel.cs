@@ -255,7 +255,14 @@ public abstract partial class AbstractLevel : ILevel
 
         var region = GetRegionForChunk(chunkX, chunkZ);
 
-        return region is null ? ValueTask.FromResult(false) : ValueTask.FromResult(region.Entities.TryRemove(entity.EntityId, out _));
+        if (region is null)
+            return ValueTask.FromResult(false);
+
+        // Players reuse their holder across death and dimension transfers; their leave path retires it.
+        if (entity is not IPlayer)
+            API.Data.AttachmentStorage.For(entity).Retire();
+
+        return ValueTask.FromResult(region.Entities.TryRemove(entity.EntityId, out _));
     }
 
     public abstract Task<bool> LoadAsync(DimensionCodec codec);

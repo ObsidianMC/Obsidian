@@ -27,7 +27,9 @@ public sealed partial class SamplePlugin
         var chunk = WorldBlockEntities.AddEmptyChunk(world);
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Saver");
         await player.LoadAsync(loadFromPersistentWorld: false);
+        Assert.True(world.TryAddPlayer(player));
         var entity = new Entity { Level = world, Type = EntityType.Pig };
+        Assert.True(world.TryAddEntity(entity));
         await using var manager = BlockUpdates.CreatePluginManager(context);
         var path = await this.PackSampleAsync();
         var plugin = (await manager.LoadPluginAsync(path))!;
@@ -106,6 +108,10 @@ public sealed partial class SamplePlugin
         Assert.Equal([5], loadedPlayer.GetAttachment(newMembership));
         Assert.Equal([6], loadedEntity.GetAttachment(newMembership));
         Assert.Equal([7], loadedChunk.GetAttachment(newMembership));
+        Assert.Throws<InvalidOperationException>(() => chunk.SetAttachment(newMembership, [99]));
+        Assert.Throws<InvalidOperationException>(() => chunk.RemoveAttachment(newMembership));
+        Assert.Throws<InvalidOperationException>(() => entity.SetAttachment(newMembership, [99]));
+        Assert.Throws<InvalidOperationException>(() => entity.RemoveAttachment(newMembership));
         newLevel.Value.Add(8);
         newLevel.MarkDirty();
         Assert.Throws<InvalidOperationException>(() => level.MarkDirty());
@@ -118,6 +124,10 @@ public sealed partial class SamplePlugin
         Assert.Equal([10, 11], ReadValues(Path.Combine(dimension.FolderPath, "data", "sample", "networks.dat")));
         Assert.True(loadedChunk.RemoveAttachment(newMembership));
         Assert.False(loadedChunk.TryGetAttachment(newMembership, out _));
+        await world.UnloadPlayerAsync(player.Uuid);
+        Assert.Throws<InvalidOperationException>(() => player.SetAttachment(newMembership, [99]));
+        Assert.Throws<InvalidOperationException>(() => player.RemoveAttachment(newMembership));
+        Assert.Equal([5], player.GetAttachment(newMembership));
     }
 
     private static (SavedDataType<List<int>>, AttachmentType<List<int>>) SavedTypes(PluginContainer plugin)

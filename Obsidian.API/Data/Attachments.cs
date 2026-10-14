@@ -9,7 +9,8 @@ namespace Obsidian.API.Data;
 
 /// <summary>
 /// An entity (players included) or chunk that can hold plugin data. Reads return detached values. Set and Remove
-/// publish changes atomically; synchronize the source object yourself when setting it from outside its level tick.
+/// publish changes atomically and throw InvalidOperationException after the holder retires for removal or its
+/// final save. Synchronize the source object yourself when setting it from outside its level tick.
 /// </summary>
 public interface IAttachmentHolder
 {
@@ -63,6 +64,20 @@ internal sealed class AttachmentStorage
     private readonly Lock gate = new();
     private NbtCompound saved = new(NbtKey);
     private long revision;
+    private bool retired;
+
+    // Retirement and publication share this gate. Once retired, the final snapshot cannot miss a successful write.
+    internal void Retire()
+    {
+        lock (this.gate)
+            this.retired = true;
+    }
+
+    private void ThrowIfRetired()
+    {
+        if (this.retired)
+            throw new InvalidOperationException("The attachment holder has been retired.");
+    }
 
     internal long Revision
     {
@@ -87,6 +102,7 @@ internal sealed class AttachmentStorage
         var copy = CopyValue(identifier, value);
         lock (this.gate)
         {
+            this.ThrowIfRetired();
             this.saved.Remove(identifier);
             this.saved.Add(copy);
             this.revision++;
@@ -97,6 +113,7 @@ internal sealed class AttachmentStorage
     {
         lock (this.gate)
         {
+            this.ThrowIfRetired();
             if (!this.saved.Remove(identifier))
                 return false;
 

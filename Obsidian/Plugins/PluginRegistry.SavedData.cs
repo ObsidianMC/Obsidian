@@ -26,6 +26,13 @@ public sealed partial class PluginRegistry
         PluginContainer owner, string identifier, ComponentCodec<TValue> codec, bool client = false)
     {
         CheckDataIdentifier(owner, identifier);
+        if (identifier.Split(':', 2)[1].Split('/').Any(segment =>
+            segment.EndsWith(".dat", StringComparison.Ordinal)
+            || segment.EndsWith(".dat.tmp", StringComparison.Ordinal)))
+        {
+            throw new ArgumentException($"{identifier} conflicts with saved data file suffixes.");
+        }
+
         ArgumentNullException.ThrowIfNull(codec);
         var key = (client ? "client:saved:" : "saved:") + identifier;
         var binding = new PluginDataBinding(key, owner, () => owner.TryEnter());
