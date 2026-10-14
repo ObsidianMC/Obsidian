@@ -287,9 +287,7 @@ internal static class TestServerFactory
         {
             Server = server,
             Position = spawn,
-            LastPosition = spawn,
-            // Standing eye height, as spawning and moving set it, so that what the player drops starts there.
-            HeadY = spawn.Y + 1.62
+            LastPosition = spawn
         };
         client.Attach(player);
         server.Connections.TryAdd(client.Id, client);

@@ -113,7 +113,6 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.True(human.TryUpdateAttribute("minecraft:scale", 0.5f)
             || human.TryAddAttribute("minecraft:scale", 0.5f));
         human.Position = new VectorD(4.5, eye.Y - 1.27f * 0.5f, 2);
-        human.HeadY = eye.Y + 5; // The stored standing eye position must not drive the break ray.
         human.Yaw = 0;
         human.Pitch = 0;
 

@@ -56,7 +56,6 @@ public partial class Mob
             { Dismount(passenger); index--; continue; }
             passenger.LastPosition = passenger.Position;
             passenger.Position = position;
-            passenger.HeadY = position.Y + 1.62;
         }
     }
 }

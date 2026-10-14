@@ -259,7 +259,6 @@ public partial class Player
             this.LastPosition = from;
             this.Position = destination.Position;
             this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
-            this.HeadY = this.Position.Y + 1.62;
             this.foodPosition = null;
             this.Yaw = destination.Yaw;
             this.Pitch = destination.Pitch;

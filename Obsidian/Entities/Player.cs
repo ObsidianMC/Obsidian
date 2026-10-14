@@ -213,7 +213,9 @@ public sealed partial class Player : Avatar, IClientPlayer
     public int XpTotal { get; set; }
     public float XpP { get; set; }
 
-    public double HeadY { get; internal set; }
+    // Worked out from the position, so that it's right from the moment the player is placed (a player who has just
+    // logged in hasn't sent a movement yet). Standing eye height; poses and scale use EyePosition.
+    public double HeadY => this.Position.Y + 1.62;
 
     public float Absorption { get; set; }
     public float FallDistance { get; set; }
@@ -621,7 +623,6 @@ public sealed partial class Player : Avatar, IClientPlayer
             Position = spawn;
             LastPosition = spawn;
             BoundingBox = Dimension.CreateBBFromPosition(spawn);
-            HeadY = spawn.Y + 1.62;
             Motion = VectorD.Zero;
             FallDistance = 0;
             foodPosition = null;
@@ -712,7 +713,6 @@ public sealed partial class Player : Avatar, IClientPlayer
                 Position = Level.LevelData.SpawnPosition;
                 LastPosition = Position;
                 BoundingBox = Dimension.CreateBBFromPosition(Position);
-                HeadY = Position.Y + 1.62;
                 Level.TryAddEntity(this);
             }
 
@@ -998,8 +998,6 @@ public sealed partial class Player : Avatar, IClientPlayer
         await UpdateFallAsync(oldPosition, movementFlags);
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
 
-        HeadY = position.Y + 1.62f;
-
         await TrySpawnPlayerAsync(position);
     }
 
@@ -1014,8 +1012,6 @@ public sealed partial class Player : Avatar, IClientPlayer
         await base.UpdateAsync(position, yaw, pitch, movementFlags);
         await UpdateFallAsync(oldPosition, movementFlags);
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
-
-        HeadY = position.Y + 1.62f;
 
         await TrySpawnPlayerAsync(position);
     }
