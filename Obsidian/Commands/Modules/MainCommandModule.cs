@@ -210,10 +210,10 @@ public sealed class MainCommandModule : CommandModuleBase
     [CommandInfo("Gives you a block or item", "/get <item> <amount>")]
     [IssuerScope(CommandIssuers.Client)]
     [RequirePermission(op: true, permissions: "obsidian.give")]
-    public Task GiveAsync(string item) => GiveAsync(item, 64);
+    public Task GiveAsync(string item) => GiveAsync(item, 1);
 
     [CommandOverload]
-    public async Task GiveAsync(string item, int amount = 64)
+    public async Task GiveAsync(string item, int amount = 1)
     {
         if (this.Player is not Player player)
             return;
