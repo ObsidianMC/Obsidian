@@ -20,7 +20,7 @@ public abstract partial class AbstractLevel
 
             var block = chunk.GetBlock(position.X, position.Y, position.Z);
             if (BlockEntityShapes.Get(this, position, block) is BlockShapes shapes)
-                return ShapeSupport.IsFaceSturdy(ShapeSupport.Face(shapes.Collision, face), support);
+                return ShapeSupport.IsFaceSturdy(ShapeSupport.Face(shapes.Collision, face), face, support);
 
             return block.IsFaceSturdy(face, support);
         }

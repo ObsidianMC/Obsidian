@@ -1,15 +1,24 @@
 namespace Obsidian.API.Blocks;
 
 // Vanilla 1.21.11 Block.isFaceFull and SupportType: FULL covers the unit face, CENTER covers the
-// central 2/16 square, and RIGID covers the outer 2/16 rim. Test the union, not its individual boxes.
+// vertical 2/16 column up to 10/16, and RIGID covers a vertical frame with a 12/16 hollow center.
+// A face shape expands along its normal. The frame therefore requires a full horizontal face; only its
+// top/bottom projection is a rim. Test the boxes' union.
 internal static class ShapeSupport
 {
     private const double Epsilon = 1e-7;
 
-    public static bool IsFaceSturdy(double[][] rectangles, SupportType support) => support switch
+    public static bool IsFaceSturdy(double[][] rectangles, BlockFace face, SupportType support) => support switch
     {
         SupportType.Full => Covers(rectangles, 0, 0, 1, 1),
-        SupportType.Center => Covers(rectangles, 7d / 16, 7d / 16, 9d / 16, 9d / 16),
+        SupportType.Center => face switch
+        {
+            BlockFace.Down or BlockFace.Up => Covers(rectangles, 7d / 16, 7d / 16, 9d / 16, 9d / 16),
+            BlockFace.West or BlockFace.East => Covers(rectangles, 0, 7d / 16, 10d / 16, 9d / 16),
+            _ => Covers(rectangles, 7d / 16, 0, 9d / 16, 10d / 16)
+        },
+        SupportType.Rigid when face is BlockFace.West or BlockFace.East or BlockFace.North or BlockFace.South =>
+            Covers(rectangles, 0, 0, 1, 1),
         SupportType.Rigid => Covers(rectangles, 0, 0, 1, 2d / 16)
             && Covers(rectangles, 0, 14d / 16, 1, 1)
             && Covers(rectangles, 0, 2d / 16, 2d / 16, 14d / 16)
@@ -58,7 +67,7 @@ internal static class ShapeSupport
         for (var face = BlockFace.Down; face <= BlockFace.East; face++)
         {
             var rectangles = faces[(int)face];
-            var fullFace = IsFaceSturdy(rectangles, SupportType.Full);
+            var fullFace = IsFaceSturdy(rectangles, face, SupportType.Full);
             if (fullFace)
                 flags |= 1 << (11 + (int)face);
 
@@ -67,16 +76,16 @@ internal static class ShapeSupport
                 if (fullFace)
                     flags |= 1 << 29;
 
-                if (IsFaceSturdy(rectangles, SupportType.Center))
+                if (IsFaceSturdy(rectangles, face, SupportType.Center))
                     flags |= 1 << 7;
 
-                if (IsFaceSturdy(rectangles, SupportType.Rigid))
+                if (IsFaceSturdy(rectangles, face, SupportType.Rigid))
                 {
                     flags |= 1 << 8;
                 }
             }
 
-            if (face == BlockFace.Down && IsFaceSturdy(rectangles, SupportType.Center))
+            if (face == BlockFace.Down && IsFaceSturdy(rectangles, face, SupportType.Center))
                 flags |= 1 << 31;
         }
 

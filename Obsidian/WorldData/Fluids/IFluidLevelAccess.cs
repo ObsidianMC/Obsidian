@@ -34,6 +34,11 @@ internal interface IFluidLevelAccess
     public IBlock GetBlock(Vector position);
 
     /// <summary>
+    /// Raw light with no sky darkening. Unlit generation views assume full sky light.
+    /// </summary>
+    public int GetRawBrightness(Vector position) => 15;
+
+    /// <summary>
     /// Stores a block without any side effects besides keeping its chunk consistent (heightmaps, block entities):
     /// players and portals hear of it through <see cref="OnBlockStored"/>, as the change's flags ask.
     /// </summary>
@@ -65,8 +70,14 @@ internal interface IFluidLevelAccess
     /// <summary>
     /// Delegates removal to the live level's serial queue, where loot can run without the tick lock.
     /// Returns false on generation-only views, which store the replacement directly without spawning entities.
+    /// Support loss supplies a survival check for a state changed by a scheduled tick; washout leaves it null.
     /// </summary>
-    public bool TryQueueDestruction(Vector position, IBlock replacement, bool dropItems, bool playEffect) => false;
+    public bool TryQueueDestruction(
+        Vector position,
+        IBlock replacement,
+        bool dropItems,
+        bool playEffect,
+        Func<IBlock, bool>? stillUnsupported = null) => false;
 
     /// <summary>
     /// How blocks other than liquids react to block updates, or null for only the vanilla blocks Obsidian models.

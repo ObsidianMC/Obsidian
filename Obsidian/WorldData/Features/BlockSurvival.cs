@@ -6,7 +6,7 @@ namespace Obsidian.WorldData.Features;
 /// <remarks>
 /// Rules are keyed by the vanilla block class (<see cref="BlockPhysics.BlockClass"/>); blocks whose class doesn't override
 /// <c>canSurvive</c> always survive. Light is evaluated like vanilla during feature placement, where chunks are not lit yet:
-/// sky light reads 15 everywhere and block light comes from the block's own emission, so raw brightness is always at least 15.
+/// sky light reads 15 everywhere. Live shape updates supply the actual raw brightness instead.
 /// A few vanilla checks use shapes Obsidian doesn't have (collision face shapes, center support); those use the closest
 /// sturdy-face data and are called out below.
 /// </remarks>
@@ -27,7 +27,8 @@ internal static class BlockSurvival
     /// <summary>
     /// Whether <paramref name="block"/> could stay at <paramref name="position"/>, like vanilla <c>BlockState.canSurvive</c>.
     /// </summary>
-    public static bool CanSurvive(this IBlock block, IWorldGenLevel level, Vector position) => block.BlockClass() switch
+    public static bool CanSurvive(
+        this IBlock block, IWorldGenLevel level, Vector position, int rawBrightness = 15) => block.BlockClass() switch
     {
         "FlowerBlock" or "TallGrassBlock" or "SweetBerryBushBlock" or "BushBlock" or "FireflyBushBlock" or "FlowerBedBlock"
             or "EyeblossomBlock" or "SaplingBlock" or "VegetationBlock" => MayPlaceOnVegetation(Below(level, position)),
@@ -41,7 +42,7 @@ internal static class BlockSurvival
         "SeagrassBlock" => SeagrassMayPlaceOn(Below(level, position)),
         "SmallDripleafBlock" => SmallDripleafCanSurvive(block, level, position),
         "DryVegetationBlock" or "ShortDryGrassBlock" or "TallDryGrassBlock" => dryVegetationMayPlaceOn.Contains(Below(level, position)),
-        "MushroomBlock" => MushroomCanSurvive(block, level, position),
+        "MushroomBlock" => MushroomCanSurvive(level, position, rawBrightness),
         "CactusBlock" => CactusCanSurvive(level, position),
         "CactusFlowerBlock" => CactusFlowerMayPlaceOn(Below(level, position)),
         "SugarCaneBlock" => SugarCaneCanSurvive(level, position),
@@ -152,14 +153,13 @@ internal static class BlockSurvival
             || level.GetBlock(position).GetFluid() == FluidKind.Water && MayPlaceOnVegetation(below);
     }
 
-    private static bool MushroomCanSurvive(IBlock block, IWorldGenLevel level, Vector position)
+    private static bool MushroomCanSurvive(IWorldGenLevel level, Vector position, int rawBrightness)
     {
         var below = Below(level, position);
         if (mushroomGrowBlock.Contains(below))
             return true;
 
-        // Unlit chunks: raw brightness is max(sky 15, block emission), never below 13, so only the tag above passes.
-        var rawBrightness = Math.Max(15, block.LightEmission());
+        // Vanilla MushroomBlock.canSurvive uses raw light with zero sky darkening, even at night.
         return rawBrightness < 13 && below.IsSolid() && below.IsCollisionShapeFullBlock();
     }
 

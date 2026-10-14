@@ -18,6 +18,7 @@ using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Ticks;
 using System;
 using System.Collections.Generic;
@@ -249,7 +250,19 @@ public sealed class BlockUpdates : IDisposable
         {
             StateProperties =
             [
-                StateProperty.Enum("shape", ["upper", "split", "center", "rim", "side_center", "side_rim", "empty"])
+                StateProperty.Enum("shape",
+                [
+                    "upper",
+                    "split",
+                    "center",
+                    "rim",
+                    "side_center",
+                    "side_rim",
+                    "side_column",
+                    "front_column",
+                    "front_rim",
+                    "empty"
+                ])
             ],
             StateShapes = values =>
             {
@@ -262,6 +275,15 @@ public sealed class BlockUpdates : IDisposable
                     "split" => [Box(0, 0, 0, 0.5, 1, 1), Box(0.5, 0, 0, 1, 1, 1)],
                     "center" => [Box(7d / 16, 0, 7d / 16, 9d / 16, 1, 9d / 16)],
                     "side_center" => [Box(0, 7d / 16, 7d / 16, 1, 9d / 16, 9d / 16)],
+                    "side_column" => [Box(0, 0, 7d / 16, 1, 10d / 16, 9d / 16)],
+                    "front_column" => [Box(7d / 16, 0, 0, 9d / 16, 10d / 16, 1)],
+                    "front_rim" =>
+                    [
+                        Box(0, 0, 0, 2d / 16, 1, 1),
+                        Box(14d / 16, 0, 0, 1, 1, 1),
+                        Box(2d / 16, 0, 0, 14d / 16, 2d / 16, 1),
+                        Box(2d / 16, 14d / 16, 0, 14d / 16, 1, 1)
+                    ],
                     "rim" =>
                     [
                         Box(0, 0, 0, 1, 1, 2d / 16),
@@ -309,6 +331,7 @@ public sealed class BlockUpdates : IDisposable
         ILevel publicLevel = world;
         IBlockLevel hookLevel = world.BlockUpdates;
         var supportPosition = new Vector(2, Ground + 1, 2);
+        // Custom horizontal rows were checked against the pinned vanilla SupportType masks.
         (string Shape, BlockFace Face, bool Full, bool Center, bool Rigid)[] supportCases =
         [
             ("upper", BlockFace.Up, true, true, true),
@@ -316,8 +339,11 @@ public sealed class BlockUpdates : IDisposable
             ("split", BlockFace.North, true, true, true),
             ("center", BlockFace.Down, false, true, false),
             ("rim", BlockFace.Up, false, false, true),
-            ("side_center", BlockFace.West, false, true, false),
-            ("side_rim", BlockFace.East, false, false, true),
+            ("side_center", BlockFace.West, false, false, false),
+            ("side_rim", BlockFace.East, false, false, false),
+            ("side_column", BlockFace.East, false, true, false),
+            ("front_column", BlockFace.South, false, true, false),
+            ("front_rim", BlockFace.North, false, false, false),
             ("empty", BlockFace.Up, false, false, false)
         ];
         foreach (var entry in supportCases)
@@ -771,6 +797,75 @@ public sealed class BlockUpdates : IDisposable
 
             await dropped.RemoveAsync();
         }
+
+        // A due relight runs before queued destruction and must not rescue an unsupported torch.
+        var relightPosition = new Vector(11, Ground + 4, 11);
+        var unlit = BlocksRegistry.RedstoneTorch.WithProperty("lit", false);
+        chunk.SetBlock(relightPosition + Vector.Down, BlocksRegistry.Stone);
+        chunk.SetBlock(relightPosition, unlit);
+        world.BlockUpdates.ScheduleTick(relightPosition, unlit, 1);
+        await world.SetBlockAsync(relightPosition + Vector.Down, BlocksRegistry.Air, BlockUpdateFlags.All);
+
+        // A neighbour update in a sealed dark cell must preserve a mushroom on ordinary stone.
+        var mushroomPosition = new Vector(11, Ground + 4, 4);
+        foreach (var face in Enum.GetValues<BlockFace>())
+            chunk.SetBlock(mushroomPosition.Offset(face), BlocksRegistry.Stone);
+
+        chunk.SetBlock(mushroomPosition, BlocksRegistry.BrownMushroom);
+        await world.SetBlockAsync(mushroomPosition + Vector.East, BlocksRegistry.Cobblestone, BlockUpdateFlags.All);
+        await world.DoWorldTickAsync();
+        var torchRemoved = chunk.GetBlock(relightPosition).IsAir;
+        var mushroomSurvived = chunk.GetBlock(mushroomPosition).Is(BlockIds.BrownMushroom);
+        Assert.True(torchRemoved && mushroomSurvived,
+            $"Unsupported relighting torch removed: {torchRemoved}; dark mushroom survived: {mushroomSurvived}");
+        var torchDrop = Assert.Single(world.GetNonPlayerEntitiesInRange((VectorD)relightPosition, 2)
+            .OfType<ItemEntity>(), item => item.Item.Is(ItemsRegistry.RedstoneTorch));
+        Assert.Equal(1, torchDrop.Item.Count);
+        await torchDrop.RemoveAsync();
+
+        // The same queue still cancels when the block is replaced or the new state has support again.
+        foreach (var restoreSupport in new[] { false, true })
+        {
+            chunk.SetBlock(relightPosition + Vector.Down, BlocksRegistry.Stone);
+            chunk.SetBlock(relightPosition, unlit);
+            world.BlockUpdates.ScheduleTick(relightPosition, unlit, 1);
+            await world.SetBlockAsync(relightPosition + Vector.Down, BlocksRegistry.Air, BlockUpdateFlags.All);
+            if (restoreSupport)
+                chunk.SetBlock(relightPosition + Vector.Down, BlocksRegistry.Stone);
+            else
+                chunk.SetBlock(relightPosition, BlocksRegistry.Stone);
+
+            await world.DoWorldTickAsync();
+            var remaining = chunk.GetBlock(relightPosition);
+            Assert.True(remaining.Is(restoreSupport ? BlockIds.RedstoneTorch : BlockIds.Stone));
+            if (restoreSupport)
+                Assert.Equal("true", remaining.GetProperty("lit"));
+
+            Assert.Empty(world.GetNonPlayerEntitiesInRange((VectorD)relightPosition, 2).OfType<ItemEntity>());
+        }
+
+        // Vanilla tests raw light without night-time sky darkening, with 13 as the first disallowed value.
+        world.Lighting.Flush();
+        chunk.SetLightLevel(mushroomPosition.X, mushroomPosition.Y, mushroomPosition.Z, LightType.Block, 12);
+        world.BlockUpdates.ShapeUpdateAt(mushroomPosition, BlockFace.East, BlockUpdateFlags.Clients, 511);
+        await world.DoWorldTickAsync();
+        Assert.True(chunk.GetBlock(mushroomPosition).Is(BlockIds.BrownMushroom));
+        chunk.SetLightLevel(mushroomPosition.X, mushroomPosition.Y, mushroomPosition.Z, LightType.Sky, 13);
+        world.BlockUpdates.ShapeUpdateAt(mushroomPosition, BlockFace.East, BlockUpdateFlags.Clients, 511);
+        await world.DoWorldTickAsync();
+        Assert.True(chunk.GetBlock(mushroomPosition).IsAir);
+        var brightDrop = Assert.Single(world.GetNonPlayerEntitiesInRange((VectorD)mushroomPosition, 2)
+            .OfType<ItemEntity>(), item => item.Item.Is(ItemsRegistry.BrownMushroom));
+        await brightDrop.RemoveAsync();
+        chunk.SetLightLevel(mushroomPosition.X, mushroomPosition.Y, mushroomPosition.Z, LightType.Sky, 0);
+        chunk.SetLightLevel(mushroomPosition.X, mushroomPosition.Y, mushroomPosition.Z, LightType.Block, 0);
+        chunk.SetBlock(mushroomPosition, BlocksRegistry.BrownMushroom);
+        await world.SetBlockAsync(mushroomPosition + Vector.Down, BlocksRegistry.Air, BlockUpdateFlags.All);
+        await world.DoWorldTickAsync();
+        Assert.True(chunk.GetBlock(mushroomPosition).IsAir);
+        var mushroomDrop = Assert.Single(world.GetNonPlayerEntitiesInRange((VectorD)mushroomPosition, 2)
+            .OfType<ItemEntity>(), item => item.Item.Is(ItemsRegistry.BrownMushroom));
+        await mushroomDrop.RemoveAsync();
 
         // SuppressDrops belongs to the shape update itself; Level.setBlock clears it for outgoing updates.
         var torchPosition = basePosition + Vector.Up;

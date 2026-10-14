@@ -149,6 +149,35 @@ public sealed class MenuClicks
             });
             Assert.NotEqual(stored, different);
         }
+
+        // A container's item-specific zero limit refuses the slot without creating an empty item stack.
+        var limited = new AppleLimitedContainer();
+        var limitedMenu = new MenuContainer(pouch, "Limited pouch")
+        {
+            Slots = Enumerable.Range(0, 5).Select(slot => new MenuSlot(limited.Inventory, slot)).ToArray()
+        };
+        var limitedPlayer = new FakePlayer { OpenedContainer = limitedMenu };
+        limitedPlayer.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Apple, 3));
+        Click(limitedPlayer, 5, 0, ClickType.QuickMove);
+        Assert.Null(limitedMenu.GetItem(0));
+        Assert.Equal(3, limitedMenu.GetItem(1)?.Count);
+        Assert.Null(limitedPlayer.Inventory.GetItem(9));
+
+        limitedPlayer.Inventory.SetItem(10, new ItemStack(ItemsRegistry.Stone, 2));
+        Click(limitedPlayer, 6, 0, ClickType.QuickMove);
+        Assert.True(limitedMenu.GetItem(0)?.Is(ItemsRegistry.Stone));
+        Assert.Equal(2, limitedMenu.GetItem(0)?.Count);
+        Assert.Null(limitedPlayer.Inventory.GetItem(10));
+        limitedMenu.SetItem(0, null);
+
+        limitedPlayer.CarriedItem = new ItemStack(ItemsRegistry.Apple, 4);
+        Click(limitedPlayer, -999, 0, ClickType.QuickCraft);
+        Click(limitedPlayer, 0, 1, ClickType.QuickCraft);
+        Click(limitedPlayer, 2, 1, ClickType.QuickCraft);
+        Click(limitedPlayer, -999, 2, ClickType.QuickCraft);
+        Assert.Null(limitedMenu.GetItem(0));
+        Assert.Equal(2, limitedMenu.GetItem(2)?.Count);
+        Assert.Equal(2, limitedPlayer.CarriedItem?.Count);
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
@@ -1256,6 +1285,13 @@ public sealed class MenuClicks
     private static readonly MenuDefinition charmMenu = MenuTypesRegistry.Register("clicks:charms", 1, 2);
 
     private static readonly MenuDefinition machine = MenuTypesRegistry.Register("clicks:machine", 1, 3);
+
+    // The first slot refuses apples through its limit while still accepting other items.
+    private sealed class AppleLimitedContainer() : ContainerBlockEntity(new Container(5))
+    {
+        protected internal override int SlotLimit(int slot, ItemStack stack) =>
+            slot == 0 && stack.Is(ItemsRegistry.Apple) ? 0 : base.SlotLimit(slot, stack);
+    }
 
     // A machine's menu: its fuel in a chest, a buffer behind item access, and an output a button fills.
     private sealed class MachineMenu : MenuContainer

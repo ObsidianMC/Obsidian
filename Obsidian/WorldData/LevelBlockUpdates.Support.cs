@@ -12,6 +12,12 @@ internal sealed partial class LevelBlockUpdates
         if (state.BlockClass() is not ("RailBlock" or "PoweredRailBlock" or "DetectorRailBlock"))
             return;
 
+        if (this.IsUnsupportedRail(position, state))
+            this.DropAndRemove(position, state);
+    }
+
+    private bool IsUnsupportedRail(Vector position, IBlock state)
+    {
         var unsupported = !this.GetBlock(position + Vector.Down).IsFaceSturdy(BlockFace.Up, SupportType.Rigid);
         if (state.GetProperty("shape") is string shape && shape.StartsWith("ascending_", StringComparison.Ordinal))
         {
@@ -19,7 +25,6 @@ internal sealed partial class LevelBlockUpdates
             unsupported |= !this.GetBlock(raised).IsFaceSturdy(BlockFace.Up, SupportType.Rigid);
         }
 
-        if (unsupported)
-            this.DropAndRemove(position, state);
+        return unsupported;
     }
 }

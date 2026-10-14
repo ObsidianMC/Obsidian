@@ -356,6 +356,9 @@ public partial class MainEventHandler
                 continue;
 
             var count = Math.Min(stack.Count, SlotLimit(player, to, slot, stack));
+            if (count <= 0)
+                continue;
+
             to.SetItem(slot, new ItemStack(stack, count));
             stack.Count -= count;
 
@@ -542,6 +545,8 @@ public partial class MainEventHandler
             var target = container.GetItem(slot);
             var existing = target.IsNullOrAir() ? 0 : target.Count;
             var count = Math.Min(share + existing, SlotLimit(player, container, slot, carried));
+            if (count <= existing)
+                continue;
 
             remaining -= count - existing;
             container.SetItem(slot, new ItemStack(carried, count));
