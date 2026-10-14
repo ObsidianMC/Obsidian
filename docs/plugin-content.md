@@ -948,7 +948,8 @@ or `PlayUi(SoundEvent sound, float volume = 1, float pitch = 1)` from screens, c
 may run on any thread: the facade queues playback on the game thread; asset I/O and OpenAL use the engine's workers.
 UI audio is non-positional, plays while the world is paused, and works without a server connection. Calls return false
 while the mod is inactive or audio is unavailable; true means queued, and missing assets remain silent. Unload disables
-the old facade and discards queued requests from that load; get the new facade when configuring again.
+the old facade and cancels requests from that load through asset loading and backend dispatch; get the new facade
+when configuring again.
 
 Supply `assets/<namespace>/sounds.json` and `assets/<namespace>/sounds/<path>.ogg` in the mod archive, like vanilla
 resource packs. Definitions merge with vanilla and player packs, including `replace`, event references and subtitles;
@@ -2665,7 +2666,8 @@ Func<IReadOnlyDictionary<string, object?>, BlockShapes?> provider)` gives a mod'
 and outline shapes from its latest synced update data. Register the type in `ConfigureRegistry` on both sides
 with `RegisterBlockEntity<T>`, then its provider in `ConfigureClient`. The provider receives plain NBT values:
 numbers, strings and arrays, nested compounds as dictionaries and lists as `List<object?>`. The outer dictionary
-is read-only; do not mutate nested values. Keep the provider pure and thread-safe, since it runs on a reading
+is read-only, and each provider receives its own deep copy, cached per snapshot, so changing nested values cannot
+change the world or another provider's data. Keep the provider pure and thread-safe, since it runs on a reading
 thread, at most once per snapshot. A new chunk or update packet replaces the snapshot and recomputes the shapes.
 Picking, the selection outline and local player collision all use them, independently of resource-pack models.
 Returning null or throwing uses the state's usual shapes; an exception is logged. Providers are staged like the
@@ -2705,9 +2707,11 @@ by direction, tinted by the block's tint where they have a tint index, put in th
 and culled where their cull face's neighbour is opaque. They don't change how the block culls its neighbours,
 which stays the block state's. The provider runs on a meshing thread inside the mod's call guard, at most once per
 update and block state, so keep it pure; a part naming an undeclared model or a rotation that isn't a quarter turn
-counts as a failure, which is logged and draws the block state's model. Each new update meshes the block's section
-again. The provider sees only its own block: a model that follows its neighbours, like a cable connecting to
-them, has the server work out the connections, put them in `GetUpdateData` (or in block state properties) and
+counts as a failure, which is logged and draws the block state's model. Invalid face or cull directions are rejected
+in the provider call. Malformed declared parts are cached as failures and fall back for that block alone, without
+discarding the section's mesh. Each new update meshes the block's section again. The provider sees only its own
+block: a model that follows its neighbours, like a cable connecting to them, has the server work out the connections,
+put them in `GetUpdateData` (or in block state properties) and
 `SendUpdate` when they change, as the shapes do.
 
 ```csharp
@@ -2766,9 +2770,11 @@ format). A renderer has a provider, code, or both:
   animations following client-side state. Keep it short and free of allocations, as the frame waits for it.
 
 Both run inside calls into the mod. If one throws, the error is logged and the block entity draws nothing from it
-(what code drew that frame is taken back) until its next update. Parts are lit with the light at the block, like
-vanilla's block entities, shaded by the direction they face as they turn, and put in the render layer of their
-texture. Block entities are drawn within 64 blocks of the camera (vanilla's default for its renderers) and while in
+(what code drew that frame is taken back) until its next update. Face directions are checked inside the provider
+call, and malformed declared parts stop that block entity's drawing without breaking the frame. Parts are lit with
+the light at the block, like vanilla's block entities, shaded by the direction they face as they turn, and put in the
+render layer of their texture. Block entities are drawn within 64 blocks of the camera (vanilla's default for its
+renderers) and while in
 view. The client only has a block entity's data once the server sends it, with its chunk or an update, so a type
 with a renderer should return update data from `GetUpdateData`, even an empty compound, to be drawn as soon as it's
 placed.
@@ -3108,7 +3114,8 @@ The client calls the screen like vanilla's: `Init` as it opens, after removing i
 (each time it's shown); `Tick` 20 times a second while it's open, to update the widgets from what changed; and
 `Removed` as it closes. Widgets are plain objects the screen keeps and changes whenever it likes: the client draws
 them as they are each frame. All of it, the widgets' events included, runs on the game's thread inside a call into the
-mod; a screen that throws is logged and closed, and when the mod unloads its open screens close.
+mod; a screen that throws is logged and closed. Item grid collections are copied inside that call before rendering
+reads them. When the mod unloads, its open and detached screens close and its navigation history entries are removed.
 
 - **`Label`**: a line of text, dark grey without a shadow like container labels unless its `Color` and `Shadow` say
   otherwise, centred in its `Width` when `Centered`.
@@ -3138,9 +3145,10 @@ factory)`: the client makes one from the factory each time the server opens such
 screen, with the menu's title at `Title`, the player's inventory at `Inventory` (three rows and the hotbar, like
 vanilla's menus; null to place those slots with `SlotGrid`s, which follow the menu's own from `Menu.SlotCount`, or to
 leave them out) and its "Inventory" label 12 pixels above it unless `InventoryLabel` says otherwise. Its `Menu` is the
-client's side of the menu: its `Type`, `Title`, `SlotCount`, the stacks in its slots (`GetItem`), its data slots'
-values as last sent (`GetData`, 0 until sent), the extra data it was opened with (`ReadOpenData()`, a new reader each
-call, reading what `WriteOpenData` wrote) and `ClickButton(number)`, which the server's `ClickButton` gets. Escape or
+client's side of the menu: its `Type`, `Title`, `SlotCount`, isolated copies of its slot stacks (`GetItem`, retaining
+their count and components), its data slots' values as last sent (`GetData`, 0 until sent), the extra data it was
+opened with (`ReadOpenData()`, a new reader each call, reading what `WriteOpenData` wrote) and `ClickButton(number)`,
+which the server's `ClickButton` gets. Escape or
 the inventory key close the screen and the menu, as does `Close()`.
 
 A mod's own screens, like settings, aren't tied to a menu: subclass `ModScreen` and open it with
