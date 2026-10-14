@@ -252,3 +252,15 @@ hashes them differently, so their clicks resynchronise the slot.
 `AbstractLevel.CallPlugin`: placement already initializes the unpublished block entity from its item
 (`BlockEntityComponents.Apply`), and capture would read the plugin's components from a call queued to the level's
 tick, or run at once when the caller is on it.
+
+## Plugin block entities reaching their server
+
+**Status:** open, an ergonomics gap.
+
+A plugin's block entity has its `Level` but no way from it to the plugin's `IServer`, which finds the plugin's
+recipes (`IServer.FindRecipe`). The engine sample's grinder keeps the server its plugin was injected with
+(`[Inject] IServer`, set before `ConfigureRegistry`) in a static of the plugin's own, which works because each load
+of a plugin is its own copy of its statics, but every machine mod has to repeat it.
+
+**Where to start:** a `Server` on `ILevel` (or on `BlockEntity`) resolved through `ServerScope.Resolve`, like event
+arguments' `Server`, so that the plugin's code gets its own instance and what it adds through it stays its own.

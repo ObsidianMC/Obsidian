@@ -88,6 +88,7 @@ its surroundings, and drops its loot table.
 
 **Sample:** a machine block that pulls items from a chest above, processes them with a plugin recipe type, and
 pushes them into a hopper below.
+(done: `samples/EngineSample`, its grinder, loaded by `Obsidian.Tests/SamplePlugin.cs`)
 
 ## Phase 3: menus and screens
 
