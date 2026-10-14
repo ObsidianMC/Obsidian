@@ -151,9 +151,11 @@ public partial class Player
 
         using (await BaseContainer.LockWindowAsync(menu, this.Inventory))
         {
+            // Like a click, refused while the player is dead.
             if (!ReferenceEquals(this.OpenedContainer, menu)
                 || this.CurrentContainerId != containerId
-                || menu.ShowsRetired)
+                || menu.ShowsRetired
+                || !this.Alive)
             {
                 return;
             }

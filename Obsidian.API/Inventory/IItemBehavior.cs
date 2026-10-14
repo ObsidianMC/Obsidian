@@ -44,9 +44,12 @@ public interface IItemBehavior
     /// <remarks>
     /// It runs holding the player's inventory lock, which clicks take too, so that it never sees a click half done.
     /// Change the stack or the inventory through their own members (a slot changed this way is sent to the player
-    /// after the tick), and don't wait on anything that clicks or the inventory lock wait on. Players' inventories
-    /// are only scanned for items whose behaviour implements this method, so leave it out when the item doesn't
-    /// need it.
+    /// after the tick). It may hurt or kill the holder, or any player: what that does to an inventory, like wearing
+    /// armour, dropping a dead player's items or giving an advancement's loot, waits until the hooks let go of the
+    /// lock and follows in the same tick, and once a hook kills the holder the rest of their stacks don't tick. Don't
+    /// wait on anything else that clicks or the inventory lock wait on, such as another task's click. Players'
+    /// inventories are only scanned for items whose behaviour implements this method, so leave it out when the item
+    /// doesn't need it.
     /// </remarks>
     public ValueTask InventoryTickAsync(ItemInventoryTickContext context) => ValueTask.CompletedTask;
 }

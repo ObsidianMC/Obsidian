@@ -86,8 +86,9 @@ internal static partial class ItemBehaviors
     }
 
     /// <summary>
-    /// Ticks the stacks in <paramref name="player"/>'s inventory whose items tick there. The caller holds the
-    /// inventory's lock. A hook that throws is logged with <paramref name="logger"/>, so that the tick goes on.
+    /// Ticks the stacks in <paramref name="player"/>'s inventory whose items tick there, until one kills the player.
+    /// The caller holds the inventory's lock, in a <see cref="Entities.DeferredInventoryWork"/> section. A hook that
+    /// throws is logged with <paramref name="logger"/>, so that the tick goes on.
     /// </summary>
     /// <param name="selectedSlot">The player's selected hotbar slot, 36 to 44.</param>
     public static async ValueTask TickInventoryAsync(
@@ -98,6 +99,11 @@ internal static partial class ItemBehaviors
     {
         foreach (var (slot, equipment) in tickOrder)
         {
+            // A hook that killed the player ends the tick, as vanilla's death empties the inventory at once, so that
+            // the remaining stacks don't tick; here the drops wait for the lock (see DeferredInventoryWork).
+            if (player.Health <= 0)
+                break;
+
             if (inventory.GetItem(slot) is not { Count: > 0 } stack
                 || stack.Holder.Binding is not { TicksInInventory: true })
             {

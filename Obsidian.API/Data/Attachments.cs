@@ -170,10 +170,13 @@ internal sealed class AttachmentStorage
     /// Takes the items of the holder's item attachments (see <see cref="ItemAttachments"/>) that a death drops: those
     /// of loaded types without <c>CopyOnDeath</c>, removing them. The caller drops them, when vanilla's
     /// <c>keep_inventory</c> rule is off; with it on, or with <c>CopyOnDeath</c>, they're kept like the inventory.
+    /// Taken in turn with menu clicks' transfers through item access (see <see cref="ItemAttachments.TransferGate"/>).
     /// </summary>
     internal List<ItemStack> TakeDeathDrops(IAttachmentHolder holder)
     {
         var drops = new List<ItemStack>();
+
+        using var transfers = ItemAttachments.TransferGate.EnterScope();
 
         foreach (var (identifier, _) in this.Snapshot())
         {

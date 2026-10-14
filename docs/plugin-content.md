@@ -537,8 +537,16 @@ keep the defaults they were made with until then.
   hotbar, 45 the off hand) and its `EquipmentSlot`: `MainHand` for the selected hotbar slot (`IsSelected`), the off
   hand or an armour slot, null elsewhere. It runs holding the inventory's lock, like a click, so it never sees a
   click half done: change the stack or the inventory through their own members, and the slots it changed are sent
-  to the player after the tick; don't wait on anything that takes the lock. Players' inventories are only scanned
-  while some item's behaviour implements this hook, so leave it out when the item doesn't need it.
+  to the player after the tick. It may hurt or kill the holder (a cursed item, say), or another player: what that
+  does to an inventory (the armour a hurt wears, a dead player's drops, an advancement's loot) waits until the hooks
+  let go of the lock and follows in the same tick, and once a hook kills the holder their other stacks don't tick,
+  as vanilla's death empties the inventory. Don't wait on anything else that takes the lock, like a click. Players'
+  inventories are only scanned while some item's behaviour implements this hook, so leave it out when the item
+  doesn't need it.
+
+The use hooks run without the inventory lock, so they may hurt the player and wait for it. A menu's callbacks
+(`ClickButton`, `QuickMove`, slot rules) and the `Changed` handlers of item attachments run synchronously, a click's
+inside its locks: they may start hurting a player, which goes on once the click lets go, but must not block on it.
 
 The hooks are calls into the plugin: none starts once the plugin begins unloading, and one that throws during the
 inventory tick is logged without stopping the tick.
@@ -1740,7 +1748,9 @@ in it.
   empties those registered without `copyOnDeath`, after the player's own inventory, armour and off hand, like
   vanilla's `Player.dropEquipment`: items with the curse of vanishing are destroyed, and the rest dropped around the
   player. With the rule on, for a spectator, or with `copyOnDeath`, they're kept, like vanilla keeps the inventory
-  and experience. A type whose plugin isn't loaded is left as saved.
+  and experience. A type whose plugin isn't loaded is left as saved. The death closes the player's window and their
+  clicks are refused until they respawn, and a click's transfers through item access, whoever's menu shows the
+  attachment, take turns with the death's drain, so that no click's swap is half dropped or put back.
 - **Access.** `holder.GetItemAccess(type, slotCount)` is [item access](#item-access) to the first `slotCount` slots,
   which a menu shows with `new MenuSlot(access, index)` and its rules (`MayPlace`, `MaxStackSize`), and the plugin
   uses itself. Each call reads and changes the saved value in one step, so the attachment stays the only copy of the

@@ -29,6 +29,20 @@ public partial class Player
         || this.GameMode == GameMode.Spectator;
 
     /// <summary>
+    /// What the player's items go through at their death: their open window closes, like the player closing it
+    /// (a crafting grid or enchanting table gives back its items, which drop too), then they drop what they lose.
+    /// </summary>
+    /// <remarks>
+    /// Closing it, and refusing clicks while the player is dead, means no click of theirs moves items in or out of
+    /// their inventory or a menu's item access while the death drops them, or after.
+    /// </remarks>
+    private async ValueTask LoseItemsAtDeathAsync()
+    {
+        await this.CloseContainerAsync();
+        await this.DropDeathLootAsync();
+    }
+
+    /// <summary>
     /// Drops what the player loses at their death, unless they keep it (see <see cref="KeepsItemsThroughDeath"/>):
     /// their inventory, armour and off hand like vanilla's <c>Player.dropEquipment</c>, the items of plugins' item
     /// attachments (see <see cref="DropItemAttachments"/>), then their experience like vanilla's
