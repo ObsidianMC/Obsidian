@@ -78,6 +78,12 @@ public class Region : IRegion
     /// </summary>
     internal Lock FluidTickLock { get; init; } = new();
 
+    // Runtime light resolves under FluidTickLock before a save takes its block and light snapshot.
+    internal Action? FlushLight { get; init; }
+
+    // Detach the light engine only after the unloaded chunk's pending light has been saved.
+    internal Action<IChunk>? LightUnloaded { get; init; }
+
     // The dimension's build range, which decides the section count of loaded chunks.
     private readonly int minY;
     private readonly int height;
@@ -184,6 +190,7 @@ public class Region : IRegion
         var chunk = loadedChunks[x, z];
         if (chunk is null) { return; }
         await SerializeChunkAsync(chunk, unloading: true);
+        this.LightUnloaded?.Invoke(chunk);
         loadedChunks[x, z] = null;
     }
 
@@ -390,6 +397,8 @@ public class Region : IRegion
             using (this.LockChunk is null ? null : await this.LockChunk(chunk.X, chunk.Z))
             lock (this.FluidTickLock)
             {
+                this.FlushLight?.Invoke();
+
                 // The chunk stored now, read under the lock: generation may have replaced the one this save was given
                 // while it waited (see ReplaceChunk). One no longer stored was unloaded and is saved as it was.
                 var current = this.loadedChunks[x, z] ?? chunk;

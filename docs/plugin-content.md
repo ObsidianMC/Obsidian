@@ -37,6 +37,25 @@ quarter turn, a `rotation` from 0 to 15 turns like a standing sign's, and `north
 properties (a fence's connections) trade values. Other properties are kept, and a block whose turned state it doesn't
 have (a `facing` without `east`, say) stays as it is.
 
+### Runtime light
+
+Placed and removed blocks update block light and sky light, including a plugin block's `LightEmission` and its
+template's opacity and light-occluding shapes. Player and plugin changes, fluids, explosions and growing trees share
+the same runtime engine. Changes are batched on the level's tick; light is resolved before random ticks, so saplings
+read the current light, and before a chunk is saved. Players watching a changed chunk receive one light packet per
+tick containing the changed sections, including sections that became dark. Dimensions without `HasSkylight` do not
+propagate sky light.
+
+Light stops at unloaded or unfinished chunks. When a complete neighbor loads, both sides of its shared borders are
+reconciled on the next tick. Unlike vanilla's chunk light storage, Obsidian stores arrays only inside the build
+range; the top sky source is virtual, and the extra sections outside the build range are not sent. Lighting does
+not load or generate missing neighbors to finish an update.
+
+Runtime updates clear dependent light and spread surviving sources again; they do not recompute complete chunks
+for each changed block. A deterministic test times 288 edits batched over nine 64-layer chunks against a fresh
+generation-engine computation after each batch. Timing is reported by `BatchedEditsMatchFullComputationAndReportTiming`
+in `Obsidian.Tests/RuntimeLight.cs`; large skylight changes can still affect an entire column and its surroundings.
+
 ### Saplings
 
 ```csharp

@@ -278,6 +278,33 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
             .ToArray();
 
         Assert.Equal(expectedLight, Convert.ToHexStringLower(SHA256.HashData(light)));
+
+        // Runtime edits must converge back to the captured vanilla light, including decreases in loaded neighbors.
+        var runtime = new RuntimeLightEngine(new System.Threading.Lock(), () => dimension.HasSkyLight);
+        var originals = new Dictionary<IChunk, byte[]>();
+        foreach (var chunk in lit)
+        {
+            originals[chunk] = chunk.Sections.ToArray()
+                .SelectMany(section => section.SkyLightArray.ToArray().Concat(section.BlockLightArray.ToArray()))
+                .ToArray();
+            runtime.Track(chunk);
+        }
+
+        runtime.Flush();
+        var center = area[(chunkX, chunkZ)];
+        var position = new Vector((chunkX << 4) + 15, dimension.MinY + dimension.Height / 2, (chunkZ << 4) + 8);
+        var originalBlock = center.GetBlock(position);
+        center.SetBlock(position, Obsidian.Registries.BlocksRegistry.Glowstone);
+        runtime.Flush();
+        center.SetBlock(position, originalBlock);
+        runtime.Flush();
+        foreach (var chunk in lit)
+        {
+            var restored = chunk.Sections.ToArray()
+                .SelectMany(section => section.SkyLightArray.ToArray().Concat(section.BlockLightArray.ToArray()))
+                .ToArray();
+            Assert.Equal(originals[chunk], restored);
+        }
     }
 
     [Fact]

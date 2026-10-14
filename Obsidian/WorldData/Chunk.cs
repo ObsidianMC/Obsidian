@@ -4,6 +4,7 @@ using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Fluids;
+using Obsidian.WorldData.Lighting;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using System.Threading;
 
@@ -11,6 +12,8 @@ namespace Obsidian.WorldData;
 
 public sealed class Chunk : IChunk
 {
+    internal RuntimeLightEngine? RuntimeLight { get; set; }
+
     public int X { get; }
     public int Z { get; }
     public long InhabitedTime { get; internal set; }
@@ -199,6 +202,23 @@ public sealed class Chunk : IChunk
         (y - this.MinY) << 8 | (z & 15) << 4 | (x & 15);
 
     public void SetBlock(int x, int y, int z, IBlock block)
+    {
+        if (this.RuntimeLight is RuntimeLightEngine light)
+        {
+            lock (light.TickLock)
+            {
+                var position = new Vector((this.X << 4) + (x & 15), y, (this.Z << 4) + (z & 15));
+                light.BlockChanging(this, position, block);
+                this.SetBlockCore(x, y, z, block);
+            }
+
+            return;
+        }
+
+        this.SetBlockCore(x, y, z, block);
+    }
+
+    private void SetBlockCore(int x, int y, int z, IBlock block)
     {
         // Generation writes through its regions' sections; any other write (a live edit of an unfinished chunk) leaves the
         // heights generation keeps stale, so they're computed again.
