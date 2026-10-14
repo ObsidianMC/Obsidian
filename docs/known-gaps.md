@@ -233,10 +233,6 @@ can't reach, rather than a delivery wait.
   and nothing sends the player their changed attributes.
 - Equipping by use ignores `equippable`'s `swappable` and plays no equip sound, and a `consumable` without `food`
   isn't consumed.
-- A plugin item's use on an entity runs before the entity's own interaction, the reverse of vanilla's
-  `Player.interactOn`, because Obsidian's entity interactions (`Mob.InteractAsync` and its overrides) don't return
-  whether they did anything.
 
-**Where to start:** for the last, return whether each `Mob.InteractAsync` override consumed the interaction and move
-the item hook after it; for attributes, a per-player modifier set fed by equipment changes, synced with
+**Where to start:** for attributes, a per-player modifier set fed by equipment changes, synced with
 `UpdateAttributes`.

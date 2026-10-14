@@ -50,9 +50,15 @@ public sealed partial class Allay : PathfinderMob
         actions.AddGoal(3, new LookAtPlayerGoal(this, 6));
     }
     public override ValueTask DamageAsync(IEntity source, float amount = 1) => source.Uuid == likedPlayer ? default : base.DamageAsync(source, amount);
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || IsRemoved || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player)) return;
+        if (!Alive
+            || IsRemoved
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4)
+            || !CanSee(player))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (dancing && duplicationCooldown == 0 && item is { Count: > 0, Holder.Id: ItemIds.AmethystShard })
         {
@@ -79,6 +85,10 @@ public sealed partial class Allay : PathfinderMob
             likedPlayer = Guid.Empty;
             throwCooldown = 60;
         }
+        else
+            return false;
+
+        return true;
     }
     protected override async ValueTask TickMobAsync()
     {

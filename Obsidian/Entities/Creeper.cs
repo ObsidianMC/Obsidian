@@ -33,14 +33,14 @@ public sealed partial class Creeper : PathfinderMob
 
     protected internal override ValueTask PerformMeleeAttackAsync(IEntity target) => default;
 
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Level != Level || player.Health <= 0 || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
-            return;
+            return false;
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (held is not { Count: > 0 } || held.Holder.Id is not ItemIds.FlintAndSteel and not ItemIds.FireCharge)
-            return;
+            return false;
         Ignited = true;
         SynchronizeMetadata();
         if (held.Is(ItemsRegistry.FlintAndSteel))
@@ -51,6 +51,8 @@ public sealed partial class Creeper : PathfinderMob
             var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
             await player.SendInventorySlotAsync(slot);
         }
+
+        return true;
     }
 
     protected override async ValueTask TickMobAsync()

@@ -42,15 +42,31 @@ public sealed partial class Strider : FarmAnimal
             if (player != null) MoveControl.MoveTo(player.Position, 1.4f);
         }
     }
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || IsRemoved || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player)) return;
+        if (!Alive
+            || IsRemoved
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4)
+            || !CanSee(player))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (CanEat(item)) { await base.FeedAsync(player, hand); return; }
-        if (IsBaby) return;
+        if (CanEat(item))
+            return await base.FeedAsync(player, hand);
+        if (IsBaby)
+            return false;
         if (item is { Count: > 0, Holder.Id: ItemIds.Saddle } && GetEquipment(EquipmentSlot.Saddle).IsAir)
         { SetEquipment(EquipmentSlot.Saddle, new ItemStack(item)); await ConsumeInteractionItemAsync(player, hand); }
-        else if (!player.Sneaking && !GetEquipment(EquipmentSlot.Saddle).IsAir && player is Player rider && Mount(rider)) GoalController?.Pause();
+        else if (!player.Sneaking
+            && !GetEquipment(EquipmentSlot.Saddle).IsAir
+            && player is Player rider
+            && Mount(rider))
+            GoalController?.Pause();
+        else
+            return false;
+
+        return true;
     }
     internal bool Boost(Player player)
     {

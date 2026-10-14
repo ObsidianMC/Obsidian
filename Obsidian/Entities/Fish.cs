@@ -42,10 +42,8 @@ public abstract class Fish : PathfinderMob
         else if (--Air <= -20) { Air = 0; await DamageEnvironmentAsync(2); }
     }
 
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
-    {
-        await TryCaptureInBucketAsync(player, hand, BucketItem);
-    }
+    internal override ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand) =>
+        TryCaptureInBucketAsync(player, hand, BucketItem);
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {

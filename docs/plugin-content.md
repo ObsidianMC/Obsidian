@@ -488,9 +488,11 @@ keep the defaults they were made with until then.
   (eating, equipping). Returning true handles the use.
 - `UseOnBlockAsync`: a player uses the item on a block, after the block's own use and before the item places a block.
 - `UseOnEntityAsync`: a player uses the item on a living entity (an `ItemUseOnEntityContext` with the `Entity`), on
-  the entity's level tick. It runs before the entity's own interaction (a villager's trading, feeding an animal, a
-  plugin entity type's behaviour), and returning true skips that. Vanilla gives the entity the first turn and the
-  item the next when the entity did nothing, but Obsidian's entity interactions don't report whether they did.
+  the entity's level tick. Like vanilla's `Player.interactOn`, it runs after the entity's own interaction (a
+  villager's trading, feeding an animal, a plugin entity type's `IEntityBehavior.InteractAsync`) and only when that
+  didn't take it. Mobs that can be ridden (tamed horses, camels, adult happy ghasts and nautiluses) give the item its
+  use before the player mounts, as vanilla's do, so there it may run twice in one use when it returns false. In
+  creative mode the context's `Stack` is a copy, so that the use leaves the player's stack as it was.
 - `InventoryTickAsync`: each server tick, on the player's tick, for every stack of the item in a player's inventory
   (the hotbar and main inventory, then the off hand and armour), like vanilla's `inventoryTick`. The
   `ItemInventoryTickContext` gives the stack, its `Slot` (5 to 8 armour, 9 to 35 the main inventory, 36 to 44 the
@@ -521,9 +523,12 @@ A plugin's entities are mobs by default: they fall, take damage and run the goal
 `IEntity.GoalController`. With `Kind = EntityKind.Projectile` they fly along the motion they're spawned with, slowed by
 drag and pulled down by `Gravity`, and call `IEntityBehavior.HitAsync` on the first block or living entity in their
 way, which removes them; spawn them with `level.SpawnEntity(position, type, motion, owner)`. With `EntityKind.Object`
-they fall and rest where they land. Every kind calls the type's behaviour each tick and when a player uses it. The
-client mod's entity should be of the same kind, so that their data matches. Entities are saved with the type's
-identifier; while the plugin is gone, saved ones stay as they were.
+they fall and rest where they land. Every kind calls the type's behaviour each tick and when a player uses it:
+`IEntityBehavior.InteractAsync` returns whether the entity took the interaction, which keeps the held item's
+`UseOnEntityAsync` from running, like a vanilla entity's interaction succeeding. (It returned `ValueTask` before; a
+behaviour implementing it now returns `ValueTask<bool>`.) The client mod's entity should be of the same kind, so that
+their data matches. Entities are saved with the type's identifier; while the plugin is gone, saved ones stay as they
+were.
 
 A mob's `Category` (a `MobCategory`, `Misc` by default) is its vanilla mob category. Biomes' `spawners` and biome
 modifiers adding spawners (see [Biome modifiers](#biome-modifiers)) spawn a plugin's mobs naturally while the

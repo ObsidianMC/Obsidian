@@ -65,17 +65,25 @@ public sealed partial class Armadillo : FarmAnimal
         else if (state == 3 && stateTicks >= 30) { SetState(0); PlayMobSound("unroll_finish"); }
         else if (state == 2 && Random.Next(400) == 0) SendEntityEvent(64);
     }
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || IsRemoved || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player)) return;
+        if (!Alive
+            || IsRemoved
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4)
+            || !CanSee(player))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (!IsBaby && item is { Count: > 0, Holder.Id: ItemIds.Brush })
         {
             DropItem(ItemsRegistry.ArmadilloScute);
             PlayMobSound("brush");
             await DamageInteractionToolAsync(player, hand, 16);
+            return true;
         }
-        else await base.FeedAsync(player, hand);
+
+        return await base.FeedAsync(player, hand);
     }
     public override void Write(INetStreamWriter writer)
     { base.Write(writer); writer.WriteEntityMetadataType(17, EntityMetadataType.ArmadilloState); writer.WriteVarInt(state); }

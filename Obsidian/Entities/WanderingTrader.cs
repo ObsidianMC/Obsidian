@@ -14,10 +14,11 @@ public sealed partial class WanderingTrader : AgeableMob
     protected override bool CanDespawn => false;
     protected override string? SoundName => "wandering_trader";
     public override bool IsBaby { get => false; set { } }
-    internal override ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (offers.IsEmpty) CreateOffers();
-        return MerchantTrading.OpenAsync(this, player, offers, 1, 0, false);
+        await MerchantTrading.OpenAsync(this, player, offers, 1, 0, false);
+        return true;
     }
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {

@@ -9,10 +9,10 @@ public sealed partial class Mooshroom : Cow
     public bool Brown { get; set; }
     internal Obsidian.API.Effects.SuspiciousStewEffect? StewEffect { get; set; }
 
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!CanInteract(player))
-            return;
+            return false;
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (!IsBaby && held is { Count: > 0, Holder.Id: ItemIds.Bowl })
         {
@@ -49,7 +49,9 @@ public sealed partial class Mooshroom : Cow
             await ConvertToAsync(EntityType.Cow);
         }
         else
-            await base.FeedAsync(player, hand);
+            return await base.FeedAsync(player, hand);
+
+        return true;
     }
 
     private static Obsidian.API.Effects.SuspiciousStewEffect? GetFlowerEffect(Item flower)

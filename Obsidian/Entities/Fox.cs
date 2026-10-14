@@ -46,11 +46,12 @@ public sealed partial class Fox : FarmAnimal
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, entity => entity.Type is EntityType.Chicken or EntityType.Rabbit ||
             entity.Type is EntityType.Cod or EntityType.Salmon));
     }
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         var love = LoveTicks;
-        await base.FeedAsync(player, hand);
+        var used = await base.FeedAsync(player, hand);
         if (LoveTicks > love) breedingPlayer = player.Uuid;
+        return used;
     }
     protected override IEntity CreateOffspring(Animal mate)
     {

@@ -15,9 +15,14 @@ public interface IEntityBehavior
     public ValueTask TickAsync(IEntity entity) => ValueTask.CompletedTask;
 
     /// <summary>
-    /// Called when a player uses the entity (right-clicks it).
+    /// Called when a player uses the entity (right-clicks it), before the held item's use on it.
     /// </summary>
-    public ValueTask InteractAsync(IEntity entity, IPlayer player, InteractionHand hand) => ValueTask.CompletedTask;
+    /// <returns>
+    /// Whether the entity used the interaction, which keeps the held item from being used on it (see
+    /// <see cref="Inventory.IItemBehavior.UseOnEntityAsync"/>), like a vanilla entity's interaction succeeding.
+    /// </returns>
+    public ValueTask<bool> InteractAsync(IEntity entity, IPlayer player, InteractionHand hand) =>
+        ValueTask.FromResult(false);
 
     /// <summary>
     /// Called when a projectile hits a block or a living entity, before it's removed.

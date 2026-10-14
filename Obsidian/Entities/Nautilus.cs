@@ -34,9 +34,15 @@ public partial class Nautilus : FarmAnimal
         if (Rider != null && InWater && AiTick % 20 == 0)
             Rider.AddPotionEffect((int)PotionEffect.BreathOfTheNautilus - 1, 200, 0, EntityEffectFlags.ShowIcon);
     }
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || IsRemoved || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player)) return;
+        if (!Alive
+            || IsRemoved
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4)
+            || !CanSee(player))
+            return false;
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (CanEat(held))
         {
@@ -48,10 +54,20 @@ public partial class Nautilus : FarmAnimal
             }
             else if (Health < GetAttributeValue("minecraft:generic.max_health"))
             { Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 2); await ConsumeInteractionItemAsync(player, hand); }
-            else if (Type == EntityType.Nautilus) await base.FeedAsync(player, hand);
-            return;
+            else if (Type == EntityType.Nautilus)
+                return await base.FeedAsync(player, hand);
+            else
+                return false;
+
+            return true;
         }
-        if (Owner == Guid.Empty || IsBaby) return;
+
+        // Like vanilla's, an adult nautilus gives the held item its use before the player equips or mounts it.
+        if (!IsBaby && await Obsidian.Plugins.ItemBehaviors.UseOnEntityAsync(player, hand, this))
+            return true;
+
+        if (Owner == Guid.Empty || IsBaby)
+            return false;
         if (held is { Count: > 0, Holder.Id: ItemIds.Saddle } && GetEquipment(EquipmentSlot.Saddle).IsAir)
         { SetEquipment(EquipmentSlot.Saddle, new ItemStack(held)); await ConsumeInteractionItemAsync(player, hand); }
         else if (held is { Count: > 0 } && held.Holder.UnlocalizedName.EndsWith("_nautilus_armor", StringComparison.Ordinal))
@@ -59,7 +75,15 @@ public partial class Nautilus : FarmAnimal
             if (!GetEquipment(EquipmentSlot.Body).IsAir) DropItem(GetEquipment(EquipmentSlot.Body));
             SetEquipment(EquipmentSlot.Body, new ItemStack(held)); await ConsumeInteractionItemAsync(player, hand);
         }
-        else if (!player.Sneaking && !GetEquipment(EquipmentSlot.Saddle).IsAir && player is Player rider && Mount(rider)) GoalController?.Pause();
+        else if (!player.Sneaking
+            && !GetEquipment(EquipmentSlot.Saddle).IsAir
+            && player is Player rider
+            && Mount(rider))
+            GoalController?.Pause();
+        else
+            return false;
+
+        return true;
     }
     protected override void TickRidden()
     {

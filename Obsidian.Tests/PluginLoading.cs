@@ -473,6 +473,23 @@ public sealed class PluginLoading : IDisposable
         };
         Assert.True(await ItemBehaviors.UseOnEntityAsync(use));
 
+        // Like vanilla, a player's use of the item on an entity comes after the entity's own interaction, and only
+        // when that didn't take it.
+        player.CurrentHeldItemSlot = 36;
+        AppContext.SetData(ProbePlugin.UsesKey, 0);
+
+        await Obsidian.Events.MainEventHandler.InteractWithEntityAsync(
+            player,
+            new InteractingMob(takes: true) { Level = null! },
+            InteractionHand.MainHand);
+        Assert.Equal(0, AppContext.GetData(ProbePlugin.UsesKey));
+
+        await Obsidian.Events.MainEventHandler.InteractWithEntityAsync(
+            player,
+            new InteractingMob(takes: false) { Level = null! },
+            InteractionHand.MainHand);
+        Assert.Equal(1, AppContext.GetData(ProbePlugin.UsesKey));
+
         // Unloaded, its hooks are gone, so inventories aren't scanned for it, while the item keeps its defaults.
         await manager.UnloadPluginAsync(container);
 
@@ -562,6 +579,15 @@ public sealed class PluginLoading : IDisposable
             Dependencies = [.. dependencies]
         };
     }
+
+    // A mob whose own interaction takes a player's use of it, or doesn't.
+    private sealed class InteractingMob(bool takes) : Mob
+    {
+        protected override bool UsesAi => true;
+
+        internal override ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand) =>
+            ValueTask.FromResult(takes);
+    }
 }
 
 /// <summary>
@@ -583,6 +609,9 @@ public sealed class ProbePlugin : PluginBase
 
     // The inventory ticks its charm recorded.
     public const string TicksKey = "Obsidian.Tests.ProbePlugin.Ticks";
+
+    // How many times its charm was used on an entity.
+    public const string UsesKey = "Obsidian.Tests.ProbePlugin.Uses";
 
     [Inject]
     public ProbeService? Service { get; set; }
@@ -768,7 +797,12 @@ public sealed class ProbePlugin : PluginBase
 
     private sealed class CharmBehavior : IItemBehavior
     {
-        public ValueTask<bool> UseOnEntityAsync(ItemUseOnEntityContext context) => ValueTask.FromResult(true);
+        public ValueTask<bool> UseOnEntityAsync(ItemUseOnEntityContext context)
+        {
+            AppContext.SetData(UsesKey, (AppContext.GetData(UsesKey) as int? ?? 0) + 1);
+
+            return ValueTask.FromResult(true);
+        }
 
         // Records each stack's tick as "slot:equipment slot;".
         public ValueTask InventoryTickAsync(ItemInventoryTickContext context)

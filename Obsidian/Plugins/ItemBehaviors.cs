@@ -42,6 +42,32 @@ internal static partial class ItemBehaviors
         RunAsync(context.Stack.Holder, behavior => behavior.UseOnEntityAsync(context));
 
     /// <summary>
+    /// Uses the stack <paramref name="player"/> holds in <paramref name="hand"/> on <paramref name="entity"/>, when
+    /// it's a plugin's item and the player may use items.
+    /// </summary>
+    /// <remarks>
+    /// Like vanilla's <c>Player.interactOn</c>, a creative player's item gets a copy of the stack, so that the use
+    /// leaves the player's stack as it was.
+    /// </remarks>
+    /// <returns>Whether the item's behaviour handled the use.</returns>
+    public static ValueTask<bool> UseOnEntityAsync(IPlayer player, InteractionHand hand, ILiving entity)
+    {
+        var stack = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
+        if (stack is not { Count: > 0 } || stack.Holder.Behavior is null ||!CanUseItems(player))
+            return ValueTask.FromResult(false);
+
+        var context = new ItemUseOnEntityContext
+        {
+            Player = player,
+            Stack = player.GameMode == GameMode.Creative ? new ItemStack(stack, stack.Count) : stack,
+            Hand = hand,
+            Entity = entity
+        };
+
+        return UseOnEntityAsync(context);
+    }
+
+    /// <summary>
     /// Whether <paramref name="inventory"/> holds a stack whose item ticks in inventories, read without its lock:
     /// cheap, and false at once when no item ticks there.
     /// </summary>

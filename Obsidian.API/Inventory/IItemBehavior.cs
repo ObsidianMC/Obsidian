@@ -24,10 +24,17 @@ public interface IItemBehavior
     public ValueTask<bool> UseOnBlockAsync(ItemUseOnBlockContext context) => ValueTask.FromResult(false);
 
     /// <summary>
-    /// Called when a player uses the item on a living entity (right-clicks it), on the entity's level tick, before the
-    /// entity's own interaction (a villager's trading, feeding an animal, a plugin entity type's behaviour).
+    /// Called when a player uses the item on a living entity (right-clicks it), on the entity's level tick, after the
+    /// entity's own interaction (a villager's trading, feeding an animal, a plugin entity type's behaviour) and only
+    /// when that did nothing, like vanilla's <c>interactLivingEntity</c>.
     /// </summary>
-    /// <returns>Whether the behaviour handled the use, which skips the entity's own interaction.</returns>
+    /// <remarks>
+    /// Mobs that can be ridden (tamed horses, camels, adult happy ghasts and nautiluses) give the item its use during
+    /// their own interaction, before the player mounts, as vanilla's do; so when it returns false and the mob does
+    /// nothing either, it's called twice in one use. In creative mode the context's stack is a copy, so that changing
+    /// it doesn't change the player's.
+    /// </remarks>
+    /// <returns>Whether the behaviour handled the use.</returns>
     public ValueTask<bool> UseOnEntityAsync(ItemUseOnEntityContext context) => ValueTask.FromResult(false);
 
     /// <summary>

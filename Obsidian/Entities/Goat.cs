@@ -33,13 +33,22 @@ public sealed partial class Goat : FarmAnimal
         child.SynchronizeMetadata();
         return child;
     }
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4)) return;
+        if (!Alive
+            || player.Health <= 0
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (!IsBaby && item is { Count: > 0, Holder.Id: ItemIds.Bucket })
+        {
             await GiveInteractionItemAsync(player, hand, ItemsRegistry.MilkBucket);
-        else await base.InteractAsync(player, hand);
+            return true;
+        }
+
+        return await base.InteractAsync(player, hand);
     }
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {

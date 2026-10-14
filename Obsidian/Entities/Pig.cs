@@ -59,31 +59,30 @@ public sealed partial class Pig : Animal
 
     protected override bool CanEat(Obsidian.API.Inventory.ItemStack? item) => IsFood(item);
 
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
-            return;
+            return false;
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var item = player.Inventory.GetItem(slot);
         if (IsFood(item))
-        {
-            await base.FeedAsync(player, hand);
-            return;
-        }
+            return await base.FeedAsync(player, hand);
         if (HasSaddle && !player.Sneaking && player is Player rider)
         {
             Mount(rider);
-            return;
+            return true;
         }
         if (IsBaby || HasSaddle || item is not { Count: > 0, Holder.Id: ItemIds.Saddle })
-            return;
+            return false;
         HasSaddle = true;
         if (player.GameMode != GameMode.Creative)
         {
             player.Inventory.RemoveItem(slot, 1);
             await player.SendInventorySlotAsync(slot);
         }
+
+        return true;
     }
 
     internal bool Boost(IPlayer player)

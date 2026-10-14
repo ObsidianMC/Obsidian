@@ -69,13 +69,20 @@ public sealed partial class Panda : FarmAnimal
         child.SynchronizeMetadata();
         return child;
     }
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4)) return;
+        if (!Alive
+            || player.Health <= 0
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (item is not { Count: > 0, Holder.Id: ItemIds.Bamboo or ItemIds.Cake }) return;
+        if (item is not { Count: > 0, Holder.Id: ItemIds.Bamboo or ItemIds.Cake })
+            return false;
+        var used = true;
         if (item.Is(ItemsRegistry.Bamboo) && (IsBaby || Age == 0 && HasBreedingBamboo()))
-            await base.FeedAsync(player, hand);
+            used = await base.FeedAsync(player, hand);
         else
         {
             if (item.Is(ItemsRegistry.Bamboo) && Age == 0) UnhappyTicks = 32;
@@ -84,6 +91,7 @@ public sealed partial class Panda : FarmAnimal
             await ConsumeInteractionItemAsync(player, hand);
         }
         SynchronizeMetadata();
+        return used;
     }
     protected internal override async ValueTask PerformMeleeAttackAsync(IEntity target)
     {

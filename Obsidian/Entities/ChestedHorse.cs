@@ -5,9 +5,14 @@ namespace Obsidian.Entities;
 public class ChestedHorse : AbstractHorse
 {
     public bool HasChest { get; set; }
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4)) return;
+        if (!Alive
+            || player.Health <= 0
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (HorseMask.HasFlag(HorseMask.Tamed)
             && !IsBaby
@@ -17,9 +22,9 @@ public class ChestedHorse : AbstractHorse
             HasChest = true;
             await ConsumeInteractionItemAsync(player, hand);
             SynchronizeMetadata();
-            return;
+            return true;
         }
-        await base.InteractAsync(player, hand);
+        return await base.InteractAsync(player, hand);
     }
     protected override async ValueTask OnDeathAsync(IEntity source)
     {
@@ -79,9 +84,14 @@ public partial class Llama : ChestedHorse
         child.SynchronizeMetadata();
         return child;
     }
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4)) return;
+        if (!Alive
+            || player.Health <= 0
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (HorseMask.HasFlag(HorseMask.Tamed) && item is { Count: > 0 } && item.Holder.UnlocalizedName.EndsWith("_carpet", StringComparison.Ordinal))
         {
@@ -92,10 +102,10 @@ public partial class Llama : ChestedHorse
                 if (!old.IsAir) DropItem(old);
                 CarpetColor = color;
                 await ConsumeInteractionItemAsync(player, hand);
-                return;
+                return true;
             }
         }
-        await base.InteractAsync(player, hand);
+        return await base.InteractAsync(player, hand);
     }
     protected override void WriteAdditionalSave(Obsidian.Nbt.Interfaces.INbtWriter writer)
     {

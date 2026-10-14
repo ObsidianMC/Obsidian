@@ -48,9 +48,14 @@ public sealed partial class Parrot : Animal
         actions.AddGoal(7, new LookAtPlayerGoal(this, 8));
         actions.AddGoal(8, new RandomLookAroundGoal(this));
     }
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4)) return;
+        if (!Alive
+            || player.Health <= 0
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (item is { Count: > 0, Holder.Id: ItemIds.Cookie })
         {
@@ -81,6 +86,10 @@ public sealed partial class Parrot : Animal
             ((Navigator)Navigator!).Stop();
             SynchronizeMetadata();
         }
+        else
+            return false;
+
+        return true;
     }
     protected override ValueTask OnHurtAsync(IEntity source)
     {
