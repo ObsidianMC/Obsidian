@@ -312,13 +312,10 @@ mob's equipment.
   ghasts, nautiluses) still move on the server from the rider's `PlayerInput`, while the Obsidian client predicts
   boats, horses, pigs and striders on its own, and neither corrects the other. The Obsidian client's prediction of a
   mod's mount leaves out fluid currents, which the server's checks absorb.
-- Attribute modifiers added through `IEntity.SetAttributeModifier` aren't saved, and the `scale` attribute doesn't
-  resize hitboxes on the server.
 - Vanilla's mobs still drop hard-coded items rather than their `entities/` loot tables; entity loot tables can't use
   `furnace_smelt` or `entity_properties` predicates other than the empty `this` one yet. Damage sources name the
   vanilla damage type closest to Obsidian's damage kinds.
-- Synced data fields aren't saved (see [plugin content](plugin-content.md#synced-data-fields)), and plugin mobs have no
-  spawn eggs.
+- Plugin mobs have no spawn eggs.
 
 **Where to start:** `ClientVehicleControl` checks moves for any mob; giving vanilla's mounts the same client control
 needs their server steering to match the client's `VehicleControl`, as `MountSteering` does for plugin mobs.

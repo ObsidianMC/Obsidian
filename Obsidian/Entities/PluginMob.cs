@@ -33,7 +33,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
     // Read from the type, whose size a reload may change.
     public override EntityDimension Dimension
     {
-        get => new() { Width = definition.Settings.Width, Height = definition.Settings.Height };
+        get => this.ScaleDimensions(definition.Settings.Width, definition.Settings.Height);
         protected set { }
     }
 
@@ -85,7 +85,10 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
             ? Math.Clamp(passenger.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
             : 1f;
 
-        return new VectorD(seat.X, seat.Y - 0.6 * scale, seat.Z);
+        return new VectorD(
+            seat.X * this.AttributeScale,
+            seat.Y * this.AttributeScale - 0.6 * scale,
+            seat.Z * this.AttributeScale);
     }
 
     // Its jump_strength, which mods can change with attribute modifiers, and its rider's client predicts with.

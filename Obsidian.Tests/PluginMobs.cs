@@ -1,5 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.Entities;
+using Obsidian.API.Inventory;
+using Obsidian.Nbt;
 using Obsidian.API.Loot;
 using Obsidian.API.Networking;
 using Obsidian.API.Plugins;
@@ -79,6 +81,33 @@ public sealed class PluginMobs
 
         var vanillaData = Metadata(false);
         Assert.Equal([.. vanillaData[..^1], 16, (byte)EntityMetadataType.Boolean, 1, 0xff], Metadata(true));
+
+        // API modifiers persist in vanilla's attributes format; metadata is transient like SynchedEntityData.
+        Assert.True(drake.SetAttributeModifier("minecraft:max_health", "pluginmobs:health", 5, AttributeOperation.Add));
+        drake.SetModifier("minecraft:movement_speed", new("pluginmobs:temporary", 1, AttributeOperation.Add));
+        var saved = EntityNbt.Save(drake)!;
+        var restored = Assert.IsType<PluginMob>(EntityNbt.Load(saved, world));
+        Assert.Equal(25, restored.GetAttributeValue("minecraft:max_health"));
+        Assert.Equal(0.25f, restored.GetAttributeValue("minecraft:movement_speed"));
+        Assert.False(restored.GetData(Saddled));
+        Assert.True(saved.TryGetTag<NbtList>("attributes", out var attributes));
+        var health = attributes.OfType<NbtCompound>()
+            .Single(entry => entry.GetString("id") == "minecraft:max_health");
+        Assert.True(health.TryGetTag<NbtList>("modifiers", out var modifiers));
+        var modifier = Assert.Single(modifiers.OfType<NbtCompound>());
+        Assert.Equal("add_value", modifier.GetString("operation"));
+        Assert.True(restored.RemoveAttributeModifier("minecraft:max_health", "pluginmobs:health"));
+        Assert.Equal(20, EntityNbt.Load(EntityNbt.Save(restored)!, world)!.GetAttributeValue("minecraft:max_health"));
+        drake.RemoveAttributeModifier("minecraft:max_health", "pluginmobs:health");
+        drake.RemoveAttributeModifier("minecraft:movement_speed", "pluginmobs:temporary");
+
+        Assert.True(restored.SetAttributeModifier("minecraft:scale", "pluginmobs:size", 1, AttributeOperation.Add));
+        Assert.Equal(1.8f, restored.Dimension.Width);
+        Assert.Equal(1.8f, restored.Dimension.Height);
+        Assert.Equal(1.53f, restored.EyeHeight, 5);
+        Assert.Equal(1.8, restored.BoundingBox.Max.Y - restored.BoundingBox.Min.Y, 5);
+        Assert.True(restored.RemoveAttributeModifier("minecraft:scale", "pluginmobs:size"));
+        Assert.Equal(0.9f, restored.Dimension.Width);
 
         var player = TestServerFactory.CreateConnectedPlayer(
             context.Server,

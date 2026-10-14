@@ -220,6 +220,7 @@ public partial class Living : Entity, ILiving
     {
         base.WriteNbt(tag);
 
+        tag.Set(this.SaveAttributes());
         tag.Set(new NbtTag<float>("Health", this.Health));
         tag.Set(new NbtTag<float>("AbsorptionAmount", this.AbsorptionHealth));
         tag.Set(new NbtTag<bool>("PersistenceRequired", this.PersistenceRequired));
@@ -228,6 +229,8 @@ public partial class Living : Entity, ILiving
     internal override void ReadNbt(NbtCompound tag)
     {
         base.ReadNbt(tag);
+
+        this.LoadAttributes(tag);
 
         if (tag.TryGetTag<NbtTag<float>>("Health", out var health))
             this.Health = health.Value;

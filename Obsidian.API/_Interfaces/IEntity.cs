@@ -106,7 +106,7 @@ public interface IEntity : Data.IAttachmentHolder
 
     /// <summary>
     /// Adds a modifier to one of the entity's attributes, replacing its modifier with the same <paramref name="id"/>,
-    /// like vanilla's transient modifiers: it isn't saved, and players tracking the entity are sent the change.
+    /// like vanilla's permanent modifiers: it is saved, and players tracking the entity are sent the change.
     /// </summary>
     /// <param name="attribute">The attribute, like <c>minecraft:movement_speed</c>.</param>
     /// <param name="id">The modifier's identifier, like <c>myplugin:charge</c>.</param>

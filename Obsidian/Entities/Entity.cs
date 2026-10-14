@@ -41,6 +41,17 @@ public partial class Entity : IEquatable<Entity>, IEntity
     public virtual EntityDimension Dimension { get; protected set; } = EntityDimension.Zero;
     protected virtual float DimensionScale => 1;
 
+    // LivingEntity.getScale clamps the attribute; age/type scaling remains independent.
+    internal float AttributeScale => this.HasAttribute("minecraft:scale")
+        ? Math.Clamp(this.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
+        : 1;
+
+    protected EntityDimension ScaleDimensions(float width, float height) => new()
+    {
+        Width = width * this.DimensionScale * this.AttributeScale,
+        Height = height * this.DimensionScale * this.AttributeScale
+    };
+
     public int PowderedSnowTicks { get; set; }
 
     public EntityType? Type { get; set; }

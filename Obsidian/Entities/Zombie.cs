@@ -31,7 +31,7 @@ public partial class Zombie : PathfinderMob
     protected override int GetExperienceReward() => (IsBaby ? 12 : 5) +
         Enum.GetValues<Obsidian.API.Inventory.EquipmentSlot>().Sum(slot => GetEquipment(slot).IsAir || GetEquipmentDropChance(slot) > 1 ? 0 : Random.Next(1, 4));
     protected internal override float AttackDamage => base.AttackDamage + GetWeaponDamage(GetEquipment(Obsidian.API.Inventory.EquipmentSlot.MainHand));
-    internal override float EyeHeight => IsBaby ? 0.93f : 1.74f;
+    internal override float EyeHeight => (IsBaby ? 0.93f : 1.74f) * this.AttributeScale;
     internal override float MovementSpeed => base.MovementSpeed * (IsBaby ? 1.5f : 1);
 
     protected override void RegisterGoals(GoalSelector actionGoals, GoalSelector targetGoals)

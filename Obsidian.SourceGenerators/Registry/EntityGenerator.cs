@@ -128,7 +128,7 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
                 .Line()
                 .Line();
 
-            builder.Line("public override EntityDimension Dimension { get => new() { Width = baseDimension.Width * DimensionScale, Height = baseDimension.Height * DimensionScale }; protected set => baseDimension = value; }")
+            builder.Line("public override EntityDimension Dimension { get => ScaleDimensions(baseDimension.Width, baseDimension.Height); protected set => baseDimension = value; }")
                 .Line();
 
             if (entityElement.TryGetProperty("is_fire_immune", out var fireImmuneElement))

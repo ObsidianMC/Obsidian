@@ -1018,7 +1018,9 @@ The Obsidian client keeps them in `IClientEntity.Metadata` by index, where entit
 providers read them, or with `entity.TryGetData(field, out var value)`; register the type with the same fields on
 both sides. Fields aren't saved, as vanilla's synced data isn't: an entity's lasting data belongs in an attachment
 (see [Saved data and attachments](#saved-data-and-attachments)), which is saved with it, survives the plugin
-unloading, and can sync itself; set the field from it, in the behaviour's `TickAsync` say.
+unloading, and can sync itself; set the field from it, in the behaviour's `TickAsync` say. This deliberately keeps
+network indices and serializers out of the save format: an attachment has a stable namespaced id and an explicit
+codec that a plugin can evolve. Use a synced attachment directly when a separate metadata field adds nothing.
 
 ### Attributes
 
@@ -1026,12 +1028,14 @@ Living entities have vanilla's attributes, vanilla's mobs their type's defaults 
 defaults with the type's `MaxHealth`, `MovementSpeed` and `FlyingSpeed`. `IEntity.GetAttributeValue` gives an
 attribute's value: its base with its modifiers applied in vanilla's order (`Add` to the base, then multiples of that
 sum for `MulBase`, then the result multiplied for each `MulTotal`), clamped to vanilla's range for it.
-`IEntity.SetAttributeModifier(attribute, id, amount, operation)` adds or replaces a modifier, like vanilla's transient
-modifiers (not saved), and `RemoveAttributeModifier` takes it off. Players get the modifiers of what they hold and
+`IEntity.SetAttributeModifier(attribute, id, amount, operation)` adds or replaces a modifier, like vanilla's permanent
+modifiers (saved in `attributes` with `modifiers`), and `RemoveAttributeModifier` takes it off. Players get the modifiers of what they hold and
 wear (items' `AttributeModifiers`, a plugin item's default included) as their equipment changes, and vanilla's
 sprinting modifier. Clients are sent the attributes vanilla syncs with `UpdateAttributes`: all of a living entity's
 when it comes into view, the player's own after joining and respawning, and those that change, to the entity's
-watchers and a player itself.
+watchers and a player itself. Equipment and sprint modifiers stay transient and are rebuilt on load.
+`minecraft:scale` multiplies hitboxes, eye height and passenger attachments on the server and the Obsidian client;
+the client also scales the whole model and its render layers.
 
 ### Damage, death and loot
 

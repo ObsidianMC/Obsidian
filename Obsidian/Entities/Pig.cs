@@ -9,7 +9,7 @@ public sealed partial class Pig : Animal
     protected override bool UsesAi => true;
     protected override string? SoundName => "pig";
     protected override int GetExperienceReward() => IsBaby ? 0 : Random.Next(1, 4);
-    internal override float EyeHeight => IsBaby ? 0.425f : 0.85f;
+    internal override float EyeHeight => (IsBaby ? 0.425f : 0.85f) * this.AttributeScale;
     public int Variant { get; set; } = 1;
 
     protected override void FinalizeSpawn()

@@ -559,7 +559,8 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      (`EntityMovementMode.Flying`, with no gravity and the flying move control); `HurtAsync` and `DiedAsync` hooks
      change or cancel damage and see deaths; dying mobs drop their `entities/` loot table with killed-by-player and
      looting conditions; `SpawnPlacement` and `CanSpawn` give natural spawning a type's own rules. Saved per-entity
-     data is attachments. Left: mobs' equipment in their attributes, saved API modifiers (see
+     data is attachments; synced metadata stays transient like vanilla. API modifiers save in vanilla attribute NBT,
+     and scale resizes dimensions and passenger attachments on both sides. Remaining parity gaps: see
      [known-gaps.md](known-gaps.md#plugin-entities)). See [plugin-content.md](plugin-content.md#riding-and-flying).
    - Done, engine phase 5 movement: the Obsidian client predicts a mod's mount its player rides first, walking or
      flying from the type's settings and synced attributes with the server's own steering (`MountSteering`), and

@@ -67,15 +67,7 @@ public partial class Mob
             writer.WriteChatMessage(CustomName);
             writer.EndCompound();
         }
-        writer.WriteListStart("attributes", NbtTagType.Compound, Attributes.Count);
-        foreach (var attribute in Attributes)
-        {
-            writer.WriteCompoundStart();
-            writer.WriteString("id", attribute.Key);
-            writer.WriteDouble("base", attribute.Value);
-            writer.EndCompound();
-        }
-        writer.EndList();
+        writer.WriteTag(this.SaveAttributes());
         writer.WriteListStart("ObsidianEquipment", NbtTagType.Compound, equipment.Count);
         foreach (var (slot, item) in equipment)
         {
@@ -277,10 +269,7 @@ public partial class Mob
         if (tag.TryGetTag("CustomName", out var name))
             CustomName = name is NbtTag<string> { Value: { } legacy } && legacy.TrimStart().StartsWith('{')
                 ? JsonSerializer.Deserialize<ChatMessage>(legacy) : name.TextFromNbt();
-        if (tag.TryGetTag<NbtList>("attributes", out var attributes))
-            foreach (var attribute in attributes.OfType<NbtCompound>())
-                if (attribute.TryGetTagValue<string>("id", out var id) && attribute.TryGetTagValue<double>("base", out var value))
-                    Attributes[id] = (float)value;
+        this.LoadAttributes(tag);
         if (tag.TryGetTag<NbtList>("ObsidianEquipment", out var savedEquipment))
             foreach (var entry in savedEquipment.OfType<NbtCompound>())
             {
