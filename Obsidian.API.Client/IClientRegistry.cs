@@ -20,6 +20,9 @@ namespace Obsidian.API.Client;
 /// </remarks>
 public interface IClientRegistry
 {
+    /// <summary>Local audio for this mod; usable after ConfigureClient returns, until the mod unloads.</summary>
+    public IClientSounds Sounds { get; }
+
     /// <summary>
     /// Supplies collision and outline shapes for a block entity type this mod registered. The provider receives
     /// its latest synced update tag as plain NBT values (nested compounds are dictionaries, lists are lists).

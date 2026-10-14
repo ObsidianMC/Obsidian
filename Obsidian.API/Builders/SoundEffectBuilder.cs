@@ -5,6 +5,15 @@ public sealed class SoundEffectBuilder : BaseSoundEffectBuilder
 {
     internal SoundEffectBuilder() { }
 
+    /// <summary>Builds a playable effect from a registered or inline event, preserving its fixed range.</summary>
+    public static ISoundEffectBuilder Create(SoundEvent sound, SoundCategory soundCategory = SoundCategory.Master) =>
+        new SoundEffectBuilder
+        {
+            SoundLocation = sound.ResourceLocation,
+            FixedRange = sound.FixedRange,
+            SoundCategory = soundCategory
+        };
+
     public static ISoundEffectBuilder Create(string soundLocation, SoundCategory soundCategory = SoundCategory.Master) => new SoundEffectBuilder
     {
         SoundLocation = soundLocation,

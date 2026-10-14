@@ -64,6 +64,12 @@ public sealed class SamplePlugin : IDisposable
         var plugin = await manager.LoadPluginAsync(path);
         Assert.NotNull(plugin);
 
+        var listener = TestServerFactory.CreateConnectedPlayer(
+            context.Server, world, "Listener", player.Position + new VectorD(1, 0, 0));
+        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, listener);
+        var listening = (TestClient)listener.Client;
+        listening.ClearPackets();
+
         Assert.True(BlocksRegistry.TryGetPluginBlock("sample:tick_counter", out var counter));
         Assert.True(BlockEntityTypesRegistry.TryGet("sample:tick_counter", out var type));
         Assert.Equal([counter], type.Blocks);
@@ -78,6 +84,12 @@ public sealed class SamplePlugin : IDisposable
 
         var placed = chunk.GetBlock(position);
         Assert.Equal("east", counter.GetValue(placed, "facing"));
+        var placementSound = Assert.Single(listening.SentPackets.OfType<SoundPacket>());
+        Assert.Equal("sample:counter.chime", placementSound.SoundLocation);
+        Assert.Equal(24, placementSound.FixedRange);
+        Assert.Equal(0.85f, placementSound.Volume);
+        Assert.Equal(0.96f, placementSound.Pitch, precision: 5);
+        Assert.Empty(client.SentPackets.OfType<SoundPacket>());
         Assert.Equal("false", counter.GetValue(placed, "powered"));
         Assert.Equal(0, chunk.GetLightLevel(position.X, position.Y, position.Z, LightType.Block));
         Assert.Equal("TickCounterBlockEntity", chunk.GetBlockEntity(4, position.Y, 4)?.GetType().Name);
@@ -117,6 +129,9 @@ public sealed class SamplePlugin : IDisposable
         var before = Assert.IsAssignableFrom<BlockEntity>(chunk.GetBlockEntity(4, position.Y, 4));
         await manager.UnloadPluginAsync(plugin);
 
+        Assert.False(SoundEventsRegistry.TryGet("sample:counter.chime", out _));
+        Assert.Equal(BlockSoundProperties.Stone, counter.SoundType);
+
         Assert.True(before.IsRemoved);
         var kept = Assert.IsType<DataBlockEntity>(chunk.GetBlockEntity(4, position.Y, 4));
         Assert.Equal(Ticks(chunk, position), kept.Data.GetInt("ticks"));
@@ -124,6 +139,9 @@ public sealed class SamplePlugin : IDisposable
         counted = Ticks(chunk, position);
         await manager.LoadPluginAsync(path);
         await world.DoWorldTickAsync();
+
+        Assert.True(SoundEventsRegistry.TryGet("sample:counter.chime", out var chime));
+        Assert.Equal(chime, counter.SoundType.Break);
 
         var restored = chunk.GetBlockEntity(4, position.Y, 4)!;
         Assert.Equal("TickCounterBlockEntity", restored.GetType().Name);
@@ -147,11 +165,18 @@ public sealed class SamplePlugin : IDisposable
         player.Yaw = 0;
         player.Pitch = 32;
         var state = chunk.GetBlock(position);
+        listening.ClearPackets();
         await context.EventDispatcher.ExecuteEventAsync(
             new BlockBreakEventArgs(context.Server, player, state, position, world));
         await world.DoWorldTickAsync();
 
         Assert.True(chunk.GetBlock(position).IsAir);
+        var breakSound = Assert.Single(listening.SentPackets.OfType<SoundPacket>());
+        Assert.Equal("sample:counter.chime", breakSound.SoundLocation);
+        Assert.Equal(24, breakSound.FixedRange);
+        Assert.Equal(0.85f, breakSound.Volume);
+        Assert.Equal(0.96f, breakSound.Pitch, precision: 5);
+        Assert.Empty(client.SentPackets.OfType<SoundPacket>());
         Assert.Null(chunk.GetBlockEntity(4, position.Y, 4));
         var dropped = Assert.Single(world.GetNonPlayerEntitiesInRange((VectorD)position, 4).OfType<ItemEntity>());
         var drop = dropped.Item;

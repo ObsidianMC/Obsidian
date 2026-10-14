@@ -12,4 +12,9 @@ test: `Obsidian.Tests/SamplePlugin.cs` packs its build output (laid out like its
 
 Later phases add to the same plugin: the grinder's screen, a cable block, a portal and a mob.
 
+Phase 4 sounds add `sample:counter.chime` to the counter's placement and break sound type. Its
+`assets/sample/sounds.json` references vanilla's amethyst chime, so the sample needs no extra audio file. The
+placement/break and reload smoke test also checks these sounds. The client API's positional and UI playback are
+exercised by the client test probe mod.
+
 See [plugin-content.md](../../docs/plugin-content.md) for the API it uses.

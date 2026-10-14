@@ -21,6 +21,7 @@
 	<ItemGroup>
 		<None Include="obsidian.mod.json" CopyToOutputDirectory="PreserveNewest" />
 		<None Include="data\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="assets\**\*.json" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 </Project>

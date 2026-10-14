@@ -40,6 +40,9 @@ public sealed class TickCounterBlock : IBlockBehavior
     /// </summary>
     public static void Register(IPluginRegistry registry)
     {
+        // Phase 4: a mod event backed by sounds.json, mixed with vanilla events in the block's sound type.
+        var chime = registry.RegisterSound("sample:counter.chime", fixedRange: 24);
+
         // Server-side only, like the grinder's: clients don't need to know it.
         Ticks = registry.RegisterComponentType(
             "sample:ticks",
@@ -54,6 +57,13 @@ public sealed class TickCounterBlock : IBlockBehavior
             ],
             DefaultState = new Dictionary<string, string> { ["powered"] = "false" },
             Hardness = 1,
+            SoundType = BlockSoundProperties.Stone with
+            {
+                Break = chime,
+                Place = chime,
+                Volume = 0.7f,
+                Pitch = 1.2f
+            },
 
             // Its block entity gives it a shape lower than a full block, so it lets light through, like glass.
             Opaque = false,

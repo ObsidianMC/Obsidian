@@ -10,6 +10,15 @@ namespace Obsidian.API.Plugins;
 public interface IPluginRegistry
 {
     /// <summary>
+    /// Declares a sound event in this plugin's namespace during ConfigureRegistry on either side. Use the returned
+    /// value with SoundEffectBuilder.Create and IPlayer.SendSoundAsync, or with the client's sound API.
+    /// Sounds use vanilla's inline holders (identifier and optional fixed range), so no ids or registry sync are
+    /// needed and a sound-only plugin does not prevent vanilla clients joining. Clients need its resource pack
+    /// to hear it. Unload removes the declaration; re-register on reload to replace its range.
+    /// </summary>
+    public SoundEvent RegisterSound(string identifier, float? fixedRange = null);
+
+    /// <summary>
     /// Registers a server-side recipe type in this plugin's namespace during ConfigureRegistry. Recipe files name
     /// it in type; its serializer and recipes stop matching on unload. Vanilla clients receive no custom types.
     /// </summary>

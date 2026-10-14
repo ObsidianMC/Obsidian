@@ -146,6 +146,20 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         return RegisterParticle(container, identifier);
     }
 
+    public SoundEvent RegisterSound(string identifier, float? fixedRange = null)
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        return RegisterSound(container, identifier, fixedRange);
+    }
+
+    internal static SoundEvent RegisterSound(PluginContainer container, string identifier, float? fixedRange)
+    {
+        CheckIdentifier(container, identifier);
+
+        return SoundEventsRegistry.Register(container, identifier, fixedRange);
+    }
+
     public MenuDefinition RegisterMenu(string identifier, int rows, int columns = 9)
     {
         var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());

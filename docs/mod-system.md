@@ -479,6 +479,14 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      they name), paged ten to a page like NeoForge's, and the search tab from every tab's items like vanilla's. Servers
      only check the registrations: tabs aren't synced, and the creative slot packet accepts any item. A mod's tabs and
      additions go when it unloads. See [plugin-content.md](plugin-content.md#creative-tabs).
+   - Done, engine phase 4 sounds: `IPluginRegistry.RegisterSound` declares a namespaced event and optional fixed range
+     on both sides. Its `SoundEvent` works with `SoundEffectBuilder.Create` and `IPlayer.SendSoundAsync`. Packets use
+     vanilla's inline holders, so sounds need no synced ids and sound-only plugins allow vanilla clients with suitable
+     packs. `BlockProperties.SoundType` supplies break, step, place, hit and fall events with volume and pitch; the
+     client predicts interactions from it and the server sends placement/break audio to nearby players. Mod archives'
+     `sounds.json` merges with other packs. `IClientRegistry.Sounds` queues positional or UI playback from any thread,
+     in menus too. Unload releases declarations and block sound types and disables the old client facade; reload
+     re-registers them. See [plugin-content.md](plugin-content.md#sounds).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
      move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine, and screens in code
      (widgets, mods reading their menus' extra data and data slots, buttons); entity render layers (emissive and

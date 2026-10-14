@@ -99,6 +99,9 @@ public sealed class BlockType
     // unloads.
     internal BlockBinding? Binding { get; set; }
 
+    /// <summary>The currently loaded plugin's sound type, or stone when the plugin is unloaded.</summary>
+    public BlockSoundProperties SoundType => this.Binding?.SoundType ?? BlockSoundProperties.Stone;
+
     // How the block collides, lights and breaks: the server's copy of the plugin's properties, kept when the plugin
     // unloads since the block stays in the world.
     internal BlockSettings Settings { get; set; } = BlockSettings.Default;
@@ -252,7 +255,8 @@ internal sealed record BlockBinding(
     IPluginContainer Owner,
     IBlockBehavior? Behavior,
     TreeGrower? TreeGrower = null,
-    bool RandomlyTicks = false);
+    bool RandomlyTicks = false,
+    BlockSoundProperties? SoundType = null);
 
 /// <summary>
 /// The parts of a plugin block's <see cref="BlockProperties"/> the server keeps: plain values, so that keeping them

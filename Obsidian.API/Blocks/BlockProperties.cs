@@ -7,6 +7,9 @@ namespace Obsidian.API.Blocks;
 /// </summary>
 public sealed class BlockProperties
 {
+    /// <summary>The block's interaction sounds, declared on both sides; stone by default.</summary>
+    public BlockSoundProperties SoundType { get; init; } = BlockSoundProperties.Stone;
+
     /// <summary>
     /// The properties the block's states vary by; none gives the block a single state. They can't change while the
     /// server runs, since clients number states by them.
