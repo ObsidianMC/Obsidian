@@ -20,8 +20,8 @@ public partial class UseItemOnPacket
         ItemStack? stack,
         IBlock block)
     {
-        if (stack is not { Count: > 0 }
-            || stack.GetComponent<EntityDataComponent>(DataComponentType.EntityData) is not EntityDataComponent component)
+        var component = stack?.GetComponent<EntityDataComponent>(DataComponentType.EntityData);
+        if (stack is not { Count: > 0 } || component is null)
         {
             return false;
         }
@@ -36,7 +36,8 @@ public partial class UseItemOnPacket
             return true;
         }
 
-        var definition = EntityDefinitionsRegistry.PluginDefinitions.FirstOrDefault(type => type.Id == component.RegistryId);
+        var definition = EntityDefinitionsRegistry.PluginDefinitions
+            .FirstOrDefault(type => type.Id == component.RegistryId);
         Mob? mob = definition is null && Enum.IsDefined((EntityType)component.RegistryId)
             ? EntitySpawner.CreateMob(level, (EntityType)component.RegistryId)
             : definition is { Kind: EntityKind.Mob, Binding: not null }

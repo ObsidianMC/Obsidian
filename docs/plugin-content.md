@@ -1029,8 +1029,9 @@ defaults with the type's `MaxHealth`, `MovementSpeed` and `FlyingSpeed`. `IEntit
 attribute's value: its base with its modifiers applied in vanilla's order (`Add` to the base, then multiples of that
 sum for `MulBase`, then the result multiplied for each `MulTotal`), clamped to vanilla's range for it.
 `IEntity.SetAttributeModifier(attribute, id, amount, operation)` adds or replaces a modifier, like vanilla's permanent
-modifiers (saved in `attributes` with `modifiers`), and `RemoveAttributeModifier` takes it off. Players get the modifiers of what they hold and
-wear (items' `AttributeModifiers`, a plugin item's default included) as their equipment changes, and vanilla's
+modifiers (saved in `attributes` with `modifiers`), and `RemoveAttributeModifier` takes it off. Players get the
+modifiers of what they hold and wear (items' `AttributeModifiers`, a plugin item's default included) as their
+equipment changes, and vanilla's
 sprinting modifier. Clients are sent the attributes vanilla syncs with `UpdateAttributes`: all of a living entity's
 when it comes into view, the player's own after joining and respawning, and those that change, to the entity's
 watchers and a player itself. Equipment and sprint modifiers stay transient and are rebuilt on load.

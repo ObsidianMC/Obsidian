@@ -295,13 +295,15 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
         if (!EntityDefinitionsRegistry.TryBind(definition, properties, container, () => container.IsClosing))
             throw new InvalidOperationException($"{container.Info.Name} is unloading.");
 
-        definition.SpawnEgg = properties.SpawnEgg ? RegisterItem(container, identifier + "_spawn_egg", new ItemProperties
-        {
-            EntityData = new EntityDataComponent(DataComponentType.EntityData)
+        definition.SpawnEgg = properties.SpawnEgg
+            ? RegisterItem(container, identifier + "_spawn_egg", new ItemProperties
             {
-                RegistryId = definition.Id
-            }
-        }) : null;
+                EntityData = new EntityDataComponent(DataComponentType.EntityData)
+                {
+                    RegistryId = definition.Id
+                }
+            })
+            : null;
 
         return definition;
     }

@@ -83,7 +83,8 @@ public sealed class PluginMobs
         Assert.Equal([.. vanillaData[..^1], 16, (byte)EntityMetadataType.Boolean, 1, 0xff], Metadata(true));
 
         // API modifiers persist in vanilla's attributes format; metadata is transient like SynchedEntityData.
-        Assert.True(drake.SetAttributeModifier("minecraft:max_health", "pluginmobs:health", 5, AttributeOperation.Add));
+        Assert.True(drake.SetAttributeModifier(
+            "minecraft:max_health", "pluginmobs:health", 5, AttributeOperation.Add));
         drake.SetModifier("minecraft:movement_speed", new("pluginmobs:temporary", 1, AttributeOperation.Add));
         var saved = EntityNbt.Save(drake)!;
         var restored = Assert.IsType<PluginMob>(EntityNbt.Load(saved, world));

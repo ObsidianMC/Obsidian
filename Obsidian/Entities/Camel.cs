@@ -27,7 +27,10 @@ public partial class Camel : AbstractHorse
     {
         var yaw = Yaw.Degrees * MathF.PI / 180;
         var offset = (index == 0 ? 0.5f : -0.7f) * this.AttributeScale;
-        return new VectorD(-MathF.Sin(yaw) * offset, Dimension.Height - (IsSitting ? 1.43f * this.AttributeScale : 0), MathF.Cos(yaw) * offset);
+        return new VectorD(
+            -MathF.Sin(yaw) * offset,
+            Dimension.Height - (IsSitting ? 1.43f * this.AttributeScale : 0),
+            MathF.Cos(yaw) * offset);
     }
     protected virtual float DashSpeed => 22.2222f;
     protected override string? SoundName => "camel";
