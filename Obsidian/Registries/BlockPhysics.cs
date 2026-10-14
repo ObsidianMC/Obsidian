@@ -88,6 +88,12 @@ internal static class BlockPhysics
     public static int BlockEntityTypeId(string type) => data.Value.BlockEntityTypeIds.GetValueOrDefault(type, -1);
 
     /// <summary>
+    /// The generated block entity type of the block, or <c>null</c> when vanilla creates no block entity for it.
+    /// </summary>
+    public static Obsidian.API.BlockEntityType? BlockEntityKind(this IBlock block) =>
+        block.BlockEntityType() is { } type && BlockEntityTypeId(type) is var id and >= 0 ? (Obsidian.API.BlockEntityType)id : null;
+
+    /// <summary>
     /// Vanilla <c>isFaceSturdy(..., face, SupportType.FULL)</c>.
     /// </summary>
     public static bool IsFaceSturdy(this IBlock block, BlockFace face) => Has(block, 11 + (int)face);
