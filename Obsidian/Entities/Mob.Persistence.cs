@@ -217,10 +217,17 @@ public partial class Mob
         var additionalTags = (NbtCompound)new NbtReader(additionalStream).ReadNextTag()!;
         foreach (var (_, child) in additionalTags)
             writer.WriteTag(child);
+
+        // The live attachments, not those it was loaded or spawned with, which the copy below would bring back.
+        writer.WriteTag(API.Data.AttachmentStorage.For(this).Snapshot());
         if (originalSave != null)
             foreach (var tag in originalSave)
-                if (!saveFields.Contains(tag.Key) && !additionalTags.HasTag(tag.Key))
+                if (!saveFields.Contains(tag.Key)
+                    && tag.Key != API.Data.AttachmentStorage.NbtKey
+                    && !additionalTags.HasTag(tag.Key))
+                {
                     writer.WriteTag(tag.Value);
+                }
         if (writeCompound)
             writer.EndCompound();
     }
@@ -228,6 +235,7 @@ public partial class Mob
     internal void ReadSave(NbtCompound tag)
     {
         originalSave = tag;
+        API.Data.AttachmentStorage.For(this).Load(tag);
         Position = ReadVector(tag, "Pos");
         LastPosition = Position;
         InitializeAi(false);
