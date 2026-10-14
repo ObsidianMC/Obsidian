@@ -35,6 +35,7 @@ public partial class Player
 
         lock (this.movementGate)
         {
+            owner?.ThrowIfClosing();
             this.movementGrants ??= [];
             this.movementGrants[id] = (grant, owner);
         }
@@ -167,13 +168,14 @@ public partial class Player
     }
 
     /// <summary>
-    /// Keeps the abilities' state in step with a movement the client reported: landing gives back the extra jumps and,
-    /// like vanilla's <c>updateFallFlying</c>, ends gliding, as does mounting, flying or losing the glider.
+    /// Keeps the abilities' state in step with a movement the client reported: a terrain-supported landing gives back
+    /// extra jumps. Like vanilla's <c>updateFallFlying</c>, landing ends gliding, as does mounting, flying or losing
+    /// the glider.
     /// </summary>
-    private void TrackMovementAbilities(MovementFlags flags)
+    private void TrackMovementAbilities(MovementFlags flags, bool supported)
     {
         var onGround = flags.HasFlag(MovementFlags.OnGround);
-        if (onGround)
+        if (supported)
             this.extraJumpsUsed = 0;
 
         if (!this.FlyingWithElytra)

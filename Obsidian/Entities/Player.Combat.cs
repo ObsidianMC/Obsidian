@@ -236,9 +236,16 @@ public partial class Player
 
     private async ValueTask UpdateFallAsync(VectorD previous, MovementFlags flags)
     {
-        this.TrackMovementAbilities(flags);
-
         var terrain = new MobTerrain(Level);
+        var bounds = Dimension.CreateBBFromPosition(Position);
+        var supported = flags.HasFlag(MovementFlags.OnGround)
+            && terrain.GetCollisions(new BoundingBox(bounds.Min - new VectorD(0, 0.05, 0), bounds.Max))
+                .Any(shape => shape.Max.Y <= Position.Y + 0.001 && shape.Max.Y >= Position.Y - 0.05
+                    && shape.Max.X > bounds.Min.X && shape.Min.X < bounds.Max.X
+                    && shape.Max.Z > bounds.Min.Z && shape.Min.Z < bounds.Max.Z);
+
+        this.TrackMovementAbilities(flags, supported);
+
         var feet = terrain.GetBlock((Vector)Position.Floor());
         if (Vehicle != null || Abilities.HasFlag(PlayerAbility.Flying) || GameMode is GameMode.Creative or GameMode.Spectator ||
             HasPotionEffect((int)PotionEffect.Levitation - 1) || HasPotionEffect((int)PotionEffect.SlowFalling - 1) ||
@@ -246,11 +253,6 @@ public partial class Player
             feet != null && TagsRegistry.Block.Climbable.Entries.Contains(feet.RegistryId))
         { FallDistance = 0; return; }
         if (previous.Y > Position.Y) FallDistance += (float)(previous.Y - Position.Y);
-        if (!flags.HasFlag(MovementFlags.OnGround)) return;
-        var bounds = Dimension.CreateBBFromPosition(Position);
-        var supported = terrain.GetCollisions(new BoundingBox(bounds.Min - new VectorD(0, 0.05, 0), bounds.Max))
-            .Any(shape => shape.Max.Y <= Position.Y + 0.001 && shape.Max.Y >= Position.Y - 0.05 &&
-                shape.Max.X > bounds.Min.X && shape.Min.X < bounds.Max.X && shape.Max.Z > bounds.Min.Z && shape.Min.Z < bounds.Max.Z);
         if (!supported) return;
         var floor = terrain.GetBlock((Vector)(Position - new VectorD(0, 0.2, 0)).Floor());
         var distance = FallDistance;

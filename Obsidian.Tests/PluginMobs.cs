@@ -139,6 +139,26 @@ public sealed class PluginMobs
             client.SentPackets,
             packet => packet is MoveVehiclePacket { Position: var back } && back == moved);
 
+        // Walking mounts still count floating when every packet claims to be on the ground in empty air.
+        var walkingControl = new ClientVehicleControl();
+        drake.NoGravity = false;
+        for (var tick = 0; tick < 80; tick++)
+        {
+            walkingControl.Enqueue(player, new VehicleMove(moved, 90, 0, true));
+            walkingControl.Tick(drake, player, flying: false);
+            drake.MovementFlags = MovementFlags.OnGround;
+        }
+
+        Assert.False(walkingControl.FloatingTooLong);
+        for (var tick = 80; tick < 100; tick++)
+        {
+            walkingControl.Enqueue(player, new VehicleMove(moved, 90, 0, true));
+            walkingControl.Tick(drake, player, flying: false);
+        }
+
+        Assert.True(walkingControl.FloatingTooLong);
+        drake.NoGravity = true;
+
         player.Input = PlayerInput.Sneak;
         await drake.TickAsync();
         Assert.Null(((IPlayer)player).Vehicle);

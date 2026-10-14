@@ -91,12 +91,24 @@ public sealed class PlayerMovement : IDisposable
         player.TrackJumpInput(0, PlayerInput.Jump);
         Assert.Equal(1, player.FallDistance);
 
+        // Reporting a landing in empty air cannot replenish the spent jump.
+        await player.UpdateAsync(ground + new VectorD(0, 1, 0), MovementFlags.OnGround);
+        await player.UpdateAsync(ground + new VectorD(0, 1, 0), MovementFlags.None);
+        player.TrackJumpInput(0, PlayerInput.Jump);
+        Assert.Equal(1, player.FallDistance);
+
         // It glides without an elytra, until it lands.
         player.TryStartGliding();
         Assert.True(player.FlyingWithElytra);
 
         await player.UpdateAsync(ground, MovementFlags.OnGround);
         Assert.False(player.FlyingWithElytra);
+
+        // A supported landing gives back the jump.
+        await player.UpdateAsync(ground + new VectorD(0, 3, 0), MovementFlags.None);
+        await player.UpdateAsync(ground + new VectorD(0, 2, 0), MovementFlags.None);
+        player.TrackJumpInput(0, PlayerInput.Jump);
+        Assert.Equal(0, player.FallDistance);
 
         // Unloading the plugin takes its grants back, flight included.
         await manager.UnloadPluginAsync(plugin);

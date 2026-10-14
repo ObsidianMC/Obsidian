@@ -44,6 +44,9 @@ internal sealed class ClientVehicleControl
     // Where the last move the server took put the mob this tick, which the mob travels to.
     private VehicleMove? accepted;
 
+    // Server collision support, kept separately from the client's on-ground flag.
+    private bool collisionBelow;
+
     // Whether the last move taken left the mob floating, and for how many ticks it has.
     private bool floating;
     private int floatingTicks;
@@ -73,7 +76,10 @@ internal sealed class ClientVehicleControl
     public void Tick(Mob vehicle, Player? rider, bool flying)
     {
         if (!ReferenceEquals(rider, this.controller))
+        {
             this.Reset(rider);
+            this.collisionBelow = vehicle.MovementFlags.HasFlag(MovementFlags.OnGround);
+        }
 
         this.accepted = null;
 
@@ -155,7 +161,8 @@ internal sealed class ClientVehicleControl
         var bounds = vehicle.Dimension.CreateBBFromPosition(from);
         var delta = target - from;
         var stepHeight = Math.Clamp(vehicle.GetAttributeValue("minecraft:step_height"), 0, 10);
-        var moved = from + EntityMovement.Collide(terrain, bounds, delta, stepHeight, wasOnGround);
+        var displacement = EntityMovement.Collide(terrain, bounds, delta, stepHeight, wasOnGround);
+        var moved = from + displacement;
         var missX = target.X - moved.X;
         var missZ = target.Z - moved.Z;
         var wrong = missX * missX + missZ * missZ > WronglySquared;
@@ -163,8 +170,11 @@ internal sealed class ClientVehicleControl
         if (wrong && terrain.IsFree(bounds) || CollidesWithNew(vehicle, bounds, target))
             return false;
 
+        // Vanilla checks the preceding move's verticalCollisionBelow, then Entity.move records downward collision.
+        var wasSupported = this.collisionBelow;
+        this.collisionBelow = delta.Y < 0 && displacement.Y != delta.Y;
         this.floating = delta.Y >= -0.03125
-            && !wasOnGround
+            && !wasSupported
             && !flying
             && !vehicle.NoGravity
             && NoBlocksAround(vehicle, target);

@@ -70,7 +70,9 @@ public partial class Player
     /// owner of a vanilla-shaped world, to its level.dat's <c>Data.Player</c> too), and the world they're in to
     /// <see cref="PersistentDataFile"/>.
     /// </summary>
-    public async Task SaveAsync()
+    public async Task SaveAsync() => await this.RunTickAsync(this.SavePlayerAsync, allowStopped: true);
+
+    private async ValueTask SavePlayerAsync()
     {
         await this.saveLock.WaitAsync();
         try

@@ -31,7 +31,11 @@ internal sealed class PlayerAdvancements(IPlayer player) : IAdvancements
             return this.Date(identifier, criterion) is not null;
     }
 
-    public async ValueTask<bool> GrantAsync(string identifier, string? criterion = null)
+    public ValueTask<bool> GrantAsync(string identifier, string? criterion = null) => player is Entities.Player concrete
+        ? concrete.GrantAdvancementAsync(() => this.GrantCoreAsync(identifier, criterion))
+        : this.GrantCoreAsync(identifier, criterion);
+
+    private async ValueTask<bool> GrantCoreAsync(string identifier, string? criterion)
     {
         Advancement definition;
         bool reward;

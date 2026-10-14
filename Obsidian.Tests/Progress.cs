@@ -147,7 +147,21 @@ public sealed class Progress
                 { "pools": [{ "rolls": 1, "entries": [{ "type": "minecraft:item", "name": "minecraft:diamond" }] }] }
                 """, "probe:reward")]);
             player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.CraftingTable));
-            await player.FireProgressAsync("inventory_changed");
+            Task grant;
+            Task save;
+            Task leave;
+            using (await player.Inventory.LockAsync())
+            {
+                // Completion has started, but reward inventory mutation is blocked. Saving and leaving must wait.
+                grant = player.FireProgressAsync("inventory_changed").AsTask();
+                Assert.False(grant.IsCompleted);
+                save = player.SaveAsync();
+                leave = player.StopTickingAsync();
+                Assert.False(save.IsCompleted);
+                Assert.False(leave.IsCompleted);
+            }
+
+            await Task.WhenAll(grant, save, leave);
             Assert.True(player.Advancements.IsDone("probe:inventory"));
             Assert.False(player.Advancements.HasCriterion("probe:unsupported", "obtain"));
             Assert.Equal(7, player.XpTotal);
@@ -170,6 +184,11 @@ public sealed class Progress
             var reloaded = new PlayerAdvancements(player);
             reloaded.Load(file.AsObject());
             Assert.True(reloaded.IsDone("probe:inventory"));
+            await player.LoadAsync(loadFromPersistentWorld: false);
+            Assert.Equal(7, player.XpTotal);
+            Assert.Contains(player.Inventory, item => item?.Holder == ItemsRegistry.Diamond);
+            Assert.False(await player.Advancements.GrantAsync("probe:progress", "first"));
+            Assert.False(player.Advancements.HasCriterion("probe:progress", "first"));
         }
         finally
         {

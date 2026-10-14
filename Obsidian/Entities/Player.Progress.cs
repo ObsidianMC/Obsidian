@@ -25,6 +25,18 @@ public partial class Player
     private readonly HashSet<string> unlockedRecipes = [];
     private readonly ConcurrentQueue<string> craftedRecipes = new();
 
+    /// <summary>Applies criteria and all their rewards as one player state change, unless the player left.</summary>
+    internal async ValueTask<bool> GrantAdvancementAsync(Func<ValueTask<bool>> grant)
+    {
+        var changed = false;
+        await this.RunTickAsync(async () =>
+        {
+            changed = await grant();
+        });
+
+        return changed;
+    }
+
     internal void RecordProgressCraft(string identifier, ItemStack result)
     {
         this.Statistics.Increment(result.Holder.UnlocalizedName, result.Count, "minecraft:crafted");

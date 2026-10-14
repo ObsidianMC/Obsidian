@@ -5,25 +5,24 @@ namespace Obsidian.Entities;
 
 public partial class Player
 {
-    // Held while the player ticks. Leaving takes it once and stops the ticks, so that what's saved is what the last
-    // tick left: a tick that took its players before this one left would otherwise pick up items into an inventory
-    // already saved.
+    // Held while the player ticks, grants advancements or saves. Leaving takes it once and closes ticks and grants,
+    // so completion and its rewards cannot be separated by a save or applied after the final leave save.
     private readonly SemaphoreSlim tickGate = new(1, 1);
 
-    // The player whose tick the current flow is in.
+    // The player whose tick, grant or save owns the gate in the current flow.
     private static readonly AsyncLocal<Player?> tickingPlayer = new();
 
     private bool stoppedTicking;
 
     /// <summary>
-    /// Whether the current flow is in one of the player's ticks, which a leave waits for: a leave started from it (a
-    /// plugin kicking the player, say) mustn't be waited for there.
+    /// Whether the current flow owns the player's tick gate, which a leave waits for: a leave started from it (a
+    /// plugin kicking the player during a tick or reward, say) mustn't be waited for there.
     /// </summary>
     internal bool IsInOwnTick => ReferenceEquals(tickingPlayer.Value, this);
 
     /// <summary>
-    /// Waits for a tick of the player under way and stops ticking them: they're leaving. Never call it from the
-    /// player's own tick.
+    /// Waits for the player's current tick, grant or save and closes ticks and grants: they're leaving. Never call
+    /// it from a flow that already owns the player's tick gate.
     /// </summary>
     internal async Task StopTickingAsync()
     {
@@ -44,20 +43,29 @@ public partial class Player
         await this.ProgressAdvancements.FlushAsync();
     }
 
-    // Runs one of the player's ticks unless they left.
-    private async ValueTask RunTickAsync(Func<ValueTask> tick)
+    // Serializes player state with leaving. Nested grants (recipe rewards) and saves reuse their owning tick.
+    private async ValueTask RunTickAsync(Func<ValueTask> tick, bool allowStopped = false)
     {
+        if (this.IsInOwnTick)
+        {
+            if (!this.stoppedTicking || allowStopped)
+                await tick();
+
+            return;
+        }
+
         await this.tickGate.WaitAsync();
+        var previous = tickingPlayer.Value;
         tickingPlayer.Value = this;
 
         try
         {
-            if (!this.stoppedTicking)
+            if (!this.stoppedTicking || allowStopped)
                 await tick();
         }
         finally
         {
-            tickingPlayer.Value = null;
+            tickingPlayer.Value = previous;
             this.tickGate.Release();
         }
     }
