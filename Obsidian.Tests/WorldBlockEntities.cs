@@ -8,6 +8,10 @@ using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Loot;
+using Obsidian.API.Loot.Entries;
+using Obsidian.API.Loot.Functions;
+using Obsidian.API.Loot.Numbers;
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using Obsidian.API.World.Generator.RandomSources;
@@ -348,6 +352,55 @@ public sealed class WorldBlockEntities : IDisposable
 
         var crate = Assert.IsAssignableFrom<ContainerBlockEntity>(chunk.GetBlockEntity(4, 70, 4));
         crate.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 5));
+
+        // A loot function waits for work under the tick lock, as explorer maps do when chunks publish. Saving the
+        // same plugin container must finish meanwhile, with the pending table rather than a partial fill.
+        var rolls = 0;
+        crate.LootTable = "probe:snapshot";
+        PluginLootTables.Apply([new LootTable
+        {
+            Identifier = crate.LootTable,
+            Pools =
+            [
+                new LootPool
+                {
+                    Rolls = new ConstantNumber { Value = 1 },
+                    Entries = [new ItemEntry { Name = ItemsRegistry.Apple }]
+                }
+            ],
+            Functions = [new SnapshotLootFunction(() =>
+            {
+                rolls++;
+                Task.Run(() =>
+                {
+                    lock (context.World.Fluids.TickLock)
+                    {
+                        var saved = BlockEntityNbt.Save(crate)!;
+                        Assert.True(saved.TryGetTagValue<string>("LootTable", out var pending));
+                        Assert.Equal("probe:snapshot", pending);
+                        Assert.False(saved.HasTag("Items"));
+                    }
+                }).WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+            })]
+        }]);
+        try
+        {
+            var access = context.World.GetItemAccess(position, null)!;
+            Assert.Equal(5, access.GetItem(0)!.Count);
+            Assert.Equal(5, access.GetItem(0)!.Count);
+            Assert.Equal(1, rolls);
+            Assert.Null(crate.LootTable);
+            Assert.Equal(1, crate.Inventory.OfType<ItemStack>().Where(item => item.Is(ItemsRegistry.Apple))
+                .Sum(item => item.Count));
+        }
+        finally
+        {
+            PluginLootTables.Apply([]);
+        }
+
+        for (var slot = 1; slot < crate.Inventory.Size; slot++)
+            crate.Inventory.SetItem(slot, null);
+
         await human.OpenInventoryAsync(crate.Inventory);
         Assert.Same(crate.Inventory, human.OpenedContainer);
 
@@ -391,6 +444,18 @@ public sealed class WorldBlockEntities : IDisposable
         // Chunk eviction waits for an in-flight click, freezes its final contents and closes remote viewers.
         await human.OpenInventoryAsync(restored.Inventory);
         var region = Assert.IsType<Region>(context.World.LoadRegionByChunk(0, 0));
+        var closes = 0;
+        context.EventDispatcher.RegisterEvent(Assert.Single(manager.Plugins),
+            (Func<ContainerClosedEventArgs, ValueTask>)(async args =>
+            {
+                if (!ReferenceEquals(args.Container, restored.Inventory))
+                    return;
+
+                Assert.True(restored.Inventory.IsRetired);
+                await human.OpenInventoryAsync(restored.Inventory);
+                await region.FlushAsync();
+                closes++;
+            }));
         Task eviction;
         using (await restored.Inventory.LockAsync())
         {
@@ -400,6 +465,7 @@ public sealed class WorldBlockEntities : IDisposable
         }
 
         await eviction;
+        Assert.Equal(1, closes);
         Assert.True(restored.Inventory.IsRetired);
         Assert.Null(human.OpenedContainer);
         await human.OpenInventoryAsync(restored.Inventory);
@@ -413,8 +479,38 @@ public sealed class WorldBlockEntities : IDisposable
 
         // The unloaded plugin's data still drops its items when any path removes the block.
         var livePlugin = Assert.Single(manager.Plugins);
+        var keeping = new ContainerBlockEntity(new Container(9))
+        {
+            DropsContents = false,
+            Owner = livePlugin
+        };
+        keeping.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 1));
+        await context.World.SetBlockEntity(position, keeping);
+        PluginLootTables.Apply([LootTableJson.Parse("""
+            {"pools":[{"rolls":1,"entries":[{"type":"minecraft:item","name":"minecraft:barrel",
+              "functions":[{"function":"minecraft:copy_components","source":"block_entity",
+                "include":["minecraft:container"]}]}]}]}
+            """, "probe:blocks/crate")]);
+        await using (var capture = await BlockEntityComponents.CaptureAsync(context.World, position, human))
+        {
+            var boxDrop = Assert.Single(BlockLoot.GetDrops(
+                crateBlock.DefaultState,
+                null,
+                new LegacyRandomSource(1),
+                checkTool: false,
+                blockEntityComponents: capture.Components));
+            var held = boxDrop.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
+                DataComponentType.Container);
+            Assert.Equal(1, Assert.Single(held!.Value).Count);
+        }
+
         await manager.UnloadPluginAsync(livePlugin);
-        await context.World.SetBlockAsync(position, BlocksRegistry.Air);
+        Assert.Null(PluginLootTables.Resolve("probe:blocks/crate"));
+        var keptBox = Assert.IsType<DataBlockEntity>(loaded.GetBlockEntity(4, 70, 4));
+        Assert.False(((NbtCompound)keptBox.Data["obsidian:container"]).GetBool("drops_contents"));
+        await context.World.ExplodeAsync((VectorD)position + 0.5, 2, false,
+            AbstractLevel.ExplosionInteraction.Block);
+        Assert.Null(loaded.GetBlockEntity(4, 70, 4));
         Assert.Equal(1, ItemsIn(context.World).Where(drop => drop.Item.Is(ItemsRegistry.Diamond))
             .Sum(drop => drop.Item.Count));
     }
@@ -568,6 +664,11 @@ public sealed class WorldBlockEntities : IDisposable
         foreach (var sherd in new[] { "minecraft:angler_pottery_sherd", "minecraft:brick" })
             sherds.Add(new NbtTag<string>(string.Empty, sherd));
         potEntity.Set(sherds);
+        var filledPot = new ItemStack(ItemsRegistry.DecoratedPot, 1, ComponentBuilder.Container with
+        {
+            Value = [new ItemStack(ItemsRegistry.Diamond, 7)]
+        });
+        await BlockEntityComponents.ApplyAsync(context.World, position, filledPot);
 
         await context.EventDispatcher.ExecuteEventAsync(new BlockBreakEventArgs(context.Server, human,
             pot, position, context.World));
@@ -575,6 +676,16 @@ public sealed class WorldBlockEntities : IDisposable
         var pieces = ItemsIn(context.World).Select(drop => drop.Item).ToList();
         Assert.Single(pieces, item => item.Is(ItemsRegistry.AnglerPotterySherd));
         Assert.Equal(3, pieces.Count(item => item.Is(ItemsRegistry.Brick)));
+        Assert.Equal(7, pieces.Where(item => item.Is(ItemsRegistry.Diamond)).Sum(item => item.Count));
+        Assert.False(potEntity.Data.HasTag("item"));
+
+        // Replacing an intact pot uses the same spill path, without relying on its loot table.
+        await context.World.SetBlockAsync(position, BlocksRegistry.DecoratedPot);
+        await BlockEntityComponents.ApplyAsync(context.World, position, filledPot);
+        await context.World.SetBlockAsync(position, BlocksRegistry.Stone);
+        await context.World.SetBlockAsync(position, BlocksRegistry.Air);
+        Assert.Equal(14, ItemsIn(context.World).Where(drop => drop.Item.Is(ItemsRegistry.Diamond))
+            .Sum(drop => drop.Item.Count));
 
         static void AssertHoldsDiamonds(ItemStack item)
         {
@@ -583,6 +694,15 @@ public sealed class WorldBlockEntities : IDisposable
             Assert.Equal(3, contents.Length);
             Assert.True(contents[2].Is(ItemsRegistry.Diamond));
             Assert.Equal(3, contents[2].Count);
+        }
+    }
+
+    private sealed class SnapshotLootFunction(Action snapshot) : LootFunction
+    {
+        protected override ItemStack Run(ItemStack stack, LootContext context)
+        {
+            snapshot();
+            return stack;
         }
     }
 

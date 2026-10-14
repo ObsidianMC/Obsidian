@@ -206,11 +206,22 @@ internal sealed class BlockEntityComponents : IAsyncDisposable
             // Its contents drop with the block's loot, once: a second break of the same box gets none.
             if (container.IsRemoved || !container.DropsContents && !inventory.TryRetire())
                 return new BlockEntityComponents([], []) { CanBreak = false };
+        }
 
-            try
+        var captured = new BlockEntityComponents(components, dynamic)
+        {
+            retirement = container.DropsContents ? null : container
+        };
+
+        try
+        {
+            if (!container.DropsContents && breaker is not null)
+                level.UnpackLootTable(container, breaker.GameMode == GameMode.Creative ? null : breaker);
+
+            using (await inventory.LockAsync())
             {
-                if (!container.DropsContents && breaker is not null)
-                    level.UnpackLootTable(container, breaker.GameMode == GameMode.Creative ? null : breaker);
+                if (container.IsRemoved)
+                    return new BlockEntityComponents([], []) { CanBreak = false };
 
                 if (inventory.CustomName is ChatMessage name)
                     components.Add(ComponentBuilder.CustomName with { Value = name });
@@ -238,19 +249,14 @@ internal sealed class BlockEntityComponents : IAsyncDisposable
                     }
                 }
             }
-            catch
-            {
-                if (!container.DropsContents)
-                    inventory.CancelRetirement();
-
-                throw;
-            }
+        }
+        catch
+        {
+            await captured.DisposeAsync();
+            throw;
         }
 
-        return new BlockEntityComponents(components, dynamic)
-        {
-            retirement = container.DropsContents ? null : container
-        };
+        return captured;
     }
 
     // Vanilla's ItemContainerContents.fromItems: copies of the slots up to the last that holds something.

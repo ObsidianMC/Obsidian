@@ -1,12 +1,10 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
-using Obsidian.API.Loot;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
-using Obsidian.WorldData.Maps;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -156,44 +154,6 @@ public abstract partial class AbstractLevel
     /// </summary>
     internal void QueueBlockEntityRemoval(BlockEntity removed) =>
         this.EnqueueEntityAction(() => this.RunBlockEntityRemovalAsync(removed, onLevelTick: true));
-
-    /// <summary>
-    /// Fills a container waiting for its loot table from the table, like vanilla's
-    /// <c>RandomizableContainer.unpackLootTable</c>: when a player opens it (<paramref name="opener"/>), or it's
-    /// removed. The table is rolled once.
-    /// </summary>
-    internal void UnpackLootTable(ContainerBlockEntity container, IEntity? opener)
-    {
-        lock (container.LootLock)
-        {
-            if (container.LootTable is not string lootTable)
-                return;
-
-            // Vanilla generates nothing for unknown tables.
-            var resolver = PluginLootTables.CaptureResolver();
-            var table = resolver(lootTable) ?? LootTable.Empty;
-            var random = table.CreateRandom(container.LootTableSeed, BlockLoot.SequencesFor(this));
-            var position = container.BlockPosition;
-
-            // Container and block tables can name the same sequence, so the whole fill, shuffling included, holds
-            // the source's lock like block destruction does. Players have no luck attribute yet, so their luck is
-            // vanilla's default of 0.
-            lock (random)
-            {
-                table.Fill(container.Inventory, new LootContext
-                {
-                    Random = random,
-                    Origin = new VectorD(position.X + 0.5, position.Y + 0.5, position.Z + 0.5),
-                    ThisEntity = opener,
-                    ResolveTable = resolver,
-                    ExplorationMaps = ExplorationMaps.For(this)
-                });
-            }
-
-            container.LootTable = null;
-            container.LootTableSeed = 0;
-        }
-    }
 
     /// <summary>
     /// Ticks the block entities of the chunks that tick, like vanilla's block entity tickers: those whose block still
@@ -463,14 +423,14 @@ public abstract partial class AbstractLevel
             case ContainerBlockEntity container:
                 var contents = new List<ItemStack>();
                 using (await container.Inventory.LockAsync())
-                {
                     container.Inventory.TryRetire();
 
-                    if (container.DropsContents)
-                    {
-                        this.UnpackLootTable(container, null);
+                if (container.DropsContents)
+                {
+                    // Loot may load chunks: keep the retired inventory frozen, but hold no click or tick lock.
+                    this.UnpackLootTable(container, null, removing: true);
+                    using (await container.Inventory.LockAsync())
                         TakeContents(container.Inventory, contents);
-                    }
                 }
 
                 await CloseWindowsAsync(container.Inventory);
@@ -481,6 +441,22 @@ public abstract partial class AbstractLevel
                 break;
             case DataBlockEntity data when data.KeptContainer() is ContainerBlockEntity kept:
                 await this.RemoveContentsAsync(kept);
+                break;
+            case DataBlockEntity { Id: "minecraft:decorated_pot" } pot:
+                // Vanilla's pot spills its item separately; its block loot copies only pot_decorations.
+                NbtCompound potData;
+                lock (pot.Data)
+                {
+                    potData = pot.SnapshotData();
+                    pot.Remove("item");
+                }
+
+                if (potData.TryGetTag<NbtCompound>("item", out var itemTag)
+                    && itemTag.ItemFromNbt() is ItemStack potItem && !potItem.IsAir && potItem.Count > 0)
+                {
+                    this.DropItemStack(pot.BlockPosition, potItem);
+                }
+
                 break;
             case DataBlockEntity { DropsItems: true } data:
                 this.DropSavedItems(data);

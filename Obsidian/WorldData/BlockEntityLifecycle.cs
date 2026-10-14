@@ -12,6 +12,10 @@ internal static class BlockEntityLifecycle
         var inventories = new List<BaseContainer>();
         foreach (var entity in chunk.BlockEntities.Values.OfType<BlockEntity>())
         {
+            // A close handler may flush an already retired region; it must not close the same window recursively.
+            if (entity.IsRemoved)
+                continue;
+
             if (entity is ContainerBlockEntity container)
             {
                 using (container.Inventory.Lock())

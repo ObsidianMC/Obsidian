@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
+using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Plugins;
 using Obsidian.WorldData.Features;
@@ -17,7 +18,7 @@ public abstract partial class AbstractLevel
     // are brought up to date then.
     private readonly ConcurrentDictionary<ContainerBlockEntity, byte> itemAccessChanges = new();
 
-    // Containers whose loot a hook's item access asked for, rolled on the next tick outside the tick lock.
+    // Loot requested under the tick or item transfer lock, rolled on the next tick without those locks.
     private readonly ConcurrentDictionary<ContainerBlockEntity, byte> pendingLoot = new();
 
     /// <inheritdoc/>
@@ -70,15 +71,16 @@ public abstract partial class AbstractLevel
 
     /// <summary>
     /// Rolls a container's pending loot before item access reaches it (see
-    /// <see cref="IContainerItemsHost.PrepareItems"/>): at once, or, holding the tick lock, which rolling loot may
-    /// wait on by loading chunks, on the level's next tick.
+    /// <see cref="IContainerItemsHost.PrepareItems"/>): at once, or on the next tick when holding the tick or item
+    /// transfer lock. Rolling loot may load chunks, so it must not hold either lock.
     /// </summary>
     private bool PrepareContainerItems(ContainerBlockEntity container)
     {
         if (container.LootTable is null)
             return true;
 
-        if (!this.Fluids.TickLock.IsHeldByCurrentThread)
+        if (!this.Fluids.TickLock.IsHeldByCurrentThread
+            && !System.Threading.Monitor.IsEntered(ItemEntity.TransferLock))
         {
             this.UnpackLootTable(container, opener: null);
             return true;

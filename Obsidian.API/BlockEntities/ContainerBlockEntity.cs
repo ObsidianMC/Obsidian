@@ -59,9 +59,12 @@ public partial class ContainerBlockEntity(BaseContainer inventory) : BlockEntity
     public bool DropsContents { get; init; } = true;
 
     /// <summary>
-    /// Taken while the loot table is rolled, so that it's rolled once.
+    /// Protects publishing generated loot with its table fields, after taking the inventory's click lock.
     /// </summary>
     internal Lock LootLock { get; } = new();
+
+    /// <summary>Serializes loot preparation outside the tick, item transfer, click and loot locks.</summary>
+    internal Lock LootGenerationLock { get; } = new();
 
     // The inventory's revision when its contents were last saved, to tell when they changed.
     internal long SavedRevision { get; set; } = -1;
