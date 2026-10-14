@@ -107,6 +107,8 @@ pushes them into a hopper below.
   and their metadata.
 
 **Sample:** the phase 2 machine gets a screen with a progress bar, a mode button and a searchable, scrolling list.
+(done: `samples/EngineSample`, its grinder's menu and screen, loaded by `Obsidian.Tests/SamplePlugin.cs` and, with
+its client side, by the client's tests)
 
 ## Phase 4: rendering
 

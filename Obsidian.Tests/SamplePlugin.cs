@@ -7,6 +7,7 @@ using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using Obsidian.Entities;
 using Obsidian.Nbt;
+using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Payloads;
 using Obsidian.Registries;
@@ -25,7 +26,8 @@ namespace Obsidian.Tests;
 
 /// <summary>
 /// The engine sample plugin (samples/EngineSample), packed from its build output and loaded through the plugin
-/// manager like any plugin: one smoke test per phase of docs/engine-foundations.md, through what a player does.
+/// manager like any plugin: a smoke test per block it adds, through what a player does, each covering the phases of
+/// docs/engine-foundations.md that block uses.
 /// </summary>
 // Loading plugins merges their tags into vanilla's, which PluginTagFiles changes too.
 [Collection(nameof(PluginTagFiles))]
@@ -206,8 +208,8 @@ public sealed class SamplePlugin : IDisposable
         await world.DoWorldTickAsync();
     }
 
-    [Fact(DisplayName = "Phase 2: the grinder grinds ore from a chest above into a hopper below, losing nothing",
-        Timeout = TestServerFactory.TestTimeout)]
+    [Fact(DisplayName = "Phases 2 and 3: the grinder grinds ore from a chest above into a hopper below, losing "
+        + "nothing, and opens its menu", Timeout = TestServerFactory.TestTimeout)]
     public async Task Grinder()
     {
         await using var context = TestServerFactory.CreateServer($"sample-{Guid.NewGuid():N}");
@@ -216,7 +218,8 @@ public sealed class SamplePlugin : IDisposable
         world.LevelData.GameRules["spawn_mobs"] = "false";
 
         // A player nearby, so that the chunk ticks.
-        await WorldBlockEntities.JoinAsync(context);
+        var player = await WorldBlockEntities.JoinAsync(context);
+        var client = (TestClient)player.Client;
 
         await using var manager = BlockUpdates.CreatePluginManager(context);
         Assert.NotNull(await manager.LoadPluginAsync(await this.PackSampleAsync()));
@@ -260,7 +263,53 @@ public sealed class SamplePlugin : IDisposable
         Assert.True(ground.TryGetTag<NbtCompound>("components", out var components));
         Assert.True(components.TryGetTag<NbtArray<int>>("sample:ground_by", out var groundBy));
         Assert.Equal([machine.X, machine.Y, machine.Z], groundBy.GetArray());
+
+        // Phase 3: using it opens its menu, bound to its block entity, with the recipes it grinds for the screen's
+        // list, in identifier order: each as its ingredient and its result.
+        await BlockUpdates.UseOn(machine, BlockFace.North).HandleAsync(context.Server, player);
+        var menu = Assert.IsAssignableFrom<MenuContainer>(player.OpenedContainer);
+        Assert.Equal("sample:grinder", menu.Menu.Identifier);
+        Assert.Same(await world.GetBlockEntityAsync(machine), menu.BlockEntity);
+
+        using var written = new NetworkBuffer();
+        menu.WriteOpenData(player, written);
+        using var openData = new NetworkBuffer(written.AsSpan(0, written.Size).ToArray());
+        Assert.Equal(4, openData.ReadVarInt());
+        Assert.True(openData.ReadRequiredItemStack().Is(ItemsRegistry.Cobblestone));
+        Assert.True(openData.ReadRequiredItemStack().Is(ItemsRegistry.Gravel));
+
+        // Its data slots follow the grinding, sent as they change on the player's ticks: its progress and its
+        // recipe's time here.
+        client.ClearPackets();
+        Assert.Null(world.GetItemAccess(machine, side: null)!.Insert(0, new ItemStack(ItemsRegistry.IronOre, 1)));
+        for (var tick = 0; tick < 5; tick++)
+            await world.DoWorldTickAsync();
+
+        await player.TickMenuAsync();
+        Assert.Equal([(0, 5), (1, 20)], DataSlots(client));
+
+        // Its button stops it pulling from above, which it saves: an ore put in the chest stays there.
+        client.ClearPackets();
+        await player.ClickMenuButtonAsync(player.CurrentContainerId, 0);
+        Assert.Null(chestItems.Insert(new ItemStack(ItemsRegistry.IronOre, 1)));
+        for (var tick = 0; tick < 5; tick++)
+            await world.DoWorldTickAsync();
+
+        await player.TickMenuAsync();
+        Assert.Equal([(0, 10), (2, 0)], DataSlots(client));
+        Assert.Equal(1, Count(world, chest, ItemsRegistry.IronOre));
+        Assert.Equal(0, Saved(world, machine).GetByte("pulls"));
     }
+
+    // The data slots the client was sent, by index, with the last value sent.
+    private static List<(int Slot, int Value)> DataSlots(TestClient client) =>
+    [
+        .. client.SentPackets
+            .OfType<ContainerSetDataPacket>()
+            .GroupBy(packet => (int)packet.WindowProperty.Property)
+            .Select(slot => (slot.Key, (int)slot.Last().WindowProperty.Value))
+            .Order()
+    ];
 
     // The sample's build output, packed into a plugin archive as Obsidian.MSBuild packs it.
     private async Task<string> PackSampleAsync()

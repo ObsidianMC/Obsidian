@@ -1,15 +1,20 @@
 using EngineSample.Grinder;
 using EngineSample.TickCounter;
+using Obsidian.API.Client;
 using Obsidian.API.Plugins;
 
 namespace EngineSample;
 
 /// <summary>
-/// Obsidian's engine sample: a plugin that uses what each phase of the engine plan (docs/engine-foundations.md) adds,
-/// through the public API alone, as a mod would. Obsidian.Tests packs it into a plugin archive and loads it through the
-/// plugin manager, so the sample keeps working as the engine changes. Each phase adds its content here.
+/// Obsidian's engine sample: a mod that uses what each phase of the engine plan (docs/engine-foundations.md) adds,
+/// through the public API alone. Obsidian.Tests packs it into a plugin archive and loads it through the plugin manager,
+/// so the sample keeps working as the engine changes. Each phase adds its content here.
 /// </summary>
-public sealed class EngineSamplePlugin : PluginBase
+/// <remarks>
+/// Its side is <c>both</c>: servers call <see cref="ConfigureRegistry"/>, and the Obsidian client calls it too, then
+/// <see cref="ConfigureClient"/> for its client side.
+/// </remarks>
+public sealed class EngineSamplePlugin : PluginBase, IClientPlugin
 {
     public override void ConfigureRegistry(IPluginRegistry registry)
     {
@@ -17,7 +22,13 @@ public sealed class EngineSamplePlugin : PluginBase
         TickCounterBlock.Register(registry);
 
         // Phase 2, items, inventories and recipes: a machine that grinds what it pulls from a chest by a recipe type
-        // of its own, and pushes the results into a hopper.
+        // of its own, and pushes the results into a hopper. Phase 3 gives it a menu.
         GrinderBlock.Register(registry);
+    }
+
+    public void ConfigureClient(IClientRegistry registry)
+    {
+        // Phase 3, menus and screens: the grinder's menu shows with a screen built in code.
+        registry.RegisterMenuScreen(GrinderMenu.Identifier, menu => new GrinderScreen(menu));
     }
 }

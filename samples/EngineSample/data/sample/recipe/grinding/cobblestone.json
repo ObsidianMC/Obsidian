@@ -1,0 +1,9 @@
+{
+  "type": "sample:grinding",
+  "ingredient": "minecraft:cobblestone",
+  "result": {
+    "id": "minecraft:gravel",
+    "count": 1
+  },
+  "grinding_time": 10
+}

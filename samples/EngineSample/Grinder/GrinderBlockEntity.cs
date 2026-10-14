@@ -7,9 +7,9 @@ using Obsidian.Nbt;
 namespace EngineSample.Grinder;
 
 /// <summary>
-/// The grinder's block entity: a container with an input slot and an output slot, and the ticks spent grinding the
-/// input, saved with its chunk. Each tick it pulls an item it can grind from the container above, grinds, and pushes
-/// what it made into whatever is below.
+/// The grinder's block entity: a container with an input slot and an output slot, the ticks spent grinding the input
+/// and whether it pulls from above, saved with its chunk. Each tick it pulls an item it can grind from the container
+/// above (unless its menu's button turned that off), grinds, and pushes what it made into whatever is below.
 /// </summary>
 /// <remarks>
 /// Other blocks reach its slots too, through item access: the top and sides reach the input, which takes only what
@@ -26,24 +26,56 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
 
     // Changed only on the level's tick, like the rest of the block entity's own state.
     private int progress;
+    private int time;
+
+    // Changed by a click in the grinder's menu, on the player's thread, and read on the level's tick: a field written
+    // whole, which the tick sees once it's set.
+    private volatile bool pulls = true;
 
     /// <summary>
     /// The ticks spent grinding the input's item, up to its recipe's time.
     /// </summary>
     public int Progress => this.progress;
 
+    /// <summary>
+    /// The ticks the input's item takes to grind, by its recipe; 0 while nothing grinds.
+    /// </summary>
+    public int Time => this.time;
+
+    /// <summary>
+    /// Whether the grinder pulls items from the container above; when it doesn't, only players and hoppers fill it.
+    /// Its menu's button toggles it.
+    /// </summary>
+    public bool Pulls
+    {
+        get => this.pulls;
+        set
+        {
+            this.pulls = value;
+            this.SetChanged();
+        }
+    }
+
     protected override void Load(NbtCompound tag)
     {
         base.Load(tag);
         this.progress = tag.TryGetTagValue<int>("progress", out var progress) ? progress : 0;
+        this.pulls = !tag.TryGetTagValue<byte>("pulls", out var pulls) || pulls != 0;
     }
 
     protected override void Save(NbtCompound tag)
     {
-        // The container saves its items; the grinder adds its progress.
+        // The container saves its items; the grinder adds its progress and its mode, a bool saved as a byte like
+        // vanilla's.
         base.Save(tag);
         tag.Add(new NbtTag<int>("progress", this.progress));
+        tag.Add(new NbtTag<byte>("pulls", (byte)(this.pulls ? 1 : 0)));
     }
+
+    /// <summary>
+    /// Whether the grinder has a recipe for <paramref name="stack"/>, which is what its input takes.
+    /// </summary>
+    public bool Grinds(ItemStack stack) => this.FindRecipe(stack) is not null;
 
     protected override IReadOnlyList<int> GetSlots(BlockFace? side) => side switch
     {
@@ -54,7 +86,7 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
 
     // Called with the inventory's lock held: finding a recipe reads the server's recipes without waiting on anything.
     protected override bool CanInsert(int slot, ItemStack stack, BlockFace? side) =>
-        slot == InputSlot ? this.FindRecipe(stack) is not null : side is null;
+        slot == InputSlot ? this.Grinds(stack) : side is null;
 
     protected override bool CanExtract(int slot, ItemStack stack, BlockFace? side) =>
         side is null || slot == OutputSlot;
@@ -66,7 +98,9 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
         if (this.Level is not ILevel level || this.GetItemAccess(side: null) is not IItemAccess own)
             return ValueTask.CompletedTask;
 
-        this.Pull(level, own);
+        if (this.pulls)
+            this.Pull(level, own);
+
         this.Grind(own);
         this.Push(level, own);
 
@@ -106,6 +140,7 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
     private void Grind(IItemAccess own)
     {
         var recipe = own.GetItem(InputSlot) is ItemStack item ? this.FindRecipe(item) : null;
+        this.time = recipe?.Time ?? 0;
         if (recipe is null)
         {
             this.SetProgress(0);
