@@ -467,6 +467,12 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      content behaviour and load contexts, like the server's plugin unloading) and loads the folder again, then the
      assets. It's only there while the client isn't connected, and content stays registered with its ids, so content
      a mod adds needs a restart.
+   - Done, creative tabs: `IPluginRegistry.RegisterCreativeTab` and `AddToCreativeTab`, from `ConfigureRegistry` on
+     both sides like NeoForge's tabs and `BuildCreativeModeTabContentsEvent`. The client builds its creative
+     inventory's tabs as it opens: vanilla's with mods' additions, then mods' tabs (after vanilla's, or after the tab
+     they name), paged ten to a page like NeoForge's, and the search tab from every tab's items like vanilla's. Servers
+     only check the registrations: tabs aren't synced, and the creative slot packet accepts any item. A mod's tabs and
+     additions go when it unloads. See [plugin-content.md](plugin-content.md#creative-tabs).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
      move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine, and screens in code
      (widgets, mods reading their menus' extra data and data slots, buttons); entity render layers (emissive and

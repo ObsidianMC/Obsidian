@@ -25,8 +25,9 @@ plugin that exercises it.
 - **NeoForge-shaped, not NeoForge-copied.** Mod authors should recognise the concepts (block entities, capabilities,
   data attachments, menu types with extra data, registry sync), but the API is designed for Obsidian.
 - **Registry sync.** Every new registry clients need (block entity types, sound events, data component types, recipe
-  serializers, creative tabs) is synced to modded clients with NeoForge's and Fabric's registry sync, like items
-  and blocks, and a vanilla client is refused once a mod adds to it.
+  serializers) is synced to modded clients with NeoForge's and Fabric's registry sync, like items and blocks, and a
+  vanilla client is refused once a mod adds to it. Creative tabs aren't: like vanilla's and NeoForge's, nothing on
+  the wire names one.
 - **A sample per phase.** Each phase adds to a sample plugin, in the repository and loaded by the tests, that uses
   every new hook, so later phases and the test mod build on proven pieces.
 
@@ -100,7 +101,7 @@ pushes them into a hopper below.
   open a screen for a menu type or on its own. The client implements them with its own UI, as it does the rest of
   the client API. `MenuScreenProperties` stays for simple menus.
 - **HUD overlays.** Mods register overlays drawn with the same UI API.
-- **Creative tabs.** Mods' items in creative tabs, registered on both sides.
+- **Creative tabs.** (done) Mods' items in creative tabs, registered on both sides.
 - **Client queries.** Mods read the client's world: block states, their block entities' synced data, entities and
   their metadata.
 
