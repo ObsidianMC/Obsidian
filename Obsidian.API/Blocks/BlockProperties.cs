@@ -44,9 +44,15 @@ public sealed class BlockProperties
     public float? ExplosionResistance { get; init; }
 
     /// <summary>
-    /// Whether the block only drops its item when broken with the right tool.
+    /// Whether a player must use the right tool for the block to drop loot. Explosions bypass this check.
     /// </summary>
     public bool RequiresCorrectTool { get; init; }
+
+    /// <summary>
+    /// The drop table's identifier. Null uses &lt;namespace&gt;:blocks/&lt;path&gt;, falling back to the block's
+    /// own item when that table is absent. An explicit missing table drops nothing.
+    /// </summary>
+    public string? LootTable { get; init; }
 
     /// <summary>
     /// The light level the block gives off, from 0 to 15.

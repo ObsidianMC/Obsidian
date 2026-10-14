@@ -86,7 +86,7 @@ internal sealed class DataBudget(string name, DataPackLimits limits)
 /// </summary>
 /// <remarks>
 /// Only the files Obsidian reads from plugins are applied (worldgen, structures and their templates, biomes, dimension
-/// and damage types, and tags); others, like recipes or loot tables, are left out unread. Like vanilla, a pack's
+/// and damage types, tags and block loot); others, like recipes, are left out unread. Like vanilla, a pack's
 /// <c>overlays</c> for the current data pack format are applied over its root, and its <c>filter</c> blocks files
 /// of the packs before it (see <see cref="DataPackMetadata"/>); plugins' files and vanilla's own entries aren't
 /// filtered.
@@ -104,6 +104,8 @@ internal sealed partial class DataPack(DataFiles files)
     /// The pack's tag files, merged with vanilla's, Obsidian's and plugins' tags after plugins' files.
     /// </summary>
     public List<TagFile> TagFiles { get; } = [];
+
+    public ImmutableArray<Obsidian.API.Loot.LootTable> LootTableFiles { get; set; } = [];
 
     /// <summary>
     /// The pack's biome, dimension type and damage type files.

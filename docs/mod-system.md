@@ -52,6 +52,9 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      vanilla's registries. A plugin's items
      stay registered, and synced, until the server stops, even if the plugin unloads for good: stacks of them can
      still be anywhere, so clients need the mod until then.
+   - Done for block loot: players and explosions evaluate vanilla's or plugins' `data/<ns>/loot_table` tables,
+     with state and tool predicates, silk touch, fortune and explosion decay. Required-tool blocks check the tool
+     component's ordered rules and live mining and tier tags; unloading a plugin restores the previous loot tables.
    - Done for blocks: plugins register blocks with `IPluginRegistry.RegisterBlock`, with state properties, simple
      physics (collision, opacity, hardness, light emission), an `IBlockBehavior` for using them and, by default, an
      item that places them. Their states get ids after vanilla's, numbered like vanilla numbers a block's states, and

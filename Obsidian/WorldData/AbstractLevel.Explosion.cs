@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -10,11 +12,20 @@ namespace Obsidian.WorldData;
 
 public abstract partial class AbstractLevel
 {
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "Could not evaluate explosion loot for {Block} at {Position}")]
+        public static partial void ExplosionLootFailed(
+            ILogger logger, Exception exception, string block, Vector position);
+    }
+
     private static readonly Dictionary<string, float> blastResistance = LoadBlastResistance();
 
     private static Dictionary<string, float> LoadBlastResistance()
     {
-        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Assets.blast_resistance.json")
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(
+            "Obsidian.Assets.blast_resistance.json")
             ?? throw new InvalidDataException("Missing block blast resistance data.");
         return JsonSerializer.Deserialize<Dictionary<string, float>>(stream)!;
     }
@@ -72,8 +83,12 @@ public abstract partial class AbstractLevel
                     var resistance = BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out var pluginBlock)
                         ? pluginBlock.Settings.ExplosionResistance
                         : blastResistance[block.UnlocalizedName];
-                    if (source is WitherSkull { Invulnerable: true } && !TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId))
+                    if (source is WitherSkull { Invulnerable: true }
+                        && !TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId))
+                    {
                         resistance = Math.Min(resistance, 0.8f);
+                    }
+
                     strength -= (resistance + 0.3f) * 0.3f;
                 }
                 if (strength > 0 && !block.IsAir)
@@ -107,7 +122,10 @@ public abstract partial class AbstractLevel
             var bounds = target.Dimension.CreateBBFromPosition(target.Position);
             var total = 0;
             var visible = 0;
-            var steps = new VectorD((float)(1 / (bounds.Width * 2 + 1)), (float)(1 / (bounds.Height * 2 + 1)), (float)(1 / (bounds.Depth * 2 + 1)));
+            var steps = new VectorD(
+                (float)(1 / (bounds.Width * 2 + 1)),
+                (float)(1 / (bounds.Height * 2 + 1)),
+                (float)(1 / (bounds.Depth * 2 + 1)));
             for (var a = 0d; a <= 1; a += steps.X)
             for (var b = 0d; b <= 1; b += steps.Y)
             for (var c = 0d; c <= 1; c += steps.Z)
@@ -127,7 +145,8 @@ public abstract partial class AbstractLevel
                 await living.DamageCombatAsync(attacker, damage, CombatDamageKind.Explosion, sourcePosition: center);
             else
                 await target.DamageAsync(attacker, damage);
-            var knockback = direction * exposure * (1 - Math.Clamp(target.GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
+            var knockback = direction * exposure
+                * (1 - Math.Clamp(target.GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
             target.Motion += knockback;
             if (target is IPlayer)
                 knockbacks[target.EntityId] = knockback;
@@ -144,27 +163,45 @@ public abstract partial class AbstractLevel
             ? "block_explosion_drop_decay"
             : "mob_explosion_drop_decay");
 
+        var removed = new HashSet<Vector>();
         foreach (var position in destroyed)
         {
-            var block = terrain.GetBlock(position)!;
-            await SetBlockAsync(position, BlocksRegistry.Air, true);
-            if (!dropDecay || random.NextSingle() <= 1 / radius)
-            {
-                if (BlocksRegistry.TryGetItem(block, out var holder))
-                {
-                    var item = new Obsidian.API.Inventory.ItemStack(holder, 1);
-                    var drop = new ItemEntity
-                    {
-                        Level = this,
-                        EntityId = Server.GetNextEntityId(),
-                        Position = (VectorD)position + 0.5f,
-                        Item = item,
-                        SpawnedBy = spawner
-                    };
+            if (!removed.Add(position))
+                continue;
 
-                    if (!this.TrySpawnEntity(drop, hostOwned: true))
-                        throw new InvalidOperationException($"Could not register entity {drop.EntityId}.");
-                }
+            var block = terrain.GetBlock(position)!;
+            var parts = await TwoPartBlockBreak.PrepareAsync(this, position, block);
+            List<ItemStack> drops;
+            try
+            {
+                // Block entity integration supplies components/dynamic contents here, from parts.DropPosition.
+                drops = await BlockLoot.GetDropsAsync(this, parts.DropPosition, parts.DropState, null,
+                    breaker: source, explosionRadius: dropDecay ? radius : null, checkTool: false);
+            }
+            catch (Exception ex)
+            {
+                Log.ExplosionLootFailed(Logger, ex, block.UnlocalizedName, position);
+                drops = [];
+            }
+
+            await parts.RemovePartnerAsync(this);
+            if (parts.PartnerPosition is Vector partnerPosition)
+                removed.Add(partnerPosition);
+
+            await SetBlockAsync(position, BlocksRegistry.Air, true);
+            foreach (var item in drops)
+            {
+                var drop = new ItemEntity
+                {
+                    Level = this,
+                    EntityId = Server.GetNextEntityId(),
+                    Position = (VectorD)parts.DropPosition + 0.5f,
+                    Item = item,
+                    SpawnedBy = spawner
+                };
+
+                if (!this.TrySpawnEntity(drop, hostOwned: true))
+                    throw new InvalidOperationException($"Could not register entity {drop.EntityId}.");
             }
         }
         // Vanilla's ServerExplosion.createFire: each position reached, now air, catches fire a third of the time
@@ -184,16 +221,26 @@ public abstract partial class AbstractLevel
             }
         }
 
-        var sound = new SoundEffect { SoundId = "minecraft:entity.generic.explode", SoundCategory = SoundCategory.Blocks,
-            Volume = 4, Pitch = 1, Seed = random.NextInt64() };
+        var sound = new SoundEffect
+        {
+            SoundId = "minecraft:entity.generic.explode",
+            SoundCategory = SoundCategory.Blocks,
+            Volume = 4,
+            Pitch = 1,
+            Seed = random.NextInt64()
+        };
         foreach (var player in GetPlayersInRange(center, 64))
         {
             var knockback = knockbacks.GetValueOrDefault(player.EntityId);
             await player.QueuePacketAsync(new ExplodePacket
             {
-                Center = center, Radius = radius, BlockCount = destroyed.Count,
+                Center = center,
+                Radius = radius,
+                BlockCount = destroyed.Count,
                 PlayerKnockback = new Velocity(knockback.X, knockback.Y, knockback.Z),
-                ExplosionParticle = new ExplosionParticleData(), ExplosionSound = sound, ExplosionParticleInfo = []
+                ExplosionParticle = new ExplosionParticleData(),
+                ExplosionSound = sound,
+                ExplosionParticleInfo = []
             });
         }
     }

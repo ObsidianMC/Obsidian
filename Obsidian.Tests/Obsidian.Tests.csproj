@@ -16,6 +16,7 @@
 	<ItemGroup>
 		<EmbeddedResource Include="Assets\bigtest.nbt" />
 		<EmbeddedResource Include="Assets\fluid_scenarios.json" />
+		<EmbeddedResource Include="Assets\block_loot.json" />
 	</ItemGroup>
 
 	<ItemGroup>
