@@ -105,6 +105,12 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
     }
 
     /// <summary>
+    /// Whether a NeoForge client agreed on one of NeoForge's own play channels, which the server sends without a
+    /// plugin's registration (see <see cref="ChannelPayloads.BuiltinPlayComponents"/>).
+    /// </summary>
+    public bool HasNeoForgePlayChannel(string channel) => this.IsNeoForge && this.playChannels.ContainsKey(channel);
+
+    /// <summary>
     /// Whether the connection may carry payloads on <paramref name="channel"/> in its current phase.
     /// </summary>
     public bool HasChannel(string channel) =>
@@ -588,7 +594,7 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
         this.Send(channel, buffer.AsSpan(0, buffer.Size).ToArray());
     }
 
-    private static CustomPayloadPacket CreatePacket(NetworkProtocol protocol, string channel, byte[] data)
+    internal static CustomPayloadPacket CreatePacket(NetworkProtocol protocol, string channel, byte[] data)
     {
         var packet = protocol == NetworkProtocol.Configuration
             ? CustomPayloadPacket.ClientboundConfiguration

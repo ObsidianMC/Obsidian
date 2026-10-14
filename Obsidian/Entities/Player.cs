@@ -304,7 +304,9 @@ public sealed partial class Player : Avatar, IClientPlayer
         if (this.TryShow(container) is not byte nextId)
             return;
 
-        await Client.QueuePacketAsync(new OpenScreenPacket(container, nextId));
+        await Client.QueuePacketAsync(container is MenuContainer opening
+            ? this.OpenMenuPacket(opening, nextId)
+            : new OpenScreenPacket(container, nextId));
 
         // Like vanilla's menus, a plugin's is sent whole, its slots then the player's inventory, so that clients know
         // how many slots it has before the player clicks. The packet sets the cursor too, so it always goes, with the
@@ -327,6 +329,9 @@ public sealed partial class Player : Avatar, IClientPlayer
         if (container is SmeltingContainer furnace)
             await AbstractLevel.SendFurnacePropertiesAsync(this, furnace);
 
+        if (container is MenuContainer menu)
+            await this.SendMenuOpenedAsync(menu, nextId);
+
         // A plugin's menu can close as it opens, when its plugin unloads, and a block entity's container can be retired
         // as it opens, when its block goes; the screen that just opened closes too.
         if (this.CurrentContainerId == nextId && container.ShowsRetired)
@@ -337,7 +342,8 @@ public sealed partial class Player : Avatar, IClientPlayer
 
     /// <summary>
     /// Makes <paramref name="container"/> the open container and numbers its window, unless it's a menu whose type
-    /// doesn't open now (see <see cref="MenuDefinition.IsOpenable"/>).
+    /// doesn't open now (see <see cref="MenuDefinition.IsOpenable"/>), or that the player's client doesn't know (see
+    /// <see cref="KnowsMenu"/>).
     /// </summary>
     /// <returns>The window's id, or null when the menu doesn't open.</returns>
     private byte? TryShow(BaseContainer container)
@@ -350,7 +356,7 @@ public sealed partial class Player : Avatar, IClientPlayer
             return Show();
 
         lock (menu.Menu.Gate)
-            return menu.Menu.IsOpenable ? Show() : null;
+            return menu.Menu.IsOpenable && this.KnowsMenu(menu.Menu) ? Show() : null;
 
         byte Show()
         {

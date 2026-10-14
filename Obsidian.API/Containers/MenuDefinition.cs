@@ -70,32 +70,3 @@ public sealed class MenuDefinition
 
     public override string ToString() => this.Identifier;
 }
-
-/// <summary>
-/// The slots of a plugin's menu (see <see cref="MenuDefinition"/>), opened with
-/// <see cref="IPlayer.OpenInventoryAsync"/>. Players move items in and out of it like a chest's;
-/// <see cref="Events.ContainerClickEventArgs"/> lets the plugin cancel or handle their clicks.
-/// </summary>
-/// <remarks>
-/// Several players can have the same container open: their clicks take turns, and each sees the others' changes. It
-/// closes for its viewers, with <see cref="Events.ContainerClosedEventArgs"/>, when the plugin that registered its
-/// menu type unloads; from then until a plugin registers the type again, opening one of its menus does nothing.
-/// </remarks>
-public sealed class MenuContainer : BaseContainer
-{
-    /// <summary>
-    /// Creates an empty container of <paramref name="menu"/>'s type.
-    /// </summary>
-    /// <param name="menu">The menu type.</param>
-    /// <param name="title">The title the menu's screen shows.</param>
-    public MenuContainer(MenuDefinition menu, ChatMessage title) : base(menu.SlotCount)
-    {
-        this.Menu = menu;
-        this.Title = title;
-    }
-
-    /// <summary>
-    /// The menu type.
-    /// </summary>
-    public MenuDefinition Menu { get; }
-}

@@ -33,7 +33,8 @@ public partial class MainEventHandler
     /// closed or changed meanwhile. A click whose slots or cursor changed since it arrived, or whose crafting result no
     /// longer follows its grid, or that a handler cancelled, isn't applied; either way the player's window and cursor
     /// are sent again, so that the client's prediction is corrected. The packets are captured inside the lock and sent
-    /// after it, since sending them runs plugins' packet handlers.
+    /// after it, since sending them runs plugins' packet handlers. A click in a plugin's menu also runs its plugin's
+    /// code, and moves items through its item access slots as it ends (see <see cref="MenuClick"/>).
     /// </remarks>
     [EventPriority(Priority = Priority.Internal)]
     public async ValueTask OnInventoryClick(ContainerClickEventArgs args)
@@ -51,21 +52,37 @@ public partial class MainEventHandler
                 return;
             }
 
+            // A plugin's menu runs its plugin's code in the click, unless the plugin is unloading or the menu is no
+            // longer valid for the player.
+            using var menuClick = MenuClick.Start(player, window);
+
             // The result handlers saw is the one the click takes: it's never worked out again in between.
-            var stale = !args.ArrivalState.IsCurrent(player) || !CraftingResultFollowsGrid(player);
+            var stale = !args.ArrivalState.IsCurrent(player)
+                || !CraftingResultFollowsGrid(player)
+                || menuClick is { Refused: true };
             var outputCount = window is SmeltingContainer smelting ? smelting[2]?.Count ?? 0 : 0;
 
-            // The client ends its drag on the correction, so the server's ends too.
-            if (stale || args.IsCancelled)
-                ResetDrag(player);
-            else
-                ApplyClick(args);
-
-            if (!stale)
+            try
             {
-                foreach (var change in args.Changes)
-                    change();
+                // The client ends its drag on the correction, so the server's ends too.
+                if (stale || args.IsCancelled)
+                    ResetDrag(player);
+                else
+                    ApplyClick(args);
+
+                if (!stale)
+                {
+                    foreach (var change in args.Changes)
+                        change();
+                }
             }
+            catch when (menuClick is not null)
+            {
+                menuClick.Undo();
+                throw;
+            }
+
+            menuClick?.Commit();
 
             if (window is SmeltingContainer furnace
                 && (furnace[2]?.Count ?? 0) < outputCount
@@ -195,6 +212,8 @@ public partial class MainEventHandler
                 return MoveEnchantingItem(player, table, source, slot);
             case BrewingStand stand:
                 return MoveBrewingItem(args, stand);
+            case MenuContainer menu:
+                return MoveMenuItem(args, menu);
         }
 
         // Like vanilla's chest, hopper and dispenser menus: the container's stack goes to the player's main inventory
@@ -281,14 +300,25 @@ public partial class MainEventHandler
         int end,
         bool reverse)
     {
-        var moved = false;
         var slots = Enumerable.Range(start, Math.Max(0, Math.Min(end, to.Size) - start));
         if (reverse)
             slots = slots.Reverse();
 
+        return MoveItemStackTo(player, stack, [.. slots.Select(slot => (to, slot))]);
+    }
+
+    /// <summary>
+    /// Moves what fits of <paramref name="stack"/>, which shrinks, into <paramref name="slots"/>, in their order, like
+    /// vanilla's <c>moveItemStackTo</c> (see the overload taking one container's range).
+    /// </summary>
+    /// <returns>Whether anything moved.</returns>
+    private static bool MoveItemStackTo(IPlayer player, ItemStack stack, (BaseContainer To, int Slot)[] slots)
+    {
+        var moved = false;
+
         if (stack.MaxStackSize > 1)
         {
-            foreach (var slot in slots)
+            foreach (var (to, slot) in slots)
             {
                 if (stack.Count == 0)
                     break;
@@ -313,7 +343,7 @@ public partial class MainEventHandler
             return moved;
 
         // Vanilla's merge fills one empty slot, then stops.
-        foreach (var slot in slots)
+        foreach (var (to, slot) in slots)
         {
             if (!to.GetItem(slot).IsNullOrAir() || !SlotAccepts(player, to, slot, stack))
                 continue;
@@ -550,7 +580,8 @@ public partial class MainEventHandler
     /// Whether the player can put <paramref name="item"/> in <paramref name="slot"/> of <paramref name="container"/>,
     /// like vanilla's slots allow: not in a result slot, armour only in its own slot, lapis lazuli only in the
     /// enchanting table's second slot, only fuel (or a bucket) in a furnace's fuel slot, and only what each of a
-    /// brewing stand's slots takes (see <see cref="Brewing.SlotAccepts"/>).
+    /// brewing stand's slots takes (see <see cref="Brewing.SlotAccepts"/>); and what a plugin's menu says in its
+    /// slots.
     /// </summary>
     private static bool SlotAccepts(IPlayer player, BaseContainer container, int slot, ItemStack item)
     {
@@ -569,6 +600,7 @@ public partial class MainEventHandler
             CraftingTable { Type: InventoryType.Crafting } => slot != 0,
             EnchantmentTable => slot != 1 || item.Is(ItemsRegistry.LapisLazuli),
             BrewingStand => Brewing.SlotAccepts(slot, item),
+            MenuContainer menu => menu.MayPlace(slot, item),
             SmeltingContainer furnace when IsFurnace(furnace) => slot switch
             {
                 1 => IsFuel(item) || item.Is(ItemsRegistry.Bucket),
@@ -582,10 +614,13 @@ public partial class MainEventHandler
     /// <summary>
     /// How many of <paramref name="item"/> <paramref name="slot"/> of <paramref name="container"/> holds, like
     /// vanilla's slots: one in an armour slot, in the enchanting table's first slot, in a brewing stand's bottle slots
-    /// and, for a bucket, in a furnace's fuel slot.
+    /// and, for a bucket, in a furnace's fuel slot; what a plugin's menu says in its slots.
     /// </summary>
     private static int SlotLimit(IPlayer player, BaseContainer container, int slot, ItemStack item)
     {
+        if (container is MenuContainer menu)
+            return menu.MaxStackSize(slot, item);
+
         var single = container == player.Inventory && slot is >= 5 and <= 8
             || container is EnchantmentTable && slot == 0
             || container is BrewingStand && slot < BrewingStand.IngredientSlot
@@ -599,14 +634,20 @@ public partial class MainEventHandler
 
     /// <summary>
     /// Whether the player can take the stack in <paramref name="slot"/> of <paramref name="container"/>: like
-    /// vanilla's armour slots, not armour cursed with binding, unless the player is in creative mode.
+    /// vanilla's armour slots, not armour cursed with binding, unless the player is in creative mode; and what a
+    /// plugin's menu says in its slots.
     /// </summary>
-    private static bool SlotMayPickup(IPlayer player, BaseContainer container, int slot) =>
-        container != player.Inventory
-        || slot is < 5 or > 8
-        || player.GameMode == GameMode.Creative
-        || !player.Alive
-        || CombatItems.EnchantmentLevel(container.GetItem(slot), EnchantmentsRegistry.BindingCurse) == 0;
+    private static bool SlotMayPickup(IPlayer player, BaseContainer container, int slot)
+    {
+        if (container is MenuContainer menu)
+            return menu.MayPickup(slot, player);
+
+        return container != player.Inventory
+            || slot is < 5 or > 8
+            || player.GameMode == GameMode.Creative
+            || !player.Alive
+            || CombatItems.EnchantmentLevel(container.GetItem(slot), EnchantmentsRegistry.BindingCurse) == 0;
+    }
 
     // Whether the slot is a crafting grid's result, which double-click collecting skips.
     private static bool IsResultSlot(IPlayer player, BaseContainer container, int slot) =>
@@ -681,7 +722,10 @@ public partial class MainEventHandler
         if (thrownItem.IsNullOrAir() || thrownItem.Count <= 0)
             return;
 
-        ItemEntity.Drop(player, thrownItem);
+        if (MenuClick.Current is MenuClick click)
+            click.Drop(thrownItem);
+        else
+            ItemEntity.Drop(player, thrownItem);
     }
 
     private static void HandlePickup(ContainerClickEventArgs args)
@@ -936,7 +980,7 @@ public partial class MainEventHandler
 
     // Captures the player's whole window, inside its lock, under the given state id, and sends it unless it changed
     // or another window opened meanwhile.
-    private static async ValueTask RefreshWindowAsync(Player player, BaseContainer window, int stateId)
+    internal static async ValueTask RefreshWindowAsync(Player player, BaseContainer window, int stateId)
     {
         var order = player.WindowSnapshots;
         WindowSnapshot snapshot;

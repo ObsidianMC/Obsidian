@@ -17,18 +17,7 @@ internal static partial class BlockBehaviors
 
         using (call)
         {
-            var eyeHeight = player.Pose switch
-            {
-                Pose.FallFlying or Pose.Swimming or Pose.SpinAttack => 0.4f,
-                Pose.Sneaking => 1.27f,
-                Pose.Sleeping => 0.2f,
-                _ => 1.62f
-            };
-            var scale = player is Player scaled && scaled.HasAttribute("minecraft:scale")
-                ? Math.Clamp(scaled.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
-                : 1f;
-            // Vanilla's pose dimensions supply eye height; scale affects the eye as well as the body.
-            var eye = player.Position + new VectorD(0, eyeHeight * scale, 0);
+            var eye = Player.EyePosition(player);
             var range = player is Player concrete ? concrete.BlockInteractionRange : 4.5;
             var end = eye + (VectorD)player.GetLookDirection() * range;
             var hit = new MobTerrain(player.Level).RaycastOutlines(eye, end);

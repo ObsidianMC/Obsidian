@@ -824,15 +824,106 @@ await player.OpenInventoryAsync(container);
 ```
 
 A plugin's menu type is a grid of 1 to 6 rows of 1 to 9 slots above the player's inventory, numbered row by row and
-followed by the player's inventory like vanilla's menus. The server opens it with its id and moves items in it like a
-chest's; a `ContainerClickEventArgs` handler cancels or handles players' clicks, and the plugin reads and changes the
-container's slots. Several players can have the same container open: their clicks take turns, so two can't take the
-same stack, and each sees the others' changes. A NeoForge or Fabric mod's menu type with the same identifier and slots
-shows it, made without extra data (vanilla's open screen packet carries none). The type keeps its id and shape across
-reloads and stays registered until the server stops; registering it again with another shape throws. When the plugin
-unloads (or reloads), its menus close for the players who have them open, with a `ContainerClosedEventArgs` the plugin
-still handles although it takes no other calls. From then until a loaded plugin registers the type again, opening one
-of its menus does nothing.
+followed by the player's main inventory and hotbar (`MenuContainer.PlayerSlotCount`, 36) like vanilla's menus. The
+server opens it with its id and moves items in it like a chest's; a `ContainerClickEventArgs` handler cancels or
+handles players' clicks, and the plugin reads and changes the container's slots. Several players can have the same
+container open: their clicks take turns, so two can't take the same stack, and each sees the others' changes. A
+NeoForge or Fabric mod's menu type with the same identifier and slots shows it, and the Obsidian client shows it like a
+chest or with the mod's screen (see [Client](#client)). The type keeps its id and shape across reloads and stays
+registered until the server stops; registering it again with another shape throws. When the plugin unloads (or
+reloads), its menus close for the players who have them open, with a `ContainerClosedEventArgs` the plugin still
+handles although it takes no other calls. From then until a loaded plugin registers the type again, opening one of
+its menus does nothing. A client that wasn't sent the type with its registries (one still to go back through
+configuration after the plugin registered it) doesn't get the menu either: opening it does nothing.
+
+### Machine menus
+
+```csharp
+// A crusher's menu: ore in its inventory, its own buffer behind item access (an IItemAccess), progress and a button.
+public sealed class CrusherMenu : MenuContainer
+{
+    private readonly Crusher crusher;
+
+    public CrusherMenu(MenuDefinition menu, Crusher crusher) : base(menu, "Crusher")
+    {
+        this.crusher = crusher;
+        this.Slots =
+        [
+            new MenuSlot(crusher.Inventory, 0) { MayPlace = item => item.Is(ItemsRegistry.IronOre) },
+            new MenuSlot(crusher.Buffer, 0) { MaxStackSize = 16 },
+            new MenuSlot(crusher.Inventory, 8) { MayPlace = _ => false }
+        ];
+        this.BlockEntity = crusher;
+        this.DataSlots = 1;
+    }
+
+    public override short GetData(int index) => (short)this.crusher.Progress;
+
+    // Ore goes to the input, anything else to the buffer; the menu's stacks go back to the player.
+    protected override IReadOnlyList<MenuSlotRange> QuickMove(IPlayer player, int slot, ItemStack stack) =>
+        slot < this.Size
+            ? base.QuickMove(player, slot, stack)
+            : stack.Is(ItemsRegistry.IronOre)
+                ? [new MenuSlotRange(0, 1)]
+                : [new MenuSlotRange(1, 2)];
+
+    protected override bool ClickButton(IPlayer player, int button)
+    {
+        this.crusher.Paused = button == 0;
+
+        return false;
+    }
+
+    protected override void WriteOpenData(IPlayer player, INetStreamWriter writer) =>
+        writer.WritePosition(this.crusher.BlockPosition);
+}
+
+var crusherMenu = registry.RegisterMenu("ruby:crusher", rows: 1, columns: 3);
+await player.OpenInventoryAsync(new CrusherMenu(crusherMenu, crusher));
+```
+
+A `MenuContainer` keeps its slots' items itself unless `Slots` says where each of the type's slots is kept, like
+vanilla's `Slot` and NeoForge's `SlotItemHandler`: in a container's slot (`new MenuSlot(container, index)`), behind
+item access (`new MenuSlot(itemAccess, index)`), or in the menu itself (`new MenuSlot()`). Each slot has its own rules:
+`MayPlace` (which stacks players may put in it; a slot that takes nothing, like an output, still gives its stack whole
+to a cursor of the same item), `MayPickup` (whether a player may take its stack) and `MaxStackSize` (up to each item's
+own). The rules run as clicks move items, with the window's lock held, so they must not wait. Where the slots go on
+screen is the client's business: a mod's client side gives their positions with `MenuScreenProperties` (vanilla's
+server doesn't use slot positions either).
+
+A slot kept in a container is that container's slot: a click changes it under the container's lock, which it takes
+with the others in one fixed order, so that a menu made of several containers takes turns with the players who have
+them open, on their own or in other menus, and they all see its changes. A slot behind item access, like a plugin
+machine's buffer, moves its items through the access as the click ends: what the click took out is extracted first,
+and if a slot no longer holds it (a pipe took it meanwhile), the whole click is undone; then what it put in is
+inserted, and what the access refuses goes back to the player's inventory, or drops. So a click never makes or loses
+an item. The access is called with the menu's locks held: a container block entity's access takes and gives nothing
+while its container is busy rather than wait, and your own access mustn't wait on a container's lock either. Don't
+show a container's slots both ways in one menu. Outside a click, change such a slot through its access;
+`SetItem` throws. Players with the menu open see the access's changes on their next tick.
+
+Subclass `MenuContainer` for the rest, like NeoForge's `AbstractContainerMenu`. These run inside calls into the plugin
+that registered the menu type, never once it's unloading:
+
+- `QuickMove(player, slot, stack)` decides shift-clicks, like vanilla's `quickMoveStack`: it returns ranges of the
+  window's slots (the menu's from 0, then the player's 36), tried in turn until one takes some of the stack. Each tops
+  up stacks of the same item first, then fills its first empty slot that takes the item, following the slots' rules,
+  from its end when `Reverse` is set. By default the menu's stacks go to the player's slots, filling from the hotbar's
+  last slot, and the player's go to the menu's slots, filling from the first, like a chest.
+- `DataSlots` and `GetData(index)` are vanilla's `ContainerData`: short values like a furnace's progress. By default
+  `GetData` returns what `SetData` set; override it to read the value from what it shows. The players who have the
+  menu open get them all as it opens, then, once a tick, the ones that changed (vanilla's `ContainerSetData`).
+- `ClickButton(player, button)` handles a button of the mod's screen, like vanilla's `clickMenuButton`: the client
+  sends a number, which means whatever the menu says. It runs with the window's lock held, like a click (spectators'
+  clicks don't reach it); return true when it changed the slots, so that the viewers are sent them.
+- `WriteOpenData(player, writer)` writes extra data as the menu opens, like NeoForge's `openMenu` with a buffer:
+  NeoForge clients and the Obsidian client get it with NeoForge's `neoforge:advanced_open_screen`, which they read to
+  build their side of the menu. Other clients get vanilla's open screen packet, which carries none.
+- `BlockEntity` binds the menu to a block entity, like a machine's: it closes when the block entity is removed (its
+  block broken or replaced, its chunk unloaded or its plugin unloaded), with the windows showing a container block
+  entity's inventory or on the player's next tick, and, like vanilla's `stillValid`, once the player's eyes are
+  farther than their block reach plus 4 blocks from its block. Clicks in it stop applying as soon as it's removed.
+  `StillValid(player)` adds a check of your own, made every tick and on every click.
 
 ### Click handlers
 
@@ -2539,7 +2630,9 @@ public sealed class RubyMod : PluginBase, IClientPlugin
   their slots centred, and the player's inventory below. `MenuScreenProperties` gives it a background instead, from
   `assets/<ns>/textures/gui/...` (`Texture = "<ns>:gui/container/pouch"`, its top left `Width` by `Height` pixels),
   with a position for each of the menu's slots, in order, and for the player's inventory, the title and the
-  "Inventory" label. Its slots must be as many as the menu has.
+  "Inventory" label. Its slots must be as many as the menu has. The client keeps what the server sends with the menu
+  for the mod's side of it (the screens in code to come): the extra data it was opened with
+  ([Machine menus](#machine-menus)) and its data slots' values, and sends the buttons a screen clicks.
 - **Entity renderers.** A mod's entity type is drawn with a model layer from `assets/<ns>/models/entity/<path>.json`
   (`Model = "<ns>:<path>"`) and a texture from `assets/<ns>/textures/entity/...` (`Texture = "<ns>:entity/..."`, or
   `minecraft:entity/...` for vanilla's), scaled by `Scale`, with a shadow of `ShadowRadius` blocks. Without a

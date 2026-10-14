@@ -19,6 +19,7 @@ internal static class ChannelPayloads
     public const string RegistrySyncStart = "neoforge:frozen_registry_sync_start";
     public const string RegistrySnapshot = "neoforge:frozen_registry";
     public const string RegistrySyncCompleted = "neoforge:frozen_registry_sync_completed";
+    public const string AdvancedOpenScreen = "neoforge:advanced_open_screen";
     public const string CommonVersion = "c:version";
     public const string CommonRegister = "c:register";
     public const string FabricRegistrySync = "fabric:registry/sync";
@@ -38,6 +39,15 @@ internal static class ChannelPayloads
         new(RegistrySyncStart, "1", PacketFlow.Clientbound, true),
         new(RegistrySnapshot, "1", PacketFlow.Clientbound, true),
         new(RegistrySyncCompleted, "1", null, true)
+    ];
+
+    /// <summary>
+    /// NeoForge's own play channels the server sends on, declared like NeoForge declares them: opening a plugin's menu
+    /// with its extra data (see <see cref="Entities.Player.OpenMenuPacket"/>).
+    /// </summary>
+    public static ImmutableArray<NetworkComponent> BuiltinPlayComponents { get; } =
+    [
+        new(AdvancedOpenScreen, "1", PacketFlow.Clientbound, true)
     ];
 
     /// <summary>
