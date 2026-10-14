@@ -29,6 +29,14 @@ public interface IBlockLevel : ISignalReader
     public IBlock GetBlock(Vector position);
 
     /// <summary>
+    /// Whether the block's face supports the requested area, like vanilla's <c>BlockState.isFaceSturdy</c>.
+    /// Reads state shapes and published block entity shapes without loading chunks or calling shape providers.
+    /// Returns false outside the build range or complete loaded chunks.
+    /// </summary>
+    public bool IsFaceSturdy(Vector position, BlockFace face, SupportType support = SupportType.Full) =>
+        this.Level.IsFaceSturdy(position, face, support);
+
+    /// <summary>
     /// The block entity at <paramref name="position"/>, like vanilla's <c>getBlockEntity</c>: what a block's hooks read
     /// their own data from, a comparator output from a counter, say. Null outside the loaded chunks.
     /// </summary>

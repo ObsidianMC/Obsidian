@@ -13,6 +13,14 @@ namespace Obsidian.API.World;
 public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
 {
     /// <summary>
+    /// Whether the block's face supports the requested area, like vanilla's <c>BlockState.isFaceSturdy</c>.
+    /// Reads state shapes and published block entity shapes synchronously, without loading or generating chunks.
+    /// Returns false outside the build range or complete loaded chunks. Use on the level tick or during block hooks.
+    /// </summary>
+    public bool IsFaceSturdy(Vector position, BlockFace face, Blocks.SupportType support = Blocks.SupportType.Full) =>
+        false;
+
+    /// <summary>
     /// Requests destruction of a loaded block on the next level tick, with optional loot and its fluid left behind.
     /// Returns whether it was queued. A changed block or block entity cancels the request before it runs.
     /// Player break hooks and tool checks do not run. Container removal still spills ordinary contents.

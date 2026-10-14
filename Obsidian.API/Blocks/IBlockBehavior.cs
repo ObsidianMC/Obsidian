@@ -68,8 +68,9 @@ public interface IBlockBehavior
 
     /// <summary>
     /// The block's state after its neighbour in <see cref="ShapeUpdateContext.Direction"/> changed, like vanilla's
-    /// <c>updateShape</c>: a fence connecting to it, or a torch losing its support. Air destroys the block, leaving
-    /// the fluid it held; it doesn't drop anything.
+    /// <c>updateShape</c>: a fence connecting to it, or a torch losing its support. Returning air queues destruction
+    /// with loot on the next level tick, leaving the fluid it held. Replacing the block or its block entity before
+    /// then cancels destruction. Player break hooks and tool checks do not run.
     /// </summary>
     /// <returns>The new state, or <see cref="BlockContext.State"/> to keep it.</returns>
     public IBlock UpdateShape(ShapeUpdateContext context) => context.State;

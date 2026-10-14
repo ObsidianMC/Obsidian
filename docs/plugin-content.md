@@ -66,12 +66,12 @@ client, which both run `ConfigureRegistry`, and only the shapes are kept. Collis
 for breaking and using, and the client's picking, outline and movement prediction read them; a block entity's
 shapes win where it publishes some. Each state's collision boxes are tested as a union once at registration: full
 faces support blocks attached to them, the central 2/16 square supports torches, and the outer 2/16 rim supports
-repeaters and similar blocks, like vanilla's `FULL`, `CENTER` and `RIGID` support tests. An upper slab supports its
-top face; separate boxes covering the unit cube count as a full block. `Opaque` still decides light and face culling.
-A block
-without `HasCollision` can't give collision boxes. A reload may change the shapes: they feed neither light nor
-heightmaps, and the server reads them afresh each time. Connected Obsidian clients keep the shapes their copy of
-the mod gave until they reload their mods, which they do while disconnected.
+repeaters and similar blocks, like vanilla's `FULL`, `CENTER` and `RIGID` support tests. The public
+`SupportType.Full`, `SupportType.Center` and `SupportType.Rigid` select those areas on any face. An upper slab
+supports its top face; separate boxes covering the unit cube count as a full block. `Opaque` still decides light
+and face culling. A block without `HasCollision` can't give collision boxes. A reload may change the shapes: they
+feed neither light nor heightmaps, and the server reads them afresh each time. Connected Obsidian clients keep the
+shapes their copy of the mod gave until they reload their mods, which they do while disconnected.
 
 Structures turn and mirror the block, in templates and pool elements, by its properties named like vanilla's: a
 `facing` of `north`, `east`, `south`, `west`, `up` or `down` turns, an `axis` of `x`, `y` or `z` swaps `x` and `z` on a
@@ -126,10 +126,10 @@ A block's `Behavior` gets vanilla's block hooks; each defaults to doing nothing:
 - `EntityInsideAsync` and `SteppedOnAsync`: each tick an entity's box overlaps the block, or the entity stands on it.
 
 The hooks with a `Level` run synchronously while the level's block updates wait for them, like vanilla's: read and
-change blocks through that `IBlockLevel` (`GetBlock`, `SetBlock`, `RemoveBlock`, `DestroyBlock`, `ScheduleTick`,
-`HasScheduledTick`, `UpdateNeighbors`, its [redstone](#redstone) signals and the level's `Random`), not through
-`ILevel`'s asynchronous methods, and keep them short. Neighbour and shape updates triggered inside another neighbour
-or shape callback wait until that callback returns, in vanilla's order. Placement and removal callbacks
+change blocks through that `IBlockLevel` (`GetBlock`, `IsFaceSturdy`, `SetBlock`, `RemoveBlock`, `DestroyBlock`,
+`ScheduleTick`, `HasScheduledTick`, `UpdateNeighbors`, its [redstone](#redstone) signals and the level's `Random`),
+not through `ILevel`'s asynchronous methods, and keep them short. Neighbour and shape updates triggered inside another
+neighbour or shape callback wait until that callback returns, in vanilla's order. Placement and removal callbacks
 run synchronously during the block change, like vanilla's `onPlace`; a change inside them can run another placement
 callback or start neighbour updates before the outer callback returns. Keep placement chains bounded (see
 [known gaps](known-gaps.md#recursive-placement-callbacks)). `IBlockLevel.GetBlockEntity` reads the block's block
@@ -138,6 +138,13 @@ what's safe to read so (a field written whole) and change the block entity on it
 logged and the updates, and the level's tick, go on. Like `UseAsync`, every hook runs as a call into the plugin, and
 none runs once it starts unloading. A block change and the updates it causes run as one step: a change made
 meanwhile on another thread waits for them.
+
+`IBlockLevel.IsFaceSturdy(position, face, support = SupportType.Full)` asks whether a neighbour's face can support
+an attachment, like vanilla's `BlockState.isFaceSturdy`. `ILevel.IsFaceSturdy` has the same signature for level ticks
+and block entity ticks. For a bud attached below another block, query that block's `BlockFace.Down`, for example.
+Both read synchronously and return false outside the build range or complete loaded chunks; neither loads or
+generates a chunk. They use vanilla's support shapes, plugin `StateShapes`, or a block entity's published collision
+shape when present. The face belongs to the queried block, not the attachment.
 
 Block changes run vanilla's side effects as `BlockUpdateFlags` ask, with vanilla's values: `ILevel.SetBlockAsync`
 with `doBlockUpdate: true`, a player placing or breaking a block, and explosions use `All` (neighbours hear of the
@@ -1363,7 +1370,7 @@ may differ. Shapes that follow the block state alone need no block entity: see `
 
 The server publishes the shapes when it creates or loads the block entity and at the end of a tick after
 `SetChanged` or `SendUpdate`, and immediately after each player's break hook so the next attempt sees the remaining
-parts. Collision, navigation and outline raycasts read that immutable snapshot without
+parts. Collision, navigation, face-sturdiness queries and outline raycasts read that immutable snapshot without
 calling plugin code from their threads. A shape change that clients must see calls `SetChanged` and `SendUpdate`,
 and includes its deciding data in `GetUpdateData`. The client registers a provider that builds the same shapes
 from that data. Unloading drops both sides' behaviour, keeping the saved data and type id for the next load.

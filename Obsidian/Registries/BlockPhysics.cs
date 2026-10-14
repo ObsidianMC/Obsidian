@@ -5,7 +5,8 @@ using System.Text.Json;
 namespace Obsidian.Registries;
 
 /// <summary>
-/// Vanilla's per-state block physics (collision, replaceability, fluids, sturdy faces), used by world generation.
+/// Vanilla's per-state block physics (collision, replaceability, fluids, sturdy faces), used by level queries,
+/// block updates and world generation.
 /// </summary>
 /// <remarks>
 /// Loaded from <c>Assets/block_physics.json</c>, which was dumped from vanilla 1.21.11 for every block state, along with
@@ -19,6 +20,7 @@ namespace Obsidian.Registries;
 /// is the empty shape, 2 <c>LiquidBlockContainer</c>, 3 <c>FlowingFluid.canHoldAnyFluid</c>, 4-7
 /// <c>FlowingFluid.canHoldSpecificFluid</c> for water, flowing water, lava and flowing lava, 16-31 the collision face set
 /// (an index into <c>collisionFaceSets</c>, whose six entries per <see cref="BlockFace"/> index <c>collisionFaces</c>).
+/// A separate <c>supportFlags</c> array records six faces per <see cref="SupportType"/>, without attachment tag rules.
 /// </remarks>
 internal static class BlockPhysics
 {
@@ -89,6 +91,26 @@ internal static class BlockPhysics
     /// Vanilla <c>isFaceSturdy(..., face, SupportType.FULL)</c>.
     /// </summary>
     public static bool IsFaceSturdy(this IBlock block, BlockFace face) => Has(block, 11 + (int)face);
+
+    /// <summary>
+    /// Vanilla's support shape tests for every face and support type; plugin states use their collision shape.
+    /// Unlike <see cref="IsBottomCenterSturdy"/>, this does not exclude the unstable-bottom-center tag.
+    /// </summary>
+    public static bool IsFaceSturdy(this IBlock block, BlockFace face, SupportType support)
+    {
+        if (face is < BlockFace.Down or > BlockFace.East)
+            throw new ArgumentOutOfRangeException(nameof(face));
+
+        if (support is < SupportType.Full or > SupportType.Rigid)
+            throw new ArgumentOutOfRangeException(nameof(support));
+
+        if (PluginShapes(block.StateId()) is PluginStateShapes own)
+            return ShapeSupport.IsFaceSturdy(own.CollisionFaces[(int)face], support);
+
+        // Captured from BlockState.isFaceSturdy: vanilla support shapes can differ from collision shapes.
+        var flags = data.Value.SupportFlags[ShapeState(block.StateId())];
+        return (flags & (1 << ((int)support * 6 + (int)face))) != 0;
+    }
 
     /// <summary>
     /// Vanilla <c>isFaceSturdy(..., UP, SupportType.CENTER)</c>.
@@ -440,6 +462,7 @@ internal static class BlockPhysics
         var root = document.RootElement;
         return new PhysicsData(
             root.GetProperty("flags").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+            root.GetProperty("supportFlags").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
             root.GetProperty("blockClasses").EnumerateObject().ToDictionary(entry => entry.Name, entry => entry.Value.GetString()!),
             root.GetProperty("blockEntityTypes").EnumerateObject().ToDictionary(entry => entry.Name, entry => entry.Value.GetString()!),
             root.GetProperty("blockEntityTypeIds").EnumerateObject().ToDictionary(entry => entry.Name, entry => entry.Value.GetInt32()),
@@ -473,7 +496,8 @@ internal static class BlockPhysics
         return ticking;
     }
 
-    private sealed record PhysicsData(int[] Flags, Dictionary<string, string> BlockClasses, Dictionary<string, string> BlockEntityTypes,
+    private sealed record PhysicsData(int[] Flags, int[] SupportFlags,
+        Dictionary<string, string> BlockClasses, Dictionary<string, string> BlockEntityTypes,
         Dictionary<string, int> BlockEntityTypeIds, HashSet<string> SignalSources, int[] FluidFlags, int[][] CollisionFaceSets,
         double[][][] CollisionFaces, double[][][] ShapeBoxes, int[] CollisionShapes, int[] VisualShapes, int[] OutlineShapes, bool[] Suffocating,
         double[][] ShapeOffsets, float[] Hardness, bool[] RequiresTool, bool[] RandomTicking)
