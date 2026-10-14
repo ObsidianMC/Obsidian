@@ -2905,6 +2905,11 @@ public sealed class RubyMod : PluginBase, IClientPlugin
   then apply by index): with vanilla's grass block item colour (the grass colormap at temperature 0.5 and downfall
   1), its default foliage colour (`#48B518`), dry foliage colour (`#5C3C32`) or water colour (`#3F76E4`), or the
   fixed colour.
+- **Animated textures.** A block or item texture with a `.png.mcmeta` animation plays like vanilla's water, lava and
+  fire, with no code: its frames in the order and for the ticks the animation gives, blended into each other with
+  `interpolate`, advancing once in each frame that runs a client tick, in menus too, and stopping while a server
+  freezes the game. The format is in [plugin-archives.md](plugin-archives.md#assets). Faces using it keep their
+  texture coordinates, since each frame is copied over the texture's place in the atlas.
 - **Particle providers.** A mod's particle type is drawn with the sprites of its definition,
   `assets/<ns>/particles/<name>.json` (`{"textures": ["<ns>:spark_0", "<ns>:spark_1"]}`, from
   `assets/<ns>/textures/particle/`), one picked at random per particle or, with `AnimateSprite`, in turn over its life.
