@@ -597,8 +597,9 @@ Loaded NBT outside the models is retained, including unknown fields within an un
 save identifiers instead of process ids. Invalid attachment values over 256 slots throw before publication, and
 their network codec rejects lengths outside that limit before reading stacks.
 
-Values received only as an `OpaqueDataComponent` have no disk codec yet: attempting to save one throws instead of
-silently dropping it. The unmodeled vanilla types are below (all identifiers have the `minecraft:` namespace):
+Values received only as an `OpaqueDataComponent` have no disk codec yet: saving a stack leaves such a component out
+rather than failing the whole save it's part of. The unmodeled vanilla types are below (all identifiers have the
+`minecraft:` namespace):
 
 - `use_effects`, `minimum_attack_charge`, `damage_type`, `tooltip_display`, `weapon`, `attack_range`, `blocks_attacks`,
   `piercing_weapon`, `kinetic_weapon`, `swing_animation`, `potion_duration_scale`, `provides_trim_material`,
@@ -610,8 +611,8 @@ silently dropping it. The unmodeled vanilla types are below (all identifiers hav
   `horse/variant`, `painting/variant`, `llama/variant`, `axolotl/variant`, `cat/variant`, `cat/collar`, `sheep/color`,
   `shulker/color`.
 
-Vanilla defines no persistent codec for `creative_slot_lock` or `map_post_processing`; saving those modeled
-transient values also throws. Entity hover text needs a live entity in the current API and cannot be reconstructed
+Vanilla defines no persistent codec for `creative_slot_lock` or `map_post_processing`; like vanilla, saves leave
+those transient values out. Entity hover text needs a live entity in the current API and cannot be reconstructed
 as a modeled value from NBT; a component containing it stays as saved NBT. Legacy UUID and tooltip flags on component
 models have no fields in the 1.21.11 component format.
 

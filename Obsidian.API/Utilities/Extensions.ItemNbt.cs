@@ -26,7 +26,9 @@ public partial class Extensions
     /// </summary>
     /// <remarks>
     /// Modeled persistent components and plugins' components are saved in vanilla's patch format. Loaded NBT beyond
-    /// the models is retained; an unsupported network-only component throws instead of being silently omitted.
+    /// the models is retained. Components vanilla doesn't persist are skipped, as vanilla's codec skips them, and so is
+    /// a component received only from the network that has no saved codec yet: losing that one component is better
+    /// than failing the whole chunk or player save it's part of (see known-gaps.md).
     /// </remarks>
     public static NbtCompound ToNbt(this ItemStack item, string name = "")
     {
@@ -39,10 +41,8 @@ public partial class Extensions
         var components = new NbtCompound("components");
         foreach (var component in item.Patch)
         {
-            var tag = ComponentToNbt(component)
-                ?? throw new NotSupportedException(
-                    $"No saved codec for {component.Identifier} ({component.GetType().Name}).");
-            components.Add(tag);
+            if (ComponentToNbt(component) is INbtTag tag)
+                components.Add(tag);
         }
 
         // Removed defaults, saved like vanilla's patch: an empty compound under the id prefixed with "!".
@@ -171,8 +171,9 @@ public partial class Extensions
 
     private static INbtTag? EncodeComponent(DataComponent component)
     {
+        // Transient in vanilla: its patch codec leaves them out of saves.
         if (component.Type is DataComponentType.CreativeSlotLock or DataComponentType.MapPostProcessing)
-            throw new NotSupportedException($"Vanilla defines no persistent codec for {component.Identifier}.");
+            return null;
 
         var name = component.Identifier;
         return component switch
