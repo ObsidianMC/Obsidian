@@ -721,8 +721,10 @@ ticket.Dispose();
   for chunk loading. Ownership follows the plugin whose code calls the API, including calls through shared levels
   obtained from players or events. Unloading that plugin releases all its handles. Disposal is idempotent, and an
   old load's handles cannot release the new load's tickets. Host code can acquire handles too and must dispose them.
-  Release removes simulation eligibility immediately; work already running may finish. Ordinary unloading runs on
-  the existing 30-second cadence. Jobs already generating finish under their existing generation pins.
+  Release removes simulation eligibility immediately and drops queued generation with no remaining demand. Player
+  and explicit world requests remain queued; jobs already generating finish under their existing generation pins.
+  Published chunks enter residency bookkeeping immediately, even if their ticket was released before completion.
+  Ordinary unloading runs on the existing 30-second cadence.
 - **Persistence and parity.** Handles last for the plugin load, not across a restart. A plugin needing persistent
   machines can save their chunk coordinates with `RegisterSavedData` and acquire fresh handles on startup. Unlike
   vanilla's propagated levels (31 entity ticking, 32 block ticking, 33 full), this API has a ticking square and one

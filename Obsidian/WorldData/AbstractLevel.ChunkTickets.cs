@@ -21,6 +21,9 @@ public abstract partial class AbstractLevel
 
     private sealed record TicketChunks(HashSet<long> Loaded, HashSet<long> Ticking);
 
+    // A player or explicit world request survives ticket release; a dispatched job finishes under its pins.
+    private enum GenerationDemand { Ticket, Retained, Running }
+
     private sealed class ChunkTicket(
         AbstractLevel level, PluginOwnership? owner, long[] loaded, long[] ticking) : IDisposable
     {
@@ -134,6 +137,47 @@ public abstract partial class AbstractLevel
         }
 
         Volatile.Write(ref this.ticketChunks, new TicketChunks(loaded, ticking));
+        lock (this.waitingJobs)
+            this.DiscardUnneededGeneration();
+    }
+
+    // Called under chunkTicketLock and waitingJobs, so release and dispatch agree on which jobs have started.
+    private void DiscardUnneededGeneration(bool moveToWaiting = false)
+    {
+        var count = this.ChunksToGen.Count;
+        for (var index = 0; index < count && this.ChunksToGen.TryDequeue(out var queued); index++)
+        {
+            if (Discard(queued))
+                continue;
+
+            if (moveToWaiting)
+                this.waitingJobs.Add(queued);
+            else
+                this.ChunksToGen.Enqueue(queued);
+        }
+
+        this.waitingJobs.RemoveAll(Discard);
+
+        bool Discard(long key)
+        {
+            if (this.queuedChunks.TryGetValue(key, out var demand)
+                && demand == GenerationDemand.Ticket
+                && !this.IsTicketLoaded(key))
+            {
+                this.queuedChunks.TryRemove(key, out _);
+                return true;
+            }
+
+            return false;
+        }
+    }
+
+    // The region calls this under TickLock at publication and completion, including generation's neighbors.
+    // Residency must not depend on a later ticket/player loading pass: its demand may already have disappeared.
+    private void TrackPublishedChunk(IChunk chunk, bool completing)
+    {
+        this.Lighting.Track(chunk, completing);
+        this.LoadedChunks.Add(NumericsHelper.IntsToLong(chunk.X, chunk.Z));
     }
 
     private bool IsTicketLoaded(long chunk) => Volatile.Read(ref this.ticketChunks).Loaded.Contains(chunk);
@@ -170,8 +214,8 @@ public abstract partial class AbstractLevel
                 continue;
 
             NumericsHelper.LongToInts(key, out var x, out var z);
-            if (!this.LoadedChunks.Contains(key) || this.GetLoadedChunk(x, z) is null)
-                await this.GetChunkAsync(x, z);
+            // Residency is already recorded at publication; refresh scheduled ticks when generation is complete.
+            await this.GetChunkAsync(x, z, scheduleGeneration: true, ticketOnly: true);
         }
     }
 }

@@ -9,6 +9,8 @@ using Obsidian.Utilities;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -26,9 +28,9 @@ public sealed partial class SamplePlugin
         var plugin = (await manager.LoadPluginAsync(await this.PackSampleAsync()))!;
         const int center = 40;
 
-        IDisposable Acquire(int radius, bool ticking) => (IDisposable)plugin.Plugin!.GetType()
+        IDisposable Acquire(int radius, bool ticking, int coordinate = center) => (IDisposable)plugin.Plugin!.GetType()
             .GetMethod("KeepChunks")!
-            .Invoke(plugin.Plugin, [world, center, center, radius, ticking])!;
+            .Invoke(plugin.Plugin, [world, coordinate, coordinate, radius, ticking])!;
 
         // A loaded-only ticket generates and retains the square, but cannot run the pending machine tick.
         using var loaded = Acquire(1, ticking: false);
@@ -83,7 +85,21 @@ public sealed partial class SamplePlugin
         await world.DoWorldTickAsync();
         Assert.Equal(counted, Ticks(chunk, position));
         using var forgotten = Acquire(0, ticking: true);
-        await manager.UnloadPluginAsync(plugin);
+        var slots = GenerationSlots(world);
+        await HoldGenerationSlotsAsync(slots);
+        try
+        {
+            using var pending = Acquire(1, ticking: false, coordinate: 200);
+            await world.ManageChunksAsync();
+            Assert.Equal(9, world.ChunksToGenCount);
+            await manager.UnloadPluginAsync(plugin);
+            Assert.Equal(0, world.ChunksToGenCount);
+        }
+        finally
+        {
+            slots.Release(Environment.ProcessorCount);
+        }
+
         world.LevelData.Time = 1200;
         await world.ManageChunksAsync();
         Assert.Null(world.GetLoadedChunk(center, center));
@@ -112,6 +128,62 @@ public sealed partial class SamplePlugin
         world.LevelData.Time = 1200;
         await world.ManageChunksAsync();
         Assert.Null(world.GetLoadedChunk(-39, -39));
+
+        var slots = GenerationSlots(world);
+        await HoldGenerationSlotsAsync(slots);
+        IDisposable? completed = null;
+        try
+        {
+            // Churn cannot accumulate generation work while all workers are occupied.
+            for (var index = 0; index < 5; index++)
+            {
+                using var queued = world.AddChunkTicket(200 + index * 32, 200, radius: 8, ticking: false);
+                await world.ManageChunksAsync();
+                Assert.Equal(289, world.ChunksToGenCount);
+                queued.Dispose();
+                Assert.Equal(0, world.ChunksToGenCount);
+            }
+
+            // A player/world request for a queued ticket chunk upgrades its demand and survives release.
+            using var requested = world.AddChunkTicket(400, 400, ticking: false);
+            await world.ManageChunksAsync();
+            Assert.Null(await world.GetChunkAsync(400, 400));
+            requested.Dispose();
+            Assert.Equal(1, world.ChunksToGenCount);
+            completed = world.AddChunkTicket(500, 500, ticking: false);
+            await world.ManageChunksAsync();
+        }
+        finally
+        {
+            slots.Release(Environment.ProcessorCount);
+        }
+
+        await world.ManageChunksAsync();
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (world.GetLoadedChunk(400, 400) is null || world.GetLoadedChunk(500, 500) is null)
+        {
+            Assert.True(DateTime.UtcNow < deadline, "Queued chunks did not finish generating.");
+            await Task.Delay(10);
+        }
+
+        await HoldGenerationSlotsAsync(slots);
+        try
+        {
+            // No loading pass runs between completion and release: publication itself must track residency.
+            Assert.NotNull(world.GetLoadedChunk(400, 400));
+            Assert.NotNull(world.GetLoadedChunk(500, 500));
+            Assert.Contains(NumericsHelper.IntsToLong(500, 500), world.LoadedChunks);
+            completed!.Dispose();
+            world.LevelData.Time = 1800;
+            await world.ManageChunksAsync();
+            Assert.Null(world.GetLoadedChunk(500, 500));
+            Assert.DoesNotContain(NumericsHelper.IntsToLong(500, 500), world.LoadedChunks);
+        }
+        finally
+        {
+            completed?.Dispose();
+            slots.Release(Environment.ProcessorCount);
+        }
 
         Assert.Throws<ArgumentOutOfRangeException>(() => world.AddChunkTicket(0, 0, radius: -1));
         Assert.Throws<ArgumentOutOfRangeException>(() => world.AddChunkTicket(0, 0, radius: 9));
@@ -157,5 +229,18 @@ public sealed partial class SamplePlugin
             Assert.True(DateTime.UtcNow < deadline, "Ticketed chunks did not finish loading.");
             await Task.Delay(10);
         }
+    }
+
+    private static SemaphoreSlim GenerationSlots(AbstractLevel level)
+    {
+        var field = typeof(AbstractLevel).GetField(
+            "generationSlots", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        return (SemaphoreSlim)field.GetValue(level)!;
+    }
+
+    private static async Task HoldGenerationSlotsAsync(SemaphoreSlim slots)
+    {
+        for (var index = 0; index < Environment.ProcessorCount; index++)
+            await slots.WaitAsync();
     }
 }

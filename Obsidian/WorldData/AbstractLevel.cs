@@ -36,7 +36,7 @@ public abstract partial class AbstractLevel : ILevel
     public ConcurrentQueue<long> ChunksToGen { get; protected set; } = [];
 
     // The chunks queued or generating, so a chunk is queued once however often it's asked for.
-    private readonly ConcurrentDictionary<long, byte> queuedChunks = [];
+    private readonly ConcurrentDictionary<long, GenerationDemand> queuedChunks = [];
 
     // The chunks queued while the level runs, taken from ChunksToGen and started nearest to a player first (see
     // TryTakeNearestJob), so chunks players wait for don't queue behind ones they've moved away from. Locked on itself.
@@ -288,7 +288,11 @@ public abstract partial class AbstractLevel : ILevel
 
     public IRegion? GetRegionForChunk(Vector location) => GetRegionForChunk(location.X, location.Z);
 
-    public async ValueTask<IChunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true)
+    public ValueTask<IChunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true) =>
+        this.GetChunkAsync(chunkX, chunkZ, scheduleGeneration, ticketOnly: false);
+
+    private async ValueTask<IChunk?> GetChunkAsync(
+        int chunkX, int chunkZ, bool scheduleGeneration, bool ticketOnly)
     {
         var region = GetRegionForChunk(chunkX, chunkZ) ?? LoadRegion(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
 
@@ -304,7 +308,7 @@ public abstract partial class AbstractLevel : ILevel
         {
             if (!chunk.IsGenerated && scheduleGeneration)
             {
-                this.QueueGeneration(packedXZ);
+                this.QueueGeneration(packedXZ, ticketOnly);
                 return null;
             }
 
@@ -315,7 +319,7 @@ public abstract partial class AbstractLevel : ILevel
 
         if (scheduleGeneration)
         {
-            this.QueueGeneration(packedXZ);
+            this.QueueGeneration(packedXZ, ticketOnly);
             return null;
         }
 
@@ -759,7 +763,7 @@ public abstract partial class AbstractLevel : ILevel
                 LockChunk = this.Generator.LockChunkAsync,
                 FluidTickLock = this.Fluids.TickLock,
                 FlushLight = this.Lighting.Flush,
-                LightLoaded = this.Lighting.Track,
+                LightLoaded = this.TrackPublishedChunk,
                 LightUnloaded = this.Lighting.Untrack,
                 BlockAccessUnloaded = this.Fluids.Untrack,
                 EntitiesLoaded = this.QueueEntitySpawn,
@@ -877,10 +881,10 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     private bool TryTakeNearestJob(out long job)
     {
+        lock (this.chunkTicketLock)
         lock (this.waitingJobs)
         {
-            while (this.ChunksToGen.TryDequeue(out var queued))
-                this.waitingJobs.Add(queued);
+            this.DiscardUnneededGeneration(moveToWaiting: true);
 
             if (this.waitingJobs.Count == 0)
             {
@@ -912,14 +916,28 @@ public abstract partial class AbstractLevel : ILevel
 
             job = this.waitingJobs[nearest];
             this.waitingJobs.RemoveAt(nearest);
+            this.queuedChunks[job] = GenerationDemand.Running;
             return true;
         }
     }
 
-    private void QueueGeneration(long packedXZ)
+    private void QueueGeneration(long packedXZ, bool ticketOnly = false)
     {
-        if (this.queuedChunks.TryAdd(packedXZ, 0))
-            this.ChunksToGen.Enqueue(packedXZ);
+        lock (this.chunkTicketLock)
+        lock (this.waitingJobs)
+        {
+            // An asynchronous ticket load may return after its last handle was released.
+            if (ticketOnly && !this.IsTicketLoaded(packedXZ))
+                return;
+
+            var demand = ticketOnly ? GenerationDemand.Ticket : GenerationDemand.Retained;
+            if (this.queuedChunks.TryAdd(packedXZ, demand))
+                this.ChunksToGen.Enqueue(packedXZ);
+            else if (!ticketOnly
+                && this.queuedChunks.TryGetValue(packedXZ, out var existing)
+                && existing == GenerationDemand.Ticket)
+                this.queuedChunks[packedXZ] = GenerationDemand.Retained;
+        }
     }
 
     private void PinGenerationArea(int chunkX, int chunkZ, int delta)
