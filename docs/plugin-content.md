@@ -398,6 +398,13 @@ Banner patterns, bees and skull profiles aren't taken yet. A plugin's block enti
 `ApplyComponents` (see [Block entities](#block-entities)); a plugin block without a loot table drops its item with
 those values.
 
+Player breaks of plugin blocks and explosions needing their live block entities' components queue the whole break
+to the level's next tick, including `CollectComponents`, loot evaluation and removal. Explosions still apply entity
+damage immediately; blocks kept as data after plugin unloading break immediately too. A queued explosion break
+checks the block state and block entity again, so replacing the target before that tick cancels its break. Only
+serial tick operations explicitly collect inline; background tasks wait for the level's simulation gate, including
+tasks started during a tick.
+
 ## Items
 
 ```csharp

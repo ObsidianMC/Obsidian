@@ -142,15 +142,16 @@ public sealed class SamplePlugin : IDisposable
         Assert.Equal(0, chunk.GetLightLevel(position.X, position.Y + 1, position.Z, LightType.Block));
         Assert.Equal(counted, Ticks(chunk, position));
 
-        // A child task captures the tick's execution context, but must wait for the simulation gate. The real tick
-        // can still collect inline after an await, without waiting on itself.
+        // Serial tick operations explicitly collect inline, even after an await. A child task receives no ambient
+        // permission from its parent and must wait for the simulation gate.
         var blockEntity = Assert.IsAssignableFrom<BlockEntity>(chunk.GetBlockEntity(4, position.Y, 4));
         var owner = Assert.IsType<Obsidian.Plugins.PluginContainer>(blockEntity.Owner);
         Task? child = null;
         world.EnqueueEntityAction(async () =>
         {
             await Task.Yield();
-            Assert.NotEmpty(await world.CollectPluginComponentsAsync(blockEntity, owner, counter.Item!));
+            Assert.NotEmpty(await world.CollectPluginComponentsAsync(
+                blockEntity, owner, counter.Item!, onLevelTick: true));
             var waiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             child = Task.Run(async () =>
             {
@@ -191,15 +192,37 @@ public sealed class SamplePlugin : IDisposable
 
         Assert.Equal(counted, Ticks(chunk, position));
 
-        // An explosion off the level's tick collects the count between two ticks.
+        // An explosion off the level's tick queues the plugin break, including collection, to the next tick.
         world.LevelData.GameRules["block_explosion_drop_decay"] = "false";
         await world.ExplodeAsync((VectorD)position + 0.5, 2, false, AbstractLevel.ExplosionInteraction.Block);
+
+        Assert.False(chunk.GetBlock(position).IsAir);
+        await world.DoWorldTickAsync();
 
         Assert.True(chunk.GetBlock(position).IsAir);
         var blown = Assert.Single(
             world.GetNonPlayerEntitiesInRange((VectorD)position, 4).OfType<ItemEntity>(),
             item => item.Item.Is(counter.Item!));
         Assert.Equal(counted, CountOnItem(blown.Item));
+
+        // The same explosion called from a tick queues collection without waiting on the gate the tick holds.
+        await blown.RemoveAsync();
+        await world.SetBlockAsync(position, state, BlockUpdateFlags.All);
+        world.EnqueueEntityAction(async () =>
+        {
+            await BlockEntityComponents.ApplyAsync(world, position, blown.Item);
+            await world.ExplodeAsync((VectorD)position + 0.5, 2, false, AbstractLevel.ExplosionInteraction.Block);
+        });
+        await world.DoWorldTickAsync();
+
+        Assert.False(chunk.GetBlock(position).IsAir);
+        await world.DoWorldTickAsync();
+
+        Assert.True(chunk.GetBlock(position).IsAir);
+        var tickDrop = Assert.Single(
+            world.GetNonPlayerEntitiesInRange((VectorD)position, 4).OfType<ItemEntity>(),
+            item => item.Item.Is(counter.Item!));
+        Assert.Equal(counted, CountOnItem(tickDrop.Item));
 
         // The removed block entity's OnRemoved runs on the next tick, which its plugin waits for before it's released.
         await world.DoWorldTickAsync();
