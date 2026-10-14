@@ -476,6 +476,9 @@ holds the component ones). Obsidian honours them as it does vanilla's:
 - `Food`: a player eats the item by using it (at any hunger with `CanAlwaysEat`), gaining its nutrition and
   saturation. `Consumable` sets how it's eaten and the effects it gives; it defaults to vanilla's food
   (`ComponentBuilder.Consumable`, 1.6 seconds) and does nothing without `Food`.
+  Default effects must be the host's sealed `ComponentConsumeEffect` or `EffectWithProbability` values; registration
+  rejects other `IConsumeEffect` implementations, so retained defaults cannot keep an unloaded plugin's assembly
+  alive.
 - `Equippable`: a player wears the item in its slot by using it, or by placing it in the armour slot.
   `ComponentBuilder.Equippable` has vanilla's defaults; set the slot.
 - `AttributeModifiers`: what the item adds while it's in the modifier's slot, by attribute id (`AttributeIds`).
@@ -634,6 +637,9 @@ type and its update data from chunk packets and `BlockEntityData`, and remapping
   (`IsRemoved`) when its block changes to one without its type, its chunk unloads, the player leaves the server or
   the mod unloads. A tick or load that throws is logged, and the instance isn't ticked again until the next update.
   Shapes and rendering keep reading the snapshot, from their own threads, never the live instance.
+  `Load` receives its own copies of update arrays, including nested arrays. Removing and recreating a block entity
+  creates a fresh live instance even when both packets arrive between client ticks; a data update retains the
+  instance.
 - **Threads.** The server calls `Load`, `Save`, `TickAsync`, `GetUpdateData` and `OnRemoved` on the level's tick,
   one at a time, inside calls into the plugin: a block removed from elsewhere (a player's break) runs `OnRemoved` on
   the next tick. Only a new block entity for a block set elsewhere is constructed there. Chunks are saved and sent

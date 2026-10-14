@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Events;
 using Obsidian.API.Loot;
 using Obsidian.Entities.AI;
+using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Entities;
@@ -73,14 +74,38 @@ public partial class Player
         await base.DamageAsync(source, amount);
     }
 
-    internal async ValueTask DamageInventoryItemAsync(int slot, int amount, bool armor = false)
+    /// <summary>
+    /// Damages a slot under the click lock. Delayed operations supply the original stack as <paramref name="expected"/>
+    /// so replacing it cannot damage another item; packets are captured under the lock and sent after it.
+    /// </summary>
+    internal async ValueTask DamageInventoryItemAsync(
+        int slot, int amount, bool armor = false, ItemStack? expected = null)
     {
-        if (GameMode == GameMode.Creative || Inventory.GetItem(slot) is not { Count: > 0 } item) return;
-        var previous = item.Damage;
-        var broke = CombatItems.HurtItem(item, amount, armor);
-        if (broke && item.Count == 0) Inventory.RemoveItem(slot);
-        if (!broke && item.Damage == previous) return;
-        await SyncInventorySlotAsync(slot);
+        List<ClientboundPacket> updates = [];
+        ClickWindowState state;
+        bool broke;
+        using (await this.Inventory.LockAsync())
+        {
+            if (this.GameMode == GameMode.Creative
+                || this.Inventory.GetItem(slot) is not { Count: > 0 } item
+                || expected is not null && !ReferenceEquals(item, expected))
+            {
+                return;
+            }
+
+            var previous = item.Damage;
+            broke = CombatItems.HurtItem(item, amount, armor);
+            if (broke && item.Count == 0)
+                this.Inventory.RemoveItem(slot);
+
+            if (!broke && item.Damage == previous)
+                return;
+
+            state = ClickWindowState.Of(this);
+            this.CaptureInventorySlot(slot, updates);
+        }
+
+        await this.WindowSnapshots.SendChangeAsync(this, state, updates);
         if (broke)
             PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket
             { EntityId = EntityId, Event = (byte)(slot switch { 5 => 49, 6 => 50, 7 => 51, 8 => 52, 45 => 48, _ => 47 }) });

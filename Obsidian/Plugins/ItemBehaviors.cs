@@ -31,15 +31,15 @@ internal static partial class ItemBehaviors
 
     /// <returns>Whether the item's behaviour handled the use.</returns>
     public static ValueTask<bool> UseAsync(ItemUseContext context) =>
-        RunAsync(context.Stack.Holder, behavior => behavior.UseAsync(context));
+        RunUseAsync(context.Player, context.Stack.Holder, behavior => behavior.UseAsync(context));
 
     /// <returns>Whether the item's behaviour handled the use.</returns>
     public static ValueTask<bool> UseOnBlockAsync(ItemUseOnBlockContext context) =>
-        RunAsync(context.Stack.Holder, behavior => behavior.UseOnBlockAsync(context));
+        RunUseAsync(context.Player, context.Stack.Holder, behavior => behavior.UseOnBlockAsync(context));
 
     /// <returns>Whether the item's behaviour handled the use.</returns>
     public static ValueTask<bool> UseOnEntityAsync(ItemUseOnEntityContext context) =>
-        RunAsync(context.Stack.Holder, behavior => behavior.UseOnEntityAsync(context));
+        RunUseAsync(context.Player, context.Stack.Holder, behavior => behavior.UseOnEntityAsync(context));
 
     /// <summary>
     /// Uses the stack <paramref name="player"/> holds in <paramref name="hand"/> on <paramref name="entity"/>, when
@@ -125,6 +125,16 @@ internal static partial class ItemBehaviors
                 InventoryTickFailed(logger, exception, stack.Holder.UnlocalizedName);
             }
         }
+    }
+
+    private static ValueTask<bool> RunUseAsync(IPlayer player, Item item, Func<IItemBehavior, ValueTask<bool>> use)
+    {
+        if (item.Binding is not { Behavior: not null })
+            return ValueTask.FromResult(false);
+
+        return player is Entities.Player concrete
+            ? concrete.RunItemUseAsync(() => RunAsync(item, use))
+            : RunAsync(item, use);
     }
 
     private static async ValueTask<bool> RunAsync(Item item, Func<IItemBehavior, ValueTask<bool>> use)

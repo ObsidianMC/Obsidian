@@ -199,6 +199,32 @@ public sealed class BlockDrops
             Assert.Equal("minecraft:cobblestone*1", Describe(drops.Select(drop => drop.Item)));
             Assert.True(chunk.GetBlock(position).IsAir);
 
+            var toolSlot = player.CurrentHeldItemSlot;
+            var originalTool = player.Inventory.GetItem(toolSlot)!;
+            Assert.Equal(1, originalTool.Damage);
+            var replacement = new ItemStack(ItemsRegistry.WoodenPickaxe, 1,
+                ComponentBuilder.Damage with { Value = ItemsRegistry.WoodenPickaxe.MaxDamage - 1 });
+            var selectedSlot = toolSlot + 1;
+            player.Inventory.SetItem(selectedSlot, replacement);
+            player.CurrentHeldItemSlot = (short)(selectedSlot - 36);
+            await player.DamageInventoryItemAsync(toolSlot, 1, expected: originalTool);
+            Assert.Equal(2, originalTool.Damage);
+            Assert.Equal(1, replacement.Count);
+
+            // Wear waiting on a click must revalidate the identity, rather than destroy a replacement in that slot.
+            ValueTask pendingWear;
+            using (await player.Inventory.LockAsync())
+            {
+                pendingWear = player.DamageInventoryItemAsync(toolSlot, 1, expected: originalTool);
+                Assert.False(pendingWear.IsCompleted);
+                player.Inventory.SetItem(toolSlot, replacement);
+            }
+
+            await pendingWear;
+            Assert.Equal(1, replacement.Count);
+            Assert.Equal(replacement.Holder.MaxDamage - 1, replacement.Damage);
+            Assert.Equal(2, originalTool.Damage);
+
             player.GameMode = GameMode.Creative;
             chunk.SetBlock(position, BlocksRegistry.Stone);
             await context.EventDispatcher.ExecuteEventAsync(new BlockBreakEventArgs(context.Server, player,
