@@ -571,6 +571,7 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         ItemsRegistry.ReleasePlugin(pluginContainer);
         SoundEventsRegistry.ReleasePlugin(pluginContainer);
+        PortalTypesRegistry.ReleasePlugin(pluginContainer);
         DataComponentTypesRegistry.ReleasePlugin(pluginContainer);
         var blocks = BlocksRegistry.ReleasePlugin(pluginContainer);
         this.RefreshPlacedBlocks(blocks);

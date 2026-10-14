@@ -4,6 +4,9 @@ namespace Obsidian.API;
 
 public interface IWorld : ILevel
 {
+    /// <summary>Finds the world's root level or a loaded dimension by its identifier, for portal routing.</summary>
+    public ILevel? GetLevel(string identifier) => this.DimensionName == identifier ? this : null;
+
     public string PlayerDataPath { get; }
     public IWorldManager WorldManager { get; }
 

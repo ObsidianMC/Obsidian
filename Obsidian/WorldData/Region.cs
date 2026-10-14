@@ -282,6 +282,7 @@ public class Region : IRegion
 
         if (entity is Entity host)
         {
+            host.CancelEntityPortalTravel();
             host.Navigator = null;
             host.GoalController = null;
             host.SpawnedBy = null;

@@ -135,6 +135,9 @@ a mod entity glows and can be ridden.
 - **Travel.** Teleport a player or any entity to a position in another level. A portal API: a frame shape, what
   lights it, the portal block that sends entities through, and finding or building the matching portal in the target
   level, generalising the Nether portal code that's hard-wired to `minecraft:the_nether` today.
+  Implemented for explicit level teleports and dedicated rectangular plugin portal blocks, with the Nether using
+  the same mechanism. Sharing vanilla's portal block is still in [known-gaps.md](known-gaps.md), so travel is not
+  marked done yet.
 - **Saved data.** (done) Per-level and per-world data, and attachments on players, entities and chunks, saved and
   optionally synced to the client (like NeoForge's data attachments).
 - **Plugin entities.** Saved per-entity data, synced metadata fields for modded clients, attribute modifiers and the

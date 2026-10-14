@@ -61,6 +61,13 @@ public interface IEntity : Data.IAttachmentHolder
     public ValueTask KillAsync(IEntity source);
     public ValueTask KillAsync(IEntity source, ChatMessage message);
 
+    /// <summary>
+    /// Moves this entity and supported passengers to a level, preserving entity state and velocity.
+    /// Null rotation components retain their current values. The destination is loaded before removal.
+    /// </summary>
+    public ValueTask TeleportAsync(ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null) =>
+        throw new NotSupportedException("This entity doesn't support level travel.");
+
     public ValueTask TeleportAsync(IWorld world);
     public ValueTask TeleportAsync(IEntity to);
     public ValueTask TeleportAsync(VectorD pos);

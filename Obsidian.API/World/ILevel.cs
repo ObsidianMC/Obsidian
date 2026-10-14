@@ -13,6 +13,13 @@ namespace Obsidian.API.World;
 public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
 {
     /// <summary>
+    /// Lights an empty registered frame containing position (an interior block).
+    /// Item/block callbacks may call this to implement their own ignition rules.
+    /// </summary>
+    public ValueTask<bool> TryLightPortalAsync(PortalType type, Vector position) =>
+        ValueTask.FromResult(false);
+
+    /// <summary>
     /// Keeps a square of chunks loaded, optionally ticking without players. Radius is in chunks (0 means one),
     /// at most 8. Ticking tickets also load a one-chunk border for block and fluid updates. Loading and generation
     /// start on the next chunk-management pass; the handle does not mean the chunks are ready yet.
