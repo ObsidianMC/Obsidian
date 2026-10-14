@@ -41,6 +41,7 @@ public partial class MainEventHandler
         var player = args.Player;
         var window = player.OpenedContainer ?? player.Inventory;
         WindowSync sync;
+        var cookingExperience = 0;
 
         using (await BaseContainer.LockWindowAsync(window, player.Inventory))
         {
@@ -52,6 +53,7 @@ public partial class MainEventHandler
 
             // The result handlers saw is the one the click takes: it's never worked out again in between.
             var stale = !args.ArrivalState.IsCurrent(player) || !CraftingResultFollowsGrid(player);
+            var outputCount = window is SmeltingContainer smelting ? smelting[2]?.Count ?? 0 : 0;
 
             // The client ends its drag on the correction, so the server's ends too.
             if (stale || args.IsCancelled)
@@ -65,12 +67,22 @@ public partial class MainEventHandler
                     change();
             }
 
+            if (window is SmeltingContainer furnace
+                && (furnace[2]?.Count ?? 0) < outputCount
+                && FurnaceBlockEntity.Of(furnace) is FurnaceBlockEntity machine)
+            {
+                cookingExperience = machine.TakeExperience(PlayerRecipes(player), Globals.Random.NextSingle);
+            }
+
             // After the click and the changes registered with it, whatever they did to the grid, and before the
             // window is captured, so that its viewers see the result that follows.
             RefreshCraftingResult(player);
 
             sync = CaptureWindow(args, window);
         }
+
+        if (cookingExperience > 0 && player.Level is AbstractLevel level)
+            level.DropCookingExperience(player.Position, cookingExperience);
 
         await SendWindowAsync(args, window, sync);
     }

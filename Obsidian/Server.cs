@@ -6,6 +6,7 @@ using Obsidian.API.Boss;
 using Obsidian.API.Commands;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
+using Obsidian.API.Inventory;
 using Obsidian.API.Events;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Modules;
@@ -262,6 +263,21 @@ public sealed partial class Server : IServer, IPluginScopedServer
     /// Recipes registered through a plugin's <see cref="IServer"/> are the plugin's, which unloading removes.
     /// </remarks>
     public void RegisterRecipes(params IRecipe[] recipes) => this.RegisterRecipes(recipes, owner: null);
+
+    public TRecipe? FindRecipe<TRecipe>(RecipeType<TRecipe> type, IReadOnlyList<ItemStack?> inputs)
+        where TRecipe : class
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(inputs);
+        return this.RecipeRegistry.Current.FindPluginRecipe(type, inputs);
+    }
+
+    internal void LoadRecipeFiles(
+        IEnumerable<(PluginContainer Owner, IEnumerable<RecipeFile> Files)> sources)
+    {
+        this.RecipeRegistry.ReplaceFiles(sources, this.logger);
+        this.OnRecipesChanged();
+    }
 
     /// <summary>
     /// Registers recipes for <paramref name="owner"/>, whose unloading removes them, or for the server. They're used

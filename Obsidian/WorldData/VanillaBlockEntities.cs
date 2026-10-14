@@ -35,6 +35,7 @@ internal static class VanillaBlockEntities
         "minecraft:furnace" => Smelting(InventoryType.Furnace, "furnace", "Furnace", position),
         "minecraft:blast_furnace" => Smelting(InventoryType.BlastFurnace, "blast_furnace", "Blast Furnace", position),
         "minecraft:smoker" => Smelting(InventoryType.Smoker, "smoker", "Smoker", position),
+        "minecraft:campfire" => new CampfireBlockEntity(),
         "minecraft:brewing_stand" => new BrewingStandBlockEntity(position),
         "minecraft:comparator" => new Redstone.ComparatorBlockEntity(),
         _ => null
@@ -48,8 +49,7 @@ internal static class VanillaBlockEntities
         return new VanillaContainerBlockEntity(container);
     }
 
-    // Vanilla's furnaces save their cooking progress and the recipes they used, which the server keeps as they were
-    // loaded until it cooks.
+    // Each furnace type uses the same inventory shape, with its own recipe type and fuel speed.
     private static FurnaceBlockEntity Smelting(InventoryType type, string id, string title, Vector position) =>
         new FurnaceBlockEntity(new SmeltingContainer(type, id)
         {
@@ -59,8 +59,7 @@ internal static class VanillaBlockEntities
 }
 
 /// <summary>
-/// One of vanilla's container block entities. The fields of its saved data the server doesn't model, like a
-/// furnace's cooking progress or a hopper's cooldown, are saved again as they were loaded.
+/// One of vanilla's container block entities. Unmodelled fields of its saved data are saved as they were loaded.
 /// </summary>
 /// <param name="inventory">The items it holds.</param>
 /// <param name="modelled">The saved fields a subclass reads and writes itself.</param>

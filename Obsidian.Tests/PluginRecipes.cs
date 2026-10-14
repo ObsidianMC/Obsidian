@@ -37,6 +37,80 @@ namespace Obsidian.Tests;
 /// </remarks>
 public sealed class PluginRecipes
 {
+    [Fact]
+    public void UpdateRecipesUsesVanillaPropertyListsAndStonecutterDisplays()
+    {
+        var recipes = RecipesRegistry.Current;
+        using var writer = new NetworkBuffer();
+        recipes.UpdatePacket.Serialize(writer);
+        using var reader = new NetworkBuffer(writer.AsSpan(0, writer.Size).ToArray());
+        Assert.Equal(7, reader.ReadVarInt());
+        var sets = new Dictionary<string, int[]>();
+        for (var i = 0; i < 7; i++)
+        {
+            var name = reader.ReadString();
+            sets.Add(name, Enumerable.Range(0, reader.ReadVarInt()).Select(_ => reader.ReadVarInt()).ToArray());
+        }
+
+        Assert.Contains(ItemsRegistry.RawIron.Id, sets["minecraft:furnace_input"]);
+        Assert.Contains(ItemsRegistry.RawIron.Id, sets["minecraft:blast_furnace_input"]);
+        Assert.Contains(ItemsRegistry.Beef.Id, sets["minecraft:smoker_input"]);
+        Assert.Contains(ItemsRegistry.Beef.Id, sets["minecraft:campfire_input"]);
+        Assert.Contains(ItemsRegistry.DiamondSword.Id, sets["minecraft:smithing_base"]);
+        Assert.Contains(ItemsRegistry.NetheriteUpgradeSmithingTemplate.Id, sets["minecraft:smithing_template"]);
+        Assert.Contains(ItemsRegistry.NetheriteIngot.Id, sets["minecraft:smithing_addition"]);
+        var cutting = recipes.Recipes.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => pair.Value).OfType<CuttingRecipe>().ToArray();
+        Assert.Equal(cutting.Length, reader.ReadVarInt());
+        foreach (var recipe in cutting)
+        {
+            var ids = recipe.Ingredient.Select(item => item.Holder.Id).Distinct().ToArray();
+            Assert.Equal(ids.Length + 1, reader.ReadVarInt());
+            foreach (var id in ids)
+                Assert.Equal(id, reader.ReadVarInt());
+
+            Assert.Equal(3, reader.ReadVarInt());
+            var result = reader.ReadItemStack();
+            Assert.Equal(recipe.Result.First().Holder, result!.Holder);
+            Assert.Equal(recipe.Result.First().Count, result.Count);
+        }
+
+        Assert.Equal(writer.Size, reader.Offset);
+
+        // Captured from 1.21.11 ClientboundUpdateRecipesPacket.STREAM_CODEC, using a raw-iron input for
+        // furnace/blast furnace and a stone -> two slabs stonecutter choice. No recipe id goes over the wire.
+        var sample = new Dictionary<string, IRecipe>();
+        foreach (var type in new[] { CraftingType.Smelting, CraftingType.Blasting })
+        {
+            sample.Add(type.ToString(), new SmeltingRecipe
+            {
+                Identifier = type.ToString(),
+                Type = type,
+                Experience = 0.7f,
+                CookingTime = 200,
+                Category = CookingBookCategory.Misc,
+                Ingredient = IngredientOf(ItemsRegistry.RawIron),
+                Result = IngredientOf(ItemsRegistry.IronIngot)
+            });
+        }
+
+        sample.Add("cut", new CuttingRecipe
+        {
+            Identifier = "cut",
+            Type = CraftingType.Stonecutting,
+            Ingredient = IngredientOf(ItemsRegistry.Stone),
+            Result = [new ItemStack(ItemsRegistry.StoneSlab, 2)],
+            Count = 2
+        });
+        using var captured = typeof(PluginRecipes).Assembly
+            .GetManifestResourceStream("Obsidian.Tests.Assets.update-recipes.bin")!;
+        using var expected = new System.IO.MemoryStream();
+        captured.CopyTo(expected);
+        using var actual = new NetworkBuffer();
+        new UpdateRecipesPacket(sample).Serialize(actual);
+        Assert.Equal(expected.ToArray(), actual.AsSpan(0, actual.Size).ToArray());
+    }
+
     [Fact(DisplayName = "A plugin's recipe crafts in the player's grid and leaves it and their book on unload",
         Timeout = TestServerFactory.TestTimeout)]
     public async Task RecipeCraftsUntilItsPluginUnloads()
@@ -46,6 +120,7 @@ public sealed class PluginRecipes
         var player = await JoinAsync(context, "Crafter");
         var client = (TestClient)player.Client;
         var plugin = Plugin();
+        Assert.Single(client.SentPackets.OfType<UpdateRecipesPacket>());
 
         // The ingredients are in the 2x2 grid before the recipe exists.
         player.Inventory.SetItem(1, new ItemStack(ItemsRegistry.Bedrock, 1));
@@ -62,6 +137,8 @@ public sealed class PluginRecipes
         {
             server.RegisterRecipes([recipe], plugin);
             await server.SyncRecipesAsync();
+
+            Assert.Equal(2, client.SentPackets.OfType<UpdateRecipesPacket>().Count());
 
             // The open grid shows the result now, and the player's book has the recipe.
             Assert.True(player.Inventory.GetItem(0)?.Is(ItemsRegistry.Diamond));
@@ -83,6 +160,8 @@ public sealed class PluginRecipes
 
             plugin.UndoHostAdditions();
             await server.SyncRecipesAsync();
+
+            Assert.Equal(3, client.SentPackets.OfType<UpdateRecipesPacket>().Count());
 
             // The result is gone, the client was told, and the recipe no longer matches.
             Assert.Null(player.Inventory.GetItem(0));

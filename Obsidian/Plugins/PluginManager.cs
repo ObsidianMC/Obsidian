@@ -444,6 +444,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             }
 
             var files = DataFiles.Of(archive);
+            container.RecipeFiles = PluginRecipeFiles.Read(files, this.logger);
             container.TagFiles.InsertRange(0, this.ReadTagFiles(files));
             container.LootTableFiles = PluginLootTables.Read(files, this.logger);
             this.ApplyLootTables();
@@ -456,6 +457,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             // Biome tags name the plugin's biomes, so they're applied once the biomes have ids.
             this.ApplyCodecs();
             this.ApplyTags();
+            this.ApplyRecipeFiles();
 
             // Noise settings name blocks, and the plugin's types, which are registered by now.
             container.NoiseFiles = this.ReadNoiseFiles(files);
@@ -569,6 +571,8 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.RefreshPlacedBlocks(blocks);
 
         BrewingRegistry.ReleasePlugin(pluginContainer);
+        if (this.server is Server recipeServer)
+            recipeServer.RecipeRegistry.Types.ReleasePlugin(pluginContainer);
         EntityDefinitionsRegistry.ReleasePlugin(pluginContainer);
         BlockEntityTypesRegistry.ReleasePlugin(pluginContainer);
         PluginGenerators.Release(pluginContainer);
@@ -583,6 +587,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.ApplyLootTables();
         this.ApplyCodecs();
         this.ApplyTags();
+        this.ApplyRecipeFiles();
         this.ApplyNoise();
         this.ApplyDimensions();
         this.ApplyBiomeRegions();
@@ -1122,6 +1127,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.ApplyLootTables();
         this.ApplyCodecs();
         this.ApplyTags();
+        this.ApplyRecipeFiles();
 
         foreach (var pack in packs)
             pack.NoiseFiles = this.ReadNoiseFiles(pack.Files);

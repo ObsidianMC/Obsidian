@@ -2,50 +2,13 @@ using Obsidian.API.Containers;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
-using System.Collections.Frozen;
 
 namespace Obsidian.Events;
 
 public partial class MainEventHandler
 {
-    // Vanilla's fuels (FuelValues.vanillaBurnTimes), which decide where shift-clicking sends a stack and what a
-    // furnace's fuel slot takes. Only whether an item burns matters so far, so their burn times aren't kept.
-    private static readonly FrozenSet<int> fuelItems = new[]
-    {
-        ItemIds.LavaBucket, ItemIds.CoalBlock, ItemIds.BlazeRod, ItemIds.Coal, ItemIds.Charcoal,
-        ItemIds.BambooMosaic, ItemIds.BambooMosaicStairs, ItemIds.BambooMosaicSlab, ItemIds.NoteBlock,
-        ItemIds.Bookshelf, ItemIds.ChiseledBookshelf, ItemIds.Lectern, ItemIds.Jukebox, ItemIds.Chest,
-        ItemIds.TrappedChest, ItemIds.CraftingTable, ItemIds.DaylightDetector, ItemIds.Bow, ItemIds.FishingRod,
-        ItemIds.Ladder, ItemIds.WoodenShovel, ItemIds.WoodenSword, ItemIds.WoodenSpear, ItemIds.WoodenHoe,
-        ItemIds.WoodenAxe, ItemIds.WoodenPickaxe, ItemIds.Stick, ItemIds.Bowl, ItemIds.DriedKelpBlock,
-        ItemIds.Crossbow, ItemIds.Bamboo, ItemIds.DeadBush, ItemIds.ShortDryGrass, ItemIds.TallDryGrass,
-        ItemIds.Scaffolding, ItemIds.Loom, ItemIds.Barrel, ItemIds.CartographyTable, ItemIds.FletchingTable,
-        ItemIds.SmithingTable, ItemIds.Composter, ItemIds.Azalea, ItemIds.FloweringAzalea, ItemIds.MangroveRoots,
-        ItemIds.LeafLitter
-    }.ToFrozenSet();
-
-    private static readonly Tag[] fuelTags =
-    [
-        TagsRegistry.Item.Logs, TagsRegistry.Item.BambooBlocks, TagsRegistry.Item.Planks,
-        TagsRegistry.Item.WoodenStairs, TagsRegistry.Item.WoodenSlabs, TagsRegistry.Item.WoodenTrapdoors,
-        TagsRegistry.Item.WoodenPressurePlates, TagsRegistry.Item.WoodenShelves, TagsRegistry.Item.WoodenFences,
-        TagsRegistry.Item.FenceGates, TagsRegistry.Item.Banners, TagsRegistry.Item.Signs,
-        TagsRegistry.Item.HangingSigns, TagsRegistry.Item.WoodenDoors, TagsRegistry.Item.Boats, TagsRegistry.Item.Wool,
-        TagsRegistry.Item.WoodenButtons, TagsRegistry.Item.Saplings, TagsRegistry.Item.WoolCarpets
-    ];
-
-    /// <summary>
-    /// Whether <paramref name="item"/> burns in a furnace, like vanilla's fuels: the ones it lists, except wood that
-    /// doesn't burn (crimson and warped).
-    /// </summary>
-    internal static bool IsFuel(ItemStack item)
-    {
-        var id = item.Holder.Id;
-        if (TagsRegistry.Item.NonFlammableWood.Entries.Contains(id))
-            return false;
-
-        return fuelItems.Contains(id) || fuelTags.Any(tag => tag.Entries.Contains(id));
-    }
+    /// <summary>Whether this stack has a vanilla furnace burn duration.</summary>
+    internal static bool IsFuel(ItemStack item) => WorldData.FurnaceFuels.BurnTime(item) > 0;
 
     // A vanilla furnace, blast furnace or smoker, rather than a plugin's container of another shape.
     private static bool IsFurnace(SmeltingContainer container) =>

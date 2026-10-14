@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Blocks;
 using Obsidian.API.Events;
+using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Networking;
 using Obsidian.API.World.Features;
@@ -7,6 +8,13 @@ using Obsidian.API.World.Features;
 namespace Obsidian.API.Plugins;
 public interface IPluginRegistry
 {
+    /// <summary>
+    /// Registers a server-side recipe type in this plugin's namespace during ConfigureRegistry. Recipe files name
+    /// it in type; its serializer and recipes stop matching on unload. Vanilla clients receive no custom types.
+    /// </summary>
+    public RecipeType<TRecipe> RegisterRecipeType<TRecipe>(string identifier, IRecipeSerializer<TRecipe> serializer)
+        where TRecipe : class => throw new NotSupportedException("This side doesn't support server recipe types.");
+
     public IPluginRegistry RegisterCommandArgumentHandler<T>(BaseArgumentParser<T> parser);
 
     public IPluginRegistry MapCommands();

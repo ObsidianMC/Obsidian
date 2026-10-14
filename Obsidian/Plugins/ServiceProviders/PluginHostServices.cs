@@ -253,6 +253,9 @@ internal sealed class PluginServer(Server server, PluginContainer plugin, IServi
 
     public void RegisterRecipes(params IRecipe[] recipes) => server.RegisterRecipes(recipes, plugin);
 
+    public TRecipe? FindRecipe<TRecipe>(RecipeType<TRecipe> type, IReadOnlyList<API.Inventory.ItemStack?> inputs)
+        where TRecipe : class => server.FindRecipe(type, inputs);
+
     public bool AddPlayer(IPlayer player) => server.AddPlayer(player);
 
     public bool RemovePlayer(IPlayer player) => server.RemovePlayer(player);

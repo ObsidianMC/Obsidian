@@ -12,6 +12,7 @@ internal sealed class RecipeBookSync
 {
     private readonly SemaphoreSlim gate = new(1, 1);
     private Dictionary<int, long>? sent;
+    private WeakReference<RecipeSet>? sentSet;
 
     /// <summary>Sends the full book that this client's configured content can safely display.</summary>
     public async ValueTask SendInitialAsync(IPlayer player)
@@ -27,8 +28,10 @@ internal sealed class RecipeBookSync
                 recipes = RecipesRegistry.Current;
 
             var entries = Entries(recipes);
+            await player.QueuePacketAsync(recipes.UpdatePacket);
             await player.QueuePacketAsync(new RecipeBookAddPacket(entries, replace: true));
             this.sent = Identities(entries);
+            this.sentSet = new(recipes);
         }
         finally
         {
@@ -51,6 +54,13 @@ internal sealed class RecipeBookSync
             if (this.sent is null)
                 return true;
 
+            if (this.sentSet is null
+                || !this.sentSet.TryGetTarget(out var previous)
+                || !ReferenceEquals(previous, recipes))
+            {
+                await player.QueuePacketAsync(recipes.UpdatePacket);
+            }
+
             var entries = Entries(recipes);
             var identities = Identities(entries);
             var removed = this.sent.Keys.Where(id => !identities.ContainsKey(id)).ToList();
@@ -67,6 +77,7 @@ internal sealed class RecipeBookSync
 
             // Only acknowledge the complete delivery. A failure is retried on the next recipe change.
             this.sent = identities;
+            this.sentSet = new(recipes);
 
             return true;
         }

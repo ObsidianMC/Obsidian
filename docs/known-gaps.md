@@ -64,21 +64,16 @@ saying which setting (see `UnsupportedFlatStemsAreRefused` in `Obsidian.Tests/Le
 - Structures need the flat generator to answer height queries for structure placement.
 - Remove each refusal as its part lands, and add a parity capture of a vanilla flat world with that setting on.
 
-## Cooking, stonecutting and smithing recipes
+## Stonecutting and smithing result slots
 
 **Status:** open, for vanilla's recipes as much as plugins'.
 
-Obsidian reads every recipe type and keeps plugins' recipes with vanilla's (see [plugin content](plugin-content.md)),
-but only crafting recipes do anything. Furnaces, smokers, blast furnaces and campfires don't cook, and the
-stonecutter and smithing table have no recipe logic. The `UpdateRecipes` packet isn't sent either, so the client's
-lists of what furnaces and the smithing table accept, and its stonecutter recipes, stay empty.
+Furnaces, smokers, blast furnaces and campfires cook vanilla's and plugins' recipes, and `UpdateRecipes` supplies
+clients' input filters and stonecutter choices on join and reload (see [plugin content](plugin-content.md#recipes)).
+The stonecutter and smithing table still have no server-side recipe result slots.
 
 **Where to start:**
 
-- Send `UpdateRecipes` from the recipe set, with vanilla's property sets and stonecutter entries, when players join
-  and when the set changes.
-- Tick cooking in furnace block entities from the recipe set, with vanilla's cook times, fuel burn times and
-  experience.
 - Add the stonecutter's and smithing table's result slots, like the crafting grid's.
 
 ## Plant growth beyond saplings

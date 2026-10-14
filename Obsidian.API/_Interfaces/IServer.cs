@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Boss;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
+using Obsidian.API.Inventory;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
@@ -96,6 +97,13 @@ public interface IServer : IDisposable
     /// A recipe's identifier, in snake case, is taken; the recipes before it were registered.
     /// </exception>
     public void RegisterRecipes(params IRecipe[] recipes);
+
+    /// <summary>
+    /// Finds the first matching recipe of a plugin's type in the current set, by lexical recipe identifier.
+    /// Returns null when none matches or the type is unloaded. Do not retain a result across reloads.
+    /// </summary>
+    public TRecipe? FindRecipe<TRecipe>(RecipeType<TRecipe> type, IReadOnlyList<ItemStack?> inputs)
+        where TRecipe : class => null;
 
     public bool AddPlayer(IPlayer player);
     public bool RemovePlayer(IPlayer player);

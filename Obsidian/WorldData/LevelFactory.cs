@@ -42,7 +42,11 @@ public sealed class LevelFactory(IServiceScopeFactory serviceScopeFactory) : ILe
 
         var generator = this.CreateGenerator(serviceProviderScope.ServiceProvider, generatorId);
 
-        return this.worldFactory.Invoke(serviceProviderScope.ServiceProvider, [generator, name, seed]);
+        var world = this.worldFactory.Invoke(serviceProviderScope.ServiceProvider, [generator, name, seed]);
+        if (serviceProviderScope.ServiceProvider.GetService<IServer>() is Server server)
+            world.RecipeSource = () => server.RecipeRegistry.Current;
+
+        return world;
     }
 
     // A generator the host registered, or else one running the plugin generator of that identifier (see

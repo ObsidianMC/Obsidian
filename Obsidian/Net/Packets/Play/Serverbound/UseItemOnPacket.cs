@@ -113,6 +113,13 @@ public partial class UseItemOnPacket
 
         if (await TryUseMusicBlockAsync(player, handSlot, bucket, b)) return;
 
+        if (player.Level is AbstractLevel cookingLevel
+            && await cookingLevel.UseCampfireAsync(player, position, handSlot))
+        {
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
+        }
+
         // Like vanilla's, a plugin's block reacts to being used before the item does, unless the player sneaks.
         if (!player.Sneaking && Plugins.ItemBehaviors.CanUseItems(player))
         {

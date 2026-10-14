@@ -9,6 +9,7 @@ using Obsidian.API.Builders;
 using Obsidian.API.Entities;
 using Obsidian.API.Configuration;
 using Obsidian.API.Events;
+using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
@@ -571,6 +572,8 @@ public sealed class PluginLoading : IDisposable
 /// </summary>
 public sealed class ProbePlugin : PluginBase
 {
+    public RecipeType<ProbePressRecipe>? PressType { get; private set; }
+
     public const string CallsKey = "Obsidian.Tests.ProbePlugin.Calls";
 
     // The chat messages its handler acts on, and the AppContext data it records what it did in.
@@ -602,6 +605,9 @@ public sealed class ProbePlugin : PluginBase
 
     public override void ConfigureRegistry(IPluginRegistry pluginRegistry)
     {
+        if (this.Container.GetFileData("data/probe/recipe/press.json") is not null)
+            this.PressType = pluginRegistry.RegisterRecipeType("probe:press", new ProbePressSerializer());
+
         pluginRegistry.MapEvent<ServerStatusRequestEventArgs>(_ =>
         {
             AppContext.SetData(CallsKey, (int)(AppContext.GetData(CallsKey) ?? 0) + 1);
@@ -782,6 +788,14 @@ public sealed class ProbePlugin : PluginBase
 
     public override ValueTask OnLoadedAsync(IServer server)
     {
+        if (this.PressType is RecipeType<ProbePressRecipe> press)
+        {
+            var result = server.FindRecipe(press, [new ItemStack(ItemsRegistry.Bedrock, 1)]);
+            Assert.Equal("probe:press", result?.Identifier);
+            Assert.Equal(ItemsRegistry.Diamond, result?.Result);
+            Assert.Null(server.FindRecipe(press, [new ItemStack(ItemsRegistry.Stone, 1)]));
+        }
+
         // Loading injects again once the plugin's own services exist, as OnServerReadyAsync does.
         this.Container.InjectServices(NullLogger.Instance, this);
 
