@@ -359,13 +359,17 @@ public sealed partial class Client : IClient
     /// </summary>
     internal void QueueWithoutHandlers(IClientboundPacket packet)
     {
+        if (DeferredInventoryWork.TryDeferSend(this, packet))
+            return;
+
         if (this.disposed || this.cancellationSource.IsCancellationRequested)
             return;
 
         this.packetQueue.Writer.TryWrite(packet);
     }
 
-    public bool SendPacket(IClientboundPacket packet) => this.SendAsync(packet);
+    public bool SendPacket(IClientboundPacket packet) =>
+        DeferredInventoryWork.TryDeferSend(this, packet) || this.SendAsync(packet);
 
     // While the client goes back to configuration, nothing but the switch reaches it, and once it's there, play
     // packets still sent for the player who left (a chunk send under way, say) don't either: it would misread them.

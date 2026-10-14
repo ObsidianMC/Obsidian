@@ -11,6 +11,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -31,6 +32,7 @@ public partial class Portals
         await using var target = TestServerFactory.CreateServer($"callback-target-{Guid.NewGuid():N}");
         WorldBlockEntities.AddEmptyChunk(source.World);
         WorldBlockEntities.AddEmptyChunk(target.World);
+        WorldBlockEntities.AddEmptyChunk(target.World, 1);
         using var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();
         using var peer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -48,10 +50,49 @@ public partial class Portals
         };
         Assert.True(source.World.TryAddPlayer(player));
         Assert.True(source.World.TryAddEntity(player));
+        player.OnChunkBatchReceived(64);
+        var outgoing = (Channel<IClientboundPacket>)typeof(Client)
+            .GetField("packetQueue", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(client)!;
+        var first = new SetHealthPacket(20, 20, 5);
+        var second = new SetExperiencePacket(0, 0, 0);
+        var third = new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks);
+        using var observer = new Client(
+            source.EventDispatcher, source.Server, NullLoggerFactory.Instance,
+            new FakeUserCache(), null!, source.Provider, null!);
+        typeof(Client).GetProperty(nameof(Client.Socket))!.SetValue(observer, peer);
+        observer.SetState(ClientState.Play);
+        var observerOutgoing = (Channel<IClientboundPacket>)typeof(Client)
+            .GetField("packetQueue", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(observer)!;
+        await using (DeferredInventoryWork.Begin(player.Logger, packetClient: client))
+        {
+            await client.QueuePacketAsync(first);
+            Assert.True(client.SendPacket(second));
+            client.QueueWithoutHandlers(third);
+            await observer.QueuePacketAsync(first);
+            await observer.QueuePacketAsync(second);
+            Assert.True(observerOutgoing.Reader.TryRead(out var observedFirst));
+            Assert.True(observerOutgoing.Reader.TryRead(out var observedSecond));
+            Assert.Same(first, observedFirst);
+            Assert.Same(second, observedSecond);
+            Assert.False(outgoing.Reader.TryPeek(out _));
+        }
+
+        Assert.True(outgoing.Reader.TryRead(out var queuedFirst));
+        Assert.True(outgoing.Reader.TryRead(out var queuedSecond));
+        Assert.True(outgoing.Reader.TryRead(out var queuedThird));
+        Assert.Same(first, queuedFirst);
+        Assert.Same(second, queuedSecond);
+        Assert.Same(third, queuedThird);
+
         var chunks = ChunkLock(player);
         var called = false;
+        var kill = true;
+        var reenter = false;
         var unlocked = true;
+        var chunkUpdatesBlocked = false;
+        var prematureChunks = -1;
         var handled = new List<IPacket>();
+        var lockedPackets = new List<string>();
         source.EventDispatcher.RegisterEvent(null, (Func<QueuePacketEventArgs, ValueTask>)(async args =>
         {
             handled.Add(args.Packet);
@@ -59,11 +100,23 @@ public partial class Portals
             unlocked &= free;
             if (free)
                 chunks.Release();
+            else
+                lockedPackets.Add(args.Packet.GetType().Name);
 
             if (args.Packet is RespawnPacket)
             {
                 called = true;
-                await player.KillAsync(player, "Respawn callback");
+                await player.SendPendingChunksAsync();
+                chunkUpdatesBlocked = !await player.UpdateChunksAsync(distance: 2);
+                prematureChunks = handled.OfType<LevelChunkWithLightPacket>().Count();
+                if (kill)
+                    await player.KillAsync(player, "Respawn callback");
+                else if (reenter)
+                {
+                    reenter = false;
+                    await player.RespawnAsync();
+                    await player.TeleportAsync(source.World, new VectorD(8, 70, 8));
+                }
             }
         }));
 
@@ -71,9 +124,33 @@ public partial class Portals
             .AsTask()
             .WaitAsync(TimeSpan.FromSeconds(10));
         Assert.True(called);
-        Assert.True(unlocked);
+        Assert.True(unlocked, string.Join(", ", lockedPackets));
+        Assert.True(chunkUpdatesBlocked);
+        Assert.Equal(0, prematureChunks);
         Assert.False(player.Alive);
         Assert.Equal(0, handled.OfType<SetHealthPacket>().Last().Health);
+        await player.SendPendingChunksAsync();
+        Assert.NotEmpty(handled.OfType<LevelChunkWithLightPacket>());
+        var queued = new List<IClientboundPacket>();
+        while (outgoing.Reader.TryRead(out var packet))
+            queued.Add(packet);
+
+        var respawnIndex = queued.FindIndex(packet => packet is RespawnPacket);
+        var positionIndex = queued.FindIndex(packet => packet is PlayerPositionPacket);
+        Assert.True(respawnIndex >= 0 && positionIndex > respawnIndex);
+        Assert.All(queued.OfType<LevelChunkWithLightPacket>(), packet =>
+            Assert.True(queued.IndexOf(packet) > positionIndex));
+
+        kill = false;
+        reenter = true;
+        unlocked = true;
+        lockedPackets.Clear();
+        handled.Clear();
+        await player.RespawnAsync().WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.True(player.Alive);
+        Assert.True(unlocked, string.Join(", ", lockedPackets));
+        Assert.Same(source.World, player.Level);
+        Assert.Equal(3, handled.OfType<RespawnPacket>().Count());
     }
 
     private static async Task AssertTransferWaitsForDeathBeforeCommittingAsync()

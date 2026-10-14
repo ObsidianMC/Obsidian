@@ -41,9 +41,9 @@ internal sealed partial class DeferredInventoryWork
     private static readonly AsyncLocal<DeferredInventoryWork?> current = new();
 
     private readonly Queue<Func<ValueTask>> queue = new();
-    private readonly bool deferPackets;
+    private readonly IClient? packetClient;
 
-    public DeferredInventoryWork(bool deferPackets = false) => this.deferPackets = deferPackets;
+    public DeferredInventoryWork(IClient? packetClient = null) => this.packetClient = packetClient;
 
     // Set as the queue runs, after which work runs at once.
     private bool closed;
@@ -60,49 +60,112 @@ internal sealed partial class DeferredInventoryWork
 
     /// <summary>
     /// Enters around a whole click, hook or respawn; dispose after releasing its locks, even on failure.
-    /// Set <paramref name="deferPackets"/> when packet callbacks must wait for that release too.
+    /// Set <paramref name="packetClient"/> when its packets must wait for that release too.
+    /// Other clients send normally. <paramref name="packetCallbacks"/> can outlive the packet drain during travel.
+    /// <paramref name="drained"/> runs after disposal finishes, even on failure.
     /// </summary>
-    internal static IAsyncDisposable Begin(ILogger logger, Action? completed = null, bool deferPackets = false) =>
-        new Transaction(logger, completed, deferPackets);
+    internal static IAsyncDisposable Begin(
+        ILogger logger, Action? completed = null, IClient? packetClient = null, Action? drained = null,
+        DeferredInventoryWork? packetCallbacks = null) =>
+        new Transaction(logger, completed, packetClient, drained, packetCallbacks);
+
+    // Enters only while packet handlers run; carrying player passengers must still await their actual transfers.
+    internal sealed class PacketCallbacks(ILogger logger) : IAsyncDisposable
+    {
+        internal DeferredInventoryWork Work { get; } = new();
+
+        public ValueTask DisposeAsync() => this.Work.RunAsync(logger);
+    }
 
     /// <summary>
     /// Queues a packet and its plugin handlers until a respawn or dimension transfer releases chunkUpdates.
     /// Queueing the entire send preserves cancellation and packet order when the transaction drains.
     /// </summary>
     internal static bool TryDeferPacket(IClient client, IClientboundPacket packet) =>
-        current.Value is { deferPackets: true } section
+        current.Value is DeferredInventoryWork section && ReferenceEquals(section.packetClient, client)
             && section.TryQueue(() => client.QueuePacketAsync(packet));
+
+    // Raw sends join the same FIFO as handled packets, without running their handlers a second time.
+    internal static bool TryDeferSend(Client client, IClientboundPacket packet) =>
+        current.Value is DeferredInventoryWork section && ReferenceEquals(section.packetClient, client)
+            && section.TryQueue(() =>
+            {
+                client.QueueWithoutHandlers(packet);
+                return ValueTask.CompletedTask;
+            });
 
     private sealed class Transaction : IAsyncDisposable
     {
         private readonly ILogger logger;
         private readonly Action? completed;
+        private readonly Action? drained;
+        private readonly DeferredInventoryWork? packetCallbacks;
         private readonly DeferredInventoryWork work;
         private readonly IDisposable section;
         private readonly DeferredAttachmentChanges notifications = new();
 
-        internal Transaction(ILogger logger, Action? completed, bool deferPackets)
+        internal Transaction(
+            ILogger logger, Action? completed, IClient? packetClient, Action? drained,
+            DeferredInventoryWork? packetCallbacks)
         {
             this.logger = logger;
             this.completed = completed;
-            this.work = new DeferredInventoryWork(deferPackets);
+            this.drained = drained;
+            this.packetCallbacks = packetCallbacks;
+            this.work = new DeferredInventoryWork(packetClient);
             this.section = this.work.Enter();
         }
 
         public ValueTask DisposeAsync()
         {
             // Notifications see the completed transfer, without click locks. Deaths they request join the queue.
-            this.notifications.Dispose();
-            this.completed?.Invoke();
-            this.section.Dispose();
-            return this.work.deferPackets ? this.DrainPacketsAsync() : this.work.RunAsync(this.logger);
+            try
+            {
+                this.notifications.Dispose();
+                this.completed?.Invoke();
+            }
+            catch
+            {
+                this.drained?.Invoke();
+                throw;
+            }
+            finally
+            {
+                this.section.Dispose();
+            }
+
+            return this.DrainAsync();
+        }
+
+        private async ValueTask DrainAsync()
+        {
+            try
+            {
+                if (this.work.packetClient is not null)
+                    await this.DrainPacketsAsync();
+                else
+                    await this.work.RunAsync(this.logger);
+            }
+            finally
+            {
+                this.drained?.Invoke();
+            }
         }
 
         private async ValueTask DrainPacketsAsync()
         {
             // A packet handler may kill or respawn its player. Finish this packet sequence first, so its saved
             // health and position cannot arrive after the next death's packets. All locks are already released.
-            await using var callbacks = Begin(this.logger);
+            // A dimension transfer keeps its callbacks queued through the remaining destination updates too.
+            if (this.packetCallbacks is DeferredInventoryWork callbacks)
+            {
+                using (callbacks.Enter())
+                    await this.work.RunAsync(this.logger);
+
+                return;
+            }
+
+            await using var deferred = Begin(this.logger);
             await this.work.RunAsync(this.logger);
         }
     }
