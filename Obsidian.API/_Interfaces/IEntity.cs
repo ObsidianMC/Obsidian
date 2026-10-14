@@ -120,4 +120,19 @@ public interface IEntity : Data.IAttachmentHolder
     /// </summary>
     /// <returns>Whether there was one.</returns>
     public bool RemoveAttributeModifier(string attribute, string id) => false;
+
+    /// <summary>
+    /// The value of one of the entity's synced data fields (see <see cref="EntityProperties.DataFields"/>).
+    /// </summary>
+    /// <exception cref="ArgumentException">The entity's type doesn't have the field.</exception>
+    public T GetData<T>(EntityDataField<T> field) =>
+        throw new ArgumentException("The entity's type doesn't have the field.", nameof(field));
+
+    /// <summary>
+    /// Sets one of the entity's synced data fields; players tracking the entity with a modded Obsidian client are
+    /// sent the change on its next tick.
+    /// </summary>
+    /// <exception cref="ArgumentException">The entity's type doesn't have the field.</exception>
+    public void SetData<T>(EntityDataField<T> field, T value) =>
+        throw new ArgumentException("The entity's type doesn't have the field.", nameof(field));
 }

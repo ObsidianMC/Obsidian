@@ -564,7 +564,7 @@ public partial class NetworkBuffer : INetStreamWriter
             return;
         }
 
-        using var packetStream = new NetworkBuffer();
+        using var packetStream = new NetworkBuffer { WritesPluginEntityData = this.WritesPluginEntityData };
 
         packet.Serialize(packetStream);
 
@@ -595,7 +595,7 @@ public partial class NetworkBuffer : INetStreamWriter
             return;
         }
 
-        using var networkBuffer = new NetworkBuffer();
+        using var networkBuffer = new NetworkBuffer { WritesPluginEntityData = this.WritesPluginEntityData };
 
         networkBuffer.WriteVarInt(packet.Id);
         packet.Serialize(networkBuffer);

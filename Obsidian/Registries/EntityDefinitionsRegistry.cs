@@ -79,7 +79,7 @@ internal static class EntityDefinitionsRegistry
             if (closing())
                 return false;
 
-            definition.Settings = EntitySettings.From(properties);
+            definition.Settings = EntitySettings.From(properties, definition.Kind);
             definition.Binding = new EntityBinding(plugin, properties.Behavior);
             return true;
         }

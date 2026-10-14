@@ -57,8 +57,68 @@ public sealed class EntityProperties
     public IReadOnlyList<VectorF> PassengerAttachments { get; init; } = [];
 
     /// <summary>
+    /// How a mob moves: walking, falling like vanilla's mobs, or flying, without gravity or fall damage, like
+    /// vanilla's flying mobs, with a flying move control and pathfinding through the air.
+    /// </summary>
+    public EntityMovementMode Movement { get; init; } = EntityMovementMode.Walking;
+
+    /// <summary>
+    /// A flying mob's <c>minecraft:flying_speed</c>, which a rider flies it with: each tick it gains a tenth of it, in
+    /// blocks per tick, in the direction the rider steers.
+    /// </summary>
+    public float FlyingSpeed { get; init; } = 0.4f;
+
+    /// <summary>
+    /// The type's synced data fields, sent to modded Obsidian clients after vanilla's fields at fixed indices (see
+    /// <see cref="EntityDataField.Index"/>), in this order. Register the same fields on both sides.
+    /// </summary>
+    public IReadOnlyList<EntityDataField> DataFields { get; init; } = [];
+
+    /// <summary>
+    /// Where natural spawning may place the mob, like vanilla's spawn placement types; null, the default, follows the
+    /// rules of the spawn list it's chosen from. With a placement, natural spawning skips those rules and asks the
+    /// behaviour's <see cref="IEntityBehavior.CanSpawn"/> instead.
+    /// </summary>
+    public SpawnPlacementType? SpawnPlacement { get; init; }
+
+    /// <summary>
     /// What the entity does each tick, when a player uses it and, for a projectile, when it hits something; or null for
     /// nothing.
     /// </summary>
     public IEntityBehavior? Behavior { get; init; }
+}
+
+/// <summary>
+/// How a plugin's mob moves (see <see cref="EntityProperties.Movement"/>).
+/// </summary>
+public enum EntityMovementMode
+{
+    Walking,
+    Flying
+}
+
+/// <summary>
+/// Where natural spawning may place a mob, like vanilla's <c>SpawnPlacementTypes</c>.
+/// </summary>
+public enum SpawnPlacementType
+{
+    /// <summary>
+    /// Standing on a block that holds it up, with no fluid at its feet.
+    /// </summary>
+    OnGround,
+
+    /// <summary>
+    /// In water, with water or air above.
+    /// </summary>
+    InWater,
+
+    /// <summary>
+    /// In lava.
+    /// </summary>
+    InLava,
+
+    /// <summary>
+    /// Anywhere its hitbox fits.
+    /// </summary>
+    NoRestrictions
 }

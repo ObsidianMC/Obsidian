@@ -28,6 +28,8 @@ public static partial class LootTableJson
             "minecraft:block_state_property" => StatePredicate(json.Clone()),
             "minecraft:location_check" => LocationPredicate(json.Clone()),
             "minecraft:entity_properties" => EntityPredicate(json.Clone()),
+            "minecraft:killed_by_player" => new PredicateCondition(context => context.LastDamagePlayer is not null),
+            "minecraft:random_chance_with_enchanted_bonus" => EnchantedChance(json),
             _ => throw new InvalidDataException($"Unsupported loot condition {type}.")
         };
     }
@@ -51,6 +53,42 @@ public static partial class LootTableJson
 
     private static ILootCondition Chance(INumberProvider chance) => new PredicateCondition(context =>
         context.Random.NextFloat() < chance.GetFloat(context));
+
+    // Vanilla's LootItemRandomChanceWithEnchantedBonusCondition: the attacker's enchantment level picks the enchanted
+    // chance for that level, or the unenchanted chance at level 0, and one draw decides.
+    private static ILootCondition EnchantedChance(JsonElement json)
+    {
+        var enchantment = Qualify(Text(json, "enchantment"));
+        var unenchanted = json.GetProperty("unenchanted_chance").GetSingle();
+        var enchanted = ReadLevelBasedValue(json.GetProperty("enchanted_chance"));
+
+        return new PredicateCondition(context =>
+        {
+            var level = EnchantmentLevel(context.AttackerWeapon, enchantment);
+            var chance = level > 0 ? enchanted(level) : unenchanted;
+
+            return context.Random.NextFloat() < chance;
+        });
+    }
+
+    // Vanilla's LevelBasedValue, as a number (a constant) or a linear value: its base plus its increase per level
+    // above the first.
+    internal static Func<int, float> ReadLevelBasedValue(JsonElement json)
+    {
+        if (json.ValueKind == JsonValueKind.Number)
+        {
+            var constant = json.GetSingle();
+            return _ => constant;
+        }
+
+        if (Qualify(Text(json, "type")) != "minecraft:linear")
+            throw new InvalidDataException($"Unsupported level-based value {Text(json, "type")}.");
+
+        var start = json.GetProperty("base").GetSingle();
+        var step = json.GetProperty("per_level_above_first").GetSingle();
+
+        return level => start + step * (level - 1);
+    }
 
     private static ILootCondition TableBonus(JsonElement json)
     {

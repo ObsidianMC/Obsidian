@@ -9,7 +9,7 @@ public partial class Mob
     protected IReadOnlyList<Player> Passengers => passengers;
     protected virtual int MaximumPassengers => 1;
 
-    protected bool Mount(Player player)
+    internal bool Mount(Player player)
     {
         if (passengers.Count >= MaximumPassengers || player.Vehicle != null || player.Level != Level || !Alive ||
             !player.Alive || player.GameMode == GameMode.Spectator)

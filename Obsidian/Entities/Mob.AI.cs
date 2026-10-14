@@ -59,6 +59,7 @@ public partial class Mob
     private int deathTicks;
     private bool deathStarted;
     private long lastPlayerHurtTick = -1000;
+    private IPlayer? lastHurtByPlayer;
     private Angle lastSentHeadYaw;
     private Angle lastSentYaw;
     private Angle lastSentPitch;
@@ -441,6 +442,21 @@ public partial class Mob
     internal ValueTask DamageEnvironmentAsync(float amount) => ApplyDamageAsync(this, amount, false);
     internal ValueTask DamageMagicAsync(IEntity source, float amount, bool ignoreHurtCooldown = false) => ApplyDamageAsync(source, amount, false, ignoreHurtCooldown);
     protected virtual bool CanTakeDamage(IEntity source) => true;
+
+    /// <summary>
+    /// Lets a mob change damage it's about to take, after its immunities: the amount it takes, or null for none.
+    /// </summary>
+    private protected virtual ValueTask<float?> FilterIncomingDamageAsync(
+        IEntity source,
+        float amount,
+        CombatDamageKind kind) => ValueTask.FromResult<float?>(amount);
+
+    /// <summary>
+    /// The player who hurt the mob in the last 100 ticks, like vanilla's <c>lastHurtByPlayer</c>, which loot tables'
+    /// <c>killed_by_player</c> conditions test.
+    /// </summary>
+    internal IPlayer? RecentPlayerAttacker => AiTick - lastPlayerHurtTick <= 100 ? lastHurtByPlayer : null;
+
     private protected virtual bool TryAbsorbDamage(float amount, CombatDamageKind kind) => false;
 
     private async ValueTask ApplyDamageAsync(IEntity source, float amount, bool applyArmor, bool ignoreHurtCooldown = false)
@@ -456,6 +472,13 @@ public partial class Mob
             return;
         if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact &&
             (IsFireImmune || HasPotionEffect((int)PotionEffect.FireResistance - 1))) return;
+
+        if (await FilterIncomingDamageAsync(source, amount, kind) is not float filtered)
+            return;
+
+        amount = filtered;
+        if (!float.IsFinite(amount) || amount <= 0 || IsRemoved || !Alive)
+            return;
 
         var incoming = amount;
         var recentlyHurt = !ignoreHurtCooldown && AiTick - lastDamageTick < 10;
@@ -477,8 +500,11 @@ public partial class Mob
         lastDamage = incoming;
         AcceptedDamageCount++;
         despawnAge = 0;
-        if (source is IPlayer)
+        if (source is IPlayer player)
+        {
             lastPlayerHurtTick = AiTick;
+            lastHurtByPlayer = player;
+        }
         if (!ReferenceEquals(source, this))
         {
             LastAttacker = source;

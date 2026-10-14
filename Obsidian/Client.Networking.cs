@@ -60,6 +60,8 @@ public partial class Client
             if (!this.Accepts(packet))
                 return false;
 
+            this.sendBufferMain.WritesPluginEntityData = this.ReadsPluginEntityData(packet);
+
             if (this.compressionThreshold >= 0)
                 this.sendBufferMain.WriteCompressedPacket(packet, this.compressionThreshold);
             else
@@ -75,6 +77,12 @@ public partial class Client
 
         return true;
     }
+
+    // Whether the packet may hold entity data and the client reads plugins' data fields in it.
+    private bool ReadsPluginEntityData(IClientboundPacket packet) =>
+        packet is Net.Packets.Play.Clientbound.SetEntityDataPacket or Net.Packets.Play.Clientbound.BundledPacket
+        && this.Channels.HasNeoForgePlayChannel(Net.Payloads.ChannelPayloads.PluginEntityData);
+
     #region Processing 
     private async ValueTask TryReceiveAsync()
     {

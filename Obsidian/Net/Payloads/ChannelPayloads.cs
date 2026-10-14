@@ -48,8 +48,16 @@ internal static class ChannelPayloads
     public static ImmutableArray<NetworkComponent> BuiltinPlayComponents { get; } =
     [
         new(AdvancedOpenScreen, "1", PacketFlow.Clientbound, true),
-        new(AttachmentPayload.Channel, "1", PacketFlow.Clientbound, true)
+        new(AttachmentPayload.Channel, "1", PacketFlow.Clientbound, true),
+        new(PluginEntityData, "1", PacketFlow.Clientbound, true)
     ];
+
+    /// <summary>
+    /// An Obsidian channel no payload is sent on: a client agreeing on it reads the data fields of plugins' entity
+    /// types after vanilla's in entity data (see <c>EntityProperties.DataFields</c>), which the Obsidian client does
+    /// and other clients, whose entity classes lack the indices, must not be sent.
+    /// </summary>
+    public const string PluginEntityData = "obsidian:entity_data";
 
     /// <summary>
     /// The handshake channels the server always listens on, announced with <c>minecraft:register</c>.

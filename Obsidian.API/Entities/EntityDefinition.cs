@@ -45,7 +45,7 @@ public sealed class EntityDefinition
     internal EntityBinding? Binding { get; set; }
 
     // The server's copy of the plugin's properties, kept when the plugin unloads since its entities stay saved.
-    internal EntitySettings Settings { get; set; } = EntitySettings.From(new EntityProperties());
+    internal EntitySettings Settings { get; set; } = EntitySettings.From(new EntityProperties(), EntityKind.Mob);
 
     public override string ToString() => this.Identifier;
 }
@@ -66,16 +66,58 @@ internal sealed record EntitySettings(
     float MovementSpeed,
     float Gravity,
     MobCategory Category,
-    VectorF[] PassengerAttachments)
+    VectorF[] PassengerAttachments,
+    EntityMovementMode Movement,
+    float FlyingSpeed,
+    EntityDataField[] DataFields,
+    SpawnPlacementType? SpawnPlacement)
 {
-    public static EntitySettings From(EntityProperties properties) => new(
-        properties.Width,
-        properties.Height,
-        properties.MaxHealth,
-        properties.MovementSpeed,
-        properties.Gravity,
-        properties.Category,
-        [.. properties.PassengerAttachments]);
+    // The first metadata index after the fields Obsidian's servers send a mob (Entity, LivingEntity and Mob fields)
+    // or, for projectiles and objects, a plain entity.
+    private const int FirstMobField = 16;
+    private const int FirstEntityField = 8;
+
+    /// <summary>
+    /// Copies the properties, giving their data fields their indices for a type of <paramref name="kind"/>.
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// A data field is listed twice, or another type gave it another index.
+    /// </exception>
+    public static EntitySettings From(EntityProperties properties, EntityKind kind)
+    {
+        EntityDataField[] fields = [.. properties.DataFields];
+        var first = kind == EntityKind.Mob ? FirstMobField : FirstEntityField;
+
+        if (fields.Distinct().Count() != fields.Length || first + fields.Length > byte.MaxValue)
+            throw new ArgumentException("Each data field can be listed once, up to the metadata's last index.");
+
+        for (var i = 0; i < fields.Length; i++)
+        {
+            if (fields[i].Index >= 0 && fields[i].Index != first + i)
+                throw new ArgumentException("A data field has another index in another entity type.");
+        }
+
+        for (var i = 0; i < fields.Length; i++)
+            fields[i].Index = first + i;
+
+        return new(
+            properties.Width,
+            properties.Height,
+            properties.MaxHealth,
+            properties.MovementSpeed,
+            properties.Gravity,
+            properties.Category,
+            [.. properties.PassengerAttachments],
+            properties.Movement,
+            properties.FlyingSpeed,
+            fields,
+            properties.SpawnPlacement);
+    }
+
+    /// <summary>
+    /// The position of <paramref name="field"/> among the type's data fields, or -1.
+    /// </summary>
+    public int IndexOf(EntityDataField field) => Array.IndexOf(this.DataFields, field);
 
     /// <summary>
     /// Where a passenger sits, from the entity's position, for the entity turned to <paramref name="yaw"/> degrees.

@@ -280,13 +280,24 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 continue;
             var feet = terrain.GetBlock(new Vector(x, y, z));
             var floor = terrain.GetBlock(new Vector(x, y - 1, z));
+
+            // A plugin's type with a spawn placement has its own rules instead of its spawn list's.
+            var placement = definition?.Settings.SpawnPlacement;
+
             if (feet == null || floor == null || !terrain.IsFree(mob.Dimension.CreateBBFromPosition(position)) ||
-                (aquatic ? !feet.Is(BlockIds.Water) :
+                placement is null && (aquatic ? !feet.Is(BlockIds.Water) :
                     feet.IsLiquid || type is not EntityType.Ghast and not EntityType.Bat && (floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0)))
                 continue;
             var sky = candidateChunk.GetLightLevel(x, y, z, LightType.Sky);
             var block = candidateChunk.GetLightLevel(x, y, z, LightType.Block);
-            if (category == "creature")
+            if (placement is API.Entities.SpawnPlacementType rule)
+            {
+                var above = terrain.GetBlock(new Vector(x, y + 1, z));
+                if (!PluginSpawnRules.Fits(rule, feet, floor, above)
+                    || !PluginSpawnRules.CanSpawn(definition!, level, new Vector(x, y, z)))
+                    continue;
+            }
+            else if (category == "creature")
             {
                 if ((type switch
                     {
