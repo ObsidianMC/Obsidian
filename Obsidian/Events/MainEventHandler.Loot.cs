@@ -15,9 +15,9 @@ public sealed partial class MainEventHandler
     private static readonly ConditionalWeakTable<DataBlockEntity, BaseContainer> generatedContainers = [];
 
     /// <summary>
-    /// Fills <paramref name="container"/> with what world generation stored in <paramref name="blockEntity"/>: the loot
-    /// of its loot table, like vanilla's <c>RandomizableContainer.unpackLootTable</c> when <paramref name="player"/> opens
-    /// the container, or else the items its template placed.
+    /// Fills <paramref name="container"/> with what world generation stored in <paramref name="blockEntity"/>:
+    /// its loot table when the player opens the container, like vanilla's RandomizableContainer.unpackLootTable,
+    /// or the items its template placed.
     /// </summary>
     /// <remarks>
     /// The caller replaces the block entity with the filled container, which also drops the loot table so it isn't
@@ -31,21 +31,28 @@ public sealed partial class MainEventHandler
             return;
         }
 
-        var seed = blockEntity.Data.TryGetTag<NbtTag<long>>("LootTableSeed", out var lootTableSeed) ? lootTableSeed.Value : 0L;
+        var seed = blockEntity.Data.TryGetTag<NbtTag<long>>("LootTableSeed", out var lootTableSeed)
+            ? lootTableSeed.Value : 0L;
 
         // Vanilla generates nothing for unknown tables.
-        var table = PluginLootTables.Resolve(lootTable.Value!) ?? LootTable.Empty;
+        var resolver = PluginLootTables.CaptureResolver();
+        var table = resolver(lootTable.Value!) ?? LootTable.Empty;
         var sequences = BlockLoot.SequencesFor(player.Level);
         var position = blockEntity.BlockPosition;
+        var random = table.CreateRandom(seed, sequences);
 
-        // Players have no luck attribute yet, so their luck is vanilla's default of 0.
-        table.Fill(container, new LootContext
+        // Container and block tables can name the same sequence. Keep the complete fill under the same source lock
+        // as block destruction, including shuffling. Players currently have vanilla's default luck of zero.
+        lock (random)
         {
-            Random = table.CreateRandom(seed, sequences),
-            Origin = new VectorD(position.X + 0.5, position.Y + 0.5, position.Z + 0.5),
-            ThisEntity = player,
-            ResolveTable = PluginLootTables.Resolve,
-            ExplorationMaps = ExplorationMaps.For(player.Level)
-        });
+            table.Fill(container, new LootContext
+            {
+                Random = random,
+                Origin = new VectorD(position.X + 0.5, position.Y + 0.5, position.Z + 0.5),
+                ThisEntity = player,
+                ResolveTable = resolver,
+                ExplorationMaps = ExplorationMaps.For(player.Level)
+            });
+        }
     }
 }

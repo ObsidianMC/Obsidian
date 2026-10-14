@@ -31,9 +31,11 @@ public partial class MainEventHandler
         }
 
         var tool = player.GetHeldItem();
-        var drops = await BlockLoot.GetDropsAsync(world, location, block, tool,
-            BlockLoot.CreateRandom(world, block), player);
+        var parts = await TwoPartBlockBreak.PrepareAsync(world, location, block);
+        // Block entity integration supplies blockEntityComponents/dynamicDrops here, from parts.DropPosition.
+        var drops = await BlockLoot.GetDropsAsync(world, parts.DropPosition, parts.DropState, tool, breaker: player);
 
+        await parts.RemovePartnerAsync(world);
         await world.SetBlockAsync(location, BlocksRegistry.Air, true);
         if (world is AbstractLevel gameEvents)
         {
@@ -77,13 +79,7 @@ public partial class MainEventHandler
                 {
                     Silverfish.SpawnFromBlock(world, location);
                 }
-
-                return;
             }
-
-            var normalName = block.UnlocalizedName.Replace("infested_", "", StringComparison.Ordinal);
-            if (BlockStateParser.TryParse(normalName) is IBlock normal)
-                drops = BlocksRegistry.TryGetItem(normal, out var normalItem) ? [new ItemStack(normalItem)] : [];
         }
 
         foreach (var droppedItem in drops)
@@ -93,7 +89,7 @@ public partial class MainEventHandler
                 EntityId = Server.GetNextEntityId(),
                 Item = droppedItem,
                 Level = player.Level,
-                Position = (VectorD)location + 0.5
+                Position = (VectorD)parts.DropPosition + 0.5
             };
 
             player.Level.TryAddEntity(item);

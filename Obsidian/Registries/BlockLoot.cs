@@ -19,9 +19,6 @@ internal static partial class BlockLoot
     internal static RandomSequences SequencesFor(ILevel level) => sequences.GetValue(level,
         current => new RandomSequences(RandomState.ParseSeed(current.Seed)));
 
-    internal static IRandomSource CreateRandom(ILevel level, IBlock block) =>
-        (ResolveTable(block) ?? LootTable.Empty).CreateRandom(0, SequencesFor(level));
-
     public static List<ItemStack> GetDrops(
         IBlock block,
         ItemStack? tool,
@@ -34,37 +31,68 @@ internal static partial class BlockLoot
         IReadOnlyList<DataComponent>? blockEntityComponents = null,
         Action<string, Action<ItemStack>>? dynamicDrops = null)
     {
+        var snapshot = Capture(block);
+        return Evaluate(snapshot, block, tool, random, breaker, explosionRadius, origin, testLocation,
+            checkTool, blockEntityComponents, dynamicDrops);
+    }
+
+    private sealed record EvaluationSnapshot(LootTable? Table, Func<string, LootTable?> Resolve, bool SelfDrop);
+
+    private static EvaluationSnapshot Capture(IBlock block)
+    {
+        var resolver = PluginLootTables.CaptureResolver();
+        var plugin = BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out var type);
+        return new EvaluationSnapshot(ResolveTable(block, resolver), resolver,
+            plugin && type!.Settings.LootTable is null);
+    }
+
+    private static List<ItemStack> Evaluate(
+        EvaluationSnapshot snapshot,
+        IBlock block,
+        ItemStack? tool,
+        IRandomSource random,
+        IEntity? breaker,
+        float? explosionRadius,
+        VectorD? origin,
+        Func<JsonElement, bool>? testLocation,
+        bool checkTool,
+        IReadOnlyList<DataComponent>? blockEntityComponents,
+        Action<string, Action<ItemStack>>? dynamicDrops)
+    {
         if (checkTool && (breaker is IPlayer { GameMode: GameMode.Creative or GameMode.Spectator }
             || !HasCorrectTool(block, tool)))
             return [];
 
-        var plugin = BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out var type);
-        var table = ResolveTable(block);
-        if (table is null)
+        // A named source is shared by the level. Hold it for the whole synchronous evaluation, including nested
+        // tables and dynamic drops, so concurrent breaks cannot interleave vanilla's draws. Other sources stay free.
+        lock (random)
         {
-            // Only plugin blocks without an explicit table keep the legacy self-item fallback.
-            return plugin && type!.Settings.LootTable is null && BlocksRegistry.TryGetItem(block, out var item)
-                && (explosionRadius is not float radius || random.NextFloat() <= 1 / radius)
-                ? [new ItemStack(item)] : [];
-        }
+            if (snapshot.Table is not LootTable table)
+            {
+                // Only plugin blocks without an explicit table keep the legacy self-item fallback.
+                return snapshot.SelfDrop && BlocksRegistry.TryGetItem(block, out var item)
+                    && (explosionRadius is not float radius || random.NextFloat() <= 1 / radius)
+                    ? [new ItemStack(item)] : [];
+            }
 
-        return table.GetRandomItems(new LootContext
-        {
-            Random = random,
-            Tool = tool ?? new ItemStack(ItemsRegistry.Air, 0),
-            BlockState = block,
-            BlockProperties = block.GetProperties(),
-            ThisEntity = breaker,
-            ExplosionRadius = explosionRadius,
-            Origin = origin,
-            TestLocation = testLocation,
-            BlockEntityComponents = blockEntityComponents ?? [],
-            DynamicDrops = dynamicDrops,
-            ResolveTable = PluginLootTables.Resolve
-        }).Where(stack => stack.Count > 0 && stack.Holder != ItemsRegistry.Air).ToList();
+            return table.GetRandomItems(new LootContext
+            {
+                Random = random,
+                Tool = tool ?? new ItemStack(ItemsRegistry.Air, 0),
+                BlockState = block,
+                BlockProperties = block.GetProperties(),
+                ThisEntity = breaker,
+                ExplosionRadius = explosionRadius,
+                Origin = origin,
+                TestLocation = testLocation,
+                BlockEntityComponents = blockEntityComponents ?? [],
+                DynamicDrops = dynamicDrops,
+                ResolveTable = snapshot.Resolve
+            }).Where(stack => stack.Count > 0 && stack.Holder != ItemsRegistry.Air).ToList();
+        }
     }
 
-    private static LootTable? ResolveTable(IBlock block)
+    private static LootTable? ResolveTable(IBlock block, Func<string, LootTable?> resolver)
     {
         var plugin = BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out var type);
         var colon = block.UnlocalizedName.IndexOf(':');
@@ -78,7 +106,7 @@ internal static partial class BlockLoot
             id = vanilla;
         }
 
-        return PluginLootTables.Resolve(id);
+        return resolver(id);
     }
 
     private static Dictionary<string, string?> ReadVanillaTables()

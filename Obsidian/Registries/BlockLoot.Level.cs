@@ -16,17 +16,19 @@ internal static partial class BlockLoot
         Vector position,
         IBlock block,
         ItemStack? tool,
-        IRandomSource random,
+        IRandomSource? random = null,
         IEntity? breaker = null,
         float? explosionRadius = null,
         bool checkTool = true,
         IReadOnlyList<DataComponent>? blockEntityComponents = null,
         Action<string, Action<ItemStack>>? dynamicDrops = null)
     {
+        var snapshot = Capture(block);
+        random ??= (snapshot.Table ?? LootTable.Empty).CreateRandom(0, SequencesFor(level));
         var locations = new Dictionary<Vector, IBlock?>();
         var visited = new HashSet<LootTable>();
         var pending = new Queue<LootTable>();
-        if (ResolveTable(block) is LootTable table)
+        if (snapshot.Table is LootTable table)
             pending.Enqueue(table);
 
         while (pending.TryDequeue(out var current))
@@ -43,12 +45,12 @@ internal static partial class BlockLoot
 
             foreach (var reference in current.References)
             {
-                if (PluginLootTables.Resolve(reference) is LootTable nested)
+                if (snapshot.Resolve(reference) is LootTable nested)
                     pending.Enqueue(nested);
             }
         }
 
-        return GetDrops(block, tool, random, breaker, explosionRadius, (VectorD)position + 0.5,
+        return Evaluate(snapshot, block, tool, random, breaker, explosionRadius, (VectorD)position + 0.5,
             condition => TestLocation(condition, locations.GetValueOrDefault(Offset(position, condition))),
             checkTool, blockEntityComponents, dynamicDrops);
     }

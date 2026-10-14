@@ -99,14 +99,37 @@ public static partial class LootTableJson
         if (type is not ("minecraft:item" or "minecraft:empty" or "minecraft:loot_table" or "minecraft:dynamic"))
             throw new InvalidDataException($"Unsupported loot entry {type}.");
 
+        LootTable? table = null;
+        string? reference = null;
+        if (type == "minecraft:loot_table")
+        {
+            if (!json.TryGetProperty("value", out var value)
+                || value.ValueKind is not (JsonValueKind.String or JsonValueKind.Object))
+                throw new InvalidDataException("A loot_table entry needs a table identifier or inline table value.");
+
+            if (value.ValueKind == JsonValueKind.String)
+            {
+                var identifier = value.GetString()!;
+                if (string.IsNullOrWhiteSpace(identifier))
+                    throw new InvalidDataException("A loot_table reference cannot be empty.");
+
+                reference = Qualify(identifier);
+            }
+            else
+            {
+                table = ReadTable(value, "");
+            }
+        }
+
+        if (type is "minecraft:item" or "minecraft:dynamic" && string.IsNullOrWhiteSpace(Text(json, "name")))
+            throw new InvalidDataException($"A {type} entry needs a name.");
+
         return new DataEntry
         {
             Kind = type,
             Name = Text(json, "name"),
-            Table = json.TryGetProperty("value", out var value)
-                ? value.ValueKind == JsonValueKind.String ? null : ReadTable(value, "") : null,
-            Reference = json.TryGetProperty("value", out value) && value.ValueKind == JsonValueKind.String
-                ? Qualify(value.GetString()!) : null,
+            Table = table,
+            Reference = reference,
             Weight = json.TryGetProperty("weight", out var weight) ? weight.GetInt32() : 1,
             Quality = json.TryGetProperty("quality", out var quality) ? quality.GetInt32() : 0,
             Conditions = conditions,

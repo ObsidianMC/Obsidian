@@ -15,6 +15,13 @@ internal static class PluginLootTables
     public static LootTable? Resolve(string identifier) =>
         Volatile.Read(ref tables).GetValueOrDefault(identifier) ?? LootTables.All.GetValueOrDefault(identifier);
 
+    /// <summary>Keeps root and nested table lookups on one reload version for a complete evaluation.</summary>
+    internal static Func<string, LootTable?> CaptureResolver()
+    {
+        var snapshot = Volatile.Read(ref tables);
+        return identifier => snapshot.GetValueOrDefault(identifier) ?? LootTables.All.GetValueOrDefault(identifier);
+    }
+
     public static void Apply(IEnumerable<LootTable> loaded)
     {
         var result = new Dictionary<string, LootTable>(StringComparer.Ordinal);

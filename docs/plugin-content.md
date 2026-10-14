@@ -146,6 +146,10 @@ Tables can add or replace any namespace's tables. Files are applied in plugin lo
 packs in their name order. Reload replaces the plugin's tables; unloading removes them and restores the previous
 table or vanilla's. Nested `minecraft:loot_table` entries resolve through the same overrides. A malformed table or
 unsupported loot type is logged and omitted, without preventing the plugin from loading.
+Each block evaluation captures one table version for its random sequence, location checks and nested references;
+an in-progress evaluation finishes against that version if a plugin reloads. Table entries require `value` to name
+a table or contain an inline table. An evaluation failure during an explosion is logged for that block, and the
+explosion continues removing blocks and evaluating their drops.
 
 The evaluator supports item, empty, dynamic and table entries; alternatives, groups and sequences; constant,
 uniform and binomial number providers; and the block conditions `match_tool`, `block_state_property`, `table_bonus`,
@@ -158,6 +162,11 @@ Functions include `set_count`, `limit_count`, all three vanilla `apply_bonus` fo
 conditions sample once. The explosion's drop-decay game rule decides whether a radius is supplied. Conditions and
 functions run in table order, with vanilla's short circuiting and random draws. Named random sequences are kept
 per level in memory, shared with container loot; persisting them remains a separate save-format task.
+Evaluations sharing a named sequence serialize their complete draws; unrelated sequences remain independent.
+
+Breaking either part of a vanilla door, bed or double plant removes its matching partner and evaluates the
+drop-bearing state once, before removal. Creative breaks suppress both parts' drops. Infested blocks keep table
+results, including plugin overrides; silverfish spawning without silk touch is handled separately.
 
 `RequiresCorrectTool` applies to vanilla and plugin blocks when players break them. A tool's `minecraft:tool`
 component uses the first matching `correct_for_drops` rule. Vanilla's defaults read the live `mineable/*` and
