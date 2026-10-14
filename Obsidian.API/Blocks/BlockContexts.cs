@@ -79,6 +79,20 @@ public sealed class ShapeUpdateContext : BlockContext
 }
 
 /// <summary>
+/// A block asked for its redstone output (see <see cref="IBlockBehavior.GetSignal"/>,
+/// <see cref="IBlockBehavior.GetDirectSignal"/> and <see cref="IBlockBehavior.GetAnalogOutput"/>).
+/// </summary>
+public sealed class SignalContext : BlockContext
+{
+    /// <summary>
+    /// For a signal, the direction from the block asking to this block, like vanilla's (the asking block is on this
+    /// block's <c>Direction.Opposite()</c> side). For an analog output, the side of this block the comparator reads
+    /// it from.
+    /// </summary>
+    public required BlockFace Direction { get; init; }
+}
+
+/// <summary>
 /// An entity touching a block (see <see cref="IBlockBehavior.EntityInsideAsync"/>).
 /// </summary>
 public sealed class EntityBlockContext

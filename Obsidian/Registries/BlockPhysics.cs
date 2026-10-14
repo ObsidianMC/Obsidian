@@ -96,6 +96,12 @@ internal static class BlockPhysics
     public static bool IsTopCenterSturdy(this IBlock block) => Has(block, 7);
 
     /// <summary>
+    /// Vanilla <c>isFaceSturdy(..., UP, SupportType.RIGID)</c>: what repeaters, comparators and pressure plates stand
+    /// on.
+    /// </summary>
+    public static bool IsTopRigidSturdy(this IBlock block) => Has(block, 8);
+
+    /// <summary>
     /// Vanilla <c>Block.canSupportCenter(..., DOWN)</c>: something can hang from the center of the bottom face.
     /// </summary>
     public static bool IsBottomCenterSturdy(this IBlock block) => Has(block, 31);

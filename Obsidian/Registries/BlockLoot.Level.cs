@@ -55,6 +55,20 @@ internal static partial class BlockLoot
             checkTool, blockEntityComponents, dynamicDrops);
     }
 
+    /// <summary>
+    /// The loot of a block destroyed without a tool, like vanilla's <c>Block.dropResources</c>, for a caller that
+    /// reads the level's blocks synchronously (under the level's tick lock) through <paramref name="getBlock"/>.
+    /// </summary>
+    public static List<ItemStack> GetDrops(ILevel level, Vector position, IBlock block, Func<Vector, IBlock> getBlock)
+    {
+        var snapshot = Capture(block);
+        var random = (snapshot.Table ?? LootTable.Empty).CreateRandom(0, SequencesFor(level));
+
+        return Evaluate(snapshot, block, null, random, null, null, (VectorD)position + 0.5,
+            condition => TestLocation(condition, getBlock(Offset(position, condition))),
+            checkTool: false, blockEntityComponents: null, dynamicDrops: null);
+    }
+
     private static Vector Offset(Vector position, JsonElement condition) => position + new Vector(
         condition.TryGetProperty("offsetX", out var x) ? x.GetInt32() : 0,
         condition.TryGetProperty("offsetY", out var y) ? y.GetInt32() : 0,

@@ -7,7 +7,7 @@ namespace Obsidian.WorldData;
 public abstract partial class AbstractLevel
 {
     /// <summary>
-    /// The level's block ticks, and how plugin and falling blocks react to block updates.
+    /// The level's block ticks, and how plugin blocks, redstone components and falling blocks react to block updates.
     /// </summary>
     internal LevelBlockUpdates BlockUpdates => this.Fluids.Blocks;
 
@@ -30,13 +30,11 @@ public abstract partial class AbstractLevel
     /// <summary>
     /// Runs the hooks of the plugin blocks an entity touches after it ticked, like vanilla's entity movement: the
     /// <see cref="IBlockBehavior.EntityInsideAsync"/> of each block its box overlaps, and the
-    /// <see cref="IBlockBehavior.SteppedOnAsync"/> of the block it stands on.
+    /// <see cref="IBlockBehavior.SteppedOnAsync"/> of the block it stands on. Vanilla's pressure plates and wooden
+    /// buttons it's inside react too.
     /// </summary>
     internal async ValueTask TouchPluginBlocksAsync(IEntity entity)
     {
-        if (BlocksRegistry.PluginBlocks.Count == 0)
-            return;
-
         // Vanilla's checkInsideBlocks: the box shrunk by 1.0E-5, so that touching a block's face isn't being inside.
         const double inset = 1.0E-5;
         var dimension = (entity as Entities.Entity)?.Dimension ?? EntityDimension.Zero;
@@ -51,6 +49,10 @@ public abstract partial class AbstractLevel
             (int)Math.Floor(position.X + halfWidth - inset),
             (int)Math.Floor(position.Y + dimension.Height - inset),
             (int)Math.Floor(position.Z + halfWidth - inset));
+
+        this.PressRedstone(entity, min, max);
+        if (BlocksRegistry.PluginBlocks.Count == 0)
+            return;
 
         for (var x = min.X; x <= max.X; x++)
         {

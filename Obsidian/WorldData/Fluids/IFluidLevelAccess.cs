@@ -99,4 +99,20 @@ internal interface IBlockReactions
         BlockFace direction,
         Vector neighborPosition,
         IBlock neighbor);
+
+    /// <summary>
+    /// What follows a change's neighbor updates: vanilla <c>updateNeighbourForOutputSignal</c> when
+    /// <paramref name="state"/>, the new block, has an analog output.
+    /// </summary>
+    public void AfterNeighborsUpdated(Vector position, IBlock state);
+
+    /// <summary>
+    /// Vanilla <c>updateIndirectNeighbourShapes</c>: <paramref name="state"/> at <paramref name="position"/> sends
+    /// shape updates past its direct neighbors (redstone dust to the dust diagonal to it).
+    /// </summary>
+    public void UpdateIndirectNeighborShapes(
+        Vector position,
+        IBlock state,
+        BlockUpdateFlags flags,
+        int updateLimit);
 }

@@ -36,7 +36,8 @@ internal sealed class LevelFluids : IFluidLevelAccess
     }
 
     /// <summary>
-    /// The level's block ticks and the reactions of plugin and falling blocks to block updates.
+    /// The level's block ticks and the reactions of plugin blocks, redstone components and falling blocks to block
+    /// updates.
     /// </summary>
     public LevelBlockUpdates Blocks { get; }
 

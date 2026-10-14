@@ -24,7 +24,21 @@ internal sealed class NeighborUpdater(FluidLevel level)
     /// <c>neighborChanged</c> for each neighbor of <paramref name="position"/>, from <paramref name="source"/>.
     /// </summary>
     public void UpdateNeighborsAt(Vector position, IBlock source) =>
-        this.AddAndRun(new MultiNeighborUpdate(position, source));
+        this.AddAndRun(new MultiNeighborUpdate(position, source, skip: null));
+
+    /// <summary>
+    /// Vanilla <c>updateNeighborsAtExceptFromFacing</c>: <see cref="UpdateNeighborsAt"/> but for the neighbor in
+    /// <paramref name="skip"/>.
+    /// </summary>
+    public void UpdateNeighborsAtExcept(Vector position, IBlock source, BlockFace skip) =>
+        this.AddAndRun(new MultiNeighborUpdate(position, source, skip));
+
+    /// <summary>
+    /// Vanilla <c>neighborChanged</c> for one block: the block at <paramref name="position"/> hears that
+    /// <paramref name="source"/> at <paramref name="sourcePosition"/> changed.
+    /// </summary>
+    public void NeighborChanged(Vector position, IBlock source, Vector sourcePosition) =>
+        this.AddAndRun(new SimpleNeighborUpdate(position, source, sourcePosition));
 
     /// <summary>
     /// <c>updateShape</c> for the block at <paramref name="position"/>, whose neighbor in
@@ -91,16 +105,32 @@ internal sealed class NeighborUpdater(FluidLevel level)
         public bool RunNext(FluidLevel level);
     }
 
-    // neighborChanged for each neighbor of a changed block, one per step.
-    private sealed class MultiNeighborUpdate(Vector source, IBlock sourceBlock) : IUpdate
+    // neighborChanged for each neighbor of a changed block but the skipped one, one per step.
+    private sealed class MultiNeighborUpdate(Vector source, IBlock sourceBlock, BlockFace? skip) : IUpdate
     {
         private int index;
 
         public bool RunNext(FluidLevel level)
         {
+            if (updateOrder[this.index] == skip)
+                this.index++;
+
             var position = source.Offset(updateOrder[this.index++]);
             level.NeighborChanged(position, sourceBlock, source);
+
+            if (this.index < updateOrder.Length && updateOrder[this.index] == skip)
+                this.index++;
+
             return this.index < updateOrder.Length;
+        }
+    }
+
+    private sealed class SimpleNeighborUpdate(Vector position, IBlock source, Vector sourcePosition) : IUpdate
+    {
+        public bool RunNext(FluidLevel level)
+        {
+            level.NeighborChanged(position, source, sourcePosition);
+            return false;
         }
     }
 

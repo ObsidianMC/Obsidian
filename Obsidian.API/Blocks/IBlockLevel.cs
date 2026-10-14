@@ -9,9 +9,9 @@ namespace Obsidian.API.Blocks;
 /// <remarks>
 /// Only use it during the hook it's given to, and use it rather than <see cref="ILevel"/>'s asynchronous methods,
 /// which wait for the hook to return. It reaches the level's complete loaded chunks: others read as void air and
-/// can't be changed.
+/// can't be changed. Its redstone signals (see <see cref="ISignalReader"/>) are read as the blocks are now.
 /// </remarks>
-public interface IBlockLevel
+public interface IBlockLevel : ISignalReader
 {
     /// <summary>
     /// The level.
@@ -59,4 +59,12 @@ public interface IBlockLevel
     /// vanilla's <c>updateNeighborsAt</c>.
     /// </summary>
     public void UpdateNeighbors(Vector position, IBlock source);
+
+    /// <summary>
+    /// Tells the comparators reading the block at <paramref name="position"/> that its analog output (see
+    /// <see cref="IBlockBehavior.GetAnalogOutput"/>) changed, like vanilla's <c>updateNeighbourForOutputSignal</c>:
+    /// those beside it and those behind a conductor beside it. A block change with neighbour updates does this for a
+    /// block with an analog output already.
+    /// </summary>
+    public void UpdateAnalogOutput(Vector position);
 }

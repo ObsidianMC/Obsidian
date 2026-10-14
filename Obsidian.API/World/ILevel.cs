@@ -6,7 +6,11 @@ using System.Threading;
 
 namespace Obsidian.API.World;
 
-public interface ILevel : IAsyncDisposable
+/// <remarks>
+/// Its redstone signals (see <see cref="Blocks.ISignalReader"/>) are read as its blocks are, waiting for the block
+/// updates running at the time.
+/// </remarks>
+public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
 {
     public string Name { get; }
     public string Seed { get; }

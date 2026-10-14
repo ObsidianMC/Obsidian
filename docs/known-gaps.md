@@ -81,15 +81,17 @@ blocks' random ticks go next to the plants' in `AbstractLevel.TickChunkBlocks`, 
 **Status:** open. The mechanism is done; vanilla's blocks get their rules over time.
 
 Block changes run vanilla's neighbour and shape updates, in vanilla's order, and plugin blocks react to them (see
-[plugin content](plugin-content.md#block-hooks)). Of vanilla's blocks, liquids flow and falling blocks fall, but the
-others don't react to changes players, plugins and explosions make: fences, walls, panes and stairs don't connect,
-torches, ladders, signs, plants and carpets don't pop off without support, and a door's other half stays. Those
-shape rules (`ShapeUpdater`) only run in generation and when water or lava changes blocks, as before, since a block
-they destroy would vanish without its drops: `FluidLevel.DestroyBlock` doesn't drop anything yet. Vanilla's
-`neighborChanged` reactions (redstone, rails, doors and trapdoors opening when powered, TNT) aren't modelled, and
-scheduled ticks of vanilla blocks other than falling blocks (a repeater's or an observer's, from a vanilla save) do
-nothing when they come due. Vanilla's own blocks don't react to entities inside them or standing on them through
-the hooks either, and placing a block doesn't check that it can survive there or that no entity is in the way.
+[plugin content](plugin-content.md#block-hooks)). Of vanilla's blocks, liquids flow, falling blocks fall and the basic
+redstone components work (see [Redstone](#redstone)), but the others don't react to changes players, plugins and
+explosions make: fences, walls, panes and stairs don't connect, torches (other than redstone torches), ladders,
+signs, plants and carpets don't pop off without support, and a door's other half stays. Those shape rules
+(`ShapeUpdater`) only run in generation and when water or lava changes blocks, as before, since a block they destroy
+would vanish without its drops: `FluidLevel.DestroyBlock` doesn't drop anything yet. Vanilla's `neighborChanged`
+reactions other than redstone components' (rails, doors and trapdoors opening when powered, TNT) aren't modelled,
+and scheduled ticks of vanilla blocks other than falling blocks and redstone components (an observer's, from a
+vanilla save) do nothing when they come due. Of vanilla's own blocks, only pressure plates and wooden buttons react
+to entities inside them, and none to entities standing on them; and placing a block other than a redstone component
+doesn't check that it can survive there, nor any block that no entity is in the way.
 
 Saved `block_ticks` and `fluid_ticks` lists are written in the order the ticks would run, where vanilla writes its
 priority queue's internal heap order. Both reload the list in file order, so after a save and reload Obsidian keeps
@@ -105,6 +107,29 @@ different one. Obsidian deliberately doesn't emulate Java's heap layout for this
   `LevelBlockUpdates.RunScheduledTick`, next to falling blocks'.
 - Placement checks belong in `UseItemOnPacket`'s placement, before the place event: vanilla's `canSurvive` and
   `isUnobstructed`.
+
+## Redstone
+
+**Status:** open. Dust, torches, repeaters, comparators, levers, buttons, pressure plates, the block of redstone and
+the redstone lamp work (see [plugin content](plugin-content.md#redstone)); the rest of vanilla's redstone doesn't.
+
+- **Consumers.** Doors, trapdoors and fence gates, pistons, dispensers and droppers, note blocks, powered, activator
+  and detector rails, TNT, bells, hoppers (locking), crafters and copper bulbs don't react to power.
+- **Sources.** Observers, daylight detectors, target blocks, trapped chests, tripwire hooks, detector rails,
+  lecterns, lightning rods and sculk sensors give no power, though dust connects to them as to any signal source.
+- **Analog outputs.** Comparators read 0 from jukeboxes, lecterns, chiseled bookshelves, crafters, decorated pots,
+  shelves, command blocks, sculk sensors, detector rails, creaking hearts, copper bulbs, copper golem statues and
+  copper chests.
+- **Timing.** Comparators hear of a container's items changing on the level's next block entity tick, and only near
+  players, where vanilla's `setChanged` tells them at once; and entities press plates and arrows press buttons after
+  they tick, where vanilla's do as they move. Cats sitting on a chest don't stop comparators reading it.
+- **Game events.** Levers, buttons and pressure plates don't emit vanilla's `block_activate` and `block_deactivate`
+  vibrations.
+- **Experiments.** The `redstone_experiments` feature's wire evaluator and update orientations aren't modelled.
+
+**Where to start:** each consumer is another `RedstoneComponent` in `Obsidian/WorldData/Redstone`, listed in
+`VanillaRedstone`, reacting in `NeighborChanged` through `LevelBlockUpdates`' signal methods, like the lamp; sources
+give their power from `GetSignal` and `GetDirectSignal`, like the lever. Analog outputs go in `AnalogOutputs`.
 
 ## Sleeping and spawn points
 

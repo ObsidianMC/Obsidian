@@ -2,8 +2,8 @@ namespace Obsidian.API.Blocks;
 
 /// <summary>
 /// What a plugin's block does: when a player uses or places it, when it or a neighbour changes, when it ticks and when
-/// entities touch it. Implement the methods the block needs; the others leave the block to Obsidian's default
-/// handling, which does nothing.
+/// entities touch it, and the redstone power it gives. Implement the methods the block needs; the others leave the
+/// block to Obsidian's default handling, which does nothing.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -81,6 +81,39 @@ public interface IBlockBehavior
     public void RandomTick(BlockContext context)
     {
     }
+
+    /// <summary>
+    /// Whether the block gives redstone power, like vanilla's <c>isSignalSource</c>: redstone dust connects to it
+    /// from every side, and comparators read it from their sides. The same for every state of the block.
+    /// </summary>
+    public bool IsSignalSource(IBlock state) => false;
+
+    /// <summary>
+    /// The weak redstone power the block gives the neighbour asking, from 0 to 15, like vanilla's <c>getSignal</c>
+    /// (see <see cref="ISignalReader"/>). Runs whenever a neighbour reads its power, so keep it a quick read of the
+    /// state; when it changes, tell the neighbours with <see cref="IBlockLevel.UpdateNeighbors"/>.
+    /// </summary>
+    public int GetSignal(SignalContext context) => 0;
+
+    /// <summary>
+    /// The strong redstone power the block gives the neighbour asking, which also powers through that neighbour when
+    /// it's a conductor, like vanilla's <c>getDirectSignal</c>. Tell the neighbours of that neighbour too when it
+    /// changes.
+    /// </summary>
+    public int GetDirectSignal(SignalContext context) => 0;
+
+    /// <summary>
+    /// Whether comparators read the block's <see cref="GetAnalogOutput"/>, like vanilla's
+    /// <c>hasAnalogOutputSignal</c>.
+    /// </summary>
+    public bool HasAnalogOutput(IBlock state) => false;
+
+    /// <summary>
+    /// The power, from 0 to 15, a comparator facing away from the block reads from it, like vanilla's
+    /// <c>getAnalogOutputSignal</c>: how full a container is, say. When it changes other than with the block's
+    /// state, tell comparators with <see cref="IBlockLevel.UpdateAnalogOutput"/>.
+    /// </summary>
+    public int GetAnalogOutput(SignalContext context) => 0;
 
     /// <summary>
     /// Called each tick an entity is inside the block (its box overlaps the block's cube), like vanilla's
