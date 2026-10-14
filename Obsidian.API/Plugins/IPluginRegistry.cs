@@ -21,8 +21,11 @@ public interface IPluginRegistry
         throw new NotSupportedException("Advancement triggers are unavailable.");
 
     /// <summary>Registers a server portal in the plugin's namespace; its behaviour is removed on unload.</summary>
-    public World.PortalType RegisterPortal(string identifier, World.PortalProperties properties) =>
-        throw new NotSupportedException("This side doesn't support portals.");
+    /// <remarks>
+    /// Portals are the server's: the Obsidian client, running a <c>both</c> mod's ConfigureRegistry, keeps only the
+    /// portal's identity, and draws its blocks like any.
+    /// </remarks>
+    public World.PortalType RegisterPortal(string identifier, World.PortalProperties properties) => new(identifier);
 
     /// <summary>Registers persistent world/level data. Call during ConfigureRegistry.</summary>
     public Data.SavedDataType<TValue> RegisterSavedData<TValue>(string identifier, ComponentCodec<TValue> codec);
