@@ -595,6 +595,45 @@ public sealed class PluginLoading : IDisposable
         Assert.Equal(8, mainSlot.StateId);
         Assert.Equal(1, mainSlot.SlotData!.Count);
 
+        // A tick hook may hurt its holder, which wears their armour under the inventory lock the hooks hold: the wear
+        // waits for the hooks and comes in the same tick. A lethal hurt stops the ticks, and its wear (100 / 4) then
+        // the death's drops follow. The timeouts fail the test rather than hang it, should the lock deadlock again.
+        var world = (World)server.DefaultWorld;
+        var chunk = new Chunk(0, 0);
+        chunk.SetChunkStatus(ChunkGenStage.full);
+        world.LoadRegionByChunk(0, 0).SetChunk(chunk);
+        var attacker = new Entity { Level = world, Type = EntityType.Pig };
+        actual.Position = new VectorD(0.5, 64, 0.5);
+        actual.OpenedContainer = null;
+        actual.Inventory.SetItem(6, new ItemStack(ItemsRegistry.IronChestplate, 1));
+        AppContext.SetData(ProbePlugin.TicksKey, "");
+
+        try
+        {
+            AppContext.SetData(ProbePlugin.HurtKey, ((IEntity)attacker, 4f));
+            await actual.TickInventoryItemsAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.True(actual.Health < 20);
+            Assert.Equal(1, actual.Inventory.GetItem(6)!.Damage);
+
+            AppContext.SetData(ProbePlugin.TicksKey, "");
+            AppContext.SetData(ProbePlugin.HurtKey, ((IEntity)attacker, 100f));
+            await actual.TickInventoryItemsAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        finally
+        {
+            AppContext.SetData(ProbePlugin.HurtKey, null);
+        }
+
+        Assert.False(actual.Alive);
+        Assert.Equal("36:MainHand;", AppContext.GetData(ProbePlugin.TicksKey));
+        Assert.All(actual.Inventory, Assert.Null);
+        var deathDrops = world.GetNonPlayerEntitiesInRange(actual.Position, 4)
+            .OfType<ItemEntity>()
+            .Select(entity => entity.Item)
+            .ToList();
+        Assert.Equal(2, deathDrops.Count(item => item.Is(charm)));
+        Assert.Contains(deathDrops, item => item.Is(ItemsRegistry.IronChestplate) && item.Damage == 26);
+
         // A rejected default cannot replace the host-owned defaults, and a reload only changes new stacks.
         var defaults = charm.DefaultComponents;
         Assert.Throws<ArgumentException>(() => ItemsRegistry.TryBind(charm, new ItemProperties
@@ -797,6 +836,9 @@ public sealed class ProbePlugin : PluginBase
 
     // How many times its charm was used on an entity.
     public const string UsesKey = "Obsidian.Tests.ProbePlugin.Uses";
+
+    // What its charm's inventory tick hurts the holder with, an (IEntity Source, float Amount) pair, while set.
+    public const string HurtKey = "Obsidian.Tests.ProbePlugin.Hurt";
 
     [Inject]
     public ProbeService? Service { get; set; }
@@ -1023,13 +1065,14 @@ public sealed class ProbePlugin : PluginBase
             return ValueTask.FromResult(true);
         }
 
-        // Records each stack's tick as "slot:equipment slot;".
-        public ValueTask InventoryTickAsync(ItemInventoryTickContext context)
+        // Records each stack's tick as "slot:equipment slot;", and hurts the holder while the test asks it to.
+        public async ValueTask InventoryTickAsync(ItemInventoryTickContext context)
         {
             var ticks = AppContext.GetData(TicksKey);
             AppContext.SetData(TicksKey, $"{ticks}{context.Slot}:{context.EquipmentSlot};");
 
-            return ValueTask.CompletedTask;
+            if (AppContext.GetData(HurtKey) is (IEntity source, float amount))
+                await context.Player.DamageAsync(source, amount);
         }
     }
 

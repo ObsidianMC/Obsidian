@@ -76,8 +76,20 @@ public partial class Player
     /// Damages a slot under the click lock. Delayed operations supply the original stack as <paramref name="expected"/>
     /// so replacing it cannot damage another item; packets are captured under the lock and sent after it.
     /// </summary>
-    internal async ValueTask DamageInventoryItemAsync(
-        int slot, int amount, bool armor = false, ItemStack? expected = null)
+    /// <remarks>
+    /// Asked for while plugins' code holds the lock, like an item's inventory tick hurting its holder, it waits until
+    /// the lock is let go (see <see cref="DeferredInventoryWork"/>). Either way it wears the stack the slot holds as
+    /// it's asked for, not one put there meanwhile.
+    /// </remarks>
+    internal ValueTask DamageInventoryItemAsync(int slot, int amount, bool armor = false, ItemStack? expected = null)
+    {
+        if ((expected ?? this.Inventory.GetItem(slot)) is not ItemStack stack)
+            return ValueTask.CompletedTask;
+
+        return DeferredInventoryWork.RunOrDeferAsync(() => this.WearInventoryItemAsync(slot, amount, armor, stack));
+    }
+
+    private async ValueTask WearInventoryItemAsync(int slot, int amount, bool armor, ItemStack expected)
     {
         List<ClientboundPacket> updates = [];
         ClickWindowState state;
@@ -87,7 +99,7 @@ public partial class Player
         {
             if (this.GameMode == GameMode.Creative
                 || this.Inventory.GetItem(slot) is not { Count: > 0 } item
-                || expected is not null && !ReferenceEquals(item, expected))
+                || !ReferenceEquals(item, expected))
             {
                 return;
             }

@@ -229,25 +229,34 @@ public partial class Player
                 ResolveTable = PluginLootTables.CaptureResolver()
             };
             var items = table.GetRandomItems(context);
-            List<ClientboundPacket> updates;
-            ClickWindowState state;
-            using (await this.Inventory.LockAsync())
-            {
-                var before = this.CaptureInventoryItems();
-                foreach (var item in items)
-                    AddToInventory(this.Inventory, this.CurrentHeldItemSlot, item, false);
 
-                state = ClickWindowState.Of(this);
-                updates = this.CaptureInventoryChanges(before);
-            }
-
-            await this.WindowSnapshots.SendChangeAsync(this, state, updates);
-            foreach (var item in items.Where(item => item.Count > 0))
-                ItemEntity.DropHostOwned(this, item);
+            // Granted by plugins' code holding the inventory lock, the items come as soon as the lock is let go.
+            await DeferredInventoryWork.RunOrDeferAsync(() => this.GiveRewardItemsAsync(items));
         }
 
         foreach (var identifier in rewards.Recipes)
             await this.UnlockProgressRecipeAsync(identifier);
+    }
+
+    // Puts an advancement's loot in the inventory, dropping what doesn't fit.
+    private async ValueTask GiveRewardItemsAsync(List<ItemStack> items)
+    {
+        List<ClientboundPacket> updates;
+        ClickWindowState state;
+
+        using (await this.Inventory.LockAsync())
+        {
+            var before = this.CaptureInventoryItems();
+            foreach (var item in items)
+                AddToInventory(this.Inventory, this.CurrentHeldItemSlot, item, false);
+
+            state = ClickWindowState.Of(this);
+            updates = this.CaptureInventoryChanges(before);
+        }
+
+        await this.WindowSnapshots.SendChangeAsync(this, state, updates);
+        foreach (var item in items.Where(item => item.Count > 0))
+            ItemEntity.DropHostOwned(this, item);
     }
 
     internal async ValueTask UnlockProgressRecipeAsync(string identifier)

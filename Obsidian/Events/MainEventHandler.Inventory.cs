@@ -46,8 +46,10 @@ public partial class MainEventHandler
 
         using (await BaseContainer.LockWindowAsync(window, player.Inventory))
         {
+            // A dead player's clicks are refused: their death drops their items (see Player.LoseItemsAtDeathAsync).
             if (!IsOpen(player, window, args.ContainerId)
-                || args.Container != window && args.Container != player.Inventory)
+                || args.Container != window && args.Container != player.Inventory
+                || player.Health <= 0)
             {
                 return;
             }

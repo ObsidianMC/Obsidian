@@ -1028,13 +1028,14 @@ public sealed class MenuClicks
             Assert.True(reloaded.GetAttachment(charms)![1]?.Is(ItemsRegistry.Diamond));
 
             // keep_inventory keeps the items and experience; without it a death drops them like vanilla, the
-            // attachments' too unless the type copies on death.
-            await player.CloseContainerAsync();
+            // attachments' too unless the type copies on death. Either way the death closes the menu, so that no
+            // click moves the items it drops.
             player.SetAttachment(kept, [new ItemStack(ItemsRegistry.Emerald, 4)]);
             player.XpLevel = 20;
             player.XpTotal = 550;
             context.World.LevelData.GameRules["keep_inventory"] = "true";
             await player.KillAsync(player, "Kept");
+            Assert.Null(player.OpenedContainer);
             await player.RespawnAsync();
             Assert.NotNull(player.GetAttachment(charms));
             Assert.Equal(2, player.Inventory.GetItem(9)?.Count);

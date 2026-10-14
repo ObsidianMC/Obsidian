@@ -1,3 +1,4 @@
+using Obsidian.API.Data;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
@@ -182,7 +183,7 @@ public partial class MainEventHandler
 
             try
             {
-                applied = !this.menu.HasItemAccessSlots || this.menu.CommitStaged(leftovers);
+                applied = this.Transfer(leftovers, retained);
             }
             catch
             {
@@ -207,6 +208,31 @@ public partial class MainEventHandler
                 GiveBack(this.player, item);
 
             return applied;
+        }
+
+        // Moves the click's items through the item access slots, undoing what moved when the access no longer holds
+        // what the click took, or throws; all in turn with deaths draining item attachments, so that none drops half
+        // of the click's transfers or has its drain undone (see ItemAttachments.TransferGate).
+        private bool Transfer(List<ItemStack> leftovers, List<ItemStack> retained)
+        {
+            if (!this.menu.HasItemAccessSlots)
+                return true;
+
+            using var transfers = ItemAttachments.TransferGate.EnterScope();
+
+            try
+            {
+                if (this.menu.CommitStaged(leftovers))
+                    return true;
+            }
+            catch
+            {
+                this.menu.UndoStaged(leftovers, retained);
+                throw;
+            }
+
+            this.menu.UndoStaged(leftovers, retained);
+            return false;
         }
 
         /// <summary>
@@ -240,11 +266,9 @@ public partial class MainEventHandler
             current = this.outer;
         }
 
+        // Undoes the rest of a click whose transfers were undone (see Transfer): the slots get back what they held.
         private void RollBack(List<ItemStack> leftovers, List<ItemStack> retained)
         {
-            if (this.menu.HasItemAccessSlots)
-                this.menu.UndoStaged(leftovers, retained);
-
             this.End();
             this.Restore(retained);
 

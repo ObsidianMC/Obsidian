@@ -15,7 +15,8 @@ public partial class MainEventHandler
 
         using (await BaseContainer.LockWindowAsync(window, player.Inventory))
         {
-            if (!IsOpen(player, window, containerId))
+            // Like a click, refused while the player is dead.
+            if (!IsOpen(player, window, containerId) || player.Health <= 0)
                 return;
 
             sync = PrepareBookRecipe(player, containerId, displayId, makeAll);

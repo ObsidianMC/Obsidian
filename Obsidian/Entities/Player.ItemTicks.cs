@@ -13,28 +13,41 @@ public partial class Player
     /// <remarks>
     /// Taken under the inventory's lock, like a click, so that a hook never sees a click half done and a click
     /// checks the contents the hooks left (a click arriving meanwhile is refused and resent, its revision moved on).
-    /// Nothing is locked or allocated while no stack in the inventory ticks.
+    /// What the hooks set off that takes the lock, like the armour a hurt wears or a death's drops, waits until the
+    /// lock is let go and runs right after, in this tick (see <see cref="DeferredInventoryWork"/>). Nothing is locked
+    /// or allocated while no stack in the inventory ticks.
     /// </remarks>
-    private async ValueTask TickInventoryItemsAsync()
+    internal async ValueTask TickInventoryItemsAsync()
     {
         if (!ItemBehaviors.HasInventoryTicks(this.Inventory))
             return;
 
-        List<ClientboundPacket> updates;
-        ClickWindowState state;
+        var deferred = new DeferredInventoryWork();
 
-        using (await this.Inventory.LockAsync())
+        try
         {
-            var before = this.CaptureInventoryItems();
+            List<ClientboundPacket> updates;
+            ClickWindowState state;
 
-            await ItemBehaviors.TickInventoryAsync(this, this.Inventory, this.CurrentHeldItemSlot, this.Logger);
+            using (await this.Inventory.LockAsync())
+            using (deferred.Enter())
+            {
+                var before = this.CaptureInventoryItems();
 
-            state = ClickWindowState.Of(this);
-            updates = this.CaptureInventoryChanges(before);
+                await ItemBehaviors.TickInventoryAsync(this, this.Inventory, this.CurrentHeldItemSlot, this.Logger);
+
+                state = ClickWindowState.Of(this);
+                updates = this.CaptureInventoryChanges(before);
+            }
+
+            // Through plugins' packet handlers, after the lock; a slot changed meanwhile is sent later, with the
+            // window.
+            if (updates.Count > 0)
+                await this.WindowSnapshots.SendChangeAsync(this, state, updates);
         }
-
-        // Through plugins' packet handlers, after the lock; a slot changed meanwhile is sent later, with the window.
-        if (updates.Count > 0)
-            await this.WindowSnapshots.SendChangeAsync(this, state, updates);
+        finally
+        {
+            await deferred.RunAsync(this.Logger);
+        }
     }
 }

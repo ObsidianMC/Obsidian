@@ -810,13 +810,11 @@ public sealed partial class Player : Avatar, IClientPlayer
         Health = 0;
         CancelEating();
         CancelWeaponUse();
-        if (OpenedContainer is EnchantmentTable table)
-        {
-            await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, table);
-            OpenedContainer = null;
-        }
         Vehicle?.Dismount(this);
-        await this.DropDeathLootAsync();
+
+        // Killed by plugins' code holding the inventory lock, like an item's inventory tick, the player loses their
+        // items as soon as the lock is let go.
+        await DeferredInventoryWork.RunOrDeferAsync(this.LoseItemsAtDeathAsync);
         await Client.QueuePacketAsync(new SetHealthPacket(0, FoodLevel, FoodSaturationLevel));
         await Client.QueuePacketAsync(new PlayerCombatKillPacket { PlayerID = EntityId, Message = deathMessage });
         PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket { EntityId = EntityId, Event = 3 }, EntityId);
