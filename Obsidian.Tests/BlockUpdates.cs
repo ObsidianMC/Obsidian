@@ -114,6 +114,29 @@ public sealed class BlockUpdates : IDisposable
         scheduler.Tick(_ => true, Run);
         Assert.Equal([2, 3, 1, 4, 5, 6], ran);
         Assert.Equal(0, loaded.Count);
+
+        // More unavailable ticks than the budget must not starve runnable ticks in the same chunk. Their original
+        // timing, priority and order survive saving and restoring the held side list too.
+        loaded.Schedule(new Vector(7, 64, 7), "probe:missing", 0);
+        loaded.Schedule(new Vector(8, 64, 8), "probe:missing", 0);
+        loaded.Schedule(new Vector(9, 64, 9), "probe:missing", 0, priority: -1);
+        loaded.Schedule(new Vector(10, 64, 10), "minecraft:sand", 0);
+        loaded.Schedule(new Vector(11, 64, 11), "minecraft:sand", 0);
+        scheduler.Tick(_ => true, Run, maxTicks: 2, canRunType: type => type != "probe:missing");
+        Assert.Equal([2, 3, 1, 4, 5, 6, 10, 11], ran);
+        Assert.Equal(3, loaded.Count);
+        Assert.True(loaded.Contains(new Vector(7, 64, 7), "probe:missing"));
+
+        scheduler.Clock.Advance();
+        scheduler.Tick(_ => true, Run, maxTicks: 2, canRunType: type => type != "probe:missing");
+        Assert.All(loaded.Pack(), tick => Assert.Equal(-1, tick.Delay));
+        loaded.StopTicking();
+        Assert.Equal([-1, 0, 0], loaded.Pack().Select(tick => tick.Priority));
+        loaded.StartTicking(scheduler, key: 0);
+        scheduler.Tick(_ => true, Run, maxTicks: 2, canRunType: _ => true);
+        scheduler.Tick(_ => true, Run, maxTicks: 2, canRunType: _ => true);
+        Assert.Equal([2, 3, 1, 4, 5, 6, 10, 11, 9, 7, 8], ran);
+        Assert.Equal(0, loaded.Count);
     }
 
     [Fact(

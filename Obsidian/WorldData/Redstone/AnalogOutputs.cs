@@ -113,7 +113,7 @@ internal static class AnalogOutputs
             if (IsBlocked(level, partner))
                 return 0;
 
-            // Vanilla's double chest reads the right half's slots first, which rolls its pending loot first.
+            // Vanilla's double chest reads the right half's slots first.
             if (level.GetBlockEntity(partner) is ContainerBlockEntity other)
             {
                 var (first, second) = state.GetProperty("type") == "right" ? (chest, other) : (other, chest);

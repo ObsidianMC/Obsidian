@@ -12,6 +12,7 @@ namespace Obsidian.Registries;
 internal static partial class BlocksRegistry
 {
     private static readonly Lock registering = new();
+    private static readonly HashSet<BlockType> configuredBlocks = [];
 
     // Registering replaces the table whole, so lookups never lock. Set by the static constructor, which runs after the
     // generated tables are initialized.
@@ -174,7 +175,18 @@ internal static partial class BlocksRegistry
             if (closing())
                 return false;
 
-            type.Settings = BlockSettings.From(properties);
+            var settings = BlockSettings.From(properties);
+            if (configuredBlocks.Contains(type)
+                && (type.Settings.LightEmission != settings.LightEmission
+                    || type.Settings.Opaque != settings.Opaque
+                    || type.Settings.HasCollision != settings.HasCollision))
+            {
+                throw new InvalidOperationException(
+                    $"{type.Identifier}'s light emission, opacity and collision require a server restart to change.");
+            }
+
+            type.Settings = settings;
+            configuredBlocks.Add(type);
             type.Binding = new BlockBinding(
                 plugin,
                 properties.Behavior,

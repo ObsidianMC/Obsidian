@@ -83,8 +83,12 @@ public class Region : IRegion
     // Invoked under FluidTickLock before publishing a slot or completing its still-stored proto chunk.
     internal Action<IChunk, bool>? LightLoaded { get; init; }
 
-    // Chunk unload detaches after saving; region removal resolves final light before detaching and saving its chunks.
+    // Chunk unload detaches at its final snapshot; region removal flushes before detaching and saving its chunks.
     internal Action<IChunk>? LightUnloaded { get; init; }
+
+    // Tick containers and block access retire at the final save snapshot, before asynchronous compression and I/O.
+    internal Action<IChunk>? BlockAccessUnloaded { get; init; }
+    private readonly HashSet<IChunk> retiredBlockAccess = [];
 
     // A removed region cannot publish or attach chunks, including loads and generation already in flight.
     private bool lightingRetired;
@@ -221,7 +225,18 @@ public class Region : IRegion
 
             this.DetachLighting(chunk);
             loadedChunks[x, z] = null;
+            this.retiredBlockAccess.Remove(chunk);
         }
+    }
+
+    /// <summary>Validates a captured chunk under FluidTickLock, including an unloading save still doing I/O.</summary>
+    internal bool IsChunkResident(IChunk chunk)
+    {
+        var x = NumericsHelper.Modulo(chunk.X, CubicRegionSize);
+        var z = NumericsHelper.Modulo(chunk.Z, CubicRegionSize);
+        return !this.lightingRetired
+            && !this.retiredBlockAccess.Contains(chunk)
+            && ReferenceEquals(this.loadedChunks[x, z], chunk);
     }
 
     internal IChunk? GetLoadedChunk(int x, int z) => loadedChunks[x, z] is { IsGenerated: true } chunk ? chunk : null;
@@ -403,7 +418,10 @@ public class Region : IRegion
             return;
 
         if (this.loadedChunks[x, z] is IChunk previous && !ReferenceEquals(previous, chunk))
+        {
             this.DetachLighting(previous);
+            this.retiredBlockAccess.Remove(previous);
+        }
 
         if (chunk is Chunk concrete)
             concrete.CompleteGeneration = this.CompleteChunk;
@@ -424,9 +442,7 @@ public class Region : IRegion
     {
         lock (this.FluidTickLock)
         {
-            var x = NumericsHelper.Modulo(chunk.X, CubicRegionSize);
-            var z = NumericsHelper.Modulo(chunk.Z, CubicRegionSize);
-            if (!this.lightingRetired && ReferenceEquals(this.loadedChunks[x, z], chunk))
+            if (this.IsChunkResident(chunk))
                 this.LightLoaded?.Invoke(chunk, true);
 
             chunk.SetChunkStatusCore(ChunkGenStage.full);
@@ -438,7 +454,16 @@ public class Region : IRegion
         if (chunk is Chunk concrete)
             concrete.CompleteGeneration = null;
 
-        this.LightUnloaded?.Invoke(chunk);
+        this.RetireBlockAccess(chunk);
+    }
+
+    private void RetireBlockAccess(IChunk chunk)
+    {
+        if (this.retiredBlockAccess.Add(chunk))
+        {
+            this.LightUnloaded?.Invoke(chunk);
+            this.BlockAccessUnloaded?.Invoke(chunk);
+        }
     }
 
     /// <summary>Flushes final light and detaches every chunk when the level removes this region.</summary>
@@ -506,6 +531,10 @@ public class Region : IRegion
                 // The chunk stored now, read under the lock: generation may have replaced the one this save was given
                 // while it waited (see ReplaceChunk). One no longer stored was unloaded and is saved as it was.
                 var current = this.loadedChunks[x, z] ?? chunk;
+
+                // No block hooks or async setters may change this instance after its final snapshot.
+                if (unloading && ReferenceEquals(current, chunk))
+                    this.RetireBlockAccess(current);
 
                 var loadedStarts = (current as Chunk)?.StructureStarts;
                 var structureStarts = this.SaveStructureStarts is null

@@ -83,10 +83,24 @@ internal sealed class TickScheduler<T>(TickClock clock) where T : notnull
     /// and scheduling order, so that it's due again next game tick, in its place among the others.
     /// </param>
     /// <param name="maxTicks">The most ticks to run.</param>
-    public void Tick(Func<long, bool> isTicking, Func<Vector, T, bool> run, int maxTicks = MaxTicksPerTick)
+    /// <param name="canRunType">
+    /// Optional availability check before spending the budget. Unavailable types wait separately with their original
+    /// timing and order, and are restored once available. A run-time refusal is held there too.
+    /// </param>
+    public void Tick(
+        Func<long, bool> isTicking,
+        Func<Vector, T, bool> run,
+        int maxTicks = MaxTicksPerTick,
+        Func<T, bool>? canRunType = null)
     {
+        if (canRunType is not null)
+        {
+            foreach (var container in this.containers.Values)
+                container.RestoreHeld(canRunType);
+        }
+
         this.SortContainersToTick(isTicking);
-        this.DrainContainers(maxTicks);
+        this.DrainContainers(maxTicks, canRunType);
 
         // Containers left over when the limit was hit wait for the next tick.
         foreach (var (container, first) in this.containersToTick.UnorderedItems)
@@ -100,7 +114,12 @@ internal sealed class TickScheduler<T>(TickClock clock) where T : notnull
         {
             this.toRunThisTickSet.Remove((entry.Tick.Position, entry.Tick.Type));
             if (!run(entry.Tick.Position, entry.Tick.Type))
-                entry.Container.Hold(entry.Tick, this.GameTime);
+            {
+                if (canRunType is null)
+                    entry.Container.Hold(entry.Tick, this.GameTime);
+                else
+                    entry.Container.Suspend(entry.Tick, this.GameTime);
+            }
         }
     }
 
@@ -152,13 +171,13 @@ internal sealed class TickScheduler<T>(TickClock clock) where T : notnull
         }
     }
 
-    private void DrainContainers(int maxTicks)
+    private void DrainContainers(int maxTicks, Func<T, bool>? canRunType)
     {
         while (this.toRunThisTick.Count < maxTicks && this.containersToTick.TryDequeue(out var container, out _))
         {
             container.TryPoll(out var tick);
-            this.toRunThisTick.Enqueue((container, tick));
-            this.DrainFromCurrentContainer(container, maxTicks);
+            this.CollectTick(container, tick, canRunType);
+            this.DrainFromCurrentContainer(container, maxTicks, canRunType);
 
             if (container.TryPeek(out var next))
             {
@@ -171,7 +190,7 @@ internal sealed class TickScheduler<T>(TickClock clock) where T : notnull
     }
 
     // Takes the container's due ticks for as long as they come before the next container's first tick.
-    private void DrainFromCurrentContainer(ChunkTicks<T> container, int maxTicks)
+    private void DrainFromCurrentContainer(ChunkTicks<T> container, int maxTicks, Func<T, bool>? canRunType)
     {
         var hasOther = this.containersToTick.TryPeek(out _, out var other);
         while (this.toRunThisTick.Count < maxTicks
@@ -180,7 +199,15 @@ internal sealed class TickScheduler<T>(TickClock clock) where T : notnull
             && (!hasOther || ScheduledTick<T>.IntraTickDrainOrder.Compare(tick, other) <= 0))
         {
             container.TryPoll(out _);
-            this.toRunThisTick.Enqueue((container, tick));
+            this.CollectTick(container, tick, canRunType);
         }
+    }
+
+    private void CollectTick(ChunkTicks<T> container, ScheduledTick<T> tick, Func<T, bool>? canRunType)
+    {
+        if (canRunType is not null && !canRunType(tick.Type))
+            container.Suspend(tick, this.GameTime);
+        else
+            this.toRunThisTick.Enqueue((container, tick));
     }
 }

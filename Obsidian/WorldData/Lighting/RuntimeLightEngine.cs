@@ -37,6 +37,23 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
     internal Lock TickLock => tickLock;
 
     /// <summary>
+    /// Captures an initial chunk packet's immutable light data before queueing it. The propagation gate excludes
+    /// both runtime relighting and generation writes; no tick lock is needed, including during serialization.
+    /// </summary>
+    internal LightUpdatePacket SnapshotLight(IChunk chunk)
+    {
+        this.propagation.EnterWriteLock();
+        try
+        {
+            return new LightUpdatePacket(chunk);
+        }
+        finally
+        {
+            this.propagation.ExitWriteLock();
+        }
+    }
+
+    /// <summary>
     /// Remembers a resident prototype until completion, or attaches the complete chunk's block-write hook and queues
     /// border reconciliation. The region may prepare the hook just before publishing generation's full status, while
     /// holding the tick lock and validating the slot identity.

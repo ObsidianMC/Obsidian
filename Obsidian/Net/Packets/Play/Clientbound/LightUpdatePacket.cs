@@ -14,7 +14,9 @@ public partial class LightUpdatePacket
     private readonly List<byte[]> sky = [];
     private readonly List<byte[]> block = [];
 
-    /// <summary>Snapshots all build-range sections. Call while holding the level's block-write lock.</summary>
+    /// <summary>
+    /// Snapshots all build-range sections. Call under the propagation gate, or on immutable storage.
+    /// </summary>
     public LightUpdatePacket(IChunk chunk)
         : this(
             chunk,
@@ -43,6 +45,12 @@ public partial class LightUpdatePacket
         writer.WriteVarInt(Chunk.X);
         writer.WriteVarInt(Chunk.Z);
 
+        this.WriteLight(writer);
+    }
+
+    /// <summary>Writes the captured masks and arrays, also used by the initial chunk packet.</summary>
+    internal void WriteLight(INetStreamWriter writer)
+    {
         WriteMask(writer, this.skyMask);
         WriteMask(writer, this.blockMask);
         WriteMask(writer, this.emptySkyMask);

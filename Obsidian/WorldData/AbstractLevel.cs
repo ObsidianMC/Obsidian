@@ -430,6 +430,9 @@ public abstract partial class AbstractLevel : ILevel
         API.BlockEntities.BlockEntity? removed;
         lock (this.Fluids.TickLock)
         {
+            if (!this.Fluids.IsResident(c))
+                return false;
+
             var old = c.GetBlock(x, y, z);
             if (canReplace is not null && !canReplace(old))
                 return false;
@@ -730,6 +733,7 @@ public abstract partial class AbstractLevel : ILevel
                 FlushLight = this.Lighting.Flush,
                 LightLoaded = this.Lighting.Track,
                 LightUnloaded = this.Lighting.Untrack,
+                BlockAccessUnloaded = this.Fluids.Untrack,
                 EntitiesLoaded = this.QueueEntitySpawn,
                 SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null
             };

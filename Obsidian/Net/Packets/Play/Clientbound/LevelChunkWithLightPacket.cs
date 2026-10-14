@@ -1,11 +1,17 @@
 ﻿using Obsidian.Nbt;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Lighting;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
 public partial class LevelChunkWithLightPacket(IChunk chunk)
 {
     public IChunk Chunk { get; } = chunk;
+
+    // Capture before the packet enters the send queue, whose serialization holds the client's send lock.
+    private readonly LightUpdatePacket light = chunk is Chunk { RuntimeLight: RuntimeLightEngine engine }
+        ? engine.SnapshotLight(chunk)
+        : new LightUpdatePacket(chunk);
 
     public override void Serialize(INetStreamWriter writer)
     {
@@ -63,14 +69,7 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
         }
 
         // Lighting
-        Chunk.WriteLightMaskTo(writer, LightType.Sky);
-        Chunk.WriteLightMaskTo(writer, LightType.Block);
-
-        Chunk.WriteEmptyLightMaskTo(writer, LightType.Sky);
-        Chunk.WriteEmptyLightMaskTo(writer, LightType.Block);
-
-        Chunk.WriteLightTo(writer, LightType.Sky);
-        Chunk.WriteLightTo(writer, LightType.Block);
+        this.light.WriteLight(writer);
     }
 
     /// <summary>

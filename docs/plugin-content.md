@@ -68,7 +68,8 @@ A block's `Behavior` gets vanilla's block hooks; each defaults to doing nothing:
 - `GetStateForPlacement`: the state a player places the block in, from a `BlockPlaceContext`: the player, hand and
   item, the clicked block, face and where on it they clicked (`ClickedAt`, 0 to 1 on each axis), where the block goes
   and whether it replaces the clicked block (tall grass, say), and the player's `HorizontalDirection` and
-  `NearestLookDirection`, worked out like vanilla's. Null doesn't place the block, and the player keeps the item.
+  `NearestLookDirection`, worked out like vanilla's. Null, or an exception logged by the host, rejects placement:
+  the player keeps the item and receives the block, inventory and prediction-acknowledgement corrections.
 - `OnPlaced`: the block was placed, or changed state (`OldState` says which), like vanilla's `onPlace`.
 - `OnRemoved`: another block replaced it with neighbour updates, like vanilla's `affectNeighborsAfterRemoval`.
 - `NeighborChanged`: a neighbour changed with neighbour updates (`SourcePosition`, and `SourceBlock`, the state it
@@ -85,10 +86,14 @@ A block's `Behavior` gets vanilla's block hooks; each defaults to doing nothing:
 The hooks with a `Level` run synchronously while the level's block updates wait for them, like vanilla's: read and
 change blocks through that `IBlockLevel` (`GetBlock`, `SetBlock`, `RemoveBlock`, `ScheduleTick`,
 `HasScheduledTick`, `UpdateNeighbors`, its [redstone](#redstone) signals and the level's `Random`), not through
-`ILevel`'s asynchronous methods, and keep them short. The updates a hook's change causes run after the hook
-returns, in vanilla's order. A hook that throws is logged and the updates, and the level's tick, go on. Like
-`UseAsync`, every hook runs as a call into the plugin, and none runs once it starts unloading. A block change and the
-updates it causes run as one step: a change made meanwhile on another thread waits for them.
+`ILevel`'s asynchronous methods, and keep them short. Neighbour and shape updates triggered inside another neighbour
+or shape callback wait until that callback returns, in vanilla's order. Placement and removal callbacks
+run synchronously during the block change, like vanilla's `onPlace`; a change inside them can run another placement
+callback or start neighbour updates before the outer callback returns. Keep placement chains bounded (see
+[known gaps](known-gaps.md#recursive-placement-callbacks)). A hook that throws is logged and the updates, and the
+level's tick, go on. Like `UseAsync`, every hook runs as a call into the plugin, and none runs once it starts
+unloading. A block change and the updates it causes run as one step: a change made meanwhile on another thread
+waits for them.
 
 Block changes run vanilla's side effects as `BlockUpdateFlags` ask, with vanilla's values: `ILevel.SetBlockAsync`
 with `doBlockUpdate: true`, a player placing or breaking a block, and explosions use `All` (neighbours hear of the
@@ -124,6 +129,12 @@ Direct `IChunk.SetBlock` and `IChunkSection.SetBlock` calls on loaded, complete 
 hook, with section coordinates local to its 16-block cube. Unfinished generation writes keep their direct storage
 path. Loading, generation completion and unloading attach or detach lighting with the chunk slot's lifecycle;
 reading a loaded chunk does not acquire the tick lock.
+
+Initial chunk packets capture immutable light masks and arrays under the propagation gate before entering the send
+queue, like runtime light updates. Serialization does not take the tick lock. A registered block's `LightEmission`,
+effective opacity and collision template cannot change on hot reload until the server restarts: registration fails
+with a logged restart-required message and retains the old settings. This keeps loaded and saved illumination and
+sky heights consistent without a world-wide relight.
 
 Light stops at unloaded or unfinished chunks. When a complete neighbor loads, both sides of its shared borders are
 reconciled on the next tick: only border blocks whose light disagrees with their neighbors are relit. A chunk that
@@ -198,14 +209,16 @@ It reacts to power in `NeighborChanged`, which runs when power around it may hav
 The hooks run in a call into the plugin like the others; while the plugin unloads or is unloaded, its blocks give no
 power and have no analog output. As it unloads, and when it loads again, the blocks around its blocks placed in loaded
 chunks hear of them like of a block change (neighbour and shape updates, and comparators), so that the circuits they
-power follow; those in chunks loaded later only do on their next change.
+power follow. When a chunk becomes available, its placed plugin blocks and plugin sources across its border send
+the same updates, so circuits also catch up with changes made while absent. Palette checks skip vanilla-only
+sections, and worlds with no registered plugin blocks skip reconciliation entirely.
 
 Vanilla's components work at runtime through the same updates and ticks, in vanilla's order and with vanilla's
 delays and tick priorities: redstone dust (vanilla's default wire evaluator, its connections, and dots and crosses
 players switch between), redstone torches (two game ticks, burning out after 8 toggles within 60 game ticks for 160),
-repeaters (delays of 1 to 4 redstone ticks, and locking), comparators (comparing and subtracting, reading containers,
-rolling their pending loot first, cakes, composters, cauldrons, beehives, end portal frames, respawn anchors and
-item frames, behind a conductor too),
+repeaters (delays of 1 to 4 redstone ticks, and locking), comparators (comparing and subtracting, reading stored
+container contents without rolling pending loot, cakes, composters, cauldrons, beehives, end portal frames,
+respawn anchors and item frames, behind a conductor too),
 levers, buttons (pressed by players and wind charges, and wooden ones by arrows), pressure plates (entities on them;
 wooden ones feel any entity, stone ones mobs and players, weighted ones count them), the block of redstone and the
 redstone lamp. Players place them as vanilla does: facing and attached from where they click and look, where they can
