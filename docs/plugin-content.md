@@ -758,6 +758,42 @@ vanilla recipes first and the rest after reconfiguration. A failed delivery does
 the next recipe change retries the affected player. Recipes are made of items, so a vanilla client sees a plugin's
 recipes of vanilla items.
 
+### Custom recipe types
+
+Register a server-side machine recipe type during `ConfigureRegistry`. Its identifier is in the plugin's namespace;
+the returned `RecipeType<TRecipe>` keeps its numeric identity across reloads. The serializer reads JSON and matches
+the machine's input slots:
+
+```csharp
+public override void ConfigureRegistry(IPluginRegistry registry)
+{
+    pressRecipes = registry.RegisterRecipeType("ruby:press", new PressRecipeSerializer());
+}
+
+// On the machine's tick, using the plugin's IServer and copies of its input stacks:
+var recipe = server.FindRecipe(pressRecipes, new ItemStack?[] { ingredient });
+```
+
+Implement `IRecipeSerializer<TRecipe>.Read(string identifier, JsonElement json)` and
+`Matches(TRecipe recipe, IReadOnlyList<ItemStack?> inputs)`. Return immutable recipe values from `Read`; matching
+must not change the recipe or inputs. Each file under `data/<namespace>/recipe/<path>.json` names its serializer in
+`type`, for example `"type": "ruby:press"`. The file's identifier is `<namespace>:<path>`; the other JSON fields
+belong to the serializer. Clone a `JsonElement` you retain. Plugins' files can also use built-in vanilla recipe
+types, including cooking, which use the same recipe set as recipes registered in code. Files are read after item
+tags; malformed files are logged and left out. Registering an identifier already in use throws.
+
+`IServer.FindRecipe<TRecipe>(RecipeType<TRecipe> type, IReadOnlyList<ItemStack?> inputs)` returns the first matching
+recipe, by lexical recipe identifier, or null. Look up the current result each tick rather than retaining recipe
+values across reloads. Registrations belong to their server and plugin; unloading removes the serializer and its
+recipes, and refuses new calls while callbacks already running drain. Plugin recipe JSON is kept as host-owned
+data, so rebuilding snapshots never keeps an unloaded serializer alive.
+
+Custom types are server-side processing rules. Vanilla's 1.21.11 `UpdateRecipes` carries fixed input property sets
+and stonecutter result displays; it has no field for arbitrary recipe types, serializers or matching. Custom types
+are therefore omitted from that packet, do not create a synced client registry and do not require modded clients
+on their own. A plugin with a custom screen can send its own display data over a negotiated payload channel.
+The server's standalone data packs still do not load recipe files; this API loads plugins' recipe files.
+
 ## Brewing
 
 ```csharp

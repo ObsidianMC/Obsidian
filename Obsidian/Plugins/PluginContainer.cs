@@ -77,6 +77,9 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     /// <summary>The plugin's loot tables, applied only while the plugin is loaded.</summary>
     internal ImmutableArray<Obsidian.API.Loot.LootTable> LootTableFiles { get; set; } = [];
 
+    /// <summary>Host-owned JSON; plugin recipe values live only in the server's current set.</summary>
+    internal ImmutableArray<RecipeFile> RecipeFiles { get; set; } = [];
+
     /// <summary>
     /// The plugin's biome, dimension type and damage type files, applied to their registries while it's loaded.
     /// </summary>

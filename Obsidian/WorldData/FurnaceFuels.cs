@@ -2,7 +2,7 @@ using Obsidian.API.Inventory;
 
 namespace Obsidian.WorldData;
 
-/// <summary>1.21.11 FuelValues.vanillaBurnTimes: no data-driven fuel durations are supplied by vanilla datagen.</summary>
+/// <summary>1.21.11 FuelValues.vanillaBurnTimes; vanilla datagen supplies no fuel durations.</summary>
 internal static class FurnaceFuels
 {
     private static readonly (Tag Tag, int Ticks)[] tagged =

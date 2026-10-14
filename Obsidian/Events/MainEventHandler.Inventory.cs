@@ -81,10 +81,10 @@ public partial class MainEventHandler
             sync = CaptureWindow(args, window);
         }
 
-        await SendWindowAsync(args, window, sync);
-
         if (cookingExperience > 0 && player.Level is AbstractLevel level)
             level.DropCookingExperience(player.Position, cookingExperience);
+
+        await SendWindowAsync(args, window, sync);
     }
 
     // Whether the player still has the window open, under the click's id.

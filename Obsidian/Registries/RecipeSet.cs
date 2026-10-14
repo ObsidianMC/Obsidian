@@ -21,10 +21,17 @@ internal sealed class RecipeSet
 
     /// <param name="recipes">Every recipe, by identifier.</param>
     /// <param name="book">The recipe book's entries by display id, <c>null</c> where an id's recipe is gone.</param>
-    public RecipeSet(FrozenDictionary<string, IRecipe> recipes, IReadOnlyList<RecipeBookEntry?> book)
+    public RecipeSet(
+        FrozenDictionary<string, IRecipe> recipes,
+        IReadOnlyList<RecipeBookEntry?> book,
+        IReadOnlyList<PluginRecipeValue>? pluginRecipes = null)
     {
         this.Recipes = recipes;
         this.Book = book;
+        this.pluginRecipes = (pluginRecipes ?? [])
+            .OrderBy(recipe => recipe.Identifier, StringComparer.Ordinal)
+            .GroupBy(recipe => recipe.Binding.Identifier)
+            .ToFrozenDictionary(group => group.Key, group => group.ToArray());
 
         // Grids try crafting recipes in display id order, so vanilla's come first and a plugin's recipe keeps its
         // place across reloads.
@@ -41,7 +48,8 @@ internal sealed class RecipeSet
         this.cookingRecipes = [.. recipes.OrderBy(pair => pair.Key, StringComparer.Ordinal)
             .Select(pair => pair.Value).OfType<SmeltingRecipe>()];
         this.cookingInputs = this.cookingRecipes
-            .SelectMany(recipe => recipe.Ingredient.Select(item => ((recipe.Type, (int)item.Holder.Id), Recipe: recipe)))
+            .SelectMany(recipe => recipe.Ingredient
+                .Select(item => ((recipe.Type, (int)item.Holder.Id), Recipe: recipe)))
             .GroupBy(pair => pair.Item1)
             .ToFrozenDictionary(group => group.Key, group => group.Select(pair => pair.Recipe).Distinct().ToArray());
         this.UpdatePacket = new(recipes);
@@ -53,6 +61,27 @@ internal sealed class RecipeSet
     public FrozenDictionary<string, IRecipe> Recipes { get; }
 
     internal Net.Packets.Play.Clientbound.UpdateRecipesPacket UpdatePacket { get; }
+
+    private readonly FrozenDictionary<string, PluginRecipeValue[]> pluginRecipes;
+
+    internal TRecipe? FindPluginRecipe<TRecipe>(RecipeType<TRecipe> type, IReadOnlyList<ItemStack?> inputs)
+        where TRecipe : class
+    {
+        if (!this.pluginRecipes.TryGetValue(type.Identifier, out var recipes))
+            return null;
+
+        foreach (var recipe in recipes)
+        {
+            if (!recipe.Binding.Active || recipe.Owner.IsClosing || recipe.Value is not TRecipe value)
+                continue;
+
+            using var call = recipe.Binding.Owner.TryEnter();
+            if (call is not null && recipe.Binding.Matches(value, inputs))
+                return value;
+        }
+
+        return null;
+    }
 
     /// <summary>The configured content when this set was published; null for vanilla's shared set.</summary>
     internal ContentVersion? RequiredContent { get; init; }

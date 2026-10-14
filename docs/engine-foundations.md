@@ -82,9 +82,9 @@ its surroundings, and drops its loot table.
   block entities. Inserting and extracting can be simulated first, so a network can plan a transfer without
   duplicating or losing items. Hoppers, droppers and dispensers move items through it. A fluid equivalent follows the
   same shape when a mod needs it.
-- **Recipe types.** Plugins register recipe types with their own serializers and matching, loaded from
+- **Recipe types.** (done) Plugins register recipe types with their own serializers and matching, loaded from
   `data/<ns>/recipe` like vanilla's. The `UpdateRecipes` packet is sent. Furnaces, smokers, blast furnaces and
-  campfires cook, which closes the cooking entry in [known-gaps.md](known-gaps.md).
+  campfires cook. Stonecutter and smithing result slots remain in [known-gaps.md](known-gaps.md).
 
 **Sample:** a machine block that pulls items from a chest above, processes them with a plugin recipe type, and
 pushes them into a hopper below.

@@ -126,7 +126,8 @@ public static partial class RecipesRegistry
     internal static RecipeSet BuildSet(
         IReadOnlyDictionary<string, IRecipe> recipes,
         IReadOnlyDictionary<string, long> revisions,
-        ContentVersion content)
+        ContentVersion content,
+        IReadOnlyList<PluginRecipeValue>? pluginRecipes = null)
     {
         lock (gate)
         {
@@ -149,7 +150,7 @@ public static partial class RecipesRegistry
                 }
             }
 
-            return new RecipeSet(recipes.ToFrozenDictionary(), book) { RequiredContent = content };
+            return new RecipeSet(recipes.ToFrozenDictionary(), book, pluginRecipes) { RequiredContent = content };
         }
     }
 

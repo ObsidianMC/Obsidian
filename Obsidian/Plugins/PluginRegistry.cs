@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Blocks;
 using Obsidian.API.Events;
+using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Networking;
 using Obsidian.API.Plugins;
@@ -18,6 +19,22 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
     private readonly PluginManager pluginManager = pluginManager;
     private readonly EventDispatcher eventDispatcher = eventDispatcher;
     private readonly CommandHandler commandHandler = commandHandler;
+
+    public RecipeType<TRecipe> RegisterRecipeType<TRecipe>(
+        string identifier, IRecipeSerializer<TRecipe> serializer) where TRecipe : class
+    {
+        var owner = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        lock (owner.WorldgenTypes)
+        {
+            if (!owner.RegisteringWorldgenTypes || owner.IsClosing)
+                throw new InvalidOperationException("Recipe types must be registered during ConfigureRegistry.");
+
+            if (this.pluginManager.server is not Server server)
+                throw new NotSupportedException("This server does not support plugin recipe types.");
+
+            return server.RecipeRegistry.Types.Register(owner, identifier, serializer);
+        }
+    }
 
     public IPluginRegistry MapCommand(string name, Delegate handler)
     {
