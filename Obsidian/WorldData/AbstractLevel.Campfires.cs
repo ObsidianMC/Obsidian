@@ -49,7 +49,7 @@ public abstract partial class AbstractLevel
         }
 
         var block = GameEventBlock(point);
-        if (block?.Material is not (Material.Campfire or Material.SoulCampfire))
+        if (block is null || !TagsRegistry.Block.Campfires.Entries.Contains(block.RegistryId))
         {
             activeCampfires.TryRemove(point, out _);
             return;
@@ -130,7 +130,7 @@ public abstract partial class AbstractLevel
             return false;
 
         var block = GameEventBlock(point);
-        if (block?.Material is not (Material.Campfire or Material.SoulCampfire) || block.GetProperty("lit") != "true")
+        if (block is null || !TagsRegistry.Block.Campfires.Entries.Contains(block.RegistryId) || block.GetProperty("lit") != "true")
             return false;
 
         var recipe = FurnaceRules.FindRecipe(CraftingType.CampfireCooking, food);

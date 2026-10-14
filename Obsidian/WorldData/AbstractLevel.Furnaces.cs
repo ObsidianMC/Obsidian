@@ -47,7 +47,7 @@ public abstract partial class AbstractLevel
         }
 
         var block = GameEventBlock(point);
-        if (block?.Material is not (Material.Furnace or Material.BlastFurnace or Material.Smoker))
+        if (block?.BlockEntityKind() is not (BlockEntityType.Furnace or BlockEntityType.BlastFurnace or BlockEntityType.Smoker))
         {
             activeFurnaces.TryRemove(point, out _);
             return;
