@@ -48,12 +48,13 @@ The base every mod needs: blocks with state that save, tick, react and sync.
   to players watching its chunk (`BlockEntityData`, and the chunk packet's block entity list). Vanilla's block
   entities move onto the same contract, replacing the hard-coded switch in `BlockEntityNbt` and the lazy
   "created when opened" containers.
-- **Block hooks.** Placement with a context (player, face clicked, look direction) that picks the placed state;
+- **Block hooks.** (done) Placement with a context (player, face clicked, look direction) that picks the placed state;
   removal and break; neighbour change; shape update; scheduled tick; random tick; entity inside and stepped on.
   A cancellable place event next to the break event.
-- **Block ticks and updates.** A general block tick scheduler saved as `block_ticks`, like fluids' `fluid_ticks`,
-  and neighbour and shape updates sent when players, plugins or explosions change blocks, so fences, torches and
-  plugin blocks react at runtime. Vanilla's blocks get their shape rules over time; the mechanism comes first.
+- **Block ticks and updates.** (done) A general block tick scheduler saved as `block_ticks`, like fluids'
+  `fluid_ticks`, and neighbour and shape updates sent when players, plugins or explosions change blocks, so fences,
+  torches and plugin blocks react at runtime. Vanilla's blocks get their shape rules over time; the mechanism comes
+  first.
 - **Shapes from data.** A block entity can give its block's collision and outline shapes, and the hooks get where
   on the block a player clicked, so one block can hold several parts (AE2's cable bus holds a cable and a part on
   each side, each selected and broken on its own).

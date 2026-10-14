@@ -575,8 +575,9 @@ public sealed class ProbePlugin : PluginBase
         pluginRegistry.AddToTag("entity_type", "probe:golems", "probe:golem");
         pluginRegistry.RegisterEntity("probe:pebble", new EntityProperties { Kind = EntityKind.Projectile });
 
-        // Its blocks generated from data/probe/blocks.
+        // Its blocks generated from data/probe/blocks, and blocks recording their hooks for BlockUpdates' tests.
         ProbeBlocks.Register(pluginRegistry);
+        ProbeRelay.Register(pluginRegistry);
 
         // Its worldgen types, which data/probe/worldgen's features are made of. Vanilla's identifiers, and its own
         // twice, are refused.

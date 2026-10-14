@@ -5,6 +5,7 @@ using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators.Mojang.Features;
+using Obsidian.WorldData.Ticks;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -75,8 +76,8 @@ public sealed class Chunk : IChunk
     internal NbtCompound? StructureReferences { get; set; }
 
     /// <summary>
-    /// Top-level tags of the saved chunk that Obsidian doesn't model, like vanilla's <c>block_ticks</c>. They're saved
-    /// back as loaded, so saving a vanilla world doesn't drop them.
+    /// Top-level tags of the saved chunk that Obsidian doesn't model, like vanilla's <c>blending_data</c>. They're
+    /// saved back as loaded, so saving a vanilla world doesn't drop them.
     /// </summary>
     internal List<INbtTag> UnmodeledTags { get; } = [];
 
@@ -89,7 +90,13 @@ public sealed class Chunk : IChunk
     /// <summary>
     /// The chunk's scheduled fluid ticks, like vanilla's <c>fluid_ticks</c>.
     /// </summary>
-    internal ChunkFluidTicks FluidTicks { get; } = new();
+    internal ChunkTicks<FluidKind> FluidTicks { get; } = new();
+
+    /// <summary>
+    /// The chunk's scheduled block ticks, like vanilla's <c>block_ticks</c>, by block identifier. Ticks of a plugin's
+    /// block are kept while the plugin is unloaded, and run once it's back.
+    /// </summary>
+    internal ChunkTicks<string> BlockTicks { get; } = new();
 
     /// <summary>
     /// The final heightmaps world generation keeps in step with its block changes, from the chunk's first decoration until

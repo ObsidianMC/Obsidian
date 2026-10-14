@@ -54,9 +54,16 @@ public sealed class BlockProperties
     public int LightEmission { get; init; }
 
     /// <summary>
-    /// What the block does when a player uses it, or null for nothing.
+    /// What the block does when players use or place it, when it or its neighbours change, when it ticks and when
+    /// entities touch it, or null for nothing.
     /// </summary>
     public IBlockBehavior? Behavior { get; init; }
+
+    /// <summary>
+    /// Whether the block's behaviour gets random ticks (<see cref="IBlockBehavior.RandomTick"/>), like vanilla's
+    /// <c>randomTicks</c>. Like <see cref="Behavior"/>, it's the plugin's: a reload replaces it.
+    /// </summary>
+    public bool RandomlyTicks { get; init; }
 
     /// <summary>
     /// The trees the block grows into, which makes it a sapling: it grows in light on random ticks and with bone meal

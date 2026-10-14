@@ -77,6 +77,31 @@ placing features through `LiveFeatureLevel`; crops' random ticks need vanilla's 
 blocks' random ticks go next to the plants' in `AbstractLevel.TickChunkBlocks`, and lava's fire in
 `AbstractLevel.RandomTickLava` once blocks know vanilla's `ignitedByLava`.
 
+## Vanilla blocks' reactions to block updates
+
+**Status:** open. The mechanism is done; vanilla's blocks get their rules over time.
+
+Block changes run vanilla's neighbour and shape updates, in vanilla's order, and plugin blocks react to them (see
+[plugin content](plugin-content.md#block-hooks)). Of vanilla's blocks, liquids flow and falling blocks fall, but the
+others don't react to changes players, plugins and explosions make: fences, walls, panes and stairs don't connect,
+torches, ladders, signs, plants and carpets don't pop off without support, and a door's other half stays. Those
+shape rules (`ShapeUpdater`) only run in generation and when water or lava changes blocks, as before, since a block
+they destroy would vanish without its drops: `FluidLevel.DestroyBlock` doesn't drop anything yet. Vanilla's
+`neighborChanged` reactions (redstone, rails, doors and trapdoors opening when powered, TNT) aren't modelled, and
+scheduled ticks of vanilla blocks other than falling blocks (a repeater's or an observer's, from a vanilla save) do
+nothing when they come due. Vanilla's own blocks don't react to entities inside them or standing on them through
+the hooks either, and placing a block doesn't check that it can survive there or that no entity is in the way.
+
+**Where to start:**
+
+- Make `FluidLevel.DestroyBlock` drop the block's loot (vanilla's `Level.destroyBlock`, unless `SuppressDrops`),
+  then run every chain with `VanillaShapes.All`, which makes `FluidLevel.OnBlockChanged` apply `ShapeUpdater`'s
+  rules too. Check beds and doors, whose breaking code removes the other half itself.
+- Vanilla blocks' `neighborChanged` goes in `LevelBlockUpdates.NeighborChanged`, and their ticks in
+  `LevelBlockUpdates.RunScheduledTick`, next to falling blocks'.
+- Placement checks belong in `UseItemOnPacket`'s placement, before the place event: vanilla's `canSurvive` and
+  `isUnobstructed`.
+
 ## Sleeping and spawn points
 
 **Status:** open.

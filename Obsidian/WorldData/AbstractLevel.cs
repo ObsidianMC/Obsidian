@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API;
+using Obsidian.API.Blocks;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
 using Obsidian.API.Inventory;
@@ -321,28 +322,21 @@ public abstract partial class AbstractLevel : ILevel
             .GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
     }
 
-    public async ValueTask SetBlockAsync(int x, int y, int z, IBlock block)
+    public ValueTask SetBlockAsync(int x, int y, int z, IBlock block) =>
+        this.SetBlockAsync(x, y, z, block, doBlockUpdate: false);
+
+    public ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate) =>
+        this.SetBlockAsync(new Vector(x, y, z), block, UpdateFlags(doBlockUpdate) | BlockUpdateFlags.Clients);
+
+    public async ValueTask SetBlockAsync(Vector location, IBlock block, BlockUpdateFlags flags)
     {
-        if (this.IsOutsideBuildHeight(y))
+        if (this.IsOutsideBuildHeight(location.Y))
             return;
 
-        await SetBlockUntrackedAsync(x, y, z, block);
-        this.BroadcastBlockChange(block, new(x, y, z));
-        TrackMobEgg(new Vector(x, y, z), block);
-        CheckWither(new Vector(x, y, z), block);
-        CheckSnowGolem(new Vector(x, y, z), block);
-    }
-
-    public async ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate)
-    {
-        if (this.IsOutsideBuildHeight(y))
-            return;
-
-        await SetBlockUntrackedAsync(x, y, z, block, doBlockUpdate);
-        this.BroadcastBlockChange(block, new(x, y, z));
-        TrackMobEgg(new Vector(x, y, z), block);
-        CheckWither(new Vector(x, y, z), block);
-        CheckSnowGolem(new Vector(x, y, z), block);
+        await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, flags);
+        TrackMobEgg(location, block);
+        CheckWither(location, block);
+        CheckSnowGolem(location, block);
     }
 
     internal void BroadcastBlockChange(IBlock block, Vector location)
@@ -375,24 +369,28 @@ public abstract partial class AbstractLevel : ILevel
     public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) =>
         SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 
-    public async ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false)
+    public ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false) =>
+        SetBlockUntrackedAsync(x, y, z, block, UpdateFlags(doBlockUpdate));
+
+    /// <summary>
+    /// Changes a block, with the side effects <paramref name="flags"/> ask for (see <see cref="AfterBlockSet"/>).
+    /// </summary>
+    internal async ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, BlockUpdateFlags flags)
     {
         if (this.IsOutsideBuildHeight(y))
             return;
 
-        if (doBlockUpdate)
-        {
-            await ScheduleBlockUpdateAsync(new BlockUpdate(this, new Vector(x, y, z), block));
-            await BlockUpdateNeighborsAsync(new BlockUpdate(this, new Vector(x, y, z), block));
-        }
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         if (c is null)
             return;
+
+        IBlock old;
 
         // Under the lock fluid ticks and growth hold, so that neither reads a block, has it changed here, and then
         // writes what it worked out from the old block over the change.
         lock (this.Fluids.TickLock)
         {
+            old = c.GetBlock(x, y, z);
             c.SetBlock(x, y, z, block);
 
             // Generated block entity data (e.g. a dungeon chest's loot) doesn't carry over to another block.
@@ -400,11 +398,7 @@ public abstract partial class AbstractLevel : ILevel
                 c.RemoveBlockEntity(x, y, z);
         }
 
-        if (doBlockUpdate)
-        {
-            this.Fluids.OnBlockChanged(new Vector(x, y, z), block);
-            this.Portals.OnBlockChanged(new Vector(x, y, z));
-        }
+        this.AfterBlockSet(new Vector(x, y, z), old, block, flags);
     }
 
     public IEnumerable<IEntity> GetEntitiesInRange(VectorD location, float distance = 10f)
@@ -539,7 +533,8 @@ public abstract partial class AbstractLevel : ILevel
         LevelData.Time += this.Configuration.TimeTickSpeedMultiplier;
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
-        // Like vanilla, fluid ticks run before entities tick.
+        // Like vanilla, block ticks and then fluid ticks run before entities tick.
+        TickStage = "block and fluid ticks";
         this.Fluids.Tick();
 
         await this.Portals.TickAsync();
@@ -577,6 +572,7 @@ public abstract partial class AbstractLevel : ILevel
             {
                 TickStage = $"entity {entity.EntityId} ({entity.GetType().Name})";
                 await entity.TickAsync();
+                await this.TouchPluginBlocksAsync(entity);
             }
         }
 
@@ -587,14 +583,10 @@ public abstract partial class AbstractLevel : ILevel
         TickStage = "brewing stands";
         await TickBrewingStandsAsync();
 
-        foreach (var region in Regions.Values)
-        {
-            if (region is Region concrete)
-            {
-                TickStage = "block updates";
-                await concrete.TickBlocksAsync();
-            }
-        }
+        TickStage = "moving entities between regions";
+        foreach (var region in Regions.Values.OfType<Region>())
+            region.MoveEntitiesToTheirRegions();
+
         foreach (var player in Players.Values)
         {
             TickStage = $"tracking for {player.Username}";
@@ -710,14 +702,6 @@ public abstract partial class AbstractLevel : ILevel
         {
             simulationGate.Release();
         }
-    }
-
-    public async ValueTask ScheduleBlockUpdateAsync(IBlockUpdate blockUpdate)
-    {
-        blockUpdate.Block ??= await GetBlockAsync(blockUpdate.Position);
-        (int chunkX, int chunkZ) = blockUpdate.Position.ToChunkCoord();
-        var region = GetRegionForChunk(chunkX, chunkZ);
-        region?.AddBlockUpdate(blockUpdate);
     }
 
     public async Task ManageChunksAsync()
@@ -1073,31 +1057,6 @@ public abstract partial class AbstractLevel : ILevel
         var z = Math.Floor(player.Z) + 0.5 - particle.Z;
 
         return x * x + y * y + z * z < range * range;
-    }
-
-    public async ValueTask<bool> HandleBlockUpdateAsync(IBlockUpdate update)
-    {
-        if (update.Block is not IBlock block)
-            return false;
-
-        // Fluids react to block changes through their scheduled ticks instead (see LevelFluids).
-        if (block.IsGravityAffected())
-            return await BlockUpdates.HandleFallingBlock(this, update);
-
-        return false;
-    }
-
-    public async ValueTask BlockUpdateNeighborsAsync(IBlockUpdate update)
-    {
-        // Each neighbor is offset from the original position, not from the previous neighbor.
-        var origin = update.Position;
-
-        Vector[] directions = Vector.AllDirections;
-        for (int i = 0; i < directions.Length; i++)
-        {
-            var neighbor = new BlockUpdate(this, origin + directions[i]);
-            await ScheduleBlockUpdateAsync(neighbor);
-        }
     }
 
     public abstract void Initialize(DimensionCodec codec);

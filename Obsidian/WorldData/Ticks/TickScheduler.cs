@@ -1,23 +1,25 @@
-namespace Obsidian.WorldData.Fluids;
+namespace Obsidian.WorldData.Ticks;
 
 /// <summary>
-/// A level's fluid tick scheduler, like vanilla's <c>LevelTicks&lt;Fluid&gt;</c>: owns the game time ticks are scheduled
-/// against and runs the due ticks of every ticking chunk in vanilla's order.
+/// A level's scheduler for one kind of tick (blocks or fluids, by <typeparamref name="T"/>), like vanilla's
+/// <c>LevelTicks</c>: owns the game time ticks are scheduled against and runs the due ticks of every ticking chunk in
+/// vanilla's order.
 /// </summary>
 /// <remarks>
 /// Not thread-safe: the owner serializes ticking and scheduling.
 /// </remarks>
-internal sealed class FluidTickScheduler
+internal sealed class TickScheduler<T> where T : notnull
 {
     /// <summary>
-    /// Vanilla's limit of fluid ticks run per game tick.
+    /// Vanilla's limit of ticks of each kind run per game tick.
     /// </summary>
     public const int MaxTicksPerTick = 65536;
 
-    private readonly Dictionary<long, ChunkFluidTicks> containers = [];
+    private readonly Dictionary<long, ChunkTicks<T>> containers = [];
     private readonly Dictionary<long, long> nextTickForContainer = [];
-    private readonly PriorityQueue<ChunkFluidTicks, ScheduledFluidTick> containersToTick = new(ScheduledFluidTick.IntraTickDrainOrder);
-    private readonly Queue<ScheduledFluidTick> toRunThisTick = new();
+    private readonly PriorityQueue<ChunkTicks<T>, ScheduledTick<T>> containersToTick =
+        new(ScheduledTick<T>.IntraTickDrainOrder);
+    private readonly Queue<ScheduledTick<T>> toRunThisTick = new();
     private long subTickCount;
 
     /// <summary>
@@ -36,11 +38,11 @@ internal sealed class FluidTickScheduler
     public long NextSubTickOrder() => this.subTickCount++;
 
     /// <summary>
-    /// Advances the game time and runs the fluid ticks due by then, like <c>ServerLevel.tick</c>.
+    /// Advances the game time and runs the ticks due by then, like <c>ServerLevel.tick</c>.
     /// </summary>
     /// <param name="isTicking">Whether a chunk (by key) may tick now; others keep their ticks for later.</param>
-    /// <param name="run">Runs one tick (vanilla <c>ServerLevel.tickFluid</c>).</param>
-    public void Tick(Func<long, bool> isTicking, Action<Vector, FluidKind> run, int maxTicks = MaxTicksPerTick)
+    /// <param name="run">Runs one tick (vanilla <c>ServerLevel.tickBlock</c> or <c>tickFluid</c>).</param>
+    public void Tick(Func<long, bool> isTicking, Action<Vector, T> run, int maxTicks = MaxTicksPerTick)
     {
         this.GameTime++;
         this.SortContainersToTick(isTicking);
@@ -52,17 +54,17 @@ internal sealed class FluidTickScheduler
 
         this.containersToTick.Clear();
         while (this.toRunThisTick.TryDequeue(out var tick))
-            run(tick.Position, tick.Fluid);
+            run(tick.Position, tick.Type);
     }
 
-    internal void Register(ChunkFluidTicks container)
+    internal void Register(ChunkTicks<T> container)
     {
         this.containers[container.Key] = container;
         if (container.TryPeek(out var first))
             this.nextTickForContainer[container.Key] = first.TriggerTick;
     }
 
-    internal void Unregister(ChunkFluidTicks container)
+    internal void Unregister(ChunkTicks<T> container)
     {
         // A newer container may have replaced it (the chunk was reloaded).
         if (this.containers.GetValueOrDefault(container.Key) == container)
@@ -73,7 +75,7 @@ internal sealed class FluidTickScheduler
     }
 
     // Vanilla's chunkScheduleUpdater: a new earliest tick moves the container's next tick.
-    internal void OnTickAdded(ChunkFluidTicks container, ScheduledFluidTick tick)
+    internal void OnTickAdded(ChunkTicks<T> container, ScheduledTick<T> tick)
     {
         if (container.TryPeek(out var first) && first == tick)
             this.nextTickForContainer[container.Key] = tick.TriggerTick;
@@ -122,11 +124,13 @@ internal sealed class FluidTickScheduler
     }
 
     // Takes the container's due ticks for as long as they come before the next container's first tick.
-    private void DrainFromCurrentContainer(ChunkFluidTicks container, int maxTicks)
+    private void DrainFromCurrentContainer(ChunkTicks<T> container, int maxTicks)
     {
         var hasOther = this.containersToTick.TryPeek(out _, out var other);
-        while (this.toRunThisTick.Count < maxTicks && container.TryPeek(out var tick) && tick.TriggerTick <= this.GameTime
-            && (!hasOther || ScheduledFluidTick.IntraTickDrainOrder.Compare(tick, other) <= 0))
+        while (this.toRunThisTick.Count < maxTicks
+            && container.TryPeek(out var tick)
+            && tick.TriggerTick <= this.GameTime
+            && (!hasOther || ScheduledTick<T>.IntraTickDrainOrder.Compare(tick, other) <= 0))
         {
             container.TryPoll(out _);
             this.toRunThisTick.Enqueue(tick);

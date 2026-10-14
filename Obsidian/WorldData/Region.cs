@@ -2,6 +2,7 @@ using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Utilities.Collections;
+using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators.Mojang;
 using System.Diagnostics;
 using System.IO;
@@ -45,8 +46,6 @@ public class Region : IRegion
 
     // Reading the region files' headers; every file operation waits for it, since regions are loaded without waiting.
     private readonly Lazy<Task> initialization;
-
-    private readonly ConcurrentDictionary<Vector, IBlockUpdate> blockUpdates = new();
 
     // Serializes filling empty chunk slots, so concurrent callers never end up with different instances of a chunk.
     private readonly SemaphoreSlim chunkSlotLock = new(1, 1);
@@ -103,14 +102,6 @@ public class Region : IRegion
         this.entityRegionFile = new RegionFile(Path.Join(entityFolder, $"r.{X}.{Z}.mca"), chunkCompression, CubicRegionSize);
 
         this.initialization = new(() => Task.WhenAll(this.regionFile.InitializeAsync(), this.entityRegionFile.InitializeAsync()));
-    }
-
-    public void AddBlockUpdate(IBlockUpdate bu)
-    {
-        if (!blockUpdates.TryAdd(bu.Position, bu))
-        {
-            blockUpdates[bu.Position] = bu;
-        }
     }
 
     public async Task<bool> InitAsync()
@@ -504,39 +495,14 @@ public class Region : IRegion
             cts.ThrowIfCancellationRequested();
             await entity.TickAsync();
         }
-        await TickBlocksAsync();
-    }
 
-    internal async Task TickBlocksAsync()
-    {
         this.MoveEntitiesToTheirRegions();
-
-        List<IBlockUpdate> neighborUpdates = [];
-        List<IBlockUpdate> delayed = [];
-
-        foreach (var pos in blockUpdates.Keys)
-        {
-            blockUpdates.Remove(pos, out var bu);
-            if (bu.DelayCounter > 0)
-            {
-                bu.DelayCounter--;
-                delayed.Add(bu);
-            }
-            else
-            {
-                bool updateNeighbor = await bu.Level.HandleBlockUpdateAsync(bu);
-                if (updateNeighbor) { neighborUpdates.Add(bu); }
-            }
-        }
-        delayed.ForEach(AddBlockUpdate);
-        foreach (var update in neighborUpdates)
-            await update.Level.BlockUpdateNeighborsAsync(update);
     }
 
     /// <summary>
     /// Hands entities that moved into another loaded region's chunks over to that region, which saves them with its chunks.
     /// </summary>
-    private void MoveEntitiesToTheirRegions()
+    internal void MoveEntitiesToTheirRegions()
     {
         foreach (var entity in this.Entities.Values)
         {
@@ -568,6 +534,7 @@ public class Region : IRegion
         "structures",
         "PostProcessing",
         "fluid_ticks",
+        "block_ticks",
         "ObsidianMobEggTicks",
         "ObsidianFrogspawnTicks",
         "isLightOn"
@@ -672,7 +639,10 @@ public class Region : IRegion
             ReadPostProcessing(chunkCompound, chunk);
 
         if (chunkCompound.TryGetTag<NbtList>("fluid_ticks", out var fluidTicks))
-            chunk.FluidTicks.Read(fluidTicks, x, z);
+            chunk.FluidTicks.Read(fluidTicks, x, z, FluidNames.TryParse);
+
+        if (chunkCompound.TryGetTag<NbtList>("block_ticks", out var blockTicks))
+            chunk.BlockTicks.Read(blockTicks, x, z, LevelBlockUpdates.TryParseTickType);
 
         // Entities of a chunk that isn't complete yet, like a vanilla proto chunk's "entities".
         if (chunkCompound.TryGetTag<NbtList>("entities", out var entities))
@@ -849,8 +819,9 @@ public class Region : IRegion
             if (generated.PostProcessing.Count > 0)
                 WritePostProcessing(writer, generated);
 
-            // Scheduled fluid ticks, like vanilla's "fluid_ticks".
-            generated.FluidTicks.Write(writer);
+            // Scheduled block and fluid ticks, like vanilla's "block_ticks" and "fluid_ticks".
+            generated.BlockTicks.Write(writer, "block_ticks", name => name);
+            generated.FluidTicks.Write(writer, "fluid_ticks", FluidNames.Name);
             var mobEggTicks = generated.MobEggTicks.ToArray();
             writer.WriteListStart("ObsidianMobEggTicks", NbtTagType.Compound, mobEggTicks.Length);
             foreach (var (position, delay) in mobEggTicks)

@@ -24,7 +24,8 @@ public abstract partial class AbstractLevel
     /// <summary>
     /// Random-ticks the chunks that tick, like vanilla's <c>ServerLevel.tickChunk</c>: the game rule's number of
     /// blocks in each section that holds a block or fluid that random-ticks, of which the plants that grow on random
-    /// ticks grow (see <see cref="Growth"/>) and lava draws its fire's chances.
+    /// ticks grow (see <see cref="Growth"/>), plugin blocks that random-tick run their hook and lava draws its fire's
+    /// chances.
     /// </summary>
     /// <remarks>
     /// Each chunk ticks under the level's <see cref="Fluids.LevelFluids.TickLock"/>, which players' block writes take
@@ -120,6 +121,8 @@ public abstract partial class AbstractLevel
 
                 if (Growth.IsRandomlyTicking(block))
                     Growth.RandomTick(this, position, block, this.GrowthRandom);
+
+                this.BlockUpdates.RandomTick(position, block);
 
                 if (block.GetFluid() is FluidKind.Lava or FluidKind.FlowingLava)
                     this.RandomTickLava(position, players);

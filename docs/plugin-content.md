@@ -37,6 +37,76 @@ quarter turn, a `rotation` from 0 to 15 turns like a standing sign's, and `north
 properties (a fence's connections) trade values. Other properties are kept, and a block whose turned state it doesn't
 have (a `facing` without `east`, say) stays as it is.
 
+### Block hooks
+
+```csharp
+public sealed class PipeBehavior : IBlockBehavior
+{
+    // The block's type, from RegisterBlock.
+    public BlockType Pipe { get; set; } = null!;
+
+    public IBlock? GetStateForPlacement(BlockPlaceContext context) =>
+        this.Pipe.With(context.Block, "facing", context.NearestLookDirection.Opposite().ToString().ToLowerInvariant());
+
+    public void OnPlaced(BlockPlacedContext context) =>
+        context.Level.ScheduleTick(context.Position, context.State, delay: 4);
+
+    public void NeighborChanged(NeighborChangedContext context)
+    {
+        // It breaks when the block below it goes.
+        if (context.Level.GetBlock(context.Position + Vector.Down).IsAir)
+            context.Level.RemoveBlock(context.Position);
+    }
+
+    public void Tick(BlockContext context) => context.Level.ScheduleTick(context.Position, context.State, delay: 4);
+}
+```
+
+A block's `Behavior` gets vanilla's block hooks; each defaults to doing nothing:
+
+- `UseAsync`: a player uses the block (right-clicks it without sneaking), before the item in their hand.
+- `GetStateForPlacement`: the state a player places the block in, from a `BlockPlaceContext`: the player, hand and
+  item, the clicked block, face and where on it they clicked (`ClickedAt`, 0 to 1 on each axis), where the block goes
+  and whether it replaces the clicked block (tall grass, say), and the player's `HorizontalDirection` and
+  `NearestLookDirection`, worked out like vanilla's. Null doesn't place the block, and the player keeps the item.
+- `OnPlaced`: the block was placed, or changed state (`OldState` says which), like vanilla's `onPlace`.
+- `OnRemoved`: another block replaced it with neighbour updates, like vanilla's `affectNeighborsAfterRemoval`.
+- `NeighborChanged`: a neighbour changed with neighbour updates (`SourcePosition`, and `SourceBlock`, the state it
+  replaced), like vanilla's `neighborChanged`.
+- `UpdateShape`: the block's state after the neighbour in `Direction` became `NeighborState`, like vanilla's
+  `updateShape`: a fence's connections, or air for a block that lost its support, which destroys it (leaving the
+  fluid it held, without drops).
+- `Tick`: a tick scheduled for the block came due, like vanilla's `tick`.
+- `RandomTick`: a random tick, like vanilla's `randomTick`, for blocks registered with `RandomlyTicks = true`. Random
+  ticks reach sections near players like vanilla's (see [Saplings](#saplings)): at the default speed, each block
+  about once every 68 seconds.
+- `EntityInsideAsync` and `SteppedOnAsync`: each tick an entity's box overlaps the block, or the entity stands on it.
+
+The hooks with a `Level` run synchronously while the level's block updates wait for them, like vanilla's: read and
+change blocks through that `IBlockLevel` (`GetBlock`, `SetBlock`, `RemoveBlock`, `ScheduleTick`,
+`HasScheduledTick`, `UpdateNeighbors`, and the level's `Random`), not through `ILevel`'s asynchronous methods, and
+keep them short. The updates a hook's change causes run after the hook returns, in vanilla's order. A hook that
+throws is logged and the updates go on. Like `UseAsync`, every hook runs as a call into the plugin, and none runs
+once it starts unloading.
+
+Block changes run vanilla's side effects as `BlockUpdateFlags` ask, with vanilla's values: `ILevel.SetBlockAsync`
+with `doBlockUpdate: true`, a player placing or breaking a block, and explosions use `All` (neighbours hear of the
+change, then get shape updates); `SetBlockAsync(position, block, flags)` takes any. Without `Neighbors`, the old
+block isn't told it was removed and the neighbours don't get `NeighborChanged`; `KnownShape` skips shape updates,
+and `SkipOnPlace` skips `OnPlaced`. `doBlockUpdate: false` is a plain change, without hooks or updates. Of vanilla's
+blocks, liquids react to the updates (they flow), falling blocks fall two ticks after they're placed or a neighbour
+changes, and the other vanilla blocks only change shape when water or lava changes blocks (see
+[known gaps](known-gaps.md)).
+
+`ILevel.ScheduleBlockTick` and `IBlockLevel.ScheduleTick` schedule a block's tick in a number of game ticks, with a
+`TickPriority`, like vanilla's `scheduleTick`: one per block and position, run if the block is still there then.
+Ticks due the same game tick run by priority, then in the order they were scheduled, before fluid ticks and
+entities. They're saved with their chunk as vanilla's `block_ticks`; a plugin's block's ticks wait while the plugin
+is unloaded and run once it's back.
+
+A cancellable `BlockPlaceEventArgs`, next to `BlockBreakEventArgs`, is raised before a player places a block, with
+the state they'd place. Cancelling it keeps the block from being placed, and the player keeps the item.
+
 ### Saplings
 
 ```csharp

@@ -175,7 +175,11 @@ internal static partial class BlocksRegistry
                 return false;
 
             type.Settings = BlockSettings.From(properties);
-            type.Binding = new BlockBinding(plugin, properties.Behavior, properties.TreeGrower);
+            type.Binding = new BlockBinding(
+                plugin,
+                properties.Behavior,
+                properties.TreeGrower,
+                properties.RandomlyTicks);
             return true;
         }
     }

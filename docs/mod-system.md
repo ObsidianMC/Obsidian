@@ -53,11 +53,12 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      stay registered, and synced, until the server stops, even if the plugin unloads for good: stacks of them can
      still be anywhere, so clients need the mod until then.
    - Done for blocks: plugins register blocks with `IPluginRegistry.RegisterBlock`, with state properties, simple
-     physics (collision, opacity, hardness, light emission), an `IBlockBehavior` for using them and, by default, an
-     item that places them. Their states get ids after vanilla's, numbered like vanilla numbers a block's states, and
-     the block registry is synced to NeoForge and Fabric clients, which number states the same way. Physics, light
-     and shapes come from a vanilla template block (stone, glass or cobweb). Vanilla blocks keep their generated
-     types. Saved worlds store blocks by name, so a plugin block loads as air once its plugin is gone.
+     physics (collision, opacity, hardness, light emission), an `IBlockBehavior` for using, placing, updating and
+     ticking them and, by default, an item that places them. Their states get ids after vanilla's, numbered like
+     vanilla numbers a block's states, and the block registry is synced to NeoForge and Fabric clients, which number
+     states the same way. Physics, light and shapes come from a vanilla template block (stone, glass or cobweb).
+     Vanilla blocks keep their generated types. Saved worlds store blocks by name, so a plugin block loads as air
+     once its plugin is gone.
    - Done for block, item and entity type tags: like a NeoForge or Fabric mod's data pack, a plugin's
      `data/<namespace>/tags/<registry>/<path>.json` files (`values` with `#` tag references and optional entries,
      `replace`, and NeoForge's `remove`) are merged with vanilla's tags in load order, and again when plugins load or

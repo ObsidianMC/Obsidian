@@ -79,10 +79,27 @@ public interface ILevel : IAsyncDisposable
 
     public ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate);
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate);
+
+    /// <summary>
+    /// Changes the block at <paramref name="location"/>, with the side effects <paramref name="flags"/> ask for, like
+    /// vanilla's <c>setBlock</c>: <see cref="Blocks.BlockUpdateFlags.All"/> is what a player placing a block does, and
+    /// what <c>doBlockUpdate</c> asks for; without it, a change has no side effects besides players seeing it.
+    /// </summary>
+    public ValueTask SetBlockAsync(Vector location, IBlock block, Blocks.BlockUpdateFlags flags);
+
+    /// <summary>
+    /// Schedules a tick of <paramref name="block"/>'s block at <paramref name="location"/> in <paramref name="delay"/>
+    /// game ticks, unless one is scheduled there already, like vanilla's <c>scheduleTick</c>. It runs if that block is
+    /// still there then (a plugin block's <see cref="Blocks.IBlockBehavior.Tick"/>), and is saved with the chunk as
+    /// vanilla's <c>block_ticks</c>. Ignored where the chunk isn't loaded and complete.
+    /// </summary>
+    public void ScheduleBlockTick(
+        Vector location,
+        IBlock block,
+        int delay,
+        Blocks.TickPriority priority = Blocks.TickPriority.Normal);
+
     public bool TryRemovePlayer(IPlayer player);
-    public ValueTask<bool> HandleBlockUpdateAsync(IBlockUpdate update);
-    public ValueTask BlockUpdateNeighborsAsync(IBlockUpdate update);
-    public ValueTask ScheduleBlockUpdateAsync(IBlockUpdate blockUpdate);
 
     public ValueTask SetBlockEntity(Vector blockPosition, IBlockEntity tileEntityData);
     public ValueTask SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData);
