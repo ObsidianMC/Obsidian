@@ -1,0 +1,247 @@
+[
+  {
+    "block": "stone",
+    "tool": "air",
+    "level": 0,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {},
+    "drops": [],
+    "nextInt": -1155869325
+  },
+  {
+    "block": "stone",
+    "tool": "wooden_pickaxe",
+    "level": 0,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {},
+    "drops": [
+      "minecraft:cobblestone*1"
+    ],
+    "nextInt": -1155869325
+  },
+  {
+    "block": "stone",
+    "tool": "diamond_pickaxe",
+    "enchantment": "silk_touch",
+    "level": 1,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {},
+    "drops": [
+      "minecraft:stone*1"
+    ],
+    "nextInt": -1155869325
+  },
+  {
+    "block": "diamond_ore",
+    "tool": "wooden_pickaxe",
+    "level": 0,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {},
+    "drops": [],
+    "nextInt": -1155869325
+  },
+  {
+    "block": "diamond_ore",
+    "tool": "diamond_pickaxe",
+    "enchantment": "fortune",
+    "level": 3,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {},
+    "drops": [
+      "minecraft:diamond*1"
+    ],
+    "nextInt": 431529176
+  },
+  {
+    "block": "diamond_ore",
+    "tool": "diamond_pickaxe",
+    "enchantment": "fortune",
+    "level": 3,
+    "seed": 42,
+    "checkTool": true,
+    "properties": {},
+    "drops": [
+      "minecraft:diamond*1"
+    ],
+    "nextInt": 234785527
+  },
+  {
+    "block": "diamond_ore",
+    "tool": "diamond_pickaxe",
+    "enchantment": "fortune",
+    "level": 3,
+    "seed": 5,
+    "checkTool": true,
+    "properties": {},
+    "drops": [
+      "minecraft:diamond*2"
+    ],
+    "nextInt": 758500184
+  },
+  {
+    "block": "redstone_ore",
+    "tool": "diamond_pickaxe",
+    "enchantment": "fortune",
+    "level": 3,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {},
+    "drops": [
+      "minecraft:redstone*5"
+    ],
+    "nextInt": 1761283695
+  },
+  {
+    "block": "glass",
+    "tool": "diamond_pickaxe",
+    "level": 0,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {},
+    "drops": [],
+    "nextInt": -1155869325
+  },
+  {
+    "block": "glass",
+    "tool": "diamond_pickaxe",
+    "enchantment": "silk_touch",
+    "level": 1,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {},
+    "drops": [
+      "minecraft:glass*1"
+    ],
+    "nextInt": -1155869325
+  },
+  {
+    "block": "oak_door",
+    "tool": "air",
+    "level": 0,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {
+      "half": "lower"
+    },
+    "drops": [
+      "minecraft:oak_door*1"
+    ],
+    "nextInt": -1155869325
+  },
+  {
+    "block": "oak_door",
+    "tool": "air",
+    "level": 0,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {
+      "half": "upper"
+    },
+    "drops": [],
+    "nextInt": -1155869325
+  },
+  {
+    "block": "wheat",
+    "tool": "air",
+    "level": 0,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {
+      "age": "0"
+    },
+    "drops": [
+      "minecraft:wheat_seeds*1"
+    ],
+    "nextInt": -1155869325
+  },
+  {
+    "block": "wheat",
+    "tool": "diamond_hoe",
+    "enchantment": "fortune",
+    "level": 3,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {
+      "age": "7"
+    },
+    "drops": [
+      "minecraft:wheat*1",
+      "minecraft:wheat_seeds*6"
+    ],
+    "nextInt": 1429008869
+  },
+  {
+    "block": "oak_leaves",
+    "tool": "air",
+    "level": 0,
+    "seed": 42,
+    "checkTool": true,
+    "properties": {},
+    "drops": [],
+    "nextInt": 205897768
+  },
+  {
+    "block": "wall_torch",
+    "tool": "air",
+    "level": 0,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {},
+    "drops": [
+      "minecraft:torch*1"
+    ],
+    "nextInt": -1155869325
+  },
+  {
+    "block": "stone",
+    "tool": "air",
+    "level": 0,
+    "seed": 1,
+    "radius": 4.0,
+    "checkTool": false,
+    "properties": {},
+    "drops": [],
+    "nextInt": 431529176
+  },
+  {
+    "block": "stone",
+    "tool": "air",
+    "level": 0,
+    "seed": 42,
+    "radius": 4.0,
+    "checkTool": false,
+    "properties": {},
+    "drops": [],
+    "nextInt": 234785527
+  },
+  {
+    "block": "redstone_ore",
+    "tool": "air",
+    "level": 0,
+    "seed": 42,
+    "radius": 4.0,
+    "checkTool": false,
+    "properties": {},
+    "drops": [
+      "minecraft:redstone*1"
+    ],
+    "nextInt": -1255373459
+  },
+  {
+    "block": "redstone_ore",
+    "tool": "air",
+    "level": 0,
+    "seed": 1,
+    "checkTool": false,
+    "properties": {},
+    "drops": [
+      "minecraft:redstone*5"
+    ],
+    "nextInt": 1761283695
+  }
+]

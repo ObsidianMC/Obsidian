@@ -260,7 +260,8 @@ internal sealed record BlockSettings(
     float Hardness,
     float ExplosionResistance,
     bool RequiresCorrectTool,
-    int LightEmission)
+    int LightEmission,
+    string? LootTable)
 {
     public static BlockSettings Default { get; } = From(new BlockProperties());
 
@@ -271,7 +272,8 @@ internal sealed record BlockSettings(
         // An unbreakable block withstands explosions too, like bedrock.
         properties.ExplosionResistance ?? (properties.Hardness < 0 ? 3_600_000 : properties.Hardness),
         properties.RequiresCorrectTool,
-        properties.LightEmission);
+        properties.LightEmission,
+        properties.LootTable);
 }
 
 /// <summary>

@@ -582,6 +582,10 @@ public sealed class PluginContentGenerator : IIncrementalGenerator
             AddFloat(root, "explosionResistance", "ExplosionResistance", settings);
             AddBool(root, "requiresCorrectTool", "RequiresCorrectTool", settings);
             AddInt(root, "lightEmission", "LightEmission", settings);
+
+            if (root.TryGetProperty("lootTable", out var lootTable))
+                settings.Add($"LootTable = {Literal(lootTable.GetString()!)}");
+
             AddBehavior(root, settings);
             AddTreeGrower(root, settings);
 

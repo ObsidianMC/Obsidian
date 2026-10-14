@@ -147,24 +147,22 @@ public abstract partial class AbstractLevel
         foreach (var position in destroyed)
         {
             var block = terrain.GetBlock(position)!;
+            var drops = await BlockLoot.GetDropsAsync(this, position, block, null, BlockLoot.CreateRandom(this, block),
+                breaker: source, explosionRadius: dropDecay ? radius : null, checkTool: false);
             await SetBlockAsync(position, BlocksRegistry.Air, true);
-            if (!dropDecay || random.NextSingle() <= 1 / radius)
+            foreach (var item in drops)
             {
-                if (BlocksRegistry.TryGetItem(block, out var holder))
+                var drop = new ItemEntity
                 {
-                    var item = new Obsidian.API.Inventory.ItemStack(holder, 1);
-                    var drop = new ItemEntity
-                    {
-                        Level = this,
-                        EntityId = Server.GetNextEntityId(),
-                        Position = (VectorD)position + 0.5f,
-                        Item = item,
-                        SpawnedBy = spawner
-                    };
+                    Level = this,
+                    EntityId = Server.GetNextEntityId(),
+                    Position = (VectorD)position + 0.5f,
+                    Item = item,
+                    SpawnedBy = spawner
+                };
 
-                    if (!this.TrySpawnEntity(drop, hostOwned: true))
-                        throw new InvalidOperationException($"Could not register entity {drop.EntityId}.");
-                }
+                if (!this.TrySpawnEntity(drop, hostOwned: true))
+                    throw new InvalidOperationException($"Could not register entity {drop.EntityId}.");
             }
         }
         // Vanilla's ServerExplosion.createFire: each position reached, now air, catches fire a third of the time
