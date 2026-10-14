@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Obsidian.API;
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
@@ -61,7 +62,8 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
         // Generated before the chunk was saved, but not spawned yet.
         Assert.Single(entities, entity => entity.Type == EntityType.EndCrystal);
 
-        var chest = Assert.IsType<Container>(chunk.GetBlockEntity(RestartedChunk.Chest.X, RestartedChunk.Chest.Y, RestartedChunk.Chest.Z));
+        var chest = Assert.IsAssignableFrom<ContainerBlockEntity>(
+            chunk.GetBlockEntity(RestartedChunk.Chest.X, RestartedChunk.Chest.Y, RestartedChunk.Chest.Z)).Inventory;
         Assert.Equal("Loot", chest.CustomName!.Text);
         Assert.Equal("Loot", chest.Title.Text);
 
@@ -79,11 +81,14 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
         Assert.Equal(23, chest[26]!.Count);
         Assert.Equal(4, chest.Count(slot => slot is not null));
 
-        // A container that wasn't opened stays waiting for its loot.
-        var unopened = Assert.IsType<DataBlockEntity>(chunk.GetBlockEntity(RestartedChunk.UnopenedChest.X, RestartedChunk.UnopenedChest.Y,
+        // A container that wasn't opened is a container too, still waiting for its loot.
+        var unopened = Assert.IsAssignableFrom<ContainerBlockEntity>(chunk.GetBlockEntity(
+            RestartedChunk.UnopenedChest.X,
+            RestartedChunk.UnopenedChest.Y,
             RestartedChunk.UnopenedChest.Z));
-        Assert.Equal("minecraft:chests/simple_dungeon", unopened.Data.GetString("LootTable"));
-        Assert.Equal(99L, unopened.Data.GetLong("LootTableSeed"));
+        Assert.Equal("minecraft:chests/simple_dungeon", unopened.LootTable);
+        Assert.Equal(99L, unopened.LootTableSeed);
+        Assert.False(unopened.Inventory.HasItems());
     }
 
     [Fact]
@@ -199,7 +204,9 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
 
             // A chest a player opened (its loot generated) and filled.
             chunk.SetBlock(Chest.X, Chest.Y, Chest.Z, BlocksRegistry.Chest);
-            var chest = new Container { Id = "chest", Title = "Loot", CustomName = "Loot", BlockPosition = Chest };
+            var chestEntity = (ContainerBlockEntity)BlockEntityNbt.Create("minecraft:chest", Chest);
+            var chest = chestEntity.Inventory;
+            chest.CustomName = "Loot";
             chest[0] = new ItemStack(ItemsRegistry.DiamondSword, 1, ComponentBuilder.Damage with { Value = 12 },
                 ComponentBuilder.CustomName with { Value = "Edge" });
             chest[4] = new ItemStack(ItemsRegistry.EnchantedBook, 1,
@@ -209,12 +216,12 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
                 1,
                 new PotionContentsDataComponent { Potion = Potion.Swiftness });
             chest[26] = new ItemStack(ItemsRegistry.Apple, 23);
-            chunk.SetBlockEntity(Chest.X, Chest.Y, Chest.Z, chest);
+            chunk.SetBlockEntity(Chest.X, Chest.Y, Chest.Z, chestEntity);
 
             chunk.SetBlock(UnopenedChest.X, UnopenedChest.Y, UnopenedChest.Z, BlocksRegistry.Chest);
-            var unopened = new DataBlockEntity { Id = "minecraft:chest", BlockPosition = UnopenedChest };
-            unopened.Set("LootTable", "minecraft:chests/simple_dungeon");
-            unopened.Set("LootTableSeed", 99L);
+            var unopened = (ContainerBlockEntity)BlockEntityNbt.Create("minecraft:chest", UnopenedChest);
+            unopened.LootTable = "minecraft:chests/simple_dungeon";
+            unopened.LootTableSeed = 99L;
             chunk.SetBlockEntity(UnopenedChest.X, UnopenedChest.Y, UnopenedChest.Z, unopened);
 
             // Entities of the level standing in the chunk.

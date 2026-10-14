@@ -2,8 +2,8 @@ namespace Obsidian.Net.Payloads;
 
 /// <summary>
 /// The registries plugins add to that clients must agree with the server on, numbered as NeoForge's and Fabric's
-/// registry sync send them: blocks (whose order numbers block states), entity types, items, menu types and particle
-/// types.
+/// registry sync send them: blocks (whose order numbers block states), block entity types, entity types, items, menu
+/// types and particle types.
 /// </summary>
 /// <remarks>
 /// The server sends the ones plugins added to; the Obsidian client checks what it receives against its own, which its
@@ -12,6 +12,7 @@ namespace Obsidian.Net.Payloads;
 internal static class SyncedRegistries
 {
     public const string Blocks = "minecraft:block";
+    public const string BlockEntityTypes = "minecraft:block_entity_type";
     public const string EntityTypes = "minecraft:entity_type";
     public const string Items = "minecraft:item";
     public const string Menus = "minecraft:menu";
@@ -20,7 +21,8 @@ internal static class SyncedRegistries
     /// <summary>
     /// The registries, in the order the server sends them.
     /// </summary>
-    public static ImmutableArray<string> Names { get; } = [Blocks, EntityTypes, Items, Menus, ParticleTypes];
+    public static ImmutableArray<string> Names { get; } =
+        [Blocks, BlockEntityTypes, EntityTypes, Items, Menus, ParticleTypes];
 
     /// <summary>
     /// The registries plugins added to, with all their entries.
@@ -33,6 +35,7 @@ internal static class SyncedRegistries
     public static bool HasPluginEntries(string name) => name switch
     {
         Blocks => BlocksRegistry.PluginBlocks.Count > 0,
+        BlockEntityTypes => BlockEntityTypesRegistry.PluginTypes.Count > 0,
         EntityTypes => EntityDefinitionsRegistry.PluginDefinitions.Count > 0,
         Items => ItemsRegistry.HasPluginItems,
         Menus => MenuTypesRegistry.PluginMenus.Count > 0,
@@ -50,6 +53,10 @@ internal static class SyncedRegistries
             Blocks => BlocksRegistry.ResourceIds
                 .Select((identifier, id) => (id, identifier))
                 .Concat(BlocksRegistry.PluginBlocks.Select(type => (type.Id, type.Identifier)))
+                .ToArray(),
+            BlockEntityTypes => BlockEntityTypesRegistry.VanillaIdentifiers
+                .Select((identifier, id) => (id, identifier))
+                .Concat(BlockEntityTypesRegistry.PluginTypes.Select(type => (type.Id, type.Identifier)))
                 .ToArray(),
             EntityTypes => Enum.GetValues<EntityType>()
                 .Select(type => ((int)type, Entities.EntityNbt.TypeId(type)))

@@ -32,8 +32,17 @@ public partial class MainEventHandler
 
         var tool = player.GetHeldItem();
         var parts = await TwoPartBlockBreak.PrepareAsync(world, location, block);
-        // Block entity integration supplies blockEntityComponents/dynamicDrops here, from parts.DropPosition.
-        var drops = await BlockLoot.GetDropsAsync(world, parts.DropPosition, parts.DropState, tool, breaker: player);
+
+        // What the block entity gives the loot (a shulker box's items, say), taken before the block goes.
+        var blockEntity = await BlockEntityComponents.CaptureAsync(world, parts.DropPosition, player);
+        var drops = await BlockLoot.GetDropsAsync(
+            world,
+            parts.DropPosition,
+            parts.DropState,
+            tool,
+            breaker: player,
+            blockEntityComponents: blockEntity.Components,
+            dynamicDrops: blockEntity.DynamicDrops);
 
         await parts.RemovePartnerAsync(world);
         await world.SetBlockAsync(location, BlocksRegistry.Air, true);
@@ -59,7 +68,18 @@ public partial class MainEventHandler
         }, player.EntityId);
 
         if (player.GameMode is GameMode.Creative or GameMode.Spectator)
+        {
+            // Vanilla's ShulkerBoxBlock.playerWillDestroy: a creative player's filled box still drops, holding its
+            // items, which would be lost otherwise.
+            if (player.GameMode == GameMode.Creative
+                && blockEntity.HoldsItems
+                && BlocksRegistry.TryGetItem(parts.DropState, out var box))
+            {
+                SpawnBlockDrop(player, parts.DropPosition, new ItemStack(box, 1, [.. blockEntity.Components]));
+            }
+
             return;
+        }
 
         if (block.UnlocalizedName.StartsWith("minecraft:infested_", StringComparison.Ordinal))
         {
@@ -83,22 +103,25 @@ public partial class MainEventHandler
         }
 
         foreach (var droppedItem in drops)
+            SpawnBlockDrop(player, parts.DropPosition, droppedItem);
+    }
+
+    private static void SpawnBlockDrop(IPlayer player, Vector position, ItemStack droppedItem)
+    {
+        var item = new ItemEntity
         {
-            var item = new ItemEntity
-            {
-                EntityId = Server.GetNextEntityId(),
-                Item = droppedItem,
-                Level = player.Level,
-                Position = (VectorD)parts.DropPosition + 0.5
-            };
+            EntityId = Server.GetNextEntityId(),
+            Item = droppedItem,
+            Level = player.Level,
+            Position = (VectorD)position + 0.5
+        };
 
-            player.Level.TryAddEntity(item);
+        player.Level.TryAddEntity(item);
 
-            var power = GetRandDropVelocity();
-            var direction = Globals.Random.NextSingle() * 6.2f;
+        var power = GetRandDropVelocity();
+        var direction = Globals.Random.NextSingle() * 6.2f;
 
-            item.SpawnEntity(new Velocity(-Math.Sin(direction) * power, 0.2f, Math.Cos(direction) * power));
-        }
+        item.SpawnEntity(new Velocity(-Math.Sin(direction) * power, 0.2f, Math.Cos(direction) * power));
     }
 
     private static float GetRandDropVelocity()

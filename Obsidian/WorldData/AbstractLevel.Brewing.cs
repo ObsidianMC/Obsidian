@@ -15,28 +15,9 @@ public abstract partial class AbstractLevel
     private static readonly string[] bottleProperties = ["has_bottle_0", "has_bottle_1", "has_bottle_2"];
 
     /// <summary>
-    /// Ticks the brewing stands of the chunks that tick, like vanilla ticks block entities: the stands players opened
-    /// (a stand only gets its block entity then) whose block is still there.
+    /// Brews a tick in a brewing stand's block entity, which it ticks with (see <see cref="BrewingStandBlockEntity"/>).
     /// </summary>
-    internal async ValueTask TickBrewingStandsAsync()
-    {
-        foreach (var chunk in Regions.Values.SelectMany(region => region.GeneratedChunks()).OfType<Chunk>())
-        {
-            if (chunk.BlockEntities.IsEmpty || !IsMobTicking(new VectorD(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8)))
-                continue;
-
-            foreach (var blockEntity in chunk.BlockEntities.Values)
-            {
-                if (blockEntity is BrewingStand stand
-                    && GameEventBlock(stand.BlockPosition)?.RegistryId == BlockIds.BrewingStand)
-                {
-                    await TickBrewingStandAsync(stand);
-                }
-            }
-        }
-    }
-
-    private async ValueTask TickBrewingStandAsync(BrewingStand stand)
+    internal async ValueTask TickBrewingStandAsync(BrewingStand stand)
     {
         Brewing.Step step;
         using (await stand.LockAsync())

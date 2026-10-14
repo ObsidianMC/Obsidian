@@ -2,7 +2,7 @@
 
 namespace Obsidian.API.Containers;
 
-public sealed class EnchantmentTable : BaseContainer, IBlockEntity
+public sealed class EnchantmentTable : BaseContainer
 {
     public string Id => "enchantment_table";
 
@@ -21,12 +21,4 @@ public sealed class EnchantmentTable : BaseContainer, IBlockEntity
         base.SetItem(slot, item);
     }
 
-    public void ToNbt() => throw new NotImplementedException();
-    public void FromNbt() => throw new NotImplementedException();
-    public IBlockEntity Clone() => new EnchantmentTable()
-    {
-        BlockPosition = this.BlockPosition,
-        items = this.items,
-        Title = this.Title,
-    };
 }

@@ -2,7 +2,7 @@
 
 namespace Obsidian.API;
 
-public sealed class Container : BaseContainer, IBlockEntity
+public sealed class Container : BaseContainer
 {
     private const int PlayerHotbarStart = 36;
     private const int PlayerHotbarEnd = PlayerHotbarStart + 8;
@@ -77,16 +77,4 @@ public sealed class Container : BaseContainer, IBlockEntity
         }
         return null;
     }
-    public void ToNbt() => throw new NotImplementedException();
-    public void FromNbt() => throw new NotImplementedException();
-    public IBlockEntity Clone() => new Container(Type)
-    {
-        Id = this.Id,
-        Title = this.Title,
-        CustomName = this.CustomName,
-        BlockPosition = this.BlockPosition,
-        Owner = this.Owner,
-        items = this.items,
-        IsPlayerInventory = this.IsPlayerInventory,
-    };
 }

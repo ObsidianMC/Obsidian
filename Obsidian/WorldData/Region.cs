@@ -371,6 +371,18 @@ public class Region : IRegion
         return new NbtReader(bytesStream).ReadNextTag() as NbtCompound;
     }
 
+    /// <summary>
+    /// The chunks the region holds, complete or still generating.
+    /// </summary>
+    internal IEnumerable<IChunk> ResidentChunks()
+    {
+        foreach (var chunk in loadedChunks)
+        {
+            if (chunk is not null)
+                yield return chunk;
+        }
+    }
+
     public IEnumerable<IChunk> GeneratedChunks()
     {
         foreach (var c in loadedChunks)
@@ -765,6 +777,9 @@ public class Region : IRegion
 
         if (chunkCompound.TryGetTag<NbtList>("block_entities", out var blockEntities))
         {
+            // Plugins' block entities load as saved data, which the level makes theirs on its tick once the chunk is
+            // complete (see AbstractLevel.RestoreKeptBlockEntities), in turn with plugins unloading.
+
             foreach (var blockEntityCompound in blockEntities.Cast<NbtCompound>())
             {
                 if (!blockEntityCompound.TryGetTag<NbtTag<string>>("id", out var id))
@@ -774,7 +789,8 @@ public class Region : IRegion
                 if (position.Y < this.minY || position.Y >= this.minY + this.height)
                     continue;
 
-                chunk.SetBlockEntity(position.X, position.Y, position.Z, BlockEntityNbt.Load(blockEntityCompound, id.Value!, position));
+                var blockEntity = BlockEntityNbt.Load(blockEntityCompound, id.Value!, position, pluginInstances: false);
+                chunk.SetBlockEntity(position.X, position.Y, position.Z, blockEntity);
             }
         }
 
@@ -915,8 +931,10 @@ public class Region : IRegion
         }
         writer.EndList();
 
-        // Data block entities and containers; other block entities aren't saved yet.
-        var blockEntities = chunk.GetBlockEntities().Select(blockEntity => BlockEntityNbt.Save(blockEntity, chunk)).OfType<NbtCompound>().ToList();
+        var blockEntities = chunk.GetBlockEntities()
+            .Select(BlockEntityNbt.Save)
+            .OfType<NbtCompound>()
+            .ToList();
         writer.WriteListStart("block_entities", NbtTagType.Compound, blockEntities.Count);
         foreach (var blockEntity in blockEntities)
             writer.WriteListTag(blockEntity);

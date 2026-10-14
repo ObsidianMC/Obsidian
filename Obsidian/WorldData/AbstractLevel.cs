@@ -400,14 +400,15 @@ public abstract partial class AbstractLevel : ILevel
 
         // Under the lock fluid ticks and growth hold, so that neither reads a block, has it changed here, and then
         // writes what it worked out from the old block over the change.
+        API.BlockEntities.BlockEntity? removed;
         lock (this.Fluids.TickLock)
         {
             c.SetBlock(x, y, z, block);
-
-            // Generated block entity data (e.g. a dungeon chest's loot) doesn't carry over to another block.
-            if (c.GetBlockEntity(x, y, z) is DataBlockEntity data && data.Id != block.BlockEntityType())
-                c.RemoveBlockEntity(x, y, z);
+            removed = this.UpdateBlockEntity(c, new Vector(x, y, z), block);
         }
+
+        if (removed is not null)
+            await this.RunBlockEntityRemovalAsync(removed);
 
         if (doBlockUpdate)
         {
@@ -594,8 +595,8 @@ public abstract partial class AbstractLevel : ILevel
         await TickMobGameEventsAsync();
         await TickMobEggsAsync();
 
-        TickStage = "brewing stands";
-        await TickBrewingStandsAsync();
+        TickStage = "block entities";
+        await TickBlockEntitiesAsync();
 
         foreach (var region in Regions.Values)
         {
@@ -962,29 +963,70 @@ public abstract partial class AbstractLevel : ILevel
     public async ValueTask<IBlockEntity?> GetBlockEntityAsync(int x, int y, int z)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
-        return c?.GetBlockEntity(x, y, z);
+        var blockEntity = c?.GetBlockEntity(x, y, z);
+
+        this.AttachBlockEntity(blockEntity);
+
+        return blockEntity;
     }
 
     public ValueTask SetBlockEntity(Vector blockPosition, IBlockEntity tileEntityData) =>
         SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
+
+    /// <remarks>
+    /// The block entity replaces the one there without the side effects of removing it. One created by plugin code
+    /// takes the position, and the type of the block there unless it has one.
+    /// </remarks>
     public async ValueTask SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
-        c?.SetBlockEntity(x, y, z, tileEntityData);
+        if (c is null)
+            return;
+
+        if (tileEntityData is API.BlockEntities.BlockEntity placed)
+        {
+            placed.BlockPosition = new Vector(x, y, z);
+
+            if (placed.Id.Length == 0)
+            {
+                placed.Id = c.GetBlock(x, y, z).BlockEntityType()
+                    ?? throw new ArgumentException($"The block at {placed.BlockPosition} has no block entity type.");
+            }
+
+            placed.Owner ??= Plugins.PluginProviders.PluginLoadContext.OwnerOf(placed.GetType().Assembly);
+            this.AttachBlockEntity(placed);
+        }
+
+        var previous = c.GetBlockEntity(x, y, z);
+        c.SetBlockEntity(x, y, z, tileEntityData);
+
+        if (previous is API.BlockEntities.BlockEntity replaced && !ReferenceEquals(previous, tileEntityData))
+            replaced.IsRemoved = true;
     }
 
     /// <summary>
-    /// Stores <paramref name="blockEntity"/> at <paramref name="blockPosition"/> unless a block entity is there
-    /// already, in one step (see <see cref="Chunk.GetOrAddBlockEntity"/>).
+    /// The block entity at <paramref name="blockPosition"/>, created for the block there when it has a type but no
+    /// block entity, as in worlds saved before the server created them with their blocks.
     /// </summary>
-    /// <returns>The stored block entity, or null when the chunk isn't loaded.</returns>
-    internal async ValueTask<IBlockEntity?> GetOrAddBlockEntityAsync(Vector blockPosition, IBlockEntity blockEntity)
+    /// <returns>The block entity, or null when there's none or the chunk isn't loaded.</returns>
+    internal async ValueTask<IBlockEntity?> GetOrCreateBlockEntityAsync(Vector blockPosition)
     {
-        var chunk = await GetChunkAsync(blockPosition.X.ToChunkCoord(), blockPosition.Z.ToChunkCoord(), false);
+        var (x, y, z) = (blockPosition.X, blockPosition.Y, blockPosition.Z);
+        if (await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false) is not Chunk chunk)
+            return null;
 
-        return chunk is Chunk loaded
-            ? loaded.GetOrAddBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, blockEntity)
-            : null;
+        var blockEntity = chunk.GetBlockEntity(x, y, z);
+        var block = chunk.GetBlock(x, y, z);
+
+        if (blockEntity is null && block.HasBlockEntity() && block.BlockEntityType() is string type)
+        {
+            var created = BlockEntityNbt.Create(type, blockPosition, logger: this.Logger);
+            blockEntity = chunk.GetOrAddBlockEntity(x, y, z, created);
+        }
+
+        this.AttachBlockEntity(blockEntity);
+
+        return blockEntity;
     }
 
     public IEntity SpawnEntity(VectorD position, EntityType type)

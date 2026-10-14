@@ -102,15 +102,10 @@ public abstract class TemplateStructurePiece : StructurePiece
     /// </summary>
     protected static void SetChestLootTable(IWorldGenLevel level, IRandomSource random, Vector position, string lootTable)
     {
-        var chest = level.GetBlockEntity(position) as DataBlockEntity;
+        var chest = level.GetBlockEntity(position);
         if (chest?.Id is not ("minecraft:chest" or "minecraft:trapped_chest"))
             return;
 
-        chest.Set("LootTable", lootTable);
-        var seed = random.NextLong();
-        if (seed != 0L)
-            chest.Set("LootTableSeed", seed);
-        else
-            chest.Data.Remove("LootTableSeed");
+        BlockEntityNbt.SetLootTable(chest, lootTable, random.NextLong());
     }
 }

@@ -270,6 +270,9 @@ public partial class UseItemOnPacket
             block = placed;
         }
 
+        // What the placed item holds goes to its block entity, like a shulker box's items.
+        var placedItem = new ItemStack(currentItem, 1);
+
         if (player.GameMode != GameMode.Creative)
             player.Inventory.RemoveItem(this.Hand == InteractionHand.MainHand ? player.CurrentHeldItemSlot : (short)45, 1);
 
@@ -334,6 +337,8 @@ public partial class UseItemOnPacket
         }
 
         await player.Level.SetBlockAsync(position, block, doBlockUpdate: true);
+        await BlockEntityComponents.ApplyAsync(player.Level, position, placedItem);
+
         if (player.Level is Obsidian.WorldData.AbstractLevel events)
             events.EmitGameEvent(Obsidian.WorldData.MobGameEvent.BlockPlace, (VectorD)position + new VectorD(0.5, 0.5, 0.5), player, affectedBlock: block);
         player.Client.SendPacket(new BlockChangedAckPacket

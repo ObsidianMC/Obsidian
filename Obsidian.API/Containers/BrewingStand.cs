@@ -6,7 +6,7 @@ namespace Obsidian.API.Containers;
 /// A brewing stand's block entity, whose slots vanilla's brewing menu numbers: the three bottles (0 to 2), the
 /// ingredient (3) and the fuel (4). The server brews in it while its chunk ticks.
 /// </summary>
-public sealed class BrewingStand : ResultContainer, IBlockEntity
+public sealed class BrewingStand : ResultContainer
 {
     /// <summary>
     /// The first of the three bottle slots.
@@ -55,15 +55,4 @@ public sealed class BrewingStand : ResultContainer, IBlockEntity
 
     public override void SetResult(ItemStack? result) => throw new NotImplementedException();
     public override ItemStack? GetResult() => throw new NotImplementedException();
-    public void ToNbt() => throw new NotImplementedException();
-    public void FromNbt() => throw new NotImplementedException();
-    public IBlockEntity Clone() => new BrewingStand()
-    {
-        BlockPosition = this.BlockPosition,
-        Title = this.Title,
-        CustomName = this.CustomName,
-        items = this.items,
-        BrewTime = this.BrewTime,
-        Fuel = this.Fuel
-    };
 }

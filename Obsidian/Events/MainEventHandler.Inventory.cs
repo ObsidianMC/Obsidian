@@ -80,7 +80,10 @@ public partial class MainEventHandler
     {
         var openId = player.OpenedContainer is null ? 0 : player.CurrentContainerId;
 
-        return (player.OpenedContainer ?? player.Inventory) == window && containerId == openId;
+        // A retired container's block entity is gone, or its plugin unloaded: its items moved on, so none move now.
+        return (player.OpenedContainer ?? player.Inventory) == window
+            && containerId == openId
+            && !window.ShowsRetired;
     }
 
     private static void ApplyClick(ContainerClickEventArgs args)

@@ -565,6 +565,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         BlocksRegistry.ReleasePlugin(pluginContainer);
         BrewingRegistry.ReleasePlugin(pluginContainer);
         EntityDefinitionsRegistry.ReleasePlugin(pluginContainer);
+        BlockEntityTypesRegistry.ReleasePlugin(pluginContainer);
         PluginGenerators.Release(pluginContainer);
 
         // Once its handlers and its types' behaviours are gone, so that nothing of the plugin's runs as they go.
@@ -645,12 +646,14 @@ public sealed partial class PluginManager : IAsyncDisposable
     }
 
     /// <summary>
-    /// Removes the server players <paramref name="plugin"/> added, and the entities it owns from every level (see
-    /// <see cref="PluginEntities"/>), as it unloads.
+    /// Removes the server players <paramref name="plugin"/> added, and the entities and block entities it owns from
+    /// every level (see <see cref="PluginEntities"/> and <see cref="PluginBlockEntities"/>), as it unloads.
     /// </summary>
     /// <remarks>
     /// Each level's entities are removed between its ticks. Inside a call into a plugin, which a tick may be waiting
-    /// for, or when a tick doesn't end in time, they're removed on the level's next tick instead.
+    /// for, or when a tick doesn't end in time, they're removed on the level's next tick instead, holding the plugin
+    /// until then so that it isn't released before its block entities' last saves. The windows showing its block
+    /// entities' containers close once they're removed.
     /// </remarks>
     private async Task RemoveEntitiesAsync(PluginContainer plugin)
     {
@@ -677,17 +680,39 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         foreach (var level in this.Levels())
         {
-            void Remove() => PluginEntities.RemoveFrom(level, plugin);
+            List<BaseContainer> retired = [];
+
+            void Remove()
+            {
+                PluginEntities.RemoveFrom(level, plugin);
+                retired = PluginBlockEntities.RemoveFrom(level, plugin);
+            }
 
             if (!PluginCall.InsideAny && await level.TryRunBetweenTicksAsync(Remove, drainTimeout))
-                continue;
-
-            level.EnqueueEntityAction(() =>
             {
-                Remove();
-                return default;
+                await PluginBlockEntities.CloseWindowsAsync(this.server, plugin, retired);
+                continue;
+            }
+
+            // The removal saves the plugin's block entities a last time, in a call into it: the plugin isn't released
+            // before that. Nothing of the plugin's starts meanwhile, so a level without any needs no hold.
+            var hold = PluginBlockEntities.AnyIn(level, plugin) ? plugin.HoldUnloading() : null;
+            level.EnqueueEntityAction(async () =>
+            {
+                try
+                {
+                    Remove();
+                    await PluginBlockEntities.CloseWindowsAsync(this.server, plugin, retired);
+                }
+                finally
+                {
+                    hold?.Dispose();
+                }
             });
         }
+
+        // Its own container classes the players have open elsewhere, like a menu it opened for them.
+        await PluginBlockEntities.CloseWindowsAsync(this.server, plugin, []);
     }
 
     // Spawns again the entities of plugins' types kept in loaded chunks while their plugins were unloaded, once their

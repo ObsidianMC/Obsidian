@@ -2,7 +2,7 @@
 
 namespace Obsidian.API.Containers;
 
-public class SmeltingContainer : ResultContainer, IBlockEntity
+public class SmeltingContainer : ResultContainer
 {
     public string Id { get; }
 
@@ -30,16 +30,4 @@ public class SmeltingContainer : ResultContainer, IBlockEntity
     public override void SetResult(ItemStack? result) => throw new NotImplementedException();
     public override ItemStack? GetResult() => throw new NotImplementedException();
 
-    public void ToNbt() => throw new NotImplementedException();
-    public void FromNbt() => throw new NotImplementedException();
-    public IBlockEntity Clone() => new SmeltingContainer(this.Type, this.Size, this.Id)
-    {
-        BlockPosition = this.BlockPosition,
-        Title = this.Title,
-        CustomName = this.CustomName,
-        items = this.items,
-        CookTime = this.CookTime,
-        CookTimeTotal = this.CookTimeTotal,
-        FuelBurnTime = this.FuelBurnTime,
-    };
 }

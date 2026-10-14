@@ -200,7 +200,7 @@ public sealed class BrewingStands : IDisposable
             new NbtTag<byte>("Fuel", 5)
         };
 
-        var stand = (BrewingStand)BlockEntityNbt.Load(tag, "minecraft:brewing_stand", Vector.Zero);
+        var stand = ((BrewingStandBlockEntity)BlockEntityNbt.Load(tag, "minecraft:brewing_stand", Vector.Zero)).Stand;
 
         for (var tick = 1; tick < 100; tick++)
             Assert.False(Brewing.Tick(stand).Brewed);

@@ -1,3 +1,4 @@
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
@@ -99,23 +100,14 @@ public sealed partial class CopperGolem : PathfinderMob
                 }
                 SetEquipment(EquipmentSlot.MainHand, held.Count == 0 ? ItemStack.Air : new ItemStack(held, held.Count));
             }
-            if (destination is DataBlockEntity data)
-            {
-                var items = new NbtList(NbtTagType.Compound, "Items");
-                for (var i = 0; i < container.Size; i++)
-                    if (container[i] is { Count: > 0 } item && !item.IsAir)
-                    { var saved = item.ToNbt(); saved.Set(new NbtTag<byte>("Slot", (byte)i)); items.Add(saved); }
-                data.Set(items);
-            }
         }
         destination = null; interactionState = 0; searchAt = AiTick + 40; SynchronizeMetadata();
     }
-    private BaseContainer? ReadContainer(IBlockEntity entity)
-    {
-        if (entity is BaseContainer container) return container.Viewers.Count == 0 ? container : null;
-        if (entity is not DataBlockEntity data || data.Data.HasTag("LootTable")) return null;
-        var inventory = new Container(27); BlockEntityNbt.LoadContents(data.Data, inventory); return inventory;
-    }
+    // A chest's items, unless players have it open or it's still waiting for its loot table.
+    private static BaseContainer? ReadContainer(IBlockEntity entity) =>
+        entity is ContainerBlockEntity { LootTable: null, Inventory.Viewers.Count: 0 } container
+            ? container.Inventory
+            : null;
     private bool Suitable(IBlockEntity entity, ItemStack held)
     {
         var block = Terrain.GetBlock(entity.BlockPosition);

@@ -104,6 +104,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
             + $"{EntityDefinitionsRegistry.PluginDefinitions.Count}/{CodecRegistry.Biomes.All.Count}/"
             + $"{CodecRegistry.Dimensions.All.Count}/{CodecRegistry.DamageType.All.Count}/{PluginCodecs.Revision}/"
             + $"{MenuTypesRegistry.PluginMenus.Count}/{ParticleTypesRegistry.PluginParticles.Count}/"
+            + $"{BlockEntityTypesRegistry.PluginTypes.Count}/"
             + DialogRegistry.Fingerprint;
 
         Net.Payloads.NetworkProtocol[] protocols =

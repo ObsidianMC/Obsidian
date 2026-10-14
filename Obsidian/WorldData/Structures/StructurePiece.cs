@@ -356,9 +356,9 @@ public abstract class StructurePiece
         level.SetBlock(position, chest ?? FeatureHelpers.Reorient(level, position, BlocksRegistry.Chest));
 
         // Vanilla only seeds a ChestBlockEntity (chests and trapped chests).
-        var container = level.GetBlockEntity(position) as DataBlockEntity;
+        var container = level.GetBlockEntity(position);
         if (container?.Id is "minecraft:chest" or "minecraft:trapped_chest")
-            SetLootTable(container, lootTable, random.NextLong());
+            BlockEntityNbt.SetLootTable(container, lootTable, random.NextLong());
 
         return true;
     }
@@ -375,20 +375,11 @@ public abstract class StructurePiece
         this.PlaceBlock(
             level, BlocksRegistry.Dispenser.WithProperty("facing", FeatureHelpers.FaceName(facing)), x, y, z, box);
 
-        var container = level.GetBlockEntity(position) as DataBlockEntity;
+        var container = level.GetBlockEntity(position);
         if (container?.Id == "minecraft:dispenser")
-            SetLootTable(container, lootTable, random.NextLong());
+            BlockEntityNbt.SetLootTable(container, lootTable, random.NextLong());
 
         return true;
-    }
-
-    private static void SetLootTable(DataBlockEntity container, string lootTable, long seed)
-    {
-        container.Set("LootTable", lootTable);
-        if (seed != 0L)
-            container.Set("LootTableSeed", seed);
-        else
-            container.Data.Remove("LootTableSeed");
     }
 
     /// <summary>

@@ -1,34 +1,45 @@
+using Obsidian.API.BlockEntities;
 using Obsidian.Nbt;
 
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// A block entity backed by vanilla's saved data: spawners, end
-/// gateways, chests waiting for their loot and the like.
+/// A block entity kept as vanilla's saved data: spawners, end gateways, beehives and the like, which the server reads
+/// and changes as data, and block entities of types the server can't create now, like a plugin's while the plugin is
+/// gone, which are saved again as they were loaded.
 /// </summary>
 /// <remarks>
-/// <see cref="Data"/> holds the fields vanilla saves besides the id and position, e.g. <c>LootTable</c> and
-/// <c>LootTableSeed</c> for a chest, or <c>SpawnData</c> for a spawner. Missing fields mean vanilla's defaults.
+/// <see cref="Data"/> holds the fields vanilla saves besides the id and position, e.g. <c>SpawnData</c> for a spawner.
+/// Missing fields mean vanilla's defaults.
 /// </remarks>
-public sealed class DataBlockEntity : IBlockEntity
+public sealed class DataBlockEntity : BlockEntity
 {
     // Block entity types whose getUpdateTag sends data to clients; the others send nothing.
     private static readonly HashSet<string> clientDataTypes =
     [
-        "minecraft:banner", "minecraft:beacon", "minecraft:brushable_block", "minecraft:campfire", "minecraft:conduit",
-        "minecraft:creaking_heart", "minecraft:decorated_pot", "minecraft:end_gateway", "minecraft:hanging_sign", "minecraft:jigsaw",
-        "minecraft:mob_spawner", "minecraft:shelf", "minecraft:sign", "minecraft:skull", "minecraft:structure_block",
-        "minecraft:test_block", "minecraft:test_instance_block", "minecraft:trial_spawner", "minecraft:vault"
+        "minecraft:banner", "minecraft:beacon", "minecraft:brushable_block", "minecraft:campfire",
+        "minecraft:conduit", "minecraft:creaking_heart", "minecraft:decorated_pot", "minecraft:end_gateway",
+        "minecraft:hanging_sign", "minecraft:jigsaw", "minecraft:mob_spawner", "minecraft:shelf", "minecraft:sign",
+        "minecraft:skull", "minecraft:structure_block", "minecraft:test_block", "minecraft:test_instance_block",
+        "minecraft:trial_spawner", "minecraft:vault"
     ];
 
-    /// <summary>
-    /// The block entity type, e.g. <c>minecraft:mob_spawner</c>.
-    /// </summary>
-    public required string Id { get; init; }
-
-    public required Vector BlockPosition { get; init; }
+    // The types kept as data whose saved items vanilla drops when the block is removed: those whose
+    // preRemoveSideEffects calls Containers.dropContents.
+    private static readonly HashSet<string> droppingTypes =
+    [
+        "minecraft:campfire", "minecraft:chiseled_bookshelf", "minecraft:crafter"
+    ];
 
     public NbtCompound Data { get; init; } = new();
+
+    // Spawner timers change on the level's thread under the data's lock, while chunks are saved or sent in parallel.
+    internal override bool SavesOnAnyThread => true;
+
+    /// <summary>
+    /// Whether the saved <c>Items</c> drop when the block is removed, like vanilla's for the type.
+    /// </summary>
+    internal bool DropsItems => droppingTypes.Contains(this.Id);
 
     /// <summary>
     /// Sets a field of <see cref="Data"/>, replacing any previous value.
@@ -47,21 +58,42 @@ public sealed class DataBlockEntity : IBlockEntity
         }
     }
 
-    public void ToNbt() => throw new NotSupportedException("Use Data instead.");
+    /// <summary>
+    /// Removes a field of <see cref="Data"/>, which then means vanilla's default.
+    /// </summary>
+    public void Remove(string name)
+    {
+        lock (this.Data)
+            this.Data.Remove(name);
+    }
 
-    public void FromNbt() => throw new NotSupportedException("Use Data instead.");
+    protected internal override void Load(NbtCompound tag)
+    {
+        lock (this.Data)
+        {
+            this.Data.Clear();
+            foreach (var (name, child) in tag)
+                this.Data.Add(name, Copy(child));
+        }
+    }
+
+    protected internal override void Save(NbtCompound tag)
+    {
+        foreach (var (name, child) in this.SnapshotData())
+            tag.Add(name, child);
+    }
 
     /// <summary>
-    /// The data clients get in chunk packets (vanilla's <c>getUpdateTag</c>), or <c>null</c> when the type sends none.
-    /// Loot tables and spawn potentials stay on the server.
+    /// The data clients get (vanilla's <c>getUpdateTag</c>), or <c>null</c> when the type sends none. Loot tables and
+    /// spawn potentials stay on the server.
     /// </summary>
-    public NbtCompound? GetClientData()
+    protected internal override NbtCompound? GetUpdateData()
     {
         if (!clientDataTypes.Contains(this.Id))
             return null;
 
         var data = new NbtCompound();
-        foreach (var (name, tag) in SnapshotData())
+        foreach (var (name, tag) in this.SnapshotData())
         {
             if (name is not ("LootTable" or "LootTableSeed" or "SpawnPotentials"))
                 data.Add(name, tag);
@@ -72,24 +104,28 @@ public sealed class DataBlockEntity : IBlockEntity
 
     /// <summary>
     /// Keeps a chunk's block entities in step with a block written during generation, like vanilla's
-    /// <c>WorldGenRegion.setBlock</c>: a block with a block entity gets an empty one (its defaults) unless it already has one,
-    /// and other blocks drop the block entity of the block they replace.
+    /// <c>WorldGenRegion.setBlock</c>: a block with a block entity gets a new one (its defaults) unless it already
+    /// has one of its type, and other blocks drop the block entity of the block they replace, without the side
+    /// effects of removing it. A plugin's type is kept as data until the chunk is complete (see
+    /// <see cref="BlockEntityNbt.Create"/>).
     /// </summary>
     internal static void ApplyBlockChange(IChunk chunk, Vector position, IBlock block)
     {
         // The flag is much cheaper than the type lookup, and blocks without it have no type.
         var type = block.HasBlockEntity() ? block.BlockEntityType() : null;
         if (type is null)
+        {
             chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
+        }
         else if (chunk.GetBlockEntity(position.X, position.Y, position.Z)?.Id != type)
-            chunk.SetBlockEntity(position.X, position.Y, position.Z, new DataBlockEntity { Id = type, BlockPosition = position });
+        {
+            var created = BlockEntityNbt.Create(type, position, pluginInstances: false);
+            chunk.SetBlockEntity(position.X, position.Y, position.Z, created);
+        }
     }
-
-    public IBlockEntity Clone() => new DataBlockEntity { Id = this.Id, BlockPosition = this.BlockPosition, Data = SnapshotData() };
 
     internal NbtCompound SnapshotData()
     {
-        // Spawner timers change on the simulation thread while chunks can be saved or sent in parallel.
         lock (this.Data)
             return Copy(this.Data);
     }
@@ -97,7 +133,7 @@ public sealed class DataBlockEntity : IBlockEntity
     /// <summary>
     /// Deep copies a compound.
     /// </summary>
-    private static NbtCompound Copy(NbtCompound compound)
+    internal static NbtCompound Copy(NbtCompound compound)
     {
         var copy = new NbtCompound(compound.Name ?? string.Empty);
         foreach (var (name, tag) in compound)
