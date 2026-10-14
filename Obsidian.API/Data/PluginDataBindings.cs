@@ -96,7 +96,11 @@ internal sealed record PluginDataBinding(
     /// Tells the handlers that <paramref name="holder"/>'s value changed, for a change the plugin made itself: a
     /// handler's exception goes to the plugin's caller. Call it inside a call into the plugin.
     /// </summary>
-    internal void RaiseChanged(IAttachmentHolder holder) => this.Changed?.Invoke(holder);
+    internal void RaiseChanged(IAttachmentHolder holder)
+    {
+        if (!DeferredAttachmentChanges.TryQueue(this, holder))
+            this.Changed?.Invoke(holder);
+    }
 
     /// <summary>
     /// Tells the handlers that <paramref name="holder"/>'s value changed, for a change the engine made: inside a call
@@ -105,6 +109,9 @@ internal sealed record PluginDataBinding(
     /// </summary>
     internal void NotifyChanged(IAttachmentHolder holder)
     {
+        if (DeferredAttachmentChanges.TryQueue(this, holder))
+            return;
+
         if (this.Changed is null)
             return;
 

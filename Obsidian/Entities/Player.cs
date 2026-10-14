@@ -300,6 +300,9 @@ public sealed partial class Player : Avatar, IClientPlayer
 
     public async ValueTask OpenInventoryAsync(BaseContainer container)
     {
+        if (!this.Alive)
+            return;
+
         if (OpenedContainer is EnchantmentTable previousTable)
             await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, previousTable);
 
@@ -415,6 +418,10 @@ public sealed partial class Player : Avatar, IClientPlayer
     /// </param>
     internal async ValueTask CloseContainerAsync(PluginContainer? unloading = null)
     {
+        // Death owns mandatory window removal. A concurrent close must not return its transient inputs to inventory.
+        if (!this.Alive)
+            return;
+
         if (this.OpenedContainer is not BaseContainer container)
             return;
 
@@ -665,19 +672,28 @@ public sealed partial class Player : Avatar, IClientPlayer
         await SaveAsync();
     }
 
-    public async Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
+    public Task RespawnAsync(DataKept dataKept = DataKept.Metadata) =>
+        DeferredInventoryWork.RunOrDeferAsync(() => new ValueTask(this.RespawnAfterDeathAsync(dataKept))).AsTask();
+
+    private async Task RespawnAfterDeathAsync(DataKept dataKept)
     {
         if (Respawning)
             return;
 
-        await this.chunkUpdates.WaitAsync();
-        try
+        while (true)
         {
-            await this.RespawnUnderLockAsync(dataKept);
-        }
-        finally
-        {
-            this.chunkUpdates.Release();
+            await this.WaitForDeathAsync();
+            await using var callbacks = DeferredInventoryWork.Begin(this.Logger);
+            await this.chunkUpdates.WaitAsync();
+            try
+            {
+                if (await this.RespawnUnderLockAsync(dataKept))
+                    return;
+            }
+            finally
+            {
+                this.chunkUpdates.Release();
+            }
         }
     }
 
@@ -686,12 +702,20 @@ public sealed partial class Player : Avatar, IClientPlayer
     /// it before the change, so the chunk loop can't send chunks of the old level after the respawn packet, or load
     /// the new level's chunks into the old view.
     /// </summary>
-    private async Task RespawnUnderLockAsync(DataKept dataKept, bool levelChange = false)
+    private async Task<bool> RespawnUnderLockAsync(DataKept dataKept, bool levelChange = false)
     {
-        if (Respawning)
-            return;
+        lock (this.deathState)
+        {
+            if (this.Respawning)
+                return true;
 
-        Respawning = true;
+            // Death may have started while this caller waited for chunkUpdates. Retry outside that lock.
+            if (this.deathFinished is { Task.IsCompleted: false })
+                return false;
+
+            this.Respawning = true;
+            this.respawnFinished = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
         this.ResetAttachmentSync();
         this.ResetAttributeSync();
         var died = !Alive;
@@ -701,7 +725,7 @@ public sealed partial class Player : Avatar, IClientPlayer
             {
                 // Death respawns must create fresh client state rather than retain the dead player's metadata.
                 dataKept = DataKept.None;
-                await this.StartLifeAfterDeathAsync();
+                // Death completed before taking chunkUpdates; never drain items again during respawn.
                 API.Data.AttachmentStorage.For(this).Respawn(this);
                 CancelEating();
                 CancelWeaponUse();
@@ -733,6 +757,7 @@ public sealed partial class Player : Avatar, IClientPlayer
                 MovementFlags = MovementFlags.None;
                 Health = MaxHealth;
                 this.progressDead = false;
+                API.Data.AttachmentStorage.For(this).EndDeath();
                 await Level.DestroyEntityAsync(this);
                 Position = Level.LevelData.SpawnPosition;
                 LastPosition = Position;
@@ -786,7 +811,7 @@ public sealed partial class Player : Avatar, IClientPlayer
             await Client.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
             await SendPlayerInfoAsync();
 
-            // Vanilla's respawn sends the experience the new player starts with (see StartLifeAfterDeathAsync).
+            // Vanilla's respawn sends the experience the new player starts with.
             if (died)
                 await Client.QueuePacketAsync(new SetExperiencePacket(this.XpP, this.XpLevel, this.XpTotal));
 
@@ -795,32 +820,19 @@ public sealed partial class Player : Avatar, IClientPlayer
         }
         finally
         {
-            Respawning = false;
+            lock (this.deathState)
+            {
+                this.Respawning = false;
+                this.respawnFinished!.TrySetResult();
+            }
         }
 
+        return true;
     }
 
     //TODO make IDamageSource 
-    public async override ValueTask KillAsync(IEntity source, ChatMessage deathMessage)
-    {
-        if (this.progressDead)
-            return;
-
-        await this.RecordProgressDeathAsync(source);
-        Health = 0;
-        CancelEating();
-        CancelWeaponUse();
-        Vehicle?.Dismount(this);
-
-        // Killed by plugins' code holding the inventory lock, like an item's inventory tick, the player loses their
-        // items as soon as the lock is let go.
-        await DeferredInventoryWork.RunOrDeferAsync(this.LoseItemsAtDeathAsync);
-        await Client.QueuePacketAsync(new SetHealthPacket(0, FoodLevel, FoodSaturationLevel));
-        await Client.QueuePacketAsync(new PlayerCombatKillPacket { PlayerID = EntityId, Message = deathMessage });
-        PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket { EntityId = EntityId, Event = 3 }, EntityId);
-        foreach (var observer in Level.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
-            observer.visiblePlayers.Remove(this);
-    }
+    public override ValueTask KillAsync(IEntity source, ChatMessage deathMessage) =>
+        this.BeginDeathAsync(source, deathMessage);
 
     public override void Write(INetStreamWriter writer)
     {

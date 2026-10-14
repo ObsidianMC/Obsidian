@@ -98,9 +98,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         var player = (e.Player as Player)!;
 
-        if (e.Container is CraftingTable { Type: InventoryType.Crafting })
+        if (player.Alive && e.Container is CraftingTable { Type: InventoryType.Crafting })
             await ReturnCraftingItemsAsync(player, e.Container, 3);
-        if (e.Container is EnchantmentTable enchantingTable)
+        if (player.Alive && e.Container is EnchantmentTable enchantingTable)
             await ReturnEnchantingItemsAsync(player, enchantingTable);
 
         // Only the window that is closing: a plugin's handler may have opened another one in its place.

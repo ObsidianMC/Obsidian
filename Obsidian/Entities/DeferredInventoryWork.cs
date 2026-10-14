@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Obsidian.API.Data;
 using System.Threading;
 
 namespace Obsidian.Entities;
@@ -52,6 +53,35 @@ internal sealed partial class DeferredInventoryWork
         current.Value is DeferredInventoryWork section && section.TryQueue(work)
             ? ValueTask.CompletedTask
             : work();
+
+    /// <summary>Enters around a whole click or hook; dispose after releasing its locks, even on failure.</summary>
+    internal static IAsyncDisposable Begin(ILogger logger, Action? completed = null) =>
+        new Transaction(logger, completed);
+
+    private sealed class Transaction : IAsyncDisposable
+    {
+        private readonly ILogger logger;
+        private readonly Action? completed;
+        private readonly DeferredInventoryWork work = new();
+        private readonly IDisposable section;
+        private readonly DeferredAttachmentChanges notifications = new();
+
+        internal Transaction(ILogger logger, Action? completed)
+        {
+            this.logger = logger;
+            this.completed = completed;
+            this.section = this.work.Enter();
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            // Notifications see the completed transfer, without click locks. Deaths they request join the queue.
+            this.notifications.Dispose();
+            this.completed?.Invoke();
+            this.section.Dispose();
+            return this.work.RunAsync(this.logger);
+        }
+    }
 
     /// <summary>
     /// Starts the section, in the current flow, until the returned handle is disposed. Call it holding the lock,

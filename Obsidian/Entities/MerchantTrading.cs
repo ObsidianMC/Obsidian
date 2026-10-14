@@ -43,9 +43,13 @@ internal sealed class MerchantContainer : BaseContainer
 
     internal async ValueTask SelectAsync(int index)
     {
+        await using var transaction = DeferredInventoryWork.Begin(this.CustomerLogger);
         await clicks.WaitAsync();
         try
         {
+            if (!ReferenceEquals(customer.OpenedContainer, this) || customer.Health <= 0)
+                return;
+
             if (closed || index < 0 || index >= offers.Length || !Merchant.Alive || Merchant.Level != customer.Level || !Merchant.IsInRange(customer, 8)) return;
             selected = index;
             ReturnInputs();
@@ -83,9 +87,13 @@ internal sealed class MerchantContainer : BaseContainer
 
     internal async ValueTask HandleClickAsync(ContainerClickPacket packet, IPlayer player)
     {
+        await using var transaction = DeferredInventoryWork.Begin(this.CustomerLogger);
         await clicks.WaitAsync();
         try
         {
+            if (!ReferenceEquals(player.OpenedContainer, this) || player.Health <= 0)
+                return;
+
             if (closed || player != customer || packet.ContainerId != player.CurrentContainerId) return;
             if (!Merchant.Alive || Merchant.Level != player.Level || !Merchant.IsInRange(player, 8)) { await CloseAsync(player); return; }
             if (packet.StateId != state) { await SyncAsync(); return; }
@@ -222,6 +230,7 @@ internal sealed class MerchantContainer : BaseContainer
     /// </remarks>
     internal async ValueTask SendInTurnAsync(Func<int, ValueTask> send)
     {
+        await using var transaction = DeferredInventoryWork.Begin(this.CustomerLogger);
         await clicks.WaitAsync();
         try
         {
@@ -244,5 +253,23 @@ internal sealed class MerchantContainer : BaseContainer
         { StateId = ++state, CarriedItem = customer.CarriedItem });
         await customer.QueuePacketAsync(new MerchantOffersPacket { WindowId = customer.CurrentContainerId, Offers = offers,
             VillagerLevel = level, VillagerExperience = experience, IsRegularVillager = canRestock, CanRestock = canRestock });
+    }
+
+    private Microsoft.Extensions.Logging.ILogger CustomerLogger => customer is IClientPlayer connected
+        ? connected.Client.Logger
+        : Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+
+    // The legacy merchant click lock precedes BaseContainer's ordered window locks (also in SendInTurnAsync).
+    // Death retires the menu here, then reclaims its inputs with both sets of locks, before any notification.
+    internal async ValueTask<IDisposable> LockDeathAsync()
+    {
+        await this.clicks.WaitAsync();
+        this.closed = true;
+        return new ClickRelease(this.clicks);
+    }
+
+    private sealed class ClickRelease(System.Threading.SemaphoreSlim gate) : IDisposable
+    {
+        public void Dispose() => gate.Release();
     }
 }

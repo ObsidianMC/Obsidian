@@ -634,6 +634,33 @@ public sealed class PluginLoading : IDisposable
         Assert.Equal(2, deathDrops.Count(item => item.Is(charm)));
         Assert.Contains(deathDrops, item => item.Is(ItemsRegistry.IronChestplate) && item.Damage == 26);
 
+        // A separately requested respawn cannot overtake a death queued by an inventory hook. Its location and XP
+        // are captured before deferral; a second queue drain cannot take items gained in the next life.
+        await actual.RespawnAsync();
+        actual.Position = new VectorD(0.5, 64, 0.5);
+        actual.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Diamond, 1));
+        actual.XpLevel = 20;
+        var deferred = new DeferredInventoryWork();
+
+        using (await actual.Inventory.LockAsync())
+        using (deferred.Enter())
+            await actual.KillAsync(actual, "Deferred death");
+
+        var respawn = actual.RespawnAsync();
+        Assert.False(respawn.IsCompleted);
+        Assert.Equal(1, actual.Inventory.GetItem(9)?.Count);
+        actual.Position = new VectorD(12, 64, 12);
+        actual.XpLevel = 1;
+        await deferred.RunAsync(NullLogger.Instance);
+        await respawn.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal(0, actual.XpLevel);
+        var capturedDrops = world.GetNonPlayerEntitiesInRange(new VectorD(0.5, 64, 0.5), 4).ToArray();
+        Assert.Contains(capturedDrops.OfType<ItemEntity>(), entity => entity.Item.Is(ItemsRegistry.Diamond));
+        Assert.Equal(100, capturedDrops.OfType<ExperienceOrb>().Sum(orb => orb.Value));
+        actual.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Emerald, 1));
+        await deferred.RunAsync(NullLogger.Instance);
+        Assert.True(actual.Inventory.GetItem(9)?.Is(ItemsRegistry.Emerald));
+
         // A rejected default cannot replace the host-owned defaults, and a reload only changes new stacks.
         var defaults = charm.DefaultComponents;
         Assert.Throws<ArgumentException>(() => ItemsRegistry.TryBind(charm, new ItemProperties

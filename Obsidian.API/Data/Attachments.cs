@@ -71,6 +71,53 @@ internal sealed class AttachmentStorage
     private NbtCompound saved = new(NbtKey);
     private long revision;
     private bool retired;
+    private bool deathPending;
+    private int transfers;
+    private TaskCompletionSource? transfersFinished;
+
+    // A reservation is a counter, not a held lock. Death never waits for a click while holding any engine lock.
+    internal bool TryBeginTransfer()
+    {
+        lock (this.gate)
+        {
+            if (this.retired || this.deathPending)
+                return false;
+
+            this.transfers++;
+            return true;
+        }
+    }
+
+    internal void EndTransfer()
+    {
+        lock (this.gate)
+        {
+            if (--this.transfers == 0)
+                this.transfersFinished?.TrySetResult();
+        }
+    }
+
+    internal Task BeginDeath()
+    {
+        lock (this.gate)
+        {
+            this.deathPending = true;
+            if (this.transfers == 0)
+                return Task.CompletedTask;
+
+            this.transfersFinished ??= new(TaskCreationOptions.RunContinuationsAsynchronously);
+            return this.transfersFinished.Task;
+        }
+    }
+
+    internal void EndDeath()
+    {
+        lock (this.gate)
+        {
+            this.deathPending = false;
+            this.transfersFinished = null;
+        }
+    }
 
     // Retirement and publication share this gate. Once retired, the final snapshot cannot miss a successful write.
     internal void Retire()
@@ -170,13 +217,11 @@ internal sealed class AttachmentStorage
     /// Takes the items of the holder's item attachments (see <see cref="ItemAttachments"/>) that a death drops: those
     /// of loaded types without <c>CopyOnDeath</c>, removing them. The caller drops them, when vanilla's
     /// <c>keep_inventory</c> rule is off; with it on, or with <c>CopyOnDeath</c>, they're kept like the inventory.
-    /// Taken in turn with menu clicks' transfers through item access (see <see cref="ItemAttachments.TransferGate"/>).
+    /// Call only after <see cref="BeginDeath"/> completes, without any window locks held.
     /// </summary>
     internal List<ItemStack> TakeDeathDrops(IAttachmentHolder holder)
     {
         var drops = new List<ItemStack>();
-
-        using var transfers = ItemAttachments.TransferGate.EnterScope();
 
         foreach (var (identifier, _) in this.Snapshot())
         {

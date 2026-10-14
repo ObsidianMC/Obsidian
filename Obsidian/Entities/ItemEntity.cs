@@ -46,11 +46,40 @@ public partial class ItemEntity : Entity
     /// their items: pushed up to half a block a tick in a random direction, and 0.2 up. It counts no statistics.
     /// </summary>
     internal static void DropAround(IPlayer player, ItemStack stack)
+        => DropAround(player.Level, player.Position, player.HeadY - 0.3, stack);
+
+    // A death can be deferred past a teleport: its drop belongs to the captured level and position.
+    internal static void DropAround(ILevel level, VectorD position, double dropY, ItemStack stack)
     {
         var power = Globals.Random.NextSingle() * 0.5f;
         var angle = Globals.Random.NextSingle() * MathF.Tau;
 
-        Drop(player, stack, hostOwned: true, new VectorD(-MathF.Sin(angle) * power, 0.2, MathF.Cos(angle) * power));
+        var item = new ItemEntity
+        {
+            EntityId = Server.GetNextEntityId(),
+            Item = new ItemStack(stack, stack.Count),
+            Level = level,
+            Position = new VectorD(position.X, dropY, position.Z),
+            Motion = new VectorD(-MathF.Sin(angle) * power, 0.2, MathF.Cos(angle) * power),
+            pickupDelay = 40
+        };
+        PublishDrop(item);
+    }
+
+    private static void PublishDrop(ItemEntity item)
+    {
+        var added = item.Level is AbstractLevel level
+            ? level.TryAddEntity(item, hostOwned: true)
+            : item.Level.TryAddEntity(item);
+
+        if (added)
+            item.SpawnEntity(new Velocity(item.Motion.X, item.Motion.Y, item.Motion.Z));
+        else if (item.Level is AbstractLevel pending)
+            pending.EnqueueEntityAction(() =>
+            {
+                PublishDrop(item);
+                return ValueTask.CompletedTask;
+            });
     }
 
     // Thrown where the player looks, or with the given motion for a drop around them.

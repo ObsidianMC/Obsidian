@@ -1,14 +1,17 @@
+using Obsidian.API.Containers;
+using Obsidian.API.Data;
+using Obsidian.API.Events;
 using Obsidian.API.Inventory;
-using Obsidian.Net.Packets;
+using Obsidian.Events;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
+using System.Threading;
 
 namespace Obsidian.Entities;
 
-// The player's own items and experience at their death and respawn.
 public partial class Player
 {
-    // Vanilla's Inventory.dropAll order, which decides the order of the item entities: the hotbar, the main inventory,
-    // then the equipment in EquipmentSlot order (off hand, feet, legs, chest, head), as the inventory window's slots.
+    // Vanilla's Inventory.dropAll order: hotbar, main inventory, then off hand, feet, legs, chest and head.
     private static readonly int[] deathDropSlots =
     [
         .. Enumerable.Range(36, 9),
@@ -20,148 +23,233 @@ public partial class Player
         5
     ];
 
-    /// <summary>
-    /// Whether the player keeps their items and experience through a death: like vanilla, with the
-    /// <c>keep_inventory</c> rule on, or as a spectator.
-    /// </summary>
-    private bool KeepsItemsThroughDeath =>
-        this.Level.LevelData.GetBooleanRule("keep_inventory", defaultValue: false)
-        || this.GameMode == GameMode.Spectator;
+    private readonly Lock deathState = new();
+    private TaskCompletionSource? deathFinished;
+    private TaskCompletionSource? respawnFinished;
 
-    /// <summary>
-    /// What the player's items go through at their death: their open window closes, like the player closing it
-    /// (a crafting grid or enchanting table gives back its items, which drop too), then they drop what they lose.
-    /// </summary>
-    /// <remarks>
-    /// Closing it, and refusing clicks while the player is dead, means no click of theirs moves items in or out of
-    /// their inventory or a menu's item access while the death drops them, or after.
-    /// </remarks>
-    private async ValueTask LoseItemsAtDeathAsync()
+    // Captured before deferral: callbacks, teleports and respawn cannot change this death's reward or location.
+    private sealed record DeathSnapshot(
+        ILevel Level,
+        VectorD Position,
+        double DropY,
+        int Experience,
+        bool Keeps,
+        BaseContainer Window,
+        byte WindowId);
+
+    private Task WaitForDeathAsync()
     {
-        await this.CloseContainerAsync();
-        await this.DropDeathLootAsync();
+        lock (this.deathState)
+            return this.deathFinished?.Task ?? Task.CompletedTask;
     }
 
-    /// <summary>
-    /// Drops what the player loses at their death, unless they keep it (see <see cref="KeepsItemsThroughDeath"/>):
-    /// their inventory, armour and off hand like vanilla's <c>Player.dropEquipment</c>, the items of plugins' item
-    /// attachments (see <see cref="DropItemAttachments"/>), then their experience like vanilla's
-    /// <c>dropExperience</c>. Items with the curse of vanishing are destroyed instead.
-    /// </summary>
-    /// <remarks>
-    /// The slots are emptied under the inventory's click lock, so that a click being applied meanwhile can't move an
-    /// item the death drops; the items are dropped once it's released. Drops and orbs are the server's, never the
-    /// plugin whose code killed the player.
-    /// </remarks>
-    private async ValueTask DropDeathLootAsync()
+    private ValueTask BeginDeathAsync(IEntity source, ChatMessage message)
     {
-        if (this.KeepsItemsThroughDeath)
-            return;
+        DeathSnapshot death;
+        TaskCompletionSource finished;
+        Task transfers;
 
-        var drops = new List<ItemStack>();
-        List<ClientboundPacket> updates = [];
-        ClickWindowState state;
-
-        using (await this.Inventory.LockAsync())
+        lock (this.deathState)
         {
-            foreach (var slot in deathDropSlots)
+            if (this.Respawning && this.respawnFinished is TaskCompletionSource respawn)
             {
-                if (this.Inventory.GetItem(slot) is not ItemStack item)
-                    continue;
-
-                this.Inventory.RemoveItem(slot);
-                this.CaptureInventorySlot(slot, updates);
-
-                if (item.Count > 0 && !Vanishes(item))
-                    drops.Add(item);
+                return DeferredInventoryWork.RunOrDeferAsync(
+                    () => this.KillAfterRespawnAsync(respawn.Task, source, message));
             }
 
-            state = ClickWindowState.Of(this);
+            if (this.progressDead || this.deathFinished is { Task.IsCompleted: false })
+                return ValueTask.CompletedTask;
+
+            death = new DeathSnapshot(
+                this.Level,
+                this.Position,
+                this.HeadY - 0.3,
+                Math.Min(this.XpLevel * 7, 100),
+                this.Level.LevelData.GetBooleanRule("keep_inventory", defaultValue: false)
+                    || this.GameMode == GameMode.Spectator,
+                this.OpenedContainer ?? this.Inventory,
+                this.CurrentContainerId);
+            finished = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            this.deathFinished = finished;
+            this.Health = 0;
+            transfers = AttachmentStorage.For(this).BeginDeath();
         }
 
-        // Vanilla's dead player still sends their emptied slots, before they respawn.
-        if (updates.Count > 0)
-            await this.WindowSnapshots.SendChangeAsync(this, state, updates);
+        ValueTask Complete() => this.CompleteDeathAsync(source, message, death, transfers, finished);
 
-        foreach (var item in drops)
-            ItemEntity.DropAround(this, item);
+        // Block hooks can synchronously kill a player on the tick lock. Never wait for a click from that lock.
+        if (death.Level is AbstractLevel level && level.Fluids.TickLock.IsHeldByCurrentThread)
+        {
+            level.EnqueueEntityAction(Complete);
+            return ValueTask.CompletedTask;
+        }
 
-        this.DropItemAttachments();
-        this.DropExperience();
+        return DeferredInventoryWork.RunOrDeferAsync(Complete);
     }
 
-    // Vanilla's Player.getBaseExperienceReward, min(level * 7, 100), split into orbs like ExperienceOrb.award. A
-    // player drops it whoever killed them, and whatever the mob_drops rule says.
-    private void DropExperience()
+    private async ValueTask KillAfterRespawnAsync(Task respawn, IEntity source, ChatMessage message)
     {
-        if (this.Level is not AbstractLevel level)
-            return;
+        await respawn;
+        await this.BeginDeathAsync(source, message);
+    }
 
-        var remaining = Math.Min(this.XpLevel * 7, 100);
+    private async ValueTask CompleteDeathAsync(
+        IEntity source,
+        ChatMessage message,
+        DeathSnapshot death,
+        Task transfers,
+        TaskCompletionSource finished)
+    {
+        // A close/packet callback may request respawn. It joins this queue, after the death barrier is signalled.
+        await using var callbacks = DeferredInventoryWork.Begin(this.Logger, () => finished.TrySetResult());
 
+        try
+        {
+            this.CancelEating();
+            this.CancelWeaponUse();
+            this.Vehicle?.Dismount(this);
+
+            await transfers;
+            await this.LoseItemsAtDeathAsync(death);
+            await this.RecordProgressDeathAsync(source);
+            await this.Client.QueuePacketAsync(new SetHealthPacket(0, this.FoodLevel, this.FoodSaturationLevel));
+            await this.Client.QueuePacketAsync(new PlayerCombatKillPacket
+            {
+                PlayerID = this.EntityId,
+                Message = message
+            });
+            this.PacketBroadcaster.QueuePacketToLevel(death.Level, new EntityEventPacket
+            {
+                EntityId = this.EntityId,
+                Event = 3
+            }, this.EntityId);
+
+            foreach (var observer in death.Level.GetPlayersInRange(death.Position, float.MaxValue).OfType<Player>())
+                observer.visiblePlayers.Remove(this);
+        }
+        catch (Exception exception)
+        {
+            finished.TrySetException(exception);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Reclaims the dead player's transient slots and inventory in one window transaction. The close event only
+    /// notifies afterwards: cancellation or a failed handler cannot prevent recovery or move the contents twice.
+    /// </summary>
+    private async ValueTask LoseItemsAtDeathAsync(DeathSnapshot death)
+    {
+        var drops = new List<ItemStack>();
+        var window = death.Window;
+        var windowId = death.WindowId;
+
+        using (window is MerchantContainer merchant ? await merchant.LockDeathAsync() : null)
+        using (await BaseContainer.LockWindowAsync(window, this.Inventory))
+        {
+            Take(this.Inventory, 1, 5);
+            this.Inventory.RemoveItem(0);
+
+            // ServerPlayer.die removes its menu with the dead player. AbstractContainerMenu.removed and
+            // clearContainer drop carried/transient items even when keep_inventory is enabled.
+            switch (window)
+            {
+                case CraftingTable { Type: InventoryType.Crafting }:
+                    Take(window, 1, 10);
+                    window.RemoveItem(0);
+                    break;
+                case EnchantmentTable:
+                    Take(window, 0, 2);
+                    break;
+                case AnvilContainer or CartographyTable or Grindstone or MerchantContainer:
+                    Take(window, 0, 2);
+                    window.RemoveItem(2);
+                    break;
+                case Loom:
+                    Take(window, 0, 3);
+                    window.RemoveItem(3);
+                    break;
+                case Stonecutter:
+                    Take(window, 0, 1);
+                    window.RemoveItem(1);
+                    break;
+            }
+
+            if (this.CarriedItem is { Count: > 0 } cursor)
+                drops.Add(new ItemStack(cursor, cursor.Count));
+
+            this.CarriedItem = null;
+            this.DraggedSlots.Clear();
+            this.IsDragging = false;
+
+            if (!death.Keeps)
+            {
+                foreach (var slot in deathDropSlots)
+                {
+                    if (this.Inventory.GetItem(slot) is not ItemStack item)
+                        continue;
+
+                    this.Inventory.RemoveItem(slot);
+
+                    if (item.Count > 0 && !Vanishes(item))
+                        drops.Add(new ItemStack(item, item.Count));
+                }
+            }
+
+            if (ReferenceEquals(this.OpenedContainer, window))
+                this.OpenedContainer = null;
+        }
+
+        if (!death.Keeps)
+        {
+            drops.AddRange(AttachmentStorage.For(this).TakeDeathDrops(this).Where(item => !Vanishes(item)));
+            this.XpLevel = 0;
+            this.XpTotal = 0;
+            this.XpP = 0;
+        }
+
+        foreach (var item in drops)
+            ItemEntity.DropAround(death.Level, death.Position, death.DropY, item);
+
+        if (!death.Keeps && death.Level is AbstractLevel level)
+            DropExperience(level, death.Position, death.Experience);
+
+        // No packets, event handlers or attachment notifications execute under the window's locks.
+        if (window != this.Inventory)
+        {
+            await this.EventDispatcher.ExecuteEventAsync(
+                new ContainerClosedEventArgs(this, this.Server, window, windowId));
+            await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = windowId });
+        }
+
+        await MainEventHandler.RefreshWindowAsync(this, this.Inventory, stateId: 0);
+
+        void Take(BaseContainer container, int start, int end)
+        {
+            for (var slot = start; slot < end; slot++)
+            {
+                if (container.GetItem(slot) is { Count: > 0 } item)
+                    drops.Add(new ItemStack(item, item.Count));
+
+                container.RemoveItem(slot);
+            }
+        }
+    }
+
+    // Vanilla's Player.getBaseExperienceReward and ExperienceOrb.award, using the death-time level and position.
+    private static void DropExperience(AbstractLevel level, VectorD position, int remaining)
+    {
         while (remaining > 0)
         {
             var value = ExperienceOrb.SplitValue(remaining);
-            var orb = new ExperienceOrb
+            level.TrySpawnEntity(new ExperienceOrb
             {
                 Level = level,
                 EntityId = Obsidian.Server.GetNextEntityId(),
-                Position = this.Position,
+                Position = position,
                 Value = value
-            };
-
-            // An orb outside the loaded regions is lost, as there's nowhere to keep it.
-            level.TrySpawnEntity(orb, hostOwned: true);
+            }, hostOwned: true);
             remaining -= value;
         }
-    }
-
-    /// <summary>
-    /// Starts the player's next life, as they respawn after a death, like vanilla's <c>ServerPlayer.restoreFrom</c>
-    /// for a respawn: the item on their cursor and in their crafting grid drop, whatever the rule, as vanilla drops
-    /// them with the dead player's menu. Unless they keep their items (see <see cref="KeepsItemsThroughDeath"/>), their
-    /// inventory starts empty and their experience, and with it their score, at zero.
-    /// </summary>
-    /// <remarks>
-    /// The inventory was emptied at the death (see <see cref="DropDeathLootAsync"/>); what reached it since is lost,
-    /// like vanilla's new player doesn't have it. The client is sent the inventory and experience with the respawn.
-    /// </remarks>
-    private async ValueTask StartLifeAfterDeathAsync()
-    {
-        var keeps = this.KeepsItemsThroughDeath;
-        var drops = new List<ItemStack>();
-
-        using (await this.Inventory.LockAsync())
-        {
-            if (this.CarriedItem is { Count: > 0 } carried)
-                drops.Add(carried);
-
-            this.CarriedItem = null;
-
-            // The crafting grid's result and its four slots, then, unless the player keeps their items, the rest.
-            var emptied = keeps ? 5 : this.Inventory.Size;
-
-            for (var slot = 0; slot < emptied; slot++)
-            {
-                if (this.Inventory.GetItem(slot) is not ItemStack item)
-                    continue;
-
-                this.Inventory.RemoveItem(slot);
-
-                if (slot is >= 1 and <= 4 && item.Count > 0)
-                    drops.Add(item);
-            }
-        }
-
-        // Vanilla throws them where the player looks; dropping them around the dead player is as good.
-        foreach (var item in drops)
-            ItemEntity.DropAround(this, item);
-
-        if (keeps)
-            return;
-
-        this.XpLevel = 0;
-        this.XpTotal = 0;
-        this.XpP = 0;
     }
 }

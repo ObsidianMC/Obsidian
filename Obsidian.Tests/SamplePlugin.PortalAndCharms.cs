@@ -30,7 +30,9 @@ public sealed partial class SamplePlugin
         var player = await WorldBlockEntities.JoinAsync(context);
 
         await using var manager = BlockUpdates.CreatePluginManager(context);
-        Assert.NotNull(await manager.LoadPluginAsync(await this.PackSampleAsync()));
+        var archive = await this.PackSampleAsync();
+        var plugin = (await manager.LoadPluginAsync(archive))!;
+        Assert.NotNull(plugin);
 
         // A server creates the dimension's level as the plugin loads (see WorldManager.AddPluginDimensionsAsync),
         // which test servers don't: the level of its stem, a flat one of the sample's type, here with empty chunks.
@@ -109,6 +111,17 @@ public sealed partial class SamplePlugin
         Assert.True(player.Inventory.GetItem(10)?.Is(ItemsRegistry.Dirt));
         Assert.True(menu.GetItem(0)?.Is(charm));
         Assert.Equal(1, player.MovementAbilities.ExtraJumps);
+
+        // Saved charms survive unload, while movement grants do not. Loading reapplies them to online players.
+        await manager.UnloadPluginAsync(plugin);
+        Assert.Equal(0, player.MovementAbilities.ExtraJumps);
+        Assert.NotNull(await manager.LoadPluginAsync(archive));
+        Assert.Equal(1, player.MovementAbilities.ExtraJumps);
+        // The old payload binding belongs to the unloaded generation; use the new binding to reopen its menu.
+        Assert.True(context.Server.PayloadChannels.TryGet("sample:open_charms", out open));
+        await open.Handler!(new NetworkBuffer(), sent);
+        menu = Assert.IsType<MenuContainer>(player.OpenedContainer, exactMatch: false);
+        Assert.True(menu.GetItem(0)?.Is(charm));
 
         // Taking the charm off takes the jump back.
         await MenuClicks.ClickAsync(context.Server, player, 0, 0, ClickType.QuickMove);
