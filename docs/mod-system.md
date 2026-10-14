@@ -723,6 +723,11 @@ Natural spawning and chunk restoration explicitly insert for the host. XP and ex
 the spawning plugin once per batch. Shared spawn and block-break APIs retain stack attribution because a plugin may
 call them, including another plugin's helper inside an ambient plugin call.
 
+Explicit item-drop helpers (`ILevel.SpawnItem` and `IBlockLevel.SpawnItem`), drop-aware `DestroyBlock` requests and
+`BlockBreakContext.ExtraDrops` produce host-owned item entities. These are detached transferred stacks, kept after
+plugin unloading. Destroy requests verify their target and collect live plugin block entity components on the
+serial level tick; they never retain a plugin callback. Ordinary entity spawn APIs keep the ownership above.
+
 Adding to an unloading plugin's dialogs, recipes, scoreboards, boss bars, generators, event handlers, commands, server
 players or entities throws `InvalidOperationException`, rather than keeping them after it unloads; one added while it
 starts unloading is removed as it throws. An entity of a plugin's type whose plugin is unloaded or unloading isn't

@@ -181,4 +181,10 @@ public sealed class BlockBreakContext
     public required BlockShapeHit Hit { get; init; }
 
     public bool IsCancelled { get; set; }
+
+    /// <summary>
+    /// Extra stacks to drop after this hook, including when IsCancelled keeps the block. The host copies them
+    /// before returning from the hook and owns the item entities. Creative and spectator breaks suppress them.
+    /// </summary>
+    public IList<Inventory.ItemStack> ExtraDrops { get; } = new List<Inventory.ItemStack>();
 }

@@ -216,13 +216,7 @@ public partial class MainEventHandler
             if (ingredient.IsNullOrAir() || ingredient.Count <= 0)
                 continue;
 
-            var remainder = ingredient.Holder.Id switch
-            {
-                ItemIds.MilkBucket or ItemIds.WaterBucket or ItemIds.LavaBucket
-                    => ItemsRegistry.GetSingleItem(ItemsRegistry.Bucket),
-                ItemIds.HoneyBottle => ItemsRegistry.GetSingleItem(ItemsRegistry.GlassBottle),
-                _ => null
-            };
+            var remainder = RecipeSet.CraftingRemainder(ingredient);
             grid.RemoveItem(slot, 1);
             if (remainder is null)
                 continue;

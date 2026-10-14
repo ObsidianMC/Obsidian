@@ -136,6 +136,16 @@ saying which setting (see `UnsupportedFlatStemsAreRefused` in `Obsidian.Tests/Le
 - Structures need the flat generator to answer height queries for structure placement.
 - Remove each refusal as its part lands, and add a parity capture of a vanilla flat world with that setting on.
 
+## Special crafting recipes
+
+**Status:** open. The player's grid, crafting table and public `IServer.EvaluateCrafting` share the shaped/shapeless
+matcher. Special recipes such as repairing tools and decorating shields are not evaluated yet; their recipe-specific
+outputs and remainders still need implementation. Public evaluations are detached plans, not inventory reservations
+or result-slot commit callbacks for custom menus.
+
+**Where to start:** capture each supported special recipe's output and remainder behavior in vanilla 1.21.11 and
+extend the shared matcher and consumption path together. Add a custom-menu commit API when a concrete menu needs it.
+
 ## Stonecutting and smithing result slots
 
 **Status:** open, for vanilla's recipes as much as plugins'.

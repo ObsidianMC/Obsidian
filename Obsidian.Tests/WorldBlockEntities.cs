@@ -148,6 +148,8 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.Equal(0.625, terrain.RaycastOutlines(eye, end)!.Value.ClickedAt.Z);
         Assert.True(terrain.IsFree(new BoundingBox(new VectorD(4.4, 70.4, 4.2), new VectorD(4.6, 70.6, 4.3))));
 
+        Assert.DoesNotContain(ItemsIn(context.World), item => item.Item.Is(ItemsRegistry.Diamond));
+
         // Unloading releases shape behaviour while keeping the parts' data; reloading restores the remaining part.
         await manager.UnloadPluginAsync(plugin);
         Assert.Null(BlockEntityShapes.Get(context.World, position, block.DefaultState));
@@ -186,6 +188,90 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.Null(AppContext.GetData(ProbeParts.RemovedKey));
         await context.World.DoWorldTickAsync();
         Assert.Equal(true, AppContext.GetData(ProbeParts.RemovedKey));
+
+        // Survival selective removal drops the part even though cancellation keeps its host block.
+        human.GameMode = GameMode.Survival;
+        await context.World.SetBlockAsync(position, block.DefaultState);
+        await context.World.DoWorldTickAsync();
+        await context.EventDispatcher.ExecuteEventAsync(new BlockBreakEventArgs(
+            context.Server, human, block.DefaultState, position, context.World));
+        await context.World.DoWorldTickAsync();
+        Assert.False(chunk.GetBlock(position.X, position.Y, position.Z).IsAir);
+        var partDrop = Assert.Single(ItemsIn(context.World), item => item.Item.Is(ItemsRegistry.Diamond));
+        Assert.Equal(2, partDrop.Item.Count);
+
+        var active = Assert.Single(manager.Plugins);
+        await manager.UnloadPluginAsync(active);
+        Assert.Contains(partDrop, ItemsIn(context.World));
+        await context.World.SetBlockAsync(position, BlocksRegistry.Air);
+        await manager.LoadPluginAsync(path);
+
+        // The probe omits its item normally. Loan a vanilla carrier to exercise collection without another type.
+        block.Item = ItemsRegistry.Stone;
+        try
+        {
+            // Losing support takes the drop-aware path, collecting plugin data on the serial tick queue.
+            var below = position + Vector.Down;
+            await context.World.SetBlockAsync(below, BlocksRegistry.Stone);
+            await context.World.SetBlockAsync(position, block.DefaultState);
+            await context.World.DoWorldTickAsync();
+            AppContext.SetData(ProbeParts.CollectedKey, null);
+            Assert.True(context.World.DestroyBlock(below, dropItems: false));
+            await context.World.DoWorldTickAsync();
+            await context.World.DoWorldTickAsync();
+            Assert.True(chunk.GetBlock(position.X, position.Y, position.Z).IsAir);
+            Assert.Equal(true, AppContext.GetData(ProbeParts.CollectedKey));
+            Assert.Single(ItemsIn(context.World), item => item.Item.Is(ItemsRegistry.Stone));
+            await context.World.DoWorldTickAsync();
+        }
+        finally
+        {
+            block.Item = null;
+        }
+    }
+
+    [Fact]
+    public async Task DestroyBlockDropsLootAndContentsAndRejectsReplacedTargets()
+    {
+        await using var context = TestServerFactory.CreateServer($"destroy-block-{Guid.NewGuid():N}");
+        var chunk = AddEmptyChunk(context.World);
+        var position = new Vector(4, 70, 4);
+
+        // Drop-aware destruction shares container removal: ordinary contents spill and shulkers keep theirs.
+        await context.World.SetBlockAsync(position, BlocksRegistry.Chest);
+        var chest = Assert.IsAssignableFrom<ContainerBlockEntity>(chunk.GetBlockEntity(4, 70, 4));
+        chest.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 3));
+        Assert.True(context.World.BlockUpdates.DestroyBlock(position, dropItems: true));
+        Assert.False(context.World.BlockUpdates.DestroyBlock(position, dropItems: true));
+        Assert.False(chunk.GetBlock(position.X, position.Y, position.Z).IsAir);
+        await context.World.DoWorldTickAsync();
+        Assert.True(chunk.GetBlock(position.X, position.Y, position.Z).IsAir);
+        Assert.Equal(3, ItemsIn(context.World).Where(item => item.Item.Is(ItemsRegistry.Diamond))
+            .Sum(item => item.Item.Count));
+        Assert.Single(ItemsIn(context.World), item => item.Item.Is(ItemsRegistry.Chest));
+
+        await context.World.SetBlockAsync(position, BlocksRegistry.ShulkerBox);
+        var box = Assert.IsAssignableFrom<ContainerBlockEntity>(chunk.GetBlockEntity(4, 70, 4));
+        box.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Emerald, 4));
+        Assert.True(context.World.DestroyBlock(position, dropItems: true));
+        await context.World.DoWorldTickAsync();
+        var boxItem = Assert.Single(ItemsIn(context.World), item => item.Item.Is(ItemsRegistry.ShulkerBox)).Item;
+        Assert.Equal(4, boxItem.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
+            DataComponentType.Container)!.Value[0].Count);
+        Assert.DoesNotContain(ItemsIn(context.World), item => item.Item.Is(ItemsRegistry.Emerald));
+
+        var waterlogged = BlocksRegistry.OakFence.WithProperty("waterlogged", "true");
+        await context.World.SetBlockAsync(position, waterlogged);
+        Assert.True(context.World.DestroyBlock(position, dropItems: false));
+        await context.World.DoWorldTickAsync();
+        Assert.True(chunk.GetBlock(position.X, position.Y, position.Z).Is(BlockIds.Water));
+        Assert.DoesNotContain(ItemsIn(context.World), item => item.Item.Is(ItemsRegistry.OakFence));
+
+        await context.World.SetBlockAsync(position, waterlogged);
+        Assert.True(context.World.DestroyBlock(position, dropItems: false));
+        await context.World.SetBlockAsync(position, BlocksRegistry.Stone);
+        await context.World.DoWorldTickAsync();
+        Assert.True(chunk.GetBlock(position.X, position.Y, position.Z).Is(BlockIds.Stone));
     }
 
     [Fact(DisplayName = "Vanilla's block entities save what they load, the fields the server doesn't model included")]
@@ -807,10 +893,13 @@ public sealed class ProbeCrate() : ContainerBlockEntity(new Container(9) { Title
 public sealed class ProbeParts : BlockEntity
 {
     public const string RemovedKey = "Obsidian.Tests.Parts.Removed";
+    public const string CollectedKey = "Obsidian.Tests.Parts.Collected";
 
     public bool Front { get; set; } = true;
 
     protected internal override void OnRemoved() => AppContext.SetData(RemovedKey, this.Front);
+
+    protected internal override void CollectComponents(ItemStack item) => AppContext.SetData(CollectedKey, true);
 
     protected internal override void Load(NbtCompound tag) => this.Front = tag.GetBool("front");
 
@@ -836,6 +925,9 @@ public sealed class ProbePartsBehavior : IBlockBehavior
     public const string UseKey = "Obsidian.Tests.Parts.Use";
     public const string BreakKey = "Obsidian.Tests.Parts.Break";
 
+    public IBlock UpdateShape(ShapeUpdateContext context) =>
+        context.Direction == BlockFace.Down && context.NeighborState.IsAir ? BlocksRegistry.Air : context.State;
+
     public ValueTask<bool> UseAsync(BlockUseContext context)
     {
         AppContext.SetData(UseKey, context.ClickedAt);
@@ -851,6 +943,7 @@ public sealed class ProbePartsBehavior : IBlockBehavior
             parts.SetChanged();
             parts.SendUpdate();
             context.IsCancelled = true;
+            context.ExtraDrops.Add(new ItemStack(ItemsRegistry.Diamond, 2));
         }
     }
 }

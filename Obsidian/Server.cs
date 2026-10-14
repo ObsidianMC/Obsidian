@@ -266,6 +266,19 @@ public sealed partial class Server : IServer, IPluginScopedServer
     /// </remarks>
     public void RegisterRecipes(params IRecipe[] recipes) => this.RegisterRecipes(recipes, owner: null);
 
+    public long CraftingRecipeRevision => this.RecipeRegistry.Current.Revision;
+
+    public CraftingEvaluation? EvaluateCrafting(IReadOnlyList<ItemStack?> grid, int width) =>
+        this.RecipeRegistry.Current.EvaluateCrafting(grid, width);
+
+    public IRecipe? GetRecipe(string identifier)
+    {
+        ArgumentNullException.ThrowIfNull(identifier);
+        return this.RecipeRegistry.Current.Recipes.TryGetValue(identifier, out var recipe)
+            ? RecipesRegistry.Snapshot(recipe)
+            : null;
+    }
+
     public TRecipe? FindRecipe<TRecipe>(RecipeType<TRecipe> type, IReadOnlyList<ItemStack?> inputs)
         where TRecipe : class
     {
