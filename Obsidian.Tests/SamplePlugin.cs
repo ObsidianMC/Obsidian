@@ -269,7 +269,9 @@ public sealed partial class SamplePlugin : IDisposable
         var client = (TestClient)player.Client;
 
         await using var manager = BlockUpdates.CreatePluginManager(context);
-        Assert.NotNull(await manager.LoadPluginAsync(await this.PackSampleAsync()));
+        var path = await this.PackSampleAsync();
+        var plugin = await manager.LoadPluginAsync(path);
+        Assert.NotNull(plugin);
         Assert.True(BlocksRegistry.TryGetPluginBlock("sample:grinder", out var grinder));
 
         // A hopper on the ground, the grinder on it and a chest on top, holding a stone block, which doesn't grind,
@@ -346,6 +348,38 @@ public sealed partial class SamplePlugin : IDisposable
         Assert.Equal([(0, 10), (2, 0)], DataSlots(client));
         Assert.Equal(1, Count(world, chest, ItemsRegistry.IronOre));
         Assert.Equal(0, Saved(world, machine).GetByte("pulls"));
+
+        // Swap the input at 19 ticks through the menu's backing slot, holding the same locks as a player click.
+        for (var tick = 10; tick < 19; tick++)
+            await world.DoWorldTickAsync();
+
+        Assert.Equal(19, Saved(world, machine).GetInt("progress"));
+        using (await BaseContainer.LockWindowAsync(menu, player.Inventory))
+            menu.SetItem(0, new ItemStack(ItemsRegistry.CopperOre, 1));
+
+        await world.DoWorldTickAsync();
+        Assert.Equal(1, Saved(world, machine).GetInt("progress"));
+        Assert.Equal(1, Count(world, machine, ItemsRegistry.CopperOre));
+        Assert.Equal(0, Count(world, machine, ItemsRegistry.RawCopper) + Count(world, hopper, ItemsRegistry.RawCopper));
+
+        // Matching saved input and recipe resume progress across a plugin reload.
+        await manager.UnloadPluginAsync(plugin);
+        plugin = await manager.LoadPluginAsync(path);
+        Assert.NotNull(plugin);
+        await world.DoWorldTickAsync();
+        Assert.Equal(2, Saved(world, machine).GetInt("progress"));
+
+        // A saved input replaced while the plugin is absent must not inherit the copper recipe's progress.
+        await manager.UnloadPluginAsync(plugin);
+        var kept = Assert.IsType<DataBlockEntity>(await world.GetBlockEntityAsync(machine));
+        var replacement = new ItemStack(ItemsRegistry.IronOre, 1).ToNbt();
+        replacement.Add(new NbtTag<byte>("Slot", 0));
+        kept.Data.Remove("Items");
+        kept.Data.Add(new NbtList(NbtTagType.Compound, "Items") { replacement });
+        Assert.NotNull(await manager.LoadPluginAsync(path));
+        await world.DoWorldTickAsync();
+        Assert.Equal(1, Saved(world, machine).GetInt("progress"));
+        Assert.Equal(1, Count(world, machine, ItemsRegistry.IronOre));
     }
 
     // The data slots the client was sent, by index, with the last value sent.
