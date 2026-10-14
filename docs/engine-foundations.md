@@ -109,8 +109,8 @@ pushes them into a hopper below.
 
 ## Phase 4: rendering
 
-- **Block entity renderers.** A generic renderer for mod block entities, data-driven (a model with parts animated by
-  the block entity's synced data) with a code escape hatch, on the same path as vanilla's hand-coded ones.
+- **Block entity renderers.** (done) A generic renderer for mod block entities, data-driven (a model with parts
+  animated by the block entity's synced data) with a code escape hatch, on the same path as vanilla's hand-coded ones.
 - **Model data beyond the block state.** (done) A block entity can give the mesher extra model parts or quads (cable
   connections, facades), re-meshed when its data changes.
 - **Render layers and light.** Mods set a block's render layer, and models can mark faces emissive.

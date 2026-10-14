@@ -48,6 +48,21 @@ public interface IClientRegistry
     public IClientRegistry RegisterBlockEntityModel(string blockEntityType, BlockEntityModelProperties model);
 
     /// <summary>
+    /// Draws a block entity type's moving parts each frame, like vanilla's block entity renderers: parts its synced
+    /// data describes, which the client animates, or code that draws them.
+    /// </summary>
+    /// <param name="blockEntityType">
+    /// The identifier of a block entity type the mod registered, like <c>examplemod:grinder</c>.
+    /// </param>
+    /// <param name="renderer">The models the parts may name, and the provider or code drawing them.</param>
+    /// <exception cref="ArgumentException">
+    /// The block entity type isn't one the mod registered, a model isn't a valid identifier, the renderer has neither
+    /// a provider nor code, or the mod gave the type a renderer already.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+    public IClientRegistry RegisterBlockEntityRenderer(string blockEntityType, BlockEntityRendererProperties renderer);
+
+    /// <summary>
     /// The client's connection to the server it's playing on, to send the mod's payloads from outside a payload
     /// handler, like when one of its keys is pressed.
     /// </summary>
