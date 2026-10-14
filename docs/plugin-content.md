@@ -192,13 +192,16 @@ A plugin block takes part through its behaviour's hooks, which default to giving
 
 It reacts to power in `NeighborChanged`, which runs when power around it may have changed, as vanilla's blocks do.
 The hooks run in a call into the plugin like the others; while the plugin unloads or is unloaded, its blocks give no
-power and have no analog output.
+power and have no analog output. As it unloads, and when it loads again, the blocks around its blocks placed in loaded
+chunks hear of them like of a block change (neighbour and shape updates, and comparators), so that the circuits they
+power follow; those in chunks loaded later only do on their next change.
 
 Vanilla's components work at runtime through the same updates and ticks, in vanilla's order and with vanilla's
 delays and tick priorities: redstone dust (vanilla's default wire evaluator, its connections, and dots and crosses
 players switch between), redstone torches (two game ticks, burning out after 8 toggles within 60 game ticks for 160),
 repeaters (delays of 1 to 4 redstone ticks, and locking), comparators (comparing and subtracting, reading containers,
-cakes, composters, cauldrons, beehives, end portal frames, respawn anchors and item frames, behind a conductor too),
+rolling their pending loot first, cakes, composters, cauldrons, beehives, end portal frames, respawn anchors and
+item frames, behind a conductor too),
 levers, buttons (pressed by players and wind charges, and wooden ones by arrows), pressure plates (entities on them;
 wooden ones feel any entity, stone ones mobs and players, weighted ones count them), the block of redstone and the
 redstone lamp. Players place them as vanilla does: facing and attached from where they click and look, where they can

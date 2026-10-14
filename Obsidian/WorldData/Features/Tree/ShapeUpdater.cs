@@ -145,8 +145,8 @@ internal static class ShapeUpdater
     }
 
     /// <summary>
-    /// Vanilla <c>RedStoneWireBlock.updateShape</c> (see <see cref="RedstoneWire.UpdateShape"/>), with vanilla's signal
-    /// sources: generation has no plugin blocks to ask.
+    /// Vanilla <c>RedStoneWireBlock.updateShape</c> (see <see cref="WireConnections.Reconnect"/>), with vanilla's
+    /// signal sources: generation has no plugin blocks to ask.
     /// </summary>
     private static IBlock UpdateRedstoneWire(
         IWorldGenLevel level,
@@ -154,7 +154,7 @@ internal static class ShapeUpdater
         Vector position,
         BlockFace direction,
         IBlock neighbor) =>
-        RedstoneWire.UpdateShape(
+        WireConnections.Reconnect(
             new WireView(level.GetBlock, block => block.IsSignalSource()),
             state,
             position,

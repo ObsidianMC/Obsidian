@@ -11,10 +11,8 @@ namespace Obsidian.WorldData.Redstone;
 /// </summary>
 internal sealed class RedstoneTorch(bool wall) : RedstoneComponent
 {
-    // Vanilla's torch delay, burn-out window, toggles that burn it out and the delay before it relights.
+    // Vanilla's torch delay, and the delay before a burnt-out torch relights.
     private const int ToggleDelay = 2;
-    private const int RecentToggleTime = 60;
-    private const int MaxRecentToggles = 8;
     private const int RestartDelay = 160;
 
     // Vanilla's level event for a torch burning out: a fizz and smoke.
@@ -55,14 +53,15 @@ internal sealed class RedstoneTorch(bool wall) : RedstoneComponent
     }
 
     public override void OnPlaced(LevelBlockUpdates level, Vector position, IBlock state, IBlock oldState) =>
-        NotifyNeighbors(level, position, state);
+        UpdateAround(level, position, state);
 
     public override void OnRemoved(LevelBlockUpdates level, Vector position, IBlock state) =>
-        NotifyNeighbors(level, position, state);
+        UpdateAround(level, position, state);
 
+    // A torch whose support's power disagrees with it toggles two game ticks later.
     public override void NeighborChanged(LevelBlockUpdates level, Vector position, IBlock state)
     {
-        if (IsLit(state) == this.HasNeighborSignal(level, position, state) && !level.WillTickThisTick(position, state))
+        if (IsLit(state) == this.IsSupportPowered(level, position, state) && !level.WillTickThisTick(position, state))
             level.ScheduleTick(position, state, ToggleDelay);
     }
 
@@ -79,34 +78,37 @@ internal sealed class RedstoneTorch(bool wall) : RedstoneComponent
         return BlocksRegistry.Air;
     }
 
+    // It goes out when its support is powered, burning out if that's too often, and relights when it isn't, unless
+    // burnt out.
     public override void Tick(LevelBlockUpdates level, Vector position, IBlock state)
     {
-        var powered = this.HasNeighborSignal(level, position, state);
-        var toggles = level.TorchToggles;
-        toggles.Forget(level.GameTime - RecentToggleTime);
+        var powered = this.IsSupportPowered(level, position, state);
+        var burnout = level.TorchBurnout;
 
-        if (IsLit(state))
+        if (!IsLit(state))
         {
-            if (!powered)
-                return;
+            if (!powered && !burnout.IsBurntOut(position, level.GameTime))
+                level.Set(position, state.WithProperty("lit", true), BlockUpdateFlags.All);
 
-            level.Set(position, state.WithProperty("lit", false), BlockUpdateFlags.All);
-            if (toggles.Count(position, level.GameTime, add: true) >= MaxRecentToggles)
-            {
-                level.LevelEvent(BurnOutEvent, position, 0);
-                level.ScheduleTick(position, level.GetBlock(position), RestartDelay);
-            }
+            return;
         }
-        else if (!powered && toggles.Count(position, level.GameTime, add: false) < MaxRecentToggles)
+
+        if (!powered)
+            return;
+
+        level.Set(position, state.WithProperty("lit", false), BlockUpdateFlags.All);
+        if (burnout.TurnedOff(position, level.GameTime))
         {
-            level.Set(position, state.WithProperty("lit", true), BlockUpdateFlags.All);
+            level.LevelEvent(BurnOutEvent, position, 0);
+            level.ScheduleTick(position, level.GetBlock(position), RestartDelay);
         }
     }
 
     private static bool IsLit(IBlock state) => state.GetProperty("lit") == "true";
 
-    // Vanilla's notifyNeighbors: the neighbours of each of its neighbours.
-    private static void NotifyNeighbors(LevelBlockUpdates level, Vector position, IBlock state)
+    // The neighbours of each of its neighbours hear of it, like vanilla's torches update: it strongly powers the
+    // block above, whose neighbours its power reaches.
+    private static void UpdateAround(LevelBlockUpdates level, Vector position, IBlock state)
     {
         foreach (var direction in all)
             level.UpdateNeighbors(position.Offset(direction), state);
@@ -144,8 +146,8 @@ internal sealed class RedstoneTorch(bool wall) : RedstoneComponent
     private BlockFace SupportDirection(IBlock state) =>
         wall ? FeatureHelpers.ParseFace(state.GetProperty("facing")).Opposite() : BlockFace.Down;
 
-    // Vanilla's hasNeighborSignal: whether the block it's on powers it.
-    private bool HasNeighborSignal(LevelBlockUpdates level, Vector position, IBlock state)
+    // Whether the block it's on powers it.
+    private bool IsSupportPowered(LevelBlockUpdates level, Vector position, IBlock state)
     {
         var support = this.SupportDirection(state);
         return level.HasSignal(position.Offset(support), support);
@@ -153,34 +155,47 @@ internal sealed class RedstoneTorch(bool wall) : RedstoneComponent
 }
 
 /// <summary>
-/// A level's redstone torches' recent toggles, like vanilla's <c>RedstoneTorchBlock.RECENT_TOGGLES</c>: a torch that
-/// turned off 8 times within 60 game ticks burns out.
+/// The redstone torches of a level that turned off lately, for their burning out: like vanilla's, a torch that turned
+/// off 8 times within 60 game ticks is burnt out until fewer did in the last 60.
 /// </summary>
-internal sealed class TorchToggles
+internal sealed class TorchBurnout
 {
-    private readonly List<(Vector Position, long Time)> toggles = [];
+    // Vanilla's burn-out window and the turn-offs within it that burn a torch out.
+    private const int Window = 60;
+    private const int TurnOffsToBurnOut = 8;
+
+    // In the order they happened, so that the expired ones are at the start.
+    private readonly List<(Vector Position, long Time)> turnOffs = [];
 
     /// <summary>
-    /// Forgets the toggles from before <paramref name="since"/>.
+    /// Counts the torch at <paramref name="position"/> turning off <paramref name="now"/>.
     /// </summary>
-    public void Forget(long since)
+    /// <returns>Whether that burns it out.</returns>
+    public bool TurnedOff(Vector position, long now)
+    {
+        this.Expire(now);
+        this.turnOffs.Add((position, now));
+
+        return this.CountAt(position) >= TurnOffsToBurnOut;
+    }
+
+    /// <summary>
+    /// Whether the torch at <paramref name="position"/> is burnt out <paramref name="now"/>.
+    /// </summary>
+    public bool IsBurntOut(Vector position, long now)
+    {
+        this.Expire(now);
+        return this.CountAt(position) >= TurnOffsToBurnOut;
+    }
+
+    private void Expire(long now)
     {
         var expired = 0;
-        while (expired < this.toggles.Count && this.toggles[expired].Time < since)
+        while (expired < this.turnOffs.Count && this.turnOffs[expired].Time < now - Window)
             expired++;
 
-        this.toggles.RemoveRange(0, expired);
+        this.turnOffs.RemoveRange(0, expired);
     }
 
-    /// <summary>
-    /// The recent toggles of the torch at <paramref name="position"/>, counting one now first if
-    /// <paramref name="add"/>.
-    /// </summary>
-    public int Count(Vector position, long now, bool add)
-    {
-        if (add)
-            this.toggles.Add((position, now));
-
-        return this.toggles.Count(toggle => toggle.Position == position);
-    }
+    private int CountAt(Vector position) => this.turnOffs.Count(turnOff => turnOff.Position == position);
 }

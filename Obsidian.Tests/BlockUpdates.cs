@@ -373,6 +373,14 @@ public sealed class BlockUpdates : IDisposable
         Assert.Empty(calls);
         Assert.Equal(0, world.GetSignal(source, BlockFace.East));
 
+        // The circuits around the relay heard of its power and analog output going: the lamp goes out four ticks
+        // later, and the comparator stops powering the dust.
+        for (var tick = 0; tick < 4; tick++)
+            await world.DoWorldTickAsync();
+
+        Assert.Equal("false", chunk.GetBlock(source + Vector.West).GetProperty("lit"));
+        Assert.Equal("0", chunk.GetBlock(source + Vector.East * 2).GetProperty("power"));
+
         // Sand placed over air waits vanilla's two ticks before it falls, and lands with updates.
         var sand = new Vector(4, Ground + 4, 4);
         await world.SetBlockAsync(sand, BlocksRegistry.Sand, doBlockUpdate: true);
@@ -496,6 +504,16 @@ public sealed class BlockUpdates : IDisposable
         steps.Add((0, () => Fill(world, At(2, 6))));
         Use(0, At(1, 8));
         checks.AddRange([(8, At(3, 8), "power", "12"), (8, At(4, 8), "power", "11")]);
+
+        // Of two comparators in line due on the same tick, the one feeding the other ticks first, so the second reads
+        // its new output: the first's hopper (3) becomes a block of redstone (15) as the second's side goes off.
+        build.AddRange([(At(6, 10), hopper), (At(7, 10), Comparator("west", "compare"))]);
+        build.AddRange([(At(8, 10), Comparator("west", "subtract")), (At(9, 10), dust)]);
+        build.Add((At(8, 11), Block("redstone_block")));
+        steps.Add((0, () => Fill(world, At(6, 10))));
+        steps.Add((10, () => world.SetBlockAsync(At(8, 11), BlocksRegistry.Air, BlockUpdateFlags.All)));
+        steps.Add((10, () => world.SetBlockAsync(At(6, 10), Block("redstone_block"), BlockUpdateFlags.All)));
+        checks.AddRange([(9, At(9, 10), "power", "0"), (12, At(9, 10), "power", "15")]);
 
         // A repeater a powered repeater points into from the side holds its output until it's unlocked.
         build.AddRange([(At(0, 12), lever), (At(1, 12), Repeater("west", 1)), (At(2, 12), lamp)]);

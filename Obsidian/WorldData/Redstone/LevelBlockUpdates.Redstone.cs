@@ -1,4 +1,6 @@
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Blocks;
+using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
@@ -21,6 +23,10 @@ internal sealed partial class LevelBlockUpdates
     // Half of vanilla's item entity height, which popped drops are lowered by.
     private const double ItemHalfHeight = 0.125;
 
+    // The flags and update limit of the shape updates a block changed with BlockUpdateFlags.All sends.
+    private const BlockUpdateFlags RefreshShapeFlags = BlockUpdateFlags.Clients;
+    private const int ShapeLimit = 511;
+
     // Vanilla's Direction.values(), the order SignalGetter asks the neighbours in.
     private static readonly BlockFace[] signalOrder =
         [BlockFace.Down, BlockFace.Up, BlockFace.North, BlockFace.South, BlockFace.West, BlockFace.East];
@@ -35,9 +41,9 @@ internal sealed partial class LevelBlockUpdates
     internal bool WiresGiveSignal { get; set; } = true;
 
     /// <summary>
-    /// The level's redstone torches' recent toggles, for their burning out.
+    /// The level's redstone torches that turned off lately, for their burning out.
     /// </summary>
-    internal TorchToggles TorchToggles { get; } = new();
+    internal TorchBurnout TorchBurnout { get; } = new();
 
     /// <summary>
     /// The game time block ticks are scheduled against.
@@ -109,6 +115,33 @@ internal sealed partial class LevelBlockUpdates
 
         lock (fluids.TickLock)
             this.UpdateComparatorsAround(position, this.GetBlock(position));
+    }
+
+    /// <summary>
+    /// Placed blocks of <paramref name="types"/>, in the level's complete chunks, lost or got back their plugin's
+    /// behaviour (as it unloads or loads), so the power, connections and analog output they give may have changed:
+    /// the blocks around each hear of it like of a change of the block. Their neighbours, and those of the blocks it
+    /// may strongly power, get neighbour updates, its neighbours shape updates, and the comparators reading it hear.
+    /// </summary>
+    public void RefreshBlocksOf(IReadOnlyCollection<BlockType> types)
+    {
+        using var host = PluginCall.EnterHost();
+
+        lock (fluids.TickLock)
+        {
+            foreach (var position in this.FindBlocksOf(types))
+            {
+                var state = this.GetBlock(position);
+                updates.UpdateNeighborsAt(position, state);
+                foreach (var direction in signalOrder)
+                    updates.UpdateNeighborsAt(position.Offset(direction), state);
+
+                foreach (var direction in signalOrder)
+                    this.ShapeUpdateAt(position.Offset(direction), direction.Opposite(), RefreshShapeFlags, ShapeLimit);
+
+                this.UpdateComparatorsAround(position, state);
+            }
+        }
     }
 
     /// <summary>
@@ -203,25 +236,6 @@ internal sealed partial class LevelBlockUpdates
             if (this.HasAnalogOutput(state))
                 this.UpdateComparatorsAround(position, state);
         }
-    }
-
-    /// <summary>
-    /// Vanilla <c>SignalGetter.getControlInputSignal</c>: the power a diode's side gets from the block at
-    /// <paramref name="position"/>, only from diodes for repeaters (<paramref name="diodesOnly"/>).
-    /// </summary>
-    internal int GetControlInputSignal(Vector position, BlockFace direction, bool diodesOnly)
-    {
-        var state = this.GetBlock(position);
-        if (diodesOnly)
-            return Diode.IsDiode(state) ? this.GetDirectSignal(position, direction) : 0;
-
-        if (state.Is(BlockIds.RedstoneBlock))
-            return 15;
-
-        if (state.Is(BlockIds.RedstoneWire))
-            return RedstoneWire.Power(state);
-
-        return this.IsSignalSource(state) ? this.GetDirectSignal(position, direction) : 0;
     }
 
     /// <summary>
@@ -397,6 +411,16 @@ internal sealed partial class LevelBlockUpdates
     internal void LevelEvent(int type, Vector position, int data) => fluids.LevelEvent(type, position, data);
 
     /// <summary>
+    /// The items of a container, its pending loot rolled first (with nobody opening it), as reading vanilla's
+    /// containers' slots does.
+    /// </summary>
+    internal BaseContainer ItemsOf(ContainerBlockEntity container)
+    {
+        level.UnpackLootTable(container, opener: null);
+        return container.Inventory;
+    }
+
+    /// <summary>
     /// The block entity at <paramref name="position"/>, if its chunk is loaded.
     /// </summary>
     internal IBlockEntity? GetBlockEntity(Vector position) =>
@@ -419,6 +443,37 @@ internal sealed partial class LevelBlockUpdates
                 yield return entity;
             }
         }
+    }
+
+    // Where blocks of the types are in the complete chunks, found before any changes, which the updates make.
+    private List<Vector> FindBlocksOf(IReadOnlyCollection<BlockType> types)
+    {
+        bool Matches(int stateId) => types.Any(type => (uint)(stateId - type.FirstStateId) < (uint)type.StateCount);
+
+        var found = new List<Vector>();
+        foreach (var chunk in fluids.TrackedChunks())
+        {
+            var sections = chunk.Sections;
+            for (var index = 0; index < sections.Length; index++)
+            {
+                if (sections[index] is not ChunkSection section || !section.MayHold(Matches))
+                    continue;
+
+                for (var y = 0; y < 16; y++)
+                {
+                    for (var z = 0; z < 16; z++)
+                    {
+                        for (var x = 0; x < 16; x++)
+                        {
+                            if (Matches(section.GetStateId(x, y, z)))
+                                found.Add(new Vector(chunk.X * 16 + x, chunk.MinY + index * 16 + y, chunk.Z * 16 + z));
+                        }
+                    }
+                }
+            }
+        }
+
+        return found;
     }
 
     // A block's weak signal: a vanilla component's, a plugin block's behaviour's, and none for other blocks.

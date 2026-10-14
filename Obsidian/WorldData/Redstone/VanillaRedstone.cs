@@ -38,16 +38,15 @@ internal static class VanillaRedstone
     /// Whether entities inside the block press it: pressure plates, and wooden buttons, which arrows press.
     /// </summary>
     public static bool IsPressedByEntities(IBlock state) =>
-        For(state) is PressurePlate or Button { PressedByArrows: true };
+        For(state) is PressurePlate or Switch { PressedByArrows: true };
 
     private static RedstoneComponent?[] Build()
     {
         var table = new RedstoneComponent?[BlocksRegistry.Names.Length];
         var torch = new RedstoneTorch(wall: false);
         var wallTorch = new RedstoneTorch(wall: true);
-        var repeater = new Repeater();
-        var comparator = new Comparator();
-        var lever = new Lever();
+        var repeater = new Diode(DiodeKind.Repeater);
+        var comparator = new Diode(DiodeKind.Comparator);
         var lamp = new RedstoneLamp();
         var redstoneBlock = new RedstoneBlock();
 
@@ -63,8 +62,8 @@ internal static class VanillaRedstone
                 "RedstoneWallTorchBlock" => wallTorch,
                 "RepeaterBlock" => repeater,
                 "ComparatorBlock" => comparator,
-                "LeverBlock" => lever,
-                "ButtonBlock" => Button.For(name),
+                "LeverBlock" => Switch.Lever,
+                "ButtonBlock" => Switch.Button(name),
                 "PressurePlateBlock" => PressurePlate.For(name),
                 "WeightedPressurePlateBlock" => PressurePlate.Weighted(name),
                 "RedstoneLampBlock" => lamp,

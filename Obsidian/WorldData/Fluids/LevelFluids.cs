@@ -146,6 +146,11 @@ internal sealed class LevelFluids : IFluidLevelAccess
         this.chunks.TryGetValue(TickScheduler<FluidKind>.ChunkKey(position), out chunk);
 
     /// <summary>
+    /// The complete chunks whose ticks run, as of now. Take <see cref="TickLock"/> first.
+    /// </summary>
+    public List<Chunk> TrackedChunks() => [.. this.chunks.Values];
+
+    /// <summary>
     /// The lock fluid ticks and fluid block changes run under, which random ticks and bone meal grow plants under and
     /// the level's block writes (<see cref="AbstractLevel.SetBlockUntrackedAsync(int, int, int, IBlock, bool)"/>) take,
     /// so that none of them writes over a change made between its read and its write. Holding it keeps them from

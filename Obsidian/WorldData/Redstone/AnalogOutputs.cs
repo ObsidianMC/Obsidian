@@ -67,7 +67,7 @@ internal static class AnalogOutputs
         "RespawnAnchorBlock" => (int)MathF.Floor(IntProperty(state, "charges") / 4f * 15f),
         "ChestBlock" or "TrappedChestBlock" or "CopperChestBlock" or "WeatheringCopperChestBlock" =>
             ChestSignal(level, state, position),
-        _ => ContainerSignal(level.GetBlockEntity(position))
+        _ => ContainerSignal(level, level.GetBlockEntity(position))
     };
 
     /// <summary>
@@ -98,8 +98,8 @@ internal static class AnalogOutputs
         return (int)MathF.Floor(fullness * 14f) + (fullness > 0 ? 1 : 0);
     }
 
-    private static int ContainerSignal(IBlockEntity? blockEntity) =>
-        blockEntity is ContainerBlockEntity container ? ContainerSignal(container.Inventory) : 0;
+    private static int ContainerSignal(LevelBlockUpdates level, IBlockEntity? blockEntity) =>
+        blockEntity is ContainerBlockEntity container ? ContainerSignal(level.ItemsOf(container)) : 0;
 
     // Vanilla ChestBlock.getContainer: both halves of a double chest, and nothing when either half is blocked by a
     // conductor above it (vanilla's cats sitting on it aren't checked).
@@ -113,11 +113,15 @@ internal static class AnalogOutputs
             if (IsBlocked(level, partner))
                 return 0;
 
+            // Vanilla's double chest reads the right half's slots first, which rolls its pending loot first.
             if (level.GetBlockEntity(partner) is ContainerBlockEntity other)
-                return ContainerSignal(chest.Inventory, other.Inventory);
+            {
+                var (first, second) = state.GetProperty("type") == "right" ? (chest, other) : (other, chest);
+                return ContainerSignal(level.ItemsOf(first), level.ItemsOf(second));
+            }
         }
 
-        return ContainerSignal(chest.Inventory);
+        return ContainerSignal(level.ItemsOf(chest));
     }
 
     // Vanilla ChestBlock.getConnectedDirection: a left half's partner is clockwise of its facing, a right half's

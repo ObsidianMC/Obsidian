@@ -30,7 +30,7 @@ internal sealed class PressurePlate(bool mobsOnly, int maxWeight, string sound) 
     {
         "minecraft:stone_pressure_plate" or "minecraft:polished_blackstone_pressure_plate" =>
             new(mobsOnly: true, maxWeight: 0, "stone_pressure_plate"),
-        _ => new(mobsOnly: false, maxWeight: 0, Button.WoodSound(name, "pressure_plate"))
+        _ => new(mobsOnly: false, maxWeight: 0, Switch.WoodSound(name, "pressure_plate"))
     };
 
     /// <summary>

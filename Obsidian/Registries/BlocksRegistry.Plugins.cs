@@ -188,16 +188,23 @@ internal static partial class BlocksRegistry
     /// Drops the behaviour of every block <paramref name="plugin"/> registered, as the plugin unloads. The blocks stay
     /// registered, with their ids and properties, for the world they're in and for the plugin to register again.
     /// </summary>
-    internal static void ReleasePlugin(IPluginContainer plugin)
+    /// <returns>The blocks released.</returns>
+    internal static List<BlockType> ReleasePlugin(IPluginContainer plugin)
     {
+        var released = new List<BlockType>();
         lock (registering)
         {
             foreach (var type in plugins.Types)
             {
-                if (type.Binding?.Owner == plugin)
-                    type.Binding = null;
+                if (type.Binding?.Owner != plugin)
+                    continue;
+
+                type.Binding = null;
+                released.Add(type);
             }
         }
+
+        return released;
     }
 
     /// <summary>
