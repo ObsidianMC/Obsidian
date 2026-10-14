@@ -56,8 +56,11 @@ StateShapes = values =>
 Like `StateLightEmission`, it's asked once per state as the block registers, on the server and on the Obsidian
 client, which both run `ConfigureRegistry`, and only the shapes are kept. Collision, mob navigation, outline raycasts
 for breaking and using, and the client's picking, outline and movement prediction read them; a block entity's
-shapes win where it publishes some. A state whose shapes aren't the full block has no sturdy faces, so torches and
-other blocks that need a full face don't attach to it, while `Opaque` still decides light and face culling. A block
+shapes win where it publishes some. Each state's collision boxes are tested as a union once at registration: full
+faces support blocks attached to them, the central 2/16 square supports torches, and the outer 2/16 rim supports
+repeaters and similar blocks, like vanilla's `FULL`, `CENTER` and `RIGID` support tests. An upper slab supports its
+top face; separate boxes covering the unit cube count as a full block. `Opaque` still decides light and face culling.
+A block
 without `HasCollision` can't give collision boxes. A reload may change the shapes: they feed neither light nor
 heightmaps, and the server reads them afresh each time. Connected Obsidian clients keep the shapes their copy of
 the mod gave until they reload their mods, which they do while disconnected.
@@ -590,6 +593,7 @@ type is never an item's default, so removing it just takes it off the stack.
 
 - **Saving.** The `ComponentCodec` saves a value as NBT, in the stack's `components` under the type's identifier
   beside vanilla's (`{ id, count, components: { "minecraft:damage": 3, "ruby:charge": 2 } }`), and reads it back.
+
   The stack keeps only that saved form, so it holds nothing of the plugin's: `Set` encodes and `Get` decodes.
 - **Clients.** With a `ComponentNetworkCodec`, the type is in the `minecraft:data_component_type` registry synced to
   NeoForge, Fabric and Obsidian clients, which must register the same type (the Obsidian client registers its mods'
@@ -610,6 +614,31 @@ type is never an item's default, so removing it just takes it off the stack.
   equality and hashing once registered, without mutating the saved stack.
 - **Block entities.** A plugin's block entity keeps its data on its block's item in the plugin's own types through
   `CollectComponents` and `ApplyComponents` (see [Block entities](#block-entities)).
+
+The shared item save codec, used by inventories, block entities, item entities and item attachments, writes all 63
+modeled persistent vanilla components and plugin components. Removed vanilla defaults use `!<identifier>: {}`.
+Loaded NBT outside the models is retained, including unknown fields within an unchanged component. Registry holders
+save identifiers instead of process ids. Invalid attachment values over 256 slots throw before publication, and
+their network codec rejects lengths outside that limit before reading stacks.
+
+Values received only as an `OpaqueDataComponent` have no disk codec yet: saving a stack leaves such a component out
+rather than failing the whole save it's part of. The unmodeled vanilla types are below (all identifiers have the
+`minecraft:` namespace):
+
+- `use_effects`, `minimum_attack_charge`, `damage_type`, `tooltip_display`, `weapon`, `attack_range`, `blocks_attacks`,
+  `piercing_weapon`, `kinetic_weapon`, `swing_animation`, `potion_duration_scale`, `provides_trim_material`,
+  `provides_banner_patterns`, `break_sound`.
+- `villager/variant`, `wolf/variant`, `wolf/sound_variant`, `wolf/collar`, `fox/variant`, `salmon/size`,
+  `parrot/variant`,
+  `tropical_fish/pattern`, `tropical_fish/base_color`, `tropical_fish/pattern_color`, `mooshroom/variant`,
+  `rabbit/variant`, `pig/variant`, `cow/variant`, `chicken/variant`, `zombie_nautilus/variant`, `frog/variant`,
+  `horse/variant`, `painting/variant`, `llama/variant`, `axolotl/variant`, `cat/variant`, `cat/collar`, `sheep/color`,
+  `shulker/color`.
+
+Vanilla defines no persistent codec for `creative_slot_lock` or `map_post_processing`; like vanilla, saves leave
+those transient values out. Entity hover text needs a live entity in the current API and cannot be reconstructed
+as a modeled value from NBT; a component containing it stays as saved NBT. Legacy UUID and tooltip flags on component
+models have no fields in the 1.21.11 component format.
 
 ### Creative tabs
 
@@ -1115,7 +1144,9 @@ its model and its texture, just as for any item: vanilla 1.21.11 eggs have indiv
 moth demonstrates all three and a creative tab. For an explicitly registered item, `ItemProperties.EntityData`
 sets the same component; its `RegistryId` is the mob type's id and `Data` holds additional saved fields.
 
-Using the egg on a block spawns that type beside it, with those fields, and consumes one outside creative mode.
+Using the egg on a block spawns that type at the clicked position when its collision shape is empty, or beside it
+otherwise, with those fields, and consumes one outside creative mode. Its vertical position settles against the
+collision shape; an upward click on a lower slab spawns at the slab's top, like vanilla's spawn eggs.
 Using it on a spawner changes its `SpawnData.entity.id` and clears old spawn potentials; spawners can spawn loaded
 plugin mob types. An unloaded type keeps its saved spawner data and resumes when its plugin returns.
 
@@ -1809,6 +1840,7 @@ in it.
   `{ slot, item }` for at most `ItemAttachments.MaxSlots` (256) slots. `ItemAttachments.NetworkCodec` syncs it to the
   Obsidian client, whose mod registers the same type and reads the charms with `TryGetPlayerAttachment`, to show them
   on its HUD say. Like any attachment it's saved with the player and kept through dimension changes.
+  Setting an array over 256 slots throws before replacing the value; the network codec enforces the same limit.
 - **Deaths.** The engine knows these attachments hold items. With the `keep_inventory` rule off, a player's death
   empties those registered without `copyOnDeath`, after the player's own inventory, armour and off hand, like
   vanilla's `Player.dropEquipment`: items with the curse of vanishing are destroyed, and the rest dropped around the

@@ -373,16 +373,32 @@ internal sealed record BlockSettings(
 /// <c>{ minX, minY, minZ, maxX, maxY, maxZ }</c> arrays vanilla's captured shapes are read as, made once here so that
 /// collision doesn't make them on every look.
 /// </summary>
-internal sealed class PluginStateShapes(BlockShapes shapes)
+internal sealed class PluginStateShapes
 {
+    public PluginStateShapes(BlockShapes shapes)
+    {
+        this.Shapes = shapes;
+        this.CollisionBoxes = Boxes(shapes.Collision);
+        this.OutlineBoxes = Boxes(shapes.Outline);
+        this.CollisionFaces = Enum.GetValues<BlockFace>()
+            .Select(face => ShapeSupport.Face(shapes.Collision, face)).ToArray();
+        this.PhysicsFlags = ShapeSupport.Flags(shapes.Collision, this.CollisionFaces);
+    }
+
+    /// <summary>Collision volume and face support flags, computed once at registration.</summary>
+    public int PhysicsFlags { get; }
+
+    /// <summary>The six collision faces, in BlockFace order, for fluid occlusion.</summary>
+    public double[][][] CollisionFaces { get; }
+
     /// <summary>The shapes the plugin gave, which copied and checked their boxes.</summary>
-    public BlockShapes Shapes { get; } = shapes;
+    public BlockShapes Shapes { get; }
 
     /// <summary>The collision boxes as arrays.</summary>
-    public IReadOnlyList<double[]> CollisionBoxes { get; } = Boxes(shapes.Collision);
+    public IReadOnlyList<double[]> CollisionBoxes { get; }
 
     /// <summary>The outline boxes as arrays.</summary>
-    public IReadOnlyList<double[]> OutlineBoxes { get; } = Boxes(shapes.Outline);
+    public IReadOnlyList<double[]> OutlineBoxes { get; }
 
     private static double[][] Boxes(IReadOnlyList<BoundingBox> boxes) =>
     [

@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.Entities;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
 using Obsidian.API.Loot;
 using Obsidian.API.Networking;
@@ -85,10 +86,15 @@ public sealed class PluginMobs
         // API modifiers persist in vanilla's attributes format; metadata is transient like SynchedEntityData.
         Assert.True(drake.SetAttributeModifier(
             "minecraft:max_health", "pluginmobs:health", 5, AttributeOperation.Add));
+        Assert.True(drake.TryAddAttribute("minecraft:attack_damage", 6));
+        Assert.True(drake.SetAttributeModifier(
+            "minecraft:attack_damage", "pluginmobs:attack", 2, AttributeOperation.Add));
         drake.SetModifier("minecraft:movement_speed", new("pluginmobs:temporary", 1, AttributeOperation.Add));
         var saved = EntityNbt.Save(drake)!;
         var restored = Assert.IsType<PluginMob>(EntityNbt.Load(saved, world));
         Assert.Equal(25, restored.GetAttributeValue("minecraft:max_health"));
+        Assert.True(restored.HasAttribute("minecraft:attack_damage"));
+        Assert.Equal(8, restored.GetAttributeValue("minecraft:attack_damage"));
         Assert.Equal(0.25f, restored.GetAttributeValue("minecraft:movement_speed"));
         Assert.False(restored.GetData(Saddled));
         Assert.True(saved.TryGetTag<NbtList>("attributes", out var attributes));
@@ -132,6 +138,31 @@ public sealed class PluginMobs
         Assert.True(await channels.FinishHandshakeAsync(0));
         client.SetState(ClientState.Play);
         Assert.True(channels.HasNeoForgePlayChannel(ChannelPayloads.PluginEntityData));
+
+        // SpawnEggItem uses empty collision rather than air, and settles on a partial clicked block's top.
+        var clicked = new Vector(4, 64, 4);
+        var oldPosition = player.Position;
+        player.Position = (VectorD)clicked + new VectorD(0, 1, 2);
+        await world.SetBlockAsync(clicked + Vector.Down, BlocksRegistry.Stone);
+        foreach (var (block, height) in new (IBlock Block, double Height)[]
+        {
+            (BlocksRegistry.ShortGrass, 64),
+            (BlocksRegistry.OakSlab, 64.5)
+        })
+        {
+            await world.SetBlockAsync(clicked, block);
+            var egg = new ItemStack(ItemsRegistry.PigSpawnEgg, 1, ComponentBuilder.EntityData with
+            {
+                RegistryId = definition.Id
+            });
+            player.Inventory.SetItem(player.CurrentHeldItemSlot, egg);
+            await BlockUpdates.UseOn(clicked, BlockFace.Up).HandleAsync(context.Server, player);
+            var spawned = Assert.Single(world.GetEntitiesInRange((VectorD)clicked, 2).OfType<PluginMob>());
+            Assert.Equal(new VectorD(4.5, height, 4.5), spawned.Position);
+            Assert.True(await world.DestroyEntityAsync(spawned));
+        }
+
+        player.Position = oldPosition;
 
         // Using it mounts the player, whose input then flies it: ahead where the player looks, and up with jump.
         Assert.True(await drake.InteractAsync(player, InteractionHand.MainHand));

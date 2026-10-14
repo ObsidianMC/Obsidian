@@ -8,6 +8,7 @@ using Obsidian.API;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
+using Obsidian.API.Utilities;
 using Obsidian.Net;
 using Xunit;
 
@@ -48,6 +49,7 @@ public class ItemComponentWire
             AssertVanillaStackRoundTrip((string)row[0], (string)row[1], (string)row[2]);
 
         AssertSupportedHashesMatchVanilla();
+        AssertModeledComponentsSurviveSaving();
         AssertMerchantOffersMatchVanilla();
         AssertComponentIdsMatchVanillaRegistry();
         AssertHashedStacksMatchVanillaAndDetectDesync();
@@ -118,6 +120,33 @@ public class ItemComponentWire
         ];
         foreach (var required in requiredTypes)
             Assert.Contains(required, supported);
+    }
+
+    private static void AssertModeledComponentsSurviveSaving()
+    {
+        foreach (var row in Stacks())
+        {
+            using var reader = new NetworkBuffer(Convert.FromHexString((string)row[1]));
+            var stack = reader.ReadItemStack()!;
+            foreach (var component in stack.Patch)
+            {
+                if (ComponentBuilder.Create(component.Type) is null
+                    || component.Type is DataComponentType.CreativeSlotLock or DataComponentType.MapPostProcessing)
+                {
+                    continue;
+                }
+
+                var saved = new ItemStack(ItemsRegistry.Stone, 1, component).ToNbt();
+                var restored = saved.ItemFromNbt()!;
+                Assert.True(restored.TryGetComponent(component.Type, out var reloaded), component.Identifier);
+                using var before = new NetworkBuffer();
+                using var after = new NetworkBuffer();
+                component.Write(before);
+                reloaded.Write(after);
+                Assert.True(before.AsSpan(0, before.Size).SequenceEqual(after.AsSpan(0, after.Size)),
+                    $"{row[0]}: {component.Identifier} changed after saving.");
+            }
+        }
     }
 
     private static void AssertMerchantOffersMatchVanilla()

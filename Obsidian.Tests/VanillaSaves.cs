@@ -2,6 +2,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Obsidian.API;
 using Obsidian.API.Configuration;
+using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using Obsidian.Nbt;
@@ -184,6 +186,25 @@ public sealed class VanillaSaves : IDisposable
             Assert.Equal(0, loaded.MaxDamage);
             Assert.Contains(DataComponentType.MaxDamage, loaded.RemoveComponents);
             Assert.True(((NbtCompound)loaded.ToNbt()["components"]).HasTag("!minecraft:max_damage"));
+
+            var charm = new ItemStack(ItemsRegistry.Diamond, 1,
+                ComponentBuilder.Lore with
+                {
+                    Value =
+                    [
+                        ChatMessage.Simple("Unique charm").AddExtra(ChatMessage.Simple(" with an extra")),
+                        ChatMessage.Simple(string.Empty)
+                    ]
+                },
+                ComponentBuilder.MaxStackSize with { Value = 1 },
+                ComponentBuilder.CustomData with { Value = new NbtCompound { new NbtTag<int>("charge", 3) } });
+            charm.Remove(DataComponentType.ItemName);
+            var restored = charm.ToNbt().ItemFromNbt()!;
+            Assert.Equal(charm, restored);
+            Assert.Equal(1, restored.MaxStackSize);
+            Assert.Equal(" with an extra", Assert.Single(restored.Lore[0].GetExtras()).Text);
+            Assert.Equal(string.Empty, restored.Lore[1].Text);
+            Assert.Contains(DataComponentType.ItemName, restored.RemoveComponents);
 
             // The explosion is a component Obsidian doesn't model, so only the saved NBT tells the stars apart.
             var red = FireworkStar(0xFF0000).ItemFromNbt()!;

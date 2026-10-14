@@ -8,6 +8,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot;
 using Obsidian.API.Registries;
+using Obsidian.API.Utilities;
 using Obsidian.Events;
 using Obsidian.Nbt;
 using Obsidian.Net;
@@ -991,8 +992,32 @@ public sealed class MenuClicks
             var changes = 0;
             charms.Changed += _ => changes++;
 
-            // Two charm slots that take one diamond each, next to the player's inventory.
+            var original = new ItemStack(ItemsRegistry.Diamond, 1,
+                ComponentBuilder.Lore with { Value = [ChatMessage.Simple("Unique charm")] },
+                ComponentBuilder.MaxStackSize with { Value = 1 });
+            original.Remove(DataComponentType.ItemName);
             var access = player.GetItemAccess(charms, 2);
+            Assert.Null(access.Insert(0, original));
+            var returned = access.Extract(0, 1)!;
+            Assert.Equal(original, returned);
+            Assert.Equal("Unique charm", Assert.Single(returned.Lore).Text);
+            Assert.Equal(1, returned.MaxStackSize);
+            Assert.Contains(DataComponentType.ItemName, returned.RemoveComponents);
+
+            var oversized = new ItemStack?[ItemAttachments.MaxSlots + 1];
+            oversized[^1] = original;
+            Assert.Throws<ArgumentOutOfRangeException>(() => player.SetAttachment(charms, oversized));
+            Assert.Empty(player.GetAttachment(charms)!);
+            using (var wire = new NetworkBuffer())
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => ItemAttachments.NetworkCodec.Write(wire, oversized));
+                Assert.Equal(0, wire.Offset);
+                wire.WriteVarInt(oversized.Length);
+                using var reader = new NetworkBuffer(wire.AsSpan(0, wire.Size).ToArray());
+                Assert.Throws<System.IO.InvalidDataException>(() => ItemAttachments.NetworkCodec.Read(reader));
+            }
+
+            // Two charm slots that take one diamond each, next to the player's inventory.
             var menu = new MenuContainer(charmMenu, "Charms")
             {
                 Slots =

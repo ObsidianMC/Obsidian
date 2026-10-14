@@ -192,11 +192,15 @@ public partial class Entity
                 continue;
 
             var name = this.ResolveAttributeName(id);
-            if (!this.HasAttribute(name))
+            // AttributeMap.load accepts registered attributes even when this entity's defaults omit them.
+            if (!VanillaAttributes.TryGetProtocolId(VanillaName(name), out _))
                 continue;
 
             if (entry.TryGetTagValue<double>("base", out var value) && double.IsFinite(value))
                 this.Attributes[name] = (float)value;
+
+            if (!this.Attributes.ContainsKey(name))
+                continue;
 
             lock (this.attributeLock)
             {

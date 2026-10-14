@@ -118,7 +118,19 @@ public sealed record class EquippableDataComponent : DataComponent
 
     protected override void ReadCore(INetStreamReader reader)
     {
-        this.slot = reader.ReadVarInt<EquipmentSlot>();
+        // EquipmentSlot.STREAM_CODEC uses its wire id, not its declaration order: offhand follows head.
+        this.slot = reader.ReadVarInt() switch
+        {
+            0 => EquipmentSlot.MainHand,
+            1 => EquipmentSlot.Boots,
+            2 => EquipmentSlot.Leggings,
+            3 => EquipmentSlot.Chestplate,
+            4 => EquipmentSlot.Helmet,
+            5 => EquipmentSlot.OffHand,
+            6 => EquipmentSlot.Body,
+            7 => EquipmentSlot.Saddle,
+            _ => throw new System.IO.InvalidDataException("Unknown equipment slot.")
+        };
         this.equipSound = ComponentValueCodecs.ReadSoundHolder(reader);
         this.assetIdentifier = reader.ReadOptionalString();
         this.assetId = this.AssetIdentifier is string value
@@ -146,7 +158,18 @@ public sealed record class EquippableDataComponent : DataComponent
 
     public override void Write(INetStreamWriter writer)
     {
-        writer.WriteVarInt(this.Slot);
+        writer.WriteVarInt(this.Slot switch
+        {
+            EquipmentSlot.MainHand => 0,
+            EquipmentSlot.Boots => 1,
+            EquipmentSlot.Leggings => 2,
+            EquipmentSlot.Chestplate => 3,
+            EquipmentSlot.Helmet => 4,
+            EquipmentSlot.OffHand => 5,
+            EquipmentSlot.Body => 6,
+            EquipmentSlot.Saddle => 7,
+            _ => throw new ArgumentOutOfRangeException(nameof(this.Slot))
+        });
         ComponentValueCodecs.WriteSoundHolder(this.EquipSound, writer);
         writer.WriteOptional(this.AssetIdentifier ?? (this.AssetId.HasValue ? "minecraft:" + this.AssetId.Value.ToString().ToSnakeCase() : null));
         writer.WriteOptional(this.CameraOverlay);

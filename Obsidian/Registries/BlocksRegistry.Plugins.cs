@@ -142,6 +142,8 @@ internal static partial class BlocksRegistry
             if (!table.ByName.TryGetValue(identifier, out var existing))
             {
                 plugins = new PluginBlockTable([.. table.Types, candidate], table.StateCount + candidate.StateCount);
+                API.Inventory.DataComponents.ComponentRegistryNames.Register(
+                    "minecraft:block", candidate.Id, identifier);
                 return candidate;
             }
 

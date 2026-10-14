@@ -41,6 +41,7 @@ public sealed record class ProfileDataComponent : DataComponent
 
     private int? model;
 
+    /// <summary>Optional skin model flag from PlayerModelType.STREAM_CODEC: 1 for slim, 0 for wide.</summary>
     public int? Model
     {
         get => this.model;

@@ -244,6 +244,55 @@ public sealed class BlockUpdates : IDisposable
         var container = await this.LoadProbeAsync(manager);
 
         Assert.True(BlocksRegistry.TryGetPluginBlock("probe:relay", out var relay));
+        var shapeProperties = new BlockProperties
+        {
+            StateProperties = [StateProperty.Enum("shape", ["upper", "split", "center", "rim", "empty"])],
+            StateShapes = values =>
+            {
+                BoundingBox Box(double x0, double y0, double z0, double x1, double y1, double z1) =>
+                    new(new VectorD(x0, y0, z0), new VectorD(x1, y1, z1));
+
+                BoundingBox[] boxes = values["shape"] switch
+                {
+                    "upper" => [Box(0, 0.5, 0, 1, 1, 1)],
+                    "split" => [Box(0, 0, 0, 0.5, 1, 1), Box(0.5, 0, 0, 1, 1, 1)],
+                    "center" => [Box(7d / 16, 0, 7d / 16, 9d / 16, 1, 9d / 16)],
+                    "rim" =>
+                    [
+                        Box(0, 0, 0, 1, 1, 2d / 16),
+                        Box(0, 0, 14d / 16, 1, 1, 1),
+                        Box(0, 0, 2d / 16, 2d / 16, 1, 14d / 16),
+                        Box(14d / 16, 0, 2d / 16, 1, 1, 14d / 16)
+                    ],
+                    _ => []
+                };
+                return new BlockShapes(boxes, boxes);
+            }
+        };
+        var support = BlocksRegistry.Register("probe:shape_support", shapeProperties);
+        support.Settings = BlockSettings.From(shapeProperties, support);
+        var upper = support.With(support.DefaultState, "shape", "upper");
+        Assert.True(upper.IsFaceSturdy(BlockFace.Up));
+        Assert.True(upper.HasFullTopCollisionFace());
+        Assert.True(upper.IsTopCenterSturdy());
+        Assert.True(upper.IsTopRigidSturdy());
+        Assert.False(upper.IsFaceSturdy(BlockFace.Down));
+        Assert.False(upper.IsSolidRender());
+        var split = support.With(support.DefaultState, "shape", "split");
+        Assert.True(split.IsCollisionShapeFullBlock());
+        Assert.True(split.HasBlockCollisionShape());
+        Assert.True(split.IsSolidRender());
+        Assert.All(Enum.GetValues<BlockFace>(), face => Assert.True(split.IsFaceSturdy(face)));
+        var centerSupport = support.With(support.DefaultState, "shape", "center");
+        Assert.True(centerSupport.IsTopCenterSturdy());
+        Assert.True(centerSupport.IsBottomCenterSturdy());
+        Assert.False(centerSupport.IsTopRigidSturdy());
+        var rim = support.With(support.DefaultState, "shape", "rim");
+        Assert.True(rim.IsTopRigidSturdy());
+        Assert.False(rim.IsTopCenterSturdy());
+        Assert.False(rim.IsFaceSturdy(BlockFace.Up));
+        Assert.True(support.With(support.DefaultState, "shape", "empty").HasEmptyCollision());
+
         var chunk = world.GetLoadedChunk(0, 0)!;
         var calls = ProbeRelay.Reset();
 

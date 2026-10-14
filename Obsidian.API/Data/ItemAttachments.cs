@@ -52,8 +52,24 @@ public static class ItemAttachments
     /// client mod registers the same type with <see cref="Codec"/> and this to read them.
     /// </summary>
     public static ComponentNetworkCodec<ItemStack?[]> NetworkCodec { get; } = new(
-        (writer, items) => writer.WriteItemStackList(items),
-        reader => reader.ReadItemStackList());
+        (writer, items) =>
+        {
+            ArgumentNullException.ThrowIfNull(items);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(items.Length, MaxSlots, nameof(items));
+            writer.WriteItemStackList(items);
+        },
+        reader =>
+        {
+            var count = reader.ReadVarInt();
+            if (count is < 0 or > MaxSlots)
+                throw new System.IO.InvalidDataException("An item attachment holds at most 256 slots.");
+
+            var items = new ItemStack?[count];
+            for (var slot = 0; slot < count; slot++)
+                items[slot] = reader.ReadItemStack();
+
+            return items;
+        });
 
     /// <summary>
     /// Access to the first <paramref name="slotCount"/> slots of <paramref name="holder"/>'s item attachment, which
@@ -91,9 +107,10 @@ public static class ItemAttachments
     internal static INbtTag Encode(ItemStack?[] items)
     {
         ArgumentNullException.ThrowIfNull(items);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(items.Length, MaxSlots, nameof(items));
 
         var list = new NbtList(NbtTagType.Compound, string.Empty);
-        for (var slot = 0; slot < Math.Min(items.Length, MaxSlots); slot++)
+        for (var slot = 0; slot < items.Length; slot++)
         {
             if (items[slot] is not { IsAir: false, Count: > 0 } item)
                 continue;

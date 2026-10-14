@@ -60,6 +60,13 @@ public class ComponentFixtures {
         for (int id = 0; id <= 1; id++) blocks.add(registryNames.getAsJsonArray("minecraft:block").get(id));
         hashRegistries.add("minecraft:block", blocks);
         output.add("registries", hashRegistries);
+        // Persistent item codecs need names for these holders even when they arrived as network IDs.
+        var componentRegistries = new JsonObject();
+        for (var key : List.of("minecraft:banner_pattern", "minecraft:jukebox_song")) {
+            componentRegistries.add(key, registryNames.get(key));
+        }
+        Files.writeString(Path.of(args[2]).resolveSibling("component_registry_ids.json"),
+            new GsonBuilder().setPrettyPrinting().create().toJson(componentRegistries) + "\n");
         var cases = new JsonArray();
         for (var input : JsonParser.parseString(Files.readString(Path.of(args[1]))).getAsJsonArray()) {
             var obj = input.getAsJsonObject();
