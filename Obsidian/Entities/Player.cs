@@ -471,18 +471,27 @@ public sealed partial class Player : Avatar, IClientPlayer
 
     public override ValueTask TeleportAsync(VectorD pos) => this.TeleportAsync(this.Level, pos);
 
-    private async ValueTask TeleportWithinLevelAsync(VectorD pos)
+    private async ValueTask TeleportWithinLevelAsync(VectorD pos, Angle? yaw, Angle? pitch)
     {
         FallDistance = 0;
         combatPosition = null;
         CancelWeaponUse();
-        LeaveVehicle();
-        EjectPassengers();
+        var from = this.Position;
+        var fromYaw = this.Yaw;
+        var fromPitch = this.Pitch;
+        var riders = this.DetachPassengersForTravel();
         LastPosition = Position;
         if (Level is AbstractLevel resident && !resident.TryMoveEntity(this, Position, pos))
+        {
+            foreach (var rider in riders)
+                rider.Ride(this, force: true);
+
             throw new InvalidOperationException("The destination region could not accept the player.");
+        }
 
         Position = pos;
+        this.Yaw = yaw ?? this.Yaw;
+        this.Pitch = pitch ?? this.Pitch;
         BoundingBox = Dimension.CreateBBFromPosition(pos);
         await UpdateChunksAsync();
 
@@ -506,6 +515,7 @@ public sealed partial class Player : Avatar, IClientPlayer
             TeleportId = tid
         });
         TeleportId = tid;
+        await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
     }
 
     public override ValueTask TeleportAsync(IEntity to) =>
@@ -536,9 +546,7 @@ public sealed partial class Player : Avatar, IClientPlayer
         if (level is AbstractLevel && area is null)
             throw new InvalidOperationException("The player moved while the destination was loading.");
 
-        this.Yaw = yaw ?? this.Yaw;
-        this.Pitch = pitch ?? this.Pitch;
-        await this.TeleportWithinLevelAsync(position);
+        await this.TeleportWithinLevelAsync(position, yaw, pitch);
     }
 
     public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
@@ -607,10 +615,11 @@ public sealed partial class Player : Avatar, IClientPlayer
         CancelEating();
         CancelWeaponUse();
         combatPosition = null;
-        LeaveVehicle();
-        EjectPassengers();
         var origin = Level;
         var from = this.Position;
+        var fromYaw = this.Yaw;
+        var fromPitch = this.Pitch;
+        Entity[] riders = [];
         var spawn = position ?? destination.LevelData.SpawnPosition;
         ValidateTravel(destination, spawn, yaw, pitch);
         using var area = destination is AbstractLevel target
@@ -621,27 +630,24 @@ public sealed partial class Player : Avatar, IClientPlayer
             return;
 
         await this.CloseContainerAsync();
-        // Held from the level change until the respawn resets the client's view (see RespawnUnderLockAsync).
-        await this.chunkUpdates.WaitAsync();
-        try
-        {
-            this.CommitTravel(origin, destination, spawn, yaw, pitch);
-            foreach (var observer in origin.GetPlayersInRange(from, float.MaxValue).OfType<Player>())
-                observer.visiblePlayers.Remove(this);
 
-            Motion = motion ?? Motion;
-            FallDistance = 0;
-            foodPosition = null;
-            this.preservePortalMotion = relativeMotion;
-            if (portal)
-                this.portalCooldown = PlayerPortalCooldown;
-
-            await this.RespawnUnderLockAsync(DataKept.Attributes | DataKept.Metadata, levelChange: true);
-        }
-        finally
+        while (true)
         {
-            this.preservePortalMotion = false;
-            this.chunkUpdates.Release();
+            await this.WaitForDeathAsync();
+            await using var callbacks = DeferredInventoryWork.Begin(this.Logger, deferPackets: true);
+            // Held from the level change until the respawn resets the client's view.
+            await this.chunkUpdates.WaitAsync();
+            try
+            {
+                if (await this.RespawnUnderLockAsync(
+                    DataKept.Attributes | DataKept.Metadata, levelChange: true, transfer: Commit))
+                    break;
+            }
+            finally
+            {
+                this.preservePortalMotion = false;
+                this.chunkUpdates.Release();
+            }
         }
 
         // Vanilla 1.21.11 sends the shared world's GlobalPos spawn, including while in a child dimension.
@@ -670,7 +676,37 @@ public sealed partial class Player : Avatar, IClientPlayer
         await this.EventDispatcher.ExecuteEventAsync(new PlayerTeleportEventArgs(this, this.Server, from, spawn));
         await this.FireProgressAsync("changed_dimension", from: origin.DimensionName, to: destination.DimensionName);
         this.progressDimension = destination.DimensionName;
+        await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
         await SaveAsync();
+
+        void Commit()
+        {
+            from = this.Position;
+            fromYaw = this.Yaw;
+            fromPitch = this.Pitch;
+            riders = this.DetachPassengersForTravel();
+            try
+            {
+                this.CommitTravel(origin, destination, spawn, yaw, pitch);
+            }
+            catch
+            {
+                foreach (var rider in riders)
+                    rider.Ride(this, force: true);
+
+                throw;
+            }
+
+            foreach (var observer in origin.GetPlayersInRange(from, float.MaxValue).OfType<Player>())
+                observer.visiblePlayers.Remove(this);
+
+            this.Motion = motion ?? this.Motion;
+            this.FallDistance = 0;
+            this.foodPosition = null;
+            this.preservePortalMotion = relativeMotion;
+            if (portal)
+                this.portalCooldown = PlayerPortalCooldown;
+        }
     }
 
     public Task RespawnAsync(DataKept dataKept = DataKept.Metadata) =>
@@ -684,7 +720,7 @@ public sealed partial class Player : Avatar, IClientPlayer
         while (true)
         {
             await this.WaitForDeathAsync();
-            await using var callbacks = DeferredInventoryWork.Begin(this.Logger);
+            await using var callbacks = DeferredInventoryWork.Begin(this.Logger, deferPackets: true);
             await this.chunkUpdates.WaitAsync();
             try
             {
@@ -699,11 +735,12 @@ public sealed partial class Player : Avatar, IClientPlayer
     }
 
     /// <summary>
-    /// Respawns the player, with <see cref="chunkUpdates"/> already held. Callers that change the player's level take
-    /// it before the change, so the chunk loop can't send chunks of the old level after the respawn packet, or load
-    /// the new level's chunks into the old view.
+    /// Respawns the player, with <see cref="chunkUpdates"/> held and packet callbacks deferred until its release.
+    /// A dimension transfer commits through <paramref name="transfer"/> after the death check reserves this respawn.
+    /// Returns false if death must finish first; the caller must release the lock before waiting and retrying.
     /// </summary>
-    private async Task<bool> RespawnUnderLockAsync(DataKept dataKept, bool levelChange = false)
+    private async Task<bool> RespawnUnderLockAsync(
+        DataKept dataKept, bool levelChange = false, Action? transfer = null)
     {
         lock (this.deathState)
         {
@@ -717,11 +754,14 @@ public sealed partial class Player : Avatar, IClientPlayer
             this.Respawning = true;
             this.respawnFinished = new(TaskCreationOptions.RunContinuationsAsynchronously);
         }
-        this.ResetAttachmentSync();
-        this.ResetAttributeSync();
-        var died = !Alive;
         try
         {
+            // Reserve the respawn before changing levels: a death that won the lock retries without committing,
+            // and a death arriving after the reservation waits for the completed transfer.
+            transfer?.Invoke();
+            this.ResetAttachmentSync();
+            this.ResetAttributeSync();
+            var died = !Alive;
             if (died)
             {
                 // Death respawns must create fresh client state rather than retain the dead player's metadata.

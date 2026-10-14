@@ -165,7 +165,10 @@ public partial class Player
             if (portal == BlockIds.EndPortal)
             {
                 var enteringEnd = name == "minecraft:the_end";
-                var position = enteringEnd ? new VectorD(100.5, 51, 0.5) : world.LevelData.SpawnPosition;
+                // Vanilla EndPortalBlock lowers the End spawn point's bottom centre by one for players.
+                var position = enteringEnd
+                    ? new VectorD(EndTravel.EndSpawnPoint.X + 0.5, EndTravel.EndSpawnPoint.Y - 1, 0.5)
+                    : world.LevelData.SpawnPosition;
                 var area = await PortalArea.LoadAsync(destination, (Vector)position, 3, CanContinue);
                 if (area is null)
                     return null;

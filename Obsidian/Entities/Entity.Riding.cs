@@ -14,18 +14,28 @@ public partial class Entity
     internal Entity? Vehicle { get; private set; }
 
     /// <summary>The entities riding this one, in seat order. The first one controls a mount.</summary>
-    internal IReadOnlyList<Entity> Passengers => this.passengers;
+    internal IReadOnlyList<Entity> Passengers
+    {
+        get
+        {
+            lock (ItemEntity.TransferLock)
+                return this.passengers.ToArray();
+        }
+    }
 
     /// <summary>The bottom of this entity's vehicle chain: itself when it rides nothing.</summary>
     internal Entity RootVehicle
     {
         get
         {
-            var root = this;
-            while (root.Vehicle is Entity vehicle)
-                root = vehicle;
+            lock (ItemEntity.TransferLock)
+            {
+                var root = this;
+                while (root.Vehicle is Entity vehicle)
+                    root = vehicle;
 
-            return root;
+                return root;
+            }
         }
     }
 
@@ -47,7 +57,7 @@ public partial class Entity
 
     IEntity? IEntity.Vehicle => this.Vehicle;
 
-    IReadOnlyList<IEntity> IEntity.Passengers => this.passengers.ToArray();
+    IReadOnlyList<IEntity> IEntity.Passengers => this.Passengers;
 
     public virtual bool StartRiding(IEntity vehicle) => vehicle is Entity entity && this.Ride(entity);
 
@@ -60,28 +70,37 @@ public partial class Entity
     /// <returns>Whether the entity now rides the vehicle.</returns>
     internal bool Ride(Entity vehicle, bool force = false)
     {
-        if (ReferenceEquals(vehicle, this) || ReferenceEquals(vehicle, this.Vehicle) || vehicle.Level != this.Level)
-            return false;
-
-        // A vehicle can't end up riding its own passenger.
-        for (var link = vehicle; link is not null; link = link.Vehicle)
+        // Evaluate the virtual seat policy without the graph lock. The graph shares the transfer lock so its
+        // level checks and travel commits agree; never acquire a tick lock or run plugin code while holding it.
+        var seats = force ? 0 : vehicle.MaximumPassengers;
+        Entity? previous;
+        lock (ItemEntity.TransferLock)
         {
-            if (ReferenceEquals(link, this))
+            if (ReferenceEquals(vehicle, this) || ReferenceEquals(vehicle, this.Vehicle) || vehicle.Level != this.Level)
                 return false;
+
+            // Validate and publish together: opposing concurrent mounts cannot both close the same cycle.
+            for (var link = vehicle; link is not null; link = link.Vehicle)
+            {
+                if (ReferenceEquals(link, this))
+                    return false;
+            }
+
+            if (!force && vehicle.passengers.Count >= seats)
+                return false;
+
+            previous = this.Vehicle;
+            previous?.passengers.Remove(this);
+            this.Vehicle = vehicle;
+
+            // Like vanilla, a player boarding a vehicle that a non-player controls takes the controlling seat.
+            if (this is Player && vehicle.passengers.Count > 0 && vehicle.passengers[0] is not Player)
+                vehicle.passengers.Insert(0, this);
+            else
+                vehicle.passengers.Add(this);
         }
 
-        if (!force && vehicle.passengers.Count >= vehicle.MaximumPassengers)
-            return false;
-
-        this.LeaveVehicle();
-        this.Vehicle = vehicle;
-
-        // Like vanilla, a player boarding a vehicle that a non-player controls takes the controlling seat.
-        if (this is Player && vehicle.passengers.Count > 0 && vehicle.passengers[0] is not Player)
-            vehicle.passengers.Insert(0, this);
-        else
-            vehicle.passengers.Add(this);
-
+        previous?.SynchronizePassengers();
         vehicle.SynchronizePassengers();
         return true;
     }
@@ -89,24 +108,34 @@ public partial class Entity
     /// <summary>Gets off the vehicle the entity rides, if any.</summary>
     internal void LeaveVehicle()
     {
-        if (this.Vehicle is not Entity vehicle)
-            return;
+        Entity vehicle;
+        lock (ItemEntity.TransferLock)
+        {
+            if (this.Vehicle is not Entity current)
+                return;
 
-        this.Vehicle = null;
-        if (vehicle.passengers.Remove(this))
-            vehicle.SynchronizePassengers();
+            vehicle = current;
+            this.Vehicle = null;
+            vehicle.passengers.Remove(this);
+        }
+
+        vehicle.SynchronizePassengers();
     }
 
     /// <summary>Takes every passenger off this entity.</summary>
     internal void EjectPassengers()
     {
-        if (this.passengers.Count == 0)
-            return;
+        lock (ItemEntity.TransferLock)
+        {
+            if (this.passengers.Count == 0)
+                return;
 
-        foreach (var passenger in this.passengers)
-            passenger.Vehicle = null;
+            foreach (var passenger in this.passengers)
+                passenger.Vehicle = null;
 
-        this.passengers.Clear();
+            this.passengers.Clear();
+        }
+
         this.SynchronizePassengers();
     }
 
@@ -116,14 +145,17 @@ public partial class Entity
     /// </summary>
     internal void PositionPassengers()
     {
-        for (var index = 0; index < this.passengers.Count; index++)
+        var riders = this.Passengers;
+        for (var index = 0; index < riders.Count; index++)
         {
-            var passenger = this.passengers[index];
+            var passenger = riders[index];
+            if (passenger.Vehicle != this)
+                continue;
+
             var position = this.Position + this.PassengerOffset(index);
             if (this.Level is AbstractLevel level && !level.TryMoveEntity(passenger, passenger.Position, position))
             {
                 passenger.LeaveVehicle();
-                index--;
                 continue;
             }
 
@@ -137,7 +169,7 @@ public partial class Entity
     }
 
     /// <summary>Tells a player that just started tracking this entity who rides it.</summary>
-    internal ValueTask SendPassengersToAsync(Player player) => this.passengers.Count == 0
+    internal ValueTask SendPassengersToAsync(Player player) => this.Passengers.Count == 0
         ? default
         : player.Client.QueuePacketAsync(this.CreatePassengersPacket());
 
@@ -147,6 +179,6 @@ public partial class Entity
     private SetPassengersPacket CreatePassengersPacket() => new()
     {
         EntityId = this.EntityId,
-        Passengers = this.passengers.Select(passenger => passenger.EntityId).ToArray()
+        Passengers = this.Passengers.Select(passenger => passenger.EntityId).ToArray()
     };
 }

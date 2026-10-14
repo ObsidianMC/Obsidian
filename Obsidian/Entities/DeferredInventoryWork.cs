@@ -8,6 +8,7 @@ namespace Obsidian.Entities;
 /// Work that takes a player's inventory lock, asked for while the current flow runs plugins' code holding a player's
 /// inventory lock, and run as soon as it lets go: like the armour a hurt wears, or a death's drops, when a plugin's
 /// item hurts its holder from its inventory tick. The lock isn't re-entrant, so waiting for it there would never end.
+/// Respawns also defer their packets and plugin callbacks until the player's chunk-update lock is released.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -40,6 +41,9 @@ internal sealed partial class DeferredInventoryWork
     private static readonly AsyncLocal<DeferredInventoryWork?> current = new();
 
     private readonly Queue<Func<ValueTask>> queue = new();
+    private readonly bool deferPackets;
+
+    public DeferredInventoryWork(bool deferPackets = false) => this.deferPackets = deferPackets;
 
     // Set as the queue runs, after which work runs at once.
     private bool closed;
@@ -54,22 +58,34 @@ internal sealed partial class DeferredInventoryWork
             ? ValueTask.CompletedTask
             : work();
 
-    /// <summary>Enters around a whole click or hook; dispose after releasing its locks, even on failure.</summary>
-    internal static IAsyncDisposable Begin(ILogger logger, Action? completed = null) =>
-        new Transaction(logger, completed);
+    /// <summary>
+    /// Enters around a whole click, hook or respawn; dispose after releasing its locks, even on failure.
+    /// Set <paramref name="deferPackets"/> when packet callbacks must wait for that release too.
+    /// </summary>
+    internal static IAsyncDisposable Begin(ILogger logger, Action? completed = null, bool deferPackets = false) =>
+        new Transaction(logger, completed, deferPackets);
+
+    /// <summary>
+    /// Queues a packet and its plugin handlers until a respawn or dimension transfer releases chunkUpdates.
+    /// Queueing the entire send preserves cancellation and packet order when the transaction drains.
+    /// </summary>
+    internal static bool TryDeferPacket(IClient client, IClientboundPacket packet) =>
+        current.Value is { deferPackets: true } section
+            && section.TryQueue(() => client.QueuePacketAsync(packet));
 
     private sealed class Transaction : IAsyncDisposable
     {
         private readonly ILogger logger;
         private readonly Action? completed;
-        private readonly DeferredInventoryWork work = new();
+        private readonly DeferredInventoryWork work;
         private readonly IDisposable section;
         private readonly DeferredAttachmentChanges notifications = new();
 
-        internal Transaction(ILogger logger, Action? completed)
+        internal Transaction(ILogger logger, Action? completed, bool deferPackets)
         {
             this.logger = logger;
             this.completed = completed;
+            this.work = new DeferredInventoryWork(deferPackets);
             this.section = this.work.Enter();
         }
 
@@ -79,7 +95,15 @@ internal sealed partial class DeferredInventoryWork
             this.notifications.Dispose();
             this.completed?.Invoke();
             this.section.Dispose();
-            return this.work.RunAsync(this.logger);
+            return this.work.deferPackets ? this.DrainPacketsAsync() : this.work.RunAsync(this.logger);
+        }
+
+        private async ValueTask DrainPacketsAsync()
+        {
+            // A packet handler may kill or respawn its player. Finish this packet sequence first, so its saved
+            // health and position cannot arrive after the next death's packets. All locks are already released.
+            await using var callbacks = Begin(this.logger);
+            await this.work.RunAsync(this.logger);
         }
     }
 

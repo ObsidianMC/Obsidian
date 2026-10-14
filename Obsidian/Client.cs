@@ -306,6 +306,9 @@ public sealed partial class Client : IClient
 
     public async ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
+        if (DeferredInventoryWork.TryDeferPacket(this, packet))
+            return;
+
         if (await this.RunQueueHandlersAsync(packet))
             this.QueueWithoutHandlers(packet);
     }

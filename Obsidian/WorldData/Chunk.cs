@@ -265,6 +265,10 @@ public sealed class Chunk : IChunk
 
     private void SetBlockCore(int x, int y, int z, IBlock block)
     {
+        // The claim belongs to this block, so even two replacements between portal ticks release it.
+        Portals.PortalOwnership.Release(
+            this, new Vector((this.X << 4) + (x & 15), y, (this.Z << 4) + (z & 15)), block);
+
         // Generation writes through its regions' sections; any other write (a live edit of an unfinished chunk) leaves the
         // heights generation keeps stale, so they're computed again.
         this.FinalHeightmaps = null;

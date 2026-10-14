@@ -23,7 +23,7 @@ using Xunit;
 
 namespace Obsidian.Tests;
 
-public class Portals
+public partial class Portals
 {
     [Theory]
     [InlineData("x", 2, 3)]
@@ -182,7 +182,7 @@ public class Portals
         };
         Assert.True(source.World.TryAddEntity(jockey));
         Assert.False(jockey.Ride(mob));
-        Assert.True(jockey.Ride(mob, force: true));
+        Assert.True(jockey.Ride(rider));
         var leashed = new Cow
         {
             Level = source.World,
@@ -204,7 +204,8 @@ public class Portals
         Assert.Equal(arrival + VectorD.Up, rider.Position);
         Assert.Same(target.World, jockey.Level);
         Assert.Equal(arrival + VectorD.Up * 2, jockey.Position);
-        Assert.Equal(new Entity[] { rider, jockey }, mob.Passengers);
+        Assert.Equal(new Entity[] { rider }, mob.Passengers);
+        Assert.Same(rider, jockey.Vehicle);
         leashed.TickLeash();
         Assert.Null(leashed.LeashHolder);
         Assert.Contains(
@@ -217,6 +218,8 @@ public class Portals
 
         await mob.TeleportAsync(new VectorD(4.5, 72, 5.5));
         Assert.Equal(new VectorD(4.5, 72, 5.5), mob.Position);
+        Assert.Equal(mob.Position + VectorD.Up * 2, jockey.Position);
+        Assert.Same(rider, jockey.Vehicle);
         attachments.Set("travelprobe:value", new NbtTag<int>("travelprobe:value", 2));
         Assert.Equal(2, Assert.IsType<NbtTag<int>>(attachments.Get("travelprobe:value")).Value);
 
@@ -305,6 +308,13 @@ public class Portals
                 sharedPortal, (await source.World.GetBlockAsync(sharedPortal))!));
             Assert.Same(PortalTypesRegistry.Nether, source.World.Portals.TypeAt(
                 commandPortal, (await source.World.GetBlockAsync(commandPortal))!));
+
+            // Replacing a claimed portal twice before its tick must not give the new block its old claim.
+            var replacedPortal = sharedPortal + Vector.Up;
+            await source.World.SetBlockAsync(replacedPortal, BlocksRegistry.Air);
+            await source.World.SetBlockAsync(replacedPortal, BlocksRegistry.NetherPortal);
+            Assert.Same(PortalTypesRegistry.Nether, source.World.Portals.TypeAt(
+                replacedPortal, (await source.World.GetBlockAsync(replacedPortal))!));
 
             var player = TestServerFactory.CreateConnectedPlayer(
                 source.Server, source.World, "PortalTraveller", new VectorD(1.5, 64, 0.5));
@@ -472,7 +482,7 @@ public class Portals
         }
 
         Assert.Same(end, player.Level);
-        Assert.Equal(new VectorD(100.5, 51, 0.5), player.Position);
+        Assert.Equal(new VectorD(100.5, 49, 0.5), player.Position);
         Assert.Equal(BlockIds.Obsidian, (await end.GetBlockAsync(new Vector(100, 48, 0)))!.RegistryId);
         Assert.True((await end.GetBlockAsync(new Vector(100, 49, 0)))!.IsAir);
         Assert.Equal(10, Assert.Single(client.SentPackets.OfType<RespawnPacket>())
