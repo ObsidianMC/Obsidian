@@ -933,6 +933,16 @@ order, like a hopper) and `Extract(slot, count)`. Inserting returns what didn't 
 transfer before doing either. Each call is atomic, but two calls aren't a transaction, so check what the real call
 returns: a player's click can come between them.
 
+For a machine's conversion inside its own inventory, use the protected `IDisposable? LockInventory()` in a
+synchronous part of `TickAsync`. A null handle means the inventory is unavailable (removed, retired or pending
+loot), or the caller holds the level's tick lock. With the handle held, read and change `Inventory` directly:
+match the current ingredient, check the output's space, consume the ingredient, then write the result, all before
+disposing the handle. It takes the same lock as menu clicks and notifies viewers and comparators when the items
+change. Do not await, call item access (even your own), or take other locks while holding it. Transfers to another
+container still use item access outside this scope and check the real extraction and any refused insertion.
+The sample grinder demonstrates this pattern, resets progress when its recipe changes, and saves the recipe's
+identity and settings with its progress. Saved progress without matching recipe data starts again from zero.
+
 Slots are the side's: a furnace's top reaches only its ingredient slot, which is slot 0 of that access. Vanilla's
 containers follow vanilla's `WorldlyContainer` rules. Chests, trapped chests, barrels, hoppers, droppers and
 dispensers give every slot to every side, and a double chest is one 54-slot inventory, its right half first.

@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
+using Obsidian.API.Registries;
 using Obsidian.API.World;
 using Obsidian.Nbt;
 
@@ -27,6 +28,7 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
     // Changed only on the level's tick, like the rest of the block entity's own state.
     private int progress;
     private int time;
+    private GrindingRecipe? activeRecipe;
 
     // Changed by a click in the grinder's menu, on the player's thread, and read on the level's tick: a field written
     // whole, which the tick sees once it's set.
@@ -60,6 +62,23 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
     {
         base.Load(tag);
         this.progress = tag.TryGetTagValue<int>("progress", out var progress) ? progress : 0;
+        this.activeRecipe = null;
+
+        // Load can run before the entity has a server. Restore the saved recipe's value, then compare it with the
+        // server's current recipe on the first tick, under the inventory lock.
+        if (tag.TryGetTagValue<string>("recipe", out var identifier)
+            && tag.TryGetTagValue<string>("ingredient", out var ingredientName)
+            && ItemsRegistry.TryGet(ingredientName, out var ingredient)
+            && tag.TryGetTagValue<string>("result", out var resultName)
+            && ItemsRegistry.TryGet(resultName, out var result)
+            && tag.TryGetTagValue<int>("count", out var count) && count > 0
+            && tag.TryGetTagValue<int>("time", out var time) && time > 0
+            && this.Inventory[InputSlot] is { IsAir: false, Count: > 0 } item && item.Is(ingredient))
+        {
+            this.activeRecipe = new GrindingRecipe(identifier, ingredient, result, count, time);
+        }
+
+        this.progress = Math.Clamp(this.progress, 0, this.activeRecipe?.Time ?? 0);
         this.pulls = !tag.TryGetTagValue<byte>("pulls", out var pulls) || pulls != 0;
     }
 
@@ -70,6 +89,14 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
         base.Save(tag);
         tag.Add(new NbtTag<int>("progress", this.progress));
         tag.Add(new NbtTag<byte>("pulls", (byte)(this.pulls ? 1 : 0)));
+        if (this.activeRecipe is GrindingRecipe recipe)
+        {
+            tag.Add(new NbtTag<string>("recipe", recipe.Identifier));
+            tag.Add(new NbtTag<string>("ingredient", recipe.Ingredient.UnlocalizedName));
+            tag.Add(new NbtTag<string>("result", recipe.Result.UnlocalizedName));
+            tag.Add(new NbtTag<int>("count", recipe.Count));
+            tag.Add(new NbtTag<int>("time", recipe.Time));
+        }
     }
 
     /// <summary>
@@ -101,7 +128,7 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
         if (this.pulls)
             this.Pull(level, own);
 
-        this.Grind(own);
+        this.Grind();
         this.Push(level, own);
 
         return ValueTask.CompletedTask;
@@ -137,9 +164,22 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
 
     // Grinds the input's item a tick further. Once its recipe's time is up and the output has room, one of it turns
     // into the recipe's result; until then it waits at full progress.
-    private void Grind(IItemAccess own)
+    private void Grind()
     {
-        var recipe = own.GetItem(InputSlot) is ItemStack item ? this.FindRecipe(item) : null;
+        // Selection and conversion share the menu's lock: neither slot can change between the two.
+        using var held = this.LockInventory();
+        if (held is null)
+            return;
+
+        var item = this.Inventory[InputSlot];
+        var recipe = item is { IsAir: false, Count: > 0 } ? this.FindRecipe(item) : null;
+        if (recipe != this.activeRecipe)
+        {
+            this.activeRecipe = recipe;
+            this.SetProgress(0);
+            this.SetChanged();
+        }
+
         this.time = recipe?.Time ?? 0;
         if (recipe is null)
         {
@@ -154,12 +194,17 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
         var result = new ItemStack(recipe.Result, recipe.Count);
         result.Set(GrinderBlock.GroundBy, this.BlockPosition);
 
-        // Only the grinder takes from its input and fills its output, so once planned, the real calls do the same.
-        if (own.Insert(OutputSlot, result, simulate: true) is not null)
+        var existing = this.Inventory[OutputSlot];
+        var empty = existing is null || existing.IsAir || existing.Count <= 0;
+        if (result.Count > result.MaxStackSize
+            || !empty && (!existing!.Equals(result) || existing.Count > result.MaxStackSize - result.Count))
+        {
             return;
+        }
 
-        own.Extract(InputSlot, 1);
-        own.Insert(OutputSlot, result);
+        // Consume the ingredient we matched before publishing its result, still under the same lock.
+        this.Inventory.SetItem(InputSlot, item!.Count > 1 ? new ItemStack(item, item.Count - 1) : null);
+        this.Inventory.SetItem(OutputSlot, new ItemStack(result, result.Count + (empty ? 0 : existing!.Count)));
         this.SetProgress(0);
     }
 
