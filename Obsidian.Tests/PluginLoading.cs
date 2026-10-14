@@ -575,10 +575,6 @@ public sealed class ProbePlugin : PluginBase
         pluginRegistry.AddToTag("entity_type", "probe:golems", "probe:golem");
         pluginRegistry.RegisterEntity("probe:pebble", new EntityProperties { Kind = EntityKind.Projectile });
 
-        // A block whose block entity counts its ticks (see WorldBlockEntities).
-        var counter = pluginRegistry.RegisterBlock("probe:counter", new BlockProperties { Item = null });
-        pluginRegistry.RegisterBlockEntity<ProbeCounter>("probe:counter", counter);
-
         var parts = pluginRegistry.RegisterBlock("probe:parts", new BlockProperties
         {
             Item = null,

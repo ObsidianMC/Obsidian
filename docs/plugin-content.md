@@ -9,6 +9,9 @@ the server's ids to their own. The mods may load in any order. Biomes, dimension
 their data, so vanilla clients can join too. On the Obsidian client, a mod adds its client
 side in code (see [Client](#client)).
 
+`samples/EngineSample` is a working plugin built on this API alone, which the tests load like any plugin: its tick
+counter is a block with state, hooks, a block entity, redstone, light and a loot table together.
+
 ## Blocks in code
 
 ```csharp
@@ -28,8 +31,12 @@ public override void ConfigureRegistry(IPluginRegistry registry)
 ```
 
 The block's identifier is in the plugin's namespace (its id). Unless `Item` is null, an item with the same identifier
-places the block and is its fallback drop when it has no loot table. A client mod declares the same properties and
-values in the same order: bool properties are `true, false`, int ones ascending, enum ones in the order given.
+places the block and is its fallback drop when it has no loot table. `LightEmission` is every state's light level;
+`StateLightEmission` gives each state its own from its property values, like vanilla's per-state light level
+(`StateLightEmission = values => values["lit"] == "true" ? 15 : 0`). It's asked once per state as the block
+registers, and changing to a state with another level relights the area (see [Runtime light](#runtime-light)). A
+client mod declares the same properties and values in the same order: bool properties are `true, false`, int ones
+ascending, enum ones in the order given.
 
 Structures turn and mirror the block, in templates and pool elements, by its properties named like vanilla's: a
 `facing` of `north`, `east`, `south`, `west`, `up` or `down` turns, an `axis` of `x`, `y` or `z` swaps `x` and `z` on a
@@ -86,9 +93,12 @@ The hooks with a `Level` run synchronously while the level's block updates wait 
 change blocks through that `IBlockLevel` (`GetBlock`, `SetBlock`, `RemoveBlock`, `ScheduleTick`,
 `HasScheduledTick`, `UpdateNeighbors`, its [redstone](#redstone) signals and the level's `Random`), not through
 `ILevel`'s asynchronous methods, and keep them short. The updates a hook's change causes run after the hook
-returns, in vanilla's order. A hook that throws is logged and the updates, and the level's tick, go on. Like
-`UseAsync`, every hook runs as a call into the plugin, and none runs once it starts unloading. A block change and the
-updates it causes run as one step: a change made meanwhile on another thread waits for them.
+returns, in vanilla's order. `IBlockLevel.GetBlockEntity` reads the block's block entity, like vanilla's
+`getBlockEntity`; a hook may run on a player's thread while block entities tick, so read only what's safe to read so
+(a field written whole) and change the block entity on its own tick. A hook that throws is logged and the updates,
+and the level's tick, go on. Like `UseAsync`, every hook runs as a call into the plugin, and none runs once it starts
+unloading. A block change and the updates it causes run as one step: a change made meanwhile on another thread waits
+for them.
 
 Block changes run vanilla's side effects as `BlockUpdateFlags` ask, with vanilla's values: `ILevel.SetBlockAsync`
 with `doBlockUpdate: true`, a player placing or breaking a block, and explosions use `All` (neighbours hear of the
@@ -191,8 +201,9 @@ A plugin block takes part through its behaviour's hooks, which default to giving
   neighbour updates does), and for strong power the neighbours of the block it powers through too, as vanilla's
   levers do.
 - `HasAnalogOutput` and `GetAnalogOutput`: what a comparator facing away from it reads, like a container's fullness.
-  A block change with neighbour updates tells the comparators; `IBlockLevel.UpdateAnalogOutput` tells them when the
-  output changes otherwise.
+  A block change with neighbour updates tells the comparators, and so does its block entity's `SetChanged` at the end
+  of the tick, like vanilla's `setChanged`, so an output read from the block entity (`IBlockLevel.GetBlockEntity`)
+  follows it; `IBlockLevel.UpdateAnalogOutput` tells them when the output changes otherwise.
 
 It reacts to power in `NeighborChanged`, which runs when power around it may have changed, as vanilla's blocks do.
 The hooks run in a call into the plugin like the others; while the plugin unloads or is unloaded, its blocks give no
@@ -364,7 +375,8 @@ entities' `custom_name`. So a broken shulker box drops a box holding its items (
 first when a player breaks it, and dropping even for a creative player when it holds items), and placing that box
 gives them back, with its name, lock and loot table. Chests and other containers whose items drop as they go give
 no `container`, like vanilla's. Item stacks save `container`, `lock`, `container_loot` and `pot_decorations`.
-Banner patterns, bees and skull profiles aren't taken yet.
+Banner patterns, bees and skull profiles aren't taken yet, and neither is a plugin's block entity data: keeping it on
+the dropped item waits for plugin data component types.
 
 ## Entities
 

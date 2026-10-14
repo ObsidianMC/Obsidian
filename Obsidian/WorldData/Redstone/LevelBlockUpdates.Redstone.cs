@@ -225,8 +225,8 @@ internal sealed partial class LevelBlockUpdates
     }
 
     /// <summary>
-    /// A container's items changed, like vanilla's <c>BlockEntity.setChanged</c> for a block with an analog output:
-    /// the comparators reading it hear of it.
+    /// A block entity changed (a container's items, say), like vanilla's <c>BlockEntity.setChanged</c> for a block
+    /// with an analog output: the comparators reading it hear of it.
     /// </summary>
     public void OnContainerChanged(Vector position)
     {
@@ -423,7 +423,7 @@ internal sealed partial class LevelBlockUpdates
     /// <summary>
     /// The block entity at <paramref name="position"/>, if its chunk is loaded.
     /// </summary>
-    internal IBlockEntity? GetBlockEntity(Vector position) =>
+    public IBlockEntity? GetBlockEntity(Vector position) =>
         fluids.TryGetChunk(position, out var chunk) ? chunk.GetBlockEntity(position.X, position.Y, position.Z) : null;
 
     /// <summary>

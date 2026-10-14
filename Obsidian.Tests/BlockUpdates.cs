@@ -36,7 +36,7 @@ namespace Obsidian.Tests;
 [Collection(nameof(PluginTagFiles))]
 public sealed class BlockUpdates : IDisposable
 {
-    private const int Ground = 69;
+    internal const int Ground = 69;
 
     private readonly string folder = Path.Join(Path.GetTempPath(), $"obsidian-block-updates-{Guid.NewGuid():N}");
 
@@ -567,7 +567,8 @@ public sealed class BlockUpdates : IDisposable
         hopper.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Get("minecraft:stone"), 64));
     }
 
-    private static UseItemOnPacket UseOn(Vector position, BlockFace face)
+    // A player using their main hand on the face of the block at position, at the middle of its top.
+    internal static UseItemOnPacket UseOn(Vector position, BlockFace face)
     {
         using var writer = new NetworkBuffer();
         writer.WriteVarInt((int)InteractionHand.MainHand);
@@ -599,7 +600,7 @@ public sealed class BlockUpdates : IDisposable
         }
     }
 
-    private static PluginManager CreatePluginManager(RealServerContext context) => new(
+    internal static PluginManager CreatePluginManager(RealServerContext context) => new(
         context.Server,
         context.Provider,
         context.EventDispatcher,
@@ -616,7 +617,7 @@ public sealed class BlockUpdates : IDisposable
     }
 
     // Complete chunks around the origin with a stone floor, loaded as the level loads them, so they tick.
-    private static async Task AddChunksAsync(WorldData.World world)
+    internal static async Task AddChunksAsync(WorldData.World world)
     {
         for (var chunkX = -1; chunkX <= 1; chunkX++)
         {

@@ -69,6 +69,7 @@ The base every mod needs: blocks with state that save, tick, react and sync.
 
 **Sample:** a block with a block entity that counts ticks, is powered by redstone, faces where it's placed, relights
 its surroundings, and drops its loot table.
+(done: `samples/EngineSample`, its tick counter, loaded by `Obsidian.Tests/SamplePlugin.cs`)
 
 ## Phase 2: items, inventories and recipes
 

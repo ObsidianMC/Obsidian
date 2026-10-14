@@ -263,7 +263,7 @@ internal static class BlockPhysics
         if ((uint)stateId < (uint)flags.Length)
             return flags[stateId];
 
-        return BlocksRegistry.TryGetPluginBlock(stateId, out var type) ? PluginFlags(type) : 0;
+        return BlocksRegistry.TryGetPluginBlock(stateId, out var type) ? PluginFlags(type, stateId) : 0;
     }
 
     // The flags a plugin block keeps from its template state: its shape's, not those that come from what the vanilla
@@ -271,9 +271,9 @@ internal static class BlockPhysics
     private const int TemplateFlags = 1 << 1 | 1 << 2 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 0b111111 << 11
         | 1 << 28 | 1 << 29 | 1 << 30 | 1 << 31;
 
-    // A plugin block's flags: its template state's (see BlocksRegistry.TemplateStateOf), with its own light emission,
-    // and a block entity when the plugin registered a block entity type for it.
-    private static int PluginFlags(BlockType type)
+    // A plugin block state's flags: its template state's (see BlocksRegistry.TemplateStateOf), with the state's own
+    // light emission, and a block entity when the plugin registered a block entity type for the block.
+    private static int PluginFlags(BlockType type, int stateId)
     {
         var settings = type.Settings;
         var flags = Tables.Flags[BlocksRegistry.TemplateStateOf(type)] & TemplateFlags;
@@ -285,7 +285,7 @@ internal static class BlockPhysics
         if (BlockEntityTypesRegistry.Of(type) is not null)
             flags |= 1 << 10;
 
-        return flags | Math.Clamp(settings.LightEmission, 0, 15) << 17;
+        return flags | Math.Clamp(settings.LightEmissionOf(stateId - type.FirstStateId), 0, 15) << 17;
     }
 
     // The vanilla state whose shapes describe a state: itself, a plugin block's template, or air for an unknown id.

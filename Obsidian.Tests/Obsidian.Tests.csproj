@@ -50,4 +50,26 @@
 		<None Include="data\**\*.json" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
+	<!-- The engine sample plugin, built first; its output, laid out like its archive, is copied into EngineSample/,
+	     which the tests pack and load like a real plugin's. -->
+	<ItemGroup>
+		<ProjectReference Include="..\samples\EngineSample\EngineSample.csproj"
+		                  OutputItemType="EngineSampleAssembly"
+		                  ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<Target Name="CopyEngineSample" AfterTargets="Build">
+		<PropertyGroup>
+			<EngineSampleOutput>@(EngineSampleAssembly->'%(RootDir)%(Directory)')</EngineSampleOutput>
+		</PropertyGroup>
+
+		<ItemGroup>
+			<EngineSampleFiles Include="$(EngineSampleOutput)**\*" />
+		</ItemGroup>
+
+		<Copy SourceFiles="@(EngineSampleFiles)"
+		      DestinationFiles="@(EngineSampleFiles->'$(OutDir)EngineSample\%(RecursiveDir)%(Filename)%(Extension)')"
+		      SkipUnchangedFiles="true" />
+	</Target>
+
 </Project>

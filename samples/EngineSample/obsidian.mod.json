@@ -1,0 +1,8 @@
+{
+  "modId": "sample",
+  "displayName": "Obsidian engine sample",
+  "version": "1.0.0",
+  "assembly": "EngineSample",
+  "description": "Uses each phase of Obsidian's engine plan (docs/engine-foundations.md) through the public API.",
+  "side": "both"
+}

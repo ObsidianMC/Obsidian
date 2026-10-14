@@ -242,12 +242,15 @@ public abstract partial class AbstractLevel
     /// <summary>
     /// Takes in the changes block entities announced: the data a plugin's block entity saves is a copy of what its
     /// <see cref="BlockEntity.Save"/> wrote now, on the level's thread, so that the plugin changing what it wrote
-    /// later doesn't change what's saved.
+    /// later doesn't change what's saved. Like vanilla's <c>setChanged</c>, the comparators reading a changed block
+    /// entity's block hear of it then (a container's hear when its items move, see <c>UpdateComparatorsOf</c>).
     /// </summary>
     internal void TakeBlockEntityChanges()
     {
         if (this.blockEntityHost is not LevelBlockEntityHost host)
             return;
+
+        List<Vector>? outputsChanged = null;
 
         while (host.Changed.TryDequeue(out var blockEntity))
         {
@@ -275,7 +278,13 @@ public abstract partial class AbstractLevel
 
             if (blockEntity is ContainerBlockEntity container && revision is long saved)
                 container.SavedRevision = saved;
+            else
+                (outputsChanged ??= []).Add(blockEntity.BlockPosition);
         }
+
+        // Outside the calls into the plugins: the comparators ask the blocks' analog output in calls of their own.
+        foreach (var position in outputsChanged ?? [])
+            this.BlockUpdates.OnContainerChanged(position);
     }
 
     /// <summary>
