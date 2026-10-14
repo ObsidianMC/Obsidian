@@ -83,6 +83,25 @@ internal sealed class RecipeSet
         return null;
     }
 
+    /// <summary>
+    /// The recipes of a plugin's type whose plugin is loaded, in lexical identifier order, like
+    /// <see cref="FindPluginRecipe"/> tries them.
+    /// </summary>
+    internal IReadOnlyList<TRecipe> GetPluginRecipes<TRecipe>(RecipeType<TRecipe> type)
+        where TRecipe : class
+    {
+        if (!this.pluginRecipes.TryGetValue(type.Identifier, out var recipes))
+            return [];
+
+        return
+        [
+            .. recipes
+                .Where(recipe => recipe.Binding.Active && !recipe.Owner.IsClosing)
+                .Select(recipe => recipe.Value)
+                .OfType<TRecipe>()
+        ];
+    }
+
     /// <summary>The configured content when this set was published; null for vanilla's shared set.</summary>
     internal ContentVersion? RequiredContent { get; init; }
 

@@ -105,6 +105,13 @@ public interface IServer : IDisposable
     public TRecipe? FindRecipe<TRecipe>(RecipeType<TRecipe> type, IReadOnlyList<ItemStack?> inputs)
         where TRecipe : class => null;
 
+    /// <summary>
+    /// The current recipes of a plugin's type, in lexical recipe identifier order, like a machine's screen lists
+    /// them. Empty when the type is unloaded. Do not retain the recipes across reloads.
+    /// </summary>
+    public IReadOnlyList<TRecipe> GetRecipes<TRecipe>(RecipeType<TRecipe> type)
+        where TRecipe : class => [];
+
     public bool AddPlayer(IPlayer player);
     public bool RemovePlayer(IPlayer player);
 

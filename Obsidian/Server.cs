@@ -273,6 +273,13 @@ public sealed partial class Server : IServer, IPluginScopedServer
         return this.RecipeRegistry.Current.FindPluginRecipe(type, inputs);
     }
 
+    public IReadOnlyList<TRecipe> GetRecipes<TRecipe>(RecipeType<TRecipe> type)
+        where TRecipe : class
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        return this.RecipeRegistry.Current.GetPluginRecipes(type);
+    }
+
     internal void LoadRecipeFiles(
         IEnumerable<(PluginContainer Owner, IEnumerable<RecipeFile> Files)> sources)
     {
