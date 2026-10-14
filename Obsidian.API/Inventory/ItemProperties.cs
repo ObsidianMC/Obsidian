@@ -1,4 +1,5 @@
 using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Effects;
 
 namespace Obsidian.API.Inventory;
 
@@ -44,6 +45,9 @@ public sealed class ItemProperties
     /// How the item's <see cref="Food"/> is eaten (how long it takes, its animation and sound, the effects it gives),
     /// the item's default <c>minecraft:consumable</c>. Vanilla's food default
     /// (<see cref="ComponentBuilder.Consumable"/>) when null; ignored without <see cref="Food"/>.
+    /// Effects must use the host's sealed <see cref="ComponentConsumeEffect"/> or
+    /// <see cref="EffectWithProbability"/>; plugin implementations are rejected so defaults cannot retain
+    /// their assembly.
     /// </summary>
     public ConsumableDataComponent? Consumable { get; init; }
 
@@ -79,8 +83,19 @@ public sealed class ItemProperties
         // Like vanilla's Item.Properties.food, food is consumable too, by default as vanilla's food is eaten.
         if (this.Food is not null)
         {
+            var consumable = this.Consumable ?? ComponentBuilder.Consumable;
+            foreach (var effect in consumable.Effects)
+            {
+                if (effect.Effect is not ComponentConsumeEffect and not EffectWithProbability)
+                {
+                    throw new ArgumentException(
+                        "Default consume effects must use ComponentConsumeEffect or EffectWithProbability.",
+                        nameof(this.Consumable));
+                }
+            }
+
             components.Add(this.Food);
-            components.Add(this.Consumable ?? ComponentBuilder.Consumable);
+            components.Add(consumable);
         }
 
         if (this.Equippable is not null)

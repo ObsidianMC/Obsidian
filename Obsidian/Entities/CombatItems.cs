@@ -44,10 +44,11 @@ internal static class CombatItems
             else if (operation == "add_multiplied_base") baseMultiplier += value;
             else if (operation == "add_multiplied_total") totalMultiplier *= 1 + value;
         }
-        // The stack's own modifiers, else a plugin item's defaults, else (below) a vanilla item's.
-        var own = item.Patch.FirstOrDefault(component => component.Type == DataComponentType.AttributeModifiers)
-            ?? item.Holder.DefaultComponents.FirstOrDefault(
-                component => component.Type == DataComponentType.AttributeModifiers);
+        // Effective components include the defaults captured when this stack was made, even after a plugin reload.
+        var own = item.Holder.Id >= ItemsRegistry.VanillaCount
+            ? item.GetComponent<SimpleDataComponent<ImmutableArray<AttributeModifier>>>(
+                DataComponentType.AttributeModifiers)
+            : item.Patch.FirstOrDefault(component => component.Type == DataComponentType.AttributeModifiers);
         if (own is SimpleDataComponent<ImmutableArray<AttributeModifier>> custom)
         {
             var id = name switch
@@ -71,7 +72,8 @@ internal static class CombatItems
                 { AttributeOperation.Add => "add_value", AttributeOperation.MulBase => "add_multiplied_base", _ => "add_multiplied_total" });
             }
         }
-        else if (Component(item, "attribute_modifiers") is { ValueKind: JsonValueKind.Array } modifiers)
+        else if (item.Holder.Id < ItemsRegistry.VanillaCount
+            && Component(item, "attribute_modifiers") is { ValueKind: JsonValueKind.Array } modifiers)
         {
             foreach (var modifier in modifiers.EnumerateArray())
                 if (modifier.GetProperty("type").GetString() == "minecraft:" + name &&

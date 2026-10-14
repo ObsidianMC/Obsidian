@@ -143,10 +143,11 @@ public static partial class ItemsRegistry
             if (closing())
                 return false;
 
+            var defaults = properties.BuildDefaultComponents();
             item.MaxStackSize = properties.MaxStackSize;
             item.MaxDamage = properties.MaxDamage;
             item.Enchantable = properties.Enchantable;
-            item.DefaultComponents = properties.BuildDefaultComponents();
+            item.DefaultComponents = defaults;
             item.Binding = new ItemBinding(plugin, properties.Behavior, TicksInInventory(properties.Behavior));
             UpdateTicksInInventory();
 

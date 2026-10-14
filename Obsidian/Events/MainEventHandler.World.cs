@@ -55,7 +55,16 @@ public partial class MainEventHandler
             return;
         }
 
-        var tool = player.GetHeldItem();
+        int toolSlot;
+        int wear;
+        ItemStack? tool;
+        using (await player.Inventory.LockAsync())
+        {
+            toolSlot = player.CurrentHeldItemSlot;
+            tool = player.Inventory.GetItem(toolSlot);
+            wear = CombatItems.ToolDamage(tool, block);
+        }
+
         var parts = await TwoPartBlockBreak.PrepareAsync(world, location, block);
 
         // What the block entity gives the loot (a shulker box's items, say), taken before the block goes.
@@ -123,8 +132,8 @@ public partial class MainEventHandler
         }
 
         // Like vanilla's Item.mineBlock, the tool wears once the drops were decided with it as it was.
-        if (player is Player miner && CombatItems.ToolDamage(tool, block) is var wear and > 0)
-            await miner.DamageInventoryItemAsync(miner.CurrentHeldItemSlot, wear);
+        if (player is Player miner && tool is not null && wear > 0)
+            await miner.DamageInventoryItemAsync(toolSlot, wear, expected: tool);
 
         if (block.UnlocalizedName.StartsWith("minecraft:infested_", StringComparison.Ordinal))
         {

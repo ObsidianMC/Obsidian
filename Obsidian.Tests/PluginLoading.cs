@@ -9,6 +9,7 @@ using Obsidian.API.Builders;
 using Obsidian.API.Entities;
 using Obsidian.API.Configuration;
 using Obsidian.API.Events;
+using Obsidian.API.Effects;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
@@ -24,6 +25,7 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Payloads;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
 using Obsidian.Plugins.Archives;
 using Obsidian.Plugins.ServiceProviders;
@@ -463,7 +465,7 @@ public sealed class PluginLoading : IDisposable
     [Fact]
     public async Task PluginItems_HaveTheirDefaultComponentsAndHooks()
     {
-        var (manager, _, _) = this.CreateManager();
+        var (manager, _, server) = this.CreateManager();
         var path = Path.Join(this.folder, "probe.obby");
 
         await File.WriteAllBytesAsync(path, ProbeArchive("1.0.0"));
@@ -497,7 +499,7 @@ public sealed class PluginLoading : IDisposable
         var use = new ItemUseOnEntityContext
         {
             Player = player,
-            Stack = stack,
+            Stack = new ItemStack(charm),
             Hand = InteractionHand.MainHand,
             Entity = null!
         };
@@ -519,6 +521,79 @@ public sealed class PluginLoading : IDisposable
             new InteractingMob(takes: false) { Level = null! },
             InteractionHand.MainHand);
         Assert.Equal(1, AppContext.GetData(ProbePlugin.UsesKey));
+
+        // Real players receive isolated updates for the inventory and the open window's player slots.
+        var client = new TestClient(server);
+        var window = new Container(27) { StateId = 7 };
+        var actual = new Obsidian.Entities.Player(Guid.NewGuid(), "ItemUser", client, server.DefaultWorld)
+        {
+            Server = server,
+            CurrentContainerId = 1,
+            OpenedContainer = window
+        };
+        actual.Inventory.SetItem(actual.CurrentHeldItemSlot, new ItemStack(charm, 2));
+        Assert.True(await ItemBehaviors.UseOnEntityAsync(actual, InteractionHand.MainHand, null!));
+        var bundle = Assert.IsType<BundledPacket>(Assert.Single(client.SentPackets));
+        var slots = bundle.Packets.Cast<ContainerSetSlotPacket>().ToArray();
+        Assert.Equal(1, slots.Single(packet => packet.ContainerId == 0).SlotData!.Count);
+        var shown = slots.Single(packet => packet.ContainerId == 1);
+        Assert.Equal(27 + actual.CurrentHeldItemSlot - 9, shown.Slot);
+        Assert.Equal(7, shown.StateId);
+        Assert.Equal(1, shown.SlotData!.Count);
+        actual.Inventory.GetItem(actual.CurrentHeldItemSlot)!.Count = 7;
+        Assert.Equal(1, shown.SlotData.Count);
+
+        actual.Inventory.SetItem(9, new ItemStack(charm, 2));
+        await actual.RunItemUseAsync(() =>
+        {
+            actual.Inventory.GetItem(9)!.Count--;
+            return ValueTask.FromResult(false);
+        });
+        var inventoryUpdate = Assert.IsType<BundledPacket>(client.SentPackets[^1]);
+        var mainSlot = inventoryUpdate.Packets.Cast<ContainerSetSlotPacket>()
+            .Single(packet => packet.ContainerId == 1);
+        Assert.Equal(27, mainSlot.Slot);
+        Assert.Equal(8, mainSlot.StateId);
+        Assert.Equal(1, mainSlot.SlotData!.Count);
+
+        // A rejected default cannot replace the host-owned defaults, and a reload only changes new stacks.
+        var defaults = charm.DefaultComponents;
+        Assert.Throws<ArgumentException>(() => ItemsRegistry.TryBind(charm, new ItemProperties
+        {
+            Food = ComponentBuilder.Food,
+            Consumable = ComponentBuilder.Consumable with
+            {
+                Effects =
+                [
+                    new ConsumeEffect
+                    {
+                        Type = "minecraft:clear_all_effects",
+                        Effect = new CustomConsumeEffect()
+                    }
+                ]
+            }
+        }, container, () => false));
+        Assert.Equal(defaults, charm.DefaultComponents);
+        Assert.True(ItemsRegistry.TryBind(charm, new ItemProperties
+        {
+            Equippable = ComponentBuilder.Equippable with { Slot = EquipmentSlot.Helmet },
+            AttributeModifiers =
+            [
+                new AttributeModifier
+                {
+                    Id = AttributeIds.Armor,
+                    Name = "probe:charm",
+                    Value = 5,
+                    Operation = AttributeOperation.Add,
+                    Slot = AttributeSlot.Head
+                }
+            ],
+            Behavior = charm.Behavior
+        }, container, () => false));
+        Assert.Equal(2, CombatItems.Attribute(stack, "armor", "head"));
+        Assert.Equal(5, CombatItems.Attribute(new ItemStack(charm), "armor", "head"));
+        stack.Remove(DataComponentType.AttributeModifiers);
+        Assert.Equal(0, CombatItems.Attribute(stack, "armor", "head"));
 
         // Unloaded, its hooks are gone, so inventories aren't scanned for it, while the item keeps its defaults.
         await manager.UnloadPluginAsync(container);
@@ -643,6 +718,15 @@ public sealed class PluginLoading : IDisposable
 
         internal override ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand) =>
             ValueTask.FromResult(takes);
+    }
+
+    private sealed class CustomConsumeEffect : IConsumeEffect
+    {
+        public string Type => "minecraft:clear_all_effects";
+
+        public IConsumeEffect Read(INetStreamReader reader) => new CustomConsumeEffect();
+
+        public void Write(INetStreamWriter writer) { }
     }
 }
 
@@ -883,6 +967,7 @@ public sealed class ProbePlugin : PluginBase
         public ValueTask<bool> UseOnEntityAsync(ItemUseOnEntityContext context)
         {
             AppContext.SetData(UsesKey, (AppContext.GetData(UsesKey) as int? ?? 0) + 1);
+            context.Stack.Count--;
 
             return ValueTask.FromResult(true);
         }
