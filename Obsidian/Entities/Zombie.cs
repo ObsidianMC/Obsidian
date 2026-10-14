@@ -31,7 +31,7 @@ public partial class Zombie : PathfinderMob
     protected override int GetExperienceReward() => (IsBaby ? 12 : 5) +
         Enum.GetValues<Obsidian.API.Inventory.EquipmentSlot>().Sum(slot => GetEquipment(slot).IsAir || GetEquipmentDropChance(slot) > 1 ? 0 : Random.Next(1, 4));
     protected internal override float AttackDamage => base.AttackDamage + GetWeaponDamage(GetEquipment(Obsidian.API.Inventory.EquipmentSlot.MainHand));
-    internal override float EyeHeight => IsBaby ? 0.93f : 1.74f;
+    internal override float EyeHeight => (IsBaby ? 0.93f : 1.74f) * this.AttributeScale;
     internal override float MovementSpeed => base.MovementSpeed * (IsBaby ? 1.5f : 1);
 
     protected override void RegisterGoals(GoalSelector actionGoals, GoalSelector targetGoals)
@@ -160,21 +160,14 @@ public partial class Zombie : PathfinderMob
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(ItemsRegistry.RottenFlesh, Random.Next(3));
-        if (source is IPlayer && Random.NextSingle() < 0.025f)
-            DropItem(Random.Next(3) switch
-            {
-                0 => ItemsRegistry.IronIngot,
-                1 => ItemsRegistry.Carrot,
-                _ => ItemsRegistry.Potato
-            });
-
+        this.DropVanillaLoot(source);
         foreach (var slot in Enum.GetValues<Obsidian.API.Inventory.EquipmentSlot>())
         {
-            var item = GetEquipment(slot);
-            if (!item.IsAir && Random.NextSingle() < GetEquipmentDropChance(slot))
-                DropItem(item);
+            var item = this.GetEquipment(slot);
+            if (!item.IsAir && this.Random.NextSingle() < this.GetEquipmentDropChance(slot))
+                this.DropItem(item);
         }
+
         return default;
     }
 

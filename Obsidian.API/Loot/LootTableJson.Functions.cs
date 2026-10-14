@@ -1,6 +1,7 @@
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot.Functions;
+using Obsidian.API.Utilities;
 using System.IO;
 using System.Text.Json;
 
@@ -23,6 +24,21 @@ public static partial class LootTableJson
                     Conditions = conditions,
                     Count = ReadNumber(json.GetProperty("count")),
                     Add = json.TryGetProperty("add", out var add) && add.GetBoolean()
+                };
+            case "minecraft:furnace_smelt":
+                // SmeltItem supplies one recipe result; vanilla preserves the input count, without random draws.
+                return new DataFunction((stack, context) =>
+                {
+                    if (stack.Count <= 0 || context.SmeltItem?.Invoke(stack) is not ItemStack result)
+                        return stack;
+
+                    return new ItemStack(result, stack.Count);
+                }) { Conditions = conditions };
+            case "minecraft:set_potion":
+                return new SetPotionFunction
+                {
+                    Conditions = conditions,
+                    Id = Enum.Parse<Potion>(Text(json, "id").Split(':')[^1].Replace("_", ""), true)
                 };
             case "minecraft:explosion_decay":
                 return new DataFunction(Decay) { Conditions = conditions };

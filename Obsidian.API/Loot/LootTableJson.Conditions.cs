@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Loot.Conditions;
 using Obsidian.API.Loot.Numbers;
 using Obsidian.API.Registries;
+using Obsidian.API.Utilities;
 using System.IO;
 using System.Text.Json;
 
@@ -136,11 +137,113 @@ public static partial class LootTableJson
 
     private static ILootCondition EntityPredicate(JsonElement json)
     {
-        // Vanilla's block tables use an empty predicate to require this_entity (snow never drops from explosions).
-        if (Text(json, "entity") != "this" || json.GetProperty("predicate").EnumerateObject().Any())
-            throw new InvalidDataException("Only an empty this_entity predicate is supported for block loot.");
+        var target = Text(json, "entity");
+        if (target is not ("this" or "attacker" or "direct_attacker" or "attacking_player"))
+            throw new InvalidDataException($"Unsupported entity target {target}.");
 
-        return new PredicateCondition(context => context.ThisEntity is not null);
+        var predicate = json.GetProperty("predicate");
+        ValidateEntityPredicate(predicate);
+        return new PredicateCondition(context => MatchesEntity(target switch
+        {
+            "this" => context.ThisEntity,
+            "attacker" => context.AttackingEntity,
+            "direct_attacker" => context.DirectAttackingEntity,
+            _ => context.LastDamagePlayer
+        }, predicate, context));
+    }
+
+    private static void ValidateEntityPredicate(JsonElement predicate)
+    {
+        foreach (var property in predicate.EnumerateObject())
+        {
+            switch (property.Name)
+            {
+                case "type":
+                    break;
+                case "vehicle":
+                    ValidateEntityPredicate(property.Value);
+                    break;
+                case "equipment":
+                    foreach (var slot in property.Value.EnumerateObject())
+                    {
+                        if (slot.Name is not ("mainhand" or "offhand" or "head" or "chest" or "legs"
+                            or "feet" or "body" or "saddle"))
+                        {
+                            throw new InvalidDataException($"Unsupported equipment slot {slot.Name}.");
+                        }
+
+                        _ = ToolPredicate(slot.Value);
+                    }
+
+                    break;
+                case "flags":
+                    foreach (var flag in property.Value.EnumerateObject())
+                    {
+                        if (flag.Name is not ("is_on_fire" or "is_sneaking" or "is_sprinting" or "is_swimming"
+                            or "is_flying" or "is_on_ground" or "is_baby"))
+                        {
+                            throw new InvalidDataException($"Unsupported entity flag {flag.Name}.");
+                        }
+                    }
+
+                    break;
+                default:
+                    throw new InvalidDataException($"Unsupported entity predicate {property.Name}.");
+            }
+        }
+    }
+
+    private static bool MatchesEntity(IEntity? entity, JsonElement predicate, LootContext context)
+    {
+        if (entity is null)
+            return false;
+
+        foreach (var property in predicate.EnumerateObject())
+        {
+            switch (property.Name)
+            {
+                case "type":
+                    var id = entity.Definition?.Id ?? (int)(entity.Type ?? (EntityType)(-1));
+                    var name = entity.Definition?.Identifier ?? "minecraft:" + entity.Type?.ToString().ToSnakeCase();
+                    if (!MatchesRegistrySet(property.Value, "entity_type", name, id))
+                        return false;
+
+                    break;
+                case "vehicle":
+                    if (!MatchesEntity((entity as IPlayer)?.Vehicle, property.Value, context))
+                        return false;
+
+                    break;
+                case "equipment":
+                    foreach (var slot in property.Value.EnumerateObject())
+                    {
+                        if (!MatchesTool(context.EntityEquipment?.Invoke(entity, slot.Name), slot.Value))
+                            return false;
+                    }
+
+                    break;
+                case "flags":
+                    foreach (var flag in property.Value.EnumerateObject())
+                    {
+                        var value = flag.Name switch
+                        {
+                            "is_on_fire" => context.EntityIsOnFire?.Invoke(entity) ?? entity.Burning,
+                            "is_sneaking" => entity.Sneaking,
+                            "is_sprinting" => entity.Sprinting,
+                            "is_swimming" => entity.Swimming,
+                            "is_flying" => entity.FlyingWithElytra,
+                            "is_on_ground" => entity.MovementFlags.HasFlag(MovementFlags.OnGround),
+                            _ => context.EntityIsBaby?.Invoke(entity) == true
+                        };
+                        if (value != flag.Value.GetBoolean())
+                            return false;
+                    }
+
+                    break;
+            }
+        }
+
+        return true;
     }
 
     private sealed class PredicateCondition(Func<LootContext, bool> test) : ILootCondition

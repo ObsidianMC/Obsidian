@@ -1020,7 +1020,9 @@ The Obsidian client keeps them in `IClientEntity.Metadata` by index, where entit
 providers read them, or with `entity.TryGetData(field, out var value)`; register the type with the same fields on
 both sides. Fields aren't saved, as vanilla's synced data isn't: an entity's lasting data belongs in an attachment
 (see [Saved data and attachments](#saved-data-and-attachments)), which is saved with it, survives the plugin
-unloading, and can sync itself; set the field from it, in the behaviour's `TickAsync` say.
+unloading, and can sync itself; set the field from it, in the behaviour's `TickAsync` say. This deliberately keeps
+network indices and serializers out of the save format: an attachment has a stable namespaced id and an explicit
+codec that a plugin can evolve. Use a synced attachment directly when a separate metadata field adds nothing.
 
 ### Attributes
 
@@ -1028,12 +1030,15 @@ Living entities have vanilla's attributes, vanilla's mobs their type's defaults 
 defaults with the type's `MaxHealth`, `MovementSpeed` and `FlyingSpeed`. `IEntity.GetAttributeValue` gives an
 attribute's value: its base with its modifiers applied in vanilla's order (`Add` to the base, then multiples of that
 sum for `MulBase`, then the result multiplied for each `MulTotal`), clamped to vanilla's range for it.
-`IEntity.SetAttributeModifier(attribute, id, amount, operation)` adds or replaces a modifier, like vanilla's transient
-modifiers (not saved), and `RemoveAttributeModifier` takes it off. Players get the modifiers of what they hold and
-wear (items' `AttributeModifiers`, a plugin item's default included) as their equipment changes, and vanilla's
+`IEntity.SetAttributeModifier(attribute, id, amount, operation)` adds or replaces a modifier, like vanilla's permanent
+modifiers (saved in `attributes` with `modifiers`), and `RemoveAttributeModifier` takes it off. Players get the
+modifiers of what they hold and wear (items' `AttributeModifiers`, a plugin item's default included) as their
+equipment changes, and vanilla's
 sprinting modifier. Clients are sent the attributes vanilla syncs with `UpdateAttributes`: all of a living entity's
 when it comes into view, the player's own after joining and respawning, and those that change, to the entity's
-watchers and a player itself.
+watchers and a player itself. Equipment and sprint modifiers stay transient and are rebuilt on load.
+`minecraft:scale` multiplies hitboxes, eye height and passenger attachments on the server and the Obsidian client;
+the client also scales the whole model and its render layers.
 
 ### Damage, death and loot
 
@@ -1044,11 +1049,19 @@ or set `damage.Cancelled`. `damage.Source` is a `DamageSource`: vanilla's damage
 `DiedAsync(entity, source)` runs when it dies, before its loot drops. Both run inside a call into the plugin, never
 after it unloads.
 
-A dying plugin mob drops its type's loot table, `data/<namespace>/loot_table/entities/<path>.json` for
+A dying plugin mob (and the migrated vanilla mobs listed in [known-gaps.md](known-gaps.md#plugin-entities)) drops
+its type's loot table, `data/<namespace>/loot_table/entities/<path>.json` for
 `<namespace>:<path>` (a data pack can override it), like vanilla's `dropFromLootTable`, when the `mob_drops` rule is
 on. Its context has the mob, the attacker and the player who hurt it in the last 100 ticks, whose luck counts, so
 `minecraft:killed_by_player`, `minecraft:random_chance_with_enchanted_bonus` and
-`minecraft:enchanted_count_increase` (looting, from the killing weapon) work like vanilla's.
+`minecraft:enchanted_count_increase` (looting, from the attacker's current applicable equipment) work like vanilla's.
+`entity_properties` tests `this`, `attacker`, `direct_attacker` or `attacking_player`: an empty predicate requires
+that entity, `type` accepts an id, list or tag, `flags` supports `is_on_fire`, `is_sneaking`, `is_sprinting`,
+`is_swimming`, `is_flying`, `is_on_ground` and `is_baby`, and `equipment` supports the normal equipment slots with
+item predicates. `vehicle` tests a player's mount. `furnace_smelt` uses the level's current furnace recipes and
+preserves the stack count; it works for burning meat and `#minecraft:smelts_loot` enchantments. Custom loot callers
+can supply `LootContext.SmeltItem`. Tag entries expand in tag order, as creeper music-disc drops require. Normal
+deaths draw from the level's named table sequence; an explicit loot seed keeps vanilla's random draw order.
 
 ```json
 { "type": "minecraft:entity", "pools": [{
@@ -1066,7 +1079,18 @@ on. Its context has the mob, the attacker and the player who hurt it in the last
 that holds it up, no fluid at its feet), `InWater` (in water, with water or air above), `InLava` or `NoRestrictions`,
 each with its hitbox free. Natural spawning then skips the spawn list's light and floor rules and asks the
 behaviour's `CanSpawn(level, position)`, which can check light, blocks or anything else, on the level's tick. Without
-a placement a mob follows its spawn list's rules, as above. Spawn eggs for plugin mobs aren't provided.
+a placement a mob follows its spawn list's rules, as above.
+
+Set `EntityProperties.SpawnEgg = true` when registering a mob to register `<namespace>:<path>_spawn_egg` too.
+`EntityDefinition.SpawnEgg` is its item; put it in a `CreativeTabProperties.Items` list. Both sides register it, so
+its item id and default `minecraft:entity_data` component agree. Supply `assets/<ns>/items/<path>_spawn_egg.json`,
+its model and its texture, just as for any item: vanilla 1.21.11 eggs have individual textures. The engine sample's
+moth demonstrates all three and a creative tab. For an explicitly registered item, `ItemProperties.EntityData`
+sets the same component; its `RegistryId` is the mob type's id and `Data` holds additional saved fields.
+
+Using the egg on a block spawns that type beside it, with those fields, and consumes one outside creative mode.
+Using it on a spawner changes its `SpawnData.entity.id` and clears old spawn potentials; spawners can spawn loaded
+plugin mob types. An unloaded type keeps its saved spawner data and resumes when its plugin returns.
 
 ## Movement
 

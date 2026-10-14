@@ -287,10 +287,23 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
         if (properties.PassengerAttachments is null)
             throw new ArgumentException("An entity's passenger attachments can't be null.", nameof(properties));
 
+        if (properties.SpawnEgg && properties.Kind != API.Entities.EntityKind.Mob)
+            throw new ArgumentException("Only mobs can have spawn eggs.", nameof(properties));
+
         var definition = EntityDefinitionsRegistry.Register(identifier, properties.Kind);
 
         if (!EntityDefinitionsRegistry.TryBind(definition, properties, container, () => container.IsClosing))
             throw new InvalidOperationException($"{container.Info.Name} is unloading.");
+
+        definition.SpawnEgg = properties.SpawnEgg
+            ? RegisterItem(container, identifier + "_spawn_egg", new ItemProperties
+            {
+                EntityData = new EntityDataComponent(DataComponentType.EntityData)
+                {
+                    RegistryId = definition.Id
+                }
+            })
+            : null;
 
         return definition;
     }

@@ -9,7 +9,7 @@ public sealed partial class Pig : Animal
     protected override bool UsesAi => true;
     protected override string? SoundName => "pig";
     protected override int GetExperienceReward() => IsBaby ? 0 : Random.Next(1, 4);
-    internal override float EyeHeight => IsBaby ? 0.425f : 0.85f;
+    internal override float EyeHeight => (IsBaby ? 0.425f : 0.85f) * this.AttributeScale;
     public int Variant { get; set; } = 1;
 
     protected override void FinalizeSpawn()
@@ -33,10 +33,10 @@ public sealed partial class Pig : Animal
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (!IsBaby)
-            DropItem(Burning ? ItemsRegistry.CookedPorkchop : ItemsRegistry.Porkchop, Random.Next(1, 4));
-        if (HasSaddle)
-            DropItem(ItemsRegistry.Saddle);
+        this.DropVanillaLoot(source);
+        if (this.HasSaddle)
+            this.DropItem(ItemsRegistry.Saddle);
+
         return default;
     }
     protected override void RegisterGoals(AI.GoalSelector actionGoals, AI.GoalSelector targetGoals)

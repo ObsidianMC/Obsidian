@@ -43,7 +43,7 @@ public sealed partial class Witch : PathfinderMob
                 SynchronizeMetadata();
             }
             return default;
-        }
+    }
         var effect = -1;
         if (Random.NextSingle() < 0.15f
             && Terrain.GetBlock((Vector)EyePosition.Floor())?.RegistryId == BlockIds.Water
@@ -88,13 +88,7 @@ public sealed partial class Witch : PathfinderMob
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        Item[] drops =
-        [
-            ItemsRegistry.GlowstoneDust, ItemsRegistry.Sugar, ItemsRegistry.GlassBottle, ItemsRegistry.SpiderEye,
-            ItemsRegistry.Gunpowder, ItemsRegistry.Stick, ItemsRegistry.Stick
-        ];
-        for (var i = Random.Next(1, 4); i > 0; i--) DropItem(drops[Random.Next(drops.Length)], Random.Next(3));
-        DropItem(ItemsRegistry.Redstone, Random.Next(4, 9));
+        this.DropVanillaLoot(source);
         return default;
     }
     public override void Write(INetStreamWriter writer)

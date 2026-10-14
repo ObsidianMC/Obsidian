@@ -279,7 +279,7 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
                     var memberName = MemberName(table.Name.StartsWith(prefix, StringComparison.Ordinal)
                         ? table.Name.Substring(prefix.Length)
                         : table.Name);
-                    var expression = category == "blocks"
+                    var expression = category is "blocks" or "entities"
                         ? $"global::Obsidian.API.Loot.LootTableJson.Parse({Literal(table.Value.GetRawText())}, "
                             + $"{Literal(table.Name)})"
                         : this.EmitObject(lootTable, table.Value, null, $"Identifier = {Literal(table.Name)}");

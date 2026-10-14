@@ -14,7 +14,8 @@ public sealed partial class HappyGhast : FarmAnimal
     protected override VectorD PassengerOffset(int index)
     {
         var angle = (Yaw.Degrees + index * 90) * MathF.PI / 180;
-        return new VectorD(-MathF.Sin(angle) * 1.1f, Dimension.Height, MathF.Cos(angle) * 1.1f);
+        return new VectorD(-MathF.Sin(angle) * 1.1f * this.AttributeScale, Dimension.Height,
+            MathF.Cos(angle) * 1.1f * this.AttributeScale);
     }
     public HappyGhast() => Type = EntityType.HappyGhast;
     internal override bool FlyingNavigation => true;

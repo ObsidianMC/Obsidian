@@ -2,6 +2,7 @@ using Obsidian.API;
 using Obsidian.API.Client;
 using Obsidian.API.Entities;
 using Obsidian.API.Plugins;
+using Obsidian.API.Inventory;
 
 namespace EngineSample.Moth;
 
@@ -35,11 +36,18 @@ public sealed class MothMob : IEntityBehavior
             Width = 0.9f,
             Height = 0.7f,
             MaxHealth = 10,
+            SpawnEgg = true,
             Movement = EntityMovementMode.Flying,
 
             // One seat on its back, a little behind its middle (+Z is ahead).
             PassengerAttachments = [new VectorF(0, 0.65f, -0.1f)],
             Behavior = new MothMob()
+        });
+        registry.RegisterCreativeTab("sample:moths", new CreativeTabProperties
+        {
+            Title = "Engine sample",
+            Icon = Type.SpawnEgg!,
+            Items = [Type.SpawnEgg!]
         });
     }
 

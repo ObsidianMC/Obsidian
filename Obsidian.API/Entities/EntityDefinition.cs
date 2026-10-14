@@ -35,6 +35,9 @@ public sealed class EntityDefinition
     /// </summary>
     public int Id { get; }
 
+    /// <summary>The optional spawn egg registered with this type, or null without one.</summary>
+    public Inventory.Item? SpawnEgg { get; internal set; }
+
     /// <summary>
     /// The plugin that registered the entity type and provides its behaviour, or null while the plugin is unloaded.
     /// </summary>

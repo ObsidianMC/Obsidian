@@ -16,9 +16,9 @@ internal static class DatagenAssets
     private static readonly string[] enumRegistries =
         ["minecraft:data_component_type", "minecraft:map_decoration_type", "minecraft:mob_effect", "minecraft:potion"];
 
-    // Container and block tables evaluated by the server (see LootRegistryGenerator).
+    // Container, block and supported entity tables evaluated by the server (see LootRegistryGenerator).
     private static readonly string[] lootTableCategories =
-        ["archaeology", "blocks", "chests", "dispensers", "pots", "spawners"];
+        ["archaeology", "blocks", "chests", "dispensers", "pots", "spawners", "entities"];
 
     /// <param name="generatedDirectory">The data generators' output (<c>data</c> and <c>reports</c>).</param>
     /// <param name="worldgenGroupsPath">The Java dumper's vanilla classes declaring each feature (see <see cref="WorldgenAssets"/>).</param>
@@ -46,6 +46,14 @@ internal static class DatagenAssets
         foreach (var category in lootTableCategories)
         {
             var tables = Combine(Path.Combine(data, "loot_table", category), path => ToId($"{category}/{path}"));
+            if (category == "entities")
+            {
+                // These need entity predicates that the evaluator does not model yet. Keep their old drops until
+                // their behaviour can be checked against vanilla; do not weaken predicates to include them.
+                foreach (var id in new[] { "ghast", "magma_cube", "slime", "turtle", "sheep", "pillager" })
+                    tables.Remove($"minecraft:entities/{id}");
+            }
+
             WriteJson(Path.Combine(outputDirectory, "loot_table", $"{category}.json"), tables);
         }
 

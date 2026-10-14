@@ -1,5 +1,4 @@
 using Obsidian.API.Entities;
-using Obsidian.API.Loot;
 using Obsidian.Entities.AI;
 using Obsidian.Plugins;
 
@@ -33,7 +32,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
     // Read from the type, whose size a reload may change.
     public override EntityDimension Dimension
     {
-        get => new() { Width = definition.Settings.Width, Height = definition.Settings.Height };
+        get => this.ScaleDimensions(definition.Settings.Width, definition.Settings.Height);
         protected set { }
     }
 
@@ -85,7 +84,10 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
             ? Math.Clamp(passenger.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
             : 1f;
 
-        return new VectorD(seat.X, seat.Y - 0.6 * scale, seat.Z);
+        return new VectorD(
+            seat.X * this.AttributeScale,
+            seat.Y * this.AttributeScale - 0.6 * scale,
+            seat.Z * this.AttributeScale);
     }
 
     // Its jump_strength, which mods can change with attribute modifiers, and its rider's client predicts with.
@@ -227,39 +229,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
             : new DamageSource("minecraft:generic_kill", null, null);
 
         await this.RunBehaviorAsync(behavior => behavior.DiedAsync(this, cause));
-        this.DropLoot(cause);
-    }
-
-    // Like vanilla's LivingEntity.dropFromLootTable: the type's entities/<path> table in its namespace, with the
-    // attacker and the player who hurt it lately (whose luck counts). Enchantments use the attacker's current
-    // applicable equipment, like vanilla, rather than the weapon captured when the damage was dealt.
-    private void DropLoot(DamageSource cause)
-    {
-        if (!this.Level.LevelData.GetBooleanRule("mob_drops"))
-            return;
-
-        var separator = definition.Identifier.IndexOf(':');
-        var identifier = $"{definition.Identifier[..separator]}:entities/{definition.Identifier[(separator + 1)..]}";
-        var resolve = PluginLootTables.CaptureResolver();
-
-        if (resolve(identifier) is not LootTable table)
-            return;
-
-        var player = this.RecentPlayerAttacker;
-        var context = new LootContext
-        {
-            Random = table.CreateRandom(this.Random.NextInt64()),
-            Luck = player?.GetAttributeValue("minecraft:luck") ?? 0,
-            Origin = this.Position,
-            ThisEntity = this,
-            AttackingEntity = cause.Attacker,
-            LastDamagePlayer = player,
-            ResolveAttackerEnchantment = identifier => CombatItems.LootEnchantmentLevel(cause.Attacker, identifier),
-            ResolveTable = resolve
-        };
-
-        foreach (var item in table.GetRandomItems(context))
-            this.DropItem(item);
+        this.DropEntityTable(cause.Attacker, cause.DirectEntity);
     }
 
     // The damage type vanilla would give damage of this kind from this source.

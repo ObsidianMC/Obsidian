@@ -47,11 +47,7 @@ public sealed partial class Hoglin : FarmAnimal
     protected internal override ValueTask PerformMeleeAttackAsync(IEntity target) => HoglinAttack.PerformAsync(this, target, IsBaby);
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (!IsBaby)
-        {
-            DropItem(Burning ? ItemsRegistry.CookedPorkchop : ItemsRegistry.Porkchop, Random.Next(2, 5));
-            DropItem(ItemsRegistry.Leather, Random.Next(2));
-        }
+        this.DropVanillaLoot(source);
         return default;
     }
     public override void Write(INetStreamWriter writer)
@@ -129,7 +125,7 @@ public sealed partial class Zoglin : PathfinderMob
     protected internal override ValueTask PerformMeleeAttackAsync(IEntity target) => HoglinAttack.PerformAsync(this, target, IsBaby);
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(ItemsRegistry.RottenFlesh, Random.Next(1, 4));
+        this.DropVanillaLoot(source);
         return default;
     }
     public override void Write(INetStreamWriter writer)

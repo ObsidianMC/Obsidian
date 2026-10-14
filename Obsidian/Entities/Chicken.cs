@@ -44,11 +44,7 @@ public sealed partial class Chicken : FarmAnimal
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (!IsBaby)
-        {
-            DropItem(ItemsRegistry.Feather, Random.Next(3));
-            DropItem(Burning ? ItemsRegistry.CookedChicken : ItemsRegistry.Chicken);
-        }
+        this.DropVanillaLoot(source);
         return default;
     }
 

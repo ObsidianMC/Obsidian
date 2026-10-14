@@ -448,7 +448,24 @@ public sealed partial class SamplePlugin : IDisposable
 
         // Using the moth seats the player on it.
         Assert.True(EntityDefinitionsRegistry.TryGet("sample:moth", out var moth));
-        var mob = Assert.IsType<PluginMob>(world.SpawnEntity(player.Position + new VectorD(0, 0, 2), moth));
+        Assert.NotNull(moth.SpawnEgg);
+        player.GameMode = GameMode.Survival;
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(moth.SpawnEgg, 2));
+        var target = new Vector(6, BlockUpdates.Ground, 6);
+        player.Position = (VectorD)target + new VectorD(0, 1, 2);
+        await BlockUpdates.UseOn(target, BlockFace.Up).HandleAsync(context.Server, player);
+        var mob = Assert.Single(world.GetEntitiesInRange((VectorD)target, 4).OfType<PluginMob>());
+        Assert.Same(moth, mob.Definition);
+        Assert.Equal(1, player.GetHeldItem()!.Count);
+        Assert.Equal((VectorD)target + new VectorD(0.5, 1, 0.5), mob.Position);
+
+        await world.SetBlockAsync(target, BlocksRegistry.Spawner);
+        await BlockUpdates.UseOn(target, BlockFace.Up).HandleAsync(context.Server, player);
+        var spawner = Assert.IsType<DataBlockEntity>(await world.GetBlockEntityAsync(target));
+        Assert.True(spawner.Data.TryGetTag<NbtCompound>("SpawnData", out var spawn));
+        Assert.True(spawn.TryGetTag<NbtCompound>("entity", out var spawnedEntity));
+        Assert.Equal("sample:moth", spawnedEntity.GetString("id"));
+        Assert.Null(player.GetHeldItem());
         Assert.True(await mob.InteractAsync(player, InteractionHand.MainHand));
         Assert.Same(mob, ((IPlayer)player).Vehicle);
     }

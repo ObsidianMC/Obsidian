@@ -143,9 +143,9 @@ and, with its client side, by the client's tests)
   marked done yet.
 - **Saved data.** (done) Per-level and per-world data, and attachments on players, entities and chunks, saved and
   optionally synced to the client (like NeoForge's data attachments).
-- **Plugin entities.** Saved per-entity data, synced metadata fields for modded clients, attribute modifiers and the
-  `UpdateAttributes` packet (vanilla parity too), mounts and flying movement, damage and death hooks, spawn placement
-  rules, and loot tables.
+- **Plugin entities.** (done) Saved per-entity data, synced metadata fields for modded clients, attribute modifiers
+  and the `UpdateAttributes` packet (vanilla parity too), mounts and flying movement, damage and death hooks, spawn
+  placement rules, and loot tables.
 - **Movement.** (done) Mods change how players and their mounts move (gliding, extra jumps, flying mounts), on the
   server and in the client's prediction, driven by the mod's input on the client.
 - **Player extensions.** (done) Extra player slots for accessories, built on attachments and phase 3's screens. The

@@ -66,12 +66,7 @@ public sealed partial class Rabbit : FarmAnimal
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (!IsBaby)
-        {
-            DropItem(ItemsRegistry.RabbitHide, Random.Next(2));
-            DropItem(Burning ? ItemsRegistry.CookedRabbit : ItemsRegistry.Rabbit);
-            if (source is IPlayer && Random.NextSingle() < 0.1f) DropItem(ItemsRegistry.RabbitFoot);
-        }
+        this.DropVanillaLoot(source);
         return default;
     }
     public override void Write(INetStreamWriter writer)

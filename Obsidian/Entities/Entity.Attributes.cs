@@ -1,6 +1,7 @@
 using Obsidian.API.Inventory;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Threading;
+using Obsidian.Nbt;
 
 namespace Obsidian.Entities;
 
@@ -19,6 +20,8 @@ public partial class Entity
     // Modifiers by attribute, then by identifier; null until the entity has one.
     private Dictionary<string, Dictionary<string, EntityAttributeModifier>>? attributeModifiers;
 
+    private readonly HashSet<(string Attribute, string Id)> savedModifiers = [];
+
     // Syncable attributes whose base or modifiers changed since clients were last sent them.
     private HashSet<string>? changedAttributes;
 
@@ -30,7 +33,7 @@ public partial class Entity
         if (!this.Attributes.TryAdd(name, value))
             return false;
 
-        this.MarkAttributeChanged(name);
+        this.OnAttributeChanged(name);
         return true;
     }
 
@@ -43,7 +46,7 @@ public partial class Entity
         if (!this.Attributes.TryUpdate(name, newValue, value))
             return false;
 
-        this.MarkAttributeChanged(name);
+        this.OnAttributeChanged(name);
         return true;
     }
 
@@ -79,7 +82,7 @@ public partial class Entity
         if (!this.Attributes.ContainsKey(name))
             return false;
 
-        this.SetModifier(name, new EntityAttributeModifier(id, amount, operation));
+        this.SetModifier(name, new EntityAttributeModifier(id, amount, operation), permanent: true);
         return true;
     }
 
@@ -90,7 +93,7 @@ public partial class Entity
     /// Adds a modifier to an attribute the entity has, replacing the one with the same identifier, like vanilla's
     /// <c>addOrUpdateTransientModifier</c>.
     /// </summary>
-    internal void SetModifier(string name, EntityAttributeModifier modifier)
+    internal void SetModifier(string name, EntityAttributeModifier modifier, bool permanent = false)
     {
         if (!this.Attributes.ContainsKey(name))
             return;
@@ -101,6 +104,11 @@ public partial class Entity
 
             if (!this.attributeModifiers.TryGetValue(name, out var modifiers))
                 this.attributeModifiers[name] = modifiers = [];
+
+            if (permanent)
+                this.savedModifiers.Add((name, modifier.Id));
+            else
+                this.savedModifiers.Remove((name, modifier.Id));
 
             if (modifiers.TryGetValue(modifier.Id, out var existing) && existing == modifier)
                 return;
@@ -115,6 +123,7 @@ public partial class Entity
     {
         lock (this.attributeLock)
         {
+            this.savedModifiers.Remove((name, id));
             if (this.attributeModifiers?.GetValueOrDefault(name)?.Remove(id) != true)
                 return false;
         }
@@ -127,6 +136,104 @@ public partial class Entity
     {
         lock (this.attributeLock)
             return this.attributeModifiers?.GetValueOrDefault(name)?.ContainsKey(id) == true;
+    }
+
+    // Vanilla 1.21.11 AttributeMap.pack/AttributeInstance.Packed: lower-case fields, named operations,
+    // and permanent modifiers only. Equipment and sprint modifiers are rebuilt, never persisted twice.
+    internal NbtList SaveAttributes()
+    {
+        var attributes = new NbtList(NbtTagType.Compound, "attributes");
+        lock (this.attributeLock)
+        {
+            foreach (var (name, value) in this.Attributes.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+            {
+                var entry = new NbtCompound(string.Empty)
+                {
+                    new NbtTag<string>("id", VanillaName(name)),
+                    new NbtTag<double>("base", value)
+                };
+                var modifiers = new NbtList(NbtTagType.Compound, "modifiers");
+                foreach (var modifier in this.attributeModifiers?.GetValueOrDefault(name)?.Values.AsEnumerable() ?? [])
+                {
+                    if (!this.savedModifiers.Contains((name, modifier.Id)))
+                        continue;
+
+                    modifiers.Add(new NbtCompound(string.Empty)
+                    {
+                        new NbtTag<string>("id", modifier.Id),
+                        new NbtTag<double>("amount", modifier.Amount),
+                        new NbtTag<string>("operation", modifier.Operation switch
+                        {
+                            AttributeOperation.Add => "add_value",
+                            AttributeOperation.MulBase => "add_multiplied_base",
+                            _ => "add_multiplied_total"
+                        })
+                    });
+                }
+
+                if (modifiers.Count > 0)
+                    entry.Add(modifiers);
+
+                attributes.Add(entry);
+            }
+        }
+
+        return attributes;
+    }
+
+    internal void LoadAttributes(NbtCompound tag)
+    {
+        if (!tag.TryGetTag<NbtList>("attributes", out var attributes))
+            return;
+
+        foreach (var entry in attributes.OfType<NbtCompound>())
+        {
+            if (!entry.TryGetTagValue<string>("id", out var id))
+                continue;
+
+            var name = this.ResolveAttributeName(id);
+            if (!this.HasAttribute(name))
+                continue;
+
+            if (entry.TryGetTagValue<double>("base", out var value) && double.IsFinite(value))
+                this.Attributes[name] = (float)value;
+
+            lock (this.attributeLock)
+            {
+                foreach (var saved in this.savedModifiers.Where(pair => pair.Attribute == name).ToArray())
+                {
+                    this.attributeModifiers?.GetValueOrDefault(name)?.Remove(saved.Id);
+                    this.savedModifiers.Remove(saved);
+                }
+            }
+
+            if (entry.TryGetTag<NbtList>("modifiers", out var modifiers))
+            {
+                foreach (var modifier in modifiers.OfType<NbtCompound>())
+                {
+                    if (!modifier.TryGetTagValue<string>("id", out var modifierId)
+                        || string.IsNullOrWhiteSpace(modifierId)
+                        || !modifier.TryGetTagValue<double>("amount", out var amount)
+                        || !double.IsFinite(amount)
+                        || !modifier.TryGetTagValue<string>("operation", out var operation))
+                    {
+                        continue;
+                    }
+
+                    var kind = operation switch
+                    {
+                        "add_value" => AttributeOperation.Add,
+                        "add_multiplied_base" => AttributeOperation.MulBase,
+                        "add_multiplied_total" => AttributeOperation.MulTotal,
+                        _ => (AttributeOperation)(-1)
+                    };
+                    if (Enum.IsDefined(kind))
+                        this.SetModifier(name, new EntityAttributeModifier(modifierId, amount, kind), permanent: true);
+                }
+            }
+
+            this.OnAttributeChanged(name);
+        }
     }
 
     /// <summary>
@@ -188,6 +295,9 @@ public partial class Entity
     protected virtual void OnAttributeChanged(string name)
     {
         this.MarkAttributeChanged(name);
+
+        if (VanillaName(name) == "minecraft:scale")
+            this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
 
         if (VanillaName(name) == "minecraft:max_health")
         {
