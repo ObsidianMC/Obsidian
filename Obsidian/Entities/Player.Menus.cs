@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.Events;
@@ -29,6 +30,38 @@ public partial class Player
 
     // What the player was last sent of their open menu (see MenuSync), changed under menuStateGate.
     private MenuSync? menuSync;
+
+    // The menus the player's window stopped showing whose Closed is due (see RecordMenuClosed), in the order they
+    // closed.
+    private readonly ConcurrentQueue<ClosedMenu> closedMenus = new();
+
+    /// <summary>
+    /// Runs <see cref="MenuContainer.Closed"/> of the menus the player's window stopped showing, each once, in the
+    /// order they closed: inside a call into the menu's plugin, which the hold taken as it closed keeps from being
+    /// released, even while it unloads.
+    /// </summary>
+    /// <remarks>
+    /// Call it after changing <see cref="OpenedContainer"/>, outside the server's locks. Every path that closes a
+    /// window does; the player's tick does too, for any it missed.
+    /// </remarks>
+    internal void RunMenusClosed()
+    {
+        while (this.closedMenus.TryDequeue(out var closed))
+        {
+            using (closed.Hold)
+            using (closed.Plugin?.EnterUnloading())
+            {
+                try
+                {
+                    closed.Menu.Closed(this);
+                }
+                catch (Exception exception)
+                {
+                    MenuClosedFailed(this.Logger, exception, closed.Menu.Menu.Identifier);
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Whether <paramref name="menu"/> stays open for <paramref name="player"/>, like vanilla's <c>stillValid</c>: its
@@ -102,6 +135,8 @@ public partial class Player
     /// </summary>
     internal async ValueTask TickMenuAsync()
     {
+        this.RunMenusClosed();
+
         if (this.OpenedContainer is not MenuContainer menu)
             return;
 
@@ -189,6 +224,31 @@ public partial class Player
         this.Client is not Client client
         || !client.AwaitingReconfiguration
             && menu.Id < MenuTypesRegistry.VanillaIdentifiers.Count + client.ConfiguredPluginMenus;
+
+    // Records that the player's window stopped showing menu, for RunMenusClosed, holding the plugin the menu was made
+    // by until then. Called by the OpenedContainer setter under menuStateGate, so it takes no other lock.
+    private void RecordMenuClosed(MenuContainer menu)
+    {
+        if (!menu.TryGetGeneration(out var owner))
+            return;
+
+        var plugin = owner as PluginContainer;
+        var hold = plugin?.TryHold();
+
+        // An unloading plugin is held as long as its unload hasn't finished closing its menus: it clears its types'
+        // owner then, before waiting for its calls. Held before checking, so that the wait can't miss the hold.
+        if (plugin is not null && hold is null)
+        {
+            hold = plugin.HoldUnloading();
+            if (!ReferenceEquals(menu.Menu.Owner, plugin))
+            {
+                hold.Dispose();
+                return;
+            }
+        }
+
+        this.closedMenus.Enqueue(new ClosedMenu(menu, plugin, hold));
+    }
 
     // The menu's data slot values and item access slots' stacks, read inside a call into its plugin, without the
     // menu's locks; null when the plugin is unloading.
@@ -280,6 +340,12 @@ public partial class Player
         public bool Shows(MenuSync other) =>
             ReferenceEquals(this.Menu, other.Menu) && this.ContainerId == other.ContainerId;
     }
+
+    // A menu whose Closed is due, with the plugin it was made by (null for the server's own) and the hold on it.
+    private readonly record struct ClosedMenu(MenuContainer Menu, PluginContainer? Plugin, IDisposable? Hold);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Closing menu {Menu} failed")]
+    private static partial void MenuClosedFailed(ILogger logger, Exception exception, string menu);
 
     // A data slot of a plugin's menu, as vanilla's ContainerSetData sends it.
     private sealed record MenuDataProperty(short Property, short Value) : IWindowProperty;

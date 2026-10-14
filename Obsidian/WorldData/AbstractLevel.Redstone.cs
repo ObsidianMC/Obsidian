@@ -57,6 +57,9 @@ public abstract partial class AbstractLevel
             return this.BlockUpdates.GetBestNeighborSignal(position);
     }
 
+    /// <inheritdoc/>
+    public void UpdateNeighbors(Vector position, IBlock source) => this.BlockUpdates.UpdateNeighbors(position, source);
+
     /// <summary>
     /// Vanilla <c>entityInside</c> for the pressure plates and wooden buttons <paramref name="entity"/>'s box
     /// overlaps after it ticked, like vanilla's entity movement.

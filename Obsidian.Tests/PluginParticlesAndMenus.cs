@@ -116,6 +116,7 @@ public sealed class PluginParticlesAndMenus
         await PluginManager.CloseMenusAsync(context.Server, plugin);
 
         Assert.Equal(1, closes);
+        Assert.Equal(1, original.Closes);
         Assert.Null(player.OpenedContainer);
         Assert.Single(((TestClient)player.Client).SentPackets.OfType<ContainerClosePacket>());
 
@@ -151,6 +152,10 @@ public sealed class PluginParticlesAndMenus
         public bool ThrowValidity { get; set; }
 
         public int Reads { get; private set; }
+
+        public int Closes { get; private set; }
+
+        protected internal override void Closed(IPlayer player) => this.Closes++;
 
         public override short GetData(int index)
         {

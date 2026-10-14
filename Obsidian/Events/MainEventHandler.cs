@@ -107,6 +107,8 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         if (ReferenceEquals(player.OpenedContainer, e.Container) && player.CurrentContainerId == e.WindowId)
             player.OpenedContainer = null;
 
+        player.RunMenusClosed();
+
         // A double chest's halves both close.
         BaseContainer[] parts = e.Container is DoubleChestContainer chest
             ? [chest.First, chest.Second]

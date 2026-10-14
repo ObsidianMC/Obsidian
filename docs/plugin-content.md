@@ -251,7 +251,11 @@ A plugin block takes part through its behaviour's hooks, which default to giving
   points from that neighbour to it). They run whenever a neighbour reads its power, so keep them a quick read of the
   state. When the power changes, tell the neighbours with `IBlockLevel.UpdateNeighbors` (a block change with
   neighbour updates does), and for strong power the neighbours of the block it powers through too, as vanilla's
-  levers do.
+  levers do. Power read from a block entity changes outside the block's hooks: from its tick, a level ticker or
+  other plugin code, tell them with `ILevel.UpdateNeighbors(position, source)`, the same updates. It runs them at
+  once under the level's tick lock, like a block change (from another thread, after the block updates running
+  then; within a hook, after the hook's own), so don't call it while holding a lock hooks may wait on, like a
+  window's.
 - `HasAnalogOutput` and `GetAnalogOutput`: what a comparator facing away from it reads, like a container's fullness.
   A block change with neighbour updates tells the comparators, and so does its block entity's `SetChanged` at the end
   of the tick, like vanilla's `setChanged`, so an output read from the block entity (`IBlockLevel.GetBlockEntity`)
@@ -1379,7 +1383,8 @@ protected override void OnChunkUnloaded() => Networks.For(this.Level!).Leave(thi
   updates sent, so it may use the level's block entities as their own ticks do, without locks. It runs whether or
   not any chunk ticks; check that its members are loaded (`GetLoadedBlockEntity`) rather than loading chunks.
   Tickers run in the order they were added: from the next tick on, or from this one when added before the level's
-  tickers run (from `OnLoad` or a block entity tick, say).
+  tickers run (from `OnLoad` or a block entity tick, say). A network whose output power changed tells the blocks
+  around its members with `ILevel.UpdateNeighbors` (see [Redstone](#redstone)).
 - **Ownership.** Like chunk tickets, a ticker belongs to the plugin whose code adds it. It runs inside calls into
   that plugin, and unloading the plugin removes it, disposed or not; a reloaded plugin adds its tickers again from
   its block entities' `OnLoad`. A tick that throws is logged, and the ticker keeps running.
@@ -1758,6 +1763,13 @@ registering the type again does not reactivate an old instance:
   entity's inventory or on the player's next tick, and, like vanilla's `stillValid`, once the player's eyes are
   farther than their block reach plus 4 blocks from its block. Clicks in it stop applying as soon as it's removed.
   `StillValid(player)` adds a check of your own, made every tick and on every click.
+- `Closed(player)` runs once each time the menu stops being open for a player, like vanilla's `removed`: the player
+  closes it, another window opens over it, it's no longer valid, the player dies, changes level or leaves, or the
+  plugin unloads. Give back what a crafting-grid style slot held there, say. It runs after the window closed (and
+  after `ContainerClosedEventArgs`, when the close raises one), without the server's locks, inside a call into the
+  plugin, even while it unloads: the unload waits for it. A leaving player's menu whose plugin finished unloading
+  first isn't called. One that throws is logged. Menus a `ServerPlayer` "opens" only set its field; they have no
+  window, so they're never closed this way.
 
 ### Click handlers
 
@@ -3571,7 +3583,11 @@ block models; `Provider` receives the same plain NBT values as a shape provider 
 and returns a `BlockModelData`, or null for the block state's model alone:
 
 - `Parts`: `BlockModelPart(Model, X, Y, UvLock)`, a declared model turned like a blockstate file's model (quarter
-  turns, X then Y, its cull faces turning with it).
+  turns, X then Y, its cull faces turning with it). `Offset`, in sixteenths of a block from -16 to 16 on each axis,
+  moves it after the turn, so one model fills each of a drive's slots:
+  `new BlockModelPart("ruby:part/drive_cell", Y: 90) { Offset = new VectorF(0, slot * 3, 0) }`. A moved face keeps
+  its cull face only while it still lies within that side of the block, so a face moved inward is always drawn;
+  ambient occlusion and lighting follow the moved faces. A renderer's `Model` applies it before its transform.
 - `Faces`: `BlockModelFace(From, To, Face, Texture)`, one face of a box in sixteenths of a block, like a model
   element's face without `uv`, with any block texture (`minecraft:block/stone`), an optional `CullFace`,
   `TintIndex`, `Shade` and `LightEmission` (0 to 15, like a model element's `light_emission`: the face is lit at

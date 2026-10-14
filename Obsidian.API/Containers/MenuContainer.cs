@@ -16,8 +16,9 @@ namespace Obsidian.API;
 /// in containers or behind item access, each slot with its own rules. Subclass it to decide where shift-clicks move
 /// stacks (<see cref="QuickMove"/>), to handle the buttons of a mod's screen (<see cref="ClickButton"/>), to keep it
 /// open only while something holds (<see cref="StillValid"/>), to compute its <see cref="DataSlots"/>
-/// (<see cref="GetData"/>) and to send modded clients extra data as it opens (<see cref="WriteOpenData"/>). These run
-/// inside calls into the plugin that registered the menu type, never once it's unloading.
+/// (<see cref="GetData"/>), to send modded clients extra data as it opens (<see cref="WriteOpenData"/>) and to hear
+/// that it closed (<see cref="Closed"/>). These run inside calls into the plugin that registered the menu type, never
+/// once it's unloading, except <see cref="Closed"/>, which its unloading waits for.
 /// </para>
 /// <para>
 /// Several players can have the same container open: their clicks take turns, and each sees the others' changes. It
@@ -92,6 +93,15 @@ public class MenuContainer : BaseContainer
 
             return ReferenceEquals(plugin, this.Menu.Owner);
         }
+    }
+
+    // The plugin generation the menu was made in, whether or not its type opens now: null for the server's own
+    // menus. False once that generation was collected.
+    internal bool TryGetGeneration(out IPluginContainer? plugin)
+    {
+        plugin = null;
+
+        return this.owner is null || this.owner.TryGetTarget(out plugin);
     }
 
     /// <summary>
@@ -217,6 +227,23 @@ public class MenuContainer : BaseContainer
     /// <see cref="BlockEntity"/>'s checks. True by default.
     /// </summary>
     protected internal virtual bool StillValid(IPlayer player) => true;
+
+    /// <summary>
+    /// Runs once each time the menu stops being open for <paramref name="player"/>, like vanilla's <c>removed</c>:
+    /// for instance to give back what its crafting slots held, or to stop a machine's preview. Every way a menu closes
+    /// counts: the player closes it, another window opens over it, it's no longer valid (see <see cref="StillValid"/>
+    /// and <see cref="BlockEntity"/>), the player dies, changes level or leaves, or the plugin that registered its
+    /// menu type unloads. Nothing by default.
+    /// </summary>
+    /// <remarks>
+    /// It runs after the window closed (after <see cref="Events.ContainerClosedEventArgs"/>, when the close raises
+    /// one), without the server's locks, inside a call into the plugin the menu was made by, even while that plugin
+    /// unloads, which waits for it. A menu of a plugin that finished unloading first, which only a leaving player's
+    /// can be, isn't called. One that throws is logged.
+    /// </remarks>
+    protected internal virtual void Closed(IPlayer player)
+    {
+    }
 
     /// <summary>
     /// Writes extra data modded clients get as the menu opens for <paramref name="player"/>, like a NeoForge mod's

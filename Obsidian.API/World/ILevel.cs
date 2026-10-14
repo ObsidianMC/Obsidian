@@ -28,6 +28,21 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
     public bool DestroyBlock(Vector position, bool dropItems, IEntity? breaker = null) => false;
 
     /// <summary>
+    /// Tells the six neighbours of <paramref name="position"/> that it changed, from <paramref name="source"/>, like
+    /// vanilla's <c>updateNeighborsAt</c> and <see cref="Blocks.IBlockLevel.UpdateNeighbors"/>: redstone components,
+    /// comparators and plugin blocks' <see cref="Blocks.IBlockBehavior.NeighborChanged"/> react as to a block change.
+    /// For a block entity whose power changed, say, from its tick or a level ticker.
+    /// </summary>
+    /// <remarks>
+    /// The updates run at once, under the level's tick lock, like those of a block change: from any thread, waiting
+    /// for the block updates running at the time, and within a block hook, after the hook's own. Don't call it while
+    /// holding a lock that block hooks may wait on, such as a window's. Neighbours outside the complete loaded chunks
+    /// aren't told.
+    /// </remarks>
+    public void UpdateNeighbors(Vector position, IBlock source) =>
+        throw new NotSupportedException("This level doesn't support neighbour updates.");
+
+    /// <summary>
     /// Spawns a host-owned item entity from a detached copy of stack, independent of plugin lifetime. Returns false
     /// for an empty stack or a failed insertion. This direct helper does not apply creative or block-drop rules.
     /// </summary>
