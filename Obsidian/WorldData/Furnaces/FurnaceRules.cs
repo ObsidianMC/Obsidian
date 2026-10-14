@@ -43,7 +43,8 @@ internal static class FurnaceRules
     };
 
     /// <summary>True when <paramref name="item"/> can be used as furnace fuel.</summary>
-    public static bool IsFuel(ItemStack? item) => GetBurnTime(item) > 0;
+    public static bool IsFuel(ItemStack? item) =>
+        item is not null && !item.IsAir && item.Count > 0 && fuelBurnTimes.ContainsKey(item.Holder.UnlocalizedName);
 
     /// <summary>The smelting recipe of <paramref name="kind"/> whose ingredient is <paramref name="input"/>, if any.</summary>
     public static SmeltingRecipe? FindRecipe(CraftingType kind, ItemStack? input)

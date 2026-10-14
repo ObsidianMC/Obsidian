@@ -357,14 +357,16 @@ public final class VanillaDumper {
         var flags = mojang.get("net.minecraft.world.flag.FeatureFlags", "DEFAULT_FLAGS");
         var fuel = Mojang.call(mojang.method(fuelType, "vanillaBurnTimes", provider, flagSet), null, builtins, flags);
         var burnDuration = mojang.method(fuelType, "burnDuration", stackType);
+        var isFuel = mojang.method(fuelType, "isFuel", stackType);
         var itemRegistry = mojang.get(REGISTRIES, "ITEM");
         var newStack = mojang.constructor(stackType, "net.minecraft.world.level.ItemLike", "int");
 
         var result = new LinkedHashMap<String, Integer>();
         for (var item : (Iterable<?>) itemRegistry) {
-            var burnTime = (int) Mojang.call(burnDuration, fuel, Mojang.create(newStack, item, 1));
-            if (burnTime > 0)
-                result.put(key(itemRegistry, item), burnTime);
+            var stack = Mojang.create(newStack, item, 1);
+            // Membership is vanilla's FuelValues.isFuel, not a positive burn time, so the table keeps exactly its keys.
+            if ((boolean) Mojang.call(isFuel, fuel, stack))
+                result.put(key(itemRegistry, item), (int) Mojang.call(burnDuration, fuel, stack));
         }
 
         Json.write(output.resolve("fuel_values.json"), result, false);
