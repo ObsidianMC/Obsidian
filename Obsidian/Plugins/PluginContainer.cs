@@ -74,6 +74,9 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     /// </summary>
     internal List<TagFile> TagFiles { get; } = [];
 
+    /// <summary>The plugin's loot tables, applied only while the plugin is loaded.</summary>
+    internal ImmutableArray<Obsidian.API.Loot.LootTable> LootTableFiles { get; set; } = [];
+
     /// <summary>
     /// The plugin's biome, dimension type and damage type files, applied to their registries while it's loaded.
     /// </summary>

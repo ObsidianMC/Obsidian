@@ -6,7 +6,6 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
-using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Maps;
 using System.Threading;
 
@@ -28,10 +27,6 @@ public abstract partial class AbstractLevel
     // The block entity type registry's revision the level last created kept block entities for (see
     // RestoreKeptBlockEntities).
     private int restoredBlockEntityRevision;
-
-    // Vanilla shares one set of random sequences between a server's levels and saves it; containers' loot rolls with
-    // this level's, kept in memory.
-    private RandomSequences? lootSequences;
 
     private LevelBlockEntityHost BlockEntityHost =>
         LazyInitializer.EnsureInitialized(ref this.blockEntityHost, () => new LevelBlockEntityHost(this));
@@ -147,20 +142,25 @@ public abstract partial class AbstractLevel
             container.LootTable = null;
 
             // Vanilla generates nothing for unknown tables.
-            var table = LootTables.All.GetValueOrDefault(lootTable, LootTable.Empty);
-            var sequences = LazyInitializer.EnsureInitialized(
-                ref this.lootSequences,
-                () => new RandomSequences(RandomState.ParseSeed(this.Seed)));
+            var resolver = PluginLootTables.CaptureResolver();
+            var table = resolver(lootTable) ?? LootTable.Empty;
+            var random = table.CreateRandom(container.LootTableSeed, BlockLoot.SequencesFor(this));
             var position = container.BlockPosition;
 
-            // Players have no luck attribute yet, so their luck is vanilla's default of 0.
-            table.Fill(container.Inventory, new LootContext
+            // Container and block tables can name the same sequence, so the whole fill, shuffling included, holds
+            // the source's lock like block destruction does. Players have no luck attribute yet, so their luck is
+            // vanilla's default of 0.
+            lock (random)
             {
-                Random = table.CreateRandom(container.LootTableSeed, sequences),
-                Origin = new VectorD(position.X + 0.5, position.Y + 0.5, position.Z + 0.5),
-                ThisEntity = opener,
-                ExplorationMaps = ExplorationMaps.For(this)
-            });
+                table.Fill(container.Inventory, new LootContext
+                {
+                    Random = random,
+                    Origin = new VectorD(position.X + 0.5, position.Y + 0.5, position.Z + 0.5),
+                    ThisEntity = opener,
+                    ResolveTable = resolver,
+                    ExplorationMaps = ExplorationMaps.For(this)
+                });
+            }
 
             container.LootTableSeed = 0;
         }

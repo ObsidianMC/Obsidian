@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- The client half of the mod API: what a mod's client side registers, implemented by the Obsidian client. It's
+	     interfaces and data only, so servers ship it too and load mods whose plugin class implements IClientPlugin. -->
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<EnablePreviewFeatures>True</EnablePreviewFeatures>
+		<Nullable>annotations</Nullable>
+		<AssemblyName>Obsidian.API.Client</AssemblyName>
+		<RootNamespace>Obsidian.API.Client</RootNamespace>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Version>1.0.0</Version>
+		<Authors>Obsidian Team</Authors>
+		<Company>Obsidian Team</Company>
+		<Product>Obsidian</Product>
+		<Description>The client mod API for Obsidian, a Minecraft server and client.</Description>
+		<PackageProjectUrl>https://github.com/ObsidianMC/Obsidian</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/ObsidianMC/Obsidian</RepositoryUrl>
+		<PackageTags>minecraft obsidian api plugin plugins mods client</PackageTags>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<AssemblyVersion>1.0.0</AssemblyVersion>
+		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+		<NoWarn>1591</NoWarn>
+		<Title>Obsidian Client Mod API</Title>
+		<PackageIcon>icon.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<DocumentationFile>Obsidian.API.Client.xml</DocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\.editorconfig" Link=".editorconfig" />
+		<None Include="..\icon.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\LICENSE">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
+	</ItemGroup>
+</Project>

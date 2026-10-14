@@ -445,6 +445,8 @@ public sealed partial class PluginManager : IAsyncDisposable
 
             var files = DataFiles.Of(archive);
             container.TagFiles.InsertRange(0, this.ReadTagFiles(files));
+            container.LootTableFiles = PluginLootTables.Read(files, this.logger);
+            this.ApplyLootTables();
             container.FeatureFiles = this.ReadFeatureFiles(files);
             container.CodecFiles = this.ReadCodecFiles(files, container.FeatureFiles);
 
@@ -573,6 +575,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             this.commandHandler.UnregisterArgumentParsers(pluginContainer.LoadContext);
 
         this.plugins = this.plugins.Remove(pluginContainer);
+        this.ApplyLootTables();
         this.ApplyCodecs();
         this.ApplyTags();
         this.ApplyNoise();
@@ -1069,6 +1072,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         foreach (var pack in packs)
         {
             pack.TagFiles.AddRange(this.ReadTagFiles(pack.Files));
+            pack.LootTableFiles = PluginLootTables.Read(pack.Files, this.logger);
             pack.FeatureFiles = this.ReadFeatureFiles(pack.Files);
             (pack.StructureFiles, pack.StructureTemplates) = this.ReadStructureFiles(pack.Files);
         }
@@ -1079,6 +1083,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             pack.CodecFiles = this.ReadCodecFiles(pack.Files, features);
 
         this.dataPacks = [.. packs];
+        this.ApplyLootTables();
         this.ApplyCodecs();
         this.ApplyTags();
 
@@ -1099,6 +1104,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         foreach (var pack in packs)
         {
             var read = pack.TagFiles.Count
+                + pack.LootTableFiles.Length
                 + pack.FeatureFiles.Length
                 + pack.CodecFiles.Length
                 + pack.NoiseFiles.Length
@@ -1114,13 +1120,14 @@ public sealed partial class PluginManager : IAsyncDisposable
         }
     }
 
-    // Whether Obsidian reads a plugin's or data pack's data file, by its path; others, like recipes or loot tables,
+    // Whether Obsidian reads a plugin's or data pack's data file, by its path; others, like recipes,
     // are left out.
     private static bool ReadsDataFile(string path)
     {
         string[] paths = [path];
 
         return PluginTags.FindFiles(paths).Any()
+            || PluginLootTables.FindFiles(paths).Any()
             || PluginFeatures.FindFiles(paths).Any()
             || PluginCodecs.FindFiles(paths).Any()
             || PluginNoise.FindFiles(paths).Any()
@@ -1128,6 +1135,9 @@ public sealed partial class PluginManager : IAsyncDisposable
             || PluginStructures.FindFiles(paths).Any()
             || PluginStructures.FindTemplates(paths).Any();
     }
+
+    private void ApplyLootTables() => PluginLootTables.Apply(
+        this.DataFilesOf(plugin => plugin.LootTableFiles, pack => pack.LootTableFiles));
 
     // The files plugins hold in load order, then data packs' in theirs, which win.
     private IEnumerable<T> DataFilesOf<T>(

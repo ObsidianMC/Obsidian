@@ -87,6 +87,9 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Obsidian.AssetGenerator\Obsidian.AssetGenerator.csproj" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
+		<!-- The server never calls the client API, but ships it so that mods whose plugin class implements
+		     IClientPlugin load on servers too. -->
+		<ProjectReference Include="..\Obsidian.API.Client\Obsidian.API.Client.csproj" />
       <ProjectReference Include="..\Obsidian.Nbt\Nbt\Obsidian.Nbt.csproj" />
 		<ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>

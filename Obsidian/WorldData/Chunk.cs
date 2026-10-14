@@ -4,6 +4,7 @@ using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Fluids;
+using Obsidian.WorldData.Lighting;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using System.Threading;
 
@@ -11,6 +12,21 @@ namespace Obsidian.WorldData;
 
 public sealed class Chunk : IChunk
 {
+    private volatile RuntimeLightEngine? runtimeLight;
+
+    internal RuntimeLightEngine? RuntimeLight => this.runtimeLight;
+
+    // The region completes generation and attaches lighting under the tick lock after validating slot identity.
+    internal Action<Chunk>? CompleteGeneration { get; set; }
+
+    /// <summary>Attaches live section writes together with the chunk's runtime light hook.</summary>
+    internal void AttachRuntimeLight(RuntimeLightEngine? light)
+    {
+        this.runtimeLight = light;
+        foreach (var section in this.sections.OfType<ChunkSection>())
+            section.LiveChunk = light is null ? null : this;
+    }
+
     public int X { get; }
     public int Z { get; }
     public long InhabitedTime { get; internal set; }
@@ -213,6 +229,26 @@ public sealed class Chunk : IChunk
 
     public void SetBlock(int x, int y, int z, IBlock block)
     {
+        if (this.RuntimeLight is RuntimeLightEngine light)
+        {
+            lock (light.TickLock)
+            {
+                var position = new Vector((this.X << 4) + (x & 15), y, (this.Z << 4) + (z & 15));
+                // A caller may have captured the hook just before unload detached it.
+                if (ReferenceEquals(this.RuntimeLight, light))
+                    light.BlockChanging(this, position, block);
+
+                this.SetBlockCore(x, y, z, block);
+            }
+
+            return;
+        }
+
+        this.SetBlockCore(x, y, z, block);
+    }
+
+    private void SetBlockCore(int x, int y, int z, IBlock block)
+    {
         // Generation writes through its regions' sections; any other write (a live edit of an unfinished chunk) leaves the
         // heights generation keeps stale, so they're computed again.
         this.FinalHeightmaps = null;
@@ -223,7 +259,7 @@ public sealed class Chunk : IChunk
         y = (y & 15);
         z = (z & 15);
 
-        this.sections[i].SetBlock(x, y, z, block);
+        ((ChunkSection)this.sections[i]).SetBlockUntracked(x, y, z, block);
     }
 
     public BlockMeta GetBlockMeta(int x, int y, int z)
@@ -380,6 +416,20 @@ public sealed class Chunk : IChunk
     }
 
     public void SetChunkStatus(ChunkGenStage status)
+    {
+        if (status == ChunkGenStage.full && this.CompleteGeneration is Action<Chunk> complete)
+        {
+            complete(this);
+            return;
+        }
+
+        this.SetChunkStatusCore(status);
+    }
+
+    /// <summary>
+    /// Updates generation storage; the region calls this under its tick lock for a live full transition.
+    /// </summary>
+    internal void SetChunkStatusCore(ChunkGenStage status)
     {
         this.ChunkStatus = status;
 
