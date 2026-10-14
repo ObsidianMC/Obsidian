@@ -81,7 +81,7 @@ own namespace, its `modId`:
 | --- | --- |
 | `assets/<ns>/blockstates/<block>.json` | The models of the states of the block `<ns>:<block>`. |
 | `assets/<ns>/models/...` | Block and item models, referred to as `<ns>:block/<name>` and `<ns>:item/<name>`. |
-| `assets/<ns>/textures/block/...`, `textures/item/...` | Textures, referred to as `<ns>:block/<name>` and `<ns>:item/<name>`. |
+| `assets/<ns>/textures/block/...`, `textures/item/...` | Textures, referred to as `<ns>:block/<name>` and `<ns>:item/<name>`, each with an optional `.png.mcmeta` that animates it. |
 | `assets/<ns>/items/<item>.json` | The definition (the model) of the item `<ns>:<item>`. |
 | `assets/<ns>/lang/<language>.json` | Translations, merged with vanilla's and other mods' per language. |
 | `assets/<ns>/models/entity/<path>.json`, `textures/entity/...` | Entity model layers and textures, for the mod's entity renderers (see [plugin-content.md](plugin-content.md#client)). |
@@ -105,7 +105,11 @@ assets/ruby/lang/en_us.json
 A `pack.mcmeta` is optional; a mod that has one gets its filter and overlays applied like a resource pack's. Only
 `assets/` (and overlays' `assets/`) are read, within the client's resource pack limits. A mod's block draws each face
 in the render layer its texture needs: solid when it's opaque, cutout with fully transparent pixels, and translucent
-with partly transparent ones. Version 1 archives have no assets.
+with partly transparent ones (an animated texture's most transparent frame decides). A block or item texture's
+`<name>.png.mcmeta` animates it like vanilla's water and fire: its `animation` gives the frame size (`width` and
+`height`, square by default), the `frames` in order (indices into the texture's frames, left to right then top to
+bottom, or `{"index": 2, "time": 5}`; all of them in turn by default), the ticks each one shows (`frametime`, 1 by
+default) and whether one blends into the next (`interpolate`). Version 1 archives have no assets.
 
 ## Reloading
 

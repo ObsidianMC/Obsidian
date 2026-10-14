@@ -516,6 +516,13 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      and faces with matrices from the live client instance, since frames are built on the game thread that ticks it.
      Both run in the mod's call guard; a failure is logged and stops the block entity's drawing until its next update.
      They go when the mod unloads. See [plugin-content.md](plugin-content.md#client).
+   - Done, engine phase 4 animated textures, in the block atlas: block and item textures with a `.png.mcmeta`
+     animation, vanilla's (water, lava, fire, portals, sea lanterns, prismarine, magma and the rest) and mods' alike,
+     play their frames in order and for their ticks, blending with `interpolate` the way vanilla's shader does. The
+     atlas keeps each frame's pixels at every mip level, and each frame that runs a client tick advances them once,
+     like vanilla, after which the renderer copies only the sprites that changed into the atlas from a staging buffer
+     before it draws. Left: the GUI and particle atlases' few animated sprites (some GUI icons, the vibration
+     particle) still show their first frame. See [plugin-archives.md](plugin-archives.md#assets).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
      move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine; entity render layers
      (emissive and translucent ones) and animations a server triggers beyond arm swings for mods' entities; client lifecycle events
