@@ -111,6 +111,15 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
     public ValueTask<IBlockEntity?> GetBlockEntityAsync(Vector blockPosition);
     public ValueTask<IBlockEntity?> GetBlockEntityAsync(int x, int y, int z);
 
+    /// <summary>
+    /// The items of the block at <paramref name="position"/> as another block reaches them through its
+    /// <paramref name="side"/> face (or from no particular side when null), like NeoForge's item handler capability:
+    /// a plugin block's own (see <see cref="Blocks.IBlockBehavior.GetItemAccess"/>), else its block entity's (see
+    /// <see cref="Inventory.IItemAccessProvider"/>), with both halves of a double chest as one. Null when it has none
+    /// from that side, or its chunk isn't loaded and complete. Synchronous: it never loads a chunk.
+    /// </summary>
+    public Inventory.IItemAccess? GetItemAccess(Vector position, BlockFace? side);
+
     public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false);
     public ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false);
 

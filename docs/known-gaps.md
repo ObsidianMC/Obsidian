@@ -113,16 +113,18 @@ different one. Obsidian deliberately doesn't emulate Java's heap layout for this
 **Status:** open. Dust, torches, repeaters, comparators, levers, buttons, pressure plates, the block of redstone and
 the redstone lamp work (see [plugin content](plugin-content.md#redstone)); the rest of vanilla's redstone doesn't.
 
-- **Consumers.** Doors, trapdoors and fence gates, pistons, dispensers and droppers, note blocks, powered, activator
-  and detector rails, TNT, bells, hoppers (locking), crafters and copper bulbs don't react to power.
+- **Consumers.** Doors, trapdoors and fence gates, pistons, note blocks, powered, activator and detector rails, TNT,
+  bells, crafters and copper bulbs don't react to power. Hoppers lock, and droppers and dispensers fire (see
+  [item access](#item-access-beyond-containers)).
 - **Sources.** Observers, daylight detectors, target blocks, trapped chests, tripwire hooks, detector rails,
   lecterns, lightning rods and sculk sensors give no power, though dust connects to them as to any signal source.
 - **Analog outputs.** Comparators read 0 from jukeboxes, lecterns, chiseled bookshelves, crafters, decorated pots,
   shelves, command blocks, sculk sensors, detector rails, creaking hearts, copper bulbs, copper golem statues and
   copper chests.
-- **Timing.** Comparators hear of a container's items changing on the level's next block entity tick, and only near
-  players, where vanilla's `setChanged` tells them at once; and entities press plates and arrows press buttons after
-  they tick, where vanilla's do as they move. Cats sitting on a chest don't stop comparators reading it.
+- **Timing.** Comparators hear of a container's items changing at the end of the level's block entity tick (through
+  item access) or on its next one (players' clicks), and only near players, where vanilla's `setChanged` tells them
+  at once; and entities press plates and arrows press buttons after they tick, where vanilla's do as they move.
+  Cats sitting on a chest don't stop comparators reading it.
 - **Game events.** Levers, buttons and pressure plates don't emit vanilla's `block_activate` and `block_deactivate`
   vibrations.
 - **Experiments.** The `redstone_experiments` feature's wire evaluator and update orientations aren't modelled.
@@ -130,6 +132,33 @@ the redstone lamp work (see [plugin content](plugin-content.md#redstone)); the r
 **Where to start:** each consumer is another `RedstoneComponent` in `Obsidian/WorldData/Redstone`, listed in
 `VanillaRedstone`, reacting in `NeighborChanged` through `LevelBlockUpdates`' signal methods, like the lamp; sources
 give their power from `GetSignal` and `GetDirectSignal`, like the lever. Analog outputs go in `AnalogOutputs`.
+
+## Item access beyond containers
+
+**Status:** open. Item access (see [plugin content](plugin-content.md#item-access)) covers vanilla's containers,
+hoppers, droppers and dispensers; the rest of vanilla's item movers aren't modelled.
+
+- **Dispensers** drop every item, like vanilla's default behaviour. Vanilla's item behaviours (shooting arrows and
+  other projectiles, pouring and filling buckets, bone meal, placing shulker boxes and other blocks, equipping
+  armour, igniting TNT, shearing, ...) aren't modelled, and a dispenser with nothing to fire doesn't emit vanilla's
+  `block_activate` game event.
+- **Composters** (vanilla's `WorldlyContainerHolder`) give no item access, and **minecarts with chests or hoppers**
+  are neither containers hoppers reach (vanilla's `getEntityContainer`) nor hoppers themselves.
+- **Crafters** are saved as data block entities, so they give no item access and don't craft.
+- **Hopper timing.** A hopper takes in item entities on its own tick, not also as they move into it (vanilla's
+  `entityInside`), and takes them in entity id order rather than vanilla's entity section order. Hoppers tick in
+  their chunk's block entity order, not vanilla's level-wide list; the cooldown rules make chains independent of
+  it, but contraptions that race separate hoppers may differ. The timings are reasoned from the 1.21.11 jar's
+  `HopperBlockEntity`, not checked against a vanilla capture.
+- **Inside block hooks**, which hold the level's tick lock, a container a player's click holds at that moment, or
+  one still waiting for its loot table, takes and gives nothing for that call, where vanilla's single thread never
+  meets either case.
+- **Fluids** have no access API yet; one would follow `IItemAccess`'s shape (amounts instead of stacks, the same
+  simulate flag and sides) when a mod needs it.
+
+**Where to start:** dispenser behaviours go in `DispenserComponent.Fire`, in
+`Obsidian/WorldData/Redstone/ItemMovers.cs`, keyed by item like vanilla's `DispenserBlock.DISPENSER_REGISTRY`; a
+composter is an `IItemAccess` that `AbstractLevel.GetItemAccess` returns before it looks for a block entity.
 
 ## Sleeping and spawn points
 

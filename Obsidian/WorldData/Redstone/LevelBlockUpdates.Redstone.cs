@@ -176,7 +176,9 @@ internal sealed partial class LevelBlockUpdates
             Position = position,
             HorizontalDirection = PlacementDirections.Horizontal(player.Yaw.Degrees),
             NearestLookingDirections =
-                PlacementDirections.NearestLooking(player.Yaw.Degrees, player.Pitch.Degrees, face, replaces)
+                PlacementDirections.NearestLooking(player.Yaw.Degrees, player.Pitch.Degrees, face, replaces),
+            ClickedFace = face,
+            NearestLookDirection = PlacementDirections.Nearest(player.Yaw.Degrees, player.Pitch.Degrees)
         };
 
         lock (fluids.TickLock)

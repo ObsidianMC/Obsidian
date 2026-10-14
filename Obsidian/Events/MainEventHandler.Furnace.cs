@@ -38,7 +38,7 @@ public partial class MainEventHandler
     /// Whether <paramref name="item"/> burns in a furnace, like vanilla's fuels: the ones it lists, except wood that
     /// doesn't burn (crimson and warped).
     /// </summary>
-    private static bool IsFuel(ItemStack item)
+    internal static bool IsFuel(ItemStack item)
     {
         var id = item.Holder.Id;
         if (TagsRegistry.Item.NonFlammableWood.Entries.Contains(id))

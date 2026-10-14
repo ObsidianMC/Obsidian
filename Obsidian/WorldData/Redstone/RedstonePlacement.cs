@@ -32,4 +32,14 @@ internal sealed class RedstonePlacement
     /// Vanilla <c>getNearestLookingDirections</c> (see <see cref="PlacementDirections.NearestLooking"/>).
     /// </summary>
     public required IReadOnlyList<BlockFace> NearestLookingDirections { get; init; }
+
+    /// <summary>
+    /// Vanilla <c>getClickedFace</c>: the face of the block the player clicked.
+    /// </summary>
+    public BlockFace ClickedFace { get; init; }
+
+    /// <summary>
+    /// Vanilla <c>getNearestLookingDirection</c>: the direction the player looks closest to, whatever they clicked.
+    /// </summary>
+    public BlockFace NearestLookDirection { get; init; }
 }

@@ -67,4 +67,15 @@ public interface IBlockLevel : ISignalReader
     /// block with an analog output already.
     /// </summary>
     public void UpdateAnalogOutput(Vector position);
+
+    /// <summary>
+    /// The items of the block at <paramref name="position"/> as another block reaches them through its
+    /// <paramref name="side"/> face, like <see cref="ILevel.GetItemAccess"/>, for use during the hook.
+    /// </summary>
+    /// <remarks>
+    /// The level's block updates wait while the hook runs, so here a container that a player's click or the server
+    /// is using at that moment, or that still waits for its loot table, takes and gives nothing for that call (its
+    /// loot is rolled on the level's next tick, outside the hook).
+    /// </remarks>
+    public Inventory.IItemAccess? GetItemAccess(Vector position, BlockFace? side);
 }
