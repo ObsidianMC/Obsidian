@@ -503,24 +503,29 @@ public class Region : IRegion
     {
         await this.initialization.Value;
 
+        var retired = new List<BaseContainer>();
         await this.saveLock.WaitAsync();
         try
         {
-            await this.WriteChunkAsync(chunk, unloading);
+            await this.WriteChunkAsync(chunk, unloading, retired);
         }
         finally
         {
             this.saveLock.Release();
+
+            // Inventories were frozen before the snapshot. Handlers may flush this region after persistence
+            // releases its semaphore; a failed write must still close the retired windows.
+            foreach (var inventory in retired)
+                await AbstractLevel.CloseWindowsAsync(inventory);
         }
     }
 
-    private async Task WriteChunkAsync(IChunk chunk, bool unloading)
+    private async Task WriteChunkAsync(IChunk chunk, bool unloading, List<BaseContainer> retired)
     {
         var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
 
         await using MemoryStream strm = new();
         NbtList? entities = null;
-        var retired = new List<BaseContainer>();
         await using (NbtWriterStream writer = new(strm, ChunkCompression, ""))
         {
             // Snapshot blocks, fluid ticks and entities together; take the generator's lock before the fluid lock.
@@ -543,7 +548,7 @@ public class Region : IRegion
                     : this.SaveStructureStarts(current.X, current.Z, loadedStarts);
 
                 if (unloading && current is Chunk retiring)
-                    retired = BlockEntityLifecycle.Retire(retiring);
+                    retired.AddRange(BlockEntityLifecycle.Retire(retiring));
 
                 SerializeChunk(writer, current, structureStarts);
 
@@ -555,9 +560,6 @@ public class Region : IRegion
 
             await writer.TryFinishAsync();
         }
-
-        foreach (var inventory in retired)
-            await AbstractLevel.CloseWindowsAsync(inventory);
 
         // Disposing the writer finishes the compression trailer before copying the bytes.
         await regionFile.SetChunkAsync(x, z, strm.ToArray());

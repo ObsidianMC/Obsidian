@@ -54,7 +54,9 @@ public sealed class DataBlockEntity : BlockEntity
         {
             Id = this.Id,
             BlockPosition = this.BlockPosition,
-            DropsContents = policy.TryGetTagValue<bool>("drops_contents", out var drops) && drops
+            // Without the live block entity, its plugin cannot promise a content-keeping loot drop. Spill instead,
+            // and expose no container component to block loot, so an available table cannot also copy the items.
+            DropsContents = true
         };
         container.Load(data);
         return container;
