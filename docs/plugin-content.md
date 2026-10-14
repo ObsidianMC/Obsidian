@@ -2727,9 +2727,10 @@ public sealed class RubyMod : PluginBase, IClientPlugin
   their slots centred, and the player's inventory below. `MenuScreenProperties` gives it a background instead, from
   `assets/<ns>/textures/gui/...` (`Texture = "<ns>:gui/container/pouch"`, its top left `Width` by `Height` pixels),
   with a position for each of the menu's slots, in order, and for the player's inventory, the title and the
-  "Inventory" label. Its slots must be as many as the menu has. The client keeps what the server sends with the menu
-  for the mod's side of it (the screens in code to come): the extra data it was opened with
-  ([Machine menus](#machine-menus)) and its data slots' values, and sends the buttons a screen clicks.
+  "Inventory" label. Its slots must be as many as the menu has. A menu with more than slots on a background
+  (progress, buttons, lists) gets a screen in code instead (see [Screens in code](#screens-in-code)), which reads the
+  extra data the menu was opened with ([Machine menus](#machine-menus)) and its data slots, and clicks its buttons. A
+  menu type has one screen or the other.
 - **Entity renderers.** A mod's entity type is drawn with a model layer from `assets/<ns>/models/entity/<path>.json`
   (`Model = "<ns>:<path>"`) and a texture from `assets/<ns>/textures/entity/...` (`Texture = "<ns>:entity/..."`, or
   `minecraft:entity/...` for vanilla's), scaled by `Scale`, with a shadow of `ShadowRadius` blocks. Without a
@@ -2807,8 +2808,152 @@ The title screen's Reload Mods button reloads the client's mods without restarti
 `mods` folder again, then the assets. It's only on the title screen, so mods never reload while the client is
 connected to a server or running a world, whose channels and ids must stay as agreed. Unloading takes back
 everything mods registered in `ConfigureClient` (payload and tick handlers, key bindings, tints, renderers, particle
-providers, menu screens) and their payload channels, disposes their plugins and unloads their code; loading runs
+providers, menu screens), closes their open screens and drops their payload channels, disposes their plugins and
+unloads their code; loading runs
 `ConfigureRegistry` and `ConfigureClient` again on new instances. Like a server's plugin reload, content (blocks,
 items, entity types, particle types, menu types) stays registered for the process with its ids, so a reload can
 change what mods do and how they draw, but content a mod adds needs a restart. Keys players bound mods' bindings to
 stay in `options.txt`.
+
+### Screens in code
+
+```csharp
+// The crusher's screen (see Machine menus): its progress, a button pausing it, and the ores it takes, searched and
+// scrolled.
+public sealed class CrusherScreen(IScreenMenu menu) : ModMenuScreen(menu)
+{
+    private static readonly Item[] ores = [ItemsRegistry.IronOre, ItemsRegistry.GoldOre, ItemsRegistry.CopperOre];
+
+    private readonly ProgressBar progress = new()
+    {
+        X = 79,
+        Y = 34,
+        Width = 24,
+        Height = 16,
+        Source = GuiImage.Sprite("ruby:crusher/progress")
+    };
+
+    private readonly ItemGrid list = new()
+    {
+        X = 110,
+        Y = 30,
+        Columns = 3,
+        Rows = 2
+    };
+
+    private readonly ScrollBar scroll = new()
+    {
+        X = 166,
+        Y = 30,
+        Height = 34
+    };
+
+    private bool paused;
+
+    protected override void Init()
+    {
+        this.Background = GuiImage.Texture("ruby:gui/container/crusher");
+        this.Add(new SlotGrid
+        {
+            X = 26,
+            Y = 35,
+            Columns = 3
+        });
+        this.Add(this.progress);
+
+        var pause = this.Add(new Button
+        {
+            X = 8,
+            Y = 58,
+            Width = 50,
+            Text = this.Translate("ruby.crusher.pause")
+        });
+        pause.Pressed += () =>
+        {
+            // The menu's ClickButton pauses on 0 and runs on anything else.
+            this.paused = !this.paused;
+            this.Menu.ClickButton(this.paused ? 0 : 1);
+            pause.Text = this.Translate(this.paused ? "ruby.crusher.run" : "ruby.crusher.pause");
+        };
+
+        var search = this.Add(new TextField
+        {
+            X = 110,
+            Y = 18,
+            Width = 54,
+            Height = 10,
+            Bordered = false
+        });
+        search.Changed += this.Search;
+
+        this.scroll.WheelArea = this.list;
+        this.scroll.Scrolled += row => this.list.FirstRow = row;
+        this.Add(this.list);
+        this.Add(this.scroll);
+        this.Search(string.Empty);
+    }
+
+    protected override void Tick() => this.progress.Progress = this.Menu.GetData(0) / 200f;
+
+    private void Search(string text)
+    {
+        this.list.Items = [.. ores.Where(ore => ore.UnlocalizedName.Contains(text)).Select(ore => new ItemStack(ore))];
+        this.scroll.MaxRow = (this.list.Items.Count + 2) / 3 - this.list.Rows;
+        this.list.FirstRow = this.scroll.Row;
+    }
+}
+
+registry.RegisterMenuScreen("ruby:crusher", menu => new CrusherScreen(menu));
+```
+
+A mod builds screens in C# from widgets in `Obsidian.API.Client.Screens`, like a NeoForge mod's `Screen` and
+`AbstractContainerScreen`, and the client draws them with its own widgets, like vanilla's. A screen is a panel of
+`Width` by `Height` GUI pixels (176 by 166 unless set) centred on the darkened game, with an optional `Background`, a
+`GuiImage`: a GUI sprite (`GuiImage.Sprite("ruby:crusher/progress")` for
+`assets/ruby/textures/gui/sprites/crusher/progress.png`, stretched, tiled or nine-sliced by its `.mcmeta` like
+vanilla's) or a region of a whole texture (`GuiImage.Texture("ruby:gui/container/crusher", u, v)`, like vanilla's
+container textures). Widgets are placed in the panel's pixels from its top left, and drawn in the order they were added.
+
+The client calls the screen like vanilla's: `Init` as it opens, after removing its widgets, so it adds them there
+(each time it's shown); `Tick` 20 times a second while it's open, to update the widgets from what changed; and
+`Removed` as it closes. Widgets are plain objects the screen keeps and changes whenever it likes: the client draws
+them as they are each frame. All of it, the widgets' events included, runs on the game's thread inside a call into the
+mod; a screen that throws is logged and closed, and when the mod unloads its open screens close.
+
+- **`Label`**: a line of text, dark grey without a shadow like container labels unless its `Color` and `Shadow` say
+  otherwise, centred in its `Width` when `Centered`.
+- **`Image`**: a `GuiImage` at the widget's size.
+- **`ProgressBar`**: a `GuiImage` cut to its `Progress` (0 to 1, rounded up to whole pixels like a furnace's arrow),
+  filling in its `Direction` (left to right, or bottom to top like a furnace's flame, ...).
+- **`Button`**: vanilla's button with its `Text`, 200 by 20 unless sized; `Pressed` is raised on a click, or Enter or
+  Space while it's focused, if it's `Active`.
+- **`TextField`**: vanilla's edit box, with its caret, selection and the clipboard; `Changed` is raised with the new
+  `Text` as the player types (up to `MaxLength`). `Hint` shows while it's empty, and `Bordered = false` draws only the
+  text, like the creative inventory's search.
+- **`ScrollBar`**: a vertical bar the player drags, or scrolls with the wheel over it or its `WheelArea`, from row 0 to
+  `MaxRow`; `Scrolled` is raised with the new `Row`. Its handle is vanilla's creative inventory scroller unless
+  `Handle` names another sprite (with a `_disabled` one, drawn while `MaxRow` is 0).
+- **`SlotGrid`**: the menu's slots from `FirstSlot`, `Columns` by `Rows`, 18 pixels apart from where its first item
+  goes, like `MenuScreenProperties.Slots`. The player clicks, drags, shift-clicks and swaps them with hotbar keys like
+  any container's, and the client draws their stacks and tooltips.
+- **`ItemGrid`**: stacks that aren't the menu's slots, like a storage terminal's contents or a list of recipes:
+  `Items` row by row, `Columns` by `Rows` from `FirstRow`, with their tooltips. `Clicked` is raised with the cell's
+  index (even past the list's end), the mouse button (0 left, 1 right, 2 middle, like vanilla's) and Shift; the mod
+  decides what it does, typically with a payload or a menu button.
+- **Tooltips**: any widget's `Tooltip` text shows while the mouse is over it, a line per `\n`, with vanilla's legacy
+  `§` formatting codes.
+
+A `ModMenuScreen` is the screen of a menu type, registered with `IClientRegistry.RegisterMenuScreen(menuType,
+factory)`: the client makes one from the factory each time the server opens such a menu, and shows it in a container
+screen, with the menu's title at `Title`, the player's inventory at `Inventory` (three rows and the hotbar, like
+vanilla's menus; null to place those slots with `SlotGrid`s, which follow the menu's own from `Menu.SlotCount`, or to
+leave them out) and its "Inventory" label 12 pixels above it unless `InventoryLabel` says otherwise. Its `Menu` is the
+client's side of the menu: its `Type`, `Title`, `SlotCount`, the stacks in its slots (`GetItem`), its data slots'
+values as last sent (`GetData`, 0 until sent), the extra data it was opened with (`ReadOpenData()`, a new reader each
+call, reading what `WriteOpenData` wrote) and `ClickButton(number)`, which the server's `ClickButton` gets. Escape or
+the inventory key close the screen and the menu, as does `Close()`.
+
+A mod's own screens, like settings, aren't tied to a menu: subclass `ModScreen` and open it with
+`registry.Screens.Open(screen)`, from a key binding's `Pressed` or a payload handler (from another thread it opens on
+the game's shortly after). It shows over the game, or over the screen shown, which Escape or `Close()` goes back to.
+Like `Connection`, `registry.Screens` stays usable after `ConfigureClient`.

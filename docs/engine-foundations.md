@@ -96,7 +96,7 @@ pushes them into a hopper below.
 - **Server menus.** (done) A plugin menu type with its own slot layout and per-slot rules, a quick-move (shift-click) hook,
   data slots synced to the client (like a furnace's progress), button clicks, and extra data sent when opened (like
   NeoForge's `openMenu` with a buffer). A menu can be bound to a block entity and closes when it's removed.
-- **Client screens in code.** A mod builds its screens in its own client side, in C#, from UI building blocks
+- **Client screens in code.** (done) A mod builds its screens in its own client side, in C#, from UI building blocks
   `Obsidian.API.Client` gains: widgets (buttons, text fields, scroll bars, slots, item grids, tooltips) and a way to
   open a screen for a menu type or on its own. The client implements them with its own UI, as it does the rest of
   the client API. `MenuScreenProperties` stays for simple menus.

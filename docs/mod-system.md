@@ -479,9 +479,16 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      they name), paged ten to a page like NeoForge's, and the search tab from every tab's items like vanilla's. Servers
      only check the registrations: tabs aren't synced, and the creative slot packet accepts any item. A mod's tabs and
      additions go when it unloads. See [plugin-content.md](plugin-content.md#creative-tabs).
+   - Done, screens in code (engine phase 3): `Obsidian.API.Client.Screens` has a retained widget API. A mod's
+     `ModMenuScreen`, registered for its menu type with `RegisterMenuScreen(menuType, factory)`, shows the menu with
+     its own widgets: labels, images and progress bars from GUI sprites or texture regions, buttons, text fields,
+     scroll bars, grids of the menu's slots and of other stacks, and tooltips. It reads the menu's data slots and
+     extra open data and clicks its buttons. A `ModScreen` of its own opens with `IClientRegistry.Screens`. The
+     client draws them with its own widgets, calls them inside calls into the mod (closing one that fails), and
+     closes them when the mod unloads. See [plugin-content.md](plugin-content.md#screens-in-code).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
-     move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine, and screens in code
-     (widgets, mods reading their menus' extra data and data slots, buttons); entity render layers (emissive and
+     move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine; HUD overlays drawn with
+     the screens' widgets; entity render layers (emissive and
      translucent ones) and animations a server triggers beyond arm swings for mods' entities; client lifecycle events
      (joining and leaving a server).
 
