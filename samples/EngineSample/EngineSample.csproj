@@ -10,10 +10,12 @@
 		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
-	<!-- The server provides the API at runtime, so its assemblies aren't copied beside the plugin's. Obsidian.API
-	     doesn't pass on its reference to Obsidian.Nbt, whose types block entities save with, so it's referenced too. -->
+	<!-- The server or client provides the API at runtime, so its assemblies aren't copied beside the plugin's.
+	     Obsidian.API doesn't pass on its reference to Obsidian.Nbt, whose types block entities save with, so it's
+	     referenced too. Obsidian.API.Client is the client half, for the mod's screens; servers ship it as well. -->
 	<ItemGroup>
 		<ProjectReference Include="..\..\Obsidian.API\Obsidian.API.csproj" Private="false" />
+		<ProjectReference Include="..\..\Obsidian.API.Client\Obsidian.API.Client.csproj" Private="false" />
 		<ProjectReference Include="..\..\Obsidian.Nbt\Nbt\Obsidian.Nbt.csproj" Private="false" />
 	</ItemGroup>
 

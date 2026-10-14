@@ -1191,15 +1191,19 @@ types, including cooking, which use the same recipe set as recipes registered in
 tags; malformed files are logged and left out. Registering an identifier already in use throws.
 
 `IServer.FindRecipe<TRecipe>(RecipeType<TRecipe> type, IReadOnlyList<ItemStack?> inputs)` returns the first matching
-recipe, by lexical recipe identifier, or null. Look up the current result each tick rather than retaining recipe
-values across reloads. Registrations belong to their server and plugin; unloading removes the serializer and its
-recipes, and refuses new calls while callbacks already running drain. Plugin recipe JSON is kept as host-owned
-data, so rebuilding snapshots never keeps an unloaded serializer alive.
+recipe, by lexical recipe identifier, or null. `IServer.GetRecipes<TRecipe>(RecipeType<TRecipe> type)` returns all
+the type's current recipes in that order, for a machine's screen to list (the
+[engine sample](../samples/EngineSample)'s grinder sends them as its menu opens). Look up the current result each tick
+rather than retaining recipe values across reloads. Registrations belong to their server and plugin; unloading
+removes the serializer and its recipes, and refuses new calls while callbacks already running drain. Plugin recipe
+JSON is kept as host-owned data, so rebuilding snapshots never keeps an unloaded serializer alive.
 
 Custom types are server-side processing rules. Vanilla's 1.21.11 `UpdateRecipes` carries fixed input property sets
 and stonecutter result displays; it has no field for arbitrary recipe types, serializers or matching. Custom types
 are therefore omitted from that packet, do not create a synced client registry and do not require modded clients
-on their own. A plugin with a custom screen can send its own display data over a negotiated payload channel.
+on their own. A plugin with a custom screen can send its own display data over a negotiated payload channel, or as
+its menu's open data. A mod whose side is `both` registers its recipe types in its shared `ConfigureRegistry`: on
+the client, `RegisterRecipeType` gives the type's identity and reads no recipes, which stay the server's.
 The server's standalone data packs still do not load recipe files; this API loads plugins' recipe files.
 
 ## Brewing
@@ -3141,7 +3145,8 @@ leave them out) and its "Inventory" label 12 pixels above it unless `InventoryLa
 client's side of the menu: its `Type`, `Title`, `SlotCount`, the stacks in its slots (`GetItem`), its data slots'
 values as last sent (`GetData`, 0 until sent), the extra data it was opened with (`ReadOpenData()`, a new reader each
 call, reading what `WriteOpenData` wrote) and `ClickButton(number)`, which the server's `ClickButton` gets. Escape or
-the inventory key close the screen and the menu, as does `Close()`.
+the inventory key close the screen and the menu, as does `Close()`. The [engine sample](../samples/EngineSample)'s
+grinder is a complete machine menu and screen.
 
 A mod's own screens, like settings, aren't tied to a menu: subclass `ModScreen` and open it with
 `registry.Screens.Open(screen)`, from a key binding's `Pressed` or a payload handler (from another thread it opens on

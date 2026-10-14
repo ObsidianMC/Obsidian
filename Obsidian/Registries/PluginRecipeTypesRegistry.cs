@@ -18,13 +18,7 @@ internal sealed class PluginRecipeTypesRegistry(Action<IReadOnlySet<string>> rem
         PluginContainer owner, string identifier, IRecipeSerializer<TRecipe> serializer) where TRecipe : class
     {
         ArgumentNullException.ThrowIfNull(serializer);
-        PluginRegistry.CheckIdentifier(owner, identifier);
-        int id;
-        lock (identitiesGate)
-        {
-            if (!identities.TryGetValue(identifier, out id))
-                identities.Add(identifier, id = identities.Count);
-        }
+        var type = Identify<TRecipe>(owner, identifier);
 
         lock (this.gate)
         {
@@ -37,6 +31,26 @@ internal sealed class PluginRecipeTypesRegistry(Action<IReadOnlySet<string>> rem
         }
 
         owner.TrackAddition(() => this.ReleasePlugin(owner));
+        return type;
+    }
+
+    /// <summary>
+    /// A plugin's recipe type with its process-wide identity, without a serializer: what the client gives a mod
+    /// registering one, since recipes are the server's, so that the mod's shared <c>ConfigureRegistry</c> runs there
+    /// too.
+    /// </summary>
+    internal static RecipeType<TRecipe> Identify<TRecipe>(PluginContainer owner, string identifier)
+        where TRecipe : class
+    {
+        PluginRegistry.CheckIdentifier(owner, identifier);
+
+        int id;
+        lock (identitiesGate)
+        {
+            if (!identities.TryGetValue(identifier, out id))
+                identities.Add(identifier, id = identities.Count);
+        }
+
         return new RecipeType<TRecipe>(identifier, id);
     }
 
