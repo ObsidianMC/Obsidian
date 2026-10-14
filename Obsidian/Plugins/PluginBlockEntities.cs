@@ -63,13 +63,30 @@ internal static class PluginBlockEntities
         BlockEntity blockEntity,
         PluginContainer plugin)
     {
+        lock (level.Fluids.TickLock)
+            return KeepCore(level, chunk, blockEntity, plugin);
+    }
+
+    private static BaseContainer? KeepCore(
+        AbstractLevel level,
+        Chunk chunk,
+        BlockEntity blockEntity,
+        PluginContainer plugin)
+    {
+        var position = blockEntity.BlockPosition;
+        if (!ReferenceEquals(chunk.GetBlockEntity(position.X, position.Y, position.Z), blockEntity))
+            return null;
+
         // A container stops taking clicks under its lock before its last save, so that the save has all the items
         // players moved and no click moves one after it (or out of an inventory the plugin's reload recreates).
         BaseContainer? retired = null;
         if (blockEntity is ContainerBlockEntity container)
         {
             using (container.Inventory.Lock())
+            {
                 container.Inventory.TryRetire();
+                blockEntity.IsRemoved = true;
+            }
 
             retired = container.Inventory;
         }
@@ -80,7 +97,12 @@ internal static class PluginBlockEntities
             BlockPosition = blockEntity.BlockPosition
         };
 
-        kept.Load(SavedData(blockEntity, plugin) ?? new NbtCompound());
+        blockEntity.SavedData = SavedData(blockEntity, plugin);
+        var saved = BlockEntityNbt.Save(blockEntity) ?? new NbtCompound();
+        foreach (var name in new[] { "id", "x", "y", "z", "keepPacked" })
+            saved.Remove(name);
+
+        kept.Load(saved);
         level.AttachBlockEntity(kept);
 
         if (!chunk.ReplaceBlockEntity(blockEntity, kept))

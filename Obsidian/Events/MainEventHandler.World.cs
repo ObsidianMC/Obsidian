@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.API.Events;
 using Obsidian.API.BlockEntities;
@@ -58,7 +59,10 @@ public partial class MainEventHandler
         var parts = await TwoPartBlockBreak.PrepareAsync(world, location, block);
 
         // What the block entity gives the loot (a shulker box's items, say), taken before the block goes.
-        var blockEntity = await BlockEntityComponents.CaptureAsync(world, parts.DropPosition, player);
+        await using var blockEntity = await BlockEntityComponents.CaptureAsync(world, parts.DropPosition, player);
+        if (!blockEntity.CanBreak)
+            return;
+
         var drops = await BlockLoot.GetDropsAsync(
             world,
             parts.DropPosition,
@@ -68,8 +72,21 @@ public partial class MainEventHandler
             blockEntityComponents: blockEntity.Components,
             dynamicDrops: blockEntity.DynamicDrops);
 
+        if (world is AbstractLevel concreteWorld)
+        {
+            var changed = await concreteWorld.TrySetBlockAsync(location, BlocksRegistry.Air, BlockUpdateFlags.All,
+                state => state.GetHashCode() == block.GetHashCode()
+                    && (blockEntity.Source is null || parts.DropPosition != location
+                        || ReferenceEquals(concreteWorld.GetResidentBlockEntity(location), blockEntity.Source)));
+            if (!changed)
+                return;
+        }
+        else
+        {
+            await world.SetBlockAsync(location, BlocksRegistry.Air, true);
+        }
+
         await parts.RemovePartnerAsync(world);
-        await world.SetBlockAsync(location, BlocksRegistry.Air, true);
         if (world is AbstractLevel gameEvents)
         {
             if (block.Is(BlockIds.Jukebox))

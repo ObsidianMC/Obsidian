@@ -264,6 +264,9 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     /// <returns>Whether this call retired it: false when it was already.</returns>
     internal bool TryRetire() => Interlocked.Exchange(ref this.retired, 1) == 0;
 
+    // Only the aborted break that acquired retirement may undo it, under the click lock.
+    internal void CancelRetirement() => Volatile.Write(ref this.retired, 0);
+
     /// <summary>
     /// Whether this container and <paramref name="other"/> show the same slots, like a double chest and its halves.
     /// </summary>

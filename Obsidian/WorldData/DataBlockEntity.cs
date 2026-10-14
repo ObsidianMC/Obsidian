@@ -41,6 +41,25 @@ public sealed class DataBlockEntity : BlockEntity
     /// </summary>
     internal bool DropsItems => droppingTypes.Contains(this.Id);
 
+    /// <summary>Reconstructs only host-owned container semantics while the plugin is absent.</summary>
+    internal ContainerBlockEntity? KeptContainer()
+    {
+        var data = this.SnapshotData();
+        if (!data.TryGetTag<NbtCompound>("obsidian:container", out var policy)
+            || !policy.TryGetTagValue<int>("size", out var size)
+            || size < 0 || size > short.MaxValue)
+            return null;
+
+        var container = new ContainerBlockEntity(new Container(size))
+        {
+            Id = this.Id,
+            BlockPosition = this.BlockPosition,
+            DropsContents = policy.TryGetTagValue<bool>("drops_contents", out var drops) && drops
+        };
+        container.Load(data);
+        return container;
+    }
+
     /// <summary>
     /// Sets a field of <see cref="Data"/>, replacing any previous value.
     /// </summary>

@@ -29,13 +29,16 @@ public static partial class LootTableJson
             case "minecraft:apply_bonus":
                 return Bonus(json, conditions);
             case "minecraft:limit_count":
-                var limit = json.GetProperty("limit").Clone();
+                var limit = json.GetProperty("limit");
+                var min = limit.ValueKind == JsonValueKind.Number ? CountLimit(limit)
+                    : limit.TryGetProperty("min", out var minimum) ? CountLimit(minimum) : 0;
+                var max = limit.ValueKind == JsonValueKind.Number ? CountLimit(limit)
+                    : limit.TryGetProperty("max", out var maximum) ? CountLimit(maximum) : int.MaxValue;
+                if (min > max)
+                    throw new InvalidDataException("limit_count requires min <= max.");
+
                 return new DataFunction((stack, _) =>
                 {
-                    var min = limit.ValueKind == JsonValueKind.Number ? (int)limit.GetSingle()
-                        : limit.TryGetProperty("min", out var minimum) ? (int)minimum.GetSingle() : 0;
-                    var max = limit.ValueKind == JsonValueKind.Number ? (int)limit.GetSingle()
-                        : limit.TryGetProperty("max", out var maximum) ? (int)maximum.GetSingle() : int.MaxValue;
                     stack.Count = Math.Clamp(stack.Count, min, max);
                     return stack;
                 }) { Conditions = conditions };
@@ -68,6 +71,15 @@ public static partial class LootTableJson
             default:
                 throw new InvalidDataException($"Unsupported loot function {type}.");
         }
+    }
+
+    private static int CountLimit(JsonElement value)
+    {
+        var number = value.GetDouble();
+        if (!double.IsFinite(number) || number < int.MinValue || number > int.MaxValue)
+            throw new InvalidDataException("limit_count requires finite limits in the integer range.");
+
+        return (int)number;
     }
 
     private static LootFunction Bonus(JsonElement json,

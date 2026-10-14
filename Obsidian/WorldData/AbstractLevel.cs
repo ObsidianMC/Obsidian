@@ -354,9 +354,11 @@ public abstract partial class AbstractLevel : ILevel
         Vector location,
         IBlock block,
         BlockUpdateFlags flags,
-        Func<IBlock, bool>? canReplace)
+        Func<IBlock, bool>? canReplace,
+        BlockPlacement? placement = null)
     {
-        if (!await this.TrySetBlockUntrackedAsync(location.X, location.Y, location.Z, block, flags, canReplace))
+        if (!await this.TrySetBlockUntrackedAsync(
+            location.X, location.Y, location.Z, block, flags, canReplace, placement))
             return false;
 
         TrackMobEgg(location, block);
@@ -415,7 +417,8 @@ public abstract partial class AbstractLevel : ILevel
         int z,
         IBlock block,
         BlockUpdateFlags flags,
-        Func<IBlock, bool>? canReplace)
+        Func<IBlock, bool>? canReplace,
+        BlockPlacement? placement = null)
     {
         if (this.IsOutsideBuildHeight(y))
             return false;
@@ -430,12 +433,23 @@ public abstract partial class AbstractLevel : ILevel
         API.BlockEntities.BlockEntity? removed;
         lock (this.Fluids.TickLock)
         {
+            if (c is Chunk { EntitiesUnloaded: true })
+                return false;
+
+            using var handLock = placement?.LockHand();
             var old = c.GetBlock(x, y, z);
             if (canReplace is not null && !canReplace(old))
                 return false;
 
+            using var prepared = placement?.Prepare(block, new Vector(x, y, z), this.Logger);
+            if (placement is not null && prepared is null)
+                return false;
+
+            // Publish the initialized entity first: lock-free readers must never see a filled box as empty.
+            removed = this.UpdateBlockEntity(c, new Vector(x, y, z), block, prepared?.Entity);
             c.SetBlock(x, y, z, block);
-            removed = this.UpdateBlockEntity(c, new Vector(x, y, z), block);
+            placement?.Consume();
+            this.CompleteBlockEntityPlacement(c, prepared?.Entity);
             this.AfterBlockSet(new Vector(x, y, z), old, block, flags);
         }
 

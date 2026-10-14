@@ -17,7 +17,7 @@ namespace Obsidian.WorldData;
 /// <c>pot_decorations</c> (and their <c>sherds</c> dynamic drop); and the <c>custom_name</c> of other named block
 /// entities kept as data. Banner patterns, bees and skull profiles aren't modelled yet.
 /// </remarks>
-internal sealed class BlockEntityComponents
+internal sealed class BlockEntityComponents : IAsyncDisposable
 {
     /// <summary>
     /// Nothing for loot, for blocks without a block entity.
@@ -28,6 +28,24 @@ internal sealed class BlockEntityComponents
     private const int PotFaces = 4;
 
     private readonly Dictionary<string, List<ItemStack>> dynamic;
+    private ContainerBlockEntity? retirement;
+
+    internal bool CanBreak { get; private init; } = true;
+    internal bool KeepsContents => this.retirement is not null;
+    internal BlockEntity? Source { get; private set; }
+
+    /// <summary>Restores a standing box after an aborted loot evaluation or a rejected removal.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (this.retirement is not ContainerBlockEntity container)
+            return;
+
+        using (await container.Inventory.LockAsync())
+        {
+            if (!container.IsRemoved)
+                container.Inventory.CancelRetirement();
+        }
+    }
 
     private BlockEntityComponents(List<DataComponent> components, Dictionary<string, List<ItemStack>> dynamic)
     {
@@ -59,7 +77,8 @@ internal sealed class BlockEntityComponents
     /// A shulker box's contents go into the components, so it's retired in the same step, under its lock: no click
     /// takes an item the box item holds, and its own removal then drops nothing. Like vanilla's
     /// <c>ShulkerBoxBlock.playerWillDestroy</c>, a player breaking one rolls the loot it was waiting for into it first;
-    /// an explosion copies the loot table instead.
+    /// an explosion copies the loot table instead. Dispose the capture after the removal attempt: retirement is
+    /// undone if the box is still standing, including when loot evaluation throws.
     /// </remarks>
     /// <param name="level">The level.</param>
     /// <param name="position">The block's position.</param>
@@ -69,12 +88,19 @@ internal sealed class BlockEntityComponents
         if (level is not AbstractLevel concrete)
             return None;
 
-        return await level.GetBlockEntityAsync(position.X, position.Y, position.Z) switch
+        var entity = await level.GetBlockEntityAsync(position.X, position.Y, position.Z);
+        var captured = entity switch
         {
             ContainerBlockEntity container => await CaptureContainerAsync(concrete, container, breaker),
+            DataBlockEntity data when data.KeptContainer() is ContainerBlockEntity kept =>
+                await CaptureContainerAsync(concrete, kept, breaker),
             DataBlockEntity data => CaptureData(data),
             _ => None
         };
+        if (!ReferenceEquals(captured, None))
+            captured.Source = entity as BlockEntity;
+
+        return captured;
     }
 
     /// <summary>
@@ -83,13 +109,52 @@ internal sealed class BlockEntityComponents
     /// </summary>
     public static async ValueTask ApplyAsync(ILevel level, Vector position, ItemStack item)
     {
-        if (await level.GetBlockEntityAsync(position.X, position.Y, position.Z) is not ContainerBlockEntity container)
+        if (await level.GetBlockEntityAsync(position.X, position.Y, position.Z) is BlockEntity entity)
+            Apply(entity, item);
+    }
+
+    /// <summary>Initializes an unpublished entity from its item before another handler can reach it.</summary>
+    internal static void Apply(BlockEntity entity, ItemStack item)
+    {
+        if (entity is DataBlockEntity data)
+        {
+            if (item.GetComponent<SimpleDataComponent<ChatMessage>>(DataComponentType.CustomName)?.Value
+                is ChatMessage dataName)
+                data.Set(dataName.ToNbt("CustomName"));
+
+            if (data.Id == "minecraft:decorated_pot")
+            {
+                var decorations = item.GetComponent<SimpleDataComponent<ImmutableArray<Item>>>(
+                    DataComponentType.PotDecorations);
+                if (decorations is not null)
+                {
+                    var sherds = new NbtList(NbtTagType.String, "sherds");
+                    foreach (var face in decorations.Value.Take(PotFaces))
+                        sherds.Add(new NbtTag<string>(string.Empty, face.UnlocalizedName));
+
+                    data.Set(sherds);
+                }
+
+                var potItems = item.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
+                    DataComponentType.Container);
+                if (potItems is not null && potItems.Value.FirstOrDefault() is ItemStack first && !first.IsAir)
+                    data.Set(first.ToNbt("item"));
+            }
+
+            data.SendUpdate();
+            return;
+        }
+
+        if (entity is not ContainerBlockEntity container)
             return;
 
         var inventory = container.Inventory;
-        using (await inventory.LockAsync())
+        using (inventory.Lock())
         lock (container.LootLock)
         {
+            if (container.IsRemoved || inventory.IsRetired)
+                return;
+
             var customName = item.GetComponent<SimpleDataComponent<ChatMessage>>(DataComponentType.CustomName);
             if (customName?.Value is ChatMessage name)
             {
@@ -121,6 +186,9 @@ internal sealed class BlockEntityComponents
                 container.LootTableSeed = loot.TryGetTagValue<long>("seed", out var seed) ? seed : 0;
             }
         }
+
+        container.SetChanged();
+        container.SendUpdate();
     }
 
     // Vanilla's BaseContainerBlockEntity and RandomizableContainerBlockEntity collectImplicitComponents.
@@ -136,41 +204,53 @@ internal sealed class BlockEntityComponents
         using (await inventory.LockAsync())
         {
             // Its contents drop with the block's loot, once: a second break of the same box gets none.
-            if (!container.DropsContents && !inventory.TryRetire())
-                return None;
+            if (container.IsRemoved || !container.DropsContents && !inventory.TryRetire())
+                return new BlockEntityComponents([], []) { CanBreak = false };
 
-            if (!container.DropsContents && breaker is not null)
-                level.UnpackLootTable(container, breaker.GameMode == GameMode.Creative ? null : breaker);
-
-            if (inventory.CustomName is ChatMessage name)
-                components.Add(ComponentBuilder.CustomName with { Value = name });
-
-            if (container is VanillaContainerBlockEntity { LockPredicate: NbtCompound key })
-                components.Add(ComponentBuilder.Lock with { Value = key });
-
-            // A container whose items drop as it goes (a chest) has dropped them by the time vanilla rolls its loot,
-            // so only one that keeps them gives them.
-            if (!container.DropsContents)
+            try
             {
-                var items = Contents(inventory);
-                components.Add(ComponentBuilder.Container with { Value = items });
-                dynamic["minecraft:contents"] = [.. items.Where(item => !item.IsAir && item.Count > 0)];
-            }
+                if (!container.DropsContents && breaker is not null)
+                    level.UnpackLootTable(container, breaker.GameMode == GameMode.Creative ? null : breaker);
 
-            lock (container.LootLock)
-            {
-                if (container.LootTable is string lootTable)
+                if (inventory.CustomName is ChatMessage name)
+                    components.Add(ComponentBuilder.CustomName with { Value = name });
+
+                if (container is VanillaContainerBlockEntity { LockPredicate: NbtCompound key })
+                    components.Add(ComponentBuilder.Lock with { Value = key });
+
+                // Vanilla rolls chest loot after its items drop; only containers that keep items supply them here.
+                if (!container.DropsContents)
                 {
-                    var loot = new NbtCompound { new NbtTag<string>("loot_table", lootTable) };
-                    if (container.LootTableSeed != 0)
-                        loot.Add(new NbtTag<long>("seed", container.LootTableSeed));
-
-                    components.Add(ComponentBuilder.ContainerLoot with { Value = loot });
+                    var items = Contents(inventory);
+                    components.Add(ComponentBuilder.Container with { Value = items });
+                    dynamic["minecraft:contents"] = [.. items.Where(item => !item.IsAir && item.Count > 0)];
                 }
+
+                lock (container.LootLock)
+                {
+                    if (container.LootTable is string lootTable)
+                    {
+                        var loot = new NbtCompound { new NbtTag<string>("loot_table", lootTable) };
+                        if (container.LootTableSeed != 0)
+                            loot.Add(new NbtTag<long>("seed", container.LootTableSeed));
+
+                        components.Add(ComponentBuilder.ContainerLoot with { Value = loot });
+                    }
+                }
+            }
+            catch
+            {
+                if (!container.DropsContents)
+                    inventory.CancelRetirement();
+
+                throw;
             }
         }
 
-        return new BlockEntityComponents(components, dynamic);
+        return new BlockEntityComponents(components, dynamic)
+        {
+            retirement = container.DropsContents ? null : container
+        };
     }
 
     // Vanilla's ItemContainerContents.fromItems: copies of the slots up to the last that holds something.

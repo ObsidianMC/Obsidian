@@ -90,6 +90,19 @@ public class ContainerBlockEntity(BaseContainer inventory) : BlockEntity
             this.SaveContents(tag);
     }
 
+    /// <summary>Overlays current container fields without invoking a plugin's Save override.</summary>
+    internal void SnapshotContents(NbtCompound tag)
+    {
+        using (this.Inventory.Lock())
+        lock (this.LootLock)
+        {
+            foreach (var name in new[] { "CustomName", "Items", "LootTable", "LootTableSeed" })
+                tag.Remove(name);
+
+            this.SaveContents(tag);
+        }
+    }
+
     // What Save writes, under the inventory's lock and the loot lock.
     private void SaveContents(NbtCompound tag)
     {

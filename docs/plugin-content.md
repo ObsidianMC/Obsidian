@@ -364,6 +364,10 @@ entities' `custom_name`. So a broken shulker box drops a box holding its items (
 first when a player breaks it, and dropping even for a creative player when it holds items), and placing that box
 gives them back, with its name, lock and loot table. Chests and other containers whose items drop as they go give
 no `container`, like vanilla's. Item stacks save `container`, `lock`, `container_loot` and `pot_decorations`.
+Placement initializes the block entity from the held item's supported components before publishing its block,
+then consumes the same hand item inside the block mutation lock. Decorated pots apply `pot_decorations` and their
+first `container` item and queue their initial client data. A failed shulker loot evaluation restores retirement
+while the box is still standing; malformed `limit_count` bounds are rejected when the table is loaded.
 Banner patterns, bees and skull profiles aren't taken yet.
 
 ## Entities
@@ -494,8 +498,10 @@ public async ValueTask BreakAsync(BlockBreakContext context)
 A `ContainerBlockEntity` holds a `BaseContainer` (its `Inventory`), saved like vanilla's containers (`Items`,
 `CustomName`, and a `LootTable` it's waiting for), which drops when the block is removed unless `DropsContents` is
 false. Changes to its items are saved without `SetChanged`, under the inventory's click lock, so that a save never
-has a click half applied or a loot table half rolled. When the block goes, its items are taken out under that lock and
-the inventory is retired: the windows showing it close, and it takes no more clicks and doesn't open again. Vanilla's block entities work the same way: chests,
+has a click half applied or a loot table half rolled. Every chunk save takes current container fields directly,
+including for remote menus outside simulation distance, while plugin-specific fields keep their tick snapshots.
+When the block goes, its items are taken out under that lock and the inventory is retired: the windows showing it
+close, and it takes no more clicks and doesn't open again. Vanilla's block entities work the same way: chests,
 barrels, dispensers, droppers, hoppers, shulker boxes, furnaces and brewing stands are `ContainerBlockEntity`s, so
 `await level.GetBlockEntityAsync(position) is ContainerBlockEntity chest` reaches a chest's items, an unopened one's
 too (its `LootTable` is rolled when a player opens it or it's broken), and the others keep vanilla's saved data. Like
@@ -505,9 +511,12 @@ entity tick.
 When the plugin unloads, its block entities are saved into their chunks as of their last change (one not taken in
 yet is saved then) and let go of; nothing of the plugin's runs after that, and the plugin isn't released before. A
 container's inventory is retired first, under its lock, and the windows showing it, or any container of the plugin's
-own classes, close: no player takes out an item the reload brings back. While it's gone they're kept as they were
-saved, in loaded chunks and in chunks loaded meanwhile, like saved entities of its types; once it loads again, the
-level creates them again from what they saved on its next tick, and so do chunks loaded later.
+own classes, close: no player takes out an item the reload brings back. Chunk and region eviction also retire
+inventories before their final save and close remote viewers. The server saves a plugin container's size and drop
+policy as `obsidian:container` data, so its items and pending loot still have container removal semantics while the
+plugin is absent. While it's gone they're kept as they were saved, in loaded chunks and in chunks loaded meanwhile,
+like saved entities of its types; once it loads again, the level creates them again from what they saved on its next
+tick, and so do chunks loaded later.
 
 ## Particles
 
