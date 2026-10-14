@@ -362,10 +362,10 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      `/locate biome` and `/locate poi`; clamping generation to a dimension type's build range.
    - Engine foundations, phase 5 travel: explicit level teleports preserve players and entity state. Server plugins
      register rectangular portals with frame predicates, ignition, routing, scales and waits; the Nether uses the
-     same mechanism. Registrations unload without removing placed blocks. Dedicated portal blocks are supported.
-     Riding is a relationship between any two entities (`IEntity.StartRiding`), travel carries whole passenger
-     trees, leads drop as vanilla's do around travel, and non-player entities use End portals and gateways. Sharing
-     vanilla's portal block and saving passenger trees remain in known gaps
+     same mechanism. Registrations unload without removing placed blocks. Portal types can share a portal block,
+     vanilla's included, through per-block claims saved with chunks. Riding is a relationship between any two
+     entities (`IEntity.StartRiding`), travel carries whole passenger trees, leads drop as vanilla's do around
+     travel, and non-player entities use End portals and gateways. Saving passenger trees remains in known gaps
      (see [plugin-content.md](plugin-content.md#travel-and-portals)).
    - Next: Phase 4.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key

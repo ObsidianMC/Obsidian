@@ -41,6 +41,9 @@ public sealed class Chunk : IChunk
     internal ConcurrentDictionary<Vector, int> MobEggTicks { get; } = new();
     internal ConcurrentDictionary<Vector, int> FrogspawnTicks { get; } = new();
 
+    /// <summary>The portal types that lit or built the chunk's portal blocks (see Portals.PortalOwnership).</summary>
+    internal ConcurrentDictionary<Vector, Portals.PortalOwner> PortalOwners { get; } = new();
+
     public bool IsGenerated => ChunkStatus == ChunkGenStage.full;
 
     public ChunkGenStage ChunkStatus { get; private set; } = ChunkGenStage.empty;

@@ -11,6 +11,15 @@ internal sealed class LevelPortals(AbstractLevel level)
 
     public void OnBlockChanged(Vector position) => this.neighborChanges.Enqueue(position);
 
+    /// <summary>
+    /// The registered portal type the portal block <paramref name="block"/> at <paramref name="position"/> belongs
+    /// to, or null when it's inert (see <see cref="PortalOwnership"/>).
+    /// </summary>
+    public PortalType? TypeAt(Vector position, IBlock block) =>
+        PortalOwnership.TypeAt(this.ChunkAt(position), position, block);
+
+    private IChunk? ChunkAt(Vector position) => level.GetLoadedChunk(position.X >> 4, position.Z >> 4);
+
     public async Task TickAsync()
     {
         if (!await this.changes.WaitAsync(0))
@@ -20,13 +29,15 @@ internal sealed class LevelPortals(AbstractLevel level)
             var checkedBlocks = new HashSet<Vector>();
             while (this.neighborChanges.TryDequeue(out var changed))
             {
-                if ((await level.GetBlockAsync(changed))?.RegistryId is BlockIds.Fire or BlockIds.SoulFire)
+                var changedBlock = await level.GetBlockAsync(changed);
+                PortalOwnership.Release(this.ChunkAt(changed), changed, changedBlock);
+                if (changedBlock?.RegistryId is BlockIds.Fire or BlockIds.SoulFire)
                     await this.TryIgniteCoreAsync(changed, fire: true);
                 foreach (var direction in Vector.AllDirections)
                 {
                     var position = changed + direction;
                     var block = await level.GetBlockAsync(position);
-                    if (block is null || PortalTypesRegistry.ForBlock(block.RegistryId) is not PortalType type
+                    if (block is null || this.TypeAt(position, block) is not PortalType type
                         || !PortalTypesRegistry.TryEnter(type, out var properties, out var call))
                         continue;
 
@@ -92,7 +103,7 @@ internal sealed class LevelPortals(AbstractLevel level)
                 if (shape is not PortalFrame frame || frame.PortalBlocks != 0)
                     continue;
 
-                await this.FillAsync(frame, properties);
+                await this.FillAsync(frame, type, properties);
                 return true;
             }
         }
@@ -145,8 +156,12 @@ internal sealed class LevelPortals(AbstractLevel level)
         }
     }
 
+    /// <summary>
+    /// Finds the nearest portal block of <paramref name="type"/> around <paramref name="target"/>, skipping portal
+    /// blocks of other types sharing its block, or builds a new exit when there is none.
+    /// </summary>
     public async Task<PortalFrame?> FindOrCreateExitAsync(
-        Vector target, string axis, Func<bool> canContinue, PortalProperties properties)
+        Vector target, string axis, Func<bool> canContinue, PortalType type, PortalProperties properties)
     {
         var radius = properties.SearchRadius?.Invoke(level) ?? 128;
         if (radius is < 1 or > 128)
@@ -169,7 +184,8 @@ internal sealed class LevelPortals(AbstractLevel level)
                 foreach (var position in PortalBlocks(chunk, properties.PortalBlock.RegistryId))
                 {
                     if (Math.Abs(position.X - target.X) > radius || Math.Abs(position.Z - target.Z) > radius ||
-                        !InsideBorder(position))
+                        !InsideBorder(position)
+                        || PortalOwnership.TypeAt(chunk, position, area.Read(position)) != type)
                         continue;
                     var distance = DistanceSquared(position, target);
                     if (distance < nearestDistance || distance == nearestDistance && position.Y < nearest?.Y)
@@ -189,7 +205,9 @@ internal sealed class LevelPortals(AbstractLevel level)
                 return await RectangleAsync(area.ReadAsync, found, existingAxis, properties);
             }
             using var creationArea = await PortalArea.LoadAsync(level, target, 16 + PortalFrame.MaxSize, canContinue);
-            return creationArea is null ? null : await this.CreateExitAsync(creationArea, target, axis, properties);
+            return creationArea is null
+                ? null
+                : await this.CreateExitAsync(creationArea, target, axis, type, properties);
         }
         finally
         {
@@ -198,7 +216,7 @@ internal sealed class LevelPortals(AbstractLevel level)
     }
 
     private async Task<PortalFrame?> CreateExitAsync(
-        PortalArea area, Vector target, string axis, PortalProperties properties)
+        PortalArea area, Vector target, string axis, PortalType type, PortalProperties properties)
     {
         var step = axis == "x" ? new Vector(1, 0, 0) : new Vector(0, 0, 1);
         var normal = axis == "x" ? new Vector(0, 0, 1) : new Vector(1, 0, 0);
@@ -268,15 +286,19 @@ internal sealed class LevelPortals(AbstractLevel level)
                 if (x == -1 || x == width || y == -1 || y == height)
                     await level.SetBlockAsync(
                         frame.Origin + step * x + Vector.Up * y, properties.FrameBlock, true);
-        await this.FillAsync(frame, properties);
+        await this.FillAsync(frame, type, properties);
         return frame;
     }
 
-    private async Task FillAsync(PortalFrame frame, PortalProperties properties)
+    // Claims each block for the type, so types sharing a portal block keep their own portals.
+    private async Task FillAsync(PortalFrame frame, PortalType type, PortalProperties properties)
     {
         var portal = properties.PortalBlock.WithProperty("axis", frame.Axis);
         foreach (var position in frame.Interior())
+        {
             await level.SetBlockAsync(position, portal);
+            PortalOwnership.Claim(level, position, type, portal);
+        }
     }
 
     private static bool CanHost(

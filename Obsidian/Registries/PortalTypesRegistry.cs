@@ -8,10 +8,13 @@ namespace Obsidian.Registries;
 /// <summary>Process-lifetime identities with bindings and collectible callbacks released on unload.</summary>
 internal static class PortalTypesRegistry
 {
-    private sealed record Binding(PortalType Type, PortalProperties Properties, PluginContainer? Owner);
+    private sealed record Binding(
+        PortalType Type, PortalProperties Properties, PluginContainer? Owner, long Order);
+
     private static readonly Lock gate = new();
     private static readonly Dictionary<string, PortalType> identities = [];
     private static readonly Dictionary<string, Binding> bindings = [];
+    private static long registrations;
 
     internal static PortalType Nether { get; } = Register(null, "minecraft:nether", new PortalProperties
     {
@@ -59,10 +62,6 @@ internal static class PortalTypesRegistry
         lock (gate)
         {
             owner?.ThrowIfClosing();
-            if (bindings.Values.Any(binding => binding.Type.Identifier != identifier
-                && binding.Properties.PortalBlock.RegistryId == properties.PortalBlock.RegistryId))
-                throw new ArgumentException("An active portal already uses this portal block.");
-
             if (bindings.TryGetValue(identifier, out var previous)
                 && previous.Owner?.Info.Id != owner?.Info.Id)
                 throw new ArgumentException("Another plugin owns this portal.");
@@ -71,7 +70,7 @@ internal static class PortalTypesRegistry
                 identities[identifier] = type = new PortalType(identifier);
 
             type.Generation++;
-            bindings[identifier] = new Binding(type, properties, owner);
+            bindings[identifier] = new Binding(type, properties, owner, registrations++);
             return type;
         }
     }
@@ -83,11 +82,27 @@ internal static class PortalTypesRegistry
                 .Select(binding => binding.Type).ToArray();
     }
 
-    internal static PortalType? ForBlock(int id)
+    /// <summary>
+    /// The registered type a portal block of <paramref name="id"/> sends entities through: the one that claimed it
+    /// (<paramref name="owner"/>, see PortalOwnership), or null while that one isn't registered; for an unclaimed
+    /// block, the earliest registered type using it, which for <c>minecraft:nether_portal</c> is the Nether.
+    /// </summary>
+    internal static PortalType? ForBlock(int id, string? owner = null)
     {
         lock (gate)
-            return bindings.Values.FirstOrDefault(binding => binding.Properties.PortalBlock.RegistryId == id
-                && binding.Owner is not { IsClosing: true })?.Type;
+        {
+            if (owner is not null)
+                return bindings.TryGetValue(owner, out var claimed)
+                    && claimed.Properties.PortalBlock.RegistryId == id
+                    && claimed.Owner is not { IsClosing: true }
+                        ? claimed.Type
+                        : null;
+
+            return bindings.Values
+                .Where(binding => binding.Properties.PortalBlock.RegistryId == id
+                    && binding.Owner is not { IsClosing: true })
+                .MinBy(binding => binding.Order)?.Type;
+        }
     }
 
     internal static bool TryEnter(PortalType type, out PortalProperties properties, out IDisposable? call)

@@ -135,13 +135,13 @@ and, with its client side, by the client's tests)
 
 ## Phase 5: world, players and entities
 
-- **Travel.** Teleport a player or any entity to a position in another level. A portal API: a frame shape, what
-  lights it, the portal block that sends entities through, and finding or building the matching portal in the target
-  level, generalising the Nether portal code that's hard-wired to `minecraft:the_nether` today.
-  Implemented for explicit level teleports and dedicated rectangular plugin portal blocks, with the Nether using
-  the same mechanism; vehicles carry their passenger trees, leads follow vanilla's travel rules, and non-player
-  entities use End portals and gateways. Sharing vanilla's portal block is still in [known-gaps.md](known-gaps.md),
-  so travel is not marked done yet.
+- **Travel.** (done) Teleport a player or any entity to a position in another level. A portal API: a frame shape,
+  what lights it, the portal block that sends entities through, and finding or building the matching portal in the
+  target level, generalising the Nether portal code that's hard-wired to `minecraft:the_nether` today.
+  Implemented for explicit level teleports and rectangular plugin portals, with the Nether using the same mechanism
+  and plugin types able to share its portal block; vehicles carry their passenger trees, leads follow vanilla's
+  travel rules, and non-player entities use End portals and gateways. Saving passenger trees with their chunk is in
+  [known-gaps.md](known-gaps.md#saved-passenger-trees-and-leads).
 - **Saved data.** (done) Per-level and per-world data, and attachments on players, entities and chunks, saved and
   optionally synced to the client (like NeoForge's data attachments).
 - **Plugin entities.** (done) Saved per-entity data, synced metadata fields for modded clients, attribute modifiers

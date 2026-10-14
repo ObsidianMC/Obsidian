@@ -285,6 +285,27 @@ public class Portals
                 source.World.GetBlockAsync, new Vector(0, 64, 0), "x", -64, properties);
             Assert.True(lit!.Value.IsComplete);
 
+            // A second type can share vanilla's portal block: its portals stay its own, beside the Nether's.
+            var shared = PluginRegistry.RegisterPortal(owner, "travelprobe:shared", properties with
+            {
+                IsFrame = candidate => candidate.RegistryId == BlockIds.GoldBlock,
+                FrameBlock = BlocksRegistry.GoldBlock,
+                PortalBlock = BlocksRegistry.NetherPortal,
+                Igniter = ItemsRegistry.Emerald
+            });
+            foreach (var position in Frame("x", 3, 4).Keys)
+                await source.World.SetBlockAsync(position + new Vector(0, 0, -8), BlocksRegistry.GoldBlock);
+
+            Assert.True(await source.World.Portals.TryIgniteAsync(new Vector(0, 64, -8),
+                igniter: new ItemStack(ItemsRegistry.Emerald)));
+            var sharedPortal = new Vector(0, 64, -8);
+            var commandPortal = new Vector(-16, 70, -16);
+            await source.World.SetBlockAsync(commandPortal, BlocksRegistry.NetherPortal);
+            Assert.Same(shared, source.World.Portals.TypeAt(
+                sharedPortal, (await source.World.GetBlockAsync(sharedPortal))!));
+            Assert.Same(PortalTypesRegistry.Nether, source.World.Portals.TypeAt(
+                commandPortal, (await source.World.GetBlockAsync(commandPortal))!));
+
             var player = TestServerFactory.CreateConnectedPlayer(
                 source.Server, source.World, "PortalTraveller", new VectorD(1.5, 64, 0.5));
             Assert.True(source.World.TryAddPlayer(player));
@@ -361,6 +382,12 @@ public class Portals
 
             PortalTypesRegistry.ReleasePlugin(owner);
             Assert.Null(await PortalTravel.FindContactAsync(player));
+
+            // Unloaded, the shared type's portal is inert rather than a Nether portal, frame checks included.
+            Assert.Null(source.World.Portals.TypeAt(sharedPortal, (await source.World.GetBlockAsync(sharedPortal))!));
+            await source.World.SetBlockAsync(new Vector(0, 63, -8), BlocksRegistry.Air, true);
+            await source.World.Portals.TickAsync();
+            Assert.Equal(BlockIds.NetherPortal, (await source.World.GetBlockAsync(sharedPortal))!.RegistryId);
             await target.World.SetBlockAsync(exit.Value.Origin + Vector.Down, BlocksRegistry.Air, true);
             await target.World.Portals.TickAsync();
             Assert.Equal(block.Id, (await target.World.GetBlockAsync(exit.Value.Origin))!.RegistryId);

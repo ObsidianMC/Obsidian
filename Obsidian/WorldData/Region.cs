@@ -735,6 +735,7 @@ public class Region : IRegion
         "block_ticks",
         "ObsidianMobEggTicks",
         "ObsidianFrogspawnTicks",
+        Portals.PortalOwnership.NbtKey,
         "obsidian:attachments",
         "isLightOn"
     ];
@@ -746,6 +747,7 @@ public class Region : IRegion
 
         var chunk = new Chunk(x, z, this.minY, this.height);
         API.Data.AttachmentStorage.For(chunk).Load(chunkCompound);
+        Portals.PortalOwnership.Read(chunk, chunkCompound);
         if (chunkCompound.TryGetTag<NbtList>("ObsidianMobEggTicks", out var mobEggTicks))
             foreach (NbtCompound tick in mobEggTicks)
                 chunk.MobEggTicks[new Vector(tick.GetInt("x"), tick.GetInt("y"), tick.GetInt("z"))] = Math.Clamp(tick.GetInt("delay"), 0, 8300);
@@ -1053,6 +1055,7 @@ public class Region : IRegion
                 writer.EndCompound();
             }
             writer.EndList();
+            Portals.PortalOwnership.Write(writer, generated);
         }
 
         writer.WriteInt("xPos", chunk.X);

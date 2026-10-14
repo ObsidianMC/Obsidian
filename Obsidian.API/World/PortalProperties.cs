@@ -4,7 +4,10 @@ namespace Obsidian.API.World;
 
 /// <summary>A rectangular portal, registered during ConfigureRegistry.</summary>
 /// <remarks>
-/// PortalBlock must have an axis property accepting x and z. FrameBlock is used when building an exit;
+/// PortalBlock must have an axis property accepting x and z. Several types may share one, such as vanilla's
+/// <c>minecraft:nether_portal</c>: each portal remembers the type that lit or built it, and stays inert while that
+/// type isn't registered; a portal block nothing lit, as one placed by a command, belongs to the earliest registered
+/// type using it (the Nether for vanilla's block). FrameBlock is used when building an exit;
 /// IsFrame may accept additional materials. ResolveTarget returning null disables lighting and travel in that level.
 /// Callbacks run inside a call into the owning plugin. Use TryLightPortalAsync from an item or block callback
 /// for ignition rules more involved than a single Igniter item.

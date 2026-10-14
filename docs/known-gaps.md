@@ -3,19 +3,6 @@
 Gaps found during the mod-system work that don't limit what mods can do: vanilla parity, test plumbing and a
 contract left weaker on purpose. Each entry says what's missing, why it was left and where to start.
 
-## Sharing vanilla's portal block
-
-**Status:** dedicated plugin portal blocks and the generalised Nether registration work; shared block ownership
-is deferred. Each active portal block currently has one portal type. Plugins cannot register another type using
-`minecraft:nether_portal` alongside the built-in Nether type.
-
-A shared block needs persistent per-frame type ownership: after unload, its frame predicate must be released,
-yet the remaining vanilla portal blocks must not begin using Nether behaviour. Guessing from a currently loaded
-predicate would also change behaviour after restart without the plugin.
-
-**Where to start:** persist a frame's portal identifier independently of its blocks, then resolve contact, search,
-frame updates and reload by that identity. Keep ordinary command-placed vanilla portals working.
-
 ## Saved passenger trees and leads
 
 **Status:** riding is a live relationship between any two entities and travel carries whole passenger trees; leads
