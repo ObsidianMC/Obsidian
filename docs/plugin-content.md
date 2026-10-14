@@ -755,7 +755,10 @@ var portal = registry.RegisterPortal("ruby:crystal_gate", new PortalProperties
 
 `IWorld.GetLevel(identifier)` finds its root level or a loaded child dimension. Returning null from
 `ResolveTarget` disables lighting and travel in that source level. The target can also be a level retained from
-`ILevelFactory`. Dimension data is still registered as described in [Dimensions](#dimensions).
+`ILevelFactory`. Dimension data is still registered as described in [Dimensions](#dimensions). Portals are the
+server's: on the Obsidian client, which runs a `both` mod's `ConfigureRegistry` too, `RegisterPortal` returns the
+portal type without registering anything, and the client draws the portal blocks like any. The engine sample's
+dusk portal (`samples/EngineSample/Portal`) leads to a flat dimension defined in data.
 
 `IsFrame` accepts frame materials; `FrameBlock` supplies the material for newly built exits and their safety
 platforms. The portal block needs `axis=x,z` states. Frames have optional corners, a 2–21 wide by 3–21 high
@@ -1761,6 +1764,9 @@ in it.
 
 **Reload.** Unloading closes the plugin's menus and releases its menu screens, slot rules, `Changed` handlers and key
 bindings. The items stay in the attachment's saved NBT, through saves and deaths, until the plugin loads again.
+
+The [engine sample](../samples/EngineSample)'s charm slots (`Charms/`) are this example built out, with a screen in
+Razor, and its moth counts its rides in an entity attachment.
 
 ## Recipes
 
@@ -2962,8 +2968,8 @@ The rules:
   in vanilla, which defaults to true (vanilla's nether sets it false). Patrols, wandering traders and phantom spawns
   stay in the overworld, where vanilla runs them. Like vanilla, which only fights the dragon in the level
   `minecraft:the_end` of the end's dimension type (and saves one fight per world in level.dat), a plugin's
-  dimension has no end fight, even with the end's type, noise settings and biome source. There are no portals to
-  plugins' dimensions.
+  dimension has no end fight, even with the end's type, noise settings and biome source. Players reach it through
+  a plugin's portals (see [Travel and portals](#travel-and-portals)).
 - A dimension's level stays until the server stops, even when its plugin unloads, with the noise settings it was
   created with. Its features come and go with their plugins like any features.
 - A reload changing a level stem, or the plugin data it reads (noise settings, density functions and noises, its

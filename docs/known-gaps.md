@@ -335,6 +335,9 @@ mob's equipment.
   type-specific predicates (sheep, slime and raider), and `damage_source_properties`, remain unsupported; the
   generator excludes sheep, slime, magma cube, pillager, ghast and turtle root tables rather than relaxing their
   conditions. Damage sources still name the vanilla damage type closest to Obsidian's damage kinds.
+- `IEntityBehavior` has no hook for a player getting on or off. A behaviour that reacts to mounting takes the
+  interaction itself and seats the player with `IPlayer.StartRiding`, as the engine sample's moth does to count its
+  rides; dismounting, by sneaking or otherwise, can't be observed.
 
 **Where to start:** `ClientVehicleControl` checks moves for any mob; giving vanilla's mounts the same client control
 needs their server steering to match the client's `VehicleControl`, as `MountSteering` does for plugin mobs.

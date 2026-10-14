@@ -3,5 +3,9 @@
   "sample.grinder.pulls.off": "Pull from above: Off",
   "sample.grinder.pulls.on": "Pull from above: On",
   "sample.grinder.search": "Search",
-  "item.sample.moth_spawn_egg": "Moth Spawn Egg"
+  "item.sample.moth_spawn_egg": "Moth Spawn Egg",
+  "item.sample.charm": "Moth Charm",
+  "container.sample.charms": "Charms",
+  "key.sample.charms": "Charms",
+  "key.category.sample.engine": "Engine Sample"
 }

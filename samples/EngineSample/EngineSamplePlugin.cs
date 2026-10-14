@@ -1,8 +1,11 @@
 using EngineSample.Cable;
+using EngineSample.Charms;
 using EngineSample.Grinder;
 using EngineSample.Moth;
+using EngineSample.Portal;
 using EngineSample.TickCounter;
 using Obsidian.API.Client;
+using Obsidian.API.Inventory;
 using Obsidian.API.Plugins;
 using Obsidian.API.World;
 
@@ -42,8 +45,17 @@ public sealed class EngineSamplePlugin : PluginBase, IClientPlugin
         CableBlock.Register(registry);
         MothMob.Register(registry);
 
-        // Phase 5: state shared by a network rather than owned by one block entity.
+        // Phase 5: state shared by a network rather than owned by one block entity, a portal to the sample's
+        // dimension, and charm slots each player keeps, whose charms the moth drops.
         this.SavedState = new SavedState(registry);
+        DuskPortal.Register(registry);
+        CharmSlots.Register(registry);
+        registry.RegisterCreativeTab("sample:moths", new CreativeTabProperties
+        {
+            Title = "Engine sample",
+            Icon = MothMob.Type.SpawnEgg!,
+            Items = [MothMob.Type.SpawnEgg!, CharmSlots.Charm]
+        });
     }
 
     public void ConfigureClient(IClientRegistry registry)
@@ -57,5 +69,9 @@ public sealed class EngineSamplePlugin : PluginBase, IClientPlugin
         // cable needs no code: its multipart blockstate draws it from its state.
         GrinderBlock.RegisterClient(registry);
         MothMob.RegisterClient(registry);
+
+        // Phase 5: a key opens the player's charm slots, shown with a screen in Razor. The dimension's sky and fog
+        // come from its dimension type's data, so they need no code.
+        CharmSlots.RegisterClient(registry);
     }
 }

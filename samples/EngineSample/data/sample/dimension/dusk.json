@@ -1,0 +1,14 @@
+{
+  "type": "sample:dusk",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "layers": [
+        { "block": "minecraft:bedrock", "height": 1 },
+        { "block": "minecraft:end_stone", "height": 3 }
+      ],
+      "biome": "minecraft:the_void",
+      "structure_overrides": []
+    }
+  }
+}
