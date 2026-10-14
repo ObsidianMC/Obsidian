@@ -62,7 +62,36 @@ public interface IEntity : Data.IAttachmentHolder
     public ValueTask KillAsync(IEntity source, ChatMessage message);
 
     /// <summary>
-    /// Moves this entity and supported passengers to a level, preserving entity state and velocity.
+    /// The entity this one rides, or null.
+    /// </summary>
+    public IEntity? Vehicle => null;
+
+    /// <summary>
+    /// The entities riding this one, in seat order; the first one steers a mount.
+    /// </summary>
+    public IReadOnlyList<IEntity> Passengers => [];
+
+    /// <summary>
+    /// Mounts this entity on another, like vanilla's <c>startRiding</c>: any entity can ride any other in the same
+    /// level that has a free seat, leaving its current vehicle first. A vehicle can't ride its own passenger.
+    /// </summary>
+    /// <remarks>
+    /// A player boards only a mob, and only while alive, not a spectator and not already riding. A plugin's mob
+    /// carries as many passengers as its type has passenger attachments, at least one, and its first passenger steers
+    /// it.
+    /// </remarks>
+    /// <returns>Whether the entity now rides <paramref name="vehicle"/>.</returns>
+    public bool StartRiding(IEntity vehicle) => false;
+
+    /// <summary>
+    /// Dismounts the entity from what it rides, if anything.
+    /// </summary>
+    public void StopRiding()
+    {
+    }
+
+    /// <summary>
+    /// Moves this entity and its passengers to a level, preserving entity state and velocity.
     /// Null rotation components retain their current values. The destination is loaded before removal.
     /// </summary>
     public ValueTask TeleportAsync(ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null) =>

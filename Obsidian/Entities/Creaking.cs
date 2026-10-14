@@ -15,6 +15,9 @@ public sealed partial class Creaking : PathfinderMob
     public Creaking() { Type = EntityType.Creaking; IsFireImmune = true; }
     protected override bool UsesAi => true;
     protected override bool CanDespawn => HomePosition == null;
+
+    // Like vanilla, a creaking bound to its heart stays out of portals.
+    internal override bool CanUsePortals => HomePosition == null;
     internal override bool Hostile => true;
     internal override bool PanicsWhenHurt => false;
     protected override string? SoundName => "creaking";

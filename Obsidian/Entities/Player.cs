@@ -71,7 +71,6 @@ public sealed partial class Player : Avatar, IClientPlayer
     public required IServer Server { get; init; }
 
     public PlayerInput Input { get; set; }
-    internal Mob? Vehicle { get; set; }
     internal long LastExperiencePickupTick { get; set; } = -2;
 
     public override bool Sneaking
@@ -470,7 +469,8 @@ public sealed partial class Player : Avatar, IClientPlayer
         FallDistance = 0;
         combatPosition = null;
         CancelWeaponUse();
-        Vehicle?.Dismount(this);
+        LeaveVehicle();
+        EjectPassengers();
         LastPosition = Position;
         if (Level is AbstractLevel resident && !resident.TryMoveEntity(this, Position, pos))
             throw new InvalidOperationException("The destination region could not accept the player.");
@@ -600,7 +600,8 @@ public sealed partial class Player : Avatar, IClientPlayer
         CancelEating();
         CancelWeaponUse();
         combatPosition = null;
-        Vehicle?.Dismount(this);
+        LeaveVehicle();
+        EjectPassengers();
         var origin = Level;
         var from = this.Position;
         var spawn = position ?? destination.LevelData.SpawnPosition;
@@ -707,7 +708,7 @@ public sealed partial class Player : Avatar, IClientPlayer
                 CancelWeaponUse();
                 combatPosition = null;
                 attackTicks = 0;
-                Vehicle?.Dismount(this);
+                LeaveVehicle();
                 ClearPotionEffects();
                 damageCooldown = 0;
                 lastIncomingDamage = 0;
@@ -810,7 +811,7 @@ public sealed partial class Player : Avatar, IClientPlayer
         Health = 0;
         CancelEating();
         CancelWeaponUse();
-        Vehicle?.Dismount(this);
+        LeaveVehicle();
 
         // Killed by plugins' code holding the inventory lock, like an item's inventory tick, the player loses their
         // items as soon as the lock is let go.
@@ -1031,6 +1032,7 @@ public sealed partial class Player : Avatar, IClientPlayer
         var oldPosition = Position;
         var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, movementFlags);
+        this.PositionPassengers();
         this.RecordProgressMovement(oldPosition, oldMovementFlags);
         await UpdateFallAsync(oldPosition, movementFlags);
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
@@ -1047,6 +1049,7 @@ public sealed partial class Player : Avatar, IClientPlayer
         var oldPosition = Position;
         var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, yaw, pitch, movementFlags);
+        this.PositionPassengers();
         this.RecordProgressMovement(oldPosition, oldMovementFlags);
         await UpdateFallAsync(oldPosition, movementFlags);
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);

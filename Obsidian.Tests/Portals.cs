@@ -171,6 +171,27 @@ public class Portals
         Assert.True(source.World.TryAddPlayer(rider));
         Assert.True(source.World.TryAddEntity(rider));
         Assert.True(mob.AddRider(rider));
+
+        // The whole passenger tree travels and boards again; a lead the vehicle holds breaks when it leaves.
+        var jockey = new Cow
+        {
+            Level = source.World,
+            EntityId = 987656,
+            Position = new VectorD(3.5, 66, 3.5),
+            Type = EntityType.Cow
+        };
+        Assert.True(source.World.TryAddEntity(jockey));
+        Assert.False(jockey.Ride(mob));
+        Assert.True(jockey.Ride(mob, force: true));
+        var leashed = new Cow
+        {
+            Level = source.World,
+            EntityId = 987657,
+            Position = new VectorD(6.5, 64, 6.5),
+            Type = EntityType.Cow
+        };
+        Assert.True(source.World.TryAddEntity(leashed));
+        leashed.LeashTo(mob);
         var uuid = mob.Uuid;
         var attachments = AttachmentStorage.For(mob);
         attachments.Set("travelprobe:value", new NbtTag<int>("travelprobe:value", 1));
@@ -181,6 +202,14 @@ public class Portals
         Assert.Same(target.World, rider.Level);
         Assert.Same(mob, rider.Vehicle);
         Assert.Equal(arrival + VectorD.Up, rider.Position);
+        Assert.Same(target.World, jockey.Level);
+        Assert.Equal(arrival + VectorD.Up * 2, jockey.Position);
+        Assert.Equal(new Entity[] { rider, jockey }, mob.Passengers);
+        leashed.TickLeash();
+        Assert.Null(leashed.LeashHolder);
+        Assert.Contains(
+            source.World.GetEntitiesInRange(leashed.Position, 2).OfType<ItemEntity>(),
+            item => item.Item!.Is(ItemsRegistry.Lead));
         Assert.Equal(6, mob.Health);
         Assert.Equal(arrival, mob.Position);
         Assert.Equal(90f, mob.Yaw.Degrees);
@@ -295,14 +324,33 @@ public class Portals
                 Position = new VectorD(1.5, 64, 0.5)
             };
             Assert.True(source.World.TryAddEntity(mob));
+            var chick = new Chicken
+            {
+                Level = source.World,
+                EntityId = 987658,
+                Type = EntityType.Chicken,
+                Position = new VectorD(1.5, 65.4, 0.5)
+            };
+            Assert.True(source.World.TryAddEntity(chick));
+            Assert.True(chick.Ride(mob));
+            mob.LeashTo(player);
             for (var tick = 0; tick < 20 && mob.Level == source.World; tick++)
             {
+                // Only the root vehicle uses the portal; its passenger comes along.
+                await chick.TickEntityPortalAsync();
                 await mob.TickEntityPortalAsync();
                 await Task.Delay(5);
             }
 
             Assert.Same(target.World, mob.Level);
             Assert.Same(mob, target.World.GetRegionForLocation(mob.Position)!.Entities[mob.EntityId]);
+            Assert.Same(target.World, chick.Level);
+            Assert.Same(mob, chick.Vehicle);
+
+            // The lead is held by its holder's UUID across levels until the holder is found again.
+            Assert.Null(mob.LeashHolder);
+            mob.TickLeash();
+            Assert.Same(player, mob.LeashHolder);
 
             var pendingTraveller = TestServerFactory.CreateConnectedPlayer(
                 source.Server, source.World, "PendingTraveller", new VectorD(1.5, 64, 0.5));
@@ -407,6 +455,25 @@ public class Portals
         Assert.Equal(VectorD.Zero, endPosition.Delta);
         Assert.Equal(world.DimensionName,
             Assert.Single(client.SentPackets.OfType<SetDefaultSpawnPositionPacket>()).Position.Dimension);
+
+        // Items and other entities use End portals too, arriving at vanilla's End spawn point facing west.
+        var item = new ItemEntity
+        {
+            Level = nether,
+            EntityId = 987659,
+            Position = new VectorD(8.5, 75.2, 8.5),
+            Item = new ItemStack(ItemsRegistry.Diamond)
+        };
+        Assert.True(nether.TryAddEntity(item));
+        for (var tick = 0; tick < 20 && item.Level == nether; tick++)
+        {
+            await item.TickEntityPortalAsync();
+            await Task.Delay(5);
+        }
+
+        Assert.Same(end, item.Level);
+        Assert.Equal(new VectorD(100.5, 50, 0.5), item.Position);
+        Assert.Equal(90f, item.Yaw.Degrees);
     }
 
     private static WorldData.Dimension AddDimension(RealServerContext context, string identifier)

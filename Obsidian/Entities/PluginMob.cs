@@ -74,7 +74,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
 
     // At the type's passenger attachment, less the rider's vehicle attachment: vanilla scales the player's
     // 0.6-block VEHICLE attachment with EntityDimensions.scale, so server positions agree with the client for
-    // scaled riders too. Passengers of mobs are players.
+    // scaled riders too. Other passengers sit on the attachment itself.
     protected override VectorD PassengerOffset(int index)
     {
         var seat = definition.Settings.PassengerAttachment(index, this.Yaw.Degrees);
@@ -83,10 +83,11 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
         var scale = passenger.HasAttribute("minecraft:scale")
             ? Math.Clamp(passenger.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
             : 1f;
+        var vehicleAttachment = passenger is Player ? 0.6 * scale : 0;
 
         return new VectorD(
             seat.X * this.AttributeScale,
-            seat.Y * this.AttributeScale - 0.6 * scale,
+            seat.Y * this.AttributeScale - vehicleAttachment,
             seat.Z * this.AttributeScale);
     }
 

@@ -22,10 +22,26 @@ public abstract partial class AbstractLevel
     private Guid[] resurrectionCrystals = [];
     private int ticksWithoutDragon;
     private readonly Dictionary<Guid, int> endPortalCooldowns = [];
+
+    // Vanilla TheEndGatewayBlockEntity's 40-tick cooldown after it sends a non-player entity, keyed by gateway.
+    private const int GatewayCooldown = 40;
+    private readonly Dictionary<Vector, int> gatewayCooldowns = [];
+
+    /// <summary>
+    /// Starts the gateway's cooldown and returns true, or returns false while it's still cooling down from the last
+    /// entity it sent.
+    /// </summary>
+    internal bool TryUseEndGateway(Vector gateway) => gatewayCooldowns.TryAdd(gateway, GatewayCooldown);
     private bool HasEndFight => DimensionName == "minecraft:the_end" && Generator is not MobTestGenerator;
 
     internal async ValueTask TickEndFightAsync()
     {
+        foreach (var gateway in gatewayCooldowns.Keys.ToArray())
+        {
+            if (--gatewayCooldowns[gateway] <= 0)
+                gatewayCooldowns.Remove(gateway);
+        }
+
         if (!HasEndFight) return;
         await TickEndPortalsAsync();
         if (!Players.Values.Any(player => player.GameMode != GameMode.Spectator &&
@@ -125,38 +141,53 @@ public abstract partial class AbstractLevel
             }
             else if (block?.RegistryId == BlockIds.EndGateway)
             {
-                var data = await GetBlockEntityAsync(position) as DataBlockEntity;
-                Vector destination;
-                if (data != null && data.Data.TryGetTag<NbtArray<int>>("exit_portal", out var savedExit) && savedExit.Count == 3)
-                {
-                    var values = savedExit.GetArray();
-                    destination = new Vector(values[0], values[1], values[2]);
-                }
-                else
-                {
-                    var length = Math.Sqrt(position.X * (double)position.X + position.Z * (double)position.Z);
-                    if (length < 1) continue;
-                    destination = new Vector((int)Math.Floor(position.X / length * 1024), 75, (int)Math.Floor(position.Z / length * 1024));
-                    if (await GetChunkAsync(destination.X >> 4, destination.Z >> 4) is not { IsGenerated: true }) continue;
-                    var terrain = new MobTerrain(this);
-                    for (var y = MinY + Height - 1; y >= MinY; y--)
-                        if (terrain.GetBlock(new Vector(destination.X, y, destination.Z)) is { IsAir: false })
-                        { destination = new Vector(destination.X, y + 3, destination.Z); break; }
-                    // Gateways always have a safe arrival platform, including gateways aimed into the void.
-                    for (var x = -2; x <= 2; x++)
-                    for (var z = -2; z <= 2; z++)
-                        await SetBlockAsync(destination + new Vector(x, -2, z), BlocksRegistry.EndStone, true);
-                    var returnGateway = destination + new Vector(0, 1, 0);
-                    await CreateEndGatewayAsync(returnGateway);
-                    await StoreGatewayExitAsync(returnGateway, position + new Vector(0, 3, 0));
-                    await StoreGatewayExitAsync(position, destination + new Vector(2, -1, 0));
-                    destination += new Vector(2, -1, 0);
-                }
-                if (await GetChunkAsync(destination.X >> 4, destination.Z >> 4) is not { IsGenerated: true }) continue;
+                if (await FindEndGatewayExitAsync(position) is not Vector destination) continue;
                 endPortalCooldowns[player.Uuid] = 100;
                 await player.TeleportAsync(new VectorD(destination.X + 0.5, destination.Y, destination.Z + 0.5));
             }
         }
+    }
+
+    /// <summary>
+    /// The block an entity entering the End gateway at <paramref name="gateway"/> arrives in, building the far
+    /// gateway and its platform the first time; null while there is no exit or its chunk isn't generated.
+    /// </summary>
+    internal async ValueTask<Vector?> FindEndGatewayExitAsync(Vector gateway)
+    {
+        var data = await GetBlockEntityAsync(gateway) as DataBlockEntity;
+        Vector destination;
+        if (data != null
+            && data.Data.TryGetTag<NbtArray<int>>("exit_portal", out var savedExit)
+            && savedExit.Count == 3)
+        {
+            var values = savedExit.GetArray();
+            destination = new Vector(values[0], values[1], values[2]);
+        }
+        else
+        {
+            var length = Math.Sqrt(gateway.X * (double)gateway.X + gateway.Z * (double)gateway.Z);
+            if (length < 1) return null;
+            destination = new Vector(
+                (int)Math.Floor(gateway.X / length * 1024),
+                75,
+                (int)Math.Floor(gateway.Z / length * 1024));
+            if (await GetChunkAsync(destination.X >> 4, destination.Z >> 4) is not { IsGenerated: true }) return null;
+            var terrain = new MobTerrain(this);
+            for (var y = MinY + Height - 1; y >= MinY; y--)
+                if (terrain.GetBlock(new Vector(destination.X, y, destination.Z)) is { IsAir: false })
+                { destination = new Vector(destination.X, y + 3, destination.Z); break; }
+            // Gateways always have a safe arrival platform, including gateways aimed into the void.
+            for (var x = -2; x <= 2; x++)
+            for (var z = -2; z <= 2; z++)
+                await SetBlockAsync(destination + new Vector(x, -2, z), BlocksRegistry.EndStone, true);
+            var returnGateway = destination + new Vector(0, 1, 0);
+            await CreateEndGatewayAsync(returnGateway);
+            await StoreGatewayExitAsync(returnGateway, gateway + new Vector(0, 3, 0));
+            await StoreGatewayExitAsync(gateway, destination + new Vector(2, -1, 0));
+            destination += new Vector(2, -1, 0);
+        }
+        if (await GetChunkAsync(destination.X >> 4, destination.Z >> 4) is not { IsGenerated: true }) return null;
+        return destination;
     }
 
     private async ValueTask StoreGatewayExitAsync(Vector gateway, Vector destination)

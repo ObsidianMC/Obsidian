@@ -5,7 +5,8 @@ public partial class Mob
     /// <summary>Detaches a removed mob without calling its plugin's goals, navigator or removal callbacks.</summary>
     internal void DetachForPluginUnload()
     {
-        this.Dismount();
+        this.EjectPassengers();
+        this.LeaveVehicle();
         this.IsRemoved = true;
         this.AttackTarget = null;
         this.AlertedTarget = null;

@@ -17,17 +17,6 @@ public partial class Skeleton : PathfinderMob
     internal virtual int AttackInterval => Level.LevelData.Difficulty == Difficulty.Hard ? 20 : 40;
     protected virtual bool BurnsInSun => true;
     internal int PowderSnowTicks { get; set; } = -1;
-    internal SkeletonHorse? HorseVehicle { get; set; }
-    protected override VectorD Travel()
-    {
-        if (HorseVehicle is { Alive: true, IsRemoved: false } horse && horse.Level == Level)
-        {
-            Motion = VectorD.Zero;
-            return horse.Position + new VectorD(0, horse.Dimension.Height * 0.75f, 0);
-        }
-        HorseVehicle = null;
-        return base.Travel();
-    }
     internal int StrayConversionTicks { get; set; } = -1;
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)

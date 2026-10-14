@@ -744,9 +744,22 @@ abilities and experience are sent again. The `IWorld` and `IEntity` overloads us
 finite and
 inside the server's global coordinate limits; they may be above or below the build range.
 
-Supported mounts carry their player passengers, retain the passengers' offsets and remount them after travel.
-A player teleported independently dismounts. Obsidian does not yet model general entity passenger trees or leashes;
-see [known-gaps.md](known-gaps.md#travel-passengers-and-leashes).
+A vehicle carries its whole passenger tree, as vanilla's teleport does: the passengers get off, travel to the same
+offset from the vehicle, turned as much as the vehicle turned, and board again in the same seats; their own
+passengers come along the same way. An entity teleported on its own gets off its vehicle, and a player that travels
+drops its own passengers. Riding is a relationship between any two entities: `IEntity.StartRiding(vehicle)` mounts
+any entity on another in its level with a free seat (one by default, the mob's seats for mounts and plugin mobs),
+`IEntity.StopRiding()` takes it off, and `IEntity.Vehicle` and `IEntity.Passengers` (in seat order) describe it, so a
+skeleton can ride a skeleton horse or a plugin's mob another. `IPlayer.StartRiding` keeps boarding only mobs. A player
+boarding a vehicle a non-player steers takes the steering seat, as in vanilla. Passengers that die, leave or change
+level get off; players also get off by sneaking.
+
+Leads are modelled as far as saved worlds and travel need. A mob's vanilla `leash` field (a holder's UUID) is read and
+saved, players tracking the mob see the lead, and the lead drops as a lead item, as in vanilla, when either end dies
+or is removed, when a non-player holder travels to another level, and when the mob arrives in another level (or is
+loaded) and its holder doesn't turn up there within 100 ticks; a player holder in another level keeps its lead.
+Using leads on mobs, fence knots (a lead tied to a fence keeps its saved field untouched) and the lead's pull are not
+modelled yet.
 
 Register rectangular portals on the server in `ConfigureRegistry`. A dedicated block makes its placed portals
 unambiguous and keeps them inert when the plugin unloads:
@@ -798,7 +811,7 @@ contact, wait, and prepare travel without holding up the entity tick while targe
 `WaitTicks` defaults to 80, `CreativeWaitTicks` to 1 and `EntityWaitTicks` to 0, matching vanilla's Nether waits.
 Like vanilla's portal processor, the previous accumulated time is compared before incrementing it, and time
 decays by four per tick out of contact. Successful travel starts a ten-tick player cooldown or a 300-tick entity
-cooldown (ten for a vehicle with a player passenger); remaining inside a portal refreshes it.
+cooldown (ten for a vehicle whose first passenger is a player); remaining inside a portal refreshes it.
 
 Coordinate mapping defaults to source dimension type's `CoordinateScale` divided by the target's.
 Set `CoordinateScale = (source, target) => ...` for another positive, finite mapping.
@@ -811,7 +824,13 @@ collision adjustment use the same transit path as Nether portals.
 The Nether portal is a built-in registration with obsidian, fire/flint-and-steel/fire-charge ignition, the vanilla
 shape limits, dimension-type coordinate scales, and searches of 16 blocks into the Nether or 128 on return.
 Only that registration names the Nether dimension; general frame, search, building and transit code do not.
-End portals (including credits and their arrival platform) and End gateways keep their specialised paths.
+Players keep their specialised End paths (credits, the arrival platform, their respawn point and their gateway
+cooldown). Other entities, item entities and plugin mobs included, use End portals and End gateways through the same
+teleport as other portals and without waiting: into the End they arrive at vanilla's spawn point (100.5, 50, 0.5) on
+the rebuilt obsidian platform, facing west with their velocity turned to match; out of the End at the top of the
+world spawn's column, keeping rotation and velocity; and through a gateway at its exit, after which the gateway
+rests for 40 ticks. Only a root vehicle uses portals, carrying its passengers. As in vanilla, the dragon, the
+wither, fishing bobbers and creakings bound to a heart never use portals.
 
 Portal types have process-lifetime identifiers and no numeric registry or extra registry sync: clients know their
 blocks. Unload removes callbacks and transit behaviour, cancels pending destinations, and leaves placed blocks
@@ -993,7 +1012,8 @@ registry.RegisterEntity("ruby:strider", new EntityProperties
 
 A player who isn't sneaking mounts a plugin's mob by using it when the behaviour's `CanMount(entity, player)` says
 so and `InteractAsync` didn't take the interaction. `IPlayer.StartRiding(mob)` mounts a player from code (any mob
-with a free seat), `IPlayer.StopRiding()` takes it off, and `IPlayer.Vehicle` is what it rides; sneaking dismounts,
+with a free seat), `IEntity.StopRiding()` takes it off, and `IEntity.Vehicle` is what it rides (other entities ride
+too, see [Travel and portals](#travel-and-portals)); sneaking dismounts,
 as in vanilla. The first passenger steers, and the mob's goals pause meanwhile: a walking mob like a horse (its
 `MovementSpeed`, a quarter of it backwards, half of it sideways, jumping with jump), and a mob with
 `Movement = EntityMovementMode.Flying` like a happy ghast, towards where the rider looks, strafing sideways and rising

@@ -18,26 +18,6 @@ public interface IPlayer : ILiving
 
     public PlayerInput Input { get; set; }
 
-    /// <summary>
-    /// The mob the player rides, or null.
-    /// </summary>
-    public IEntity? Vehicle => null;
-
-    /// <summary>
-    /// Mounts the player on a mob, like vanilla's <c>startRiding</c>: in its next free seat, if it's alive, in the
-    /// player's level and has one. A plugin's mob carries as many players as its type has passenger attachments, at
-    /// least one, and its first passenger steers it.
-    /// </summary>
-    /// <returns>Whether the player mounted it.</returns>
-    public bool StartRiding(IEntity vehicle) => false;
-
-    /// <summary>
-    /// Dismounts the player from what it rides, if anything.
-    /// </summary>
-    public void StopRiding()
-    {
-    }
-
     public ConcurrentHashSet<long> LoadedChunks { get; }
 
     public Container Inventory { get; }

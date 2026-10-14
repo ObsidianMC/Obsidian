@@ -135,8 +135,10 @@ public partial class Player
         return true;
     }
 
-    private ValueTask<PortalContact?> FindPortalContactAsync() =>
-        PortalTravel.FindContactAsync(this, includeEnd: true);
+    // Like vanilla's canUsePortal, a passenger doesn't use portals: its root vehicle carries it through.
+    private ValueTask<PortalContact?> FindPortalContactAsync() => this.Vehicle is null
+        ? PortalTravel.FindContactAsync(this, includeEnd: true)
+        : ValueTask.FromResult<PortalContact?>(null);
 
     private async Task<PortalDestination?> PreparePortalDestinationAsync(Vector entrance, int portal, int generation)
     {
@@ -170,16 +172,8 @@ public partial class Player
                 try
                 {
                     if (enteringEnd)
-                    {
-                        // EndPlatformFeature, anchored one block below END_SPAWN_POINT (100,50,0).
-                        for (var x = 98; x <= 102; x++)
-                            for (var z = -2; z <= 2; z++)
-                                for (var y = 48; y <= 51; y++)
-                                {
-                                    var block = y == 48 ? BlocksRegistry.ObsidianBlock : BlocksRegistry.Air;
-                                    await destination.SetBlockAsync(x, y, z, block, true);
-                                }
-                    }
+                        await EndTravel.BuildArrivalPlatformAsync(destination);
+
                     if (CanContinue())
                         return new(destination, position, enteringEnd ? 90f : this.Yaw,
                             enteringEnd ? 0f : this.Pitch, VectorD.Zero, area);

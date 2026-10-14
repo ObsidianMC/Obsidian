@@ -21,17 +21,39 @@ public partial class Entity
         if (level is AbstractLevel && area is null)
             throw new InvalidOperationException("The entity moved while the destination was loading.");
 
-        Player[] riders;
+        Entity[] riders;
+        Angle fromYaw;
+        Angle fromPitch;
         lock (ItemEntity.TransferLock)
         {
             this.ValidateTravelResident(source);
-            riders = this is Mob mob ? mob.TravelPassengers.ToArray() : [];
-            foreach (var rider in riders)
-                rider.Vehicle?.Dismount(rider);
 
-            this.CommitTravel(source, level, position, yaw, pitch);
+            // Like vanilla, an entity teleported on its own gets off its vehicle, and its passengers get off to travel
+            // separately and board again at the destination.
+            this.LeaveVehicle();
+            riders = this.Passengers.ToArray();
+            this.EjectPassengers();
+            from = this.Position;
+            fromYaw = this.Yaw;
+            fromPitch = this.Pitch;
+
+            try
+            {
+                this.CommitTravel(source, level, position, yaw, pitch);
+            }
+            catch (InvalidOperationException)
+            {
+                foreach (var rider in riders)
+                    rider.Ride(this, force: true);
+
+                throw;
+            }
+
             if (source != level)
+            {
+                (this as Mob)?.HoldLeashByUuid();
                 this.SpawnEntity();
+            }
             else
                 this.PacketBroadcaster.QueuePacketToLevel(level, new TeleportEntityPacket
                 {
@@ -44,13 +66,31 @@ public partial class Entity
                 });
         }
 
-        if (this is Mob vehicle)
+        await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
+    }
+
+    /// <summary>
+    /// Moves passengers taken off this entity before it travelled to the same place relative to it, each with its own
+    /// passengers, and seats them again. A passenger that can't follow, such as one removed meanwhile, stays behind.
+    /// </summary>
+    private async ValueTask CarryPassengersAsync(
+        Entity[] riders, VectorD from, Angle fromYaw, Angle fromPitch)
+    {
+        foreach (var rider in riders)
         {
-            foreach (var rider in riders)
+            // Vanilla's passenger transition: the same offset from the vehicle, turned as much as the vehicle turned.
+            var riderYaw = this.Yaw.Degrees + (rider.Yaw.Degrees - fromYaw.Degrees);
+            var riderPitch = this.Pitch.Degrees + (rider.Pitch.Degrees - fromPitch.Degrees);
+            try
             {
-                await rider.TeleportAsync(level, position + (rider.Position - from), rider.Yaw, rider.Pitch);
-                vehicle.RestoreTravelPassenger(rider);
+                await rider.TeleportAsync(this.Level, this.Position + (rider.Position - from), riderYaw, riderPitch);
             }
+            catch (InvalidOperationException)
+            {
+                continue;
+            }
+
+            rider.Ride(this, force: true);
         }
     }
 

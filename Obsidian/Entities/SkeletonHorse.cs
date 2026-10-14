@@ -26,10 +26,13 @@ public sealed partial class SkeletonHorse : AbstractHorse
     {
         skeletonRider = skeleton;
         skeletonRiderUuid = skeleton.Uuid;
-        skeleton.HorseVehicle = this;
-        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new Obsidian.Net.Packets.Play.Clientbound.SetPassengersPacket
-        { EntityId = EntityId, Passengers = [skeleton.EntityId] });
+        skeleton.Ride(this, force: true);
     }
+
+    // The trap's skeletons sit lower than a player would.
+    protected override VectorD PassengerOffset(int index) => this.Passengers[index] is Skeleton
+        ? new VectorD(0, this.Dimension.Height * 0.75f, 0)
+        : base.PassengerOffset(index);
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
@@ -41,11 +44,9 @@ public sealed partial class SkeletonHorse : AbstractHorse
         }
         if (skeletonRider is { Alive: false } || skeletonRider?.IsRemoved == true)
         {
-            if (skeletonRider != null) skeletonRider.HorseVehicle = null;
+            skeletonRider?.LeaveVehicle();
             skeletonRider = null;
             skeletonRiderUuid = Guid.Empty;
-            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new Obsidian.Net.Packets.Play.Clientbound.SetPassengersPacket
-            { EntityId = EntityId, Passengers = [] });
         }
         if (!SkeletonTrap) return;
         if (++TrapTime >= 18000) { await RemoveAsync(); return; }

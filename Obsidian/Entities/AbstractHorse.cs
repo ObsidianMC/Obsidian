@@ -165,7 +165,7 @@ public class AbstractHorse : Animal
             else
             {
                 Temper = Math.Min(MaximumTemper, Temper + 5);
-                Dismount();
+                EjectPassengers();
                 SendEntityEvent(6);
             }
             return;

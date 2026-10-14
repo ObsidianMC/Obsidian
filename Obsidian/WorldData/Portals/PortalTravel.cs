@@ -17,7 +17,12 @@ internal sealed record PortalDestination(
 /// <summary>Rectangular transit shared by players and other entities; preparation does not block ticks.</summary>
 internal static class PortalTravel
 {
-    internal static async ValueTask<PortalContact?> FindContactAsync(IEntity entity, bool includeEnd = false)
+    /// <summary>
+    /// The portal block the entity touches, if any. <paramref name="includeEnd"/> adds End portals and
+    /// <paramref name="includeGateways"/> End gateways, whose contacts have no <see cref="PortalType"/>.
+    /// </summary>
+    internal static async ValueTask<PortalContact?> FindContactAsync(
+        IEntity entity, bool includeEnd = false, bool includeGateways = false)
     {
         var width = entity.Dimension.Width > 0 ? entity.Dimension.Width : 0.6;
         var height = entity.Dimension.Height > 0 ? entity.Dimension.Height
@@ -34,6 +39,10 @@ internal static class PortalTravel
                     if (includeEnd && block?.RegistryId == BlockIds.EndPortal
                         && min.Y < y + 0.75 && max.Y > y + 0.375)
                         return new(position, BlockIds.EndPortal, null);
+
+                    // End gateways are whole blocks to entities inside them.
+                    if (includeGateways && block?.RegistryId == BlockIds.EndGateway)
+                        return new(position, BlockIds.EndGateway, null);
 
                     if (block is null || PortalTypesRegistry.ForBlock(block.RegistryId) is not PortalType type)
                         continue;

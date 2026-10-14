@@ -188,8 +188,8 @@ public partial class Player
         if (attack.ChargeAttack && target is Living chargedTarget)
         {
             if (attack.ChargeKnockback) CombatEffects.Knockback(chargedTarget, chargedTarget.Position - Position, 0.4f);
-            if (attack.ChargeDismount && chargedTarget is Player rider) rider.Vehicle?.Dismount(rider);
-            if (attack.ChargeDismount && chargedTarget is Mob mob) mob.Dismount();
+            if (attack.ChargeDismount && chargedTarget is Player rider) rider.LeaveVehicle();
+            if (attack.ChargeDismount && chargedTarget is Mob mob) mob.EjectPassengers();
         }
         if (damage <= 0) return;
         var charged = AttackCharge > 0.9f;

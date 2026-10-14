@@ -139,8 +139,9 @@ and, with its client side, by the client's tests)
   lights it, the portal block that sends entities through, and finding or building the matching portal in the target
   level, generalising the Nether portal code that's hard-wired to `minecraft:the_nether` today.
   Implemented for explicit level teleports and dedicated rectangular plugin portal blocks, with the Nether using
-  the same mechanism. Sharing vanilla's portal block is still in [known-gaps.md](known-gaps.md), so travel is not
-  marked done yet.
+  the same mechanism; vehicles carry their passenger trees, leads follow vanilla's travel rules, and non-player
+  entities use End portals and gateways. Sharing vanilla's portal block is still in [known-gaps.md](known-gaps.md),
+  so travel is not marked done yet.
 - **Saved data.** (done) Per-level and per-world data, and attachments on players, entities and chunks, saved and
   optionally synced to the client (like NeoForge's data attachments).
 - **Plugin entities.** (done) Saved per-entity data, synced metadata fields for modded clients, attribute modifiers
