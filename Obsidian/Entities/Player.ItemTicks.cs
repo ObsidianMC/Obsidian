@@ -22,32 +22,22 @@ public partial class Player
         if (!ItemBehaviors.HasInventoryTicks(this.Inventory))
             return;
 
-        var deferred = new DeferredInventoryWork();
+        await using var transaction = DeferredInventoryWork.Begin(this.Logger);
+        List<ClientboundPacket> updates;
+        ClickWindowState state;
 
-        try
+        using (await this.Inventory.LockAsync())
         {
-            List<ClientboundPacket> updates;
-            ClickWindowState state;
+            var before = this.CaptureInventoryItems();
 
-            using (await this.Inventory.LockAsync())
-            using (deferred.Enter())
-            {
-                var before = this.CaptureInventoryItems();
+            await ItemBehaviors.TickInventoryAsync(this, this.Inventory, this.CurrentHeldItemSlot, this.Logger);
 
-                await ItemBehaviors.TickInventoryAsync(this, this.Inventory, this.CurrentHeldItemSlot, this.Logger);
-
-                state = ClickWindowState.Of(this);
-                updates = this.CaptureInventoryChanges(before);
-            }
-
-            // Through plugins' packet handlers, after the lock; a slot changed meanwhile is sent later, with the
-            // window.
-            if (updates.Count > 0)
-                await this.WindowSnapshots.SendChangeAsync(this, state, updates);
+            state = ClickWindowState.Of(this);
+            updates = this.CaptureInventoryChanges(before);
         }
-        finally
-        {
-            await deferred.RunAsync(this.Logger);
-        }
+
+        // Through plugins' packet handlers, after the lock; a slot changed meanwhile is sent later, with the window.
+        if (updates.Count > 0)
+            await this.WindowSnapshots.SendChangeAsync(this, state, updates);
     }
 }

@@ -39,6 +39,10 @@ public partial class MainEventHandler
     [EventPriority(Priority = Priority.Internal)]
     public async ValueTask OnInventoryClick(ContainerClickEventArgs args)
     {
+        var logger = args.Player is IClientPlayer connected
+            ? connected.Client.Logger
+            : Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+        await using var transaction = DeferredInventoryWork.Begin(logger);
         var player = args.Player;
         var window = player.OpenedContainer ?? player.Inventory;
         WindowSync sync;

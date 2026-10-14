@@ -1018,7 +1018,7 @@ public sealed class MenuClicks
             await ClickAsync(context.Server, player, 0, 0, ClickType.QuickMove);
             Assert.Null(menu.GetItem(0));
             Assert.Equal(2, player.Inventory.GetItem(9)?.Count);
-            Assert.True(changes >= 3);
+            Assert.Equal(2, changes); // One notification per changed holder and type per completed click.
 
             // The attachment is the only copy: saved and loaded as NBT.
             var saved = new NbtCompound();
@@ -1067,6 +1067,147 @@ public sealed class MenuClicks
             Assert.Equal((0, 0), (player.XpLevel, player.XpTotal));
             Assert.All(((TestClient)player.Client).SentPackets.OfType<ContainerSetContentPacket>().Last().Items,
                 Assert.Null);
+
+            // Death waits for the window transaction. Transient inputs and cursor drop even with keep_inventory,
+            // whether the close notification is cancelled or its first handler throws; the result is never dropped.
+            var rejectClose = false;
+            context.EventDispatcher.RegisterEvent(null, (Func<ContainerClosedEventArgs, ValueTask>)(closed =>
+            {
+                if (!ReferenceEquals(closed.Player, player))
+                    return ValueTask.CompletedTask;
+
+                if (rejectClose)
+                    closed.Cancel();
+                else
+                    throw new InvalidOperationException("Failed close notification");
+
+                return ValueTask.CompletedTask;
+            }));
+            context.World.LevelData.GameRules["keep_inventory"] = "true";
+
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                rejectClose = attempt == 1;
+                var table = new CraftingTable();
+                await player.OpenInventoryAsync(table);
+                table.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 1));
+                table.SetItem(1, new ItemStack(ItemsRegistry.GoldIngot, 5));
+                player.CarriedItem = new ItemStack(ItemsRegistry.CopperIngot, 2);
+                player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Emerald, 3));
+                var before = context.World.GetNonPlayerEntitiesInRange(player.Position, 8)
+                    .OfType<Obsidian.Entities.ItemEntity>()
+                    .Select(entity => entity.EntityId)
+                    .ToHashSet();
+                Task dying;
+
+                using (await BaseContainer.LockWindowAsync(table, player.Inventory))
+                {
+                    dying = player.KillAsync(player, "Locked crafting death").AsTask();
+                    Assert.False(dying.IsCompleted);
+                    Assert.Equal(5, table.GetItem(1)?.Count);
+                    Assert.Equal(2, player.CarriedItem?.Count);
+                    Assert.Equal(3, player.Inventory.GetItem(9)?.Count);
+                }
+
+                await dying.WaitAsync(TimeSpan.FromSeconds(10));
+                Assert.Null(player.OpenedContainer);
+                Assert.All(table, Assert.Null);
+                Assert.Null(player.CarriedItem);
+                Assert.Equal(3, player.Inventory.GetItem(9)?.Count);
+                var transient = context.World.GetNonPlayerEntitiesInRange(player.Position, 8)
+                    .OfType<Obsidian.Entities.ItemEntity>()
+                    .Where(entity => !before.Contains(entity.EntityId))
+                    .Select(entity => entity.Item)
+                    .ToArray();
+                Assert.Equal(2, transient.Length);
+                Assert.Contains(transient, item => item.Is(ItemsRegistry.GoldIngot) && item.Count == 5);
+                Assert.Contains(transient, item => item.Is(ItemsRegistry.CopperIngot) && item.Count == 2);
+                await player.RespawnAsync();
+            }
+
+            // Another player's attachment is swapped completely before Changed runs. The callback can spawn items
+            // and kill its holder, without click locks, a global transfer lock, or a half-swapped death drain.
+            var viewer = TestServerFactory.CreateConnectedPlayer(
+                context.Server, context.World, "Viewer", player.Position);
+            context.World.LevelData.GameRules["keep_inventory"] = "false";
+            player.SetAttachment(charms, [new ItemStack(ItemsRegistry.Diamond, 1)]);
+            var pauseClick = true;
+            var clickStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var resumeClick = new System.Threading.ManualResetEventSlim();
+            var otherMenu = new MenuContainer(charmMenu, "Other player's slots")
+            {
+                Slots =
+                [
+                    new MenuSlot(access, 0)
+                    {
+                        MayPickup = _ =>
+                        {
+                            if (pauseClick)
+                            {
+                                clickStarted.TrySetResult();
+                                Assert.True(resumeClick.Wait(TimeSpan.FromSeconds(10)));
+                            }
+
+                            return true;
+                        }
+                    },
+                    new MenuSlot(access, 1)
+                ]
+            };
+            await viewer.OpenInventoryAsync(otherMenu);
+            viewer.CarriedItem = new ItemStack(ItemsRegistry.Dirt, 1);
+
+            // A concurrent death also waits for an already-started transfer in somebody else's window.
+            var clicking = Task.Run(() => ClickAsync(context.Server, viewer, 0, 0, ClickType.Pickup));
+            Task holderDying;
+            try
+            {
+                await clickStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                holderDying = player.KillAsync(player, "Concurrent attachment death").AsTask();
+                Assert.False(holderDying.IsCompleted);
+                Assert.True(access.GetItem(0)?.Is(ItemsRegistry.Diamond));
+            }
+            finally
+            {
+                resumeClick.Set();
+            }
+
+            await Task.WhenAll(clicking, holderDying).WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.True(viewer.CarriedItem?.Is(ItemsRegistry.Diamond));
+            Assert.False(player.TryGetAttachment(charms, out _));
+            await player.RespawnAsync();
+
+            pauseClick = false;
+            player.SetAttachment(charms, [new ItemStack(ItemsRegistry.Diamond, 1)]);
+            viewer.CarriedItem = new ItemStack(ItemsRegistry.Dirt, 1);
+            var unlocked = false;
+            charms.Changed += holder =>
+            {
+                if (!ReferenceEquals(holder, player) || !player.Alive)
+                    return;
+
+                var inventoryFree = viewer.Inventory.TransactionLock.Wait(0);
+                if (inventoryFree)
+                    viewer.Inventory.TransactionLock.Release();
+
+                var windowFree = otherMenu.TransactionLock.Wait(0);
+                if (windowFree)
+                    otherMenu.TransactionLock.Release();
+
+                unlocked = inventoryFree && windowFree;
+
+                context.World.SpawnItem(player.Position, new ItemStack(ItemsRegistry.Stick, 1));
+                _ = player.KillAsync(player, "Attachment callback death");
+            };
+            await ClickAsync(context.Server, viewer, 0, 0, ClickType.Pickup);
+            Assert.True(unlocked);
+            Assert.False(player.Alive);
+            Assert.True(viewer.CarriedItem?.Is(ItemsRegistry.Diamond));
+            Assert.False(player.TryGetAttachment(charms, out _));
+            Assert.Contains(context.World.GetNonPlayerEntitiesInRange(player.Position, 8)
+                .OfType<Obsidian.Entities.ItemEntity>(), entity => entity.Item.Is(ItemsRegistry.Dirt));
+            await player.RespawnAsync();
+            Assert.False(player.TryGetAttachment(charms, out _));
 
             // Unloaded, the access takes and gives nothing, and the saved items wait for the plugin to return.
             owner.Close();

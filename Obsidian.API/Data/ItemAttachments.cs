@@ -2,7 +2,6 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Utilities;
 using Obsidian.Nbt;
-using System.Threading;
 
 namespace Obsidian.API.Data;
 
@@ -28,18 +27,6 @@ public static class ItemAttachments
     /// The most slots an item attachment holds, like vanilla's <c>minecraft:container</c> component.
     /// </summary>
     public const int MaxSlots = 256;
-
-    /// <summary>
-    /// Held through a click's transfers through a menu's item access (see <c>MenuContainer.CommitStaged</c>), with
-    /// their undoing, and through a death's drain of a player's item attachments (see
-    /// <see cref="AttachmentStorage.TakeDeathDrops"/>), so that a death never drops half of a click's swap, nor a
-    /// click puts back what the death drained. A menu may show another player's attachment, so the players'
-    /// inventory locks can't do it.
-    /// </summary>
-    /// <remarks>
-    /// The last lock taken: inside it run only item access and attachments' <c>Changed</c> handlers, which never wait.
-    /// </remarks>
-    internal static Lock TransferGate { get; } = new();
 
     /// <summary>
     /// Saves the slots like vanilla's <c>minecraft:container</c> component: a list of the slots holding something,
@@ -145,6 +132,8 @@ internal sealed class AttachmentItemAccess(
     PluginDataBinding binding,
     int slotCount) : IItemAccess
 {
+    internal AttachmentStorage Storage => AttachmentStorage.For(holder);
+
     public int SlotCount => slotCount;
 
     public ItemStack? GetItem(int slot)
@@ -236,13 +225,31 @@ internal sealed class AttachmentItemAccess(
             return change(saved is null ? [] : ItemAttachments.Decode(saved)) is not null;
         }
 
-        var published = PluginDataBindings.TryPublish(binding, () => storage.TryUpdate(identifier, saved =>
-        {
-            var items = change(saved is null ? [] : ItemAttachments.Decode(saved));
-            changed = items is not null;
+        // Standalone access also reserves the holder. An in-flight menu keeps its reservation until rollback ends.
+        var enlisted = AttachmentTransfers.ReserveCurrent(storage);
+        if (enlisted == false)
+            return false;
 
-            return items is null ? null : ItemAttachments.Encode(items);
-        }));
+        var reserved = enlisted is null;
+        if (reserved && !storage.TryBeginTransfer())
+            return false;
+
+        bool published;
+        try
+        {
+            published = PluginDataBindings.TryPublish(binding, () => storage.TryUpdate(identifier, saved =>
+            {
+                var items = change(saved is null ? [] : ItemAttachments.Decode(saved));
+                changed = items is not null;
+
+                return items is null ? null : ItemAttachments.Encode(items);
+            }));
+        }
+        finally
+        {
+            if (reserved)
+                storage.EndTransfer();
+        }
 
         if (!published || !changed)
             return false;

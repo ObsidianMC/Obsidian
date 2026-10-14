@@ -83,6 +83,8 @@ public partial class MainEventHandler
 
         private readonly MenuClick? outer;
 
+        private readonly AttachmentTransfers attachments = new();
+
         // What the player's inventory, their cursor and the menu's slots not behind item access held as it started.
         private readonly ItemStack?[] inventory = [];
 
@@ -99,29 +101,37 @@ public partial class MainEventHandler
             this.player = player;
             this.menu = menu;
             this.call = call;
-            this.Refused = refused;
+            this.Refused = refused || !this.attachments.Reserve(menu);
 
-            if (refused)
+            if (this.Refused)
             {
                 this.ended = true;
                 return;
             }
 
-            this.inventory = [.. player.Inventory.GetItems().Select(Copy)];
-            this.cursor = Copy(player.CarriedItem);
-            this.slots = new ItemStack?[menu.Size];
-
-            for (var slot = 0; slot < menu.Size; slot++)
+            try
             {
-                if (!this.KeptInAccess(slot))
-                    this.slots[slot] = Copy(menu[slot]);
+                this.inventory = [.. player.Inventory.GetItems().Select(Copy)];
+                this.cursor = Copy(player.CarriedItem);
+                this.slots = new ItemStack?[menu.Size];
+
+                for (var slot = 0; slot < menu.Size; slot++)
+                {
+                    if (!this.KeptInAccess(slot))
+                        this.slots[slot] = Copy(menu[slot]);
+                }
+
+                if (menu.HasItemAccessSlots)
+                    menu.BeginStaging();
+
+                this.outer = current;
+                current = this;
             }
-
-            if (menu.HasItemAccessSlots)
-                menu.BeginStaging();
-
-            this.outer = current;
-            current = this;
+            catch
+            {
+                this.attachments.Dispose();
+                throw;
+            }
         }
 
         /// <summary>
@@ -210,15 +220,12 @@ public partial class MainEventHandler
             return applied;
         }
 
-        // Moves the click's items through the item access slots, undoing what moved when the access no longer holds
-        // what the click took, or throws; all in turn with deaths draining item attachments, so that none drops half
-        // of the click's transfers or has its drain undone (see ItemAttachments.TransferGate).
+        // Reservations keep attachment deaths waiting through the whole transfer and its possible rollback.
+        // No global lock is held across item access, whose implementation may belong to a plugin.
         private bool Transfer(List<ItemStack> leftovers, List<ItemStack> retained)
         {
             if (!this.menu.HasItemAccessSlots)
                 return true;
-
-            using var transfers = ItemAttachments.TransferGate.EnterScope();
 
             try
             {
@@ -253,6 +260,7 @@ public partial class MainEventHandler
                 this.End();
 
             this.call?.Dispose();
+            this.attachments.Dispose();
         }
 
         // Ends the click's staging, so that the item access slots read what the access holds again.

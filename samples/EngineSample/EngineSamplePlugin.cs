@@ -4,6 +4,7 @@ using EngineSample.Grinder;
 using EngineSample.Moth;
 using EngineSample.Portal;
 using EngineSample.TickCounter;
+using Obsidian.API;
 using Obsidian.API.Client;
 using Obsidian.API.Inventory;
 using Obsidian.API.Plugins;
@@ -73,5 +74,14 @@ public sealed class EngineSamplePlugin : PluginBase, IClientPlugin
         // Phase 5: a key opens the player's charm slots, shown with a screen in Razor. The dimension's sky and fog
         // come from its dimension type's data, so they need no code.
         CharmSlots.RegisterClient(registry);
+    }
+
+    public override ValueTask OnLoadedAsync(IServer server)
+    {
+        // Movement grants are transient and unload removes them; the saved worn items survive a hot reload.
+        foreach (var player in server.OnlinePlayers.Values)
+            CharmSlots.Apply(player);
+
+        return ValueTask.CompletedTask;
     }
 }

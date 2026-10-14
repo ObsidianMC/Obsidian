@@ -561,8 +561,9 @@ keep the defaults they were made with until then.
   doesn't need it.
 
 The use hooks run without the inventory lock, so they may hurt the player and wait for it. A menu's callbacks
-(`ClickButton`, `QuickMove`, slot rules) and the `Changed` handlers of item attachments run synchronously, a click's
-inside its locks: they may start hurting a player, which goes on once the click lets go, but must not block on it.
+(`ClickButton`, `QuickMove`, slot rules) run synchronously inside the click's locks: inventory work they request,
+including death and respawn, follows after the click releases them. Attachment `Changed` notifications wait until
+the transaction releases its locks and finishes all transfers or rollback; they observe the final saved value.
 
 The hooks are calls into the plugin: none starts once the plugin begins unloading, and one that throws during the
 inventory tick is logged without stopping the tick.
@@ -1816,6 +1817,10 @@ in it.
   and experience. A type whose plugin isn't loaded is left as saved. The death closes the player's window and their
   clicks are refused until they respawn, and a click's transfers through item access, whoever's menu shows the
   attachment, take turns with the death's drain, so that no click's swap is half dropped or put back.
+  Respawn waits for the complete death transaction, including work deferred by inventory hooks. Drops and experience
+  use the position, level and experience reward captured at death. Transient window inputs (crafting, enchanting,
+  and similar menus), the inventory crafting grid and cursor always drop, even with `keep_inventory`; close-event
+  cancellation or handler failure cannot prevent that cleanup. Respawn does not drain the inventory a second time.
 - **Access.** `holder.GetItemAccess(type, slotCount)` is [item access](#item-access) to the first `slotCount` slots,
   which a menu shows with `new MenuSlot(access, index)` and its rules (`MayPlace`, `MaxStackSize`), and the plugin
   uses itself. Each call reads and changes the saved value in one step, so the attachment stays the only copy of the
@@ -1830,10 +1835,13 @@ in it.
   no button for mods' menus; a mod's own screen can have one that sends the payload.
 - **Effects.** `AttachmentType.Changed` is raised after a holder's value changes: set or removed by the plugin,
   changed through item access (by a click too), dropped at a death or removed at a death's respawn. It isn't raised as
-  a player joins or loads. Handlers run synchronously inside a call into the plugin, possibly with a menu's locks
-  held, so they must not wait; read the new value with a get. An exception from a handler reaches the plugin's own
-  `SetAttachment` or `RemoveAttachment` caller, and is logged for the engine's changes, which stand. Apply what
-  worn items do with [attribute modifiers](#attributes) and [movement abilities](#movement), on changes and joins.
+  a player joins or loads. Engine transactions coalesce notifications by holder and type, then deliver them after
+  releasing their locks; handlers can read the final value and spawn items or hurt players. Item attachment menus
+  reserve their holders through transfers and rollback without holding a global lock; death stops new reservations
+  and waits for existing ones before draining. Outside a transaction, a handler's exception reaches the plugin's
+  `SetAttachment` or `RemoveAttachment` caller; deferred and engine notifications log failures, and changes stand.
+  Apply what worn items do with [attribute modifiers](#attributes) and [movement abilities](#movement), on changes,
+  joins, and to online players in `OnLoadedAsync` after hot reload.
   Unloading takes the plugin's movement abilities back but not its attribute modifiers: remove those in
   `OnUnloadingAsync`.
 

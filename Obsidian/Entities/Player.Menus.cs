@@ -140,6 +140,7 @@ public partial class Player
     /// </summary>
     internal async ValueTask ClickMenuButtonAsync(int containerId, int button)
     {
+        await using var transaction = DeferredInventoryWork.Begin(this.Logger);
         if (containerId != this.CurrentContainerId
             || this.OpenedContainer is not MenuContainer menu
             || this.GameMode == GameMode.Spectator)

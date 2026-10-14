@@ -10,6 +10,9 @@ public partial class ContainerClosePacket
 
     public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
+        if (player.Health <= 0)
+            return;
+
         if (player.OpenedContainer is null && this.ContainerId == 0)
         {
             await Obsidian.Events.MainEventHandler.ReturnCraftingItemsAsync(player, player.Inventory, 2);
