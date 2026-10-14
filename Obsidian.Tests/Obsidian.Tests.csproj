@@ -8,6 +8,10 @@
 		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(UseArtifactsOutput)' == 'true'">
+		<CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)generated</CompilerGeneratedFilesOutputPath>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<None Remove="Assets\bigtest.nbt" />
 		<None Remove="Assets\fluid_scenarios.json" />
@@ -23,7 +27,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
+		<!-- An artifacts build may follow an in-tree build that left generated sources in the checkout. -->
+		<Compile Remove="Generated/**/*.cs;$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
 	</ItemGroup>
 
   <ItemGroup>

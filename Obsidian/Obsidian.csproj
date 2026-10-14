@@ -33,6 +33,10 @@
 		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(UseArtifactsOutput)' == 'true'">
+		<CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)generated</CompilerGeneratedFilesOutputPath>
+	</PropertyGroup>
+
 	<PropertyGroup>
 		<Deterministic>False</Deterministic>
 		<SourceRevisionId>$(GIT_SHA)</SourceRevisionId>
@@ -71,7 +75,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
+		<!-- An artifacts build may follow an in-tree build that left generated sources in the checkout. -->
+		<Compile Remove="Generated/**/*.cs;$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
 	</ItemGroup>
 
 	<!-- Assets is generated when Obsidian.AssetGenerator builds, so it's included once the reference is built rather than

@@ -14,12 +14,41 @@ contain `..`.
 | `obsidian.mod.json` | Required. The plugin's metadata, see [below](#metadata). |
 | `<Assembly>.dll` | Required. The plugin's main assembly, named by `assembly` in the metadata. |
 | `<Assembly>.pdb`, `<Assembly>.deps.json` | Optional. Symbols, and the dependency manifest that lists the libraries to load. |
-| `*.dll`, `*.pdb` | Libraries the plugin uses, as `dotnet publish` puts them beside the main assembly. |
+| `*.dll`, `*.pdb` | The plugin's private libraries from `dotnet publish`. |
 | `assets/<namespace>/...` | Optional. Client resources (textures, models, translations), laid out like a resource pack, see [below](#assets). |
 | `data/<namespace>/...` | Optional. Server data laid out like a data pack; block, item and entity tags are read. |
 
 Entries may be stored or deflated. Obsidian reads the file into memory once and decompresses each file when it is
 first needed, so the file on disk can be replaced while the plugin runs, which reloads it.
+
+## Building and packing
+
+Reference `Obsidian.API` (and `Obsidian.API.Client` for a client side) with `ExcludeAssets="runtime"` on package
+references, or `Private="false"` on project references to an engine checkout. Do the same for a direct
+`Obsidian.Nbt` reference when saving block entities or other NBT data. The host supplies these assemblies and its API
+dependencies, including `CommunityToolkit.HighPerformance`, logging and dependency-injection abstractions, and
+`SharpNoise`; they must not be bundled with a mod.
+
+For a project whose metadata, `assets/` and `data/` files have `CopyToOutputDirectory="PreserveNewest"`, publish into
+an empty staging directory:
+
+```powershell
+dotnet publish path/to/Mod.csproj -c Release --artifacts-path C:\tmp\mod-build -o C:\tmp\mod-staging
+```
+
+ZIP the staging contents (with `obsidian.mod.json` and the main DLL at the root, and `/` entry separators), and name
+the archive `.obby`. Inspect its DLLs before distributing it: include the mod and its private libraries only.
+`samples/EngineSample` shows the project-reference setup. Its published output contains only `EngineSample.dll`,
+its symbols and dependency manifest, metadata, and its assets and data.
+
+With project references, `--artifacts-path` also builds the engine projects there. Current generated vanilla assets
+are reused from the engine checkout; generate them once with a normal engine build first if the scratch build must
+not write into that checkout (see the [build notes](../README.md)).
+
+The API's `CommunityToolkit.HighPerformance` reference excludes runtime assets, like its other host dependencies.
+It remains a NuGet dependency at version 8.4.0; the packed dependency excludes runtime assets for consumers too.
+`Obsidian.Nbt` is still private to the API packages (`PrivateAssets="all"`), so mods using its types need a direct
+reference. Whether the API packages should declare NBT as a public dependency remains an open packaging decision.
 
 ## Metadata
 
