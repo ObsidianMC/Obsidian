@@ -98,18 +98,26 @@ public sealed partial class Player : Avatar, IClientPlayer
     /// </summary>
     public BaseContainer? OpenedContainer
     {
-        get;
+        get
+        {
+            lock (this.menuStateGate)
+                return field;
+        }
         set
         {
-            if (ReferenceEquals(field, value))
-                return;
+            lock (this.menuStateGate)
+            {
+                if (ReferenceEquals(field, value))
+                    return;
 
-            field?.RemoveViewer(this);
-            value?.AddViewer(this);
-            field = value;
+                field?.RemoveViewer(this);
+                value?.AddViewer(this);
+                field = value;
+                this.menuSync = null;
 
-            this.IsDragging = false;
-            this.DraggedSlots.Clear();
+                this.IsDragging = false;
+                this.DraggedSlots.Clear();
+            }
         }
     }
 
@@ -311,9 +319,36 @@ public sealed partial class Player : Avatar, IClientPlayer
         // Like vanilla's menus, a plugin's is sent whole, its slots then the player's inventory, so that clients know
         // how many slots it has before the player clicks. The packet sets the cursor too, so it always goes, with the
         // player's carried item, even for an empty container.
-        var contents = container is CraftingTable { Type: InventoryType.Crafting } or MenuContainer or EnchantmentTable
-            ? container.Concat(this.Inventory.Skip(9).Take(36)).ToList()
-            : container.ToList();
+        List<ItemStack> contents;
+        if (container is MenuContainer openedMenu)
+        {
+            // The opening packet can await unloading. Resolve the instance's generation before reading its slots.
+            if (!ReferenceEquals(this.OpenedContainer, openedMenu)
+                || this.CurrentContainerId != nextId
+                || !openedMenu.TryGetOwner(out var owner))
+            {
+                if (this.CurrentContainerId == nextId)
+                    await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = nextId });
+
+                return;
+            }
+
+            var plugin = owner as PluginContainer;
+            using var call = plugin?.TryEnter();
+            if (plugin is not null && call is null)
+            {
+                await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = nextId });
+                return;
+            }
+
+            contents = openedMenu.Concat(this.Inventory.Skip(9).Take(36)).ToList();
+        }
+        else
+        {
+            contents = container is CraftingTable { Type: InventoryType.Crafting } or EnchantmentTable
+                ? container.Concat(this.Inventory.Skip(9).Take(36)).ToList()
+                : container.ToList();
+        }
 
         await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, contents)
         {
@@ -356,7 +391,7 @@ public sealed partial class Player : Avatar, IClientPlayer
             return Show();
 
         lock (menu.Menu.Gate)
-            return menu.Menu.IsOpenable && this.KnowsMenu(menu.Menu) ? Show() : null;
+            return menu.TryGetOwner(out _) && this.KnowsMenu(menu.Menu) ? Show() : null;
 
         byte Show()
         {

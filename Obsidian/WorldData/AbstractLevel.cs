@@ -572,14 +572,12 @@ public abstract partial class AbstractLevel : ILevel
     {
         TickStage = "waiting for simulation gate";
         await simulationGate.WaitAsync();
-        this.EnterTick();
         try
         {
             await TickLevelAsync();
         }
         finally
         {
-            this.ExitTick();
             simulationGate.Release();
         }
     }
@@ -1399,7 +1397,7 @@ public abstract partial class AbstractLevel : ILevel
     public bool TryAddEntity(IEntity entity) => this.TryAddEntity(entity, hostOwned: false);
 
     // Only known host paths or batches that already credited their caller may bypass the attribution stack walk.
-    private bool TryAddEntity(IEntity entity, bool hostOwned)
+    internal bool TryAddEntity(IEntity entity, bool hostOwned)
     {
         if (!PluginEntities.HasLoadedType(entity))
             return false;

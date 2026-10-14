@@ -2,7 +2,6 @@ using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Plugins;
-using System.Threading;
 
 namespace Obsidian.WorldData;
 
@@ -11,23 +10,13 @@ namespace Obsidian.WorldData;
 /// <see cref="BlockEntity.CollectComponents"/>), which their code gives on the level's tick.
 /// </summary>
 /// <remarks>
-/// Breaks run on the tick or elsewhere: a player's break of a plugin's block, and an explosion a ticking entity sets
-/// off, run on it; an explosion a player sets off by using a bed doesn't. So the level marks the flow running its tick
-/// (<see cref="EnterTick"/>), and a break elsewhere waits for the running tick to end and collects between two ticks,
-/// holding the simulation gate like the tick, rather than for the next tick, which a break on the tick would wait for
-/// forever.
+/// Plugin block breaks that need component collection are queued to the tick, for both players and explosions.
+/// Only those serial queue callbacks request inline collection explicitly. Other callers wait for the running tick
+/// to end and collect between two ticks, holding the simulation gate like the tick.
+/// Execution context inherited by a background task never grants permission to bypass that gate.
 /// </remarks>
 public abstract partial class AbstractLevel
 {
-    // The mark of the flow running a level's tick. A task the tick starts carries it too, so the level also keeps the
-    // mark of the tick running now: a task left running after its tick ended carries a stale one.
-    private static readonly AsyncLocal<object?> tickFlow = new();
-
-    private object? runningTick;
-
-    // Whether the current flow is the level's running tick, which holds the simulation gate.
-    private bool OnTick => tickFlow.Value is object mark && ReferenceEquals(mark, Volatile.Read(ref this.runningTick));
-
     /// <summary>
     /// Collects the components a plugin's block entity gives the item its block drops, in a call into its plugin
     /// where its code may run: at once on the level's tick, and otherwise between two ticks, once the running one
@@ -36,15 +25,20 @@ public abstract partial class AbstractLevel
     /// <param name="blockEntity">The block entity, whose block is about to break.</param>
     /// <param name="plugin">Its plugin.</param>
     /// <param name="item">The block's item, which the block entity sets components on a stack of.</param>
+    /// <param name="onLevelTick">
+    /// True only for an explicitly identified serial tick operation that already holds the simulation gate.
+    /// A background task must use false, even when it was started by a tick operation.
+    /// </param>
     /// <returns>
     /// The components it set; none once its plugin started unloading, it was removed, or it failed.
     /// </returns>
     internal async ValueTask<IReadOnlyList<DataComponent>> CollectPluginComponentsAsync(
         BlockEntity blockEntity,
         PluginContainer plugin,
-        Item item)
+        Item item,
+        bool onLevelTick = false)
     {
-        if (this.OnTick)
+        if (onLevelTick)
             return this.CollectPluginComponents(blockEntity, plugin, item);
 
         try
@@ -64,21 +58,6 @@ public abstract partial class AbstractLevel
         {
             this.simulationGate.Release();
         }
-    }
-
-    // Marks the current flow as the level's tick. Called holding the simulation gate, from the async method that
-    // holds it: the mark doesn't flow back out of that method.
-    private void EnterTick()
-    {
-        var mark = new object();
-        Volatile.Write(ref this.runningTick, mark);
-        tickFlow.Value = mark;
-    }
-
-    private void ExitTick()
-    {
-        Volatile.Write(ref this.runningTick, null);
-        tickFlow.Value = null;
     }
 
     private IReadOnlyList<DataComponent> CollectPluginComponents(

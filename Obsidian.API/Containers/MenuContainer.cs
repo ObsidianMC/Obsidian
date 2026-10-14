@@ -1,5 +1,6 @@
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
+using Obsidian.API.Plugins;
 
 namespace Obsidian.API;
 
@@ -47,6 +48,13 @@ public class MenuContainer : BaseContainer
     // and as they were before it; null otherwise.
     private Dictionary<int, StagedStack>? staged;
 
+    // A menu instance belongs to one generation, even after its stable type is registered again.
+    private readonly WeakReference<IPluginContainer>? owner;
+
+    private readonly bool openable;
+
+    private readonly List<AccessTransfer> transfers = [];
+
     /// <summary>
     /// Creates a container of <paramref name="menu"/>'s type, which keeps its slots' items itself and starts empty.
     /// </summary>
@@ -57,12 +65,34 @@ public class MenuContainer : BaseContainer
         this.Menu = menu;
         this.Title = title;
         this.slots = [.. Enumerable.Repeat(ownSlot, menu.SlotCount)];
+
+        lock (menu.Gate)
+        {
+            this.openable = menu.IsOpenable;
+            this.owner = menu.Owner is IPluginContainer plugin ? new(plugin) : null;
+        }
     }
 
     /// <summary>
     /// The menu type.
     /// </summary>
     public MenuDefinition Menu { get; }
+
+    // Resolves without retaining an unloaded generation, and never treats a cleared owner as host permission.
+    internal bool TryGetOwner(out IPluginContainer? plugin)
+    {
+        lock (this.Menu.Gate)
+        {
+            plugin = null;
+            if (!this.openable || !this.Menu.IsOpenable)
+                return false;
+
+            if (this.owner is not null && !this.owner.TryGetTarget(out plugin))
+                return false;
+
+            return ReferenceEquals(plugin, this.Menu.Owner);
+        }
+    }
 
     /// <summary>
     /// Where each slot's item is kept and the rules players' clicks follow in it, one for each of the type's slots,
@@ -241,6 +271,7 @@ public class MenuContainer : BaseContainer
 
     internal override bool ShowsRetired =>
         this.IsRetired
+        || !this.TryGetOwner(out _)
         || this.sources.Any(source => source.ShowsRetired)
         || this.BlockEntity is { IsRemoved: true }
         || this.BoundInventory is { ShowsRetired: true };
@@ -286,9 +317,17 @@ public class MenuContainer : BaseContainer
     /// click sees them, and <see cref="CommitStaged"/> moves the items through the access. Call it with the window's
     /// lock held.
     /// </summary>
-    internal void BeginStaging() => this.staged = [];
+    internal void BeginStaging()
+    {
+        this.staged = [];
+        this.transfers.Clear();
+    }
 
-    internal void EndStaging() => this.staged = null;
+    internal void EndStaging()
+    {
+        this.staged = null;
+        this.transfers.Clear();
+    }
 
     /// <summary>
     /// Moves the items a click moved in and out of the item access slots through the access: first what each slot
@@ -299,8 +338,8 @@ public class MenuContainer : BaseContainer
     /// couldn't be put back. They're the player's.
     /// </param>
     /// <returns>
-    /// False, with everything taken out put back, when a slot no longer held what the click took from it: the click
-    /// isn't applied.
+    /// False when a slot no longer held what the click took from it: the caller must undo the successful transfers
+    /// with <see cref="UndoStaged"/> before restoring the player's stacks and ending staging.
     /// </returns>
     internal bool CommitStaged(List<ItemStack> leftovers)
     {
@@ -308,8 +347,6 @@ public class MenuContainer : BaseContainer
             .Where(entry => Removed(entry.Value) > 0 || Added(entry.Value) > 0)
             .OrderBy(entry => entry.Key)
             .ToArray();
-        var taken = new List<(IItemAccess Items, int Index, ItemStack Stack)>();
-
         foreach (var (slot, stack) in changes)
         {
             var count = Removed(stack);
@@ -321,16 +358,10 @@ public class MenuContainer : BaseContainer
             var got = ContainerItemAccess.WithoutWaiting(() => items.Extract(binding.Index, count));
 
             if (got is not null)
-                taken.Add((items, binding.Index, got));
+                this.transfers.Add(new AccessTransfer(items, binding.Index, got, Inserted: false));
 
             if (got is null || got.Count != count || !got.Equals(stack.Before))
             {
-                foreach (var (from, index, back) in taken)
-                {
-                    if (ContainerItemAccess.WithoutWaiting(() => from.Insert(index, back)) is ItemStack left)
-                        leftovers.Add(left);
-                }
-
                 return false;
             }
         }
@@ -345,12 +376,89 @@ public class MenuContainer : BaseContainer
             var items = binding.Items!;
             var added = new ItemStack(stack.After!, count);
 
-            if (ContainerItemAccess.WithoutWaiting(() => items.Insert(binding.Index, added)) is ItemStack left)
+            var left = ContainerItemAccess.WithoutWaiting(() => items.Insert(binding.Index, added));
+            var accepted = added.Count - (left?.Count ?? 0);
+            if (accepted > 0)
+            {
+                this.transfers.Add(new AccessTransfer(
+                    items, binding.Index, new ItemStack(added, accepted), Inserted: true));
+            }
+
+            if (left is not null)
                 leftovers.Add(left);
         }
 
         return true;
     }
+
+    // Reverses successful transfers even when a later callback throws. Each access operation is atomic, as its
+    // contract requires. A failing recovery must not stop recovery of earlier transfers or delete their items.
+    internal void UndoStaged(List<ItemStack> refunds, List<ItemStack> retained)
+    {
+        refunds.Clear();
+
+        foreach (var transfer in this.transfers.AsEnumerable().Reverse())
+        {
+            var stack = new ItemStack(transfer.Stack, transfer.Stack.Count);
+            if (transfer.Inserted)
+            {
+                ItemStack? recovered = null;
+                try
+                {
+                    recovered = ContainerItemAccess.WithoutWaiting(
+                        () => transfer.Items.Extract(transfer.Index, stack.Count));
+                }
+                catch
+                {
+                    // The inserted items still belong to the access: don't restore a second copy to the player.
+                }
+
+                if (recovered is not null && recovered.Equals(stack))
+                    stack.Count -= recovered.Count;
+                else if (recovered is not null)
+                    refunds.Add(recovered);
+
+                if (stack.Count > 0)
+                    retained.Add(stack);
+
+                continue;
+            }
+
+            // An insertion that couldn't be reversed may have come from an earlier extraction in this click.
+            ConsumeRetained(stack, retained);
+            if (stack.Count == 0)
+                continue;
+
+            try
+            {
+                if (ContainerItemAccess.WithoutWaiting(
+                    () => transfer.Items.Insert(transfer.Index, stack)) is ItemStack left)
+                {
+                    refunds.Add(left);
+                }
+            }
+            catch
+            {
+                refunds.Add(stack);
+            }
+        }
+    }
+
+    // Cancels items still in an access against the copies rollback would otherwise restore elsewhere.
+    internal static void ConsumeRetained(ItemStack stack, List<ItemStack> retained)
+    {
+        foreach (var kept in retained)
+        {
+            if (!stack.Equals(kept))
+                continue;
+
+            var count = Math.Min(stack.Count, kept.Count);
+            stack.Count -= count;
+            kept.Count -= count;
+        }
+    }
+
+    private sealed record AccessTransfer(IItemAccess Items, int Index, ItemStack Stack, bool Inserted);
 
     // The block entity's inventory, for a menu of a container block entity.
     private BaseContainer? BoundInventory => (this.BlockEntity as ContainerBlockEntity)?.Inventory;

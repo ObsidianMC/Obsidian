@@ -55,11 +55,12 @@ public partial class MainEventHandler
             // A plugin's menu runs its plugin's code in the click, unless the plugin is unloading or the menu is no
             // longer valid for the player.
             using var menuClick = MenuClick.Start(player, window);
+            if (menuClick is { Refused: true })
+                return;
 
             // The result handlers saw is the one the click takes: it's never worked out again in between.
             var stale = !args.ArrivalState.IsCurrent(player)
-                || !CraftingResultFollowsGrid(player)
-                || menuClick is { Refused: true };
+                || !CraftingResultFollowsGrid(player);
             var outputCount = window is SmeltingContainer smelting ? smelting[2]?.Count ?? 0 : 0;
 
             try
@@ -75,14 +76,14 @@ public partial class MainEventHandler
                     foreach (var change in args.Changes)
                         change();
                 }
+
+                menuClick?.Commit();
             }
             catch when (menuClick is not null)
             {
                 menuClick.Undo();
                 throw;
             }
-
-            menuClick?.Commit();
 
             if (window is SmeltingContainer furnace
                 && (furnace[2]?.Count ?? 0) < outputCount

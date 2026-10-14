@@ -88,7 +88,12 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
     /// <param name="level">The level.</param>
     /// <param name="position">The block's position.</param>
     /// <param name="breaker">The player breaking the block, if one is.</param>
-    public static async ValueTask<BlockEntityComponents> CaptureAsync(ILevel level, Vector position, IPlayer? breaker)
+    /// <param name="onLevelTick">True only when the caller is a serial tick operation, never a forked task.</param>
+    public static async ValueTask<BlockEntityComponents> CaptureAsync(
+        ILevel level,
+        Vector position,
+        IPlayer? breaker,
+        bool onLevelTick = false)
     {
         if (level is not AbstractLevel concrete)
             return None;
@@ -111,7 +116,8 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
             && await level.GetBlockAsync(position) is IBlock block
             && BlocksRegistry.TryGetItem(block, out var item))
         {
-            captured.components.AddRange(await concrete.CollectPluginComponentsAsync(owned, plugin, item));
+            captured.components.AddRange(await concrete.CollectPluginComponentsAsync(
+                owned, plugin, item, onLevelTick));
         }
 
         if (!ReferenceEquals(captured, None))

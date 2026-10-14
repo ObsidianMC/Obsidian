@@ -398,6 +398,13 @@ Banner patterns, bees and skull profiles aren't taken yet. A plugin's block enti
 `ApplyComponents` (see [Block entities](#block-entities)); a plugin block without a loot table drops its item with
 those values.
 
+Player breaks of plugin blocks and explosions needing their live block entities' components queue the whole break
+to the level's next tick, including `CollectComponents`, loot evaluation and removal. Explosions still apply entity
+damage immediately; blocks kept as data after plugin unloading break immediately too. A queued explosion break
+checks the block state and block entity again, so replacing the target before that tick cancels its break. Only
+serial tick operations explicitly collect inline; background tasks wait for the level's simulation gate, including
+tasks started during a tick.
+
 ## Items
 
 ```csharp
@@ -710,7 +717,8 @@ type and its update data from chunk packets and `BlockEntityData`, and remapping
 - **Threads.** The server calls `Load`, `Save`, `TickAsync`, `GetUpdateData`, `CollectComponents` and `OnRemoved`
   on the level's tick, one at a time, inside calls into the plugin: a block removed from elsewhere (a player's break)
   runs `OnRemoved` on the next tick, and a break elsewhere (an explosion a player sets off with a bed, say) runs
-  `CollectComponents` between two ticks, once the running tick ends. Only a new block entity for a block set
+  `CollectComponents` between two ticks, once the running tick ends. A background task waits the same way, even when
+  the tick started it. Only a new block entity for a block set
   elsewhere is constructed and given its item (`ApplyComponents`) there. Chunks are saved and sent from copies of what
   those calls returned last, so the block entity's code needs no locks of its own, and changing a compound it handed
   over changes nothing saved or sent.
@@ -1032,14 +1040,17 @@ with the others in one fixed order, so that a menu made of several containers ta
 them open, on their own or in other menus, and they all see its changes. A slot behind item access, like a plugin
 machine's buffer, moves its items through the access as the click ends: what the click took out is extracted first,
 and if a slot no longer holds it (a pipe took it meanwhile), the whole click is undone; then what it put in is
-inserted, and what the access refuses goes back to the player's inventory, or drops. So a click never makes or loses
-an item. The access is called with the menu's locks held: a container block entity's access takes and gives nothing
+inserted, and what the access refuses goes back to the player's inventory, or drops. If an access callback throws,
+successful transfers are undone too; items the access cannot take back are refunded to the player. Player drops and
+refunds belong to the host and survive the menu plugin unloading. Each access call must be atomic, including on
+failure. The access is called with the menu's locks held: a container block entity's access takes and gives nothing
 while its container is busy rather than wait, and your own access mustn't wait on a container's lock either. Don't
 show a container's slots both ways in one menu. Outside a click, change such a slot through its access;
 `SetItem` throws. Players with the menu open see the access's changes on their next tick.
 
 Subclass `MenuContainer` for the rest, like NeoForge's `AbstractContainerMenu`. These run inside calls into the plugin
-that registered the menu type, never once it's unloading:
+that registered the menu type, never once it's unloading. Each menu instance remains bound to that plugin generation;
+registering the type again does not reactivate an old instance:
 
 - `QuickMove(player, slot, stack)` decides shift-clicks, like vanilla's `quickMoveStack`: it returns ranges of the
   window's slots (the menu's from 0, then the player's 36), tried in turn until one takes some of the stack. Each tops

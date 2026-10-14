@@ -1,4 +1,5 @@
 using Obsidian.API.Blocks;
+using Obsidian.API.BlockEntities;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
@@ -171,71 +172,29 @@ public abstract partial class AbstractLevel
                 continue;
 
             var block = terrain.GetBlock(position)!;
-            var parts = await TwoPartBlockBreak.PrepareAsync(this, position, block);
-            BlockEntityComponents captured;
-            try
+            var expected = this.GetResidentBlockEntity(position);
+            if (expected is BlockEntity { Owner: PluginContainer } && expected is not DataBlockEntity)
             {
-                captured = await BlockEntityComponents.CaptureAsync(this, parts.DropPosition, null);
-            }
-            catch (Exception ex)
-            {
-                Log.ExplosionLootFailed(Logger, ex, block.UnlocalizedName, position);
-                continue;
-            }
-
-            await using var blockEntity = captured;
-            if (!blockEntity.CanBreak)
-                continue;
-
-            List<ItemStack> drops;
-            try
-            {
-                // What the block entity gives the loot, taken before the block goes; no player breaks it.
-                drops = await BlockLoot.GetDropsAsync(
-                    this,
-                    parts.DropPosition,
-                    parts.DropState,
-                    null,
-                    breaker: source,
-                    explosionRadius: dropDecay ? radius : null,
-                    checkTool: false,
-                    blockEntityComponents: blockEntity.Components,
-                    dynamicDrops: blockEntity.DynamicDrops);
-            }
-            catch (Exception ex)
-            {
-                Log.ExplosionLootFailed(Logger, ex, block.UnlocalizedName, position);
-                if (blockEntity.KeepsContents)
-                    continue;
-
-                drops = [];
-            }
-
-            if (!await this.TrySetBlockAsync(position, BlocksRegistry.Air, BlockUpdateFlags.All,
-                current => current.GetHashCode() == block.GetHashCode()
-                    && (blockEntity.Source is null || parts.DropPosition != position
-                        || ReferenceEquals(this.GetResidentBlockEntity(position), blockEntity.Source))))
-                continue;
-
-            await parts.RemovePartnerAsync(this);
-            if (parts.PartnerPosition is Vector partnerPosition)
-                removed.Add(partnerPosition);
-
-            foreach (var item in drops)
-            {
-                var drop = new ItemEntity
+                // Damage can reach here from either a tick or a packet, including chained crystal explosions.
+                // Queue the whole plugin break without awaiting it: no ambient context can bypass the tick gate.
+                this.EnqueueEntityAction(async () =>
                 {
-                    Level = this,
-                    EntityId = Server.GetNextEntityId(),
-                    Position = (VectorD)parts.DropPosition + 0.5f,
-                    Item = item,
-                    SpawnedBy = spawner
-                };
+                    if (ReferenceEquals(this.GetResidentBlockEntity(position), expected))
+                    {
+                        await this.BreakExplodedBlockAsync(
+                            position, block, source, dropDecay ? radius : null, spawner, onLevelTick: true);
+                    }
+                });
 
-                if (!this.TrySpawnEntity(drop, hostOwned: true))
-                    throw new InvalidOperationException($"Could not register entity {drop.EntityId}.");
+                continue;
             }
+
+            var partner = await this.BreakExplodedBlockAsync(
+                position, block, source, dropDecay ? radius : null, spawner);
+            if (partner is Vector partnerPosition)
+                removed.Add(partnerPosition);
         }
+
         // Vanilla's ServerExplosion.createFire: each position reached, now air, catches fire a third of the time
         // when the block below is solid.
         foreach (var position in reached)
@@ -275,6 +234,85 @@ public abstract partial class AbstractLevel
                 ExplosionParticleInfo = []
             });
         }
+    }
+
+    /// <summary>
+    /// Captures loot and removes one verified explosion target. Plugin targets run only from the serial tick queue.
+    /// </summary>
+    private async ValueTask<Vector?> BreakExplodedBlockAsync(
+        Vector position,
+        IBlock block,
+        Entity? source,
+        float? explosionRadius,
+        PluginContainer? spawner,
+        bool onLevelTick = false)
+    {
+        if (await this.GetBlockAsync(position) is not IBlock current || current.GetHashCode() != block.GetHashCode())
+            return null;
+
+        var parts = await TwoPartBlockBreak.PrepareAsync(this, position, block);
+        BlockEntityComponents captured;
+        try
+        {
+            captured = await BlockEntityComponents.CaptureAsync(this, parts.DropPosition, null, onLevelTick);
+        }
+        catch (Exception ex)
+        {
+            Log.ExplosionLootFailed(Logger, ex, block.UnlocalizedName, position);
+            return null;
+        }
+
+        await using var blockEntity = captured;
+        if (!blockEntity.CanBreak)
+            return null;
+
+        List<ItemStack> drops;
+        try
+        {
+            // What the block entity gives the loot, taken before the block goes; no player breaks it.
+            drops = await BlockLoot.GetDropsAsync(
+                this,
+                parts.DropPosition,
+                parts.DropState,
+                null,
+                breaker: source,
+                explosionRadius: explosionRadius,
+                checkTool: false,
+                blockEntityComponents: blockEntity.Components,
+                dynamicDrops: blockEntity.DynamicDrops);
+        }
+        catch (Exception ex)
+        {
+            Log.ExplosionLootFailed(Logger, ex, block.UnlocalizedName, position);
+            if (blockEntity.KeepsContents)
+                return null;
+
+            drops = [];
+        }
+
+        if (!await this.TrySetBlockAsync(position, BlocksRegistry.Air, BlockUpdateFlags.All,
+            state => state.GetHashCode() == block.GetHashCode()
+                && (blockEntity.Source is null || parts.DropPosition != position
+                    || ReferenceEquals(this.GetResidentBlockEntity(position), blockEntity.Source))))
+            return null;
+
+        await parts.RemovePartnerAsync(this);
+        foreach (var item in drops)
+        {
+            var drop = new ItemEntity
+            {
+                Level = this,
+                EntityId = Server.GetNextEntityId(),
+                Position = (VectorD)parts.DropPosition + 0.5f,
+                Item = item,
+                SpawnedBy = spawner
+            };
+
+            if (!this.TrySpawnEntity(drop, hostOwned: true))
+                throw new InvalidOperationException($"Could not register entity {drop.EntityId}.");
+        }
+
+        return parts.PartnerPosition;
     }
 
     /// <summary>

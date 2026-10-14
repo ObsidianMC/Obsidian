@@ -23,7 +23,11 @@ public partial class Player
     // the order they were read.
     private readonly SemaphoreSlim menuSyncGate = new(1, 1);
 
-    // What the player was last sent of their open menu (see MenuSync), changed under menuSyncGate.
+    // Coordinates changing the open container with installing or clearing its last menu snapshot. Packet sends
+    // hold only menuSyncGate, so a close from a packet handler doesn't wait for its own send to finish.
+    private readonly object menuStateGate = new();
+
+    // What the player was last sent of their open menu (see MenuSync), changed under menuStateGate.
     private MenuSync? menuSync;
 
     /// <summary>
@@ -55,7 +59,10 @@ public partial class Player
         }
 
         using var extra = new NetworkBuffer();
-        var plugin = menu.Menu.Owner as PluginContainer;
+        if (!menu.TryGetOwner(out var owner))
+            return new OpenScreenPacket(menu, containerId);
+
+        var plugin = owner as PluginContainer;
 
         using (var call = plugin?.TryEnter())
         {
@@ -84,7 +91,7 @@ public partial class Player
     /// </summary>
     internal async ValueTask SendMenuOpenedAsync(MenuContainer menu, int containerId)
     {
-        if (ReadMenu(menu, containerId) is MenuSync read)
+        if (this.ReadMenu(menu, containerId) is MenuSync read)
             await this.SyncMenuAsync(read, all: true);
     }
 
@@ -99,7 +106,10 @@ public partial class Player
             return;
 
         var containerId = this.CurrentContainerId;
-        var plugin = menu.Menu.Owner as PluginContainer;
+        if (!menu.TryGetOwner(out var owner))
+            return;
+
+        var plugin = owner as PluginContainer;
         bool valid;
 
         using (var call = plugin?.TryEnter())
@@ -119,7 +129,7 @@ public partial class Player
             return;
         }
 
-        if (ReadMenu(menu, containerId) is MenuSync read && await this.SyncMenuAsync(read, all: false))
+        if (this.ReadMenu(menu, containerId) is MenuSync read && await this.SyncMenuAsync(read, all: false))
             await MainEventHandler.RefreshWindowAsync(this, menu, stateId: 0);
     }
 
@@ -155,15 +165,15 @@ public partial class Player
             try
             {
                 changed = menu.ClickButton(this, button);
+
+                // A button whose items the access no longer held is undone; the window is sent again either way.
+                changed |= !click.Commit();
             }
             catch
             {
                 click.Undo();
                 throw;
             }
-
-            // A button whose items the access no longer held is undone; the window is sent again either way.
-            changed |= !click.Commit();
         }
 
         if (changed)
@@ -179,9 +189,16 @@ public partial class Player
 
     // The menu's data slot values and item access slots' stacks, read inside a call into its plugin, without the
     // menu's locks; null when the plugin is unloading.
-    private static MenuSync? ReadMenu(MenuContainer menu, int containerId)
+    private MenuSync? ReadMenu(MenuContainer menu, int containerId)
     {
-        var plugin = menu.Menu.Owner as PluginContainer;
+        if (!ReferenceEquals(this.OpenedContainer, menu)
+            || this.CurrentContainerId != containerId
+            || !menu.TryGetOwner(out var owner))
+        {
+            return null;
+        }
+
+        var plugin = owner as PluginContainer;
 
         using var call = plugin?.TryEnter();
         if (plugin is not null && call is null)
@@ -206,11 +223,15 @@ public partial class Player
         await this.menuSyncGate.WaitAsync();
         try
         {
-            if (!ReferenceEquals(this.OpenedContainer, read.Menu) || this.CurrentContainerId != read.ContainerId)
-                return false;
+            MenuSync? last;
+            lock (this.menuStateGate)
+            {
+                if (!ReferenceEquals(this.OpenedContainer, read.Menu) || this.CurrentContainerId != read.ContainerId)
+                    return false;
 
-            var last = !all && this.menuSync is MenuSync sent && sent.Shows(read) ? sent : null;
-            this.menuSync = read;
+                last = !all && this.menuSync is MenuSync sent && sent.Shows(read) ? sent : null;
+                this.menuSync = read;
+            }
 
             for (var index = 0; index < read.Data.Length; index++)
             {

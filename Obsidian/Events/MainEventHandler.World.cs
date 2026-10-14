@@ -18,14 +18,14 @@ public partial class MainEventHandler
         if (args.Level is AbstractLevel level && BlocksRegistry.TryGetPluginBlock(args.Block.GetHashCode(), out _))
         {
             // The entire transaction shares the tick with block entity callbacks and plugin unloading.
-            level.EnqueueEntityAction(() => this.BreakBlockAsync(args));
+            level.EnqueueEntityAction(() => this.BreakBlockAsync(args, onLevelTick: true));
             return ValueTask.CompletedTask;
         }
 
         return this.BreakBlockAsync(args);
     }
 
-    private async ValueTask BreakBlockAsync(BlockBreakEventArgs args)
+    private async ValueTask BreakBlockAsync(BlockBreakEventArgs args, bool onLevelTick = false)
     {
         var player = args.Player;
         var sequence = args.Sequence;
@@ -68,7 +68,8 @@ public partial class MainEventHandler
         var parts = await TwoPartBlockBreak.PrepareAsync(world, location, block);
 
         // What the block entity gives the loot (a shulker box's items, say), taken before the block goes.
-        await using var blockEntity = await BlockEntityComponents.CaptureAsync(world, parts.DropPosition, player);
+        await using var blockEntity = await BlockEntityComponents.CaptureAsync(
+            world, parts.DropPosition, player, onLevelTick);
         if (!blockEntity.CanBreak)
             return;
 
