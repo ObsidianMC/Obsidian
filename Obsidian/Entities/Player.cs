@@ -51,6 +51,9 @@ public sealed partial class Player : Avatar, IClientPlayer
     private static readonly TimeSpan ChunkLoadTimeBudget = TimeSpan.FromMilliseconds(5);
     private readonly SemaphoreSlim chunkUpdates = new(1, 1);
 
+    // Release chunkUpdates before packet handlers run, but keep later chunk sends behind the respawn's FIFO.
+    private int deferredChunkSequences;
+
     // Set once the player left for reconfiguration, after which the client's next player sends its chunks.
     private bool chunksStopped;
 
@@ -471,18 +474,27 @@ public sealed partial class Player : Avatar, IClientPlayer
 
     public override ValueTask TeleportAsync(VectorD pos) => this.TeleportAsync(this.Level, pos);
 
-    private async ValueTask TeleportWithinLevelAsync(VectorD pos)
+    private async ValueTask TeleportWithinLevelAsync(VectorD pos, Angle? yaw, Angle? pitch)
     {
         FallDistance = 0;
         combatPosition = null;
         CancelWeaponUse();
-        LeaveVehicle();
-        EjectPassengers();
+        var from = this.Position;
+        var fromYaw = this.Yaw;
+        var fromPitch = this.Pitch;
+        var riders = this.DetachPassengersForTravel();
         LastPosition = Position;
         if (Level is AbstractLevel resident && !resident.TryMoveEntity(this, Position, pos))
+        {
+            foreach (var rider in riders)
+                rider.Ride(this, force: true);
+
             throw new InvalidOperationException("The destination region could not accept the player.");
+        }
 
         Position = pos;
+        this.Yaw = yaw ?? this.Yaw;
+        this.Pitch = pitch ?? this.Pitch;
         BoundingBox = Dimension.CreateBBFromPosition(pos);
         await UpdateChunksAsync();
 
@@ -506,6 +518,7 @@ public sealed partial class Player : Avatar, IClientPlayer
             TeleportId = tid
         });
         TeleportId = tid;
+        await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
     }
 
     public override ValueTask TeleportAsync(IEntity to) =>
@@ -536,9 +549,7 @@ public sealed partial class Player : Avatar, IClientPlayer
         if (level is AbstractLevel && area is null)
             throw new InvalidOperationException("The player moved while the destination was loading.");
 
-        this.Yaw = yaw ?? this.Yaw;
-        this.Pitch = pitch ?? this.Pitch;
-        await this.TeleportWithinLevelAsync(position);
+        await this.TeleportWithinLevelAsync(position, yaw, pitch);
     }
 
     public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
@@ -599,18 +610,27 @@ public sealed partial class Player : Avatar, IClientPlayer
         return true;
     }
 
-    internal async Task TransferDimensionAsync(
+    internal Task TransferDimensionAsync(
         ILevel destination, VectorD? position = null, Angle? yaw = null, Angle? pitch = null,
         VectorD? motion = null, bool portal = false, bool relativeMotion = false)
+        => DeferredInventoryWork.RunOrDeferAsync(() => new ValueTask(this.TransferDimensionAfterCallbacksAsync(
+            destination, position, yaw, pitch, motion, portal, relativeMotion))).AsTask();
+
+    private async Task TransferDimensionAfterCallbacksAsync(
+        ILevel destination, VectorD? position, Angle? yaw, Angle? pitch,
+        VectorD? motion, bool portal, bool relativeMotion)
     {
+        // Callback-requested deaths and further transfers run after this destination's complete update sequence.
+        await using var travelCallbacks = new DeferredInventoryWork.PacketCallbacks(this.Logger);
         await this.CancelPortalTravelAsync();
         CancelEating();
         CancelWeaponUse();
         combatPosition = null;
-        LeaveVehicle();
-        EjectPassengers();
         var origin = Level;
         var from = this.Position;
+        var fromYaw = this.Yaw;
+        var fromPitch = this.Pitch;
+        Entity[] riders = [];
         var spawn = position ?? destination.LevelData.SpawnPosition;
         ValidateTravel(destination, spawn, yaw, pitch);
         using var area = destination is AbstractLevel target
@@ -621,27 +641,24 @@ public sealed partial class Player : Avatar, IClientPlayer
             return;
 
         await this.CloseContainerAsync();
-        // Held from the level change until the respawn resets the client's view (see RespawnUnderLockAsync).
-        await this.chunkUpdates.WaitAsync();
-        try
-        {
-            this.CommitTravel(origin, destination, spawn, yaw, pitch);
-            foreach (var observer in origin.GetPlayersInRange(from, float.MaxValue).OfType<Player>())
-                observer.visiblePlayers.Remove(this);
 
-            Motion = motion ?? Motion;
-            FallDistance = 0;
-            foodPosition = null;
-            this.preservePortalMotion = relativeMotion;
-            if (portal)
-                this.portalCooldown = PlayerPortalCooldown;
-
-            await this.RespawnUnderLockAsync(DataKept.Attributes | DataKept.Metadata, levelChange: true);
-        }
-        finally
+        while (true)
         {
-            this.preservePortalMotion = false;
-            this.chunkUpdates.Release();
+            await this.WaitForDeathAsync();
+            // Held from the level change until the respawn resets the client's view.
+            await this.chunkUpdates.WaitAsync();
+            await using var callbacks = this.DeferRespawnPackets(travelCallbacks.Work);
+            try
+            {
+                if (await this.RespawnUnderLockAsync(
+                    DataKept.Attributes | DataKept.Metadata, levelChange: true, transfer: Commit))
+                    break;
+            }
+            finally
+            {
+                this.preservePortalMotion = false;
+                this.chunkUpdates.Release();
+            }
         }
 
         // Vanilla 1.21.11 sends the shared world's GlobalPos spawn, including while in a child dimension.
@@ -670,7 +687,37 @@ public sealed partial class Player : Avatar, IClientPlayer
         await this.EventDispatcher.ExecuteEventAsync(new PlayerTeleportEventArgs(this, this.Server, from, spawn));
         await this.FireProgressAsync("changed_dimension", from: origin.DimensionName, to: destination.DimensionName);
         this.progressDimension = destination.DimensionName;
+        await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
         await SaveAsync();
+
+        void Commit()
+        {
+            from = this.Position;
+            fromYaw = this.Yaw;
+            fromPitch = this.Pitch;
+            riders = this.DetachPassengersForTravel();
+            try
+            {
+                this.CommitTravel(origin, destination, spawn, yaw, pitch);
+            }
+            catch
+            {
+                foreach (var rider in riders)
+                    rider.Ride(this, force: true);
+
+                throw;
+            }
+
+            foreach (var observer in origin.GetPlayersInRange(from, float.MaxValue).OfType<Player>())
+                observer.visiblePlayers.Remove(this);
+
+            this.Motion = motion ?? this.Motion;
+            this.FallDistance = 0;
+            this.foodPosition = null;
+            this.preservePortalMotion = relativeMotion;
+            if (portal)
+                this.portalCooldown = PlayerPortalCooldown;
+        }
     }
 
     public Task RespawnAsync(DataKept dataKept = DataKept.Metadata) =>
@@ -684,8 +731,8 @@ public sealed partial class Player : Avatar, IClientPlayer
         while (true)
         {
             await this.WaitForDeathAsync();
-            await using var callbacks = DeferredInventoryWork.Begin(this.Logger);
             await this.chunkUpdates.WaitAsync();
+            await using var callbacks = this.DeferRespawnPackets();
             try
             {
                 if (await this.RespawnUnderLockAsync(dataKept))
@@ -698,12 +745,21 @@ public sealed partial class Player : Avatar, IClientPlayer
         }
     }
 
+    private IAsyncDisposable DeferRespawnPackets(DeferredInventoryWork? callbacks = null)
+    {
+        Interlocked.Increment(ref this.deferredChunkSequences);
+        return DeferredInventoryWork.Begin(
+            this.Logger, packetClient: this.Client,
+            drained: () => Interlocked.Decrement(ref this.deferredChunkSequences), packetCallbacks: callbacks);
+    }
+
     /// <summary>
-    /// Respawns the player, with <see cref="chunkUpdates"/> already held. Callers that change the player's level take
-    /// it before the change, so the chunk loop can't send chunks of the old level after the respawn packet, or load
-    /// the new level's chunks into the old view.
+    /// Respawns the player, with <see cref="chunkUpdates"/> held and packet callbacks deferred until its release.
+    /// A dimension transfer commits through <paramref name="transfer"/> after the death check reserves this respawn.
+    /// Returns false if death must finish first; the caller must release the lock before waiting and retrying.
     /// </summary>
-    private async Task<bool> RespawnUnderLockAsync(DataKept dataKept, bool levelChange = false)
+    private async Task<bool> RespawnUnderLockAsync(
+        DataKept dataKept, bool levelChange = false, Action? transfer = null)
     {
         lock (this.deathState)
         {
@@ -717,11 +773,14 @@ public sealed partial class Player : Avatar, IClientPlayer
             this.Respawning = true;
             this.respawnFinished = new(TaskCreationOptions.RunContinuationsAsynchronously);
         }
-        this.ResetAttachmentSync();
-        this.ResetAttributeSync();
-        var died = !Alive;
         try
         {
+            // Reserve the respawn before changing levels: a death that won the lock retries without committing,
+            // and a death arriving after the reservation waits for the completed transfer.
+            transfer?.Invoke();
+            this.ResetAttachmentSync();
+            this.ResetAttributeSync();
+            var died = !Alive;
             if (died)
             {
                 // Death respawns must create fresh client state rather than retain the dead player's metadata.
@@ -1092,6 +1151,14 @@ public sealed partial class Player : Avatar, IClientPlayer
         await this.chunkUpdates.WaitAsync();
         try
         {
+            if (Volatile.Read(ref this.deferredChunkSequences) != 0)
+            {
+                // A respawn's packets are still draining. Retry on the next tick rather than dropping the update.
+                this.pendingRespawnChunks = true;
+                this.respawnChunkRetryTicks = 1;
+                return false;
+            }
+
             return await this.UpdateChunksUnderLockAsync(unloadAll, distance);
         }
         finally
@@ -1197,6 +1264,9 @@ public sealed partial class Player : Avatar, IClientPlayer
 
         try
         {
+            if (Volatile.Read(ref this.deferredChunkSequences) != 0)
+                return;
+
             await this.SendReadyChunksAsync();
         }
         catch (OperationCanceledException)

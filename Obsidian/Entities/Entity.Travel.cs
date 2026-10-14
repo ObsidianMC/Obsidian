@@ -30,9 +30,7 @@ public partial class Entity
 
             // Like vanilla, an entity teleported on its own gets off its vehicle, and its passengers get off to travel
             // separately and board again at the destination.
-            this.LeaveVehicle();
-            riders = this.Passengers.ToArray();
-            this.EjectPassengers();
+            riders = this.DetachPassengersForTravel();
             from = this.Position;
             fromYaw = this.Yaw;
             fromPitch = this.Pitch;
@@ -73,7 +71,7 @@ public partial class Entity
     /// Moves passengers taken off this entity before it travelled to the same place relative to it, each with its own
     /// passengers, and seats them again. A passenger that can't follow, such as one removed meanwhile, stays behind.
     /// </summary>
-    private async ValueTask CarryPassengersAsync(
+    private protected async ValueTask CarryPassengersAsync(
         Entity[] riders, VectorD from, Angle fromYaw, Angle fromPitch)
     {
         foreach (var rider in riders)
@@ -91,6 +89,18 @@ public partial class Entity
             }
 
             rider.Ride(this, force: true);
+        }
+    }
+
+    /// <summary>Captures and detaches the passengers that follow this entity, including a player vehicle.</summary>
+    private protected Entity[] DetachPassengersForTravel()
+    {
+        lock (ItemEntity.TransferLock)
+        {
+            this.LeaveVehicle();
+            var riders = this.Passengers.ToArray();
+            this.EjectPassengers();
+            return riders;
         }
     }
 

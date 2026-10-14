@@ -393,10 +393,11 @@ public abstract partial class AbstractLevel
             if (created is DataBlockEntity)
                 continue;
 
-            this.AttachBlockEntity(created);
-
             if (chunk.ReplaceBlockEntity(kept, created))
+            {
                 kept.IsRemoved = true;
+                this.AttachBlockEntity(created);
+            }
         }
     }
 

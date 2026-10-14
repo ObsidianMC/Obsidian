@@ -801,13 +801,21 @@ inside the server's global coordinate limits; they may be above or below the bui
 
 A vehicle carries its whole passenger tree, as vanilla's teleport does: the passengers get off, travel to the same
 offset from the vehicle, turned as much as the vehicle turned, and board again in the same seats; their own
-passengers come along the same way. An entity teleported on its own gets off its vehicle, and a player that travels
-drops its own passengers. Riding is a relationship between any two entities: `IEntity.StartRiding(vehicle)` mounts
+passengers come along the same way, including passengers of a player vehicle. An entity teleported on its own gets
+off its vehicle. Riding is a relationship between any two entities: `IEntity.StartRiding(vehicle)` mounts
 any entity on another in its level with a free seat (one by default, the mob's seats for mounts and plugin mobs),
 `IEntity.StopRiding()` takes it off, and `IEntity.Vehicle` and `IEntity.Passengers` (in seat order) describe it, so a
 skeleton can ride a skeleton horse or a plugin's mob another. `IPlayer.StartRiding` keeps boarding only mobs. A player
 boarding a vehicle a non-player steers takes the steering seat, as in vanilla. Passengers that die, leave or change
 level get off; players also get off by sneaking.
+
+Mount validation and the relationship change share the entity transfer lock, so concurrent mounts cannot form a
+cycle. Respawn and dimension-transfer packet handlers run after the player's chunk-update lock is released. Later
+chunk sends wait until the respawn, position and initial chunks have entered the connection's queue, in order;
+direct sends in that flow join the same queue. Observer packets are not deferred. A handler can await death,
+respawn or another dimension transfer: the requested work runs after the current sequence, including a dimension
+transfer's remaining destination updates. A death that starts while travel waits for the lock completes before
+the destination is committed.
 
 Leads are modelled as far as saved worlds and travel need. A mob's vanilla `leash` field (a holder's UUID) is read and
 saved, players tracking the mob see the lead, and the lead drops as a lead item, as in vanilla, when either end dies
@@ -863,7 +871,8 @@ chunk, so contact, exit searches and frame checks treat it as that type's: a Net
 portals made of the same block, and the other way round. While its type isn't registered, after the plugin unloads
 or across a restart without it, a claimed block is inert, never a Nether portal, and comes back to its type when the
 plugin registers it again. An unclaimed portal block, such as one placed by a command or found in a vanilla world,
-belongs to the earliest registered type using that block, so vanilla's stay Nether portals.
+belongs to the earliest registered type using that block, so vanilla's stay Nether portals. Replacing a portal with
+another block releases its claim with the block write, even if another portal is placed before the next tick.
 
 The configured `Igniter` is an item used against the frame, with normal survival consumption. More involved item
 or block callbacks can call `await level.TryLightPortalAsync(portal, interiorPosition)`, returning whether an empty
@@ -887,8 +896,9 @@ The Nether portal is a built-in registration with obsidian, fire/flint-and-steel
 shape limits, dimension-type coordinate scales, and searches of 16 blocks into the Nether or 128 on return.
 Only that registration names the Nether dimension; general frame, search, building and transit code do not.
 Players keep their specialised End paths (credits, the arrival platform, their respawn point and their gateway
-cooldown). Other entities, item entities and plugin mobs included, use End portals and End gateways through the same
-teleport as other portals and without waiting: into the End they arrive at vanilla's spawn point (100.5, 50, 0.5) on
+cooldown), arriving in the End at (100.5, 49, 0.5). Other entities, item entities and plugin mobs included, use End
+portals and End gateways through the same teleport as other portals and without waiting: into the End they arrive
+at vanilla's spawn point (100.5, 50, 0.5) on
 the rebuilt obsidian platform, facing west with their velocity turned to match; out of the End at the top of the
 world spawn's column, keeping rotation and velocity; and through a gateway at its exit, after which the gateway
 rests for 40 ticks. Only a root vehicle uses portals, carrying its passengers. As in vanilla, the dragon, the
