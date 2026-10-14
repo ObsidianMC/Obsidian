@@ -467,6 +467,12 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      content behaviour and load contexts, like the server's plugin unloading) and loads the folder again, then the
      assets. It's only there while the client isn't connected, and content stays registered with its ids, so content
      a mod adds needs a restart.
+   - Done, engine phase 3 client queries: `IClientConnection.World` exposes `IClientWorld` while playing, also
+     reachable from a live client block entity with `GetClientWorld()` during `Load` and `ClientTick`. Block states,
+     loaded chunks and deep copies of synced block entity NBT can be read on any thread. Game-thread queries find
+     live mod block entities and return detached entity snapshots by id or position box, with type, position and
+     copied synced metadata. Removal and unload discard live instances and detach their view; server `Level` stays
+     null on the client. See [plugin-content.md](plugin-content.md#client).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
      move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine, and screens in code
      (widgets, mods reading their menus' extra data and data slots, buttons); entity render layers (emissive and

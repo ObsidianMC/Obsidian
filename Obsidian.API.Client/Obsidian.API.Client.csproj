@@ -45,5 +45,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
+		<ProjectReference Include="..\Obsidian.Nbt\Nbt\Obsidian.Nbt.csproj" PrivateAssets="all" />
 	</ItemGroup>
 </Project>
