@@ -44,15 +44,25 @@ internal static class CombatItems
             else if (operation == "add_multiplied_base") baseMultiplier += value;
             else if (operation == "add_multiplied_total") totalMultiplier *= 1 + value;
         }
-        if (item.Patch.FirstOrDefault(component => component.Type == DataComponentType.AttributeModifiers) is
-            SimpleDataComponent<ImmutableArray<AttributeModifier>> custom)
+        // The stack's own modifiers, else a plugin item's defaults, else (below) a vanilla item's.
+        var own = item.Patch.FirstOrDefault(component => component.Type == DataComponentType.AttributeModifiers)
+            ?? item.Holder.DefaultComponents.FirstOrDefault(
+                component => component.Type == DataComponentType.AttributeModifiers);
+        if (own is SimpleDataComponent<ImmutableArray<AttributeModifier>> custom)
         {
-            // Protocol ids from the 1.21.11 vanilla attribute registry.
             var id = name switch
             {
-                "armor" => 0, "armor_toughness" => 1, "attack_damage" => 2, "attack_knockback" => 3,
-                "attack_speed" => 4, "entity_interaction_range" => 10, "fall_damage_multiplier" => 11,
-                "knockback_resistance" => 16, "safe_fall_distance" => 24, "sweeping_damage_ratio" => 30, _ => -1
+                "armor" => AttributeIds.Armor,
+                "armor_toughness" => AttributeIds.ArmorToughness,
+                "attack_damage" => AttributeIds.AttackDamage,
+                "attack_knockback" => AttributeIds.AttackKnockback,
+                "attack_speed" => AttributeIds.AttackSpeed,
+                "entity_interaction_range" => AttributeIds.EntityInteractionRange,
+                "fall_damage_multiplier" => AttributeIds.FallDamageMultiplier,
+                "knockback_resistance" => AttributeIds.KnockbackResistance,
+                "safe_fall_distance" => AttributeIds.SafeFallDistance,
+                "sweeping_damage_ratio" => AttributeIds.SweepingDamageRatio,
+                _ => -1
             };
             foreach (var modifier in custom.Value)
             {
@@ -91,6 +101,27 @@ internal static class CombatItems
 
     internal static int MaxDamage(ItemStack item) => item.RemoveComponents.Contains(DataComponentType.MaxDamage) ? 0 :
         item.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? item.Holder.MaxDamage;
+
+    /// <summary>
+    /// How much breaking <paramref name="block"/> wears <paramref name="tool"/>, like vanilla's <c>Item.mineBlock</c>:
+    /// its tool component's damage per block, or 0 for a block that breaks instantly or an item that isn't a tool.
+    /// </summary>
+    internal static int ToolDamage(ItemStack? tool, IBlock block)
+    {
+        if (tool is not { Count: > 0 }
+            || tool.RemoveComponents.Contains(DataComponentType.Tool)
+            || BlockPhysics.MiningHardness(block.GetHashCode()) == 0)
+        {
+            return 0;
+        }
+
+        if (tool.GetComponent<ToolDataComponent>(DataComponentType.Tool) is ToolDataComponent component)
+            return component.DamagePerBlock;
+
+        var vanilla = Component(tool, "tool");
+
+        return vanilla.ValueKind == JsonValueKind.Object ? (int)Number(vanilla, "damage_per_block", 1) : 0;
+    }
 
     internal static int PlayerArmorSlot(ItemStack? item)
     {

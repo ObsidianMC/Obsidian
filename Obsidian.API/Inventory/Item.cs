@@ -49,6 +49,18 @@ public sealed class Item : INetworkSerializable<Item>
     public int Enchantable { get; internal set; }
 
     /// <summary>
+    /// A plugin item's default components besides its stack size, durability and enchantability (see
+    /// <see cref="ItemProperties"/>): every new stack of the item has them unless it sets or removes its own. They
+    /// aren't sent or saved with stacks, as clients and saves know them from the item, like vanilla's. Empty for
+    /// vanilla items, whose defaults Obsidian reads from vanilla's data.
+    /// </summary>
+    /// <remarks>
+    /// Stacks take them as they're made, so a reload that changes them reaches stacks made, loaded or received
+    /// afterwards. They stay when the plugin unloads, with the item.
+    /// </remarks>
+    public ImmutableArray<DataComponent> DefaultComponents { get; internal set; } = [];
+
+    /// <summary>
     /// The plugin block the item places, or null. Vanilla's items place the block with their identifier.
     /// </summary>
     public BlockType? Block { get; internal set; }
@@ -76,6 +88,8 @@ public sealed class Item : INetworkSerializable<Item>
 }
 
 /// <summary>
-/// The plugin that registered an item, and what the item does.
+/// The plugin that registered an item, and what the item does. <c>TicksInInventory</c> is whether the behaviour
+/// implements <see cref="IItemBehavior.InventoryTickAsync"/>, so that players' inventories are only scanned for items
+/// that do something there.
 /// </summary>
-internal sealed record ItemBinding(IPluginContainer Owner, IItemBehavior? Behavior);
+internal sealed record ItemBinding(IPluginContainer Owner, IItemBehavior? Behavior, bool TicksInInventory);

@@ -22,6 +22,9 @@ public static partial class ItemsRegistry
     // Items by id and identifier. Registering replaces the table whole, so lookups never lock.
     private static ItemTable table;
 
+    // Whether a bound item's behaviour ticks in inventories, kept under the registering lock.
+    private static volatile bool anyTicksInInventory;
+
     // Builds the table once the generated static properties exist: field initializers across partial declarations run
     // in no particular order, but all before the static constructor.
     static ItemsRegistry()
@@ -47,6 +50,12 @@ public static partial class ItemsRegistry
     /// registered until the server stops, even once their plugin unloads, since stacks of them may still be around.
     /// </summary>
     public static bool HasPluginItems => table.ById.Length > VanillaCount;
+
+    /// <summary>
+    /// Whether any item has a behaviour that ticks in inventories (see <see cref="IItemBehavior.InventoryTickAsync"/>),
+    /// so that players' inventories aren't scanned when none does.
+    /// </summary>
+    internal static bool AnyTicksInInventory => anyTicksInInventory;
 
     public static Item Get(INetStreamReader reader) => Get(reader.ReadVarInt());
 
@@ -116,6 +125,8 @@ public static partial class ItemsRegistry
                 if (item.Binding?.Owner == plugin)
                     item.Binding = null;
             }
+
+            UpdateTicksInInventory();
         }
     }
 
@@ -135,10 +146,38 @@ public static partial class ItemsRegistry
             item.MaxStackSize = properties.MaxStackSize;
             item.MaxDamage = properties.MaxDamage;
             item.Enchantable = properties.Enchantable;
-            item.Binding = new ItemBinding(plugin, properties.Behavior);
+            item.DefaultComponents = properties.BuildDefaultComponents();
+            item.Binding = new ItemBinding(plugin, properties.Behavior, TicksInInventory(properties.Behavior));
+            UpdateTicksInInventory();
 
             return true;
         }
+    }
+
+    // Whether the behaviour's class implements InventoryTickAsync itself, rather than keeping the interface's default,
+    // which does nothing.
+    private static bool TicksInInventory(IItemBehavior? behavior)
+    {
+        if (behavior is null)
+            return false;
+
+        var map = behavior.GetType().GetInterfaceMap(typeof(IItemBehavior));
+        for (var i = 0; i < map.InterfaceMethods.Length; i++)
+        {
+            if (map.InterfaceMethods[i].Name == nameof(IItemBehavior.InventoryTickAsync))
+                return map.TargetMethods[i].DeclaringType != typeof(IItemBehavior);
+        }
+
+        return false;
+    }
+
+    private static void UpdateTicksInInventory()
+    {
+        var any = false;
+        foreach (var item in table.ById.AsSpan(VanillaCount))
+            any |= item.Binding?.TicksInInventory == true;
+
+        anyTicksInInventory = any;
     }
 
     private sealed class ItemTable(Item[] byId)

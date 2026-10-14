@@ -169,6 +169,13 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
             this.Placeholders[placeholder.Type] = placeholder;
         }
 
+        // A plugin item's own defaults, which replace the common ones of the same type (its attribute modifiers).
+        foreach (var placeholder in this.Holder.DefaultComponents)
+        {
+            this.InternalStorage[placeholder.Type] = placeholder;
+            this.Placeholders[placeholder.Type] = placeholder;
+        }
+
         foreach (var component in components)
             this[component.Type] = component;
     }

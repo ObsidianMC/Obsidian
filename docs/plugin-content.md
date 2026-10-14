@@ -394,6 +394,115 @@ while the box is still standing; malformed `limit_count` bounds are rejected whe
 Banner patterns, bees and skull profiles aren't taken yet, and neither is a plugin's block entity data: keeping it on
 the dropped item waits for plugin data component types.
 
+## Items
+
+```csharp
+var pickaxe = registry.RegisterItem("ruby:ruby_pickaxe", new ItemProperties
+{
+    MaxStackSize = 1,
+    MaxDamage = 900,
+    Enchantable = 12,
+    Tool = ComponentBuilder.Tool with
+    {
+        Rules =
+        [
+            new ToolRule
+            {
+                Blocks = new IdSet { Type = 0, TagName = "minecraft:incorrect_for_iron_tool" },
+                CorrectDropForBlocks = false
+            },
+            new ToolRule
+            {
+                Blocks = new IdSet { Type = 0, TagName = "minecraft:mineable/pickaxe" },
+                Speed = 7,
+                CorrectDropForBlocks = true
+            }
+        ]
+    },
+    AttributeModifiers =
+    [
+        new AttributeModifier
+        {
+            Id = AttributeIds.AttackDamage,
+            Name = "minecraft:base_attack_damage",
+            Value = 4,
+            Operation = AttributeOperation.Add,
+            Slot = AttributeSlot.MainHand
+        }
+    ],
+    Behavior = new RubyPickaxeBehavior()
+});
+
+registry.RegisterItem("ruby:ruby_apple", new ItemProperties
+{
+    Food = ComponentBuilder.Food with { Nutrition = 4, SaturationModifier = 0.3f }
+});
+
+registry.RegisterItem("ruby:ruby_helmet", new ItemProperties
+{
+    MaxStackSize = 1,
+    MaxDamage = 300,
+    Equippable = ComponentBuilder.Equippable with { Slot = EquipmentSlot.Helmet },
+    AttributeModifiers =
+    [
+        new AttributeModifier
+        {
+            Id = AttributeIds.Armor,
+            Name = "minecraft:armor.helmet",
+            Value = 3,
+            Operation = AttributeOperation.Add,
+            Slot = AttributeSlot.Head
+        }
+    ]
+});
+```
+
+A plugin's item is in its namespace and keeps its id across reloads; unloading the plugin drops its behaviour but
+not the item, its properties or its stacks.
+
+**Default components.** `MaxStackSize`, `MaxDamage` and `Enchantable`, and `Tool`, `Food`, `Consumable`,
+`Equippable` and `AttributeModifiers` built from `ComponentBuilder` with a `with` expression, are the item's default
+components, like a vanilla item's: every stack has them unless it sets or removes its own, and they aren't sent or
+saved with stacks, since the client mod registers the same item with the same properties (`Item.DefaultComponents`
+holds the component ones). Obsidian honours them as it does vanilla's:
+
+- `Tool`: its rules, the first matching one deciding, give the mining speed and whether the item is the correct
+  tool for a block's drops (by block tag, `Type = 0` and `TagName`, or by block ids); breaking a block that doesn't
+  break instantly, outside creative, wears the item by its damage per block. Mining speed is the client's: the
+  server doesn't time breaking, for any item.
+- `Food`: a player eats the item by using it (at any hunger with `CanAlwaysEat`), gaining its nutrition and
+  saturation. `Consumable` sets how it's eaten and the effects it gives; it defaults to vanilla's food
+  (`ComponentBuilder.Consumable`, 1.6 seconds) and does nothing without `Food`.
+- `Equippable`: a player wears the item in its slot by using it, or by placing it in the armour slot.
+  `ComponentBuilder.Equippable` has vanilla's defaults; set the slot.
+- `AttributeModifiers`: what the item adds while it's in the modifier's slot, by attribute id (`AttributeIds`).
+  Obsidian applies armour, armour toughness and knockback resistance from worn items and attack damage and speed
+  from held ones; modifiers of other attributes reach clients but don't change the player.
+
+Changing an item's defaults in a reload reaches stacks made, loaded or received afterwards; stacks already in memory
+keep the defaults they were made with until then.
+
+**Item hooks.** An item's `Behavior` (an `IItemBehavior`) gets these hooks, each doing nothing by default:
+
+- `UseAsync`: a player uses the item without aiming at a block (right-clicks the air), before vanilla's handling
+  (eating, equipping). Returning true handles the use.
+- `UseOnBlockAsync`: a player uses the item on a block, after the block's own use and before the item places a block.
+- `UseOnEntityAsync`: a player uses the item on a living entity (an `ItemUseOnEntityContext` with the `Entity`), on
+  the entity's level tick. It runs before the entity's own interaction (a villager's trading, feeding an animal, a
+  plugin entity type's behaviour), and returning true skips that. Vanilla gives the entity the first turn and the
+  item the next when the entity did nothing, but Obsidian's entity interactions don't report whether they did.
+- `InventoryTickAsync`: each server tick, on the player's tick, for every stack of the item in a player's inventory
+  (the hotbar and main inventory, then the off hand and armour), like vanilla's `inventoryTick`. The
+  `ItemInventoryTickContext` gives the stack, its `Slot` (5 to 8 armour, 9 to 35 the main inventory, 36 to 44 the
+  hotbar, 45 the off hand) and its `EquipmentSlot`: `MainHand` for the selected hotbar slot (`IsSelected`), the off
+  hand or an armour slot, null elsewhere. It runs holding the inventory's lock, like a click, so it never sees a
+  click half done: change the stack or the inventory through their own members, and the slots it changed are sent
+  to the player after the tick; don't wait on anything that takes the lock. Players' inventories are only scanned
+  while some item's behaviour implements this hook, so leave it out when the item doesn't need it.
+
+The hooks are calls into the plugin: none starts once the plugin begins unloading, and one that throws during the
+inventory tick is logged without stopping the tick.
+
 ## Entities
 
 ```csharp

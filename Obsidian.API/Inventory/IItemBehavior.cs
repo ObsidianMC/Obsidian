@@ -22,6 +22,26 @@ public interface IItemBehavior
     /// </summary>
     /// <returns>Whether the behaviour handled the use, which skips Obsidian's own handling.</returns>
     public ValueTask<bool> UseOnBlockAsync(ItemUseOnBlockContext context) => ValueTask.FromResult(false);
+
+    /// <summary>
+    /// Called when a player uses the item on a living entity (right-clicks it), on the entity's level tick, before the
+    /// entity's own interaction (a villager's trading, feeding an animal, a plugin entity type's behaviour).
+    /// </summary>
+    /// <returns>Whether the behaviour handled the use, which skips the entity's own interaction.</returns>
+    public ValueTask<bool> UseOnEntityAsync(ItemUseOnEntityContext context) => ValueTask.FromResult(false);
+
+    /// <summary>
+    /// Called every tick, on the player's tick, for each stack of the item in a player's inventory: their hotbar and
+    /// main inventory, then their off hand and armour, like vanilla's <c>inventoryTick</c>.
+    /// </summary>
+    /// <remarks>
+    /// It runs holding the player's inventory lock, which clicks take too, so that it never sees a click half done.
+    /// Change the stack or the inventory through their own members (a slot changed this way is sent to the player
+    /// after the tick), and don't wait on anything that clicks or the inventory lock wait on. Players' inventories
+    /// are only scanned for items whose behaviour implements this method, so leave it out when the item doesn't
+    /// need it.
+    /// </remarks>
+    public ValueTask InventoryTickAsync(ItemInventoryTickContext context) => ValueTask.CompletedTask;
 }
 
 /// <summary>
@@ -49,4 +69,39 @@ public sealed class ItemUseOnBlockContext : ItemUseContext
     public required BlockFace Face { get; init; }
 
     public required IBlock Block { get; init; }
+}
+
+/// <summary>
+/// A player using an item on a living entity.
+/// </summary>
+public sealed class ItemUseOnEntityContext : ItemUseContext
+{
+    public required ILiving Entity { get; init; }
+}
+
+/// <summary>
+/// A stack of an item ticking in a player's inventory.
+/// </summary>
+public sealed class ItemInventoryTickContext
+{
+    public required IPlayer Player { get; init; }
+
+    public required ItemStack Stack { get; init; }
+
+    /// <summary>
+    /// The stack's slot in the player's inventory: 5 to 8 for the head, chest, legs and feet, 9 to 35 for the main
+    /// inventory, 36 to 44 for the hotbar and 45 for the off hand.
+    /// </summary>
+    public required int Slot { get; init; }
+
+    /// <summary>
+    /// The equipment slot the stack is in: <see cref="Inventory.EquipmentSlot.MainHand"/> for the selected hotbar
+    /// slot, the off hand or an armour slot; null elsewhere in the inventory.
+    /// </summary>
+    public EquipmentSlot? EquipmentSlot { get; init; }
+
+    /// <summary>
+    /// Whether the stack is in the player's selected hotbar slot, their main hand.
+    /// </summary>
+    public bool IsSelected => this.EquipmentSlot == Inventory.EquipmentSlot.MainHand;
 }

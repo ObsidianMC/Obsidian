@@ -46,7 +46,9 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
 2. **Content registries** (in progress)
    - Done for items: `Item` is a registered item type (one instance per item, keyed by identifier) rather than a
      struct keyed by the old `Material` enum. Plugins register items in their namespace with
-     `IPluginRegistry.RegisterItem`, with an `IItemBehavior` for using them. An item keeps its instance and id across
+     `IPluginRegistry.RegisterItem`, with an `IItemBehavior` for using them (in the air, on a block or on an
+     entity) and ticking in inventories, and default tool, food, equippable and attribute modifier components (see
+     [plugin-content.md](plugin-content.md#items)). An item keeps its instance and id across
      reloads; only its behaviour is replaced. Once a plugin registered items, vanilla clients are refused, NeoForge
      clients are sent the item registry with NeoForge's registry sync and Fabric clients with Fabric API's, before
      vanilla's registries. A plugin's items
