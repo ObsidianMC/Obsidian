@@ -107,7 +107,7 @@ public partial class Player
         {
             this.CancelEating();
             this.CancelWeaponUse();
-            this.Vehicle?.Dismount(this);
+            this.LeaveVehicle();
 
             await transfers;
             await this.LoseItemsAtDeathAsync(death);

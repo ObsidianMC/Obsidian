@@ -210,7 +210,7 @@ public static partial class LootTableJson
 
                     break;
                 case "vehicle":
-                    if (!MatchesEntity((entity as IPlayer)?.Vehicle, property.Value, context))
+                    if (!MatchesEntity(entity.Vehicle, property.Value, context))
                         return false;
 
                     break;

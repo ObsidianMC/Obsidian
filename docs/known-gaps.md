@@ -3,28 +3,19 @@
 Gaps found during the mod-system work that don't limit what mods can do: vanilla parity, test plumbing and a
 contract left weaker on purpose. Each entry says what's missing, why it was left and where to start.
 
-## Sharing vanilla's portal block
+## Saved passenger trees and leads
 
-**Status:** dedicated plugin portal blocks and the generalised Nether registration work; shared block ownership
-is deferred. Each active portal block currently has one portal type. Plugins cannot register another type using
-`minecraft:nether_portal` alongside the built-in Nether type.
+**Status:** riding is a live relationship between any two entities and travel carries whole passenger trees; leads
+held by entities are read, saved, shown and dropped as vanilla does around travel (see
+[plugin-content.md](plugin-content.md#travel-and-portals)). Chunk saves still store each entity on its own, so a
+mob-on-mob ride (other than the skeleton trap horse's rider, which finds its skeleton again by UUID) is lost on
+reload; a vanilla save's nested `Passengers` list is kept as saved but its passengers aren't spawned. Using a lead on
+a mob, fence knots (a knot-tied `leash` field is kept untouched) and the lead's elastic pull and snapping distance are
+not modelled.
 
-A shared block needs persistent per-frame type ownership: after unload, its frame predicate must be released,
-yet the remaining vanilla portal blocks must not begin using Nether behaviour. Guessing from a currently loaded
-predicate would also change behaviour after restart without the plugin.
-
-**Where to start:** persist a frame's portal identifier independently of its blocks, then resolve contact, search,
-frame updates and reload by that identity. Keep ordinary command-placed vanilla portals working.
-
-## Travel passengers and leashes
-
-**Status:** the existing player passengers of mobs travel with their vehicle and remount. General entity passenger
-trees (including the NPC skeleton rider of a skeleton horse) and leashes are not modelled by the shared riding API.
-Unmodelled passenger/leash NBT is preserved, but live travel does not migrate those relationships or drop leash
-items as vanilla does. End portals and gateways retain their existing player-only transit.
-
-**Where to start:** make riding and leashes entity relationships, then traverse passengers with the same level
-teleport API. Capture vanilla's leash detach/drop behaviour before modelling it.
+**Where to start:** save passengers nested in their root vehicle's `Passengers` list like vanilla's
+`saveAsPassenger`, skipping them at the top level, and spawn and seat them when the root loads. Leads next need the
+lead item's use on mobs and fences, the knot entity and `Leashable`'s distance checks.
 
 ## Item components without a saved codec
 

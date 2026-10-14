@@ -144,8 +144,7 @@ public partial class Camel : AbstractHorse
     protected override void TickRidden()
     {
         // Camel controls replace the horse's taming and vertical jump behavior.
-        foreach (var passenger in Passengers.ToArray())
-            if (passenger.Level != Level || !passenger.Alive || passenger.Sneaking || !Alive) Dismount(passenger);
+        DropInvalidPassengers();
         var charge = Interlocked.Exchange(ref pendingDashCharge, -1);
         if (Rider == null)
         {

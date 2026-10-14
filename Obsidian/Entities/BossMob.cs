@@ -16,6 +16,9 @@ public abstract class BossMob : PathfinderMob
         .Where(player => player.TrackedEntities.TryGetValue(EntityId, out var uuid) && uuid == Uuid);
     protected override bool CanDespawn => false;
 
+    // Vanilla's dragon and wither never use portals.
+    internal override bool CanUsePortals => false;
+
     public override async ValueTask TickAsync()
     {
         await base.TickAsync();

@@ -21,9 +21,9 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// What a complete chunk keeps across a restart: its entities, its opened containers, and the state of the structure
-/// starting in it. The fixture saves the chunk through a region, then reads it back with a fresh region and structure
-/// manager, like a server starting again.
+/// What a complete chunk keeps across a restart: its entities, its opened containers, its portal claims and the state
+/// of the structure starting in it. The fixture saves the chunk through a region, then reads it back with a fresh
+/// region and structure manager, like a server starting again.
 /// </summary>
 public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) : IClassFixture<WorldPersistence.RestartedChunk>
 {
@@ -89,6 +89,11 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
         Assert.Equal("minecraft:chests/simple_dungeon", unopened.LootTable);
         Assert.Equal(99L, unopened.LootTableSeed);
         Assert.False(unopened.Inventory.HasItems());
+
+        // So does the portal type that lit a portal block, whether or not that type is registered.
+        Assert.Equal(
+            new WorldData.Portals.PortalOwner("travelprobe:shared", "minecraft:nether_portal"),
+            chunk.PortalOwners[RestartedChunk.Chest + Vector.Up]);
     }
 
     [Fact]
@@ -223,6 +228,10 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
             unopened.LootTable = "minecraft:chests/simple_dungeon";
             unopened.LootTableSeed = 99L;
             chunk.SetBlockEntity(UnopenedChest.X, UnopenedChest.Y, UnopenedChest.Z, unopened);
+
+            // A portal block a plugin's portal type lit, sharing vanilla's block.
+            chunk.PortalOwners[Chest + Vector.Up] = new WorldData.Portals.PortalOwner(
+                "travelprobe:shared", "minecraft:nether_portal");
 
             // Entities of the level standing in the chunk.
             var witch = new Living

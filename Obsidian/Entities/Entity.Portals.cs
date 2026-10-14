@@ -40,15 +40,25 @@ public partial class Entity
         }, TaskScheduler.Default);
     }
 
-    private int TravelPortalCooldown => this is IPlayer || this is Mob { TravelPassengers.Count: > 0 } ? 10 : 300;
+    /// <summary>Whether the entity's type uses portals at all.</summary>
+    internal virtual bool CanUsePortals => true;
+
+    // Vanilla's getDimensionChangingDelay: a vehicle whose first passenger is a player waits like a player.
+    private int TravelPortalCooldown => this is IPlayer || this.Passengers is [Player, ..] ? 10 : 300;
 
     /// <summary>Called once after each non-player entity tick, independently of its movement implementation.</summary>
     internal async Task TickEntityPortalAsync()
     {
-        var contact = this.Health > 0 ? await PortalTravel.FindContactAsync(this) : null;
+        // Like vanilla's canUsePortal, only a living root vehicle uses portals; it carries its passengers along.
+        var contact = this.Health > 0 && this.IsActive && this.Vehicle is null && this.CanUsePortals
+            ? await PortalTravel.FindContactAsync(this, includeEnd: true, includeGateways: true)
+            : null;
         if (this.travelPortalDestination is Task<PortalDestination?> pending)
         {
-            if (contact?.Type != this.travelPortalType)
+            // An End portal or gateway trip, which has no portal type, completes once started, as vanilla's
+            // happens within the tick of contact.
+            var stillInside = this.travelPortalType is null || contact?.Type == this.travelPortalType;
+            if (!stillInside)
                 this.travelPortalGeneration++;
 
             if (!pending.IsCompleted)
@@ -58,8 +68,8 @@ public partial class Entity
             var destination = await pending;
             try
             {
-                if (destination is not null && contact?.Type == this.travelPortalType
-                    && destination.Type?.Generation == destination.Generation)
+                if (destination is not null && stillInside
+                    && (destination.Type is null || destination.Type.Generation == destination.Generation))
                 {
                     this.Motion = destination.Motion;
                     await this.TeleportAsync(
@@ -83,9 +93,15 @@ public partial class Entity
             return;
         }
 
-        if (contact is not PortalContact portal || portal.Type is not PortalType type)
+        if (contact is not PortalContact portal)
         {
             this.travelPortalTime = Math.Max(0, this.travelPortalTime - 4);
+            return;
+        }
+
+        if (portal.Type is not PortalType type)
+        {
+            this.StartEndTravel(portal);
             return;
         }
 
@@ -107,19 +123,40 @@ public partial class Entity
         if (this.travelPortalTime++ < delay)
             return;
 
+        this.travelPortalTime = 0;
+        this.StartTravelPreparation(
+            canContinue => PortalTravel.PrepareAsync(this, type, portal.Position, canContinue));
+    }
+
+    // End portals and gateways send entities without waiting, like vanilla's zero transition time; a gateway only
+    // when it isn't cooling down from the last entity it sent.
+    private void StartEndTravel(PortalContact portal)
+    {
+        this.travelPortalType = null;
+        this.travelPortalTime = 0;
+        if (portal.BlockId == BlockIds.EndGateway
+            && (this.Level is not AbstractLevel level || !level.TryUseEndGateway(portal.Position)))
+            return;
+
+        this.StartTravelPreparation(canContinue => EndTravel.PrepareAsync(this, portal, canContinue));
+    }
+
+    // Prepares the destination in the background; it lapses if the entity dies, leaves or starts another trip.
+    private void StartTravelPreparation(Func<Func<bool>, Task<PortalDestination?>> prepare)
+    {
         var generation = ++this.travelPortalGeneration;
         var source = this.Level;
-        this.travelPortalTime = 0;
         this.travelPortalDestination = PrepareAsync();
 
         async Task<PortalDestination?> PrepareAsync()
         {
             try
             {
-                return await PortalTravel.PrepareAsync(this, type, portal.Position,
-                    () => this.Health > 0 && this.Level == source && this.travelPortalGeneration == generation
-                        && source is AbstractLevel resident
-                        && resident.GetRegionForLocation(this.Position)?.Entities.ContainsKey(this.EntityId) == true);
+                return await prepare(() => this.Health > 0
+                    && this.Level == source
+                    && this.travelPortalGeneration == generation
+                    && source is AbstractLevel resident
+                    && resident.GetRegionForLocation(this.Position)?.Entities.ContainsKey(this.EntityId) == true);
             }
             catch (Exception exception)
             {

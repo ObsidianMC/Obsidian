@@ -250,7 +250,11 @@ public partial class Mob
     public override async ValueTask TickAsync()
     {
         await base.TickAsync();
-        if (!UsesAi || IsRemoved)
+        if (IsRemoved)
+            return;
+
+        TickLeash();
+        if (!UsesAi)
             return;
 
         InitializeAi();
@@ -330,7 +334,16 @@ public partial class Mob
 
         var oldPosition = Position;
         var oldMovementFlags = MovementFlags;
-        var position = Travel();
+
+        // A passenger is carried: its vehicle moves it to its seat (see PositionPassengers). It gets off a vehicle
+        // that's gone or elsewhere, as players' vehicles don't check their passengers.
+        if (Vehicle is Entity vehicle && (!vehicle.IsActive || vehicle.Level != Level))
+            LeaveVehicle();
+
+        if (Vehicle is not null)
+            Motion = VectorD.Zero;
+
+        var position = Vehicle is null ? Travel() : Position;
         LastPosition = oldPosition;
         if (Level is AbstractLevel level && !level.TryMoveEntity(this, oldPosition, position))
         {
@@ -341,7 +354,7 @@ public partial class Mob
 
         Position = position;
         BoundingBox = Dimension.CreateBBFromPosition(position);
-        UpdateRider();
+        PositionPassengers();
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
         SynchronizeMovement(oldPosition);
     }
@@ -544,7 +557,8 @@ public partial class Mob
 
     public override async ValueTask RemoveAsync()
     {
-        Dismount();
+        EjectPassengers();
+        LeaveVehicle();
         IsRemoved = true;
         goals.Cancel();
         TargetGoals.Cancel();

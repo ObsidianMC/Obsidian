@@ -17,7 +17,12 @@ internal sealed record PortalDestination(
 /// <summary>Rectangular transit shared by players and other entities; preparation does not block ticks.</summary>
 internal static class PortalTravel
 {
-    internal static async ValueTask<PortalContact?> FindContactAsync(IEntity entity, bool includeEnd = false)
+    /// <summary>
+    /// The portal block the entity touches, if any. <paramref name="includeEnd"/> adds End portals and
+    /// <paramref name="includeGateways"/> End gateways, whose contacts have no <see cref="PortalType"/>.
+    /// </summary>
+    internal static async ValueTask<PortalContact?> FindContactAsync(
+        IEntity entity, bool includeEnd = false, bool includeGateways = false)
     {
         var width = entity.Dimension.Width > 0 ? entity.Dimension.Width : 0.6;
         var height = entity.Dimension.Height > 0 ? entity.Dimension.Height
@@ -35,7 +40,11 @@ internal static class PortalTravel
                         && min.Y < y + 0.75 && max.Y > y + 0.375)
                         return new(position, BlockIds.EndPortal, null);
 
-                    if (block is null || PortalTypesRegistry.ForBlock(block.RegistryId) is not PortalType type)
+                    // End gateways are whole blocks to entities inside them.
+                    if (includeGateways && block?.RegistryId == BlockIds.EndGateway)
+                        return new(position, BlockIds.EndGateway, null);
+
+                    if (block is null || TypeAt(entity.Level, position, block) is not PortalType type)
                         continue;
 
                     // Vanilla's thin portal contact shape is a quarter block wide, centred in its plane.
@@ -47,6 +56,10 @@ internal static class PortalTravel
 
         return null;
     }
+
+    private static PortalType? TypeAt(ILevel level, Vector position, IBlock block) => level is AbstractLevel resident
+        ? resident.Portals.TypeAt(position, block)
+        : PortalTypesRegistry.ForBlock(block.RegistryId);
 
     internal static async Task<PortalDestination?> PrepareAsync(
         Entity entity, PortalType type, Vector entrance, Func<bool> canContinue)
@@ -92,7 +105,8 @@ internal static class PortalTravel
             var normal = axis == "x"
                 ? entity.Position.Z - sourceFrame.Origin.Z - 0.5
                 : entity.Position.X - sourceFrame.Origin.X - 0.5;
-            var frame = await destination.Portals.FindOrCreateExitAsync(target, axis, CanContinue, properties);
+            var frame = await destination.Portals.FindOrCreateExitAsync(
+                target, axis, CanContinue, type, properties);
             if (frame is null || !CanContinue())
                 return null;
             var exit = frame.Value;

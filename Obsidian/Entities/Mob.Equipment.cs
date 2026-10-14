@@ -179,7 +179,7 @@ public partial class Mob
     {
         base.SpawnEntity(velocity, additionalData);
         SynchronizeEquipment();
-        if (Rider != null)
+        if (Passengers.Count > 0)
             SynchronizePassengers();
     }
 }

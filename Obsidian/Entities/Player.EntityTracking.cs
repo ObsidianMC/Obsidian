@@ -27,7 +27,16 @@ public partial class Player
             var data = entity is Arrow arrow ? arrow.Owner?.EntityId ?? 0 : 0;
             await Client.QueuePacketAsync(entity.CreateSpawnPacket(new Velocity(entity.Motion.X, entity.Motion.Y, entity.Motion.Z), data));
             if (entity is Mob mob)
+            {
                 await mob.SendEquipmentToAsync(this);
+                await mob.SendLeashToAsync(this);
+            }
+
+            // Like vanilla's pairing data: who rides the entity, and the seats of the vehicle it rides.
+            await entity.SendPassengersToAsync(this);
+            if (entity.Vehicle is Entity vehicle)
+                await vehicle.SendPassengersToAsync(this);
+
             if (entity is Living living)
                 foreach (var (id, effect) in living.ActivePotionEffects)
                     await Client.QueuePacketAsync(new UpdateMobEffectPacket(entity.EntityId, id, effect.CurrentDuration)
