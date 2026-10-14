@@ -381,6 +381,42 @@ public sealed class WorldBlockEntities : IDisposable
         await context.World.DoWorldTickAsync();
 
         Assert.IsAssignableFrom<ContainerBlockEntity>(generating.GetBlockEntity(20, 70, 4));
+
+        // A remote edit is saved immediately, including outside simulation distance and before another tick.
+        human.Position = new VectorD(4096, 70, 4096);
+        restored.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 2));
+        var remoteSave = BlockEntityNbt.Save(restored)!;
+        Assert.Equal(2, ((NbtList)remoteSave["Items"]).OfType<NbtCompound>().Single().GetInt("count"));
+
+        // Chunk eviction waits for an in-flight click, freezes its final contents and closes remote viewers.
+        await human.OpenInventoryAsync(restored.Inventory);
+        var region = Assert.IsType<Region>(context.World.LoadRegionByChunk(0, 0));
+        Task eviction;
+        using (await restored.Inventory.LockAsync())
+        {
+            eviction = Task.Run(() => region.UnloadChunk(0, 0));
+            restored.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 1));
+            Assert.False(eviction.IsCompleted);
+        }
+
+        await eviction;
+        Assert.True(restored.Inventory.IsRetired);
+        Assert.Null(human.OpenedContainer);
+        await human.OpenInventoryAsync(restored.Inventory);
+        Assert.Null(human.OpenedContainer);
+
+        var loaded = Assert.IsType<Chunk>(await region.GetChunkAsync(0, 0));
+        await context.World.DoWorldTickAsync();
+        var afterEviction = Assert.IsAssignableFrom<ContainerBlockEntity>(loaded.GetBlockEntity(4, 70, 4));
+        Assert.Equal(1, afterEviction.Inventory[0]!.Count);
+        Assert.False(afterEviction.Inventory.IsRetired);
+
+        // The unloaded plugin's data still drops its items when any path removes the block.
+        var livePlugin = Assert.Single(manager.Plugins);
+        await manager.UnloadPluginAsync(livePlugin);
+        await context.World.SetBlockAsync(position, BlocksRegistry.Air);
+        Assert.Equal(1, ItemsIn(context.World).Where(drop => drop.Item.Is(ItemsRegistry.Diamond))
+            .Sum(drop => drop.Item.Count));
     }
 
     [Fact(DisplayName = "A container's removal takes its items under the click lock, and closes its windows",

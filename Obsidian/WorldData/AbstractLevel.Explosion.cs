@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
@@ -171,11 +172,25 @@ public abstract partial class AbstractLevel
 
             var block = terrain.GetBlock(position)!;
             var parts = await TwoPartBlockBreak.PrepareAsync(this, position, block);
+            BlockEntityComponents captured;
+            try
+            {
+                captured = await BlockEntityComponents.CaptureAsync(this, parts.DropPosition, null);
+            }
+            catch (Exception ex)
+            {
+                Log.ExplosionLootFailed(Logger, ex, block.UnlocalizedName, position);
+                continue;
+            }
+
+            await using var blockEntity = captured;
+            if (!blockEntity.CanBreak)
+                continue;
+
             List<ItemStack> drops;
             try
             {
                 // What the block entity gives the loot, taken before the block goes; no player breaks it.
-                var blockEntity = await BlockEntityComponents.CaptureAsync(this, parts.DropPosition, breaker: null);
                 drops = await BlockLoot.GetDropsAsync(
                     this,
                     parts.DropPosition,
@@ -190,14 +205,22 @@ public abstract partial class AbstractLevel
             catch (Exception ex)
             {
                 Log.ExplosionLootFailed(Logger, ex, block.UnlocalizedName, position);
+                if (blockEntity.KeepsContents)
+                    continue;
+
                 drops = [];
             }
+
+            if (!await this.TrySetBlockAsync(position, BlocksRegistry.Air, BlockUpdateFlags.All,
+                current => current.GetHashCode() == block.GetHashCode()
+                    && (blockEntity.Source is null || parts.DropPosition != position
+                        || ReferenceEquals(this.GetResidentBlockEntity(position), blockEntity.Source))))
+                continue;
 
             await parts.RemovePartnerAsync(this);
             if (parts.PartnerPosition is Vector partnerPosition)
                 removed.Add(partnerPosition);
 
-            await SetBlockAsync(position, BlocksRegistry.Air, true);
             foreach (var item in drops)
             {
                 var drop = new ItemEntity

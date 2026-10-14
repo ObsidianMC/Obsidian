@@ -32,6 +32,11 @@ public abstract partial class AbstractLevel
     private LevelBlockEntityHost BlockEntityHost =>
         LazyInitializer.EnsureInitialized(ref this.blockEntityHost, () => new LevelBlockEntityHost(this));
 
+    /// <summary>Reads the resident entity for identity checks under the block mutation lock.</summary>
+    internal IBlockEntity? GetResidentBlockEntity(Vector position) =>
+        this.GetLoadedChunk(position.X.ToChunkCoord(), position.Z.ToChunkCoord())
+            ?.GetBlockEntity(position.X, position.Y, position.Z);
+
     /// <summary>
     /// Places a block entity in the level, which it reaches through <see cref="BlockEntity.Level"/> from then on.
     /// </summary>
@@ -59,13 +64,15 @@ public abstract partial class AbstractLevel
     /// <see cref="RunBlockEntityRemovalAsync"/> (or queues with <see cref="QueueBlockEntityRemoval"/>) once it let go
     /// of its locks; or null.
     /// </returns>
-    internal BlockEntity? UpdateBlockEntity(IChunk chunk, Vector position, IBlock block)
+    internal BlockEntity? UpdateBlockEntity(
+        IChunk chunk, Vector position, IBlock block, BlockEntity? prepared = null)
     {
         // The flag is much cheaper than the type lookup, and blocks without it have no type.
         var type = block.HasBlockEntity() ? block.BlockEntityType() : null;
         var existing = chunk.GetBlockEntity(position.X, position.Y, position.Z);
 
-        if (existing is not null && string.Equals(existing.Id, type, StringComparison.OrdinalIgnoreCase))
+        if (prepared is null && existing is not null
+            && string.Equals(existing.Id, type, StringComparison.OrdinalIgnoreCase))
             return null;
 
         BlockEntity? removed = null;
@@ -82,10 +89,11 @@ public abstract partial class AbstractLevel
 
         if (type is not null)
         {
-            var created = BlockEntityNbt.Create(type, position, logger: this.Logger);
+            var created = prepared ?? BlockEntityNbt.Create(type, position, logger: this.Logger);
             this.AttachBlockEntity(created);
             chunk.SetBlockEntity(position.X, position.Y, position.Z, created);
-            this.KeepIfUnloading(chunk, created);
+            if (prepared is null)
+                this.KeepIfUnloading(chunk, created);
         }
 
         return removed;
@@ -161,8 +169,6 @@ public abstract partial class AbstractLevel
             if (container.LootTable is not string lootTable)
                 return;
 
-            container.LootTable = null;
-
             // Vanilla generates nothing for unknown tables.
             var resolver = PluginLootTables.CaptureResolver();
             var table = resolver(lootTable) ?? LootTable.Empty;
@@ -184,6 +190,7 @@ public abstract partial class AbstractLevel
                 });
             }
 
+            container.LootTable = null;
             container.LootTableSeed = 0;
         }
     }
@@ -425,6 +432,13 @@ public abstract partial class AbstractLevel
         }
     }
 
+    /// <summary>Finishes a placement that raced the plugin's unloading sweep, after transferring its items.</summary>
+    internal void CompleteBlockEntityPlacement(IChunk chunk, BlockEntity? entity)
+    {
+        if (entity is not null)
+            this.KeepIfUnloading(chunk, entity);
+    }
+
     // A plugin's block entity created as its plugin started unloading may be stored after the unloading swept the
     // chunk (see PluginBlockEntities): it's kept as its data then, like the others.
     private void KeepIfUnloading(IChunk chunk, BlockEntity created)
@@ -463,6 +477,9 @@ public abstract partial class AbstractLevel
                 foreach (var item in contents)
                     this.DropItemStack(container.BlockPosition, item);
 
+                break;
+            case DataBlockEntity data when data.KeptContainer() is ContainerBlockEntity kept:
+                await this.RemoveContentsAsync(kept);
                 break;
             case DataBlockEntity { DropsItems: true } data:
                 this.DropSavedItems(data);

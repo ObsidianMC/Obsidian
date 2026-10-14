@@ -367,7 +367,7 @@ public partial class UseItemOnPacket
         }
 
         // What the placed item holds goes to its block entity, like a shulker box's items.
-        var placedItem = new ItemStack(currentItem, 1);
+        var placement = new BlockPlacement(player, handSlot, currentItem);
 
         // The event's handlers may have filled the target or changed the player's hand while it ran: both are checked
         // again in the same step as the block is placed, and the item is only used once it is.
@@ -377,7 +377,8 @@ public partial class UseItemOnPacket
             BlockUpdateFlags.All,
             current => (pouring || current.CanBeReplaced())
                 && ReferenceEquals(player.Inventory.GetItem(handSlot), currentItem)
-                && currentItem.Count > 0);
+                && currentItem.Count > 0,
+            placement);
 
         if (!stored)
         {
@@ -385,11 +386,7 @@ public partial class UseItemOnPacket
             return;
         }
 
-        await BlockEntityComponents.ApplyAsync(placeLevel, position, placedItem);
         placeLevel.BlockUpdates.OnPlacedByPlayer(position, block);
-
-        if (player.GameMode != GameMode.Creative)
-            player.Inventory.RemoveItem(handSlot, 1);
 
         var center = (VectorD)position + new VectorD(0.5, 0.5, 0.5);
         placeLevel.EmitGameEvent(MobGameEvent.BlockPlace, center, player, affectedBlock: block);

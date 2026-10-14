@@ -1,3 +1,5 @@
+using Obsidian.API.Blocks;
+
 namespace Obsidian.WorldData;
 
 /// <summary>
@@ -8,7 +10,8 @@ internal sealed record TwoPartBlockBreak(
     Vector DropPosition,
     IBlock DropState,
     Vector? PartnerPosition = null,
-    IBlock? PartnerReplacement = null)
+    IBlock? PartnerReplacement = null,
+    IBlock? ExpectedPartner = null)
 {
     internal static async ValueTask<TwoPartBlockBreak> PrepareAsync(ILevel level, Vector position, IBlock block)
     {
@@ -68,13 +71,16 @@ internal sealed record TwoPartBlockBreak(
         var replacement = partnerProperties.GetValueOrDefault("waterlogged") == "true"
             || partner.Is(BlockIds.TallSeagrass) ? BlocksRegistry.Water : BlocksRegistry.Air;
         return properties[property] == dropPart
-            ? new TwoPartBlockBreak(position, block, partnerPosition, replacement)
-            : new TwoPartBlockBreak(partnerPosition, partner, partnerPosition, replacement);
+            ? new TwoPartBlockBreak(position, block, partnerPosition, replacement, partner)
+            : new TwoPartBlockBreak(partnerPosition, partner, partnerPosition, replacement, partner);
     }
 
     internal async ValueTask RemovePartnerAsync(ILevel level)
     {
-        if (this.PartnerPosition is Vector position)
-            await level.SetBlockAsync(position, this.PartnerReplacement!, true);
+        if (this.PartnerPosition is Vector position && level is AbstractLevel concrete)
+        {
+            await concrete.TrySetBlockAsync(position, this.PartnerReplacement!, BlockUpdateFlags.All,
+                current => current.GetHashCode() == this.ExpectedPartner!.GetHashCode());
+        }
     }
 }

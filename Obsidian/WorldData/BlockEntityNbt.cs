@@ -33,6 +33,18 @@ internal static partial class BlockEntityNbt
                 tag.Add(name, child);
         }
 
+        if (saved is ContainerBlockEntity { SavesOnAnyThread: false } container)
+        {
+            container.SnapshotContents(tag);
+            // Host-owned semantics survive plugin unloads and server restarts without retaining plugin classes.
+            tag.Remove("obsidian:container");
+            tag.Add(new NbtCompound("obsidian:container")
+            {
+                new NbtTag<int>("size", container.Inventory.Size),
+                new NbtTag<bool>("drops_contents", container.DropsContents)
+            });
+        }
+
         return tag;
     }
 

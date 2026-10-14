@@ -127,7 +127,7 @@ public class Region : IRegion
         await this.initialization.Value;
 
         foreach (Chunk c in loadedChunks.Cast<Chunk>())
-            await SerializeChunkAsync(c);
+            await SerializeChunkAsync(c, unloading: this.lightingRetired);
 
         regionFile.Flush();
         this.entityRegionFile.Flush();
@@ -495,6 +495,7 @@ public class Region : IRegion
 
         await using MemoryStream strm = new();
         NbtList? entities = null;
+        var retired = new List<BaseContainer>();
         await using (NbtWriterStream writer = new(strm, ChunkCompression, ""))
         {
             // Snapshot blocks, fluid ticks and entities together; take the generator's lock before the fluid lock.
@@ -512,6 +513,9 @@ public class Region : IRegion
                     ? loadedStarts
                     : this.SaveStructureStarts(current.X, current.Z, loadedStarts);
 
+                if (unloading && current is Chunk retiring)
+                    retired = BlockEntityLifecycle.Retire(retiring);
+
                 SerializeChunk(writer, current, structureStarts);
 
                 if (current.IsGenerated && current is Chunk complete)
@@ -522,6 +526,9 @@ public class Region : IRegion
 
             await writer.TryFinishAsync();
         }
+
+        foreach (var inventory in retired)
+            await AbstractLevel.CloseWindowsAsync(inventory);
 
         // Disposing the writer finishes the compression trailer before copying the bytes.
         await regionFile.SetChunkAsync(x, z, strm.ToArray());
