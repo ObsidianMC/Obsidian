@@ -88,7 +88,7 @@ public abstract partial class AbstractLevel
     private void BroadcastCampfire(Vector point, CampfireBlockEntity campfire, IChunk chunk)
     {
         var nbt = BlockEntityNbt.Save(campfire, chunk) ?? new NbtCompound();
-        var packet = BlockEntityDataPacket.Create(point, BlockPhysics.BlockEntityTypeId(campfire.Id), nbt);
+        var packet = BlockEntityDataPacket.Create(point, BlockEntityType.Campfire, nbt);
         foreach (var player in PlayersInRange(point))
             player.SendPacket(packet);
     }
