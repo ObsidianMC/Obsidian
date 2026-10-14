@@ -46,6 +46,11 @@ read the current light, and before a chunk is saved. Players watching a changed 
 tick containing the changed sections, including sections that became dark. Dimensions without `HasSkylight` do not
 propagate sky light.
 
+Direct `IChunk.SetBlock` and `IChunkSection.SetBlock` calls on loaded, complete chunks use the same lock and relight
+hook, with section coordinates local to its 16-block cube. Unfinished generation writes keep their direct storage
+path. Loading, generation completion and unloading attach or detach lighting with the chunk slot's lifecycle;
+reading a loaded chunk does not acquire the tick lock.
+
 Light stops at unloaded or unfinished chunks. When a complete neighbor loads, both sides of its shared borders are
 reconciled on the next tick. Unlike vanilla's chunk light storage, Obsidian stores arrays only inside the build
 range; the top sky source is virtual, and the extra sections outside the build range are not sent. Lighting does

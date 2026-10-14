@@ -187,13 +187,10 @@ public abstract partial class AbstractLevel : ILevel
 
     internal IChunk? GetLoadedChunk(int chunkX, int chunkZ)
     {
-        var chunk = GetRegionForChunk(chunkX, chunkZ) is Region region
+        // Entity initialization calls this under EntityLock; reads must never acquire the fluid tick lock.
+        return GetRegionForChunk(chunkX, chunkZ) is Region region
             ? region.GetLoadedChunk(NumericsHelper.Modulo(chunkX, 32), NumericsHelper.Modulo(chunkZ, 32))
             : null;
-        if (chunk is not null)
-            this.Lighting.Track(chunk);
-
-        return chunk;
     }
 
     internal bool TryMoveEntity(IEntity entity, VectorD from, VectorD to)
@@ -299,7 +296,6 @@ public abstract partial class AbstractLevel : ILevel
 
             LoadedChunks.Add(packedXZ);
             this.Fluids.Track(chunk);
-            this.Lighting.Track(chunk);
             return chunk;
         }
 
@@ -642,7 +638,6 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal void QueueEntitySpawn(Chunk chunk)
     {
-        this.Lighting.Track(chunk);
         this.entitySpawns.Enqueue(chunk);
     }
 
@@ -706,6 +701,7 @@ public abstract partial class AbstractLevel : ILevel
                 LockChunk = this.Generator.LockChunkAsync,
                 FluidTickLock = this.Fluids.TickLock,
                 FlushLight = this.Lighting.Flush,
+                LightLoaded = this.Lighting.Track,
                 LightUnloaded = this.Lighting.Untrack,
                 EntitiesLoaded = this.QueueEntitySpawn,
                 SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null
@@ -729,7 +725,20 @@ public abstract partial class AbstractLevel : ILevel
         await simulationGate.WaitAsync();
         try
         {
-            if (Regions.TryRemove(value, out var r))
+            IRegion? r;
+            lock (this.Fluids.TickLock)
+            {
+                if (!Regions.TryGetValue(value, out r))
+                    return;
+
+                // Retire publication and detach lighting before another reader can create a replacement region.
+                if (r is Region concrete)
+                    concrete.RetireLighting();
+
+                Regions.TryRemove(KeyValuePair.Create(value, r));
+            }
+
+            if (r is not null)
                 await r.FlushAsync();
         }
         finally

@@ -17,15 +17,18 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
     private readonly HashSet<Vector> changes = [];
     private readonly HashSet<Vector> columns = [];
     private readonly HashSet<Vector> borders = [];
-    private readonly Dictionary<(Chunk Chunk, LightType Type, int Section), byte[]> originals = [];
-    private readonly HashSet<Chunk> forcedUpdates = [];
+    private readonly Dictionary<(int X, int Z, LightType Type, int Section), byte[]> originals = [];
+    private readonly HashSet<(int X, int Z)> forcedUpdates = [];
 
     internal Lock TickLock => tickLock;
 
-    /// <summary>Attaches the block-write hook once, and queues reconciliation with loaded neighbors.</summary>
-    public void Track(IChunk chunk)
+    /// <summary>
+    /// Attaches the block-write hook once, and queues border reconciliation. The region may prepare the hook just
+    /// before publishing generation's full status, while holding the tick lock and validating the slot identity.
+    /// </summary>
+    public void Track(IChunk chunk, bool completing = false)
     {
-        if (chunk is not Chunk { IsGenerated: true } complete)
+        if (chunk is not Chunk complete || (!complete.IsGenerated && !completing))
             return;
 
         lock (tickLock)
@@ -35,10 +38,10 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
                 return;
 
             if (previous is not null)
-                previous.RuntimeLight = null;
+                previous.AttachRuntimeLight(null);
 
             this.chunks[key] = complete;
-            complete.RuntimeLight = this;
+            complete.AttachRuntimeLight(this);
             var sources = new int[256];
             if (hasSkyLight())
             {
@@ -79,7 +82,7 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
             var key = (chunk.X, chunk.Z);
             if (this.chunks.TryGetValue(key, out var stored) && ReferenceEquals(stored, chunk))
             {
-                stored.RuntimeLight = null;
+                stored.AttachRuntimeLight(null);
                 this.chunks.Remove(key);
                 this.skySources.Remove(key);
             }
@@ -103,7 +106,7 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
         if (chunk is Chunk complete)
         {
             lock (tickLock)
-                this.forcedUpdates.Add(complete);
+                this.forcedUpdates.Add((complete.X, complete.Z));
         }
     }
 
@@ -163,7 +166,7 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
             {
                 // A save/unload/reload can replace the instance between flushes in this tick. Compare against the
                 // chunk now loaded at that coordinate, and send it once rather than sending stale storage too.
-                var chunk = this.chunks.GetValueOrDefault((key.Chunk.X, key.Chunk.Z));
+                var chunk = this.chunks.GetValueOrDefault((key.X, key.Z));
                 if (chunk is null)
                     continue;
 
@@ -306,7 +309,8 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
     private void SetLight(Chunk chunk, Vector position, LightType type, int level)
     {
         var sectionIndex = (position.Y - chunk.MinY) >> 4;
-        var key = (chunk, type, sectionIndex);
+        // Coordinates preserve a save's pending packet across reloads without retaining unloaded chunk instances.
+        var key = (chunk.X, chunk.Z, type, sectionIndex);
         if (!this.originals.ContainsKey(key))
         {
             var section = chunk.Sections[sectionIndex];

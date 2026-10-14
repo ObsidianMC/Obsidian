@@ -12,7 +12,20 @@ namespace Obsidian.WorldData;
 
 public sealed class Chunk : IChunk
 {
-    internal RuntimeLightEngine? RuntimeLight { get; set; }
+    private volatile RuntimeLightEngine? runtimeLight;
+
+    internal RuntimeLightEngine? RuntimeLight => this.runtimeLight;
+
+    // The region completes generation and attaches lighting under the tick lock after validating slot identity.
+    internal Action<Chunk>? CompleteGeneration { get; set; }
+
+    /// <summary>Attaches live section writes together with the chunk's runtime light hook.</summary>
+    internal void AttachRuntimeLight(RuntimeLightEngine? light)
+    {
+        this.runtimeLight = light;
+        foreach (var section in this.sections.OfType<ChunkSection>())
+            section.LiveChunk = light is null ? null : this;
+    }
 
     public int X { get; }
     public int Z { get; }
@@ -208,7 +221,10 @@ public sealed class Chunk : IChunk
             lock (light.TickLock)
             {
                 var position = new Vector((this.X << 4) + (x & 15), y, (this.Z << 4) + (z & 15));
-                light.BlockChanging(this, position, block);
+                // A caller may have captured the hook just before unload detached it.
+                if (ReferenceEquals(this.RuntimeLight, light))
+                    light.BlockChanging(this, position, block);
+
                 this.SetBlockCore(x, y, z, block);
             }
 
@@ -230,7 +246,7 @@ public sealed class Chunk : IChunk
         y = (y & 15);
         z = (z & 15);
 
-        this.sections[i].SetBlock(x, y, z, block);
+        ((ChunkSection)this.sections[i]).SetBlockUntracked(x, y, z, block);
     }
 
     public BlockMeta GetBlockMeta(int x, int y, int z)
@@ -387,6 +403,20 @@ public sealed class Chunk : IChunk
     }
 
     public void SetChunkStatus(ChunkGenStage status)
+    {
+        if (status == ChunkGenStage.full && this.CompleteGeneration is Action<Chunk> complete)
+        {
+            complete(this);
+            return;
+        }
+
+        this.SetChunkStatusCore(status);
+    }
+
+    /// <summary>
+    /// Updates generation storage; the region calls this under its tick lock for a live full transition.
+    /// </summary>
+    internal void SetChunkStatusCore(ChunkGenStage status)
     {
         this.ChunkStatus = status;
 

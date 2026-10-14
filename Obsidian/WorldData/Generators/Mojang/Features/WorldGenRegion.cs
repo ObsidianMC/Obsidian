@@ -179,9 +179,9 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         if (chunk.IsGenerated)
             chunk.SetBlock(position.X, position.Y, position.Z, block ??= BlocksRegistry.Get(stateId));
         else if (section is not null && knownState)
-            section.SetStateId(position.X & 15, position.Y & 15, position.Z & 15, stateId);
+            section.SetStateIdUntracked(position.X & 15, position.Y & 15, position.Z & 15, stateId);
         else if (section is not null)
-            section.SetBlock(position.X & 15, position.Y & 15, position.Z & 15, block!);
+            section.SetBlockUntracked(position.X & 15, position.Y & 15, position.Z & 15, block!);
         else
             chunk.SetBlock(position.X, position.Y, position.Z, block ??= BlocksRegistry.Get(stateId));
 

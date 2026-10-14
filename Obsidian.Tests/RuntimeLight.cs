@@ -1,6 +1,8 @@
 using Obsidian.API;
 using Obsidian.API.Blocks;
+using Obsidian.API.ChunkData;
 using Obsidian.API.Registries;
+using Obsidian.ChunkData;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
@@ -287,6 +289,223 @@ public sealed class RuntimeLightTests(ITestOutputHelper output)
         await write;
         engine.Flush();
         Assert.Equal(14, Light(chunks, new Vector(9, 0, 8), LightType.Block));
+    }
+
+    [Fact]
+    public async Task LoadedChunkReadsUnderEntityLockDoNotWaitForTickLock()
+    {
+        await using var context = TestServerFactory.CreateServer($"light-read-lock-{Guid.NewGuid():N}");
+        var world = context.World;
+        var chunk = new Chunk(0, 0, world.MinY, world.Height, ChunkGenStage.full);
+        var region = (Region)world.LoadRegionByChunk(0, 0);
+        region.SetChunk(chunk);
+        Assert.Same(world.Lighting, chunk.RuntimeLight);
+
+        using var completed = new ManualResetEventSlim();
+        Task<IChunk> read;
+        lock (world.Fluids.TickLock)
+        {
+            read = Task.Run(() =>
+            {
+                lock (chunk.EntityLock)
+                {
+                    var loaded = world.GetLoadedChunk(0, 0);
+                    completed.Set();
+                    return loaded;
+                }
+            });
+            Assert.True(completed.Wait(TimeSpan.FromSeconds(5)), "A loaded read acquired the tick lock.");
+        }
+
+        Assert.Same(chunk, await read);
+    }
+
+    [Fact]
+    public async Task UnloadAndReplacementRejectStaleLightingAttachment()
+    {
+        await using var context = TestServerFactory.CreateServer($"light-stale-chunk-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = (Region)world.LoadRegionByChunk(0, 0);
+        var chunk = CreateChunk(world, 0, 0);
+        region.SetChunk(chunk);
+        var captured = Assert.IsType<Chunk>(world.GetLoadedChunk(0, 0));
+        var completing = captured.CompleteGeneration!;
+
+        await region.UnloadChunk(0, 0);
+        Assert.Null(world.GetLoadedChunk(0, 0));
+        Assert.Null(captured.RuntimeLight);
+        completing(captured);
+        world.QueueEntitySpawn(captured);
+        Assert.Null(captured.RuntimeLight);
+
+        var loaded = Assert.IsType<Chunk>(await world.GetChunkAsync(0, 0, scheduleGeneration: false));
+        Assert.NotSame(captured, loaded);
+        Assert.Same(world.Lighting, loaded.RuntimeLight);
+        completing(captured);
+        Assert.Null(captured.RuntimeLight);
+        Assert.Same(world.Lighting, loaded.RuntimeLight);
+
+        // Completion of a stored proto chunk attaches once; replacement rejects its captured completion callback.
+        var proto = new Chunk(1, 0, world.MinY, world.Height, ChunkGenStage.features);
+        region.SetChunk(proto);
+        Assert.Null(proto.RuntimeLight);
+        var protoCompleting = proto.CompleteGeneration!;
+        using var started = new ManualResetEventSlim();
+        using var completed = new ManualResetEventSlim();
+        Task completion;
+        lock (world.Fluids.TickLock)
+        {
+            completion = Task.Run(() =>
+            {
+                started.Set();
+                proto.SetChunkStatus(ChunkGenStage.full);
+                completed.Set();
+            });
+            Assert.True(started.Wait(TimeSpan.FromSeconds(5)));
+            Assert.False(completed.Wait(TimeSpan.FromMilliseconds(100)));
+            Assert.False(proto.IsGenerated);
+            Assert.Null(world.GetLoadedChunk(1, 0));
+        }
+
+        await completion.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Same(world.Lighting, proto.RuntimeLight);
+        var replacement = CreateChunk(world, 1, 0);
+        region.ReplaceChunk(proto, replacement);
+        protoCompleting(proto);
+        Assert.Null(proto.RuntimeLight);
+        Assert.Same(world.Lighting, replacement.RuntimeLight);
+        Assert.Same(replacement, world.GetLoadedChunk(1, 0));
+    }
+
+    [Fact]
+    public async Task RegionUnloadFlushesAndDetachesEveryChunk()
+    {
+        await using var context = TestServerFactory.CreateServer($"light-region-unload-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = (Region)world.LoadRegionByChunk(0, 0);
+        var first = CreateChunk(world, 0, 0);
+        var second = CreateChunk(world, 1, 0);
+        region.SetChunk(first);
+        region.SetChunk(second);
+        var completing = second.CompleteGeneration!;
+        first.SetBlock(8, 70, 8, BlocksRegistry.Glowstone);
+        world.SendLightUpdate(second);
+
+        try
+        {
+            await world.UnloadRegionAsync(0, 0);
+            Assert.Null(world.GetRegionForChunk(0, 0));
+            Assert.Equal(15, first.GetLightLevel(8, 70, 8, LightType.Block));
+            foreach (var chunk in new[] { first, second })
+            {
+                Assert.Null(chunk.RuntimeLight);
+                Assert.Null(chunk.CompleteGeneration);
+                Assert.All(chunk.Sections.ToArray(), section => Assert.Null(((ChunkSection)section).LiveChunk));
+            }
+
+            // A generation job retaining the removed region must not attach or publish into it again.
+            completing(second);
+            var late = CreateChunk(world, 2, 0);
+            region.SetChunk(late);
+            Assert.Null(late.RuntimeLight);
+            Assert.Null(region.GetLoadedChunk(2, 0));
+            second.Sections[(70 - world.MinY) >> 4].SetBlock(8, 70 & 15, 8, BlocksRegistry.Glowstone);
+            Assert.Empty(world.Lighting.TakeUpdates());
+            Assert.Equal(0, second.GetLightLevel(8, 70, 8, LightType.Block));
+        }
+        finally
+        {
+            // Removed regions are no longer disposed by the level's test context.
+            await region.DisposeAsync();
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LiveSectionWritesShareTickLockAndRelight(bool byStateId)
+    {
+        var chunks = CreateArea(true);
+        var engine = Track(chunks, true);
+        var chunk = chunks[(0, 0)];
+        var section = (ChunkSection)chunk.Sections[0];
+        using var started = new ManualResetEventSlim();
+        using var completed = new ManualResetEventSlim();
+        Task write;
+        lock (engine.TickLock)
+        {
+            write = Task.Run(() =>
+            {
+                started.Set();
+                if (byStateId)
+                    section.SetStateId(8, 8, 8, BlocksRegistry.Glowstone.GetHashCode());
+                else
+                    ((IChunkSection)section).SetBlock(new Vector(8, 8, 8), BlocksRegistry.Glowstone);
+
+                completed.Set();
+            });
+            Assert.True(started.Wait(TimeSpan.FromSeconds(5)));
+            Assert.False(completed.Wait(TimeSpan.FromMilliseconds(100)));
+            Assert.Equal(BlockIds.Air, chunk.GetBlock(8, -24, 8).RegistryId);
+        }
+
+        await write.WaitAsync(TimeSpan.FromSeconds(5));
+        var update = Assert.Single(engine.TakeUpdates(), packet => ReferenceEquals(packet.Chunk, chunk));
+        Assert.NotEmpty(Serialize(update));
+        Assert.Equal(15, chunk.GetLightLevel(8, -24, 8, LightType.Block));
+        Assert.Equal(14, chunk.GetLightLevel(9, -24, 8, LightType.Block));
+        Assert.Equal(0, chunk.GetLightLevel(8, -24, 8, LightType.Sky));
+        AssertMatchesFull(chunks, true);
+    }
+
+    [Fact]
+    public async Task LiveSectionChangesFlushIntoSavedLight()
+    {
+        await using var context = TestServerFactory.CreateServer($"light-section-save-{Guid.NewGuid():N}");
+        var world = context.World;
+        var chunk = CreateChunk(world, -1, -1);
+        var region = (Region)world.LoadRegionByChunk(-1, -1);
+        region.SetChunk(chunk);
+        chunk.Sections[(70 - world.MinY) >> 4].SetBlock(8, 70 & 15, 8, BlocksRegistry.Glowstone);
+        Assert.Equal(0, chunk.GetLightLevel(-8, 70, -8, LightType.Block));
+        await region.FlushAsync();
+        Assert.Equal(14, chunk.GetLightLevel(-7, 70, -8, LightType.Block));
+        await region.UnloadChunk(31, 31);
+        var loaded = Assert.IsType<Chunk>(await world.GetChunkAsync(-1, -1, scheduleGeneration: false));
+        Assert.NotSame(chunk, loaded);
+        Assert.Same(world.Lighting, loaded.RuntimeLight);
+        Assert.Equal(BlockIds.Glowstone, loaded.GetBlock(-8, 70, -8).RegistryId);
+        Assert.Equal(15, loaded.GetLightLevel(-8, 70, -8, LightType.Block));
+        Assert.Equal(14, loaded.GetLightLevel(-7, 70, -8, LightType.Block));
+        Assert.Equal(0, loaded.GetLightLevel(-8, 70, -8, LightType.Sky));
+        Assert.Single(world.Lighting.TakeUpdates(), update => ReferenceEquals(update.Chunk, loaded));
+    }
+
+    [Fact]
+    public void UnfinishedSectionWritesKeepTheGenerationStoragePath()
+    {
+        var chunk = new Chunk(0, 0, -32, 64, ChunkGenStage.features);
+        var engine = new RuntimeLightEngine(new Lock(), () => true);
+        engine.Track(chunk);
+        var section = (ChunkSection)chunk.Sections[0];
+        Assert.Null(chunk.RuntimeLight);
+        Assert.Null(section.LiveChunk);
+        section.SetBlock(8, 8, 8, BlocksRegistry.Glowstone);
+        section.SetStateId(9, 8, 8, BlocksRegistry.Torch.GetHashCode());
+        Assert.Equal(BlockIds.Glowstone, chunk.GetBlock(8, -24, 8).RegistryId);
+        Assert.Equal(BlockIds.Torch, chunk.GetBlock(9, -24, 8).RegistryId);
+        Assert.Empty(engine.TakeUpdates());
+        Assert.Equal(0, chunk.GetLightLevel(8, -24, 8, LightType.Block));
+    }
+
+    private static Chunk CreateChunk(AbstractLevel world, int x, int z)
+    {
+        var chunk = new Chunk(x, z, world.MinY, world.Height, ChunkGenStage.full);
+        for (var y = world.MinY; y < world.MinY + world.Height; y += 16)
+            chunk.SetBiome(0, y, 0, CodecRegistry.Biomes.Plains);
+
+        LightEngine.LightChunk(chunk, [], true);
+        return chunk;
     }
 
     private static Dictionary<(int X, int Z), Chunk> CreateArea(bool sky)
