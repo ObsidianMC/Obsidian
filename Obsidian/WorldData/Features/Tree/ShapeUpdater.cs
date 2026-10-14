@@ -68,7 +68,13 @@ internal static class ShapeUpdater
     /// Vanilla <c>updateShape</c>: the state of <paramref name="state"/> after its neighbor in <paramref name="direction"/>
     /// became <paramref name="neighbor"/>, scheduling the fluid tick vanilla schedules there.
     /// </summary>
-    internal static IBlock UpdateShape(IWorldGenLevel level, IBlock state, Vector position, BlockFace direction, IBlock neighbor)
+    internal static IBlock UpdateShape(
+        IWorldGenLevel level,
+        IBlock state,
+        Vector position,
+        BlockFace direction,
+        IBlock neighbor,
+        int rawBrightness = 15)
     {
         ScheduleFluidTick(level, state, position, neighbor);
 
@@ -148,7 +154,7 @@ internal static class ShapeUpdater
                 or "SeagrassBlock" or "SnowLayerBlock" or "HangingRootsBlock" or "SporeBlossomBlock"
                 or "CocoaBlock" or "CactusFlowerBlock":
                 // Vegetation and carpets turn into air whenever they're updated without support.
-                return state.CanSurvive(level, position) ? state : air;
+                return state.CanSurvive(level, position, rawBrightness) ? state : air;
         }
 
         // SnowyDirtBlock and its subclasses (grass blocks, mycelium, podzol).

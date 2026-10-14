@@ -364,7 +364,10 @@ game event source, independently of game mode. Loot respects `block_drops`. Ordi
 contents through removal even with `dropItems: false`; shulker contents go into their box item when loot is enabled.
 Plugin `CollectComponents` runs only in the serial tick transaction. Failed loot evaluation is logged and keeps the
 block. Vanilla and plugin `UpdateShape` results of air use the same queued transaction, honouring the shape update's
-`SuppressDrops` flag and `block_drops`; the block remains until that queued break runs. Each half of a vanilla
+`SuppressDrops` flag and `block_drops`; the block remains until that queued break runs. If a scheduled tick changes
+only its state meanwhile, environmental removal checks its current support again and breaks the current state when
+it is still unsupported. Replacing the block cancels the removal. Live mushroom checks use current raw light
+(without sky darkening); the full-sky assumption is only for unlit generation views. Each half of a vanilla
 two-part block evaluates its own loot before removal, so upper plant halves don't duplicate the lower half's drop.
 Shape destruction and `DestroyBlock` send level event 2001 for break sound and particles (except fire). Water washout
 uses tool-less loot without that effect; lava only fizzes. Redstone dust, diodes and rails losing support through

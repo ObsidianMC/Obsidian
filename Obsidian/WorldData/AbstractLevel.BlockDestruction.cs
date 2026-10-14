@@ -19,13 +19,15 @@ public abstract partial class AbstractLevel
 
     // Environmental removal evaluates the selected state's loot. Its partner reacts through shape updates,
     // rather than redirecting an upper half's empty loot table to the lower half as a player's break does.
+    // Support loss supplies a current-state survival check; explicit destroys and washout keep exact-state guards.
     internal bool QueueBlockDestruction(
         Vector position,
         bool dropItems,
         IEntity? breaker,
         IBlock? replacement,
         bool playEffect,
-        bool removePartner = false)
+        bool removePartner = false,
+        Func<IBlock, bool>? stillUnsupported = null)
     {
         lock (this.Fluids.TickLock)
         {
@@ -39,7 +41,15 @@ public abstract partial class AbstractLevel
                 try
                 {
                     await this.DestroyCapturedBlockAsync(
-                        position, block, entity, dropItems, breaker, replacement, playEffect, removePartner);
+                        position,
+                        block,
+                        entity,
+                        dropItems,
+                        breaker,
+                        replacement,
+                        playEffect,
+                        removePartner,
+                        stillUnsupported);
                 }
                 catch (Exception exception)
                 {
@@ -109,12 +119,26 @@ public abstract partial class AbstractLevel
         IEntity? breaker,
         IBlock? replacement,
         bool playEffect,
-        bool removePartner)
+        bool removePartner,
+        Func<IBlock, bool>? stillUnsupported)
     {
         if (await this.GetBlockAsync(position) is not IBlock current
-            || current.GetHashCode() != block.GetHashCode()
             || !ReferenceEquals(this.GetResidentBlockEntity(position), expectedEntity))
             return;
+
+        if (!current.IsSameState(block))
+        {
+            // Scheduled ticks precede this queue. A state change (such as relighting) must not rescue the same
+            // unsupported block, but a replacement or a block whose support was restored cancels the removal.
+            lock (this.Fluids.TickLock)
+            {
+                if (current.RegistryId != block.RegistryId || stillUnsupported?.Invoke(current) != true)
+                    return;
+            }
+
+            block = current;
+            replacement = FluidState.Of(current).CreateLegacyBlock();
+        }
 
         // A queued source can unload meanwhile. Never read its plugin implementation after that generation closes.
         if (breaker is not null && !PluginEntities.HasLoadedType(breaker))

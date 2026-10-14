@@ -317,7 +317,10 @@ internal sealed class FluidLevel
         VanillaShapes shapes)
     {
         if (shapes == VanillaShapes.All)
-            return ShapeUpdater.UpdateShape(this.ShapeView, block, position, direction, neighbor);
+        {
+            var brightness = block.BlockClass() == "MushroomBlock" ? this.access.GetRawBrightness(position) : 15;
+            return ShapeUpdater.UpdateShape(this.ShapeView, block, position, direction, neighbor, brightness);
+        }
 
         this.ScheduleFluidShapeTick(position, block, neighbor);
         return block;
@@ -343,10 +346,27 @@ internal sealed class FluidLevel
             return false;
 
         var fluid = this.GetFluid(position).CreateLegacyBlock();
-        if (this.access.TryQueueDestruction(position, fluid, dropItems, playEffect: true))
+        if (this.access.TryQueueDestruction(position, fluid, dropItems, playEffect: true,
+            stillUnsupported: current => this.IsUnsupported(position, current)))
             return true;
 
         return this.SetBlock(position, fluid, BlockUpdateFlags.All, updateLimit, shapes);
+    }
+
+    // Re-evaluate shape survival against all current neighbours: the state's attachment face may have changed.
+    internal bool IsUnsupported(Vector position, IBlock state)
+    {
+        foreach (var direction in updateShapeOrder)
+        {
+            var neighborPosition = position.Offset(direction);
+            var neighbor = this.GetBlock(neighborPosition);
+            var updated = this.access.Reactions?.UpdateShape(position, state, direction, neighborPosition, neighbor)
+                ?? this.UpdateVanillaShape(state, position, direction, neighbor, VanillaShapes.All);
+            if (updated.IsAir)
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>

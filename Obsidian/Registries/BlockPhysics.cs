@@ -105,7 +105,7 @@ internal static class BlockPhysics
             throw new ArgumentOutOfRangeException(nameof(support));
 
         if (PluginShapes(block.StateId()) is PluginStateShapes own)
-            return ShapeSupport.IsFaceSturdy(own.CollisionFaces[(int)face], support);
+            return ShapeSupport.IsFaceSturdy(own.CollisionFaces[(int)face], face, support);
 
         // Captured from BlockState.isFaceSturdy: vanilla support shapes can differ from collision shapes.
         var flags = data.Value.SupportFlags[ShapeState(block.StateId())];

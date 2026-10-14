@@ -374,7 +374,11 @@ internal sealed partial class LevelBlockUpdates
     /// hand, and leaves the fluid it held. Loot runs on the serial queue, outside the tick lock.
     /// </summary>
     internal void DropAndRemove(Vector position, IBlock state) =>
-        level.QueueBlockDestruction(position, true, null, FluidState.Of(state).CreateLegacyBlock(), playEffect: false);
+        level.QueueBlockDestruction(position, true, null, FluidState.Of(state).CreateLegacyBlock(), playEffect: false,
+            stillUnsupported: current => current.BlockClass() is
+                "RailBlock" or "PoweredRailBlock" or "DetectorRailBlock"
+                ? this.IsUnsupportedRail(position, current)
+                : updates.IsUnsupported(position, current));
 
     /// <summary>
     /// Plays a block sound at the centre of <paramref name="position"/> to the players near it, but
