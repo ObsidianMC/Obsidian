@@ -2,6 +2,7 @@ using EngineSample.Grinder;
 using EngineSample.TickCounter;
 using Obsidian.API.Client;
 using Obsidian.API.Plugins;
+using Obsidian.API.World;
 
 namespace EngineSample;
 
@@ -17,6 +18,13 @@ namespace EngineSample;
 public sealed class EngineSamplePlugin : PluginBase, IClientPlugin
 {
     public SavedState SavedState { get; private set; } = null!;
+
+    /// <summary>
+    /// Phase 5: keep a machine's chunks ticking without players. Dispose the handle when the machine stops needing
+    /// them; unloading this plugin releases it even if the caller forgets.
+    /// </summary>
+    public IDisposable KeepChunks(ILevel level, int chunkX, int chunkZ, int radius = 0, bool ticking = true) =>
+        level.AddChunkTicket(chunkX, chunkZ, radius, ticking);
 
     public override void ConfigureRegistry(IPluginRegistry registry)
     {

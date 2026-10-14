@@ -269,6 +269,8 @@ public sealed class BlockUpdates : IDisposable
             world.TryRemovePlayer(player);
         }
 
+        // Scheduled ticks now need simulation too; keep this circuit active after the random-tick player leaves.
+        using var simulation = world.AddChunkTicket(0, 0);
         var center = new Vector(8, Ground + 3, 8);
         Vector[] around = [Vector.Up, Vector.Down, Vector.North, Vector.South, Vector.West, Vector.East];
         foreach (var offset in around)

@@ -1,6 +1,7 @@
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.ChunkData;
 using Obsidian.Registries;
+using System.Threading;
 
 namespace Obsidian.WorldData;
 
@@ -144,9 +145,8 @@ public abstract partial class AbstractLevel
         return positions;
     }
 
-    // Vanilla's block-ticking chunks: complete chunks within the simulation distance of a player (as IsMobTicking
-    // reckons it) whose eight neighbours are loaded and complete too, so that a tree growing in one never reaches a
-    // chunk that isn't there.
+    // Simulated chunks, from players or tickets, whose eight neighbours are complete too, so growth never reaches
+    // a chunk that isn't there. Tickets use the same random-tick path as players.
     private List<Chunk> RandomTickingChunks(List<VectorD> players)
     {
         var distance = (int)Configuration.SimulationDistance;
@@ -167,6 +167,16 @@ public abstract partial class AbstractLevel
                         chunks.Add(chunk);
                 }
             }
+        }
+
+        foreach (var key in Volatile.Read(ref this.ticketChunks).Ticking)
+        {
+            if (!seen.Add(key))
+                continue;
+
+            NumericsHelper.LongToInts(key, out var x, out var z);
+            if (this.GetLoadedChunk(x, z) is Chunk chunk && this.HasLoadedNeighbours(x, z))
+                chunks.Add(chunk);
         }
 
         return chunks;

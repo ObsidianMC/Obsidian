@@ -523,6 +523,12 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      like vanilla, after which the renderer copies only the sprites that changed into the atlas from a staging buffer
      before it draws. Left: the GUI and particle atlases' few animated sprites (some GUI icons, the vibration
      particle) still show their first frame. See [plugin-archives.md](plugin-archives.md#assets).
+   - Done, engine phase 5 chunk tickets: `ILevel.AddChunkTicket` returns a disposable, automatically plugin-owned
+     handle keeping a bounded square loaded and optionally simulated without players. Ticking squares load one
+     border for block and fluid updates; plugin unload releases all its tickets. Handles are not persistent; mods
+     can save coordinates with `RegisterSavedData` and reacquire them on startup. Vanilla's separate block-ticking
+     border and forced-ticket persistence remain in [known-gaps.md](known-gaps.md#chunk-ticket-parity). See
+     [plugin-content.md](plugin-content.md#chunk-tickets).
    - Done, engine phase 5 saved data and attachments: `RegisterSavedData` gives worlds and levels lazy, dirty-marked
      gzip NBT files, and `RegisterAttachment` adds detached data to players, entities and chunks. Unknown NBT survives
      unloading; saved handles cannot write across reloads. Player attachments optionally survive death. An optional

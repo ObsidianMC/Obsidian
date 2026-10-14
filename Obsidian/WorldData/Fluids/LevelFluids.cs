@@ -11,7 +11,7 @@ namespace Obsidian.WorldData.Fluids;
 /// fluid behavior and the reactions of <see cref="Blocks"/>.
 /// </summary>
 /// <remarks>
-/// Like vanilla, a chunk's ticks only run while the chunk and its eight neighbors are loaded and complete, so ticks
+/// A chunk's ticks only run while it is simulated and it and its eight neighbors are loaded and complete, so ticks
 /// never write into chunks that are still generating. Everything touching ticks or the blocks they change goes through
 /// one lock: the level's tick, block changes with updates, and the post-processing of generating chunks next to
 /// complete ones.
@@ -251,10 +251,13 @@ internal sealed class LevelFluids : IFluidLevelAccess
             chunk.FluidTicks.Schedule(position, fluid, delay);
     }
 
-    // Vanilla's tick check: the chunk ticks once it and its neighbors are loaded and complete.
+    // A player or ticket must simulate the chunk, and every neighbour must be loaded and complete.
     private bool IsTicking(long key)
     {
         NumericsHelper.LongToInts(key, out var chunkX, out var chunkZ);
+        if (!this.level.IsMobTicking(new VectorD(chunkX * 16 + 8, 0, chunkZ * 16 + 8)))
+            return false;
+
         for (var dx = -1; dx <= 1; dx++)
         {
             for (var dz = -1; dz <= 1; dz++)

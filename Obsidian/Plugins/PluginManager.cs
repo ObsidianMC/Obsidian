@@ -545,6 +545,9 @@ public sealed partial class PluginManager : IAsyncDisposable
         // Closed first, so that whatever the plugin registers meanwhile is refused rather than kept after unloading.
         pluginContainer.Close();
 
+        foreach (var level in this.Levels())
+            level.ReleaseChunkTickets(pluginContainer);
+
         // Before its handlers go, so that the plugin sees its menus close (to keep their contents, say). Its handlers
         // of that still run, although it's closed.
         await CloseMenusAsync(this.server, pluginContainer);

@@ -954,6 +954,7 @@ public sealed class MenuClicks
         var dropped = Assert.Single(context.World.GetNonPlayerEntitiesInRange(player.Position, 4)
             .OfType<Obsidian.Entities.ItemEntity>()
             .Where(item => item.Item.Is(ItemsRegistry.Emerald)));
+        Assert.Equal(2, dropped.Item.Count);
         Assert.Null(dropped.SpawnedBy);
         owner.Close();
         Obsidian.Plugins.PluginEntities.RemoveFrom(context.World, owner);
