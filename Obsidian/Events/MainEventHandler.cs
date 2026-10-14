@@ -206,7 +206,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
             var type = block.Material;
 
-            if (type is Material.Campfire or Material.SoulCampfire && item is { IsAir: false, Count: > 0 } && player != null
+            if (TagsRegistry.Block.Campfires.Entries.Contains(block.RegistryId) && item is { IsAir: false, Count: > 0 } && player != null
                 && player.Level is Obsidian.WorldData.AbstractLevel campfireLevel
                 && Obsidian.WorldData.Furnaces.FurnaceRules.FindRecipe(Obsidian.API.Crafting.CraftingType.CampfireCooking, item) is not null)
             {
