@@ -38,8 +38,8 @@ public sealed class BrewingStands : IDisposable
     // from 9 at 5.
     private static readonly Dictionary<string, (Action<BrewingStand, Container> Fill, short Slot,
         Action<BrewingStand, Container> Check)> quickMoves = new()
-    {
-        ["Blaze powder tops up the fuel and stops there"] = (
+        {
+            ["Blaze powder tops up the fuel and stops there"] = (
             (stand, inventory) =>
             {
                 stand.SetItem(BrewingStand.FuelSlot, new ItemStack(ItemsRegistry.BlazePowder, 60));
@@ -51,8 +51,9 @@ public sealed class BrewingStands : IDisposable
                 Assert.Equal(64, stand.GetItem(BrewingStand.FuelSlot)?.Count);
                 Assert.Null(stand.GetItem(BrewingStand.IngredientSlot));
                 Assert.Equal(6, inventory.GetItem(9)?.Count);
-            }),
-        ["Blaze powder goes to the ingredient slot when the fuel is full"] = (
+            }
+            ),
+            ["Blaze powder goes to the ingredient slot when the fuel is full"] = (
             (stand, inventory) =>
             {
                 stand.SetItem(BrewingStand.FuelSlot, new ItemStack(ItemsRegistry.BlazePowder, 64));
@@ -63,16 +64,18 @@ public sealed class BrewingStands : IDisposable
             {
                 Assert.Equal(10, stand.GetItem(BrewingStand.IngredientSlot)?.Count);
                 Assert.Null(inventory.GetItem(9));
-            }),
-        ["An ingredient goes to the ingredient slot"] = (
+            }
+            ),
+            ["An ingredient goes to the ingredient slot"] = (
             (stand, inventory) => inventory.SetItem(40, new ItemStack(ItemsRegistry.NetherWart, 5)),
             36,
             (stand, inventory) =>
             {
                 Assert.True(stand.GetItem(BrewingStand.IngredientSlot)?.Is(ItemsRegistry.NetherWart));
                 Assert.Null(inventory.GetItem(40));
-            }),
-        ["An ingredient stays put when the ingredient slot is full"] = (
+            }
+            ),
+            ["An ingredient stays put when the ingredient slot is full"] = (
             (stand, inventory) =>
             {
                 stand.SetItem(BrewingStand.IngredientSlot, new ItemStack(ItemsRegistry.NetherWart, 64));
@@ -83,8 +86,9 @@ public sealed class BrewingStands : IDisposable
             {
                 Assert.Equal(5, inventory.GetItem(9)?.Count);
                 Assert.Null(inventory.GetItem(36));
-            }),
-        ["Bottles go one to each bottle slot"] = (
+            }
+            ),
+            ["Bottles go one to each bottle slot"] = (
             (stand, inventory) => inventory.SetItem(9, new ItemStack(ItemsRegistry.GlassBottle, 5)),
             5,
             (stand, inventory) =>
@@ -93,24 +97,26 @@ public sealed class BrewingStands : IDisposable
                     Assert.Equal(1, stand.GetItem(slot)?.Count);
 
                 Assert.Equal(2, inventory.GetItem(9)?.Count);
-            }),
-        ["Other stacks go from the main inventory to the hotbar"] = (
+            }
+            ),
+            ["Other stacks go from the main inventory to the hotbar"] = (
             (stand, inventory) => inventory.SetItem(9, new ItemStack(ItemsRegistry.Dirt, 3)),
             5,
             (stand, inventory) => Assert.Equal(3, inventory.GetItem(36)?.Count)),
-        ["Other stacks go from the hotbar to the main inventory"] = (
+            ["Other stacks go from the hotbar to the main inventory"] = (
             (stand, inventory) => inventory.SetItem(36, new ItemStack(ItemsRegistry.Dirt, 3)),
             32,
             (stand, inventory) => Assert.Equal(3, inventory.GetItem(9)?.Count)),
-        ["The stand's stacks go to the hotbar's last slot first"] = (
+            ["The stand's stacks go to the hotbar's last slot first"] = (
             (stand, inventory) => stand.SetItem(1, Potion(ItemsRegistry.Potion, API.Potion.Awkward)),
             1,
             (stand, inventory) =>
             {
                 Assert.Null(stand.GetItem(1));
                 Assert.True(inventory.GetItem(44)?.Is(ItemsRegistry.Potion));
-            })
-    };
+            }
+            )
+        };
 
     private readonly string folder = Path.Join(Path.GetTempPath(), $"obsidian-brewing-{Guid.NewGuid():N}");
 
@@ -147,67 +153,69 @@ public sealed class BrewingStands : IDisposable
         check(stand, player.Inventory);
     }
 
-    [Fact(DisplayName = "A brew takes fuel, brews for 400 ticks and mixes every bottle")]
-    public void BrewCompletes()
+    [Fact]
+    public void BrewingCompletesAndResumesSavedProgress()
     {
-        var stand = new BrewingStand();
-        stand.SetItem(0, Potion(ItemsRegistry.Potion, API.Potion.Water));
-        stand.SetItem(2, Potion(ItemsRegistry.Potion, API.Potion.Water));
-        stand.SetItem(BrewingStand.IngredientSlot, new ItemStack(ItemsRegistry.NetherWart, 2));
-        stand.SetItem(BrewingStand.FuelSlot, new ItemStack(ItemsRegistry.BlazePowder, 1));
-
-        // The first tick takes a blaze powder for 20 brews and starts one, using a brew of it up.
-        var first = Brewing.Tick(stand);
-        Assert.Null(stand.GetItem(BrewingStand.FuelSlot));
-        Assert.Equal(19, stand.Fuel);
-        Assert.Equal(400, stand.BrewTime);
-        Assert.Equal([true, false, true], first.Bottles);
-
-        for (var tick = 1; tick < 400; tick++)
-            Assert.False(Brewing.Tick(stand).Brewed);
-
-        Assert.True(Brewing.Tick(stand).Brewed);
-        Assert.Equal(API.Potion.Awkward, PotionOf(stand.GetItem(0)));
-        Assert.Equal(API.Potion.Awkward, PotionOf(stand.GetItem(2)));
-        Assert.Null(stand.GetItem(1));
-        Assert.Equal(1, stand.GetItem(BrewingStand.IngredientSlot)?.Count);
-        Assert.Equal(0, stand.BrewTime);
-
-        // Gunpowder makes splash potions of them, keeping their potion; the stand then has nothing left to brew.
-        stand.SetItem(BrewingStand.IngredientSlot, new ItemStack(ItemsRegistry.Gunpowder, 1));
-        for (var tick = 0; tick <= 400; tick++)
-            Brewing.Tick(stand);
-
-        Assert.True(stand.GetItem(0)?.Is(ItemsRegistry.SplashPotion));
-        Assert.Equal(API.Potion.Awkward, PotionOf(stand.GetItem(0)));
-        Assert.Null(stand.GetItem(BrewingStand.IngredientSlot));
-        Assert.Equal(18, stand.Fuel);
-    }
-
-    [Fact(DisplayName = "A brew loaded part way through finishes without spending more fuel")]
-    public void LoadedBrewFinishes()
-    {
-        var items = new NbtList(NbtTagType.Compound, "Items")
         {
-            Slotted(Potion(ItemsRegistry.Potion, API.Potion.Water), 0),
-            Slotted(new ItemStack(ItemsRegistry.NetherWart, 1), BrewingStand.IngredientSlot)
-        };
+            var stand = new BrewingStand();
+            stand.SetItem(0, Potion(ItemsRegistry.Potion, API.Potion.Water));
+            stand.SetItem(2, Potion(ItemsRegistry.Potion, API.Potion.Water));
+            stand.SetItem(BrewingStand.IngredientSlot, new ItemStack(ItemsRegistry.NetherWart, 2));
+            stand.SetItem(BrewingStand.FuelSlot, new ItemStack(ItemsRegistry.BlazePowder, 1));
 
-        var tag = new NbtCompound
+            // The first tick takes a blaze powder for 20 brews and starts one, using a brew of it up.
+            var first = Brewing.Tick(stand);
+            Assert.Null(stand.GetItem(BrewingStand.FuelSlot));
+            Assert.Equal(19, stand.Fuel);
+            Assert.Equal(400, stand.BrewTime);
+            Assert.Equal([true, false, true], first.Bottles);
+
+            for (var tick = 1; tick < 400; tick++)
+                Assert.False(Brewing.Tick(stand).Brewed);
+
+            Assert.True(Brewing.Tick(stand).Brewed);
+            Assert.Equal(API.Potion.Awkward, PotionOf(stand.GetItem(0)));
+            Assert.Equal(API.Potion.Awkward, PotionOf(stand.GetItem(2)));
+            Assert.Null(stand.GetItem(1));
+            Assert.Equal(1, stand.GetItem(BrewingStand.IngredientSlot)?.Count);
+            Assert.Equal(0, stand.BrewTime);
+
+            // Gunpowder makes splash potions of them, keeping their potion; the stand then has nothing left to brew.
+            stand.SetItem(BrewingStand.IngredientSlot, new ItemStack(ItemsRegistry.Gunpowder, 1));
+            for (var tick = 0; tick <= 400; tick++)
+                Brewing.Tick(stand);
+
+            Assert.True(stand.GetItem(0)?.Is(ItemsRegistry.SplashPotion));
+            Assert.Equal(API.Potion.Awkward, PotionOf(stand.GetItem(0)));
+            Assert.Null(stand.GetItem(BrewingStand.IngredientSlot));
+            Assert.Equal(18, stand.Fuel);
+        }
+
         {
-            items,
-            new NbtTag<short>("BrewTime", 100),
-            new NbtTag<byte>("Fuel", 5)
-        };
+            var items = new NbtList(NbtTagType.Compound, "Items")
+            {
+                Slotted(Potion(ItemsRegistry.Potion, API.Potion.Water), 0),
+                Slotted(new ItemStack(ItemsRegistry.NetherWart, 1), BrewingStand.IngredientSlot)
+            };
 
-        var stand = ((BrewingStandBlockEntity)BlockEntityNbt.Load(tag, "minecraft:brewing_stand", Vector.Zero)).Stand;
+            var tag = new NbtCompound
+            {
+                items,
+                new NbtTag<short>("BrewTime", 100),
+                new NbtTag<byte>("Fuel", 5)
+            };
 
-        for (var tick = 1; tick < 100; tick++)
-            Assert.False(Brewing.Tick(stand).Brewed);
+            var entity = (BrewingStandBlockEntity)BlockEntityNbt.Load(
+                tag, "minecraft:brewing_stand", Vector.Zero);
+            var stand = entity.Stand;
 
-        Assert.True(Brewing.Tick(stand).Brewed);
-        Assert.Equal(API.Potion.Awkward, PotionOf(stand.GetItem(0)));
-        Assert.Equal(5, stand.Fuel);
+            for (var tick = 1; tick < 100; tick++)
+                Assert.False(Brewing.Tick(stand).Brewed);
+
+            Assert.True(Brewing.Tick(stand).Brewed);
+            Assert.Equal(API.Potion.Awkward, PotionOf(stand.GetItem(0)));
+            Assert.Equal(5, stand.Fuel);
+        }
     }
 
     [Fact(DisplayName = "A plugin's potion mix brews until the plugin unloads",
