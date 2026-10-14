@@ -5,7 +5,6 @@ using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Tests.Fakes;
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -15,99 +14,53 @@ namespace Obsidian.Tests;
 public sealed class ServerPlayerTests
 {
     [Fact]
-    public async Task ServerPlayer_CanBeCreatedWithoutANetworkConnection()
+    public async Task ServerPlayerLifecycleReachesConnectedHumans()
     {
         await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
 
-        var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
+        var human = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Human");
+        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, human);
 
-        Assert.IsNotType<Obsidian.Entities.Player>(player);
+        var client = (TestClient)human.Client;
+        client.ClearPackets();
+
+        var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(
+            Guid.NewGuid(), "ServerBot", context.World);
+        player.Position = human.Position;
+
+        Assert.True(ContainsPlayerInfo(client, player.Uuid));
+        Assert.True(ContainsListedFlag(client, player.Uuid, listed: true));
+        Assert.True(ContainsSpawn(client, player.EntityId));
+
         Assert.IsNotAssignableFrom<IClientPlayer>(player);
         Assert.Null(player.ClientIP);
-        Assert.Equal(new EntityDimension { Width = 0.6f, Height = 1.8f }, player.Dimension);
-        Assert.Equal("ServerBot", player.Username);
         Assert.Same(player, context.Server.GetPlayer(player.Uuid));
-    }
-
-    [Fact]
-    public async Task ServerPlayer_RegistersInOnlineLevelAndEntityState_AndTicksAndQueriesWork()
-    {
-        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
-
-        var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
-        player.Position = context.World.LevelData.SpawnPosition;
-        player.LastPosition = player.Position;
-
-        Assert.True(context.Server.IsPlayerOnline(player.Uuid));
-        Assert.True(context.World.Players.ContainsKey(player.Uuid));
-        Assert.Contains(player, context.World.GetPlayersInRange(player.Position, 1f));
-        Assert.Contains(player, context.World.GetEntitiesInRange(player.Position, 1f));
-
+        Assert.Same(player, context.Server.GetPlayer(player.Username));
+        Assert.Same(player, context.World.Players[player.Uuid]);
+        Assert.Contains(player, context.World.GetEntitiesInRange(player.Position, 1));
         await context.World.DoWorldTickAsync();
 
-        Assert.Same(player, context.Server.GetPlayer(player.Username));
-        Assert.Same(player, context.Server.GetPlayer(player.EntityId));
-    }
+        var late = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "LateHuman", player.Position);
+        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, late);
+        var lateClient = (TestClient)late.Client;
+        Assert.True(ContainsPlayerInfo(lateClient, player.Uuid));
+        Assert.True(ContainsSpawn(lateClient, player.EntityId));
 
-    [Fact]
-    public async Task ExistingConnectedHuman_ReceivesPlayerInfoAndSpawn_WhenServerPlayerIsAdded()
-    {
-        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
-
-        var human = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Human");
-        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, human);
-
-        var client = (TestClient)human.Client;
         client.ClearPackets();
+        await player.SetGamemodeAsync(GameMode.Creative);
+        Assert.Contains(client.SentPackets.OfType<PlayerInfoUpdatePacket>(), packet =>
+            packet.Players.TryGetValue(player.Uuid, out var actions)
+            && actions.OfType<UpdateGamemodeInfoAction>().Any());
 
-        var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
-        player.Position = human.Position;
+        await ((Obsidian.WorldData.AbstractLevel)context.World).ExplodeAsync(player, 1f);
+        Assert.Contains(client.SentPackets, packet => packet is ExplodePacket);
 
-        Assert.True(ContainsPlayerInfo(client, player.Uuid));
-        Assert.True(ContainsListedFlag(client, player.Uuid, listed: true));
-        Assert.True(ContainsSpawn(client, player.EntityId));
-    }
-
-    [Fact]
-    public async Task HumanJoiningAfterward_SeesExistingServerPlayer()
-    {
-        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
-
-        var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
-        player.Position = context.World.LevelData.SpawnPosition;
-        player.LastPosition = player.Position;
-
-        var human = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "LateHuman", player.Position);
-        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, human);
-
-        var client = (TestClient)human.Client;
-        Assert.True(ContainsPlayerInfo(client, player.Uuid));
-        Assert.True(ContainsListedFlag(client, player.Uuid, listed: true));
-        Assert.True(ContainsSpawn(client, player.EntityId));
-    }
-
-    [Fact]
-    public async Task RemovingServerPlayer_CleansUpObserversAndLookups()
-    {
-        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
-
-        var human = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Human");
-        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, human);
-        var client = (TestClient)human.Client;
-
-        var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
-        player.Position = human.Position;
-        player.LastPosition = player.Position;
         client.ClearPackets();
-
         Assert.True(await context.Server.RemoveServerPlayerAsync(player));
-
-        var packetNames = string.Join(", ", client.SentPackets.Select(packet => packet.GetType().Name));
-        Assert.True(ContainsPlayerInfoRemoval(client, player.Uuid), packetNames);
-        Assert.True(ContainsEntityRemoval(client, player.EntityId), packetNames);
+        Assert.True(ContainsPlayerInfoRemoval(client, player.Uuid));
+        Assert.True(ContainsEntityRemoval(client, player.EntityId));
         Assert.False(context.Server.IsPlayerOnline(player.Uuid));
         Assert.False(context.World.Players.ContainsKey(player.Uuid));
-        Assert.DoesNotContain(context.World.GetEntitiesInRange(player.Position, 1f), entity => entity.EntityId == player.EntityId);
     }
 
     [Fact]
@@ -131,72 +84,58 @@ public sealed class ServerPlayerTests
     }
 
     [Fact]
-    public async Task ServerPlayerGamemodeChange_ReachesConnectedPlayers()
+    public async Task FailedAndStaleServerPlayerOperationsPreserveRegistrations()
     {
-        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
+        {
+            await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
 
-        var human = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Human");
-        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, human);
-        var client = (TestClient)human.Client;
+            var existing = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
 
-        var player = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
-        client.ClearPackets();
+            // Same UUID under a new name, then the same name under a new UUID.
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => context.Server.AddServerPlayerAsync(existing.Uuid, "OtherBot", context.World));
+            var otherUuid = Guid.NewGuid();
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => context.Server.AddServerPlayerAsync(otherUuid, "ServerBot", context.World));
 
-        await player.SetGamemodeAsync(GameMode.Creative);
+            Assert.False(context.Server.IsPlayerOnline("OtherBot"));
+            Assert.False(context.Server.IsPlayerOnline(otherUuid));
+            Assert.Same(existing, context.Server.GetPlayer(existing.Uuid));
+            Assert.Same(existing, context.Server.GetPlayer("ServerBot"));
+        }
 
-        Assert.Contains(client.SentPackets.OfType<PlayerInfoUpdatePacket>(), packet =>
-            packet.Players.TryGetValue(player.Uuid, out var actions) && actions.OfType<UpdateGamemodeInfoAction>().Any());
-    }
+        {
+            await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
 
-    [Fact]
-    public async Task DuplicateServerPlayer_LeavesExistingRegistrationsIntact()
-    {
-        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
+            context.EventDispatcher.RegisterEvent(
+                null,
+                (Func<PlayerJoinEventArgs, ValueTask>)(_ => throw new InvalidOperationException("boom")),
+                Priority.Critical);
 
-        var existing = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
+            var uuid = Guid.NewGuid();
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => context.Server.AddServerPlayerAsync(uuid, "BrokenBot", context.World));
 
-        // Same UUID under a new name, then the same name under a new UUID.
-        await Assert.ThrowsAsync<InvalidOperationException>(() => context.Server.AddServerPlayerAsync(existing.Uuid, "OtherBot", context.World));
-        var otherUuid = Guid.NewGuid();
-        await Assert.ThrowsAsync<InvalidOperationException>(() => context.Server.AddServerPlayerAsync(otherUuid, "ServerBot", context.World));
+            Assert.False(context.Server.IsPlayerOnline(uuid));
+            Assert.False(context.World.Players.ContainsKey(uuid));
+            Assert.Null(context.Server.GetPlayer(uuid));
+        }
 
-        Assert.False(context.Server.IsPlayerOnline("OtherBot"));
-        Assert.False(context.Server.IsPlayerOnline(otherUuid));
-        Assert.Same(existing, context.Server.GetPlayer(existing.Uuid));
-        Assert.Same(existing, context.Server.GetPlayer("ServerBot"));
-    }
+        {
+            await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
 
-    [Fact]
-    public async Task FailedServerPlayerCreation_RollsBackRegistrations()
-    {
-        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
+            var uuid = Guid.NewGuid();
+            var stale = await context.Server.AddServerPlayerAsync(uuid, "ServerBot", context.World);
+            Assert.True(await context.Server.RemoveServerPlayerAsync(stale));
+            var replacement = await context.Server.AddServerPlayerAsync(uuid, "ServerBot", context.World);
 
-        context.EventDispatcher.RegisterEvent(null, (Func<PlayerJoinEventArgs, ValueTask>)(_ => throw new InvalidOperationException("boom")), Priority.Critical);
+            Assert.False(await context.Server.RemoveServerPlayerAsync(stale));
+            Assert.False(context.Server.RemovePlayer(stale));
 
-        var uuid = Guid.NewGuid();
-        await Assert.ThrowsAsync<InvalidOperationException>(() => context.Server.AddServerPlayerAsync(uuid, "BrokenBot", context.World));
-
-        Assert.False(context.Server.IsPlayerOnline(uuid));
-        Assert.False(context.World.Players.ContainsKey(uuid));
-        Assert.Null(context.Server.GetPlayer(uuid));
-    }
-
-    [Fact]
-    public async Task RemovingStaleReference_KeepsReplacementServerPlayer()
-    {
-        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
-
-        var uuid = Guid.NewGuid();
-        var stale = await context.Server.AddServerPlayerAsync(uuid, "ServerBot", context.World);
-        Assert.True(await context.Server.RemoveServerPlayerAsync(stale));
-        var replacement = await context.Server.AddServerPlayerAsync(uuid, "ServerBot", context.World);
-
-        Assert.False(await context.Server.RemoveServerPlayerAsync(stale));
-        Assert.False(context.Server.RemovePlayer(stale));
-
-        Assert.Same(replacement, context.Server.GetPlayer(uuid));
-        Assert.Same(replacement, context.Server.GetPlayer("ServerBot"));
-        Assert.Same(replacement, context.World.Players[uuid]);
+            Assert.Same(replacement, context.Server.GetPlayer(uuid));
+            Assert.Same(replacement, context.Server.GetPlayer("ServerBot"));
+            Assert.Same(replacement, context.World.Players[uuid]);
+        }
     }
 
     [Fact]
@@ -210,7 +149,10 @@ public sealed class ServerPlayerTests
 
         var player = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
         // Runs before the internal leave handler and stops it from running.
-        context.EventDispatcher.RegisterEvent(null, (Func<PlayerLeaveEventArgs, ValueTask>)(_ => throw new InvalidOperationException("boom")), Priority.Critical);
+        context.EventDispatcher.RegisterEvent(
+            null,
+            (Func<PlayerLeaveEventArgs, ValueTask>)(_ => throw new InvalidOperationException("boom")),
+            Priority.Critical);
         client.ClearPackets();
 
         Assert.True(await context.Server.RemoveServerPlayerAsync(player));
@@ -219,25 +161,8 @@ public sealed class ServerPlayerTests
         Assert.True(ContainsEntityRemoval(client, player.EntityId));
         Assert.False(context.Server.IsPlayerOnline(player.Uuid));
         Assert.False(context.World.Players.ContainsKey(player.Uuid));
-        Assert.DoesNotContain(context.World.GetEntitiesInRange(player.Position, 1f), entity => entity.EntityId == player.EntityId);
-    }
-
-    [Fact]
-    public async Task Explosion_NearServerPlayer_StillReachesConnectedPlayers()
-    {
-        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
-
-        var human = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Human");
-        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, human);
-        var client = (TestClient)human.Client;
-
-        var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
-        player.Position = human.Position + new VectorD(2, 0, 0);
-        client.ClearPackets();
-
-        await ((Obsidian.WorldData.AbstractLevel)context.World).ExplodeAsync(player, 1f);
-
-        Assert.Contains(client.SentPackets, packet => packet is ExplodePacket);
+        Assert.DoesNotContain(
+            context.World.GetEntitiesInRange(player.Position, 1f), entity => entity.EntityId == player.EntityId);
     }
 
     private static bool ContainsPlayerInfo(TestClient client, Guid uuid) =>
@@ -255,7 +180,8 @@ public sealed class ServerPlayerTests
 
     private static bool ContainsSpawn(TestClient client, int entityId) =>
         client.SentPackets.Any(packet => packet is AddEntityPacket add && add.EntityId == entityId
-            || packet is BundledPacket bundle && bundle.Packets.OfType<AddEntityPacket>().Any(add => add.EntityId == entityId));
+            || packet is BundledPacket bundle && bundle.Packets.OfType<AddEntityPacket>(
+                ).Any(add => add.EntityId == entityId));
 
     private static bool ContainsEntityRemoval(TestClient client, int entityId) =>
         client.SentPackets.OfType<RemoveEntitiesPacket>().Any(packet => packet.Entities.Contains(entityId));

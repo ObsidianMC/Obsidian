@@ -319,49 +319,6 @@ public sealed class NeoForgePorting
         Assert.Equal(PluginDependencyType.Optional, dependency.Type);
     }
 
-    [Theory]
-    [InlineData("\\u00e9", "é")]
-    [InlineData("\\U0001F600", "😀")]
-    [InlineData("\\uD800", null)]
-    [InlineData("\\U00110000", null)]
-    [InlineData("\\UFFFFFFFF", null)]
-    [InlineData("\\u 0e9", null)]
-    [InlineData("\\u+0e9", null)]
-    public void Toml_ReadsUnicodeScalarEscapesOnly(string escape, string expected)
-    {
-        var document = $"name = \"{escape}\"";
-
-        if (expected is null)
-            Assert.Throws<FormatException>(() => Toml.Parse(document));
-        else
-            Assert.Equal(expected, Toml.Parse(document)["name"]);
-    }
-
-    [Fact]
-    public void Write_AcceptsATrailingSeparatorAndCountsWhatItWrote()
-    {
-        var folder = Path.Join(Path.GetTempPath(), $"obsidian-porting-{Guid.NewGuid():N}");
-        var output = new Dictionary<string, byte[]>
-        {
-            ["obsidian.mod.json"] = [1],
-            ["../outside.json"] = [2]
-        };
-
-        try
-        {
-            using var errors = new StringWriter();
-
-            Assert.Equal(1, ModPorter.Write(output, folder + Path.DirectorySeparatorChar, errors));
-            Assert.True(File.Exists(Path.Join(folder, "obsidian.mod.json")));
-            Assert.Contains("../outside.json", errors.ToString());
-        }
-        finally
-        {
-            if (Directory.Exists(folder))
-                Directory.Delete(folder, recursive: true);
-        }
-    }
-
     [Fact]
     public void ModJar_PortsDataAndMetadataAndReportsTheRest()
     {

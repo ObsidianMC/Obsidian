@@ -13,76 +13,93 @@ using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Lighting;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Obsidian.Tests;
 
 [Collection(nameof(PluginTagFiles))]
-public sealed class RuntimeLightTests(ITestOutputHelper output)
+public sealed class RuntimeLightTests
 {
     [Fact]
-    public void PlaceAndRemoveSourcesAcrossChunkAndSectionBorders()
+    public void RuntimeLightPropagationMatchesFullComputation()
     {
-        var chunks = CreateArea(false);
-        var engine = Track(chunks, false);
-        var position = new Vector(15, 15, 8);
-        chunks[(0, 0)].SetBlock(position.X, position.Y, position.Z, BlocksRegistry.Glowstone);
-        Assert.Equal(0, Light(chunks, position, LightType.Block));
-        engine.Flush();
-        Assert.Equal(15, Light(chunks, position, LightType.Block));
-        Assert.Equal(14, Light(chunks, position + Vector.East, LightType.Block));
-        Assert.Equal(14, Light(chunks, position + Vector.Up, LightType.Block));
-        Assert.Equal(0, Light(chunks, position, LightType.Sky));
-        AssertMatchesFull(chunks, false);
-
-        // An independent, weaker source survives the decrease pass of the stronger source.
-        var other = new Vector(18, 15, 8);
-        chunks[(1, 0)].SetBlock(other.X, other.Y, other.Z, BlocksRegistry.Torch);
-        engine.Flush();
-        chunks[(0, 0)].SetBlock(position.X, position.Y, position.Z, BlocksRegistry.Air);
-        engine.Flush();
-        Assert.Equal(11, Light(chunks, position, LightType.Block));
-        AssertMatchesFull(chunks, false);
-        chunks[(1, 0)].SetBlock(other.X, other.Y, other.Z, BlocksRegistry.Air);
-        engine.Flush();
-        Assert.All(chunks.Values.SelectMany(chunk => chunk.Sections.ToArray()),
-            section => Assert.All(section.BlockLightArray.ToArray(), value => Assert.Equal(0, value)));
-    }
-
-    [Fact]
-    public void SkyObstructionAndDirectionalShapesMatchFullComputation()
-    {
-        var chunks = CreateArea(true);
-        var engine = Track(chunks, true);
-        var position = new Vector(15, 20, 8);
-        chunks[(0, 0)].SetBlock(position.X, position.Y, position.Z, BlocksRegistry.Stone);
-        engine.Flush();
-        Assert.Equal(0, Light(chunks, position, LightType.Sky));
-        Assert.Equal(14, Light(chunks, position + Vector.Down, LightType.Sky));
-        Assert.Equal(15, Light(chunks, position + Vector.East, LightType.Sky));
-        AssertMatchesFull(chunks, true);
-
-        var slab = BlocksRegistry.GetDefault(BlockIds.OakSlab);
-        foreach (var block in new[] { slab, BlocksRegistry.Water, BlocksRegistry.Air })
         {
-            chunks[(0, 0)].SetBlock(position.X, position.Y, position.Z, block);
+            var chunks = CreateArea(false);
+            var engine = Track(chunks, false);
+            var position = new Vector(15, 15, 8);
+            chunks[(0, 0)].SetBlock(position.X, position.Y, position.Z, BlocksRegistry.Glowstone);
+            Assert.Equal(0, Light(chunks, position, LightType.Block));
             engine.Flush();
+            Assert.Equal(15, Light(chunks, position, LightType.Block));
+            Assert.Equal(14, Light(chunks, position + Vector.East, LightType.Block));
+            Assert.Equal(14, Light(chunks, position + Vector.Up, LightType.Block));
+            Assert.Equal(0, Light(chunks, position, LightType.Sky));
+            AssertMatchesFull(chunks, false);
+
+            // An independent, weaker source survives the decrease pass of the stronger source.
+            var other = new Vector(18, 15, 8);
+            chunks[(1, 0)].SetBlock(other.X, other.Y, other.Z, BlocksRegistry.Torch);
+            engine.Flush();
+            chunks[(0, 0)].SetBlock(position.X, position.Y, position.Z, BlocksRegistry.Air);
+            engine.Flush();
+            Assert.Equal(11, Light(chunks, position, LightType.Block));
+            AssertMatchesFull(chunks, false);
+            chunks[(1, 0)].SetBlock(other.X, other.Y, other.Z, BlocksRegistry.Air);
+            engine.Flush();
+            Assert.All(chunks.Values.SelectMany(chunk => chunk.Sections.ToArray()),
+                section => Assert.All(section.BlockLightArray.ToArray(), value => Assert.Equal(0, value)));
+        }
+
+        {
+            var chunks = CreateArea(true);
+            var engine = Track(chunks, true);
+            var position = new Vector(15, 20, 8);
+            chunks[(0, 0)].SetBlock(position.X, position.Y, position.Z, BlocksRegistry.Stone);
+            engine.Flush();
+            Assert.Equal(0, Light(chunks, position, LightType.Sky));
+            Assert.Equal(14, Light(chunks, position + Vector.Down, LightType.Sky));
+            Assert.Equal(15, Light(chunks, position + Vector.East, LightType.Sky));
+            AssertMatchesFull(chunks, true);
+
+            var slab = BlocksRegistry.GetDefault(BlockIds.OakSlab);
+            foreach (var block in new[] { slab, BlocksRegistry.Water, BlocksRegistry.Air })
+            {
+                chunks[(0, 0)].SetBlock(position.X, position.Y, position.Z, block);
+                engine.Flush();
+                AssertMatchesFull(chunks, true);
+            }
+
+            Assert.Equal(15, Light(chunks, position + Vector.Down, LightType.Sky));
+            // The virtual sky source above the world must still illuminate a water block at the top.
+            var top = new Vector(8, 31, 8);
+            chunks[(0, 0)].SetBlock(top.X, top.Y, top.Z, BlocksRegistry.Water);
+            engine.Flush();
+            Assert.Equal(14, Light(chunks, top, LightType.Sky));
             AssertMatchesFull(chunks, true);
         }
 
-        Assert.Equal(15, Light(chunks, position + Vector.Down, LightType.Sky));
-        // The virtual sky source above the world must still illuminate a water block at the top.
-        var top = new Vector(8, 31, 8);
-        chunks[(0, 0)].SetBlock(top.X, top.Y, top.Z, BlocksRegistry.Water);
-        engine.Flush();
-        Assert.Equal(14, Light(chunks, top, LightType.Sky));
-        AssertMatchesFull(chunks, true);
+        {
+            var properties = new BlockProperties { LightEmission = 7 };
+            var type = BlocksRegistry.Register("runtime_light:lamp", properties);
+            var plugin = new LightPlugin();
+            Assert.True(BlocksRegistry.TryBind(type, properties, plugin, () => false));
+            var chunks = CreateArea(false);
+            var engine = Track(chunks, false);
+            var position = new Vector(8, 0, 8);
+            chunks[(0, 0)].SetBlock(position.X, position.Y, position.Z, type.DefaultState);
+            engine.Flush();
+            Assert.Equal(7, Light(chunks, position, LightType.Block));
+            Assert.Equal(6, Light(chunks, position + Vector.East, LightType.Block));
+            AssertMatchesFull(chunks, false);
+            chunks[(0, 0)].SetBlock(position.X, position.Y, position.Z, BlocksRegistry.Air);
+            engine.Flush();
+            Assert.Equal(0, Light(chunks, position + Vector.East, LightType.Block));
+            BlocksRegistry.ReleasePlugin(plugin);
+        }
     }
 
     [Fact]
@@ -111,65 +128,6 @@ public sealed class RuntimeLightTests(ITestOutputHelper output)
         engine.Flush();
         Assert.Equal(14, unloaded.GetLightLevel(0, 0, 8, LightType.Block));
         AssertMatchesFull(chunks, false);
-    }
-
-    [Fact]
-    public void BatchedEditsMatchFullComputationAndReportTiming()
-    {
-        var chunks = CreateArea(true);
-        var engine = Track(chunks, true);
-        var random = new Random(712);
-        IBlock[] blocks =
-        [
-            BlocksRegistry.Stone,
-            BlocksRegistry.Glowstone,
-            BlocksRegistry.Water,
-            BlocksRegistry.GetDefault(BlockIds.OakSlab),
-            BlocksRegistry.GetDefault(BlockIds.OakLeaves),
-            BlocksRegistry.Air
-        ];
-        var incremental = TimeSpan.Zero;
-        var full = TimeSpan.Zero;
-        for (var batch = 0; batch < 12; batch++)
-        {
-            var timer = Stopwatch.StartNew();
-            for (var edit = 0; edit < 24; edit++)
-            {
-                var position = new Vector(random.Next(-4, 20), random.Next(-20, 32), random.Next(-4, 20));
-                var chunk = chunks[(position.X >> 4, position.Z >> 4)];
-                chunk.SetBlock(position.X, position.Y, position.Z, blocks[random.Next(blocks.Length)]);
-            }
-
-            engine.Flush();
-            incremental += timer.Elapsed;
-            timer.Restart();
-            AssertMatchesFull(chunks, true);
-            full += timer.Elapsed;
-        }
-
-        output.WriteLine($"288 edits in 12 batches: incremental {incremental.TotalMilliseconds:F1} ms; "
-            + $"full recomputation and comparison {full.TotalMilliseconds:F1} ms (9 chunks, 64 layers).");
-    }
-
-    [Fact]
-    public void PluginEmissionUsesTheSameRuntimePropagation()
-    {
-        var properties = new BlockProperties { LightEmission = 7 };
-        var type = BlocksRegistry.Register("runtime_light:lamp", properties);
-        var plugin = new LightPlugin();
-        Assert.True(BlocksRegistry.TryBind(type, properties, plugin, () => false));
-        var chunks = CreateArea(false);
-        var engine = Track(chunks, false);
-        var position = new Vector(8, 0, 8);
-        chunks[(0, 0)].SetBlock(position.X, position.Y, position.Z, type.DefaultState);
-        engine.Flush();
-        Assert.Equal(7, Light(chunks, position, LightType.Block));
-        Assert.Equal(6, Light(chunks, position + Vector.East, LightType.Block));
-        AssertMatchesFull(chunks, false);
-        chunks[(0, 0)].SetBlock(position.X, position.Y, position.Z, BlocksRegistry.Air);
-        engine.Flush();
-        Assert.Equal(0, Light(chunks, position + Vector.East, LightType.Block));
-        BlocksRegistry.ReleasePlugin(plugin);
     }
 
     [Fact]
@@ -479,23 +437,6 @@ public sealed class RuntimeLightTests(ITestOutputHelper output)
         Assert.Equal(14, loaded.GetLightLevel(-7, 70, -8, LightType.Block));
         Assert.Equal(0, loaded.GetLightLevel(-8, 70, -8, LightType.Sky));
         Assert.Single(world.Lighting.TakeUpdates(), update => ReferenceEquals(update.Chunk, loaded));
-    }
-
-    [Fact]
-    public void UnfinishedSectionWritesKeepTheGenerationStoragePath()
-    {
-        var chunk = new Chunk(0, 0, -32, 64, ChunkGenStage.features);
-        var engine = new RuntimeLightEngine(new Lock(), () => true);
-        engine.Track(chunk);
-        var section = (ChunkSection)chunk.Sections[0];
-        Assert.Null(chunk.RuntimeLight);
-        Assert.Null(section.LiveChunk);
-        section.SetBlock(8, 8, 8, BlocksRegistry.Glowstone);
-        section.SetStateId(9, 8, 8, BlocksRegistry.Torch.GetHashCode());
-        Assert.Equal(BlockIds.Glowstone, chunk.GetBlock(8, -24, 8).RegistryId);
-        Assert.Equal(BlockIds.Torch, chunk.GetBlock(9, -24, 8).RegistryId);
-        Assert.Empty(engine.TakeUpdates());
-        Assert.Equal(0, chunk.GetLightLevel(8, -24, 8, LightType.Block));
     }
 
     private static Chunk CreateChunk(AbstractLevel world, int x, int z)

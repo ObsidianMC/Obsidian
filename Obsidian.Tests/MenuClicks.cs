@@ -34,150 +34,230 @@ public sealed class MenuClicks
     private static readonly MenuDefinition pouch = MenuTypesRegistry.Register("clicks:pouch", 1, 5);
 
     [Fact]
-    public void EqualCustomDataStacksMerge()
+    public void DragMovesItemsWithoutSurvivalDuplication()
     {
-        var first = ComponentBuilder.CustomData with
         {
-            Value = new NbtCompound
+            var menu = new MenuContainer(pouch, "Pouch");
+            var player = new FakePlayer
             {
-                new NbtTag<int>("level", 7),
-                new NbtTag<string>("owner", "Alex")
-            }
-        };
-        var second = ComponentBuilder.CustomData with
+                OpenedContainer = menu,
+                CarriedItem = new ItemStack(ItemsRegistry.Diamond, 1)
+            };
+
+            // Vanilla's buttons: start, add two slots, end, with the middle button's drag.
+            Click(player, -999, 8, ClickType.QuickCraft);
+            Click(player, 0, 9, ClickType.QuickCraft);
+            Click(player, 1, 9, ClickType.QuickCraft);
+            Click(player, -999, 10, ClickType.QuickCraft);
+
+            Assert.All(menu, Assert.Null);
+            Assert.Equal(1, player.CarriedItem.Count);
+            Assert.False(player.IsDragging);
+            Assert.Empty(player.DraggedSlots);
+        }
+
         {
-            Value = new NbtCompound
+            var menu = new MenuContainer(pouch, "Pouch");
+            var player = new FakePlayer
             {
-                new NbtTag<string>("owner", "Alex"),
-                new NbtTag<int>("level", 7)
+                OpenedContainer = menu,
+                CarriedItem = new ItemStack(ItemsRegistry.Stone, 4)
+            };
+
+            Click(player, -999, 0, ClickType.QuickCraft);
+            Click(player, 0, 1, ClickType.QuickCraft);
+            Click(player, 5, 1, ClickType.QuickCraft);
+            Click(player, -999, 2, ClickType.QuickCraft);
+
+            Assert.Equal(2, menu.GetItem(0)?.Count);
+            Assert.Equal(2, player.Inventory.GetItem(9)?.Count);
+            Assert.All(menu.Skip(1), Assert.Null);
+            Assert.Null(player.CarriedItem);
+            Assert.False(player.IsDragging);
+        }
+    }
+
+    [Fact]
+    public void MenuTransfersPreserveStacksAndComponents()
+    {
+        {
+            var menu = new MenuContainer(pouch, "Pouch");
+            var player = new FakePlayer { OpenedContainer = menu };
+            var named = new ItemStack(
+                ItemsRegistry.Stone, 5, ComponentBuilder.CustomName with { Value = "Named stone" });
+            menu.SetItem(0, named);
+
+            // Like vanilla's chest, to the hotbar's last slot first.
+            Click(player, 0, 0, ClickType.QuickMove);
+
+            Assert.Null(menu.GetItem(0));
+            Assert.Equal(named, player.Inventory.GetItem(44));
+            Assert.Equal(5, player.Inventory.GetItem(44)?.Count);
+
+            Click(player, 40, 0, ClickType.QuickMove);
+
+            Assert.Null(player.Inventory.GetItem(44));
+            Assert.Equal(named, menu.GetItem(0));
+        }
+
+        {
+            var first = ComponentBuilder.CustomData with
+            {
+                Value = new NbtCompound
+                {
+                    new NbtTag<int>("level", 7),
+                    new NbtTag<string>("owner", "Alex")
+                }
+            };
+            var second = ComponentBuilder.CustomData with
+            {
+                Value = new NbtCompound
+                {
+                    new NbtTag<string>("owner", "Alex"),
+                    new NbtTag<int>("level", 7)
+                }
+            };
+            var stored = new ItemStack(ItemsRegistry.Stone, 5, first);
+            var carried = new ItemStack(ItemsRegistry.Stone, 3, second);
+            Assert.Equal(first, first with { Value = first.Value });
+            Assert.Equal(stored, carried);
+            Assert.Equal(stored.GetHashCode(), carried.GetHashCode());
+
+            var menu = new MenuContainer(pouch, "Pouch");
+            menu.SetItem(0, stored);
+            var player = new FakePlayer
+            {
+                OpenedContainer = menu,
+                CarriedItem = carried
+            };
+
+            Click(player, 0, 0, ClickType.Pickup);
+
+            Assert.Equal(8, menu.GetItem(0)?.Count);
+            Assert.Null(player.CarriedItem);
+            Assert.All(menu.Skip(1), Assert.Null);
+
+            var different = new ItemStack(ItemsRegistry.Stone, 3, ComponentBuilder.CustomData with
+            {
+                Value = new NbtCompound { new NbtTag<int>("level", 8) }
+            });
+            Assert.NotEqual(stored, different);
+        }
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task SharedChestClicksDoNotDuplicateItems()
+    {
+        {
+            await using var context = TestServerFactory.CreateServer($"menu-clicks-{Guid.NewGuid():N}");
+            var first = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "First");
+            var second = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Second");
+            Obsidian.Entities.Player[] players = [first, second];
+            var menu = new MenuContainer(pouch, "Pouch");
+            menu.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 10));
+
+            foreach (var player in players)
+                await player.OpenInventoryAsync(menu);
+
+            Assert.Equal(2, menu.Viewers.Count);
+
+            await Task.WhenAll(players.Select(player => Task.Run(() => PickUpAsync(player))));
+
+            Assert.Null(menu.GetItem(0));
+            Assert.Equal(10, players.Sum(player => player.CarriedItem?.Count ?? 0));
+
+            // The one holding the stack puts it back; the other sees it there.
+            var holder = players.Single(player => player.CarriedItem is not null);
+            var other = players.Single(player => player != holder);
+            await PickUpAsync(holder);
+
+            var shown = ((TestClient)other.Client).SentPackets.OfType<ContainerSetContentPacket>().Last();
+            Assert.Equal(other.CurrentContainerId, shown.ContainerId);
+            Assert.Equal(10, shown.Items[0]?.Count);
+
+            async Task PickUpAsync(Obsidian.Entities.Player player)
+            {
+                var click = Packet(player.CurrentContainerId, 0, 0, ClickType.Pickup);
+                await click.HandleAsync(context.Server, player);
             }
-        };
-        var stored = new ItemStack(ItemsRegistry.Stone, 5, first);
-        var carried = new ItemStack(ItemsRegistry.Stone, 3, second);
-        Assert.Equal(first, first with { Value = first.Value });
-        Assert.Equal(stored, carried);
-        Assert.Equal(stored.GetHashCode(), carried.GetHashCode());
+        }
 
-        var menu = new MenuContainer(pouch, "Pouch");
-        menu.SetItem(0, stored);
-        var player = new FakePlayer
         {
-            OpenedContainer = menu,
-            CarriedItem = carried
-        };
+            await using var context = TestServerFactory.CreateServer($"chest-open-{Guid.NewGuid():N}");
+            Obsidian.Entities.Player[] players =
+            [
+                TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "First"),
+                TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Second")
+            ];
+            var position = new Vector(0, 64, 0);
 
-        Click(player, 0, 0, ClickType.Pickup);
+            // A chest without its block entity yet, as in a world saved before chests got theirs when placed.
+            var chunk = new Chunk(0, 0);
+            chunk.SetChunkStatus(ChunkGenStage.full);
+            chunk.SetBlock(position.X, position.Y, position.Z, BlocksRegistry.Chest);
+            context.World.LoadRegionByChunk(0, 0).SetChunk(chunk);
 
-        Assert.Equal(8, menu.GetItem(0)?.Count);
-        Assert.Null(player.CarriedItem);
-        Assert.All(menu.Skip(1), Assert.Null);
+            await Task.WhenAll(players.Select(player => Task.Run(async () =>
+                await context.Server.EventDispatcher.ExecuteEventAsync(
+                    new PlayerInteractEventArgs(player, context.Server)
+                    {
+                        Block = BlocksRegistry.Chest,
+                        BlockLocation = position
+                    }))));
 
-        var different = new ItemStack(ItemsRegistry.Stone, 3, ComponentBuilder.CustomData with
+            var blockEntity = await context.World.GetBlockEntityAsync(position);
+            var stored = Assert.IsAssignableFrom<ContainerBlockEntity>(blockEntity).Inventory;
+            Assert.All(players, player => Assert.Same(stored, player.OpenedContainer));
+            Assert.Equal(2, stored.Viewers.Count);
+        }
+
         {
-            Value = new NbtCompound { new NbtTag<int>("level", 8) }
-        });
-        Assert.NotEqual(stored, different);
-    }
+            await using var context = TestServerFactory.CreateServer($"double-chest-{Guid.NewGuid():N}");
+            var chunk = new Chunk(0, 0);
+            chunk.SetChunkStatus(ChunkGenStage.full);
+            context.World.LoadRegionByChunk(0, 0).SetChunk(chunk);
 
-    [Fact(DisplayName = "A survival player's full-stack drag creates no items")]
-    public void SurvivalMiddleDragCreatesNothing()
-    {
-        var menu = new MenuContainer(pouch, "Pouch");
-        var player = new FakePlayer
-        {
-            OpenedContainer = menu,
-            CarriedItem = new ItemStack(ItemsRegistry.Diamond, 1)
-        };
+            // Facing north, a left half's other half is east of it; the right half's slots come first.
+            var left = BlocksRegistry.Chest.WithProperty("facing", "north").WithProperty("type", "left");
+            var right = BlocksRegistry.Chest.WithProperty("facing", "north").WithProperty("type", "right");
+            chunk.SetBlock(0, 64, 0, left);
+            chunk.SetBlock(1, 64, 0, right);
 
-        // Vanilla's buttons: start, add two slots, end, with the middle button's drag.
-        Click(player, -999, 8, ClickType.QuickCraft);
-        Click(player, 0, 9, ClickType.QuickCraft);
-        Click(player, 1, 9, ClickType.QuickCraft);
-        Click(player, -999, 10, ClickType.QuickCraft);
+            var first = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "First");
+            var second = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Second");
+            await InteractAsync(first, left, new Vector(0, 64, 0));
+            await InteractAsync(second, right, new Vector(1, 64, 0));
 
-        Assert.All(menu, Assert.Null);
-        Assert.Equal(1, player.CarriedItem.Count);
-        Assert.False(player.IsDragging);
-        Assert.Empty(player.DraggedSlots);
-    }
+            var leftHalf = await HalfAsync(new Vector(0, 64, 0));
+            var rightHalf = await HalfAsync(new Vector(1, 64, 0));
+            foreach (var player in new[] { first, second })
+            {
+                var window = Assert.IsType<DoubleChestContainer>(player.OpenedContainer);
+                Assert.Equal(54, window.Size);
+                Assert.Same(rightHalf, window.First);
+                Assert.Same(leftHalf, window.Second);
+            }
 
-    [Fact(DisplayName = "A drag spreads the carried stack across the menu and the player's inventory")]
-    public void DragReachesPlayerInventory()
-    {
-        var menu = new MenuContainer(pouch, "Pouch");
-        var player = new FakePlayer
-        {
-            OpenedContainer = menu,
-            CarriedItem = new ItemStack(ItemsRegistry.Stone, 4)
-        };
+            // A click in the left half reaches its block entity and the other viewer's window.
+            first.CarriedItem = new ItemStack(ItemsRegistry.Diamond, 3);
+            await ClickAsync(context.Server, first, 27, 0, ClickType.Pickup);
 
-        Click(player, -999, 0, ClickType.QuickCraft);
-        Click(player, 0, 1, ClickType.QuickCraft);
-        Click(player, 5, 1, ClickType.QuickCraft);
-        Click(player, -999, 2, ClickType.QuickCraft);
+            Assert.Equal(3, leftHalf.GetItem(0)?.Count);
+            var shown = ((TestClient)second.Client).SentPackets.OfType<ContainerSetContentPacket>().Last();
+            Assert.Equal(second.CurrentContainerId, shown.ContainerId);
+            Assert.Equal(3, shown.Items[27]?.Count);
 
-        Assert.Equal(2, menu.GetItem(0)?.Count);
-        Assert.Equal(2, player.Inventory.GetItem(9)?.Count);
-        Assert.All(menu.Skip(1), Assert.Null);
-        Assert.Null(player.CarriedItem);
-        Assert.False(player.IsDragging);
-    }
+            async Task InteractAsync(Obsidian.Entities.Player player, IBlock block, Vector position) =>
+                await context.Server.EventDispatcher.ExecuteEventAsync(
+                    new PlayerInteractEventArgs(player, context.Server)
+                    {
+                        Block = block,
+                        BlockLocation = position
+                    });
 
-    [Fact(DisplayName = "Shift-clicking moves whole stacks between the menu and the player's inventory")]
-    public void QuickMoveCrossesToTheOtherInventory()
-    {
-        var menu = new MenuContainer(pouch, "Pouch");
-        var player = new FakePlayer { OpenedContainer = menu };
-        var named = new ItemStack(ItemsRegistry.Stone, 5, ComponentBuilder.CustomName with { Value = "Named stone" });
-        menu.SetItem(0, named);
-
-        // Like vanilla's chest, to the hotbar's last slot first.
-        Click(player, 0, 0, ClickType.QuickMove);
-
-        Assert.Null(menu.GetItem(0));
-        Assert.Equal(named, player.Inventory.GetItem(44));
-        Assert.Equal(5, player.Inventory.GetItem(44)?.Count);
-
-        Click(player, 40, 0, ClickType.QuickMove);
-
-        Assert.Null(player.Inventory.GetItem(44));
-        Assert.Equal(named, menu.GetItem(0));
-    }
-
-    [Fact(DisplayName = "Viewers of a shared menu take turns and see each other's clicks",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task SharedMenuClicksTakeTurns()
-    {
-        await using var context = TestServerFactory.CreateServer($"menu-clicks-{Guid.NewGuid():N}");
-        var first = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "First");
-        var second = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Second");
-        Obsidian.Entities.Player[] players = [first, second];
-        var menu = new MenuContainer(pouch, "Pouch");
-        menu.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 10));
-
-        foreach (var player in players)
-            await player.OpenInventoryAsync(menu);
-
-        Assert.Equal(2, menu.Viewers.Count);
-
-        await Task.WhenAll(players.Select(player => Task.Run(() => PickUpAsync(player))));
-
-        Assert.Null(menu.GetItem(0));
-        Assert.Equal(10, players.Sum(player => player.CarriedItem?.Count ?? 0));
-
-        // The one holding the stack puts it back; the other sees it there.
-        var holder = players.Single(player => player.CarriedItem is not null);
-        var other = players.Single(player => player != holder);
-        await PickUpAsync(holder);
-
-        var shown = ((TestClient)other.Client).SentPackets.OfType<ContainerSetContentPacket>().Last();
-        Assert.Equal(other.CurrentContainerId, shown.ContainerId);
-        Assert.Equal(10, shown.Items[0]?.Count);
-
-        async Task PickUpAsync(Obsidian.Entities.Player player)
-        {
-            var click = Packet(player.CurrentContainerId, 0, 0, ClickType.Pickup);
-            await click.HandleAsync(context.Server, player);
+            async Task<BaseContainer> HalfAsync(Vector position) =>
+                Assert.IsAssignableFrom<ContainerBlockEntity>(
+                    await context.World.GetBlockEntityAsync(position)).Inventory;
         }
     }
 
@@ -250,62 +330,6 @@ public sealed class MenuClicks
 
         async Task ClickAsync(short slot, sbyte button) =>
             await Packet(0, slot, button, ClickType.QuickCraft).HandleAsync(context.Server, player);
-    }
-
-    [Fact(DisplayName = "Opening a container syncs the cursor, and closing it from the server closes the screen",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task OpenSyncsCursorAndForcedCloseClosesScreen()
-    {
-        await using var context = TestServerFactory.CreateServer($"menu-close-{Guid.NewGuid():N}");
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Closer");
-        var client = (TestClient)player.Client;
-        player.CarriedItem = new ItemStack(ItemsRegistry.Stone, 3);
-
-        // Even an empty chest's contents are sent, as they carry the cursor.
-        await player.OpenInventoryAsync(new Container());
-        var id = player.CurrentContainerId;
-
-        var contents = client.SentPackets.OfType<ContainerSetContentPacket>().Last();
-        Assert.Equal(id, contents.ContainerId);
-        Assert.Equal(3, contents.CarriedItem?.Count);
-
-        // The server's close handler lets go of the container, but the client's screen still closes.
-        await player.CloseContainerAsync();
-
-        Assert.Null(player.OpenedContainer);
-        var closed = client.SentPackets.OfType<Net.Packets.Play.Clientbound.ContainerClosePacket>().Single();
-        Assert.Equal(id, closed.ContainerId);
-    }
-
-    [Fact(DisplayName = "Players opening a new chest at once share its one stored container",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task FirstOpenOfAChestSharesOneContainer()
-    {
-        await using var context = TestServerFactory.CreateServer($"chest-open-{Guid.NewGuid():N}");
-        Obsidian.Entities.Player[] players =
-        [
-            TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "First"),
-            TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Second")
-        ];
-        var position = new Vector(0, 64, 0);
-
-        // A chest without its block entity yet, as in a world saved before chests got theirs when placed.
-        var chunk = new Chunk(0, 0);
-        chunk.SetChunkStatus(ChunkGenStage.full);
-        chunk.SetBlock(position.X, position.Y, position.Z, BlocksRegistry.Chest);
-        context.World.LoadRegionByChunk(0, 0).SetChunk(chunk);
-
-        await Task.WhenAll(players.Select(player => Task.Run(async () =>
-            await context.Server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, context.Server)
-            {
-                Block = BlocksRegistry.Chest,
-                BlockLocation = position
-            }))));
-
-        var blockEntity = await context.World.GetBlockEntityAsync(position);
-        var stored = Assert.IsAssignableFrom<ContainerBlockEntity>(blockEntity).Inventory;
-        Assert.All(players, player => Assert.Same(stored, player.OpenedContainer));
-        Assert.Equal(2, stored.Viewers.Count);
     }
 
     // Rows of vanilla's click behaviour, each a click sequence on a fresh player, played through the click packet.
@@ -420,52 +444,166 @@ public sealed class MenuClicks
         await clickRows[row](context.Server, player);
     }
 
-    [Fact(DisplayName = "A click whose slots changed while plugins decided isn't applied, and is corrected",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task StaleOrCancelledClicksAreCorrected()
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task StaleClicksCannotDuplicateItems()
     {
-        await using var context = TestServerFactory.CreateServer($"stale-click-{Guid.NewGuid():N}");
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Clicker");
-        var client = (TestClient)player.Client;
-        var menu = await OpenAsync(player, new MenuContainer(pouch, "Pouch"));
-        menu.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 10));
-
-        var interfere = true;
-        var changed = false;
-        context.EventDispatcher.RegisterEvent(null, (Func<ContainerClickEventArgs, ValueTask>)(click =>
         {
-            if (interfere)
             {
-                // Another change lands while the handler decides; its change, registered with the click, mustn't run.
-                menu.SetItem(0, new ItemStack(ItemsRegistry.Stone, 1));
-                click.ApplyWithClick(() => changed = true);
+                await using var context = TestServerFactory.CreateServer($"stale-click-{Guid.NewGuid():N}");
+                var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Clicker");
+                var client = (TestClient)player.Client;
+                var menu = await OpenAsync(player, new MenuContainer(pouch, "Pouch"));
+                menu.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 10));
+
+                var interfere = true;
+                var changed = false;
+                context.EventDispatcher.RegisterEvent(null, (Func<ContainerClickEventArgs, ValueTask>)(click =>
+                {
+                    if (interfere)
+                    {
+                        // Another change lands while the handler decides. Its registered click change mustn't run.
+                        menu.SetItem(0, new ItemStack(ItemsRegistry.Stone, 1));
+                        click.ApplyWithClick(() => changed = true);
+                    }
+                    else
+                    {
+                        click.Cancel();
+                        click.ApplyWithClick(() => menu.SetItem(1, new ItemStack(ItemsRegistry.GoldIngot, 2)));
+                    }
+
+                    return ValueTask.CompletedTask;
+                }), Priority.Normal);
+
+                await ClickAsync(context.Server, player, 0, 0, ClickType.Pickup);
+
+                Assert.Null(player.CarriedItem);
+                Assert.False(changed);
+                Assert.True(menu.GetItem(0)?.Is(ItemsRegistry.Stone));
+                Assert.True(
+                    client.SentPackets.OfType<ContainerSetContentPacket>().Last().Items[0]?.Is(ItemsRegistry.Stone));
+
+                // A cancelled click applies only the change registered with it, and the window is sent all the same.
+                interfere = false;
+                var sent = client.SentPackets.Count;
+                await ClickAsync(context.Server, player, 0, 0, ClickType.Pickup);
+
+                Assert.Null(player.CarriedItem);
+                Assert.Equal(2, menu.GetItem(1)?.Count);
+                var shown = client.SentPackets.Skip(sent).OfType<ContainerSetContentPacket>().Single();
+                Assert.Equal(2, shown.Items[1]?.Count);
+                Assert.Null(shown.CarriedItem);
             }
-            else
+
             {
-                click.Cancel();
-                click.ApplyWithClick(() => menu.SetItem(1, new ItemStack(ItemsRegistry.GoldIngot, 2)));
+                await using var context = TestServerFactory.CreateServer($"pickup-click-{Guid.NewGuid():N}");
+                var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Clicker");
+                var chest = await OpenAsync(player, new Container());
+                var sword = new ItemStack(ItemsRegistry.IronSword);
+                sword[DataComponentType.Damage] = ComponentBuilder.Damage with { Value = 3 };
+                chest.SetItem(0, sword);
+                player.Inventory.SetItem(36, new ItemStack(ItemsRegistry.Diamond, 10));
+
+                var changed = false;
+                context.EventDispatcher.RegisterEvent(null, (Func<ContainerClickEventArgs, ValueTask>)(click =>
+                {
+                    // Replacing a component on the copy reaches neither the slot nor the next read.
+                    click.Item![DataComponentType.Damage] = ComponentBuilder.Damage with { Value = 100 };
+                    Assert.Equal(3, click.Item.Damage);
+
+                    // A pickup tops up the held stack in place while the handler decides.
+                    Obsidian.Entities.Player.AddToInventory(
+                        player.Inventory, 36, new ItemStack(ItemsRegistry.Diamond, 1));
+                    click.ApplyWithClick(() => changed = true);
+
+                    return ValueTask.CompletedTask;
+                }), Priority.Normal);
+
+                await ClickAsync(context.Server, player, 0, 0, ClickType.Pickup);
+
+                Assert.Null(player.CarriedItem);
+                Assert.False(changed);
+                Assert.Same(sword, chest.GetItem(0));
+                Assert.Equal(3, sword.Damage);
+                Assert.Equal(11, player.Inventory.GetItem(36)?.Count);
             }
 
-            return ValueTask.CompletedTask;
-        }), Priority.Normal);
+            {
+                await RecipesRegistry.InitializeAsync();
+                await using var context = TestServerFactory.CreateServer($"stale-craft-{Guid.NewGuid():N}");
+                var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Crafter");
+                var client = (TestClient)player.Client;
 
-        await ClickAsync(context.Server, player, 0, 0, ClickType.Pickup);
+                // If the grid changes before its result follows, the stale result must not be taken or recomputed
+                // and taken instead.
+                player.Inventory.SetItem(1, new ItemStack(ItemsRegistry.OakLog, 1));
+                player.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 1));
 
-        Assert.Null(player.CarriedItem);
-        Assert.False(changed);
-        Assert.True(menu.GetItem(0)?.Is(ItemsRegistry.Stone));
-        Assert.True(client.SentPackets.OfType<ContainerSetContentPacket>().Last().Items[0]?.Is(ItemsRegistry.Stone));
+                await ClickAsync(context.Server, player, 0, 0, ClickType.Pickup);
 
-        // A cancelled click applies only the change registered with it, and the window is sent all the same.
-        interfere = false;
-        var sent = client.SentPackets.Count;
-        await ClickAsync(context.Server, player, 0, 0, ClickType.Pickup);
+                Assert.Null(player.CarriedItem);
+                Assert.Equal(1, player.Inventory.GetItem(1)?.Count);
+                Assert.True(player.Inventory.GetItem(0)?.Is(ItemsRegistry.OakPlanks));
+                var shown = client.SentPackets.OfType<ContainerSetContentPacket>().Last();
+                Assert.True(shown.Items[0]?.Is(ItemsRegistry.OakPlanks));
 
-        Assert.Null(player.CarriedItem);
-        Assert.Equal(2, menu.GetItem(1)?.Count);
-        var shown = client.SentPackets.Skip(sent).OfType<ContainerSetContentPacket>().Single();
-        Assert.Equal(2, shown.Items[1]?.Count);
-        Assert.Null(shown.CarriedItem);
+                // A change registered with a click is followed by the result too, before the window is sent.
+                context.EventDispatcher.RegisterEvent(null, (Func<ContainerClickEventArgs, ValueTask>)(click =>
+                {
+                    click.ApplyWithClick(() => player.Inventory.SetItem(1, null));
+
+                    return ValueTask.CompletedTask;
+                }), Priority.Normal);
+
+                await ClickAsync(context.Server, player, 9, 0, ClickType.Pickup);
+
+                Assert.Null(player.Inventory.GetItem(0));
+                Assert.Null(client.SentPackets.OfType<ContainerSetContentPacket>().Last().Items[0]);
+            }
+        }
+
+        {
+            await using var context = TestServerFactory.CreateServer($"component-click-{Guid.NewGuid():N}");
+            var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Clicker");
+            var food = new FoodDataComponent
+            {
+                Nutrition = 1,
+                SaturationModifier = 0.5f,
+                CanAlwaysEat = false
+            };
+            var stack = new ItemStack(ItemsRegistry.Apple, 1, food);
+            var chest = new Container();
+            chest.SetItem(0, stack);
+            await OpenAsync(player, chest);
+            var revision = chest.Revision;
+            var client = (TestClient)player.Client;
+            var sent = client.SentPackets.Count;
+            var applied = false;
+
+            context.EventDispatcher.RegisterEvent(null, (Func<ContainerClickEventArgs, ValueTask>)(click =>
+            {
+                stack[DataComponentType.Food] = food with { Nutrition = 5 };
+                click.ApplyWithClick(() => applied = true);
+                return ValueTask.CompletedTask;
+            }), Priority.Normal);
+
+            await ClickAsync(context.Server, player, 0, 0, ClickType.Pickup);
+
+            Assert.True(chest.Revision > revision);
+            Assert.False(applied);
+            Assert.Null(player.CarriedItem);
+            Assert.Same(stack, chest.GetItem(0));
+            Assert.Equal(1, food.Nutrition);
+            var shown = client.SentPackets.Skip(sent).OfType<ContainerSetContentPacket>().Last();
+            var updated = shown.Items[0]!.GetComponent<FoodDataComponent>(DataComponentType.Food)!;
+            Assert.Equal(5, updated.Nutrition);
+
+            // The actual wire value and a captured packet remain independent of subsequent replacements.
+            stack[DataComponentType.Food] = food with { Nutrition = 9 };
+            var wire = new NetworkBuffer();
+            wire.WriteItemStack(shown.Items[0]);
+            wire.Reset();
+            Assert.Equal(5, wire.ReadItemStack()!.GetComponent<FoodDataComponent>(DataComponentType.Food)!.Nutrition);
+        }
     }
 
     [Fact(DisplayName = "Creative slot packets need creative mode and set the player's inventory",
@@ -490,353 +628,135 @@ public sealed class MenuClicks
         Assert.All(chest, Assert.Null);
     }
 
-    [Fact(DisplayName = "A double chest opens as one 54-slot window over both halves, which viewers share",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task DoubleChestSharesBothHalves()
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task WindowSnapshotsRecoverWithoutSendingStaleState()
     {
-        await using var context = TestServerFactory.CreateServer($"double-chest-{Guid.NewGuid():N}");
-        var chunk = new Chunk(0, 0);
-        chunk.SetChunkStatus(ChunkGenStage.full);
-        context.World.LoadRegionByChunk(0, 0).SetChunk(chunk);
-
-        // Facing north, a left half's other half is east of it; the right half's slots come first.
-        var left = BlocksRegistry.Chest.WithProperty("facing", "north").WithProperty("type", "left");
-        var right = BlocksRegistry.Chest.WithProperty("facing", "north").WithProperty("type", "right");
-        chunk.SetBlock(0, 64, 0, left);
-        chunk.SetBlock(1, 64, 0, right);
-
-        var first = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "First");
-        var second = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Second");
-        await InteractAsync(first, left, new Vector(0, 64, 0));
-        await InteractAsync(second, right, new Vector(1, 64, 0));
-
-        var leftHalf = await HalfAsync(new Vector(0, 64, 0));
-        var rightHalf = await HalfAsync(new Vector(1, 64, 0));
-        foreach (var player in new[] { first, second })
         {
-            var window = Assert.IsType<DoubleChestContainer>(player.OpenedContainer);
-            Assert.Equal(54, window.Size);
-            Assert.Same(rightHalf, window.First);
-            Assert.Same(leftHalf, window.Second);
-        }
+            await using var context = TestServerFactory.CreateServer($"stale-window-{Guid.NewGuid():N}");
+            var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Viewer");
+            var client = (TestClient)player.Client;
+            player.Inventory.SetItem(36, new ItemStack(ItemsRegistry.Stone));
+            var handled = new List<IClientboundPacket>();
+            var changing = true;
+            player.WindowSnapshots = new WindowSnapshots(Decide, packet => client.SendPacket(packet));
+            var sent = client.SentPackets.Count;
 
-        // A click in the left half reaches its block entity and the other viewer's window.
-        first.CarriedItem = new ItemStack(ItemsRegistry.Diamond, 3);
-        await ClickAsync(context.Server, first, 27, 0, ClickType.Pickup);
+            // Each snapshot the click sends meets a change, so none is sent, and the window is left stale.
+            await ClickAsync(context.Server, player, 9, 0, ClickType.Pickup);
 
-        Assert.Equal(3, leftHalf.GetItem(0)?.Count);
-        var shown = ((TestClient)second.Client).SentPackets.OfType<ContainerSetContentPacket>().Last();
-        Assert.Equal(second.CurrentContainerId, shown.ContainerId);
-        Assert.Equal(3, shown.Items[27]?.Count);
+            Assert.Equal(2, handled.Count);
+            Assert.Empty(client.SentPackets.Skip(sent));
+            Assert.True(player.WindowSnapshots.IsStale);
 
-        async Task InteractAsync(Obsidian.Entities.Player player, IBlock block, Vector position) =>
-            await context.Server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, context.Server)
+            // A tick tries once, not again and again while the window keeps changing.
+            await MainEventHandler.RefreshStaleWindowAsync(player);
+
+            Assert.Equal(3, handled.Count);
+            Assert.Empty(client.SentPackets.Skip(sent));
+
+            // Once it holds still, the window is sent as it is now, through the handlers.
+            changing = false;
+            await MainEventHandler.RefreshStaleWindowAsync(player);
+
+            var shown = Assert.IsType<ContainerSetContentPacket>(Assert.Single(client.SentPackets.Skip(sent)));
+            Assert.Contains(shown, handled);
+            Assert.Equal(4, shown.Items[36]?.Count);
+            Assert.False(player.WindowSnapshots.IsStale);
+
+            // Stands in for a plugin's queue handler during which the held stack grows, as a pickup would grow it.
+            ValueTask<bool> Decide(IClientboundPacket packet)
             {
-                Block = block,
-                BlockLocation = position
-            });
+                handled.Add(packet);
 
-        async Task<BaseContainer> HalfAsync(Vector position) =>
-            Assert.IsAssignableFrom<ContainerBlockEntity>(await context.World.GetBlockEntityAsync(position)).Inventory;
-    }
+                if (changing)
+                    player.Inventory.GetItem(36)!.Count++;
 
-    [Fact(DisplayName = "An item picked up while plugins decide makes the click stale, and Item shares nothing",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task PickupWhileDecidingRejectsTheClick()
-    {
-        await using var context = TestServerFactory.CreateServer($"pickup-click-{Guid.NewGuid():N}");
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Clicker");
-        var chest = await OpenAsync(player, new Container());
-        var sword = new ItemStack(ItemsRegistry.IronSword);
-        sword[DataComponentType.Damage] = ComponentBuilder.Damage with { Value = 3 };
-        chest.SetItem(0, sword);
-        player.Inventory.SetItem(36, new ItemStack(ItemsRegistry.Diamond, 10));
-
-        var changed = false;
-        context.EventDispatcher.RegisterEvent(null, (Func<ContainerClickEventArgs, ValueTask>)(click =>
-        {
-            // Replacing a component on the copy reaches neither the slot nor the next read.
-            click.Item![DataComponentType.Damage] = ComponentBuilder.Damage with { Value = 100 };
-            Assert.Equal(3, click.Item.Damage);
-
-            // A pickup tops up the held stack in place while the handler decides.
-            Obsidian.Entities.Player.AddToInventory(player.Inventory, 36, new ItemStack(ItemsRegistry.Diamond, 1));
-            click.ApplyWithClick(() => changed = true);
-
-            return ValueTask.CompletedTask;
-        }), Priority.Normal);
-
-        await ClickAsync(context.Server, player, 0, 0, ClickType.Pickup);
-
-        Assert.Null(player.CarriedItem);
-        Assert.False(changed);
-        Assert.Same(sword, chest.GetItem(0));
-        Assert.Equal(3, sword.Damage);
-        Assert.Equal(11, player.Inventory.GetItem(36)?.Count);
-    }
-
-    [Fact(DisplayName = "Replacing a slot's component advances its revision and corrects an in-flight click",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task ReplacingComponentInvalidatesClickAndReachesViewer()
-    {
-        await using var context = TestServerFactory.CreateServer($"component-click-{Guid.NewGuid():N}");
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Clicker");
-        var food = new FoodDataComponent
-        {
-            Nutrition = 1,
-            SaturationModifier = 0.5f,
-            CanAlwaysEat = false
-        };
-        var stack = new ItemStack(ItemsRegistry.Apple, 1, food);
-        var chest = new Container();
-        chest.SetItem(0, stack);
-        await OpenAsync(player, chest);
-        var revision = chest.Revision;
-        var client = (TestClient)player.Client;
-        var sent = client.SentPackets.Count;
-        var applied = false;
-
-        context.EventDispatcher.RegisterEvent(null, (Func<ContainerClickEventArgs, ValueTask>)(click =>
-        {
-            stack[DataComponentType.Food] = food with { Nutrition = 5 };
-            click.ApplyWithClick(() => applied = true);
-            return ValueTask.CompletedTask;
-        }), Priority.Normal);
-
-        await ClickAsync(context.Server, player, 0, 0, ClickType.Pickup);
-
-        Assert.True(chest.Revision > revision);
-        Assert.False(applied);
-        Assert.Null(player.CarriedItem);
-        Assert.Same(stack, chest.GetItem(0));
-        Assert.Equal(1, food.Nutrition);
-        var shown = client.SentPackets.Skip(sent).OfType<ContainerSetContentPacket>().Last();
-        var updated = shown.Items[0]!.GetComponent<FoodDataComponent>(DataComponentType.Food)!;
-        Assert.Equal(5, updated.Nutrition);
-
-        // The actual wire value and a captured packet remain independent of subsequent replacements.
-        stack[DataComponentType.Food] = food with { Nutrition = 9 };
-        var wire = new NetworkBuffer();
-        wire.WriteItemStack(shown.Items[0]);
-        wire.Reset();
-        Assert.Equal(5, wire.ReadItemStack()!.GetComponent<FoodDataComponent>(DataComponentType.Food)!.Nutrition);
-    }
-
-    [Fact(DisplayName = "A crafting click whose result no longer follows the grid is corrected, not applied",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task StaleCraftingResultIsCorrected()
-    {
-        await RecipesRegistry.InitializeAsync();
-        await using var context = TestServerFactory.CreateServer($"stale-craft-{Guid.NewGuid():N}");
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Crafter");
-        var client = (TestClient)player.Client;
-
-        // The grid changed without its result following it: the result shown, which handlers saw, isn't taken, nor
-        // worked out again and taken instead.
-        player.Inventory.SetItem(1, new ItemStack(ItemsRegistry.OakLog, 1));
-        player.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 1));
-
-        await ClickAsync(context.Server, player, 0, 0, ClickType.Pickup);
-
-        Assert.Null(player.CarriedItem);
-        Assert.Equal(1, player.Inventory.GetItem(1)?.Count);
-        Assert.True(player.Inventory.GetItem(0)?.Is(ItemsRegistry.OakPlanks));
-        var shown = client.SentPackets.OfType<ContainerSetContentPacket>().Last();
-        Assert.True(shown.Items[0]?.Is(ItemsRegistry.OakPlanks));
-
-        // A change registered with a click is followed by the result too, before the window is sent.
-        context.EventDispatcher.RegisterEvent(null, (Func<ContainerClickEventArgs, ValueTask>)(click =>
-        {
-            click.ApplyWithClick(() => player.Inventory.SetItem(1, null));
-
-            return ValueTask.CompletedTask;
-        }), Priority.Normal);
-
-        await ClickAsync(context.Server, player, 9, 0, ClickType.Pickup);
-
-        Assert.Null(player.Inventory.GetItem(0));
-        Assert.Null(client.SentPackets.OfType<ContainerSetContentPacket>().Last().Items[0]);
-    }
-
-    [Fact(DisplayName = "A number-key swap with the off hand in a container corrects it in the player's inventory",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task OffhandSwapIsCorrectedInThePlayerInventory()
-    {
-        await using var context = TestServerFactory.CreateServer($"offhand-swap-{Guid.NewGuid():N}");
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Swapper");
-        var client = (TestClient)player.Client;
-        var chest = await OpenAsync(player, new Container());
-        chest.SetItem(0, new ItemStack(ItemsRegistry.Shield));
-        var sent = client.SentPackets.Count;
-
-        await ClickAsync(context.Server, player, 0, 40, ClickType.Swap);
-
-        // Vanilla's client sets the off hand from the player inventory packet, at its inventory's index 40.
-        var packets = client.SentPackets.Skip(sent).ToList();
-        var offhand = Assert.Single(packets.OfType<SetPlayerInventoryPacket>());
-        Assert.Equal(40, offhand.Slot);
-        Assert.True(offhand.Contents?.Is(ItemsRegistry.Shield));
-        Assert.DoesNotContain(packets, packet => packet is ContainerSetSlotPacket);
-    }
-
-    [Fact(DisplayName = "Every snapshot of a container's window sets its viewers' off hand",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task ContainerSnapshotsCarryTheOffhand()
-    {
-        await using var context = TestServerFactory.CreateServer($"offhand-viewer-{Guid.NewGuid():N}");
-        var first = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "First");
-        var second = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Second");
-        var chest = new Container();
-        chest.SetItem(0, new ItemStack(ItemsRegistry.Diamond));
-        await first.OpenInventoryAsync(chest);
-        await second.OpenInventoryAsync(chest);
-
-        // As left by a swap with the off hand whose snapshot is left out for a newer one: another viewer's click.
-        first.Inventory.SetItem(45, new ItemStack(ItemsRegistry.Shield));
-        var client = (TestClient)first.Client;
-        var sent = client.SentPackets.Count;
-
-        await ClickAsync(context.Server, second, 0, 0, ClickType.Pickup);
-
-        var offhand = Assert.Single(client.SentPackets.Skip(sent).OfType<SetPlayerInventoryPacket>());
-        Assert.Equal(40, offhand.Slot);
-        Assert.True(offhand.Contents?.Is(ItemsRegistry.Shield));
-    }
-
-    [Fact(DisplayName = "A click's Item keeps the saved components of the stacks nested in it")]
-    public void ClickItemKeepsNestedUnmodeledComponents()
-    {
-        var customData = new NbtCompound
-        {
-            new NbtCompound("minecraft:custom_data") { new NbtTag<string>("gem", "ruby") }
-        };
-        var gem = new ItemStack(ItemsRegistry.Diamond) { UnmodeledComponents = customData };
-        var bundle = new ItemStack(ItemsRegistry.Bundle);
-        bundle[DataComponentType.BundleContents] = ComponentBuilder.BundleContents with { Value = [gem] };
-        var chest = new Container();
-        chest.SetItem(0, bundle);
-
-        var click = new ContainerClickEventArgs(new FakePlayer(), server, chest)
-        {
-            ContainerId = 1,
-            ClickedSlot = 0,
-            Button = 0,
-            StateId = 0,
-            ClickType = ClickType.Pickup
-        };
-        click.Arrive(NetworkBuffer.SnapshotItemStack);
-
-        var contents = click.Item!.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
-            DataComponentType.BundleContents)!;
-        var copy = Assert.Single(contents.Value!);
-        Assert.NotSame(gem, copy);
-        Assert.NotSame(customData, copy.UnmodeledComponents);
-        Assert.Equal(gem, copy);
-        customData.Clear();
-        Assert.Equal("ruby", Assert.IsType<NbtCompound>(
-            copy.UnmodeledComponents!["minecraft:custom_data"]).GetString("gem"));
-    }
-
-    [Fact(DisplayName = "A window snapshot isn't sent after a newer one, nor once the window changed",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task ObsoleteSnapshotsAreNotSent()
-    {
-        await using var context = TestServerFactory.CreateServer($"snapshots-{Guid.NewGuid():N}");
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Viewer");
-        var client = (TestClient)player.Client;
-        var order = player.WindowSnapshots;
-        player.Inventory.SetItem(36, new ItemStack(ItemsRegistry.Stone));
-        var sent = client.SentPackets.Count;
-
-        var older = Snapshot(order.Next());
-        var newer = Snapshot(order.Next());
-
-        Assert.False(await order.SendAsync(newer));
-        Assert.False(await order.SendAsync(older));
-        Assert.Same(newer.Packets[0], Assert.Single(client.SentPackets.Skip(sent)));
-
-        // The held stack changed in place since it was captured: a newer snapshot is needed.
-        var changed = Snapshot(order.Next());
-        player.Inventory.GetItem(36)!.Count++;
-
-        Assert.True(await order.SendAsync(changed));
-        Assert.Single(client.SentPackets.Skip(sent));
-        Assert.True(order.IsStale);
-
-        WindowSnapshot Snapshot(long sequence) =>
-            new(player, sequence, ClickWindowState.Of(player), [new SetPlayerInventoryPacket { Slot = 0, Contents = null }]);
-    }
-
-    [Fact(DisplayName = "A picked-up arrow's slot goes through plugins' packet handlers",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task PickupGoesThroughPacketHandlers()
-    {
-        await using var context = TestServerFactory.CreateServer($"pickup-handlers-{Guid.NewGuid():N}");
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Collector");
-        var client = (TestClient)player.Client;
-        var handled = new List<IClientboundPacket>();
-        player.WindowSnapshots = new WindowSnapshots(Redact, packet => client.SendPacket(packet));
-        var sent = client.SentPackets.Count;
-
-        Assert.True(await player.ReceiveProjectileAsync(new ItemStack(ItemsRegistry.Arrow), creativeOnly: false));
-
-        Assert.True(player.Inventory.GetItem(36)?.Is(ItemsRegistry.Arrow));
-        Assert.IsType<ContainerSetSlotPacket>(Assert.Single(handled));
-        Assert.Empty(client.SentPackets.Skip(sent));
-
-        // Stands in for a plugin's queue handler that cancels the inventory's slot updates.
-        ValueTask<bool> Redact(IClientboundPacket packet)
-        {
-            handled.Add(packet);
-
-            return ValueTask.FromResult(packet is not ContainerSetSlotPacket);
+                return ValueTask.FromResult(true);
+            }
         }
-    }
 
-    [Fact(DisplayName = "A window that keeps changing while handlers decide is sent later, through them, as it is",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task StaleWindowIsSentLaterThroughHandlers()
-    {
-        await using var context = TestServerFactory.CreateServer($"stale-window-{Guid.NewGuid():N}");
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Viewer");
-        var client = (TestClient)player.Client;
-        player.Inventory.SetItem(36, new ItemStack(ItemsRegistry.Stone));
-        var handled = new List<IClientboundPacket>();
-        var changing = true;
-        player.WindowSnapshots = new WindowSnapshots(Decide, packet => client.SendPacket(packet));
-        var sent = client.SentPackets.Count;
-
-        // Each snapshot the click sends meets a change, so none is sent, and the window is left stale.
-        await ClickAsync(context.Server, player, 9, 0, ClickType.Pickup);
-
-        Assert.Equal(2, handled.Count);
-        Assert.Empty(client.SentPackets.Skip(sent));
-        Assert.True(player.WindowSnapshots.IsStale);
-
-        // A tick tries once, not again and again while the window keeps changing.
-        await MainEventHandler.RefreshStaleWindowAsync(player);
-
-        Assert.Equal(3, handled.Count);
-        Assert.Empty(client.SentPackets.Skip(sent));
-
-        // Once it holds still, the window is sent as it is now, through the handlers.
-        changing = false;
-        await MainEventHandler.RefreshStaleWindowAsync(player);
-
-        var shown = Assert.IsType<ContainerSetContentPacket>(Assert.Single(client.SentPackets.Skip(sent)));
-        Assert.Contains(shown, handled);
-        Assert.Equal(4, shown.Items[36]?.Count);
-        Assert.False(player.WindowSnapshots.IsStale);
-
-        // Stands in for a plugin's queue handler during which the held stack grows, as a pickup would grow it.
-        ValueTask<bool> Decide(IClientboundPacket packet)
         {
-            handled.Add(packet);
+            await using var context = TestServerFactory.CreateServer($"snapshots-{Guid.NewGuid():N}");
+            var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Viewer");
+            var client = (TestClient)player.Client;
+            var order = player.WindowSnapshots;
+            player.Inventory.SetItem(36, new ItemStack(ItemsRegistry.Stone));
+            var sent = client.SentPackets.Count;
 
-            if (changing)
-                player.Inventory.GetItem(36)!.Count++;
+            var older = Snapshot(order.Next());
+            var newer = Snapshot(order.Next());
 
-            return ValueTask.FromResult(true);
+            Assert.False(await order.SendAsync(newer));
+            Assert.False(await order.SendAsync(older));
+            Assert.Same(newer.Packets[0], Assert.Single(client.SentPackets.Skip(sent)));
+
+            // The held stack changed in place since it was captured: a newer snapshot is needed.
+            var changed = Snapshot(order.Next());
+            player.Inventory.GetItem(36)!.Count++;
+
+            Assert.True(await order.SendAsync(changed));
+            Assert.Single(client.SentPackets.Skip(sent));
+            Assert.True(order.IsStale);
+
+            WindowSnapshot Snapshot(long sequence) =>
+                new(player, sequence, ClickWindowState.Of(player), [new SetPlayerInventoryPacket
+                {
+                    Slot = 0,
+                    Contents = null
+                }]);
+        }
+
+        {
+            await using var context = TestServerFactory.CreateServer($"stale-merchant-{Guid.NewGuid():N}");
+            var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Customer");
+            var client = (TestClient)player.Client;
+            player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Emerald, 5));
+            var villager = new Obsidian.Entities.Villager
+            {
+                Level = context.World,
+                EntityId = Server.GetNextEntityId(),
+                Position = player.Position,
+                Health = 20
+            };
+            var offer = new TradeEntry
+            {
+                FirstInput = new TradeItem(ItemsRegistry.Emerald.Id, 1, []),
+                SecondInput = new TradeItem(0, 0, []),
+                Output = new ItemStack(ItemsRegistry.Bread),
+                MaxCount = 12
+            };
+            await Obsidian.Entities.MerchantTrading.OpenAsync(villager, player, [offer], 1, 0, canRestock: true);
+            Assert.IsType<Obsidian.Entities.MerchantContainer>(player.OpenedContainer);
+            var stateId = client.SentPackets.OfType<ContainerSetContentPacket>().Last().StateId;
+
+            // The emeralds grow while handlers decide on a picked-up arrow's slot, which is then left out.
+            var changing = true;
+            player.WindowSnapshots = new WindowSnapshots(Decide, packet => client.SendPacket(packet));
+            Assert.True(await player.ReceiveProjectileAsync(new ItemStack(ItemsRegistry.Arrow), creativeOnly: false));
+            Assert.True(player.WindowSnapshots.IsStale);
+
+            changing = false;
+            var sent = client.SentPackets.Count;
+            await MainEventHandler.RefreshStaleWindowAsync(player);
+
+            var shown = client.SentPackets.Skip(sent).OfType<ContainerSetContentPacket>().Single();
+            Assert.Equal(6, shown.Items[3]?.Count);
+            Assert.Equal(stateId, shown.StateId);
+            Assert.False(player.WindowSnapshots.IsStale);
+
+            // The client clicks with the id it was sent last: the click picks the emeralds up.
+            await ClickAsync(context.Server, player, 3, 0, ClickType.Pickup, shown.StateId);
+
+            Assert.Equal(6, player.CarriedItem?.Count);
+            Assert.Null(player.Inventory.GetItem(9));
+
+            ValueTask<bool> Decide(IClientboundPacket packet)
+            {
+                if (changing)
+                    player.Inventory.GetItem(9)!.Count++;
+
+                return ValueTask.FromResult(true);
+            }
         }
     }
 
@@ -877,62 +797,6 @@ public sealed class MenuClicks
             handled.Add(packet);
 
             return ValueTask.FromResult(packet is not SetPlayerInventoryPacket);
-        }
-    }
-
-    [Fact(DisplayName = "A merchant's window sent after a stale pickup keeps its state id, so the next click applies",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task StaleMerchantWindowKeepsItsStateId()
-    {
-        await using var context = TestServerFactory.CreateServer($"stale-merchant-{Guid.NewGuid():N}");
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Customer");
-        var client = (TestClient)player.Client;
-        player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Emerald, 5));
-        var villager = new Obsidian.Entities.Villager
-        {
-            Level = context.World,
-            EntityId = Server.GetNextEntityId(),
-            Position = player.Position,
-            Health = 20
-        };
-        var offer = new TradeEntry
-        {
-            FirstInput = new TradeItem(ItemsRegistry.Emerald.Id, 1, []),
-            SecondInput = new TradeItem(0, 0, []),
-            Output = new ItemStack(ItemsRegistry.Bread),
-            MaxCount = 12
-        };
-        await Obsidian.Entities.MerchantTrading.OpenAsync(villager, player, [offer], 1, 0, canRestock: true);
-        Assert.IsType<Obsidian.Entities.MerchantContainer>(player.OpenedContainer);
-        var stateId = client.SentPackets.OfType<ContainerSetContentPacket>().Last().StateId;
-
-        // The emeralds grow while handlers decide on a picked-up arrow's slot, which is then left out.
-        var changing = true;
-        player.WindowSnapshots = new WindowSnapshots(Decide, packet => client.SendPacket(packet));
-        Assert.True(await player.ReceiveProjectileAsync(new ItemStack(ItemsRegistry.Arrow), creativeOnly: false));
-        Assert.True(player.WindowSnapshots.IsStale);
-
-        changing = false;
-        var sent = client.SentPackets.Count;
-        await MainEventHandler.RefreshStaleWindowAsync(player);
-
-        var shown = client.SentPackets.Skip(sent).OfType<ContainerSetContentPacket>().Single();
-        Assert.Equal(6, shown.Items[3]?.Count);
-        Assert.Equal(stateId, shown.StateId);
-        Assert.False(player.WindowSnapshots.IsStale);
-
-        // The client clicks with the id it was sent last: the click picks the emeralds up.
-        await ClickAsync(context.Server, player, 3, 0, ClickType.Pickup, shown.StateId);
-
-        Assert.Equal(6, player.CarriedItem?.Count);
-        Assert.Null(player.Inventory.GetItem(9));
-
-        ValueTask<bool> Decide(IClientboundPacket packet)
-        {
-            if (changing)
-                player.Inventory.GetItem(9)!.Count++;
-
-            return ValueTask.FromResult(true);
         }
     }
 

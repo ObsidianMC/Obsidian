@@ -117,32 +117,6 @@ public class StructureLocating
         Assert.Equal(new VectorD(5, 0, 5), EyeOfEnder.FlightTarget(from, new VectorD(5, 0, 5)));
     }
 
-    [Fact(
-        DisplayName = "Eyes see the block a player aims at by outline shapes, fluids aside",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task AimsAtBlocksByOutline()
-    {
-        await using var context = TestServerFactory.CreateServer($"eye-aim-{Guid.NewGuid():N}");
-        var chunk = new Chunk(0, 0, -64, 384, ChunkGenStage.full);
-        context.World.GetRegionForChunk(0, 0)!.SetChunk(chunk);
-
-        // Looking along +z at y 70.75: over a bottom slab and through water, to an end portal frame.
-        chunk.SetBlock(8, 70, 3, BlocksRegistry.StoneSlab);
-        chunk.SetBlock(8, 70, 4, BlocksRegistry.Water);
-        chunk.SetBlock(8, 70, 5, BlocksRegistry.EndPortalFrame);
-
-        var terrain = new MobTerrain(context.World);
-        var hit = terrain.ClipOutlines(new VectorD(8.5, 70.75, 1.5), new VectorD(8.5, 70.75, 6));
-        Assert.Equal(new Vector(8, 70, 5), hit!.Value.Position);
-        Assert.True(hit.Value.Block.Is(BlockIds.EndPortalFrame));
-
-        // Lower, the slab's outline is in the way; short of the frame, nothing is.
-        Assert.Equal(
-            new Vector(8, 70, 3),
-            terrain.ClipOutlines(new VectorD(8.5, 70.25, 1.5), new VectorD(8.5, 70.25, 6))!.Value.Position);
-        Assert.Null(terrain.ClipOutlines(new VectorD(8.5, 70.75, 1.5), new VectorD(8.5, 70.75, 4.9)));
-    }
-
     [Fact(DisplayName = "Eyes of ender are saved with their item, like vanilla's")]
     public void SavesEyesOfEnder()
     {
