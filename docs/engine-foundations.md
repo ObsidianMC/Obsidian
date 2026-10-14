@@ -147,8 +147,8 @@ and, with its client side, by the client's tests)
   rules, and loot tables.
 - **Movement.** (done) Mods change how players and their mounts move (gliding, extra jumps, flying mounts), on the
   server and in the client's prediction, driven by the mod's input on the client.
-- **Player extensions.** Extra player slots for accessories, built on attachments and phase 3's screens. The engine
-  gives the pieces; it doesn't ship a Curios-style accessory API until a second mod needs one.
+- **Player extensions.** (done) Extra player slots for accessories, built on attachments and phase 3's screens. The
+  engine gives the pieces; it doesn't ship a Curios-style accessory API until a second mod needs one.
 - **Chunk tickets.** (done) Plugins keep chunks loaded and ticking without players nearby.
 - **Progress.** Advancements and statistics (vanilla parity), so mods can grant and check them.
   Core statistics, saved criteria, rewards, common triggers and plugin APIs are implemented; full parity remains

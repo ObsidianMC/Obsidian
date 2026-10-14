@@ -860,8 +860,10 @@ The engine namespace avoids collisions with vanilla tags and does not claim NeoF
 or unloaded types stay as saved NBT, including through player saves and chunk unloads, until the plugin returns.
 
 Player death respawn drops attachments registered without `copyOnDeath`; kept values are already detached NBT, so
-no copy callback is needed. Dimension changes retain all attachments. A type absent during death remains untouched:
-an unloaded plugin must not lose its saved player data. `ServerPlayer` follows the same death policy.
+no copy callback is needed. Attachments holding items follow the inventory's rules instead (see
+[Player extensions](#player-extensions)). `AttachmentType.Changed` tells the plugin about changes, these included.
+Dimension changes retain all attachments. A type absent during death remains untouched: an unloaded plugin must not
+lose its saved player data. `ServerPlayer` follows the same death policy.
 
 A network codec opts a type into sync. The optional, version 1 `obsidian:attachments` play channel carries complete
 replacement snapshots, with names and individually framed network values. Only clients negotiating that channel
@@ -1576,6 +1578,139 @@ viewers.
   (an item pickup's animation with its slots). One that the window outdated while they ran isn't sent; the window
   is captured again instead, and if it keeps changing, the player's next ticks send it whole, through the handlers
   too, once it holds still.
+
+## Player extensions
+
+```csharp
+// Two charm slots each player keeps, shown next to their inventory, opened with a key; worn charms take effect.
+public sealed class CharmsPlugin : PluginBase, IClientPlugin
+{
+    private AttachmentType<ItemStack?[]> charms = null!;
+    private MenuDefinition charmMenu = null!;
+    private Item swiftCharm = null!;
+    private Item cloudCharm = null!;
+
+    public override void ConfigureRegistry(IPluginRegistry registry)
+    {
+        this.swiftCharm = registry.RegisterItem("ruby:swift_charm");
+        this.cloudCharm = registry.RegisterItem("ruby:cloud_charm");
+
+        // A death drops the charms unless keep_inventory is on; copyOnDeath: true would keep them anyway.
+        this.charms = registry.RegisterAttachment("ruby:charms", ItemAttachments.Codec, ItemAttachments.NetworkCodec);
+        this.charms.Changed += holder =>
+        {
+            if (holder is IPlayer player)
+                this.ApplyCharms(player);
+        };
+
+        this.charmMenu = registry.RegisterMenu("ruby:charms", rows: 1, columns: 2);
+        registry.MapPayload<OpenCharms>(PayloadPhase.Play, PayloadDirection.Serverbound, this.OpenCharmsAsync);
+    }
+
+    public void ConfigureClient(IClientRegistry registry)
+    {
+        var open = registry.RegisterKeyBinding("ruby:open_charms", "key.keyboard.j", "ruby:charms");
+        open.Pressed += () => registry.Connection.SendPayload(new OpenCharms());
+
+        registry.RegisterMenuScreen("ruby:charms", new MenuScreenProperties
+        {
+            Texture = "ruby:gui/container/charms",
+            Slots = [new(71, 35), new(89, 35)]
+        });
+    }
+
+    // Modifiers and abilities aren't saved: apply them as a player joins too, from a PlayerJoinEventArgs handler.
+    public void ApplyCharms(IPlayer player)
+    {
+        var worn = player.GetAttachment(this.charms) ?? [];
+
+        if (worn.Any(item => item?.Is(this.swiftCharm) == true))
+            player.SetAttributeModifier(
+                "minecraft:movement_speed", "ruby:swift_charm", 0.1, AttributeOperation.MulBase);
+        else
+            player.RemoveAttributeModifier("minecraft:movement_speed", "ruby:swift_charm");
+
+        if (worn.Any(item => item?.Is(this.cloudCharm) == true))
+            player.SetMovementAbilities("ruby:cloud_charm", new MovementAbilities { ExtraJumps = 1 });
+        else
+            player.RemoveMovementAbilities("ruby:cloud_charm");
+    }
+
+    private async ValueTask OpenCharmsAsync(OpenCharms payload, PayloadContext context)
+    {
+        if (context.Player is IPlayer player)
+            await player.OpenInventoryAsync(new CharmMenu(this.charmMenu, player, this.charms));
+    }
+}
+
+// The player's charm slots: charms only, one in each.
+public sealed class CharmMenu : MenuContainer
+{
+    public CharmMenu(MenuDefinition menu, IPlayer player, AttachmentType<ItemStack?[]> charms) : base(menu, "Charms")
+    {
+        var worn = player.GetItemAccess(charms, slotCount: 2);
+        this.Slots =
+        [
+            .. Enumerable.Range(0, 2).Select(slot => new MenuSlot(worn, slot)
+            {
+                MayPlace = item => RubyTags.Items.Charms.Contains(item.Holder.Id),
+                MaxStackSize = 1
+            })
+        ];
+    }
+}
+
+public sealed record OpenCharms : ICustomPayload<OpenCharms>
+{
+    public static string Channel => "ruby:open_charms";
+
+    public static OpenCharms Read(INetStreamReader reader) => new();
+
+    public void Write(INetStreamWriter writer)
+    {
+    }
+}
+```
+
+Extra player slots, for accessories and the like, are built from pieces the engine already has rather than an
+accessory API (which waits for a second mod needing the same one): the slots' items are kept in a player
+[attachment](#saved-data-and-attachments), and the mod's own [menu](#machine-menus) shows them next to the player's
+inventory. The player's inventory window (window 0) doesn't change, since vanilla clients can't be given more slots
+in it.
+
+- **Storage.** An attachment registered with `ItemAttachments.Codec` holds items: its value is the slots' stacks
+  (`ItemStack?[]`, null for an empty slot), saved like vanilla's `minecraft:container` component, a list of
+  `{ slot, item }` for at most `ItemAttachments.MaxSlots` (256) slots. `ItemAttachments.NetworkCodec` syncs it to the
+  Obsidian client, whose mod registers the same type and reads the charms with `TryGetPlayerAttachment`, to show them
+  on its HUD say. Like any attachment it's saved with the player and kept through dimension changes.
+- **Deaths.** The engine knows these attachments hold items. With the `keep_inventory` rule off, a player's death
+  empties those registered without `copyOnDeath`: items with the curse of vanishing are destroyed, and the rest
+  dropped around the player like vanilla drops the inventory. With the rule on, or `copyOnDeath`, they're kept.
+  A type whose plugin isn't loaded is left as saved. (Obsidian doesn't drop the player's own inventory at a death
+  yet; see [known-gaps.md](known-gaps.md#player-death-drops).)
+- **Access.** `holder.GetItemAccess(type, slotCount)` is [item access](#item-access) to the first `slotCount` slots,
+  which a menu shows with `new MenuSlot(access, index)` and its rules (`MayPlace`, `MaxStackSize`), and the plugin
+  uses itself. Each call reads and changes the saved value in one step, so the attachment stays the only copy of the
+  items, whatever saves, syncs or drops it; the menu's viewers see changes made elsewhere on their next tick. Slots
+  take any item up to its stack size; the rules belong to the menu. A shift-click follows the menu's `QuickMove`: by
+  default the player's stacks go to the charm slots that take them, and the charms back to the inventory. Once the
+  plugin unloads or the holder is retired (a player who left), the access takes and gives nothing.
+- **Opening.** The menu needs no block entity: it's the player's own, open until they close it, like their
+  inventory (their client closes it as they die). Open it from a payload a key binding sends, as above (the key works
+  in game with no screen open), from an item's use, or from a command. Override `StillValid` for a menu showing
+  another player's slots, to close it once they leave or go out of reach. The Obsidian client's inventory screen has
+  no button for mods' menus; a mod's own screen can have one that sends the payload.
+- **Effects.** `AttachmentType.Changed` is raised after a holder's value changes: set or removed by the plugin,
+  changed through item access (by a click too), dropped at a death or removed at a death's respawn. It isn't raised as
+  a player joins or loads. Handlers run synchronously inside a call into the plugin, possibly with a menu's locks
+  held, so they must not wait; read the new value with a get. An exception from a handler reaches the plugin's own
+  `SetAttachment` or `RemoveAttachment` caller, and is logged for the engine's changes, which stand. Apply what
+  worn items do with [attribute modifiers](#attributes) and [movement abilities](#movement), on changes and joins.
+  Unloading takes the plugin's movement abilities back but not its attribute modifiers: remove those in
+  `OnUnloadingAsync`.
+
+**Reload.** Unloading closes the plugin's menus and releases its menu screens, slot rules, `Changed` handlers and key
+bindings. The items stay in the attachment's saved NBT, through saves and deaths, until the plugin loads again.
 
 ## Recipes
 

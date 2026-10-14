@@ -568,6 +568,14 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      jumps, gliding without an elytra and flight (vanilla's `mayfly`), honoured by the server and the Obsidian
      client's prediction and taken back when the granting plugin unloads; attribute modifiers tune the rest. Vanilla
      clients fly but can't jump twice or glide without a glider. See [plugin-content.md](plugin-content.md#movement).
+   - Done, engine phase 5 player extensions: extra player slots are a player attachment registered with
+     `ItemAttachments.Codec`, shown by the mod's own menu through `GetItemAccess`, item access over the saved value
+     so the attachment stays the only copy of the items. A death drops them like vanilla's inventory, the curse of
+     vanishing included, unless `keep_inventory` is on or the type copies on death. `AttachmentType.Changed` tells
+     the mod when a holder's value changes, to apply worn items' modifiers and movement abilities. No accessory API,
+     slot types or inventory-screen button: a key binding's payload opens the menu (see
+     [known-gaps.md](known-gaps.md#player-death-drops)). See
+     [plugin-content.md](plugin-content.md#player-extensions).
    - Done, engine phase 4 entity renderers: `EntityRendererProperties` gains `Layers` drawn over the model and posed
      like it (an `EntityRenderLayer`: the model or another model layer, a texture, a tint and a cutout, translucent or
      emissive render type, emissive being vanilla's full-bright `eyes`), a `TextureProvider` choosing the texture from

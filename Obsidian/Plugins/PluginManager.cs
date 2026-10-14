@@ -132,6 +132,8 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.serverProvider = serverProvider;
         this.startup = serverProvider.GetService<PluginStartup>();
         this.pluginRegistry = new PluginRegistry(this, eventDispatcher, commandHandler);
+        API.Data.PluginDataBinding.HandlerFailed = (key, exception) =>
+            logger.LogError(exception, "A change handler of {Attachment} failed.", key);
 
         DirectoryWatcher.Filters = [".obby"];
         DirectoryWatcher.FileChanged += path => _ = this.LoadPluginAsync(path);

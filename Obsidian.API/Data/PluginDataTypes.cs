@@ -77,6 +77,21 @@ public sealed class AttachmentType<TValue>
 
     public string Identifier { get; }
     public bool CopyOnDeath => this.Binding.CopyOnDeath;
+
+    /// <summary>
+    /// Raised after a holder's value of this type changes: set or removed by the plugin, changed through
+    /// <see cref="ItemAttachments.GetItemAccess"/> (a menu click included), dropped at a death or removed at a death's
+    /// respawn. Not raised as holders load. Handlers run synchronously inside a call into the plugin, possibly with a
+    /// menu's locks held, so they must not wait; read the new value with a get. An exception from a handler reaches
+    /// the plugin's own <c>SetAttachment</c> or <c>RemoveAttachment</c> caller, and is logged for the engine's
+    /// changes. Handlers go with the registration on unload.
+    /// </summary>
+    public event Action<IAttachmentHolder>? Changed
+    {
+        add => this.Binding.Changed += value;
+        remove => this.Binding.Changed -= value;
+    }
+
     internal ComponentCodec<TValue> Codec { get; }
     internal PluginDataBinding Binding { get; }
 }

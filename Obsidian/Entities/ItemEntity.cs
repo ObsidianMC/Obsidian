@@ -41,10 +41,23 @@ public partial class ItemEntity : Entity
     // Finished menu clicks drop the player's items, regardless of the menu's ambient plugin call.
     internal static void DropHostOwned(IPlayer player, ItemStack stack) => Drop(player, stack, hostOwned: true);
 
-    private static bool Drop(IPlayer player, ItemStack stack, bool hostOwned)
+    /// <summary>
+    /// Drops a stack around the player, like vanilla's <c>Player.drop(stack, dropAround: true)</c> as a death drops
+    /// their items: pushed up to half a block a tick in a random direction, and 0.2 up. It counts no statistics.
+    /// </summary>
+    internal static void DropAround(IPlayer player, ItemStack stack)
+    {
+        var power = Globals.Random.NextSingle() * 0.5f;
+        var angle = Globals.Random.NextSingle() * MathF.Tau;
+
+        Drop(player, stack, hostOwned: true, new VectorD(-MathF.Sin(angle) * power, 0.2, MathF.Cos(angle) * power));
+    }
+
+    // Thrown where the player looks, or with the given motion for a drop around them.
+    private static bool Drop(IPlayer player, ItemStack stack, bool hostOwned, VectorD? around = null)
     {
         var direction = player.GetLookDirection();
-        var motion = new VectorD(direction.X * 0.3, direction.Y * 0.3 + 0.1, direction.Z * 0.3);
+        var motion = around ?? new VectorD(direction.X * 0.3, direction.Y * 0.3 + 0.1, direction.Z * 0.3);
         var item = new ItemEntity
         {
             EntityId = Server.GetNextEntityId(),
@@ -68,7 +81,7 @@ public partial class ItemEntity : Entity
             return false;
         }
 
-        if (player is Player droppingPlayer)
+        if (around is null && player is Player droppingPlayer)
         {
             droppingPlayer.Statistics.Increment(stack.Holder.UnlocalizedName, stack.Count, "minecraft:dropped");
             droppingPlayer.Statistics.Increment("minecraft:drop");

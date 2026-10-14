@@ -56,7 +56,9 @@ public sealed partial class PluginRegistry
             () => owner.TryEnter(),
             copyOnDeath,
             networkCodec is null ? null : (tag, writer) => networkCodec.Write(writer, codec.Decode(tag)),
-            networkCodec is null ? null : reader => codec.Encode(networkCodec.Read(reader)));
+            networkCodec is null ? null : reader => codec.Encode(networkCodec.Read(reader)),
+            // The engine's item codec makes an item attachment, which it reads itself for item access and deaths.
+            HoldsItems: ReferenceEquals(codec, ItemAttachments.Codec));
         RegisterDataBinding(owner, binding);
         return new AttachmentType<TValue>(identifier, codec, binding);
     }
