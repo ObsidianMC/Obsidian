@@ -52,6 +52,10 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     public IBlock GetBlock(Vector position) => fluids.GetBlock(position);
 
     /// <inheritdoc/>
+    public bool IsFaceSturdy(Vector position, BlockFace face, SupportType support = SupportType.Full) =>
+        level.IsFaceSturdy(position, face, support);
+
+    /// <inheritdoc/>
     public bool SetBlock(Vector position, IBlock block, BlockUpdateFlags flags = BlockUpdateFlags.All)
     {
         using var host = PluginCall.EnterHost();

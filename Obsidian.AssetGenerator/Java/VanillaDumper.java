@@ -426,6 +426,14 @@ public final class VanillaDumper {
         var requiresTool = new ArrayList<Boolean>();
         var randomTicking = new ArrayList<Integer>();
         var flags = new int[states.size()];
+        // Six faces per mode (FULL, CENTER, RIGID), independent of collision and tag-based attachment restrictions.
+        var supportFlags = new int[states.size()];
+        var supportTypes = new Object[]
+        {
+            full,
+            center,
+            rigid
+        };
         var fluidFlags = new int[states.size()];
         var faces = new Indexer<List<double[]>>(face -> face.stream().map(Arrays::toString).toList());
         var faceSets = new Indexer<List<Integer>>();
@@ -477,6 +485,15 @@ public final class VanillaDumper {
             bits |= bit(31, !unstable && (boolean) Mojang.call(isFaceSturdy, state, emptyLevel, origin, down, center));
             flags[id] = bits;
 
+            for (var support = 0; support < supportTypes.length; support++)
+            {
+                for (var face = 0; face < directions.length; face++)
+                {
+                    supportFlags[id] |= bit(support * 6 + face,
+                        Mojang.call(isFaceSturdy, state, emptyLevel, origin, directions[face], supportTypes[support]));
+                }
+            }
+
             var fluidBits = 0;
             fluidBits |= bit(0, collision == blockShape);
             fluidBits |= bit(1, collision == emptyShape);
@@ -498,6 +515,7 @@ public final class VanillaDumper {
         var json = new LinkedHashMap<String, Object>();
         json.put("_notes", "Vanilla " + version + " block state physics, indexed by state id. See BlockPhysics for the bit layouts.");
         json.put("flags", flags);
+        json.put("supportFlags", supportFlags);
         json.put("blockClasses", blockClasses());
         var blockEntityTypes = blockEntityTypes();
         json.put("blockEntityTypes", blockEntityTypes);

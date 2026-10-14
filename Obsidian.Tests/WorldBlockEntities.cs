@@ -94,6 +94,12 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.False(terrain.IsFree(new BoundingBox(new VectorD(4.4, 70.4, 4.2), new VectorD(4.6, 70.6, 4.3))));
         Assert.True(terrain.IsFree(new BoundingBox(new VectorD(4.05, 70.4, 4.2), new VectorD(4.2, 70.6, 4.3))));
 
+        // Published multipart collision takes precedence over the block state's full-cube template.
+        Assert.False(context.World.IsFaceSturdy(position, BlockFace.Up));
+        Assert.False(context.World.IsFaceSturdy(position, BlockFace.North, SupportType.Center));
+        Assert.All(Enum.GetValues<SupportType>(), mode =>
+            Assert.False(context.World.BlockUpdates.IsFaceSturdy(position, BlockFace.Up, mode)));
+
         // The use packet supplies its own local hit coordinates.
         using var useData = new NetworkBuffer();
         useData.WriteVarInt((int)InteractionHand.MainHand);
@@ -155,11 +161,13 @@ public sealed class WorldBlockEntities : IDisposable
         await manager.UnloadPluginAsync(plugin);
         Assert.Null(BlockEntityShapes.Get(context.World, position, block.DefaultState));
         Assert.IsType<DataBlockEntity>(chunk.GetBlockEntity(4, 70, 4));
+        Assert.True(context.World.IsFaceSturdy(position, BlockFace.Up));
         await manager.LoadPluginAsync(path);
         client.ClearPackets();
         await context.World.DoWorldTickAsync();
         Assert.Equal(0.625, terrain.RaycastOutlines(eye, end)!.Value.ClickedAt.Z);
         Assert.False(Assert.Single(client.SentPackets.OfType<BlockEntityDataPacket>()).NBTData.GetBool("front"));
+        Assert.False(context.World.IsFaceSturdy(position, BlockFace.Up));
 
         // The final part permits ordinary block removal.
         human.Pose = Pose.Swimming;

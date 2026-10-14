@@ -7,6 +7,7 @@ using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Plugins;
 using Obsidian.API.Registries;
+using Obsidian.API.World;
 using Obsidian.Commands.Framework;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -246,7 +247,10 @@ public sealed class BlockUpdates : IDisposable
         Assert.True(BlocksRegistry.TryGetPluginBlock("probe:relay", out var relay));
         var shapeProperties = new BlockProperties
         {
-            StateProperties = [StateProperty.Enum("shape", ["upper", "split", "center", "rim", "empty"])],
+            StateProperties =
+            [
+                StateProperty.Enum("shape", ["upper", "split", "center", "rim", "side_center", "side_rim", "empty"])
+            ],
             StateShapes = values =>
             {
                 BoundingBox Box(double x0, double y0, double z0, double x1, double y1, double z1) =>
@@ -257,12 +261,20 @@ public sealed class BlockUpdates : IDisposable
                     "upper" => [Box(0, 0.5, 0, 1, 1, 1)],
                     "split" => [Box(0, 0, 0, 0.5, 1, 1), Box(0.5, 0, 0, 1, 1, 1)],
                     "center" => [Box(7d / 16, 0, 7d / 16, 9d / 16, 1, 9d / 16)],
+                    "side_center" => [Box(0, 7d / 16, 7d / 16, 1, 9d / 16, 9d / 16)],
                     "rim" =>
                     [
                         Box(0, 0, 0, 1, 1, 2d / 16),
                         Box(0, 0, 14d / 16, 1, 1, 1),
                         Box(0, 0, 2d / 16, 2d / 16, 1, 14d / 16),
                         Box(14d / 16, 0, 2d / 16, 1, 1, 14d / 16)
+                    ],
+                    "side_rim" =>
+                    [
+                        Box(0, 0, 0, 1, 1, 2d / 16),
+                        Box(0, 0, 14d / 16, 1, 1, 1),
+                        Box(0, 0, 2d / 16, 1, 2d / 16, 14d / 16),
+                        Box(0, 14d / 16, 2d / 16, 1, 1, 14d / 16)
                     ],
                     _ => []
                 };
@@ -294,6 +306,64 @@ public sealed class BlockUpdates : IDisposable
         Assert.True(support.With(support.DefaultState, "shape", "empty").HasEmptyCollision());
 
         var chunk = world.GetLoadedChunk(0, 0)!;
+        ILevel publicLevel = world;
+        IBlockLevel hookLevel = world.BlockUpdates;
+        var supportPosition = new Vector(2, Ground + 1, 2);
+        (string Shape, BlockFace Face, bool Full, bool Center, bool Rigid)[] supportCases =
+        [
+            ("upper", BlockFace.Up, true, true, true),
+            ("upper", BlockFace.Down, false, false, false),
+            ("split", BlockFace.North, true, true, true),
+            ("center", BlockFace.Down, false, true, false),
+            ("rim", BlockFace.Up, false, false, true),
+            ("side_center", BlockFace.West, false, true, false),
+            ("side_rim", BlockFace.East, false, false, true),
+            ("empty", BlockFace.Up, false, false, false)
+        ];
+        foreach (var entry in supportCases)
+        {
+            chunk.SetBlock(supportPosition, support.With(support.DefaultState, "shape", entry.Shape));
+            Assert.Equal(entry.Full, publicLevel.IsFaceSturdy(supportPosition, entry.Face));
+            Assert.Equal(entry.Full, hookLevel.IsFaceSturdy(supportPosition, entry.Face));
+            Assert.Equal(entry.Center, publicLevel.IsFaceSturdy(supportPosition, entry.Face, SupportType.Center));
+            Assert.Equal(entry.Center, hookLevel.IsFaceSturdy(supportPosition, entry.Face, SupportType.Center));
+            Assert.Equal(entry.Rigid, publicLevel.IsFaceSturdy(supportPosition, entry.Face, SupportType.Rigid));
+            Assert.Equal(entry.Rigid, hookLevel.IsFaceSturdy(supportPosition, entry.Face, SupportType.Rigid));
+        }
+
+        // Vanilla soul sand's support shape is full even though its collision box is only 14/16 high.
+        chunk.SetBlock(supportPosition, BlocksRegistry.SoulSand);
+        Assert.All(Enum.GetValues<SupportType>(), mode =>
+            Assert.True(publicLevel.IsFaceSturdy(supportPosition, BlockFace.Up, mode)));
+
+        // Captured vanilla 1.21.11: a hopper supports the top rim and bottom center, but no full face.
+        chunk.SetBlock(supportPosition, BlocksRegistry.Hopper);
+        Assert.False(publicLevel.IsFaceSturdy(supportPosition, BlockFace.Up));
+        Assert.False(publicLevel.IsFaceSturdy(supportPosition, BlockFace.Up, SupportType.Center));
+        Assert.True(publicLevel.IsFaceSturdy(supportPosition, BlockFace.Up, SupportType.Rigid));
+        Assert.False(hookLevel.IsFaceSturdy(supportPosition, BlockFace.Down));
+        Assert.True(hookLevel.IsFaceSturdy(supportPosition, BlockFace.Down, SupportType.Center));
+        Assert.False(hookLevel.IsFaceSturdy(supportPosition, BlockFace.Down, SupportType.Rigid));
+
+        // One snow layer has no collision, yet its support shape has a full bottom face.
+        chunk.SetBlock(supportPosition, BlocksRegistry.Snow);
+        Assert.All(Enum.GetValues<SupportType>(), mode =>
+        {
+            Assert.True(publicLevel.IsFaceSturdy(supportPosition, BlockFace.Down, mode));
+            Assert.False(publicLevel.IsFaceSturdy(supportPosition, BlockFace.Up, mode));
+        });
+
+        chunk.SetBlock(supportPosition, BlocksRegistry.Air);
+        Assert.False(publicLevel.IsFaceSturdy(supportPosition, BlockFace.Up));
+        var unloaded = new Vector(1600, Ground, 1600);
+        Assert.All(Enum.GetValues<SupportType>(), mode =>
+        {
+            Assert.False(publicLevel.IsFaceSturdy(unloaded, BlockFace.Up, mode));
+            Assert.False(hookLevel.IsFaceSturdy(unloaded, BlockFace.Up, mode));
+            Assert.False(publicLevel.IsFaceSturdy(new Vector(2, int.MaxValue, 2), BlockFace.Up, mode));
+        });
+        Assert.Null(world.GetLoadedChunk(100, 100));
+
         var calls = ProbeRelay.Reset();
 
         // Count random ticks before the other scenarios leave relays in another section. Every draw must hit a

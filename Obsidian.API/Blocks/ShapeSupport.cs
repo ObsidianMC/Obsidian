@@ -6,6 +6,17 @@ internal static class ShapeSupport
 {
     private const double Epsilon = 1e-7;
 
+    public static bool IsFaceSturdy(double[][] rectangles, SupportType support) => support switch
+    {
+        SupportType.Full => Covers(rectangles, 0, 0, 1, 1),
+        SupportType.Center => Covers(rectangles, 7d / 16, 7d / 16, 9d / 16, 9d / 16),
+        SupportType.Rigid => Covers(rectangles, 0, 0, 1, 2d / 16)
+            && Covers(rectangles, 0, 14d / 16, 1, 1)
+            && Covers(rectangles, 0, 2d / 16, 2d / 16, 14d / 16)
+            && Covers(rectangles, 14d / 16, 2d / 16, 1, 14d / 16),
+        _ => throw new ArgumentOutOfRangeException(nameof(support))
+    };
+
     public static int Flags(IReadOnlyList<BoundingBox> boxes, double[][][] faces)
     {
         if (boxes.Count == 0)
@@ -47,7 +58,7 @@ internal static class ShapeSupport
         for (var face = BlockFace.Down; face <= BlockFace.East; face++)
         {
             var rectangles = faces[(int)face];
-            var fullFace = Covers(rectangles, 0, 0, 1, 1);
+            var fullFace = IsFaceSturdy(rectangles, SupportType.Full);
             if (fullFace)
                 flags |= 1 << (11 + (int)face);
 
@@ -56,19 +67,16 @@ internal static class ShapeSupport
                 if (fullFace)
                     flags |= 1 << 29;
 
-                if (Covers(rectangles, 7d / 16, 7d / 16, 9d / 16, 9d / 16))
+                if (IsFaceSturdy(rectangles, SupportType.Center))
                     flags |= 1 << 7;
 
-                if (Covers(rectangles, 0, 0, 1, 2d / 16)
-                    && Covers(rectangles, 0, 14d / 16, 1, 1)
-                    && Covers(rectangles, 0, 2d / 16, 2d / 16, 14d / 16)
-                    && Covers(rectangles, 14d / 16, 2d / 16, 1, 14d / 16))
+                if (IsFaceSturdy(rectangles, SupportType.Rigid))
                 {
                     flags |= 1 << 8;
                 }
             }
 
-            if (face == BlockFace.Down && Covers(rectangles, 7d / 16, 7d / 16, 9d / 16, 9d / 16))
+            if (face == BlockFace.Down && IsFaceSturdy(rectangles, SupportType.Center))
                 flags |= 1 << 31;
         }
 
