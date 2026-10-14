@@ -106,7 +106,31 @@ internal interface IContainerItemsHost
 /// </remarks>
 internal sealed class ContainerItemAccess(ContainerBlockEntity owner, BlockFace? side) : IItemAccess
 {
+    // Set while a plugin's menu calls item access holding its click locks (see WithoutWaiting).
+    [ThreadStatic]
+    private static bool withoutWaiting;
+
     private readonly IReadOnlyList<int> slots = owner.GetSlots(side);
+
+    /// <summary>
+    /// Runs <paramref name="call"/> so that a container's item access in it never waits: a container busy with a
+    /// click, or still waiting for its loot table, takes and gives nothing, like inside the tick lock. A plugin's menu
+    /// calls item access this way while it holds click locks, which waiting could take out of order.
+    /// </summary>
+    internal static T WithoutWaiting<T>(Func<T> call)
+    {
+        var outer = withoutWaiting;
+        withoutWaiting = true;
+
+        try
+        {
+            return call();
+        }
+        finally
+        {
+            withoutWaiting = outer;
+        }
+    }
 
     public int SlotCount => this.slots.Count;
 
@@ -199,12 +223,14 @@ internal sealed class ContainerItemAccess(ContainerBlockEntity owner, BlockFace?
     private Gate? Enter()
     {
         var host = owner.Host as IContainerItemsHost;
-        if (host is not null && !host.PrepareItems(owner))
+
+        // Rolling loot takes locks that come before a menu's click locks.
+        if (withoutWaiting ? owner.LootTable is not null : host is not null && !host.PrepareItems(owner))
             return null;
 
         var inventory = owner.Inventory;
         IDisposable held;
-        if (host is { HoldsTickLock: true })
+        if (withoutWaiting || host is { HoldsTickLock: true })
         {
             var gate = inventory.TransactionLock;
             if (!gate.Wait(0))

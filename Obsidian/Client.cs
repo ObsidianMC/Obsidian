@@ -177,6 +177,12 @@ public sealed partial class Client : IClient
     internal ContentVersion? ConfiguredContent { get; set; }
 
     /// <summary>
+    /// How many plugins' menu types there were when the client last started configuration: it was sent at least those
+    /// (see <see cref="Player.OpenInventoryAsync"/>).
+    /// </summary>
+    internal int ConfiguredPluginMenus { get; private set; }
+
+    /// <summary>
     /// Whether the server asked the client to go back to configuration and waits for it to acknowledge: the player has
     /// left the world, and the client's play packets are ignored meanwhile.
     /// </summary>
@@ -648,6 +654,7 @@ public sealed partial class Client : IClient
     internal void StartConfiguration()
     {
         this.ConfiguredContent = ((Server)this.HostServer).GetContentVersion();
+        this.ConfiguredPluginMenus = MenuTypesRegistry.PluginMenus.Count;
         this.Channels.StartConfiguration();
     }
 

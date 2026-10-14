@@ -198,51 +198,93 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     internal void MarkChanged() => Volatile.Write(ref this.slotsChanged, ChangeStamp.Next());
 
     /// <summary>
+    /// The containers whose <see cref="TransactionLock"/>s guard this one's slots: itself, or the containers it's made
+    /// of.
+    /// </summary>
+    internal virtual IEnumerable<BaseContainer> LockParts => [this];
+
+    /// <summary>
     /// Takes the container's <see cref="TransactionLock"/>, and those of the containers it's made of, until the
     /// returned handle is disposed.
     /// </summary>
-    internal virtual async ValueTask<IDisposable> LockAsync()
-    {
-        var gate = this.TransactionLock;
-        await gate.WaitAsync();
-
-        return new LockRelease(gate);
-    }
+    internal ValueTask<IDisposable> LockAsync() => LockAllAsync(this.LockParts);
 
     /// <summary>
-    /// Takes the container's lock like <see cref="LockAsync"/>, blocking, for code that can't wait asynchronously, such
-    /// as a save on a chunk's lock. Never call it holding the container's lock.
+    /// Takes the container's lock like <see cref="LockAsync"/>, blocking, for code that can't wait asynchronously,
+    /// such as a save on a chunk's lock. Never call it holding the container's lock.
     /// </summary>
-    internal virtual IDisposable Lock()
+    internal IDisposable Lock()
     {
-        var gate = this.TransactionLock;
-        gate.Wait();
+        var gates = Ordered(this.LockParts);
+        var taken = new List<IDisposable>(gates.Length);
 
-        return new LockRelease(gate);
+        foreach (var gate in gates)
+        {
+            gate.Wait();
+            taken.Add(new LockRelease(gate));
+        }
+
+        return new LockSet(taken);
     }
 
     /// <summary>
-    /// Takes the locks a click in a player's open <paramref name="window"/> needs: the window's, then the player's
-    /// <paramref name="inventory"/>'s, which the window shows too, until the returned handle is disposed. Always in
-    /// that order, so that clicks sharing a container, and other changes to the player's inventory, take turns without
+    /// Takes the locks a click in a player's open <paramref name="window"/> needs: the window's and the player's
+    /// <paramref name="inventory"/>'s, which the window shows too, until the returned handle is disposed.
+    /// </summary>
+    /// <remarks>
+    /// Every lock of several containers takes them in one order (see <see cref="Ordered"/>), so that clicks sharing
+    /// containers, plugins' menus made of several, and other changes to the player's inventory take turns without
     /// deadlocking.
-    /// </summary>
-    internal static async ValueTask<IDisposable> LockWindowAsync(BaseContainer window, BaseContainer inventory)
+    /// </remarks>
+    internal static ValueTask<IDisposable> LockWindowAsync(BaseContainer window, BaseContainer inventory) =>
+        LockAllAsync(window.LockParts.Append(inventory));
+
+    // Takes the containers' locks in order; the returned handle releases them in reverse.
+    private static async ValueTask<IDisposable> LockAllAsync(IEnumerable<BaseContainer> parts)
     {
-        var first = await window.LockAsync();
-        if (window.SharesSlotsWith(inventory))
-            return first;
+        var gates = Ordered(parts);
+        var taken = new List<IDisposable>(gates.Length);
 
         try
         {
-            var second = await inventory.LockAsync();
-
-            return new LockPair(first, second);
+            foreach (var gate in gates)
+            {
+                await gate.WaitAsync();
+                taken.Add(new LockRelease(gate));
+            }
         }
         catch
         {
-            first.Dispose();
+            new LockSet(taken).Dispose();
             throw;
+        }
+
+        return new LockSet(taken);
+    }
+
+    // The distinct containers' locks in the order every lock of several takes them: by a rank each container gets the
+    // first time it's locked, which never changes.
+    private static SemaphoreSlim[] Ordered(IEnumerable<BaseContainer> parts) =>
+    [
+        .. parts
+            .Distinct()
+            .OrderBy(part => part.LockRank)
+            .Select(part => part.TransactionLock)
+    ];
+
+    private static long nextLockRank;
+
+    private long lockRank;
+
+    // The container's place in the order of Ordered, given when it's first asked for.
+    private long LockRank
+    {
+        get
+        {
+            if (Volatile.Read(ref this.lockRank) == 0)
+                Interlocked.CompareExchange(ref this.lockRank, Interlocked.Increment(ref nextLockRank), 0);
+
+            return Volatile.Read(ref this.lockRank);
         }
     }
 
@@ -268,11 +310,12 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     internal void CancelRetirement() => Volatile.Write(ref this.retired, 0);
 
     /// <summary>
-    /// Whether this container and <paramref name="other"/> show the same slots, like a double chest and its halves.
+    /// Whether this container and <paramref name="other"/> show the same slots, like a double chest and its halves, or
+    /// a plugin's menu and the containers its slots are kept in.
     /// </summary>
     internal virtual bool SharesSlotsWith(BaseContainer other) =>
         ReferenceEquals(this, other)
-        || other is Containers.DoubleChestContainer chest && chest.SharesSlotsWith(this);
+        || other is Containers.DoubleChestContainer or MenuContainer && other.SharesSlotsWith(this);
 
     /// <summary>
     /// The container's slots in order: its own array, or a copy for a container made of others.
@@ -331,14 +374,14 @@ internal sealed class LockRelease(SemaphoreSlim gate) : IDisposable
 }
 
 /// <summary>
-/// Releases two locks taken in turn, the second first.
+/// Releases locks taken in turn, the last first.
 /// </summary>
-internal sealed class LockPair(IDisposable first, IDisposable second) : IDisposable
+internal sealed class LockSet(List<IDisposable> taken) : IDisposable
 {
     public void Dispose()
     {
-        second.Dispose();
-        first.Dispose();
+        for (var index = taken.Count - 1; index >= 0; index--)
+            taken[index].Dispose();
     }
 }
 

@@ -38,6 +38,7 @@ public partial class Player
     {
         await this.TickPortalsAsync();
         await this.PickupNearbyItemsAsync();
+        await this.TickMenuAsync();
         await Obsidian.Events.MainEventHandler.RefreshStaleWindowAsync(this);
         await MapStorage.For(this.Level).TickAsync(this);
     }

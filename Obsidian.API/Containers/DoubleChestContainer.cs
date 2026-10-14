@@ -7,8 +7,8 @@ namespace Obsidian.API.Containers;
 /// container. The halves keep the items; this only shows them together.
 /// </summary>
 /// <remarks>
-/// Each opening makes a new one, so several can show the same halves: they lock both halves, first then second,
-/// and share the halves' viewers, so that their clicks take turns with each other's and with a single half's.
+/// Each opening makes a new one, so several can show the same halves: they lock both halves and share the halves'
+/// viewers, so that their clicks take turns with each other's and with a single half's.
 /// </remarks>
 internal sealed class DoubleChestContainer : BaseContainer
 {
@@ -48,37 +48,9 @@ internal sealed class DoubleChestContainer : BaseContainer
     public override void Resize(int newSize) =>
         throw new NotSupportedException("A double chest has its halves' slots.");
 
-    internal override async ValueTask<IDisposable> LockAsync()
-    {
-        var first = await this.First.LockAsync();
-        try
-        {
-            var second = await this.Second.LockAsync();
-
-            return new LockPair(first, second);
-        }
-        catch
-        {
-            first.Dispose();
-            throw;
-        }
-    }
+    internal override IEnumerable<BaseContainer> LockParts => [this.First, this.Second];
 
     internal override bool ShowsRetired => this.First.ShowsRetired || this.Second.ShowsRetired;
-
-    internal override IDisposable Lock()
-    {
-        var first = this.First.Lock();
-        try
-        {
-            return new LockPair(first, this.Second.Lock());
-        }
-        catch
-        {
-            first.Dispose();
-            throw;
-        }
-    }
 
     internal override bool SharesSlotsWith(BaseContainer other) =>
         ReferenceEquals(this, other)

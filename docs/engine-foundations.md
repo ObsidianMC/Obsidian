@@ -92,7 +92,7 @@ pushes them into a hopper below.
 
 ## Phase 3: menus and screens
 
-- **Server menus.** A plugin menu type with its own slot layout and per-slot rules, a quick-move (shift-click) hook,
+- **Server menus.** (done) A plugin menu type with its own slot layout and per-slot rules, a quick-move (shift-click) hook,
   data slots synced to the client (like a furnace's progress), button clicks, and extra data sent when opened (like
   NeoForge's `openMenu` with a buffer). A menu can be bound to a block entity and closes when it's removed.
 - **Client screens in code.** A mod builds its screens in its own client side, in C#, from UI building blocks

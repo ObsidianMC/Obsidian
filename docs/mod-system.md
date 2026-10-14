@@ -101,6 +101,14 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      the process, are synced to NeoForge and Fabric clients with the `minecraft:particle_type` and `minecraft:menu`
      registries (refusing vanilla clients once there are any), and have no behaviour to replace on reload; a menu's
      shape can't change until the server restarts.
+   - Done, menus that do more than hold items (engine phase 3's server menus): a `MenuContainer` keeps each of its
+     type's slots in a container, behind item access or itself, with per-slot rules (`MenuSlot`), routes shift-clicks
+     with an overridable `QuickMove`, has data slots sent as they change (vanilla's `ContainerSetData`), handles its
+     screen's buttons (`ClickButton`), writes extra data NeoForge clients and the Obsidian client get as it opens
+     (NeoForge's `neoforge:advanced_open_screen`), and closes with the block entity it's bound to or once the player
+     is out of reach. Its plugin code runs inside calls into the plugin; a click in it never makes or loses an item,
+     undoing itself when an item access slot lost what it took. Clicks take their containers' locks in one global
+     order. See [plugin-content.md](plugin-content.md#machine-menus).
    - Done for brewing: brewing stands brew (fuel, 400-tick brews and vanilla's mixes) and route shift-clicks like
      vanilla's, and `IPluginRegistry.AddPotionMix` and `AddContainerMix` add a plugin's mixes after vanilla's, removed
      when it unloads (see [plugin-content.md](plugin-content.md#brewing)). Mixes aren't synced: clients know only
@@ -445,7 +453,8 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      (read without options) are drawn with the sprites of their definitions and behave like vanilla's base particle,
      or as an `IClientRegistry.RegisterParticleProvider` says (lifetime, gravity, friction, scale, the server's
      velocity kept or randomised, animated sprites). Mods' menus show like a chest with their slots centred, or with
-     the background and slot positions an `IClientRegistry.RegisterMenuScreen` gives.
+     the background and slot positions an `IClientRegistry.RegisterMenuScreen` gives. The client reads NeoForge's
+     `neoforge:advanced_open_screen`, keeping the extra data a mod's menu opens with, and its data slots.
    - Done, client ticks, mods' entity animations, equipment and sizes, and reloading: `IClientRegistry.OnTick` runs
      a mod's handler on the game's thread every client tick. Mods' entity renderers play keyframed animations from
      `assets/<ns>/animations/entity/`, in the shape of `client_models.json`'s (an idle one, a walk one advancing with
@@ -457,10 +466,10 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      assets. It's only there while the client isn't connected, and content stays registered with its ids, so content
      a mod adds needs a restart.
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
-     move or draw unlike a sprite; menus beyond a grid of slots (other slot shapes, data slots, buttons, NeoForge's
-     extra open data) and screens drawing more than their background; entity render layers (emissive and translucent
-     ones) and animations a server triggers beyond arm swings for mods' entities; client lifecycle events (joining
-     and leaving a server).
+     move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine, and screens in code
+     (widgets, mods reading their menus' extra data and data slots, buttons); entity render layers (emissive and
+     translucent ones) and animations a server triggers beyond arm swings for mods' entities; client lifecycle events
+     (joining and leaving a server).
 
 ## Porting from NeoForge
 

@@ -103,8 +103,9 @@ internal sealed class PayloadChannelRegistry
             .Select(registration => registration.ToComponent())
             .ToList();
 
-        if (protocol == NetworkProtocol.Configuration)
-            components.AddRange(ChannelPayloads.BuiltinComponents);
+        components.AddRange(protocol == NetworkProtocol.Configuration
+            ? ChannelPayloads.BuiltinComponents
+            : ChannelPayloads.BuiltinPlayComponents);
 
         return components;
     }

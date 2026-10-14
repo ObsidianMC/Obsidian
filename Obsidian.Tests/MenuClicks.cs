@@ -800,6 +800,143 @@ public sealed class MenuClicks
         }
     }
 
+    [Fact(DisplayName = "A plugin's menu keeps slots elsewhere under its rules, syncs data and closes with its block",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task BoundMenusFollowTheirSlotsAndBlock()
+    {
+        await using var context = TestServerFactory.CreateServer($"bound-menu-{Guid.NewGuid():N}");
+        var chunk = new Chunk(0, 0);
+        chunk.SetChunkStatus(ChunkGenStage.full);
+        context.World.LoadRegionByChunk(0, 0).SetChunk(chunk);
+
+        var position = new Vector(0, 64, 0);
+        await context.World.SetBlockAsync(position, BlocksRegistry.Chest);
+        var chest = Assert.IsAssignableFrom<ContainerBlockEntity>(await context.World.GetBlockEntityAsync(position));
+        var player = TestServerFactory.CreateConnectedPlayer(
+            context.Server, context.World, "Machinist", new VectorD(0.5, 64, 2.5));
+        var sent = ((TestClient)player.Client).SentPackets;
+
+        // Fuel kept in the chest, sixteen at most; a buffer behind item access; an output players only take from.
+        var buffer = new BufferAccess();
+        var menu = new MachineMenu(machine, chest, buffer);
+        await player.OpenInventoryAsync(menu);
+        Assert.Contains(player, chest.Inventory.Viewers);
+
+        player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Coal, 20));
+        player.Inventory.SetItem(10, new ItemStack(ItemsRegistry.Diamond, 5));
+        await ClickAsync(context.Server, player, 3, 0, ClickType.QuickMove);
+        await ClickAsync(context.Server, player, 4, 0, ClickType.QuickMove);
+
+        Assert.Equal(16, chest.Inventory.GetItem(0)?.Count);
+        Assert.Equal(4, player.Inventory.GetItem(9)?.Count);
+        Assert.Equal(5, buffer.Stack?.Count);
+        Assert.Null(player.Inventory.GetItem(10));
+
+        // A click whose buffer lost items before the click ended is undone, so that no item is made.
+        buffer.Steal = true;
+        await ClickAsync(context.Server, player, 1, 0, ClickType.Pickup);
+        Assert.Null(player.CarriedItem);
+        Assert.Equal(4, buffer.Stack?.Count);
+
+        buffer.Steal = false;
+        await ClickAsync(context.Server, player, 1, 0, ClickType.Pickup);
+        await ClickAsync(context.Server, player, 2, 0, ClickType.Pickup);
+        Assert.Equal(4, player.CarriedItem?.Count);
+        Assert.Null(menu.GetItem(2));
+
+        // Data slots are sent as the menu opens, then on the player's ticks only when they changed; buttons reach the
+        // menu.
+        await player.TickMenuAsync();
+        var data = sent.OfType<ContainerSetDataPacket>().Select(packet => packet.WindowProperty.Value).ToList();
+        Assert.Equal([0, 16], data);
+
+        await player.TickMenuAsync();
+        Assert.Equal(2, sent.OfType<ContainerSetDataPacket>().Count());
+
+        await player.ClickMenuButtonAsync(player.CurrentContainerId, 0);
+        Assert.True(menu.GetItem(2)?.Is(ItemsRegistry.Emerald));
+
+        // Out of reach the menu closes, and with its block gone it closes too.
+        player.Position = new VectorD(0.5, 64, 12.5);
+        await player.TickMenuAsync();
+        Assert.Null(player.OpenedContainer);
+
+        player.Position = new VectorD(0.5, 64, 2.5);
+        await player.OpenInventoryAsync(new MachineMenu(machine, chest, buffer));
+        await context.World.SetBlockAsync(position, BlocksRegistry.Air);
+        Assert.Null(player.OpenedContainer);
+    }
+
+    private static readonly MenuDefinition machine = MenuTypesRegistry.Register("clicks:machine", 1, 3);
+
+    // A machine's menu: its fuel in a chest, a buffer behind item access, and an output a button fills.
+    private sealed class MachineMenu : MenuContainer
+    {
+        public MachineMenu(MenuDefinition menu, ContainerBlockEntity chest, IItemAccess buffer) : base(menu, "Machine")
+        {
+            this.Slots =
+            [
+                new MenuSlot(chest.Inventory, 0)
+                {
+                    MayPlace = item => item.Is(ItemsRegistry.Coal),
+                    MaxStackSize = 16
+                },
+                new MenuSlot(buffer, 0) { MayPlace = item => item.Is(ItemsRegistry.Diamond) },
+                new MenuSlot { MayPlace = _ => false }
+            ];
+            this.BlockEntity = chest;
+            this.DataSlots = 1;
+        }
+
+        public override short GetData(int index) => (short)(this.GetItem(0)?.Count ?? 0);
+
+        protected internal override bool ClickButton(IPlayer player, int button)
+        {
+            this.SetItem(2, new ItemStack(ItemsRegistry.Emerald, 1));
+
+            return true;
+        }
+    }
+
+    // One slot of items behind item access, which can lose an item to something else just before one is taken out.
+    private sealed class BufferAccess : IItemAccess
+    {
+        public ItemStack? Stack { get; set; }
+
+        public bool Steal { get; set; }
+
+        public int SlotCount => 1;
+
+        public ItemStack? GetItem(int slot) =>
+            this.Stack is ItemStack stack ? new ItemStack(stack, stack.Count) : null;
+
+        public ItemStack? Insert(int slot, ItemStack stack, bool simulate = false)
+        {
+            if (this.Stack is not null && !this.Stack.Equals(stack))
+                return stack;
+
+            if (!simulate)
+                this.Stack = new ItemStack(stack, stack.Count + (this.Stack?.Count ?? 0));
+
+            return null;
+        }
+
+        public ItemStack? Extract(int slot, int count, bool simulate = false)
+        {
+            if (this.Steal && this.Stack is not null)
+                this.Stack.Count--;
+
+            if (this.Stack is not ItemStack stack)
+                return null;
+
+            var taken = Math.Min(count, stack.Count);
+            if (!simulate)
+                this.Stack = stack.Count > taken ? new ItemStack(stack, stack.Count - taken) : null;
+
+            return new ItemStack(stack, taken);
+        }
+    }
+
     private static async Task<T> OpenAsync<T>(Obsidian.Entities.Player player, T container) where T : BaseContainer
     {
         await player.OpenInventoryAsync(container);

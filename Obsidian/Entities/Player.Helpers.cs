@@ -46,6 +46,26 @@ public partial class Player
     }
 
     /// <summary>
+    /// Where <paramref name="player"/>'s eyes are, which they reach blocks from: their pose's eye height, as vanilla's
+    /// pose dimensions give it, scaled like the rest of their body.
+    /// </summary>
+    internal static VectorD EyePosition(IPlayer player)
+    {
+        var eyeHeight = player.Pose switch
+        {
+            Pose.FallFlying or Pose.Swimming or Pose.SpinAttack => 0.4f,
+            Pose.Sneaking => 1.27f,
+            Pose.Sleeping => 0.2f,
+            _ => 1.62f
+        };
+        var scale = player is Player scaled && scaled.HasAttribute("minecraft:scale")
+            ? Math.Clamp(scaled.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
+            : 1f;
+
+        return player.Position + new VectorD(0, eyeHeight * scale, 0);
+    }
+
+    /// <summary>
     /// Saves the player in vanilla's shape to the world's <c>playerdata/&lt;uuid&gt;.dat</c> (and for the singleplayer
     /// owner of a vanilla-shaped world, to its level.dat's <c>Data.Player</c> too), and the world they're in to
     /// <see cref="PersistentDataFile"/>.
