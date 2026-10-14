@@ -80,8 +80,48 @@ internal sealed record PluginDataBinding(
     Func<IDisposable?> TryEnter,
     bool CopyOnDeath = false,
     Action<INbtTag, INetStreamWriter>? WriteNetwork = null,
-    Func<INetStreamReader, INbtTag>? ReadNetwork = null)
+    Func<INetStreamReader, INbtTag>? ReadNetwork = null,
+    bool HoldsItems = false)
 {
+    /// <summary>
+    /// Logs a <see cref="Changed"/> handler that threw on a change the engine made (through item access, or at a
+    /// death), which stands and has no caller to throw to. The server sets it.
+    /// </summary>
+    internal static Action<string, Exception>? HandlerFailed { get; set; }
+
+    /// <summary>The handlers of <see cref="AttachmentType{TValue}.Changed"/>.</summary>
+    internal event Action<IAttachmentHolder>? Changed;
+
+    /// <summary>
+    /// Tells the handlers that <paramref name="holder"/>'s value changed, for a change the plugin made itself: a
+    /// handler's exception goes to the plugin's caller. Call it inside a call into the plugin.
+    /// </summary>
+    internal void RaiseChanged(IAttachmentHolder holder) => this.Changed?.Invoke(holder);
+
+    /// <summary>
+    /// Tells the handlers that <paramref name="holder"/>'s value changed, for a change the engine made: inside a call
+    /// into the plugin while it's loaded, with a handler's exception logged rather than thrown, since the change
+    /// stands either way.
+    /// </summary>
+    internal void NotifyChanged(IAttachmentHolder holder)
+    {
+        if (this.Changed is null)
+            return;
+
+        using var call = this.TryEnter();
+        if (call is null)
+            return;
+
+        try
+        {
+            this.Changed?.Invoke(holder);
+        }
+        catch (Exception exception)
+        {
+            HandlerFailed?.Invoke(this.Key, exception);
+        }
+    }
+
     internal IDisposable Enter()
     {
         var call = this.TryEnter();

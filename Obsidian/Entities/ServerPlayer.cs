@@ -203,7 +203,7 @@ public sealed partial class ServerPlayer : Avatar, IPlayer
     public Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
     {
         if (!this.Alive)
-            API.Data.AttachmentStorage.For(this).Respawn();
+            API.Data.AttachmentStorage.For(this).Respawn(this);
 
         this.Health = 20f;
         this.Position = this.Level.LevelData.SpawnPosition;

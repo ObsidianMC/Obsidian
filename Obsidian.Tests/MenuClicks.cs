@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Obsidian.API;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
+using Obsidian.API.Data;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
@@ -960,6 +961,107 @@ public sealed class MenuClicks
         Obsidian.Plugins.PluginEntities.RemoveFrom(context.World, owner);
         Assert.Contains(dropped, context.World.GetNonPlayerEntitiesInRange(player.Position, 4));
     }
+
+    [Fact(DisplayName = "A player's item attachment backs menu slots, saves, follows death rules and outlives unload",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task ItemAttachmentsBackPlayerSlots()
+    {
+        await using var context = TestServerFactory.CreateServer($"player-slots-{Guid.NewGuid():N}");
+        var chunk = new Chunk(0, 0);
+        chunk.SetChunkStatus(ChunkGenStage.full);
+        context.World.LoadRegionByChunk(0, 0).SetChunk(chunk);
+        var player = TestServerFactory.CreateConnectedPlayer(
+            context.Server, context.World, "Wearer", new VectorD(0.5, 64, 0.5));
+        var owner = new PluginContainer
+        {
+            Info = new PluginInfo("charms"),
+            Archive = PluginArchive.Open("charms.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+            {
+                [PluginMetadata.FileName] = PluginArchives.Metadata("charms", "1.0.0", "Charms")
+            }))
+        };
+
+        try
+        {
+            var charms = PluginRegistry.RegisterAttachment(
+                owner, "charms:worn", ItemAttachments.Codec, ItemAttachments.NetworkCodec, copyOnDeath: false);
+            var kept = PluginRegistry.RegisterAttachment(
+                owner, "charms:soulbound", ItemAttachments.Codec, null, copyOnDeath: true);
+            var changes = 0;
+            charms.Changed += _ => changes++;
+
+            // Two charm slots that take one diamond each, next to the player's inventory.
+            var access = player.GetItemAccess(charms, 2);
+            var menu = new MenuContainer(charmMenu, "Charms")
+            {
+                Slots =
+                [
+                    .. Enumerable.Range(0, 2).Select(slot => new MenuSlot(access, slot)
+                    {
+                        MayPlace = item => item.Is(ItemsRegistry.Diamond),
+                        MaxStackSize = 1
+                    })
+                ]
+            };
+            await player.OpenInventoryAsync(menu);
+            player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Diamond, 3));
+            player.Inventory.SetItem(10, new ItemStack(ItemsRegistry.Coal, 1));
+
+            // Shift-clicks follow the slots' rules into the attachment, and back to the inventory.
+            await ClickAsync(context.Server, player, 2, 0, ClickType.QuickMove);
+            await ClickAsync(context.Server, player, 3, 0, ClickType.QuickMove);
+            Assert.Equal(1, player.Inventory.GetItem(9)?.Count);
+            Assert.True(player.Inventory.GetItem(10)?.Is(ItemsRegistry.Coal));
+            Assert.All(player.GetAttachment(charms)!, item => Assert.Equal(1, item?.Count));
+
+            await ClickAsync(context.Server, player, 0, 0, ClickType.QuickMove);
+            Assert.Null(menu.GetItem(0));
+            Assert.Equal(2, player.Inventory.GetItem(9)?.Count);
+            Assert.True(changes >= 3);
+
+            // The attachment is the only copy: saved and loaded as NBT.
+            var saved = new NbtCompound();
+            AttachmentStorage.For(player).Save(saved);
+            var reloaded = new Obsidian.Entities.Entity { Level = context.World, Type = EntityType.Pig };
+            AttachmentStorage.For(reloaded).Load(saved);
+            Assert.True(reloaded.GetAttachment(charms)![1]?.Is(ItemsRegistry.Diamond));
+
+            // keep_inventory keeps the items; without it a death drops them, unless the type copies on death.
+            await player.CloseContainerAsync();
+            player.SetAttachment(kept, [new ItemStack(ItemsRegistry.Emerald, 4)]);
+            context.World.LevelData.GameRules["keep_inventory"] = "true";
+            await player.KillAsync(player, "Kept");
+            await player.RespawnAsync();
+            Assert.NotNull(player.GetAttachment(charms));
+
+            context.World.LevelData.GameRules["keep_inventory"] = "false";
+            changes = 0;
+            await player.KillAsync(player, "Dropped");
+            Assert.False(player.TryGetAttachment(charms, out _));
+            Assert.Equal(1, changes);
+            Assert.Contains(context.World.GetNonPlayerEntitiesInRange(player.Position, 4)
+                .OfType<Obsidian.Entities.ItemEntity>(), item => item.Item.Is(ItemsRegistry.Diamond));
+
+            await player.RespawnAsync();
+            Assert.Equal(4, Assert.Single(player.GetAttachment(kept)!)?.Count);
+
+            // Unloaded, the access takes and gives nothing, and the saved items wait for the plugin to return.
+            owner.Close();
+            owner.UndoHostAdditions();
+            var emerald = new ItemStack(ItemsRegistry.Emerald, 1);
+            Assert.Null(access.GetItem(0));
+            Assert.Same(emerald, access.Insert(0, emerald));
+            Assert.True(AttachmentStorage.For(player).Snapshot().HasTag(kept.Identifier));
+        }
+        finally
+        {
+            owner.Close();
+            owner.UndoHostAdditions();
+            await owner.DisposeAsync();
+        }
+    }
+
+    private static readonly MenuDefinition charmMenu = MenuTypesRegistry.Register("clicks:charms", 1, 2);
 
     private static readonly MenuDefinition machine = MenuTypesRegistry.Register("clicks:machine", 1, 3);
 

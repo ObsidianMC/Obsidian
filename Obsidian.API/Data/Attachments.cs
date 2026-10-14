@@ -1,3 +1,4 @@
+using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
 using System.Collections.Generic;
@@ -40,6 +41,8 @@ public static class AttachmentExtensions
         {
             throw new InvalidOperationException($"{type.Identifier} is unloaded or replaced.");
         }
+
+        type.Binding.RaiseChanged(holder);
     }
 
     public static bool RemoveAttachment<TValue>(this IAttachmentHolder holder, AttachmentType<TValue> type)
@@ -51,6 +54,9 @@ public static class AttachmentExtensions
         {
             throw new InvalidOperationException($"{type.Identifier} is unloaded or replaced.");
         }
+
+        if (removed)
+            type.Binding.RaiseChanged(holder);
 
         return removed;
     }
@@ -143,14 +149,85 @@ internal sealed class AttachmentStorage
         holder.Add(this.Snapshot());
     }
 
-    internal void Respawn()
+    internal void Respawn(IAttachmentHolder holder)
     {
         foreach (var (identifier, _) in this.Snapshot())
         {
             var binding = PluginDataBindings.FindAttachment(identifier);
-            // Unknown types stay untouched. A missing plugin must not destroy its player's saved data.
-            if (binding is { CopyOnDeath: false })
-                PluginDataBindings.TryPublish(binding, () => this.Remove(identifier));
+            var removed = false;
+
+            // Unknown types stay untouched. A missing plugin must not destroy its player's saved data. Items were
+            // dropped as the player died already, or kept (see TakeDeathDrops).
+            if (binding is { CopyOnDeath: false, HoldsItems: false })
+                PluginDataBindings.TryPublish(binding, () => removed = this.Remove(identifier));
+
+            if (removed)
+                binding!.NotifyChanged(holder);
+        }
+    }
+
+    /// <summary>
+    /// Takes the items of the holder's item attachments (see <see cref="ItemAttachments"/>) that a death drops: those
+    /// of loaded types without <c>CopyOnDeath</c>, removing them. The caller drops them, when vanilla's
+    /// <c>keep_inventory</c> rule is off; with it on, or with <c>CopyOnDeath</c>, they're kept like the inventory.
+    /// </summary>
+    internal List<ItemStack> TakeDeathDrops(IAttachmentHolder holder)
+    {
+        var drops = new List<ItemStack>();
+
+        foreach (var (identifier, _) in this.Snapshot())
+        {
+            if (PluginDataBindings.FindAttachment(identifier) is not { CopyOnDeath: false, HoldsItems: true } binding)
+                continue;
+
+            INbtTag? taken = null;
+            PluginDataBindings.TryPublish(binding, () => taken = this.TryTake(identifier));
+
+            if (taken is null)
+                continue;
+
+            drops.AddRange(ItemAttachments.Decode(taken).OfType<ItemStack>());
+            binding.NotifyChanged(holder);
+        }
+
+        return drops;
+    }
+
+    // Removes and returns a value, or null when there's none or the holder is retired.
+    private INbtTag? TryTake(string identifier)
+    {
+        lock (this.gate)
+        {
+            if (this.retired || !this.saved.TryGetTag(identifier, out var value))
+                return null;
+
+            this.saved.Remove(identifier);
+            this.revision++;
+            return value;
+        }
+    }
+
+    /// <summary>
+    /// Changes a value in one step, under the holder's lock: <paramref name="change"/> gets the saved value (null when
+    /// there's none) and returns its replacement, or null to leave it. It's host code, never a plugin's codec.
+    /// </summary>
+    /// <returns>False when the holder is retired, and nothing changed.</returns>
+    internal bool TryUpdate(string identifier, Func<INbtTag?, INbtTag?> change)
+    {
+        lock (this.gate)
+        {
+            if (this.retired)
+                return false;
+
+            var current = this.saved.TryGetTag(identifier, out var value) ? value : null;
+            if (change(current) is not INbtTag replacement)
+                return true;
+
+            var copy = CopyValue(identifier, replacement);
+            this.saved.Remove(identifier);
+            this.saved.Add(copy);
+            this.revision++;
+            return true;
         }
     }
 

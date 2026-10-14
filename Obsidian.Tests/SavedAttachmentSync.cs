@@ -214,7 +214,7 @@ public sealed class SavedAttachmentSync
             owner.Close();
             owner.UndoHostAdditions();
             var before = calls;
-            AttachmentStorage.For(modded).Respawn();
+            AttachmentStorage.For(modded).Respawn(modded);
             Assert.Throws<InvalidOperationException>(() => modded.SetAttachment(synced, [100]));
             Assert.Equal(before, calls);
             Assert.True(AttachmentStorage.For(modded).Snapshot().HasTag(synced.Identifier));

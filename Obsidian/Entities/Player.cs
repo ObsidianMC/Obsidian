@@ -700,7 +700,7 @@ public sealed partial class Player : Avatar, IClientPlayer
             {
                 // Death respawns must create fresh client state rather than retain the dead player's metadata.
                 dataKept = DataKept.None;
-                API.Data.AttachmentStorage.For(this).Respawn();
+                API.Data.AttachmentStorage.For(this).Respawn(this);
                 CancelEating();
                 CancelWeaponUse();
                 combatPosition = null;
@@ -809,6 +809,7 @@ public sealed partial class Player : Avatar, IClientPlayer
             OpenedContainer = null;
         }
         Vehicle?.Dismount(this);
+        this.DropItemAttachments();
         await Client.QueuePacketAsync(new SetHealthPacket(0, FoodLevel, FoodSaturationLevel));
         await Client.QueuePacketAsync(new PlayerCombatKillPacket { PlayerID = EntityId, Message = deathMessage });
         PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket { EntityId = EntityId, Event = 3 }, EntityId);
