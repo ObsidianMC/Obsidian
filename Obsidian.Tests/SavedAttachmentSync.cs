@@ -82,8 +82,21 @@ public sealed class SavedAttachmentSync
         {
             var synced = PluginRegistry.RegisterAttachment(owner, "attachmentsync:kept", codec, network, true);
             var transient = PluginRegistry.RegisterAttachment(owner, "attachmentsync:transient", codec, null, false);
-            Assert.Throws<ArgumentException>(() =>
-                PluginRegistry.RegisterSavedData(owner, "attachmentsync:../escape", codec));
+            foreach (var path in new[]
+            {
+                "../escape",
+                "/rooted",
+                "bad\\path",
+                "bad?path",
+                "foo.dat/bar",
+                "foo.dat.tmp/bar"
+            })
+            {
+                Assert.Throws<ArgumentException>(() =>
+                    PluginRegistry.RegisterSavedData(owner, "attachmentsync:" + path, codec));
+            }
+
+            Assert.NotNull(PluginRegistry.RegisterSavedData(owner, "attachmentsync:foo/bar", codec));
             var entity = new Entity { Level = world, Type = EntityType.Pig };
             Assert.True(world.TryAddEntity(entity));
             ((IPlayer)modded).TrackEntity(entity);
@@ -94,13 +107,14 @@ public sealed class SavedAttachmentSync
             entity.SetAttachment(synced, [2]);
             chunk.SetAttachment(synced, [3]);
             vanilla.SetAttachment(synced, [4]);
+            modded.visiblePlayers.Add(vanilla);
             client.ClearPackets();
             vanillaClient.ClearPackets();
             modded.SynchronizeAttachments();
             vanilla.SynchronizeAttachments();
 
             var packets = client.SentPackets.OfType<CustomPayloadPacket>().ToArray();
-            Assert.Equal(3, packets.Length);
+            Assert.Equal(4, packets.Length);
             var values = packets.Select(packet =>
             {
                 Assert.Equal(AttachmentPayload.Channel, packet.Channel);
@@ -112,11 +126,26 @@ public sealed class SavedAttachmentSync
                 [synced.Identifier]).GetArray());
             Assert.Equal([3], ((NbtArray<int>)values[new(AttachmentTargetKind.Chunk, 0, 0)]
                 [synced.Identifier]).GetArray());
+            Assert.Equal([4], ((NbtArray<int>)values[new(AttachmentTargetKind.Entity, vanilla.EntityId)]
+                [synced.Identifier]).GetArray());
             Assert.All(values.Values, saved => Assert.False(saved.HasTag(transient.Identifier)));
             Assert.Empty(vanillaClient.SentPackets.OfType<CustomPayloadPacket>());
             client.ClearPackets();
             modded.SynchronizeAttachments();
             Assert.Empty(client.SentPackets);
+
+            modded.visiblePlayers.Remove(vanilla);
+            modded.SynchronizeAttachments();
+            modded.visiblePlayers.Add(vanilla);
+            client.ClearPackets();
+            modded.SynchronizeAttachments();
+            var visibleAgain = Assert.Single(client.SentPackets.OfType<CustomPayloadPacket>());
+            using (var buffer = new NetworkBuffer(visibleAgain.PluginData.ToArray()))
+            {
+                var (target, saved) = AttachmentPayload.Decode(buffer, client: false);
+                Assert.Equal(new AttachmentTarget(AttachmentTargetKind.Entity, vanilla.EntityId), target);
+                Assert.Equal([4], ((NbtArray<int>)saved[synced.Identifier]).GetArray());
+            }
 
             Assert.True(entity.RemoveAttachment(synced));
             client.ClearPackets();
@@ -133,6 +162,38 @@ public sealed class SavedAttachmentSync
             await modded.RespawnAsync();
             Assert.Equal([1], modded.GetAttachment(synced));
             Assert.False(modded.TryGetAttachment(transient, out _));
+
+            // A worker encoding during the final chunk save must fail instead of publishing a lost write.
+            var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var finish = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var retirement = PluginRegistry.RegisterAttachment(owner, "attachmentsync:retirement",
+                new ComponentCodec<int>(value =>
+                {
+                    if (value == 2)
+                    {
+                        started.SetResult();
+                        finish.Task.GetAwaiter().GetResult();
+                    }
+
+                    return new NbtTag<int>("", value);
+                }, tag => ((NbtTag<int>)tag).Value), null, false);
+            chunk.SetAttachment(retirement, 1);
+            var write = Task.Run(() => chunk.SetAttachment(retirement, 2));
+            var region = world.GetRegionForChunk(0, 0)!;
+            try
+            {
+                await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                await region.UnloadChunk(0, 0);
+            }
+            finally
+            {
+                finish.TrySetResult();
+            }
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => write);
+            var loadedChunk = (await region.GetChunkAsync(0, 0))!;
+            Assert.Equal(1, loadedChunk.GetAttachment(retirement));
+            Assert.Throws<InvalidOperationException>(() => chunk.RemoveAttachment(retirement));
 
             // An encode that was already running during reload cannot publish over the new load's attachment.
             AttachmentType<int[]> newRace = null;

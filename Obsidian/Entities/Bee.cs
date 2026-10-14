@@ -125,6 +125,7 @@ public sealed partial class Bee : FarmAnimal
                 {
                     if (!entity.Data.TryGetTag<NbtList>("bees", out var occupants)) occupants = new NbtList(NbtTagType.Compound, "bees");
                     if (occupants.Count >= 3) return;
+                    API.Data.AttachmentStorage.For(this).Retire();
                     var data = EntityNbt.Save(this)!;
                     data.Name = "entity_data";
                     occupants.Add(new NbtCompound { data, new NbtTag<int>("ticks_in_hive", 0), new NbtTag<int>("min_ticks_in_hive", HasNectar ? 2400 : 600) });

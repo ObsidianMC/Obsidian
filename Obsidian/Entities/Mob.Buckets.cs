@@ -13,6 +13,7 @@ public partial class Mob
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var item = player.Inventory.GetItem(slot);
         if (item is not { Count: > 0, Holder.Id: ItemIds.WaterBucket }) return false;
+        API.Data.AttachmentStorage.For(this).Retire();
         var data = EntityNbt.Save(this)!;
         foreach (var name in new[] { "id", "UUID", "Pos", "Motion", "Rotation" }) data.Remove(name);
         data.Set(new NbtTag<bool>("FromBucket", true));

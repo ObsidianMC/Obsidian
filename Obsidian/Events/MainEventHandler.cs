@@ -490,6 +490,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         if (player is Player portalPlayer)
             await portalPlayer.CancelPortalTravelAsync();
 
+        API.Data.AttachmentStorage.For(player).Retire();
         await player.SaveAsync();
 
         await DespawnPlayerAsync(player);

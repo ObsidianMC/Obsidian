@@ -12,6 +12,13 @@ public partial class Player
     private readonly Dictionary<AttachmentTarget, (AttachmentStorage Storage, long Revision, int Types)>
         attachmentsSent = [];
 
+    // A player can disappear and spawn again between sync ticks, without changing its holder or revision.
+    private void ResetVisiblePlayerAttachments(int entityId)
+    {
+        lock (this.attachmentSyncGate)
+            this.attachmentsSent.Remove(new AttachmentTarget(AttachmentTargetKind.Entity, entityId));
+    }
+
     private void ResetAttachmentSync()
     {
         lock (this.attachmentSyncGate)
@@ -41,6 +48,15 @@ public partial class Player
             {
                 this.SendAttachments(
                     new AttachmentTarget(AttachmentTargetKind.Entity, entity.EntityId), entity, visible);
+            }
+        }
+
+        foreach (var player in this.visiblePlayers)
+        {
+            if (player.Alive && player is not Player { Respawning: true } && ReferenceEquals(player.Level, level))
+            {
+                this.SendAttachments(
+                    new AttachmentTarget(AttachmentTargetKind.Entity, player.EntityId), player, visible);
             }
         }
 

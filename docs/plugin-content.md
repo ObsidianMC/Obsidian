@@ -678,7 +678,8 @@ Level files are `<level>/data/<namespace>/<path>.dat`. World-wide files use the 
 `<world>/data/obsidian/world/<namespace>/<path>.dat`, to distinguish them from the overworld's own level data. Both
 use vanilla's gzip NBT envelope (`DataVersion`, `data`), with the plugin codec's tag under `data`. Names follow the
 plugin's namespace, with portable path segments; traversal and Windows device names are rejected, and `obsidian`
-is reserved for these types. Saves replace a temporary file atomically. World saves, region flushes and shutdown
+is reserved for these types. Saved-data path segments ending in `.dat` or `.dat.tmp` are rejected to prevent
+file and directory collisions. Saves replace a temporary file atomically. World saves, region flushes and shutdown
 write dirty data. Unloading first flushes any already-published dirty snapshot, without running a codec, then releases
 the live instance. World saves leave its file untouched while the plugin is absent; reload reads it again. Old
 handles throw and cannot overwrite a new load.
@@ -686,7 +687,10 @@ handles throw and cannot overwrite a new load.
 Players and entities implement `IAttachmentHolder` through `IEntity`, and chunks through `IChunk` (obtained from
 `ILevel.GetChunkAsync`). `GetAttachment`, `TryGetAttachment`, `SetAttachment` and `RemoveAttachment` are extensions
 in `Obsidian.API.Data`. Holders retain encoded NBT only: a get decodes a detached value, and changing that value
-requires setting it again. Saved holder NBT uses `obsidian:attachments`, with a value under each type's identifier.
+requires setting it again. `SetAttachment` and `RemoveAttachment` throw `InvalidOperationException` once a holder
+is retired for removal or its final save (chunk unload, entity eviction or player leave). Retirement and publication
+share a lock, so a successful change precedes the final snapshot. Reads remain available. Saved holder NBT uses
+`obsidian:attachments`, with a value under each type's identifier.
 The engine namespace avoids collisions with vanilla tags and does not claim NeoForge save compatibility. Unknown
 or unloaded types stay as saved NBT, including through player saves and chunk unloads, until the plugin returns.
 
@@ -700,8 +704,9 @@ receive it; vanilla clients receive none, and attachment-only plugins do not ext
 vanilla clients joining. The Obsidian client declares the channel, registers the same type through its mod's
 `ConfigureRegistry`, and reads detached values on `IClientWorld` with `TryGetPlayerAttachment(type, out value)`,
 `TryGetEntityAttachment(entityId, type, out value)` and `TryGetChunkAttachment(chunkX, chunkZ, type, out value)`.
-Players receive their own data, tracked entities' data, and data for chunks they have. Changes and removals follow
-on the level tick; tracking starts and respawns get fresh snapshots. Client entity removal, chunk forgetting and
+Players receive their own data, visible players' and tracked entities' data, and data for chunks they have. Changes
+and removals follow on the level tick; tracking starts and respawns get fresh snapshots. Client entity removal,
+chunk forgetting and
 dimension changes clear the relevant snapshots. Unknown client types are skipped without calling their codecs.
 
 **Threads and reload.** Access live saved objects on their owning level's tick. World-wide objects can be reached

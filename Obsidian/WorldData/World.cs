@@ -287,8 +287,11 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
     public async Task UnloadPlayerAsync(Guid uuid)
     {
-        Players.TryRemove(uuid, out var player);
-        await player.SaveAsync();
+        if (Players.TryRemove(uuid, out var player))
+        {
+            API.Data.AttachmentStorage.For(player).Retire();
+            await player.SaveAsync();
+        }
     }
 
     /// <summary>
