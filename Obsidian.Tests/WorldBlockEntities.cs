@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.BlockEntities;
+using Obsidian.API.Blocks;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
@@ -12,8 +13,11 @@ using Obsidian.API.Utilities;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Commands.Framework;
 using Obsidian.Entities;
+using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
+using Obsidian.Net;
 using Obsidian.Net.Payloads;
 using Obsidian.Plugins;
 using Obsidian.Registries;
@@ -46,6 +50,99 @@ public sealed class WorldBlockEntities : IDisposable
     public WorldBlockEntities() => Directory.CreateDirectory(this.folder);
 
     public void Dispose() => Directory.Delete(this.folder, recursive: true);
+
+    [Fact]
+    public async Task MultipartShapesSelectAndBreakOnlyTheNearestPart()
+    {
+        await using var context = TestServerFactory.CreateServer($"multipart-{Guid.NewGuid():N}");
+        var chunk = AddEmptyChunk(context.World);
+        var human = await JoinAsync(context);
+        await using var manager = new PluginManager(
+            context.Server,
+            context.Provider,
+            context.EventDispatcher,
+            context.Provider.GetRequiredService<CommandHandler>(),
+            NullLogger<PluginManager>.Instance,
+            new ConfigurationBuilder().Build());
+        var path = Path.Join(this.folder, "probe.obby");
+        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0"));
+        var plugin = (await manager.LoadPluginAsync(path))!;
+
+        Assert.True(BlocksRegistry.TryGetPluginBlock("probe:parts", out var block));
+        var position = new Vector(4, 70, 4);
+        await context.World.SetBlockAsync(position, block.DefaultState);
+        var terrain = new MobTerrain(context.World);
+        var eye = new VectorD(4.5, 70.5, 2);
+        var end = new VectorD(4.5, 70.5, 7);
+        var hit = terrain.RaycastOutlines(eye, end)!.Value;
+        Assert.Equal(position, hit.Position);
+        Assert.Equal(1, hit.BoxIndex);
+        Assert.Equal(BlockFace.North, hit.Face);
+        Assert.Equal(new VectorD(0.5, 0.5, 0.125), hit.ClickedAt);
+        Assert.False(terrain.IsFree(new BoundingBox(new VectorD(4.4, 70.4, 4.2), new VectorD(4.6, 70.6, 4.3))));
+        Assert.True(terrain.IsFree(new BoundingBox(new VectorD(4.05, 70.4, 4.2), new VectorD(4.2, 70.6, 4.3))));
+
+        // The use packet supplies its own local hit coordinates.
+        using var useData = new NetworkBuffer();
+        useData.WriteVarInt((int)InteractionHand.MainHand);
+        useData.WritePosition(position);
+        useData.WriteVarInt((int)BlockFace.North);
+        useData.WriteAbsoluteFloatPositionF(new VectorF(0.5f, 0.5f, 0.125f));
+        useData.WriteBoolean(false);
+        useData.WriteBoolean(false);
+        useData.WriteVarInt(1);
+        using var useReader = new NetworkBuffer(useData.AsSpan(0, useData.Size).ToArray());
+        var use = new UseItemOnPacket();
+        use.Populate(useReader);
+        await use.HandleAsync(context.Server, human);
+        Assert.Equal(hit.ClickedAt, AppContext.GetData(ProbePartsBehavior.UseKey));
+
+        human.GameMode = GameMode.Creative;
+        human.Position = new VectorD(4.5, 68.88, 2);
+        human.HeadY = eye.Y;
+        human.Yaw = 0;
+        human.Pitch = 0;
+        human.LoadedChunks.Add(NumericsHelper.IntsToLong(0, 0));
+
+        using var breakData = new NetworkBuffer();
+        breakData.WriteVarInt((int)PlayerActionStatus.StartedDigging);
+        breakData.WritePosition(position);
+        breakData.WriteByte((byte)BlockFace.South); // The server derives the true face, not this packet's claim.
+        breakData.WriteVarInt(2);
+        using var breakReader = new NetworkBuffer(breakData.AsSpan(0, breakData.Size).ToArray());
+        var breaking = new PlayerActionPacket();
+        breaking.Populate(breakReader);
+
+        // An intervening outline blocks the target; the multipart hook must not run.
+        AppContext.SetData(ProbePartsBehavior.BreakKey, null);
+        await context.World.SetBlockAsync(new Vector(4, 70, 3), BlocksRegistry.Stone);
+        await breaking.HandleAsync(context.Server, human);
+        Assert.Null(AppContext.GetData(ProbePartsBehavior.BreakKey));
+        await context.World.SetBlockAsync(new Vector(4, 70, 3), BlocksRegistry.Air);
+
+        await breaking.HandleAsync(context.Server, human);
+        Assert.Equal(hit, AppContext.GetData(ProbePartsBehavior.BreakKey));
+        Assert.Equal(block.DefaultState.GetHashCode(),
+            chunk.GetBlock(position.X, position.Y, position.Z).GetHashCode());
+        await context.World.DoWorldTickAsync();
+        Assert.False(BlockEntityNbt.Save(chunk.GetBlockEntity(4, 70, 4)!)!.GetBool("front"));
+        Assert.Equal(0.625, terrain.RaycastOutlines(eye, end)!.Value.ClickedAt.Z);
+        Assert.True(terrain.IsFree(new BoundingBox(new VectorD(4.4, 70.4, 4.2), new VectorD(4.6, 70.6, 4.3))));
+
+        // Unloading releases shape behaviour while keeping the parts' data; reloading restores the remaining part.
+        await manager.UnloadPluginAsync(plugin);
+        Assert.Null(BlockEntityShapes.Get(context.World, position, block.DefaultState));
+        Assert.IsType<DataBlockEntity>(chunk.GetBlockEntity(4, 70, 4));
+        await manager.LoadPluginAsync(path);
+        await context.World.DoWorldTickAsync();
+        Assert.Equal(0.625, terrain.RaycastOutlines(eye, end)!.Value.ClickedAt.Z);
+
+        // The final part permits ordinary block removal.
+        human.HeadY = eye.Y;
+        await breaking.HandleAsync(context.Server, human);
+        Assert.True(chunk.GetBlock(position.X, position.Y, position.Z).IsAir);
+        Assert.Null(chunk.GetBlockEntity(4, 70, 4));
+    }
 
     [Fact(DisplayName = "Vanilla's block entities save what they load, the fields the server doesn't model included")]
     public void VanillaBlockEntitiesSaveWhatTheyLoad()
@@ -620,3 +717,49 @@ public sealed class RetainingBlockEntity : BlockEntity
 /// The probe plugin's container block entity: nine slots, saved like a chest's.
 /// </summary>
 public sealed class ProbeCrate() : ContainerBlockEntity(new Container(9) { Title = "Crate" });
+
+/// <summary>The probe's two parts, ordered far before near to exercise nearest-hit selection.</summary>
+public sealed class ProbeParts : BlockEntity
+{
+    public bool Front { get; set; } = true;
+
+    protected internal override void Load(NbtCompound tag) => this.Front = tag.GetBool("front");
+
+    protected internal override void Save(NbtCompound tag) => tag.Add(new NbtTag<bool>("front", this.Front));
+
+    protected internal override NbtCompound? GetUpdateData() => new() { new NbtTag<bool>("front", this.Front) };
+
+    protected internal override BlockShapes? GetShapes()
+    {
+        BoundingBox[] boxes = this.Front
+            ? [new(new VectorD(0.375, 0, 0.625), new VectorD(0.625, 1, 0.875)),
+                new(new VectorD(0.375, 0, 0.125), new VectorD(0.625, 1, 0.375))]
+            : [new(new VectorD(0.375, 0, 0.625), new VectorD(0.625, 1, 0.875))];
+
+        return new BlockShapes(boxes, boxes);
+    }
+}
+
+public sealed class ProbePartsBehavior : IBlockBehavior
+{
+    public const string UseKey = "Obsidian.Tests.Parts.Use";
+    public const string BreakKey = "Obsidian.Tests.Parts.Break";
+
+    public ValueTask<bool> UseAsync(BlockUseContext context)
+    {
+        AppContext.SetData(UseKey, context.ClickedAt);
+        return ValueTask.FromResult(true);
+    }
+
+    public async ValueTask BreakAsync(BlockBreakContext context)
+    {
+        AppContext.SetData(BreakKey, context.Hit);
+        if (await context.Player.Level.GetBlockEntityAsync(context.Hit.Position) is ProbeParts { Front: true } parts)
+        {
+            parts.Front = false;
+            parts.SetChanged();
+            parts.SendUpdate();
+            context.IsCancelled = true;
+        }
+    }
+}

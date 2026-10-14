@@ -351,7 +351,8 @@ creates one whenever one of its blocks is set, however it's set (placed by a pla
 generation or a structure), and removes it when its position changes to a block without its type. Removing it calls
 `OnRemoved` before a container's items drop, like vanilla's `preRemoveSideEffects`. The type's identifier is in the plugin's namespace, and its
 id follows vanilla's in the `minecraft:block_entity_type` registry, synced to NeoForge and Fabric clients, whose mod
-registers the same type for the same blocks. The Obsidian client doesn't register block entity types yet.
+registers the same type for the same blocks. The Obsidian client uses the same registration code, retaining the
+type and its update data from chunk packets and `BlockEntityData`, and remapping server ids by identifier.
 
 - **Saving.** The block entity is saved in its chunk's `block_entities` with the type's `id` and its position, and
   `Load` reads back what `Save` wrote. Call `SetChanged` whenever the saved data changes, like vanilla's
@@ -360,7 +361,8 @@ registers the same type for the same blocks. The Obsidian client doesn't registe
   only while the block still has the type. `Level` is the level it's in, and `BlockPosition` its block.
 - **Clients.** `GetUpdateData` is what clients get (vanilla's `getUpdateTag`): with the chunk, and at the end of the
   tick after the block entity calls `SendUpdate` (once however many times it called it), as a `BlockEntityData`
-  packet to the players who have the chunk. The client mod's block entity reads it.
+  packet to the players who have the chunk. The Obsidian client retains that data as a snapshot; it doesn't create
+  or tick the server's subclass. A client shape provider reads the snapshot (see [Client](#client)).
 - **Threads.** The server calls `Load`, `Save`, `TickAsync`, `GetUpdateData` and `OnRemoved` on the level's tick,
   one at a time, inside calls into the plugin: a block removed from elsewhere (a player's break) runs `OnRemoved` on
   the next tick. Only a new block entity for a block set elsewhere is constructed there. Chunks are saved and sent
@@ -368,6 +370,45 @@ registers the same type for the same blocks. The Obsidian client doesn't registe
   compound it handed over changes nothing saved or sent.
 - **Generation.** In chunks still generating, and in chunks being loaded, a plugin's block entities are kept as
   their saved data: the level creates the plugin's objects on its next tick once the chunk is complete.
+
+### Shapes and multipart blocks
+
+Override `BlockEntity.GetShapes()` to return a `BlockShapes(collision, outline)`, two lists of `BoundingBox` in
+block-local coordinates. Each box must have positive volume and finite coordinates inside the unit cube, from
+0 to 1 on every axis. The lists are copied and read-only. Empty lists mean no collision or no selection;
+returning null keeps the state's usual shapes (a plugin block's template). Collision and outline may differ.
+
+The server publishes the shapes when it creates or loads the block entity and at the end of a tick after
+`SetChanged` or `SendUpdate`. Collision, navigation and outline raycasts read that immutable snapshot without
+calling plugin code from their threads. A shape change that clients must see calls `SetChanged` and `SendUpdate`,
+and includes its deciding data in `GetUpdateData`. The client registers a provider that builds the same shapes
+from that data. Unloading drops both sides' behaviour, keeping the saved data and type id for the next load.
+
+`BlockUseContext.ClickedAt`, like `BlockPlaceContext.ClickedAt`, is the use packet's hit location relative to the
+clicked block's lowest corner. `IBlockBehavior.BreakAsync(BlockBreakContext)` runs before a player's block removal
+and drops, after the existing break event has allowed it. Its `Player` and `Block` identify the attempt, and its
+`Hit` is a `BlockShapeHit(Position, ClickedAt, Face, BoxIndex)` from a server outline raycast within the player's
+block interaction range. The nearest intersected box decides `BoxIndex`, in the returned outline list's order;
+another block in the way, a miss or an out-of-reach target prevents the hook and break. Vanilla's break packet
+has no hit location, so neither its face claim nor client-provided coordinates decide this hit.
+
+Set `BlockBreakContext.IsCancelled` to keep the block after removing one selected part, then mark and sync the
+block entity's change. Leave it false for ordinary removal when the last part goes. The client receives a block
+acknowledgement and correction on cancellation. Like `UseAsync`, the hook runs on the player's packet flow,
+inside a call into its plugin; synchronise changes to data shared with block entity ticks.
+
+```csharp
+public async ValueTask BreakAsync(BlockBreakContext context)
+{
+    if (await context.Player.Level.GetBlockEntityAsync(context.Hit.Position) is CableBus cable
+        && cable.RemovePart(context.Hit.BoxIndex))
+    {
+        cable.SetChanged();
+        cable.SendUpdate();
+        context.IsCancelled = true;
+    }
+}
+```
 
 A `ContainerBlockEntity` holds a `BaseContainer` (its `Inventory`), saved like vanilla's containers (`Items`,
 `CustomName`, and a `LootTable` it's waiting for), which drops when the block is removed unless `DropsContents` is
@@ -1967,10 +2008,35 @@ What `ConfigureClient` registers takes effect when it returns and stays until th
 if it throws, the mod fails to load and none of it does. The registry only takes registrations during
 `ConfigureClient`, since the client loads the assets that depend on them afterwards: registering later, through a
 registry the mod kept, throws `InvalidOperationException`. Its `Connection`, and sending payloads on it, stay usable
-for as long as the client runs. Like the server's content, key bindings, tints, renderers, particle providers and
-menu screens are the mod's own: their identifiers are in its namespace (its mod id) and valid by vanilla's rules,
-they're for blocks, entity types, particle types and menu types it registered, and registering one twice throws
+for as long as the client runs. Like the server's content, key bindings, tints, renderers, particle providers,
+block entity shape providers and menu screens are the mod's own: their identifiers are in its namespace (its mod
+id) and valid by vanilla's rules, they're for content it registered, and registering one twice throws
 `ArgumentException`.
+
+`IClientRegistry.RegisterBlockEntityShapes(string blockEntityType,
+Func<IReadOnlyDictionary<string, object?>, BlockShapes?> provider)` gives a mod's block entity type its collision
+and outline shapes from its latest synced update data. Register the type in `ConfigureRegistry` on both sides
+with `RegisterBlockEntity<T>`, then its provider in `ConfigureClient`. The provider receives plain NBT values:
+numbers, strings and arrays, nested compounds as dictionaries and lists as `List<object?>`. The outer dictionary
+is read-only; do not mutate nested values. Keep the provider pure and thread-safe, since it runs on a reading
+thread, at most once per snapshot. A new chunk or update packet replaces the snapshot and recomputes the shapes.
+Picking, the selection outline and local player collision all use them, independently of resource-pack models.
+Returning null or throwing uses the state's usual shapes; an exception is logged. Providers are staged like the
+other client registrations and released on unload, while the shared block entity type keeps its id.
+
+```csharp
+registry.RegisterBlockEntityShapes("ruby:cable_bus", data =>
+{
+    var connected = data.TryGetValue("connected", out var value) && value is byte flag && flag != 0;
+    BoundingBox[] boxes = connected
+        ? [new(new VectorD(0.375, 0.375, 0), new VectorD(0.625, 0.625, 1))]
+        : [new(new VectorD(0.375), new VectorD(0.625))];
+
+    return new BlockShapes(boxes, boxes);
+});
+```
+
+Use the same pure shape-building helper in the server's `GetShapes` and the client provider to keep them equal.
 
 ```csharp
 public sealed class RubyMod : PluginBase, IClientPlugin

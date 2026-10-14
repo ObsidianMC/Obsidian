@@ -261,6 +261,7 @@ public abstract partial class AbstractLevel
             try
             {
                 blockEntity.SavedData = DataBlockEntity.Copy(BlockEntityNbt.SaveData(blockEntity));
+                blockEntity.ShapeData = blockEntity.GetShapes();
             }
             catch (Exception ex)
             {
@@ -292,7 +293,10 @@ public abstract partial class AbstractLevel
 
             NbtCompound? data = null;
             var answered = this.CallPlugin(blockEntity, blockEntity.Owner as PluginContainer, current =>
-                data = current.GetUpdateData() is NbtCompound update ? DataBlockEntity.Copy(update) : null);
+            {
+                data = current.GetUpdateData() is NbtCompound update ? DataBlockEntity.Copy(update) : null;
+                current.ShapeData = current.GetShapes();
+            });
 
             if (!answered)
                 continue;

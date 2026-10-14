@@ -30,6 +30,13 @@ public partial class MainEventHandler
             return;
         }
 
+        if (await Plugins.BlockBehaviors.CancelPlayerBreakAsync(player, location, block))
+        {
+            var current = await world.GetBlockAsync(location) ?? block;
+            player.SendPacket(new BlockUpdatePacket(location, current.GetHashCode()));
+            return;
+        }
+
         var tool = player.GetHeldItem();
         var parts = await TwoPartBlockBreak.PrepareAsync(world, location, block);
 

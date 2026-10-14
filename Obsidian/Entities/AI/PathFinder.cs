@@ -51,7 +51,7 @@ internal sealed class WalkNodeEvaluator(PathfinderMob mob)
             if (CanOpenDoors && TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId))
                 continue;
 
-            foreach (var shape in BlockCollisionShapes.Get(block))
+            foreach (var shape in BlockCollisionShapes.Get(mob.Level, new Vector(x, y, z), block))
             {
                 if (shape.Min.X <= 0.5f && shape.Max.X >= 0.5f && shape.Min.Z <= 0.5f && shape.Max.Z >= 0.5f)
                     candidates.Add(y + shape.Max.Y);
