@@ -17,6 +17,12 @@ public delegate void ClientPayloadHandler<TPayload>(TPayload payload, IClientCon
 public interface IClientConnection
 {
     /// <summary>
+    /// The client's read-only world view while playing, or null during login, configuration and disconnection.
+    /// Obtain it again after changing servers; see <see cref="IClientWorld"/> for thread rules.
+    /// </summary>
+    public IClientWorld? World { get; }
+
+    /// <summary>
     /// The phase the connection is in: <see cref="PayloadPhase.Configuration"/> or <see cref="PayloadPhase.Play"/>,
     /// or null while the client isn't connected (or is still logging in).
     /// </summary>

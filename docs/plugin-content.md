@@ -633,7 +633,9 @@ type and its update data from chunk packets and `BlockEntityData`, and remapping
   for what only players see (animations, particles, sounds), like vanilla's client-side tickers: it runs once a
   client tick, 20 times a second, on the game's thread while the player is in a world that isn't paused, never on
   the server. It may use the block entity's own fields, `Id`, `BlockPosition` and client state the mod kept from
-  `ConfigureClient`; `Level` is null there, and `SetChanged` and `SendUpdate` do nothing. The instance is dropped
+  `ConfigureClient`. With `using Obsidian.API.Client`, `this.GetClientWorld()` supplies the client's read-only
+  world view during `Load` and `ClientTick` (see **World queries** in [Client](#client)). `Level` stays the server
+  level and is null on the client; `SetChanged` and `SendUpdate` do nothing. The instance is dropped
   (`IsRemoved`) when its block changes to one without its type, its chunk unloads, the player leaves the server or
   the mod unloads. A tick or load that throws is logged, and the instance isn't ticked again until the next update.
   Shapes and rendering keep reading the snapshot, from their own threads, never the live instance.
@@ -2526,6 +2528,28 @@ public sealed class RubyMod : PluginBase, IClientPlugin
   like NeoForge's client tick event: for client logic such as polling `IsDown`. `Connection.Phase` says whether the
   client is playing on a server. A handler that throws is logged and not run again. A mod's block entities tick
   themselves with `BlockEntity.ClientTick` (see [Block entities](#block-entities)).
+- **World queries.** `registry.Connection.World` is an `IClientWorld` while playing, null during login,
+  configuration and disconnection. The connection passed to a payload handler supplies the same view. A client
+  block entity uses `this.GetClientWorld()` from `Obsidian.API.Client`; it is attached before `Load` and detached
+  on removal. It is separate from `Level`, whose server operations do not apply to a client view.
+  `IsChunkLoaded(chunkX, chunkZ)` takes chunk coordinates (`blockX >> 4`, `blockZ >> 4`). `GetBlock(Vector)` returns
+  the current `IBlock`, vanilla or plugin, or air when unloaded or outside the dimension's height. Queries never
+  load chunks. `GetBlockEntityData(Vector)` returns a deep `NbtCompound` copy of synced update data, or null;
+  nested arrays and compounds belong to the caller. `GetBlockEntity(Vector)` returns a mod's live client instance
+  when one exists; cast to your mod's class. It becomes available on the first client tick, follows data updates on
+  subsequent ticks, and disappears when its block, chunk or mod goes away.
+  `GetEntity(id)` and `GetEntities(BoundingBox)` return detached `IClientEntity` snapshots with `Id`, `Uuid`,
+  `Type` (the client's `EntityType` id, including plugin types), `Position` and `Metadata`. Box queries test current
+  displayed positions, including the boundary, rather than hitboxes. Use a box centred on a position for nearby
+  entities. Removed entities are excluded. Metadata is indexed by protocol byte index with values as decoded:
+  scalars, vectors, NBT dictionaries/lists, arrays, item stacks and the client's other decoded values. The table is
+  read-only, and mutable values are deep copies: changing them affects neither tracking nor later queries. Missing
+  metadata means it has not been received; null is a valid value. Results are eager, with unspecified order.
+  Block, chunk and synced block entity data queries may run on any thread; separate calls can observe different
+  updates. Entity queries and live instance access require the game's thread and throw elsewhere, so a payload
+  handler may read block data there but must hand entity work to its game-thread code. Ticks, key bindings and
+  screens run on that thread. Never hand live instances to workers. Obtain `Connection.World` again after changing
+  servers instead of retaining it across disconnects.
 - **Block tints.** A tinted block's faces whose model gives them a `tintindex` are multiplied by the tint, like
   vanilla's block colours: the biome's grass, foliage, dry foliage or water colour, blended across nearby biomes with
   the player's biome blend (grass follows the swamp and dark forest modifiers), or `BlockTint.Fixed(0xRRGGBB)`. Its

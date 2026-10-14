@@ -41,7 +41,8 @@ public abstract class BlockEntity : IBlockEntity
 
     /// <summary>
     /// The level the block entity is in, or null while it's in a chunk that isn't part of a level yet (being
-    /// generated), or it was created but not placed.
+    /// generated), or it was created but not placed. Always null on the client; use the GetClientWorld() extension
+    /// in Obsidian.API.Client for the client's separate read-only world view.
     /// </summary>
     public ILevel? Level => this.Host?.Level;
 
@@ -129,7 +130,10 @@ public abstract class BlockEntity : IBlockEntity
     /// It runs on the client's game thread while the player is in a world that isn't paused, one block entity at a
     /// time, in turn with its <see cref="Load"/> calls. It may use the block entity's own fields, <see cref="Id"/>,
     /// <see cref="BlockPosition"/>, and client state the mod kept from <c>ConfigureClient</c>; <see cref="Level"/> is
-    /// null, and <see cref="SetChanged"/> and <see cref="SendUpdate"/> do nothing. Keep it short, as the game waits
+    /// null. The GetClientWorld() extension in Obsidian.API.Client reads neighbouring blocks, synced block entity
+    /// data and tracked entities; its live instance and entity queries require this game thread. The view is also
+    /// available during client Load, and detached when the instance is dropped. <see cref="SetChanged"/> and
+    /// <see cref="SendUpdate"/> do nothing. Keep it short, as the game waits
     /// for it. A tick that throws is logged, and the block entity isn't ticked again until the server updates it.
     /// </para>
     /// </remarks>

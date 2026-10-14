@@ -101,8 +101,8 @@ pushes them into a hopper below.
   the client API. `MenuScreenProperties` stays for simple menus.
 - **HUD overlays.** Mods register overlays drawn with the same UI API.
 - **Creative tabs.** Mods' items in creative tabs, registered on both sides.
-- **Client queries.** Mods read the client's world: block states, their block entities' synced data, entities and
-  their metadata.
+- **Client queries.** (done) Mods read the client's world: block states, their block entities' synced data, entities
+  and their metadata.
 
 **Sample:** the phase 2 machine gets a screen with a progress bar, a mode button and a searchable, scrolling list.
 
