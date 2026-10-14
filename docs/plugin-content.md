@@ -127,10 +127,11 @@ reading a loaded chunk does not acquire the tick lock.
 
 Light stops at unloaded or unfinished chunks. When a complete neighbor loads, both sides of its shared borders are
 reconciled on the next tick: only border blocks whose light disagrees with their neighbors are relit. A chunk that
-generation completes skips this, since generation already lit it together with its lit neighbors, unless a runtime
-relight reached it while it was unfinished. Generation lighting runs in parallel and only waits for runtime
-relighting, not for the tick lock. Unlike vanilla's chunk light storage, Obsidian stores arrays only inside the build
-range; the top sky source is virtual, and the extra sections outside the build range are not sent. Lighting does
+generation completes skips this only if its current instance ran lighting under overlapping-area locks and no runtime
+relight reached it while it was unfinished. Saved prototypes that resume after lighting still reconcile. Mojang
+generation lighting runs in parallel under its chunk locks; generators without those locks serialize lighting under
+the tick lock and reconcile at completion. Unlike vanilla's chunk light storage, Obsidian stores arrays inside the
+build range; the top sky source is virtual, and the extra sections outside the build range are not sent. Lighting does
 not load or generate missing neighbors to finish an update.
 
 Runtime updates clear dependent light and spread surviving sources again; they do not recompute complete chunks

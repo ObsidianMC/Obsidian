@@ -9,9 +9,8 @@ namespace Obsidian.WorldData.Lighting;
 /// </summary>
 /// <remarks>
 /// Border reconciliation relights only the border blocks whose stored light disagrees with their neighbors, so
-/// attaching chunks whose light is already consistent costs a scan, not a relight. Chunks completed by generation skip
-/// even the scan: generation lit them together with their lit neighbors, unless a relight here reached into them
-/// before they were tracked.
+/// attaching chunks whose light is already consistent costs a scan, not a relight. Completion skips the scan only when
+/// generation lit the resident instance under overlapping-area locks and no runtime relight missed it meanwhile.
 /// </remarks>
 internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
 {
@@ -25,8 +24,9 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
     // Shared borders to reconcile, as the chunk tracked last and the direction (2 to 5) of its tracked neighbor.
     private readonly HashSet<((int X, int Z) Chunk, int Direction)> borders = [];
 
-    // Untracked chunks a relight spread into or read from; their borders are reconciled once they're tracked.
-    private readonly HashSet<(int X, int Z)> missedChunks = [];
+    // Completion markers belong only to resident prototypes, and retire with their instances. Missing coordinates
+    // never acquire markers; a later chunk must either run locked generation lighting or reconcile its borders.
+    private readonly Dictionary<(int X, int Z), (Chunk Chunk, bool Lit, bool Missed)> generating = [];
     private readonly Dictionary<(int X, int Z, LightType Type, int Section), byte[]> originals = [];
     private readonly HashSet<(int X, int Z)> forcedUpdates = [];
 
@@ -37,17 +37,26 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
     internal Lock TickLock => tickLock;
 
     /// <summary>
-    /// Attaches the block-write hook once, and queues border reconciliation. The region may prepare the hook just
-    /// before publishing generation's full status, while holding the tick lock and validating the slot identity.
+    /// Remembers a resident prototype until completion, or attaches the complete chunk's block-write hook and queues
+    /// border reconciliation. The region may prepare the hook just before publishing generation's full status, while
+    /// holding the tick lock and validating the slot identity.
     /// </summary>
     public void Track(IChunk chunk, bool completing = false)
     {
-        if (chunk is not Chunk complete || (!complete.IsGenerated && !completing))
+        if (chunk is not Chunk complete)
             return;
 
         lock (tickLock)
         {
             var key = (complete.X, complete.Z);
+            if (!complete.IsGenerated && !completing)
+            {
+                if (!this.generating.TryGetValue(key, out var pending) || !ReferenceEquals(pending.Chunk, complete))
+                    this.generating[key] = (complete, false, false);
+
+                return;
+            }
+
             if (this.chunks.TryGetValue(key, out var previous) && ReferenceEquals(previous, complete))
                 return;
 
@@ -68,11 +77,13 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
 
             this.skySources[key] = sources;
 
-            // Generation lit a completing chunk together with its lit neighbors, so their shared borders already agree
-            // unless a relight missed the chunk meanwhile. A loaded or replaced chunk may hold light saved before a
-            // neighbor changed.
-            var missed = this.missedChunks.Remove(key);
-            if (!completing || missed)
+            // Saved prototypes may resume after their light stage, and legacy generators don't hold overlapping-area
+            // locks. Neither can skip reconciliation merely because they reached full status.
+            var freshlyLit = this.generating.Remove(key, out var generation)
+                && ReferenceEquals(generation.Chunk, complete)
+                && generation.Lit
+                && !generation.Missed;
+            if (!completing || !freshlyLit)
             {
                 for (var direction = 2; direction < 6; direction++)
                 {
@@ -90,6 +101,9 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
         lock (tickLock)
         {
             var key = (chunk.X, chunk.Z);
+            if (this.generating.TryGetValue(key, out var pending) && ReferenceEquals(pending.Chunk, chunk))
+                this.generating.Remove(key);
+
             if (this.chunks.TryGetValue(key, out var stored) && ReferenceEquals(stored, chunk))
             {
                 stored.AttachRuntimeLight(null);
@@ -121,14 +135,33 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
     }
 
     /// <summary>
-    /// Runs generation's lighting of a chunk, which may spread into tracked neighbors. Generation threads light
-    /// concurrently; only a relight or a packet snapshot of tracked chunks waits for them, or they for it.
+    /// Runs generation lighting, which may write lit neighbors. Only callers holding overlapping-area generation
+    /// locks may run concurrently; other callers also take the tick lock to exclude save snapshots.
     /// </summary>
     /// <remarks>
     /// <paramref name="light"/> must not take <see cref="TickLock"/>: a flush holds it while it waits for generation.
+    /// With <paramref name="hasGenerationLocks"/>, the caller must hold every chunk's lock in the lighting area.
     /// </remarks>
-    public void RunGenerationLighting(Action light)
+    public void RunGenerationLighting(IChunk chunk, Action light, bool hasGenerationLocks)
     {
+        if (!hasGenerationLocks)
+        {
+            lock (tickLock)
+            {
+                this.propagation.EnterWriteLock();
+                try
+                {
+                    light();
+                }
+                finally
+                {
+                    this.propagation.ExitWriteLock();
+                }
+            }
+
+            return;
+        }
+
         this.propagation.EnterReadLock();
         try
         {
@@ -137,6 +170,15 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
         finally
         {
             this.propagation.ExitReadLock();
+        }
+
+        // Take the tick lock only after releasing the gate, matching flush's tick-lock-then-gate order. Keep a missed
+        // marker even if it predates this lighting pass: an untracked prototype couldn't consume that runtime update.
+        lock (tickLock)
+        {
+            var key = (chunk.X, chunk.Z);
+            if (this.generating.TryGetValue(key, out var pending) && ReferenceEquals(pending.Chunk, chunk))
+                this.generating[key] = (pending.Chunk, true, pending.Missed);
         }
     }
 
@@ -392,8 +434,9 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
     private Chunk? Reach(Vector position)
     {
         var chunk = this.ChunkAt(position);
-        if (chunk is null)
-            this.missedChunks.Add((position.X >> 4, position.Z >> 4));
+        var key = (position.X >> 4, position.Z >> 4);
+        if (chunk is null && this.generating.TryGetValue(key, out var pending))
+            this.generating[key] = (pending.Chunk, pending.Lit, true);
 
         return chunk;
     }

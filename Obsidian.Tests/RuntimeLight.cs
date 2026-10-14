@@ -129,14 +129,39 @@ public sealed class RuntimeLightTests
         Assert.Equal(14, unloaded.GetLightLevel(0, 0, 8, LightType.Block));
         AssertMatchesFull(chunks, false);
 
-        // Completing generation skips reconciliation only while no relight missed the chunk.
+        // A resident prototype lit under generation locks still reconciles if runtime propagation missed it.
         engine.Untrack(unloaded);
+        unloaded.SetChunkStatus(ChunkGenStage.light);
+        engine.Track(unloaded);
+        engine.RunGenerationLighting(
+            unloaded,
+            () => LightEngine.LightChunk(
+                unloaded, chunks.Values.Where(chunk => !ReferenceEquals(chunk, unloaded)), false),
+            true);
         chunks[(-1, 0)].SetBlock(position.X, position.Y, position.Z, BlocksRegistry.Air);
         engine.Flush();
+        unloaded.SetChunkStatus(ChunkGenStage.full);
         engine.Track(unloaded, completing: true);
         engine.Flush();
         Assert.Equal(0, unloaded.GetLightLevel(0, 0, 8, LightType.Block));
         AssertMatchesFull(chunks, false);
+
+        // Legacy generators can collect both neighbor lists before either chunk is lit. Completion must join them.
+        var first = new Chunk(0, 0, -32, 64, ChunkGenStage.initialize_light);
+        var second = new Chunk(1, 0, -32, 64, ChunkGenStage.initialize_light);
+        first.SetBlock(15, 0, 8, BlocksRegistry.Glowstone);
+        var legacy = new RuntimeLightEngine(new Lock(), () => false);
+        legacy.Track(first);
+        legacy.Track(second);
+        legacy.RunGenerationLighting(first, () => LightEngine.LightChunk(first, [], false), false);
+        legacy.RunGenerationLighting(second, () => LightEngine.LightChunk(second, [], false), false);
+        Assert.Equal(0, second.GetLightLevel(16, 0, 8, LightType.Block));
+        first.SetChunkStatus(ChunkGenStage.full);
+        legacy.Track(first, completing: true);
+        second.SetChunkStatus(ChunkGenStage.full);
+        legacy.Track(second, completing: true);
+        legacy.Flush();
+        Assert.Equal(14, second.GetLightLevel(16, 0, 8, LightType.Block));
     }
 
     [Fact]
@@ -240,6 +265,40 @@ public sealed class RuntimeLightTests
     {
         var chunks = CreateArea(false);
         var engine = Track(chunks, false);
+        using var lightingStarted = new ManualResetEventSlim();
+        using var finishLighting = new ManualResetEventSlim();
+        using var snapshotStarted = new ManualResetEventSlim();
+        using var snapshotCompleted = new ManualResetEventSlim();
+        var lighting = Task.Run(() => engine.RunGenerationLighting(chunks[(0, 0)], () =>
+        {
+            lightingStarted.Set();
+            Assert.True(finishLighting.Wait(TimeSpan.FromSeconds(5)));
+        }, false));
+        Assert.True(lightingStarted.Wait(TimeSpan.FromSeconds(5)));
+        Task snapshot;
+        try
+        {
+            snapshot = Task.Run(() =>
+            {
+                snapshotStarted.Set();
+                lock (engine.TickLock)
+                {
+                    var data = chunks[(0, 0)].Sections[0].BlockLightArray.ToArray();
+                    snapshotCompleted.Set();
+                    return data;
+                }
+            });
+            Assert.True(snapshotStarted.Wait(TimeSpan.FromSeconds(5)));
+            Assert.False(snapshotCompleted.Wait(TimeSpan.FromMilliseconds(100)));
+        }
+        finally
+        {
+            finishLighting.Set();
+        }
+
+        await lighting.WaitAsync(TimeSpan.FromSeconds(5));
+        await snapshot.WaitAsync(TimeSpan.FromSeconds(5));
+
         using var started = new ManualResetEventSlim();
         Task write;
         lock (engine.TickLock)
@@ -342,6 +401,44 @@ public sealed class RuntimeLightTests
         Assert.Null(proto.RuntimeLight);
         Assert.Same(world.Lighting, replacement.RuntimeLight);
         Assert.Same(replacement, world.GetLoadedChunk(1, 0));
+
+        // Restart after saving a lit prototype and removing its neighboring source while it is unloaded.
+        replacement.SetBlock(31, 70, 8, BlocksRegistry.Glowstone);
+        world.Lighting.Flush();
+        var savedProto = new Chunk(2, 0, world.MinY, world.Height, ChunkGenStage.light);
+        for (var y = world.MinY; y < world.MinY + world.Height; y += 16)
+            savedProto.SetBiome(0, y, 0, CodecRegistry.Biomes.Plains);
+
+        LightEngine.LightChunk(savedProto, [replacement], true);
+        region.SetChunk(savedProto);
+        await region.UnloadChunk(2, 0);
+        replacement.SetBlock(31, 70, 8, BlocksRegistry.Air);
+        world.Lighting.Flush();
+        await world.UnloadRegionAsync(0, 0);
+        await region.DisposeAsync();
+
+        var restarted = new RuntimeLightEngine(new Lock(), () => true);
+        await using var reopened = new Region(
+            0,
+            0,
+            world.FolderPath,
+            System.IO.Path.GetFileName(region.RegionFolder),
+            minY: world.MinY,
+            height: world.Height)
+        {
+            FluidTickLock = restarted.TickLock,
+            FlushLight = restarted.Flush,
+            LightLoaded = restarted.Track,
+            LightUnloaded = restarted.Untrack
+        };
+        Assert.IsType<Chunk>(await reopened.GetChunkAsync(1, 0));
+        var resumed = Assert.IsType<Chunk>(await reopened.GetChunkAsync(2, 0));
+        Assert.NotSame(savedProto, resumed);
+        Assert.Equal(ChunkGenStage.light, resumed.ChunkStatus);
+        Assert.Equal(14, resumed.GetLightLevel(32, 70, 8, LightType.Block));
+        resumed.SetChunkStatus(ChunkGenStage.full);
+        restarted.Flush();
+        Assert.Equal(0, resumed.GetLightLevel(32, 70, 8, LightType.Block));
     }
 
     [Fact]
