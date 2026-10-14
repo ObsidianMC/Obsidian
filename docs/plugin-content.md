@@ -604,6 +604,47 @@ Obsidian client:
 - **Unloading.** A plugin's tabs and additions are removed when it unloads and registered again on reload, on both
   sides; the client builds the tabs again each time the creative inventory opens.
 
+## Chunk tickets
+
+`ILevel.AddChunkTicket(int chunkX, int chunkZ, int radius = 0, bool ticking = true)` returns an `IDisposable`
+handle. Coordinates and radius are in chunks; radius 0 keeps one chunk, radius 1 a 3 by 3 square. Acquire from
+plugin code, for example when a machine starts, and dispose when it no longer needs the chunks:
+
+```csharp
+var ticket = level.AddChunkTicket(chunkX, chunkZ);
+// Later, when this machine stops keeping its chunk active:
+ticket.Dispose();
+```
+
+- **Loading.** The next chunk-management pass loads the square from disk or queues generation on the existing
+  bounded generation workers. The handle does not mean loading is complete: `GetChunkAsync` can still return null
+  until generation finishes. Tickets retain chunks through normal unload passes and prevent region eviction.
+- **Ticking.** With `ticking: true`, the square uses the player's simulation paths for block entities, scheduled
+  block and fluid ticks, random ticks and entities, without needing a player. It also keeps a one-chunk border
+  loaded so growth and fluids can reach their neighbours. That border does not itself tick unless a player or
+  another ticking ticket covers it. Natural mob spawning and other explicitly player-dependent mechanics still
+  need players. A `ticking: false` ticket loads only its square, without a border; it does not suppress simulation
+  caused by another ticket or player. Scheduled block and fluid ticks now also respect simulation distance.
+- **Limits.** Radius is 0 through 8. Each level allows 256 handles and 1,024 distinct retained chunks, including
+  borders. Overlaps count once toward the chunk limit, and every handle counts toward the handle limit. An invalid
+  radius or coordinates outside Minecraft's horizontal build range throws `ArgumentOutOfRangeException`; exceeding
+  either capacity throws `InvalidOperationException`. Generation may temporarily load extra neighbouring chunks
+  needed by its existing pipeline.
+- **Threads and ownership.** Acquisition and disposal are safe from plugin tasks and tick callbacks; neither waits
+  for chunk loading. Ownership follows the plugin whose code calls the API, including calls through shared levels
+  obtained from players or events. Unloading that plugin releases all its handles. Disposal is idempotent, and an
+  old load's handles cannot release the new load's tickets. Host code can acquire handles too and must dispose them.
+  Release removes simulation eligibility immediately; work already running may finish. Ordinary unloading runs on
+  the existing 30-second cadence. Jobs already generating finish under their existing generation pins.
+- **Persistence and parity.** Handles last for the plugin load, not across a restart. A plugin needing persistent
+  machines can save their chunk coordinates with `RegisterSavedData` and acquire fresh handles on startup. Unlike
+  vanilla's propagated levels (31 entity ticking, 32 block ticking, 33 full), this API has a ticking square and one
+  loaded border. Vanilla forced tickets and `/forceload` are deferred; see
+  [known-gaps.md](known-gaps.md#chunk-ticket-parity).
+
+`samples/EngineSample` exposes `KeepChunks` to keep a machine active; its smoke test loads and ticks the counter
+without players, then unloads the plugin to release even forgotten handles.
+
 ## Saved data and attachments
 
 Register types during `ConfigureRegistry` with the same codec shapes as item components:

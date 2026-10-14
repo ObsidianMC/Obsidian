@@ -13,6 +13,20 @@ namespace Obsidian.API.World;
 public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
 {
     /// <summary>
+    /// Keeps a square of chunks loaded, optionally ticking without players. Radius is in chunks (0 means one),
+    /// at most 8. Ticking tickets also load a one-chunk border for block and fluid updates. Loading and generation
+    /// start on the next chunk-management pass; the handle does not mean the chunks are ready yet.
+    /// </summary>
+    /// <remarks>
+    /// Dispose to release. Tickets acquired by plugin code are automatically released when that plugin unloads.
+    /// Tickets are not saved. Each level allows at most 256 handles and 1024 distinct retained chunks,
+    /// including borders.
+    /// A loaded-only ticket does not prevent simulation caused by a player or another ticket.
+    /// </remarks>
+    public IDisposable AddChunkTicket(int chunkX, int chunkZ, int radius = 0, bool ticking = true) =>
+        throw new NotSupportedException("This level doesn't support chunk tickets.");
+
+    /// <summary>
     /// Gets the load's live instance, reading its file lazily. World scope shares across dimensions. Access plugin
     /// objects on the level tick or synchronize them yourself; call MarkDirty to publish changes for saving.
     /// </summary>

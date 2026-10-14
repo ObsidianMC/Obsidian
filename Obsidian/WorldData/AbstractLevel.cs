@@ -175,6 +175,9 @@ public abstract partial class AbstractLevel : ILevel
         if (GetLoadedChunk(x, z) == null)
             return false;
 
+        if (this.IsTicketTicking(x, z))
+            return true;
+
         var simulationDistance = Configuration.SimulationDistance;
         foreach (var player in Players.Values)
         {
@@ -775,6 +778,9 @@ public abstract partial class AbstractLevel : ILevel
                 if (!Regions.TryGetValue(value, out r))
                     return;
 
+                if (this.HasRegionTickets(regionX, regionZ))
+                    return;
+
                 // Retire publication and detach lighting before another reader can create a replacement region.
                 if (r is Region concrete)
                     concrete.RetireLighting();
@@ -783,7 +789,10 @@ public abstract partial class AbstractLevel : ILevel
             }
 
             if (r is not null)
+            {
                 await r.FlushAsync();
+                await r.DisposeAsync();
+            }
         }
         finally
         {
@@ -801,22 +810,25 @@ public abstract partial class AbstractLevel : ILevel
                 chunksToKeep.AddRange(p.LoadedChunks);
             });
 
-            foreach (var chunk in LoadedChunks.Except(chunksToKeep).Except(this.spawnChunks).Where(chunk => !this.generationPins.ContainsKey(chunk)))
+            foreach (var chunk in LoadedChunks.Except(chunksToKeep).Except(this.spawnChunks))
             {
-                if (LoadedChunks.TryRemove(chunk))
+                await simulationGate.WaitAsync();
+                try
                 {
+                    // Recheck after entering the gate, against tickets acquired since the candidate snapshot.
+                    if (!this.TryReleaseUnneededChunk(chunk))
+                        continue;
+
                     NumericsHelper.LongToInts(chunk, out var cx, out var cz);
-                    await simulationGate.WaitAsync();
-                    try
-                    {
-                        var r = GetRegionForChunk(cx, cz);
-                        if (r is not null)
-                            await r.UnloadChunk(NumericsHelper.Modulo(cx, Region.CubicRegionSize), NumericsHelper.Modulo(cz, Region.CubicRegionSize));
-                    }
-                    finally
-                    {
-                        simulationGate.Release();
-                    }
+                    var r = GetRegionForChunk(cx, cz);
+                    if (r is not null)
+                        await r.UnloadChunk(
+                            NumericsHelper.Modulo(cx, Region.CubicRegionSize),
+                            NumericsHelper.Modulo(cz, Region.CubicRegionSize));
+                }
+                finally
+                {
+                    simulationGate.Release();
                 }
             }
         }
@@ -824,6 +836,7 @@ public abstract partial class AbstractLevel : ILevel
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
             ExceptionDispatchInfo.Throw(failure);
 
+        await this.LoadTicketChunksAsync();
         this.StartQueuedJobs();
     }
 
@@ -1469,6 +1482,7 @@ public abstract partial class AbstractLevel : ILevel
 
         GC.SuppressFinalize(this);
 
+        this.ClearChunkTickets();
         this.optionsMonitor.Dispose();
         this.SavePluginData();
 
