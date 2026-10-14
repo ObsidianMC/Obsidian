@@ -269,7 +269,25 @@ internal sealed record BlockSettings(
 {
     public static BlockSettings Default { get; } = From(new BlockProperties());
 
-    public static BlockSettings From(BlockProperties properties) => new(
+    /// <summary>
+    /// Each state's light level, by its index among the block's states, when
+    /// <see cref="BlockProperties.StateLightEmission"/> gave them; null when every state gives
+    /// <see cref="LightEmission"/>.
+    /// </summary>
+    public ImmutableArray<byte>? StateLightEmission { get; init; }
+
+    /// <summary>
+    /// The light level of the block's state at <paramref name="stateIndex"/> among its states.
+    /// </summary>
+    public int LightEmissionOf(int stateIndex) =>
+        this.StateLightEmission is ImmutableArray<byte> levels ? levels[stateIndex] : this.LightEmission;
+
+    /// <summary>
+    /// The settings of <paramref name="properties"/>, asking <see cref="BlockProperties.StateLightEmission"/> for
+    /// each state of <paramref name="type"/> when both are given.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">A state's light level isn't from 0 to 15.</exception>
+    public static BlockSettings From(BlockProperties properties, BlockType? type = null) => new(
         properties.HasCollision,
         properties.HasCollision && properties.Opaque,
         properties.Hardness,
@@ -277,7 +295,30 @@ internal sealed record BlockSettings(
         properties.ExplosionResistance ?? (properties.Hardness < 0 ? 3_600_000 : properties.Hardness),
         properties.RequiresCorrectTool,
         properties.LightEmission,
-        properties.LootTable);
+        properties.LootTable)
+    {
+        StateLightEmission = type is not null && properties.StateLightEmission is { } emission
+            ? LevelsOf(type, emission)
+            : null
+    };
+
+    private static ImmutableArray<byte> LevelsOf(
+        BlockType type,
+        Func<IReadOnlyDictionary<string, string>, int> emission)
+    {
+        var levels = new byte[type.StateCount];
+
+        for (var index = 0; index < levels.Length; index++)
+        {
+            var level = emission(type.ValuesOf(type.FirstStateId + index));
+            ArgumentOutOfRangeException.ThrowIfNegative(level, nameof(BlockProperties.StateLightEmission));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(level, 15, nameof(BlockProperties.StateLightEmission));
+
+            levels[index] = (byte)level;
+        }
+
+        return [.. levels];
+    }
 }
 
 /// <summary>

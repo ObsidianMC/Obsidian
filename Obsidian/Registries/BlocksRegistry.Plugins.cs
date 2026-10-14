@@ -174,7 +174,7 @@ internal static partial class BlocksRegistry
             if (closing())
                 return false;
 
-            type.Settings = BlockSettings.From(properties);
+            type.Settings = BlockSettings.From(properties, type);
             type.Binding = new BlockBinding(
                 plugin,
                 properties.Behavior,

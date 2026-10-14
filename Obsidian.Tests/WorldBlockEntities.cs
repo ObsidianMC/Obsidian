@@ -18,7 +18,6 @@ using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net;
-using Obsidian.Net.Payloads;
 using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
@@ -37,7 +36,7 @@ namespace Obsidian.Tests;
 
 /// <summary>
 /// Block entities in the world: vanilla's saved as vanilla saves them, created and removed with their blocks, a
-/// container's items dropping with it, and a plugin's ticked, saved, synced and kept across a reload.
+/// container's items dropping with it, and a plugin's kept across a reload (SamplePlugin's ticks, saves and syncs).
 /// </summary>
 // Loading plugins merges their tags into vanilla's, which PluginTagFiles changes too.
 [Collection(nameof(PluginTagFiles))]
@@ -173,6 +172,17 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.Equal(0, lastHit.BoxIndex);
         Assert.Equal(0.625, lastHit.ClickedAt.Z);
         Assert.True(chunk.GetBlock(position.X, position.Y, position.Z).IsAir);
+
+        // A block entity removed from elsewhere, here the test's thread, runs OnRemoved on the level's next tick, in
+        // turn with its other callbacks. Its plugin waits for that before it's released.
+        await context.World.DoWorldTickAsync();
+        await context.World.SetBlockAsync(position, block.DefaultState);
+        AppContext.SetData(ProbeParts.RemovedKey, null);
+        await context.World.SetBlockAsync(position, BlocksRegistry.Stone);
+
+        Assert.Null(AppContext.GetData(ProbeParts.RemovedKey));
+        await context.World.DoWorldTickAsync();
+        Assert.Equal(true, AppContext.GetData(ProbeParts.RemovedKey));
     }
 
     [Fact(DisplayName = "Vanilla's block entities save what they load, the fields the server doesn't model included")]
@@ -311,91 +321,6 @@ public sealed class WorldBlockEntities : IDisposable
 
         // The brew started: its 400 ticks count down from the next tick.
         Assert.Equal(400, stand.BrewTime);
-    }
-
-    [Fact(DisplayName = "A plugin's block entity ticks, saves and syncs, and comes back as it saved after a reload",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task PluginBlockEntityLifecycle()
-    {
-        await using var context = TestServerFactory.CreateServer($"plugin-block-entities-{Guid.NewGuid():N}");
-        var chunk = AddEmptyChunk(context.World);
-        var human = await JoinAsync(context);
-        var client = (TestClient)human.Client;
-        await using var manager = new PluginManager(
-            context.Server,
-            context.Provider,
-            context.EventDispatcher,
-            context.Provider.GetRequiredService<CommandHandler>(),
-            NullLogger<PluginManager>.Instance,
-            new ConfigurationBuilder().Build());
-        var path = Path.Join(this.folder, "probe.obby");
-
-        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0"));
-        var container = (await manager.LoadPluginAsync(path))!;
-
-        Assert.True(BlockEntityTypesRegistry.TryGet("probe:counter", out var type));
-        Assert.True(BlocksRegistry.TryGetPluginBlock("probe:counter", out var block));
-        Assert.Equal([block], type.Blocks);
-
-        // Synced to modded clients after vanilla's types, like the other registries plugins add to.
-        var synced = SyncedRegistries.Get(SyncedRegistries.BlockEntityTypes);
-        Assert.Contains((0, "minecraft:furnace"), synced.Entries);
-        Assert.Contains((type.Id, "probe:counter"), synced.Entries);
-        Assert.Contains(SyncedRegistries.GetModded(), registry => registry.Name == SyncedRegistries.BlockEntityTypes);
-
-        // Setting its block creates it; it ticks while its chunk does, and sends players its updates.
-        var position = new Vector(4, 70, 4);
-        human.LoadedChunks.Add(NumericsHelper.IntsToLong(0, 0));
-        await context.World.SetBlockAsync(position, block.DefaultState);
-
-        var counter = Assert.IsAssignableFrom<BlockEntity>(chunk.GetBlockEntity(4, 70, 4));
-        Assert.Equal(nameof(ProbeCounter), counter.GetType().Name);
-        Assert.Same(context.World, counter.Level);
-
-        client.ClearPackets();
-        for (var tick = 0; tick < 3; tick++)
-            await context.World.DoWorldTickAsync();
-
-        var update = client.SentPackets.OfType<BlockEntityDataPacket>().Last();
-        Assert.Equal(position, update.Position);
-        Assert.Equal(type.Id, update.Type);
-        Assert.Equal(3, update.NBTData.GetInt("ticks"));
-
-        // Saved as of its last change, which the level took in at the end of the tick.
-        var saved = BlockEntityNbt.Save(counter)!;
-        Assert.Equal("probe:counter", saved.GetString("id"));
-        Assert.Equal(3, saved.GetInt("ticks"));
-
-        // Unloading the plugin keeps it in its chunk as it saved, and lets go of the plugin's object.
-        await manager.UnloadPluginAsync(container);
-
-        var kept = Assert.IsType<DataBlockEntity>(chunk.GetBlockEntity(4, 70, 4));
-        Assert.True(counter.IsRemoved);
-        Assert.Equal(3, kept.Data.GetInt("ticks"));
-        Assert.Equal(3, BlockEntityNbt.Save(kept)!.GetInt("ticks"));
-
-        await context.World.DoWorldTickAsync();
-        Assert.Same(kept, chunk.GetBlockEntity(4, 70, 4));
-
-        // Loaded again, the plugin gets it back from what it saved on the level's next tick, and it ticks on.
-        await manager.LoadPluginAsync(path);
-        await context.World.DoWorldTickAsync();
-
-        var restored = Assert.IsAssignableFrom<BlockEntity>(chunk.GetBlockEntity(4, 70, 4));
-        Assert.Equal(nameof(ProbeCounter), restored.GetType().Name);
-        Assert.NotSame(counter.GetType(), restored.GetType());
-        Assert.Equal(4, BlockEntityNbt.Save(restored)!.GetInt("ticks"));
-
-        // Another block in its place removes it. Its own code runs on the level's tick, in turn with its ticks.
-        AppContext.SetData(ProbeCounter.RemovedKey, null);
-        await context.World.SetBlockAsync(position, BlocksRegistry.Stone);
-
-        Assert.Null(chunk.GetBlockEntity(4, 70, 4));
-        Assert.True(restored.IsRemoved);
-        Assert.Null(AppContext.GetData(ProbeCounter.RemovedKey));
-
-        await context.World.DoWorldTickAsync();
-        Assert.Equal(4, AppContext.GetData(ProbeCounter.RemovedKey));
     }
 
     [Fact(DisplayName = "A plugin's container stops taking clicks as its plugin unloads, and comes back with its items",
@@ -704,35 +629,6 @@ public sealed class WorldBlockEntities : IDisposable
 }
 
 /// <summary>
-/// The probe plugin's block entity, which counts the ticks it was ticked, saves the count and sends it to players.
-/// It records the count it was removed with in <see cref="AppContext"/> data, since its statics are its plugin's own.
-/// </summary>
-public sealed class ProbeCounter : BlockEntity
-{
-    public const string RemovedKey = "Obsidian.Tests.ProbeCounter.Removed";
-
-    private int ticks;
-
-    protected internal override void OnRemoved() => AppContext.SetData(RemovedKey, this.ticks);
-
-    protected internal override void Load(NbtCompound tag) =>
-        this.ticks = tag.TryGetTagValue<int>("ticks", out var ticks) ? ticks : 0;
-
-    protected internal override void Save(NbtCompound tag) => tag.Add(new NbtTag<int>("ticks", this.ticks));
-
-    protected internal override ValueTask TickAsync()
-    {
-        this.ticks++;
-        this.SetChanged();
-        this.SendUpdate();
-
-        return ValueTask.CompletedTask;
-    }
-
-    protected internal override NbtCompound? GetUpdateData() => new() { new NbtTag<int>("ticks", this.ticks) };
-}
-
-/// <summary>
 /// A block entity that hands the server compounds it keeps changing, to show the server keeps copies.
 /// </summary>
 public sealed class RetainingBlockEntity : BlockEntity
@@ -749,10 +645,17 @@ public sealed class RetainingBlockEntity : BlockEntity
 /// </summary>
 public sealed class ProbeCrate() : ContainerBlockEntity(new Container(9) { Title = "Crate" });
 
-/// <summary>The probe's two parts, ordered far before near to exercise nearest-hit selection.</summary>
+/// <summary>
+/// The probe's two parts, ordered far before near to exercise nearest-hit selection. It records whether it still had
+/// its front part when it was removed in <see cref="AppContext"/> data, since its statics are its plugin's own.
+/// </summary>
 public sealed class ProbeParts : BlockEntity
 {
+    public const string RemovedKey = "Obsidian.Tests.Parts.Removed";
+
     public bool Front { get; set; } = true;
+
+    protected internal override void OnRemoved() => AppContext.SetData(RemovedKey, this.Front);
 
     protected internal override void Load(NbtCompound tag) => this.Front = tag.GetBool("front");
 

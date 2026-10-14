@@ -29,6 +29,16 @@ public interface IBlockLevel : ISignalReader
     public IBlock GetBlock(Vector position);
 
     /// <summary>
+    /// The block entity at <paramref name="position"/>, like vanilla's <c>getBlockEntity</c>: what a block's hooks read
+    /// their own data from, a comparator output from a counter, say. Null outside the loaded chunks.
+    /// </summary>
+    /// <remarks>
+    /// Hooks can run while block entities tick (a player's change runs on its own thread), so read what is safe to read
+    /// so, like a field the block entity writes whole, and change the block entity on its own tick.
+    /// </remarks>
+    public IBlockEntity? GetBlockEntity(Vector position);
+
+    /// <summary>
     /// Changes the block at <paramref name="position"/>, with the side effects <paramref name="flags"/> ask for. The
     /// neighbour and shape updates it causes run after the current hook's, like vanilla's chained updates.
     /// </summary>

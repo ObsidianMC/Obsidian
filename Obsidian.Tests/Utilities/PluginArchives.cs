@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 
 namespace Obsidian.Tests.Utilities;
@@ -29,6 +30,14 @@ internal static class PluginArchives
 
         return stream.ToArray();
     }
+
+    /// <summary>
+    /// Writes a version 2 archive of every file in <paramref name="folder"/>, a plugin's output laid out like its
+    /// archive.
+    /// </summary>
+    public static byte[] Folder(string folder) => Zip(Directory
+        .EnumerateFiles(folder, "*", SearchOption.AllDirectories)
+        .ToDictionary(file => Path.GetRelativePath(folder, file).Replace('\\', '/'), File.ReadAllBytes));
 
     public static byte[] Metadata(string id, string version, string assembly, string dependencies = "[]") =>
         Encoding.UTF8.GetBytes($$"""

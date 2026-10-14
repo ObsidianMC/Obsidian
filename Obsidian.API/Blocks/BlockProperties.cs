@@ -60,6 +60,14 @@ public sealed class BlockProperties
     public int LightEmission { get; init; }
 
     /// <summary>
+    /// The light level, from 0 to 15, of a state of the block given its property values by name, like vanilla's
+    /// per-state light level: <c>values => values["lit"] == "true" ? 15 : 0</c> for a lamp. It replaces
+    /// <see cref="LightEmission"/> when set. It's asked once for each state when the block is registered (again when
+    /// the plugin reloads), and not kept: the levels it gave are.
+    /// </summary>
+    public Func<IReadOnlyDictionary<string, string>, int>? StateLightEmission { get; init; }
+
+    /// <summary>
     /// What the block does when players use or place it, when it or its neighbours change, when it ticks and when
     /// entities touch it, or null for nothing.
     /// </summary>
