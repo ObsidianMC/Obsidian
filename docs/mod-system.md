@@ -124,7 +124,10 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      code runs only on the level's tick, their open containers close and stop taking clicks as they unload, and broken
      block entities give block loot their components and dynamic drops (a shulker box drops holding its items). A
      plugin's block entity keeps its data on its block's item in the plugin's component types
-     (`CollectComponents`, `ApplyComponents`), and reaches its plugin's `IServer` through `Server`. The
+     (`CollectComponents`, `ApplyComponents`), and reaches its plugin's `IServer` through `Server`. Like NeoForge's,
+     it hears `OnLoad` once live and `OnChunkUnloaded` when its chunk unloads; `ILevel.GetLoadedBlockEntity` finds
+     its neighbours without loading chunks, and `ILevel.AddTicker` runs a plugin's code once per level tick, for
+     networks spanning many block entities (see [plugin-content.md](plugin-content.md#level-tickers)). The
      Obsidian client registers a mod's block entity types too, keeps a live instance of its class for each of its
      block entities the server sends, loaded from their update data, and ticks it with `ClientTick` (see
      [plugin-content.md](plugin-content.md#block-entities)).
@@ -735,4 +738,7 @@ added to a level (`TryAddEntity` returns false).
 
 ## Known gaps
 
+- Block entity `OnLoad` runs on the level's next tick, not as the chunk loads like NeoForge's `onLoad`, and
+  `OnChunkUnloaded` isn't called as the server stops (its chunks are saved, not unloaded). Level tickers have one
+  phase, after block entities; there's no tick before them and no server-wide tick across levels.
 - Obsidian.MSBuild writes version 2 archives on its `feat/obby-v2` branch, which isn't released yet.

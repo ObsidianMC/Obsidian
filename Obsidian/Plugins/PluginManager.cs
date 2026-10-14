@@ -550,7 +550,10 @@ public sealed partial class PluginManager : IAsyncDisposable
         pluginContainer.Close();
 
         foreach (var level in this.Levels())
+        {
             level.ReleaseChunkTickets(pluginContainer);
+            level.ReleaseLifecycle(pluginContainer);
+        }
 
         // Movement abilities aren't saved, so only online players hold the plugin's grants.
         foreach (var player in this.server.OnlinePlayers.Values.OfType<Player>())

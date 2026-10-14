@@ -427,6 +427,8 @@ public sealed class WorldBlockEntities : IDisposable
             NullLogger<PluginManager>.Instance,
             new ConfigurationBuilder().Build());
         var path = Path.Join(this.folder, "probe.obby");
+        foreach (var key in new[] { ProbeCrate.LoadsKey, ProbeCrate.UnloadedKey, ProbeCrate.TicksKey })
+            AppContext.SetData(key, null);
 
         await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0"));
         var container = (await manager.LoadPluginAsync(path))!;
@@ -505,6 +507,10 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.Equal(5, restored.Inventory[0]!.Count);
         Assert.False(restored.Inventory.IsRetired);
 
+        // Only the reloaded crate was live on a tick: its OnLoad added the plugin's level ticker, which ran then.
+        Assert.Equal(1, AppContext.GetData(ProbeCrate.LoadsKey));
+        Assert.Equal(1, AppContext.GetData(ProbeCrate.TicksKey));
+
         // Generation keeps a plugin's block entities as data, outside the level's tick; the level makes them the
         // plugin's once their chunk is complete.
         var generating = new Chunk(1, 0);
@@ -519,6 +525,8 @@ public sealed class WorldBlockEntities : IDisposable
         await context.World.DoWorldTickAsync();
 
         Assert.IsAssignableFrom<ContainerBlockEntity>(generating.GetBlockEntity(20, 70, 4));
+        Assert.Equal(2, AppContext.GetData(ProbeCrate.LoadsKey));
+        Assert.Equal(2, AppContext.GetData(ProbeCrate.TicksKey));
 
         // A remote edit is saved immediately, including outside simulation distance and before another tick.
         human.Position = new VectorD(4096, 70, 4096);
@@ -556,11 +564,19 @@ public sealed class WorldBlockEntities : IDisposable
         await human.OpenInventoryAsync(restored.Inventory);
         Assert.Null(human.OpenedContainer);
 
+        // The crate heard its chunk unload while still in its level; the loaded-only lookup doesn't load it back.
+        Assert.Equal(position, AppContext.GetData(ProbeCrate.UnloadedKey));
+        Assert.Null(context.World.GetLoadedBlockEntity(position));
+        Assert.Null(context.World.GetLoadedChunk(0, 0));
+
         var loaded = Assert.IsType<Chunk>(await region.GetChunkAsync(0, 0));
         await context.World.DoWorldTickAsync();
         var afterEviction = Assert.IsAssignableFrom<ContainerBlockEntity>(loaded.GetBlockEntity(4, 70, 4));
         Assert.Equal(1, afterEviction.Inventory[0]!.Count);
         Assert.False(afterEviction.Inventory.IsRetired);
+        Assert.Same(afterEviction, context.World.GetLoadedBlockEntity(position));
+        Assert.Equal(3, AppContext.GetData(ProbeCrate.LoadsKey));
+        Assert.Equal(3, AppContext.GetData(ProbeCrate.TicksKey));
 
         // The unloaded plugin's data still drops its items when any path removes the block.
         var livePlugin = Assert.Single(manager.Plugins);
@@ -591,6 +607,10 @@ public sealed class WorldBlockEntities : IDisposable
 
         await manager.UnloadPluginAsync(livePlugin);
         Assert.Null(PluginLootTables.Resolve("probe:blocks/crate"));
+
+        // Unloading the plugin removed its ticker.
+        await context.World.DoWorldTickAsync();
+        Assert.Equal(3, AppContext.GetData(ProbeCrate.TicksKey));
         var keptBox = Assert.IsType<DataBlockEntity>(loaded.GetBlockEntity(4, 70, 4));
         Assert.False(((NbtCompound)keptBox.Data["obsidian:container"]).GetBool("drops_contents"));
         await context.World.ExplodeAsync((VectorD)position + 0.5, 2, false,
@@ -882,9 +902,35 @@ public sealed class RetainingBlockEntity : BlockEntity
 }
 
 /// <summary>
-/// The probe plugin's container block entity: nine slots, saved like a chest's.
+/// The probe plugin's container block entity: nine slots, saved like a chest's. It counts its loads, and records where
+/// its chunk unloaded, in <see cref="AppContext"/> data; the first one loaded adds a level ticker counting ticks.
 /// </summary>
-public sealed class ProbeCrate() : ContainerBlockEntity(new Container(9) { Title = "Crate" });
+public sealed class ProbeCrate() : ContainerBlockEntity(new Container(9) { Title = "Crate" })
+{
+    public const string LoadsKey = "Obsidian.Tests.Crate.Loads";
+    public const string UnloadedKey = "Obsidian.Tests.Crate.Unloaded";
+    public const string TicksKey = "Obsidian.Tests.Crate.Ticks";
+
+    // The plugin's own static, so each load of the plugin adds one ticker, like a network runtime would.
+    private static IDisposable? ticker;
+
+    protected internal override void OnLoad()
+    {
+        Count(LoadsKey);
+        ticker ??= this.Level!.AddTicker(CountTick);
+    }
+
+    protected internal override void OnChunkUnloaded() =>
+        AppContext.SetData(UnloadedKey, this.Level is null ? null : this.BlockPosition);
+
+    private static ValueTask CountTick()
+    {
+        Count(TicksKey);
+        return ValueTask.CompletedTask;
+    }
+
+    private static void Count(string key) => AppContext.SetData(key, (AppContext.GetData(key) as int? ?? 0) + 1);
+}
 
 /// <summary>
 /// The probe's two parts, ordered far before near to exercise nearest-hit selection. It records whether it still had

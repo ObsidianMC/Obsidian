@@ -20,13 +20,20 @@ namespace Obsidian.API.BlockEntities;
 /// complete, which creates and loads them.
 /// </para>
 /// <para>
+/// A plugin's block entity hears when it joins and leaves the level's live set, like NeoForge's block entities:
+/// <see cref="OnLoad"/> once it's placed, its chunk loaded or its plugin reloaded, then <see cref="OnRemoved"/> when
+/// its block is removed or <see cref="OnChunkUnloaded"/> when its chunk unloads. Its plugin unloading tells it
+/// nothing.
+/// </para>
+/// <para>
 /// The server saves what <see cref="Save"/> writes as of the last time the block entity called
 /// <see cref="SetChanged"/>, taken at the end of the level's tick: call it whenever its saved data changes, like
 /// vanilla's <c>setChanged</c>. The server calls <see cref="Load"/>, <see cref="Save"/>, <see cref="TickAsync"/>,
-/// <see cref="GetUpdateData"/>, <see cref="GetShapes"/>, <see cref="CollectComponents"/> and <see cref="OnRemoved"/>
-/// on the level's tick (or between two ticks), one at a time, besides creating a new one for a block set elsewhere,
-/// which <see cref="ApplyComponents"/> initializes; code that changes it on the level's tick needs no locking. Chunks
-/// are saved and sent from copies of what those calls returned.
+/// <see cref="GetUpdateData"/>, <see cref="GetShapes"/>, <see cref="CollectComponents"/>, <see cref="OnLoad"/>,
+/// <see cref="OnRemoved"/> and <see cref="OnChunkUnloaded"/> on the level's tick (or between two ticks), one at a
+/// time, besides creating a new one for a block set elsewhere, which <see cref="ApplyComponents"/> initializes; code
+/// that changes it on the level's tick needs no locking. Chunks are saved and sent from copies of what those calls
+/// returned.
 /// </para>
 /// </remarks>
 public abstract class BlockEntity : IBlockEntity
@@ -56,8 +63,8 @@ public abstract class BlockEntity : IBlockEntity
     public IServer? Server => this.Host?.ServerOf(this) is IServer server ? ServerScope.Resolve(server) : null;
 
     /// <summary>
-    /// Whether the block entity was removed from its level: its block changed to one without its type, or its
-    /// plugin unloaded. A removed block entity isn't ticked, saved or sent again.
+    /// Whether the block entity was removed from its level: its block changed to one without its type, its chunk
+    /// unloaded, or its plugin unloaded. A removed block entity isn't ticked, saved or sent again.
     /// </summary>
     public bool IsRemoved { get; internal set; }
 
@@ -97,6 +104,11 @@ public abstract class BlockEntity : IBlockEntity
     /// Whether <see cref="SetChanged"/> was called since the server last took a change in.
     /// </summary>
     internal bool HasPendingChange => Volatile.Read(ref this.changed) == 1;
+
+    /// <summary>
+    /// Whether the level placed the block entity and hasn't called <see cref="OnLoad"/> yet.
+    /// </summary>
+    internal bool LoadPending { get; set; }
 
     /// <summary>
     /// Reads the block entity's saved data, as <see cref="Save"/> wrote it, when its chunk loads, or when a structure
@@ -207,11 +219,40 @@ public abstract class BlockEntity : IBlockEntity
 
     /// <summary>
     /// Called when the block entity's block is removed from the level, before what a container holds drops, like
-    /// vanilla's <c>preRemoveSideEffects</c>: drop what it holds, say. Not called when its chunk unloads, or its plugin
-    /// does. Runs on the level's tick after the removal, which may come from elsewhere; <see cref="IsRemoved"/> is
-    /// already true, and a container's inventory no longer takes clicks.
+    /// vanilla's <c>preRemoveSideEffects</c>: drop what it holds, say. Not called when its chunk unloads (see
+    /// <see cref="OnChunkUnloaded"/>), or its plugin does. Runs on the level's tick after the removal, which may come
+    /// from elsewhere; <see cref="IsRemoved"/> is already true, and a container's inventory no longer takes clicks.
     /// </summary>
     protected internal virtual void OnRemoved()
+    {
+    }
+
+    /// <summary>
+    /// Called once a plugin's block entity is live in its level, like NeoForge's <c>onLoad</c>: after it was placed,
+    /// its chunk loaded, or its plugin loaded again, on the level's next tick, whether or not its chunk ticks, and
+    /// before its first <see cref="TickAsync"/>. Join what spans several block entities here, such as a network
+    /// (see <see cref="ILevel.AddTicker"/>), and leave it in <see cref="OnRemoved"/> and <see cref="OnChunkUnloaded"/>.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Level"/> is set. One removed or unloaded before that tick gets neither this nor
+    /// <see cref="OnChunkUnloaded"/>, but still gets <see cref="OnRemoved"/>. A call that throws is logged.
+    /// </remarks>
+    protected internal virtual void OnLoad()
+    {
+    }
+
+    /// <summary>
+    /// Called when the block entity's chunk unloads, like NeoForge's <c>onChunkUnloaded</c>: after the chunk's final
+    /// save, between two of the level's ticks, holding no lock. The block entity is gone from then on (its block stays
+    /// saved, and its chunk loading again creates a new one), so drop what refers to it.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="IsRemoved"/> is already true, a container's inventory no longer takes clicks, and
+    /// <see cref="Level"/> is still set for this call. Don't change the world from it: its chunk is saved. Not called
+    /// when its block is removed (see <see cref="OnRemoved"/>), its plugin unloads, or the server stops (which saves
+    /// its chunk without unloading it). A call that throws is logged.
+    /// </remarks>
+    protected internal virtual void OnChunkUnloaded()
     {
     }
 

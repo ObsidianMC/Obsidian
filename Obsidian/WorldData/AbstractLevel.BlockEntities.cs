@@ -46,6 +46,7 @@ public abstract partial class AbstractLevel
         var host = this.BlockEntityHost;
         placed.Host = host;
         host.Updates[placed] = true;
+        this.QueueLoad(placed);
 
         // A change announced before it was placed is taken in like the others.
         if (placed.HasPendingChange)
@@ -157,8 +158,9 @@ public abstract partial class AbstractLevel
 
     /// <summary>
     /// Ticks the block entities of the chunks that tick, like vanilla's block entity tickers: those whose block still
-    /// has their type. Then takes in the changes they announced (see <see cref="BlockEntity.SetChanged"/>) and sends
-    /// the updates they asked for.
+    /// has their type, after the pending <see cref="BlockEntity.OnLoad"/> calls. Then runs the level's tickers (see
+    /// <see cref="AddTicker"/>), takes in the changes block entities announced (see
+    /// <see cref="BlockEntity.SetChanged"/>) and sends the updates they asked for.
     /// </summary>
     internal async ValueTask TickBlockEntitiesAsync()
     {
@@ -174,6 +176,8 @@ public abstract partial class AbstractLevel
                 this.RestoreKeptBlockEntities(chunk, revision);
         }
 
+        this.RunPendingLoads();
+
         foreach (var chunk in chunks)
         {
             if (chunk.BlockEntities.IsEmpty || !this.IsMobTicking(new VectorD(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8)))
@@ -188,6 +192,7 @@ public abstract partial class AbstractLevel
                     continue;
 
                 this.AttachBlockEntity(blockEntity);
+                this.RunLoad(blockEntity);
                 await this.TickBlockEntityAsync(blockEntity);
 
                 // A plugin's container is saved as of its last change, which players make by moving its items.
@@ -201,6 +206,8 @@ public abstract partial class AbstractLevel
                     this.UpdateComparatorsOf(watched);
             }
         }
+
+        await this.RunTickersAsync();
 
         await this.FlushItemAccessChangesAsync();
         this.TakeBlockEntityChanges();

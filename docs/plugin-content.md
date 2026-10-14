@@ -1229,11 +1229,24 @@ type and its update data from chunk packets and `BlockEntityData`, and remapping
   throws is logged, and the drop or the block goes without the data. Neither runs once the plugin starts unloading:
   a block entity kept as saved data while its plugin is gone gives its item nothing, and keeps its data. A
   container's items still drop as its items. Creative pick-block with data and `block_entity_data` aren't supported.
+- **Lifecycle.** Like NeoForge's `onLoad` and `onChunkUnloaded`, `OnLoad` runs once the block entity is live in
+  its level: on the level's next tick after it was placed, its chunk loaded or its plugin loaded again, whether or
+  not its chunk ticks, and before its first `TickAsync`. `OnChunkUnloaded` runs when its chunk unloads, after the
+  chunk's final save and between two ticks, with `IsRemoved` already true and `Level` still set; drop what refers
+  to it there, and don't change the world. A block removal calls `OnRemoved` instead, and a plugin unloading calls
+  neither (its block entities are kept as saved data, and get `OnLoad` again once it's back), and neither does the
+  server stopping. One removed or unloaded before its first tick gets no `OnLoad` and no `OnChunkUnloaded`.
+- **Neighbours.** `ILevel.GetLoadedBlockEntity(Vector)` returns the block entity at a position only if its chunk is
+  loaded and complete, never loading or generating anything, so a tick can follow a cable from block entity to block
+  entity; null once that block entity was removed or its chunk unloaded. `GetBlockEntityAsync` loads the chunk from
+  disk instead, and adds an ungenerated one where none was saved. In a block hook, `IBlockLevel.GetBlockEntity`
+  already reads only loaded chunks.
 - **Server.** `Server` is the plugin's own `IServer` in the calls into the plugin, resolved like event arguments'
   `Server`: a machine finds its plugin's recipes with `this.Server?.FindRecipe(type, inputs)`. It's null while the
   block entity isn't in a level (in `ApplyComponents`, say).
-- **Threads.** The server calls `Load`, `Save`, `TickAsync`, `GetUpdateData`, `CollectComponents` and `OnRemoved`
-  on the level's tick, one at a time, inside calls into the plugin: a block removed from elsewhere (a player's break)
+- **Threads.** The server calls `Load`, `Save`, `TickAsync`, `GetUpdateData`, `CollectComponents`, `OnLoad`,
+  `OnRemoved` and `OnChunkUnloaded` on the level's tick (or between two ticks), one at a time, inside calls into
+  the plugin: a block removed from elsewhere (a player's break)
   runs `OnRemoved` on the next tick, and a break elsewhere (an explosion a player sets off with a bed, say) runs
   `CollectComponents` between two ticks, once the running tick ends. A background task waits the same way, even when
   the tick started it. Only a new block entity for a block set
@@ -1242,6 +1255,35 @@ type and its update data from chunk packets and `BlockEntityData`, and remapping
   over changes nothing saved or sent.
 - **Generation.** In chunks still generating, and in chunks being loaded, a plugin's block entities are kept as
   their saved data: the level creates the plugin's objects on its next tick once the chunk is complete.
+
+### Level tickers
+
+`ILevel.AddTicker(Func<ValueTask> tick)` runs code once every tick of one level, like NeoForge's post
+`LevelTickEvent`, for what spans many block entities, such as a network of cables and machines that ticks once
+rather than once per member. It returns an `IDisposable`; dispose it to stop. A block entity can add its network's
+ticker from `OnLoad` the first time one joins in that level:
+
+```csharp
+protected override void OnLoad()
+{
+    var network = Networks.For(this.Level!);  // the plugin's own per-level runtime
+    network.Join(this);
+    network.Ticker ??= this.Level!.AddTicker(network.TickAsync);
+}
+
+protected override void OnRemoved() => Networks.For(this.Level!).Leave(this);
+
+protected override void OnChunkUnloaded() => Networks.For(this.Level!).Leave(this);
+```
+
+- **When.** On the level's tick, after the block entities ticked and before their changes are saved and their
+  updates sent, so it may use the level's block entities as their own ticks do, without locks. It runs whether or
+  not any chunk ticks; check that its members are loaded (`GetLoadedBlockEntity`) rather than loading chunks.
+  Tickers run in the order they were added: from the next tick on, or from this one when added before the level's
+  tickers run (from `OnLoad` or a block entity tick, say).
+- **Ownership.** Like chunk tickets, a ticker belongs to the plugin whose code adds it. It runs inside calls into
+  that plugin, and unloading the plugin removes it, disposed or not; a reloaded plugin adds its tickers again from
+  its block entities' `OnLoad`. A tick that throws is logged, and the ticker keeps running.
 
 ### Shapes and multipart blocks
 

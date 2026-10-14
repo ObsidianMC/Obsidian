@@ -47,6 +47,32 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
         throw new NotSupportedException("This level doesn't support chunk tickets.");
 
     /// <summary>
+    /// Runs <paramref name="tick"/> once every tick of the level, like NeoForge's post level tick event: for what
+    /// spans many block entities, such as a network that ticks once rather than once per member. It runs on the
+    /// level's tick, after the block entities ticked and before their changes are saved and sent, so it may use the
+    /// level's block entities as their own ticks do. It runs whether or not any chunk ticks.
+    /// </summary>
+    /// <remarks>
+    /// Dispose the handle to stop it. Tickers run in the order they were added, from the next tick on (or this one if
+    /// added before the level's tickers run). A plugin's run inside calls into the plugin, and are removed when it
+    /// unloads. A tick that throws is logged and the ticker keeps running.
+    /// </remarks>
+    public IDisposable AddTicker(Func<ValueTask> tick) =>
+        throw new NotSupportedException("This level doesn't support tickers.");
+
+    /// <summary>
+    /// The block entity at <paramref name="position"/> if its chunk is loaded and complete, without loading or
+    /// generating anything, like <see cref="Blocks.IBlockLevel.GetBlockEntity"/>: for following a cable or network
+    /// across block entities from a tick. Null otherwise, or once the block entity was removed or its chunk unloaded.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="GetBlockEntityAsync(Vector)"/>, by contrast, loads the chunk from disk, and adds an ungenerated one
+    /// where none was saved. Use what this returns on the level's tick, as block entity ticks and tickers do.
+    /// </remarks>
+    public IBlockEntity? GetLoadedBlockEntity(Vector position) =>
+        throw new NotSupportedException("This level doesn't support loaded block entity lookups.");
+
+    /// <summary>
     /// Gets the load's live instance, reading its file lazily. World scope shares across dimensions. Access plugin
     /// objects on the level tick or synchronize them yourself; call MarkDirty to publish changes for saving.
     /// </summary>
