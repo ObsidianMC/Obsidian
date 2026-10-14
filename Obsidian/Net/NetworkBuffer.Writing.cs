@@ -440,7 +440,7 @@ public partial class NetworkBuffer : INetStreamWriter
 
         // Like vanilla's DataComponentPatch: only the components set on the stack. The client knows the item's defaults,
         // and Obsidian's placeholders for them (e.g. a max stack size of 64) would override them.
-        var components = value.Patch.ToList();
+        var components = SentPatch(value);
         WriteVarInt(components.Count);
         WriteVarInt(value.RemoveComponents.Count);
 

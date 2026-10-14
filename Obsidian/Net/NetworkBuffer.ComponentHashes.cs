@@ -23,6 +23,12 @@ public partial class NetworkBuffer
     /// False means the value needs an unsupported codec or an unavailable registry entry.</summary>
     public bool TryHashDataComponent(DataComponent component, out int hash)
     {
+        if (component is PluginDataComponent plugin)
+        {
+            hash = HashPluginComponent(plugin);
+            return true;
+        }
+
         var buffer = new NetworkBuffer { ComponentRegistryName = this.ComponentRegistryName, IdMaps = this.IdMaps };
         try
         {
@@ -70,7 +76,7 @@ public partial class NetworkBuffer
         }
 
         var hashes = new List<(DataComponentType Type, int Hash)>();
-        foreach (var component in stack.Patch)
+        foreach (var component in SentPatch(stack))
         {
             if (this.HasComponentType(component.Type) && this.TryHashDataComponent(component, out var hash))
                 hashes.Add((component.Type, hash));
@@ -132,8 +138,8 @@ public partial class NetworkBuffer
                 || !this.ComponentsToRemove.ToHashSet().SetEquals(other.RemoveComponents))
                 return false;
 
-            var patch = other.Patch.ToArray();
-            if (patch.Length != this.HashedComponents.Count)
+            var patch = SentPatch(other);
+            if (patch.Count != this.HashedComponents.Count)
                 return false;
 
             var hasher = new NetworkBuffer { ComponentRegistryName = registryNames };
@@ -143,6 +149,22 @@ public partial class NetworkBuffer
     }
 
     private sealed class UnsupportedComponentHashException : Exception;
+
+    // A plugin's component is hashed like vanilla's HashOps hashes its codec's value, from its saved NBT: the same on
+    // the Obsidian client, which saves it with the same codec.
+    private static int HashPluginComponent(PluginDataComponent component)
+    {
+        var buffer = new NetworkBuffer();
+        buffer.WriteNbtCompound(component.Saved);
+        buffer.Reset();
+
+        // The compound wrapping the value, then the value's tag type and name.
+        buffer.ReadByte();
+        var tag = buffer.ReadByte();
+        buffer.ReadNbtString();
+
+        return buffer.HashNbt(tag, false);
+    }
 
     private string RegistryName(string registry, int id)
     {

@@ -13,12 +13,16 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.API.Plugins;
+using Obsidian.API.Utilities;
 using Obsidian.API.World;
 using Obsidian.API.World.Features;
 using Obsidian.API.World.Generator;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Commands.Framework;
 using Obsidian.Entities;
+using Obsidian.Nbt;
+using Obsidian.Net;
+using Obsidian.Net.Payloads;
 using Obsidian.Plugins;
 using Obsidian.Plugins.Archives;
 using Obsidian.Plugins.ServiceProviders;
@@ -130,7 +134,7 @@ public sealed class PluginLoading : IDisposable
 
         AppContext.SetData(ProbeGenerator.DisposedKey, 0);
         await File.WriteAllBytesAsync(path, ProbeArchive("1.0.0"));
-        var (unloaded, gem, ore) = await LoadAndTrackAsync(manager, path, generator);
+        var (unloaded, gem, ore, charged) = await LoadAndTrackAsync(manager, path, generator);
 
         await File.WriteAllBytesAsync(path, ProbeArchive("1.1.0"));
         var reloaded = await manager.LoadPluginAsync(path);
@@ -174,10 +178,29 @@ public sealed class PluginLoading : IDisposable
         var context = new ItemUseContext
         {
             Player = null!,
-            Stack = new ItemStack(gem),
+            Stack = charged,
             Hand = InteractionHand.MainHand
         };
         Assert.True(await ItemBehaviors.UseAsync(context));
+
+        // Its component types keep their ids too: the reloaded plugin read the charge the first one set and counted
+        // the use. The stack saves its charge, and a note only the server keeps, beside vanilla's components.
+        Assert.True(DataComponentTypesRegistry.TryGet("probe:charge", out var charge));
+        Assert.True(DataComponentTypesRegistry.TryGet("probe:note", out var note));
+        Assert.False(DataComponentTypesRegistry.IsVanilla(charge.Type));
+
+        AssertChargeSaved(charged);
+        Assert.Equal(charged, charged.ToNbt().ItemFromNbt());
+
+        // Clients get the charge with its network codec, never the note; a type with a network codec is synced, so
+        // only modded clients can join.
+        var synced = SyncedRegistries.Get(SyncedRegistries.DataComponentTypes).Entries;
+        Assert.Contains(((int)charge.Type, "probe:charge"), synced);
+        Assert.DoesNotContain(synced, entry => entry.Identifier == "probe:note");
+
+        var sent = Assert.Single(SentComponents(charged));
+        Assert.Equal(charge.Type, sent.Type);
+        Assert.Equal(2, Assert.IsType<NbtTag<int>>(Assert.IsType<PluginDataComponent>(sent).ToNbt()).Value);
 
         // So does its block, whose item places it.
         Assert.True(BlocksRegistry.TryGetPluginBlock("probe:ore", out var reloadedOre));
@@ -274,6 +297,12 @@ public sealed class PluginLoading : IDisposable
         Assert.Null(gem.Behavior);
         Assert.Same(gem, ItemsRegistry.Get(gem.Id));
         Assert.False(await ItemBehaviors.UseAsync(context));
+
+        // Its stack, which outlived the plugin's code, keeps the components as saved, saving and loading them
+        // unchanged, but sends no charge without the plugin's network codec.
+        AssertChargeSaved(charged);
+        Assert.Equal(charged, charged.ToNbt().ItemFromNbt());
+        Assert.Empty(SentComponents(charged));
 
         Assert.Null(ore.Owner);
         Assert.True(ore.Is(BlocksRegistry.Get(ore.DefaultState.GetHashCode())));
@@ -483,10 +512,8 @@ public sealed class PluginLoading : IDisposable
 
     // Kept out of the test method so that no local keeps the first load alive.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task<(WeakReference LoadContext, Item Gem, BlockType Ore)> LoadAndTrackAsync(
-        PluginManager manager,
-        string path,
-        PluginLevelGenerator generator)
+    private static async Task<(WeakReference LoadContext, Item Gem, BlockType Ore, ItemStack Charged)>
+        LoadAndTrackAsync(PluginManager manager, string path, PluginLevelGenerator generator)
     {
         var container = await manager.LoadPluginAsync(path);
 
@@ -500,7 +527,35 @@ public sealed class PluginLoading : IDisposable
         Assert.Same(container, generator.Plugin);
         Assert.True((await generator.GenerateChunkAsync(0, 0)).IsGenerated);
 
-        return (new WeakReference(container.LoadContext), gem, ore);
+        // Using its gem charges the stack, with the plugin's own component types.
+        var charged = new ItemStack(gem);
+        var context = new ItemUseContext
+        {
+            Player = null!,
+            Stack = charged,
+            Hand = InteractionHand.MainHand
+        };
+        Assert.True(await ItemBehaviors.UseAsync(context));
+
+        return (new WeakReference(container.LoadContext), gem, ore, charged);
+    }
+
+    // The probe's components saved on its gem after two uses, under their identifiers like vanilla's.
+    private static void AssertChargeSaved(ItemStack stack)
+    {
+        Assert.True(stack.ToNbt().TryGetTag<NbtCompound>("components", out var saved));
+        Assert.Equal(2, saved.GetInt("probe:charge"));
+        Assert.Equal("used", saved.GetString("probe:note"));
+    }
+
+    // The components a client gets with the stack, read back from what the server writes.
+    private static IEnumerable<DataComponent> SentComponents(ItemStack stack)
+    {
+        var buffer = new NetworkBuffer();
+        buffer.WriteItemStack(stack);
+        buffer.Reset();
+
+        return buffer.ReadItemStack()!.Patch;
     }
 
     private (PluginManager Manager, EventDispatcher Dispatcher, FakeServer Server) CreateManager(World? world = null)
@@ -618,6 +673,17 @@ public sealed class ProbePlugin : PluginBase
 
         // Its gem brews awkward potions into potions of luck, which no vanilla mix makes.
         pluginRegistry.AddPotionMix(Potion.Awkward, gem, Potion.Luck);
+
+        // What using its gem leaves on the stack: a charge clients are sent, and a note only the server keeps.
+        Charge = pluginRegistry.RegisterComponentType(
+            "probe:charge",
+            new ComponentCodec<int>(value => new NbtTag<int>("", value), tag => ((NbtTag<int>)tag).Value),
+            new ComponentNetworkCodec<int>(
+                (writer, value) => writer.WriteVarInt(value),
+                reader => reader.ReadVarInt()));
+        Note = pluginRegistry.RegisterComponentType(
+            "probe:note",
+            new ComponentCodec<string>(value => new NbtTag<string>("", value), tag => ((NbtTag<string>)tag).Value!));
 
         // A charm with every kind of default component, and hooks for a use on an entity and the inventory tick.
         pluginRegistry.RegisterItem("probe:charm", new ItemProperties
@@ -761,9 +827,20 @@ public sealed class ProbePlugin : PluginBase
         public ValueTask<bool> UseAsync(BlockUseContext context) => ValueTask.FromResult(true);
     }
 
+    // The plugin's component types; static fields of the plugin's own copy of this assembly.
+    private static PluginComponentType<int>? Charge;
+    private static PluginComponentType<string>? Note;
+
+    // Using the gem counts its uses in the stack's charge.
     private sealed class GemBehavior : IItemBehavior
     {
-        public ValueTask<bool> UseAsync(ItemUseContext context) => ValueTask.FromResult(true);
+        public ValueTask<bool> UseAsync(ItemUseContext context)
+        {
+            context.Stack.Set(Charge!, context.Stack.Get(Charge!) + 1);
+            context.Stack.Set(Note!, "used");
+
+            return ValueTask.FromResult(true);
+        }
     }
 
     private sealed class CharmBehavior : IItemBehavior

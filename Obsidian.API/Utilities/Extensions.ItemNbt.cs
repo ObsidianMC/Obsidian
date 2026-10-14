@@ -180,6 +180,8 @@ public partial class Extensions
                 && data.Value is not null => CopyCompound(name, data.Value),
             SimpleDataComponent<ImmutableArray<Item>> decorations
                 when component.Type == DataComponentType.PotDecorations => PotDecorationsToNbt(name, decorations.Value),
+            // A plugin's component, saved with its type's codec when it was set, like vanilla's components.
+            PluginDataComponent plugin => plugin.ToNbt(),
             _ => null
         };
     }
@@ -299,6 +301,10 @@ public partial class Extensions
                 {
                     Value = [.. decorations.OfType<NbtTag<string>>().Select(item => ItemsRegistry.Get(item.Value!))]
                 };
+            // A plugin's component, kept as saved whether or not its plugin is loaded. A type no plugin registered in
+            // this process stays unmodeled.
+            case var _ when DataComponentTypesRegistry.TryGet(name, out var plugin):
+                return new PluginDataComponent(plugin.Type, plugin.Identifier, tag);
             default:
                 return null;
         }

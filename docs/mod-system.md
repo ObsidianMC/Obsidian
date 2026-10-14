@@ -122,6 +122,14 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      features it names, vanilla's or files', on random ticks and with bone meal like vanilla's saplings, 2x2 mega
      trees included; the grower is the plugin's, like its behaviour (see
      [plugin-content.md](plugin-content.md#saplings)). Vanilla's saplings grow, and bone meal grows crops and grass.
+   - Done for data component types: `IPluginRegistry.RegisterComponentType` registers a type with a codec, saving its
+     values as NBT in stacks' `components` under its identifier beside vanilla's, and an optional network codec.
+     Its id follows vanilla's generated `DataComponentType` values and stays for the process. A type with a network
+     codec is synced with the `minecraft:data_component_type` registry (refusing vanilla clients once there are any)
+     and its values are sent with stacks; one without is the server's own and never leaves it. Stacks hold a plugin's
+     values only in their saved form, so unloading the plugin leaves them as saved (not sent meanwhile) and a reload
+     reads them again. The Obsidian client registers a mod's types too and reads them from stacks with the mod's
+     network codec (see [plugin-content.md](plugin-content.md#item-components)).
    - Next: Phase 3.
 3. **Data-driven content and world generation** (done): loading a mod's `data/` folder like a data pack
    (biomes, dimension types, damage types, tags, worldgen features), letting mods register codec types for
