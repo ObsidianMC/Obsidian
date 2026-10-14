@@ -1,3 +1,4 @@
+using Obsidian.API.Inventory;
 using Obsidian.API.Networking;
 using Obsidian.API.Blocks;
 using Obsidian.API.Client.Screens;
@@ -148,6 +149,83 @@ public interface IClientRegistry
     /// </exception>
     /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
     public IClientRegistry RegisterEntityRenderer(string entityType, EntityRendererProperties renderer);
+
+    /// <summary>
+    /// Registers a property an item model definition's <c>minecraft:condition</c> model can test, like NeoForge's
+    /// conditional item model properties: <c>{"type":"minecraft:condition","property":"examplemod:charged",
+    /// "on_true":...,"on_false":...}</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The property is a function of the stack, read-only with its components (including the mod's own, read with
+    /// <c>ItemStack.TryGet</c>), and where it's drawn. It runs on the client's game thread inside a call into the mod,
+    /// when a stack drawn with the definition changes, or its context does (a new tick, another holder or display
+    /// context): its value is kept per stack and display context in between, so keep it pure. If it throws, the error
+    /// is logged, and it's false for the stack until the stack changes.
+    /// </para>
+    /// <para>
+    /// Condition, select and range properties are separate, like vanilla's: one identifier can name one of each.
+    /// </para>
+    /// </remarks>
+    /// <param name="property">
+    /// The property's identifier, in the mod's namespace, like <c>examplemod:charged</c>.
+    /// </param>
+    /// <param name="condition">Whether the stack takes the <c>on_true</c> model.</param>
+    /// <exception cref="ArgumentException">
+    /// The identifier isn't valid or in the mod's namespace, or the mod registered the condition already.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+    public IClientRegistry RegisterItemCondition(string property, Func<ItemStack, ItemModelContext, bool> condition);
+
+    /// <summary>
+    /// Registers a property an item model definition's <c>minecraft:select</c> model can choose by, like NeoForge's
+    /// select item model properties: the case whose <c>when</c> is the value (or lists it) is drawn, else the
+    /// <c>fallback</c>.
+    /// </summary>
+    /// <remarks>
+    /// It runs, is kept and fails like <see cref="RegisterItemCondition"/>'s properties; a failure, or null, chooses
+    /// the fallback.
+    /// </remarks>
+    /// <param name="property">The property's identifier, in the mod's namespace, like <c>examplemod:gem</c>.</param>
+    /// <param name="select">
+    /// The stack's value, compared with the cases' <c>when</c> strings exactly; null for none.
+    /// </param>
+    /// <exception cref="ArgumentException">
+    /// The identifier isn't valid or in the mod's namespace, or the mod registered the select property already.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+    public IClientRegistry RegisterItemSelect(string property, Func<ItemStack, ItemModelContext, string?> select);
+
+    /// <summary>
+    /// Registers a property an item model definition's <c>minecraft:range_dispatch</c> model can choose by, like
+    /// NeoForge's range item model properties: the value, times the model's <c>scale</c>, chooses the entry with the
+    /// highest <c>threshold</c> at or below it, else the <c>fallback</c>.
+    /// </summary>
+    /// <remarks>
+    /// It runs, is kept and fails like <see cref="RegisterItemCondition"/>'s properties; a failure gives 0.
+    /// </remarks>
+    /// <param name="property">The property's identifier, in the mod's namespace, like <c>examplemod:fill</c>.</param>
+    /// <param name="range">The stack's value.</param>
+    /// <exception cref="ArgumentException">
+    /// The identifier isn't valid or in the mod's namespace, or the mod registered the range property already.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+    public IClientRegistry RegisterItemRange(string property, Func<ItemStack, ItemModelContext, float> range);
+
+    /// <summary>
+    /// Draws a special item model type with code, like NeoForge's special model renderers: items whose definitions
+    /// have a <c>minecraft:special</c> model of the type draw with the renderer in every display context.
+    /// </summary>
+    /// <param name="specialModelType">
+    /// The type's identifier, in the mod's namespace, like <c>examplemod:gem_display</c>.
+    /// </param>
+    /// <param name="renderer">The models it may draw, and its code.</param>
+    /// <exception cref="ArgumentException">
+    /// The identifier isn't valid or in the mod's namespace, a model isn't a valid identifier, or the mod registered
+    /// the type already.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+    public IClientRegistry RegisterItemRenderer(string specialModelType, ItemRendererProperties renderer);
 
     /// <summary>
     /// Sets how a mod's particle type's particles move and how long they live. They're drawn with the sprites of its
