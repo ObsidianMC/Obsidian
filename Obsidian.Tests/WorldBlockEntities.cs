@@ -14,6 +14,7 @@ using Obsidian.API.Loot.Functions;
 using Obsidian.API.Loot.Numbers;
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
+using Obsidian.API.World;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Commands.Framework;
 using Obsidian.Entities;
@@ -488,8 +489,83 @@ public sealed class WorldBlockEntities : IDisposable
         for (var slot = 1; slot < crate.Inventory.Size; slot++)
             crate.Inventory.SetItem(slot, null);
 
+        // The plugin's last slot holds one item through simulation, real insertion and hopper transfers.
+        var limited = context.World.GetItemAccess(position, BlockFace.Down)!;
+        var stones = new ItemStack(ItemsRegistry.Stone, 5);
+        var revision = crate.Inventory.Revision;
+        Assert.Equal(4, limited.Insert(0, stones, simulate: true)?.Count);
+        Assert.Equal(revision, crate.Inventory.Revision);
+        Assert.Null(crate.Inventory[8]);
+        Assert.Equal(4, limited.Insert(0, stones)?.Count);
+        Assert.Equal(1, crate.Inventory[8]?.Count);
+        Assert.Same(stones, limited.Insert(0, stones));
+        Assert.Equal(5, stones.Count);
+        Assert.Equal(1, limited.Extract(0, 64)?.Count);
+
+        crate.Inventory.SetItem(6, new ItemStack(ItemsRegistry.Stone, 3));
+        var source = context.World.GetItemAccess(position, null)!;
+        Assert.True(Hoppers.TryMoveOne(source, 6, limited, out var leftover));
+        Assert.Null(leftover);
+        Assert.Equal(1, crate.Inventory[8]?.Count);
+        Assert.False(Hoppers.TryMoveOne(source, 6, limited, out leftover));
+        Assert.Null(leftover);
+        Assert.Equal(2, crate.Inventory[6]?.Count);
+        crate.Inventory.SetItem(6, null);
+        crate.Inventory.SetItem(8, null);
+
+        // Direct windows and remapped container-backed menu slots use the same limit; a menu may lower it further.
         await human.OpenInventoryAsync(crate.Inventory);
         Assert.Same(crate.Inventory, human.OpenedContainer);
+        human.CarriedItem = new ItemStack(ItemsRegistry.Stone, 5);
+        await MenuClicks.ClickAsync(context.Server, human, 8, 0, ClickType.Pickup);
+        Assert.Equal(1, crate.Inventory[8]?.Count);
+        Assert.Equal(4, human.CarriedItem?.Count);
+        await MenuClicks.ClickAsync(context.Server, human, 8, 0, ClickType.Pickup);
+        Assert.Equal(1, crate.Inventory[8]?.Count);
+        Assert.Equal(4, human.CarriedItem?.Count);
+        human.Inventory.SetItem(36, new ItemStack(ItemsRegistry.Dirt, 2));
+        await MenuClicks.ClickAsync(context.Server, human, 8, 0, ClickType.Swap);
+        Assert.True(crate.Inventory[8]!.Is(ItemsRegistry.Stone));
+        Assert.Equal(1, crate.Inventory[8]?.Count);
+        Assert.Equal(2, human.Inventory[36]?.Count);
+        human.Inventory.SetItem(36, null);
+        crate.Inventory.SetItem(8, null);
+
+        var menuType = PluginRegistry.RegisterMenu(container, "probe:crate_slots", 1, 2);
+        var menu = new MenuContainer(menuType, "Crate slots")
+        {
+            BlockEntity = crate,
+            Slots =
+            [
+                new MenuSlot(crate.Inventory, 8),
+                new MenuSlot(crate.Inventory, 7) { MaxStackSize = 2 }
+            ]
+        };
+        await human.OpenInventoryAsync(menu);
+        await MenuClicks.ClickAsync(context.Server, human, 0, 0, ClickType.Pickup);
+        Assert.Equal(1, crate.Inventory[8]?.Count);
+        Assert.Equal(3, human.CarriedItem?.Count);
+        await MenuClicks.ClickAsync(context.Server, human, 1, 0, ClickType.Pickup);
+        Assert.Equal(2, crate.Inventory[7]?.Count);
+        Assert.Equal(1, human.CarriedItem?.Count);
+        human.CarriedItem = null;
+        crate.Inventory.SetItem(7, null);
+        crate.Inventory.SetItem(8, null);
+        await human.OpenInventoryAsync(crate.Inventory);
+
+        // A default-interface lookup reads states from complete published chunks, without creating missing regions.
+        ILevel level = context.World;
+        var regions = context.World.RegionCount;
+        var queued = context.World.ChunksToGenCount;
+        Assert.Null(level.GetLoadedBlock(new Vector(-513, 70, -513)));
+        Assert.Equal(regions, context.World.RegionCount);
+        Assert.Equal(queued, context.World.ChunksToGenCount);
+        Assert.Equal(crateBlock.DefaultState.GetHashCode(), level.GetLoadedBlock(position)?.GetHashCode());
+        Assert.Equal(BlocksRegistry.Air.GetHashCode(), level.GetLoadedBlock(position + Vector.East)?.GetHashCode());
+        Assert.Equal(BlocksRegistry.VoidAir.GetHashCode(),
+            level.GetLoadedBlock(new Vector(4, context.World.MinY - 1, 4))?.GetHashCode());
+        var background = await Task.Run(() => level.GetLoadedBlock(position));
+        Assert.Equal(crateBlock.DefaultState.GetHashCode(), background?.GetHashCode());
 
         // Unloading retires the inventory before its last save, and closes the window showing it: the player can't
         // take the diamonds the plugin's reload brings back.
@@ -520,10 +596,12 @@ public sealed class WorldBlockEntities : IDisposable
         context.World.LoadRegionByChunk(1, 0).SetChunk(generating);
 
         Assert.IsType<DataBlockEntity>(generating.GetBlockEntity(20, 70, 4));
+        Assert.Null(level.GetLoadedBlock(generated));
 
         generating.SetChunkStatus(ChunkGenStage.full);
         await context.World.DoWorldTickAsync();
 
+        Assert.Equal(crateBlock.DefaultState.GetHashCode(), level.GetLoadedBlock(generated)?.GetHashCode());
         Assert.IsAssignableFrom<ContainerBlockEntity>(generating.GetBlockEntity(20, 70, 4));
         Assert.Equal(2, AppContext.GetData(ProbeCrate.LoadsKey));
         Assert.Equal(2, AppContext.GetData(ProbeCrate.TicksKey));
@@ -567,6 +645,7 @@ public sealed class WorldBlockEntities : IDisposable
         // The crate heard its chunk unload while still in its level; the loaded-only lookup doesn't load it back.
         Assert.Equal(position, AppContext.GetData(ProbeCrate.UnloadedKey));
         Assert.Null(context.World.GetLoadedBlockEntity(position));
+        Assert.Null(level.GetLoadedBlock(position));
         Assert.Null(context.World.GetLoadedChunk(0, 0));
 
         var loaded = Assert.IsType<Chunk>(await region.GetChunkAsync(0, 0));
@@ -575,6 +654,7 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.Equal(1, afterEviction.Inventory[0]!.Count);
         Assert.False(afterEviction.Inventory.IsRetired);
         Assert.Same(afterEviction, context.World.GetLoadedBlockEntity(position));
+        Assert.Equal(crateBlock.DefaultState.GetHashCode(), level.GetLoadedBlock(position)?.GetHashCode());
         Assert.Equal(3, AppContext.GetData(ProbeCrate.LoadsKey));
         Assert.Equal(3, AppContext.GetData(ProbeCrate.TicksKey));
 
@@ -913,6 +993,17 @@ public sealed class ProbeCrate() : ContainerBlockEntity(new Container(9) { Title
 
     // The plugin's own static, so each load of the plugin adds one ticker, like a network runtime would.
     private static IDisposable? ticker;
+
+    protected internal override IReadOnlyList<int> GetSlots(BlockFace? side) =>
+        side == BlockFace.Down ? [8] : base.GetSlots(side);
+
+    protected internal override int SlotLimit(int slot, ItemStack stack)
+    {
+        if (slot != 8)
+            return base.SlotLimit(slot, stack);
+
+        return stack.Is(ItemsRegistry.Dirt) ? 0 : 1;
+    }
 
     protected internal override void OnLoad()
     {

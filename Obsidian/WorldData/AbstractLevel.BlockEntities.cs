@@ -600,6 +600,15 @@ public abstract partial class AbstractLevel
 
         public bool HoldsTickLock => level.HoldsTickLock;
 
+        public int SlotLimit(ContainerBlockEntity container, int slot, ItemStack stack)
+        {
+            var limit = 0;
+            level.CallPlugin(container, container.Owner as PluginContainer,
+                _ => limit = container.SlotLimit(slot, stack));
+
+            return limit;
+        }
+
         public bool PrepareItems(ContainerBlockEntity container) => level.PrepareContainerItems(container);
 
         public void OnItemsChanged(ContainerBlockEntity container) => level.OnContainerItemsChanged(container);

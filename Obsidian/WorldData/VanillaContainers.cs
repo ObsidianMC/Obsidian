@@ -87,7 +87,7 @@ internal sealed partial class BrewingStandBlockEntity
         side is null || slot != BrewingStand.IngredientSlot || stack.Is(ItemsRegistry.GlassBottle);
 
     // A bottle slot holds one, like the menu's.
-    internal override int SlotLimit(int slot, ItemStack stack) =>
+    protected internal override int SlotLimit(int slot, ItemStack stack) =>
         slot < BrewingStand.IngredientSlot ? 1 : base.SlotLimit(slot, stack);
 }
 

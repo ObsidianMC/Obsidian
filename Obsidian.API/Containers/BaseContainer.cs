@@ -1,3 +1,4 @@
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using System.Collections;
 using System.Threading;
@@ -21,6 +22,15 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     public ChatMessage? CustomName { get; set; }
 
     public Guid Uuid { get; } = Guid.NewGuid();
+
+    // A retained inventory must not keep an unloaded plugin's block entity or code alive.
+    internal WeakReference<ContainerBlockEntity>? BlockEntityOwner { get; set; }
+
+    /// <summary>Combines the block entity's slot limit with the item's own stack size, under the click lock.</summary>
+    internal int SlotLimit(int slot, ItemStack stack) =>
+        this.BlockEntityOwner is not null && this.BlockEntityOwner.TryGetTarget(out var owner)
+            ? Math.Clamp(owner.MenuSlotLimit(slot, stack), 0, stack.MaxStackSize)
+            : stack.MaxStackSize;
 
     /// <summary>
     /// The players who have the container open. The server keeps it as they open and close it.

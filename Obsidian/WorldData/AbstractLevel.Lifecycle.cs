@@ -7,8 +7,8 @@ namespace Obsidian.WorldData;
 
 /// <summary>
 /// The level's tickers (see <see cref="AddTicker"/>), its block entities' load and chunk unload notices (see
-/// <see cref="BlockEntity.OnLoad"/> and <see cref="BlockEntity.OnChunkUnloaded"/>), and the block entity lookup that
-/// never loads a chunk (see <see cref="GetLoadedBlockEntity"/>).
+/// <see cref="BlockEntity.OnLoad"/> and <see cref="BlockEntity.OnChunkUnloaded"/>), and the block and block entity
+/// lookups that never load a chunk (see <see cref="GetLoadedBlock"/> and <see cref="GetLoadedBlockEntity"/>).
 /// </summary>
 public abstract partial class AbstractLevel
 {
@@ -60,6 +60,18 @@ public abstract partial class AbstractLevel
             if (blockEntity.Owner != plugin)
                 this.pendingLoads.Enqueue(blockEntity);
         }
+    }
+
+    /// <inheritdoc/>
+    public IBlock? GetLoadedBlock(Vector position)
+    {
+        var chunk = this.GetLoadedChunk(position.X.ToChunkCoord(), position.Z.ToChunkCoord());
+        if (chunk is null || !chunk.IsGenerated)
+            return null;
+
+        return this.IsOutsideBuildHeight(position.Y)
+            ? BlocksRegistry.VoidAir
+            : chunk.GetBlock(position.X, position.Y, position.Z);
     }
 
     /// <inheritdoc/>

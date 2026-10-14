@@ -41,10 +41,18 @@ public partial class ContainerBlockEntity
     protected internal virtual bool CanExtract(int slot, ItemStack stack, BlockFace? side) => true;
 
     /// <summary>
-    /// The most of <paramref name="stack"/>'s item <paramref name="slot"/> holds when filled through item access:
-    /// the item's stack size by default.
+    /// The most of <paramref name="stack"/>'s item <paramref name="slot"/> holds through item access or menu clicks:
+    /// the item's stack size by default. The slot is the inventory's index, not a side's item access index.
+    /// Called with the inventory's lock held, from any thread: read <see cref="Inventory"/>, don't wait on anything.
+    /// Return zero to refuse insertion; the item's own stack size remains an upper bound.
     /// </summary>
-    internal virtual int SlotLimit(int slot, ItemStack stack) => stack.MaxStackSize;
+    protected internal virtual int SlotLimit(int slot, ItemStack stack) => stack.MaxStackSize;
+
+    // Menu clicks reach the owning plugin through its host, including when another plugin's menu shows the slot.
+    internal int MenuSlotLimit(int slot, ItemStack stack) =>
+        this.IsRemoved ? 0
+        : this.Host is IContainerItemsHost host ? host.SlotLimit(this, slot, stack)
+        : this.SlotLimit(slot, stack);
 
     /// <summary>
     /// Called with the inventory's lock held just before items are put into the container through item access, for
@@ -72,6 +80,9 @@ public partial class ContainerBlockEntity
 /// </summary>
 internal interface IContainerItemsHost
 {
+    /// <summary>Reads a menu slot's limit inside a call into the container's owning plugin.</summary>
+    public int SlotLimit(ContainerBlockEntity container, int slot, ItemStack stack);
+
     /// <summary>
     /// Readies the container's items before item access reads or changes them: rolls the loot table it's waiting
     /// for. Called without the inventory's lock.
@@ -161,7 +172,7 @@ internal sealed class ContainerItemAccess(ContainerBlockEntity owner, BlockFace?
 
             var existing = owner.Inventory[index];
             var empty = existing is null || existing.IsAir || existing.Count <= 0;
-            var limit = owner.SlotLimit(index, stack);
+            var limit = Math.Clamp(owner.SlotLimit(index, stack), 0, stack.MaxStackSize);
 
             // Vanilla's HopperBlockEntity.tryMoveInItem: an empty slot takes the stack, a stack of the same item with
             // the same components tops up to the moving stack's size.

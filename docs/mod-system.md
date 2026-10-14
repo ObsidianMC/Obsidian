@@ -126,7 +126,9 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      plugin's block entity keeps its data on its block's item in the plugin's component types
      (`CollectComponents`, `ApplyComponents`), and reaches its plugin's `IServer` through `Server`. Like NeoForge's,
      it hears `OnLoad` once live and `OnChunkUnloaded` when its chunk unloads; `ILevel.GetLoadedBlockEntity` finds
-     its neighbours without loading chunks, and `ILevel.AddTicker` runs a plugin's code once per level tick, for
+     its neighbours without loading chunks, and `ILevel.GetLoadedBlock` reads their block states the same way.
+     A container's overridable `SlotLimit(slot, stack)` applies to item access, hoppers and container-backed menu
+     slots, including direct inventory windows. `ILevel.AddTicker` runs a plugin's code once per level tick, for
      networks spanning many block entities (see [plugin-content.md](plugin-content.md#level-tickers)). The
      Obsidian client registers a mod's block entity types too, keeps a live instance of its class for each of its
      block entities the server sends, loaded from their update data, and ticks it with `ClientTick` (see

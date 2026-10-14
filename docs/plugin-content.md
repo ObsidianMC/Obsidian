@@ -1306,8 +1306,13 @@ type and its update data from chunk packets and `BlockEntityData`, and remapping
 - **Neighbours.** `ILevel.GetLoadedBlockEntity(Vector)` returns the block entity at a position only if its chunk is
   loaded and complete, never loading or generating anything, so a tick can follow a cable from block entity to block
   entity; null once that block entity was removed or its chunk unloaded. `GetBlockEntityAsync` loads the chunk from
-  disk instead, and adds an ungenerated one where none was saved. In a block hook, `IBlockLevel.GetBlockEntity`
-  already reads only loaded chunks.
+  disk instead, and adds an ungenerated one where none was saved. `ILevel.GetLoadedBlock(Vector)` reads a block
+  state the same way, returning null for an unloaded or incomplete chunk, and void air outside a loaded chunk's
+  build range. It is safe from any thread: it reads published chunk sections like `GetBlockAsync`, and a read
+  racing an edit may see the state before or after it. Several reads aren't an atomic snapshot, and it doesn't
+  wait for block updates or take the level's tick lock. In a block hook, `IBlockLevel.GetBlockEntity` and `GetBlock`
+  already read only loaded chunks; `GetBlock` returns void air for missing chunks, with reads stable until the
+  hook returns.
 - **Server.** `Server` is the plugin's own `IServer` in the calls into the plugin, resolved like event arguments'
   `Server`: a machine finds its plugin's recipes with `this.Server?.FindRecipe(type, inputs)`. It's null while the
   block entity isn't in a level (in `ApplyComponents`, say).
@@ -1501,8 +1506,16 @@ loot table rolls it first, as vanilla's hoppers do.
 
 A `ContainerBlockEntity` gives this access from every side to every slot. Override `GetSlots(side)`,
 `CanInsert(slot, stack, side)` and `CanExtract(slot, stack, side)` for per-side and per-slot rules (they run with the
-inventory's lock held, so read `Inventory` and don't wait on anything), or override `GetItemAccess(side)` to give
-your own. Any other block entity exposes items by implementing `IItemAccessProvider`, and a block without a block
+inventory's lock held, so read `Inventory` and don't wait on anything). Override
+`protected override int SlotLimit(int slot, ItemStack stack)` to limit a slot's stack size, for example
+`slot == 0 ? 1 : base.SlotLimit(slot, stack)` for a machine's single-item input. The index is the inventory's,
+even when item access exposes different slots from a side. The default is the item's stack size; zero refuses
+insertion, and the item's stack size remains an upper bound. Simulated and real insertion, hopper transfers,
+direct inventory windows and container-backed `MenuSlot`s all follow it. A menu's `MaxStackSize` may lower the
+limit further. The override runs from any thread with the inventory's lock held; don't wait on anything.
+Direct `Inventory.SetItem` calls, loading and machine code remain responsible for their own contents.
+Override `GetItemAccess(side)` to give your own access instead. Any other block entity exposes items by
+implementing `IItemAccessProvider`, and a block without a block
 entity, like vanilla's composter, by returning one from `IBlockBehavior.GetItemAccess(ItemAccessContext)`, which
 is asked first. A plugin's access is called inside calls into its plugin, from any thread, and gives nothing once
 the plugin is unloading; make it thread-safe. A container block entity holds at most `ContainerBlockEntity.MaxSlots`

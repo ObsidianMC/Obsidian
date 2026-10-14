@@ -61,6 +61,19 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
         throw new NotSupportedException("This level doesn't support tickers.");
 
     /// <summary>
+    /// The block state at <paramref name="position"/> if its chunk is loaded and complete, without loading or
+    /// generating anything. Null otherwise; void air outside the build range of a loaded chunk.
+    /// </summary>
+    /// <remarks>
+    /// Safe to call from any thread: reads published chunk sections, like <see cref="GetBlockAsync(Vector)"/>.
+    /// A read racing an edit may see the state before or after it; several reads aren't an atomic snapshot.
+    /// It does not wait for block updates or acquire the level's tick lock. Inside a block hook, use
+    /// <see cref="Blocks.IBlockLevel.GetBlock"/>, whose reads stay stable until the hook returns.
+    /// </remarks>
+    public IBlock? GetLoadedBlock(Vector position) =>
+        throw new NotSupportedException("This level doesn't support loaded block lookups.");
+
+    /// <summary>
     /// The block entity at <paramref name="position"/> if its chunk is loaded and complete, without loading or
     /// generating anything, like <see cref="Blocks.IBlockLevel.GetBlockEntity"/>: for following a cable or network
     /// across block entities from a tick. Null otherwise, or once the block entity was removed or its chunk unloaded.

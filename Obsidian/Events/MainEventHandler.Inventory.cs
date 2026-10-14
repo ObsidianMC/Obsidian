@@ -636,7 +636,7 @@ public partial class MainEventHandler
                 && slot == 1
                 && item.Is(ItemsRegistry.Bucket);
 
-        return single ? 1 : item.MaxStackSize;
+        return Math.Min(single ? 1 : item.MaxStackSize, container.SlotLimit(slot, item));
     }
 
     /// <summary>
@@ -864,6 +864,8 @@ public partial class MainEventHandler
             return;
 
         var limit = SlotLimit(player, container, slot, source);
+        if (limit <= 0)
+            return;
 
         if (item.IsNullOrAir())
         {

@@ -264,7 +264,13 @@ public class MenuContainer : BaseContainer
 
     internal bool MayPickup(int slot, IPlayer player) => this.slots[slot].MayPickup?.Invoke(player) ?? true;
 
-    internal int MaxStackSize(int slot, ItemStack item) => Math.Min(this.slots[slot].MaxStackSize, item.MaxStackSize);
+    internal int MaxStackSize(int slot, ItemStack item)
+    {
+        var binding = this.slots[slot];
+        var limit = binding.Container?.SlotLimit(binding.Index, item) ?? item.MaxStackSize;
+
+        return Math.Min(binding.MaxStackSize, limit);
+    }
 
     internal override IEnumerable<BaseContainer> LockParts =>
         [this, .. this.sources.SelectMany(source => source.LockParts)];
@@ -598,7 +604,8 @@ public sealed class MenuSlot
 
     /// <summary>
     /// The most items the slot holds, up to each item's own stack size, like vanilla's <c>getMaxStackSize</c>: 99 by
-    /// default, so that the item's stack size decides.
+    /// default, so that the item's stack size decides. A container-backed slot also respects its owning
+    /// <see cref="ContainerBlockEntity"/>'s slot limit.
     /// </summary>
     public int MaxStackSize
     {

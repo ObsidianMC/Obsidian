@@ -27,9 +27,24 @@ namespace Obsidian.API.BlockEntities;
 /// <c>WorldlyContainer</c>.
 /// </para>
 /// </remarks>
-/// <param name="inventory">The items it holds, at most <see cref="MaxSlots"/>.</param>
-public partial class ContainerBlockEntity(BaseContainer inventory) : BlockEntity, IItemAccessProvider
+public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
 {
+    /// <summary>
+    /// Creates a block entity holding <paramref name="inventory"/>, at most <see cref="MaxSlots"/> slots.
+    /// </summary>
+    public ContainerBlockEntity(BaseContainer inventory)
+    {
+        ArgumentNullException.ThrowIfNull(inventory);
+        if (inventory.Size > MaxSlots)
+        {
+            throw new ArgumentException(
+                $"A container block entity holds at most {MaxSlots} slots.", nameof(inventory));
+        }
+
+        this.Inventory = inventory;
+        inventory.BlockEntityOwner = new(this);
+    }
+
     /// <summary>
     /// The most slots a container block entity holds: vanilla saves each slot's number as a byte.
     /// </summary>
@@ -38,9 +53,7 @@ public partial class ContainerBlockEntity(BaseContainer inventory) : BlockEntity
     /// <summary>
     /// The items the block entity holds, which opening its block shows.
     /// </summary>
-    public BaseContainer Inventory { get; } = inventory.Size <= MaxSlots
-        ? inventory
-        : throw new ArgumentException($"A container block entity holds at most {MaxSlots} slots.", nameof(inventory));
+    public BaseContainer Inventory { get; }
 
     /// <summary>
     /// The loot table the container is filled from when it's first opened, like
