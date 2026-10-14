@@ -111,6 +111,15 @@ public sealed class RuntimeLightTests(ITestOutputHelper output)
         engine.Flush();
         Assert.Equal(14, unloaded.GetLightLevel(0, 0, 8, LightType.Block));
         AssertMatchesFull(chunks, false);
+
+        // Completing generation skips reconciliation only while no relight missed the chunk.
+        engine.Untrack(unloaded);
+        chunks[(-1, 0)].SetBlock(position.X, position.Y, position.Z, BlocksRegistry.Air);
+        engine.Flush();
+        engine.Track(unloaded, completing: true);
+        engine.Flush();
+        Assert.Equal(0, unloaded.GetLightLevel(0, 0, 8, LightType.Block));
+        AssertMatchesFull(chunks, false);
     }
 
     [Fact]

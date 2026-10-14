@@ -129,8 +129,10 @@ internal sealed class LightEngine
     /// or later.
     /// </summary>
     /// <remarks>
-    /// The caller holds generation's chunk locks. For a live level, propagation also takes the fluid tick lock after
-    /// those locks, so runtime writes, light updates and save snapshots cannot interleave with it.
+    /// The caller holds generation's chunk locks, which keep other generation and save snapshots out of these chunks.
+    /// For a live level, propagation also waits out runtime relighting (see
+    /// <see cref="RuntimeLightEngine.RunGenerationLighting"/>) without serializing generation threads. A runtime block
+    /// write meanwhile is relit by the runtime engine's next flush.
     /// </remarks>
     public static async ValueTask LightChunkAsync(IChunk chunk, ILevel level, bool hasSkyLight = true)
     {
@@ -149,14 +151,9 @@ internal sealed class LightEngine
         }
 
         if (level is AbstractLevel live)
-        {
-            lock (live.Fluids.TickLock)
-                LightChunk(chunk, litNeighbors, hasSkyLight);
-        }
+            live.Lighting.RunGenerationLighting(() => LightChunk(chunk, litNeighbors, hasSkyLight));
         else
-        {
             LightChunk(chunk, litNeighbors, hasSkyLight);
-        }
     }
 
     /// <summary>
