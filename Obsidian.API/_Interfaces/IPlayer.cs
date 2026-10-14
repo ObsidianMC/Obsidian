@@ -63,6 +63,28 @@ public interface IPlayer : ILiving
 
     public PlayerAbility Abilities { get; set; }
 
+    /// <summary>
+    /// What the player's movement grants add up to (see <see cref="SetMovementAbilities"/>).
+    /// </summary>
+    public MovementAbilities MovementAbilities => default;
+
+    /// <summary>
+    /// Grants the player movement abilities under <paramref name="id"/>, replacing an earlier grant with the same id;
+    /// grants with other ids add up (see <see cref="MovementAbilities.Combine"/>). Grants aren't saved, and a plugin's
+    /// are taken back when it unloads.
+    /// </summary>
+    /// <param name="id">The grant's identifier, like <c>ruby:cloud_boots</c>.</param>
+    /// <param name="abilities">The abilities; negative extra jumps count as none.</param>
+    public void SetMovementAbilities(string id, MovementAbilities abilities)
+    {
+    }
+
+    /// <summary>
+    /// Takes back the grant <see cref="SetMovementAbilities"/> made under <paramref name="id"/>.
+    /// </summary>
+    /// <returns>Whether there was one.</returns>
+    public bool RemoveMovementAbilities(string id) => false;
+
     public bool IsDragging { get; set; }
 
     /// <summary>

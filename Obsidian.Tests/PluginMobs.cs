@@ -119,6 +119,26 @@ public sealed class PluginMobs
         Assert.True(player.Position.Y > drake.Position.Y);
         Assert.Contains(client.SentPackets, packet => packet is SetEntityDataPacket data && data.EntityId == drake.EntityId);
 
+        // Once the rider's client sends where it moved the mob, the client moves it: the server takes a move it can
+        // make, and stops steering from the input.
+        var moved = drake.Position + new VectorD(0, 0.2, 0.4);
+        drake.ClientControl.Enqueue(player, new VehicleMove(moved, 90, 0, false));
+        await drake.TickAsync();
+        Assert.Equal(moved, drake.Position);
+        Assert.Equal(90, drake.Yaw.Degrees, 1);
+
+        await drake.TickAsync();
+        Assert.Equal(moved, drake.Position);
+
+        // It refuses one far beyond the mob's motion, as vanilla does, and puts the client's mob back.
+        client.ClearPackets();
+        drake.ClientControl.Enqueue(player, new VehicleMove(moved + new VectorD(0, 0, 20), 90, 0, false));
+        await drake.TickAsync();
+        Assert.Equal(moved, drake.Position);
+        Assert.Contains(
+            client.SentPackets,
+            packet => packet is MoveVehiclePacket { Position: var back } && back == moved);
+
         player.Input = PlayerInput.Sneak;
         await drake.TickAsync();
         Assert.Null(((IPlayer)player).Vehicle);

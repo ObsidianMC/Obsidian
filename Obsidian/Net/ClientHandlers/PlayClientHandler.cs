@@ -74,6 +74,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case 27:
                 await HandleFromPoolAsync<KeepAlivePacket>(data);
                 break;
+            case 33:
+                await HandleFromPoolAsync<MoveVehiclePacket>(data);
+                break;
             case 35:
                 await HandleFromPoolAsync<PickItemFromBlockPacket>(data);
                 break;

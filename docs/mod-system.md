@@ -558,9 +558,16 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      (`EntityMovementMode.Flying`, with no gravity and the flying move control); `HurtAsync` and `DiedAsync` hooks
      change or cancel damage and see deaths; dying mobs drop their `entities/` loot table with killed-by-player and
      looting conditions; `SpawnPlacement` and `CanSpawn` give natural spawning a type's own rules. Saved per-entity
-     data is attachments. Left: client prediction of mod mounts and the server reading `MoveVehicle`, mobs' equipment
-     in their attributes, saved API modifiers (see [known-gaps.md](known-gaps.md#plugin-entities)). See
-     [plugin-content.md](plugin-content.md#riding-and-flying).
+     data is attachments. Left: mobs' equipment in their attributes, saved API modifiers (see
+     [known-gaps.md](known-gaps.md#plugin-entities)). See [plugin-content.md](plugin-content.md#riding-and-flying).
+   - Done, engine phase 5 movement: the Obsidian client predicts a mod's mount its player rides first, walking or
+     flying from the type's settings and synced attributes with the server's own steering (`MountSteering`), and
+     sends `MoveVehicle`; the server takes those moves for plugin mobs after vanilla's `handleMoveVehicle` checks
+     (too quick, wrong after collision, into new blocks, floating too long), correcting the client otherwise, and
+     steers from `PlayerInput` until a rider's client sends one. `IPlayer.SetMovementAbilities` grants players extra
+     jumps, gliding without an elytra and flight (vanilla's `mayfly`), honoured by the server and the Obsidian
+     client's prediction and taken back when the granting plugin unloads; attribute modifiers tune the rest. Vanilla
+     clients fly but can't jump twice or glide without a glider. See [plugin-content.md](plugin-content.md#movement).
    - Done, engine phase 4 entity renderers: `EntityRendererProperties` gains `Layers` drawn over the model and posed
      like it (an `EntityRenderLayer`: the model or another model layer, a texture, a tint and a cutout, translucent or
      emissive render type, emissive being vanilla's full-bright `eyes`), a `TextureProvider` choosing the texture from

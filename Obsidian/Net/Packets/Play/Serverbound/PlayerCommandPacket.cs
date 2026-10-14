@@ -57,7 +57,7 @@ public partial class PlayerCommandPacket
                 player.InHorseInventory = true;
                 break;
             case PlayerCommand.StartFlyingWithElytra:
-                player.FlyingWithElytra = true;
+                (player as Player)?.TryStartGliding();
                 break;
         }
 
