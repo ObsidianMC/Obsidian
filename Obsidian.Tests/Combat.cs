@@ -98,6 +98,27 @@ public sealed class Combat
         player.UpdateEquipmentAttributes();
         Assert.Equal(0.13, player.GetAttributeValue("minecraft:movement_speed"), 5);
         Assert.Equal(3, player.GetAttributeValue("minecraft:armor"));
+
+        // Replacing a component on the same equipped stack must update its modifiers.
+        player.Sprinting = false;
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, charm);
+        player.UpdateEquipmentAttributes();
+        charm[DataComponentType.AttributeModifiers] = ComponentBuilder.AttributeModifiers with
+        {
+            Value = [Modifier(speedId, "test:moving", 0.2, AttributeOperation.Add) with { Slot = AttributeSlot.Hand }]
+        };
+        player.UpdateEquipmentAttributes();
+        Assert.Equal(0.3, player.GetAttributeValue("minecraft:movement_speed"), 5);
+
+        // Move offhand -> mainhand: the later slot's removal must not erase the earlier slot's replacement.
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, null);
+        player.Inventory.SetItem(45, charm);
+        player.UpdateEquipmentAttributes();
+        Assert.Equal(0.3, player.GetAttributeValue("minecraft:movement_speed"), 5);
+        player.Inventory.SetItem(45, null);
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, charm);
+        player.UpdateEquipmentAttributes();
+        Assert.Equal(0.3, player.GetAttributeValue("minecraft:movement_speed"), 5);
     }
 
     [Theory]

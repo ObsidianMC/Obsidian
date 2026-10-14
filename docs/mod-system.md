@@ -495,7 +495,8 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      (`Microsoft.NET.Sdk.Razor`), registered with `RegisterMenuScreen<TComponent>(menuType)` or opened with
      `Screens.Open<TComponent>()`. `Obsidian.API.Client.Razor` has the building blocks (panels, labels, images,
      progress bars, buttons, text fields, scroll bars, slot and item grids, tooltips), which the client draws with its
-     own widgets, and `ModComponent`, the components' base, whose lifecycle, rendering and event handlers run inside
+     own widgets, and `ModComponent`, the components' base (no `[Inject]` or `@inject`; use `ScreenContext`),
+     whose lifecycle, rendering and event handlers run inside
      calls into the mod; a screen's `ScreenContext` gives its menu and panel. The client hosts them like screens in
      code (failures close them, unloading closes and forgets them) and forgets the mod's component types in Blazor's
      process-wide caches as it unloads, so that its load context is collected; the sample's grinder uses one. See

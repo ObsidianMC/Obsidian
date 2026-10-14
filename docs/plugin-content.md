@@ -3853,7 +3853,12 @@ inside a call into the mod, as it does a screen in code, and reads the mod's obj
 content, item lists) and raises their events inside that call too; an async method stays inside it until its task
 completes. Whatever throws is logged and closes the screen. For that, the client only renders a mod's components that
 inherit `ModComponent` and don't implement Blazor's component interfaces (`IComponent`, `IHandleEvent`,
-`IHandleAfterRender`, `IDisposable`, `IAsyncDisposable`) themselves. When the mod unloads, its screens close and
+`IHandleAfterRender`, `IDisposable`, `IAsyncDisposable`) themselves. Mod components must not use `[Inject]` or
+`@inject`: Blazor sets those properties after component activation, outside the mod's call guard. Use the screen's
+`ScreenContext` cascading parameter instead. Shared client widgets guard mod-owned child fragments when they render
+them, and unloading waits for active asynchronous calls before disposing the mod's services. A five-second drain
+timeout logs a warning and leaves disposal pending until those calls finish.
+When the mod unloads, its screens close and
 their navigation history goes, like screens in code, and the client forgets its component types in Blazor's caches,
 so that its code unloads. The [engine sample](../samples/EngineSample)'s grinder registers `GrinderView.razor`, the
 Razor form of its `GrinderScreen`.

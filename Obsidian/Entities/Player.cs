@@ -606,32 +606,23 @@ public sealed partial class Player : Avatar, IClientPlayer
         ValidateTravel(destination, spawn, yaw, pitch);
         using var area = destination is AbstractLevel target
             ? await PortalArea.LoadAsync(target, (Vector)spawn.Floor(), 0,
-                () => this.Client.Connected && this.Alive && this.Level == origin)
+                () => this.Client.Connected && this.Alive && this.IsTravelResident(origin))
             : null;
         if (destination is AbstractLevel && area is null)
             return;
 
         await this.CloseContainerAsync();
-        await origin.DestroyEntityAsync(this);
-        origin.TryRemovePlayer(this);
-        foreach (var observer in origin.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
-            observer.visiblePlayers.Remove(this);
-
         // Held from the level change until the respawn resets the client's view (see RespawnUnderLockAsync).
         await this.chunkUpdates.WaitAsync();
         try
         {
-            Level = destination;
-            Position = spawn;
-            LastPosition = from;
-            Yaw = yaw ?? Yaw;
-            Pitch = pitch ?? Pitch;
-            BoundingBox = Dimension.CreateBBFromPosition(spawn);
+            this.CommitTravel(origin, destination, spawn, yaw, pitch);
+            foreach (var observer in origin.GetPlayersInRange(from, float.MaxValue).OfType<Player>())
+                observer.visiblePlayers.Remove(this);
+
             Motion = motion ?? Motion;
             FallDistance = 0;
             foodPosition = null;
-            destination.TryAddPlayer(this);
-            destination.TryAddEntity(this);
             this.preservePortalMotion = relativeMotion;
             if (portal)
                 this.portalCooldown = PlayerPortalCooldown;

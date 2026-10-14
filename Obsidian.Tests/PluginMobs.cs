@@ -144,7 +144,10 @@ public sealed class PluginMobs
         {
             var sword = ItemsRegistry.GetSingleItem(ItemsRegistry.IronSword);
             EnchantmentHelper.Enchant(sword, EnchantmentsRegistry.Looting, 2);
-            await drake.DamageCombatAsync(player, 100, CombatDamageKind.Melee, sword);
+            player.Inventory.SetItem(player.CurrentHeldItemSlot, sword);
+            // A projectile remembers a different weapon; looting reads what its attacker holds at death.
+            var damageWeapon = ItemsRegistry.GetSingleItem(ItemsRegistry.Bow);
+            await drake.DamageCombatAsync(player, 100, CombatDamageKind.Melee, damageWeapon);
         }
         finally
         {

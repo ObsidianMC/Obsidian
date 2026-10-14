@@ -22,6 +22,7 @@ public partial class Player
     ];
 
     // Per equipment slot: the stack whose modifiers are applied, and the attributes and modifier ids it added.
+    private readonly long[] equippedVersions = new long[attributeSlots.Length];
     private readonly ItemStack?[] equippedStacks = new ItemStack?[attributeSlots.Length];
     private readonly List<(string Attribute, string Id)>[] equippedModifiers =
         [.. attributeSlots.Select(_ => new List<(string, string)>())];
@@ -42,23 +43,37 @@ public partial class Player
     /// </summary>
     internal override void UpdateEquipmentAttributes()
     {
+        Span<bool> changed = stackalloc bool[attributeSlots.Length];
+        changed.Clear();
         for (var index = 0; index < attributeSlots.Length; index++)
         {
-            var (slot, inventorySlot) = attributeSlots[index];
+            var inventorySlot = attributeSlots[index].Inventory;
             var stack = inventorySlot < 0 ? this.GetHeldItem() : this.Inventory.GetItem(inventorySlot);
             var current = stack is { Count: > 0 } ? stack : null;
 
-            if (ReferenceEquals(current, this.equippedStacks[index]))
+            var version = current?.Version ?? 0;
+            if (ReferenceEquals(current, this.equippedStacks[index]) && version == this.equippedVersions[index])
                 continue;
 
+            changed[index] = true;
             this.equippedStacks[index] = current;
+            this.equippedVersions[index] = version;
 
             foreach (var (attribute, id) in this.equippedModifiers[index])
                 this.RemoveModifier(attribute, id);
 
             this.equippedModifiers[index].Clear();
+        }
 
-            foreach (var (attribute, modifier) in CombatItems.Modifiers(current, slot))
+        // Vanilla removes every changed slot before adding replacements, in EquipmentSlot order. A modifier id
+        // shared by two slots must not be removed after its replacement was installed.
+        for (var index = 0; index < attributeSlots.Length; index++)
+        {
+            if (!changed[index])
+                continue;
+
+            foreach (var (attribute, modifier) in CombatItems.Modifiers(
+                this.equippedStacks[index], attributeSlots[index].Slot))
             {
                 this.SetModifier(attribute, modifier);
                 this.equippedModifiers[index].Add((attribute, modifier.Id));

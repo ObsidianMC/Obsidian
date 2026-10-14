@@ -1,4 +1,6 @@
 using Obsidian.API;
+using Obsidian.API.Data;
+using Obsidian.Nbt;
 using Obsidian.API.Registries;
 using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
@@ -170,6 +172,8 @@ public class Portals
         Assert.True(source.World.TryAddEntity(rider));
         Assert.True(mob.AddRider(rider));
         var uuid = mob.Uuid;
+        var attachments = AttachmentStorage.For(mob);
+        attachments.Set("travelprobe:value", new NbtTag<int>("travelprobe:value", 1));
         await ((IEntity)mob).TeleportAsync(target.World, arrival, 90f, 5f);
         Assert.Same(mob, target.World.GetRegionForLocation(arrival)!.Entities[mob.EntityId]);
         Assert.False(source.World.GetRegionForLocation(new VectorD(3.5, 64, 3.5))!.Entities.ContainsKey(mob.EntityId));
@@ -184,6 +188,20 @@ public class Portals
 
         await mob.TeleportAsync(new VectorD(4.5, 72, 5.5));
         Assert.Equal(new VectorD(4.5, 72, 5.5), mob.Position);
+        attachments.Set("travelprobe:value", new NbtTag<int>("travelprobe:value", 2));
+        Assert.Equal(2, Assert.IsType<NbtTag<int>>(attachments.Get("travelprobe:value")).Value);
+
+        // A destination that is still a proto chunk keeps the teleport pending until removal cancels it.
+        source.World.LoadRegionByChunk(0, 0).SetChunk(
+            new Chunk(0, 0, source.World.MinY, source.World.Height, ChunkGenStage.empty));
+        var pending = mob.TeleportAsync(source.World, arrival).AsTask();
+        Assert.False(pending.IsCompleted);
+        await target.World.DestroyEntityAsync(mob);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => pending);
+        Assert.False(source.World.GetRegionForLocation(arrival)!.Entities.ContainsKey(mob.EntityId));
+        Assert.False(target.World.GetRegionForLocation(mob.Position)!.Entities.ContainsKey(mob.EntityId));
+        Assert.Throws<InvalidOperationException>(() =>
+            attachments.Set("travelprobe:value", new NbtTag<int>("travelprobe:value", 3)));
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]

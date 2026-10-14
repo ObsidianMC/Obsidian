@@ -407,7 +407,14 @@ public partial class Entity : IEquatable<Entity>, IEntity
         return new(-cosPitch * sinYaw, -sinPitch, cosPitch * cosYaw);
     }
 
-    public async virtual ValueTask RemoveAsync() => await this.Level.DestroyEntityAsync(this);
+    public virtual async ValueTask RemoveAsync()
+    {
+        ValueTask<bool> removal;
+        lock (ItemEntity.TransferLock)
+            removal = this.Level.DestroyEntityAsync(this);
+
+        await removal;
+    }
 
     protected virtual EntityBitMask GenerateBitmask()
     {

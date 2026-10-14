@@ -252,6 +252,12 @@ public class Region : IRegion
     /// <returns>Whether the entity was in the region.</returns>
     internal bool Evict(IEntity entity, bool keepSaved)
     {
+        lock (ItemEntity.TransferLock)
+            return this.EvictUnderTransferLock(entity, keepSaved);
+    }
+
+    private bool EvictUnderTransferLock(IEntity entity, bool keepSaved)
+    {
         var entry = new KeyValuePair<int, IEntity>(entity.EntityId, entity);
         var (chunkX, chunkZ) = ChunkOf(entity.Position);
         var local = this.GetLoadedChunk(
@@ -583,6 +589,7 @@ public class Region : IRegion
     {
         var entities = new NbtList(NbtTagType.Compound, "Entities");
 
+        lock (ItemEntity.TransferLock)
         using (chunk.EntityLock.EnterScope())
         {
             if (chunk.EntitiesUnloaded)
@@ -675,13 +682,19 @@ public class Region : IRegion
     {
         foreach (var entity in this.Entities.Values)
         {
-            var (chunkX, chunkZ) = ChunkOf(entity.Position);
-            if (chunkX >> CubicRegionSizeShift == this.X && chunkZ >> CubicRegionSizeShift == this.Z)
-                continue;
+            lock (ItemEntity.TransferLock)
+            {
+                if (!this.Entities.TryGetValue(entity.EntityId, out var resident) || !ReferenceEquals(resident, entity))
+                    continue;
 
-            if (entity.Level is AbstractLevel level && level.GetRegionForChunk(chunkX, chunkZ) is Region target
-                && target.Entities.TryAdd(entity.EntityId, entity))
-                this.Entities.TryRemove(entity.EntityId, out _);
+                var (chunkX, chunkZ) = ChunkOf(entity.Position);
+                if (chunkX >> CubicRegionSizeShift == this.X && chunkZ >> CubicRegionSizeShift == this.Z)
+                    continue;
+
+                if (entity.Level is AbstractLevel level && level.GetRegionForChunk(chunkX, chunkZ) is Region target
+                    && target.Entities.TryAdd(entity.EntityId, entity))
+                    this.Entities.TryRemove(new KeyValuePair<int, IEntity>(entity.EntityId, entity));
+            }
         }
     }
 
