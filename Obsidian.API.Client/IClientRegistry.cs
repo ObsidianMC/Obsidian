@@ -200,4 +200,20 @@ public interface IClientRegistry
     /// <exception cref="ArgumentException">The mod registered the overlay already.</exception>
     /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
     public IClientRegistry RegisterOverlay(ModOverlay overlay);
+
+    /// <summary>
+    /// Draws a mod's dimension type's clouds with its own texture, or adjusts and draws its sky, fog and clouds in
+    /// code, beyond what the type's data says (see <see cref="DimensionEffectsProperties"/>).
+    /// </summary>
+    /// <param name="dimensionType">
+    /// The identifier of a dimension type in the mod's namespace, like <c>examplemod:skylands</c> for the server's
+    /// <c>data/examplemod/dimension_type/skylands.json</c>.
+    /// </param>
+    /// <param name="effects">The cloud texture, sky textures and code.</param>
+    /// <exception cref="ArgumentException">
+    /// The identifier isn't valid or in the mod's namespace, a texture isn't a valid identifier, or the mod gave the
+    /// type effects already.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+    public IClientRegistry RegisterDimensionEffects(string dimensionType, DimensionEffectsProperties effects);
 }

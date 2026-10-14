@@ -121,7 +121,7 @@ its client side, by the client's tests)
 - **Entity renderers.** (done) Several layers per entity (emissive eyes, overlays), textures chosen by synced data,
   code renderers, and passenger offsets so mod mounts can be ridden.
 - **Item renderers.** Mod item model properties and code-driven item renderers.
-- **Dimension effects.** Per-dimension sky, cloud and fog rendering for mods: data-driven settings first (cloud
+- **Dimension effects.** (done) Per-dimension sky, cloud and fog rendering for mods: data-driven settings first (cloud
   texture, colour and height, sky colour, fog), a code hook for anything else. The Nether and End special cases stop
   being keyed on vanilla dimension names.
 - **Sounds.** (done) Sound declarations for mods (inline holders; no synced ids needed), sound types for mod blocks,
