@@ -31,7 +31,7 @@ internal sealed class WaterFluid : FlowingFluid
     protected override bool CanConvertToSource(FluidLevel level) => level.Rules.WaterSourceConversion;
 
     /// <remarks>
-    /// Vanilla drops the destroyed block's loot here; Obsidian doesn't spawn block drops for fluids yet.
+    /// Live levels queue the loot and replacement together in FlowingFluid.SpreadTo; generation spawns no items.
     /// </remarks>
     protected override void BeforeDestroyingBlock(FluidLevel level, Vector position, IBlock block)
     {

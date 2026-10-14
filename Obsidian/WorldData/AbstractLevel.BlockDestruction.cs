@@ -13,7 +13,19 @@ public abstract partial class AbstractLevel
     private readonly HashSet<Vector> pendingDestruction = [];
 
     /// <inheritdoc/>
-    public bool DestroyBlock(Vector position, bool dropItems, IEntity? breaker = null)
+    public bool DestroyBlock(Vector position, bool dropItems, IEntity? breaker = null) =>
+        this.QueueBlockDestruction(
+            position, dropItems, breaker, replacement: null, playEffect: true, removePartner: true);
+
+    // Environmental removal evaluates the selected state's loot. Its partner reacts through shape updates,
+    // rather than redirecting an upper half's empty loot table to the lower half as a player's break does.
+    internal bool QueueBlockDestruction(
+        Vector position,
+        bool dropItems,
+        IEntity? breaker,
+        IBlock? replacement,
+        bool playEffect,
+        bool removePartner = false)
     {
         lock (this.Fluids.TickLock)
         {
@@ -26,7 +38,8 @@ public abstract partial class AbstractLevel
             {
                 try
                 {
-                    await this.DestroyCapturedBlockAsync(position, block, entity, dropItems, breaker);
+                    await this.DestroyCapturedBlockAsync(
+                        position, block, entity, dropItems, breaker, replacement, playEffect, removePartner);
                 }
                 catch (Exception exception)
                 {
@@ -89,7 +102,14 @@ public abstract partial class AbstractLevel
 
     // Only called by the serial tick queue: no inherited async context may bypass the simulation gate.
     private async ValueTask DestroyCapturedBlockAsync(
-        Vector position, IBlock block, IBlockEntity? expectedEntity, bool dropItems, IEntity? breaker)
+        Vector position,
+        IBlock block,
+        IBlockEntity? expectedEntity,
+        bool dropItems,
+        IEntity? breaker,
+        IBlock? replacement,
+        bool playEffect,
+        bool removePartner)
     {
         if (await this.GetBlockAsync(position) is not IBlock current
             || current.GetHashCode() != block.GetHashCode()
@@ -100,7 +120,9 @@ public abstract partial class AbstractLevel
         if (breaker is not null && !PluginEntities.HasLoadedType(breaker))
             breaker = null;
 
-        var parts = await TwoPartBlockBreak.PrepareAsync(this, position, block);
+        var parts = removePartner
+            ? await TwoPartBlockBreak.PrepareAsync(this, position, block)
+            : new TwoPartBlockBreak(position, block);
         await using var captured = dropItems
             ? await BlockEntityComponents.CaptureAsync(this, parts.DropPosition, null, onLevelTick: true)
             : BlockEntityComponents.None;
@@ -113,7 +135,7 @@ public abstract partial class AbstractLevel
                 breaker: breaker, checkTool: false, blockEntityComponents: captured.Components,
                 dynamicDrops: captured.DynamicDrops)
             : [];
-        var replacement = FluidState.Of(block).CreateLegacyBlock();
+        replacement ??= FluidState.Of(block).CreateLegacyBlock();
         if (!await this.TrySetBlockAsync(position, replacement, BlockUpdateFlags.All,
             state => state.GetHashCode() == block.GetHashCode()
                 && ReferenceEquals(this.GetResidentBlockEntity(position), expectedEntity)
@@ -122,8 +144,15 @@ public abstract partial class AbstractLevel
             return;
 
         await parts.RemovePartnerAsync(this);
-        BlockSoundPlayback.Play(this, block, position, breaking: true, actor: 0);
-        this.EmitGameEvent(MobGameEvent.BlockDestroy, (VectorD)position + 0.5, breaker, affectedBlock: block);
+        // Vanilla Level.destroyBlock sends 2001 (sound and particles), except for fire. Water washout and
+        // dropResources/removeBlock callers deliberately omit it; sending a separate sound would play it twice.
+        if (playEffect)
+        {
+            if (block.BlockClass() is not ("FireBlock" or "SoulFireBlock"))
+                this.BroadcastLevelEvent(2001, position, block.GetHashCode());
+
+            this.EmitGameEvent(MobGameEvent.BlockDestroy, (VectorD)position + 0.5, breaker, affectedBlock: block);
+        }
 
         foreach (var stack in drops)
             this.PopBlockResource(parts.DropPosition, stack);

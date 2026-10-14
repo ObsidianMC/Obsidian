@@ -63,6 +63,12 @@ internal interface IFluidLevelAccess
     }
 
     /// <summary>
+    /// Delegates removal to the live level's serial queue, where loot can run without the tick lock.
+    /// Returns false on generation-only views, which store the replacement directly without spawning entities.
+    /// </summary>
+    public bool TryQueueDestruction(Vector position, IBlock replacement, bool dropItems, bool playEffect) => false;
+
+    /// <summary>
     /// How blocks other than liquids react to block updates, or null for only the vanilla blocks Obsidian models.
     /// </summary>
     public IBlockReactions? Reactions => null;

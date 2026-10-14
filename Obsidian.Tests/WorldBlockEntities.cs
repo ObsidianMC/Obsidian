@@ -232,6 +232,17 @@ public sealed class WorldBlockEntities : IDisposable
             Assert.Equal(true, AppContext.GetData(ProbeParts.CollectedKey));
             Assert.Single(ItemsIn(context.World), item => item.Item.Is(ItemsRegistry.Stone));
             await context.World.DoWorldTickAsync();
+
+            foreach (var item in ItemsIn(context.World).Where(item => item.Item.Is(ItemsRegistry.Stone)))
+                await item.RemoveAsync();
+
+            // A plugin returning air shares the shape update's suppression flag, rather than queuing its own drops.
+            await context.World.SetBlockAsync(position, block.DefaultState);
+            context.World.BlockUpdates.ShapeUpdateAt(position, BlockFace.Down,
+                BlockUpdateFlags.Clients | BlockUpdateFlags.SuppressDrops, 511);
+            await context.World.DoWorldTickAsync();
+            Assert.True(chunk.GetBlock(position.X, position.Y, position.Z).IsAir);
+            Assert.DoesNotContain(ItemsIn(context.World), item => item.Item.Is(ItemsRegistry.Stone));
         }
         finally
         {

@@ -155,6 +155,10 @@ internal abstract class FlowingFluid
             return;
         }
 
+        if (!block.IsAir && FluidState.IsWaterKind(fluid.Kind)
+            && level.TryWashAway(position, fluid.CreateLegacyBlock()))
+            return;
+
         if (!block.IsAir)
             this.BeforeDestroyingBlock(level, position, block);
 

@@ -242,6 +242,14 @@ internal sealed class LevelFluids : IFluidLevelAccess
     public void LevelEvent(int type, Vector position, int data) => this.level.BroadcastLevelEvent(type, position, data);
 
     /// <inheritdoc/>
+    public bool TryQueueDestruction(Vector position, IBlock replacement, bool dropItems, bool playEffect)
+    {
+        this.level.QueueBlockDestruction(position, dropItems, null, replacement, playEffect);
+        // An already pending removal still belongs to the queue; never fall back to a direct write.
+        return true;
+    }
+
+    /// <inheritdoc/>
     /// <remarks>
     /// Like vanilla, ticks for chunks that aren't loaded are dropped.
     /// </remarks>

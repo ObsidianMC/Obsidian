@@ -363,7 +363,14 @@ with an empty tool, without the player's harvesting check or `BreakAsync`. `brea
 game event source, independently of game mode. Loot respects `block_drops`. Ordinary containers still spill their
 contents through removal even with `dropItems: false`; shulker contents go into their box item when loot is enabled.
 Plugin `CollectComponents` runs only in the serial tick transaction. Failed loot evaluation is logged and keeps the
-block. A plugin's `UpdateShape` returning air uses this path too; the block remains until that queued break runs.
+block. Vanilla and plugin `UpdateShape` results of air use the same queued transaction, honouring the shape update's
+`SuppressDrops` flag and `block_drops`; the block remains until that queued break runs. Each half of a vanilla
+two-part block evaluates its own loot before removal, so upper plant halves don't duplicate the lower half's drop.
+Shape destruction and `DestroyBlock` send level event 2001 for break sound and particles (except fire). Water washout
+uses tool-less loot without that effect; lava only fizzes. Redstone dust, diodes and rails losing support through
+neighbour changes drop without that effect too, matching vanilla's separate removal path. As in vanilla,
+`SetBlock` clears `SuppressDrops` when sending new neighbour shape updates; it suppresses a destruction only when
+carried by that shape update itself, while `block_drops` suppresses environmental loot throughout the level.
 
 `IBlockLevel.SpawnItem(VectorD position, ItemStack stack)` and `ILevel.SpawnItem` immediately spawn a host-owned item
 entity from a detached copy, returning whether it was inserted (empty stacks return false). The item survives

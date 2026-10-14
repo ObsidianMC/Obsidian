@@ -1,26 +1,20 @@
+using Obsidian.API.Blocks;
 using Obsidian.API.World.Features.Trees;
 using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.WorldData.Features.Tree;
 
 /// <summary>
-/// Neighbor shape updates during generation: vanilla <c>StructureTemplate.updateShapeAtEdge</c> after tree and template
-/// placement, and <c>Block.updateFromNeighbourShapes</c> for blocks marked for post-processing.
+/// Vanilla neighbour shape rules shared by live block updates, generation post-processing, trees and templates.
 /// </summary>
 /// <remarks>
-/// Obsidian has no general <c>updateShape</c> implementation, so only the block behaviors that matter for generated
-/// blocks and structure templates are reproduced: vines re-checking their supports, double plants, doors and beds losing
-/// their other half, snowy dirt (<c>snowy</c> from the block above), hanging moss (<c>tip</c>), liquids and waterlogged
-/// blocks scheduling a fluid tick, fence, bar, wall and double chest connections, stair shapes, fence gates in walls, and
-/// torches, ladders, lanterns, levers, wall signs and banners, vegetation and carpets dropping without support, and
-/// redstone dust's connections. Other blocks keep their state, which matches vanilla for logs, leaves (they only
-/// schedule ticks), roots and most others.
+/// These rules cover support loss, two-part partners, connections, stair shapes, snowy ground and fluid scheduling.
+/// The live level supplies plugin and redstone reactions first, then applies these rules to vanilla blocks.
+/// Other blocks keep their state; scheduled survival checks and other missing reactions are tracked in known gaps.
 /// </remarks>
 internal static class ShapeUpdater
 {
     private static readonly IBlock air = BlockStateProperties.GetState("minecraft:air");
-
-    private static readonly BlockSet farmland = new("minecraft:farmland");
 
     private static readonly BlockSet fences = new("#minecraft:fences");
 
@@ -29,6 +23,8 @@ internal static class ShapeUpdater
     private static readonly BlockSet walls = new("#minecraft:walls");
 
     private static readonly BlockSet wallPostOverride = new("#minecraft:wall_post_override");
+
+    private static readonly BlockSet wallHangingSigns = new("#minecraft:wall_hanging_signs");
 
     // Blocks fences and bars never connect to for having a sturdy face (Block.isExceptionForConnection, besides leaves).
     private static readonly BlockSet connectionExceptions = new("minecraft:barrier", "minecraft:carved_pumpkin", "minecraft:jack_o_lantern",
@@ -94,9 +90,12 @@ internal static class ShapeUpdater
                 return IsUnsupportedWallBlock(level, state, position, direction) ? air : state;
             case "VineBlock":
                 return direction == BlockFace.Down ? state : UpdateVine(level, state, position);
-            case "DoublePlantBlock" or "TallFlowerBlock":
+            case "DoublePlantBlock" or "TallFlowerBlock" or "TallSeagrassBlock" or "SmallDripleafBlock":
                 return UpdateDoublePlant(level, state, position, direction, neighbor);
             case "HangingMossBlock":
+                if (direction == BlockFace.Up && !state.CanSurvive(level, position))
+                    return air;
+
                 return state.WithProperty("tip", level.GetBlock(position + Vector.Down).RegistryId != state.RegistryId);
             case "StairBlock" or "WeatheringCopperStairBlock":
                 return IsHorizontal(direction) ? state.WithProperty("shape", GetStairsShape(level, state, position)) : state;
@@ -119,6 +118,16 @@ internal static class ShapeUpdater
                 // These drop when the block behind them isn't solid.
                 return direction == FeatureHelpers.ParseFace(state.GetProperty("facing")).Opposite()
                     && !level.GetBlock(position.Offset(direction)).IsSolid() ? air : state;
+            case "BannerBlock" or "StandingSignBlock":
+                return direction == BlockFace.Down && !level.GetBlock(position + Vector.Down).IsSolid() ? air : state;
+            case "CeilingHangingSignBlock":
+                return direction == BlockFace.Up
+                    && !level.GetBlock(position + Vector.Up).IsFaceSturdy(BlockFace.Down, SupportType.Center)
+                    ? air : state;
+            case "WallHangingSignBlock":
+                var sideways = FeatureHelpers.ParseFace(state.GetProperty("facing")).ClockWise();
+                return SameAxis(direction, sideways) && !WallHangingSignSupported(level, state, position, sideways)
+                    ? air : state;
             case "LeverBlock" or "ButtonBlock":
                 return UpdateFaceAttached(level, state, position, direction);
             case "LanternBlock":
@@ -129,10 +138,15 @@ internal static class ShapeUpdater
                 return direction == BlockFace.Down && !level.GetBlock(position + Vector.Down).IsTopCenterSturdy() ? air : state;
             case "RedstoneWallTorchBlock":
                 return IsUnsupportedWallBlock(level, state, position, direction) ? air : state;
-            case "CarpetBlock" or "WoolCarpetBlock" or "FlowerBlock" or "TallGrassBlock" or "SweetBerryBushBlock" or "BushBlock"
-                or "SaplingBlock" or "CropBlock" or "CarrotBlock" or "PotatoBlock" or "BeetrootBlock" or "StemBlock" or "MushroomBlock"
-                or "WaterlilyBlock" or "FlowerBedBlock" or "FireflyBushBlock" or "DryVegetationBlock" or "ShortDryGrassBlock"
-                or "TallDryGrassBlock" or "LeafLitterBlock":
+            case "CarpetBlock" or "WoolCarpetBlock" or "FlowerBlock" or "TallGrassBlock"
+                or "SweetBerryBushBlock" or "BushBlock" or "SaplingBlock" or "CropBlock"
+                or "CarrotBlock" or "PotatoBlock" or "BeetrootBlock" or "StemBlock" or "MushroomBlock"
+                or "WaterlilyBlock" or "FlowerBedBlock" or "FireflyBushBlock"
+                or "DryVegetationBlock" or "ShortDryGrassBlock"
+                or "TallDryGrassBlock" or "LeafLitterBlock" or "VegetationBlock" or "EyeblossomBlock"
+                or "WitherRoseBlock" or "AzaleaBlock" or "FungusBlock" or "RootsBlock" or "NetherSproutsBlock"
+                or "SeagrassBlock" or "SnowLayerBlock" or "HangingRootsBlock" or "SporeBlossomBlock"
+                or "CocoaBlock" or "CactusFlowerBlock":
                 // Vegetation and carpets turn into air whenever they're updated without support.
                 return state.CanSurvive(level, position) ? state : air;
         }
@@ -208,9 +222,7 @@ internal static class ShapeUpdater
         {
             if (isLower && direction == BlockFace.Down)
             {
-                // VegetationBlock.mayPlaceOn: dirt or farmland below.
-                var below = level.GetBlock(position + Vector.Down);
-                if (!TreeBlocks.Dirt.Contains(below) && !farmland.Contains(below))
+                if (!state.CanSurvive(level, position))
                     return air;
             }
 
@@ -274,6 +286,29 @@ internal static class ShapeUpdater
     }
 
     private static bool SameAxis(BlockFace a, BlockFace b) => a == b || a == b.Opposite();
+
+    // Vanilla wall hanging signs need either end of their bar supported, or another aligned wall hanging sign.
+    private static bool WallHangingSignSupported(
+        IWorldGenLevel level, IBlock state, Vector position, BlockFace sideways)
+    {
+        foreach (var side in new[] { sideways, sideways.Opposite() })
+        {
+            var neighbor = level.GetBlock(position.Offset(side));
+            if (wallHangingSigns.Contains(neighbor))
+            {
+                var facing = FeatureHelpers.ParseFace(state.GetProperty("facing"));
+                var neighborFacing = FeatureHelpers.ParseFace(neighbor.GetProperty("facing"));
+                if (SameAxis(facing, neighborFacing))
+                    return true;
+            }
+            else if (neighbor.IsFaceSturdy(side.Opposite()))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static bool IsStairs(IBlock block) => block.BlockClass() is "StairBlock" or "WeatheringCopperStairBlock";
 
