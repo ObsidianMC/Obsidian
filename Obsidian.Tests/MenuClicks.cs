@@ -1151,7 +1151,7 @@ public sealed class MenuClicks
     }
 
     // Clicks a slot of the player's open window through the click packet, carrying the given state id.
-    private static async Task ClickAsync(
+    internal static async Task ClickAsync(
         Server server,
         Obsidian.Entities.Player player,
         short slot,

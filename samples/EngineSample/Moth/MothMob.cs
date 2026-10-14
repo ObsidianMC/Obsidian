@@ -1,15 +1,18 @@
 using Obsidian.API;
 using Obsidian.API.Client;
+using Obsidian.API.Data;
 using Obsidian.API.Entities;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Plugins;
-using Obsidian.API.Inventory;
+using Obsidian.Nbt;
 
 namespace EngineSample.Moth;
 
 /// <summary>
 /// Phase 4's mob, <c>sample:moth</c>: a big moth that flies, which players ride by using it, and whose eyes glow in
 /// the dark on the Obsidian client. Ridden, it flies where its rider looks (see <c>EntityMovementMode.Flying</c>);
-/// sneaking gets off.
+/// sneaking gets off. Phase 5 has it count its rides in a saved attachment, <see cref="Rides"/>, and drop a charm
+/// when a player kills it, through its loot table, <c>data/sample/loot_table/entities/moth.json</c>.
 /// </summary>
 /// <remarks>
 /// Its model and textures are <c>assets/sample/models/entity/moth.json</c> and
@@ -26,8 +29,14 @@ public sealed class MothMob : IEntityBehavior
     public static EntityDefinition Type { get; private set; } = null!;
 
     /// <summary>
-    /// Registers the entity type. Both sides register it the same, so that the client seats its rider where the
-    /// server does.
+    /// <c>sample:moth_rides</c>: how many times players got on a moth. It's saved with the moth, and kept as saved
+    /// while the plugin is away.
+    /// </summary>
+    public static AttachmentType<int> Rides { get; private set; } = null!;
+
+    /// <summary>
+    /// Registers the entity type and its attachment. Both sides register the type the same, so that the client
+    /// seats its rider where the server does.
     /// </summary>
     public static void Register(IPluginRegistry registry)
     {
@@ -43,12 +52,11 @@ public sealed class MothMob : IEntityBehavior
             PassengerAttachments = [new VectorF(0, 0.65f, -0.1f)],
             Behavior = new MothMob()
         });
-        registry.RegisterCreativeTab("sample:moths", new CreativeTabProperties
-        {
-            Title = "Engine sample",
-            Icon = Type.SpawnEgg!,
-            Items = [Type.SpawnEgg!]
-        });
+
+        // Only the server counts rides, so the attachment has no network codec: clients aren't sent it.
+        Rides = registry.RegisterAttachment("sample:moth_rides", new ComponentCodec<int>(
+            rides => new NbtTag<int>("", rides),
+            tag => ((NbtTag<int>)tag).Value));
     }
 
     /// <summary>
@@ -74,7 +82,17 @@ public sealed class MothMob : IEntityBehavior
     }
 
     /// <summary>
-    /// Any player who uses it rides it, while its seat is free.
+    /// A player who uses it without sneaking rides it, while its seat is free, and it counts the ride. A behaviour
+    /// with nothing to count returns true from <c>CanMount</c> instead, and the engine seats the player.
     /// </summary>
-    public bool CanMount(IEntity entity, IPlayer player) => true;
+    public ValueTask<bool> InteractAsync(IEntity entity, IPlayer player, InteractionHand hand)
+    {
+        if (player.Sneaking || !player.StartRiding(entity))
+            return ValueTask.FromResult(false);
+
+        // A get returns a detached value: set it again to change it.
+        entity.SetAttachment(Rides, entity.GetAttachment(Rides) + 1);
+
+        return ValueTask.FromResult(true);
+    }
 }

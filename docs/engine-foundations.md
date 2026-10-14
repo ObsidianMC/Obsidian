@@ -157,6 +157,8 @@ and, with its client side, by the client's tests)
 
 **Sample:** a portal to a sample dimension, a rideable flying mob with saved data and a loot table, and a player
 attachment shown in an extra inventory slot.
+(done: `samples/EngineSample`, its dusk portal and dimension, its moth's rides and loot, and its charm slots, loaded by
+`Obsidian.Tests/SamplePlugin.cs` and, with its client side, by the client's tests)
 
 ## The test mod
 

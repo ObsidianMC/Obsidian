@@ -1,0 +1,16 @@
+{
+  "skybox": "end",
+  "has_skylight": true,
+  "has_ceiling": false,
+  "coordinate_scale": 1,
+  "min_y": 0,
+  "height": 256,
+  "logical_height": 256,
+  "infiniburn": "#minecraft:infiniburn_end",
+  "ambient_light": 0.1,
+  "monster_spawn_light_level": 0,
+  "monster_spawn_block_light_limit": 0,
+  "attributes": {
+    "minecraft:visual/fog_color": "#3b2a55"
+  }
+}

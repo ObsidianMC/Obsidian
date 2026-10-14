@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Blocks;
+using Obsidian.API.Data;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
@@ -390,7 +391,7 @@ public sealed partial class SamplePlugin : IDisposable
     }
 
     [Fact(DisplayName = "Phase 4: cables connect to the cables, grinder and chests beside them, and players ride the "
-        + "moth", Timeout = TestServerFactory.TestTimeout)]
+        + "moth, which counts its rides and drops a charm (phase 5)", Timeout = TestServerFactory.TestTimeout)]
     public async Task CableAndMoth()
     {
         await using var context = TestServerFactory.CreateServer($"sample-{Guid.NewGuid():N}");
@@ -400,7 +401,7 @@ public sealed partial class SamplePlugin : IDisposable
         var player = await WorldBlockEntities.JoinAsync(context);
 
         await using var manager = BlockUpdates.CreatePluginManager(context);
-        Assert.NotNull(await manager.LoadPluginAsync(await this.PackSampleAsync()));
+        var plugin = (await manager.LoadPluginAsync(await this.PackSampleAsync()))!;
         Assert.True(BlocksRegistry.TryGetPluginBlock("sample:cable", out var cable));
         Assert.True(BlocksRegistry.TryGetPluginBlock("sample:grinder", out var grinder));
 
@@ -468,6 +469,20 @@ public sealed partial class SamplePlugin : IDisposable
         Assert.Null(player.GetHeldItem());
         Assert.True(await mob.InteractAsync(player, InteractionHand.MainHand));
         Assert.Same(mob, ((IPlayer)player).Vehicle);
+
+        // Phase 5: the moth counted the ride in its attachment, which it saves and loads back.
+        var rides = (AttachmentType<int>)plugin.Plugin!.GetType().Assembly
+            .GetType("EngineSample.Moth.MothMob")!
+            .GetProperty("Rides")!
+            .GetValue(null)!;
+        Assert.Equal(1, mob.GetAttachment(rides));
+        Assert.Equal(1, EntityNbt.Load(EntityNbt.Save(mob)!, world)!.GetAttachment(rides));
+
+        // Killed by a player, it drops a charm from its loot table.
+        ((IPlayer)player).StopRiding();
+        await mob.DamageCombatAsync(player, 100, CombatDamageKind.Melee);
+        var drop = Assert.Single(world.GetEntitiesInRange(mob.Position, 3).OfType<ItemEntity>());
+        Assert.Equal("sample:charm", drop.Item.Holder.UnlocalizedName);
     }
 
     // The data slots the client was sent, by index, with the last value sent.
