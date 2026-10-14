@@ -2702,13 +2702,17 @@ and returns a `BlockModelData`, or null for the block state's model alone:
   turns, X then Y, its cull faces turning with it).
 - `Faces`: `BlockModelFace(From, To, Face, Texture)`, one face of a box in sixteenths of a block, like a model
   element's face without `uv`, with any block texture (`minecraft:block/stone`), an optional `CullFace`,
-  `TintIndex` and `Shade`. They're for textures chosen by data, like a facade showing another block's texture.
+  `TintIndex`, `Shade` and `LightEmission` (0 to 15, like a model element's `light_emission`: the face is lit at
+  least that brightly, a screen glowing in the dark). They're for textures chosen by data, like a facade showing
+  another block's texture.
 - `ReplacesBlockModel`: the parts and faces replace the block state's model rather than adding to it, for a block
   drawn entirely from its data, or whose own model a facade covers.
 
 The parts and faces are meshed like the block's own model: lit with smooth lighting and ambient occlusion, shaded
-by direction, tinted by the block's tint where they have a tint index, put in the render layer of their texture,
-and culled where their cull face's neighbour is opaque. They don't change how the block culls its neighbours,
+by direction, tinted by the block's tint where they have a tint index, put in the render layer of their texture
+(or their model's `render_type`), raised to their light emission, and culled where their cull face's neighbour is
+opaque. The model files' render types and emissive elements are described in
+[plugin-archives.md](plugin-archives.md#assets). They don't change how the block culls its neighbours,
 which stays the block state's. The provider runs on a meshing thread inside the mod's call guard, at most once per
 update and block state, so keep it pure; a part naming an undeclared model or a rotation that isn't a quarter turn
 counts as a failure, which is logged and draws the block state's model. Invalid face or cull directions are rejected
@@ -2776,12 +2780,11 @@ format). A renderer has a provider, code, or both:
 Both run inside calls into the mod. If one throws, the error is logged and the block entity draws nothing from it
 (what code drew that frame is taken back) until its next update. Face directions are checked inside the provider
 call, and malformed declared parts stop that block entity's drawing without breaking the frame. Parts are lit with
-the light at the block, like vanilla's block entities, shaded by the direction they face as they turn, and put in the
-render layer of their texture. Block entities are drawn within 64 blocks of the camera (vanilla's default for its
-renderers) and while in
-view. The client only has a block entity's data once the server sends it, with its chunk or an update, so a type
-with a renderer should return update data from `GetUpdateData`, even an empty compound, to be drawn as soon as it's
-placed.
+the light at the block, like vanilla's block entities, raised to their faces' light emission, shaded by the direction
+they face as they turn, and put in the render layer of their texture or model. Block entities are drawn within 64
+blocks of the camera (vanilla's default for its renderers) and while in view. The client only has a block entity's
+data once the server sends it, with its chunk or an update, so a type with a renderer should return update data from
+`GetUpdateData`, even an empty compound, to be drawn as soon as it's placed.
 
 ```csharp
 // The grinder spins its wheel while it works: the server puts "working_since" in its update data (the level's Time

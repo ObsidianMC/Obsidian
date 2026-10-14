@@ -523,6 +523,14 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      like vanilla, after which the renderer copies only the sprites that changed into the atlas from a staging buffer
      before it draws. Left: the GUI and particle atlases' few animated sprites (some GUI icons, the vibration
      particle) still show their first frame. See [plugin-archives.md](plugin-archives.md#assets).
+   - Done, engine phase 4 render layers and light: a block model's `render_type` (NeoForge's key, inherited by child
+     models) puts its faces in the solid, cutout or translucent layer instead of the one its textures need, which is
+     how NeoForge mods choose a block's layer; there's no code registration, as NeoForge deprecated
+     `ItemBlockRenderTypes` for it. Vanilla's element `light_emission` (0 to 15) and model data's
+     `BlockModelFace.LightEmission` raise a face's sky and block light to at least that level, in the world's mesh
+     and in block entity renderers, keeping its ambient occlusion and shading as vanilla does. Left: NeoForge's
+     per-face `neoforge_data` (separate block and sky light, colour, ambient occlusion), and emission on items' models.
+     See [plugin-archives.md](plugin-archives.md#assets).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
      move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine; entity render layers
      (emissive and translucent ones) and animations a server triggers beyond arm swings for mods' entities; client lifecycle events
