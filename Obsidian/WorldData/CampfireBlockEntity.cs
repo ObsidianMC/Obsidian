@@ -48,7 +48,7 @@ internal sealed class CampfireBlockEntity()
                 if (this.Inventory[slot] is not ItemStack stack || stack.IsAir)
                     continue;
 
-                var saved = stack.ToNbt();
+                var saved = NetworkBuffer.ItemUpdateNbt(stack);
                 saved.Add(new NbtTag<byte>("Slot", (byte)slot));
                 items.Add(saved);
             }

@@ -129,7 +129,9 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      and its values are sent with stacks; one without is the server's own and never leaves it. Stacks hold a plugin's
      values only in their saved form, so unloading the plugin leaves them as saved (not sent meanwhile) and a reload
      reads them again. The Obsidian client registers a mod's types too and reads them from stacks with the mod's
-     network codec (see [plugin-content.md](plugin-content.md#item-components)).
+     network codec. Codec and optional typed click-hash callbacks hold plugin call leases, and stacks loaded before
+     registration use the same component projection for networking and equality once their type is known
+     (see [plugin-content.md](plugin-content.md#item-components)).
    - Next: Phase 3.
 3. **Data-driven content and world generation** (done): loading a mod's `data/` folder like a data pack
    (biomes, dimension types, damage types, tags, worldgen features), letting mods register codec types for

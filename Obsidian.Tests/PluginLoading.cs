@@ -205,6 +205,41 @@ public sealed class PluginLoading : IDisposable
         Assert.Equal(charge.Type, sent.Type);
         Assert.Equal(2, Assert.IsType<NbtTag<int>>(Assert.IsType<PluginDataComponent>(sent).ToNbt()).Value);
 
+        // A stack loaded before its type's first registration projects identically to a freshly modeled one.
+        const string lateIdentifier = "probe:late_flag";
+        var lateSaved = new NbtCompound
+        {
+            new NbtTag<string>("id", "minecraft:beef"),
+            new NbtTag<int>("count", 1),
+            new NbtCompound("components")
+            {
+                new NbtTag<byte>(lateIdentifier, 1)
+            }
+        };
+        var lateStack = lateSaved.ItemFromNbt()!;
+        Assert.NotNull(lateStack.UnmodeledComponents);
+        var flag = PluginRegistry.RegisterComponentType(
+            reloaded,
+            lateIdentifier,
+            new ComponentCodec<bool>(
+                value => new NbtTag<byte>("", value ? (byte)1 : (byte)0),
+                tag => ((NbtTag<byte>)tag).Value != 0),
+            new ComponentNetworkCodec<bool>(
+                (writer, value) => writer.WriteBoolean(value), reader => reader.ReadBoolean())
+            {
+                Hash = ComponentHash.Boolean
+            });
+        var modeled = new ItemStack(ItemsRegistry.Beef);
+        modeled.Set(flag, true);
+        Assert.True(lateStack.TryGet(flag, out var flagValue) && flagValue);
+        Assert.Equal(modeled, lateStack);
+        Assert.Equal(modeled.GetHashCode(), lateStack.GetHashCode());
+        Assert.Equal(Assert.Single(SentComponents(modeled)), Assert.Single(SentComponents(lateStack)));
+        using var hasher = new NetworkBuffer();
+        Assert.True(hasher.TryHashDataComponent(Assert.Single(SentComponents(lateStack)), out var flagHash));
+        Assert.Equal(ComponentHash.Boolean(true), flagHash);
+        Assert.NotEqual(ComponentHash.Byte(1), flagHash);
+
         // So does its block, whose item places it.
         Assert.True(BlocksRegistry.TryGetPluginBlock("probe:ore", out var reloadedOre));
         Assert.Same(ore, reloadedOre);
@@ -295,6 +330,10 @@ public sealed class PluginLoading : IDisposable
 
         await manager.DisposeAsync();
         Assert.Empty(manager.Plugins);
+        Assert.False(lateStack.TryGet(flag, out _));
+        Assert.Throws<InvalidOperationException>(() => modeled.Set(flag, false));
+        Assert.Empty(SentComponents(lateStack));
+        Assert.Equal(modeled, lateStack);
 
         // Unloaded, the item loses its behaviour but stays registered with its id.
         Assert.Null(gem.Behavior);

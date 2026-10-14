@@ -59,11 +59,17 @@ internal static class DataComponentTypesRegistry
         byName.TryGetValue(identifier, out entry);
 
     /// <summary>
-    /// The network codec's writer of a plugin's component type, taking its saved value, or null when it has none: it
-    /// isn't sent to clients, or its plugin is gone.
+    /// Enters a call before taking any codec from the binding. Keep the lease through the whole codec call.
     /// </summary>
-    public static Action<INbtTag, INetStreamWriter>? NetworkWriter(DataComponentType type) =>
-        TryGet(type, out var entry) ? entry.Binding?.WriteNetwork : null;
+    public static IDisposable? TryEnter(DataComponentType type, out PluginComponentBinding? binding)
+    {
+        binding = TryGet(type, out var entry) ? entry.Binding : null;
+        var call = binding?.TryEnter();
+        if (call is null)
+            binding = null;
+
+        return call;
+    }
 
     /// <summary>
     /// Registers a component type, or returns the one registered before under the same identifier, which keeps its id.
@@ -98,15 +104,19 @@ internal static class DataComponentTypesRegistry
         ComponentCodec<TValue> codec,
         ComponentNetworkCodec<TValue>? networkCodec,
         IPluginContainer plugin,
-        Func<bool> closing)
+        Func<bool> closing,
+        Func<IDisposable?> tryEnter)
     {
         // Network values convert from and to the saved form, which is all a stack holds.
         Func<INetStreamReader, INbtTag>? read = null;
         Action<INbtTag, INetStreamWriter>? write = null;
+        Func<INbtTag, int>? hash = null;
         if (networkCodec is not null)
         {
             read = reader => codec.Encode(networkCodec.Read(reader));
             write = (tag, writer) => networkCodec.Write(writer, codec.Decode(tag));
+            if (networkCodec.Hash is Func<TValue, int> hashValue)
+                hash = tag => hashValue(codec.Decode(tag));
         }
 
         lock (registering)
@@ -116,7 +126,7 @@ internal static class DataComponentTypesRegistry
 
             // Once synced, clients need the type for as long as the server runs, like plugins' items.
             entry.IsSynced |= networkCodec is not null;
-            entry.Binding = new PluginComponentBinding(plugin, read, write);
+            entry.Binding = new PluginComponentBinding(plugin, tryEnter, read, write, hash);
 
             return true;
         }
@@ -173,5 +183,7 @@ internal sealed class PluginComponentTypeEntry(DataComponentType type, string id
 /// </summary>
 internal sealed record PluginComponentBinding(
     IPluginContainer Owner,
+    Func<IDisposable?> TryEnter,
     Func<INetStreamReader, INbtTag>? ReadNetwork,
-    Action<INbtTag, INetStreamWriter>? WriteNetwork);
+    Action<INbtTag, INetStreamWriter>? WriteNetwork,
+    Func<INbtTag, int>? Hash);

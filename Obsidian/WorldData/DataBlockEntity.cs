@@ -1,5 +1,6 @@
 using Obsidian.API.BlockEntities;
 using Obsidian.Nbt;
+using Obsidian.Net;
 
 namespace Obsidian.WorldData;
 
@@ -120,6 +121,7 @@ public sealed class DataBlockEntity : BlockEntity
                 data.Add(name, tag);
         }
 
+        NetworkBuffer.ProjectUpdateItems(data);
         return data.Count == 0 ? null : data;
     }
 

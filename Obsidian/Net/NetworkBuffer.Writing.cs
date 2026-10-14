@@ -1,5 +1,6 @@
 using Obsidian.API.Advancements;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
@@ -440,7 +441,23 @@ public partial class NetworkBuffer : INetStreamWriter
 
         // Like vanilla's DataComponentPatch: only the components set on the stack. The client knows the item's defaults,
         // and Obsidian's placeholders for them (e.g. a max stack size of 64) would override them.
-        var components = SentPatch(value);
+        // Encode before counting: a plugin may start unloading after projection. No codec delegate escapes its lease,
+        // and values refused at encoding time are omitted from both the count and payload.
+        var components = new List<(DataComponentType Type, byte[] Bytes)>();
+        foreach (var component in SentPatch(value))
+        {
+            using var encoded = new NetworkBuffer { IdMaps = this.IdMaps };
+            if (component is PluginDataComponent plugin)
+            {
+                if (!plugin.TryWriteNetwork(encoded))
+                    continue;
+            }
+            else
+                encoded.WriteDataComponent(component);
+
+            components.Add((component.Type, encoded.data.AsSpan(0, encoded.Offset).ToArray()));
+        }
+
         WriteVarInt(components.Count);
         WriteVarInt(value.RemoveComponents.Count);
 
@@ -450,13 +467,11 @@ public partial class NetworkBuffer : INetStreamWriter
 
             if (delimitedComponents)
             {
-                var encoded = new NetworkBuffer { IdMaps = this.IdMaps };
-                encoded.WriteDataComponent(component);
-                this.WriteVarInt(encoded.Offset);
-                this.Write(encoded.data.AsSpan(0, encoded.Offset));
+                this.WriteVarInt(component.Bytes.Length);
+                this.Write(component.Bytes);
             }
             else
-                this.WriteDataComponent(component);
+                this.Write(component.Bytes);
         }
 
         foreach (var componentType in value.RemoveComponents)

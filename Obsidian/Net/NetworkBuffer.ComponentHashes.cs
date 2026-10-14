@@ -25,7 +25,7 @@ public partial class NetworkBuffer
     {
         if (component is PluginDataComponent plugin)
         {
-            hash = HashPluginComponent(plugin);
+            hash = plugin.TryHash(out var typed) ? typed : HashPluginComponent(plugin);
             return true;
         }
 
@@ -150,8 +150,7 @@ public partial class NetworkBuffer
 
     private sealed class UnsupportedComponentHashException : Exception;
 
-    // A plugin's component is hashed like vanilla's HashOps hashes its codec's value, from its saved NBT: the same on
-    // the Obsidian client, which saves it with the same codec.
+    // Fallback for NBT-shaped codecs. Saved NBT cannot distinguish codec booleans from bytes; those need a typed hash.
     private static int HashPluginComponent(PluginDataComponent component)
     {
         var buffer = new NetworkBuffer();

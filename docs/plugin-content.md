@@ -540,12 +540,18 @@ type is never an item's default, so removing it just takes it off the stack.
   with the same `ConfigureRegistry` code), and its values are sent with stacks. Like a plugin's items, a synced type
   keeps vanilla clients out and stays synced until the server stops. Without a network codec, the type is the
   server's own, like vanilla's components that aren't synced: it isn't in the synced registry and its values never
-  leave the server, so it doesn't keep vanilla clients out. Click predictions hash a plugin's component from its saved
-  NBT, as vanilla's `HashOps` hashes a codec's value; the Obsidian client hashes it the same way.
+  leave the server, so it doesn't keep vanilla clients out. Vanilla block entity updates filter their item NBT through
+  the same visible patch; disk saves keep all components. Click predictions default to hashing the saved NBT. When NBT
+  loses the persistent codec's type distinctions, set `ComponentNetworkCodec<TValue>.Hash` (`Func<TValue, int>?`) to
+  the client's `HashOps` value using `ComponentHash`, for example `Hash = ComponentHash.Boolean` for a boolean codec.
+  The callback receives the decoded value and runs under the same plugin call guard as the codecs.
 - **Unloading.** When the plugin unloads, its types lose their codecs but keep their ids, and stacks keep their
   values as saved, saving and loading them unchanged, and comparing them, so they still stack. They aren't sent to
-  clients meanwhile. Once the plugin is back, its codecs read the values again. A value saved under an identifier no
-  plugin registered since the server started is kept the same way, and read once one does.
+  clients meanwhile. Codec calls admitted before unloading finish before release; new calls are refused. `TryGet`
+  returns false (and `Get` returns default) through an unloaded plugin's type handle; `Set` throws
+  `InvalidOperationException`. Use the new handle after reload. Once the plugin is back, its codecs read the values
+  again. A value saved before its type's first registration is projected as a modeled component for networking,
+  equality and hashing once registered, without mutating the saved stack.
 
 ## Entities
 
