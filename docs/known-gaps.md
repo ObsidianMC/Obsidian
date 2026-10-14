@@ -272,14 +272,32 @@ can't reach, rather than a delivery wait.
 
 - Breaking time isn't checked: a player's client times breaking from the held tool's mining speed and the server
   accepts the finished break. The tool component still decides drops and wear.
-- Attribute modifiers only change armour, armour toughness and knockback resistance (worn) and attack damage and
-  speed (held). Others, such as movement speed or maximum health, are sent to clients but don't change the player,
-  and nothing sends the player their changed attributes.
+- Mobs' equipment modifiers don't go into their attributes: mobs add their armour items' armour, toughness and
+  knockback resistance where they're hit, and their held item's attack damage where they attack. Players apply
+  every modifier of what they hold and wear. Enchantments' attribute effects aren't applied to anyone.
 - Equipping by use ignores `equippable`'s `swappable` and plays no equip sound, and a `consumable` without `food`
   isn't consumed.
 
-**Where to start:** for attributes, a per-player modifier set fed by equipment changes, synced with
-`UpdateAttributes`.
+**Where to start:** for mobs' attributes, `Player.UpdateEquipmentAttributes`'s per-slot modifier tracking, run on a
+mob's equipment.
+
+## Plugin entities
+
+**Status:** open, deliberately deferred.
+
+- The Obsidian client doesn't predict a mod's mount: a rider's mob moves on the server, from the rider's
+  `PlayerInput`, and the client follows its positions, so steering lags by the round trip. The server ignores
+  `MoveVehicle`, for vanilla's mounts too.
+- Attribute modifiers added through `IEntity.SetAttributeModifier` aren't saved, and the `scale` attribute doesn't
+  resize hitboxes on the server.
+- Vanilla's mobs still drop hard-coded items rather than their `entities/` loot tables; entity loot tables can't use
+  `furnace_smelt` or `entity_properties` predicates other than the empty `this` one yet. Damage sources name the
+  vanilla damage type closest to Obsidian's damage kinds.
+- Synced data fields aren't saved (see [plugin content](plugin-content.md#synced-data-fields)), and plugin mobs have no
+  spawn eggs.
+
+**Where to start:** client prediction in `VehicleControl` for plugin types, driven like a horse or a happy ghast from
+the type's movement mode and speeds, with the server reading `MoveVehicle` from the controlling rider.
 
 ## Block entity data on items
 

@@ -535,6 +535,18 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      Obsidian payload syncs the local player, tracked entities and loaded chunks, read through `IClientWorld` on the
      game thread. Attachment-only plugins allow vanilla clients. See
      [plugin-content.md](plugin-content.md#saved-data-and-attachments).
+   - Done, engine phase 5 plugin entities, server-authoritative: living entities' attributes take modifiers, applied
+     in vanilla's operation order and clamped to vanilla's ranges; players get their held and worn items' modifiers
+     and the sprinting one, and `UpdateAttributes` is sent as vanilla sends it. A plugin type declares synced data
+     fields (`EntityProperties.DataFields`), sent after vanilla's fields only to clients agreeing on the optional
+     `obsidian:entity_data` channel, which the Obsidian client keeps in `IClientEntity.Metadata`. Plugin mobs can be
+     mounted (`IEntityBehavior.CanMount`, `IPlayer.StartRiding`) and steered by their rider, walking or flying
+     (`EntityMovementMode.Flying`, with no gravity and the flying move control); `HurtAsync` and `DiedAsync` hooks
+     change or cancel damage and see deaths; dying mobs drop their `entities/` loot table with killed-by-player and
+     looting conditions; `SpawnPlacement` and `CanSpawn` give natural spawning a type's own rules. Saved per-entity
+     data is attachments. Left: client prediction of mod mounts and the server reading `MoveVehicle`, mobs' equipment
+     in their attributes, saved API modifiers (see [known-gaps.md](known-gaps.md#plugin-entities)). See
+     [plugin-content.md](plugin-content.md#riding-and-flying).
    - Done, engine phase 4 entity renderers: `EntityRendererProperties` gains `Layers` drawn over the model and posed
      like it (an `EntityRenderLayer`: the model or another model layer, a texture, a tint and a cutout, translucent or
      emissive render type, emissive being vanilla's full-bright `eyes`), a `TextureProvider` choosing the texture from
