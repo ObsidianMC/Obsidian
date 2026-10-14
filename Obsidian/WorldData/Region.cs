@@ -1,3 +1,4 @@
+using Obsidian.API.BlockEntities;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -88,6 +89,12 @@ public class Region : IRegion
 
     // Tick containers and block access retire at the final save snapshot, before asynchronous compression and I/O.
     internal Action<IChunk>? BlockAccessUnloaded { get; init; }
+
+    /// <summary>
+    /// Tells a block entity its chunk unloaded (the level's <see cref="AbstractLevel.OnBlockEntityUnloaded"/>), after
+    /// the chunk's final save, holding no lock.
+    /// </summary>
+    internal Action<BlockEntity>? BlockEntityUnloaded { get; init; }
     private readonly HashSet<IChunk> retiredBlockAccess = [];
 
     // A removed region cannot publish or attach chunks, including loads and generation already in flight.
@@ -516,10 +523,11 @@ public class Region : IRegion
         await this.initialization.Value;
 
         var retired = new List<BaseContainer>();
+        var unloaded = new List<BlockEntity>();
         await this.saveLock.WaitAsync();
         try
         {
-            await this.WriteChunkAsync(chunk, unloading, retired);
+            await this.WriteChunkAsync(chunk, unloading, retired, unloaded);
         }
         finally
         {
@@ -529,10 +537,18 @@ public class Region : IRegion
             // releases its semaphore; a failed write must still close the retired windows.
             foreach (var inventory in retired)
                 await AbstractLevel.CloseWindowsAsync(inventory);
+
+            // Saved and retired, the block entities hear their chunk unloaded while they still reach their level.
+            foreach (var blockEntity in unloaded)
+            {
+                this.BlockEntityUnloaded?.Invoke(blockEntity);
+                BlockEntityLifecycle.Detach(blockEntity);
+            }
         }
     }
 
-    private async Task WriteChunkAsync(IChunk chunk, bool unloading, List<BaseContainer> retired)
+    private async Task WriteChunkAsync(
+        IChunk chunk, bool unloading, List<BaseContainer> retired, List<BlockEntity> unloaded)
     {
         var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
 
@@ -560,7 +576,7 @@ public class Region : IRegion
                     : this.SaveStructureStarts(current.X, current.Z, loadedStarts);
 
                 if (unloading && current is Chunk retiring)
-                    retired.AddRange(BlockEntityLifecycle.Retire(retiring));
+                    BlockEntityLifecycle.Retire(retiring, retired, unloaded);
 
                 SerializeChunk(writer, current, structureStarts);
 
