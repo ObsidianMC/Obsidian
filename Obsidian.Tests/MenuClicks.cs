@@ -934,6 +934,8 @@ public sealed class MenuClicks
         }
 
         // Finished player drops stay host-owned even while the menu's plugin call is active.
+        // This fixture moves Position directly, without the movement packet that normally updates the drop height.
+        player.HeadY = player.Position.Y + 1.62;
         var owner = new PluginContainer
         {
             Info = new PluginInfo("dropowner"),
@@ -950,8 +952,11 @@ public sealed class MenuClicks
             Assert.True(click.Commit());
         }
 
-        var dropped = Assert.Single(context.World.GetNonPlayerEntitiesInRange(player.Position, 4)
-            .OfType<Obsidian.Entities.ItemEntity>());
+        // The chest removed earlier can have dropped its coal too; identify the stack this click dropped.
+        var dropped = Assert.Single(
+            context.World.GetNonPlayerEntitiesInRange(player.Position, 4).OfType<Obsidian.Entities.ItemEntity>(),
+            entity => entity.Item.Is(ItemsRegistry.Emerald));
+        Assert.Equal(2, dropped.Item.Count);
         Assert.Null(dropped.SpawnedBy);
         owner.Close();
         Obsidian.Plugins.PluginEntities.RemoveFrom(context.World, owner);
