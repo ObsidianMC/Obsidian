@@ -1,15 +1,20 @@
+using Obsidian.API.Blocks;
+using Obsidian.WorldData.Ticks;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Obsidian.WorldData.Fluids;
 
 /// <summary>
-/// A live level's fluids: the scheduled fluid ticks of its complete chunks, run each level tick with vanilla's fluid
-/// behavior.
+/// A live level's scheduled ticks and block updates: the scheduled block and fluid ticks of its complete chunks, run
+/// each level tick, and the neighbor and shape updates of block changes (see <see cref="FluidLevel"/>), with vanilla's
+/// fluid behavior and the reactions of <see cref="Blocks"/>.
 /// </summary>
 /// <remarks>
-/// Like vanilla, a chunk's ticks only run while the chunk and its eight neighbors are loaded and complete, so fluids never
-/// write into chunks that are still generating. Everything touching fluid ticks or the blocks they change goes through one
-/// lock: the level's tick, block changes with updates, and the post-processing of generating chunks next to complete ones.
+/// Like vanilla, a chunk's ticks only run while the chunk and its eight neighbors are loaded and complete, so ticks
+/// never write into chunks that are still generating. Everything touching ticks or the blocks they change goes through
+/// one lock: the level's tick, block changes with updates, and the post-processing of generating chunks next to
+/// complete ones.
 /// </remarks>
 internal sealed class LevelFluids : IFluidLevelAccess
 {
@@ -17,7 +22,7 @@ internal sealed class LevelFluids : IFluidLevelAccess
     private const int PruneInterval = 100;
 
     private readonly AbstractLevel level;
-    private readonly FluidTickScheduler scheduler = new();
+    private readonly TickScheduler<FluidKind> scheduler;
     private readonly Dictionary<long, Chunk> chunks = [];
     private readonly Lock sync = new();
     private readonly FluidLevel fluidLevel;
@@ -25,8 +30,23 @@ internal sealed class LevelFluids : IFluidLevelAccess
     public LevelFluids(AbstractLevel level)
     {
         this.level = level;
+        this.scheduler = new TickScheduler<FluidKind>(this.Clock);
         this.fluidLevel = new FluidLevel(this);
+        this.Blocks = new LevelBlockUpdates(level, this, this.fluidLevel);
     }
+
+    /// <summary>
+    /// The level's block ticks and the reactions of plugin and falling blocks to block updates.
+    /// </summary>
+    public LevelBlockUpdates Blocks { get; }
+
+    /// <summary>
+    /// The game time block and fluid ticks are scheduled against, like vanilla's level game time.
+    /// </summary>
+    public TickClock Clock { get; } = new();
+
+    /// <inheritdoc/>
+    public IBlockReactions? Reactions => this.Blocks;
 
     /// <inheritdoc/>
     public int MinY => this.level.MinY;
@@ -67,34 +87,62 @@ internal sealed class LevelFluids : IFluidLevelAccess
         {
             var key = NumericsHelper.IntsToLong(complete.X, complete.Z);
             if (this.chunks.TryGetValue(key, out var previous) && previous != complete)
+            {
                 previous.FluidTicks.StopTicking();
+                previous.BlockTicks.StopTicking();
+            }
 
             this.chunks[key] = complete;
             complete.FluidTicks.StartTicking(this.scheduler, key);
+            complete.BlockTicks.StartTicking(this.Blocks.Scheduler, key);
         }
     }
 
     /// <summary>
-    /// Runs one level tick of fluid ticks.
+    /// Runs one level tick of block ticks and then fluid ticks, like vanilla.
     /// </summary>
+    /// <remarks>
+    /// The game time advances before either runs, as vanilla's does, so that a fluid tick a block tick schedules is
+    /// due as many ticks later as one scheduled anywhere else.
+    /// </remarks>
     public void Tick()
     {
         lock (this.sync)
         {
+            this.Clock.Advance();
+            this.Blocks.Scheduler.Tick(this.IsTicking, this.Blocks.RunScheduledTick);
             this.scheduler.Tick(this.IsTicking, this.fluidLevel.RunScheduledTick);
-            if (this.scheduler.GameTime % PruneInterval == 0)
+            if (this.Clock.GameTime % PruneInterval == 0)
                 this.PruneUnloaded();
         }
     }
 
     /// <summary>
-    /// Lets fluids react to a block changed with block updates outside of fluid ticks (see <see cref="FluidLevel.OnBlockChanged"/>).
+    /// Lets fluids react to a block a feature growing at runtime changed (see
+    /// <see cref="FluidLevel.UpdateFluidsAround"/>).
     /// </summary>
     public void OnBlockChanged(Vector position, IBlock block)
     {
         lock (this.sync)
-            this.fluidLevel.OnBlockChanged(position, block);
+            this.fluidLevel.UpdateFluidsAround(position, block);
     }
+
+    /// <summary>
+    /// Runs the side effects of a block the level stored outside of ticks, from <paramref name="old"/>, as
+    /// <paramref name="flags"/> ask (see <see cref="FluidLevel.OnBlockChanged"/>).
+    /// </summary>
+    public void OnBlockChanged(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
+    {
+        lock (this.sync)
+            this.fluidLevel.OnBlockChanged(position, old, block, flags);
+    }
+
+    /// <summary>
+    /// The complete chunk holding <paramref name="position"/>, if it's loaded. Call it under <see cref="TickLock"/>,
+    /// which tracking chunks takes.
+    /// </summary>
+    public bool TryGetChunk(Vector position, [NotNullWhen(true)] out Chunk? chunk) =>
+        this.chunks.TryGetValue(TickScheduler<FluidKind>.ChunkKey(position), out chunk);
 
     /// <summary>
     /// The lock fluid ticks and fluid block changes run under, which random ticks and bone meal grow plants under and
@@ -120,14 +168,14 @@ internal sealed class LevelFluids : IFluidLevelAccess
     /// Chunks that aren't loaded read as void air too; fluid ticks only run where every chunk they can reach is loaded.
     /// </remarks>
     public IBlock GetBlock(Vector position) =>
-        !this.level.IsOutsideBuildHeight(position.Y) && this.chunks.TryGetValue(FluidTickScheduler.ChunkKey(position), out var chunk)
+        !this.level.IsOutsideBuildHeight(position.Y) && this.TryGetChunk(position, out var chunk)
             ? chunk.GetBlock(position.X, position.Y, position.Z)
             : BlocksRegistry.VoidAir;
 
     /// <inheritdoc/>
     public bool SetBlock(Vector position, IBlock block)
     {
-        if (this.level.IsOutsideBuildHeight(position.Y) || !this.chunks.TryGetValue(FluidTickScheduler.ChunkKey(position), out var chunk))
+        if (this.level.IsOutsideBuildHeight(position.Y) || !this.TryGetChunk(position, out var chunk))
             return false;
 
         chunk.SetBlock(position.X, position.Y, position.Z, block);
@@ -137,9 +185,21 @@ internal sealed class LevelFluids : IFluidLevelAccess
         if (this.level.UpdateBlockEntity(chunk, position, block) is API.BlockEntities.BlockEntity removed)
             this.level.QueueBlockEntityRemoval(removed);
 
-        this.level.BroadcastBlockChange(block, position);
-        this.level.Portals.OnBlockChanged(position);
         return true;
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Players see the change with <see cref="BlockUpdateFlags.Clients"/>, and portals check their frames around it
+    /// with <see cref="BlockUpdateFlags.Neighbors"/>.
+    /// </remarks>
+    public void OnBlockStored(Vector position, IBlock block, BlockUpdateFlags flags)
+    {
+        if ((flags & BlockUpdateFlags.Clients) != 0)
+            this.level.BroadcastBlockChange(block, position);
+
+        if ((flags & BlockUpdateFlags.Neighbors) != 0)
+            this.level.Portals.OnBlockChanged(position);
     }
 
     /// <inheritdoc/>
@@ -151,7 +211,7 @@ internal sealed class LevelFluids : IFluidLevelAccess
     /// </remarks>
     public void ScheduleFluidTick(Vector position, FluidKind fluid, int delay)
     {
-        if (this.chunks.TryGetValue(FluidTickScheduler.ChunkKey(position), out var chunk))
+        if (this.TryGetChunk(position, out var chunk))
             chunk.FluidTicks.Schedule(position, fluid, delay);
     }
 
@@ -181,6 +241,7 @@ internal sealed class LevelFluids : IFluidLevelAccess
                 continue;
 
             chunk.FluidTicks.StopTicking();
+            chunk.BlockTicks.StopTicking();
             this.chunks.Remove(key);
         }
     }

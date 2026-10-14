@@ -239,18 +239,17 @@ public partial class UseItemOnPacket
         if (player is Obsidian.Entities.Player eatingPlayer)
             eatingPlayer.StartEating(Hand);
 
+        if (currentItem is null || player.Level is not AbstractLevel placeLevel)
+            return;
+
         IBlock block;
-        if (currentItem?.Holder.Block is BlockType pluginBlock)
+        if (currentItem.Holder.Block is BlockType pluginBlock)
         {
             // A plugin's block item places its block, for players that may use items.
             if (currentItem.Count <= 0 || !Plugins.ItemBehaviors.CanUseItems(player))
                 return;
 
             block = pluginBlock.DefaultState;
-        }
-        else if (currentItem is null)
-        {
-            return;
         }
         else if (currentItem.Is(ItemsRegistry.WaterBucket))
         {
@@ -270,11 +269,20 @@ public partial class UseItemOnPacket
             block = placed;
         }
 
-        // What the placed item holds goes to its block entity, like a shulker box's items.
-        var placedItem = new ItemStack(currentItem, 1);
+        // Like vanilla's BlockPlaceContext: a block goes into a clicked block it can replace (tall grass, say, but not
+        // a block of its own kind), and otherwise next to it on the clicked face, where there must be room. Buckets
+        // pour next to the clicked block.
+        var pouring = block.Is(BlockIds.Water) || block.Is(BlockIds.Lava);
+        var replacesClicked = !pouring && b.CanBeReplaced() && b.RegistryId != block.RegistryId;
+        if (!replacesClicked)
+            position += this.Face.ToVector();
 
-        if (player.GameMode != GameMode.Creative)
-            player.Inventory.RemoveItem(this.Hand == InteractionHand.MainHand ? player.CurrentHeldItemSlot : (short)45, 1);
+        var target = await placeLevel.GetBlockAsync(position);
+        if (placeLevel.IsOutsideBuildHeight(position.Y) || !pouring && target?.CanBeReplaced() != true)
+        {
+            await this.RejectPlacementAsync(player, handSlot);
+            return;
+        }
 
         if (block.Is(BlockIds.EndPortalFrame))
         {
@@ -282,70 +290,104 @@ public partial class UseItemOnPacket
             block = block.WithProperty("facing", facings[(int)Math.Floor((player.Yaw.Degrees + 45) / 90) % 4]);
         }
 
-        switch (Face) // TODO fix this for logs
+        if (currentItem.Holder.Block is BlockType)
         {
-            case BlockFace.Down:
-                position.Y -= 1;
-                break;
+            var context = new BlockPlaceContext
+            {
+                Level = placeLevel.BlockUpdates,
+                Player = player,
+                Hand = this.Hand,
+                Item = currentItem,
+                Block = block,
+                Position = position,
+                ClickedPosition = this.Position,
+                ClickedFace = this.Face,
+                ClickedAt = this.Cursor,
+                ReplacesClicked = replacesClicked,
+                HorizontalDirection = PlacementDirections.Horizontal(player.Yaw.Degrees),
+                NearestLookDirection = PlacementDirections.Nearest(player.Yaw.Degrees, player.Pitch.Degrees)
+            };
 
-            case BlockFace.Up:
-                position.Y += 1;
-                break;
+            // Like the block's other hooks, while the level's block updates wait, so what it reads stays as it read.
+            IBlock? state;
+            lock (placeLevel.Fluids.TickLock)
+                state = Plugins.BlockBehaviors.GetStateForPlacement(context);
 
-            case BlockFace.North:
-                position.Z -= 1;
-                break;
+            if (state is null)
+            {
+                await this.RejectPlacementAsync(player, handSlot);
+                return;
+            }
 
-            case BlockFace.South:
-                position.Z += 1;
-                break;
-
-            case BlockFace.West:
-                position.X -= 1;
-                break;
-
-            case BlockFace.East:
-                position.X += 1;
-                break;
-
-            default:
-                break;
+            block = state;
         }
 
         // Like vanilla's buckets, water poured where it evaporates (the nether) hisses instead of being placed.
-        if (block.Is(BlockIds.Water)
-            && player.Level is AbstractLevel waterLevel
-            && waterLevel.Evaporates(player, position))
+        if (block.Is(BlockIds.Water) && placeLevel.Evaporates(player, position))
         {
             player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
             return;
         }
 
-        if (block.IsGravityAffected() && !BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out _))
+        var placing = new BlockPlaceEventArgs(server, player, block, position, placeLevel, this.Hand)
         {
-            if (await player.Level.GetBlockAsync(position + Vector.Down) is IBlock below &&
-                below.IsFreeForFallingBlock())
-            {
-                await player.Level.SetBlockAsync(position, BlocksRegistry.Air, true);
-                player.Client.SendPacket(new BlockChangedAckPacket
-                {
-                    SequenceID = Sequence
-                });
-                player.Level.SpawnFallingBlock(position, BlocksRegistry.GetDefault(block.RegistryId));
-                return;
-            }
+            Sequence = this.Sequence
+        };
+
+        await server.EventDispatcher.ExecuteEventAsync(placing);
+        if (placing.IsCancelled)
+        {
+            await this.RejectPlacementAsync(player, handSlot);
+            return;
         }
 
-        await player.Level.SetBlockAsync(position, block, doBlockUpdate: true);
-        await BlockEntityComponents.ApplyAsync(player.Level, position, placedItem);
+        // What the placed item holds goes to its block entity, like a shulker box's items.
+        var placedItem = new ItemStack(currentItem, 1);
 
-        if (player.Level is Obsidian.WorldData.AbstractLevel events)
-            events.EmitGameEvent(Obsidian.WorldData.MobGameEvent.BlockPlace, (VectorD)position + new VectorD(0.5, 0.5, 0.5), player, affectedBlock: block);
+        // The event's handlers may have filled the target or changed the player's hand while it ran: both are checked
+        // again in the same step as the block is placed, and the item is only used once it is.
+        var stored = await placeLevel.TrySetBlockAsync(
+            position,
+            block,
+            BlockUpdateFlags.All,
+            current => (pouring || current.CanBeReplaced())
+                && ReferenceEquals(player.Inventory.GetItem(handSlot), currentItem)
+                && currentItem.Count > 0);
+
+        if (!stored)
+        {
+            await this.RejectPlacementAsync(player, handSlot);
+            return;
+        }
+
+        await BlockEntityComponents.ApplyAsync(placeLevel, position, placedItem);
+
+        if (player.GameMode != GameMode.Creative)
+            player.Inventory.RemoveItem(handSlot, 1);
+
+        var center = (VectorD)position + new VectorD(0.5, 0.5, 0.5);
+        placeLevel.EmitGameEvent(MobGameEvent.BlockPlace, center, player, affectedBlock: block);
         player.Client.SendPacket(new BlockChangedAckPacket
         {
             SequenceID = Sequence
         });
     }
+
+    // A placement that didn't happen: the player's client, which predicted it, gets the block and the item back.
+    private async ValueTask RejectPlacementAsync(IClientPlayer player, int handSlot)
+    {
+        player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+
+        var target = this.Position + this.Face.ToVector();
+        foreach (var position in new[] { this.Position, target })
+        {
+            if (await player.Level.GetBlockAsync(position) is IBlock block)
+                player.Client.SendPacket(new BlockUpdatePacket(position, block.GetHashCode()));
+        }
+
+        await player.SendInventorySlotAsync(handSlot);
+    }
+
     private async ValueTask ConsumePortalItemAsync(IClientPlayer player, ItemStack item)
     {
         var slot = this.Hand == InteractionHand.MainHand ? player.CurrentHeldItemSlot : (short)45;

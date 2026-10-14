@@ -245,10 +245,14 @@ public sealed class BlockType
 }
 
 /// <summary>
-/// The plugin that registered a block, and what the block does: its behaviour, and the trees it grows into when it's
-/// a sapling.
+/// The plugin that registered a block, and what the block does: its behaviour, whether that gets random ticks, and the
+/// trees it grows into when it's a sapling.
 /// </summary>
-internal sealed record BlockBinding(IPluginContainer Owner, IBlockBehavior? Behavior, TreeGrower? TreeGrower = null);
+internal sealed record BlockBinding(
+    IPluginContainer Owner,
+    IBlockBehavior? Behavior,
+    TreeGrower? TreeGrower = null,
+    bool RandomlyTicks = false);
 
 /// <summary>
 /// The parts of a plugin block's <see cref="BlockProperties"/> the server keeps: plain values, so that keeping them

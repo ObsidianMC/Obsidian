@@ -1,7 +1,9 @@
 using Obsidian.API;
 using Obsidian.Registries;
 using Obsidian.WorldData;
+using Obsidian.API.Blocks;
 using Obsidian.WorldData.Fluids;
+using Obsidian.WorldData.Ticks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -65,7 +67,10 @@ public class VanillaFluids(VanillaFluids.ScenarioFixture fixture) : IClassFixtur
                 world.Fluids.SetBlock(action.Position, action.Block, BlockUpdateFlags.All);
 
             if (tick > 0)
+            {
+                world.Scheduler.Clock.Advance();
                 world.Scheduler.Tick(_ => true, world.Fluids.RunScheduledTick);
+            }
 
             if (checkpoints.TryGetValue(tick, out var checkpoint))
                 diffs.AddRange(Compare(world, checkpoint, min, max));
@@ -147,7 +152,7 @@ public class VanillaFluids(VanillaFluids.ScenarioFixture fixture) : IClassFixtur
             this.Fluids = new FluidLevel(this);
         }
 
-        public FluidTickScheduler Scheduler { get; } = new();
+        public TickScheduler<FluidKind> Scheduler { get; } = new();
 
         public FluidLevel Fluids { get; }
 
@@ -182,7 +187,7 @@ public class VanillaFluids(VanillaFluids.ScenarioFixture fixture) : IClassFixtur
             if (!this.chunks.TryGetValue(key, out var chunk))
             {
                 this.chunks[key] = chunk = new Chunk(key.Item1, key.Item2, this.MinY, this.Height, ChunkGenStage.full);
-                chunk.FluidTicks.StartTicking(this.Scheduler, FluidTickScheduler.ChunkKey(position));
+                chunk.FluidTicks.StartTicking(this.Scheduler, TickScheduler<FluidKind>.ChunkKey(position));
             }
 
             return chunk;

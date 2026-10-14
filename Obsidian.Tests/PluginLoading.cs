@@ -583,8 +583,9 @@ public sealed class ProbePlugin : PluginBase
         var crate = pluginRegistry.RegisterBlock("probe:crate", new BlockProperties { Item = null });
         pluginRegistry.RegisterBlockEntity<ProbeCrate>("probe:crate", crate);
 
-        // Its blocks generated from data/probe/blocks.
+        // Its blocks generated from data/probe/blocks, and blocks recording their hooks for BlockUpdates' tests.
         ProbeBlocks.Register(pluginRegistry);
+        ProbeRelay.Register(pluginRegistry);
 
         // Its worldgen types, which data/probe/worldgen's features are made of. Vanilla's identifiers, and its own
         // twice, are refused.

@@ -28,8 +28,6 @@ public interface IRegion : IAsyncDisposable
 
     public Task<bool> InitAsync();
 
-    public void AddBlockUpdate(IBlockUpdate bu);
-
     public Task BeginTickAsync(CancellationToken cts = default);
     public Task FlushAsync(CancellationToken cts = default);
     public IEnumerable<IChunk> GeneratedChunks();
