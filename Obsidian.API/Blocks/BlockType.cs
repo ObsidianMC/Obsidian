@@ -287,10 +287,24 @@ internal sealed record BlockSettings(
         this.StateLightEmission is ImmutableArray<byte> levels ? levels[stateIndex] : this.LightEmission;
 
     /// <summary>
-    /// The settings of <paramref name="properties"/>, asking <see cref="BlockProperties.StateLightEmission"/> for
-    /// each state of <paramref name="type"/> when both are given.
+    /// Each state's own shapes, by its index among the block's states, when <see cref="BlockProperties.StateShapes"/>
+    /// gave them (null for a state it gave none); null when no state has shapes of its own.
+    /// </summary>
+    public ImmutableArray<PluginStateShapes?>? StateShapes { get; init; }
+
+    /// <summary>
+    /// The shapes of the block's state at <paramref name="stateIndex"/> among its states, or null for the usual
+    /// shapes of its template state.
+    /// </summary>
+    public PluginStateShapes? ShapesOf(int stateIndex) =>
+        this.StateShapes is ImmutableArray<PluginStateShapes?> shapes ? shapes[stateIndex] : null;
+
+    /// <summary>
+    /// The settings of <paramref name="properties"/>, asking <see cref="BlockProperties.StateLightEmission"/> and
+    /// <see cref="BlockProperties.StateShapes"/> for each state of <paramref name="type"/> when both are given.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">A state's light level isn't from 0 to 15.</exception>
+    /// <exception cref="ArgumentException">A state of a block without collision has collision boxes.</exception>
     public static BlockSettings From(BlockProperties properties, BlockType? type = null) => new(
         properties.HasCollision,
         properties.HasCollision && properties.Opaque,
@@ -303,8 +317,37 @@ internal sealed record BlockSettings(
     {
         StateLightEmission = type is not null && properties.StateLightEmission is { } emission
             ? LevelsOf(type, emission)
+            : null,
+        StateShapes = type is not null && properties.StateShapes is { } shapes
+            ? ShapesOf(type, shapes, properties.HasCollision)
             : null
     };
+
+    private static ImmutableArray<PluginStateShapes?> ShapesOf(
+        BlockType type,
+        Func<IReadOnlyDictionary<string, string>, BlockShapes?> shapesOf,
+        bool hasCollision)
+    {
+        var shapes = new PluginStateShapes?[type.StateCount];
+
+        for (var index = 0; index < shapes.Length; index++)
+        {
+            if (shapesOf(type.ValuesOf(type.FirstStateId + index)) is not BlockShapes given)
+                continue;
+
+            // Light and heightmaps take a block without collision for one entities pass through.
+            if (!hasCollision && given.Collision.Count > 0)
+            {
+                throw new ArgumentException(
+                    $"{type.Identifier} has no collision, so its states can't have collision boxes.",
+                    nameof(BlockProperties.StateShapes));
+            }
+
+            shapes[index] = new PluginStateShapes(given);
+        }
+
+        return [.. shapes];
+    }
 
     private static ImmutableArray<byte> LevelsOf(
         BlockType type,
@@ -323,6 +366,28 @@ internal sealed record BlockSettings(
 
         return [.. levels];
     }
+}
+
+/// <summary>
+/// A plugin block state's own shapes, from <see cref="BlockProperties.StateShapes"/>, and their boxes as the
+/// <c>{ minX, minY, minZ, maxX, maxY, maxZ }</c> arrays vanilla's captured shapes are read as, made once here so that
+/// collision doesn't make them on every look.
+/// </summary>
+internal sealed class PluginStateShapes(BlockShapes shapes)
+{
+    /// <summary>The shapes the plugin gave, which copied and checked their boxes.</summary>
+    public BlockShapes Shapes { get; } = shapes;
+
+    /// <summary>The collision boxes as arrays.</summary>
+    public IReadOnlyList<double[]> CollisionBoxes { get; } = Boxes(shapes.Collision);
+
+    /// <summary>The outline boxes as arrays.</summary>
+    public IReadOnlyList<double[]> OutlineBoxes { get; } = Boxes(shapes.Outline);
+
+    private static double[][] Boxes(IReadOnlyList<BoundingBox> boxes) =>
+    [
+        .. boxes.Select(box => new[] { box.Min.X, box.Min.Y, box.Min.Z, box.Max.X, box.Max.Y, box.Max.Z })
+    ];
 }
 
 /// <summary>

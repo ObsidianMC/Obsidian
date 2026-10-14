@@ -285,7 +285,33 @@ internal static class BlockPhysics
         if (BlockEntityTypesRegistry.Of(type) is not null)
             flags |= 1 << 10;
 
-        return flags | Math.Clamp(settings.LightEmissionOf(stateId - type.FirstStateId), 0, 15) << 17;
+        var index = stateId - type.FirstStateId;
+        if (settings.ShapesOf(index) is PluginStateShapes own)
+            flags = OwnShapeFlags(flags, own);
+
+        return flags | Math.Clamp(settings.LightEmissionOf(index), 0, 15) << 17;
+    }
+
+    // The flags that come from a collision shape: a full collision cube (6), sturdy faces and centers (7, 8, 11-16,
+    // 31) and a full top face (29).
+    private const int FullShapeFlags = 1 << 6 | 1 << 7 | 1 << 8 | 0b111111 << 11 | 1 << 29 | 1 << 31;
+
+    // A plugin state with shapes of its own keeps its template's full-block flags only when its collision is the full
+    // block; any other shape has no sturdy faces, so nothing that needs a full face (a torch, a door) holds on to it.
+    // An empty collision shape is flagged so (28).
+    private static int OwnShapeFlags(int flags, PluginStateShapes own)
+    {
+        var collision = own.Shapes.Collision;
+        var fullBlock = collision.Count == 1
+            && collision[0].Min == VectorD.Zero
+            && collision[0].Max == new VectorD(1, 1, 1);
+
+        if (fullBlock)
+            return flags;
+
+        flags &= ~FullShapeFlags;
+
+        return collision.Count == 0 ? flags | 1 << 28 : flags & ~(1 << 28);
     }
 
     // The vanilla state whose shapes describe a state: itself, a plugin block's template, or air for an unknown id.
@@ -323,12 +349,35 @@ internal static class BlockPhysics
 
     private static int Flags(IBlock block) => Flags(block.GetHashCode());
 
-    /// <summary>Vanilla state shapes captured with empty collision context, in block-local coordinates.</summary>
+    /// <summary>
+    /// Vanilla state shapes captured with empty collision context, in block-local coordinates, or a plugin block
+    /// state's own collision shape (see <see cref="PluginShapes"/>), which is its visual shape too, as vanilla's
+    /// visual shape is the collision shape unless a block says otherwise.
+    /// </summary>
     public static IReadOnlyList<double[]> ShapeBoxes(int state, bool visual = false) =>
-        data.Value.ShapeBoxes[(visual ? data.Value.VisualShapes : data.Value.CollisionShapes)[ShapeState(state)]];
-    /// <summary>Vanilla's selection/picking shape, distinct from the camera's visual shape.</summary>
+        PluginShapes(state)?.CollisionBoxes
+        ?? data.Value.ShapeBoxes[(visual ? data.Value.VisualShapes : data.Value.CollisionShapes)[ShapeState(state)]];
+
+    /// <summary>
+    /// Vanilla's selection/picking shape, distinct from the camera's visual shape, or a plugin block state's own
+    /// outline (see <see cref="PluginShapes"/>).
+    /// </summary>
     public static IReadOnlyList<double[]> OutlineBoxes(int state) =>
-        data.Value.ShapeBoxes[data.Value.OutlineShapes[ShapeState(state)]];
+        PluginShapes(state)?.OutlineBoxes ?? data.Value.ShapeBoxes[data.Value.OutlineShapes[ShapeState(state)]];
+
+    /// <summary>
+    /// The shapes a plugin block's <see cref="BlockProperties.StateShapes"/> gave a state when it registered, or null
+    /// for vanilla's states and plugin states that keep their template's shapes. Both sides read them from the
+    /// block's settings, which each side's <c>ConfigureRegistry</c> made; a block entity's shapes win over them where
+    /// the caller reads those first.
+    /// </summary>
+    internal static PluginStateShapes? PluginShapes(int stateId)
+    {
+        if ((uint)stateId < (uint)Tables.Flags.Length || !BlocksRegistry.TryGetPluginBlock(stateId, out var type))
+            return null;
+
+        return type.Settings.ShapesOf(stateId - type.FirstStateId);
+    }
 
     public static bool Suffocates(int state) => data.Value.Suffocating[ShapeState(state)];
 

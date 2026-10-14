@@ -71,6 +71,19 @@ public sealed class BlockProperties
     public Func<IReadOnlyDictionary<string, string>, int>? StateLightEmission { get; init; }
 
     /// <summary>
+    /// The collision and outline shapes of a state of the block given its property values by name, like the shapes
+    /// vanilla's fences, walls and panes take from their connections; null for a state keeps the block's usual shapes
+    /// (a full block). It's asked once for each state when the block is registered (again when the plugin reloads),
+    /// and not kept: the shapes it gave are. A block entity's shapes (<c>BlockEntity.GetShapes</c>) win over them.
+    /// </summary>
+    /// <remarks>
+    /// Shapes decide what entities collide with, what mobs path around and what players aim at; whether the block
+    /// blocks light and hides its neighbours' faces stays <see cref="Opaque"/>'s, and a block without
+    /// <see cref="HasCollision"/> can't give a state collision boxes. A reload may change the shapes.
+    /// </remarks>
+    public Func<IReadOnlyDictionary<string, string>, BlockShapes?>? StateShapes { get; init; }
+
+    /// <summary>
     /// What the block does when players use or place it, when it or its neighbours change, when it ticks and when
     /// entities touch it, or null for nothing.
     /// </summary>

@@ -38,6 +38,30 @@ registers, and changing to a state with another level relights the area (see [Ru
 client mod declares the same properties and values in the same order: bool properties are `true, false`, int ones
 ascending, enum ones in the order given.
 
+A block is a full block to collide with and aim at, unless `StateShapes` gives a state its own shapes from its
+property values, like vanilla's fences and walls take theirs from their connections: a `BlockShapes(collision,
+outline)` in blocks (see [Shapes and multipart blocks](#shapes-and-multipart-blocks)), or null for a full block.
+
+```csharp
+StateShapes = values =>
+{
+    List<BoundingBox> boxes = [new(new VectorD(0.25, 0, 0.25), new VectorD(0.75, 1, 0.75))];
+    if (values["north"] == "true")
+        boxes.Add(new(new VectorD(0.375, 0.5, 0), new VectorD(0.625, 0.875, 0.25)));
+
+    return new BlockShapes(boxes, boxes);
+}
+```
+
+Like `StateLightEmission`, it's asked once per state as the block registers, on the server and on the Obsidian
+client, which both run `ConfigureRegistry`, and only the shapes are kept. Collision, mob navigation, outline raycasts
+for breaking and using, and the client's picking, outline and movement prediction read them; a block entity's
+shapes win where it publishes some. A state whose shapes aren't the full block has no sturdy faces, so torches and
+other blocks that need a full face don't attach to it, while `Opaque` still decides light and face culling. A block
+without `HasCollision` can't give collision boxes. A reload may change the shapes: they feed neither light nor
+heightmaps, and the server reads them afresh each time. Connected Obsidian clients keep the shapes their copy of
+the mod gave until they reload their mods, which they do while disconnected.
+
 Structures turn and mirror the block, in templates and pool elements, by its properties named like vanilla's: a
 `facing` of `north`, `east`, `south`, `west`, `up` or `down` turns, an `axis` of `x`, `y` or `z` swaps `x` and `z` on a
 quarter turn, a `rotation` from 0 to 15 turns like a standing sign's, and `north`, `east`, `south` and `west`
@@ -1171,7 +1195,9 @@ type and its update data from chunk packets and `BlockEntityData`, and remapping
 Override `BlockEntity.GetShapes()` to return a `BlockShapes(collision, outline)`, two lists of `BoundingBox` in
 block-local coordinates. Each box must have positive volume and finite coordinates inside the unit cube, from
 0 to 1 on every axis. The lists are copied and read-only. Empty lists mean no collision or no selection;
-returning null keeps the state's usual shapes (a plugin block's template). Collision and outline may differ.
+returning null keeps the state's usual shapes (its `StateShapes`', or else its template's). Collision and outline
+may differ. Shapes that follow the block state alone need no block entity: see `StateShapes` in
+[Blocks in code](#blocks-in-code).
 
 The server publishes the shapes when it creates or loads the block entity and at the end of a tick after
 `SetChanged` or `SendUpdate`, and immediately after each player's break hook so the next attempt sees the remaining
@@ -3175,7 +3201,7 @@ block: a model that follows its neighbours, like a cable connecting to them, has
 put them in `GetUpdateData` (or in block state properties) and
 `SendUpdate` when they change, as the shapes do. Connections alone need no block entity: the engine sample's cable
 (`samples/EngineSample`) keeps them in block state properties, set by its `GetStateForPlacement` and `UpdateShape`
-hooks, and its multipart blockstate draws an arm for each.
+hooks; its multipart blockstate draws an arm for each, and its `StateShapes` give each arm a box.
 
 ```csharp
 string[] sides = ["north", "east", "south", "west"];

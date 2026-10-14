@@ -198,6 +198,12 @@ internal static partial class BlocksRegistry
     /// Whether <paramref name="settings"/> keep <paramref name="type"/>'s collision, opacity and every state's light
     /// level, which placed blocks' light and sky heights were worked out from.
     /// </summary>
+    /// <remarks>
+    /// Each state's own shapes (<see cref="BlockProperties.StateShapes"/>) may change: they feed neither light nor
+    /// heightmaps, and collision, navigation and raycasts read the block's current settings each time, keeping
+    /// nothing (a path search's ground cache lasts one search). Sturdy faces follow at once too, and blocks already
+    /// resting on a face that stops being sturdy stay until a neighbour update checks them.
+    /// </remarks>
     private static bool SameLightAndCollision(BlockType type, BlockSettings settings)
     {
         var current = type.Settings;

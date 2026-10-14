@@ -6,6 +6,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using Obsidian.Entities;
+using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -432,6 +433,18 @@ public sealed partial class SamplePlugin : IDisposable
 
         Assert.Equal(["west"], Connected(first));
         Assert.Equal(["north", "east"], Connected(second));
+
+        // Its shapes follow its state: a player fits beside the first cable's core, east of it where it has no arm,
+        // but not on its west arm, and a look down misses its empty corner and hits its core.
+        var terrain = new MobTerrain(world);
+        var corner = (VectorD)first;
+        BoundingBox Player(double x) => new(corner + new VectorD(x, 0, 0.2), corner + new VectorD(x + 0.6, 1.8, 0.8));
+
+        Assert.True(terrain.IsFree(Player(0.7)));
+        Assert.False(terrain.IsFree(Player(0)));
+        Assert.Null(terrain.RaycastOutlines(corner + new VectorD(0.1, 0.9, 0.1), corner + new VectorD(0.1, 0.1, 0.1)));
+        var hit = terrain.RaycastOutlines(corner + new VectorD(0.5, 0.9, 0.5), corner + new VectorD(0.5, 0.1, 0.5));
+        Assert.Equal(11 / 16.0, hit!.Value.ClickedAt.Y, precision: 6);
 
         // Using the moth seats the player on it.
         Assert.True(EntityDefinitionsRegistry.TryGet("sample:moth", out var moth));
