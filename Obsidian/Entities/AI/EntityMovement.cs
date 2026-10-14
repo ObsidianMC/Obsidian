@@ -36,23 +36,8 @@ internal static class EntityMovement
 
         var bounds = mob.Dimension.CreateBBFromPosition(mob.Position);
         var stepHeight = Math.Clamp(mob.GetAttributeValue("minecraft:generic.step_height"), 0, 10);
-        var swept = new BoundingBox(VectorD.Min(bounds.Min, bounds.Min + velocity),
-            VectorD.Max(bounds.Max, bounds.Max + velocity) + new VectorD(0, stepHeight, 0));
-        var shapes = terrain.GetCollisions(swept).ToArray();
-        var displacement = Clip(bounds, velocity, shapes);
+        var displacement = Collide(terrain, bounds, velocity, mob is Mob ? stepHeight : 0, grounded);
         var horizontalCollision = Math.Abs(displacement.X - velocity.X) > 0.00001f ||
-            Math.Abs(displacement.Z - velocity.Z) > 0.00001f;
-
-        if (mob is Mob && stepHeight > 0 && horizontalCollision && (grounded || velocity.Y < 0 && displacement.Y != velocity.Y))
-        {
-            var rise = Clip(bounds, new VectorD(0, stepHeight, 0), shapes);
-            var step = Clip(bounds.OffsetBy(rise), new VectorD(velocity.X, 0, velocity.Z), shapes);
-            var descent = Clip(bounds.OffsetBy(rise + step), new VectorD(0, velocity.Y - rise.Y, 0), shapes);
-            var stepped = rise + step + descent;
-            if (stepped.X * stepped.X + stepped.Z * stepped.Z > displacement.X * displacement.X + displacement.Z * displacement.Z)
-                displacement = stepped;
-        }
-        horizontalCollision = Math.Abs(displacement.X - velocity.X) > 0.00001f ||
             Math.Abs(displacement.Z - velocity.Z) > 0.00001f;
 
         var onGround = velocity.Y < 0 && Math.Abs(displacement.Y - velocity.Y) > 0.00001f;
@@ -83,6 +68,40 @@ internal static class EntityMovement
                 mob.Motion = new VectorD(mob.Motion.X, 0.3f, mob.Motion.Z);
         }
         return mob.Position + displacement;
+    }
+
+    /// <summary>
+    /// How far <paramref name="bounds"/> moves of <paramref name="velocity"/> before blocks stop it, stepping up
+    /// blocks up to <paramref name="stepHeight"/> high when it stands on the ground or lands, if that gets it further.
+    /// </summary>
+    internal static VectorD Collide(
+        MobTerrain terrain,
+        BoundingBox bounds,
+        VectorD velocity,
+        float stepHeight,
+        bool grounded)
+    {
+        var swept = new BoundingBox(VectorD.Min(bounds.Min, bounds.Min + velocity),
+            VectorD.Max(bounds.Max, bounds.Max + velocity) + new VectorD(0, stepHeight, 0));
+        var shapes = terrain.GetCollisions(swept).ToArray();
+        var displacement = Clip(bounds, velocity, shapes);
+        var horizontalCollision = Math.Abs(displacement.X - velocity.X) > 0.00001f ||
+            Math.Abs(displacement.Z - velocity.Z) > 0.00001f;
+
+        if (stepHeight > 0 && horizontalCollision && (grounded || velocity.Y < 0 && displacement.Y != velocity.Y))
+        {
+            var rise = Clip(bounds, new VectorD(0, stepHeight, 0), shapes);
+            var step = Clip(bounds.OffsetBy(rise), new VectorD(velocity.X, 0, velocity.Z), shapes);
+            var descent = Clip(bounds.OffsetBy(rise + step), new VectorD(0, velocity.Y - rise.Y, 0), shapes);
+            var stepped = rise + step + descent;
+            if (stepped.X * stepped.X + stepped.Z * stepped.Z
+                > displacement.X * displacement.X + displacement.Z * displacement.Z)
+            {
+                displacement = stepped;
+            }
+        }
+
+        return displacement;
     }
 
     internal static VectorD Clip(BoundingBox bounds, VectorD desired, IReadOnlyList<BoundingBox> shapes)

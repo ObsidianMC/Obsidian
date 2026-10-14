@@ -143,8 +143,8 @@ a mod entity glows and can be ridden.
 - **Plugin entities.** Saved per-entity data, synced metadata fields for modded clients, attribute modifiers and the
   `UpdateAttributes` packet (vanilla parity too), mounts and flying movement, damage and death hooks, spawn placement
   rules, and loot tables.
-- **Movement.** Mods change how players and their mounts move (gliding, extra jumps, flying mounts), on the server
-  and in the client's prediction, driven by the mod's input on the client.
+- **Movement.** (done) Mods change how players and their mounts move (gliding, extra jumps, flying mounts), on the
+  server and in the client's prediction, driven by the mod's input on the client.
 - **Player extensions.** Extra player slots for accessories, built on attachments and phase 3's screens. The engine
   gives the pieces; it doesn't ship a Curios-style accessory API until a second mod needs one.
 - **Chunk tickets.** (done) Plugins keep chunks loaded and ticking without players nearby.

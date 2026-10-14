@@ -1,4 +1,5 @@
-﻿using Obsidian.Net.Packets.Play.Clientbound;
+﻿using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -15,8 +16,10 @@ public partial class PlayerInputPacket
     public override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var wasSneaking = player.Sneaking;
+        var previous = player.Input;
 
         player.Input = this.Flags;
+        (player as Player)?.TrackJumpInput(previous, this.Flags);
 
         if (player.Sneaking != wasSneaking)
         {

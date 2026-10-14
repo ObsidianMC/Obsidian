@@ -95,7 +95,7 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
             return true;
         }
 
-        if (channel == AttachmentPayload.Channel)
+        if (channel is AttachmentPayload.Channel or MovementAbilitiesPayload.Channel)
             return protocol == NetworkProtocol.Play && this.HasNeoForgePlayChannel(channel);
 
         var negotiated = protocol == NetworkProtocol.Configuration ? this.configurationChannels : this.playChannels;

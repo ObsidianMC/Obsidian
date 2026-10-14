@@ -154,6 +154,7 @@ public sealed partial class Player : Avatar, IClientPlayer
                 GameMode.Survival or GameMode.Adventure => PlayerAbility.None,
                 _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown gamemode.")
             };
+            Abilities |= this.GrantedFlight;
             field = value;
         }
     }

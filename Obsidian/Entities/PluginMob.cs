@@ -20,6 +20,11 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
 
     public override EntityDefinition Definition => definition;
 
+    /// <summary>
+    /// The moves the rider's client makes to the mob, which it predicts, and the checks they pass.
+    /// </summary>
+    internal ClientVehicleControl ClientControl { get; } = new();
+
     protected override bool UsesAi => true;
 
     // Like an animal, it stays until it's killed: the plugin decides when it goes.
@@ -83,11 +88,32 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
         return new VectorD(seat.X, seat.Y - 0.6 * scale, seat.Z);
     }
 
-    protected override VectorD Travel() => this.Flying ? VolumeMovement.Travel(this, true) : base.Travel();
+    // Its jump_strength, which mods can change with attribute modifiers, and its rider's client predicts with.
+    internal override float JumpPower => this.GetAttributeValue("minecraft:jump_strength");
+
+    // Where its rider's client moved it, while the client controls it; otherwise its own travel.
+    protected override VectorD Travel()
+    {
+        if (!this.ClientControl.ControlledBy(this.Rider))
+            return this.Flying ? VolumeMovement.Travel(this, true) : base.Travel();
+
+        if (this.ClientControl.Accepted is not VehicleMove move)
+            return this.Position;
+
+        this.Yaw = move.Yaw;
+        this.Pitch = move.Pitch;
+        this.MovementFlags = move.OnGround ? MovementFlags.OnGround : MovementFlags.None;
+
+        return move.Position;
+    }
 
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
+
+        if (this.ClientControl.FloatingTooLong && this.Rider is Player rider)
+            await rider.KickAsync(new ChatMessage { Translate = "multiplayer.disconnect.flying" });
+
         await this.RunBehaviorAsync(behavior => behavior.TickAsync(this));
 
         if (!this.DataChanged)
@@ -120,15 +146,17 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
         return used;
     }
 
-    // The first passenger steers, like a vanilla mount's controlling passenger: a walking mob like a horse, from
-    // the rider's movement keys and jump, and a flying one like a happy ghast, towards where the rider looks, up
-    // with jump. Its goals pause meanwhile.
+    // The first passenger steers, like a vanilla mount's controlling passenger: its client, once it sends where it
+    // moved the mob (see ClientVehicleControl), or else the server from the rider's keys (MountSteering), as a walking
+    // mob like a horse or a flying one like a happy ghast. Its goals pause meanwhile.
     protected override void TickRidden()
     {
         base.TickRidden();
 
         if (this.Rider is not Player rider || this.MobBitMask.HasFlag(MobBitmask.NoAi))
         {
+            this.ClientControl.Tick(this, null, this.Flying);
+
             if (this.riddenPaused && this.GoalController is GoalSelector { IsPaused: true } goals)
                 goals.Resume();
 
@@ -143,34 +171,32 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
             this.riddenPaused = true;
         }
 
+        this.ClientControl.Tick(this, rider, this.Flying);
+        if (this.ClientControl.ControlledBy(rider))
+            return;
+
         var input = rider.Input;
         this.Yaw = rider.Yaw;
 
         if (this.Flying)
         {
             this.Pitch = rider.Pitch;
+            this.MoveControl.Acceleration = MountSteering.Fly(
+                input,
+                rider.Yaw.Degrees,
+                rider.Pitch.Degrees,
+                this.GetAttributeValue("minecraft:flying_speed"));
 
-            var forward = (input.HasFlag(PlayerInput.Forward) ? 1 : 0)
-                - (input.HasFlag(PlayerInput.Backward) ? 0.5 : 0);
-            var sideways = (input.HasFlag(PlayerInput.Left) ? 1 : 0)
-                - (input.HasFlag(PlayerInput.Right) ? 1 : 0);
-            var yaw = this.Yaw.Degrees * Math.PI / 180;
-            var lift = input.HasFlag(PlayerInput.Jump) ? 0.5 : 0;
-            var direction = (VectorD)rider.GetLookDirection() * forward
-                + new VectorD(Math.Cos(yaw) * sideways, lift, Math.Sin(yaw) * sideways);
-
-            if (direction.MagnitudeSquared() > 1)
-                direction /= direction.Magnitude;
-
-            this.MoveControl.Acceleration = direction * (this.GetAttributeValue("minecraft:flying_speed") * 0.1);
             return;
         }
 
         this.Pitch = rider.Pitch.Degrees * 0.5f;
-
-        var ahead = (input.HasFlag(PlayerInput.Forward) ? 1f : 0) - (input.HasFlag(PlayerInput.Backward) ? 1f : 0);
-        var side = (input.HasFlag(PlayerInput.Left) ? 0.5f : 0) - (input.HasFlag(PlayerInput.Right) ? 0.5f : 0);
-        this.MoveControl.Ride(this.MovementSpeed, ahead < 0 ? ahead * 0.25f : ahead, side);
+        this.MoveControl.Acceleration = MountSteering.Walk(
+            input,
+            this.Yaw.Degrees,
+            this.MovementSpeed,
+            this.MovementFlags.HasFlag(MovementFlags.OnGround),
+            this.InWater || this.InLava);
 
         if (input.HasFlag(PlayerInput.Jump))
             this.JumpControl.Jump();

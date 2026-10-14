@@ -891,9 +891,17 @@ sealed class DrakeBehavior(EntityDataField<bool> saddled) : IEntityBehavior
 }
 ```
 
-Movement is the server's: the Obsidian client doesn't predict a mod's mount, so it follows the server's positions
-and its rider's view lags by the round trip, and the server doesn't read `MoveVehicle` (see
-[known-gaps.md](known-gaps.md#plugin-entities)).
+The Obsidian client predicts a mob its player rides first, as vanilla's client predicts a horse: it pushes the mob
+from the keys like the server does (Obsidian's `MountSteering`, which both share), walking or flying as the type's
+`Movement` says, with its synced `movement_speed`, `flying_speed`, `jump_strength`, `gravity` and `step_height`, and
+sends where it went with `MoveVehicle`. The server takes those moves after vanilla's checks: a move more than ten
+blocks beyond the mob's motion, one ending over a quarter of a block from where the server's collision lets the mob
+go, or one into blocks it wasn't in is refused, and the client's mob is put back; a walking mob kept floating for 80
+ticks (longer under lower gravity) kicks its rider, as vanilla does. Until the rider's client sends a move, the server
+steers from the rider's `PlayerInput` as above, which is what clients that don't predict the mob get. Register the
+type with the same `Movement`, speeds and size on both sides, so that both move it alike; modifiers on the mob's
+attributes change both sides' movement, since attributes are synced. Fluid currents and the server's mob-specific
+travel quirks aren't predicted: the server's checks absorb the small differences.
 
 ### Synced data fields
 
@@ -957,6 +965,40 @@ that holds it up, no fluid at its feet), `InWater` (in water, with water or air 
 each with its hitbox free. Natural spawning then skips the spawn list's light and floor rules and asks the
 behaviour's `CanSpawn(level, position)`, which can check light, blocks or anything else, on the level's tick. Without
 a placement a mob follows its spawn list's rules, as above. Spawn eggs for plugin mobs aren't provided.
+
+## Movement
+
+Attribute modifiers (see [Attributes](#attributes)) tune the movement players and mobs already have:
+`minecraft:jump_strength`, `minecraft:gravity`, `minecraft:movement_speed`, `minecraft:step_height`,
+`minecraft:safe_fall_distance` and the rest are synced, so the server and every client move alike. For moves no
+attribute gives, a plugin grants a player `MovementAbilities` with `IPlayer.SetMovementAbilities(id, abilities)`:
+
+- `ExtraJumps`: jumps in the air before landing, each a new press of jump, as high as a ground jump, forgiving the
+  fall so far (a double jump is `ExtraJumps = 1`);
+- `CanGlide`: gliding like with an elytra, without one: a press of jump in the air starts it, landing ends it;
+- `CanFly`: creative-style flight in any game mode (vanilla's `mayfly`).
+
+```csharp
+// Boots of the clouds: a double jump while they're worn, from an equipment change handler, say.
+player.SetMovementAbilities("ruby:cloud_boots", new MovementAbilities { ExtraJumps = 1 });
+
+// Taken off.
+player.RemoveMovementAbilities("ruby:cloud_boots");
+```
+
+Grants with different ids add up (their extra jumps sum, the rest combine), and the same id replaces its grant.
+`IPlayer.MovementAbilities` is the total. Grants aren't saved, and unloading the plugin that made them takes them
+back, flight included. They come from the keys vanilla already sends (jump, and the input packet the server reads),
+so a mod needs no input of its own; a mod wanting its own key for a move binds it on the client and sends a payload
+(see [Client](#client)), whose server handler grants the ability.
+
+The server doesn't simulate players: like vanilla, it takes the client's positions, so it keeps its own state in step.
+It counts a press of jump in the air as an extra jump while one is left (forgiving the fall, which fall damage
+reads), starts gliding when the client asks if the player has a glider on the chest or `CanGlide`, ends gliding on
+landing, mounting, flying or losing both, and lets a survival player fly while `CanFly` (it no longer kicks a
+client flying where flight is allowed). Flight works with every client, through vanilla's abilities packet. Extra
+jumps and gliding without a glider need the Obsidian client, which is sent the abilities on the optional
+`obsidian:movement` play channel and predicts them; a vanilla client just doesn't jump twice or glide without one.
 
 ## Block entities
 

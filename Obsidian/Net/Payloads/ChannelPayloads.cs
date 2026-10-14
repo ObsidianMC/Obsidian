@@ -43,13 +43,15 @@ internal static class ChannelPayloads
 
     /// <summary>
     /// NeoForge's own play channels the server sends on, declared like NeoForge declares them: opening a plugin's menu
-    /// with its extra data (see <see cref="Entities.Player.OpenMenuPacket"/>).
+    /// with its extra data (see <see cref="Entities.Player.OpenMenuPacket"/>), and Obsidian's attachments, plugin
+    /// entity data and movement abilities.
     /// </summary>
     public static ImmutableArray<NetworkComponent> BuiltinPlayComponents { get; } =
     [
         new(AdvancedOpenScreen, "1", PacketFlow.Clientbound, true),
         new(AttachmentPayload.Channel, "1", PacketFlow.Clientbound, true),
-        new(PluginEntityData, "1", PacketFlow.Clientbound, true)
+        new(PluginEntityData, "1", PacketFlow.Clientbound, true),
+        new(MovementAbilitiesPayload.Channel, "1", PacketFlow.Clientbound, true)
     ];
 
     /// <summary>

@@ -230,6 +230,8 @@ public partial class Player
 
     private async ValueTask UpdateFallAsync(VectorD previous, MovementFlags flags)
     {
+        this.TrackMovementAbilities(flags);
+
         var terrain = new MobTerrain(Level);
         var feet = terrain.GetBlock((Vector)Position.Floor());
         if (Vehicle != null || Abilities.HasFlag(PlayerAbility.Flying) || GameMode is GameMode.Creative or GameMode.Spectator ||

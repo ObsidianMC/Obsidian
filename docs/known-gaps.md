@@ -308,9 +308,10 @@ mob's equipment.
 
 **Status:** open, deliberately deferred.
 
-- The Obsidian client doesn't predict a mod's mount: a rider's mob moves on the server, from the rider's
-  `PlayerInput`, and the client follows its positions, so steering lags by the round trip. The server ignores
-  `MoveVehicle`, for vanilla's mounts too.
+- The server reads `MoveVehicle` only for plugin mobs. Vanilla's mounts (horses, pigs, striders, camels, happy
+  ghasts, nautiluses) still move on the server from the rider's `PlayerInput`, while the Obsidian client predicts
+  boats, horses, pigs and striders on its own, and neither corrects the other. The Obsidian client's prediction of a
+  mod's mount leaves out fluid currents, which the server's checks absorb.
 - Attribute modifiers added through `IEntity.SetAttributeModifier` aren't saved, and the `scale` attribute doesn't
   resize hitboxes on the server.
 - Vanilla's mobs still drop hard-coded items rather than their `entities/` loot tables; entity loot tables can't use
@@ -319,8 +320,8 @@ mob's equipment.
 - Synced data fields aren't saved (see [plugin content](plugin-content.md#synced-data-fields)), and plugin mobs have no
   spawn eggs.
 
-**Where to start:** client prediction in `VehicleControl` for plugin types, driven like a horse or a happy ghast from
-the type's movement mode and speeds, with the server reading `MoveVehicle` from the controlling rider.
+**Where to start:** `ClientVehicleControl` checks moves for any mob; giving vanilla's mounts the same client control
+needs their server steering to match the client's `VehicleControl`, as `MountSteering` does for plugin mobs.
 
 ## Block entity data on items
 
