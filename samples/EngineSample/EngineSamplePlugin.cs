@@ -1,6 +1,5 @@
 using EngineSample.Grinder;
 using EngineSample.TickCounter;
-using Obsidian.API;
 using Obsidian.API.Plugins;
 
 namespace EngineSample;
@@ -12,12 +11,6 @@ namespace EngineSample;
 /// </summary>
 public sealed class EngineSamplePlugin : PluginBase
 {
-    /// <summary>
-    /// The plugin's own server, injected before <see cref="ConfigureRegistry"/>.
-    /// </summary>
-    [Inject]
-    public IServer Server { get; set; } = null!;
-
     public override void ConfigureRegistry(IPluginRegistry registry)
     {
         // Phase 1, blocks that do things: a block with a block entity that counts ticks while powered.
@@ -25,6 +18,6 @@ public sealed class EngineSamplePlugin : PluginBase
 
         // Phase 2, items, inventories and recipes: a machine that grinds what it pulls from a chest by a recipe type
         // of its own, and pushes the results into a hopper.
-        GrinderBlock.Register(registry, this.Server);
+        GrinderBlock.Register(registry);
     }
 }

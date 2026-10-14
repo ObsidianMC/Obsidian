@@ -54,7 +54,7 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
 
     // Called with the inventory's lock held: finding a recipe reads the server's recipes without waiting on anything.
     protected override bool CanInsert(int slot, ItemStack stack, BlockFace? side) =>
-        slot == InputSlot ? GrinderBlock.FindRecipe(stack) is not null : side is null;
+        slot == InputSlot ? this.FindRecipe(stack) is not null : side is null;
 
     protected override bool CanExtract(int slot, ItemStack stack, BlockFace? side) =>
         side is null || slot == OutputSlot;
@@ -105,7 +105,7 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
     // into the recipe's result; until then it waits at full progress.
     private void Grind(IItemAccess own)
     {
-        var recipe = own.GetItem(InputSlot) is ItemStack item ? GrinderBlock.FindRecipe(item) : null;
+        var recipe = own.GetItem(InputSlot) is ItemStack item ? this.FindRecipe(item) : null;
         if (recipe is null)
         {
             this.SetProgress(0);
@@ -146,6 +146,10 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
             own.Insert(OutputSlot, refused);
         }
     }
+
+    // The recipe that grinds the stack, or null when nothing does, found through the plugin's own server. Recipes go
+    // when the plugin unloads and come back from its files when it loads again, so it's looked up each time.
+    private GrindingRecipe? FindRecipe(ItemStack stack) => this.Server?.FindRecipe(GrinderBlock.Recipes, [stack]);
 
     // Saved at the end of the tick when it changes.
     private void SetProgress(int progress)

@@ -1,7 +1,9 @@
+using Microsoft.Extensions.Logging;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
+using Obsidian.Plugins;
 
 namespace Obsidian.WorldData;
 
@@ -15,9 +17,11 @@ namespace Obsidian.WorldData;
 /// Covers the components of the types the server models: containers' <c>custom_name</c>, <c>lock</c>,
 /// <c>container_loot</c> and a shulker box's <c>container</c> (and its <c>contents</c> dynamic drop); decorated pots'
 /// <c>pot_decorations</c> (and their <c>sherds</c> dynamic drop); and the <c>custom_name</c> of other named block
-/// entities kept as data. Banner patterns, bees and skull profiles aren't modelled yet.
+/// entities kept as data. Banner patterns, bees and skull profiles aren't modelled yet. A plugin's block entity adds
+/// what its <see cref="BlockEntity.CollectComponents"/> sets, and reads it back in
+/// <see cref="BlockEntity.ApplyComponents"/>.
 /// </remarks>
-internal sealed class BlockEntityComponents : IAsyncDisposable
+internal sealed partial class BlockEntityComponents : IAsyncDisposable
 {
     /// <summary>
     /// Nothing for loot, for blocks without a block entity.
@@ -27,6 +31,7 @@ internal sealed class BlockEntityComponents : IAsyncDisposable
     // Vanilla's PotDecorations: the back, left, right and front faces, bricks where they have no sherd.
     private const int PotFaces = 4;
 
+    private readonly List<DataComponent> components;
     private readonly Dictionary<string, List<ItemStack>> dynamic;
     private ContainerBlockEntity? retirement;
 
@@ -49,14 +54,14 @@ internal sealed class BlockEntityComponents : IAsyncDisposable
 
     private BlockEntityComponents(List<DataComponent> components, Dictionary<string, List<ItemStack>> dynamic)
     {
-        this.Components = components;
+        this.components = components;
         this.dynamic = dynamic;
     }
 
     /// <summary>
     /// The components for <c>copy_components</c> with the <c>block_entity</c> source.
     /// </summary>
-    public IReadOnlyList<DataComponent> Components { get; }
+    public IReadOnlyList<DataComponent> Components => this.components;
 
     /// <summary>
     /// The items of the <c>dynamic</c> entries the block names, copied for each roll, or null when it names none.
@@ -95,8 +100,20 @@ internal sealed class BlockEntityComponents : IAsyncDisposable
             DataBlockEntity data when data.KeptContainer() is ContainerBlockEntity kept =>
                 await CaptureContainerAsync(concrete, kept, breaker),
             DataBlockEntity data => CaptureData(data),
+            BlockEntity { Owner: PluginContainer } => new BlockEntityComponents([], []),
             _ => None
         };
+
+        // A plugin's block entity adds its own; one kept as data while its plugin is gone gives none.
+        if (captured.CanBreak
+            && entity is BlockEntity { Owner: PluginContainer plugin } owned
+            && owned is not DataBlockEntity
+            && await level.GetBlockAsync(position) is IBlock block
+            && BlocksRegistry.TryGetItem(block, out var item))
+        {
+            captured.components.AddRange(await concrete.CollectPluginComponentsAsync(owned, plugin, item));
+        }
+
         if (!ReferenceEquals(captured, None))
             captured.Source = entity as BlockEntity;
 
@@ -113,8 +130,14 @@ internal sealed class BlockEntityComponents : IAsyncDisposable
             Apply(entity, item);
     }
 
-    /// <summary>Initializes an unpublished entity from its item before another handler can reach it.</summary>
-    internal static void Apply(BlockEntity entity, ItemStack item)
+    /// <summary>
+    /// Initializes an unpublished entity from its item before another handler can reach it. A plugin's block entity
+    /// reads it in a call into its plugin, unless the plugin started unloading.
+    /// </summary>
+    /// <param name="entity">The new block entity.</param>
+    /// <param name="item">One of the stack placed.</param>
+    /// <param name="logger">Where a plugin's failing hook is logged.</param>
+    internal static void Apply(BlockEntity entity, ItemStack item, ILogger? logger = null)
     {
         if (entity is DataBlockEntity data)
         {
@@ -145,9 +168,16 @@ internal sealed class BlockEntityComponents : IAsyncDisposable
             return;
         }
 
-        if (entity is not ContainerBlockEntity container)
-            return;
+        if (entity is ContainerBlockEntity container)
+            ApplyContainer(container, item);
 
+        if (entity.Owner is PluginContainer plugin)
+            ApplyPlugin(entity, plugin, item, logger);
+    }
+
+    // Vanilla's BaseContainerBlockEntity and RandomizableContainerBlockEntity applyImplicitComponents.
+    private static void ApplyContainer(ContainerBlockEntity container, ItemStack item)
+    {
         var inventory = container.Inventory;
         using (inventory.Lock())
         lock (container.LootLock)
@@ -189,6 +219,26 @@ internal sealed class BlockEntityComponents : IAsyncDisposable
 
         container.SetChanged();
         container.SendUpdate();
+    }
+
+    // Like vanilla's BlockItem.updateBlockEntityComponents, the block entity is saved after it read its item.
+    private static void ApplyPlugin(BlockEntity entity, PluginContainer plugin, ItemStack item, ILogger? logger)
+    {
+        using var call = plugin.TryEnter();
+        if (call is null)
+            return;
+
+        try
+        {
+            entity.ApplyComponents(item);
+        }
+        catch (Exception ex)
+        {
+            if (logger is not null)
+                Log.ApplyFailed(logger, ex, entity.Id, entity.BlockPosition);
+        }
+
+        entity.SetChanged();
     }
 
     // Vanilla's BaseContainerBlockEntity and RandomizableContainerBlockEntity collectImplicitComponents.
@@ -317,5 +367,11 @@ internal sealed class BlockEntityComponents : IAsyncDisposable
 
         foreach (var item in items)
             output(new ItemStack(item, item.Count));
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Error, Message = "Block entity {Type} at {Position} failed to read its item")]
+        public static partial void ApplyFailed(ILogger logger, Exception exception, string type, Vector position);
     }
 }

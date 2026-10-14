@@ -16,7 +16,7 @@ namespace EngineSample.Grinder;
 /// </summary>
 /// <remarks>
 /// What it registers is held in statics of the plugin's own: a reload loads a new copy of the plugin, which registers
-/// everything again and sets its own.
+/// everything again and sets its own. Its block entity finds recipes through its own <c>Server</c>, the plugin's.
 /// </remarks>
 public static class GrinderBlock
 {
@@ -37,17 +37,12 @@ public static class GrinderBlock
     /// </summary>
     public static PluginComponentType<Vector> GroundBy { get; private set; } = null!;
 
-    // The plugin's own server, which finds its recipes.
-    private static IServer server = null!;
-
     /// <summary>
     /// Registers the recipe type, the component type, the block (with its item) and its block entity type.
     /// </summary>
     /// <param name="registry">The registry <c>ConfigureRegistry</c> is given.</param>
-    /// <param name="pluginServer">The plugin's server, injected before <c>ConfigureRegistry</c>.</param>
-    public static void Register(IPluginRegistry registry, IServer pluginServer)
+    public static void Register(IPluginRegistry registry)
     {
-        server = pluginServer;
         Recipes = registry.RegisterRecipeType("sample:grinding", new GrindingRecipeSerializer());
 
         // Without a network codec the component is the server's own: it's saved with stacks but never sent to
@@ -59,12 +54,6 @@ public static class GrinderBlock
         Block = registry.RegisterBlock(Identifier, new BlockProperties { Hardness = 3.5f });
         registry.RegisterBlockEntity<GrinderBlockEntity>(Identifier, Block);
     }
-
-    /// <summary>
-    /// The recipe that grinds <paramref name="stack"/>, or null when nothing does. Recipes go when the plugin unloads
-    /// and come back from its files when it loads again, so it's looked up each time rather than kept.
-    /// </summary>
-    public static GrindingRecipe? FindRecipe(ItemStack stack) => server.FindRecipe(Recipes, [stack]);
 
     // Saved as vanilla saves a block position: an int array of x, y and z.
     private static INbtTag SavePosition(Vector position) =>

@@ -572,12 +572,14 @@ public abstract partial class AbstractLevel : ILevel
     {
         TickStage = "waiting for simulation gate";
         await simulationGate.WaitAsync();
+        this.EnterTick();
         try
         {
             await TickLevelAsync();
         }
         finally
         {
+            this.ExitTick();
             simulationGate.Release();
         }
     }

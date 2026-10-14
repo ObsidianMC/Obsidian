@@ -1,6 +1,8 @@
 using Obsidian.API;
 using Obsidian.API.Blocks;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Plugins;
+using Obsidian.Nbt;
 
 namespace EngineSample.TickCounter;
 
@@ -8,7 +10,8 @@ namespace EngineSample.TickCounter;
 /// Phase 1's block, <c>sample:tick_counter</c>: it faces the player who places it, turns on and lights up while
 /// redstone powers it, and its block entity (<see cref="TickCounterBlockEntity"/>) counts the ticks it's on, which
 /// comparators read. Breaking it drops it through its loot table,
-/// <c>data/sample/loot_table/blocks/tick_counter.json</c>.
+/// <c>data/sample/loot_table/blocks/tick_counter.json</c>, which copies the count onto the item (<see cref="Ticks"/>),
+/// so that placing it again counts on.
 /// </summary>
 public sealed class TickCounterBlock : IBlockBehavior
 {
@@ -27,10 +30,21 @@ public sealed class TickCounterBlock : IBlockBehavior
     public static BlockType Block { get; private set; } = null!;
 
     /// <summary>
-    /// Registers the block, its item (which the block's properties give it by default) and its block entity type.
+    /// <c>sample:ticks</c>: the ticks a broken tick counter counted, on its item.
+    /// </summary>
+    public static PluginComponentType<int> Ticks { get; private set; } = null!;
+
+    /// <summary>
+    /// Registers the block, its item (which the block's properties give it by default), its block entity type, and
+    /// the component type its item keeps the count in.
     /// </summary>
     public static void Register(IPluginRegistry registry)
     {
+        // Server-side only, like the grinder's: clients don't need to know it.
+        Ticks = registry.RegisterComponentType(
+            "sample:ticks",
+            new ComponentCodec<int>(ticks => new NbtTag<int>("", ticks), tag => ((NbtTag<int>)tag).Value));
+
         Block = registry.RegisterBlock(Identifier, new BlockProperties
         {
             StateProperties =

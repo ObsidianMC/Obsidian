@@ -7,7 +7,16 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "sample:tick_counter"
+          "name": "sample:tick_counter",
+          "functions": [
+            {
+              "function": "minecraft:copy_components",
+              "source": "block_entity",
+              "include": [
+                "sample:ticks"
+              ]
+            }
+          ]
         }
       ],
       "conditions": [

@@ -232,35 +232,17 @@ can't reach, rather than a delivery wait.
 **Where to start:** for attributes, a per-player modifier set fed by equipment changes, synced with
 `UpdateAttributes`.
 
-## Plugin block entity data on items
+## Block entity data on items
 
-**Status:** open. Unblocked by plugin data component types (see
-[plugin content](plugin-content.md#item-components)).
+**Status:** partly done. A plugin's block entity keeps its data on its block's item (`BlockEntity.CollectComponents`
+and `ApplyComponents`, see [plugin content](plugin-content.md#block-entities)).
 
-A broken plugin block entity gives its drop none of its data, and a placed item gives none back: there's no hook like
-vanilla's `collectImplicitComponents` and `applyImplicitComponents` for a plugin to copy its data into its own
-component type and out again. Collecting is the hard half: players' breaks capture a block entity's components off
-the level's tick (`BlockEntityComponents.CaptureAsync`), but a plugin's block entity code only runs on the tick, and
-explosions capture on the tick itself, so a capture would have to run there without waiting for the next tick from
-inside one.
+- Creative pick-block (`PickItemFromBlock`) isn't handled, so no block entity's data reaches a picked item, and a
+  placed item's `block_entity_data` isn't loaded into its block entity, which vanilla does before
+  `applyImplicitComponents` (an operator's or a creative player's raw block entity data).
+- Plugin component values are hashed for click predictions from their saved NBT, which matches vanilla's `HashOps`
+  for codecs writing NBT-shaped values; a NeoForge or Fabric client whose codec writes booleans, which NBT stores as
+  bytes, hashes them differently, so their clicks resynchronise the slot.
 
-Plugin component values are hashed for click predictions from their saved NBT, which matches vanilla's `HashOps` for
-codecs writing NBT-shaped values; a NeoForge or Fabric client whose codec writes booleans, which NBT stores as bytes,
-hashes them differently, so their clicks resynchronise the slot.
-
-**Where to start:** virtual `BlockEntity` hooks taking the drop's `ItemStack` and the placing one, called through
-`AbstractLevel.CallPlugin`: placement already initializes the unpublished block entity from its item
-(`BlockEntityComponents.Apply`), and capture would read the plugin's components from a call queued to the level's
-tick, or run at once when the caller is on it.
-
-## Plugin block entities reaching their server
-
-**Status:** open, an ergonomics gap.
-
-A plugin's block entity has its `Level` but no way from it to the plugin's `IServer`, which finds the plugin's
-recipes (`IServer.FindRecipe`). The engine sample's grinder keeps the server its plugin was injected with
-(`[Inject] IServer`, set before `ConfigureRegistry`) in a static of the plugin's own, which works because each load
-of a plugin is its own copy of its statics, but every machine mod has to repeat it.
-
-**Where to start:** a `Server` on `ILevel` (or on `BlockEntity`) resolved through `ServerScope.Resolve`, like event
-arguments' `Server`, so that the plugin's code gets its own instance and what it adds through it stays its own.
+**Where to start:** pick-block in `PlayClientHandler`, collecting through the same path as breaks
+(`BlockEntityComponents.CaptureAsync` without retiring a container).

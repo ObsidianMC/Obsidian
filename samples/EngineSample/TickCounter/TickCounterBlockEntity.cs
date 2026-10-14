@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Blocks;
+using Obsidian.API.Inventory;
 using Obsidian.API.World;
 using Obsidian.Nbt;
 
@@ -8,7 +9,8 @@ namespace EngineSample.TickCounter;
 
 /// <summary>
 /// The tick counter's block entity: counts the ticks its block is powered, saves the count with its chunk and sends it
-/// to the players watching it once a second. It also gives the block its shape.
+/// to the players watching it once a second. It also gives the block its shape, and its count to its block's item when
+/// the block breaks, which it counts on from once placed again.
 /// </summary>
 public sealed class TickCounterBlockEntity : BlockEntity
 {
@@ -43,6 +45,19 @@ public sealed class TickCounterBlockEntity : BlockEntity
 
     // The same box whatever the data: a client mod gives its block the same shape.
     protected override BlockShapes? GetShapes() => shape;
+
+    // A counter that never counted leaves its item bare, so that it stacks with new ones.
+    protected override void CollectComponents(ItemStack item)
+    {
+        if (this.ticks > 0)
+            item.Set(TickCounterBlock.Ticks, this.ticks);
+    }
+
+    protected override void ApplyComponents(ItemStack item)
+    {
+        if (item.TryGet(TickCounterBlock.Ticks, out var ticks))
+            this.ticks = ticks;
+    }
 
     protected override async ValueTask TickAsync()
     {
