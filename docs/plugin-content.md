@@ -556,6 +556,47 @@ type is never an item's default, so removing it just takes it off the stack.
 - **Block entities.** A plugin's block entity keeps its data on its block's item in the plugin's own types through
   `CollectComponents` and `ApplyComponents` (see [Block entities](#block-entities)).
 
+### Creative tabs
+
+```csharp
+registry.RegisterCreativeTab("ruby:rubies", new CreativeTabProperties
+{
+    Title = new ChatMessage { Translate = "itemGroup.ruby.rubies" },
+    Icon = pickaxe,
+    After = "minecraft:spawn_eggs",
+    Items = [pickaxe],
+    DisplayItems = () => RubyVariants.All.Select(variant => variant.Item)
+});
+
+registry.AddToCreativeTab("minecraft:tools_and_utilities", [pickaxe], after: ItemsRegistry.NetheritePickaxe);
+```
+
+Like a NeoForge mod's creative tabs, a plugin's are registered in `ConfigureRegistry` on both sides, and shown by the
+Obsidian client:
+
+- **Tabs.** `RegisterCreativeTab(identifier, properties)` adds a tab in the plugin's namespace. Its `Title` is a
+  translation key (from the mod's language files) or plain text (`ChatMessage.Simple`), its `Icon` an item. It shows
+  `Items`, then whatever `DisplayItems` gives each time the creative inventory opens, like NeoForge's display items
+  generator; the generator runs inside a call into the plugin, and one that throws is logged and leaves its items
+  out. Tabs without items aren't shown. Tabs go after vanilla's, in registration (load) order, or right after the
+  tab named by `After` (vanilla's or another plugin's, like NeoForge's `withTabsBefore`).
+- **Adding to tabs.** `AddToCreativeTab(tab, items, after)` adds items, the plugin's or vanilla's, to any tab by
+  identifier, like NeoForge's `BuildCreativeModeTabContentsEvent`: at the end, or right after the last of `after`'s
+  stacks when the tab shows it. Additions to the hotbar, search and inventory tabs, or to a tab that isn't
+  registered, aren't shown.
+- **Pages and search.** Like NeoForge's, tabs are paged: ten tabs with items to a page, five on top and five below,
+  with the hotbar, search and inventory tabs on every page, so vanilla's fill the first page and plugins' follow on
+  the next ones, turned with the buttons above the tabs. The search tab shows every tab's items in tab order, like
+  vanilla's, so plugins' items are found too. A plugin's item in no tab isn't shown anywhere, as on NeoForge; put
+  it in a tab.
+- **Servers.** Like vanilla's and NeoForge's, creative tabs are the client's: the `minecraft:creative_mode_tab`
+  registry isn't synced and nothing on the wire names a tab, so a server only checks the registrations (the same
+  checks as the client's) and keeps nothing. A creative player sets stacks with the creative slot packet, which
+  accepts any item, a plugin's included, with its default components; vanilla clients can't be sent one, since
+  they're refused once a plugin registered items.
+- **Unloading.** A plugin's tabs and additions are removed when it unloads and registered again on reload, on both
+  sides; the client builds the tabs again each time the creative inventory opens.
+
 ## Entities
 
 ```csharp

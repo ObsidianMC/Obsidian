@@ -466,6 +466,25 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         return this;
     }
 
+    // Checked only: the creative inventory is the client's (see PluginCreativeTabs).
+    public IPluginRegistry RegisterCreativeTab(string identifier, CreativeTabProperties properties)
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        PluginCreativeTabs.CheckTab(container, identifier, properties);
+
+        return this;
+    }
+
+    public IPluginRegistry AddToCreativeTab(string tab, IEnumerable<Item> items, Item? after = null)
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        PluginCreativeTabs.CheckAddition(container, tab, items);
+
+        return this;
+    }
+
     // A region registered in code is kept as the JSON of a region file, and read with the plugin's region files once
     // its biomes are registered, so that it's checked and generates exactly like one.
     private static void RegisterBiomeRegion(

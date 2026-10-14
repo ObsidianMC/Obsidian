@@ -363,6 +363,40 @@ public interface IPluginRegistry
     /// </exception>
     /// <exception cref="InvalidOperationException">The plugin is unloading.</exception>
     public IPluginRegistry AddContainerMix(Item from, Item ingredient, Item to) => this;
+
+    /// <summary>
+    /// Registers a creative tab, like a NeoForge mod's <c>CreativeModeTab</c>: the Obsidian client shows it in the
+    /// creative inventory after vanilla's tabs (or <see cref="CreativeTabProperties.After"/> another), on further
+    /// pages once vanilla's ten places are full, and its items in the search tab. Its identifier is in the plugin's
+    /// namespace. The tab and the plugin's additions to tabs (see <see cref="AddToCreativeTab"/>) are removed when the
+    /// plugin unloads; a reload registers them again.
+    /// </summary>
+    /// <remarks>
+    /// Like vanilla's and NeoForge's, creative tabs are the client's: they aren't synced, so servers only check the
+    /// registration, and a player in creative mode can set any item in their inventory whatever the tabs show, which
+    /// a server accepts like vanilla's. A plugin's items appear in no tab unless it puts them in one.
+    /// </remarks>
+    /// <param name="identifier">The tab's identifier, like <c>myplugin:rubies</c>.</param>
+    /// <param name="properties">The tab's title, icon, place and items.</param>
+    /// <exception cref="ArgumentException">
+    /// The identifier isn't in the plugin's namespace or isn't valid, or the plugin already registered it (checked on
+    /// the client).
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The plugin is unloading.</exception>
+    public IPluginRegistry RegisterCreativeTab(string identifier, CreativeTabProperties properties) => this;
+
+    /// <summary>
+    /// Adds items to a creative tab, vanilla's (like <c>minecraft:ingredients</c>) or a plugin's, like NeoForge's
+    /// <c>BuildCreativeModeTabContentsEvent</c>: at the end of the tab, or right after the last of
+    /// <paramref name="after"/>'s stacks when the tab shows it. The search tab shows every tab's items, so items
+    /// added to the hotbar, search or inventory tabs, or to a tab that isn't registered, aren't shown. The rules are
+    /// <see cref="RegisterCreativeTab"/>'s.
+    /// </summary>
+    /// <param name="tab">The tab's identifier.</param>
+    /// <param name="items">The items to add, in order.</param>
+    /// <param name="after">The item to add them after, or null for the end.</param>
+    /// <exception cref="InvalidOperationException">The plugin is unloading.</exception>
+    public IPluginRegistry AddToCreativeTab(string tab, IEnumerable<Item> items, Item? after = null) => this;
 }
 
 
