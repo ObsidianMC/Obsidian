@@ -1,18 +1,22 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
 	<!-- Obsidian's engine sample: a plugin built against the public API alone, as a mod is, which Obsidian.Tests packs
-	     and loads through the plugin manager (see README.md). -->
+	     and loads through the plugin manager (see README.md). The Razor SDK compiles its screen's .razor component into
+	     its assembly. -->
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
 		<EnablePreviewFeatures>true</EnablePreviewFeatures>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<IsPackable>false</IsPackable>
+		<!-- A mod has no web assets, so its output is only what its archive holds. -->
+		<StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
 	</PropertyGroup>
 
 	<!-- The server or client provides the API at runtime, so its assemblies aren't copied beside the plugin's.
 	     Obsidian.API doesn't pass on its reference to Obsidian.Nbt, whose types block entities save with, so it's
-	     referenced too. Obsidian.API.Client is the client half, for the mod's screens; servers ship it as well. -->
+	     referenced too. Obsidian.API.Client is the client half, for the mod's screens; servers ship it as well. It
+	     brings the ASP.NET Core framework, whose Blazor components Razor screens are built on. -->
 	<ItemGroup>
 		<ProjectReference Include="..\..\Obsidian.API\Obsidian.API.csproj" Private="false" />
 		<ProjectReference Include="..\..\Obsidian.API.Client\Obsidian.API.Client.csproj" Private="false" />

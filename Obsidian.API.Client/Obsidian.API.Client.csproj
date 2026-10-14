@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<!-- The client half of the mod API: what a mod's client side registers, implemented by the Obsidian client. It's
-	     interfaces and data only, so servers ship it too and load mods whose plugin class implements IClientPlugin. -->
+	     interfaces, data and Razor building blocks the client draws, so servers ship it too and load mods whose
+	     plugin class implements IClientPlugin. -->
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
 		<EnablePreviewFeatures>True</EnablePreviewFeatures>
@@ -41,6 +42,12 @@
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
+	</ItemGroup>
+
+	<!-- Blazor's components, for mods' screens in Razor (Obsidian.API.Client.Razor). Servers reference it too, and the
+	     framework passes on to mods, whose Razor components compile against it. -->
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
 
 	<ItemGroup>

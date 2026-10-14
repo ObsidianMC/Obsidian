@@ -41,7 +41,9 @@ public sealed class EngineSamplePlugin : PluginBase, IClientPlugin
 
     public void ConfigureClient(IClientRegistry registry)
     {
-        // Phase 3, menus and screens: the grinder's menu shows with a screen built in code.
-        registry.RegisterMenuScreen(GrinderMenu.Identifier, menu => new GrinderScreen(menu));
+        // Phase 3, menus and screens: the grinder's menu shows with a screen built in Razor. GrinderScreen is the same
+        // screen built in code, which registers with RegisterMenuScreen(GrinderMenu.Identifier, menu => new
+        // GrinderScreen(menu)).
+        registry.RegisterMenuScreen<GrinderView>(GrinderMenu.Identifier);
     }
 }
