@@ -194,7 +194,7 @@ internal sealed class MobProjectile : Entity
                 if (harms && living is Witch && ReferenceEquals(living, Owner)) continue;
                 if (harms)
                     await living.DamageAsync(Owner ?? this, living is Witch ? amount * 0.15f : amount);
-                else living.Health = Math.Min(living is IPlayer ? 20 : living.GetAttributeValue("minecraft:generic.max_health"), living.Health + amount);
+                else living.Health = Math.Min(living.GetAttributeValue("minecraft:max_health"), living.Health + amount);
             }
             else
             {

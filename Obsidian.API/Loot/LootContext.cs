@@ -38,6 +38,24 @@ public sealed class LootContext
     /// <summary>The stack used to break a block, or null for an empty hand or explosion.</summary>
     public ItemStack? Tool { get; init; }
 
+    /// <summary>
+    /// The entity responsible for killing the entity whose loot this is (vanilla's <c>attacking_entity</c>), like the
+    /// player who shot it.
+    /// </summary>
+    public IEntity? AttackingEntity { get; init; }
+
+    /// <summary>
+    /// The player who hurt the entity whose loot this is lately (vanilla's <c>last_damage_player</c>), which
+    /// <c>killed_by_player</c> conditions require.
+    /// </summary>
+    public IPlayer? LastDamagePlayer { get; init; }
+
+    /// <summary>
+    /// The weapon the attacking entity killed with, whose enchantments (like looting) enchantment-based conditions
+    /// and functions read.
+    /// </summary>
+    public ItemStack? AttackerWeapon { get; init; }
+
     /// <summary>The block before removal, for block predicates and state copying.</summary>
     public IBlock? BlockState { get; init; }
 

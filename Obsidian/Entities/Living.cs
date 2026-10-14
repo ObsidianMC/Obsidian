@@ -77,8 +77,19 @@ public partial class Living : Entity, ILiving
         activePotionEffects = new ConcurrentDictionary<int, EffectWithCurrentDuration>();
     }
 
+    /// <summary>
+    /// Applies the attribute modifiers of what the entity holds and wears, as they change; nothing for entities
+    /// without that.
+    /// </summary>
+    internal virtual void UpdateEquipmentAttributes()
+    {
+    }
+
     public override async ValueTask TickAsync()
     {
+        this.UpdateEquipmentAttributes();
+        this.SendAttributeChanges();
+
         effectTicks++;
         foreach (var (potion, active) in activePotionEffects)
         {
@@ -91,7 +102,7 @@ public partial class Living : Entity, ILiving
             var effectTime = data.CurrentDuration == -1 ? effectTicks : data.CurrentDuration;
             if (Alive && potion == (int)PotionEffect.Regeneration - 1 &&
                 effectTime % Math.Max(1, 50 >> Math.Min(30, data.EffectData.Amplifier)) == 0)
-                Health = Math.Min(this is Player ? 20 : GetAttributeValue("minecraft:generic.max_health"), Health + 1);
+                Health = Math.Min(GetAttributeValue("minecraft:max_health"), Health + 1);
             var poisonInterval = Math.Max(1, 25 >> Math.Min(30, data.EffectData.Amplifier));
             if (potion == (int)PotionEffect.Poison - 1 && effectTime % poisonInterval == 0 && Health > 1)
             {

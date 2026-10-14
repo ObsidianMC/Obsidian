@@ -97,8 +97,11 @@ internal static class CombatEffects
 
     internal static void Knockback(Living target, VectorD direction, float strength)
     {
-        var resistance = target.GetAttributeValue("minecraft:knockback_resistance") +
-            Armor(target).Sum(entry => CombatItems.Attribute(entry.Item, "knockback_resistance", entry.Slot));
+        // A player's worn items are in its attributes' modifiers; a mob's are added here.
+        var resistance = target is Player
+            ? target.GetAttributeValue("minecraft:knockback_resistance")
+            : target.GetAttributeValue("minecraft:knockback_resistance")
+                + Armor(target).Sum(entry => CombatItems.Attribute(entry.Item, "knockback_resistance", entry.Slot));
         strength *= 1 - Math.Clamp(resistance, 0, 1);
         var horizontal = Math.Sqrt(direction.X * direction.X + direction.Z * direction.Z);
         if (strength <= 0 || horizontal < 0.00001) return;

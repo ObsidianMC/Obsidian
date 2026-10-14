@@ -80,6 +80,12 @@ internal sealed class PluginEntity(EntityDefinition definition) : Entity
             velocity ?? new Velocity(this.Motion.X, this.Motion.Y, this.Motion.Z),
             this.Owner?.EntityId ?? 0);
 
+    public override void Write(INetStreamWriter writer)
+    {
+        base.Write(writer);
+        this.WritePluginData(writer);
+    }
+
     public override async ValueTask RemoveAsync()
     {
         this.removed = true;
@@ -104,6 +110,16 @@ internal sealed class PluginEntity(EntityDefinition definition) : Entity
 
         if (this.removed)
             return;
+
+        if (this.DataChanged)
+        {
+            this.DataChanged = false;
+            this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position, new SetEntityDataPacket
+            {
+                EntityId = this.EntityId,
+                Entity = this
+            });
+        }
 
         if (definition.Kind == EntityKind.Projectile)
             await this.FlyAsync(level);

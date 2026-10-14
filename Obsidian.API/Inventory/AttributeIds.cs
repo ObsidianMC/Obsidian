@@ -5,9 +5,7 @@ namespace Obsidian.API.Inventory;
 /// </summary>
 /// <remarks>
 /// They're the attributes' protocol ids, their positions in vanilla 1.21.11's attribute registry, which clients read
-/// the modifiers with. Obsidian applies armour, armour toughness and knockback resistance from worn items and attack
-/// damage and speed from held ones; modifiers of other attributes are kept and sent to clients but don't change the
-/// holder.
+/// the modifiers with. A player gets the modifiers of what it holds and wears, for every attribute it has.
 /// </remarks>
 public static class AttributeIds
 {

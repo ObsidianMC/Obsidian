@@ -83,6 +83,62 @@ internal static class CombatItems
         return (baseValue + additions) * (1 + baseMultiplier) * totalMultiplier;
     }
 
+    /// <summary>
+    /// The attribute modifiers an item applies in an equipment slot (<c>mainhand</c>, <c>offhand</c>, <c>head</c>,
+    /// <c>chest</c>, <c>legs</c> or <c>feet</c>), like vanilla's <c>ItemStack.forEachModifier</c>: its own
+    /// <c>attribute_modifiers</c> component, or else its item's default, by attribute name.
+    /// </summary>
+    internal static List<(string Attribute, EntityAttributeModifier Modifier)> Modifiers(ItemStack? item, string slot)
+    {
+        var result = new List<(string, EntityAttributeModifier)>();
+        if (item is not { Count: > 0 } || item.RemoveComponents.Contains(DataComponentType.AttributeModifiers))
+            return result;
+
+        // Effective components include the defaults captured when this stack was made, even after a plugin reload.
+        var own = item.Holder.Id >= ItemsRegistry.VanillaCount
+            ? item.GetComponent<SimpleDataComponent<ImmutableArray<AttributeModifier>>>(
+                DataComponentType.AttributeModifiers)
+            : item.Patch.FirstOrDefault(component => component.Type == DataComponentType.AttributeModifiers);
+
+        if (own is SimpleDataComponent<ImmutableArray<AttributeModifier>> custom)
+        {
+            foreach (var modifier in custom.Value)
+            {
+                var group = modifier.Slot.ToString().ToLowerInvariant();
+                if (VanillaAttributes.NameOf(modifier.Id) is not string attribute || !MatchesSlot(group, slot))
+                    continue;
+
+                result.Add((attribute, new EntityAttributeModifier(modifier.Name, modifier.Value, modifier.Operation)));
+            }
+        }
+        else if (item.Holder.Id < ItemsRegistry.VanillaCount
+            && Component(item, "attribute_modifiers") is { ValueKind: JsonValueKind.Array } modifiers)
+        {
+            foreach (var modifier in modifiers.EnumerateArray())
+            {
+                var group = modifier.TryGetProperty("slot", out var value) ? value.GetString()! : "any";
+                if (!MatchesSlot(group, slot))
+                    continue;
+
+                var operation = modifier.GetProperty("operation").GetString() switch
+                {
+                    "add_multiplied_base" => AttributeOperation.MulBase,
+                    "add_multiplied_total" => AttributeOperation.MulTotal,
+                    _ => AttributeOperation.Add
+                };
+
+                var entry = new EntityAttributeModifier(
+                    modifier.GetProperty("id").GetString()!,
+                    modifier.GetProperty("amount").GetDouble(),
+                    operation);
+
+                result.Add((modifier.GetProperty("type").GetString()!, entry));
+            }
+        }
+
+        return result;
+    }
+
     private static bool MatchesSlot(string group, string slot) => group == "any" || group == slot ||
         group == "hand" && slot is "mainhand" or "offhand" ||
         group == "armor" && slot is "head" or "chest" or "legs" or "feet";

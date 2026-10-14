@@ -490,8 +490,8 @@ holds the component ones). Obsidian honours them as it does vanilla's:
 - `Equippable`: a player wears the item in its slot by using it, or by placing it in the armour slot.
   `ComponentBuilder.Equippable` has vanilla's defaults; set the slot.
 - `AttributeModifiers`: what the item adds while it's in the modifier's slot, by attribute id (`AttributeIds`).
-  Obsidian applies armour, armour toughness and knockback resistance from worn items and attack damage and speed
-  from held ones; modifiers of other attributes reach clients but don't change the player.
+  A player gets them while holding or wearing the item, for every attribute players have (see
+  [Attributes](#attributes)); mobs apply only their equipment's armour, toughness and knockback resistance.
 
 Changing an item's defaults in a reload reaches stacks made, loaded or received afterwards; stacks already in memory
 keep the defaults they were made with until then.
@@ -848,8 +848,8 @@ in blocks from the entity's feet for the entity facing south (+Z ahead, +X to it
 first passenger takes the first point and those past the last point share it; a player's feet go 0.6 blocks below
 it, as vanilla places players. Without points, passengers sit on top of the hitbox, vanilla's default. The server
 places a mob's riders there, and the Obsidian client draws riders and the riding player's camera there, so register
-the type with the same points on both sides (in `ConfigureRegistry`, which both run). Mounting a plugin's mobs is
-still to come (engine phase 5).
+the type with the same points on both sides (in `ConfigureRegistry`, which both run). A mob carries as many players
+as it has points, at least one.
 
 ```csharp
 registry.RegisterEntity("ruby:strider", new EntityProperties
@@ -859,6 +859,104 @@ registry.RegisterEntity("ruby:strider", new EntityProperties
     PassengerAttachments = [new VectorF(0, 1.4f, 0.2f), new VectorF(0, 1.4f, -0.6f)]
 });
 ```
+
+### Riding and flying
+
+A player who isn't sneaking mounts a plugin's mob by using it when the behaviour's `CanMount(entity, player)` says
+so and `InteractAsync` didn't take the interaction. `IPlayer.StartRiding(mob)` mounts a player from code (any mob
+with a free seat), `IPlayer.StopRiding()` takes it off, and `IPlayer.Vehicle` is what it rides; sneaking dismounts,
+as in vanilla. The first passenger steers, and the mob's goals pause meanwhile: a walking mob like a horse (its
+`MovementSpeed`, a quarter of it backwards, half of it sideways, jumping with jump), and a mob with
+`Movement = EntityMovementMode.Flying` like a happy ghast, towards where the rider looks, strafing sideways and rising
+with jump, gaining a tenth of its `FlyingSpeed` each tick. Flying mobs have no gravity or fall damage, and their goals
+path through the air with Obsidian's flying move control, as vanilla's flying mobs do.
+
+```csharp
+var saddled = EntityDataFields.Boolean();
+
+registry.RegisterEntity("ruby:drake", new EntityProperties
+{
+    Width = 1.4f,
+    Height = 1.2f,
+    Movement = EntityMovementMode.Flying,
+    FlyingSpeed = 0.5f,
+    PassengerAttachments = [new VectorF(0, 1.2f, 0)],
+    DataFields = [saddled],
+    Behavior = new DrakeBehavior(saddled)
+});
+
+sealed class DrakeBehavior(EntityDataField<bool> saddled) : IEntityBehavior
+{
+    public bool CanMount(IEntity entity, IPlayer player) => entity.GetData(saddled);
+}
+```
+
+Movement is the server's: the Obsidian client doesn't predict a mod's mount, so it follows the server's positions
+and its rider's view lags by the round trip, and the server doesn't read `MoveVehicle` (see
+[known-gaps.md](known-gaps.md#plugin-entities)).
+
+### Synced data fields
+
+`DataFields` lists a type's synced data fields, like a vanilla entity class's `SynchedEntityData`: make each with
+`EntityDataFields` (`Byte`, `Int`, `Long`, `Float`, `String`, `Boolean`, `Item` and `BlockPos`, written with
+vanilla's serializers), and read and write them with `IEntity.GetData(field)` and `SetData(field, value)`. A change is
+sent on the entity's next tick. The fields follow vanilla's at fixed indices, in their order: from 16 for a mob, after
+the entity, living entity and mob fields, and from 8 for a projectile or object; `EntityDataField.Index` says which,
+once a type with the field is registered, and a field can't have another index in another type.
+
+Only modded Obsidian clients are sent them: such a client agrees on the optional `obsidian:entity_data` play channel,
+which carries no payload, and other clients, whose classes for the type don't have those indices, never see them.
+The Obsidian client keeps them in `IClientEntity.Metadata` by index, where entity renderers' texture and layer
+providers read them, or with `entity.TryGetData(field, out var value)`; register the type with the same fields on
+both sides. Fields aren't saved, as vanilla's synced data isn't: an entity's lasting data belongs in an attachment
+(see [Saved data and attachments](#saved-data-and-attachments)), which is saved with it, survives the plugin
+unloading, and can sync itself; set the field from it, in the behaviour's `TickAsync` say.
+
+### Attributes
+
+Living entities have vanilla's attributes, vanilla's mobs their type's defaults and a plugin's mobs vanilla's mob
+defaults with the type's `MaxHealth`, `MovementSpeed` and `FlyingSpeed`. `IEntity.GetAttributeValue` gives an
+attribute's value: its base with its modifiers applied in vanilla's order (`Add` to the base, then multiples of that
+sum for `MulBase`, then the result multiplied for each `MulTotal`), clamped to vanilla's range for it.
+`IEntity.SetAttributeModifier(attribute, id, amount, operation)` adds or replaces a modifier, like vanilla's transient
+modifiers (not saved), and `RemoveAttributeModifier` takes it off. Players get the modifiers of what they hold and
+wear (items' `AttributeModifiers`, a plugin item's default included) as their equipment changes, and vanilla's
+sprinting modifier. Clients are sent the attributes vanilla syncs with `UpdateAttributes`: all of a living entity's
+when it comes into view, the player's own after joining and respawning, and those that change, to the entity's
+watchers and a player itself.
+
+### Damage, death and loot
+
+`IEntityBehavior.HurtAsync(entity, damage)` runs when a plugin's mob is about to take damage, after its immunities and
+before its hurt cooldown, armour and absorption, like NeoForge's `LivingIncomingDamageEvent`: change `damage.Amount`,
+or set `damage.Cancelled`. `damage.Source` is a `DamageSource`: vanilla's damage type (`minecraft:player_attack`,
+`minecraft:mob_attack`, `minecraft:arrow`, `minecraft:fall` and so on), the attacker and the direct entity.
+`DiedAsync(entity, source)` runs when it dies, before its loot drops. Both run inside a call into the plugin, never
+after it unloads.
+
+A dying plugin mob drops its type's loot table, `data/<namespace>/loot_table/entities/<path>.json` for
+`<namespace>:<path>` (a data pack can override it), like vanilla's `dropFromLootTable`, when the `mob_drops` rule is
+on. Its context has the mob, the attacker and the player who hurt it in the last 100 ticks, whose luck counts, so
+`minecraft:killed_by_player`, `minecraft:random_chance_with_enchanted_bonus` and
+`minecraft:enchanted_count_increase` (looting, from the killing weapon) work like vanilla's.
+
+```json
+{ "type": "minecraft:entity", "pools": [{
+  "rolls": 1,
+  "conditions": [{ "condition": "minecraft:killed_by_player" }],
+  "entries": [{ "type": "minecraft:item", "name": "ruby:drake_scale", "functions": [
+    { "function": "minecraft:enchanted_count_increase", "enchantment": "minecraft:looting", "count": 1 }
+  ] }]
+}] }
+```
+
+### Spawn placement
+
+`SpawnPlacement` gives natural spawning a type's own rules, like vanilla's spawn placements: `OnGround` (on a block
+that holds it up, no fluid at its feet), `InWater` (in water, with water or air above), `InLava` or `NoRestrictions`,
+each with its hitbox free. Natural spawning then skips the spawn list's light and floor rules and asks the
+behaviour's `CanSpawn(level, position)`, which can check light, blocks or anything else, on the level's tick. Without
+a placement a mob follows its spawn list's rules, as above. Spawn eggs for plugin mobs aren't provided.
 
 ## Block entities
 

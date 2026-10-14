@@ -28,6 +28,8 @@ public static partial class LootTableJson
                 return new DataFunction(Decay) { Conditions = conditions };
             case "minecraft:apply_bonus":
                 return Bonus(json, conditions);
+            case "minecraft:enchanted_count_increase":
+                return EnchantedCountIncrease(json, conditions);
             case "minecraft:limit_count":
                 var limit = json.GetProperty("limit");
                 var min = limit.ValueKind == JsonValueKind.Number ? CountLimit(limit)
@@ -125,6 +127,34 @@ public static partial class LootTableJson
 
                     break;
             }
+
+            return stack;
+        }) { Conditions = conditions };
+    }
+
+    // Vanilla's EnchantedCountIncreaseFunction, looting's extra drops: with the attacker's enchantment level above 0,
+    // the count grows by the level times the drawn count, rounded, then is cut to the limit if there's one.
+    private static LootFunction EnchantedCountIncrease(JsonElement json,
+        ImmutableArray<Conditions.ILootCondition> conditions)
+    {
+        var enchantment = Qualify(Text(json, "enchantment"));
+        var count = ReadNumber(json.GetProperty("count"));
+        var limit = json.TryGetProperty("limit", out var value) ? value.GetInt32() : 0;
+
+        return new DataFunction((stack, context) =>
+        {
+            if (context.AttackingEntity is null)
+                return stack;
+
+            var level = EnchantmentLevel(context.AttackerWeapon, enchantment);
+            if (level == 0)
+                return stack;
+
+            // Java's Math.round: half up.
+            stack.Count += (int)MathF.Floor(level * count.GetFloat(context) + 0.5f);
+
+            if (limit > 0)
+                stack.Count = Math.Min(stack.Count, limit);
 
             return stack;
         }) { Conditions = conditions };
