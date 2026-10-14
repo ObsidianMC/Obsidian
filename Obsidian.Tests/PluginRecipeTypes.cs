@@ -7,7 +7,10 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.Commands.Framework;
 using Obsidian.Nbt;
+using Obsidian.Net;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
+using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using System;
@@ -44,14 +47,53 @@ public sealed class PluginRecipeTypes
         {
             var files = new Dictionary<string, byte[]>
             {
+                ["data/probe/tags/item/materials.json"] = Encoding.UTF8.GetBytes("""
+                    { "values": ["minecraft:bedrock"] }
+                    """),
+                ["data/c/tags/item/logs.json"] = Encoding.UTF8.GetBytes("""
+                    { "values": ["minecraft:barrier"] }
+                    """),
                 ["data/probe/recipe/press.json"] = Encoding.UTF8.GetBytes("""
                     { "type": "probe:press", "ingredient": "minecraft:bedrock", "result": "minecraft:diamond" }
                     """),
                 ["data/probe/recipe/baked.json"] = Encoding.UTF8.GetBytes("""
                     {
-                      "type": "minecraft:smelting", "ingredient": "minecraft:bedrock",
+                      "type": "minecraft:smelting", "ingredient": "#probe:materials",
                       "result": { "id": "minecraft:diamond" }, "cookingtime": 4,
                       "experience": 1.0, "category": "misc"
+                    }
+                    """),
+                ["data/probe/recipe/tagged.json"] = Encoding.UTF8.GetBytes("""
+                    {
+                      "type": "minecraft:crafting_shapeless", "category": "misc",
+                      "ingredients": ["#c:ingots/iron", ["#probe:materials"]],
+                      "result": { "id": "minecraft:diamond" }
+                    }
+                    """),
+                ["data/probe/recipe/cut.json"] = Encoding.UTF8.GetBytes("""
+                    {
+                      "type": "minecraft:stonecutting", "ingredient": { "tag": "c:logs" },
+                      "result": { "id": "minecraft:diamond" }
+                    }
+                    """),
+                ["data/probe/recipe/smith.json"] = Encoding.UTF8.GetBytes("""
+                    {
+                      "type": "minecraft:smithing_transform", "template": "#c:ingots/iron",
+                      "base": "#c:logs", "addition": "#probe:materials",
+                      "result": { "id": "minecraft:diamond" }
+                    }
+                    """),
+                ["data/probe/recipe/unqualified.json"] = Encoding.UTF8.GetBytes("""
+                    {
+                      "type": "minecraft:stonecutting", "ingredient": "#logs",
+                      "result": { "id": "minecraft:diamond" }
+                    }
+                    """),
+                ["data/probe/recipe/missing.json"] = Encoding.UTF8.GetBytes("""
+                    {
+                      "type": "minecraft:crafting_shapeless", "category": "misc",
+                      "ingredients": [["minecraft:bedrock", "#missing:logs"]],
+                      "result": { "id": "minecraft:diamond" }
                     }
                     """)
             };
@@ -104,7 +146,9 @@ public sealed class PluginRecipeTypes
         var set = server.RecipeRegistry.Current;
         Assert.Contains("probe:baked", set.Recipes.Keys);
         Assert.DoesNotContain("probe:unregistered", set.Recipes.Keys);
+        Assert.DoesNotContain("probe:missing", set.Recipes.Keys);
         Assert.DoesNotContain("probe:press", set.UpdatePacket.Recipes.Keys);
+        AssertTaggedRecipes(set, ItemsRegistry.Bedrock);
         var furnace = Assert.IsType<FurnaceBlockEntity>(BlockEntityNbt.Create("minecraft:furnace", default));
         furnace.Inventory[0] = new ItemStack(ItemsRegistry.Bedrock, 1);
         furnace.Inventory[1] = new ItemStack(ItemsRegistry.Coal, 1);
@@ -112,6 +156,17 @@ public sealed class PluginRecipeTypes
             furnace.Cook(set);
 
         Assert.True(furnace.Inventory[2]?.Is(ItemsRegistry.Diamond));
+
+        // Rebind the same recipe files after a tag change, as the plugin manager does on load and unload.
+        var changed = PluginTags.Parse("item", "probe:materials", "reload",
+            Encoding.UTF8.GetBytes("""{ "replace": true, "values": ["minecraft:structure_block"] }"""));
+        PluginTags.Apply([.. plugin.TagFiles, changed], NullLogger.Instance);
+        server.LoadRecipeFiles([(plugin, plugin.RecipeFiles)]);
+        AssertTaggedRecipes(server.RecipeRegistry.Current, ItemsRegistry.StructureBlock);
+        Assert.False(server.RecipeRegistry.Current.IsCookingIngredient(
+            CraftingType.Smelting, new ItemStack(ItemsRegistry.Bedrock, 1)));
+        AssertTaggedRecipes(set, ItemsRegistry.Bedrock);
+
         var weak = new WeakReference(plugin.LoadContext);
         await manager.UnloadPluginAsync(plugin);
         // Drop the immutable snapshot and returned plugin values before the caller checks collection.
@@ -120,6 +175,49 @@ public sealed class PluginRecipeTypes
         registered = null;
         plugin = null;
         return (id, weak);
+    }
+
+    private static void AssertTaggedRecipes(RecipeSet set, Item material)
+    {
+        ItemStack?[] grid = [new(ItemsRegistry.IronIngot, 1), new(material, 1), null, null];
+        var match = Assert.IsType<CraftingEvaluation>(set.EvaluateCrafting(grid, 2));
+        Assert.Equal("probe:tagged", match.RecipeIdentifier);
+        Assert.True(match.Output.Is(ItemsRegistry.Diamond));
+        Assert.True(set.IsCookingIngredient(CraftingType.Smelting, new ItemStack(material, 1)));
+
+        var cut = Assert.IsType<CuttingRecipe>(set.Recipes["probe:cut"]);
+        Assert.Equal(ItemsRegistry.Barrier, Assert.Single(cut.Ingredient).Holder);
+        Assert.DoesNotContain(cut.Ingredient, stack => stack.Is(ItemsRegistry.OakLog));
+        var logs = Assert.IsType<CuttingRecipe>(set.Recipes["probe:unqualified"]);
+        Assert.Contains(logs.Ingredient, stack => stack.Is(ItemsRegistry.OakLog));
+
+        // Check the actual packet, including filters used by cooking and smithing screens.
+        var smith = set.Recipes["probe:smith"];
+        var cooking = set.Recipes["probe:baked"];
+        var packet = new UpdateRecipesPacket(new Dictionary<string, IRecipe>
+        {
+            [cut.Identifier] = cut,
+            [smith.Identifier] = smith,
+            [cooking.Identifier] = cooking
+        });
+        using var writer = new NetworkBuffer();
+        packet.Serialize(writer);
+        using var reader = new NetworkBuffer(writer.AsSpan(0, writer.Size).ToArray());
+        Assert.Equal(7, reader.ReadVarInt());
+        var properties = new Dictionary<string, int[]>();
+        for (var i = 0; i < 7; i++)
+        {
+            var name = reader.ReadString();
+            properties[name] = Enumerable.Range(0, reader.ReadVarInt()).Select(_ => reader.ReadVarInt()).ToArray();
+        }
+
+        Assert.Equal([(int)material.Id], properties["minecraft:furnace_input"]);
+        Assert.Equal([(int)material.Id], properties["minecraft:smithing_addition"]);
+        Assert.Equal([(int)ItemsRegistry.Barrier.Id], properties["minecraft:smithing_base"]);
+        Assert.Equal([(int)ItemsRegistry.IronIngot.Id], properties["minecraft:smithing_template"]);
+        Assert.Equal(1, reader.ReadVarInt());
+        Assert.Equal(2, reader.ReadVarInt());
+        Assert.Equal(ItemsRegistry.Barrier.Id, reader.ReadVarInt());
     }
 }
 

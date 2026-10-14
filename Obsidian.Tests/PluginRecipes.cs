@@ -34,7 +34,9 @@ namespace Obsidian.Tests;
 /// </summary>
 /// <remarks>
 /// Plugin recipes belong to their server; test recipes use bedrock and barriers to avoid vanilla matches.
+/// Content fingerprint checks share the process-wide registries with the plugin and tag loading tests.
 /// </remarks>
+[Collection(nameof(PluginTagFiles))]
 public sealed class PluginRecipes
 {
     [Fact]

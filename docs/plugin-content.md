@@ -2003,6 +2003,13 @@ belong to the serializer. Clone a `JsonElement` you retain. Plugins' files can a
 types, including cooking, which use the same recipe set as recipes registered in code. Files are read after item
 tags; malformed files are logged and left out. Registering an identifier already in use throws.
 
+Built-in recipe ingredients accept item identifiers and item tags such as `"#c:ingots/iron"` or
+`"#ruby:all_gems"`, including inside ingredient lists. Tags are looked up by their full namespace and path;
+`"#logs"` means `"#minecraft:logs"`, and `"#c:logs"` never falls back to it. An unknown tag is logged and the
+recipe is left out. Cooking, stonecutting and smithing use the same ingredient resolution. Files are read again
+after tags change on plugin load or unload, so the next immutable recipe snapshot, its matching caches, recipe
+book displays and client input property sets all use the rebuilt tags. A snapshot already in use stays unchanged.
+
 `IServer.FindRecipe<TRecipe>(RecipeType<TRecipe> type, IReadOnlyList<ItemStack?> inputs)` returns the first matching
 recipe, by lexical recipe identifier, or null. `IServer.GetRecipes<TRecipe>(RecipeType<TRecipe> type)` returns all
 the type's current recipes in that order, for a machine's screen to list (the
@@ -2053,6 +2060,10 @@ tags with the loaded plugins' files in load order, then the server's data packs'
 [Data packs and overriding vanilla](#data-packs-and-overriding-vanilla)), whenever a plugin loads or unloads, and
 vanilla's `Tag` objects hold the result, so server code using them sees the plugins' entries.
 `IPluginRegistry.AddToTag` adds entries from code.
+
+Recipe files can use these item tags, including convention and plugin namespaces, as `"#namespace:path"`
+ingredients (see [Custom recipe types](#custom-recipe-types)). They are resolved again when tags rebuild; names
+without a namespace refer to `minecraft`, never to the recipe's own namespace.
 
 The generator makes a `RubyTags` class with a `TagKey` per tag of the plugin's namespaces:
 
@@ -3469,6 +3480,13 @@ it too, so the same plugin class loads on them. The client calls
 `ConfigureClient` when it loads its mods, after `ConfigureRegistry`: at startup, and on a new instance of the plugin
 when the player reloads them (see below); servers never call it, so a `both` mod runs on a server without any client
 code.
+
+Mods put translations in `assets/<namespace>/lang/en_us.json` in their archives, with other languages alongside it
+(for example `fr_fr.json`). The client loads English from every namespace, then overlays the selected language;
+missing translations keep their English names. An item's default name uses `item.<namespace>.<path>`, falling back
+to `block.<namespace>.<path>` for block items. Slashes in paths become dots, like vanilla: `ruby:tools/hammer` uses
+`item.ruby.tools.hammer`. Entity and enchantment description keys follow the same format with their own prefix.
+Stack custom names and item name components still take precedence.
 
 What `ConfigureClient` registers takes effect when it returns and stays until the client exits or reloads its mods;
 if it throws, the mod fails to load and none of it does. The registry only takes registrations during
