@@ -778,6 +778,10 @@ public sealed class ProbePlugin : PluginBase
 {
     public RecipeType<ProbePressRecipe>? PressType { get; private set; }
 
+    public Obsidian.API.Advancements.AdvancementTrigger<int>? ProgressTrigger { get; private set; }
+    public int ProgressStatisticId { get; private set; }
+
+
     public const string CallsKey = "Obsidian.Tests.ProbePlugin.Calls";
 
     // The chat messages its handler acts on, and the AppContext data it records what it did in.
@@ -812,6 +816,14 @@ public sealed class ProbePlugin : PluginBase
 
     public override void ConfigureRegistry(IPluginRegistry pluginRegistry)
     {
+        if (this.Container.GetFileData("data/probe/advancement/progress.json") is not null)
+        {
+            this.ProgressStatisticId = pluginRegistry.RegisterCustomStatistic("probe:steps");
+            this.ProgressTrigger = pluginRegistry.RegisterAdvancementTrigger("probe:event",
+                new Obsidian.API.Advancements.AdvancementConditionsCodec<int>(
+                    json => json.GetProperty("value").GetInt32()));
+        }
+
         if (this.Container.GetFileData("data/probe/recipe/press.json") is not null)
             this.PressType = pluginRegistry.RegisterRecipeType("probe:press", new ProbePressSerializer());
 

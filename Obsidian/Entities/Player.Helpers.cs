@@ -88,6 +88,7 @@ public partial class Player
                 vanillaWorld.SingleplayerPlayerData = data;
 
             await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(this.Uuid), data);
+            await this.SaveProgressAsync();
         }
         finally
         {
@@ -119,6 +120,7 @@ public partial class Player
         try
         {
             await this.LoadDataAsync(loadFromPersistentWorld);
+            this.LoadProgress();
             this.dataLoaded = true;
         }
         finally
@@ -422,6 +424,8 @@ public partial class Player
                 var collected = originalCount - itemEntity.Item.Count;
                 if (collected == 0)
                     continue;
+
+                this.Statistics.Increment(itemEntity.Item.Holder.UnlocalizedName, collected, "minecraft:picked_up");
                 pickup = new TakeItemEntityPacket
                 {
                     CollectedEntityId = itemEntity.EntityId,
@@ -505,11 +509,20 @@ public partial class Player
         tag.Set(new NbtTag<int>("XpTotal", this.XpTotal));
         tag.Set(new NbtTag<float>("XpP", this.XpP));
         tag.Set(new NbtTag<int>("XpSeed", this.EnchantmentSeed));
+        var recipeBook = this.UnmodeledData.TryGetTag<NbtCompound>("recipeBook", out var existingBook)
+            ? existingBook
+            : new NbtCompound("recipeBook");
+        var knownRecipes = new NbtList(NbtTagType.String, "recipes");
+        foreach (var identifier in this.unlockedRecipes.Order(StringComparer.Ordinal))
+            knownRecipes.Add(new NbtTag<string>("", identifier));
+
+        recipeBook.Set(knownRecipes);
+        tag.Set(recipeBook);
 
         tag.Set(new NbtTag<bool>("seenCredits", this.SeenCredits));
         tag.Set(new NbtTag<int>("PortalCooldown", this.portalCooldown));
 
-        // Vanilla counts this in the player's stats, which Obsidian doesn't save; phantoms spawn from it.
+        // Legacy field is retained for older Obsidian saves; stats now supplies the phantom timer.
         tag.Set(new NbtTag<int>("ObsidianTimeSinceRest", this.TimeSinceRest));
 
         tag.Set(new NbtTag<int>("SelectedItemSlot", this.CurrentHeldItemSlot - HotbarStart));
@@ -587,6 +600,16 @@ public partial class Player
         this.XpLevel = Read("XpLevel", 0);
         this.XpTotal = Read("XpTotal", 0);
         this.XpP = Read("XpP", 0f);
+        this.unlockedRecipes.Clear();
+        if (tag.TryGetTag<NbtCompound>("recipeBook", out var book)
+            && book.TryGetTag<NbtList>("recipes", out var recipes))
+        {
+            foreach (var recipe in recipes.OfType<NbtTag<string>>())
+            {
+                if (recipe.Value is string identifier)
+                    this.unlockedRecipes.Add(identifier);
+            }
+        }
 
         var selectedSlot = Read("SelectedItemSlot", 0);
         if (selectedSlot >= HotbarStart)

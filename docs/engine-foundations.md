@@ -149,6 +149,8 @@ a mod entity glows and can be ridden.
   gives the pieces; it doesn't ship a Curios-style accessory API until a second mod needs one.
 - **Chunk tickets.** (done) Plugins keep chunks loaded and ticking without players nearby.
 - **Progress.** Advancements and statistics (vanilla parity), so mods can grant and check them.
+  Core statistics, saved criteria, rewards, common triggers and plugin APIs are implemented; full parity remains
+  in [known-gaps.md](known-gaps.md#progress-parity).
 
 **Sample:** a portal to a sample dimension, a rideable flying mob with saved data and a loot table, and a player
 attachment shown in an extra inventory slot.

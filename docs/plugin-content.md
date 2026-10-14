@@ -604,6 +604,82 @@ Obsidian client:
 - **Unloading.** A plugin's tabs and additions are removed when it unloads and registered again on reload, on both
   sides; the client builds the tabs again each time the creative inventory opens.
 
+## Progress
+
+Connected players expose `IPlayer.Statistics` and `IPlayer.Advancements`. Both persist in the owning world's
+vanilla files: `stats/<uuid>.json` has `stats` grouped by registry type, and `advancements/<uuid>.json` has criterion
+completion dates and `done`, with `DataVersion` in both. Dimension travel keeps the same world's progress.
+
+```csharp
+player.Statistics.Increment("minecraft:jump");
+player.Statistics.Increment("minecraft:diamond", 3, "minecraft:picked_up");
+var jumps = player.Statistics.Get("minecraft:jump");
+
+await player.Advancements.GrantAsync("ruby:powered", "first_machine");
+var powered = player.Advancements.IsDone("ruby:powered");
+var obtained = player.Advancements.HasCriterion("ruby:powered", "first_machine");
+player.Advancements.Revoke("ruby:powered", "first_machine");
+```
+
+`Get(identifier, type = "minecraft:custom")` returns zero when there is no value. `Increment(identifier,
+amount = 1, type = "minecraft:custom")` accepts registered identifiers and a nonnegative amount, saturating at
+`int.MaxValue`. The types are vanilla's `mined`, `crafted`, `used`, `broken`, `picked_up`, `dropped`, `killed`,
+`killed_by` and `custom`, all in the `minecraft` namespace. Play time and time since death/rest are ticks;
+movement is centimetres; damage uses tenths of a health point. The server records these at existing movement,
+combat, inventory, crafting, consumption and item-use hooks and answers the client's statistics request.
+
+Register a plugin custom statistic during `ConfigureRegistry` with `RegisterCustomStatistic("ruby:machines")`,
+which returns its protocol id. It joins `minecraft:custom_stat` in NeoForge/Fabric registry sync and the content
+version checked on reload; clients must provide the same registry entry. Identities stay for the process after
+unload, while incrementing an unloaded statistic is refused. Saved values and unknown stat identifiers survive.
+This server API does not add custom-stat registration to the Obsidian client's plugin registry yet.
+
+Advancements are vanilla JSON in `data/<ns>/advancement/<path>.json`, loaded from the generated vanilla assets,
+then plugins, then data packs. The engine sample's `sample:grinder` advancement demonstrates `inventory_changed`
+and an experience reward. Criteria have a trigger and detached conditions. Requirements are an AND of rows, each
+an OR of criterion names; omitting requirements makes each criterion its own required row. Parent, display,
+rewards and `sends_telemetry_event` are read. Join sends a reset and every definition/progress entry, and tick-end
+updates carry changed progress. Content reload resets the tree. The client can select an advancement tab.
+
+`GrantAsync(identifier, criterion = null)` grants one criterion or the whole advancement and returns whether
+anything changed. Completing the requirements grants experience, generates reward loot into inventory (overflow
+drops), and records/adds reward recipes to the existing recipe book. Repeating a grant is inert; revoking and
+completing again grants rewards again, as in vanilla. `Revoke(identifier, criterion = null)` returns whether
+anything changed. Granting/revoking missing advancement or criterion ids returns false. Saved plugin progress stays
+when its content unloads and resumes when it returns.
+`/advancement grant|revoke <player> only <id> [criterion]` uses the same API
+and the `advancement` permission.
+
+### Plugin triggers
+
+```csharp
+// During ConfigureRegistry, on the server:
+var powered = registry.RegisterAdvancementTrigger("ruby:powered",
+    new AdvancementConditionsCodec<int>(json => json.GetProperty("minimum").GetInt32()));
+
+// When a machine starts, evaluate each matching criterion's decoded conditions:
+await powered.FireAsync(player, minimum => machine.Power >= minimum);
+```
+
+The JSON criterion names `"trigger": "ruby:powered"` and `"conditions": { "minimum": 10 }`. The generic
+`RegisterAdvancementTrigger<TInstance>(identifier, AdvancementConditionsCodec<TInstance> conditions)` returns an
+`AdvancementTrigger<TInstance>` whose `FireAsync(IPlayer, Func<TInstance, bool>)` checks that player's criteria.
+Conditions decode only while firing inside the plugin's active call. Throw `NotSupportedException` or a JSON
+validation exception for unsupported conditions. Old handles become inert on unload and cannot fire a replacement
+registration. Player progress never retains plugin condition instances or codecs.
+
+The current vanilla triggers are `inventory_changed`, `recipe_unlocked`, `player_killed_entity`,
+`entity_killed_player`, `changed_dimension`, `location` (every 20 ticks), `consume_item`, `placed_block`,
+`item_used_on_block`, `tick`, `recipe_crafted`, `enchanted_item`, and the transition into `Sleeping` for
+`slept_in_bed`. `impossible` only advances through explicit grants. Vanilla condition matching supports inventory
+slot counts; loot's item/id/tag/count/enchantment predicates; entity type; dimension and coordinate ranges; block
+id/tag/state predicates; and supported `entity_properties`, `location_check`, `block_state_property` and
+`match_tool` checks. Unsupported triggers and condition fields never match.
+
+Full vanilla visibility, predicates, selective recipe unlocking, breeding attribution, function rewards and
+remaining event coverage are recorded in [known-gaps.md](known-gaps.md#progress-parity). Progress is usable but the
+engine plan's Progress item is not marked done.
+
 ## Travel and portals
 
 Move a player or any server entity without replacing its state:
@@ -2181,7 +2257,7 @@ The rules:
   them; with none, or when the player aims at an end portal frame within reach, using an eye does nothing and keeps
   it. Like vanilla's, a thrown eye drops as an item four times in five and breaks otherwise, and is saved with its
   item but not where it heads, so one loaded again flies on as it moved and breaks. Obsidian has no `/locate biome`
-  or `/locate poi`, and keeps no statistics, so throws don't count toward the eye's `minecraft:used`.
+  or `/locate poi`. Successful throws count toward the eye's `minecraft:used` statistic.
 
 ### Structure and pool element types
 

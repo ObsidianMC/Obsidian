@@ -41,6 +41,7 @@ public partial class Player
         await this.TickMenuAsync();
         await Obsidian.Events.MainEventHandler.RefreshStaleWindowAsync(this);
         await MapStorage.For(this.Level).TickAsync(this);
+        await this.ProgressAdvancements.FlushAsync();
     }
 
     // Runs one of the player's ticks unless they left.

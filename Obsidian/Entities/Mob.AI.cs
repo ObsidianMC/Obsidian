@@ -502,7 +502,12 @@ public partial class Mob
         var absorbed = Math.Min(AbsorptionHealth, amount);
         AbsorptionHealth -= absorbed;
         amount -= absorbed;
+        var previousHealth = Health;
         await base.DamageAsync(source, amount);
+        if (source is Player attackingPlayer && Health < previousHealth)
+            attackingPlayer.Statistics.Increment("minecraft:damage_dealt",
+                (int)Math.Clamp(Math.Floor(Math.Min(previousHealth, amount) * 10 + 0.5), 0, int.MaxValue));
+
         await OnHurtAsync(source);
         if (Alive && !absorbedByEquipment)
             PlayMobSound("hurt");
@@ -538,6 +543,8 @@ public partial class Mob
             return;
         Health = 0;
         deathStarted = true;
+        if (source is Player killingPlayer)
+            await killingPlayer.RecordProgressKillAsync(this);
         goals.Cancel();
         TargetGoals.Cancel();
         (Navigator as Navigator)?.Stop();

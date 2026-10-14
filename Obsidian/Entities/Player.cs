@@ -668,6 +668,8 @@ public sealed partial class Player : Avatar, IClientPlayer
         await Client.QueuePacketAsync(new SetExperiencePacket(this.XpP, this.XpLevel, this.XpTotal));
         await Client.QueuePacketAsync(new PlayerAbilitiesPacket { Abilities = this.Abilities });
         await this.EventDispatcher.ExecuteEventAsync(new PlayerTeleportEventArgs(this, this.Server, from, spawn));
+        await this.FireProgressAsync("changed_dimension", from: origin.DimensionName, to: destination.DimensionName);
+        this.progressDimension = destination.DimensionName;
         await SaveAsync();
     }
 
@@ -735,6 +737,7 @@ public sealed partial class Player : Avatar, IClientPlayer
                 Pitch = 0;
                 MovementFlags = MovementFlags.None;
                 Health = 20f;
+                this.progressDead = false;
                 await Level.DestroyEntityAsync(this);
                 Position = Level.LevelData.SpawnPosition;
                 LastPosition = Position;
@@ -800,6 +803,10 @@ public sealed partial class Player : Avatar, IClientPlayer
     //TODO make IDamageSource 
     public async override ValueTask KillAsync(IEntity source, ChatMessage deathMessage)
     {
+        if (this.progressDead)
+            return;
+
+        await this.RecordProgressDeathAsync(source);
         Health = 0;
         CancelEating();
         CancelWeaponUse();
@@ -1025,6 +1032,7 @@ public sealed partial class Player : Avatar, IClientPlayer
         var oldPosition = Position;
         var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, movementFlags);
+        this.RecordProgressMovement(oldPosition, oldMovementFlags);
         await UpdateFallAsync(oldPosition, movementFlags);
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
 
@@ -1040,6 +1048,7 @@ public sealed partial class Player : Avatar, IClientPlayer
         var oldPosition = Position;
         var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, yaw, pitch, movementFlags);
+        this.RecordProgressMovement(oldPosition, oldMovementFlags);
         await UpdateFallAsync(oldPosition, movementFlags);
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
 

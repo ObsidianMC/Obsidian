@@ -105,7 +105,7 @@ public sealed partial class EyeOfEnder : Entity
             await player.SyncInventorySlotAsync(slot);
         }
 
-        // Vanilla awards the item's minecraft:used statistic here; Obsidian keeps no statistics.
+        player.Statistics.Increment(stack.Holder.UnlocalizedName, type: "minecraft:used");
         return true;
     }
 

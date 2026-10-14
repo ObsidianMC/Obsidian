@@ -18,12 +18,13 @@ internal static class SyncedRegistries
     public const string Items = "minecraft:item";
     public const string Menus = "minecraft:menu";
     public const string ParticleTypes = "minecraft:particle_type";
+    public const string CustomStatistics = "minecraft:custom_stat";
 
     /// <summary>
     /// The registries, in the order the server sends them.
     /// </summary>
     public static ImmutableArray<string> Names { get; } =
-        [Blocks, BlockEntityTypes, DataComponentTypes, EntityTypes, Items, Menus, ParticleTypes];
+        [Blocks, BlockEntityTypes, DataComponentTypes, EntityTypes, Items, Menus, ParticleTypes, CustomStatistics];
 
     /// <summary>
     /// The registries plugins added to, with all their entries.
@@ -42,6 +43,7 @@ internal static class SyncedRegistries
         Items => ItemsRegistry.HasPluginItems,
         Menus => MenuTypesRegistry.PluginMenus.Count > 0,
         ParticleTypes => ParticleTypesRegistry.PluginParticles.Count > 0,
+        CustomStatistics => CustomStatisticsRegistry.Plugins.Length > 0,
         _ => throw new ArgumentException($"{name} isn't a synced registry.", nameof(name))
     };
 
@@ -52,6 +54,9 @@ internal static class SyncedRegistries
     {
         (int Id, string Identifier)[] entries = name switch
         {
+            CustomStatistics => CustomStatisticsRegistry.Vanilla.Concat(CustomStatisticsRegistry.Plugins)
+                .Select((identifier, id) => (id, identifier))
+                .ToArray(),
             Blocks => BlocksRegistry.ResourceIds
                 .Select((identifier, id) => (id, identifier))
                 .Concat(BlocksRegistry.PluginBlocks.Select(type => (type.Id, type.Identifier)))

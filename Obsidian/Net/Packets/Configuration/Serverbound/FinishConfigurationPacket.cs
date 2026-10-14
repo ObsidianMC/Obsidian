@@ -71,7 +71,10 @@ public sealed partial class FinishConfigurationPacket
         await client.QueuePacketAsync(new RecipeBookSettingsPacket());
 
         if (player is Entities.Player joined)
+        {
             await joined.RecipeBookSync.SendInitialAsync(player);
+            await joined.ProgressAdvancements.FlushAsync(initial: true);
+        }
 
         await player.UpdatePlayerInfoAsync();
         await player.SendPlayerInfoAsync();

@@ -1,3 +1,4 @@
+using Obsidian.API.Crafting;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
@@ -191,6 +192,10 @@ public partial class MainEventHandler
                 default:
                     return;
             }
+
+            if (player is Player progressing
+                && PlayerRecipes(player).FindRecipe(grid, width) is IRecipeWithResult recipe)
+                progressing.RecordProgressCraft(recipe.Identifier, result);
 
             ConsumeCraftingIngredients(player, grid, width);
 

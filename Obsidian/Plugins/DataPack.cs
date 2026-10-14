@@ -105,6 +105,8 @@ internal sealed partial class DataPack(DataFiles files)
     /// </summary>
     public List<TagFile> TagFiles { get; } = [];
 
+    internal ImmutableArray<Obsidian.API.Advancements.Advancement> AdvancementFiles { get; set; } = [];
+
     public ImmutableArray<Obsidian.API.Loot.LootTable> LootTableFiles { get; set; } = [];
 
     /// <summary>

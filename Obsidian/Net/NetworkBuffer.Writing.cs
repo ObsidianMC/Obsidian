@@ -227,7 +227,7 @@ public partial class NetworkBuffer : INetStreamWriter
         }
     }
 
-    //TODO make sure this is up to date
+    // Vanilla 1.21.11 sends requirements and telemetry here; criteria definitions remain on the server.
     public void WriteAdvancement(Advancement advancement)
     {
         var hasParent = !string.IsNullOrEmpty(advancement.Parent);
@@ -245,7 +245,7 @@ public partial class NetworkBuffer : INetStreamWriter
             this.WriteChat(advancement.Display.Title);
             this.WriteChat(advancement.Display.Description);
 
-            this.WriteItemStack(new ItemStack(advancement.Display.Icon, 1));
+            this.WriteItemStack(advancement.Display.IconStack ?? new ItemStack(advancement.Display.Icon, 1));
 
             this.WriteVarInt(advancement.Display.AdvancementFrameType);
 
@@ -258,24 +258,19 @@ public partial class NetworkBuffer : INetStreamWriter
             this.WriteSingle(advancement.Display.YCoord);
         }
 
-        this.WriteVarInt(advancement.Criteria.Count);
-
-        foreach (var criteria in advancement.Criteria)
-            this.WriteString(criteria.Identifier);
-
-        var reqired = advancement.Criteria.Where(x => x.Required).ToList();
-
-        //For some reason this takes a array of an array??
-        if (reqired.Count > 0)
+        var requirements = advancement.Requirements.Count > 0
+            ? advancement.Requirements
+            : advancement.Criteria.Where(criterion => criterion.Required)
+                .Select(criterion => new List<string> { criterion.Identifier }).ToList();
+        this.WriteVarInt(requirements.Count);
+        foreach (var row in requirements)
         {
-            //Always gonna be 1 for now
-            this.WriteVarInt(1);
-
-            this.WriteVarInt(reqired.Count);
-
-            foreach (var criteria in reqired)
-                this.WriteString(criteria.Identifier);
+            this.WriteVarInt(row.Count);
+            foreach (var criterion in row)
+                this.WriteString(criterion);
         }
+
+        this.WriteBoolean(advancement.SendsTelemetryEvent);
     }
 
     public void WriteAttributeModifier(AttributeModifier attribute) => AttributeModifier.Write(attribute, this);
