@@ -1,7 +1,6 @@
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Blocks;
 using Obsidian.ChunkData;
-using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
 using Obsidian.WorldData.Features;
@@ -20,9 +19,6 @@ namespace Obsidian.WorldData;
 /// </remarks>
 internal sealed partial class LevelBlockUpdates
 {
-    // Half of vanilla's item entity height, which popped drops are lowered by.
-    private const double ItemHalfHeight = 0.125;
-
     // The flags and update limit of the shape updates a block changed with BlockUpdateFlags.All sends.
     private const BlockUpdateFlags RefreshShapeFlags = BlockUpdateFlags.Clients;
     private const int ShapeLimit = 511;
@@ -364,7 +360,7 @@ internal sealed partial class LevelBlockUpdates
     internal void ShapeUpdateAt(Vector position, BlockFace direction, BlockUpdateFlags flags, int updateLimit)
     {
         var neighbor = this.GetBlock(position.Offset(direction));
-        updates.QueueShapeUpdate(direction, neighbor, position, flags, updateLimit, VanillaShapes.Fluids);
+        updates.QueueShapeUpdate(direction, neighbor, position, flags, updateLimit, VanillaShapes.All);
     }
 
     /// <summary>
@@ -375,45 +371,10 @@ internal sealed partial class LevelBlockUpdates
 
     /// <summary>
     /// Vanilla <c>dropResources</c> and <c>removeBlock</c>: the block drops its loot, like a player breaking it by
-    /// hand, and leaves the fluid it held.
+    /// hand, and leaves the fluid it held. Loot runs on the serial queue, outside the tick lock.
     /// </summary>
-    internal void DropAndRemove(Vector position, IBlock state)
-    {
-        this.DropLoot(position, state);
-        this.RemoveBlock(position);
-    }
-
-    /// <summary>
-    /// Vanilla <c>Block.dropResources</c> without a tool: the block's loot, each stack popped out of the block like
-    /// vanilla's <c>popResource</c>.
-    /// </summary>
-    internal void DropLoot(Vector position, IBlock state)
-    {
-        if (!level.LevelData.GetBooleanRule("block_drops", true))
-            return;
-
-        foreach (var stack in BlockLoot.GetDrops(level, position, state, this.GetBlock))
-        {
-            // Vanilla's popResource: within a quarter block of the centre, lowered by half an item's height.
-            var random = this.Random;
-            var x = position.X + 0.5 + random.NextDouble() * 0.5 - 0.25;
-            var y = position.Y + 0.5 + random.NextDouble() * 0.5 - 0.25 - ItemHalfHeight;
-            var z = position.Z + 0.5 + random.NextDouble() * 0.5 - 0.25;
-            var motion = new VectorD(random.NextDouble() * 0.2 - 0.1, 0.2, random.NextDouble() * 0.2 - 0.1);
-
-            var item = new ItemEntity
-            {
-                Level = level,
-                EntityId = Server.GetNextEntityId(),
-                Position = new VectorD(x, y, z),
-                Item = stack,
-                Motion = motion
-            };
-
-            // The level's own drop, not one a plugin's code on the stack spawns.
-            level.TrySpawnEntity(item, hostOwned: true);
-        }
-    }
+    internal void DropAndRemove(Vector position, IBlock state) =>
+        level.QueueBlockDestruction(position, true, null, FluidState.Of(state).CreateLegacyBlock(), playEffect: false);
 
     /// <summary>
     /// Plays a block sound at the centre of <paramref name="position"/> to the players near it, but

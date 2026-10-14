@@ -16,6 +16,7 @@ using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.ChunkData;
 using Obsidian.Commands.Framework;
 using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
@@ -308,6 +309,44 @@ public sealed class BlockDrops
             Assert.Equal("minecraft:" + item, drop.Item.Holder.UnlocalizedName);
             Assert.Equal(name == "tall_grass" ? 2 : 1, drop.Item.Count);
         }
+
+        foreach (var drop in drops)
+            await drop.RemoveAsync();
+
+        // Drain shape requests for partners the player's two-part transaction already removed.
+        await context.World.DoWorldTickAsync();
+
+        // Environmental destruction uses each half's own tool-less loot, even with a creative player nearby.
+        // Beds survive loss of the blocks below; their missing-part update drops only the head's item.
+        var lower = defaultBlock.WithProperty(property, property == "part" ? "foot" : "lower");
+        if (property == "part")
+            lower = lower.WithProperty("facing", "east");
+
+        var partnerPosition = position + (property == "part" ? Vector.East : Vector.Up);
+        chunk.SetBlock(position + Vector.Down, BlocksRegistry.Clay);
+        chunk.SetBlock(position, lower);
+        chunk.SetBlock(partnerPosition, lower.WithProperty(property, property == "part" ? "head" : "upper"));
+        var client = (TestClient)player.Client;
+        player.LoadedChunks.Add(0);
+        client.ClearPackets();
+        await context.World.SetBlockAsync(position + Vector.Down, BlocksRegistry.Air, BlockUpdateFlags.All);
+        await context.World.DoWorldTickAsync();
+        if (property == "part")
+        {
+            Assert.True(chunk.GetBlock(position).IsSameState(lower));
+            Assert.Equal("head", chunk.GetBlock(partnerPosition).GetProperty("part"));
+            await context.World.SetBlockAsync(position, BlocksRegistry.Air, BlockUpdateFlags.All);
+        }
+
+        await context.World.DoWorldTickAsync();
+        Assert.True(chunk.GetBlock(position).IsAir);
+        Assert.True(chunk.GetBlock(partnerPosition).IsAir);
+        Assert.Equal(name == "small_dripleaf" ? "" : "minecraft:" + item + "*1",
+            Describe(context.World.GetEntitiesInRange((VectorD)position, 4)
+                .OfType<ItemEntity>().Select(drop => drop.Item)));
+        Assert.Equal(property == "part" ? 1 : 2,
+            client.SentPackets.OfType<LevelEventPacket>().Count(packet => packet.Type == 2001
+                && (packet.Position == position || packet.Position == partnerPosition)));
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
@@ -476,6 +515,20 @@ public sealed class BlockDrops
             await parts.RemovePartnerAsync(context.World);
             Assert.True(chunk.GetBlock(position + Vector.Down).Is(BlockIds.Stone));
             Assert.Empty(await BlockLoot.GetDropsAsync(context.World, parts.DropPosition, parts.DropState, null));
+
+            // A supported double flower drops once from its lower half; the upper half has an empty loot result.
+            await context.World.GetChunkAsync(0, 0, scheduleGeneration: false);
+            chunk.SetBlock(position + Vector.Down, BlocksRegistry.Dirt);
+            chunk.SetBlock(position, BlocksRegistry.Sunflower.WithProperty("half", "lower"));
+            chunk.SetBlock(position + Vector.Up, BlocksRegistry.Sunflower.WithProperty("half", "upper"));
+            await context.World.SetBlockAsync(position + Vector.Down, BlocksRegistry.Air, BlockUpdateFlags.All);
+            await context.World.DoWorldTickAsync();
+            await context.World.DoWorldTickAsync();
+            Assert.True(chunk.GetBlock(position).IsAir);
+            Assert.True(chunk.GetBlock(position + Vector.Up).IsAir);
+            var flower = Assert.Single(context.World.GetEntitiesInRange((VectorD)position, 4).OfType<ItemEntity>());
+            Assert.True(flower.Item.Is(ItemsRegistry.Sunflower));
+            Assert.Equal(1, flower.Item.Count);
         }
     }
 

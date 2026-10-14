@@ -683,7 +683,7 @@ public sealed class BlockUpdates : IDisposable
         // Dust whose block goes pops off, dropping its item.
         build.AddRange([(At(14, 14), stone), (At(14, 14, up: 2), dust)]);
         steps.Add((0, () => world.SetBlockAsync(At(14, 14), BlocksRegistry.Air, BlockUpdateFlags.All)));
-        checks.Add((0, At(14, 14, up: 2), "block", "minecraft:air"));
+        checks.Add((1, At(14, 14, up: 2), "block", "minecraft:air"));
 
         foreach (var (position, state) in build)
             await world.SetBlockAsync(position, state, BlockUpdateFlags.All);
@@ -708,7 +708,142 @@ public sealed class BlockUpdates : IDisposable
         // The dropped dust slides a little on the motion it popped out with.
         var drops = world.GetNonPlayerEntitiesInRange((VectorD)At(14, 14, up: 2), 8).OfType<ItemEntity>();
         Assert.Contains(drops, drop => drop.Item.Is(ItemsRegistry.Get("minecraft:redstone")));
+
+        await AssertSupportLossAsync(world, player);
         world.TryRemovePlayer(player);
+    }
+
+    // Exercise the shared destruction boundary through ordinary shape updates, explicit shape flags and fluids.
+    private static async Task AssertSupportLossAsync(WorldData.World world, Entities.Player player)
+    {
+        var chunk = world.GetLoadedChunk(0, 0)!;
+        var basePosition = new Vector(3, Ground + 4, 7);
+        var client = (TestClient)player.Client;
+        player.LoadedChunks.Add(0);
+
+        (string Block, string Item, Vector Offset, bool Effect)[] attachments =
+        [
+            ("torch", "torch", Vector.Up, true),
+            ("wall_torch", "torch", Vector.East, true),
+            ("dandelion", "dandelion", Vector.Up, true),
+            ("white_carpet", "white_carpet", Vector.Up, true),
+            ("oak_sign", "oak_sign", Vector.Up, true),
+            ("white_banner", "white_banner", Vector.Up, true),
+            ("oak_wall_sign", "oak_sign", Vector.East, true),
+            ("white_wall_banner", "white_banner", Vector.East, true),
+            ("oak_hanging_sign", "oak_hanging_sign", Vector.Down, true),
+            ("oak_wall_hanging_sign", "oak_hanging_sign", Vector.North, true),
+            ("lever", "lever", Vector.Up, true),
+            ("stone_button", "stone_button", Vector.Up, true),
+            ("redstone_torch", "redstone_torch", Vector.Up, true),
+            ("stone_pressure_plate", "stone_pressure_plate", Vector.Up, true),
+            ("rail", "rail", Vector.Up, false),
+            ("redstone_wire", "redstone", Vector.Up, false)
+        ];
+
+        foreach (var (name, item, offset, effect) in attachments)
+        {
+            var position = basePosition + offset;
+            var block = BlockStateProperties.GetState($"minecraft:{name}");
+            if (offset == Vector.East)
+                block = block.WithProperty("facing", "east");
+
+            if (name == "oak_wall_hanging_sign")
+                block = block.WithProperty("facing", "east");
+
+            if (block.HasProperty("face"))
+                block = block.WithProperty("face", "floor");
+
+            chunk.SetBlock(basePosition, BlocksRegistry.Dirt);
+            chunk.SetBlock(position, block);
+            client.ClearPackets();
+            await world.SetBlockAsync(basePosition, BlocksRegistry.Air, BlockUpdateFlags.All);
+            Assert.True(chunk.GetBlock(position).IsSameState(block));
+            await world.DoWorldTickAsync();
+            Assert.True(chunk.GetBlock(position).IsAir, name);
+            var dropped = Assert.Single(world.GetNonPlayerEntitiesInRange((VectorD)position, 2).OfType<ItemEntity>());
+            Assert.Equal($"minecraft:{item}", dropped.Item.Holder.UnlocalizedName);
+            Assert.Equal(1, dropped.Item.Count);
+            var effects = client.SentPackets.OfType<LevelEventPacket>().Where(packet => packet.Position == position);
+            Assert.Equal(effect ? [2001] : Array.Empty<int>(), effects.Select(packet => packet.Type));
+            if (effect)
+                Assert.Equal(block.GetHashCode(), Assert.Single(effects).Data);
+
+            await dropped.RemoveAsync();
+        }
+
+        // SuppressDrops belongs to the shape update itself; Level.setBlock clears it for outgoing updates.
+        var torchPosition = basePosition + Vector.Up;
+        (IBlock Block, bool Suppress, bool Rule)[] suppression =
+        [
+            (BlocksRegistry.Torch, true, true),
+            (BlocksRegistry.RedstoneTorch, true, true),
+            (BlocksRegistry.Torch, false, false)
+        ];
+        foreach (var (block, suppress, rule) in suppression)
+        {
+            world.LevelData.GameRules["block_drops"] = rule ? "true" : "false";
+            chunk.SetBlock(torchPosition, block);
+            world.BlockUpdates.ShapeUpdateAt(torchPosition, BlockFace.Down,
+                BlockUpdateFlags.Clients | (suppress ? BlockUpdateFlags.SuppressDrops : BlockUpdateFlags.None), 511);
+            client.ClearPackets();
+            await world.DoWorldTickAsync();
+            Assert.True(chunk.GetBlock(torchPosition).IsAir);
+            Assert.Empty(world.GetNonPlayerEntitiesInRange((VectorD)torchPosition, 2).OfType<ItemEntity>());
+            Assert.Contains(client.SentPackets.OfType<LevelEventPacket>(), packet =>
+                packet.Type == 2001 && packet.Position == torchPosition);
+        }
+
+        world.LevelData.GameRules["block_drops"] = "true";
+
+        // Water's beforeDestroyingBlock drops the washed block but has no 2001; lava only fizzes (1501).
+        (string Block, bool Water, bool Rule)[] washouts =
+        [
+            ("torch", true, true),
+            ("wheat", true, true),
+            ("torch", true, false),
+            ("torch", false, true)
+        ];
+        var washPosition = basePosition;
+        foreach (var (name, water, rule) in washouts)
+        {
+            world.LevelData.GameRules["block_drops"] = rule ? "true" : "false";
+            var block = BlockStateProperties.GetState($"minecraft:{name}");
+            if (name == "wheat")
+                block = block.WithProperty("age", "7");
+
+            var sourcePosition = washPosition + Vector.Up;
+            chunk.SetBlock(washPosition, block);
+            chunk.SetBlock(sourcePosition, water ? BlocksRegistry.Water : BlocksRegistry.Lava);
+            client.ClearPackets();
+            world.Fluids.ScheduleFluidTick(sourcePosition, water ? FluidKind.Water : FluidKind.Lava, 0);
+            await world.DoWorldTickAsync();
+            Assert.True(chunk.GetBlock(washPosition).IsLiquid, $"{name}, water={water}, drops={rule}");
+            var washed = world.GetNonPlayerEntitiesInRange((VectorD)washPosition, 2).OfType<ItemEntity>().ToArray();
+            if (water && rule)
+            {
+                var expected = ItemsRegistry.Get($"minecraft:{name}");
+                Assert.Equal(1, Assert.Single(washed, drop => drop.Item.Is(expected)).Item.Count);
+                Assert.All(washed, drop => Assert.True(drop.Item.Is(expected)
+                    || name == "wheat" && drop.Item.Is(ItemsRegistry.WheatSeeds)));
+                foreach (var drop in washed)
+                    await drop.RemoveAsync();
+            }
+            else
+            {
+                Assert.Empty(washed);
+            }
+
+            Assert.DoesNotContain(client.SentPackets.OfType<LevelEventPacket>(), packet =>
+                packet.Type == 2001 && packet.Position == washPosition);
+            if (!water)
+                Assert.Contains(client.SentPackets.OfType<LevelEventPacket>(), packet =>
+                    packet.Type == 1501 && packet.Position == washPosition);
+
+            chunk.SetBlock(washPosition, BlocksRegistry.Air);
+            chunk.SetBlock(sourcePosition, BlocksRegistry.Air);
+            washPosition += Vector.East * 3;
+        }
     }
 
     // Fills a hopper's first slot with a stack of stone, as a player moving items in would.

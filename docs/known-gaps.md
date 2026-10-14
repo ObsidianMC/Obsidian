@@ -188,11 +188,12 @@ blocks' random ticks go next to the plants' in `AbstractLevel.TickChunkBlocks`, 
 
 Block changes run vanilla's neighbour and shape updates, in vanilla's order, and plugin blocks react to them (see
 [plugin content](plugin-content.md#block-hooks)). Of vanilla's blocks, liquids flow, falling blocks fall and the basic
-redstone components work (see [Redstone](#redstone)), but the others don't react to changes players, plugins and
-explosions make: fences, walls, panes and stairs don't connect, torches (other than redstone torches), ladders,
-signs, plants and carpets don't pop off without support, and a door's other half stays. Those shape rules
-(`ShapeUpdater`) only run in generation and when water or lava changes blocks, as before, since a block they destroy
-would vanish without its drops: `FluidLevel.DestroyBlock` doesn't drop anything yet. Vanilla's `neighborChanged`
+redstone components work (see [Redstone](#redstone)). The existing shape rules (`ShapeUpdater`) now also run for
+changes players, plugins and explosions make: fences, walls, panes and stairs connect; supported attachments and
+plants pop off with tool-less loot and break effects; doors, beds and double plants react when their partner goes.
+Removal is queued on the serial level tick so loot never runs under the tick lock. Shape destruction respects
+`SuppressDrops` and `block_drops`. Water washout drops loot without the break effect; lava only fizzes.
+Rails check their base and ascending end support and drop without a break effect. Vanilla's `neighborChanged`
 reactions other than redstone components' (rails, doors and trapdoors opening when powered, TNT) aren't modelled,
 and scheduled ticks of vanilla blocks other than falling blocks and redstone components (an observer's, from a
 vanilla save) do nothing when they come due. Of vanilla's own blocks, only pressure plates and wooden buttons react
@@ -206,9 +207,6 @@ different one. Obsidian deliberately doesn't emulate Java's heap layout for this
 
 **Where to start:**
 
-- Make `FluidLevel.DestroyBlock` drop the block's loot (vanilla's `Level.destroyBlock`, unless `SuppressDrops`),
-  then run every chain with `VanillaShapes.All`, which makes `FluidLevel.OnBlockChanged` apply `ShapeUpdater`'s
-  rules too. Check beds and doors, whose breaking code removes the other half itself.
 - Vanilla blocks' `neighborChanged` goes in `LevelBlockUpdates.NeighborChanged`, and their ticks in
   `LevelBlockUpdates.RunScheduledTick`, next to falling blocks'.
 - Placement checks belong in `UseItemOnPacket`'s placement, before the place event: vanilla's `canSurvive` and

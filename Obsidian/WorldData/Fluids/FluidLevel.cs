@@ -112,11 +112,10 @@ internal sealed class FluidLevel
 
     /// <summary>
     /// <see cref="SetBlock(Vector, IBlock, BlockUpdateFlags, int)"/> for changes from outside fluid ticks (plugin
-    /// blocks' hooks): of vanilla's blocks, only liquids, waterlogged blocks and falling blocks react to the shape
-    /// updates of its chain of updates, as for <see cref="OnBlockChanged"/>.
+    /// blocks' hooks), including vanilla's support and connection rules.
     /// </summary>
     public bool SetBlockOutsideFluids(Vector position, IBlock block, BlockUpdateFlags flags) =>
-        this.SetBlock(position, block, flags, UpdateLimit, VanillaShapes.Fluids);
+        this.SetBlock(position, block, flags, UpdateLimit, VanillaShapes.All);
 
     /// <summary>
     /// Runs the side effects of a block something else stored (a player, a plugin or an explosion), as
@@ -124,18 +123,13 @@ internal sealed class FluidLevel
     /// <see cref="IFluidLevelAccess.OnBlockStored"/>), then <paramref name="old"/>'s removal,
     /// <paramref name="block"/>'s placement and its neighbors' updates run, as the flags ask.
     /// </summary>
-    /// <remarks>
-    /// Of vanilla's blocks, only liquids, waterlogged blocks and falling blocks react to the chain's shape updates:
-    /// fences, torches and the other vanilla blocks <see cref="ShapeUpdater"/> knows keep their state, as they did
-    /// before, since the blocks they'd destroy can't drop their items yet (see known gaps).
-    /// </remarks>
     public void OnBlockChanged(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
     {
         // Players are sent even an unchanged block, which corrects a client that predicted another.
         this.access.OnBlockStored(position, block, flags);
 
         if (!old.IsSameState(block))
-            this.OnChanged(position, old, block, flags, UpdateLimit, VanillaShapes.Fluids);
+            this.OnChanged(position, old, block, flags, UpdateLimit, VanillaShapes.All);
     }
 
     /// <summary>
@@ -243,7 +237,7 @@ internal sealed class FluidLevel
             return;
 
         if (updated.IsAir)
-            this.DestroyBlock(position, updateLimit, shapes);
+            this.DestroyBlock(position, (flags & BlockUpdateFlags.SuppressDrops) == 0, updateLimit, shapes);
         else
             this.SetBlock(position, updated, flags & ~BlockUpdateFlags.SuppressDrops, updateLimit, shapes);
     }
@@ -343,17 +337,24 @@ internal sealed class FluidLevel
     /// <summary>
     /// Vanilla <c>Level.destroyBlock</c>: the block is replaced by its fluid (air, or the water a waterlogged block held).
     /// </summary>
-    /// <remarks>
-    /// Vanilla also plays the break effect and drops the block's loot, which Obsidian doesn't do for these yet.
-    /// </remarks>
-    private bool DestroyBlock(Vector position, int updateLimit, VanillaShapes shapes)
+    private bool DestroyBlock(Vector position, bool dropItems, int updateLimit, VanillaShapes shapes)
     {
         if (this.GetBlock(position).IsAir)
             return false;
 
         var fluid = this.GetFluid(position).CreateLegacyBlock();
+        if (this.access.TryQueueDestruction(position, fluid, dropItems, playEffect: true))
+            return true;
+
         return this.SetBlock(position, fluid, BlockUpdateFlags.All, updateLimit, shapes);
     }
+
+    /// <summary>
+    /// WaterFluid.beforeDestroyingBlock drops resources with an empty tool, without Level.destroyBlock's effect.
+    /// Keep the original block until its queued loot transaction can replace it with the incoming water.
+    /// </summary>
+    public bool TryWashAway(Vector position, IBlock replacement) =>
+        this.access.TryQueueDestruction(position, replacement, dropItems: true, playEffect: false);
 
     // Block.onPlace: only liquids react, and they react like to a neighbor change.
     private void OnPlace(Vector position, IBlock block) => this.NeighborChanged(position, block);

@@ -3,8 +3,9 @@ using Obsidian.API.Blocks;
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// Prepares vanilla two-part destruction without a general shape-update system. Evaluate DropState at DropPosition
-/// before removing either part, then remove the verified partner along with the selected block.
+/// Prepares a player's or explosion's two-part destruction. Evaluate DropState at DropPosition before removing
+/// either part, then remove the verified partner along with the selected block. Shape destruction uses each
+/// half's own loot instead, so a non-dropping upper half cannot redirect its loot to the lower half.
 /// </summary>
 internal sealed record TwoPartBlockBreak(
     Vector DropPosition,
@@ -79,8 +80,10 @@ internal sealed record TwoPartBlockBreak(
     {
         if (this.PartnerPosition is Vector position && level is AbstractLevel concrete)
         {
-            await concrete.TrySetBlockAsync(position, this.PartnerReplacement!, BlockUpdateFlags.All,
+            var removed = await concrete.TrySetBlockAsync(position, this.PartnerReplacement!, BlockUpdateFlags.All,
                 current => current.GetHashCode() == this.ExpectedPartner!.GetHashCode());
+            if (removed)
+                concrete.BroadcastLevelEvent(2001, position, this.ExpectedPartner!.GetHashCode());
         }
     }
 }

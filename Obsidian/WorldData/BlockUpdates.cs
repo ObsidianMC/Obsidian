@@ -191,6 +191,7 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     public void NeighborChanged(Vector position, IBlock state, IBlock source, Vector sourcePosition)
     {
         VanillaRedstone.For(state)?.NeighborChanged(this, position, state);
+        this.RemoveUnsupportedRail(position, state);
 
         this.RunHook(
             state,
@@ -221,15 +222,7 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         }
 
         if (VanillaRedstone.For(state) is RedstoneComponent component)
-        {
-            var updated = component.UpdateShape(this, position, state, direction, neighbor);
-
-            // Vanilla's destroyBlock: what loses its support drops its loot as it goes.
-            if (updated.IsAir)
-                this.DropLoot(position, state);
-
-            return updated;
-        }
+            return component.UpdateShape(this, position, state, direction, neighbor);
 
         if (!BlockBehaviors.TryEnter(state, out var behavior, out var call))
             return null;
@@ -238,7 +231,7 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         {
             try
             {
-                var updated = behavior.UpdateShape(new ShapeUpdateContext
+                return behavior.UpdateShape(new ShapeUpdateContext
                 {
                     Level = this,
                     Position = position,
@@ -247,14 +240,6 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
                     NeighborPosition = neighborPosition,
                     NeighborState = neighbor
                 }) ?? state;
-
-                if (updated.IsAir && !state.IsAir)
-                {
-                    this.DestroyBlock(position, dropItems: true);
-                    return state;
-                }
-
-                return updated;
             }
             catch (Exception exception)
             {
