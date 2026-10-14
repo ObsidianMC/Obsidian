@@ -190,10 +190,11 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
 
         var entry = DataComponentTypesRegistry.Register(identifier);
 
-        if (!DataComponentTypesRegistry.TryBind(entry, codec, networkCodec, container, () => container.IsClosing))
+        if (!DataComponentTypesRegistry.TryBind(
+            entry, codec, networkCodec, container, () => container.IsClosing, () => container.TryEnter()))
             throw new InvalidOperationException($"{container.Info.Name} is unloading.");
 
-        return new PluginComponentType<TValue>(entry.Type, entry.Identifier, codec);
+        return new PluginComponentType<TValue>(entry.Type, entry.Identifier, codec, () => container.TryEnter());
     }
 
     /// <summary>

@@ -244,9 +244,11 @@ the level's tick (`BlockEntityComponents.CaptureAsync`), but a plugin's block en
 explosions capture on the tick itself, so a capture would have to run there without waiting for the next tick from
 inside one.
 
-Plugin component values are hashed for click predictions from their saved NBT, which matches vanilla's `HashOps` for
-codecs writing NBT-shaped values; a NeoForge or Fabric client whose codec writes booleans, which NBT stores as bytes,
-hashes them differently, so their clicks resynchronise the slot.
+Plugin component values default to hashes of their saved NBT, which matches vanilla's `HashOps` for codecs writing
+NBT-shaped values. Codecs whose types NBT loses (such as booleans stored as bytes) must supply
+`ComponentNetworkCodec<TValue>.Hash` to match NeoForge or Fabric predictions. Without it, hashes can differ. The
+server currently ignores client click predictions and sends authoritative contents after a click; hash mismatches
+do not change the click it applies.
 
 **Where to start:** virtual `BlockEntity` hooks taking the drop's `ItemStack` and the placing one, called through
 `AbstractLevel.CallPlugin`: placement already initializes the unpublished block entity from its item

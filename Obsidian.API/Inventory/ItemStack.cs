@@ -60,8 +60,8 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     /// stack again doesn't drop them. Copies of the stack own an isolated compound.
     /// </summary>
     /// <remarks>
-    /// They aren't sent to clients, but take part in <see cref="Equals(ItemStack?)"/>, so stacks that differ only in
-    /// them don't merge.
+    /// They take part in <see cref="Equals(ItemStack?)"/>. Once a plugin registers an entry's type, the canonical
+    /// projection treats it like a modeled component, including for networking, without changing the saved stack.
     /// </remarks>
     internal NbtCompound? UnmodeledComponents { get; init; }
 
@@ -106,6 +106,13 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     /// </remarks>
     public bool TryGet<TValue>(PluginComponentType<TValue> type, [MaybeNullWhen(false)] out TValue value)
     {
+        using var call = type.TryEnter();
+        if (call is null)
+        {
+            value = default;
+            return false;
+        }
+
         INbtTag? saved = null;
         if (this.InternalStorage.GetValueOrDefault(type.Type) is PluginDataComponent component)
             saved = component.ToNbt();
@@ -127,6 +134,9 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     /// </summary>
     public void Set<TValue>(PluginComponentType<TValue> type, TValue value)
     {
+        using var call = type.TryEnter()
+            ?? throw new InvalidOperationException($"{type.Identifier}'s plugin is unloading.");
+
         this[type.Type] = new PluginDataComponent(type.Type, type.Identifier, type.Codec.Encode(value));
         this.UnmodeledComponents?.Remove(type.Identifier);
     }
@@ -192,10 +202,10 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     {
         var hash = new HashCode();
         hash.Add(this.Holder);
-        foreach (var component in this.InternalStorage)
+        foreach (var component in this.ProjectComponents(this.InternalStorage.Values).OrderBy(value => value.Type))
             hash.Add(component);
 
-        hash.Add(new ComponentValueKey(this.UnmodeledComponents));
+        hash.Add(new ComponentValueKey(this.UnrecognizedComponents()));
         return hash.ToHashCode();
     }
 
@@ -229,30 +239,42 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public override bool Equals(object obj) => Equals(obj as ItemStack);
 
-    public bool Equals(ItemStack? other) => other is not null && this.Holder.Equals(other.Holder) &&
-        this.InternalStorage.SequenceEqual(other.InternalStorage) &&
-        UnmodeledEquals(this.UnmodeledComponents, other.UnmodeledComponents);
+    public bool Equals(ItemStack? other) => other is not null && this.Holder.Equals(other.Holder)
+        && this.ProjectComponents(this.InternalStorage.Values).OrderBy(value => value.Type)
+            .SequenceEqual(other.ProjectComponents(other.InternalStorage.Values).OrderBy(value => value.Type))
+        && new ComponentValueKey(this.UnrecognizedComponents())
+            .Equals(new ComponentValueKey(other.UnrecognizedComponents()));
 
-    private static bool UnmodeledEquals(NbtCompound? left, NbtCompound? right) =>
-        ReferenceEquals(left, right) || (left is not null && right is not null && NbtEquals(left, right));
-
-    // Structural equality of saved NBT. A compound's entries may come in any order.
-    private static bool NbtEquals(INbtTag left, INbtTag right) => (left, right) switch
+    /// <summary>
+    /// Projects components saved before a plugin's first registration without mutating the stack. Networking and
+    /// equality share this interpretation; an explicit modeled value takes precedence over a saved entry.
+    /// </summary>
+    internal IEnumerable<DataComponent> ProjectComponents(IEnumerable<DataComponent> modeled)
     {
-        (NbtCompound a, NbtCompound b) => a.Count == b.Count
-            && a.All(entry => b.TryGetTag(entry.Key, out var other) && NbtEquals(entry.Value, other)),
-        (NbtList a, NbtList b) => a.Count == b.Count && a.Zip(b).All(pair => NbtEquals(pair.First, pair.Second)),
-        (NbtArray<byte> a, NbtArray<byte> b) => a.GetArray().AsSpan().SequenceEqual(b.GetArray()),
-        (NbtArray<int> a, NbtArray<int> b) => a.GetArray().AsSpan().SequenceEqual(b.GetArray()),
-        (NbtArray<long> a, NbtArray<long> b) => a.GetArray().AsSpan().SequenceEqual(b.GetArray()),
-        (NbtTag<byte> a, NbtTag<byte> b) => a.Value == b.Value,
-        (NbtTag<bool> a, NbtTag<bool> b) => a.Value == b.Value,
-        (NbtTag<short> a, NbtTag<short> b) => a.Value == b.Value,
-        (NbtTag<int> a, NbtTag<int> b) => a.Value == b.Value,
-        (NbtTag<long> a, NbtTag<long> b) => a.Value == b.Value,
-        (NbtTag<float> a, NbtTag<float> b) => a.Value.Equals(b.Value),
-        (NbtTag<double> a, NbtTag<double> b) => a.Value.Equals(b.Value),
-        (NbtTag<string> a, NbtTag<string> b) => a.Value == b.Value,
-        _ => false
-    };
+        foreach (var component in modeled)
+            yield return component;
+
+        foreach (var (identifier, tag) in this.UnmodeledComponents ?? [])
+        {
+            if (DataComponentTypesRegistry.TryGet(identifier, out var type)
+                && !this.InternalStorage.ContainsKey(type.Type)
+                && !this.RemoveComponents.Contains(type.Type))
+                yield return new PluginDataComponent(type.Type, type.Identifier, tag);
+        }
+    }
+
+    private NbtCompound? UnrecognizedComponents()
+    {
+        var remaining = ComponentCopies.Nbt(this.UnmodeledComponents);
+        if (remaining is null)
+            return null;
+
+        foreach (var identifier in remaining.Select(entry => entry.Key).ToArray())
+        {
+            if (DataComponentTypesRegistry.TryGet(identifier, out _))
+                remaining.Remove(identifier);
+        }
+
+        return remaining.Count == 0 ? null : remaining;
+    }
 }

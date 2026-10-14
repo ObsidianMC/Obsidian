@@ -17,7 +17,15 @@ public sealed record ComponentCodec<TValue>(Func<TValue, INbtTag> Encode, Func<I
 /// </summary>
 public sealed record ComponentNetworkCodec<TValue>(
     Action<INetStreamWriter, TValue> Write,
-    Func<INetStreamReader, TValue> Read);
+    Func<INetStreamReader, TValue> Read)
+{
+    /// <summary>
+    /// Optional persistent-codec hash for click predictions, using <see cref="ComponentHash"/>. Supply this when
+    /// saved NBT loses the codec's types, such as booleans stored as bytes.
+    /// It must match the client mod's HashOps value.
+    /// </summary>
+    public Func<TValue, int>? Hash { get; init; }
+}
 
 /// <summary>
 /// A plugin's data component type, from <see cref="Plugins.IPluginRegistry.RegisterComponentType"/>: read, set and
@@ -26,11 +34,16 @@ public sealed record ComponentNetworkCodec<TValue>(
 /// </summary>
 public sealed class PluginComponentType<TValue>
 {
-    internal PluginComponentType(DataComponentType type, string identifier, ComponentCodec<TValue> codec)
+    internal PluginComponentType(
+        DataComponentType type,
+        string identifier,
+        ComponentCodec<TValue> codec,
+        Func<IDisposable?> tryEnter)
     {
         this.Type = type;
         this.Identifier = identifier;
         this.Codec = codec;
+        this.TryEnter = tryEnter;
     }
 
     /// <summary>
@@ -44,6 +57,8 @@ public sealed class PluginComponentType<TValue>
     public string Identifier { get; }
 
     internal ComponentCodec<TValue> Codec { get; }
+
+    internal Func<IDisposable?> TryEnter { get; }
 
     public override string ToString() => this.Identifier;
 }
@@ -62,10 +77,6 @@ public sealed record PluginDataComponent : DataComponent
     private readonly NbtCompound saved;
     private readonly ComponentValueKey key;
 
-    // The network codec's writer taken as the stack was about to be sent (ForNetwork), so that the plugin unloading
-    // meanwhile doesn't leave a component counted but unwritable. Not part of the value.
-    private readonly Action<INbtTag, INetStreamWriter>? networkWriter;
-
     /// <param name="type">The component's type.</param>
     /// <param name="identifier">The type's identifier.</param>
     /// <param name="value">The saved value, which is copied.</param>
@@ -82,16 +93,6 @@ public sealed record PluginDataComponent : DataComponent
         value.Parent = parent;
 
         this.key = new ComponentValueKey(this.saved);
-    }
-
-    private PluginDataComponent(PluginDataComponent original, Action<INbtTag, INetStreamWriter> networkWriter)
-        : base(original)
-    {
-        this.Type = original.Type;
-        this.Identifier = original.Identifier;
-        this.saved = original.saved;
-        this.key = original.key;
-        this.networkWriter = networkWriter;
     }
 
     public override DataComponentType Type { get; }
@@ -119,11 +120,39 @@ public sealed record PluginDataComponent : DataComponent
     }
 
     /// <summary>
-    /// The component as it's sent to clients, with its type's network codec, or null when it isn't sent: its type has
+    /// The component as it's sent to clients, or null when it isn't sent: its type has
     /// no network codec, or its plugin is gone.
     /// </summary>
-    internal PluginDataComponent? ForNetwork() =>
-        DataComponentTypesRegistry.NetworkWriter(this.Type) is { } write ? new(this, write) : null;
+    internal PluginDataComponent? ForNetwork()
+    {
+        using var call = DataComponentTypesRegistry.TryEnter(this.Type, out var binding);
+        return binding?.WriteNetwork is not null ? this : null;
+    }
+
+    /// <summary>Encodes under a call lease, or refuses the value once unloading starts.</summary>
+    internal bool TryWriteNetwork(INetStreamWriter writer)
+    {
+        using var call = DataComponentTypesRegistry.TryEnter(this.Type, out var binding);
+        if (binding?.WriteNetwork is not Action<INbtTag, INetStreamWriter> write)
+            return false;
+
+        write(this.ToNbt(), writer);
+        return true;
+    }
+
+    /// <summary>Hashes the decoded value under its plugin's call lease when a typed hash was supplied.</summary>
+    internal bool TryHash(out int hash)
+    {
+        using var call = DataComponentTypesRegistry.TryEnter(this.Type, out var binding);
+        if (binding?.Hash is not Func<INbtTag, int> hashValue)
+        {
+            hash = 0;
+            return false;
+        }
+
+        hash = hashValue(this.ToNbt());
+        return true;
+    }
 
     /// <summary>
     /// Writes the value with its type's network codec.
@@ -131,11 +160,8 @@ public sealed record PluginDataComponent : DataComponent
     /// <exception cref="InvalidOperationException">The type has no network codec now.</exception>
     public override void Write(INetStreamWriter writer)
     {
-        var write = this.networkWriter
-            ?? DataComponentTypesRegistry.NetworkWriter(this.Type)
-            ?? throw new InvalidOperationException($"{this.Identifier} isn't sent to clients.");
-
-        write(this.ToNbt(), writer);
+        if (!this.TryWriteNetwork(writer))
+            throw new InvalidOperationException($"{this.Identifier} isn't sent to clients.");
     }
 
     public bool Equals(PluginDataComponent? other) =>

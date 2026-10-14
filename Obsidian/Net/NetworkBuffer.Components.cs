@@ -16,7 +16,7 @@ public partial class NetworkBuffer
 
     /// <summary>
     /// The components of a stack's patch that clients get: vanilla's, and plugins' whose type has a network codec,
-    /// taken with it. Plugins' types without one are the server's own, like vanilla's components that aren't synced.
+    /// while its plugin accepts calls. Types without one are the server's own, like vanilla's unsynced components.
     /// </summary>
     /// <remarks>
     /// Vanilla clients can't join while a plugin's type has a network codec (see SyncedRegistries), so they never get
@@ -24,7 +24,7 @@ public partial class NetworkBuffer
     /// </remarks>
     internal static List<DataComponent> SentPatch(ItemStack stack) =>
     [
-        .. stack.Patch
+        .. stack.ProjectComponents(stack.Patch)
             .Select(component => component is PluginDataComponent plugin ? plugin.ForNetwork() : component)
             .OfType<DataComponent>()
     ];
@@ -35,7 +35,8 @@ public partial class NetworkBuffer
         // bytes can't be told apart from what follows them.
         if (DataComponentTypesRegistry.TryGet(type, out var plugin))
         {
-            var read = plugin.Binding?.ReadNetwork
+            using var call = DataComponentTypesRegistry.TryEnter(type, out var binding);
+            var read = binding?.ReadNetwork
                 ?? throw new InvalidDataException($"{plugin.Identifier} isn't read from the network.");
 
             return new PluginDataComponent(type, plugin.Identifier, read(this));

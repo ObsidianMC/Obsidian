@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using Obsidian.Registries;
@@ -97,7 +98,9 @@ public sealed class Cooking
         Assert.True(sponge.Inventory[2]?.Is(ItemsRegistry.Sponge));
 
         await world.SetBlockAsync(position, BlocksRegistry.Campfire);
-        player.Inventory[36] = new ItemStack(ItemsRegistry.Beef, 2);
+        var privateType = DataComponentTypesRegistry.Register("cooking:private");
+        player.Inventory[36] = new ItemStack(ItemsRegistry.Beef, 2,
+            new PluginDataComponent(privateType.Type, privateType.Identifier, new NbtTag<int>("", 7)));
         Assert.True(await world.UseCampfireAsync(player, position, 36));
         Assert.Equal(1, player.Inventory[36]?.Count);
         var campfire = Assert.IsType<CampfireBlockEntity>(world.GetResidentBlockEntity(position));
@@ -106,6 +109,22 @@ public sealed class Cooking
 
         var campfireSave = BlockEntityNbt.SaveData(campfire);
         Assert.Equal(100, FirstTime(campfireSave));
+        var savedInput = Assert.IsType<NbtCompound>(Assert.IsType<NbtList>(campfireSave["Items"])[0]);
+        Assert.Equal(7, Assert.IsType<NbtCompound>(savedInput["components"]).GetInt(privateType.Identifier));
+        var visibleInput = Assert.IsType<NbtCompound>(Assert.IsType<NbtList>(campfire.GetUpdateData()!["Items"])[0]);
+        Assert.False(visibleInput.HasTag("components"));
+
+        // Data-backed vanilla displays use the same projection, while retaining their full item data on disk.
+        var pot = new DataBlockEntity
+        {
+            Id = "minecraft:decorated_pot"
+        };
+        var potItem = DataBlockEntity.Copy(savedInput);
+        potItem.Name = "item";
+        potItem.Remove("count");
+        pot.Set(potItem);
+        Assert.False(Assert.IsType<NbtCompound>(pot.GetUpdateData()!["item"]).HasTag("components"));
+        Assert.True(Assert.IsType<NbtCompound>(pot.SnapshotData()["item"]).HasTag("components"));
         var reloaded = Assert.IsType<CampfireBlockEntity>(
             BlockEntityNbt.Create("minecraft:campfire", position, campfireSave));
         chunk.SetBlockEntity(position.X, position.Y, position.Z, reloaded);
