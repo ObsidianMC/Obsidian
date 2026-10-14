@@ -2656,9 +2656,9 @@ if it throws, the mod fails to load and none of it does. The registry only takes
 `ConfigureClient`, since the client loads the assets that depend on them afterwards: registering later, through a
 registry the mod kept, throws `InvalidOperationException`. Its `Connection`, and sending payloads on it, stay usable
 for as long as the client runs. Like the server's content, key bindings, tints, renderers, particle providers,
-block entity shape and model providers and menu screens are the mod's own: their identifiers are in its namespace
-(its mod id) and valid by vanilla's rules, they're for content it registered, and registering one twice throws
-`ArgumentException`.
+block entity shape and model providers, block entity renderers and menu screens are the mod's own: their identifiers
+are in its namespace (its mod id) and valid by vanilla's rules, they're for content it registered, and registering
+one twice throws `ArgumentException`.
 
 `IClientRegistry.RegisterBlockEntityShapes(string blockEntityType,
 Func<IReadOnlyDictionary<string, object?>, BlockShapes?> provider)` gives a mod's block entity type its collision
@@ -2736,6 +2736,69 @@ registry.RegisterBlockEntityModel("ruby:cable_bus", new BlockEntityModelProperti
             Faces = faces,
             ReplacesBlockModel = true
         };
+    }
+});
+```
+
+`IClientRegistry.RegisterBlockEntityRenderer(string blockEntityType, BlockEntityRendererProperties renderer)` draws
+a block entity type's moving parts each frame, like vanilla's block entity renderers: a machine's gear spinning while
+it works, a door sliding open. Model data is meshed with the world and costs nothing per frame, but only changes
+with an update; a renderer's parts move between updates and ticks. Like model data, `Models` declares the models the
+parts may name, which the client reads with the block models (block or item models with elements, in the block model
+format). A renderer has a provider, code, or both:
+
+- `Provider` receives the block entity's latest synced update data and its block's `IBlock` state, like a model
+  provider, and returns the `BlockEntityRenderPart`s to draw, or null for none: a part is shown by returning it and
+  hidden by leaving it out. It runs at most once per update and block state, and the client animates its parts each
+  frame without calling the mod. A part draws a declared `Model` (a `BlockModelPart`, turned in quarter turns like
+  model data's) and `Faces` (model data's faces, without culling or tints), scaled by `Scale` and turned about
+  `Pivot` (in sixteenths of a block, the block's centre by default) around `Axis` (up by default), then moved by
+  `Offset` (in sixteenths). Its angle is `Angle` degrees plus `Speed` degrees per tick since the game tick `Since`,
+  counting the partial tick, so it turns smoothly between ticks. The server's level counts the ticks (`ILevel.Time`),
+  which the client follows: a machine that starts working puts the tick in its update data.
+- `Renderer` is code, an `IBlockEntityRenderer`, whose `Render(BlockEntity blockEntity, float partialTick,
+  IBlockEntityRenderBuffer buffer)` runs each frame for each block entity, like vanilla's `BlockEntityRenderer.render`.
+  It gets the mod's live client instance (see `BlockEntity.ClientTick` in [Block entities](#block-entities)), from its
+  first client tick on, and draws declared models (`buffer.Model(part, transform)`) and faces (`buffer.Face(face,
+  transform)`) with `Matrix4x4` transforms in blocks from the block's lowest corner. Frames are built on the game
+  thread, which also runs `ClientTick`, so it reads what ticks keep in the instance's fields without locking and
+  interpolates between the last two ticks with `partialTick`: for what a provider's parts can't describe, like
+  animations following client-side state. Keep it short and free of allocations, as the frame waits for it.
+
+Both run inside calls into the mod. If one throws, the error is logged and the block entity draws nothing from it
+(what code drew that frame is taken back) until its next update. Parts are lit with the light at the block, like
+vanilla's block entities, shaded by the direction they face as they turn, and put in the render layer of their
+texture. Block entities are drawn within 64 blocks of the camera (vanilla's default for its renderers) and while in
+view. The client only has a block entity's data once the server sends it, with its chunk or an update, so a type
+with a renderer should return update data from `GetUpdateData`, even an empty compound, to be drawn as soon as it's
+placed.
+
+```csharp
+// The grinder spins its wheel while it works: the server puts "working_since" in its update data (the level's Time
+// when it started) and leaves it out when it stops, sending an update each time.
+registry.RegisterBlockEntityRenderer("ruby:grinder", new BlockEntityRendererProperties
+{
+    Models = ["ruby:part/grinder_wheel"],
+    Provider = (data, block) =>
+    {
+        // A wheel facing north turns about the north-south axis; one facing east is turned a quarter turn first.
+        var east = block.GetProperty("facing") is "east" or "west";
+        var wheel = new BlockModelPart("ruby:part/grinder_wheel", Y: east ? 90 : 0);
+        if (data.TryGetValue("working_since", out var value) && value is long since)
+        {
+            return
+            [
+                new BlockEntityRenderPart
+                {
+                    Model = wheel,
+                    Axis = east ? new VectorF(1, 0, 0) : new VectorF(0, 0, 1),
+                    Speed = 18,
+                    Since = since
+                }
+            ];
+        }
+
+        return [new BlockEntityRenderPart { Model = wheel }];
     }
 });
 ```

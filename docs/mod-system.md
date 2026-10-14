@@ -507,6 +507,15 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      The HUD draws overlays, so they hide with it (F1) and show under screens; their `Tick` runs inside a call into
      the mod while the player is in a world, an overlay that throws is logged and removed, and a mod's overlays go
      when it unloads. See [plugin-content.md](plugin-content.md#hud-overlays).
+   - Done, engine phase 4 block entity renderers: `IClientRegistry.RegisterBlockEntityRenderer` draws a mod's block
+     entity type each frame, on the path of vanilla's block entities (within 64 blocks and in view, lit at the
+     block). A provider describes parts from the synced data and block state once per update (declared models or
+     model data's faces, with a pivot, an axis, an angle, a speed in degrees per tick since a game tick, an offset and
+     a scale), which the client bakes once and turns per frame with the partial tick, without calling the mod. An
+     `IBlockEntityRenderer`, the code escape hatch like vanilla's `BlockEntityRenderer.render`, draws declared models
+     and faces with matrices from the live client instance, since frames are built on the game thread that ticks it.
+     Both run in the mod's call guard; a failure is logged and stops the block entity's drawing until its next update.
+     They go when the mod unloads. See [plugin-content.md](plugin-content.md#client).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
      move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine; entity render layers
      (emissive and translucent ones) and animations a server triggers beyond arm swings for mods' entities; client lifecycle events
