@@ -201,9 +201,18 @@ Their direct source entity, when present, supplies `this_entity`, independently 
 
 For direct evaluation, `LootTableJson.Parse(string json, string identifier = "")` builds a `LootTable`.
 `LootContext` adds `Tool`, `BlockState`, `BlockProperties`, `ExplosionRadius`, `BlockEntityComponents`,
-`DynamicDrops` and `TestLocation`. Block entity code supplies components and dynamic contents to the context;
-`copy_components` respects `include` and `exclude`, and `copy_state` copies requested properties onto the stack's
-`minecraft:block_state` component. Container contents and block entity lifecycle are handled by their own subsystem.
+`DynamicDrops` and `TestLocation`. `copy_components` respects `include` and `exclude`, and `copy_state` copies
+requested properties onto the stack's `minecraft:block_state` component.
+
+Players' breaks and explosions take the broken block entity's components and dynamic drops before the block goes,
+like vanilla's `BlockEntity.collectComponents` and blocks' `getDrops`: a container's `custom_name`, `lock` and
+`container_loot` (the loot table it's still waiting for), a shulker box's `container` and its `minecraft:contents`
+dynamic drop, a decorated pot's `pot_decorations` and its `minecraft:sherds` dynamic drop, and other named block
+entities' `custom_name`. So a broken shulker box drops a box holding its items (rolling the loot it was waiting for
+first when a player breaks it, and dropping even for a creative player when it holds items), and placing that box
+gives them back, with its name, lock and loot table. Chests and other containers whose items drop as they go give
+no `container`, like vanilla's. Item stacks save `container`, `lock`, `container_loot` and `pot_decorations`.
+Banner patterns, bees and skull profiles aren't taken yet.
 
 ## Entities
 
@@ -266,7 +275,7 @@ registry.RegisterBlockEntity<Counter>("ruby:counter", counter);
 A block entity type, like a NeoForge mod's `BlockEntityType`, gives the plugin's blocks a `BlockEntity`: the server
 creates one whenever one of its blocks is set, however it's set (placed by a player, by plugin code, by world
 generation or a structure), and removes it when its position changes to a block without its type. Removing it calls
-`OnRemoved` first, like vanilla's `preRemoveSideEffects`. The type's identifier is in the plugin's namespace, and its
+`OnRemoved` before a container's items drop, like vanilla's `preRemoveSideEffects`. The type's identifier is in the plugin's namespace, and its
 id follows vanilla's in the `minecraft:block_entity_type` registry, synced to NeoForge and Fabric clients, whose mod
 registers the same type for the same blocks. The Obsidian client doesn't register block entity types yet.
 
@@ -275,16 +284,22 @@ registers the same type for the same blocks. The Obsidian client doesn't registe
   `setChanged`: the level calls `Save` at the end of its tick, and saves the chunk with what it wrote.
 - **Ticking.** `TickAsync` runs once a tick while the chunk ticks (a player is within the simulation distance), and
   only while the block still has the type. `Level` is the level it's in, and `BlockPosition` its block.
-- **Clients.** `GetUpdateData` is what clients get (vanilla's `getUpdateTag`): with the chunk, and when the block
-  entity calls `SendUpdate`, as a `BlockEntityData` packet to the players who have the chunk. The client mod's block
-  entity reads it.
-- **Threads.** The server calls `Save` and `TickAsync` on the level's thread, and `GetUpdateData` there or from
-  `SendUpdate`; chunks are saved and sent from what they returned last, so the block entity's code needs no locks
-  of its own.
+- **Clients.** `GetUpdateData` is what clients get (vanilla's `getUpdateTag`): with the chunk, and at the end of the
+  tick after the block entity calls `SendUpdate` (once however many times it called it), as a `BlockEntityData`
+  packet to the players who have the chunk. The client mod's block entity reads it.
+- **Threads.** The server calls `Load`, `Save`, `TickAsync`, `GetUpdateData` and `OnRemoved` on the level's tick,
+  one at a time, inside calls into the plugin: a block removed from elsewhere (a player's break) runs `OnRemoved` on
+  the next tick. Only a new block entity for a block set elsewhere is constructed there. Chunks are saved and sent
+  from copies of what those calls returned last, so the block entity's code needs no locks of its own, and changing a
+  compound it handed over changes nothing saved or sent.
+- **Generation.** In chunks still generating, and in chunks being loaded, a plugin's block entities are kept as
+  their saved data: the level creates the plugin's objects on its next tick once the chunk is complete.
 
 A `ContainerBlockEntity` holds a `BaseContainer` (its `Inventory`), saved like vanilla's containers (`Items`,
 `CustomName`, and a `LootTable` it's waiting for), which drops when the block is removed unless `DropsContents` is
-false. Changes to its items are saved without `SetChanged`. Vanilla's block entities work the same way: chests,
+false. Changes to its items are saved without `SetChanged`, under the inventory's click lock, so that a save never
+has a click half applied or a loot table half rolled. When the block goes, its items are taken out under that lock and
+the inventory is retired: the windows showing it close, and it takes no more clicks and doesn't open again. Vanilla's block entities work the same way: chests,
 barrels, dispensers, droppers, hoppers, shulker boxes, furnaces and brewing stands are `ContainerBlockEntity`s, so
 `await level.GetBlockEntityAsync(position) is ContainerBlockEntity chest` reaches a chest's items, an unopened one's
 too (its `LootTable` is rolled when a player opens it or it's broken), and the others keep vanilla's saved data. Like
@@ -292,9 +307,11 @@ vanilla's, containers drop their items when their block goes by any cause, and b
 entity tick.
 
 When the plugin unloads, its block entities are saved into their chunks as of their last change (one not taken in
-yet is saved then) and let go of; nothing of the plugin's runs after that. While it's gone they're kept as they were
+yet is saved then) and let go of; nothing of the plugin's runs after that, and the plugin isn't released before. A
+container's inventory is retired first, under its lock, and the windows showing it, or any container of the plugin's
+own classes, close: no player takes out an item the reload brings back. While it's gone they're kept as they were
 saved, in loaded chunks and in chunks loaded meanwhile, like saved entities of its types; once it loads again, the
-level creates them again from what they saved on its next tick, and chunks loaded later create them as they load.
+level creates them again from what they saved on its next tick, and so do chunks loaded later.
 
 ## Particles
 

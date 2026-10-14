@@ -31,6 +31,12 @@ public sealed class Chunk : IChunk
     public int Z { get; }
     public long InhabitedTime { get; internal set; }
     internal bool MusicRegistered { get; set; }
+
+    /// <summary>
+    /// The block entity type registry's revision the level last made the chunk's kept plugin block entities its
+    /// plugins' at (see AbstractLevel.RestoreKeptBlockEntities); -1 until it first did.
+    /// </summary>
+    internal int RestoredBlockEntityRevision { get; set; } = -1;
     internal ConcurrentDictionary<Vector, int> MobEggTicks { get; } = new();
     internal ConcurrentDictionary<Vector, int> FrogspawnTicks { get; } = new();
 

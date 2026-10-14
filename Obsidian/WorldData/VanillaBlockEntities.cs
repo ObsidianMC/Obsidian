@@ -2,6 +2,7 @@ using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
 using Obsidian.Nbt;
+using System.Threading;
 
 namespace Obsidian.WorldData;
 
@@ -72,6 +73,28 @@ internal class VanillaContainerBlockEntity(BaseContainer inventory, params strin
 
     // Players change the inventory from their connections, so it's saved as it is whenever its chunk is.
     internal override bool SavesOnAnyThread => true;
+
+    /// <summary>
+    /// The container's lock, like vanilla's <c>LockCode</c> saved as <c>lock</c>: the item predicate that opens it,
+    /// or null for none. A copy; set it to replace it.
+    /// </summary>
+    internal NbtCompound? LockPredicate
+    {
+        get => Volatile.Read(ref this.others).TryGetTag<NbtCompound>("lock", out var key)
+            ? DataBlockEntity.Copy(key)
+            : null;
+        set
+        {
+            // Replaced whole, since saves read the fields from other threads.
+            var others = DataBlockEntity.Copy(Volatile.Read(ref this.others));
+            others.Remove("lock");
+
+            if (value is not null)
+                others.Add("lock", DataBlockEntity.Copy(value));
+
+            Volatile.Write(ref this.others, others);
+        }
+    }
 
     protected internal override void Load(NbtCompound tag)
     {

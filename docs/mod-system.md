@@ -109,8 +109,10 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      Vanilla's containers and brewing stands are `ContainerBlockEntity`s on the same contract, loaded with their
      chunk (unopened chests included, keeping their loot table), whose items drop when their block goes; vanilla's
      other types stay data kept as saved. Unloading the plugin keeps its block entities in their chunks as saved and
-     a reload creates them again (see [plugin-content.md](plugin-content.md#block-entities)). The Obsidian client
-     doesn't register block entity types or tick block entities yet.
+     a reload creates them again (see [plugin-content.md](plugin-content.md#block-entities)). Plugins' block entity
+     code runs only on the level's tick, their open containers close and stop taking clicks as they unload, and broken
+     block entities give block loot their components and dynamic drops (a shulker box drops holding its items). The
+     Obsidian client doesn't register block entity types or tick block entities yet.
    - Done for saplings: `BlockProperties.TreeGrower` makes a plugin's block a sapling that grows the configured
      features it names, vanilla's or files', on random ticks and with bone meal like vanilla's saplings, 2x2 mega
      trees included; the grower is the plugin's, like its behaviour (see

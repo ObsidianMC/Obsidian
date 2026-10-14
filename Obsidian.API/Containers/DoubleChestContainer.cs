@@ -64,6 +64,22 @@ internal sealed class DoubleChestContainer : BaseContainer
         }
     }
 
+    internal override bool ShowsRetired => this.First.ShowsRetired || this.Second.ShowsRetired;
+
+    internal override IDisposable Lock()
+    {
+        var first = this.First.Lock();
+        try
+        {
+            return new LockPair(first, this.Second.Lock());
+        }
+        catch
+        {
+            first.Dispose();
+            throw;
+        }
+    }
+
     internal override bool SharesSlotsWith(BaseContainer other) =>
         ReferenceEquals(this, other)
         || this.First.SharesSlotsWith(other)

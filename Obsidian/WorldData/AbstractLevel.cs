@@ -408,7 +408,7 @@ public abstract partial class AbstractLevel : ILevel
         }
 
         if (removed is not null)
-            this.RunBlockEntityRemoval(removed);
+            await this.RunBlockEntityRemovalAsync(removed);
 
         if (doBlockUpdate)
         {

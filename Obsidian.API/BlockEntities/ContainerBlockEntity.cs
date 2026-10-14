@@ -79,7 +79,19 @@ public class ContainerBlockEntity(BaseContainer inventory) : BlockEntity
         }
     }
 
+    /// <remarks>
+    /// Saves the inventory under its lock and <see cref="LootLock"/>, so that the save never has a click half applied,
+    /// nor a loot table being rolled into the slots (which would save neither the table nor its loot).
+    /// </remarks>
     protected internal override void Save(NbtCompound tag)
+    {
+        using (this.Inventory.Lock())
+        lock (this.LootLock)
+            this.SaveContents(tag);
+    }
+
+    // What Save writes, under the inventory's lock and the loot lock.
+    private void SaveContents(NbtCompound tag)
     {
         if (this.Inventory.CustomName is not null)
             tag.Add(this.Inventory.CustomName.ToNbt("CustomName"));

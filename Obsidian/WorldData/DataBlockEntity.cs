@@ -106,16 +106,22 @@ public sealed class DataBlockEntity : BlockEntity
     /// Keeps a chunk's block entities in step with a block written during generation, like vanilla's
     /// <c>WorldGenRegion.setBlock</c>: a block with a block entity gets a new one (its defaults) unless it already
     /// has one of its type, and other blocks drop the block entity of the block they replace, without the side
-    /// effects of removing it.
+    /// effects of removing it. A plugin's type is kept as data until the chunk is complete (see
+    /// <see cref="BlockEntityNbt.Create"/>).
     /// </summary>
     internal static void ApplyBlockChange(IChunk chunk, Vector position, IBlock block)
     {
         // The flag is much cheaper than the type lookup, and blocks without it have no type.
         var type = block.HasBlockEntity() ? block.BlockEntityType() : null;
         if (type is null)
+        {
             chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
+        }
         else if (chunk.GetBlockEntity(position.X, position.Y, position.Z)?.Id != type)
-            chunk.SetBlockEntity(position.X, position.Y, position.Z, BlockEntityNbt.Create(type, position));
+        {
+            var created = BlockEntityNbt.Create(type, position, pluginInstances: false);
+            chunk.SetBlockEntity(position.X, position.Y, position.Z, created);
+        }
     }
 
     internal NbtCompound SnapshotData()

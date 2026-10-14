@@ -174,9 +174,18 @@ public abstract partial class AbstractLevel
             List<ItemStack> drops;
             try
             {
-                // Block entity integration supplies components/dynamic contents here, from parts.DropPosition.
-                drops = await BlockLoot.GetDropsAsync(this, parts.DropPosition, parts.DropState, null,
-                    breaker: source, explosionRadius: dropDecay ? radius : null, checkTool: false);
+                // What the block entity gives the loot, taken before the block goes; no player breaks it.
+                var blockEntity = await BlockEntityComponents.CaptureAsync(this, parts.DropPosition, breaker: null);
+                drops = await BlockLoot.GetDropsAsync(
+                    this,
+                    parts.DropPosition,
+                    parts.DropState,
+                    null,
+                    breaker: source,
+                    explosionRadius: dropDecay ? radius : null,
+                    checkTool: false,
+                    blockEntityComponents: blockEntity.Components,
+                    dynamicDrops: blockEntity.DynamicDrops);
             }
             catch (Exception ex)
             {

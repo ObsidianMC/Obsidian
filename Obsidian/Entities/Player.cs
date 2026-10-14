@@ -324,8 +324,11 @@ public sealed partial class Player : Avatar, IClientPlayer
         if (container is BrewingStand stand)
             await AbstractLevel.SendBrewingPropertiesAsync(this, stand);
 
-        // A plugin's menu can close as it opens, when its plugin unloads; the screen that just opened closes too.
-        if (this.CurrentContainerId == nextId && !ReferenceEquals(this.OpenedContainer, container))
+        // A plugin's menu can close as it opens, when its plugin unloads, and a block entity's container can be retired
+        // as it opens, when its block goes; the screen that just opened closes too.
+        if (this.CurrentContainerId == nextId && container.ShowsRetired)
+            await this.CloseContainerAsync();
+        else if (this.CurrentContainerId == nextId && !ReferenceEquals(this.OpenedContainer, container))
             await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = nextId });
     }
 
@@ -336,6 +339,10 @@ public sealed partial class Player : Avatar, IClientPlayer
     /// <returns>The window's id, or null when the menu doesn't open.</returns>
     private byte? TryShow(BaseContainer container)
     {
+        // A container whose block entity is gone doesn't open again.
+        if (container.ShowsRetired)
+            return null;
+
         if (container is not MenuContainer menu)
             return Show();
 

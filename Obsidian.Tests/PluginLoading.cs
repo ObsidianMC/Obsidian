@@ -579,6 +579,10 @@ public sealed class ProbePlugin : PluginBase
         var counter = pluginRegistry.RegisterBlock("probe:counter", new BlockProperties { Item = null });
         pluginRegistry.RegisterBlockEntity<ProbeCounter>("probe:counter", counter);
 
+        // A block whose block entity holds items, like a chest (see WorldBlockEntities).
+        var crate = pluginRegistry.RegisterBlock("probe:crate", new BlockProperties { Item = null });
+        pluginRegistry.RegisterBlockEntity<ProbeCrate>("probe:crate", crate);
+
         // Its blocks generated from data/probe/blocks.
         ProbeBlocks.Register(pluginRegistry);
 

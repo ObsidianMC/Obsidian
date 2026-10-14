@@ -32,6 +32,9 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     // The stamp of the last time a slot was set (see MarkChanged); the stacks keep their own (see Revision).
     private long slotsChanged;
 
+    // 1 once the container is retired (see IsRetired).
+    private int retired;
+
     /// <summary>
     /// Taken while a player's click changes the container, so that the clicks of players sharing it take turns.
     /// Take it with <see cref="LockAsync"/>, which also covers containers made of others.
@@ -207,6 +210,18 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     }
 
     /// <summary>
+    /// Takes the container's lock like <see cref="LockAsync"/>, blocking, for code that can't wait asynchronously, such
+    /// as a save on a chunk's lock. Never call it holding the container's lock.
+    /// </summary>
+    internal virtual IDisposable Lock()
+    {
+        var gate = this.TransactionLock;
+        gate.Wait();
+
+        return new LockRelease(gate);
+    }
+
+    /// <summary>
     /// Takes the locks a click in a player's open <paramref name="window"/> needs: the window's, then the player's
     /// <paramref name="inventory"/>'s, which the window shows too, until the returned handle is disposed. Always in
     /// that order, so that clicks sharing a container, and other changes to the player's inventory, take turns without
@@ -230,6 +245,24 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
             throw;
         }
     }
+
+    /// <summary>
+    /// Whether the container was retired: its block entity was removed, or its plugin unloaded. Clicks in a window
+    /// showing it aren't applied and it doesn't open again, so that nothing more moves in or out of it.
+    /// </summary>
+    internal bool IsRetired => Volatile.Read(ref this.retired) == 1;
+
+    /// <summary>
+    /// Whether the window shows a retired container: this one, or one it's made of.
+    /// </summary>
+    internal virtual bool ShowsRetired => this.IsRetired;
+
+    /// <summary>
+    /// Retires the container (see <see cref="IsRetired"/>). Call it holding the container's lock (see
+    /// <see cref="LockAsync"/>), so that no click is half applied.
+    /// </summary>
+    /// <returns>Whether this call retired it: false when it was already.</returns>
+    internal bool TryRetire() => Interlocked.Exchange(ref this.retired, 1) == 0;
 
     /// <summary>
     /// Whether this container and <paramref name="other"/> show the same slots, like a double chest and its halves.

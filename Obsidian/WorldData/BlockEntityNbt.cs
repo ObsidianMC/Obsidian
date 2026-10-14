@@ -50,7 +50,7 @@ internal static partial class BlockEntityNbt
     /// <summary>
     /// Loads a saved block entity (see <see cref="Create"/>).
     /// </summary>
-    public static BlockEntity Load(NbtCompound tag, string id, Vector position)
+    public static BlockEntity Load(NbtCompound tag, string id, Vector position, bool pluginInstances = true)
     {
         var data = new NbtCompound();
         foreach (var (name, child) in tag)
@@ -59,7 +59,7 @@ internal static partial class BlockEntityNbt
                 data.Add(name, child);
         }
 
-        return Create(id, position, data);
+        return Create(id, position, data, pluginInstances: pluginInstances);
     }
 
     /// <summary>
@@ -74,7 +74,16 @@ internal static partial class BlockEntityNbt
     /// <param name="logger">
     /// Where a plugin's block entity failing to be created or loaded is logged, if anywhere.
     /// </param>
-    public static BlockEntity Create(string type, Vector position, NbtCompound? data = null, ILogger? logger = null)
+    /// <param name="pluginInstances">
+    /// False to keep a plugin's type as a <see cref="DataBlockEntity"/> too, for chunks still generating: those are
+    /// outside the level's tick, which runs plugins' block entities, so they're created once the chunk is complete.
+    /// </param>
+    public static BlockEntity Create(
+        string type,
+        Vector position,
+        NbtCompound? data = null,
+        ILogger? logger = null,
+        bool pluginInstances = true)
     {
         var blockEntity = VanillaBlockEntities.Create(type, position);
         if (blockEntity is not null)
@@ -88,7 +97,8 @@ internal static partial class BlockEntityNbt
             return blockEntity;
         }
 
-        if (BlockEntityTypesRegistry.TryGet(type, out var pluginType)
+        if (pluginInstances
+            && BlockEntityTypesRegistry.TryGet(type, out var pluginType)
             && pluginType.Binding is BlockEntityBinding binding
             && CreatePlugin(pluginType, binding, position, data, logger) is BlockEntity created)
         {
@@ -126,7 +136,7 @@ internal static partial class BlockEntityNbt
 
         blockEntity.Load(data);
         blockEntity.SavedData = DataBlockEntity.Copy(data);
-        blockEntity.ClientData = blockEntity.GetUpdateData();
+        blockEntity.ClientData = CopyOrNull(blockEntity.GetUpdateData());
     }
 
     /// <summary>
@@ -182,7 +192,7 @@ internal static partial class BlockEntityNbt
                 blockEntity.SavedData = DataBlockEntity.Copy(data);
             }
 
-            blockEntity.ClientData = blockEntity.GetUpdateData();
+            blockEntity.ClientData = CopyOrNull(blockEntity.GetUpdateData());
 
             return blockEntity;
         }
@@ -194,6 +204,9 @@ internal static partial class BlockEntityNbt
             return null;
         }
     }
+
+    // Plugins' update data is copied as the server takes it, so that the plugin changing it later changes nothing sent.
+    private static NbtCompound? CopyOrNull(NbtCompound? data) => data is null ? null : DataBlockEntity.Copy(data);
 
     private static NbtCompound Header(string id, Vector position) => new()
     {

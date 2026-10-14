@@ -13,15 +13,17 @@ namespace Obsidian.API.BlockEntities;
 /// <para>
 /// The server creates a block entity when one of its type's blocks is set, by any means (a player placing it, plugin
 /// code, world generation), and removes it when the position changes to a block its type doesn't cover. Loading its
-/// chunk loads it from the chunk's saved <c>block_entities</c> through <see cref="Load"/>.
+/// chunk loads it from the chunk's saved <c>block_entities</c> through <see cref="Load"/>. A plugin's block entities
+/// in chunks being generated or loaded are kept as saved data until the level's next tick once the chunk is
+/// complete, which creates and loads them.
 /// </para>
 /// <para>
 /// The server saves what <see cref="Save"/> writes as of the last time the block entity called
 /// <see cref="SetChanged"/>, taken at the end of the level's tick: call it whenever its saved data changes, like
-/// vanilla's <c>setChanged</c>. The server calls <see cref="Save"/> and <see cref="TickAsync"/> on the level's thread,
-/// and <see cref="GetUpdateData"/> there or from <see cref="SendUpdate"/>, besides while the block entity is created
-/// or loaded, so code that changes it on the level's thread needs no locking; chunks are saved and sent from what
-/// those calls returned.
+/// vanilla's <c>setChanged</c>. The server calls <see cref="Load"/>, <see cref="Save"/>, <see cref="TickAsync"/>,
+/// <see cref="GetUpdateData"/> and <see cref="OnRemoved"/> on the level's tick, one at a time, besides creating a new
+/// one for a block set elsewhere; so code that changes it on the level's tick needs no locking. Chunks are saved and
+/// sent from copies of what those calls returned.
 /// </para>
 /// </remarks>
 public abstract class BlockEntity : IBlockEntity
@@ -59,14 +61,14 @@ public abstract class BlockEntity : IBlockEntity
     internal IPluginContainer? Owner { get; set; }
 
     /// <summary>
-    /// What <see cref="Save"/> wrote when the server last took a change in, without the id and position, which the
-    /// chunk is saved with. Null until then, which saves no data beyond the id and position.
+    /// A copy of what <see cref="Save"/> wrote when the server last took a change in, without the id and position,
+    /// which the chunk is saved with. Null until then, which saves no data beyond the id and position.
     /// </summary>
     internal NbtCompound? SavedData { get; set; }
 
     /// <summary>
-    /// What <see cref="GetUpdateData"/> returned when the block entity was created, loaded or last sent an update,
-    /// which chunk packets send.
+    /// A copy of what <see cref="GetUpdateData"/> returned when the block entity was created, loaded or last sent an
+    /// update, which chunk packets send.
     /// </summary>
     internal NbtCompound? ClientData { get; set; }
 
@@ -114,8 +116,10 @@ public abstract class BlockEntity : IBlockEntity
     protected internal virtual NbtCompound? GetUpdateData() => null;
 
     /// <summary>
-    /// Called when the block entity's block is removed from the level, before the block entity goes, like vanilla's
-    /// <c>preRemoveSideEffects</c>: drop what it holds, say. Not called when its chunk unloads, or its plugin does.
+    /// Called when the block entity's block is removed from the level, before what a container holds drops, like
+    /// vanilla's <c>preRemoveSideEffects</c>: drop what it holds, say. Not called when its chunk unloads, or its plugin
+    /// does. Runs on the level's tick after the removal, which may come from elsewhere; <see cref="IsRemoved"/> is
+    /// already true, and a container's inventory no longer takes clicks.
     /// </summary>
     protected internal virtual void OnRemoved()
     {
@@ -132,8 +136,9 @@ public abstract class BlockEntity : IBlockEntity
     }
 
     /// <summary>
-    /// Sends what <see cref="GetUpdateData"/> returns now to the players who have the block entity's chunk, like
-    /// vanilla's block entity data packet; nothing when it returns null.
+    /// Sends what <see cref="GetUpdateData"/> returns at the end of the level's tick to the players who have the block
+    /// entity's chunk, like vanilla's block entity data packet; nothing when it returns null. Calls in one tick send
+    /// one update.
     /// </summary>
     public void SendUpdate() => this.Host?.SendUpdate(this);
 
@@ -162,7 +167,7 @@ internal abstract class BlockEntityHost
     public abstract void OnChanged(BlockEntity blockEntity);
 
     /// <summary>
-    /// Sends a block entity's update data to the players who have its chunk.
+    /// Queues a block entity's update, which the level sends to the players who have its chunk at the end of its tick.
     /// </summary>
     public abstract void SendUpdate(BlockEntity blockEntity);
 }

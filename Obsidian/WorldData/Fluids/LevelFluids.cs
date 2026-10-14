@@ -132,9 +132,10 @@ internal sealed class LevelFluids : IFluidLevelAccess
 
         chunk.SetBlock(position.X, position.Y, position.Z, block);
 
-        // Like AbstractLevel.SetBlockUntrackedAsync.
+        // Like AbstractLevel.SetBlockUntrackedAsync; the removal's side effects run on the next tick, without the
+        // fluid tick's lock.
         if (this.level.UpdateBlockEntity(chunk, position, block) is API.BlockEntities.BlockEntity removed)
-            this.level.RunBlockEntityRemoval(removed);
+            this.level.QueueBlockEntityRemoval(removed);
 
         this.level.BroadcastBlockChange(block, position);
         this.level.Portals.OnBlockChanged(position);

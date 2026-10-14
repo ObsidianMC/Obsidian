@@ -173,8 +173,76 @@ public partial class Extensions
                 ChargedProjectilesToNbt(name, projectiles.Value),
             FireworksDataComponent fireworks => FireworksToNbt(name, fireworks),
             BucketEntityDataComponent bucket => CopyBucketData(name, bucket.Value),
+            SimpleDataComponent<ImmutableArray<ItemStack>> container
+                when component.Type == DataComponentType.Container => ContainerToNbt(name, container.Value),
+            SimpleDataComponent<NbtCompound> data
+                when component.Type is DataComponentType.Lock or DataComponentType.ContainerLoot
+                && data.Value is not null => CopyCompound(name, data.Value),
+            SimpleDataComponent<ImmutableArray<Item>> decorations
+                when component.Type == DataComponentType.PotDecorations => PotDecorationsToNbt(name, decorations.Value),
             _ => null
         };
+    }
+
+    // Vanilla's ItemContainerContents codec: the non-empty slots, each with its index.
+    private static NbtList ContainerToNbt(string name, ImmutableArray<ItemStack> items)
+    {
+        var list = new NbtList(NbtTagType.Compound, name);
+        for (var slot = 0; slot < items.Length; slot++)
+        {
+            var item = items[slot];
+            if (item is null || item.IsAir || item.Count <= 0)
+                continue;
+
+            list.Add(new NbtCompound
+            {
+                new NbtTag<int>("slot", slot),
+                item.ToNbt("item")
+            });
+        }
+
+        return list;
+    }
+
+    private static ImmutableArray<ItemStack> ContainerFromNbt(NbtList list)
+    {
+        var slots = new SortedDictionary<int, ItemStack>();
+        foreach (var entry in list.OfType<NbtCompound>())
+        {
+            if (entry.TryGetTag<NbtTag<int>>("slot", out var slot)
+                && slot.Value is >= 0 and < 256
+                && entry.TryGetTag<NbtCompound>("item", out var itemTag)
+                && itemTag.ItemFromNbt() is ItemStack item)
+            {
+                slots[slot.Value] = item;
+            }
+        }
+
+        var size = slots.Count == 0 ? 0 : slots.Keys.Max() + 1;
+        var items = new ItemStack[size];
+        for (var index = 0; index < size; index++)
+            items[index] = slots.GetValueOrDefault(index) ?? new ItemStack(ItemsRegistry.Air, 0);
+
+        return [.. items];
+    }
+
+    // Vanilla's PotDecorations codec: the back, left, right and front faces' items.
+    private static NbtList PotDecorationsToNbt(string name, ImmutableArray<Item> decorations)
+    {
+        var list = new NbtList(NbtTagType.String, name);
+        foreach (var item in decorations)
+            list.Add(new NbtTag<string>(string.Empty, item.UnlocalizedName));
+
+        return list;
+    }
+
+    private static NbtCompound CopyCompound(string name, NbtCompound value)
+    {
+        var copy = new NbtCompound(name);
+        foreach (var (childName, child) in ComponentCopies.Nbt(value)!)
+            copy.Add(childName, child);
+
+        return copy;
     }
 
     [SuppressMessage("Performance", "CA1859", Justification = "Returns many component types; the analyzer only sees the potion contents one.")]
@@ -220,6 +288,17 @@ public partial class Extensions
                 };
             case "minecraft:fireworks" when tag is NbtCompound fireworks:
                 return FireworksFromNbt(fireworks);
+            case "minecraft:container" when tag is NbtList container:
+                return ComponentBuilder.Container with { Value = ContainerFromNbt(container) };
+            case "minecraft:lock" when tag is NbtCompound lockPredicate:
+                return ComponentBuilder.Lock with { Value = CopyCompound(string.Empty, lockPredicate) };
+            case "minecraft:container_loot" when tag is NbtCompound loot:
+                return ComponentBuilder.ContainerLoot with { Value = CopyCompound(string.Empty, loot) };
+            case "minecraft:pot_decorations" when tag is NbtList decorations:
+                return ComponentBuilder.PotDecorations with
+                {
+                    Value = [.. decorations.OfType<NbtTag<string>>().Select(item => ItemsRegistry.Get(item.Value!))]
+                };
             default:
                 return null;
         }

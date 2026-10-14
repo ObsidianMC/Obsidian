@@ -15,6 +15,11 @@ namespace Obsidian.WorldData;
 /// The level's side of block entities: creating and removing them as blocks change, ticking them, taking in their
 /// changes, and sending their updates.
 /// </summary>
+/// <remarks>
+/// A plugin's block entity code runs on the level's tick, in turn with its ticks, its saves and its plugin unloading:
+/// its removal (<see cref="BlockEntity.OnRemoved"/>) and its updates (<see cref="BlockEntity.SendUpdate"/>) are
+/// queued to it. Creating one for a block set from elsewhere constructs it there, before anything else can reach it.
+/// </remarks>
 public abstract partial class AbstractLevel
 {
     // Vanilla's Containers.dropItemStack spreads drops by the width of an item entity, and tosses them with this
@@ -23,10 +28,6 @@ public abstract partial class AbstractLevel
     private const double DropMotionSpread = 0.11485000171139836;
 
     private LevelBlockEntityHost? blockEntityHost;
-
-    // The block entity type registry's revision the level last created kept block entities for (see
-    // RestoreKeptBlockEntities).
-    private int restoredBlockEntityRevision;
 
     private LevelBlockEntityHost BlockEntityHost =>
         LazyInitializer.EnsureInitialized(ref this.blockEntityHost, () => new LevelBlockEntityHost(this));
@@ -54,7 +55,8 @@ public abstract partial class AbstractLevel
     /// </summary>
     /// <returns>
     /// The block entity removed, whose removal side effects the caller runs with
-    /// <see cref="RunBlockEntityRemoval"/> once it let go of its locks; or null.
+    /// <see cref="RunBlockEntityRemovalAsync"/> (or queues with <see cref="QueueBlockEntityRemoval"/>) once it let go
+    /// of its locks; or null.
     /// </returns>
     internal BlockEntity? UpdateBlockEntity(IChunk chunk, Vector position, IBlock block)
     {
@@ -82,6 +84,7 @@ public abstract partial class AbstractLevel
             var created = BlockEntityNbt.Create(type, position, logger: this.Logger);
             this.AttachBlockEntity(created);
             chunk.SetBlockEntity(position.X, position.Y, position.Z, created);
+            this.KeepIfUnloading(chunk, created);
         }
 
         return removed;
@@ -90,42 +93,60 @@ public abstract partial class AbstractLevel
     /// <summary>
     /// Runs what removing a block entity's block does, like vanilla's <c>preRemoveSideEffects</c>: the block
     /// entity's <see cref="BlockEntity.OnRemoved"/>, and a container's items dropping, with the loot it was waiting
-    /// for.
+    /// for. Call it holding no lock.
     /// </summary>
-    internal void RunBlockEntityRemoval(BlockEntity removed)
+    /// <param name="removed">The block entity removed.</param>
+    /// <param name="onLevelTick">
+    /// Whether the caller runs on the level's tick, where a plugin's <see cref="BlockEntity.OnRemoved"/> runs at once;
+    /// elsewhere it's queued to the tick, and its container stops taking clicks meanwhile.
+    /// </param>
+    internal async ValueTask RunBlockEntityRemovalAsync(BlockEntity removed, bool onLevelTick = false)
     {
-        if (removed.Owner is PluginContainer plugin)
-        {
-            using var call = plugin.TryEnter();
-
-            if (call is not null)
-            {
-                try
-                {
-                    removed.OnRemoved();
-                }
-                catch (Exception ex)
-                {
-                    Log.BlockEntityFailed(this.Logger, ex, removed.Id, removed.BlockPosition);
-                }
-            }
-        }
-        else
+        if (removed.Owner is not PluginContainer plugin)
         {
             removed.OnRemoved();
+            await this.RemoveContentsAsync(removed);
+            return;
         }
 
-        switch (removed)
+        if (onLevelTick)
         {
-            case ContainerBlockEntity { DropsContents: true } container:
-                this.UnpackLootTable(container, null);
-                this.DropContents(container.BlockPosition, container.Inventory);
-                break;
-            case DataBlockEntity { DropsItems: true } data:
-                this.DropSavedItems(data);
-                break;
+            this.CallPlugin(removed, plugin, static blockEntity => blockEntity.OnRemoved());
+            await this.RemoveContentsAsync(removed);
+            return;
         }
+
+        if (removed is ContainerBlockEntity container)
+        {
+            using (await container.Inventory.LockAsync())
+                container.Inventory.TryRetire();
+        }
+
+        // Unloading: the plugin's code no longer runs, but what the block entity held still drops.
+        var hold = plugin.TryHold();
+        if (hold is null)
+        {
+            await this.RemoveContentsAsync(removed);
+            return;
+        }
+
+        this.EnqueueEntityAction(async () =>
+        {
+            using (hold)
+            {
+                this.CallPlugin(removed, plugin, static blockEntity => blockEntity.OnRemoved());
+                await this.RemoveContentsAsync(removed);
+            }
+        });
     }
+
+    /// <summary>
+    /// Queues a removed block entity's side effects (see <see cref="RunBlockEntityRemovalAsync"/>) to the level's
+    /// next tick, for a caller that can't let go of its locks first, like a fluid tick or a feature placed in the
+    /// running level.
+    /// </summary>
+    internal void QueueBlockEntityRemoval(BlockEntity removed) =>
+        this.EnqueueEntityAction(() => this.RunBlockEntityRemovalAsync(removed, onLevelTick: true));
 
     /// <summary>
     /// Fills a container waiting for its loot table from the table, like vanilla's
@@ -168,13 +189,24 @@ public abstract partial class AbstractLevel
 
     /// <summary>
     /// Ticks the block entities of the chunks that tick, like vanilla's block entity tickers: those whose block still
-    /// has their type. Then takes in the changes they announced (see <see cref="BlockEntity.SetChanged"/>).
+    /// has their type. Then takes in the changes they announced (see <see cref="BlockEntity.SetChanged"/>) and sends
+    /// the updates they asked for.
     /// </summary>
     internal async ValueTask TickBlockEntitiesAsync()
     {
-        this.RestoreKeptBlockEntities();
+        var revision = BlockEntityTypesRegistry.Revision;
+        var chunks = this.Regions.Values
+            .SelectMany(region => region.GeneratedChunks())
+            .OfType<Chunk>()
+            .ToList();
 
-        foreach (var chunk in this.Regions.Values.SelectMany(region => region.GeneratedChunks()).OfType<Chunk>())
+        foreach (var chunk in chunks)
+        {
+            if (chunk.RestoredBlockEntityRevision != revision)
+                this.RestoreKeptBlockEntities(chunk, revision);
+        }
+
+        foreach (var chunk in chunks)
         {
             if (chunk.BlockEntities.IsEmpty || !this.IsMobTicking(new VectorD(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8)))
                 continue;
@@ -200,11 +232,13 @@ public abstract partial class AbstractLevel
         }
 
         this.TakeBlockEntityChanges();
+        this.SendBlockEntityUpdates();
     }
 
     /// <summary>
-    /// Takes in the changes block entities announced: the data a plugin's block entity saves is what its
-    /// <see cref="BlockEntity.Save"/> wrote now, on the level's thread.
+    /// Takes in the changes block entities announced: the data a plugin's block entity saves is a copy of what its
+    /// <see cref="BlockEntity.Save"/> wrote now, on the level's thread, so that the plugin changing what it wrote
+    /// later doesn't change what's saved.
     /// </summary>
     internal void TakeBlockEntityChanges()
     {
@@ -226,7 +260,7 @@ public abstract partial class AbstractLevel
 
             try
             {
-                blockEntity.SavedData = BlockEntityNbt.SaveData(blockEntity);
+                blockEntity.SavedData = DataBlockEntity.Copy(BlockEntityNbt.SaveData(blockEntity));
             }
             catch (Exception ex)
             {
@@ -236,6 +270,48 @@ public abstract partial class AbstractLevel
 
             if (blockEntity is ContainerBlockEntity container && revision is long saved)
                 container.SavedRevision = saved;
+        }
+    }
+
+    /// <summary>
+    /// Sends the updates block entities asked for since the last tick (see <see cref="BlockEntity.SendUpdate"/>), like
+    /// vanilla's <c>ClientboundBlockEntityDataPacket</c>, to the players who have the chunk: what
+    /// <see cref="BlockEntity.GetUpdateData"/> returns now, copied, which chunk packets send from then on too.
+    /// </summary>
+    private void SendBlockEntityUpdates()
+    {
+        if (this.blockEntityHost is not LevelBlockEntityHost host)
+            return;
+
+        foreach (var blockEntity in host.Updates.Keys)
+        {
+            host.Updates.TryRemove(blockEntity, out _);
+
+            if (blockEntity.IsRemoved)
+                continue;
+
+            NbtCompound? data = null;
+            var answered = this.CallPlugin(blockEntity, blockEntity.Owner as PluginContainer, current =>
+                data = current.GetUpdateData() is NbtCompound update ? DataBlockEntity.Copy(update) : null);
+
+            if (!answered)
+                continue;
+
+            blockEntity.ClientData = data;
+
+            var type = BlockEntityTypesRegistry.NetworkId(blockEntity.Id);
+            if (data is null || type < 0)
+                continue;
+
+            var packet = new BlockEntityDataPacket
+            {
+                Position = blockEntity.BlockPosition,
+                Type = type,
+                NBTData = data
+            };
+
+            foreach (var player in this.PlayersInRange(blockEntity.BlockPosition))
+                player.SendPacket(packet);
         }
     }
 
@@ -263,45 +339,133 @@ public abstract partial class AbstractLevel
     }
 
     /// <summary>
-    /// Creates the block entities of plugins' types that were kept as saved while their plugins were gone (see
-    /// <see cref="PluginBlockEntities"/>), once a plugin bound its types again: on the level's next tick. Those of
-    /// chunks loaded later are created as the chunks load.
+    /// Runs block entity code synchronously: the server's at once, a plugin's inside a call into its plugin, with its
+    /// failures logged.
     /// </summary>
-    private void RestoreKeptBlockEntities()
+    /// <returns>Whether the code ran without failing: not when the plugin is unloading.</returns>
+    private bool CallPlugin(BlockEntity blockEntity, PluginContainer? plugin, Action<BlockEntity> code)
     {
-        var revision = BlockEntityTypesRegistry.Revision;
-        if (revision == this.restoredBlockEntityRevision)
-            return;
-
-        this.restoredBlockEntityRevision = revision;
-
-        foreach (var chunk in this.Regions.Values.SelectMany(region => region.GeneratedChunks()).OfType<Chunk>())
+        if (plugin is null)
         {
-            foreach (var kept in chunk.BlockEntities.Values.OfType<DataBlockEntity>())
+            code(blockEntity);
+            return true;
+        }
+
+        using var call = plugin.TryEnter();
+        if (call is null)
+            return false;
+
+        try
+        {
+            code(blockEntity);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.BlockEntityFailed(this.Logger, ex, blockEntity.Id, blockEntity.BlockPosition);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Creates the plugins' block entities a complete chunk keeps as saved data (see <see cref="DataBlockEntity"/>)
+    /// once their types are bound: those generation placed or the chunk loaded with, and those kept while their
+    /// plugins were gone (see <see cref="PluginBlockEntities"/>). On the level's tick, in turn with plugins
+    /// unloading, whenever the chunk is new to the block entity type registry's <paramref name="revision"/>.
+    /// </summary>
+    private void RestoreKeptBlockEntities(Chunk chunk, int revision)
+    {
+        chunk.RestoredBlockEntityRevision = revision;
+
+        foreach (var kept in chunk.BlockEntities.Values.OfType<DataBlockEntity>())
+        {
+            if (!BlockEntityTypesRegistry.TryGet(kept.Id, out var type) || type.Binding is null)
+                continue;
+
+            var position = kept.BlockPosition;
+            var blockType = chunk.GetBlock(position.X, position.Y, position.Z).BlockEntityType();
+
+            if (blockType != type.Identifier)
+                continue;
+
+            var created = BlockEntityNbt.Create(type.Identifier, position, kept.SnapshotData(), this.Logger);
+            if (created is DataBlockEntity)
+                continue;
+
+            this.AttachBlockEntity(created);
+
+            if (chunk.ReplaceBlockEntity(kept, created))
+                kept.IsRemoved = true;
+        }
+    }
+
+    // A plugin's block entity created as its plugin started unloading may be stored after the unloading swept the
+    // chunk (see PluginBlockEntities): it's kept as its data then, like the others.
+    private void KeepIfUnloading(IChunk chunk, BlockEntity created)
+    {
+        if (created.Owner is PluginContainer { IsClosing: true } plugin && chunk is Chunk stored)
+            PluginBlockEntities.Keep(this, stored, created, plugin);
+    }
+
+    /// <summary>
+    /// The removal side effects that aren't the block entity's own code: a container's items drop, with the loot it
+    /// was waiting for, and the windows showing it close.
+    /// </summary>
+    /// <remarks>
+    /// Its items are taken out under the container's lock, which clicks hold, in the step that retires it, so that no
+    /// click takes or copies an item that drops; the items drop after, holding no lock.
+    /// </remarks>
+    private async ValueTask RemoveContentsAsync(BlockEntity removed)
+    {
+        switch (removed)
+        {
+            case ContainerBlockEntity container:
+                var contents = new List<ItemStack>();
+                using (await container.Inventory.LockAsync())
+                {
+                    container.Inventory.TryRetire();
+
+                    if (container.DropsContents)
+                    {
+                        this.UnpackLootTable(container, null);
+                        TakeContents(container.Inventory, contents);
+                    }
+                }
+
+                await CloseWindowsAsync(container.Inventory);
+
+                foreach (var item in contents)
+                    this.DropItemStack(container.BlockPosition, item);
+
+                break;
+            case DataBlockEntity { DropsItems: true } data:
+                this.DropSavedItems(data);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Closes the windows players have open on <paramref name="inventory"/>, or on a container made of it, like
+    /// vanilla's menus closing once their block is gone.
+    /// </summary>
+    /// <param name="inventory">The inventory, retired first so that no click applies meanwhile.</param>
+    /// <param name="unloading">The plugin whose unloading closes them, if any (see
+    /// <see cref="Player.CloseContainerAsync"/>).</param>
+    internal static async ValueTask CloseWindowsAsync(BaseContainer inventory, PluginContainer? unloading = null)
+    {
+        foreach (var viewer in inventory.GetViewers())
+        {
+            if (viewer is Player player
+                && player.OpenedContainer is BaseContainer shown
+                && shown.SharesSlotsWith(inventory))
             {
-                if (!BlockEntityTypesRegistry.TryGet(kept.Id, out var type) || type.Binding is null)
-                    continue;
-
-                var position = kept.BlockPosition;
-                var blockType = chunk.GetBlock(position.X, position.Y, position.Z).BlockEntityType();
-
-                if (blockType != type.Identifier)
-                    continue;
-
-                var created = BlockEntityNbt.Create(type.Identifier, position, kept.SnapshotData(), this.Logger);
-                if (created is DataBlockEntity)
-                    continue;
-
-                this.AttachBlockEntity(created);
-
-                if (chunk.ReplaceBlockEntity(kept, created))
-                    kept.IsRemoved = true;
+                await player.CloseContainerAsync(unloading);
             }
         }
     }
 
-    // Vanilla's Containers.dropContents: each stack drops where dropItemStack puts it, and leaves the container.
-    private void DropContents(Vector position, BaseContainer inventory)
+    // Vanilla's Containers.dropContents takes each stack out of the container, in slot order, to drop it.
+    private static void TakeContents(BaseContainer inventory, List<ItemStack> contents)
     {
         for (var slot = 0; slot < inventory.Size; slot++)
         {
@@ -310,7 +474,7 @@ public abstract partial class AbstractLevel
                 continue;
 
             inventory.SetItem(slot, null);
-            this.DropItemStack(position, item);
+            contents.Add(item);
         }
     }
 
@@ -386,32 +550,19 @@ public abstract partial class AbstractLevel
         /// </summary>
         public ConcurrentQueue<BlockEntity> Changed { get; } = new();
 
+        /// <summary>
+        /// The block entities whose updates the level sends at the end of its tick, each once.
+        /// </summary>
+        public ConcurrentDictionary<BlockEntity, byte> Updates { get; } = new();
+
         public override ILevel Level => level;
 
         public override void OnChanged(BlockEntity blockEntity) => this.Changed.Enqueue(blockEntity);
 
-        // Like vanilla's ClientboundBlockEntityDataPacket, to the players who have the chunk.
         public override void SendUpdate(BlockEntity blockEntity)
         {
-            if (blockEntity.IsRemoved)
-                return;
-
-            var data = blockEntity.GetUpdateData();
-            blockEntity.ClientData = data;
-
-            var type = BlockEntityTypesRegistry.NetworkId(blockEntity.Id);
-            if (data is null || type < 0)
-                return;
-
-            var packet = new BlockEntityDataPacket
-            {
-                Position = blockEntity.BlockPosition,
-                Type = type,
-                NBTData = data
-            };
-
-            foreach (var player in level.PlayersInRange(blockEntity.BlockPosition))
-                player.SendPacket(packet);
+            if (!blockEntity.IsRemoved)
+                this.Updates.TryAdd(blockEntity, 0);
         }
     }
 
