@@ -129,12 +129,12 @@ internal sealed class LightEngine
     /// or later.
     /// </summary>
     /// <remarks>
-    /// The caller holds generation's chunk locks, which keep other generation and save snapshots out of these chunks.
-    /// For a live level, propagation also waits out runtime relighting (see
-    /// <see cref="RuntimeLightEngine.RunGenerationLighting"/>) without serializing generation threads. A runtime block
-    /// write meanwhile is relit by the runtime engine's next flush.
+    /// Callers holding generation locks over the entire 3 by 3 area may opt into parallel propagation. Other callers
+    /// on live levels serialize propagation under the tick lock, which also excludes save snapshots. Completion checks
+    /// their borders, since neighbors may have been collected before another lighting pass reached its light status.
     /// </remarks>
-    public static async ValueTask LightChunkAsync(IChunk chunk, ILevel level, bool hasSkyLight = true)
+    public static async ValueTask LightChunkAsync(
+        IChunk chunk, ILevel level, bool hasSkyLight = true, bool hasGenerationLocks = false)
     {
         var litNeighbors = new List<IChunk>();
         for (var dz = -1; dz <= 1; dz++)
@@ -151,7 +151,12 @@ internal sealed class LightEngine
         }
 
         if (level is AbstractLevel live)
-            live.Lighting.RunGenerationLighting(() => LightChunk(chunk, litNeighbors, hasSkyLight));
+        {
+            live.Lighting.RunGenerationLighting(
+                chunk,
+                () => LightChunk(chunk, litNeighbors, hasSkyLight),
+                hasGenerationLocks);
+        }
         else
             LightChunk(chunk, litNeighbors, hasSkyLight);
     }

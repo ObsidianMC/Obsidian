@@ -699,7 +699,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         if (chunk.ChunkStatus >= ChunkGenStage.light)
             return;
 
-        await LightEngine.LightChunkAsync(chunk, this.world, this.Dimension.HasSkyLight);
+        await LightEngine.LightChunkAsync(chunk, this.world, this.Dimension.HasSkyLight, hasGenerationLocks: true);
         chunk.SetChunkStatus(ChunkGenStage.light);
 
         // Light spreads into lit neighbors, and complete ones may already be on clients.
