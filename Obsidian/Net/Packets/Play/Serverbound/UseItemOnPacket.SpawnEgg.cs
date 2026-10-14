@@ -6,6 +6,7 @@ using Obsidian.Entities.AI;
 using Obsidian.Entities.Factories;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Registries;
 using Obsidian.WorldData;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -60,13 +61,32 @@ public partial class UseItemOnPacket
         }
         else
         {
-            // A clicked solid block uses the neighbouring block; air at the clicked point uses that point.
-            var target = block.IsAir ? this.Position : this.Position + this.Face.ToVector();
+            var clickedShape = BlockCollisionShapes.Get(level, this.Position, block);
+            var target = clickedShape.Count == 0 ? this.Position : this.Position + this.Face.ToVector();
             if (level.IsOutsideBuildHeight(target.Y))
                 return true;
 
             mob.EntityId = Server.GetNextEntityId();
             mob.Position = (VectorD)target + new VectorD(0.5, 0, 0.5);
+            // SpawnEggItem / EntityType.getYOffset starts one block up and settles against block collisions.
+            // A click on the upper face can settle through the target and onto the clicked block below it.
+            var raised = mob.Dimension.CreateBBFromPosition(mob.Position + new VectorD(0, 1, 0));
+            var search = new BoundingBox((VectorD)target, (VectorD)target + new VectorD(1, 1, 1));
+            var descent = -1d;
+            if (target != this.Position && this.Face == BlockFace.Up)
+            {
+                search = new BoundingBox(search.Min - new VectorD(0, 1, 0), search.Max);
+                descent = -2;
+            }
+
+            var terrain = new MobTerrain(level);
+            var collisions = terrain.GetCollisions(search).Where(shape =>
+                shape.Max.X > search.Min.X && shape.Min.X < search.Max.X
+                && shape.Max.Y > search.Min.Y && shape.Min.Y < search.Max.Y
+                && shape.Max.Z > search.Min.Z && shape.Min.Z < search.Max.Z).ToArray();
+            var offset = EntityMovement.Clip(
+                raised, new VectorD(0, descent, 0), collisions).Y;
+            mob.Position += new VectorD(0, 1 + offset, 0);
             mob.Yaw = Random.Shared.NextSingle() * 360;
             mob.InitializeAi();
             var saved = EntityNbt.Save(mob)!;
@@ -77,10 +97,6 @@ public partial class UseItemOnPacket
             }
 
             mob.ReadNbt(saved);
-            var terrain = new MobTerrain(level);
-            if (!terrain.IsFree(mob.Dimension.CreateBBFromPosition(mob.Position)))
-                return true;
-
             level.SpawnEntity(mob);
         }
 

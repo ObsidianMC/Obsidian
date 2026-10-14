@@ -91,6 +91,8 @@ internal static class BlockEntityTypesRegistry
             if (!byName.TryGetValue(identifier, out var type))
             {
                 type = new BlockEntityType(VanillaIdentifiers.Count + types.Length, identifier);
+                API.Inventory.DataComponents.ComponentRegistryNames.Register(
+                    "minecraft:block_entity_type", type.Id, identifier);
                 types = [.. types, type];
                 byName = types.ToFrozenDictionary(entry => entry.Identifier, StringComparer.OrdinalIgnoreCase);
             }

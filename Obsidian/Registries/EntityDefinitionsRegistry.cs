@@ -55,6 +55,8 @@ internal static class EntityDefinitionsRegistry
             }
 
             var definition = new EntityDefinition(VanillaCount + definitions.Length, identifier, kind);
+            API.Inventory.DataComponents.ComponentRegistryNames.Register(
+                "minecraft:entity_type", definition.Id, identifier);
 
             definitions = [.. definitions, definition];
             byName = definitions.ToFrozenDictionary(entry => entry.Identifier, StringComparer.OrdinalIgnoreCase);

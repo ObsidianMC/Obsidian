@@ -195,6 +195,9 @@ internal static class BlockPhysics
         if (from.HasBlockCollisionShape() || to.HasBlockCollisionShape())
             return true;
 
+        if (PluginShapes(from.StateId()) is not null || PluginShapes(to.StateId()) is not null)
+            return CoversFace(CollisionFace(from, direction), CollisionFace(to, direction.Opposite()));
+
         return data.Value.FaceOcclusion.GetOrAdd((from.StateId(), to.StateId(), direction),
             key => CoversFace(CollisionFace(from, key.Direction), CollisionFace(to, key.Direction.Opposite())));
     }
@@ -202,6 +205,9 @@ internal static class BlockPhysics
     // The boxes (min and max on each of the face's two axes) where the collision shape touches the given face.
     private static double[][] CollisionFace(IBlock block, BlockFace face)
     {
+        if (PluginShapes(block.StateId()) is PluginStateShapes own)
+            return own.CollisionFaces[(int)face];
+
         var physics = data.Value;
         var set = (int)((uint)FluidFlags(block) >> 16);
         return physics.CollisionFaces[physics.CollisionFaceSets[set][(int)face]];
@@ -296,22 +302,14 @@ internal static class BlockPhysics
     // 31) and a full top face (29).
     private const int FullShapeFlags = 1 << 6 | 1 << 7 | 1 << 8 | 0b111111 << 11 | 1 << 29 | 1 << 31;
 
-    // A plugin state with shapes of its own keeps its template's full-block flags only when its collision is the full
-    // block; any other shape has no sturdy faces, so nothing that needs a full face (a torch, a door) holds on to it.
-    // An empty collision shape is flagged so (28).
+    // Registration computes volume and face coverage once, independently of how the union was split into boxes.
     private static int OwnShapeFlags(int flags, PluginStateShapes own)
     {
-        var collision = own.Shapes.Collision;
-        var fullBlock = collision.Count == 1
-            && collision[0].Min == VectorD.Zero
-            && collision[0].Max == new VectorD(1, 1, 1);
+        flags = (flags & ~(FullShapeFlags | 1 << 28)) | own.PhysicsFlags;
+        if ((own.PhysicsFlags & (1 << 6)) == 0)
+            flags &= ~(1 << 9 | 1 << 30);
 
-        if (fullBlock)
-            return flags;
-
-        flags &= ~FullShapeFlags;
-
-        return collision.Count == 0 ? flags | 1 << 28 : flags & ~(1 << 28);
+        return flags;
     }
 
     // The vanilla state whose shapes describe a state: itself, a plugin block's template, or air for an unknown id.
@@ -342,7 +340,10 @@ internal static class BlockPhysics
         if ((uint)id < (uint)flags.Length)
             return flags[id];
 
-        // A plugin block's collision shape is its template's, but it holds no fluid.
+        if (PluginShapes(id) is PluginStateShapes own)
+            return (own.PhysicsFlags & (1 << 6)) != 0 ? 1 : own.Shapes.Collision.Count == 0 ? 2 : 0;
+
+        // A plugin block without its own shapes uses its template, but holds no fluid.
         const int shapeFlags = 0b11 | unchecked((int)0xFFFF0000);
         return flags[ShapeState(id)] & shapeFlags;
     }
