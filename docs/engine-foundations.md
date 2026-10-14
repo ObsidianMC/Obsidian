@@ -11,8 +11,9 @@ plugin that exercises it.
 
 ## Rules for every phase
 
-- **Both sides, one API.** Server pieces go in Obsidian.API and Obsidian; client pieces go in `Obsidian.API.Client`
-  and the Obsidian client. A mod uses the same API from either side, as today.
+- **Both sides, one API.** Server pieces go in Obsidian.API and Obsidian; client pieces go in the
+  `Obsidian.API.Client` project (its own assembly, which servers ship too) and the Obsidian client. A mod uses the
+  same API from either side, as today.
 - **Reloadable.** Whatever a plugin registers is its own and goes when it unloads, like its entities and recipes do
   now. Identity stays for the process (ids of new registries like block entity types and sound events don't change
   across reloads); behaviour is replaced. Saved data of an unloaded plugin's types is kept as saved, like its

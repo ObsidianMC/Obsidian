@@ -390,7 +390,8 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      colour modifier, and temperature and downfall for the colormaps); vanilla's biomes keep the registry's colours
      (see [plugin-archives.md](plugin-archives.md#assets)). The client's mods load before its assets, so their
      blocks are baked from the start.
-   - Done, slice 4c, the client API: `Obsidian.API.Client` holds interfaces and records only. A mod's plugin
+   - Done, slice 4c, the client API: `Obsidian.API.Client`, now its own project and assembly (which servers ship,
+     so a `both` mod's plugin class loads on them), holds interfaces and records only. A mod's plugin
      implements `IClientPlugin`, whose `ConfigureClient(IClientRegistry)` the Obsidian client calls after
      `ConfigureRegistry` and servers never call, so a `both` mod runs on a server without client code. Through
      `IClientRegistry` a mod handles the payloads servers send on the channels it declared with `MapPayload`

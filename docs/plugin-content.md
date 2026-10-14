@@ -1708,10 +1708,12 @@ The rules:
 ## Client
 
 A mod whose side is `client` or `both` also runs on the Obsidian client, which registers its content like a server
-(see [mod-system.md](mod-system.md)). Its plugin class implements `IClientPlugin`, from `Obsidian.API.Client`, to
-register its client side. The client calls `ConfigureClient` when it loads its mods, after `ConfigureRegistry`: at
-startup, and on a new instance of the plugin when the player reloads them (see below); servers never call it, so a
-`both` mod runs on a server without any client code.
+(see [mod-system.md](mod-system.md)). Its plugin class implements `IClientPlugin` to register its client side. The
+client API is its own assembly and package, `Obsidian.API.Client`, which the mod references besides `Obsidian.API`;
+it's interfaces and data only, and servers ship it too, so the same plugin class loads on them. The client calls
+`ConfigureClient` when it loads its mods, after `ConfigureRegistry`: at startup, and on a new instance of the plugin
+when the player reloads them (see below); servers never call it, so a `both` mod runs on a server without any client
+code.
 
 What `ConfigureClient` registers takes effect when it returns and stays until the client exits or reloads its mods;
 if it throws, the mod fails to load and none of it does. The registry only takes registrations during

@@ -1,0 +1,454 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Obsidian.API.Client</name>
+    </assembly>
+    <members>
+        <member name="T:Obsidian.API.Client.BlockTintSource">
+            <summary>
+            Where a block's tint comes from.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Client.BlockTintSource.Grass">
+            <summary>
+            The biome's grass colour, like grass and ferns.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Client.BlockTintSource.Foliage">
+            <summary>
+            The biome's foliage colour, like oak leaves and vines.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Client.BlockTintSource.DryFoliage">
+            <summary>
+            The biome's dry foliage colour, like leaf litter.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Client.BlockTintSource.Water">
+            <summary>
+            The biome's water colour.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Client.BlockTintSource.Fixed">
+            <summary>
+            A fixed colour, like birch leaves.
+            </summary>
+        </member>
+        <member name="T:Obsidian.API.Client.BlockTint">
+            <summary>
+            The colour a block's faces are tinted with, like vanilla's block colours: faces whose model gives them a
+            <c>tintindex</c> are multiplied by it. Register it with <see cref="M:Obsidian.API.Client.IClientRegistry.RegisterBlockTint(System.String,Obsidian.API.Client.BlockTint)"/>.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.BlockTint.Grass">
+            <summary>
+            The biome's grass colour, blended across nearby biomes; vanilla's grass block item colour for the block's item.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.BlockTint.Foliage">
+            <summary>
+            The biome's foliage colour, blended across nearby biomes; vanilla's default foliage colour for the block's item.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.BlockTint.DryFoliage">
+            <summary>
+            The biome's dry foliage colour, blended across nearby biomes; vanilla's default dry foliage colour for the
+            block's item.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.BlockTint.Water">
+            <summary>
+            The biome's water colour, blended across nearby biomes; vanilla's default water colour for the block's item.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.BlockTint.Source">
+            <summary>
+            Where the colour comes from.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.BlockTint.Color">
+            <summary>
+            The colour, as <c>0xRRGGBB</c>, for <see cref="F:Obsidian.API.Client.BlockTintSource.Fixed"/>; 0 for the biome sources.
+            </summary>
+        </member>
+        <member name="M:Obsidian.API.Client.BlockTint.Fixed(System.Int32)">
+            <summary>
+            A fixed colour, as <c>0xRRGGBB</c>, for the block and its item.
+            </summary>
+        </member>
+        <member name="T:Obsidian.API.Client.EntityRendererProperties">
+            <summary>
+            How the Obsidian client draws a mod's entity type: a model layer and a texture from the mod's assets, and the
+            keyframed animations it plays. Register it with <see cref="M:Obsidian.API.Client.IClientRegistry.RegisterEntityRenderer(System.String,Obsidian.API.Client.EntityRendererProperties)"/>.
+            </summary>
+            <remarks>
+            <para>
+            Parts named <c>head</c> turn to where the entity looks, and, without a <see cref="P:Obsidian.API.Client.EntityRendererProperties.WalkAnimation"/>, parts whose
+            names end in <c>leg</c> swing as it walks (left and right, and front and back, in opposite phases), like vanilla's
+            mobs; other parts stay as modelled unless an animation moves them.
+            </para>
+            <para>
+            The items the server says the entity holds and wears are drawn on parts named like vanilla's: held items in the
+            hands of <c>right_arm</c> and <c>left_arm</c>, and armour pieces on the parts vanilla's humanoid armour covers
+            (<c>head</c>, <c>body</c>, <c>right_arm</c>, <c>left_arm</c>, <c>right_leg</c> and <c>left_leg</c>), following them.
+            A model without such a part doesn't show what would go on it.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:Obsidian.API.Client.EntityRendererProperties.Model">
+            <summary>
+            The model layer, for example <c>examplemod:golem</c> for <c>assets/examplemod/models/entity/golem.json</c>:
+            the texture's size and a tree of parts with their pivots, rotations and cube faces, in the client's model layer
+            format (see Obsidian's docs on plugin content).
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.EntityRendererProperties.Texture">
+            <summary>
+            The texture, for example <c>examplemod:entity/golem</c> for
+            <c>assets/examplemod/textures/entity/golem.png</c>. Entity textures are read from <c>textures/entity/</c>.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.EntityRendererProperties.Scale">
+            <summary>
+            How much bigger than its model the entity is drawn.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.EntityRendererProperties.ShadowRadius">
+            <summary>
+            The radius of the entity's shadow, in blocks, like vanilla renderers' shadow radius; 0 for none.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.EntityRendererProperties.IdleAnimation">
+            <summary>
+            An animation the entity always plays, from its spawn, for example <c>examplemod:golem/idle</c> for
+            <c>assets/examplemod/animations/entity/golem/idle.json</c>; null for none. A looping one repeats, and one that
+            doesn't loop holds its last pose.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.EntityRendererProperties.WalkAnimation">
+            <summary>
+            An animation played as the entity walks, advancing with the distance it walks and weighted by its speed like
+            vanilla's walking animations, instead of swinging its legs; null for none.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.EntityRendererProperties.AttackAnimation">
+            <summary>
+            An animation played once each time the entity swings its arm, which servers show as mobs attack; null for
+            none.
+            </summary>
+        </member>
+        <member name="T:Obsidian.API.Client.ClientPayloadHandler`1">
+            <summary>
+            Handles a payload the server sent on a mod's channel. It runs on the connection's packet thread, so hand work for
+            the game over to it rather than blocking.
+            </summary>
+            <param name="payload">The payload.</param>
+            <param name="connection">The connection it arrived on, to answer on.</param>
+        </member>
+        <member name="T:Obsidian.API.Client.IClientConnection">
+            <summary>
+            The client's connection to a server, which a mod sends its payloads on.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.IClientConnection.Phase">
+            <summary>
+            The phase the connection is in: <see cref="F:Obsidian.API.Networking.PayloadPhase.Configuration"/> or <see cref="F:Obsidian.API.Networking.PayloadPhase.Play"/>,
+            or null while the client isn't connected (or is still logging in).
+            </summary>
+        </member>
+        <member name="M:Obsidian.API.Client.IClientConnection.SendPayload``1(``0)">
+            <summary>
+            Sends a payload to the server, if the server agreed on its channel (in NeoForge's handshake, or by registering
+            it) and the mod declared the channel with <see cref="M:Obsidian.API.Plugins.IPluginRegistry.MapPayload``1(Obsidian.API.Networking.PayloadPhase,Obsidian.API.Networking.PayloadDirection,Obsidian.API.Networking.PayloadHandler{``0},System.String,System.Boolean)"/> for the
+            current phase.
+            </summary>
+            <returns>Whether the payload was sent.</returns>
+        </member>
+        <member name="T:Obsidian.API.Client.IClientPlugin">
+            <summary>
+            A plugin with a client side: implemented by a mod's <see cref="T:Obsidian.API.Plugins.PluginBase"/> subclass to register what the
+            Obsidian client does with it, like its payload handlers, key bindings, block tints and entity renderers.
+            </summary>
+            <remarks>
+            Only the Obsidian client calls <see cref="M:Obsidian.API.Client.IClientPlugin.ConfigureClient(Obsidian.API.Client.IClientRegistry)"/>, after the mod's
+            <see cref="M:Obsidian.API.Plugins.PluginBase.ConfigureRegistry(Obsidian.API.Plugins.IPluginRegistry)"/>; servers never do, so a mod whose side is <c>both</c> runs on a
+            server without any client code. Keep client-only work in this method and what it registers.
+            </remarks>
+        </member>
+        <member name="M:Obsidian.API.Client.IClientPlugin.ConfigureClient(Obsidian.API.Client.IClientRegistry)">
+            <summary>
+            Registers the mod's client side. Called when the client loads its mods: at startup, and again on a new
+            instance of the plugin when the player reloads them. What it registers takes effect when it returns, after
+            which <paramref name="registry"/> takes no more registrations, and is dropped when the mods reload.
+            </summary>
+        </member>
+        <member name="T:Obsidian.API.Client.IClientRegistry">
+            <summary>
+            What a mod's <see cref="M:Obsidian.API.Client.IClientPlugin.ConfigureClient(Obsidian.API.Client.IClientRegistry)"/> registers its client side with.
+            </summary>
+            <remarks>
+            <para>
+            What the mod registers takes effect when <see cref="M:Obsidian.API.Client.IClientPlugin.ConfigureClient(Obsidian.API.Client.IClientRegistry)"/> returns and stays until the
+            client exits or the player reloads its mods; if it throws, none of it does. The registry is sealed then, since the
+            client loads what depends on it afterwards: registering through it later throws
+            <see cref="T:System.InvalidOperationException"/>, while <see cref="P:Obsidian.API.Client.IClientRegistry.Connection"/> stays usable.
+            </para>
+            <para>
+            Like the server's content, what the mod registers is its own: identifiers are in its namespace (its mod id) and
+            valid by vanilla's rules (lowercase letters, digits and <c>_-./</c>, one <c>:</c>).
+            </para>
+            </remarks>
+        </member>
+        <member name="P:Obsidian.API.Client.IClientRegistry.Connection">
+            <summary>
+            The client's connection to the server it's playing on, to send the mod's payloads from outside a payload
+            handler, like when one of its keys is pressed.
+            </summary>
+        </member>
+        <member name="M:Obsidian.API.Client.IClientRegistry.HandlePayload``1(Obsidian.API.Client.ClientPayloadHandler{``0})">
+            <summary>
+            Handles the payloads the server sends on <typeparamref name="TPayload"/>'s channel, in the phases the mod
+            declared it for with <see cref="M:Obsidian.API.Plugins.IPluginRegistry.MapPayload``1(Obsidian.API.Networking.PayloadPhase,Obsidian.API.Networking.PayloadDirection,Obsidian.API.Networking.PayloadHandler{``0},System.String,System.Boolean)"/>; the server's handler given
+            there is the server's, and isn't called on the client.
+            </summary>
+            <exception cref="T:System.ArgumentException">
+            The mod didn't declare the channel, or declared it only for payloads sent to the server.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+        </member>
+        <member name="M:Obsidian.API.Client.IClientRegistry.OnTick(System.Action)">
+            <summary>
+            Runs <paramref name="handler"/> on the game's thread every client tick, 20 times a second, in menus as in game,
+            for the mod's own client logic, like polling <see cref="P:Obsidian.API.Client.IKeyBinding.IsDown"/>. <see cref="P:Obsidian.API.Client.IClientRegistry.Connection"/>'s
+            <see cref="P:Obsidian.API.Client.IClientConnection.Phase"/> says whether the client is playing on a server. A handler that throws is
+            logged and not run again.
+            </summary>
+            <exception cref="T:System.InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+        </member>
+        <member name="M:Obsidian.API.Client.IClientRegistry.RegisterKeyBinding(System.String,System.String,System.String)">
+            <summary>
+            Registers a key binding, listed in the key binds screen under its category and saved in <c>options.txt</c> like
+            vanilla's.
+            </summary>
+            <param name="identifier">
+            The binding's identifier, in the mod's namespace, like <c>examplemod:open_map</c>; its name, and translation
+            key, is <c>key.examplemod.open_map</c>.
+            </param>
+            <param name="defaultKey">
+            The key or mouse button it's bound to until the player rebinds it, in vanilla's names: <c>key.keyboard.g</c>,
+            <c>key.keyboard.left.alt</c>, <c>key.mouse.middle</c>, or <c>key.keyboard.unknown</c> for none.
+            </param>
+            <param name="category">
+            The category's identifier, like <c>examplemod:main</c>, in any namespace so mods can share one; its
+            translation key is <c>key.category.examplemod.main</c>.
+            </param>
+            <exception cref="T:System.ArgumentException">
+            The identifier isn't valid or in the mod's namespace, the category isn't valid, a binding with the identifier
+            exists, or the key isn't a keyboard key or mouse button name.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+        </member>
+        <member name="M:Obsidian.API.Client.IClientRegistry.RegisterBlockTint(System.String,Obsidian.API.Client.BlockTint)">
+            <summary>
+            Tints a block: the faces of its models with a <c>tintindex</c> are multiplied by the tint's colour, and so are
+            its item's when the item's definition (<c>assets/&lt;ns&gt;/items/...</c>) gives the model no tints of its
+            own.
+            </summary>
+            <param name="block">The identifier of a block the mod registered, like <c>examplemod:mossy_bricks</c>.</param>
+            <param name="tint">The tint.</param>
+            <exception cref="T:System.ArgumentException">
+            The block isn't one the mod registered, or the mod tinted it already.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+        </member>
+        <member name="M:Obsidian.API.Client.IClientRegistry.RegisterEntityRenderer(System.String,Obsidian.API.Client.EntityRendererProperties)">
+            <summary>
+            Draws a mod's entity type with a model and texture from its assets. Without one, the type's entities aren't
+            drawn.
+            </summary>
+            <param name="entityType">
+            The identifier of an entity type the mod registered, like <c>examplemod:golem</c>.
+            </param>
+            <param name="renderer">The model and texture.</param>
+            <exception cref="T:System.ArgumentException">
+            The entity type isn't one the mod registered, or the mod gave it a renderer already.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+        </member>
+        <member name="M:Obsidian.API.Client.IClientRegistry.RegisterParticleProvider(System.String,Obsidian.API.Client.ParticleProviderProperties)">
+            <summary>
+            Sets how a mod's particle type's particles move and how long they live. They're drawn with the sprites of its
+            definition, <c>assets/&lt;ns&gt;/particles/&lt;name&gt;.json</c>, with or without a provider.
+            </summary>
+            <param name="particleType">
+            The identifier of a particle type the mod registered, like <c>examplemod:spark</c>.
+            </param>
+            <param name="provider">How its particles move and live.</param>
+            <exception cref="T:System.ArgumentException">
+            The particle type isn't one the mod registered, or the mod gave it a provider already.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+        </member>
+        <member name="M:Obsidian.API.Client.IClientRegistry.RegisterMenuScreen(System.String,Obsidian.API.Client.MenuScreenProperties)">
+            <summary>
+            Shows a mod's menu type with a background and slot positions from its assets. Without a screen, the menu shows
+            like a chest.
+            </summary>
+            <param name="menuType">The identifier of a menu type the mod registered, like <c>examplemod:pouch</c>.</param>
+            <param name="screen">The background and where the slots go.</param>
+            <exception cref="T:System.ArgumentException">
+            The menu type isn't one the mod registered, the screen places a different number of slots than the menu has,
+            or the mod gave it a screen already.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+        </member>
+        <member name="T:Obsidian.API.Client.IKeyBinding">
+            <summary>
+            A mod's key binding, which players rebind in the key binds screen like vanilla's. Register it with
+            <see cref="M:Obsidian.API.Client.IClientRegistry.RegisterKeyBinding(System.String,System.String,System.String)"/>.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.IKeyBinding.Identifier">
+            <summary>
+            The binding's identifier, for example <c>examplemod:open_map</c>.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.IKeyBinding.Name">
+            <summary>
+            The binding's name, which is also its translation key and, after <c>key_</c>, its key in <c>options.txt</c>:
+            <c>key.examplemod.open_map</c> for <c>examplemod:open_map</c>.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.IKeyBinding.Key">
+            <summary>
+            The key or mouse button it's bound to, in vanilla's names: <c>key.keyboard.g</c>, <c>key.mouse.right</c>, or
+            <c>key.keyboard.unknown</c> when unbound.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.IKeyBinding.IsDown">
+            <summary>
+            Whether the key that pressed it in game is still held down, even if the binding was rebound since.
+            </summary>
+        </member>
+        <member name="E:Obsidian.API.Client.IKeyBinding.Pressed">
+            <summary>
+            Raised on the game's thread when the key is pressed in game, with no screen open.
+            </summary>
+        </member>
+        <member name="T:Obsidian.API.Client.MenuScreenProperties">
+            <summary>
+            How the Obsidian client shows a mod's menu type, like a NeoForge mod's container screen: a background texture
+            from the mod's assets with the menu's slots and the player's inventory on it. Register it with
+            <see cref="M:Obsidian.API.Client.IClientRegistry.RegisterMenuScreen(System.String,Obsidian.API.Client.MenuScreenProperties)"/>; without one, the menu shows like a chest, with its rows of slots
+            centred.
+            </summary>
+            <remarks>
+            Positions are in the GUI's pixels from the background's top left, and a slot's is where its item's top left goes
+            (vanilla's slot frames are 18 pixels, one around each 16-pixel item).
+            </remarks>
+        </member>
+        <member name="P:Obsidian.API.Client.MenuScreenProperties.Texture">
+            <summary>
+            The background, for example <c>examplemod:gui/container/pouch</c> for
+            <c>assets/examplemod/textures/gui/container/pouch.png</c>; its top left <see cref="P:Obsidian.API.Client.MenuScreenProperties.Width"/> by
+            <see cref="P:Obsidian.API.Client.MenuScreenProperties.Height"/> pixels are drawn, like vanilla's container textures.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.MenuScreenProperties.Width">
+            <summary>
+            The background's width, in pixels.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.MenuScreenProperties.Height">
+            <summary>
+            The background's height, in pixels.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.MenuScreenProperties.Slots">
+            <summary>
+            Where the menu's slots go, one for each, in slot order (row by row).
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.MenuScreenProperties.Inventory">
+            <summary>
+            Where the first slot of the player's inventory goes: its three rows of nine, then the hotbar 58 pixels below
+            the first row, like vanilla's menus.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.MenuScreenProperties.Title">
+            <summary>
+            Where the menu's title goes.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.MenuScreenProperties.InventoryLabel">
+            <summary>
+            Where the "Inventory" label goes; if null, 12 pixels above the player's inventory, like on vanilla's
+            176 by 166 screens.
+            </summary>
+        </member>
+        <member name="T:Obsidian.API.Client.GuiPosition">
+            <summary>
+            A position on a screen, in the GUI's pixels.
+            </summary>
+            <param name="X">Pixels from the left.</param>
+            <param name="Y">Pixels from the top.</param>
+        </member>
+        <member name="M:Obsidian.API.Client.GuiPosition.#ctor(System.Int32,System.Int32)">
+            <summary>
+            A position on a screen, in the GUI's pixels.
+            </summary>
+            <param name="X">Pixels from the left.</param>
+            <param name="Y">Pixels from the top.</param>
+        </member>
+        <member name="P:Obsidian.API.Client.GuiPosition.X">
+            <summary>Pixels from the left.</summary>
+        </member>
+        <member name="P:Obsidian.API.Client.GuiPosition.Y">
+            <summary>Pixels from the top.</summary>
+        </member>
+        <member name="T:Obsidian.API.Client.ParticleProviderProperties">
+            <summary>
+            How the Obsidian client moves and draws a mod's particle type, like a NeoForge mod's particle provider making a
+            sprite particle. Register it with <see cref="M:Obsidian.API.Client.IClientRegistry.RegisterParticleProvider(System.String,Obsidian.API.Client.ParticleProviderProperties)"/>; without one, the type's
+            particles behave like vanilla's base particle.
+            </summary>
+            <remarks>
+            The particle's sprites are its definition's, <c>assets/&lt;ns&gt;/particles/&lt;name&gt;.json</c>, like
+            vanilla's: <c>{"textures": ["&lt;ns&gt;:&lt;texture&gt;", ...]}</c>, from
+            <c>assets/&lt;ns&gt;/textures/particle/</c>.
+            </remarks>
+        </member>
+        <member name="P:Obsidian.API.Client.ParticleProviderProperties.Lifetime">
+            <summary>
+            How many ticks a particle lives; 0 for vanilla's base particle's random lifetime, from 4 to 40 ticks.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.ParticleProviderProperties.Gravity">
+            <summary>
+            How strongly particles fall, like vanilla's particles' <c>gravity</c>: 1 speeds their fall by 0.04 blocks per
+            tick each tick, and a negative value makes them rise.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.ParticleProviderProperties.Friction">
+            <summary>
+            What a particle's velocity is multiplied by each tick, like vanilla's particles' <c>friction</c>.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.ParticleProviderProperties.Scale">
+            <summary>
+            How much bigger than vanilla's base particle (0.1 to 0.2 blocks) particles are drawn.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.ParticleProviderProperties.RandomizeVelocity">
+            <summary>
+            Whether a particle's velocity is randomised like vanilla's base particle's (a random direction with a slight
+            upward push, around the velocity the server sent), rather than exactly the server's.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Client.ParticleProviderProperties.AnimateSprite">
+            <summary>
+            Whether a particle shows its sprites in turn over its life, rather than one picked at random.
+            </summary>
+        </member>
+    </members>
+</doc>
