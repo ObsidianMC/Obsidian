@@ -282,11 +282,14 @@ internal static class TestServerFactory
     public static Obsidian.Entities.Player CreateConnectedPlayer(Server server, IWorld world, string username, VectorD? position = null)
     {
         var client = new TestClient(server);
+        var spawn = position ?? world.LevelData.SpawnPosition;
         var player = new Obsidian.Entities.Player(Guid.NewGuid(), username, client, world)
         {
             Server = server,
-            Position = position ?? world.LevelData.SpawnPosition,
-            LastPosition = position ?? world.LevelData.SpawnPosition,
+            Position = spawn,
+            LastPosition = spawn,
+            // Standing eye height, as spawning and moving set it, so that what the player drops starts there.
+            HeadY = spawn.Y + 1.62
         };
         client.Attach(player);
         server.Connections.TryAdd(client.Id, client);
