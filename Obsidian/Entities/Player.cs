@@ -10,6 +10,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
 using Obsidian.Services;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Portals;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -461,14 +462,20 @@ public sealed partial class Player : Avatar, IClientPlayer
         return true;
     }
 
-    public async override ValueTask TeleportAsync(VectorD pos)
+    public override ValueTask TeleportAsync(VectorD pos) => this.TeleportAsync(this.Level, pos);
+
+    private async ValueTask TeleportWithinLevelAsync(VectorD pos)
     {
         FallDistance = 0;
         combatPosition = null;
         CancelWeaponUse();
         Vehicle?.Dismount(this);
         LastPosition = Position;
+        if (Level is AbstractLevel resident && !resident.TryMoveEntity(this, Position, pos))
+            throw new InvalidOperationException("The destination region could not accept the player.");
+
         Position = pos;
+        BoundingBox = Dimension.CreateBBFromPosition(pos);
         await UpdateChunksAsync();
 
         var tid = Globals.Random.Next(0, 999);
@@ -478,69 +485,52 @@ public sealed partial class Player : Avatar, IClientPlayer
             (
                 this,
                 this.Server,
-                Position,
+                LastPosition,
                 pos
             ));
 
         await Client.QueuePacketAsync(new PlayerPositionPacket
         {
             Position = pos,
+            Delta = Motion,
+            Yaw = Yaw,
+            Pitch = Pitch,
             TeleportId = tid
         });
         TeleportId = tid;
     }
 
-    public async override ValueTask TeleportAsync(IEntity to)
+    public override ValueTask TeleportAsync(IEntity to) =>
+        this.TeleportAsync(to.Level, to.Position, to.Yaw, to.Pitch);
+
+    public override ValueTask TeleportAsync(IWorld world) =>
+        this.TeleportAsync(world, world.LevelData.SpawnPosition);
+
+    public override async ValueTask TeleportAsync(
+        ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null)
     {
-        FallDistance = 0;
-        combatPosition = null;
-        CancelWeaponUse();
-        LastPosition = Position;
-        Position = to.Position;
+        ValidateTravel(level, position, yaw, pitch);
+        if (!this.Alive || this.Respawning)
+            throw new InvalidOperationException("A dead or respawning player cannot travel.");
 
-        await UpdateChunksAsync();
-
-        TeleportId = Globals.Random.Next(0, 999);
-
-        await Client.QueuePacketAsync(new PlayerPositionPacket
+        await this.CancelPortalTravelAsync();
+        if (this.Level != level)
         {
-            Position = to.Position,
-            TeleportId = TeleportId
-        });
-    }
-
-    public async override ValueTask TeleportAsync(IWorld world)
-    {
-        if (world is not World w)
-        {
-            await base.TeleportAsync(world);
+            await this.TransferDimensionAsync(level, position, yaw, pitch);
             return;
         }
 
-        // save current world/persistent data 
-        await SaveAsync();
+        var source = this.Level;
+        using var area = level is AbstractLevel resident
+            ? await PortalArea.LoadAsync(resident, (Vector)position.Floor(), 0,
+                () => this.Client.Connected && this.Alive && this.Level == source)
+            : null;
+        if (level is AbstractLevel && area is null)
+            throw new InvalidOperationException("The player moved while the destination was loading.");
 
-        // Held until the client's view is reset, so the chunk loop can't send chunks of the old world in between.
-        await this.chunkUpdates.WaitAsync();
-        try
-        {
-            Level.TryRemovePlayer(this);
-            w.TryAddPlayer(this);
-
-            Level = w;
-
-            // resync player data
-            await LoadAsync(false);
-
-            // reload world stuff and send rest of the info
-            await this.UpdateChunksUnderLockAsync(true);
-        }
-        finally
-        {
-            this.chunkUpdates.Release();
-        }
-
-        await SendPlayerInfoAsync();
+        this.Yaw = yaw ?? this.Yaw;
+        this.Pitch = pitch ?? this.Pitch;
+        await this.TeleportWithinLevelAsync(position);
     }
 
     public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
@@ -601,15 +591,27 @@ public sealed partial class Player : Avatar, IClientPlayer
         return true;
     }
 
-    internal async Task TransferDimensionAsync(ILevel destination)
+    internal async Task TransferDimensionAsync(
+        ILevel destination, VectorD? position = null, Angle? yaw = null, Angle? pitch = null,
+        VectorD? motion = null, bool portal = false, bool relativeMotion = false)
     {
+        await this.CancelPortalTravelAsync();
         CancelEating();
         CancelWeaponUse();
         combatPosition = null;
         Vehicle?.Dismount(this);
         var origin = Level;
-        var spawn = destination.LevelData.SpawnPosition;
-        await destination.GetChunkAsync((Vector)spawn.Floor());
+        var from = this.Position;
+        var spawn = position ?? destination.LevelData.SpawnPosition;
+        ValidateTravel(destination, spawn, yaw, pitch);
+        using var area = destination is AbstractLevel target
+            ? await PortalArea.LoadAsync(target, (Vector)spawn.Floor(), 0,
+                () => this.Client.Connected && this.Alive && this.Level == origin)
+            : null;
+        if (destination is AbstractLevel && area is null)
+            return;
+
+        await this.CloseContainerAsync();
         await origin.DestroyEntityAsync(this);
         origin.TryRemovePlayer(this);
         foreach (var observer in origin.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
@@ -621,27 +623,51 @@ public sealed partial class Player : Avatar, IClientPlayer
         {
             Level = destination;
             Position = spawn;
-            LastPosition = spawn;
+            LastPosition = from;
+            Yaw = yaw ?? Yaw;
+            Pitch = pitch ?? Pitch;
             BoundingBox = Dimension.CreateBBFromPosition(spawn);
-            Motion = VectorD.Zero;
+            Motion = motion ?? Motion;
             FallDistance = 0;
             foodPosition = null;
             destination.TryAddPlayer(this);
             destination.TryAddEntity(this);
-            await this.RespawnUnderLockAsync(DataKept.Metadata);
+            this.preservePortalMotion = relativeMotion;
+            if (portal)
+                this.portalCooldown = PlayerPortalCooldown;
+
+            await this.RespawnUnderLockAsync(DataKept.Attributes | DataKept.Metadata, levelChange: true);
         }
         finally
         {
+            this.preservePortalMotion = false;
             this.chunkUpdates.Release();
         }
 
-        await Client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
-        { Dimension = destination.DimensionName, Pos = (Vector)spawn.Floor() }, 0, 0));
+        // Vanilla 1.21.11 sends the shared world's GlobalPos spawn, including while in a child dimension.
+        var sharedSpawn = destination is IDimension child ? child.ParentWorld : destination;
         await Client.QueuePacketAsync(new SetTimePacket(destination.LevelData.Time, destination.LevelData.DayTime, true));
-        await Client.QueuePacketAsync(new GameEventPacket(destination.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        await Client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
+        {
+            Dimension = sharedSpawn.DimensionName,
+            Pos = (Vector)sharedSpawn.LevelData.SpawnPosition.Floor()
+        }, 0, 0));
+        var weather = destination.LevelData.Raining
+            ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining;
+        await Client.QueuePacketAsync(new GameEventPacket(weather));
         foreach (var (id, effect) in ActivePotionEffects)
             await Client.QueuePacketAsync(new UpdateMobEffectPacket(EntityId, id, effect.CurrentDuration)
-            { Amplifier = effect.EffectData.Amplifier, Flags = EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon });
+            {
+                Amplifier = effect.EffectData.Amplifier,
+                Flags = EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon
+            });
+        await Client.QueuePacketAsync(new GameEventPacket(
+            ChangeGameStateReason.RainLevelChange, destination.LevelData.Raining ? 1 : 0));
+        await Client.QueuePacketAsync(new GameEventPacket(
+            ChangeGameStateReason.ThunderLevelChange, destination.LevelData.Thundering ? 1 : 0));
+        await Client.QueuePacketAsync(new SetExperiencePacket(this.XpP, this.XpLevel, this.XpTotal));
+        await Client.QueuePacketAsync(new PlayerAbilitiesPacket { Abilities = this.Abilities });
+        await this.EventDispatcher.ExecuteEventAsync(new PlayerTeleportEventArgs(this, this.Server, from, spawn));
         await SaveAsync();
     }
 
@@ -666,7 +692,7 @@ public sealed partial class Player : Avatar, IClientPlayer
     /// it before the change, so the chunk loop can't send chunks of the old level after the respawn packet, or load
     /// the new level's chunks into the old view.
     /// </summary>
-    private async Task RespawnUnderLockAsync(DataKept dataKept)
+    private async Task RespawnUnderLockAsync(DataKept dataKept, bool levelChange = false)
     {
         if (Respawning)
             return;
@@ -735,6 +761,10 @@ public sealed partial class Player : Avatar, IClientPlayer
                 },
                 DataKept = dataKept,
             });
+
+            // Vanilla's level transfer keeps metadata and attributes, then sends the target difficulty.
+            if (levelChange)
+                await Client.QueuePacketAsync(ChangeDifficultyPacket.Of(Level.LevelData));
 
             visiblePlayers.Clear();
 

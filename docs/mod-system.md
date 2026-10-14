@@ -181,8 +181,8 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      data pack's dimension. Vanilla's dimensions are the same generator built from vanilla's stems, and generate as
      before. A level's name and its dimension type are now separate, so clients get the plugin dimension's name in
      login and respawn with its type's height. Levels stay until the server stops; a changed stem applies after a
-     restart. Players get there with `/dimension <id>` or `IPlayer.TeleportToDimensionAsync`; there are no portals
-     (see [plugin-content.md](plugin-content.md#dimensions)).
+     restart. Players get there with `/dimension <id>`, `IPlayer.TeleportToDimensionAsync`, explicit level teleports,
+     or registered portals (see [plugin-content.md](plugin-content.md#dimensions)).
    - Done, slice 4b: plugins' noise settings, density functions and noises, from their `data/<namespace>/worldgen/
      noise_settings`, `density_function` and `noise` files, with surface rules inline as in vanilla. They're read at
      runtime into the same objects the source generator makes of vanilla's (a parity test reads all of vanilla's files
@@ -357,6 +357,11 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      identifier or `#tag`, permission level 2, vanilla's search and messages) and eyes of ender, which fly toward the
      nearest structure of `#minecraft:eye_of_ender_located`, find vanilla's and plugins' structures. Possible later:
      `/locate biome` and `/locate poi`; clamping generation to a dimension type's build range.
+   - Engine foundations, phase 5 travel: explicit level teleports preserve players and entity state. Server plugins
+     register rectangular portals with frame predicates, ignition, routing, scales and waits; the Nether uses the
+     same mechanism. Registrations unload without removing placed blocks. Dedicated portal blocks are supported;
+     sharing vanilla's portal block and general passenger/leash graphs remain in known gaps
+     (see [plugin-content.md](plugin-content.md#travel-and-portals)).
    - Next: Phase 4.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource

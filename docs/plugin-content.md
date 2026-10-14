@@ -604,6 +604,93 @@ Obsidian client:
 - **Unloading.** A plugin's tabs and additions are removed when it unloads and registered again on reload, on both
   sides; the client builds the tabs again each time the creative inventory opens.
 
+## Travel and portals
+
+Move a player or any server entity without replacing its state:
+
+```csharp
+await entity.TeleportAsync(targetLevel, new VectorD(8.5, 72, -3.5), yaw: 90f, pitch: 0f);
+```
+
+The API is `IEntity.TeleportAsync(ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null)`.
+Omitted rotations retain their values. Destination chunks are loaded before the entity leaves; a player's
+level change uses the existing respawn path, keeping attributes, metadata, health, food, inventory, effects,
+attachments and velocity. The shared world's spawn, target level's difficulty, time and weather, and the player's
+abilities and experience are sent again. The `IWorld` and `IEntity` overloads use the same path. Coordinates must be
+finite and
+inside the server's global coordinate limits; they may be above or below the build range.
+
+Supported mounts carry their player passengers, retain the passengers' offsets and remount them after travel.
+A player teleported independently dismounts. Obsidian does not yet model general entity passenger trees or leashes;
+see [known-gaps.md](known-gaps.md#travel-passengers-and-leashes).
+
+Register rectangular portals on the server in `ConfigureRegistry`. A dedicated block makes its placed portals
+unambiguous and keeps them inert when the plugin unloads:
+
+```csharp
+var frame = registry.RegisterBlock("ruby:portal_frame");
+var gateway = registry.RegisterBlock("ruby:crystal_portal", new BlockProperties
+{
+    StateProperties = [StateProperty.Enum("axis", "x", "z")],
+    HasCollision = false,
+    Opaque = false
+});
+
+var portal = registry.RegisterPortal("ruby:crystal_gate", new PortalProperties
+{
+    IsFrame = frame.Is,
+    FrameBlock = frame.DefaultState,
+    PortalBlock = gateway.DefaultState,
+    Igniter = ItemsRegistry.Diamond,
+    WaitTicks = 40,
+    ResolveTarget = level =>
+    {
+        var world = level is IDimension child ? child.ParentWorld : level as IWorld;
+        return level.DimensionName == "ruby:crystal_world"
+            ? world
+            : world?.GetLevel("ruby:crystal_world");
+    }
+});
+```
+
+`IWorld.GetLevel(identifier)` finds its root level or a loaded child dimension. Returning null from
+`ResolveTarget` disables lighting and travel in that source level. The target can also be a level retained from
+`ILevelFactory`. Dimension data is still registered as described in [Dimensions](#dimensions).
+
+`IsFrame` accepts frame materials; `FrameBlock` supplies the material for newly built exits and their safety
+platforms. The portal block needs `axis=x,z` states. Frames have optional corners, a 2–21 wide by 3–21 high
+interior by default; `MinWidth`, `MaxWidth`, `MinHeight` and `MaxHeight` narrow those limits. Builders use the
+minimum width and height. An active portal block belongs to one portal type; vanilla's Nether block is currently
+reserved for its built-in type (see [known-gaps.md](known-gaps.md#sharing-vanillas-portal-block)).
+
+The configured `Igniter` is an item used against the frame, with normal survival consumption. More involved item
+or block callbacks can call `await level.TryLightPortalAsync(portal, interiorPosition)`, returning whether an empty
+frame was lit. Set `IgnitesFromFire` to light frames when fire is placed. Registered portal blocks detect entity
+contact, wait, and prepare travel without holding up the entity tick while target chunks generate.
+
+`WaitTicks` defaults to 80, `CreativeWaitTicks` to 1 and `EntityWaitTicks` to 0, matching vanilla's Nether waits.
+Like vanilla's portal processor, the previous accumulated time is compared before incrementing it, and time
+decays by four per tick out of contact. Successful travel starts a ten-tick player cooldown or a 300-tick entity
+cooldown (ten for a vehicle with a player passenger); remaining inside a portal refreshes it.
+
+Coordinate mapping defaults to source dimension type's `CoordinateScale` divided by the target's.
+Set `CoordinateScale = (source, target) => ...` for another positive, finite mapping.
+`SearchRadius = target => ...` selects 1–128 blocks (128 by default). Existing exits are searched in saved or
+loaded chunks, choosing the closest portal block, with lower Y breaking distance ties. Obsidian has no POI index,
+so it scans chunk palettes. New exits search within 16 blocks for a clear site and use a frame-material platform
+at a safe height if no site exists. Entrance position within the rectangle, axis rotation, velocity and exit
+collision adjustment use the same transit path as Nether portals.
+
+The Nether portal is a built-in registration with obsidian, fire/flint-and-steel/fire-charge ignition, the vanilla
+shape limits, dimension-type coordinate scales, and searches of 16 blocks into the Nether or 128 on return.
+Only that registration names the Nether dimension; general frame, search, building and transit code do not.
+End portals (including credits and their arrival platform) and End gateways keep their specialised paths.
+
+Portal types have process-lifetime identifiers and no numeric registry or extra registry sync: clients know their
+blocks. Unload removes callbacks and transit behaviour, cancels pending destinations, and leaves placed blocks
+alone, including neighbour changes while unloaded. Registering the same identifier after reload returns the same
+`PortalType` and reactivates those blocks. In-flight results from a previous registration cannot complete travel.
+
 ## Chunk tickets
 
 `ILevel.AddChunkTicket(int chunkX, int chunkZ, int radius = 0, bool ticking = true)` returns an `IDisposable`
@@ -2491,8 +2578,9 @@ The rules:
 Players get there with `/dimension <id>`, like `/dimension ruby:crystal_world`, and plugins with
 `IPlayer.TeleportToDimensionAsync("ruby:crystal_world")`, which sends a player to the dimension's spawn. Vanilla
 clients see a plugin's dimension as a level of that name with its dimension type, sent in login and respawn with the
-build height of the type, and its plugin biomes in chunks by their registry ids. There are no portals to plugins'
-dimensions, and only the default world has them.
+build height of the type, and its plugin biomes in chunks by their registry ids. Plugins can register portals to
+these levels (see [Travel and portals](#travel-and-portals)); data-defined plugin dimensions belong to the default
+world.
 
 ## Data packs and overriding vanilla
 

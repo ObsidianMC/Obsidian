@@ -3,6 +3,29 @@
 Gaps found during the mod-system work that don't limit what mods can do: vanilla parity, test plumbing and a
 contract left weaker on purpose. Each entry says what's missing, why it was left and where to start.
 
+## Sharing vanilla's portal block
+
+**Status:** dedicated plugin portal blocks and the generalised Nether registration work; shared block ownership
+is deferred. Each active portal block currently has one portal type. Plugins cannot register another type using
+`minecraft:nether_portal` alongside the built-in Nether type.
+
+A shared block needs persistent per-frame type ownership: after unload, its frame predicate must be released,
+yet the remaining vanilla portal blocks must not begin using Nether behaviour. Guessing from a currently loaded
+predicate would also change behaviour after restart without the plugin.
+
+**Where to start:** persist a frame's portal identifier independently of its blocks, then resolve contact, search,
+frame updates and reload by that identity. Keep ordinary command-placed vanilla portals working.
+
+## Travel passengers and leashes
+
+**Status:** the existing player passengers of mobs travel with their vehicle and remount. General entity passenger
+trees (including the NPC skeleton rider of a skeleton horse) and leashes are not modelled by the shared riding API.
+Unmodelled passenger/leash NBT is preserved, but live travel does not migrate those relationships or drop leash
+items as vanilla does. End portals and gateways retain their existing player-only transit.
+
+**Where to start:** make riding and leashes entity relationships, then traverse passengers with the same level
+teleport API. Capture vanilla's leash detach/drop behaviour before modelling it.
+
 ## Chunk ticket parity
 
 **Status:** plugin tickets implemented; vanilla ticket propagation and persistence deferred.

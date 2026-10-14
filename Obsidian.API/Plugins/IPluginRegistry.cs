@@ -9,6 +9,10 @@ using Obsidian.API.World.Features;
 namespace Obsidian.API.Plugins;
 public interface IPluginRegistry
 {
+    /// <summary>Registers a server portal in the plugin's namespace; its behaviour is removed on unload.</summary>
+    public World.PortalType RegisterPortal(string identifier, World.PortalProperties properties) =>
+        throw new NotSupportedException("This side doesn't support portals.");
+
     /// <summary>Registers persistent world/level data. Call during ConfigureRegistry.</summary>
     public Data.SavedDataType<TValue> RegisterSavedData<TValue>(string identifier, ComponentCodec<TValue> codec);
 

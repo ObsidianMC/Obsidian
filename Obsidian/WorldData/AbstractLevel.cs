@@ -247,6 +247,9 @@ public abstract partial class AbstractLevel : ILevel
 
     public ValueTask<bool> DestroyEntityAsync(IEntity entity)
     {
+        if (entity is Entity concrete)
+            concrete.CancelEntityPortalTravel();
+
         var destroyed = new RemoveEntitiesPacket(entity.EntityId);
 
         this.PacketBroadcaster.QueuePacketToLevel(this, destroyed, entity is IPlayer ? [entity.EntityId] : []);
@@ -642,6 +645,8 @@ public abstract partial class AbstractLevel : ILevel
                 TickStage = $"entity {entity.EntityId} ({entity.GetType().Name})";
                 await entity.TickAsync();
                 await this.TouchPluginBlocksAsync(entity);
+                if (entity is Entity concrete && entity is not Player && entity.Level == this)
+                    await concrete.TickEntityPortalAsync();
             }
         }
 

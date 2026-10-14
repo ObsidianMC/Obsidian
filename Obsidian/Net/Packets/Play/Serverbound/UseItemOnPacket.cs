@@ -196,7 +196,8 @@ public partial class UseItemOnPacket
         }
 
         if (player.Level is AbstractLevel level && currentItem is { Count: > 0 } &&
-            currentItem.Holder.Id is ItemIds.EnderEye or ItemIds.FlintAndSteel or ItemIds.FireCharge)
+            (currentItem.Holder.Id is ItemIds.EnderEye or ItemIds.FlintAndSteel or ItemIds.FireCharge
+                || level.Portals.HasIgniter(currentItem)))
         {
             var used = false;
             if (player.GameMode != GameMode.Spectator && (uint)this.Face <= (uint)BlockFace.East)
@@ -209,8 +210,11 @@ public partial class UseItemOnPacket
                     var existing = await level.GetBlockAsync(firePosition);
                     if (existing is { IsAir: true } && !level.IsOutsideBuildHeight(firePosition.Y))
                     {
-                        used = await level.Portals.TryIgniteAsync(firePosition);
-                        if (!used && await level.GetBlockAsync(firePosition + Vector.Down) is { } below && below.HasFullTopCollisionFace())
+                        used = await level.Portals.TryIgniteAsync(firePosition, igniter: currentItem);
+                        if (!used
+                            && currentItem.Holder.Id is ItemIds.FlintAndSteel or ItemIds.FireCharge
+                            && await level.GetBlockAsync(firePosition + Vector.Down) is IBlock below
+                            && below.HasFullTopCollisionFace())
                         {
                             var fire = below.RegistryId is BlockIds.SoulSand or BlockIds.SoulSoil
                                 ? BlocksRegistry.SoulFire

@@ -7,6 +7,8 @@ public partial class Mob
     private readonly List<Player> passengers = [];
     protected Player? Rider => passengers.FirstOrDefault();
     protected IReadOnlyList<Player> Passengers => passengers;
+    internal IReadOnlyList<Player> TravelPassengers => this.passengers;
+    internal void RestoreTravelPassenger(Player player) => this.Mount(player);
     protected virtual int MaximumPassengers => 1;
 
     protected bool Mount(Player player)

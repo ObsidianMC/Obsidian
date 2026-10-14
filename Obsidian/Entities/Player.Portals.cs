@@ -1,3 +1,4 @@
+using Obsidian.API.World;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -8,14 +9,14 @@ namespace Obsidian.Entities;
 
 public partial class Player
 {
-    private const int SurvivalPortalDelay = 80;
-    private const int CreativePortalDelay = 1;
     private const int PlayerPortalCooldown = 10;
     private const int NetherPortalRelativeFlags = 0x1E0;
     private int portalTime;
     private int portalCooldown;
     private volatile int portalGeneration;
     private int lastPortal;
+    private PortalType? lastPortalType;
+    private int lastPortalBinding;
     private Task<PortalDestination?>? portalDestination;
     private bool returningFromEnd;
     private bool preservePortalMotion;
@@ -23,13 +24,12 @@ public partial class Player
     internal bool AwaitingEndCredits { get; private set; }
     internal int PortalCooldown => this.portalCooldown;
 
-    private sealed record PortalDestination(AbstractLevel Level, VectorD Position, Angle Yaw, Angle Pitch, VectorD Motion,
-        PortalArea Area);
-
     internal async Task CancelPortalTravelAsync()
     {
         this.portalGeneration++;
-        if (this.portalDestination is not { } pending)
+        this.portalTime = 0;
+        this.lastPortalType = null;
+        if (this.portalDestination is not Task<PortalDestination?> pending)
             return;
         this.portalDestination = null;
         (await pending)?.Area.Dispose();
@@ -45,9 +45,13 @@ public partial class Player
             return;
         }
         var contact = await this.FindPortalContactAsync();
-        if (this.portalDestination is { } pending)
+        if (this.lastPortalType is not null && contact?.Type != this.lastPortalType)
+            this.portalGeneration++;
+        if (this.portalDestination is Task<PortalDestination?> pending)
         {
-            if (!this.returningFromEnd && (contact is null || contact.Value.BlockId != this.lastPortal))
+            if (!this.returningFromEnd
+                && (contact is null || contact.Value.BlockId != this.lastPortal
+                    || contact.Value.Type != this.lastPortalType))
                 this.portalGeneration++;
             if (!pending.IsCompleted)
                 return;
@@ -55,7 +59,10 @@ public partial class Player
             var destination = await pending;
             try
             {
-                if (destination is not null && (this.returningFromEnd || contact?.BlockId == this.lastPortal))
+                if (destination is not null
+                    && (destination.Type is null || destination.Type.Generation == destination.Generation)
+                    && (this.returningFromEnd
+                        || contact?.BlockId == this.lastPortal && contact?.Type == this.lastPortalType))
                 {
                     await this.ChangePortalLevelAsync(destination);
                     this.portalCooldown = PlayerPortalCooldown;
@@ -74,16 +81,29 @@ public partial class Player
             this.portalCooldown = contact is null ? this.portalCooldown - 1 : PlayerPortalCooldown;
             return;
         }
-        if (contact is not { } portal)
+        if (contact is not PortalContact portal)
         {
             this.portalTime = Math.Max(0, this.portalTime - 4);
             return;
         }
-        if (portal.BlockId != this.lastPortal)
+        if (portal.BlockId != this.lastPortal || portal.Type != this.lastPortalType
+            || this.lastPortalBinding != (portal.Type?.Generation ?? 0))
             this.portalTime = 0;
+
         this.lastPortal = portal.BlockId;
-        var delay = portal.BlockId == BlockIds.EndPortal ? 0 :
-            this.Abilities.HasFlag(PlayerAbility.Invulnerable) ? CreativePortalDelay : SurvivalPortalDelay;
+        this.lastPortalType = portal.Type;
+        this.lastPortalBinding = portal.Type?.Generation ?? 0;
+        var delay = 0;
+        if (portal.Type is PortalType type)
+        {
+            if (!PortalTypesRegistry.TryEnter(type, out var properties, out var call))
+                return;
+
+            using var behavior = call;
+            delay = this.Abilities.HasFlag(PlayerAbility.Invulnerable)
+                ? properties.CreativeWaitTicks : properties.WaitTicks;
+        }
+
         if (this.portalTime++ < delay)
             return;
 
@@ -108,34 +128,15 @@ public partial class Player
         this.AwaitingEndCredits = false;
         var generation = ++this.portalGeneration;
         this.lastPortal = BlockIds.EndPortal;
+        this.lastPortalType = null;
         this.returningFromEnd = true;
         this.portalDestination =
             this.PreparePortalDestinationAsync((Vector)this.Position, BlockIds.EndPortal, generation);
         return true;
     }
 
-    private async ValueTask<(Vector Position, int BlockId)?> FindPortalContactAsync()
-    {
-        var width = this.Dimension.Width > 0 ? this.Dimension.Width : 0.6;
-        var height = this.Dimension.Height > 0 ? this.Dimension.Height : this.Swimming ? 0.6 : this.Sneaking ? 1.5 : 1.8;
-        var min = new VectorD(this.Position.X - width / 2, this.Position.Y, this.Position.Z - width / 2);
-        var max = new VectorD(this.Position.X + width / 2, this.Position.Y + height, this.Position.Z + width / 2);
-        for (var x = (int)Math.Floor(min.X + 1e-7); x <= (int)Math.Floor(max.X - 1e-7); x++)
-            for (var y = (int)Math.Floor(min.Y + 1e-7); y <= (int)Math.Floor(max.Y - 1e-7); y++)
-                for (var z = (int)Math.Floor(min.Z + 1e-7); z <= (int)Math.Floor(max.Z - 1e-7); z++)
-                {
-                    var position = new Vector(x, y, z);
-                    var block = await this.Level.GetBlockAsync(position);
-                    if (block?.RegistryId == BlockIds.EndPortal && min.Y < y + 0.75 && max.Y > y + 0.375)
-                        return (position, BlockIds.EndPortal);
-                    if (block?.RegistryId != BlockIds.NetherPortal)
-                        continue;
-                    if (block.GetProperty("axis") == "x" ? min.Z < z + 0.625 && max.Z > z + 0.375 :
-                        min.X < x + 0.625 && max.X > x + 0.375)
-                        return (position, BlockIds.NetherPortal);
-                }
-        return null;
-    }
+    private ValueTask<PortalContact?> FindPortalContactAsync() =>
+        PortalTravel.FindContactAsync(this, includeEnd: true);
 
     private async Task<PortalDestination?> PreparePortalDestinationAsync(Vector entrance, int portal, int generation)
     {
@@ -147,10 +148,15 @@ public partial class Player
             this.portalGeneration == generation;
         try
         {
-            var name = portal == BlockIds.EndPortal
-                ? source.DimensionName == "minecraft:the_end" ? world.DimensionName : "minecraft:the_end"
-                : source.DimensionName == "minecraft:the_nether" ? world.DimensionName : "minecraft:the_nether";
-            var destination = name == world.DimensionName ? world : world.dimensions.GetValueOrDefault(name) as AbstractLevel;
+            if (portal != BlockIds.EndPortal)
+            {
+                return this.lastPortalType is PortalType type
+                    ? await PortalTravel.PrepareAsync(this, type, entrance, CanContinue)
+                    : null;
+            }
+
+            var name = source.DimensionName == "minecraft:the_end" ? world.DimensionName : "minecraft:the_end";
+            var destination = world.GetLevel(name) as AbstractLevel;
             if (destination is null)
                 return null;
 
@@ -187,49 +193,7 @@ public partial class Player
                 }
             }
 
-            var entranceBlock = await source.GetBlockAsync(entrance);
-            var axis = entranceBlock?.GetProperty("axis") ?? "x";
-            var sourceFrame = await LevelPortals.RectangleAsync(source.GetBlockAsync, entrance, axis);
-            var scale = source.DimensionType.Element.CoordinateScale
-                / destination.DimensionType.Element.CoordinateScale;
-            var target = new Vector((int)Math.Floor(Math.Clamp(this.Position.X * scale,
-                -LevelPortals.WorldBorderLimit + 1, LevelPortals.WorldBorderLimit - 2)),
-                (int)Math.Floor(this.Position.Y), (int)Math.Floor(Math.Clamp(this.Position.Z * scale,
-                -LevelPortals.WorldBorderLimit + 1, LevelPortals.WorldBorderLimit - 2)));
-            var width = this.Dimension.Width > 0 ? this.Dimension.Width : 0.6;
-            var height = this.Dimension.Height > 0 ? this.Dimension.Height : 1.8;
-            var along = axis == "x" ? this.Position.X - sourceFrame.Origin.X : this.Position.Z - sourceFrame.Origin.Z;
-            var horizontal = sourceFrame.Width > width ? Math.Clamp((along - width / 2) / (sourceFrame.Width - width), 0, 1) : 0.5;
-            var vertical = sourceFrame.Height > height ? Math.Clamp((this.Position.Y - sourceFrame.Origin.Y) / (sourceFrame.Height - height), 0, 1) : 0;
-            var normal = axis == "x" ? this.Position.Z - sourceFrame.Origin.Z - 0.5 : this.Position.X - sourceFrame.Origin.X - 0.5;
-            var frame = await destination.Portals.FindOrCreateExitAsync(target, axis, CanContinue);
-            if (frame is null || !CanContinue())
-                return null;
-            var exit = frame.Value;
-            this.Logger.LogInformation("Nether portal travel for {Username}: {SourceDimension} {Entrance} -> {DestinationDimension}, search target {Target}, exit {Exit}",
-                this.Username, source.DimensionName, entrance, destination.DimensionName, target, exit.Origin);
-            var h = width / 2 + (exit.Width - width) * horizontal;
-            var v = (exit.Height - height) * vertical;
-            var positionAtExit = new VectorD(exit.Origin.X + (exit.Axis == "x" ? h : 0.5 + normal),
-                exit.Origin.Y + v, exit.Origin.Z + (exit.Axis == "z" ? h : 0.5 + normal));
-            var rotation = axis == exit.Axis ? 0f : 90f;
-            var motion = rotation == 0 ? this.Motion : new VectorD(-this.Motion.Z, this.Motion.Y, this.Motion.X);
-            var exitArea = await PortalArea.LoadAsync(destination, (Vector)positionAtExit, 5, CanContinue);
-            if (exitArea is null)
-                return null;
-            try
-            {
-                positionAtExit = PortalCollision.FindFreePosition(exitArea.Read, positionAtExit, width, height);
-                if (CanContinue())
-                    return new(destination, positionAtExit, (float)this.Yaw + rotation, this.Pitch, motion, exitArea);
-                exitArea.Dispose();
-                return null;
-            }
-            catch
-            {
-                exitArea.Dispose();
-                throw;
-            }
+            return null;
         }
         catch (OperationCanceledException)
         {
@@ -242,52 +206,13 @@ public partial class Player
         }
     }
 
-    private async Task ChangePortalLevelAsync(PortalDestination destination)
-    {
-        var previous = this.Level;
-        var from = this.Position;
-        await previous.DestroyEntityAsync(this);
-        previous.TryRemovePlayer(this);
-        foreach (var other in previous.Players.Values.OfType<Player>())
-            other.visiblePlayers.Remove(this);
-
-        // Held from the level change until the respawn resets the client's view (see RespawnUnderLockAsync).
-        await this.chunkUpdates.WaitAsync();
-        try
-        {
-            this.Level = destination.Level;
-            this.LastPosition = from;
-            this.Position = destination.Position;
-            this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
-            this.foodPosition = null;
-            this.Yaw = destination.Yaw;
-            this.Pitch = destination.Pitch;
-            this.Motion = destination.Motion;
-            this.FallDistance = 0;
-            this.CancelWeaponUse();
-            this.combatPosition = null;
-            this.Level.TryAddPlayer(this);
-            this.Level.TryAddEntity(this);
-            this.portalCooldown = PlayerPortalCooldown;
-            this.preservePortalMotion = this.lastPortal == BlockIds.NetherPortal;
-            await this.RespawnUnderLockAsync(DataKept.Attributes | DataKept.Metadata);
-        }
-        finally
-        {
-            this.preservePortalMotion = false;
-            this.chunkUpdates.Release();
-        }
-
-        var world = this.Level is IDimension dimension ? dimension.ParentWorld : this.Level as IWorld;
-        await this.Client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
-        {
-            Dimension = world!.DimensionName,
-            Pos = (Vector)world.LevelData.SpawnPosition
-        }, 0, 0));
-        await this.Client.QueuePacketAsync(new SetTimePacket(this.Level.LevelData.Time, this.Level.LevelData.DayTime, true));
-        await this.Client.QueuePacketAsync(new GameEventPacket(this.Level.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
-        await this.Client.QueuePacketAsync(new PlayerAbilitiesPacket { Abilities = this.Abilities });
-        await this.SendPlayerInfoAsync();
-        await this.EventDispatcher.ExecuteEventAsync(new PlayerTeleportEventArgs(this, this.Server, from, this.Position));
-    }
+    private Task ChangePortalLevelAsync(PortalDestination destination) =>
+        this.TransferDimensionAsync(
+            destination.Level,
+            destination.Position,
+            destination.Yaw,
+            destination.Pitch,
+            destination.Motion,
+            portal: true,
+            relativeMotion: this.lastPortalType is not null);
 }

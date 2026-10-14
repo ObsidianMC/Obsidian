@@ -307,6 +307,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         }
     }
 
+    public ILevel? GetLevel(string identifier) =>
+        this.DimensionName == identifier ? this : this.dimensions.GetValueOrDefault(identifier);
+
     public void RegisterDimension(IDimension dimension)
     {
         if (!dimensions.TryAdd(dimension.DimensionName, dimension))

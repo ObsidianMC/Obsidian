@@ -1,3 +1,5 @@
+using Obsidian.API.World;
+using Obsidian.API.Inventory;
 using System.Threading;
 
 namespace Obsidian.WorldData.Portals;
@@ -19,20 +21,24 @@ internal sealed class LevelPortals(AbstractLevel level)
             while (this.neighborChanges.TryDequeue(out var changed))
             {
                 if ((await level.GetBlockAsync(changed))?.RegistryId is BlockIds.Fire or BlockIds.SoulFire)
-                    await this.TryIgniteCoreAsync(changed);
+                    await this.TryIgniteCoreAsync(changed, fire: true);
                 foreach (var direction in Vector.AllDirections)
                 {
                     var position = changed + direction;
                     var block = await level.GetBlockAsync(position);
-                    if (block?.RegistryId != BlockIds.NetherPortal)
+                    if (block is null || PortalTypesRegistry.ForBlock(block.RegistryId) is not PortalType type
+                        || !PortalTypesRegistry.TryEnter(type, out var properties, out var call))
                         continue;
+
+                    using var behavior = call;
                     var axis = block.GetProperty("axis") ?? "x";
                     // Vanilla ignores changes normal to the portal plane.
                     if ((axis == "x" && direction.Z != 0) || (axis == "z" && direction.X != 0))
                         continue;
                     if (!checkedBlocks.Add(position))
                         continue;
-                    var shape = await NetherPortalShape.FindAsync(level.GetBlockAsync, position, axis, level.MinY);
+                    var shape = await PortalFrame.FindAsync(
+                        level.GetBlockAsync, position, axis, level.MinY, properties);
                     if (shape is { IsComplete: true })
                         continue;
                     await level.SetBlockAsync(position, BlocksRegistry.Air);
@@ -46,14 +52,13 @@ internal sealed class LevelPortals(AbstractLevel level)
         }
     }
 
-    public async ValueTask<bool> TryIgniteAsync(Vector position)
+    public async ValueTask<bool> TryIgniteAsync(
+        Vector position, PortalType? type = null, ItemStack? igniter = null)
     {
-        if (level.DimensionName is not ("minecraft:overworld" or "minecraft:the_nether"))
-            return false;
         await this.changes.WaitAsync();
         try
         {
-            return await this.TryIgniteCoreAsync(position);
+            return await this.TryIgniteCoreAsync(position, type, igniter);
         }
         finally
         {
@@ -61,18 +66,52 @@ internal sealed class LevelPortals(AbstractLevel level)
         }
     }
 
-    private async ValueTask<bool> TryIgniteCoreAsync(Vector position)
+    private async ValueTask<bool> TryIgniteCoreAsync(
+        Vector position, PortalType? requested = null, ItemStack? igniter = null, bool fire = false)
     {
-        if (level.DimensionName is not ("minecraft:overworld" or "minecraft:the_nether"))
-            return false;
-        foreach (var axis in new[] { "x", "z" })
+        foreach (var type in requested is not null ? new[] { requested } : PortalTypesRegistry.ActiveTypes())
         {
-            var shape = await NetherPortalShape.FindAsync(level.GetBlockAsync, position, axis, level.MinY);
-            if (shape is not NetherPortalShape frame || frame.PortalBlocks != 0)
+            if (!PortalTypesRegistry.TryEnter(type, out var properties, out var call))
                 continue;
-            await this.FillAsync(frame);
-            return true;
+
+            using var behavior = call;
+            if (fire && !properties.IgnitesFromFire)
+                continue;
+
+            if (igniter is not null && !(properties.Igniter is Item item && igniter.Is(item))
+                && !(type == PortalTypesRegistry.Nether
+                    && igniter.Holder.Id is ItemIds.FlintAndSteel or ItemIds.FireCharge))
+                continue;
+
+            if (properties.ResolveTarget(level) is null)
+                continue;
+
+            foreach (var axis in new[] { "x", "z" })
+            {
+                var shape = await PortalFrame.FindAsync(level.GetBlockAsync, position, axis, level.MinY, properties);
+                if (shape is not PortalFrame frame || frame.PortalBlocks != 0)
+                    continue;
+
+                await this.FillAsync(frame, properties);
+                return true;
+            }
         }
+
+        return false;
+    }
+
+    internal bool HasIgniter(ItemStack stack)
+    {
+        foreach (var type in PortalTypesRegistry.ActiveTypes())
+        {
+            if (!PortalTypesRegistry.TryEnter(type, out var properties, out var call))
+                continue;
+
+            using var behavior = call;
+            if (properties.Igniter is Item item && stack.Is(item))
+                return true;
+        }
+
         return false;
     }
 
@@ -106,11 +145,14 @@ internal sealed class LevelPortals(AbstractLevel level)
         }
     }
 
-    public async Task<NetherPortalShape?> FindOrCreateExitAsync(Vector target, string axis, Func<bool> canContinue)
+    public async Task<PortalFrame?> FindOrCreateExitAsync(
+        Vector target, string axis, Func<bool> canContinue, PortalProperties properties)
     {
-        var radius = level.DimensionName == "minecraft:the_nether" ? 16 : 128;
+        var radius = properties.SearchRadius?.Invoke(level) ?? 128;
+        if (radius is < 1 or > 128)
+            throw new InvalidOperationException("Portal search radius must be between 1 and 128 blocks.");
         // Existing portals live in saved or loaded chunks; searching must not generate the entire lookup area.
-        using var area = await PortalArea.LoadAsync(level, target, radius + NetherPortalShape.MaxSize, canContinue,
+        using var area = await PortalArea.LoadAsync(level, target, radius + PortalFrame.MaxSize, canContinue,
             generateMissing: false);
         if (area is null)
             return null;
@@ -124,7 +166,7 @@ internal sealed class LevelPortals(AbstractLevel level)
             var nearestDistance = double.MaxValue;
             foreach (var chunk in area.Chunks.Values)
             {
-                foreach (var position in PortalBlocks(chunk))
+                foreach (var position in PortalBlocks(chunk, properties.PortalBlock.RegistryId))
                 {
                     if (Math.Abs(position.X - target.X) > radius || Math.Abs(position.Z - target.Z) > radius ||
                         !InsideBorder(position))
@@ -137,17 +179,17 @@ internal sealed class LevelPortals(AbstractLevel level)
                     }
                 }
             }
-            if (nearest is { } found)
+            if (nearest is Vector found)
             {
                 var existingAxis = area.Read(found).GetProperty("axis") ?? "x";
-                var frame = await NetherPortalShape.FindAsync(area.ReadAsync, found, existingAxis, level.MinY);
+                var frame = await PortalFrame.FindAsync(area.ReadAsync, found, existingAxis, level.MinY, properties);
                 if (frame is { IsComplete: true })
                     return frame;
                 // Command-placed portal blocks still work, even without a frame.
-                return await RectangleAsync(area.ReadAsync, found, existingAxis);
+                return await RectangleAsync(area.ReadAsync, found, existingAxis, properties);
             }
-            using var creationArea = await PortalArea.LoadAsync(level, target, 16 + NetherPortalShape.MaxSize, canContinue);
-            return creationArea is null ? null : await this.CreateExitAsync(creationArea, target, axis);
+            using var creationArea = await PortalArea.LoadAsync(level, target, 16 + PortalFrame.MaxSize, canContinue);
+            return creationArea is null ? null : await this.CreateExitAsync(creationArea, target, axis, properties);
         }
         finally
         {
@@ -155,12 +197,18 @@ internal sealed class LevelPortals(AbstractLevel level)
         }
     }
 
-    private async Task<NetherPortalShape?> CreateExitAsync(PortalArea area, Vector target, string axis)
+    private async Task<PortalFrame?> CreateExitAsync(
+        PortalArea area, Vector target, string axis, PortalProperties properties)
     {
         var step = axis == "x" ? new Vector(1, 0, 0) : new Vector(0, 0, 1);
         var normal = axis == "x" ? new Vector(0, 0, 1) : new Vector(1, 0, 0);
+        // Vanilla's output-affecting site search: radius 16, minimum frame, three-wide clearance,
+        // then a safety platform at Y >= 70 with nine blocks of headroom when no natural site exists.
+        var width = properties.MinWidth;
+        var height = properties.MinHeight;
         var top = Math.Min(level.MinY + level.Height - 1, level.MinY + level.DimensionType.Element.LogicalHeight);
-        Vector? best = null, fallback = null;
+        Vector? best = null;
+        Vector? fallback = null;
         var bestDistance = double.MaxValue;
         var fallbackDistance = double.MaxValue;
         foreach (var offset in Spiral(16))
@@ -179,10 +227,14 @@ internal sealed class LevelPortals(AbstractLevel level)
                 var ceiling = y;
                 while (y > level.MinY && IsFree(area.Read(origin + Vector.Down)))
                     origin.Y = --y;
-                if (y + 4 > top || ceiling - y is > 0 and < 3 || !CanHost(area, origin, step, normal, 0))
+                if (y + height + 1 > top
+                    || ceiling - y > 0 && ceiling - y < height
+                    || !CanHost(area, origin, step, normal, 0, width, height))
                     continue;
                 var distance = DistanceSquared(origin, target);
-                if (CanHost(area, origin, step, normal, -1) && CanHost(area, origin, step, normal, 1) && distance < bestDistance)
+                if (CanHost(area, origin, step, normal, -1, width, height)
+                    && CanHost(area, origin, step, normal, 1, width, height)
+                    && distance < bestDistance)
                 {
                     best = origin;
                     bestDistance = distance;
@@ -198,39 +250,40 @@ internal sealed class LevelPortals(AbstractLevel level)
         if (best is null)
         {
             var min = Math.Max(level.MinY + 1, 70);
-            var max = top - 9;
+            var max = top - Math.Max(9, height + 1);
             if (max < min)
                 return null;
             var origin = target - step;
             origin.Y = Math.Clamp(origin.Y, min, max);
             best = origin;
             for (var side = -1; side <= 1; side++)
-                for (var x = 0; x < 2; x++)
-                    for (var y = -1; y < 3; y++)
+                for (var x = 0; x < width; x++)
+                    for (var y = -1; y < height; y++)
                         await level.SetBlockAsync(origin + step * x + normal * side + Vector.Up * y,
-                            y < 0 ? BlocksRegistry.ObsidianBlock : BlocksRegistry.Air);
+                            y < 0 ? properties.FrameBlock : BlocksRegistry.Air);
         }
-        var frame = new NetherPortalShape(best.Value, axis, 2, 3, 6);
-        for (var x = -1; x < 3; x++)
-            for (var y = -1; y < 4; y++)
-                if (x is -1 or 2 || y is -1 or 3)
+        var frame = new PortalFrame(best.Value, axis, width, height, width * height);
+        for (var x = -1; x < width + 1; x++)
+            for (var y = -1; y < height + 1; y++)
+                if (x == -1 || x == width || y == -1 || y == height)
                     await level.SetBlockAsync(
-                        frame.Origin + step * x + Vector.Up * y, BlocksRegistry.ObsidianBlock, true);
-        await this.FillAsync(frame);
+                        frame.Origin + step * x + Vector.Up * y, properties.FrameBlock, true);
+        await this.FillAsync(frame, properties);
         return frame;
     }
 
-    private async Task FillAsync(NetherPortalShape frame)
+    private async Task FillAsync(PortalFrame frame, PortalProperties properties)
     {
-        var portal = BlocksRegistry.NetherPortal.WithProperty("axis", frame.Axis);
+        var portal = properties.PortalBlock.WithProperty("axis", frame.Axis);
         foreach (var position in frame.Interior())
             await level.SetBlockAsync(position, portal);
     }
 
-    private static bool CanHost(PortalArea area, Vector origin, Vector step, Vector normal, int side)
+    private static bool CanHost(
+        PortalArea area, Vector origin, Vector step, Vector normal, int side, int width, int height)
     {
-        for (var x = -1; x < 3; x++)
-            for (var y = -1; y < 4; y++)
+        for (var x = -1; x < width + 1; x++)
+            for (var y = -1; y < height + 1; y++)
             {
                 var block = area.Read(origin + step * x + normal * side + Vector.Up * y);
                 if (y < 0 ? !block.IsSolid() : !IsFree(block))
@@ -242,12 +295,13 @@ internal sealed class LevelPortals(AbstractLevel level)
     private static bool IsFree(IBlock block) => block.CanBeReplaced() && FluidStateEmpty(block);
     private static bool FluidStateEmpty(IBlock block) => !block.IsLiquid && block.GetProperty("waterlogged") != "true";
     internal const int WorldBorderLimit = 29999984;
-    internal static bool InsideBorder(Vector position) => position.X >= -WorldBorderLimit && position.X < WorldBorderLimit &&
-        position.Z >= -WorldBorderLimit && position.Z < WorldBorderLimit;
+    internal static bool InsideBorder(Vector position) =>
+        position.X >= -WorldBorderLimit && position.X < WorldBorderLimit
+        && position.Z >= -WorldBorderLimit && position.Z < WorldBorderLimit;
     private static double DistanceSquared(Vector a, Vector b) =>
         Math.Pow((double)a.X - b.X, 2) + Math.Pow((double)a.Y - b.Y, 2) + Math.Pow((double)a.Z - b.Z, 2);
 
-    private static IEnumerable<Vector> PortalBlocks(IChunk chunk)
+    private static IEnumerable<Vector> PortalBlocks(IChunk chunk, int portalId)
     {
         // Skip sections whose local palette has never contained a portal.
         var sections = chunk.Sections.ToArray();
@@ -258,21 +312,25 @@ internal sealed class LevelPortals(AbstractLevel level)
                 continue;
             var palette = section.BlockStateContainer.Palette;
             if (palette.BitCount <= 8 && !Enumerable.Range(0, palette.Count)
-                .Any(index => palette.GetValueFromIndex(index)?.RegistryId == BlockIds.NetherPortal))
+                .Any(index => palette.GetValueFromIndex(index)?.RegistryId == portalId))
                 continue;
             for (var y = 0; y < 16; y++)
                 for (var z = 0; z < 16; z++)
                     for (var x = 0; x < 16; x++)
-                        if (section.GetBlock(x, y, z).RegistryId == BlockIds.NetherPortal)
-                            yield return new Vector((chunk.X << 4) + x, chunk.MinY + sectionIndex * 16 + y, (chunk.Z << 4) + z);
+                        if (section.GetBlock(x, y, z).RegistryId == portalId)
+                            yield return new Vector(
+                                (chunk.X << 4) + x, chunk.MinY + sectionIndex * 16 + y, (chunk.Z << 4) + z);
         }
     }
 
-    internal static async ValueTask<NetherPortalShape> RectangleAsync(Func<Vector, ValueTask<IBlock?>> read, Vector position, string axis)
+    internal static async ValueTask<PortalFrame> RectangleAsync(
+        Func<Vector, ValueTask<IBlock?>> read, Vector position, string axis, PortalProperties? properties = null)
     {
         var step = axis == "x" ? new Vector(1, 0, 0) : new Vector(0, 0, 1);
+        properties ??= PortalFrame.NetherProperties;
         async ValueTask<bool> Matches(Vector p) =>
-            (await read(p)) is { RegistryId: BlockIds.NetherPortal } block && block.GetProperty("axis") == axis;
+            await read(p) is IBlock block && block.RegistryId == properties.PortalBlock.RegistryId
+                && block.GetProperty("axis") == axis;
         for (var i = 0; i < 20 && await Matches(position + Vector.Down); i++)
             position += Vector.Down;
         for (var i = 0; i < 20 && await Matches(position - step); i++)

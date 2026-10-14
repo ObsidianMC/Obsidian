@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.Entities;
 
-public class Entity : IEquatable<Entity>, IEntity
+public partial class Entity : IEquatable<Entity>, IEntity
 {
     protected virtual ConcurrentDictionary<string, float> Attributes { get; } = new();
 
@@ -543,58 +543,13 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public override int GetHashCode() => EntityId.GetHashCode();
 
-    public virtual ValueTask TeleportAsync(IWorld world) => default;
+    public virtual ValueTask TeleportAsync(IWorld world) =>
+        this.TeleportAsync(world, world.LevelData.SpawnPosition);
 
-    public async virtual ValueTask TeleportAsync(IEntity to)
-    {
-        if (to is not Entity target)
-            return;
+    public virtual ValueTask TeleportAsync(IEntity to) =>
+        this.TeleportAsync(to.Level, to.Position, to.Yaw, to.Pitch);
 
-        if (to.Level != Level)
-        {
-            await Level.DestroyEntityAsync(this);
-
-            Level = target.Level;
-
-            if (Definition is API.Entities.EntityDefinition definition)
-                Level.SpawnEntity(to.Position, definition);
-            else if (Type is EntityType type)
-                Level.SpawnEntity(to.Position, type);
-
-            return;
-        }
-
-        await this.TeleportAsync(to.Position);
-    }
-
-    public virtual ValueTask TeleportAsync(VectorD pos)
-    {
-        var delta = MoveDelta(Position, pos);
-        if (!IsRelativeMove(delta))
-        {
-            this.PacketBroadcaster.QueuePacketToLevel(this.Level, 0, new TeleportEntityPacket
-            {
-                EntityId = EntityId,
-                OnGround = MovementFlags.HasFlag(MovementFlags.OnGround),
-                Position = pos,
-                Pitch = Pitch,
-                Yaw = Yaw
-            });
-
-            return default;
-        }
-
-        this.PacketBroadcaster.QueuePacketToLevel(this.Level, 0, new MoveEntityPosRotPacket
-        {
-            EntityId = EntityId,
-            Delta = delta,
-            OnGround = MovementFlags.HasFlag(MovementFlags.OnGround),
-            Pitch = Pitch,
-            Yaw = Yaw
-        });
-
-        return default;
-    }
+    public virtual ValueTask TeleportAsync(VectorD pos) => this.TeleportAsync(this.Level, pos);
 
     public virtual void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
     {
