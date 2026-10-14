@@ -175,4 +175,13 @@ public interface IClientRegistry
     /// </exception>
     /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
     public IClientRegistry RegisterMenuScreen(string menuType, Func<IScreenMenu, ModMenuScreen> screen);
+
+    /// <summary>
+    /// Draws an overlay on the HUD, like a minimap or a mana bar, from when <see cref="IClientPlugin.ConfigureClient"/>
+    /// returns until the mod unloads; its <see cref="ModOverlay.Tick"/> updates it while the player is in a world.
+    /// </summary>
+    /// <param name="overlay">The overlay, with the widgets it draws.</param>
+    /// <exception cref="ArgumentException">The mod registered the overlay already.</exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+    public IClientRegistry RegisterOverlay(ModOverlay overlay);
 }

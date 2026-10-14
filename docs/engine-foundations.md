@@ -101,7 +101,7 @@ pushes them into a hopper below.
   `Obsidian.API.Client` gains: widgets (buttons, text fields, scroll bars, slots, item grids, tooltips) and a way to
   open a screen for a menu type or on its own. The client implements them with its own UI, as it does the rest of
   the client API. `MenuScreenProperties` stays for simple menus.
-- **HUD overlays.** Mods register overlays drawn with the same UI API.
+- **HUD overlays.** (done) Mods register overlays drawn with the same UI API.
 - **Creative tabs.** (done) Mods' items in creative tabs, registered on both sides.
 - **Client queries.** (done) Mods read the client's world: block states, their block entities' synced data, entities
   and their metadata.
