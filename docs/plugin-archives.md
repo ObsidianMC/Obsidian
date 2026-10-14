@@ -105,11 +105,12 @@ assets/ruby/lang/en_us.json
 A `pack.mcmeta` is optional; a mod that has one gets its filter and overlays applied like a resource pack's. Only
 `assets/` (and overlays' `assets/`) are read, within the client's resource pack limits. A mod's block draws each face
 in the render layer its texture needs: solid when it's opaque, cutout with fully transparent pixels, and translucent
-with partly transparent ones (an animated texture's most transparent frame decides). A block or item texture's
-`<name>.png.mcmeta` animates it like vanilla's water and fire: its `animation` gives the frame size (`width` and
-`height`, square by default), the `frames` in order (indices into the texture's frames, left to right then top to
-bottom, or `{"index": 2, "time": 5}`; all of them in turn by default), the ticks each one shows (`frametime`, 1 by
-default) and whether one blends into the next (`interpolate`). Version 1 archives have no assets.
+with partly transparent ones (an animated texture's most transparent frame decides). A block, item, entity, GUI
+sprite or particle texture's `<name>.png.mcmeta` animates it like vanilla's water and fire: its `animation` gives
+the frame size (`width` and `height`, square by default), the `frames` in order (indices into the texture's frames,
+left to right then top to bottom, or `{"index": 2, "time": 5}`; all of them in turn by default), the ticks each one
+shows (`frametime`, 1 by default) and whether one blends into the next (`interpolate`). Version 1 archives have no
+assets.
 
 A block model can choose its faces' layer itself with NeoForge's `render_type`, which its children inherit:
 `"render_type": "minecraft:cutout"`, or `solid`, `cutout_mipped` (drawn as cutout) or `translucent`. Names the client

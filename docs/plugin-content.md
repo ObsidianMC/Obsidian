@@ -3468,11 +3468,12 @@ public sealed class RubyMod : PluginBase, IClientPlugin
   then apply by index): with vanilla's grass block item colour (the grass colormap at temperature 0.5 and downfall
   1), its default foliage colour (`#48B518`), dry foliage colour (`#5C3C32`) or water colour (`#3F76E4`), or the
   fixed colour.
-- **Animated textures.** A block or item texture with a `.png.mcmeta` animation plays like vanilla's water, lava and
-  fire, with no code: its frames in the order and for the ticks the animation gives, blended into each other with
-  `interpolate`, advancing once in each frame that runs a client tick, in menus too, and stopping while a server
-  freezes the game. The format is in [plugin-archives.md](plugin-archives.md#assets). Faces using it keep their
-  texture coordinates, since each frame is copied over the texture's place in the atlas.
+- **Animated textures.** A block, item, entity, GUI sprite or particle texture with a `.png.mcmeta` animation plays
+  like vanilla's water, lava and fire, with no code: its frames in the order and for the ticks the animation gives,
+  blended into each other with `interpolate`, advancing once in each frame that runs a client tick, in menus too, and
+  stopping while a server freezes the game. The format is in [plugin-archives.md](plugin-archives.md#assets). Faces
+  and sprites using it keep their texture coordinates, since each frame is copied over the texture's place in its
+  atlas.
 - **Item models.** Items are drawn from their item model definitions, `assets/<ns>/items/<item>.json`, as vanilla
   does since 1.21.4, the same way for mods' items and vanilla's, and for a `minecraft:item_model` component naming
   another definition: in menus, hands, heads, item frames and on the ground. `minecraft:model`, `composite`,
@@ -3486,7 +3487,8 @@ public sealed class RubyMod : PluginBase, IClientPlugin
   shield, bed, banner, head and the like, or a mod's) is drawn by it, and otherwise by its `base` model.
 - **Particle providers.** A mod's particle type is drawn with the sprites of its definition,
   `assets/<ns>/particles/<name>.json` (`{"textures": ["<ns>:spark_0", "<ns>:spark_1"]}`, from
-  `assets/<ns>/textures/particle/`), one picked at random per particle or, with `AnimateSprite`, in turn over its life.
+  `assets/<ns>/textures/particle/`, each animated by its `.png.mcmeta` if it has one), one picked at random per
+  particle or, with `AnimateSprite`, in turn over its life.
   Without a provider its particles behave like vanilla's base particle: they live 4 to 40 ticks, are 0.1 to 0.2 blocks
   wide, drift in a random direction around the velocity sent, and slow down without falling.
   `ParticleProviderProperties` sets their `Lifetime` in ticks, `Gravity` (vanilla's: 1 speeds their fall by 0.04
@@ -3822,9 +3824,10 @@ A mod builds screens in C# from widgets in `Obsidian.API.Client.Screens`, like a
 `AbstractContainerScreen`, and the client draws them with its own widgets, like vanilla's. A screen is a panel of
 `Width` by `Height` GUI pixels (176 by 166 unless set) centred on the darkened game, with an optional `Background`, a
 `GuiImage`: a GUI sprite (`GuiImage.Sprite("ruby:crusher/progress")` for
-`assets/ruby/textures/gui/sprites/crusher/progress.png`, stretched, tiled or nine-sliced by its `.mcmeta` like
-vanilla's) or a region of a whole texture (`GuiImage.Texture("ruby:gui/container/crusher", u, v)`, like vanilla's
-container textures). Widgets are placed in the panel's pixels from its top left, and drawn in the order they were added.
+`assets/ruby/textures/gui/sprites/crusher/progress.png`, stretched, tiled or nine-sliced, and animated, by its
+`.mcmeta` like vanilla's) or a region of a whole texture (`GuiImage.Texture("ruby:gui/container/crusher", u, v)`,
+like vanilla's container textures). Widgets are placed in the panel's pixels from its top left, and drawn in the order
+they were added.
 
 The client calls the screen like vanilla's: `Init` as it opens, after removing its widgets, so it adds them there
 (each time it's shown); `Tick` 20 times a second while it's open, to update the widgets from what changed; and

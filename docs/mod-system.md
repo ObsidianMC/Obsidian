@@ -531,13 +531,14 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      and faces with matrices from the live client instance, since frames are built on the game thread that ticks it.
      Both run in the mod's call guard; a failure is logged and stops the block entity's drawing until its next update.
      They go when the mod unloads. See [plugin-content.md](plugin-content.md#client).
-   - Done, engine phase 4 animated textures, in the block atlas: block and item textures with a `.png.mcmeta`
-     animation, vanilla's (water, lava, fire, portals, sea lanterns, prismarine, magma and the rest) and mods' alike,
-     play their frames in order and for their ticks, blending with `interpolate` the way vanilla's shader does. The
-     atlas keeps each frame's pixels at every mip level, and each frame that runs a client tick advances them once,
-     like vanilla, after which the renderer copies only the sprites that changed into the atlas from a staging buffer
-     before it draws. Left: the GUI and particle atlases' few animated sprites (some GUI icons, the vibration
-     particle) still show their first frame. See [plugin-archives.md](plugin-archives.md#assets).
+   - Done, engine phase 4 animated textures: textures with a `.png.mcmeta` animation, vanilla's and mods' alike,
+     play their frames in order and for their ticks, blending with `interpolate` the way vanilla's shader does, in
+     every atlas: block and item textures (water, lava, fire, portals, sea lanterns, prismarine, magma and the rest),
+     GUI sprites (the music notes, trial and locator bar icons), entity textures (the conduit's wind) and particles
+     (the vibration). Each atlas keeps each frame's pixels at each of its mip levels (the block atlas has five, the
+     others one), and each frame that runs a client tick advances them all once, like vanilla, after which the
+     renderer copies only the sprites that changed into their atlases from a per-frame staging buffer before it
+     draws. See [plugin-archives.md](plugin-archives.md#assets).
    - Done, engine phase 5 chunk tickets: `ILevel.AddChunkTicket` returns a disposable, automatically plugin-owned
      handle keeping a bounded square loaded and optionally simulated without players. Ticking squares load one
      border for block and fluid updates; plugin unload releases all its tickets. Handles are not persistent; mods
