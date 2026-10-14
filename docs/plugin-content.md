@@ -658,7 +658,7 @@ var portal = registry.RegisterPortal("ruby:crystal_gate", new PortalProperties
 `ILevelFactory`. Dimension data is still registered as described in [Dimensions](#dimensions).
 
 `IsFrame` accepts frame materials; `FrameBlock` supplies the material for newly built exits and their safety
-platforms. The portal block needs `axis=x,z` states. Frames have optional corners, a 2–21 wide by 3–21 high
+platforms. The portal block needs `axis=x,z` states. Frames have optional corners, a 2â€“21 wide by 3â€“21 high
 interior by default; `MinWidth`, `MaxWidth`, `MinHeight` and `MaxHeight` narrow those limits. Builders use the
 minimum width and height. An active portal block belongs to one portal type; vanilla's Nether block is currently
 reserved for its built-in type (see [known-gaps.md](known-gaps.md#sharing-vanillas-portal-block)).
@@ -675,7 +675,7 @@ cooldown (ten for a vehicle with a player passenger); remaining inside a portal 
 
 Coordinate mapping defaults to source dimension type's `CoordinateScale` divided by the target's.
 Set `CoordinateScale = (source, target) => ...` for another positive, finite mapping.
-`SearchRadius = target => ...` selects 1–128 blocks (128 by default). Existing exits are searched in saved or
+`SearchRadius = target => ...` selects 1â€“128 blocks (128 by default). Existing exits are searched in saved or
 loaded chunks, choosing the closest portal block, with lower Y breaking distance ties. Obsidian has no POI index,
 so it scans chunk palettes. New exits search within 16 blocks for a clear site and use a frame-material platform
 at a safe height if no site exists. Entrance position within the rectangle, axis rotation, velocity and exit
@@ -3442,8 +3442,8 @@ public sealed class GolemCrystalRenderer : IEntityRenderer
 }
 ```
 
-Plugin entities don't have synced metadata fields of their own yet (engine phase 5): until then, providers read the
-fields every mob has, like its custom name, health or flags.
+Providers read the fields every mob has, like its custom name, health or flags, and the type's own synced data
+fields (see [Synced data fields](#synced-data-fields)) with `TryGetData`.
 
 A model layer has the shape of the layers in the client's `client_models.json`, which are vanilla's model layers:
 
