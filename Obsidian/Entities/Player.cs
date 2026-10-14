@@ -1152,7 +1152,12 @@ public sealed partial class Player : Avatar, IClientPlayer
         try
         {
             if (Volatile.Read(ref this.deferredChunkSequences) != 0)
+            {
+                // A respawn's packets are still draining. Retry on the next tick rather than dropping the update.
+                this.pendingRespawnChunks = true;
+                this.respawnChunkRetryTicks = 1;
                 return false;
+            }
 
             return await this.UpdateChunksUnderLockAsync(unloadAll, distance);
         }
