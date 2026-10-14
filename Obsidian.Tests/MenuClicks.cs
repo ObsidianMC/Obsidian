@@ -950,8 +950,10 @@ public sealed class MenuClicks
             Assert.True(click.Commit());
         }
 
+        // The chest's coal lies nearby too, in one or two item entities as vanilla splits it at random.
         var dropped = Assert.Single(context.World.GetNonPlayerEntitiesInRange(player.Position, 4)
-            .OfType<Obsidian.Entities.ItemEntity>());
+            .OfType<Obsidian.Entities.ItemEntity>()
+            .Where(item => item.Item.Is(ItemsRegistry.Emerald)));
         Assert.Null(dropped.SpawnedBy);
         owner.Close();
         Obsidian.Plugins.PluginEntities.RemoveFrom(context.World, owner);
