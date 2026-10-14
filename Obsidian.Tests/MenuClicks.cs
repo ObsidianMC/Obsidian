@@ -6,6 +6,7 @@ using Obsidian.API.Data;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Loot;
 using Obsidian.API.Registries;
 using Obsidian.Events;
 using Obsidian.Nbt;
@@ -1026,24 +1027,45 @@ public sealed class MenuClicks
             AttachmentStorage.For(reloaded).Load(saved);
             Assert.True(reloaded.GetAttachment(charms)![1]?.Is(ItemsRegistry.Diamond));
 
-            // keep_inventory keeps the items; without it a death drops them, unless the type copies on death.
+            // keep_inventory keeps the items and experience; without it a death drops them like vanilla, the
+            // attachments' too unless the type copies on death.
             await player.CloseContainerAsync();
             player.SetAttachment(kept, [new ItemStack(ItemsRegistry.Emerald, 4)]);
+            player.XpLevel = 20;
+            player.XpTotal = 550;
             context.World.LevelData.GameRules["keep_inventory"] = "true";
             await player.KillAsync(player, "Kept");
             await player.RespawnAsync();
             Assert.NotNull(player.GetAttachment(charms));
+            Assert.Equal(2, player.Inventory.GetItem(9)?.Count);
+            Assert.Equal(20, player.XpLevel);
 
+            var vanishing = new ItemStack(ItemsRegistry.Stick, 1);
+            EnchantmentHelper.Enchant(vanishing, EnchantmentsRegistry.VanishingCurse, 1);
+            player.Inventory.SetItem(45, vanishing);
+            player.Inventory.SetItem(6, new ItemStack(ItemsRegistry.IronChestplate, 1));
             context.World.LevelData.GameRules["keep_inventory"] = "false";
             changes = 0;
             await player.KillAsync(player, "Dropped");
             Assert.False(player.TryGetAttachment(charms, out _));
             Assert.Equal(1, changes);
-            Assert.Contains(context.World.GetNonPlayerEntitiesInRange(player.Position, 4)
-                .OfType<Obsidian.Entities.ItemEntity>(), item => item.Item.Is(ItemsRegistry.Diamond));
+            Assert.All(player.Inventory, Assert.Null);
+            var nearby = context.World.GetNonPlayerEntitiesInRange(player.Position, 4).ToList();
+            var drops = nearby.OfType<Obsidian.Entities.ItemEntity>().Select(item => item.Item).ToList();
+            Assert.Contains(drops, item => item.Is(ItemsRegistry.Diamond));
+            Assert.Contains(drops, item => item.Is(ItemsRegistry.Coal));
+            Assert.Contains(drops, item => item.Is(ItemsRegistry.IronChestplate));
+            Assert.DoesNotContain(drops, item => item.Is(ItemsRegistry.Stick));
+
+            // Vanilla's min(level * 7, 100) points, in its orb sizes.
+            var orbs = nearby.OfType<Obsidian.Entities.ExperienceOrb>().Select(orb => orb.Value);
+            Assert.Equal([3, 7, 17, 73], orbs.Order());
 
             await player.RespawnAsync();
             Assert.Equal(4, Assert.Single(player.GetAttachment(kept)!)?.Count);
+            Assert.Equal((0, 0), (player.XpLevel, player.XpTotal));
+            Assert.All(((TestClient)player.Client).SentPackets.OfType<ContainerSetContentPacket>().Last().Items,
+                Assert.Null);
 
             // Unloaded, the access takes and gives nothing, and the saved items wait for the plugin to return.
             owner.Close();

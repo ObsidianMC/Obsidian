@@ -580,7 +580,7 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      vanishing included, unless `keep_inventory` is on or the type copies on death. `AttachmentType.Changed` tells
      the mod when a holder's value changes, to apply worn items' modifiers and movement abilities. No accessory API,
      slot types or inventory-screen button: a key binding's payload opens the menu (see
-     [known-gaps.md](known-gaps.md#player-death-drops)). See
+     [known-gaps.md](known-gaps.md#mods-menus-in-the-inventory-screen)). See
      [plugin-content.md](plugin-content.md#player-extensions).
    - Done, engine phase 4 entity renderers: `EntityRendererProperties` gains `Layers` drawn over the model and posed
      like it (an `EntityRenderLayer`: the model or another model layer, a texture, a tint and a cutout, translucent or

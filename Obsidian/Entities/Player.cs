@@ -694,12 +694,14 @@ public sealed partial class Player : Avatar, IClientPlayer
         Respawning = true;
         this.ResetAttachmentSync();
         this.ResetAttributeSync();
+        var died = !Alive;
         try
         {
-            if (!Alive)
+            if (died)
             {
                 // Death respawns must create fresh client state rather than retain the dead player's metadata.
                 dataKept = DataKept.None;
+                await this.StartLifeAfterDeathAsync();
                 API.Data.AttachmentStorage.For(this).Respawn(this);
                 CancelEating();
                 CancelWeaponUse();
@@ -783,6 +785,11 @@ public sealed partial class Player : Avatar, IClientPlayer
             Level.TryAddEntity(this);
             await Client.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
             await SendPlayerInfoAsync();
+
+            // Vanilla's respawn sends the experience the new player starts with (see StartLifeAfterDeathAsync).
+            if (died)
+                await Client.QueuePacketAsync(new SetExperiencePacket(this.XpP, this.XpLevel, this.XpTotal));
+
             await TrySpawnPlayerAsync(Position);
             await SynchronizeTrackedEntitiesAsync();
         }
@@ -809,7 +816,7 @@ public sealed partial class Player : Avatar, IClientPlayer
             OpenedContainer = null;
         }
         Vehicle?.Dismount(this);
-        this.DropItemAttachments();
+        await this.DropDeathLootAsync();
         await Client.QueuePacketAsync(new SetHealthPacket(0, FoodLevel, FoodSaturationLevel));
         await Client.QueuePacketAsync(new PlayerCombatKillPacket { PlayerID = EntityId, Message = deathMessage });
         PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket { EntityId = EntityId, Event = 3 }, EntityId);
