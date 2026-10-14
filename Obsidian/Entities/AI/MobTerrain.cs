@@ -121,7 +121,7 @@ internal sealed class MobTerrain(ILevel level)
             if (ignoreWoodenDoors && TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId))
                 continue;
 
-            foreach (var shape in BlockCollisionShapes.Get(block))
+            foreach (var shape in BlockCollisionShapes.Get(level, position, block))
                 yield return (shape.OffsetBy(new VectorD(x, y, z)), position);
         }
     }
@@ -137,7 +137,8 @@ internal sealed class MobTerrain(ILevel level)
         {
             var block = GetBlock(new Vector(x, y, z));
             if (block != null && BlockPhysics.Suffocates(block.GetHashCode()) &&
-                BlockCollisionShapes.Get(block).Any(shape => Overlaps(bounds, shape.OffsetBy(new VectorD(x, y, z)))))
+                BlockCollisionShapes.Get(level, new Vector(x, y, z), block)
+                    .Any(shape => Overlaps(bounds, shape.OffsetBy(new VectorD(x, y, z)))))
                 return true;
         }
         return false;
@@ -171,7 +172,7 @@ internal sealed class MobTerrain(ILevel level)
             if (block == null)
                 return false;
 
-            foreach (var shape in BlockCollisionShapes.Get(block))
+            foreach (var shape in BlockCollisionShapes.Get(level, cell, block))
             {
                 if (IntersectsSegment(shape.OffsetBy((VectorD)cell), start, direction))
                     return false;
@@ -191,26 +192,47 @@ internal sealed class MobTerrain(ILevel level)
     /// </summary>
     public (Vector Position, IBlock Block)? ClipOutlines(VectorD start, VectorD end)
     {
+        return this.RaycastOutlines(start, end) is API.Blocks.BlockShapeHit hit
+            && this.GetBlock(hit.Position) is IBlock block ? (hit.Position, block) : null;
+    }
+
+    /// <summary>Returns the nearest outline box hit and the location within its block.</summary>
+    public API.Blocks.BlockShapeHit? RaycastOutlines(VectorD start, VectorD end)
+    {
         var direction = end - start;
+
+        if (!double.IsFinite(direction.X + direction.Y + direction.Z + start.X + start.Y + start.Z)
+            || direction.MagnitudeSquared() < 1e-12)
+        {
+            return null;
+        }
 
         foreach (var cell in CellsAlong(start, end))
         {
             if (GetBlock(cell) is not IBlock block)
                 return null;
 
-            var state = block.GetHashCode();
-            var (offsetX, offsetY, offsetZ) = BlockPhysics.ShapeOffset(state, cell.X, cell.Z);
-            var corner = new VectorD(cell.X + offsetX, cell.Y + offsetY, cell.Z + offsetZ);
-
-            foreach (var box in BlockPhysics.OutlineBoxes(state))
+            var shapes = BlockEntityShapes.Get(level, cell, block);
+            IReadOnlyList<BoundingBox> boxes;
+            var offset = VectorD.Zero;
+            if (shapes is not null)
             {
-                var shape = new BoundingBox(
-                    corner + new VectorD(box[0], box[1], box[2]),
-                    corner + new VectorD(box[3], box[4], box[5]));
-
-                if (IntersectsSegment(shape, start, direction))
-                    return (cell, block);
+                boxes = shapes.Outline;
             }
+            else
+            {
+                var state = block.GetHashCode();
+                var (offsetX, offsetY, offsetZ) = BlockPhysics.ShapeOffset(state, cell.X, cell.Z);
+                offset = new VectorD(offsetX, offsetY, offsetZ);
+                boxes = BlockPhysics.OutlineBoxes(state)
+                    .Select(box => new BoundingBox(new VectorD(box[0], box[1], box[2]),
+                        new VectorD(box[3], box[4], box[5])))
+                    .ToArray();
+            }
+
+            var hit = BlockShapeRaycast.Clip(boxes, cell, offset, start, direction);
+            if (hit is not null)
+                return hit.Value.Hit;
         }
 
         return null;

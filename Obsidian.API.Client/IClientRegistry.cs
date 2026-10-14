@@ -1,4 +1,5 @@
 using Obsidian.API.Networking;
+using Obsidian.API.Blocks;
 
 namespace Obsidian.API.Client;
 
@@ -19,6 +20,17 @@ namespace Obsidian.API.Client;
 /// </remarks>
 public interface IClientRegistry
 {
+    /// <summary>
+    /// Supplies collision and outline shapes for a block entity type this mod registered. The provider receives
+    /// its latest synced update tag as plain NBT values (nested compounds are dictionaries, lists are lists).
+    /// Return null to use the block state's shapes. Runs at most once per snapshot on a reading thread: keep it
+    /// pure and short, and do not mutate nested values. Registration is staged until ConfigureClient returns and
+    /// removed when the mod unloads.
+    /// </summary>
+    public IClientRegistry RegisterBlockEntityShapes(
+        string blockEntityType,
+        Func<IReadOnlyDictionary<string, object?>, BlockShapes?> provider);
+
     /// <summary>
     /// The client's connection to the server it's playing on, to send the mod's payloads from outside a payload
     /// handler, like when one of its keys is pressed.

@@ -42,6 +42,7 @@ public abstract partial class AbstractLevel
 
         var host = this.BlockEntityHost;
         placed.Host = host;
+        host.Updates[placed] = true;
 
         // A change announced before it was placed is taken in like the others.
         if (placed.HasPendingChange)
@@ -261,6 +262,7 @@ public abstract partial class AbstractLevel
             try
             {
                 blockEntity.SavedData = DataBlockEntity.Copy(BlockEntityNbt.SaveData(blockEntity));
+                blockEntity.ShapeData = blockEntity.GetShapes();
             }
             catch (Exception ex)
             {
@@ -285,20 +287,16 @@ public abstract partial class AbstractLevel
 
         foreach (var blockEntity in host.Updates.Keys)
         {
-            host.Updates.TryRemove(blockEntity, out _);
+            if (!host.Updates.TryRemove(blockEntity, out var initial))
+                continue;
 
             if (blockEntity.IsRemoved)
                 continue;
 
-            NbtCompound? data = null;
-            var answered = this.CallPlugin(blockEntity, blockEntity.Owner as PluginContainer, current =>
-                data = current.GetUpdateData() is NbtCompound update ? DataBlockEntity.Copy(update) : null);
-
-            if (!answered)
+            if (!this.RefreshBlockEntitySnapshot(blockEntity))
                 continue;
 
-            blockEntity.ClientData = data;
-
+            var data = blockEntity.ClientData;
             var type = BlockEntityTypesRegistry.NetworkId(blockEntity.Id);
             if (data is null || type < 0)
                 continue;
@@ -311,9 +309,25 @@ public abstract partial class AbstractLevel
             };
 
             foreach (var player in this.PlayersInRange(blockEntity.BlockPosition))
+            {
+                // Placement can originate on another thread; always recreate the state before its initial data.
+                if (initial && this.GameEventBlock(blockEntity.BlockPosition) is IBlock block)
+                    player.SendPacket(new BlockUpdatePacket(blockEntity.BlockPosition, block.GetHashCode()));
+
                 player.SendPacket(packet);
+            }
         }
     }
+
+    /// <summary>
+    /// Publishes the current shapes and client data on the level tick, including between queued breaks.
+    /// </summary>
+    internal bool RefreshBlockEntitySnapshot(BlockEntity blockEntity) =>
+        !blockEntity.IsRemoved && this.CallPlugin(blockEntity, blockEntity.Owner as PluginContainer, current =>
+        {
+            current.ShapeData = current.GetShapes();
+            current.ClientData = current.GetUpdateData() is NbtCompound update ? DataBlockEntity.Copy(update) : null;
+        });
 
     private async ValueTask TickBlockEntityAsync(BlockEntity blockEntity)
     {
@@ -551,9 +565,9 @@ public abstract partial class AbstractLevel
         public ConcurrentQueue<BlockEntity> Changed { get; } = new();
 
         /// <summary>
-        /// The block entities whose updates the level sends at the end of its tick, each once.
+        /// The block entities whose updates the level sends at tick end; true also sends their initial state first.
         /// </summary>
-        public ConcurrentDictionary<BlockEntity, byte> Updates { get; } = new();
+        public ConcurrentDictionary<BlockEntity, bool> Updates { get; } = new();
 
         public override ILevel Level => level;
 
@@ -562,7 +576,7 @@ public abstract partial class AbstractLevel
         public override void SendUpdate(BlockEntity blockEntity)
         {
             if (!blockEntity.IsRemoved)
-                this.Updates.TryAdd(blockEntity, 0);
+                this.Updates.TryAdd(blockEntity, false);
         }
     }
 

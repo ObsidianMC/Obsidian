@@ -137,6 +137,7 @@ internal static partial class BlockEntityNbt
         blockEntity.Load(data);
         blockEntity.SavedData = DataBlockEntity.Copy(data);
         blockEntity.ClientData = CopyOrNull(blockEntity.GetUpdateData());
+        blockEntity.ShapeData = blockEntity.GetShapes();
     }
 
     /// <summary>
@@ -193,6 +194,7 @@ internal static partial class BlockEntityNbt
             }
 
             blockEntity.ClientData = CopyOrNull(blockEntity.GetUpdateData());
+            blockEntity.ShapeData = blockEntity.GetShapes();
 
             return blockEntity;
         }

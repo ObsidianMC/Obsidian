@@ -339,7 +339,8 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
    packs, and answers NeoForge's handshake and registry sync.
    - Slice 4a, mods on the client (done): the Obsidian client loads `.obby` mods whose side is `client` or `both`
      from its `mods` folder at startup, with the server's archive, metadata and dependency rules (the same code, with
-     the client's side), and runs their `ConfigureServices` and `ConfigureRegistry`. Blocks, items and entity types
+     the client's side), and runs their `ConfigureServices` and `ConfigureRegistry`. Blocks, items, block entity types
+     and entity types
      register exactly as on a server, with ids after vanilla's in load order; commands,
      events, tags and worldgen are a server's and do nothing there, and the server's lifecycle callbacks aren't
      called. A mod that fails to load is logged and skipped, with the mods that require it. Mods come only from the
@@ -421,7 +422,8 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      colours unless their definitions have tints), and draws its entity types (`EntityRendererProperties`: a model
      layer from `assets/<ns>/models/entity/`, in the shape of the client's `client_models.json` layers, a texture,
      scale and shadow radius; heads follow the look and legs swing, by part name). Like the server's content, a mod's
-     bindings, tints and renderers are its own (in its namespace, for its blocks and entity types); they take effect
+     bindings, tints, renderers and block entity shape providers are its own (in its namespace, for its content);
+     they take effect
      only once `ConfigureClient` returns, and the registry is sealed then. See
      [plugin-content.md](plugin-content.md#client).
    - Done, particles and menus: the client registers its mods' particle types and menu types like the server and

@@ -56,7 +56,7 @@ The base every mod needs: blocks with state that save, tick, react and sync.
   `fluid_ticks`, and neighbour and shape updates sent when players, plugins or explosions change blocks, so fences,
   torches and plugin blocks react at runtime. Vanilla's blocks get their shape rules over time; the mechanism comes
   first.
-- **Shapes from data.** A block entity can give its block's collision and outline shapes, and the hooks get where
+- **Shapes from data.** (done) A block entity can give its block's collision and outline shapes, and the hooks get where
   on the block a player clicked, so one block can hold several parts (AE2's cable bus holds a cable and a part on
   each side, each selected and broken on its own).
 - **Drops.** Block drops from loot tables (vanilla's and a plugin's `data/<ns>/loot_table`), with tool checks,
