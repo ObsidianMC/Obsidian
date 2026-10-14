@@ -794,6 +794,7 @@ public sealed partial class Client : IClient
         {
             // No longer a viewer of what they had open, so other viewers' clicks don't update them.
             player.OpenedContainer = null;
+            player.RunMenusClosed();
             leave.SetResult();
         }
     }

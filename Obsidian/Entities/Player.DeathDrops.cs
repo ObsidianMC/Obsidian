@@ -222,6 +222,8 @@ public partial class Player
             await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = windowId });
         }
 
+        this.RunMenusClosed();
+
         await MainEventHandler.RefreshWindowAsync(this, this.Inventory, stateId: 0);
 
         void Take(BaseContainer container, int start, int end)

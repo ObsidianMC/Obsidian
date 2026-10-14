@@ -25,13 +25,25 @@ public sealed record BlockModelData
 
 /// <summary>
 /// A model drawn in a block, turned like a blockstate file's model: <paramref name="X"/> then <paramref name="Y"/>
-/// degrees clockwise (0, 90, 180 or 270) looking along the axis, its faces' cull faces turning with it.
+/// degrees clockwise (0, 90, 180 or 270) looking along the axis, its faces' cull faces turning with it; then moved by
+/// <see cref="Offset"/>.
 /// </summary>
 /// <param name="Model">The model, one of <see cref="BlockEntityModelProperties.Models"/>.</param>
 /// <param name="X">The rotation about the X axis, in degrees.</param>
 /// <param name="Y">The rotation about the Y axis, in degrees.</param>
 /// <param name="UvLock">Whether textures keep their world orientation as the model turns.</param>
-public readonly record struct BlockModelPart(string Model, int X = 0, int Y = 0, bool UvLock = false);
+public readonly record struct BlockModelPart(string Model, int X = 0, int Y = 0, bool UvLock = false)
+{
+    /// <summary>
+    /// How far the model is moved after it's turned, in sixteenths of a block on each axis, from -16 to 16: to draw
+    /// one model in each of a drive's slots, say. Its textures move with it. A moved face keeps its cull face only
+    /// while it still lies within that side of the block.
+    /// </summary>
+    /// <remarks>
+    /// Drawn by a block entity or item renderer, the model is moved before the renderer's transform.
+    /// </remarks>
+    public VectorF Offset { get; init; }
+}
 
 /// <summary>
 /// A face drawn in a block, like a face of a block model's element: the <paramref name="Face"/> side of the box from

@@ -110,6 +110,9 @@ public sealed partial class Player : Avatar, IClientPlayer
                 if (ReferenceEquals(field, value))
                     return;
 
+                if (field is MenuContainer closing)
+                    this.RecordMenuClosed(closing);
+
                 field?.RemoveViewer(this);
                 value?.AddViewer(this);
                 field = value;
@@ -315,7 +318,11 @@ public sealed partial class Player : Avatar, IClientPlayer
             };
         }
 
-        if (this.TryShow(container) is not byte nextId)
+        var shown = this.TryShow(container);
+
+        // The menu it opened over closed.
+        this.RunMenusClosed();
+        if (shown is not byte nextId)
             return;
 
         await Client.QueuePacketAsync(container is MenuContainer opening
@@ -401,6 +408,10 @@ public sealed partial class Player : Avatar, IClientPlayer
 
         byte Show()
         {
+            // Opening the open menu again ends its last opening, which its Closed hears of.
+            if (container is MenuContainer && ReferenceEquals(this.OpenedContainer, container))
+                this.OpenedContainer = null;
+
             this.OpenedContainer = container;
 
             return this.GetNextContainerId();
@@ -440,6 +451,7 @@ public sealed partial class Player : Avatar, IClientPlayer
         if (ReferenceEquals(this.OpenedContainer, container))
             this.OpenedContainer = null;
 
+        this.RunMenusClosed();
         await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = containerId });
     }
 
