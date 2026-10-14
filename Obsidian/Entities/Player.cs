@@ -324,6 +324,9 @@ public sealed partial class Player : Avatar, IClientPlayer
         if (container is BrewingStand stand)
             await AbstractLevel.SendBrewingPropertiesAsync(this, stand);
 
+        if (container is SmeltingContainer furnace)
+            await AbstractLevel.SendFurnacePropertiesAsync(this, furnace);
+
         // A plugin's menu can close as it opens, when its plugin unloads, and a block entity's container can be retired
         // as it opens, when its block goes; the screen that just opened closes too.
         if (this.CurrentContainerId == nextId && container.ShowsRetired)

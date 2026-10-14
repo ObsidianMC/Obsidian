@@ -17,6 +17,7 @@ internal sealed class RecipeSet
     private readonly FrozenDictionary<int, List<IRecipeWithResult>> craftingRecipes;
 
     private readonly SmeltingRecipe[] cookingRecipes;
+    private readonly FrozenDictionary<(CraftingType, int), SmeltingRecipe[]> cookingInputs;
 
     /// <param name="recipes">Every recipe, by identifier.</param>
     /// <param name="book">The recipe book's entries by display id, <c>null</c> where an id's recipe is gone.</param>
@@ -37,7 +38,12 @@ internal sealed class RecipeSet
                 ? shaped.Pattern.Sum(row => row.Count(symbol => symbol != ' '))
                 : ((ShapelessRecipe)recipe).Ingredients.Count)
             .ToFrozenDictionary(group => group.Key, group => group.ToList());
-        this.cookingRecipes = [.. recipes.Values.OfType<SmeltingRecipe>()];
+        this.cookingRecipes = [.. recipes.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => pair.Value).OfType<SmeltingRecipe>()];
+        this.cookingInputs = this.cookingRecipes
+            .SelectMany(recipe => recipe.Ingredient.Select(item => ((recipe.Type, (int)item.Holder.Id), Recipe: recipe)))
+            .GroupBy(pair => pair.Item1)
+            .ToFrozenDictionary(group => group.Key, group => group.Select(pair => pair.Recipe).Distinct().ToArray());
         this.UpdatePacket = new(recipes);
     }
 
@@ -113,7 +119,23 @@ internal sealed class RecipeSet
     /// takes as its ingredient.
     /// </summary>
     public bool IsCookingIngredient(CraftingType type, ItemStack item) =>
-        this.cookingRecipes.Any(recipe => recipe.Type == type && MatchesIngredient(recipe.Ingredient, item));
+        this.cookingInputs.ContainsKey((type, item.Holder.Id));
+
+    /// <summary>Tries the last matching identifier first, like vanilla's cached cooking lookup.</summary>
+    internal SmeltingRecipe? FindCooking(CraftingType type, ItemStack item, string? previous = null)
+    {
+        if (previous is not null
+            && this.Recipes.GetValueOrDefault(previous) is SmeltingRecipe cached
+            && cached.Type == type
+            && MatchesIngredient(cached.Ingredient, item))
+        {
+            return cached;
+        }
+
+        return this.cookingInputs.TryGetValue((type, item.Holder.Id), out var candidates)
+            ? candidates.FirstOrDefault()
+            : null;
+    }
 
     private static bool MatchesShaped(
         BaseContainer grid,

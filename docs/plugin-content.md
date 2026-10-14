@@ -737,9 +737,14 @@ changing the original recipe afterward has no effect:
   the others in the order they were first registered, so a plugin's recipe can't take over a vanilla pattern.
 - Every player's recipe book shows them, and placing one from the book fills the grid, or shows its ghost when the
   player lacks the items. Obsidian has no recipe unlocking: every player knows every crafting recipe.
-- Furnaces, blast furnaces and smokers take a smelting, blasting or smoking recipe's ingredient when it's
-  shift-clicked into them. Obsidian doesn't cook yet, nor use stonecutting, smithing or campfire recipes, vanilla's
-  or plugins': those are kept but unused.
+- Furnaces, blast furnaces and smokers cook smelting, blasting and smoking recipes with their recipe's cook time,
+  vanilla fuel durations (halved in the fast machines), lit state and menu progress. Cooking progress, remaining
+  fuel and recipe-use counts survive saving. Taking output awards the accumulated experience, including output
+  extracted earlier by hoppers. History for a temporarily missing recipe stays saved until it returns.
+- Using a campfire with a campfire-cooking ingredient places one item in its first free slot. Its four items cook
+  independently while lit and drop their results; an unlit fire cools progress by two ticks per tick.
+- Clients receive vanilla's seven recipe input property sets and stonecutter choices on join and when recipes
+  change. Stonecutter and smithing result slots are still unimplemented.
 
 An identifier (in snake case) names one recipe: registering a taken one throws. Players online follow changes without
 reconnecting. Registered recipes are added to their books with vanilla's recipe book packet (without the new-recipe

@@ -120,6 +120,8 @@ public partial class ContainerBlockEntity(BaseContainer inventory) : BlockEntity
     // What Save writes, under the inventory's lock and the loot lock.
     private void SaveContents(NbtCompound tag)
     {
+        this.SaveMachineState(tag);
+
         if (this.Inventory.CustomName is not null)
             tag.Add(this.Inventory.CustomName.ToNbt("CustomName"));
 
@@ -147,5 +149,10 @@ public partial class ContainerBlockEntity(BaseContainer inventory) : BlockEntity
         }
 
         tag.Add(items);
+    }
+
+    // Vanilla machines save their counters atomically with their items, under the inventory and loot locks.
+    internal virtual void SaveMachineState(NbtCompound tag)
+    {
     }
 }

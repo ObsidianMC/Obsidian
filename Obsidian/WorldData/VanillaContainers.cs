@@ -11,7 +11,7 @@ namespace Obsidian.WorldData;
 /// (<c>AbstractFurnaceBlockEntity</c>'s <c>WorldlyContainer</c>): the top reaches the ingredient, the sides the fuel,
 /// the bottom the result and then the fuel (to take out an empty bucket).
 /// </summary>
-internal sealed class FurnaceBlockEntity(SmeltingContainer furnace) : VanillaContainerBlockEntity(furnace)
+internal sealed partial class FurnaceBlockEntity : VanillaContainerBlockEntity
 {
     private const int IngredientSlot = 0;
     private const int FuelSlot = 1;

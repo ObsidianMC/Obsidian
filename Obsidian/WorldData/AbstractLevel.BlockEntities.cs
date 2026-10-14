@@ -478,6 +478,15 @@ public abstract partial class AbstractLevel
                 foreach (var item in contents)
                     this.DropItemStack(container.BlockPosition, item);
 
+                if (container is FurnaceBlockEntity furnace)
+                {
+                    int experience;
+                    using (furnace.Inventory.Lock())
+                        experience = furnace.TakeExperience(this.CookingRecipes, Globals.Random.NextSingle);
+
+                    this.DropCookingExperience((VectorD)furnace.BlockPosition, experience);
+                }
+
                 break;
             case DataBlockEntity data when data.KeptContainer() is ContainerBlockEntity kept:
                 await this.RemoveContentsAsync(kept);
