@@ -1,3 +1,5 @@
+using Obsidian.API.Client.Razor;
+
 namespace Obsidian.API.Client.Screens;
 
 /// <summary>
@@ -13,4 +15,17 @@ public interface IClientScreens
     /// The screen is a <see cref="ModMenuScreen"/>, which only opens with its menu.
     /// </exception>
     public void Open(ModScreen screen);
+
+    /// <summary>
+    /// Opens a screen of the mod's built in Razor, like <see cref="Open(ModScreen)"/>: a new
+    /// <typeparamref name="TComponent"/>, given <paramref name="parameters"/> and the screen's
+    /// <see cref="ScreenContext"/>.
+    /// </summary>
+    /// <param name="parameters">The component's parameters by name, copied as it opens; null for none.</param>
+    public void Open<TComponent>(IReadOnlyDictionary<string, object?>? parameters = null)
+        where TComponent : ModComponent
+    {
+        var copied = parameters?.ToDictionary() ?? new Dictionary<string, object?>();
+        this.Open(new ComponentScreen(typeof(TComponent), copied));
+    }
 }

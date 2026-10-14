@@ -491,6 +491,15 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      extra open data and clicks its buttons. A `ModScreen` of its own opens with `IClientRegistry.Screens`. The
      client draws them with its own widgets, calls them inside calls into the mod (closing one that fails), and
      closes them when the mod unloads. See [plugin-content.md](plugin-content.md#screens-in-code).
+   - Done, screens in Razor: a mod can build the same screens as `.razor` components compiled into its assembly
+     (`Microsoft.NET.Sdk.Razor`), registered with `RegisterMenuScreen<TComponent>(menuType)` or opened with
+     `Screens.Open<TComponent>()`. `Obsidian.API.Client.Razor` has the building blocks (panels, labels, images,
+     progress bars, buttons, text fields, scroll bars, slot and item grids, tooltips), which the client draws with its
+     own widgets, and `ModComponent`, the components' base, whose lifecycle, rendering and event handlers run inside
+     calls into the mod; a screen's `ScreenContext` gives its menu and panel. The client hosts them like screens in
+     code (failures close them, unloading closes and forgets them) and forgets the mod's component types in Blazor's
+     process-wide caches as it unloads, so that its load context is collected; the sample's grinder uses one. See
+     [plugin-content.md](plugin-content.md#screens-in-razor).
    - Done, engine phase 4 model data: `IClientRegistry.RegisterBlockEntityModel` gives a mod's block entity type
      a provider that, from its synced update data and block state, adds declared block models (turned like a
      blockstate's, with `uvlock`) and textured faces to its block's model, or replaces it, like NeoForge's model

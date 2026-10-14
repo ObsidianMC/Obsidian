@@ -271,6 +271,24 @@ public interface IClientRegistry
     public IClientRegistry RegisterMenuScreen(string menuType, Func<IScreenMenu, ModMenuScreen> screen);
 
     /// <summary>
+    /// Shows a mod's menu type with a screen built in Razor: the client renders <typeparamref name="TComponent"/>
+    /// in the menu's container screen each time the server opens the menu, with the menu in its
+    /// <see cref="Razor.ScreenContext"/>. It's the Razor form of
+    /// <see cref="RegisterMenuScreen(string, Func{IScreenMenu, ModMenuScreen})"/>, hosted the same way.
+    /// </summary>
+    /// <typeparam name="TComponent">The screen's component.</typeparam>
+    /// <param name="menuType">
+    /// The identifier of a menu type the mod registered, like <c>examplemod:grinder</c>.
+    /// </param>
+    /// <exception cref="ArgumentException">
+    /// The menu type isn't one the mod registered, or the mod gave it a screen already.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+    public IClientRegistry RegisterMenuScreen<TComponent>(string menuType)
+        where TComponent : Razor.ModComponent =>
+        this.RegisterMenuScreen(menuType, menu => new Razor.ComponentMenuScreen(menu, typeof(TComponent)));
+
+    /// <summary>
     /// Draws an overlay on the HUD, like a minimap or a mana bar, from when <see cref="IClientPlugin.ConfigureClient"/>
     /// returns until the mod unloads; its <see cref="ModOverlay.Tick"/> updates it while the player is in a world.
     /// </summary>

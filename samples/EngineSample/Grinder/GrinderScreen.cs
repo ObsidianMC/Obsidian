@@ -5,13 +5,20 @@ using Obsidian.API.Inventory;
 namespace EngineSample.Grinder;
 
 /// <summary>
-/// Phase 3's screen, the client's side of <see cref="GrinderMenu"/>: the grinder's input and output slots with a
-/// progress arrow between them, a button toggling its mode, and the recipes it grinds, which a search field filters
-/// and a scroll bar scrolls. It's drawn with vanilla's GUI textures, so the sample ships none.
+/// Phase 3's screen built in code, the client's side of <see cref="GrinderMenu"/>: the grinder's input and output
+/// slots with a progress arrow between them, a button toggling its mode, and the recipes it grinds, which a search
+/// field filters and a scroll bar scrolls. It's drawn with vanilla's GUI textures, so the sample ships none.
 /// </summary>
 /// <remarks>
+/// <para>
+/// The sample registers the same screen built in Razor, <c>GrinderView.razor</c>; this one shows the code form. To
+/// use it instead, register it with <c>registry.RegisterMenuScreen(GrinderMenu.Identifier, menu => new
+/// GrinderScreen(menu))</c>.
+/// </para>
+/// <para>
 /// The client makes one each time the server opens the menu, and calls <see cref="Init"/> each time it's shown, after
 /// removing its widgets: the widgets it keeps are fields, whose events are handled once, in the constructor.
+/// </para>
 /// </remarks>
 public sealed class GrinderScreen : ModMenuScreen
 {
@@ -153,8 +160,9 @@ public sealed class GrinderScreen : ModMenuScreen
         this.list.FirstRow = 0;
     }
 
-    // Reads what GrinderMenu.WriteOpenData wrote: the count, then each recipe's ingredient and result.
-    private static ItemStack[][] ReadRecipes(INetStreamReader reader)
+    // Reads what GrinderMenu.WriteOpenData wrote: the count, then each recipe's ingredient and result. GrinderView
+    // reads it too.
+    internal static ItemStack[][] ReadRecipes(INetStreamReader reader)
     {
         var recipes = new ItemStack[reader.ReadVarInt()][];
         for (var i = 0; i < recipes.Length; i++)

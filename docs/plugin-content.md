@@ -2887,7 +2887,8 @@ The rules:
 A mod whose side is `client` or `both` also runs on the Obsidian client, which registers its content like a server
 (see [mod-system.md](mod-system.md)). Its plugin class implements `IClientPlugin` to register its client side. The
 client API is its own assembly and package, `Obsidian.API.Client`, which the mod references besides `Obsidian.API`;
-it's interfaces and data only, and servers ship it too, so the same plugin class loads on them. The client calls
+it's interfaces, data and Razor building blocks (with the ASP.NET Core framework they're built on), and servers ship
+it too, so the same plugin class loads on them. The client calls
 `ConfigureClient` when it loads its mods, after `ConfigureRegistry`: at startup, and on a new instance of the plugin
 when the player reloads them (see below); servers never call it, so a `both` mod runs on a server without any client
 code.
@@ -3626,6 +3627,138 @@ A mod's own screens, like settings, aren't tied to a menu: subclass `ModScreen` 
 `registry.Screens.Open(screen)`, from a key binding's `Pressed` or a payload handler (from another thread it opens on
 the game's shortly after). It shows over the game, or over the screen shown, which Escape or `Close()` goes back to.
 Like `Connection`, `registry.Screens` stays usable after `ConfigureClient`.
+
+### Screens in Razor
+
+```razor
+@* Crusher.razor: the crusher's screen of Screens in code, built in Razor. *@
+<SlotGrid X="26" Y="35" Columns="3" />
+<ProgressBar X="79" Y="34" Width="24" Height="16" Source="Arrow" Progress="@(this.Menu.GetData(0) / 200f)" />
+<Button X="8"
+        Y="58"
+        Width="50"
+        Text="@this.Screen.Translate(this.paused ? "ruby.crusher.run" : "ruby.crusher.pause")"
+        OnClick="this.TogglePause" />
+<TextField X="110" Y="18" Width="54" Height="10" Bordered="false" Value="@this.search" ValueChanged="this.Search" />
+<ItemGrid X="110" Y="30" Columns="3" Rows="2" Items="this.shown" @bind-FirstRow="this.row" />
+<ScrollBar X="166" Y="30" Height="34" MaxRow="@((this.shown.Length + 2) / 3 - 2)" @bind-Row="this.row" />
+
+@code {
+    private static readonly GuiImage Arrow = GuiImage.Sprite("ruby:crusher/progress");
+    private static readonly Item[] ores = [ItemsRegistry.IronOre, ItemsRegistry.GoldOre, ItemsRegistry.CopperOre];
+
+    private ItemStack[] shown = [];
+    private string search = string.Empty;
+    private int row;
+    private bool paused;
+
+    // The client's cascading value: the screen's panel and its menu.
+    [CascadingParameter]
+    public ScreenContext Screen { get; set; } = null!;
+
+    private IScreenMenu Menu => this.Screen.Menu!;
+
+    protected override void OnInitialized()
+    {
+        this.Screen.Background = GuiImage.Texture("ruby:gui/container/crusher");
+        this.Search(string.Empty);
+    }
+
+    private void TogglePause()
+    {
+        // The menu's ClickButton pauses on 0 and runs on anything else.
+        this.paused = !this.paused;
+        this.Menu.ClickButton(this.paused ? 0 : 1);
+    }
+
+    private void Search(string text)
+    {
+        this.search = text;
+        this.shown = [.. ores.Where(ore => ore.UnlocalizedName.Contains(text)).Select(ore => new ItemStack(ore))];
+        this.row = 0;
+    }
+}
+```
+
+```csharp
+registry.RegisterMenuScreen<Crusher>("ruby:crusher");
+```
+
+A mod can build its screens in Razor rather than in code: `.razor` components, which the Razor SDK compiles into the
+mod's assembly when the mod builds, so the client loads and unloads them with the rest of the mod's code. The mod's
+project uses the Razor SDK, and its components inherit `ModComponent` (set once in `_Imports.razor`):
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- A mod has no web assets: its output is what its archive holds. -->
+    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The server or client provides the API, so it isn't packed with the mod. Obsidian.API.Client brings the
+         ASP.NET Core framework, whose Blazor components Razor screens are built on. -->
+    <PackageReference Include="Obsidian.API" Version="1.0.0" ExcludeAssets="runtime" />
+    <PackageReference Include="Obsidian.API.Client" Version="1.0.0" ExcludeAssets="runtime" />
+  </ItemGroup>
+</Project>
+```
+
+```razor
+@* _Imports.razor *@
+@using Microsoft.AspNetCore.Components
+@using Obsidian.API
+@using Obsidian.API.Client.Razor
+@using Obsidian.API.Client.Screens
+@using Obsidian.API.Inventory
+@using Obsidian.API.Registries
+@inherits ModComponent
+```
+
+A screen in Razor is the same screen as one in code, hosted the same way: `RegisterMenuScreen<TComponent>(menuType)`
+shows a menu type with a new `TComponent` each time the server opens the menu, in its container screen with the
+menu's title, slots and the player's inventory, and `registry.Screens.Open<TComponent>(parameters)` opens a mod's own
+screen, given the parameters by name. The component draws with the building blocks of `Obsidian.API.Client.Razor`,
+the Razor counterparts of the widgets in [Screens in code](#screens-in-code), which the client draws with its own
+widgets; HTML elements draw nothing.
+
+- **`Panel`**: a box holding parts, its child content, at their positions or stacked by its `Flow` (`Column` or
+  `Row`, with `Gap`, `Padding` and `Align`), optionally filled with a `Color` and clipping what's outside it (`Clip`).
+- **`Label`**, **`Image`**, **`ProgressBar`**: like the widgets, with a `Source` `GuiImage` at the part's size.
+- **`Button`**: `Text`, `Active`, and `OnClick`.
+- **`TextField`**: `Value` and `ValueChanged` (`@bind-Value`), `MaxLength`, `Hint` and `Bordered`.
+- **`ScrollBar`**: `Row` and `RowChanged` (`@bind-Row`) up to `MaxRow`, with its `Handle` sprite; the wheel over it
+  scrolls it.
+- **`SlotGrid`**: the menu's slots from `FirstSlot`, `Columns` by `Rows`. Its position is from the top left of the
+  screen's panel wherever it is in the markup, since the container screen draws the slots.
+- **`ItemGrid`**: `Items`, `Columns` by `Rows` from `FirstRow`, with their tooltips; `OnClick` with the cell, the
+  button and Shift, and the wheel over it raises `FirstRowChanged` (`@bind-FirstRow`, to the same field as a scroll
+  bar's `@bind-Row`).
+- **Tooltips**: any part's `Tooltip` text, like a widget's.
+
+Each part has `X`, `Y`, `Width` and `Height` in GUI pixels from the top left of the panel it's in (or offsets in a
+stacking panel), with null sizes meaning its natural size or its type's default (buttons and text fields 200 by 20,
+scroll bars 12 wide), and `Visible`. A mod's own components, built from parts, nest like any Razor components.
+
+The screen's components get its `ScreenContext` as a cascading value: the `Menu` (the same `IScreenMenu` as a
+`ModMenuScreen`'s; null for a mod's own screen), the panel's `Width`, `Height` and `Background`, for a menu's screen
+its `Inventory`, `Title` and `InventoryLabel` positions, `Close()`, `Translate` and `TextWidth`. Set the panel's
+properties as the component initializes; the client lays the screen out again after its first render. The client
+redraws the screen every client tick, and components taking the context render again with it, so markup reading the
+menu's data slots shows them as last sent; others render when their parameters change, after their event handlers,
+and on `StateHasChanged`.
+
+`ModComponent` is the mod's counterpart of Blazor's `ComponentBase`, with its lifecycle (`OnInitialized(Async)`,
+`OnParametersSet(Async)`, `OnAfterRender(Async)`, `ShouldRender`, `StateHasChanged`, `InvokeAsync`), and
+`OnDispose` to clean up. The client runs all of it, rendering and event handlers included, on the game's thread
+inside a call into the mod, as it does a screen in code, and reads the mod's objects the parts are given (child
+content, item lists) and raises their events inside that call too; an async method stays inside it until its task
+completes. Whatever throws is logged and closes the screen. For that, the client only renders a mod's components that
+inherit `ModComponent` and don't implement Blazor's component interfaces (`IComponent`, `IHandleEvent`,
+`IHandleAfterRender`, `IDisposable`, `IAsyncDisposable`) themselves. When the mod unloads, its screens close and
+their navigation history goes, like screens in code, and the client forgets its component types in Blazor's caches,
+so that its code unloads. The [engine sample](../samples/EngineSample)'s grinder registers `GrinderView.razor`, the
+Razor form of its `GrinderScreen`.
 
 ### HUD overlays
 
