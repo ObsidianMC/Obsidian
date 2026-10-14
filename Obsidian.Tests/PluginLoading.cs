@@ -10,6 +10,7 @@ using Obsidian.API.Entities;
 using Obsidian.API.Configuration;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.API.Plugins;
 using Obsidian.API.World;
@@ -429,6 +430,57 @@ public sealed class PluginLoading : IDisposable
         Assert.Null(PluginGenerators.Find("probe:helper"));
     }
 
+    [Fact]
+    public async Task PluginItems_HaveTheirDefaultComponentsAndHooks()
+    {
+        var (manager, _, _) = this.CreateManager();
+        var path = Path.Join(this.folder, "probe.obby");
+
+        await File.WriteAllBytesAsync(path, ProbeArchive("1.0.0"));
+        var container = (await manager.LoadPluginAsync(path))!;
+
+        Assert.True(ItemsRegistry.TryGet("probe:charm", out var charm));
+
+        // Its stacks have its default components without sending or saving them, and they work like a vanilla
+        // item's: a pickaxe's drops and wear, food, and a helmet with its armour.
+        var stack = new ItemStack(charm);
+
+        Assert.Empty(stack.Patch);
+        Assert.True(BlockLoot.HasCorrectTool(BlocksRegistry.Stone, stack));
+        Assert.Equal(2, CombatItems.ToolDamage(stack, BlocksRegistry.Stone));
+        Assert.Equal((4, 0.3f, true, 1.6f), Obsidian.Entities.Player.GetFood(stack));
+        Assert.Equal(5, CombatItems.PlayerArmorSlot(stack));
+        Assert.Equal(2, CombatItems.Attribute(stack, "armor", "head"));
+        Assert.Equal(0, CombatItems.Attribute(stack, "armor", "mainhand"));
+
+        // Each stack in a player's inventory ticks, with its equipment slot, and a use on an entity is its own.
+        var player = new FakePlayer { Inventory = new Container(46) };
+        player.Inventory.SetItem(36, new ItemStack(charm));
+        player.Inventory.SetItem(9, new ItemStack(charm));
+        player.Inventory.SetItem(5, stack);
+        AppContext.SetData(ProbePlugin.TicksKey, "");
+
+        Assert.True(ItemBehaviors.HasInventoryTicks(player.Inventory));
+        await ItemBehaviors.TickInventoryAsync(player, player.Inventory, 36, NullLogger.Instance);
+        Assert.Equal("36:MainHand;9:;5:Helmet;", AppContext.GetData(ProbePlugin.TicksKey));
+
+        var use = new ItemUseOnEntityContext
+        {
+            Player = player,
+            Stack = stack,
+            Hand = InteractionHand.MainHand,
+            Entity = null!
+        };
+        Assert.True(await ItemBehaviors.UseOnEntityAsync(use));
+
+        // Unloaded, its hooks are gone, so inventories aren't scanned for it, while the item keeps its defaults.
+        await manager.UnloadPluginAsync(container);
+
+        Assert.False(ItemBehaviors.HasInventoryTicks(player.Inventory));
+        Assert.False(await ItemBehaviors.UseOnEntityAsync(use));
+        Assert.Equal(5, CombatItems.PlayerArmorSlot(new ItemStack(charm)));
+    }
+
     // Kept out of the test method so that no local keeps the first load alive.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task<(WeakReference LoadContext, Item Gem, BlockType Ore)> LoadAndTrackAsync(
@@ -529,6 +581,9 @@ public sealed class ProbePlugin : PluginBase
     public const string ServerKey = "Obsidian.Tests.ProbePlugin.Server";
     public const string BossBarKey = "Obsidian.Tests.ProbePlugin.BossBar";
 
+    // The inventory ticks its charm recorded.
+    public const string TicksKey = "Obsidian.Tests.ProbePlugin.Ticks";
+
     [Inject]
     public ProbeService? Service { get; set; }
 
@@ -563,6 +618,39 @@ public sealed class ProbePlugin : PluginBase
 
         // Its gem brews awkward potions into potions of luck, which no vanilla mix makes.
         pluginRegistry.AddPotionMix(Potion.Awkward, gem, Potion.Luck);
+
+        // A charm with every kind of default component, and hooks for a use on an entity and the inventory tick.
+        pluginRegistry.RegisterItem("probe:charm", new ItemProperties
+        {
+            MaxStackSize = 1,
+            Tool = ComponentBuilder.Tool with
+            {
+                Rules =
+                [
+                    new ToolRule
+                    {
+                        Blocks = new IdSet { Type = 0, TagName = "minecraft:mineable/pickaxe" },
+                        Speed = 6,
+                        CorrectDropForBlocks = true
+                    }
+                ],
+                DamagePerBlock = 2
+            },
+            Food = ComponentBuilder.Food with { Nutrition = 4, SaturationModifier = 0.3f, CanAlwaysEat = true },
+            Equippable = ComponentBuilder.Equippable with { Slot = EquipmentSlot.Helmet },
+            AttributeModifiers =
+            [
+                new AttributeModifier
+                {
+                    Id = AttributeIds.Armor,
+                    Name = "probe:charm",
+                    Value = 2,
+                    Operation = AttributeOperation.Add,
+                    Slot = AttributeSlot.Head
+                }
+            ],
+            Behavior = new CharmBehavior()
+        });
 
         pluginRegistry.RegisterBlock("probe:ore", new BlockProperties
         {
@@ -676,6 +764,20 @@ public sealed class ProbePlugin : PluginBase
     private sealed class GemBehavior : IItemBehavior
     {
         public ValueTask<bool> UseAsync(ItemUseContext context) => ValueTask.FromResult(true);
+    }
+
+    private sealed class CharmBehavior : IItemBehavior
+    {
+        public ValueTask<bool> UseOnEntityAsync(ItemUseOnEntityContext context) => ValueTask.FromResult(true);
+
+        // Records each stack's tick as "slot:equipment slot;".
+        public ValueTask InventoryTickAsync(ItemInventoryTickContext context)
+        {
+            var ticks = AppContext.GetData(TicksKey);
+            AppContext.SetData(TicksKey, $"{ticks}{context.Slot}:{context.EquipmentSlot};");
+
+            return ValueTask.CompletedTask;
+        }
     }
 
     public override ValueTask OnLoadedAsync(IServer server)

@@ -181,6 +181,46 @@ public static partial class ComponentBuilder
     public static AttributeModifiersDataComponent AttributeModifiers =>
         new();
 
+    /// <summary>
+    /// A <c>minecraft:tool</c> without rules, mining at speed 1 and taking 1 damage per block, like vanilla's defaults.
+    /// </summary>
+    public static ToolDataComponent Tool => new()
+    {
+        Rules = [],
+        DefaultMiningSpeed = 1,
+        DamagePerBlock = 1
+    };
+
+    /// <summary>
+    /// A <c>minecraft:food</c> giving nothing; set its nutrition and saturation modifier.
+    /// </summary>
+    public static FoodDataComponent Food => new();
+
+    /// <summary>
+    /// Vanilla's <c>minecraft:consumable</c> for food: eaten in 1.6 seconds, with the eating animation, sound and
+    /// particles, and no effects.
+    /// </summary>
+    public static ConsumableDataComponent Consumable => new()
+    {
+        ConsumeSeconds = 1.6f,
+        Animation = ItemAnimation.Eat,
+        Sound = new SoundEvent { ResourceLocation = "minecraft:entity.generic.eat" },
+        HasConsumeParticles = true
+    };
+
+    /// <summary>
+    /// A <c>minecraft:equippable</c> with vanilla's defaults: the generic armour equip sound, dispensable, swappable
+    /// by using it, and damaged when its wearer is hurt. Set its slot.
+    /// </summary>
+    public static EquippableDataComponent Equippable => new()
+    {
+        EquipSound = new SoundEvent { ResourceLocation = "minecraft:item.armor.equip_generic" },
+        Dispensable = true,
+        Swappable = true,
+        DamageOnHurt = true,
+        ShearingSound = new SoundEvent { ResourceLocation = "minecraft:item.shears.snip" }
+    };
+
     public static SimpleDataComponent<int> MapColor =>
         BuildSimpleComponent(
             DataComponentType.MapColor,

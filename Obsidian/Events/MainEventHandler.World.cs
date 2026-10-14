@@ -122,6 +122,10 @@ public partial class MainEventHandler
             return;
         }
 
+        // Like vanilla's Item.mineBlock, the tool wears once the drops were decided with it as it was.
+        if (player is Player miner && CombatItems.ToolDamage(tool, block) is var wear and > 0)
+            await miner.DamageInventoryItemAsync(miner.CurrentHeldItemSlot, wear);
+
         if (block.UnlocalizedName.StartsWith("minecraft:infested_", StringComparison.Ordinal))
         {
             var silkTouch = tool is not null && EnchantmentHelper.GetEnchantments(tool).Any(enchantment =>

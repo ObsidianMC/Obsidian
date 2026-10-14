@@ -18,7 +18,7 @@ public partial class Player
             .ToDictionary(item => item.Name, item => item.Value.GetProperty("components").Clone());
     }
 
-    private static (int Nutrition, float Saturation, bool AlwaysEat, float Seconds)? GetFood(ItemStack? item)
+    internal static (int Nutrition, float Saturation, bool AlwaysEat, float Seconds)? GetFood(ItemStack? item)
     {
         if (item?.Is(ItemsRegistry.OminousBottle) == true) return (0, 0, true, 1.6f);
         if (item == null || item.RemoveComponents.Contains(DataComponentType.Food) || item.RemoveComponents.Contains(DataComponentType.Consumable)) return null;
@@ -134,6 +134,7 @@ public partial class Player
             CancelWeaponUse();
             return;
         }
+        await TickInventoryItemsAsync();
         TimeSinceRest = Sleeping ? 0 : (int)Math.Min(int.MaxValue, (long)TimeSinceRest + 1);
         var grounded = MovementFlags.HasFlag(MovementFlags.OnGround);
         if (foodPosition is VectorD previous)
