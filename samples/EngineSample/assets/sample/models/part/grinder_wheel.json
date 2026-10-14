@@ -1,4 +1,5 @@
 {
+  "parent": "sample:block/base",
   "textures": {
     "particle": "minecraft:block/grindstone_side",
     "side": "minecraft:block/grindstone_side",

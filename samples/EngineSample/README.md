@@ -27,19 +27,26 @@ The client draws the sample's blocks and its mob from `assets/sample/`, with van
   hoppers) beside it, in a boolean block state property for each side, worked out as a player places it
   (`GetStateForPlacement`) and as its neighbours change (`UpdateShape`), like a fence. Its multipart blockstate,
   `blockstates/cable.json`, adds an arm to its core for each side that connects, so it needs neither a block entity
-  nor client code. Its collision and outline are still a full block (see
-  [known-gaps.md](../../docs/known-gaps.md#plugin-block-shapes-by-state)).
+  nor client code. Its `StateShapes` give each state the same core and arms to collide with and aim at, on the
+  server and the client alike.
 - **`sample:moth`** ([Moth](Moth)): a flying mob whose behaviour's `CanMount` lets players ride it, with a seat on
   its back (`PassengerAttachments`). Its client side draws it with its own model layer,
   `models/entity/moth.json`, and texture, `textures/entity/moth.png`, and its eyes with an emissive layer,
   `moth_eyes.png`, transparent but for the eyes, which glow in the dark.
+- **Items and the tick counter's model.** `items/` holds an item model definition for each block's item: the
+  grinder's draws its block model and its wheel together, the cable's its own model (`models/item/cable.json`, a
+  core and a straight run), and the tick counter's its block model, which `blockstates/tick_counter.json` draws
+  with a lamp on top that lights while it's powered. The block models inherit `models/block/base.json`, the display
+  transforms of vanilla's `block/block`, so the items look like vanilla's block items in hand and in inventories.
+  The moth has no spawn egg, since plugin mobs have none yet.
 - **Sounds.** `sample:counter.chime` in the tick counter's placement and break sound type. Its `sounds.json`
   references vanilla's amethyst chime, so the sample needs no audio file. The tick counter's smoke test checks
   these sounds; the client API's positional and UI playback are exercised by the client test probe mod.
 
 `Obsidian.Tests/SamplePlugin.cs` checks that the grinder says when it grinds, that cables follow what's placed
-and removed beside them and that players ride the moth; the client's `EngineSampleShowsItsGrinderScreen` checks
-the renderers the sample registers, the moth's model and the cable's models for its states.
+and removed beside them, with shapes to match, and that players ride the moth; the client's
+`EngineSampleShowsItsGrinderScreen` checks the renderers the sample registers, the moth's model, the blocks' and
+items' models, and the cable's models and shapes for its states.
 
 Later phases add to the same mod: a portal, and saved data and a loot table for the moth.
 

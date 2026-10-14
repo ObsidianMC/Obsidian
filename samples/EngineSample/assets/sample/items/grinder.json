@@ -1,0 +1,9 @@
+{
+  "model": {
+    "type": "minecraft:composite",
+    "models": [
+      { "type": "minecraft:model", "model": "sample:block/grinder" },
+      { "type": "minecraft:model", "model": "sample:part/grinder_wheel" }
+    ]
+  }
+}

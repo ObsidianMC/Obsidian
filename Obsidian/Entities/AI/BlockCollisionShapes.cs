@@ -15,7 +15,10 @@ internal static class BlockCollisionShapes
 
     public static IReadOnlyList<BoundingBox> Get(int stateId)
     {
-        // A plugin's block collides like its template state.
+        // A plugin's block collides with the shapes its state was registered with, or else like its template state.
+        if (BlockPhysics.PluginShapes(stateId) is API.Blocks.PluginStateShapes own)
+            return own.Shapes.Collision;
+
         if (BlocksRegistry.TryGetPluginBlock(stateId, out var type))
             stateId = BlocksRegistry.TemplateStateOf(type);
 

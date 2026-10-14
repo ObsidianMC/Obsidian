@@ -9,7 +9,8 @@ namespace EngineSample.Cable;
 /// other cables and to the blocks that hold items (the grinder, chests, hoppers), with a boolean state property per
 /// side, worked out on the server as it's placed and as its neighbours change. The client draws it from
 /// <c>assets/sample/blockstates/cable.json</c>, a multipart blockstate that adds an arm for each side that connects,
-/// so it needs neither a block entity nor client code.
+/// so it needs neither a block entity nor client code. Its shapes follow the same state: entities collide with, and
+/// players aim at, its core and the arms that connect (<see cref="BlockProperties.StateShapes"/>).
 /// </summary>
 /// <remarks>
 /// It only connects for now; carrying items between what it connects is for a later phase.
@@ -37,8 +38,10 @@ public sealed class CableBlock : IBlockBehavior
             DefaultState = sides.ToDictionary(Property, _ => "false"),
             Hardness = 0.5f,
 
-            // Its model is thinner than a block, so it neither hides its neighbours' faces nor blocks light.
+            // Its model is thinner than a block, so it neither hides its neighbours' faces nor blocks light, and its
+            // shapes are its model's boxes, asked for each state as it registers on the server and on clients.
             Opaque = false,
+            StateShapes = Shapes,
             Behavior = new CableBlock()
         });
     }
@@ -70,6 +73,34 @@ public sealed class CableBlock : IBlockBehavior
 
         return Block.Is(level.GetBlock(neighbor)) || level.GetItemAccess(neighbor, side.Opposite()) is not null;
     }
+
+    // The shapes of the state with the given connections: like its models, a core 6 pixels wide and an arm 4 pixels
+    // wide out to each side that connects, the same boxes for collision and the outline.
+    private static BlockShapes Shapes(IReadOnlyDictionary<string, string> values)
+    {
+        List<BoundingBox> boxes = [Box(5, 5, 5, 11, 11, 11)];
+        foreach (var side in sides)
+        {
+            if (values[Property(side)] == "true")
+                boxes.Add(Arm(side));
+        }
+
+        return new BlockShapes(boxes, boxes);
+    }
+
+    private static BoundingBox Arm(BlockFace side) => side switch
+    {
+        BlockFace.Down => Box(6, 0, 6, 10, 5, 10),
+        BlockFace.Up => Box(6, 11, 6, 10, 16, 10),
+        BlockFace.North => Box(6, 6, 0, 10, 10, 5),
+        BlockFace.South => Box(6, 6, 11, 10, 10, 16),
+        BlockFace.West => Box(0, 6, 6, 5, 10, 10),
+        _ => Box(11, 6, 6, 16, 10, 10)
+    };
+
+    // A box given in pixels, sixteenths of a block, as models give theirs; shapes are in blocks.
+    private static BoundingBox Box(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) =>
+        new(new VectorD(minX, minY, minZ) / 16, new VectorD(maxX, maxY, maxZ) / 16);
 
     private static IBlock WithSide(IBlock state, BlockFace side, bool connected) =>
         Block.With(state, Property(side), connected ? "true" : "false");
