@@ -84,11 +84,11 @@ A block's `Behavior` gets vanilla's block hooks; each defaults to doing nothing:
 
 The hooks with a `Level` run synchronously while the level's block updates wait for them, like vanilla's: read and
 change blocks through that `IBlockLevel` (`GetBlock`, `SetBlock`, `RemoveBlock`, `ScheduleTick`,
-`HasScheduledTick`, `UpdateNeighbors`, and the level's `Random`), not through `ILevel`'s asynchronous methods, and
-keep them short. The updates a hook's change causes run after the hook returns, in vanilla's order. A hook that
-throws is logged and the updates, and the level's tick, go on. Like `UseAsync`, every hook runs as a call into the
-plugin, and none runs once it starts unloading. A block change and the updates it causes run as one step: a change
-made meanwhile on another thread waits for them.
+`HasScheduledTick`, `UpdateNeighbors`, its [redstone](#redstone) signals and the level's `Random`), not through
+`ILevel`'s asynchronous methods, and keep them short. The updates a hook's change causes run after the hook
+returns, in vanilla's order. A hook that throws is logged and the updates, and the level's tick, go on. Like
+`UseAsync`, every hook runs as a call into the plugin, and none runs once it starts unloading. A block change and the
+updates it causes run as one step: a change made meanwhile on another thread waits for them.
 
 Block changes run vanilla's side effects as `BlockUpdateFlags` ask, with vanilla's values: `ILevel.SetBlockAsync`
 with `doBlockUpdate: true`, a player placing or breaking a block, and explosions use `All` (neighbours hear of the
@@ -97,8 +97,8 @@ Without `Clients`, players aren't sent the change. Without `Neighbors`, the old 
 neighbours don't get `NeighborChanged` and nether portals don't check their frames; `KnownShape` skips shape updates,
 and `SkipOnPlace` skips `OnPlaced`. `doBlockUpdate: false` is a plain change, without hooks or updates. Of vanilla's
 blocks, liquids react to the updates (they flow), falling blocks fall two ticks after they're placed or a neighbour
-changes, and the other vanilla blocks only change shape when water or lava changes blocks (see
-[known gaps](known-gaps.md)).
+changes, [redstone components](#redstone) react like vanilla's, and the other vanilla blocks only change shape when
+water or lava changes blocks (see [known gaps](known-gaps.md)).
 
 `ILevel.ScheduleBlockTick` and `IBlockLevel.ScheduleTick` schedule a block's tick in a number of game ticks, with a
 `TickPriority`, like vanilla's `scheduleTick`: one per block and position, run if the block is still there then.
@@ -137,6 +137,80 @@ Runtime updates clear dependent light and spread surviving sources again; they d
 for each changed block. A deterministic test times 288 edits batched over nine 64-layer chunks against a fresh
 generation-engine computation after each batch. Timing is reported by `BatchedEditsMatchFullComputationAndReportTiming`
 in `Obsidian.Tests/RuntimeLight.cs`; large skylight changes can still affect an entire column and its surroundings.
+
+### Redstone
+
+```csharp
+public sealed class SensorBehavior : IBlockBehavior
+{
+    // The block's type, from RegisterBlock, with a "powered" property.
+    public BlockType Sensor { get; set; } = null!;
+
+    // It powers every side while powered, like a lever; dust connects to it.
+    public bool IsSignalSource(IBlock state) => true;
+
+    public int GetSignal(SignalContext context) => this.Sensor.GetValue(context.State, "powered") == "true" ? 15 : 0;
+
+    // Comparators facing away from it read 1 to 15.
+    public bool HasAnalogOutput(IBlock state) => true;
+
+    public int GetAnalogOutput(SignalContext context) => 8;
+
+    // It turns on and off with the power it gets, like a lamp, and tells its neighbours.
+    public void NeighborChanged(NeighborChangedContext context)
+    {
+        var powered = context.Level.HasNeighborSignal(context.Position);
+        var state = this.Sensor.With(context.State, "powered", powered ? "true" : "false");
+        context.Level.SetBlock(context.Position, state);
+    }
+}
+```
+
+Redstone power goes from 0 to 15, like vanilla's. A block gives each neighbour a weak signal, which powers that
+neighbour (a lever powers the dust beside it), and a strong one, which also powers through the neighbour when it's a
+conductor (a lever powers the block it's on, and that block powers the dust beside it). Conductors are what vanilla
+calls redstone conductors, full solid blocks like stone; a plugin block is one when its template is (opaque blocks
+with collision).
+
+`ISignalReader` reads power like vanilla's `SignalGetter`, on the `IBlockLevel` a hook gets and on `ILevel`:
+`GetSignal` (what the block at a position gives the block asking, or for a conductor the most strong power it gets),
+`GetDirectSignal` (its strong power), `GetDirectSignalTo`, `HasSignal`, `HasNeighborSignal` (whether anything powers
+a position, what a lamp lights by) and `GetBestNeighborSignal`. Directions are vanilla's: the direction from the block
+asking to the block at the position, so a block reads its west neighbour with
+`GetSignal(position + Vector.West, BlockFace.West)`. `ILevel`'s methods wait for the block updates running at the
+time, like its block changes.
+
+A plugin block takes part through its behaviour's hooks, which default to giving no power:
+
+- `IsSignalSource`: whether it gives power, like vanilla's `isSignalSource`. Dust connects to it from every side, and
+  comparators take its strong power from their sides.
+- `GetSignal` and `GetDirectSignal`: its weak and strong power toward the neighbour asking (`SignalContext.Direction`
+  points from that neighbour to it). They run whenever a neighbour reads its power, so keep them a quick read of the
+  state. When the power changes, tell the neighbours with `IBlockLevel.UpdateNeighbors` (a block change with
+  neighbour updates does), and for strong power the neighbours of the block it powers through too, as vanilla's
+  levers do.
+- `HasAnalogOutput` and `GetAnalogOutput`: what a comparator facing away from it reads, like a container's fullness.
+  A block change with neighbour updates tells the comparators; `IBlockLevel.UpdateAnalogOutput` tells them when the
+  output changes otherwise.
+
+It reacts to power in `NeighborChanged`, which runs when power around it may have changed, as vanilla's blocks do.
+The hooks run in a call into the plugin like the others; while the plugin unloads or is unloaded, its blocks give no
+power and have no analog output. As it unloads, and when it loads again, the blocks around its blocks placed in loaded
+chunks hear of them like of a block change (neighbour and shape updates, and comparators), so that the circuits they
+power follow; those in chunks loaded later only do on their next change.
+
+Vanilla's components work at runtime through the same updates and ticks, in vanilla's order and with vanilla's
+delays and tick priorities: redstone dust (vanilla's default wire evaluator, its connections, and dots and crosses
+players switch between), redstone torches (two game ticks, burning out after 8 toggles within 60 game ticks for 160),
+repeaters (delays of 1 to 4 redstone ticks, and locking), comparators (comparing and subtracting, reading containers,
+rolling their pending loot first, cakes, composters, cauldrons, beehives, end portal frames, respawn anchors and
+item frames, behind a conductor too),
+levers, buttons (pressed by players and wind charges, and wooden ones by arrows), pressure plates (entities on them;
+wooden ones feel any entity, stone ones mobs and players, weighted ones count them), the block of redstone and the
+redstone lamp. Players place them as vanilla does: facing and attached from where they click and look, where they can
+stay. Those that lose their support pop off, dropping their loot. A comparator's output is saved in its block
+entity, and vanilla saves' scheduled ticks of these blocks run. Other powered blocks (doors, pistons and the like)
+don't react yet (see [known gaps](known-gaps.md#redstone)).
 
 ### Saplings
 

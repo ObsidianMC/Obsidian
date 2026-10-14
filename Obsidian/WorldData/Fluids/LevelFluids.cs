@@ -36,7 +36,8 @@ internal sealed class LevelFluids : IFluidLevelAccess
     }
 
     /// <summary>
-    /// The level's block ticks and the reactions of plugin and falling blocks to block updates.
+    /// The level's block ticks and the reactions of plugin blocks, redstone components and falling blocks to block
+    /// updates.
     /// </summary>
     public LevelBlockUpdates Blocks { get; }
 
@@ -143,6 +144,11 @@ internal sealed class LevelFluids : IFluidLevelAccess
     /// </summary>
     public bool TryGetChunk(Vector position, [NotNullWhen(true)] out Chunk? chunk) =>
         this.chunks.TryGetValue(TickScheduler<FluidKind>.ChunkKey(position), out chunk);
+
+    /// <summary>
+    /// The complete chunks whose ticks run, as of now. Take <see cref="TickLock"/> first.
+    /// </summary>
+    public List<Chunk> TrackedChunks() => [.. this.chunks.Values];
 
     /// <summary>
     /// The lock fluid ticks and fluid block changes run under, which random ticks and bone meal grow plants under and

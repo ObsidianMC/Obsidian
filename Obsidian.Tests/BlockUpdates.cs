@@ -187,6 +187,26 @@ public sealed class BlockUpdates : IDisposable
             client.SentPackets.OfType<BlockUpdatePacket>(),
             packet => packet.Position == filled && packet.BlockId == BlocksRegistry.Stone.GetHashCode());
 
+        // Vanilla's redstone components go down as vanilla places them: a lever on the floor facing the way the
+        // player does, a torch clicked onto a block's side on that side, and redstone dust as a cross.
+        meanwhile = null;
+        async Task<IBlock> PlaceVanillaAsync(string item, Vector clicked, BlockFace face)
+        {
+            player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Get(item), 1));
+            await UseOn(clicked, face).HandleAsync(context.Server, player);
+            return world.GetLoadedChunk(0, 0)!.GetBlock(clicked + face.ToVector());
+        }
+
+        var wall = new Vector(12, Ground + 1, 4);
+        await world.SetBlockAsync(wall, BlocksRegistry.Stone);
+
+        var lever = await PlaceVanillaAsync("minecraft:lever", new Vector(10, Ground, 4), BlockFace.Up);
+        Assert.Equal(("floor", "west"), (lever.GetProperty("face"), lever.GetProperty("facing")));
+        var torch = await PlaceVanillaAsync("minecraft:redstone_torch", wall, BlockFace.East);
+        Assert.Equal(("minecraft:redstone_wall_torch", "east"), (torch.UnlocalizedName, torch.GetProperty("facing")));
+        var dust = await PlaceVanillaAsync("minecraft:redstone", new Vector(14, Ground, 8), BlockFace.Up);
+        Assert.All(["north", "east", "south", "west"], side => Assert.Equal("side", dust.GetProperty(side)));
+
         await manager.UnloadPluginAsync(container);
     }
 
@@ -268,6 +288,31 @@ public sealed class BlockUpdates : IDisposable
         Assert.Contains("inside 9,72,8", calls);
         Assert.Equal("idle", world.TickStage);
 
+        // Relays take part in redstone: one facing south powers a lamp beside it, and a comparator reads its analog
+        // output (7) into dust; another hears a lever beside it pulled, and reads its power.
+        var southRelay = relay.With(relay.DefaultState, "facing", "south");
+        var source = new Vector(2, Ground + 1, 12);
+        var lamp = BlocksRegistry.GetDefault(BlockIds.RedstoneLamp);
+        var comparator = BlocksRegistry.GetDefault(BlockIds.Comparator).WithProperty("facing", "west");
+        await world.SetBlockAsync(source + Vector.West, lamp, BlockUpdateFlags.All);
+        await world.SetBlockAsync(source + Vector.East, comparator, BlockUpdateFlags.All);
+        await world.SetBlockAsync(source + Vector.East * 2, BlocksRegistry.RedstoneWire, BlockUpdateFlags.All);
+        await world.SetBlockAsync(source, southRelay, BlockUpdateFlags.All);
+
+        var lever = new Vector(8, Ground + 1, 12);
+        var listener = lever + Vector.East;
+        await world.SetBlockAsync(lever, BlocksRegistry.GetDefault(BlockIds.Lever), BlockUpdateFlags.All);
+        await world.SetBlockAsync(listener, relay.DefaultState, BlockUpdateFlags.All);
+        Assert.True(world.BlockUpdates.UseRedstone(lever, new FakePlayer(), mayBuild: true));
+
+        await world.DoWorldTickAsync();
+        await world.DoWorldTickAsync();
+
+        Assert.Equal("true", chunk.GetBlock(source + Vector.West).GetProperty("lit"));
+        Assert.Equal("7", chunk.GetBlock(source + Vector.East * 2).GetProperty("power"));
+        Assert.Equal(15, world.GetSignal(source, BlockFace.East));
+        Assert.Contains("power 9,70,12 15", calls);
+
         // Changes made at once each run their updates before the next change: the relay is placed, then removed.
         await world.SetBlockAsync(center, BlocksRegistry.Stone, BlockUpdateFlags.All);
         calls.Clear();
@@ -326,6 +371,15 @@ public sealed class BlockUpdates : IDisposable
         await manager.UnloadPluginAsync(container);
         await world.SetBlockAsync(center, BlocksRegistry.Air, BlockUpdateFlags.All);
         Assert.Empty(calls);
+        Assert.Equal(0, world.GetSignal(source, BlockFace.East));
+
+        // The circuits around the relay heard of its power and analog output going: the lamp goes out four ticks
+        // later, and the comparator stops powering the dust.
+        for (var tick = 0; tick < 4; tick++)
+            await world.DoWorldTickAsync();
+
+        Assert.Equal("false", chunk.GetBlock(source + Vector.West).GetProperty("lit"));
+        Assert.Equal("0", chunk.GetBlock(source + Vector.East * 2).GetProperty("power"));
 
         // Sand placed over air waits vanilla's two ticks before it falls, and lands with updates.
         var sand = new Vector(4, Ground + 4, 4);
@@ -341,6 +395,176 @@ public sealed class BlockUpdates : IDisposable
             await world.DoWorldTickAsync();
 
         Assert.True(chunk.GetBlock(sand.X, Ground + 1, sand.Z).Is(BlockIds.Sand));
+    }
+
+    [Fact(DisplayName = "Redstone circuits power, delay, lock, burn out and drop like vanilla's",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task RedstoneCircuitsMatchVanilla()
+    {
+        await using var context = TestServerFactory.CreateServer($"redstone-{Guid.NewGuid():N}");
+        var world = context.World;
+        await AddChunksAsync(world);
+        world.LevelData.GameRules["spawn_mobs"] = "false";
+
+        // A player near the ticking chunk, so that its containers tick and tell comparators of their items.
+        var player = TestServerFactory.CreateConnectedPlayer(
+            context.Server,
+            world,
+            "Redstoner",
+            new VectorD(8, Ground + 1, 8));
+
+        Assert.True(world.TryAddPlayer(player));
+
+        IBlock Block(string name, params (string Name, string Value)[] properties) =>
+            BlockStateProperties.GetState($"minecraft:{name}", properties.ToDictionary(p => p.Name, p => p.Value));
+
+        Vector At(int x, int z, int up = 1) => new(x, Ground + up, z);
+
+        var lever = Block("lever", ("face", "floor"), ("facing", "north"));
+        var dust = Block("redstone_wire");
+        var lamp = Block("redstone_lamp");
+        var stone = Block("stone");
+        var hopper = Block("hopper");
+        IBlock Repeater(string facing, int delay) => Block("repeater", ("facing", facing), ("delay", $"{delay}"));
+        IBlock Comparator(string facing, string mode) => Block("comparator", ("facing", facing), ("mode", mode));
+        var torch = Block("redstone_wall_torch", ("facing", "east"));
+
+        // Each circuit is built in the ticking chunk in the order listed, with block updates; the steps run after
+        // that many game ticks, and the checks after the steps of their tick. Outcomes and timings are vanilla's,
+        // checked by hand against 1.21.11: dust loses one power a block, repeaters wait two game ticks a delay,
+        // torches two, comparators two, and lamps go out four game ticks after their power does.
+        var build = new List<(Vector Position, IBlock State)>();
+        var steps = new List<(int Tick, Func<ValueTask> Run)>();
+        var checks = new List<(int Tick, Vector Position, string Property, string Value)>();
+        void Use(int tick, Vector position) => steps.Add((tick, () =>
+        {
+            Assert.True(world.BlockUpdates.UseRedstone(position, player, mayBuild: true));
+            return ValueTask.CompletedTask;
+        }));
+
+        // Dust carries a lever's power 15 blocks, into the lamp at its end; the lamp goes out four ticks after.
+        build.Add((At(0, 0), lever));
+        build.AddRange(Enumerable.Range(1, 14).Select(x => (At(x, 0), dust)));
+        build.Add((At(15, 0), lamp));
+        Use(0, At(0, 0));
+        Use(3, At(0, 0));
+        checks.AddRange(
+        [
+            (0, At(1, 0), "power", "15"), (0, At(14, 0), "power", "2"), (0, At(15, 0), "lit", "true"),
+            (3, At(14, 0), "power", "0"), (6, At(15, 0), "lit", "true"), (7, At(15, 0), "lit", "false")
+        ]);
+
+        // Repeaters of delay 1 and 4 light a lamp 10 game ticks after the lever, and put it out 14 after.
+        build.AddRange([(At(0, 2), lever), (At(1, 2), Repeater("west", 1)), (At(2, 2), Repeater("west", 4))]);
+        build.Add((At(3, 2), lamp));
+        Use(0, At(0, 2));
+        Use(20, At(0, 2));
+        checks.AddRange(
+        [
+            (1, At(1, 2), "powered", "false"), (2, At(1, 2), "powered", "true"), (9, At(3, 2), "lit", "false"),
+            (10, At(3, 2), "lit", "true"), (33, At(3, 2), "lit", "true"), (34, At(3, 2), "lit", "false")
+        ]);
+
+        // A torch on a block a lever powers goes out two ticks after, and lights again two ticks after it's off.
+        build.AddRange([(At(9, 2), stone), (At(9, 2, up: 2), lever), (At(11, 2), lamp), (At(10, 2), torch)]);
+        Use(0, At(9, 2, up: 2));
+        Use(10, At(9, 2, up: 2));
+        checks.AddRange(
+        [
+            (0, At(11, 2), "lit", "true"), (1, At(10, 2), "lit", "true"), (2, At(10, 2), "lit", "false"),
+            (5, At(11, 2), "lit", "true"), (6, At(11, 2), "lit", "false"), (12, At(11, 2), "lit", "true")
+        ]);
+
+        // A torch turned off 8 times within 60 game ticks burns out, and relights 160 ticks after the last.
+        build.AddRange([(At(1, 4), stone), (At(1, 4, up: 2), lever), (At(2, 4), torch)]);
+        for (var tick = 0; tick <= 45; tick += 3)
+            Use(tick, At(1, 4, up: 2));
+
+        checks.AddRange(
+        [
+            (5, At(2, 4), "lit", "true"), (44, At(2, 4), "lit", "false"), (47, At(2, 4), "lit", "false"),
+            (203, At(2, 4), "lit", "false"), (204, At(2, 4), "lit", "true")
+        ]);
+
+        // A comparator reads a hopper holding a stack (3), and a block of redstone beside it beats that.
+        build.AddRange([(At(9, 4), Comparator("west", "compare")), (At(10, 4), dust), (At(11, 4), dust)]);
+        build.Add((At(8, 4), hopper));
+        steps.Add((0, () => Fill(world, At(8, 4))));
+        Use(6, At(9, 4));
+        steps.Add((8, () => world.SetBlockAsync(At(9, 3), Block("redstone_block"), BlockUpdateFlags.All)));
+        checks.AddRange(
+        [
+            (5, At(10, 4), "power", "3"), (5, At(11, 4), "power", "2"), (7, At(9, 4), "mode", "subtract"),
+            (9, At(10, 4), "power", "3"), (10, At(10, 4), "power", "0")
+        ]);
+
+        // Subtracting, a comparator takes a side comparator's 3 from a lever's 15.
+        build.AddRange([(At(2, 8), Comparator("west", "subtract")), (At(3, 8), dust), (At(4, 8), dust)]);
+        build.AddRange([(At(2, 7), Comparator("north", "compare")), (At(2, 6), hopper), (At(1, 8), lever)]);
+        steps.Add((0, () => Fill(world, At(2, 6))));
+        Use(0, At(1, 8));
+        checks.AddRange([(8, At(3, 8), "power", "12"), (8, At(4, 8), "power", "11")]);
+
+        // Of two comparators in line due on the same tick, the one feeding the other ticks first, so the second reads
+        // its new output: the first's hopper (3) becomes a block of redstone (15) as the second's side goes off.
+        build.AddRange([(At(6, 10), hopper), (At(7, 10), Comparator("west", "compare"))]);
+        build.AddRange([(At(8, 10), Comparator("west", "subtract")), (At(9, 10), dust)]);
+        build.Add((At(8, 11), Block("redstone_block")));
+        steps.Add((0, () => Fill(world, At(6, 10))));
+        steps.Add((10, () => world.SetBlockAsync(At(8, 11), BlocksRegistry.Air, BlockUpdateFlags.All)));
+        steps.Add((10, () => world.SetBlockAsync(At(6, 10), Block("redstone_block"), BlockUpdateFlags.All)));
+        checks.AddRange([(9, At(9, 10), "power", "0"), (12, At(9, 10), "power", "15")]);
+
+        // A repeater a powered repeater points into from the side holds its output until it's unlocked.
+        build.AddRange([(At(0, 12), lever), (At(1, 12), Repeater("west", 1)), (At(2, 12), lamp)]);
+        build.AddRange([(At(1, 10), lever), (At(1, 11), Repeater("north", 1))]);
+        Use(0, At(0, 12));
+        Use(5, At(1, 10));
+        Use(10, At(0, 12));
+        Use(20, At(1, 10));
+        checks.AddRange(
+        [
+            (2, At(2, 12), "lit", "true"), (6, At(1, 12), "locked", "false"), (7, At(1, 12), "locked", "true"),
+            (19, At(2, 12), "lit", "true"), (22, At(1, 12), "locked", "false"), (23, At(1, 12), "powered", "true"),
+            (24, At(1, 12), "powered", "false"), (27, At(2, 12), "lit", "true"), (28, At(2, 12), "lit", "false")
+        ]);
+
+        // Dust whose block goes pops off, dropping its item.
+        build.AddRange([(At(14, 14), stone), (At(14, 14, up: 2), dust)]);
+        steps.Add((0, () => world.SetBlockAsync(At(14, 14), BlocksRegistry.Air, BlockUpdateFlags.All)));
+        checks.Add((0, At(14, 14, up: 2), "block", "minecraft:air"));
+
+        foreach (var (position, state) in build)
+            await world.SetBlockAsync(position, state, BlockUpdateFlags.All);
+
+        var chunk = world.GetLoadedChunk(0, 0)!;
+        var last = checks.Max(check => check.Tick);
+        for (var tick = 0; tick <= last; tick++)
+        {
+            foreach (var step in steps.Where(step => step.Tick == tick))
+                await step.Run();
+
+            foreach (var (_, position, property, value) in checks.Where(check => check.Tick == tick))
+            {
+                var state = chunk.GetBlock(position);
+                var actual = property == "block" ? state.UnlocalizedName : state.GetProperty(property);
+                Assert.True(value == actual, $"At tick {tick}, {property} at {position} is {actual}, not {value}.");
+            }
+
+            await world.DoWorldTickAsync();
+        }
+
+        // The dropped dust slides a little on the motion it popped out with.
+        var drops = world.GetNonPlayerEntitiesInRange((VectorD)At(14, 14, up: 2), 8).OfType<ItemEntity>();
+        Assert.Contains(drops, drop => drop.Item.Is(ItemsRegistry.Get("minecraft:redstone")));
+        world.TryRemovePlayer(player);
+    }
+
+    // Fills a hopper's first slot with a stack of stone, as a player moving items in would.
+    private static async ValueTask Fill(WorldData.World world, Vector position)
+    {
+        var hopper = (API.BlockEntities.ContainerBlockEntity)(await world.GetBlockEntityAsync(position))!;
+        hopper.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Get("minecraft:stone"), 64));
     }
 
     private static UseItemOnPacket UseOn(Vector position, BlockFace face)
@@ -421,7 +645,9 @@ public sealed class BlockUpdates : IDisposable
 /// <summary>
 /// The probe plugin's blocks for <see cref="BlockUpdates"/>: <c>probe:relay</c> records each hook it gets in
 /// <see cref="AppContext"/> data (the plugin's statics are its own copy's), faces away from the player placing it,
-/// turns towards a gold block placed east or west of it, gets random ticks and throws from its entity hook.
+/// turns towards a gold block placed east or west of it, gets random ticks and throws from its entity hook. Facing
+/// south, it gives full redstone power and an analog output of 7; it records the power it gets when a neighbour
+/// changes.
 /// </summary>
 public sealed class ProbeRelay : IBlockBehavior
 {
@@ -463,8 +689,22 @@ public sealed class ProbeRelay : IBlockBehavior
     public void OnRemoved(BlockRemovedContext context) =>
         Record($"removed {At(context.Position)} for {Short(context.NewState)}");
 
-    public void NeighborChanged(NeighborChangedContext context) =>
+    public void NeighborChanged(NeighborChangedContext context)
+    {
         Record($"neighbor {At(context.Position)} from {Short(context.SourceBlock)}");
+
+        var power = context.Level.GetBestNeighborSignal(context.Position);
+        if (power > 0)
+            Record($"power {At(context.Position)} {power}");
+    }
+
+    public bool IsSignalSource(IBlock state) => true;
+
+    public int GetSignal(SignalContext context) => this.FacesSouth(context.State) ? 15 : 0;
+
+    public bool HasAnalogOutput(IBlock state) => true;
+
+    public int GetAnalogOutput(SignalContext context) => this.FacesSouth(context.State) ? 7 : 0;
 
     public IBlock UpdateShape(ShapeUpdateContext context)
     {
@@ -488,6 +728,8 @@ public sealed class ProbeRelay : IBlockBehavior
         Record($"inside {At(context.Position)}");
         throw new InvalidOperationException("The relay's entity hook failed.");
     }
+
+    private bool FacesSouth(IBlock state) => this.type!.GetValue(state, "facing") == "south";
 
     private static void Record(string call)
     {

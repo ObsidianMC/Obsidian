@@ -480,6 +480,9 @@ public sealed partial class PluginManager : IAsyncDisposable
 
             await container.Plugin.OnLoadedAsync(container.HostServices.Server);
 
+            // Placed blocks of its types take part in redstone again, with their behaviour.
+            this.RefreshPlacedBlocks([.. BlocksRegistry.PluginBlocks.Where(type => type.Owner == container)]);
+
             if (this.serverReady)
                 await this.StartAsync(container);
 
@@ -562,7 +565,9 @@ public sealed partial class PluginManager : IAsyncDisposable
             Log.UndoFailed(this.logger, failure, pluginContainer.Info.Name);
 
         ItemsRegistry.ReleasePlugin(pluginContainer);
-        BlocksRegistry.ReleasePlugin(pluginContainer);
+        var blocks = BlocksRegistry.ReleasePlugin(pluginContainer);
+        this.RefreshPlacedBlocks(blocks);
+
         BrewingRegistry.ReleasePlugin(pluginContainer);
         EntityDefinitionsRegistry.ReleasePlugin(pluginContainer);
         BlockEntityTypesRegistry.ReleasePlugin(pluginContainer);
@@ -713,6 +718,17 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         // Its own container classes the players have open elsewhere, like a menu it opened for them.
         await PluginBlockEntities.CloseWindowsAsync(this.server, plugin, []);
+    }
+
+    // The placed blocks of plugin block types whose behaviour went or came back: the blocks around hear of them, as
+    // the power, connections and analog output they give may have changed (see LevelBlockUpdates.RefreshBlocksOf).
+    private void RefreshPlacedBlocks(List<API.Blocks.BlockType> types)
+    {
+        if (types.Count == 0)
+            return;
+
+        foreach (var level in this.Levels())
+            level.BlockUpdates.RefreshBlocksOf(types);
     }
 
     // Spawns again the entities of plugins' types kept in loaded chunks while their plugins were unloaded, once their

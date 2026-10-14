@@ -20,6 +20,7 @@ internal sealed class TickScheduler<T>(TickClock clock) where T : notnull
     private readonly PriorityQueue<ChunkTicks<T>, ScheduledTick<T>> containersToTick =
         new(ScheduledTick<T>.IntraTickDrainOrder);
     private readonly Queue<(ChunkTicks<T> Container, ScheduledTick<T> Tick)> toRunThisTick = new();
+    private readonly HashSet<(Vector Position, T Type)> toRunThisTickSet = [];
     private long subTickCount;
 
     /// <summary>
@@ -49,6 +50,13 @@ internal sealed class TickScheduler<T>(TickClock clock) where T : notnull
     /// The scheduling order of the next tick scheduled (vanilla <c>Level.nextSubTickCount</c>).
     /// </summary>
     public long NextSubTickOrder() => this.subTickCount++;
+
+    /// <summary>
+    /// Whether a tick of <paramref name="type"/> at <paramref name="position"/> is due this game tick and hasn't run
+    /// yet, like vanilla's <c>willTickThisTick</c>: only while the due ticks run. Such a tick is no longer scheduled,
+    /// so redstone components check this before scheduling one again.
+    /// </summary>
+    public bool WillTickThisTick(Vector position, T type) => this.toRunThisTickSet.Contains((position, type));
 
     /// <summary>
     /// Runs the ticks due by the clock's game time, like <c>LevelTicks.tick</c>; advance the clock first.
@@ -85,8 +93,12 @@ internal sealed class TickScheduler<T>(TickClock clock) where T : notnull
             this.nextTickForContainer[container.Key] = first.TriggerTick;
 
         this.containersToTick.Clear();
+        foreach (var (_, tick) in this.toRunThisTick)
+            this.toRunThisTickSet.Add((tick.Position, tick.Type));
+
         while (this.toRunThisTick.TryDequeue(out var entry))
         {
+            this.toRunThisTickSet.Remove((entry.Tick.Position, entry.Tick.Type));
             if (!run(entry.Tick.Position, entry.Tick.Type))
                 entry.Container.Hold(entry.Tick, this.GameTime);
         }

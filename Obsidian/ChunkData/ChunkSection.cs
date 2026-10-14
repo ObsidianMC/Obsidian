@@ -108,22 +108,29 @@ public sealed class ChunkSection : IChunkSection
         this.IsEmpty = true;
     }
 
-    // A state that random-ticks must be in the palette, which holds every state in the section (and maybe some that
-    // were overwritten), so most sections are ruled out without reading their blocks.
+    /// <summary>
+    /// Whether the section may hold a state <paramref name="matches"/> accepts (by state id): false only when its
+    /// palette, which holds every state in the section (and maybe some that were overwritten), rules it out.
+    /// </summary>
+    internal bool MayHold(Func<int, bool> matches)
+    {
+        if (this.BlockStateContainer.Palette is not IndirectBlockPalette palette)
+            return true;
+
+        for (var index = 0; index < palette.Count; index++)
+        {
+            if (palette.TryGetStateId(index, out var stateId) && matches(stateId))
+                return true;
+        }
+
+        return false;
+    }
+
+    // Most sections are ruled out by their palette without reading their blocks.
     private bool FindRandomlyTicking()
     {
-        if (this.BlockStateContainer.Palette is IndirectBlockPalette palette)
-        {
-            var inPalette = false;
-            for (var index = 0; index < palette.Count && !inPalette; index++)
-            {
-                if (palette.TryGetStateId(index, out var stateId))
-                    inPalette = BlockPhysics.IsRandomlyTicking(stateId);
-            }
-
-            if (!inPalette)
-                return false;
-        }
+        if (!this.MayHold(BlockPhysics.IsRandomlyTicking))
+            return false;
 
         for (var y = 0; y < 16; y++)
         {

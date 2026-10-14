@@ -3,15 +3,17 @@ using Obsidian.API.Blocks;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Plugins;
 using Obsidian.WorldData.Fluids;
+using Obsidian.WorldData.Redstone;
 using Obsidian.WorldData.Ticks;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// A live level's block ticks, and how plugin blocks and vanilla's falling blocks react to block updates: plugin
-/// blocks run their behaviour's hooks (see <see cref="IBlockBehavior"/>), and falling blocks schedule the tick they
-/// fall on. It's the <see cref="IBlockLevel"/> those hooks get.
+/// A live level's block ticks, and how plugin blocks, vanilla's redstone components and vanilla's falling blocks
+/// react to block updates: plugin blocks run their behaviour's hooks (see <see cref="IBlockBehavior"/>), redstone
+/// components their rules (see <see cref="VanillaRedstone"/>), and falling blocks schedule the tick they fall on.
+/// It's the <see cref="IBlockLevel"/> those hooks get.
 /// </summary>
 /// <remarks>
 /// Everything here runs under the level's tick lock (<see cref="LevelFluids.TickLock"/>), which the
@@ -99,8 +101,8 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
 
     /// <summary>
     /// Vanilla <c>ServerLevel.tickBlock</c>: runs a scheduled tick if the block is still the one it was scheduled
-    /// for. Plugin blocks run their <see cref="IBlockBehavior.Tick"/>, and vanilla's falling blocks fall; other
-    /// vanilla blocks' ticks (a repeater's, from a vanilla save) do nothing yet.
+    /// for. Plugin blocks run their <see cref="IBlockBehavior.Tick"/>, redstone components their own, and vanilla's
+    /// falling blocks fall; other vanilla blocks' ticks (an observer's, from a vanilla save) do nothing yet.
     /// </summary>
     /// <returns>
     /// False to hold the tick: a plugin's block's tick waits while its plugin is unloading or unloaded, as it was
@@ -114,6 +116,12 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
 
         if (BlocksRegistry.TryGetPluginBlock(state.GetHashCode(), out var pluginBlock))
             return this.RunPluginTick(position, state, pluginBlock);
+
+        if (VanillaRedstone.For(state) is RedstoneComponent component)
+        {
+            component.Tick(this, position, state);
+            return true;
+        }
 
         if (IsVanillaFalling(state))
             this.Fall(position, state);
@@ -139,6 +147,8 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     /// <inheritdoc/>
     public void OnRemoved(Vector position, IBlock state, IBlock newState)
     {
+        VanillaRedstone.For(state)?.OnRemoved(this, position, state);
+
         this.RunHook(state, nameof(IBlockBehavior.OnRemoved), behavior => behavior.OnRemoved(new BlockRemovedContext
         {
             Level = this,
@@ -157,6 +167,8 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
             return;
         }
 
+        VanillaRedstone.For(state)?.OnPlaced(this, position, state, oldState);
+
         this.RunHook(state, nameof(IBlockBehavior.OnPlaced), behavior => behavior.OnPlaced(new BlockPlacedContext
         {
             Level = this,
@@ -169,6 +181,8 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     /// <inheritdoc/>
     public void NeighborChanged(Vector position, IBlock state, IBlock source, Vector sourcePosition)
     {
+        VanillaRedstone.For(state)?.NeighborChanged(this, position, state);
+
         this.RunHook(
             state,
             nameof(IBlockBehavior.NeighborChanged),
@@ -197,6 +211,17 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
             return null;
         }
 
+        if (VanillaRedstone.For(state) is RedstoneComponent component)
+        {
+            var updated = component.UpdateShape(this, position, state, direction, neighbor);
+
+            // Vanilla's destroyBlock: what loses its support drops its loot as it goes.
+            if (updated.IsAir)
+                this.DropLoot(position, state);
+
+            return updated;
+        }
+
         if (!BlockBehaviors.TryEnter(state, out var behavior, out var call))
             return null;
 
@@ -221,6 +246,21 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
             }
         }
     }
+
+    /// <inheritdoc/>
+    public void AfterNeighborsUpdated(Vector position, IBlock state)
+    {
+        if (this.HasAnalogOutput(state))
+            this.UpdateComparatorsAround(position, state);
+    }
+
+    /// <inheritdoc/>
+    public void UpdateIndirectNeighborShapes(
+        Vector position,
+        IBlock state,
+        BlockUpdateFlags flags,
+        int updateLimit) =>
+        VanillaRedstone.For(state)?.UpdateIndirectNeighborShapes(this, position, state, flags, updateLimit);
 
     // Vanilla's falling blocks and suspicious sand and gravel; plugins' blocks never fall on their own.
     private static bool IsVanillaFalling(IBlock state) =>

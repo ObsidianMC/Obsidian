@@ -5,6 +5,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Redstone;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -130,6 +131,18 @@ public partial class UseItemOnPacket
                 player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
                 return;
             }
+        }
+
+        // Vanilla's redstone components react to being used with the main hand: levers, buttons, repeaters,
+        // comparators and dust. Adventure mode can't change repeaters, comparators or dust.
+        if (!player.Sneaking
+            && this.Hand == InteractionHand.MainHand
+            && player.GameMode != GameMode.Spectator
+            && player.Level is AbstractLevel redstoneLevel
+            && redstoneLevel.BlockUpdates.UseRedstone(position, player, player.GameMode != GameMode.Adventure))
+        {
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
         }
 
         // Beds and respawn anchors, which explode where their environment attributes say they don't work.
@@ -260,7 +273,8 @@ public partial class UseItemOnPacket
         {
             block = BlocksRegistry.Lava;
         }
-        else if (!BlocksRegistry.TryGetBlock(currentItem.Holder, out var placed))
+        else if (!BlocksRegistry.TryGetBlock(currentItem.Holder, out var placed)
+            && !VanillaRedstone.TryGetPlacedBlock(currentItem.Holder, out placed))
         {
             // The item isn't a block, or it's a plugin's item without one, which does what its behaviour does.
             return;
@@ -290,6 +304,16 @@ public partial class UseItemOnPacket
             string[] facings = ["north", "east", "south", "west"];
             block = block.WithProperty("facing", facings[(int)Math.Floor((player.Yaw.Degrees + 45) / 90) % 4]);
         }
+
+        // Vanilla's redstone components face and attach as the player clicks and looks, where they can stay.
+        if (placeLevel.BlockUpdates.GetRedstonePlacement(block, position, player, this.Face, replacesClicked)
+            is not IBlock redstoneState)
+        {
+            await this.RejectPlacementAsync(player, handSlot);
+            return;
+        }
+
+        block = redstoneState;
 
         if (currentItem.Holder.Block is BlockType)
         {
@@ -362,6 +386,7 @@ public partial class UseItemOnPacket
         }
 
         await BlockEntityComponents.ApplyAsync(placeLevel, position, placedItem);
+        placeLevel.BlockUpdates.OnPlacedByPlayer(position, block);
 
         if (player.GameMode != GameMode.Creative)
             player.Inventory.RemoveItem(handSlot, 1);

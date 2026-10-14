@@ -14,9 +14,9 @@ namespace Obsidian.WorldData.Fluids;
 /// <remarks>
 /// Neighbor updates reach the blocks Obsidian models: liquids (which schedule their tick and turn lava to obsidian,
 /// cobblestone or basalt), the other blocks' reactions the access gives (<see cref="IFluidLevelAccess.Reactions"/>:
-/// plugin blocks and falling blocks on a live level) and, through <see cref="ShapeUpdater"/>, the shapes of the
-/// vanilla blocks Obsidian models, such as plants losing their support or the other half of a double plant. Not
-/// thread-safe; the caller serializes access to the blocks.
+/// plugin blocks, redstone components and falling blocks on a live level) and, through <see cref="ShapeUpdater"/>,
+/// the shapes of the vanilla blocks Obsidian models, such as plants losing their support or the other half of a
+/// double plant. Not thread-safe; the caller serializes access to the blocks.
 /// </remarks>
 internal sealed class FluidLevel
 {
@@ -146,6 +146,34 @@ internal sealed class FluidLevel
         this.neighborUpdater.UpdateNeighborsAt(position, source);
 
     /// <summary>
+    /// Vanilla <c>updateNeighborsAtExceptFromFacing</c>: <see cref="UpdateNeighborsAt"/> but for the neighbor in
+    /// <paramref name="skip"/>.
+    /// </summary>
+    public void UpdateNeighborsAtExcept(Vector position, IBlock source, BlockFace skip) =>
+        this.neighborUpdater.UpdateNeighborsAtExcept(position, source, skip);
+
+    /// <summary>
+    /// Vanilla <c>Level.neighborChanged</c>: the block at <paramref name="position"/> alone hears that
+    /// <paramref name="source"/> at <paramref name="sourcePosition"/> changed.
+    /// </summary>
+    public void QueueNeighborChanged(Vector position, IBlock source, Vector sourcePosition) =>
+        this.neighborUpdater.NeighborChanged(position, source, sourcePosition);
+
+    /// <summary>
+    /// Vanilla <c>neighborShapeChanged</c>: the block at <paramref name="position"/> gets a shape update from its
+    /// neighbor in <paramref name="direction"/>, now <paramref name="neighbor"/>, like the direct ones a block change
+    /// sends (redstone dust updates the dust diagonal to it this way).
+    /// </summary>
+    public void QueueShapeUpdate(
+        BlockFace direction,
+        IBlock neighbor,
+        Vector position,
+        BlockUpdateFlags flags,
+        int updateLimit,
+        VanillaShapes shapes) =>
+        this.neighborUpdater.ShapeUpdate(direction, neighbor, position, flags, updateLimit, shapes);
+
+    /// <summary>
     /// Lets fluids react to a block that something else changed (a feature growing at runtime): a placed liquid and
     /// neighboring liquids get vanilla's <c>onPlace</c> and <c>neighborChanged</c>, and fluid neighbors schedule the
     /// tick their <c>updateShape</c> would.
@@ -260,11 +288,16 @@ internal sealed class FluidLevel
             return;
 
         if ((flags & BlockUpdateFlags.Neighbors) != 0)
+        {
             this.neighborUpdater.UpdateNeighborsAt(position, old);
+            this.access.Reactions?.AfterNeighborsUpdated(position, block);
+        }
 
         if ((flags & BlockUpdateFlags.KnownShape) == 0 && updateLimit > 0)
         {
+            // Vanilla's order: the old block's indirect shape updates, the new one's direct ones, then its indirect.
             var shapeFlags = flags & ~(BlockUpdateFlags.Neighbors | BlockUpdateFlags.SuppressDrops);
+            this.access.Reactions?.UpdateIndirectNeighborShapes(position, old, shapeFlags, updateLimit - 1);
             foreach (var face in updateShapeOrder)
             {
                 this.neighborUpdater.ShapeUpdate(
@@ -275,6 +308,8 @@ internal sealed class FluidLevel
                     updateLimit - 1,
                     shapes);
             }
+
+            this.access.Reactions?.UpdateIndirectNeighborShapes(position, block, shapeFlags, updateLimit - 1);
         }
     }
 

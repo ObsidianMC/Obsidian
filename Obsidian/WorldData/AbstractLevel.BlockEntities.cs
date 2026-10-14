@@ -229,6 +229,9 @@ public abstract partial class AbstractLevel
                 {
                     container.SetChanged();
                 }
+
+                if (blockEntity is ContainerBlockEntity watched)
+                    this.UpdateComparatorsOf(watched);
             }
         }
 

@@ -36,6 +36,7 @@ internal static class VanillaBlockEntities
         "minecraft:blast_furnace" => Smelting(InventoryType.BlastFurnace, "blast_furnace", "Blast Furnace", position),
         "minecraft:smoker" => Smelting(InventoryType.Smoker, "smoker", "Smoker", position),
         "minecraft:brewing_stand" => new BrewingStandBlockEntity(position),
+        "minecraft:comparator" => new Redstone.ComparatorBlockEntity(),
         _ => null
     };
 
