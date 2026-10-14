@@ -548,6 +548,22 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      and in block entity renderers, keeping its ambient occlusion and shading as vanilla does. Left: NeoForge's
      per-face `neoforge_data` (separate block and sky light, colour, ambient occlusion), and emission on items' models.
      See [plugin-archives.md](plugin-archives.md#assets).
+   - Done, engine phase 4 item renderers: the client evaluates item model definitions (`assets/<ns>/items/*.json`)
+     generally, for mods' items and vanilla's alike and for `minecraft:item_model` components, in menus, hands,
+     heads, item frames and on the ground. Every definition is compiled once per display context, its leaves baked
+     and its cases, thresholds and properties read, so evaluating a stack each frame allocates nothing; vanilla's own
+     definitions keep the bounded paths that reproduce holder-driven looks (bow, crossbow, shield, trident and horn
+     use, clock, compass and brush frames) and trims, which the evaluator's properties don't cover yet. Mods register
+     `condition`, `select` and `range_dispatch` properties by identifier (`RegisterItemCondition`,
+     `RegisterItemSelect`, `RegisterItemRange`), functions of the stack and an `ItemModelContext` (display context,
+     holder, game and day time) kept per stack and display context until either changes, and `special` model types
+     drawn in code (`RegisterItemRenderer`, an `IItemRenderer` drawing declared models and faces into an
+     `IItemRenderBuffer` in the base model's display space), like NeoForge's item model registration events. All run
+     in the mod's call guard; a failing property gives vanilla's default and a failing renderer the base model until
+     the stack changes, and they go when the mod unloads. Left: NeoForge's custom item model types, special model
+     fields, and vanilla's `component` predicates and selects, `bundle/selected_item`, `compass`, `cooldown`,
+     `crossbow/pull`, `use_cycle` and other GUI or input properties in the general evaluator. See
+     [plugin-content.md](plugin-content.md#client).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
      move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine; animations a server
      triggers beyond arm swings for mods' entities; client lifecycle events (joining and leaving a server).

@@ -2751,9 +2751,9 @@ if it throws, the mod fails to load and none of it does. The registry only takes
 `ConfigureClient`, since the client loads the assets that depend on them afterwards: registering later, through a
 registry the mod kept, throws `InvalidOperationException`. Its `Connection`, and sending payloads on it, stay usable
 for as long as the client runs. Like the server's content, key bindings, tints, renderers, particle providers,
-block entity shape and model providers, block entity renderers and menu screens are the mod's own: their identifiers
-are in its namespace (its mod id) and valid by vanilla's rules, they're for content it registered, and registering
-one twice throws `ArgumentException`.
+block entity shape and model providers, block entity renderers, item model properties, item renderers and menu
+screens are the mod's own: their identifiers are in its namespace (its mod id) and valid by vanilla's rules, they're
+for content it registered, and registering one twice throws `ArgumentException`.
 
 `IClientRegistry.RegisterBlockEntityShapes(string blockEntityType,
 Func<IReadOnlyDictionary<string, object?>, BlockShapes?> provider)` gives a mod's block entity type its collision
@@ -2906,6 +2906,75 @@ registry.RegisterBlockEntityRenderer("ruby:grinder", new BlockEntityRendererProp
 });
 ```
 
+A mod's items are drawn from their item model definitions, `assets/<ns>/items/<item>.json`, like vanilla's since
+1.21.4 (see the item models bullet below). Like NeoForge's item model registration events, the mod adds what those
+definitions can name:
+
+- `IClientRegistry.RegisterItemCondition(string property, Func<ItemStack, ItemModelContext, bool> condition)`,
+  `RegisterItemSelect(string property, Func<ItemStack, ItemModelContext, string?> select)` and
+  `RegisterItemRange(string property, Func<ItemStack, ItemModelContext, float> range)` register a property a
+  `minecraft:condition`, `minecraft:select` or `minecraft:range_dispatch` model names in its `property`, like
+  `"property": "ruby:charge"`. A select draws the case whose `when` is the value (or lists it), compared exactly, and
+  its `fallback` for null; a range the entry with the highest `threshold` at or below the value times `scale`, else
+  its `fallback`. Like vanilla's, the three kinds are separate, so one identifier can name one of each. A property is
+  a function of the stack, read-only, with its components, including the mod's own (read with `ItemStack.TryGet`,
+  see [Item components](#item-components)), and of an `ItemModelContext`: the `DisplayContext` (`Gui`, `Ground`,
+  `Fixed`, `Head`, and the first and third person hands), the `HolderId` of the entity holding, wearing or showing
+  the stack, or the dropped item (the player for their inventory; `IClientWorld.GetEntity` takes it), and the world's
+  `GameTime` and `DayTime` in ticks.
+- `IClientRegistry.RegisterItemRenderer(string specialModelType, ItemRendererProperties renderer)` draws a
+  `minecraft:special` model type in code, like NeoForge's special model renderers: a definition's
+  `{"type": "minecraft:special", "model": {"type": "ruby:gem_display"}, "base": "ruby:item/gem"}` draws with the
+  type's `IItemRenderer`, whose `Render(ItemStack stack, ItemModelContext context, IItemRenderBuffer buffer)` draws
+  declared `Models` (`buffer.Model(part, transform)`) and faces (`buffer.Face(face, transform)`) like a block entity
+  renderer's code, with `Matrix4x4` transforms in blocks in the item's model space (the box from 0 to 1 its base
+  model's elements fill). The base model's `display` transform for the context then places it, in every context:
+  menus, hands, heads, item frames and the ground. Fields of the special model other than its `type` aren't read.
+
+The properties run on the client's game thread inside calls into the mod, and their value is kept per stack and
+display context until the stack changes or its context does (another tick, holder or display context), so a
+property reading the mod's component decodes it about once a tick rather than every frame: keep them pure. A property
+that throws is logged and gives its default (false, the fallback, 0) for the stack until the stack changes. The
+renderer runs each frame for each stack drawn with its type, on the game thread inside a call into the mod: keep it
+short and free of allocations. If it throws, the error is logged, what it drew is taken back, and the base model is
+drawn instead until the stack changes; the base model is drawn too once the mod is gone. Both go when the mod
+unloads, and definitions naming them fall back to their defaults.
+
+```csharp
+// The gem's definition, assets/ruby/items/gem.json, selects by its charge: plain, glowing, or full, which the gem
+// display renderer draws in code.
+// {"model": {"type": "minecraft:select", "property": "ruby:charge",
+//   "cases": [
+//     {"when": "charged", "model": {"type": "minecraft:model", "model": "ruby:item/gem_glowing"}},
+//     {"when": "full", "model": {"type": "minecraft:special", "base": "ruby:item/gem",
+//       "model": {"type": "ruby:gem_display"}}}],
+//   "fallback": {"type": "minecraft:model", "model": "ruby:item/gem"}}}
+// this.charge is the PluginComponentType<int> the mod registered in ConfigureRegistry.
+registry.RegisterItemSelect("ruby:charge", (stack, context) => stack.Get(this.charge) switch
+{
+    >= 100 => "full",
+    > 0 => "charged",
+    _ => null
+});
+registry.RegisterItemRenderer("ruby:gem_display", new ItemRendererProperties
+{
+    Models = ["ruby:item/gem_core"],
+    Renderer = new GemDisplayRenderer()
+});
+
+// The full gem's core spins about its centre with the world's time.
+public sealed class GemDisplayRenderer : IItemRenderer
+{
+    public void Render(ItemStack stack, ItemModelContext context, IItemRenderBuffer buffer)
+    {
+        var spin = Matrix4x4.CreateTranslation(-0.5f, -0.5f, -0.5f)
+            * Matrix4x4.CreateRotationY(context.GameTime % 360 * MathF.PI / 180)
+            * Matrix4x4.CreateTranslation(0.5f, 0.5f, 0.5f);
+        buffer.Model(new BlockModelPart("ruby:item/gem_core"), spin);
+    }
+}
+```
+
 ```csharp
 public sealed class RubyMod : PluginBase, IClientPlugin
 {
@@ -3013,6 +3082,17 @@ public sealed class RubyMod : PluginBase, IClientPlugin
   `interpolate`, advancing once in each frame that runs a client tick, in menus too, and stopping while a server
   freezes the game. The format is in [plugin-archives.md](plugin-archives.md#assets). Faces using it keep their
   texture coordinates, since each frame is copied over the texture's place in the atlas.
+- **Item models.** Items are drawn from their item model definitions, `assets/<ns>/items/<item>.json`, as vanilla
+  does since 1.21.4, the same way for mods' items and vanilla's, and for a `minecraft:item_model` component naming
+  another definition: in menus, hands, heads, item frames and on the ground. `minecraft:model`, `composite`,
+  `condition`, `select`, `range_dispatch`, `special` and `empty` models are evaluated for the stack each time it's
+  drawn, with vanilla's properties that a stack, its holder and the world's time decide (`broken`, `damaged`,
+  `has_component`, `custom_model_data` and `using_item` conditions; `display_context`, `context_dimension`,
+  `context_entity_type`, `main_hand`, `block_state`, `charge_type`, `custom_model_data`, `trim_material` and
+  `local_time` selects; `custom_model_data`, `damage`, `count`, `use_duration` and `time` ranges) and the mod's own
+  (see the item model properties above). Vanilla's other properties give their defaults (false, the fallback, 0),
+  and `bundle/selected_item` draws nothing. A `minecraft:special` model of a type with a renderer (vanilla's chest,
+  shield, bed, banner, head and the like, or a mod's) is drawn by it, and otherwise by its `base` model.
 - **Particle providers.** A mod's particle type is drawn with the sprites of its definition,
   `assets/<ns>/particles/<name>.json` (`{"textures": ["<ns>:spark_0", "<ns>:spark_1"]}`, from
   `assets/<ns>/textures/particle/`), one picked at random per particle or, with `AnimateSprite`, in turn over its life.
@@ -3178,7 +3258,8 @@ The title screen's Reload Mods button reloads the client's mods without restarti
 `mods` folder again, then the assets. It's only on the title screen, so mods never reload while the client is
 connected to a server or running a world, whose channels and ids must stay as agreed. Unloading takes back
 everything mods registered in `ConfigureClient` (payload and tick handlers, key bindings, tints, renderers and what
-they cached for entities, particle providers, menu screens, HUD overlays), closes their open screens and drops their
+they cached for entities, item model properties and item renderers, particle providers, menu screens, HUD overlays),
+closes their open screens and drops their
 payload channels, disposes their plugins and unloads their code; loading runs `ConfigureRegistry` and
 `ConfigureClient` again on new instances. Like a server's plugin reload, content (blocks, items, entity types,
 particle types, menu types) stays registered for the process with its ids, so a reload can change what mods do and
