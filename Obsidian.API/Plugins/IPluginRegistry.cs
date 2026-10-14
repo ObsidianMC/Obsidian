@@ -9,6 +9,18 @@ using Obsidian.API.World.Features;
 namespace Obsidian.API.Plugins;
 public interface IPluginRegistry
 {
+    /// <summary>Registers persistent world/level data. Call during ConfigureRegistry.</summary>
+    public Data.SavedDataType<TValue> RegisterSavedData<TValue>(string identifier, ComponentCodec<TValue> codec);
+
+    /// <summary>
+    /// Registers detached entity, player and chunk data; a network codec enables optional client sync.
+    /// </summary>
+    public Data.AttachmentType<TValue> RegisterAttachment<TValue>(
+        string identifier,
+        ComponentCodec<TValue> codec,
+        ComponentNetworkCodec<TValue>? networkCodec = null,
+        bool copyOnDeath = false);
+
     /// <summary>
     /// Declares a sound event in this plugin's namespace during ConfigureRegistry on either side. Use the returned
     /// value with SoundEffectBuilder.Create and IPlayer.SendSoundAsync, or with the client's sound API.

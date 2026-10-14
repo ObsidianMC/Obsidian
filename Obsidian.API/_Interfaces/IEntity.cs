@@ -3,7 +3,7 @@ using Obsidian.API.Entities;
 
 namespace Obsidian.API;
 
-public interface IEntity
+public interface IEntity : Data.IAttachmentHolder
 {
     public ILevel Level { get; }
     public INavigator? Navigator { get; set; }

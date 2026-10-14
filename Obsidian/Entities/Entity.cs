@@ -136,6 +136,7 @@ public class Entity : IEquatable<Entity>, IEntity
     /// </remarks>
     internal virtual void WriteNbt(NbtCompound tag)
     {
+        API.Data.AttachmentStorage.For(this).Save(tag);
         tag.Set(EntityNbt.DoubleList("Pos", this.Position));
         tag.Set(EntityNbt.DoubleList("Motion", this.Motion));
         tag.Set(new NbtList(NbtTagType.Float, "Rotation")
@@ -161,6 +162,7 @@ public class Entity : IEquatable<Entity>, IEntity
     /// </summary>
     internal virtual void ReadNbt(NbtCompound tag)
     {
+        API.Data.AttachmentStorage.For(this).Load(tag);
         if (EntityNbt.TryReadVector(tag, "Pos", out var position))
             this.Position = position;
         if (EntityNbt.TryReadVector(tag, "Motion", out var motion))

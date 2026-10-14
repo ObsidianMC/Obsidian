@@ -636,12 +636,14 @@ public sealed partial class Player : Avatar, IClientPlayer
             return;
 
         Respawning = true;
+        this.ResetAttachmentSync();
         try
         {
             if (!Alive)
             {
                 // Death respawns must create fresh client state rather than retain the dead player's metadata.
                 dataKept = DataKept.None;
+                API.Data.AttachmentStorage.For(this).Respawn();
                 CancelEating();
                 CancelWeaponUse();
                 combatPosition = null;

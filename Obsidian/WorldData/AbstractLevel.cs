@@ -660,6 +660,8 @@ public abstract partial class AbstractLevel : ILevel
         {
             TickStage = $"tracking for {player.Username}";
             await player.SynchronizeTrackedEntitiesAsync();
+            if (player is Player connectedPlayer)
+                connectedPlayer.SynchronizeAttachments();
         }
         TickStage = "idle";
     }
@@ -961,6 +963,7 @@ public abstract partial class AbstractLevel : ILevel
             Interlocked.Exchange(ref this.jobsSinceFlush, 0);
             SavingEntities = true;
             await Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
+            this.SavePluginData();
         }
         finally
         {
@@ -1469,6 +1472,7 @@ public abstract partial class AbstractLevel : ILevel
         GC.SuppressFinalize(this);
 
         this.optionsMonitor.Dispose();
+        this.SavePluginData();
 
         // Waits out the generation jobs, holding every slot so no new one starts, and saves what jobs finished since the
         // last save started, including jobs that were still running during the server's save on stop.

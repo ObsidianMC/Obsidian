@@ -47,7 +47,8 @@ internal static class ChannelPayloads
     /// </summary>
     public static ImmutableArray<NetworkComponent> BuiltinPlayComponents { get; } =
     [
-        new(AdvancedOpenScreen, "1", PacketFlow.Clientbound, true)
+        new(AdvancedOpenScreen, "1", PacketFlow.Clientbound, true),
+        new(AttachmentPayload.Channel, "1", PacketFlow.Clientbound, true)
     ];
 
     /// <summary>

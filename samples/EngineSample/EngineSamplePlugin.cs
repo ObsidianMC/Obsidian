@@ -11,6 +11,8 @@ namespace EngineSample;
 /// </summary>
 public sealed class EngineSamplePlugin : PluginBase
 {
+    public SavedState SavedState { get; private set; } = null!;
+
     public override void ConfigureRegistry(IPluginRegistry registry)
     {
         // Phase 1, blocks that do things: a block with a block entity that counts ticks while powered.
@@ -19,5 +21,8 @@ public sealed class EngineSamplePlugin : PluginBase
         // Phase 2, items, inventories and recipes: a machine that grinds what it pulls from a chest by a recipe type
         // of its own, and pushes the results into a hopper.
         GrinderBlock.Register(registry);
+
+        // Phase 5: state shared by a network rather than owned by one block entity.
+        this.SavedState = new SavedState(registry);
     }
 }

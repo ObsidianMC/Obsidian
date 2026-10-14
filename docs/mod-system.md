@@ -501,6 +501,12 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      `sounds.json` merges with other packs. `IClientRegistry.Sounds` queues positional or UI playback from any thread,
      in menus too. Unload releases declarations and block sound types and disables the old client facade; reload
      re-registers them. See [plugin-content.md](plugin-content.md#sounds).
+   - Done, engine phase 5 saved data and attachments: `RegisterSavedData` gives worlds and levels lazy, dirty-marked
+     gzip NBT files, and `RegisterAttachment` adds detached data to players, entities and chunks. Unknown NBT survives
+     unloading; saved handles cannot write across reloads. Player attachments optionally survive death. An optional
+     Obsidian payload syncs the local player, tracked entities and loaded chunks, read through `IClientWorld` on the
+     game thread. Attachment-only plugins allow vanilla clients. See
+     [plugin-content.md](plugin-content.md#saved-data-and-attachments).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
      move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine; HUD overlays drawn with
      the screens' widgets; entity render layers (emissive and

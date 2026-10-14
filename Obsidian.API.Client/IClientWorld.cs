@@ -1,6 +1,8 @@
 using Obsidian.API.BlockEntities;
 using Obsidian.Nbt;
 using System.Collections.Generic;
+using Obsidian.API.Data;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Client;
 
@@ -17,6 +19,17 @@ namespace Obsidian.API.Client;
 /// </remarks>
 public interface IClientWorld
 {
+    /// <summary>Reads a detached synced attachment of the local player. Game thread only.</summary>
+    public bool TryGetPlayerAttachment<TValue>(AttachmentType<TValue> type, [MaybeNullWhen(false)] out TValue value);
+
+    /// <summary>Reads a detached synced attachment of a tracked entity. Game thread only.</summary>
+    public bool TryGetEntityAttachment<TValue>(
+        int entityId, AttachmentType<TValue> type, [MaybeNullWhen(false)] out TValue value);
+
+    /// <summary>Reads a detached synced attachment of a loaded chunk column. Game thread only.</summary>
+    public bool TryGetChunkAttachment<TValue>(
+        int chunkX, int chunkZ, AttachmentType<TValue> type, [MaybeNullWhen(false)] out TValue value);
+
     /// <summary>
     /// Whether the client has a chunk column, using chunk coordinates (block coordinates shifted by 4).
     /// </summary>
