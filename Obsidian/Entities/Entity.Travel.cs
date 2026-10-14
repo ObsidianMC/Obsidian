@@ -16,67 +16,33 @@ public partial class Entity
         var source = this.Level;
         var from = this.Position;
         using var area = level is AbstractLevel destination
-            ? await PortalArea.LoadAsync(destination, (Vector)position.Floor(), 0, () => this.Level == source)
+            ? await PortalArea.LoadAsync(destination, (Vector)position.Floor(), 0, () => this.IsTravelResident(source))
             : null;
         if (level is AbstractLevel && area is null)
             throw new InvalidOperationException("The entity moved while the destination was loading.");
 
-        var riders = this is Mob mob ? mob.TravelPassengers.ToArray() : [];
-        foreach (var rider in riders)
-            rider.Vehicle?.Dismount(rider);
-
-        if (source != level)
+        Player[] riders;
+        lock (ItemEntity.TransferLock)
         {
-            await source.DestroyEntityAsync(this);
-            if (this is IPlayer player)
-                source.TryRemovePlayer(player);
+            this.ValidateTravelResident(source);
+            riders = this is Mob mob ? mob.TravelPassengers.ToArray() : [];
+            foreach (var rider in riders)
+                rider.Vehicle?.Dismount(rider);
 
-            foreach (var observer in source.Players.Values.OfType<Player>())
-                observer.TrackedEntities.TryRemove(this.EntityId, out _);
+            this.CommitTravel(source, level, position, yaw, pitch);
+            if (source != level)
+                this.SpawnEntity();
+            else
+                this.PacketBroadcaster.QueuePacketToLevel(level, new TeleportEntityPacket
+                {
+                    EntityId = this.EntityId,
+                    Position = position,
+                    Delta = this.Motion,
+                    Yaw = this.Yaw,
+                    Pitch = this.Pitch,
+                    OnGround = this.MovementFlags.HasFlag(MovementFlags.OnGround)
+                });
         }
-
-        this.LastPosition = from;
-        this.Position = position;
-        this.Yaw = yaw ?? this.Yaw;
-        this.Pitch = pitch ?? this.Pitch;
-        this.BoundingBox = this.Dimension.CreateBBFromPosition(position);
-        this.Level = level;
-        if (source == level && level is AbstractLevel resident)
-        {
-            if (!resident.TryMoveEntity(this, from, position))
-            {
-                this.Position = from;
-                this.BoundingBox = this.Dimension.CreateBBFromPosition(from);
-                throw new InvalidOperationException("The destination region could not accept the entity.");
-            }
-        }
-        else if (!level.TryAddEntity(this))
-        {
-            this.Level = source;
-            this.Position = from;
-            this.BoundingBox = this.Dimension.CreateBBFromPosition(from);
-            source.TryAddEntity(this);
-            if (this is IPlayer player)
-                source.TryAddPlayer(player);
-
-            throw new InvalidOperationException("The destination level could not accept the entity.");
-        }
-
-        if (this is IPlayer movedPlayer)
-            level.TryAddPlayer(movedPlayer);
-
-        if (source != level)
-            this.SpawnEntity();
-        else
-            this.PacketBroadcaster.QueuePacketToLevel(level, new TeleportEntityPacket
-            {
-                EntityId = this.EntityId,
-                Position = position,
-                Delta = this.Motion,
-                Yaw = this.Yaw,
-                Pitch = this.Pitch,
-                OnGround = this.MovementFlags.HasFlag(MovementFlags.OnGround)
-            });
 
         if (this is Mob vehicle)
         {
@@ -84,6 +50,84 @@ public partial class Entity
             {
                 await rider.TeleportAsync(level, position + (rider.Position - from), rider.Yaw, rider.Pitch);
                 vehicle.RestoreTravelPassenger(rider);
+            }
+        }
+    }
+
+    // Membership is authoritative for ordinary removal and unloading saves; item pickup and mob death may mark
+    // removal before their dictionary entry is taken out. Read and revalidate under the shared transfer lock.
+    private protected bool IsTravelResident(ILevel source)
+    {
+        lock (ItemEntity.TransferLock)
+            return this.Level == source
+                && this is not ItemEntity { Removed: true }
+                && this is not Mob { IsRemoved: true }
+                && source is AbstractLevel origin
+                && origin.GetRegionForLocation(this.Position) is IRegion region
+                && region.Entities.TryGetValue(this.EntityId, out var entity)
+                && ReferenceEquals(entity, this);
+    }
+
+    private void ValidateTravelResident(ILevel source)
+    {
+        if (!this.IsTravelResident(source))
+            throw new InvalidOperationException("The entity was removed or moved while the destination was loading.");
+    }
+
+    // No awaits or tick-lock acquisition here. Saves take tick lock -> transfer lock -> chunk entity lock, so
+    // neither a save nor a removal can observe or interrupt the removal/position/addition commit.
+    private protected void CommitTravel(
+        ILevel source, ILevel destination, VectorD position, Angle? yaw, Angle? pitch)
+    {
+        lock (ItemEntity.TransferLock)
+        {
+            this.ValidateTravelResident(source);
+            var from = this.Position;
+            var oldYaw = this.Yaw;
+            var oldPitch = this.Pitch;
+            if (source != destination)
+            {
+                if (source is not AbstractLevel origin)
+                    throw new NotSupportedException("Entity transfers require an Obsidian source level.");
+
+                origin.RemoveEntity(this, transferring: true);
+                if (this is IPlayer player)
+                    source.TryRemovePlayer(player);
+            }
+
+            this.LastPosition = from;
+            this.Position = position;
+            this.Yaw = yaw ?? this.Yaw;
+            this.Pitch = pitch ?? this.Pitch;
+            this.BoundingBox = this.Dimension.CreateBBFromPosition(position);
+            this.Level = destination;
+            var added = source == destination && destination is AbstractLevel resident
+                ? resident.TryMoveEntity(this, from, position)
+                : destination.TryAddEntity(this);
+            if (!added)
+            {
+                this.Level = source;
+                this.Position = from;
+                this.Yaw = oldYaw;
+                this.Pitch = oldPitch;
+                this.BoundingBox = this.Dimension.CreateBBFromPosition(from);
+                if (source != destination)
+                {
+                    source.TryAddEntity(this);
+                    if (this is IPlayer player)
+                        source.TryAddPlayer(player);
+                }
+
+                throw new InvalidOperationException("The destination level could not accept the entity.");
+            }
+
+            if (this is IPlayer movedPlayer)
+                destination.TryAddPlayer(movedPlayer);
+
+            if (source != destination)
+            {
+                foreach (var observer in source.Players.Values.OfType<Player>())
+                    observer.TrackedEntities.TryRemove(this.EntityId, out _);
             }
         }
     }

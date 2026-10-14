@@ -247,25 +247,27 @@ public abstract partial class AbstractLevel : ILevel
 
     public ValueTask<bool> DestroyEntityAsync(IEntity entity)
     {
+        lock (ItemEntity.TransferLock)
+            return ValueTask.FromResult(this.RemoveEntity(entity, transferring: false));
+    }
+
+    // Transfers reuse the instance and its attachment holder; only a real removal retires storage.
+    // The caller holds TransferLock, shared with transfer commits and the entity save snapshot.
+    internal bool RemoveEntity(IEntity entity, bool transferring)
+    {
+        var region = this.GetRegionForLocation(entity.Position);
+        if (region is null || !region.Entities.TryRemove(new KeyValuePair<int, IEntity>(entity.EntityId, entity)))
+            return false;
+
         if (entity is Entity concrete)
             concrete.CancelEntityPortalTravel();
 
-        var destroyed = new RemoveEntitiesPacket(entity.EntityId);
-
-        this.PacketBroadcaster.QueuePacketToLevel(this, destroyed, entity is IPlayer ? [entity.EntityId] : []);
-
-        var (chunkX, chunkZ) = Region.ChunkOf(entity.Position);
-
-        var region = GetRegionForChunk(chunkX, chunkZ);
-
-        if (region is null)
-            return ValueTask.FromResult(false);
-
-        // Players reuse their holder across death and dimension transfers; their leave path retires it.
-        if (entity is not IPlayer)
+        if (!transferring && entity is not IPlayer)
             API.Data.AttachmentStorage.For(entity).Retire();
 
-        return ValueTask.FromResult(region.Entities.TryRemove(entity.EntityId, out _));
+        this.PacketBroadcaster.QueuePacketToLevel(
+            this, new RemoveEntitiesPacket(entity.EntityId), entity is IPlayer ? [entity.EntityId] : []);
+        return true;
     }
 
     public abstract Task<bool> LoadAsync(DimensionCodec codec);

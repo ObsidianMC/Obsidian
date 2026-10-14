@@ -146,7 +146,7 @@ public static partial class LootTableJson
             if (context.AttackingEntity is null)
                 return stack;
 
-            var level = EnchantmentLevel(context.AttackerWeapon, enchantment);
+            var level = context.AttackerEnchantmentLevel(enchantment);
             if (level == 0)
                 return stack;
 

@@ -64,7 +64,7 @@ public static partial class LootTableJson
 
         return new PredicateCondition(context =>
         {
-            var level = EnchantmentLevel(context.AttackerWeapon, enchantment);
+            var level = context.AttackerEnchantmentLevel(enchantment);
             var chance = level > 0 ? enchanted(level) : unenchanted;
 
             return context.Random.NextFloat() < chance;

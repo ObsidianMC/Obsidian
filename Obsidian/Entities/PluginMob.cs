@@ -231,7 +231,8 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
     }
 
     // Like vanilla's LivingEntity.dropFromLootTable: the type's entities/<path> table in its namespace, with the
-    // attacker, the player who hurt it lately (whose luck counts) and the weapon that killed it, which looting reads.
+    // attacker and the player who hurt it lately (whose luck counts). Enchantments use the attacker's current
+    // applicable equipment, like vanilla, rather than the weapon captured when the damage was dealt.
     private void DropLoot(DamageSource cause)
     {
         if (!this.Level.LevelData.GetBooleanRule("mob_drops"))
@@ -253,7 +254,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
             ThisEntity = this,
             AttackingEntity = cause.Attacker,
             LastDamagePlayer = player,
-            AttackerWeapon = this.IncomingWeapon,
+            ResolveAttackerEnchantment = identifier => CombatItems.LootEnchantmentLevel(cause.Attacker, identifier),
             ResolveTable = resolve
         };
 

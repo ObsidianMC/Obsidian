@@ -185,6 +185,9 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
                 if (json.TryGetProperty("primary_items", out var primaryItems))
                     parts.Add($"PrimaryItems = {this.EmitItemSet(primaryItems)}");
 
+                var slots = json.GetProperty("slots").EnumerateArray().Select(slot => Literal(slot.GetString()!));
+                parts.Add($"Slots = [{string.Join(", ", slots)}]");
+
                 parts.Add($"Weight = {json.GetProperty("weight").GetInt32()}");
                 parts.Add($"MaxLevel = {json.GetProperty("max_level").GetInt32()}");
                 parts.Add($"MinCost = {EmitCost(json.GetProperty("min_cost"))}");

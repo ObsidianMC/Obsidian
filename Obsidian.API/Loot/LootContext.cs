@@ -51,10 +51,17 @@ public sealed class LootContext
     public IPlayer? LastDamagePlayer { get; init; }
 
     /// <summary>
-    /// The weapon the attacking entity killed with, whose enchantments (like looting) enchantment-based conditions
-    /// and functions read.
+    /// Fallback weapon for callers without a living attacker's equipment resolver. The server resolves enchantments
+    /// from the attacker's current applicable equipment, including for projectile kills.
     /// </summary>
     public ItemStack? AttackerWeapon { get; init; }
+
+    internal Func<string, int>? ResolveAttackerEnchantment { get; init; }
+
+    internal int AttackerEnchantmentLevel(string identifier) => this.ResolveAttackerEnchantment is not null
+        ? this.ResolveAttackerEnchantment(identifier)
+        : LootTableJson.EnchantmentLevel(this.AttackerWeapon, identifier);
+
 
     /// <summary>The block before removal, for block predicates and state copying.</summary>
     public IBlock? BlockState { get; init; }

@@ -32,6 +32,60 @@ internal static class CombatItems
                 .Where(entry => entry.Id == enchantment.Id).Select(entry => entry.Level).DefaultIfEmpty().Max() ?? 0
             : 0;
 
+    // Vanilla's EnchantmentHelper.getEnchantmentLevel takes the maximum across the living attacker's current
+    // equipment in the enchantment's applicable slot groups. It doesn't read the projectile's captured weapon.
+    internal static int LootEnchantmentLevel(IEntity? attacker, string identifier)
+    {
+        var definition = EnchantmentsRegistry.All.FirstOrDefault(enchantment => enchantment.Identifier == identifier);
+        if (definition is null || attacker is not Player && attacker is not Mob)
+            return 0;
+
+        var level = 0;
+        foreach (var slot in Enum.GetValues<EquipmentSlot>())
+        {
+            var name = slot switch
+            {
+                EquipmentSlot.MainHand => "mainhand",
+                EquipmentSlot.OffHand => "offhand",
+                EquipmentSlot.Boots => "feet",
+                EquipmentSlot.Leggings => "legs",
+                EquipmentSlot.Chestplate => "chest",
+                EquipmentSlot.Helmet => "head",
+                EquipmentSlot.Body => "body",
+                _ => "saddle"
+            };
+            if (!definition.Slots.Any(group => MatchesSlot(group, name)))
+                continue;
+
+            var item = attacker switch
+            {
+                Mob mob => mob.GetEquipment(slot),
+                Player player => slot switch
+                {
+                    EquipmentSlot.MainHand => player.GetHeldItem(),
+                    EquipmentSlot.OffHand => player.Inventory.GetItem(45),
+                    EquipmentSlot.Boots => player.Inventory.GetItem(8),
+                    EquipmentSlot.Leggings => player.Inventory.GetItem(7),
+                    EquipmentSlot.Chestplate => player.Inventory.GetItem(6),
+                    EquipmentSlot.Helmet => player.Inventory.GetItem(5),
+                    _ => null
+                },
+                _ => null
+            };
+            if (item is { Count: > 0 })
+            {
+                var equippedLevel = item.Enchantments
+                    .Where(enchantment => enchantment.Id == definition.Id)
+                    .Select(enchantment => enchantment.Level)
+                    .DefaultIfEmpty()
+                    .Max();
+                level = Math.Max(level, equippedLevel);
+            }
+        }
+
+        return level;
+    }
+
     internal static float Attribute(ItemStack? item, string name, string slot, float baseValue = 0)
     {
         if (item is not { Count: > 0 } || item.RemoveComponents.Contains(DataComponentType.AttributeModifiers)) return baseValue;

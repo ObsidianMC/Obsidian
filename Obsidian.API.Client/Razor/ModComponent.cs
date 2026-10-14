@@ -18,7 +18,9 @@ namespace Obsidian.API.Client.Razor;
 /// <para>
 /// For that, the component can't implement Blazor's component interfaces (<c>IComponent</c>, <c>IHandleEvent</c>,
 /// <c>IHandleAfterRender</c>, <c>IDisposable</c>, <c>IAsyncDisposable</c>) itself: clean up in
-/// <see cref="OnDispose"/> rather than with <c>@implements IDisposable</c>.
+/// <see cref="OnDispose"/> rather than with <c>@implements IDisposable</c>. Mod components cannot use
+/// <c>[Inject]</c> or <c>@inject</c>: Blazor invokes those setters outside the guarded lifecycle. Obtain the screen's
+/// context through its <see cref="ScreenContext"/> cascading parameter instead.
 /// </para>
 /// </remarks>
 public abstract class ModComponent : IComponent, IHandleEvent, IHandleAfterRender, IDisposable
