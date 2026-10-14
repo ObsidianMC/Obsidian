@@ -26,6 +26,13 @@ public interface IBlockBehavior
     public ValueTask<bool> UseAsync(BlockUseContext context) => ValueTask.FromResult(false);
 
     /// <summary>
+    /// Runs before a player breaks this block. Set IsCancelled to keep it, for example after removing one part.
+    /// The hit comes from the server's outline raycast, since vanilla's break packet carries no hit location.
+    /// Runs on the level tick, in turn with block entity callbacks and the resulting break transaction.
+    /// </summary>
+    public ValueTask BreakAsync(BlockBreakContext context) => ValueTask.CompletedTask;
+
+    /// <summary>
     /// The state a player places the block in, like vanilla's <c>getStateForPlacement</c>: from where they clicked
     /// and where they look, say a <c>facing</c> property from <see cref="BlockPlaceContext.HorizontalDirection"/>.
     /// </summary>
@@ -147,4 +154,19 @@ public sealed class BlockUseContext
     public required BlockFace Face { get; init; }
 
     public required InteractionHand Hand { get; init; }
+
+    /// <summary>The use packet's hit location relative to the block's lowest corner.</summary>
+    public VectorD ClickedAt { get; init; }
+}
+
+/// <summary>A player's attempt to break a plugin block, before removal and drops.</summary>
+public sealed class BlockBreakContext
+{
+    public required IPlayer Player { get; init; }
+
+    public required IBlock Block { get; init; }
+
+    public required BlockShapeHit Hit { get; init; }
+
+    public bool IsCancelled { get; set; }
 }

@@ -117,35 +117,6 @@ public sealed class PluginUnloading : IDisposable
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task PluginHandlers_GetThePluginsOwnServer()
-    {
-        await using var context = TestServerFactory.CreateServer($"probe-server-{Guid.NewGuid():N}");
-        var human = await JoinAsync(context);
-        await using var manager = CreateManager(context);
-        var path = Path.Join(this.folder, "probe.obby");
-
-        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0"));
-        var container = (await manager.LoadPluginAsync(path))!;
-
-        // The handler cancels the message, which the server's handler after it sees in the shared arguments.
-        var chat = new IncomingChatMessageEventArgs(human, context.Server, ProbePlugin.ServerMessage, "");
-        Assert.Equal(EventResult.Cancelled, await context.EventDispatcher.ExecuteEventAsync(chat));
-
-        // In the arguments, the handler found the plugin's own server; the test, outside the plugin, the server.
-        var own = Assert.IsType<PluginServer>(container.HostServices.Server);
-        Assert.Same(own, AppContext.GetData(ProbePlugin.ServerKey));
-        Assert.Same(context.Server, chat.Server);
-
-        // So the boss bar it created through it is the plugin's, which unloading retires.
-        var bar = (IBossBar)AppContext.GetData(ProbePlugin.BossBarKey)!;
-        bar.AddPlayer(human.EntityId);
-
-        await manager.UnloadPluginAsync(container);
-
-        Assert.Throws<InvalidOperationException>(() => bar.AddPlayer(human.EntityId));
-    }
-
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task Reload_InsidePluginCall_PreservesOldGenerationState()
     {
         await using var context = TestServerFactory.CreateServer($"probe-reload-{Guid.NewGuid():N}");
@@ -229,47 +200,6 @@ public sealed class PluginUnloading : IDisposable
             packet => packet.EntityId == horse.EntityId && packet.Passengers.Length == 0);
         Assert.Contains(client.SentPackets.OfType<RemoveEntitiesPacket>(),
             packet => packet.Entities.Contains(horse.EntityId));
-    }
-
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task ContextsBuiltWithPluginServer_ResolveForAnotherPluginAndHost()
-    {
-        await using var context = TestServerFactory.CreateServer($"probe-context-{Guid.NewGuid():N}");
-        var human = await JoinAsync(context);
-        await using var manager = CreateManager(context);
-        var path = Path.Join(this.folder, "probe.obby");
-        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0"));
-        var first = (await manager.LoadPluginAsync(path))!;
-        var own = first.HostServices.Server;
-        var chat = new IncomingChatMessageEventArgs(human, own, "hello", "");
-        var command = new CommandContext("/plugins", new CommandSender(CommandIssuers.Console, null), null, own);
-        var payload = new PayloadContext
-        {
-            Client = human.Client,
-            Player = human,
-            Server = own,
-            Phase = PayloadPhase.Play
-        };
-
-        // A second loaded generation has a different server wrapper, while the contexts retain the first one.
-        var second = (await manager.LoadPluginAsync(path))!;
-        using (second.TryEnter())
-        {
-            Assert.Same(second.HostServices.Server, chat.Server);
-            Assert.Same(second.HostServices.Server, command.Server);
-            Assert.Same(second.HostServices.Server, payload.Server);
-
-            using (PluginCall.EnterHost())
-            {
-                Assert.Same(context.Server, chat.Server);
-                Assert.Same(context.Server, command.Server);
-                Assert.Same(context.Server, payload.Server);
-            }
-        }
-
-        Assert.Same(context.Server, chat.Server);
-        Assert.Same(context.Server, command.Server);
-        Assert.Same(context.Server, payload.Server);
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]

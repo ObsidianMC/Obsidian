@@ -1,4 +1,5 @@
 using Obsidian.API.Plugins;
+using Obsidian.API.Blocks;
 using Obsidian.Nbt;
 using System.Threading;
 
@@ -21,8 +22,9 @@ namespace Obsidian.API.BlockEntities;
 /// The server saves what <see cref="Save"/> writes as of the last time the block entity called
 /// <see cref="SetChanged"/>, taken at the end of the level's tick: call it whenever its saved data changes, like
 /// vanilla's <c>setChanged</c>. The server calls <see cref="Load"/>, <see cref="Save"/>, <see cref="TickAsync"/>,
-/// <see cref="GetUpdateData"/> and <see cref="OnRemoved"/> on the level's tick, one at a time, besides creating a new
-/// one for a block set elsewhere; so code that changes it on the level's tick needs no locking. Chunks are saved and
+/// <see cref="GetUpdateData"/>, <see cref="GetShapes"/> and <see cref="OnRemoved"/> on the level's tick, one at a time,
+/// besides creating a new one for a block set elsewhere; code that changes it on the level's tick needs no locking.
+/// Chunks are saved and
 /// sent from copies of what those calls returned.
 /// </para>
 /// </remarks>
@@ -72,6 +74,9 @@ public abstract class BlockEntity : IBlockEntity
     /// </summary>
     internal NbtCompound? ClientData { get; set; }
 
+    // Published with saved/update data; collision and raycast readers never call plugin code.
+    internal volatile BlockShapes? ShapeData;
+
     /// <summary>
     /// Whether the server may call <see cref="Save"/> and <see cref="GetUpdateData"/> from any thread, when the chunk
     /// is saved or sent, rather than keeping what they returned: true for the server's own block entities.
@@ -111,9 +116,16 @@ public abstract class BlockEntity : IBlockEntity
     /// <see cref="SendUpdate"/>; null, the default, sends none.
     /// </summary>
     /// <remarks>
-    /// A client mod's block entity of the same type reads it, so send only what clients show.
+    /// A client mod's shape and rendering code reads it, so send only what clients show.
     /// </remarks>
     protected internal virtual NbtCompound? GetUpdateData() => null;
+
+    /// <summary>
+    /// Overrides this block's collision and outline boxes from its data, or returns null for the state's shapes.
+    /// Called when created or loaded, after a player's break hook, and at tick end after SetChanged or SendUpdate.
+    /// Call both when a shape change must be saved and shown to clients; GetUpdateData includes the client's data.
+    /// </summary>
+    protected internal virtual BlockShapes? GetShapes() => null;
 
     /// <summary>
     /// Called when the block entity's block is removed from the level, before what a container holds drops, like

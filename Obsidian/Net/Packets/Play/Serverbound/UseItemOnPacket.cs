@@ -122,7 +122,8 @@ public partial class UseItemOnPacket
                 Position = position,
                 Block = b,
                 Face = this.Face,
-                Hand = this.Hand
+                Hand = this.Hand,
+                ClickedAt = this.Cursor
             });
 
             if (usedBlock)

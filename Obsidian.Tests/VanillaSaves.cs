@@ -48,46 +48,19 @@ public sealed class VanillaSaves : IDisposable
             Directory.Delete(this.folder, recursive: true);
     }
 
-    [Fact(DisplayName = "A vanilla chunk loads with its block states by name, biomes and namespaced status")]
-    public async Task VanillaChunkLoads()
-    {
-        await WriteChunkAsync(this.folder, VanillaChunk());
-
-        var chunk = await LoadChunkAsync(this.folder);
-
-        Assert.Equal(ChunkGenStage.full, chunk.ChunkStatus);
-        Assert.Equal(BlockStateProperties.GetState("minecraft:oak_stairs", stairsProperties), chunk.GetBlock(stairs));
-        Assert.Equal("east", chunk.GetBlock(stairs).GetProperty("facing"));
-        Assert.Equal(BlocksRegistry.Stone, chunk.GetBlock(stairs + new Vector(1, 0, 0)));
-        Assert.Equal(BlocksRegistry.Granite, chunk.GetBlock(0, 16, 0));
-        Assert.Equal("minecraft:desert", chunk.GetBiome(desert.X, desert.Y, desert.Z).Name);
-        Assert.Equal("minecraft:plains", chunk.GetBiome(0, 0, 0).Name);
-    }
-
-    [Fact(DisplayName = "A region file counts as saved chunks only once its header locates one")]
-    public async Task EmptyRegionFileHasNoChunks()
-    {
-        var path = Path.Join(this.folder, "region", "r.0.0.mca");
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-
-        await using (var empty = new RegionFile(path, NbtCompression.ZLib))
-        {
-            await empty.InitializeAsync();
-            empty.Flush();
-        }
-
-        Assert.False(RegionFile.HasChunks(path));
-
-        await WriteChunkAsync(this.folder, VanillaChunk());
-
-        Assert.True(RegionFile.HasChunks(path));
-    }
-
     [Fact(DisplayName = "Obsidian saves chunks in vanilla's section shape and reloads them unchanged")]
     public async Task SavedChunkHasVanillaShape()
     {
         await WriteChunkAsync(this.folder, VanillaChunk());
         var loaded = await LoadChunkAsync(this.folder);
+
+        Assert.Equal(ChunkGenStage.full, loaded.ChunkStatus);
+        Assert.Equal(BlockStateProperties.GetState("minecraft:oak_stairs", stairsProperties), loaded.GetBlock(stairs));
+        Assert.Equal("east", loaded.GetBlock(stairs).GetProperty("facing"));
+        Assert.Equal(BlocksRegistry.Stone, loaded.GetBlock(stairs + new Vector(1, 0, 0)));
+        Assert.Equal(BlocksRegistry.Granite, loaded.GetBlock(0, 16, 0));
+        Assert.Equal("minecraft:desert", loaded.GetBiome(desert.X, desert.Y, desert.Z).Name);
+        Assert.Equal("minecraft:plains", loaded.GetBiome(0, 0, 0).Name);
 
         // Post-processing marks in two sections.
         var marks = ((Chunk)loaded).PostProcessing;
@@ -135,7 +108,8 @@ public sealed class VanillaSaves : IDisposable
         // Vanilla's post-processing: a list of packed positions for every section, x | y << 4 | z << 8 within it.
         var postProcessing = ((NbtList)saved["PostProcessing"]).Cast<NbtList>().ToList();
         Assert.Equal(loaded.Sections.Length, postProcessing.Count);
-        Assert.Equal([(short)(3 | 4 << 4 | 5 << 8)], postProcessing[0].Cast<NbtTag<short>>().Select(mark => mark.Value));
+        Assert.Equal(
+            [(short)(3 | 4 << 4 | 5 << 8)], postProcessing[0].Cast<NbtTag<short>>().Select(mark => mark.Value));
         Assert.Equal([(short)(15 | 1 << 4)], postProcessing[5].Cast<NbtTag<short>>().Select(mark => mark.Value));
         Assert.Equal(marks, ((Chunk)reloaded).PostProcessing);
 
@@ -147,52 +121,74 @@ public sealed class VanillaSaves : IDisposable
         Assert.Equal([1L], ((NbtArray<long>)references["minecraft:village_plains"]).GetArray());
     }
 
-    [Fact(DisplayName = "A vanilla player loads, and saves keep vanilla's names and what Obsidian doesn't model")]
-    public async Task VanillaPlayerRoundTrips()
+    [Fact]
+    public async Task PlayerAndItemComponentsRoundTrip()
     {
-        var world = this.CreateWorld();
-        var player = CreatePlayer(world, owner: false);
-        await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(player.Uuid), VanillaPlayer(xpLevel: 5));
-
-        try
         {
-            await player.LoadAsync(loadFromPersistentWorld: false);
+            var world = this.CreateWorld();
+            var player = CreatePlayer(world, owner: false);
+            await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(player.Uuid), VanillaPlayer(xpLevel: 5));
 
-            Assert.Equal(new VectorD(1.5, 70, -2.5), player.Position);
-            Assert.Equal(GameMode.Creative, player.GameMode);
-            Assert.Equal(15f, player.Health);
-            Assert.Equal(17, player.FoodLevel);
-            Assert.Equal(0.25f, player.XpP);
-            Assert.Equal(playerUuid, player.Uuid);
-            Assert.Equal(39, player.CurrentHeldItemSlot);
-            Assert.Equal(5, player.Inventory.GetItem(39)!.Damage);
-            Assert.Equal(64, player.Inventory.GetItem(9)!.Count);
-            Assert.Same(ItemsRegistry.IronHelmet, player.Inventory.GetItem(5)!.Holder);
-            Assert.Same(ItemsRegistry.Shield, player.Inventory.GetItem(45)!.Holder);
-            Assert.Equal(3, player.EnderInventory.GetItem(0)!.Count);
+            try
+            {
+                await player.LoadAsync(loadFromPersistentWorld: false);
 
-            player.XpLevel = 6;
-            await player.SaveAsync();
+                Assert.Equal(new VectorD(1.5, 70, -2.5), player.Position);
+                Assert.Equal(GameMode.Creative, player.GameMode);
+                Assert.Equal(15f, player.Health);
+                Assert.Equal(17, player.FoodLevel);
+                Assert.Equal(0.25f, player.XpP);
+                Assert.Equal(playerUuid, player.Uuid);
+                Assert.Equal(39, player.CurrentHeldItemSlot);
+                Assert.Equal(5, player.Inventory.GetItem(39)!.Damage);
+                Assert.Equal(64, player.Inventory.GetItem(9)!.Count);
+                Assert.Same(ItemsRegistry.IronHelmet, player.Inventory.GetItem(5)!.Holder);
+                Assert.Same(ItemsRegistry.Shield, player.Inventory.GetItem(45)!.Holder);
+                Assert.Equal(3, player.EnderInventory.GetItem(0)!.Count);
 
-            var saved = PlayerDataFile.Read(world.GetPlayerDataPath(player.Uuid), NullLogger.Instance)!;
-            Assert.Equal(6, saved.GetInt("XpLevel"));
-            Assert.Equal(3, saved.GetInt("SelectedItemSlot"));
-            Assert.Equal("minecraft:overworld", saved.GetString("Dimension"));
-            Assert.Equal(1.0, saved.GetDouble("fall_distance"));
-            Assert.True(((NbtCompound)saved["recipeBook"]).GetBool("isGuiOpen"));
-            Assert.Equal("minecraft:iron_helmet", ((NbtCompound)((NbtCompound)saved["equipment"])["head"]).GetString("id"));
+                player.XpLevel = 6;
+                await player.SaveAsync();
 
-            var sword = ((NbtList)saved["Inventory"]).Cast<NbtCompound>().Single(item => item.GetByte("Slot") == 3);
-            Assert.Equal(1, sword.GetInt("count"));
-            Assert.False(sword.HasTag("Count"));
+                var saved = PlayerDataFile.Read(world.GetPlayerDataPath(player.Uuid), NullLogger.Instance)!;
+                Assert.Equal(6, saved.GetInt("XpLevel"));
+                Assert.Equal(3, saved.GetInt("SelectedItemSlot"));
+                Assert.Equal("minecraft:overworld", saved.GetString("Dimension"));
+                Assert.Equal(1.0, saved.GetDouble("fall_distance"));
+                Assert.True(((NbtCompound)saved["recipeBook"]).GetBool("isGuiOpen"));
+                Assert.Equal(
+                    "minecraft:iron_helmet", ((NbtCompound)((NbtCompound)saved["equipment"])["head"]).GetString("id"));
 
-            var components = (NbtCompound)sword["components"];
-            Assert.Equal(5, components.GetInt("minecraft:damage"));
-            Assert.Equal("dev", ((NbtCompound)components["minecraft:custom_data"]).GetString("owner"));
+                var sword = ((NbtList)saved["Inventory"]).Cast<NbtCompound>().Single(item => item.GetByte("Slot") == 3);
+                Assert.Equal(1, sword.GetInt("count"));
+                Assert.False(sword.HasTag("Count"));
+
+                var components = (NbtCompound)sword["components"];
+                Assert.Equal(5, components.GetInt("minecraft:damage"));
+                Assert.Equal("dev", ((NbtCompound)components["minecraft:custom_data"]).GetString("owner"));
+            }
+            finally
+            {
+                DeletePersistentData(player);
+            }
         }
-        finally
+
         {
-            DeletePersistentData(player);
+            var pickaxe = new NbtCompound
+            {
+                new NbtTag<string>("id", "minecraft:diamond_pickaxe"),
+                new NbtTag<int>("count", 1),
+                new NbtCompound("components") { new NbtCompound("!minecraft:max_damage") }
+            };
+
+            var loaded = pickaxe.ItemFromNbt()!;
+            Assert.Equal(0, loaded.MaxDamage);
+            Assert.Contains(DataComponentType.MaxDamage, loaded.RemoveComponents);
+            Assert.True(((NbtCompound)loaded.ToNbt()["components"]).HasTag("!minecraft:max_damage"));
+
+            // The explosion is a component Obsidian doesn't model, so only the saved NBT tells the stars apart.
+            var red = FireworkStar(0xFF0000).ItemFromNbt()!;
+            Assert.Equal(red, FireworkStar(0xFF0000).ItemFromNbt());
+            Assert.NotEqual(red, FireworkStar(0x0000FF).ItemFromNbt());
         }
     }
 
@@ -249,27 +245,6 @@ public sealed class VanillaSaves : IDisposable
         }
     }
 
-    [Fact(DisplayName = "Saved items apply removed defaults, and differ from items with other unmodeled components")]
-    public void SavedItemComponents()
-    {
-        var pickaxe = new NbtCompound
-        {
-            new NbtTag<string>("id", "minecraft:diamond_pickaxe"),
-            new NbtTag<int>("count", 1),
-            new NbtCompound("components") { new NbtCompound("!minecraft:max_damage") }
-        };
-
-        var loaded = pickaxe.ItemFromNbt()!;
-        Assert.Equal(0, loaded.MaxDamage);
-        Assert.Contains(DataComponentType.MaxDamage, loaded.RemoveComponents);
-        Assert.True(((NbtCompound)loaded.ToNbt()["components"]).HasTag("!minecraft:max_damage"));
-
-        // The explosion is a component Obsidian doesn't model, so only the saved NBT tells the stars apart.
-        var red = FireworkStar(0xFF0000).ItemFromNbt()!;
-        Assert.Equal(red, FireworkStar(0xFF0000).ItemFromNbt());
-        Assert.NotEqual(red, FireworkStar(0x0000FF).ItemFromNbt());
-    }
-
     [Fact(DisplayName = "A new world reads its game rules, and its dimensions share its difficulty")]
     public void NewWorldLevelData()
     {
@@ -310,8 +285,15 @@ public sealed class VanillaSaves : IDisposable
 
     private World CreateWorld(NbtCompound? data = null)
     {
-        var world = new World(NullLogger<World>.Instance, null!, null!, new FixedOptions(new ServerConfiguration()), null!,
-            new EmptyWorldGenerator(), "world", "0");
+        var world = new World(
+            NullLogger<World>.Instance,
+            null!,
+            null!,
+            new FixedOptions(new ServerConfiguration()),
+            null!,
+            new EmptyWorldGenerator(),
+            "world",
+            "0");
 
         world.UseVanillaLayout(this.folder);
         CodecRegistry.TryGetDimension("minecraft:overworld", out var overworld);
@@ -334,8 +316,8 @@ public sealed class VanillaSaves : IDisposable
     }
 
     /// <summary>
-    /// A player as vanilla 1.21.11 saves them: an item with a component Obsidian doesn't model, equipment, an ender chest,
-    /// and fields Obsidian doesn't model at all (the recipe book, and another player's UUID).
+    /// A player as vanilla 1.21.11 saves them, including equipment, an ender chest and an unmodeled item component.
+    /// Unmodeled player fields include the recipe book and another player's UUID.
     /// </summary>
     private static NbtCompound VanillaPlayer(int xpLevel) => new()
     {
@@ -346,7 +328,11 @@ public sealed class VanillaSaves : IDisposable
             new NbtTag<double>(string.Empty, 70),
             new NbtTag<double>(string.Empty, -2.5)
         },
-        new NbtList(NbtTagType.Float, "Rotation") { new NbtTag<float>(string.Empty, 90f), new NbtTag<float>(string.Empty, 10f) },
+        new NbtList(NbtTagType.Float, "Rotation")
+        {
+            new NbtTag<float>(string.Empty, 90f),
+            new NbtTag<float>(string.Empty, 10f)
+        },
         new NbtArray<int>("UUID", [1, 2, 3, 4]),
         new NbtTag<string>("Dimension", "minecraft:overworld"),
         new NbtTag<int>("playerGameType", 1),
@@ -378,8 +364,16 @@ public sealed class VanillaSaves : IDisposable
         },
         new NbtCompound("equipment")
         {
-            new NbtCompound("head") { new NbtTag<string>("id", "minecraft:iron_helmet"), new NbtTag<int>("count", 1) },
-            new NbtCompound("offhand") { new NbtTag<string>("id", "minecraft:shield"), new NbtTag<int>("count", 1) }
+            new NbtCompound("head")
+            {
+                new NbtTag<string>("id", "minecraft:iron_helmet"),
+                new NbtTag<int>("count", 1)
+            },
+            new NbtCompound("offhand")
+            {
+                new NbtTag<string>("id", "minecraft:shield"),
+                new NbtTag<int>("count", 1)
+            }
         },
         new NbtList(NbtTagType.Compound, "EnderItems")
         {
@@ -394,9 +388,9 @@ public sealed class VanillaSaves : IDisposable
     };
 
     /// <summary>
-    /// A complete chunk as vanilla 1.21.11 saves it, with two sections: section 0 holds stone with oak stairs (by name and
-    /// properties) at <see cref="stairs"/> over plains with a desert cell at <see cref="desert"/>; section 1 is granite in
-    /// Obsidian's previous format, by state id.
+    /// A complete chunk as vanilla 1.21.11 saves it, with two sections. Section 0 holds stone with oak stairs
+    /// (by name and properties) at <see cref="stairs"/>, over plains with a desert cell at <see cref="desert"/>.
+    /// Section 1 is granite in Obsidian's previous format, by state id.
     /// </summary>
     private static NbtCompound VanillaChunk()
     {
@@ -447,7 +441,11 @@ public sealed class VanillaSaves : IDisposable
                         new NbtList(NbtTagType.Compound, "palette")
                         {
                             new NbtCompound { new NbtTag<string>("Name", "minecraft:stone") },
-                            new NbtCompound { new NbtTag<string>("Name", "minecraft:oak_stairs"), stairsProperties }
+                            new NbtCompound
+                            {
+                                new NbtTag<string>("Name", "minecraft:oak_stairs"),
+                                stairsProperties
+                            }
                         },
                         new NbtArray<long>("data", blocks)
                     },

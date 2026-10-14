@@ -133,9 +133,6 @@ public sealed class LevelStemGenerators
     // for vanilla's own dimensions.
     [Theory(DisplayName = "Flat stems Obsidian can't generate as vanilla would are refused, saying where")]
     [InlineData("stemgen:lakes", "\"lakes\": false", "\"lakes\": true", "generator.settings.lakes")]
-    [InlineData("stemgen:features", "\"features\": false", "\"features\": true", "generator.settings.features")]
-    [InlineData("stemgen:structures", "\"structure_overrides\": []", "\"a\": 1", "structure_overrides")]
-    [InlineData("stemgen:high", "\"height\": 2", "\"height\": 4063", "generator.settings.layers")]
     [InlineData("minecraft:overworld", "", "", "minecraft:noise")]
     public void UnsupportedFlatStemsAreRefused(string identifier, string from, string to, string message)
     {

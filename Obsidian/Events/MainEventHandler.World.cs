@@ -1,5 +1,6 @@
 using Obsidian.API.Inventory;
 using Obsidian.API.Events;
+using Obsidian.API.BlockEntities;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.API.Loot;
@@ -11,12 +12,24 @@ namespace Obsidian.Events;
 public partial class MainEventHandler
 {
     [EventPriority(Priority = Priority.Internal)]
-    public async ValueTask OnBlockBreak(BlockBreakEventArgs args)
+    public ValueTask OnBlockBreak(BlockBreakEventArgs args)
+    {
+        if (args.Level is AbstractLevel level && BlocksRegistry.TryGetPluginBlock(args.Block.GetHashCode(), out _))
+        {
+            // The entire transaction shares the tick with block entity callbacks and plugin unloading.
+            level.EnqueueEntityAction(() => this.BreakBlockAsync(args));
+            return ValueTask.CompletedTask;
+        }
+
+        return this.BreakBlockAsync(args);
+    }
+
+    private async ValueTask BreakBlockAsync(BlockBreakEventArgs args)
     {
         var player = args.Player;
         var sequence = args.Sequence;
         var block = args.Block;
-        var world = player.Level;
+        var world = args.Level;
         var location = args.Location;
 
         player.SendPacket(new BlockChangedAckPacket
@@ -24,9 +37,20 @@ public partial class MainEventHandler
             SequenceID = sequence
         });
 
-        if (args.IsCancelled)
+        if (player.Level != world)
+            return;
+
+        var current = await world.GetBlockAsync(location) ?? BlocksRegistry.Air;
+        if (args.IsCancelled || current.GetHashCode() != block.GetHashCode())
         {
-            player.SendPacket(new BlockUpdatePacket(location, block.GetHashCode()));
+            await RestoreBreakAsync(player, world, location, current);
+            return;
+        }
+
+        if (await Plugins.BlockBehaviors.CancelPlayerBreakAsync(player, location, block))
+        {
+            current = await world.GetBlockAsync(location) ?? BlocksRegistry.Air;
+            await RestoreBreakAsync(player, world, location, current);
             return;
         }
 
@@ -104,6 +128,27 @@ public partial class MainEventHandler
 
         foreach (var droppedItem in drops)
             SpawnBlockDrop(player, parts.DropPosition, droppedItem);
+    }
+
+    private static async ValueTask RestoreBreakAsync(IPlayer player, ILevel world, Vector location, IBlock block)
+    {
+        player.SendPacket(new BlockUpdatePacket(location, block.GetHashCode()));
+
+        // Prediction discarded the client's block entity. Restore its retained data after recreating the block.
+        if (await world.GetBlockEntityAsync(location) is not BlockEntity entity || entity.IsRemoved)
+            return;
+
+        var data = entity.SavesOnAnyThread ? entity.GetUpdateData() : entity.ClientData;
+        var type = BlockEntityTypesRegistry.NetworkId(entity.Id);
+        if (data is not null && type >= 0)
+        {
+            player.SendPacket(new BlockEntityDataPacket
+            {
+                Position = location,
+                Type = type,
+                NBTData = DataBlockEntity.Copy(data)
+            });
+        }
     }
 
     private static void SpawnBlockDrop(IPlayer player, Vector position, ItemStack droppedItem)

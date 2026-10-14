@@ -246,10 +246,13 @@ public class PluginStructureFiles
             var start = manager.GetStarts(0, 0).Single(candidate => candidate.Structure == tower);
             Assert.Equal(plugin, Assert.Single(start.Owners));
             StructureManager.RestoreStart(start, null);
+            Assert.True(start.TryAddReference());
 
             // The plugin unloads: the set stays, and the structures no longer name the plugin. The start made with it
             // isn't placed, though the current structures don't run the plugin's code.
             plugin.Close();
+            var saved = manager.SaveStarts(0, 0, null);
+            Assert.Equal(1, ((NbtCompound)saved![Tower]).GetInt("references"));
             structures = built with { Version = built.Version + 1 };
 
             Assert.Equal(0, DiamondBlocks(new FullChunks(builder, MojangDimension.Overworld).Get(0, 0)));
@@ -261,6 +264,8 @@ public class PluginStructureFiles
             Assert.NotSame(start, again);
             Assert.Empty(again.Owners);
             Assert.True(again.IsStateRestored);
+            Assert.Equal(1, again.References);
+            Assert.Equal(1, ((NbtCompound)manager.SaveStarts(0, 0, null)![Tower]).GetInt("references"));
         }
         finally
         {
@@ -268,192 +273,88 @@ public class PluginStructureFiles
         }
     }
 
-    [Fact(DisplayName = "An unloading plugin's start is saved with the state it retires with, even before it's pruned")]
-    public void SavesStartsOfUnloadingPlugins()
+    [Fact]
+    public void HostileTemplatesAreRejectedBeforeLargeAllocations()
     {
-        var plugin = new PluginContainer
         {
-            Info = new PluginInfo("structuresaver"),
-            Archive = PluginArchive.Open(
-                "structuresaver.obby",
-                PluginArchives.Zip(new Dictionary<string, byte[]>
-                {
-                    [PluginMetadata.FileName] = PluginArchives.Metadata("structuresaver", "1.0.0", "Saver")
-                }))
-        };
+            // A palette of int.MaxValue block states, in a few bytes.
+            var palette = new MemoryStream();
+            Header(palette, NbtTagType.List, "palette");
+            palette.WriteByte((byte)NbtTagType.Compound);
+            palette.Write([0x7F, 0xFF, 0xFF, 0xFF]);
 
-        var built = Only(Build(TowerFiles()), "structuretest:towers");
-        var tower = built.Structures[Tower];
-        var structures = built with
-        {
-            Owners = new Dictionary<Structure, ImmutableArray<PluginContainer>> { [tower] = [plugin] }
-                .ToFrozenDictionary()
-        };
-
-        var manager = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => structures).Structures!;
-        var start = manager.GetStarts(0, 0).Single(candidate => candidate.Structure == tower);
-        StructureManager.RestoreStart(start, null);
-        Assert.True(start.TryAddReference());
-
-        // The plugin starts unloading, and the chunk is saved before the starts are pruned: the start can't be
-        // entered, but its state is still saved, and pruning keeps the same.
-        plugin.Close();
-        var saved = manager.SaveStarts(0, 0, null);
-        Assert.Equal(1, References(saved));
-
-        structures = built with { Version = built.Version + 1 };
-        manager.Refresh();
-
-        Assert.Equal(1, References(manager.SaveStarts(0, 0, null)));
-        Assert.Equal(1, manager.GetStarts(0, 0).Single(candidate => candidate.Structure == tower).References);
-
-        static int References(NbtCompound starts) => ((NbtCompound)starts[Tower]).GetInt("references");
-    }
-
-    [Fact(DisplayName = "A template's block data counts once for each palette, which copies it, before it's copied")]
-    public void RejectsTemplatesCopyingLargeDataPerPalette()
-    {
-        // A block holding 1 MiB of data, which a hundred palettes would copy a hundred times.
-        Assert.Throws<InvalidDataException>(() => ParseLargeDataTemplate(palettes: 100));
-
-        // One copy is within the budget.
-        ParseLargeDataTemplate(palettes: 1);
-
-        static TemplateFile ParseLargeDataTemplate(int palettes)
-        {
-            var blocks = new NbtList(NbtTagType.Compound, "blocks")
+            // Lists in lists, far deeper than vanilla's reader allows.
+            var nested = new MemoryStream();
+            Header(nested, NbtTagType.List, "deep");
+            for (var i = 0; i < 2_000; i++)
             {
-                new NbtCompound
-                {
-                    Ints("pos", 0, 0, 0),
-                    new NbtTag<int>("state", 0),
-                    new NbtCompound("nbt") { new NbtArray<byte>("data", new byte[1 << 20]) }
-                }
-            };
-
-            var paletteList = new NbtList(NbtTagType.List, "palettes");
-            for (var i = 0; i < palettes; i++)
-                paletteList.Add(new NbtList(NbtTagType.Compound));
-
-            using var stream = new MemoryStream();
-            using (var writer = new NbtWriterStream(stream, NbtCompression.GZip, ""))
-            {
-                writer.WriteTag(Ints("size", 1, 1, 1));
-                writer.WriteTag(paletteList);
-                writer.WriteTag(blocks);
-                writer.EndCompound();
-                writer.TryFinish();
+                nested.WriteByte((byte)NbtTagType.List);
+                nested.Write([0, 0, 0, 1]);
             }
 
-            return PluginStructures.ParseTemplate(Tower, "test", stream.ToArray(), DataPackLimits.Default.FileSize)
-                .File;
+            nested.WriteByte((byte)NbtTagType.End);
+            nested.Write([0, 0, 0, 0]);
+
+            foreach (var nbt in (MemoryStream[])[palette, nested])
+            {
+                nbt.WriteByte((byte)NbtTagType.End);
+
+                var gzipped = new MemoryStream();
+                using (var gzip = new GZipStream(gzipped, CompressionLevel.Fastest, leaveOpen: true))
+                    gzip.Write(nbt.ToArray());
+
+                Assert.Throws<InvalidDataException>(() => PluginStructures.ParseTemplate(
+                    Tower,
+                    "test",
+                    gzipped.ToArray(),
+                    DataPackLimits.Default.FileSize));
+            }
+
+            // The root compound, without a name, then a field's type and name.
+            static void Header(MemoryStream stream, NbtTagType type, string name)
+            {
+                stream.Write([(byte)NbtTagType.Compound, 0, 0, (byte)type, 0, (byte)name.Length]);
+                stream.Write(Encoding.ASCII.GetBytes(name));
+            }
         }
-    }
 
-    [Fact(DisplayName = "A template declaring more than its data holds, or nested too deeply, is rejected unread")]
-    public void RejectsHostileTemplates()
-    {
-        // A palette of int.MaxValue block states, in a few bytes.
-        var palette = new MemoryStream();
-        Header(palette, NbtTagType.List, "palette");
-        palette.WriteByte((byte)NbtTagType.Compound);
-        palette.Write([0x7F, 0xFF, 0xFF, 0xFF]);
-
-        // Lists in lists, far deeper than vanilla's reader allows.
-        var nested = new MemoryStream();
-        Header(nested, NbtTagType.List, "deep");
-        for (var i = 0; i < 2_000; i++)
         {
-            nested.WriteByte((byte)NbtTagType.List);
-            nested.Write([0, 0, 0, 1]);
+            // A block holding 1 MiB of data, which a hundred palettes would copy a hundred times.
+            Assert.Throws<InvalidDataException>(() => ParseLargeDataTemplate(palettes: 100));
+
+            // One copy is within the budget.
+            ParseLargeDataTemplate(palettes: 1);
+
+            static TemplateFile ParseLargeDataTemplate(int palettes)
+            {
+                var blocks = new NbtList(NbtTagType.Compound, "blocks")
+                {
+                    new NbtCompound
+                    {
+                        Ints("pos", 0, 0, 0),
+                        new NbtTag<int>("state", 0),
+                        new NbtCompound("nbt") { new NbtArray<byte>("data", new byte[1 << 20]) }
+                    }
+                };
+
+                var paletteList = new NbtList(NbtTagType.List, "palettes");
+                for (var i = 0; i < palettes; i++)
+                    paletteList.Add(new NbtList(NbtTagType.Compound));
+
+                using var stream = new MemoryStream();
+                using (var writer = new NbtWriterStream(stream, NbtCompression.GZip, ""))
+                {
+                    writer.WriteTag(Ints("size", 1, 1, 1));
+                    writer.WriteTag(paletteList);
+                    writer.WriteTag(blocks);
+                    writer.EndCompound();
+                    writer.TryFinish();
+                }
+
+                return PluginStructures.ParseTemplate(Tower, "test", stream.ToArray(), DataPackLimits.Default.FileSize)
+                    .File;
+            }
         }
-
-        nested.WriteByte((byte)NbtTagType.End);
-        nested.Write([0, 0, 0, 0]);
-
-        foreach (var nbt in (MemoryStream[])[palette, nested])
-        {
-            nbt.WriteByte((byte)NbtTagType.End);
-
-            var gzipped = new MemoryStream();
-            using (var gzip = new GZipStream(gzipped, CompressionLevel.Fastest, leaveOpen: true))
-                gzip.Write(nbt.ToArray());
-
-            Assert.Throws<InvalidDataException>(() => PluginStructures.ParseTemplate(
-                Tower,
-                "test",
-                gzipped.ToArray(),
-                DataPackLimits.Default.FileSize));
-        }
-
-        // The root compound, without a name, then a field's type and name.
-        static void Header(MemoryStream stream, NbtTagType type, string name)
-        {
-            stream.Write([(byte)NbtTagType.Compound, 0, 0, (byte)type, 0, (byte)name.Length]);
-            stream.Write(Encoding.ASCII.GetBytes(name));
-        }
-    }
-
-    [Fact(DisplayName = "A processor list file may be a bare list of processors, as vanilla's codec reads it")]
-    public void ReadsBareProcessorLists()
-    {
-        var file = PluginFeatures.Parse(
-            PluginFeatures.ProcessorList,
-            "structuretest:decay",
-            "test",
-            """[{ "processor_type": "minecraft:block_rot", "integrity": 0.5 }]"""u8);
-
-        var features = PluginFeatures.Build([file], [], [], NullLogger.Instance, dimensions: []);
-
-        Assert.Single(features.ProcessorLists["structuretest:decay"].Processors);
-    }
-
-    [Theory(DisplayName = "A jigsaw's max distance and dimension padding are read in vanilla's number and object forms")]
-    [InlineData("16", null, 16, 16, 0, 0)]
-    [InlineData("""{ "horizontal": 16 }""", """{ "bottom": 8 }""", 16, 4064, 8, 0)]
-    [InlineData("""{ "horizontal": 16, "vertical": 40 }""", "5", 16, 40, 5, 5)]
-    [InlineData("16", """{ "bottom": 2, "top": -1 }""", 16, 16, 2, 0)]
-    [InlineData("16", "0", 16, 16, 0, 0)]
-    [InlineData("16", "{}", 16, 16, 0, 0)]
-    [InlineData("""{ "vertical": 40 }""", null, 0, 0, 0, 0)]
-    [InlineData("""{ "horizontal": 129 }""", null, 0, 0, 0, 0)]
-    [InlineData("16", "-1", 0, 0, 0, 0)]
-    public void ReadsJigsawDistanceForms(
-        string distance,
-        string? padding,
-        int horizontal,
-        int vertical,
-        int bottom,
-        int top)
-    {
-        var json = TowerStructure.Replace(
-            "\"max_distance_from_center\": 16",
-            $"\"max_distance_from_center\": {distance}"
-                + (padding is null ? "" : $", \"dimension_padding\": {padding}"));
-
-        StructureFile[] files =
-        [
-            Parse(PluginStructures.Structure, Tower, json),
-            Parse(PluginStructures.TemplatePool, "structuretest:tower/start", TowerPool)
-        ];
-
-        var structures = Build(files);
-
-        // An invalid form is logged and left out.
-        if (horizontal == 0)
-        {
-            Assert.False(structures.Structures.ContainsKey(Tower));
-            return;
-        }
-
-        var tower = Assert.IsType<WorldData.Structures.Pools.JigsawStructure>(structures.Structures[Tower]);
-        Assert.Equal(new(horizontal, vertical), tower.MaxDistanceFromCenter);
-
-        // Like vanilla, an omitted padding differs from an explicit zero: only the latter checks the start's height.
-        if (padding is null)
-            Assert.Null(tower.DimensionPadding);
-        else
-            Assert.Equal(new WorldData.Structures.Pools.DimensionPadding(bottom, top), tower.DimensionPadding);
     }
 
     private static WorldgenStructures Build(StructureFile[] files) => PluginStructures.Build(

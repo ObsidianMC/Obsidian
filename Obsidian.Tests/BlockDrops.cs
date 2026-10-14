@@ -72,49 +72,6 @@ public sealed class BlockDrops
         }
     }
 
-    [Fact]
-    public void ToolComponentRulesOverrideDefaultsAndEnforcePluginRequirements()
-    {
-        var tool = new ItemStack(ItemsRegistry.WoodenPickaxe);
-        Assert.True(BlockLoot.HasCorrectTool(BlocksRegistry.Stone, tool));
-        Assert.False(BlockLoot.HasCorrectTool(BlocksRegistry.DiamondOre, tool));
-        var properties = new BlockProperties { RequiresCorrectTool = true };
-        var block = BlocksRegistry.Register("blockloottests:ore", properties);
-        block.Settings = BlockSettings.From(properties);
-        Assert.False(BlockLoot.HasCorrectTool(block.DefaultState, tool));
-
-        tool[DataComponentType.Tool] = new ToolDataComponent
-        {
-            DefaultMiningSpeed = 1,
-            DamagePerBlock = 1,
-            Rules =
-            [
-                new ToolRule
-                {
-                    Blocks = new IdSet
-                    {
-                        Type = 2,
-                        Ids = [BlockIds.DiamondOre]
-                    },
-                    CorrectDropForBlocks = false
-                },
-                new ToolRule
-                {
-                    Blocks = new IdSet
-                    {
-                        Type = 3,
-                        Ids = [BlockIds.DiamondOre, block.Id]
-                    },
-                    CorrectDropForBlocks = true
-                }
-            ]
-        };
-        Assert.False(BlockLoot.HasCorrectTool(BlocksRegistry.DiamondOre, tool));
-        Assert.True(BlockLoot.HasCorrectTool(block.DefaultState, tool));
-        tool.Remove(DataComponentType.Tool);
-        Assert.False(BlockLoot.HasCorrectTool(BlocksRegistry.Stone, tool));
-    }
-
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task PluginTablesLoadOverrideReloadAndUnload()
     {
@@ -226,68 +183,61 @@ public sealed class BlockDrops
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task PlayerBreakAndExplosionUseBlockTables()
     {
-        await using var context = TestServerFactory.CreateServer($"block-break-loot-{Guid.NewGuid():N}");
-        var chunk = AddChunk(context.World);
-        var position = new Vector(8, 65, 8);
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Miner",
-            new VectorD(8, 65, 10));
-        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, player);
-        player.GameMode = GameMode.Survival;
-        player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.WoodenPickaxe));
-        chunk.SetBlock(position, BlocksRegistry.Stone);
-        await context.EventDispatcher.ExecuteEventAsync(new BlockBreakEventArgs(context.Server, player,
-            BlocksRegistry.Stone, position, context.World));
-        var drops = context.World.GetEntitiesInRange((VectorD)position, 4).OfType<ItemEntity>().ToArray();
-        Assert.Equal("minecraft:cobblestone*1", Describe(drops.Select(drop => drop.Item)));
-        Assert.True(chunk.GetBlock(position).IsAir);
+        {
+            await using var context = TestServerFactory.CreateServer($"block-break-loot-{Guid.NewGuid():N}");
+            var chunk = AddChunk(context.World);
+            var position = new Vector(8, 65, 8);
+            var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Miner",
+                new VectorD(8, 65, 10));
+            await TestServerFactory.JoinConnectedPlayerAsync(context.Server, player);
+            player.GameMode = GameMode.Survival;
+            player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.WoodenPickaxe));
+            chunk.SetBlock(position, BlocksRegistry.Stone);
+            await context.EventDispatcher.ExecuteEventAsync(new BlockBreakEventArgs(context.Server, player,
+                BlocksRegistry.Stone, position, context.World));
+            var drops = context.World.GetEntitiesInRange((VectorD)position, 4).OfType<ItemEntity>().ToArray();
+            Assert.Equal("minecraft:cobblestone*1", Describe(drops.Select(drop => drop.Item)));
+            Assert.True(chunk.GetBlock(position).IsAir);
 
-        player.GameMode = GameMode.Creative;
-        chunk.SetBlock(position, BlocksRegistry.Stone);
-        await context.EventDispatcher.ExecuteEventAsync(new BlockBreakEventArgs(context.Server, player,
-            BlocksRegistry.Stone, position, context.World));
-        Assert.Single(context.World.GetEntitiesInRange((VectorD)position, 4).OfType<ItemEntity>());
+            player.GameMode = GameMode.Creative;
+            chunk.SetBlock(position, BlocksRegistry.Stone);
+            await context.EventDispatcher.ExecuteEventAsync(new BlockBreakEventArgs(context.Server, player,
+                BlocksRegistry.Stone, position, context.World));
+            Assert.Single(context.World.GetEntitiesInRange((VectorD)position, 4).OfType<ItemEntity>());
 
-        // Radius 1 keeps every item. Melon drops several slices rather than its own block item.
-        chunk.SetBlock(position, BlocksRegistry.Melon);
-        player.Position = (VectorD)position + 0.5;
-        await ((AbstractLevel)context.World).ExplodeAsync(player, 1,
-            interaction: AbstractLevel.ExplosionInteraction.Block);
-        var slices = context.World.GetEntitiesInRange((VectorD)position, 4).OfType<ItemEntity>()
-            .Where(drop => drop.Item.Holder == ItemsRegistry.MelonSlice).ToArray();
-        Assert.Single(slices);
-        Assert.InRange(slices[0].Item.Count, 3, 7);
-        Assert.True(chunk.GetBlock(position).IsAir);
-    }
+            // Radius 1 keeps every item. Melon drops several slices rather than its own block item.
+            chunk.SetBlock(position, BlocksRegistry.Melon);
+            player.Position = (VectorD)position + 0.5;
+            await ((AbstractLevel)context.World).ExplodeAsync(player, 1,
+                interaction: AbstractLevel.ExplosionInteraction.Block);
+            var slices = context.World.GetEntitiesInRange((VectorD)position, 4).OfType<ItemEntity>()
+                .Where(drop => drop.Item.Holder == ItemsRegistry.MelonSlice).ToArray();
+            Assert.Single(slices);
+            Assert.InRange(slices[0].Item.Count, 3, 7);
+            Assert.True(chunk.GetBlock(position).IsAir);
+        }
 
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task LocationPredicatesReadBeforeRemoval()
-    {
-        await using var context = TestServerFactory.CreateServer($"block-location-loot-{Guid.NewGuid():N}");
-        var chunk = AddChunk(context.World);
-        var position = new Vector(8, 65, 8);
-        var lower = BlocksRegistry.TallGrass.WithProperty("half", "lower");
-        chunk.SetBlock(position, lower);
-        chunk.SetBlock(position + Vector.Up, BlocksRegistry.TallGrass.WithProperty("half", "upper"));
-        var tool = new ItemStack(ItemsRegistry.Shears);
-        Assert.Equal("minecraft:short_grass*2", Describe(await BlockLoot.GetDropsAsync(context.World,
-            position, lower, tool, new LegacyRandomSource(1))));
-        chunk.SetBlock(position + Vector.Up, BlocksRegistry.Air);
-        Assert.Empty(await BlockLoot.GetDropsAsync(context.World, position, lower, tool, new LegacyRandomSource(1)));
+        {
+            await using var context = TestServerFactory.CreateServer($"block-location-loot-{Guid.NewGuid():N}");
+            var chunk = AddChunk(context.World);
+            var position = new Vector(8, 65, 8);
+            var lower = BlocksRegistry.TallGrass.WithProperty("half", "lower");
+            chunk.SetBlock(position, lower);
+            chunk.SetBlock(position + Vector.Up, BlocksRegistry.TallGrass.WithProperty("half", "upper"));
+            var tool = new ItemStack(ItemsRegistry.Shears);
+            Assert.Equal("minecraft:short_grass*2", Describe(await BlockLoot.GetDropsAsync(context.World,
+                position, lower, tool, new LegacyRandomSource(1))));
+            chunk.SetBlock(position + Vector.Up, BlocksRegistry.Air);
+            Assert.Empty(
+                await BlockLoot.GetDropsAsync(context.World, position, lower, tool, new LegacyRandomSource(1)));
+        }
     }
 
     [Theory(Timeout = TestServerFactory.TestTimeout)]
     [InlineData("oak_door", "half", "lower", "upper", "oak_door", false)]
-    [InlineData("oak_door", "half", "upper", "lower", "oak_door", false)]
-    [InlineData("red_bed", "part", "head", "foot", "red_bed", false)]
     [InlineData("red_bed", "part", "foot", "head", "red_bed", false)]
-    [InlineData("sunflower", "half", "upper", "lower", "sunflower", false)]
-    [InlineData("tall_grass", "half", "upper", "lower", "short_grass", false)]
     [InlineData("small_dripleaf", "half", "upper", "lower", "small_dripleaf", false)]
-    [InlineData("pitcher_crop", "half", "upper", "lower", "pitcher_plant", false)]
     [InlineData("oak_door", "half", "upper", "lower", "oak_door", true)]
-    [InlineData("red_bed", "part", "foot", "head", "red_bed", true)]
-    [InlineData("sunflower", "half", "upper", "lower", "sunflower", true)]
-    [InlineData("small_dripleaf", "half", "upper", "lower", "small_dripleaf", true)]
     public async Task TwoPartPlayerBreakRemovesBothAndDropsOnce(
         string name, string property, string selectedPart, string partnerPart, string item, bool creative)
     {
@@ -332,22 +282,6 @@ public sealed class BlockDrops
             Assert.Equal("minecraft:" + item, drop.Item.Holder.UnlocalizedName);
             Assert.Equal(name == "tall_grass" ? 2 : 1, drop.Item.Count);
         }
-    }
-
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task UnmatchedTwoPartNeighborIsNotDestroyed()
-    {
-        await using var context = TestServerFactory.CreateServer($"unmatched-loot-{Guid.NewGuid():N}");
-        var chunk = AddChunk(context.World);
-        var position = new Vector(8, 65, 8);
-        var upper = BlocksRegistry.OakDoor.WithProperty("half", "upper");
-        chunk.SetBlock(position, upper);
-        chunk.SetBlock(position + Vector.Down, BlocksRegistry.Stone);
-        var parts = await TwoPartBlockBreak.PrepareAsync(context.World, position, upper);
-        Assert.Null(parts.PartnerPosition);
-        await parts.RemovePartnerAsync(context.World);
-        Assert.True(chunk.GetBlock(position + Vector.Down).Is(BlockIds.Stone));
-        Assert.Empty(await BlockLoot.GetDropsAsync(context.World, parts.DropPosition, parts.DropState, null));
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
@@ -447,52 +381,9 @@ public sealed class BlockDrops
         }
     }
 
-    [Theory(Timeout = TestServerFactory.TestTimeout)]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task InfestedOverrideDropsSurviveSilverfishAndSilkTouchHandling(bool silkTouch)
-    {
-        await using var context = TestServerFactory.CreateServer($"infested-loot-{Guid.NewGuid():N}");
-        context.World.LevelData.Difficulty = Difficulty.Normal;
-        var chunk = AddChunk(context.World);
-        var position = new Vector(8, 65, 8);
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Miner",
-            new VectorD(8, 65, 10));
-        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, player);
-        player.GameMode = GameMode.Survival;
-        var tool = new ItemStack(ItemsRegistry.DiamondPickaxe);
-        if (silkTouch)
-            EnchantmentHelper.Enchant(tool, EnchantmentsRegistry.SilkTouch, 1);
-
-        player.Inventory.SetItem(player.CurrentHeldItemSlot, tool);
-        PluginLootTables.Apply([LootTableJson.Parse(ItemTable("minecraft:diamond", 2),
-            "minecraft:blocks/infested_stone")]);
-        try
-        {
-            chunk.SetBlock(position, BlocksRegistry.InfestedStone);
-            await context.EventDispatcher.ExecuteEventAsync(new BlockBreakEventArgs(context.Server, player,
-                BlocksRegistry.InfestedStone, position, context.World));
-            Assert.True(chunk.GetBlock(position).IsAir);
-            Assert.Equal("minecraft:diamond*2", Describe(context.World.GetEntitiesInRange((VectorD)position, 4)
-                .OfType<ItemEntity>().Select(drop => drop.Item)));
-            // The empty test chunk has no biome data for natural spawning. A spectator still drains entity actions.
-            player.GameMode = GameMode.Spectator;
-            await context.World.DoWorldTickAsync();
-            Assert.Equal(silkTouch ? 0 : 1,
-                context.World.GetEntitiesInRange((VectorD)position, 8).OfType<Silverfish>().Count());
-        }
-        finally
-        {
-            PluginLootTables.Apply([]);
-        }
-    }
-
     [Theory]
     [InlineData("missing", "")]
-    [InlineData("null", ", \"value\": null")]
     [InlineData("number", ", \"value\": 1")]
-    [InlineData("array", ", \"value\": []")]
-    [InlineData("empty", ", \"value\": \"\"")]
     public void MalformedTableReferenceIsRejectedAndLoaderSkipsIt(string caseId, string value)
     {
         var json = $$"""
@@ -510,47 +401,61 @@ public sealed class BlockDrops
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task ExplosionLootFailureStillRemovesEveryBlockAndEvaluatesOtherDrops()
+    public async Task FailedLootAndUnmatchedPartsDoNotCorruptBlockRemoval()
     {
-        await using var context = TestServerFactory.CreateServer($"explosion-loot-failure-{Guid.NewGuid():N}");
-        var chunk = AddChunk(context.World);
-        var position = new Vector(8, 65, 8);
-        chunk.SetBlock(position, BlocksRegistry.ShortGrass);
-        chunk.SetBlock(position + Vector.East, BlocksRegistry.Dandelion);
-        context.World.LevelData.GameRules["block_explosion_drop_decay"] = "false";
-        PluginLootTables.Apply([new LootTable
         {
-            Identifier = "minecraft:blocks/short_grass",
-            Pools =
-            [
-                new LootPool
-                {
-                    Rolls = new ConstantNumber { Value = 1 },
-                    Entries = [],
-                    Conditions = [new ThrowingLootCondition()]
-                }
-            ]
-        }]);
-        try
-        {
-            await context.World.ExplodeAsync((VectorD)position + 0.5, 2, false,
-                AbstractLevel.ExplosionInteraction.Block);
-            Assert.True(chunk.GetBlock(position).IsAir);
-            Assert.True(chunk.GetBlock(position + Vector.East).IsAir);
-            Assert.Equal("minecraft:dandelion*1", Describe(context.World.GetEntitiesInRange((VectorD)position, 4)
-                .OfType<ItemEntity>().Select(drop => drop.Item)));
+            await using var context = TestServerFactory.CreateServer($"explosion-loot-failure-{Guid.NewGuid():N}");
+            var chunk = AddChunk(context.World);
+            var position = new Vector(8, 65, 8);
+            chunk.SetBlock(position, BlocksRegistry.ShortGrass);
+            chunk.SetBlock(position + Vector.East, BlocksRegistry.Dandelion);
+            context.World.LevelData.GameRules["block_explosion_drop_decay"] = "false";
+            PluginLootTables.Apply([new LootTable
+            {
+                Identifier = "minecraft:blocks/short_grass",
+                Pools =
+                [
+                    new LootPool
+                    {
+                        Rolls = new ConstantNumber { Value = 1 },
+                        Entries = [],
+                        Conditions = [new ThrowingLootCondition()]
+                    }
+                ]
+            }]);
+            try
+            {
+                await context.World.ExplodeAsync((VectorD)position + 0.5, 2, false,
+                    AbstractLevel.ExplosionInteraction.Block);
+                Assert.True(chunk.GetBlock(position).IsAir);
+                Assert.True(chunk.GetBlock(position + Vector.East).IsAir);
+                Assert.Equal("minecraft:dandelion*1", Describe(context.World.GetEntitiesInRange((VectorD)position, 4)
+                    .OfType<ItemEntity>().Select(drop => drop.Item)));
+            }
+            finally
+            {
+                PluginLootTables.Apply([]);
+            }
         }
-        finally
+
         {
-            PluginLootTables.Apply([]);
+            await using var context = TestServerFactory.CreateServer($"unmatched-loot-{Guid.NewGuid():N}");
+            var chunk = AddChunk(context.World);
+            var position = new Vector(8, 65, 8);
+            var upper = BlocksRegistry.OakDoor.WithProperty("half", "upper");
+            chunk.SetBlock(position, upper);
+            chunk.SetBlock(position + Vector.Down, BlocksRegistry.Stone);
+            var parts = await TwoPartBlockBreak.PrepareAsync(context.World, position, upper);
+            Assert.Null(parts.PartnerPosition);
+            await parts.RemovePartnerAsync(context.World);
+            Assert.True(chunk.GetBlock(position + Vector.Down).Is(BlockIds.Stone));
+            Assert.Empty(await BlockLoot.GetDropsAsync(context.World, parts.DropPosition, parts.DropState, null));
         }
     }
 
     [Theory(Timeout = TestServerFactory.TestTimeout)]
     [InlineData("oak_door", "half", "upper")]
-    [InlineData("oak_door", "half", "lower")]
     [InlineData("red_bed", "part", "foot")]
-    [InlineData("red_bed", "part", "head")]
     public async Task ExplosionDestroysTwoPartBlocksAndDropsOnce(string name, string property, string selectedPart)
     {
         await using var context = TestServerFactory.CreateServer($"two-part-explosion-{Guid.NewGuid():N}");

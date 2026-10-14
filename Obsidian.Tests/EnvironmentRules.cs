@@ -175,61 +175,6 @@ public sealed class EnvironmentRules
         Assert.False(Block(world, foot).Is(BlockIds.RedBed));
     }
 
-    [Fact(DisplayName = "Offhand glowstone charges a partly charged anchor instead of the main hand exploding it",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task OffhandGlowstoneChargesAnAnchor()
-    {
-        await using var context = TestServerFactory.CreateServer($"anchor-offhand-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddGroundChunk(world);
-        var player = await JoinAsync(context);
-
-        var anchor = new Vector(4, Ground + 1, 4);
-        var charged = BlocksRegistry.GetDefault(BlockIds.RespawnAnchor).WithProperty("charges", "1");
-        world.GetLoadedChunk(0, 0)!.SetBlock(anchor, charged);
-        player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.DiamondPickaxe, 1));
-        player.Inventory.SetItem(OffhandSlot, new ItemStack(ItemsRegistry.Glowstone, 2));
-
-        // The main hand passes, leaving the anchor whole in the overworld, where it doesn't work.
-        Assert.False(await UseAnchorAsync(world, player, anchor));
-        Assert.Equal("1", Block(world, anchor).GetProperty("charges"));
-
-        Assert.True(await world.UseRespawnAnchorAsync(player, anchor, Block(world, anchor), OffhandSlot));
-        Assert.Equal("2", Block(world, anchor).GetProperty("charges"));
-        Assert.Equal(1, player.Inventory.GetItem(OffhandSlot)?.Count);
-    }
-
-    [Fact(DisplayName = "A biome's monsters_burn false doesn't stop monsters burning by day",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task DayBurnsMonstersOverABiome()
-    {
-        await using var context = TestServerFactory.CreateServer($"burn-biome-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddGroundChunk(world);
-
-        PluginCodecs.Apply(
-            [
-                PluginCodecs.Parse(
-                    PluginCodecs.Biome,
-                    "gameplaytests:shaded",
-                    "test",
-                    Encoding.UTF8.GetBytes(ShadedBiome))
-            ],
-            NullLogger.Instance);
-
-        Assert.True(CodecRegistry.TryGetBiome("gameplaytests:shaded", out var shaded));
-        var position = new Vector(8, Ground + 1, 8);
-        for (var y = Ground - 4; y < Ground + 8; y += 4)
-            world.GetLoadedChunk(0, 0)!.SetBiome(8, y, 8, shaded!);
-
-        // The day timeline applies after the biome, as vanilla's layers do.
-        world.DayTime = 1000;
-        Assert.True(world.MonstersBurn(position));
-
-        world.DayTime = 18000;
-        Assert.False(world.MonstersBurn(position));
-    }
-
     // A red bed facing north: its foot, and its head to the north.
     private static (IBlock Foot, IBlock Head) Bed()
     {

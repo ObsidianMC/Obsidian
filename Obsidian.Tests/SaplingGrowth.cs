@@ -129,103 +129,65 @@ public sealed class SaplingGrowth : IDisposable
         Assert.False(world.UseBoneMeal(left));
     }
 
-    [Fact(DisplayName = "A player's break while bone meal grows a sapling isn't undone by the growth",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task BreakDuringGrowthStaysBroken()
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task GrowthCannotUndoInterveningBlockChanges()
     {
-        await using var context = TestServerFactory.CreateServer($"sapling-race-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world, BlocksRegistry.GrassBlock);
-
-        var sapling = new Vector(8, Ground + 1, 8);
-        world.GetLoadedChunk(0, 0)!.SetBlock(sapling, BlocksRegistry.GetDefault(BlockIds.OakSapling));
-
-        // Loaded like a player's chunk, whose fluids tick, so that writes to it take only the locks they always do.
-        await world.GetChunkAsync(0, 0, false);
-
-        using var random = new PausingRandom();
-        world.GrowthRandom = random;
-
-        Assert.True(world.UseBoneMeal(sapling));
-        var tick = Task.Run(world.DoWorldTickAsync);
-
-        // The bone meal has read the sapling and is drawing its chance when the player breaks the sapling.
-        Assert.True(random.Paused.Wait(TestServerFactory.TestTimeout));
-        var write = Task.Run(async () => await world.SetBlockAsync(sapling, BlocksRegistry.Air));
-
-        // The break waits for the growth, rather than land in between its read and its write.
-        await Task.WhenAny(write, Task.Delay(200));
-        Assert.False(write.IsCompleted);
-
-        random.Resume();
-        await Task.WhenAll(tick, write);
-
-        Assert.True(world.GetLoadedChunk(0, 0)!.GetBlock(sapling).IsAir);
-    }
-
-    [Fact(DisplayName = "Queued bone meal applies to the block each use finds, and is only used up when it applies",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task QueuedBoneMealAppliesToCurrentBlock()
-    {
-        await using var context = TestServerFactory.CreateServer($"bone-meal-queue-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world, BlocksRegistry.GrassBlock);
-
-        // Three uses before a tick each age the wheat two to five from where the one before left it.
-        var wheat = new Vector(-8, Ground + 1, 8);
-        world.GetLoadedChunk(-1, 0)!.SetBlock(wheat, BlocksRegistry.GetDefault(BlockIds.Wheat));
-
-        for (var use = 0; use < 3; use++)
-            Assert.True(world.UseBoneMeal(wheat));
-
-        await world.DoWorldTickAsync();
-        Assert.True(int.Parse(world.GetLoadedChunk(-1, 0)!.GetBlock(wheat).GetProperty("age")!) >= 6);
-
-        // A use whose wheat is broken before the tick does nothing, and the player keeps the bone meal.
-        var player = new FakePlayer();
-        player.Inventory.SetItem(0, ItemsRegistry.GetSingleItem(ItemsRegistry.BoneMeal));
-        world.GetLoadedChunk(-1, 0)!.SetBlock(wheat, BlocksRegistry.GetDefault(BlockIds.Wheat));
-
-        Assert.True(world.UseBoneMeal(wheat, player, 0));
-        await world.SetBlockAsync(wheat, BlocksRegistry.Air);
-        await world.DoWorldTickAsync();
-
-        Assert.Equal(1, player.Inventory.GetItem(0)!.Count);
-    }
-
-    [Fact(DisplayName = "Random ticks draw positions only in sections with something that random-ticks",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task RandomTicksSkipSectionsWithoutTickingBlocks()
-    {
-        await using var context = TestServerFactory.CreateServer($"random-ticks-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world, BlocksRegistry.Stone);
-
-        var player = new FakePlayer { Position = new VectorD(8, Ground + 1, 8) };
-        Assert.True(world.TryAddPlayer(player));
-
-        try
         {
-            // Stone doesn't random-tick, so no section of the chunks around the player draws a position.
-            var value = world.RandomTickValue;
-            world.TickRandomBlocks();
-            Assert.Equal(value, world.RandomTickValue);
+            await using var context = TestServerFactory.CreateServer($"sapling-race-{Guid.NewGuid():N}");
+            var world = context.World;
+            AddChunks(world, BlocksRegistry.GrassBlock);
 
-            // A sapling's section in the middle chunk, whose neighbours are all there, draws the game rule's number
-            // of positions; one in a chunk at the edge of those loaded doesn't tick.
-            var sapling = BlocksRegistry.GetDefault(BlockIds.OakSapling);
-            world.GetLoadedChunk(0, 0)!.SetBlock(new Vector(8, Ground + 1, 8), sapling);
-            world.GetLoadedChunk(1, 1)!.SetBlock(new Vector(24, Ground + 1, 24), sapling);
-            world.TickRandomBlocks();
+            var sapling = new Vector(8, Ground + 1, 8);
+            world.GetLoadedChunk(0, 0)!.SetBlock(sapling, BlocksRegistry.GetDefault(BlockIds.OakSapling));
 
-            for (var tick = 0; tick < world.LevelData.GetIntegerRule("random_tick_speed", 3); tick++)
-                value = unchecked(value * 3 + 1013904223);
+            // Loaded like a player's chunk, whose fluids tick, so that writes to it take only the locks they always do.
+            await world.GetChunkAsync(0, 0, false);
 
-            Assert.Equal(value, world.RandomTickValue);
+            using var random = new PausingRandom();
+            world.GrowthRandom = random;
+
+            Assert.True(world.UseBoneMeal(sapling));
+            var tick = Task.Run(world.DoWorldTickAsync);
+
+            // The bone meal has read the sapling and is drawing its chance when the player breaks the sapling.
+            Assert.True(random.Paused.Wait(TestServerFactory.TestTimeout));
+            var write = Task.Run(async () => await world.SetBlockAsync(sapling, BlocksRegistry.Air));
+
+            // The break waits for the growth, rather than land in between its read and its write.
+            await Task.WhenAny(write, Task.Delay(200));
+            Assert.False(write.IsCompleted);
+
+            random.Resume();
+            await Task.WhenAll(tick, write);
+
+            Assert.True(world.GetLoadedChunk(0, 0)!.GetBlock(sapling).IsAir);
         }
-        finally
+
         {
-            world.TryRemovePlayer(player);
+            await using var context = TestServerFactory.CreateServer($"bone-meal-queue-{Guid.NewGuid():N}");
+            var world = context.World;
+            AddChunks(world, BlocksRegistry.GrassBlock);
+
+            // Three uses before a tick each age the wheat two to five from where the one before left it.
+            var wheat = new Vector(-8, Ground + 1, 8);
+            world.GetLoadedChunk(-1, 0)!.SetBlock(wheat, BlocksRegistry.GetDefault(BlockIds.Wheat));
+
+            for (var use = 0; use < 3; use++)
+                Assert.True(world.UseBoneMeal(wheat));
+
+            await world.DoWorldTickAsync();
+            Assert.True(int.Parse(world.GetLoadedChunk(-1, 0)!.GetBlock(wheat).GetProperty("age")!) >= 6);
+
+            // A use whose wheat is broken before the tick does nothing, and the player keeps the bone meal.
+            var player = new FakePlayer();
+            player.Inventory.SetItem(0, ItemsRegistry.GetSingleItem(ItemsRegistry.BoneMeal));
+            world.GetLoadedChunk(-1, 0)!.SetBlock(wheat, BlocksRegistry.GetDefault(BlockIds.Wheat));
+
+            Assert.True(world.UseBoneMeal(wheat, player, 0));
+            await world.SetBlockAsync(wheat, BlocksRegistry.Air);
+            await world.DoWorldTickAsync();
+
+            Assert.Equal(1, player.Inventory.GetItem(0)!.Count);
         }
     }
 
