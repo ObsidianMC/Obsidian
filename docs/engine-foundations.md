@@ -118,8 +118,8 @@ its client side, by the client's tests)
   connections, facades), re-meshed when its data changes.
 - **Render layers and light.** Mods set a block's render layer, and models can mark faces emissive.
 - **Animated textures.** `.mcmeta` animations, for vanilla's water, lava, fire and portals as much as mods'.
-- **Entity renderers.** Several layers per entity (emissive eyes, overlays), textures chosen by synced data, code
-  renderers, and passenger offsets so mod mounts can be ridden.
+- **Entity renderers.** (done) Several layers per entity (emissive eyes, overlays), textures chosen by synced data,
+  code renderers, and passenger offsets so mod mounts can be ridden.
 - **Item renderers.** Mod item model properties and code-driven item renderers.
 - **Dimension effects.** Per-dimension sky, cloud and fog rendering for mods: data-driven settings first (cloud
   texture, colour and height, sky colour, fog), a code hook for anything else. The Nether and End special cases stop

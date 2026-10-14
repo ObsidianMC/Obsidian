@@ -708,6 +708,23 @@ plugin is loaded, and they count against their category's cap; misc mobs don't s
 don't despawn. They spawn with the rules of the list they're chosen from: on grass in light as creatures, in water in
 the water categories, and in the dark otherwise.
 
+`PassengerAttachments` says where riders sit, like a vanilla entity type's passenger attachments: a point per seat,
+in blocks from the entity's feet for the entity facing south (+Z ahead, +X to its left), turned with its yaw. The
+first passenger takes the first point and those past the last point share it; a player's feet go 0.6 blocks below
+it, as vanilla places players. Without points, passengers sit on top of the hitbox, vanilla's default. The server
+places a mob's riders there, and the Obsidian client draws riders and the riding player's camera there, so register
+the type with the same points on both sides (in `ConfigureRegistry`, which both run). Mounting a plugin's mobs is
+still to come (engine phase 5).
+
+```csharp
+registry.RegisterEntity("ruby:strider", new EntityProperties
+{
+    Width = 1.2f,
+    Height = 1.6f,
+    PassengerAttachments = [new VectorF(0, 1.4f, 0.2f), new VectorF(0, 1.4f, -0.6f)]
+});
+```
+
 ## Block entities
 
 ```csharp
@@ -3025,6 +3042,78 @@ public sealed class RubyMod : PluginBase, IClientPlugin
   humanoid armour covers (`head`, `body`, `right_arm`, `left_arm`, `right_leg`, `left_leg`), following their poses;
   a model without such a part doesn't show what goes on it. The entity type's registered `Width` and `Height` are its
   hitbox, for picking and hitting it, its name tag's height and its eye height (85% of its height, vanilla's default).
+  Riders sit at its type's `PassengerAttachments` (see [Entities](#entities)).
+
+A renderer can choose its texture from the entity's synced metadata, draw layers over its model and run code, like
+vanilla's renderers:
+
+- `TextureProvider` receives the entity's metadata, as `IClientEntity.Metadata` has it (by protocol index, values as
+  decoded), and returns a texture, or null for `Texture`: for variants.
+- `Layers` are `EntityRenderLayer`s drawn over the model in order, like vanilla's render layers: a model layer
+  (`Model`, or null for the entity's own model), a `Texture`, a `Tint` (`0xRRGGBB`) and a `RenderType`. `Cutout`, the
+  default, is drawn like the model; `Translucent` blends by the texture's alpha; `Emissive` is vanilla's `eyes`:
+  full-bright whatever the light, unshaded, never tinted red as the entity is hurt, and blended without hiding what's
+  behind it, for glowing eyes and markings. A layer's parts are posed by name like the model's (heads turn, legs
+  swing, animations move them), so a saddle or armour layer whose parts are named like the model's follows it. A
+  layer's `Provider` chooses its look from the metadata: an `EntityLayerAppearance` with its texture and tint, or
+  null to hide it.
+- `Renderer` is code, an `IEntityRenderer`, whose `Render(in EntityRenderContext entity, IEntityRenderBuffer buffer)`
+  runs each frame after the model and layers, like vanilla's `EntityRenderer.render`. The context has the entity's id,
+  type and metadata, the partial tick, its age in ticks and its position, body and head yaw and pitch, interpolated
+  for the frame, and `ModelTransform`, which its model is drawn with. `buffer.Model(model, part, texture, transform,
+  renderType, tint)` draws a model layer, or one part of it with its children: the renderer's model, a layer's, or
+  one of `Models`, which declares more model layers for the client to read. Its `Matrix4x4` takes the model's space
+  (16 pixels to a block, Y down, or the part's parent's for a part) to blocks from the entity's position;
+  `ModelTransform` places it like the entity's model. Its parts are posed by name like the model's too. Keep it short
+  and free of allocations, as the frame waits for it.
+
+The providers run at most once per metadata change, the code each frame, all on the client's game thread inside
+calls into the mod; the metadata table is the entity's own, read-only, so don't change values in it. A provider that
+throws is logged and its defaults (`Texture`, or a layer's `Texture` and `Tint`) are used until the metadata changes
+again; code that throws is logged, what it drew that frame is taken back, and it isn't called for the entity until
+its metadata changes. Layers and code aren't drawn while the entity is invisible. They go when the mod unloads.
+
+```csharp
+registry.RegisterEntityRenderer("ruby:golem", new EntityRendererProperties
+{
+    Model = "ruby:golem",
+    Texture = "ruby:entity/golem",
+
+    // The server keeps the golem's ore in metadata 16 (a VarInt): 1 for gold.
+    TextureProvider = data => data.GetValueOrDefault((byte)16) is 1 ? "ruby:entity/golem_gold" : null,
+    Layers =
+    [
+        new EntityRenderLayer
+        {
+            Texture = "ruby:entity/golem_eyes",
+            RenderType = EntityRenderType.Emissive
+        },
+        new EntityRenderLayer
+        {
+            Model = "ruby:golem_saddle",
+            Texture = "ruby:entity/golem_saddle",
+            Provider = data => data.GetValueOrDefault((byte)17) is true
+                ? new EntityLayerAppearance("ruby:entity/golem_saddle")
+                : null
+        }
+    ],
+    Models = ["ruby:golem_crystal"],
+    Renderer = new GolemCrystalRenderer()
+});
+
+// A glowing crystal over the golem's head, where its model layer puts it, spinning with the golem's age.
+public sealed class GolemCrystalRenderer : IEntityRenderer
+{
+    public void Render(in EntityRenderContext entity, IEntityRenderBuffer buffer)
+    {
+        var spin = Matrix4x4.CreateRotationY(entity.Age * 0.1f) * entity.ModelTransform;
+        buffer.Model("ruby:golem_crystal", null, "ruby:entity/golem_crystal", spin, EntityRenderType.Emissive);
+    }
+}
+```
+
+Plugin entities don't have synced metadata fields of their own yet (engine phase 5): until then, providers read the
+fields every mob has, like its custom name, health or flags.
 
 A model layer has the shape of the layers in the client's `client_models.json`, which are vanilla's model layers:
 
@@ -3085,13 +3174,12 @@ sampled to the millisecond.
 The title screen's Reload Mods button reloads the client's mods without restarting: it unloads them and loads the
 `mods` folder again, then the assets. It's only on the title screen, so mods never reload while the client is
 connected to a server or running a world, whose channels and ids must stay as agreed. Unloading takes back
-everything mods registered in `ConfigureClient` (payload and tick handlers, key bindings, tints, renderers, particle
-providers, menu screens, HUD overlays), closes their open screens and drops their payload channels, disposes their
-plugins and unloads their code; loading runs
-`ConfigureRegistry` and `ConfigureClient` again on new instances. Like a server's plugin reload, content (blocks,
-items, entity types, particle types, menu types) stays registered for the process with its ids, so a reload can
-change what mods do and how they draw, but content a mod adds needs a restart. Keys players bound mods' bindings to
-stay in `options.txt`.
+everything mods registered in `ConfigureClient` (payload and tick handlers, key bindings, tints, renderers and what
+they cached for entities, particle providers, menu screens, HUD overlays), closes their open screens and drops their
+payload channels, disposes their plugins and unloads their code; loading runs `ConfigureRegistry` and
+`ConfigureClient` again on new instances. Like a server's plugin reload, content (blocks, items, entity types,
+particle types, menu types) stays registered for the process with its ids, so a reload can change what mods do and
+how they draw, but content a mod adds needs a restart. Keys players bound mods' bindings to stay in `options.txt`.
 
 ### Screens in code
 

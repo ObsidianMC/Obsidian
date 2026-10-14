@@ -49,6 +49,15 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
         ["minecraft:water_movement_efficiency"] = 0
     });
 
+    // At the type's passenger attachment, less a player's vehicle attachment (0.6 blocks up from its feet), as vanilla
+    // clients place riders; passengers of mobs are players.
+    protected override VectorD PassengerOffset(int index)
+    {
+        var seat = definition.Settings.PassengerAttachment(index, this.Yaw.Degrees);
+
+        return new VectorD(seat.X, seat.Y - 0.6, seat.Z);
+    }
+
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
