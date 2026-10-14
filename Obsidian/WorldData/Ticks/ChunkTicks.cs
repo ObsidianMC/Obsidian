@@ -236,6 +236,30 @@ internal sealed class ChunkTicks<T> where T : notnull
     }
 
     /// <summary>
+    /// Puts back a polled tick that couldn't run yet (a plugin's block's, while its plugin is away), unchanged: it
+    /// keeps its game tick, priority and scheduling order. Ignored if its position got another tick of its type
+    /// meanwhile.
+    /// </summary>
+    internal void Hold(ScheduledTick<T> tick, long now)
+    {
+        lock (this.sync)
+        {
+            if (!this.scheduled.Add((tick.Position, tick.Type)))
+                return;
+
+            // The chunk stopped ticking meanwhile: the tick waits with the others, still overdue.
+            if (this.scheduler is null)
+            {
+                this.pending.Add(tick.ToSaved(now));
+                return;
+            }
+
+            this.queue.Enqueue(tick, tick);
+            this.scheduler.OnTickAdded(this, tick);
+        }
+    }
+
+    /// <summary>
     /// Removes and returns the earliest due tick, if any; its position and type can be scheduled again.
     /// </summary>
     internal bool TryPoll(out ScheduledTick<T> tick)

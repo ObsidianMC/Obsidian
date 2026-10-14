@@ -337,15 +337,32 @@ public abstract partial class AbstractLevel : ILevel
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate) =>
         this.SetBlockAsync(new Vector(x, y, z), block, UpdateFlags(doBlockUpdate) | BlockUpdateFlags.Clients);
 
-    public async ValueTask SetBlockAsync(Vector location, IBlock block, BlockUpdateFlags flags)
-    {
-        if (this.IsOutsideBuildHeight(location.Y))
-            return;
+    public async ValueTask SetBlockAsync(Vector location, IBlock block, BlockUpdateFlags flags) =>
+        await this.TrySetBlockAsync(location, block, flags, canReplace: null);
 
-        await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, flags);
+    /// <summary>
+    /// Changes a block like <see cref="SetBlockAsync(Vector, IBlock, BlockUpdateFlags)"/> if
+    /// <paramref name="canReplace"/> accepts the block there, deciding and changing it in one step, so that nothing
+    /// changes the block in between.
+    /// </summary>
+    /// <param name="canReplace">
+    /// Whether the block there may be replaced, or null for any; it runs under the level's tick lock, so it mustn't
+    /// wait on anything.
+    /// </param>
+    /// <returns>Whether the block was changed.</returns>
+    internal async ValueTask<bool> TrySetBlockAsync(
+        Vector location,
+        IBlock block,
+        BlockUpdateFlags flags,
+        Func<IBlock, bool>? canReplace)
+    {
+        if (!await this.TrySetBlockUntrackedAsync(location.X, location.Y, location.Z, block, flags, canReplace))
+            return false;
+
         TrackMobEgg(location, block);
         CheckWither(location, block);
         CheckSnowGolem(location, block);
+        return true;
     }
 
     internal void BroadcastBlockChange(IBlock block, Vector location)
@@ -384,30 +401,48 @@ public abstract partial class AbstractLevel : ILevel
     /// <summary>
     /// Changes a block, with the side effects <paramref name="flags"/> ask for (see <see cref="AfterBlockSet"/>).
     /// </summary>
-    internal async ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, BlockUpdateFlags flags)
+    internal async ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, BlockUpdateFlags flags) =>
+        await this.TrySetBlockUntrackedAsync(x, y, z, block, flags, canReplace: null);
+
+    /// <summary>
+    /// Changes a block if <paramref name="canReplace"/> (null for any) accepts the block there, with the side effects
+    /// <paramref name="flags"/> ask for (see <see cref="AfterBlockSet"/>).
+    /// </summary>
+    /// <returns>Whether the block was changed.</returns>
+    internal async ValueTask<bool> TrySetBlockUntrackedAsync(
+        int x,
+        int y,
+        int z,
+        IBlock block,
+        BlockUpdateFlags flags,
+        Func<IBlock, bool>? canReplace)
     {
         if (this.IsOutsideBuildHeight(y))
-            return;
+            return false;
 
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         if (c is null)
-            return;
-
-        IBlock old;
+            return false;
 
         // Under the lock fluid ticks and growth hold, so that neither reads a block, has it changed here, and then
-        // writes what it worked out from the old block over the change.
+        // writes what it worked out from the old block over the change; and with the change's updates, so that
+        // another change's can't run between the block and its own.
         lock (this.Fluids.TickLock)
         {
-            old = c.GetBlock(x, y, z);
+            var old = c.GetBlock(x, y, z);
+            if (canReplace is not null && !canReplace(old))
+                return false;
+
             c.SetBlock(x, y, z, block);
 
             // Generated block entity data (e.g. a dungeon chest's loot) doesn't carry over to another block.
             if (c.GetBlockEntity(x, y, z) is DataBlockEntity data && data.Id != block.BlockEntityType())
                 c.RemoveBlockEntity(x, y, z);
+
+            this.AfterBlockSet(new Vector(x, y, z), old, block, flags);
         }
 
-        this.AfterBlockSet(new Vector(x, y, z), old, block, flags);
+        return true;
     }
 
     public IEnumerable<IEntity> GetEntitiesInRange(VectorD location, float distance = 10f)

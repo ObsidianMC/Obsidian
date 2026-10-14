@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Blocks;
 using System.Diagnostics.CodeAnalysis;
 
@@ -6,7 +7,7 @@ namespace Obsidian.Plugins;
 /// <summary>
 /// Runs the behaviour of a plugin's block, as a call into the plugin, so that the plugin can't be released meanwhile.
 /// </summary>
-internal static class BlockBehaviors
+internal static partial class BlockBehaviors
 {
     /// <returns>Whether the block's behaviour handled the use.</returns>
     public static async ValueTask<bool> UseAsync(BlockUseContext context)
@@ -30,22 +31,50 @@ internal static class BlockBehaviors
             return behavior.GetStateForPlacement(context);
     }
 
-    public static async ValueTask EntityInsideAsync(EntityBlockContext context)
+    /// <summary>
+    /// Runs the block's <see cref="IBlockBehavior.EntityInsideAsync"/>. One that throws is logged with
+    /// <paramref name="logger"/>, so that the level's tick goes on.
+    /// </summary>
+    public static async ValueTask EntityInsideAsync(EntityBlockContext context, ILogger logger)
     {
         if (!TryEnter(context.State, out var behavior, out var call))
             return;
 
         using (call)
-            await behavior.EntityInsideAsync(context);
+        {
+            try
+            {
+                await behavior.EntityInsideAsync(context);
+            }
+            catch (Exception exception)
+            {
+                var hook = nameof(IBlockBehavior.EntityInsideAsync);
+                HookFailed(logger, exception, context.State.UnlocalizedName, hook);
+            }
+        }
     }
 
-    public static async ValueTask SteppedOnAsync(EntityBlockContext context)
+    /// <summary>
+    /// Runs the block's <see cref="IBlockBehavior.SteppedOnAsync"/>. One that throws is logged with
+    /// <paramref name="logger"/>, so that the level's tick goes on.
+    /// </summary>
+    public static async ValueTask SteppedOnAsync(EntityBlockContext context, ILogger logger)
     {
         if (!TryEnter(context.State, out var behavior, out var call))
             return;
 
         using (call)
-            await behavior.SteppedOnAsync(context);
+        {
+            try
+            {
+                await behavior.SteppedOnAsync(context);
+            }
+            catch (Exception exception)
+            {
+                var hook = nameof(IBlockBehavior.SteppedOnAsync);
+                HookFailed(logger, exception, context.State.UnlocalizedName, hook);
+            }
+        }
     }
 
     /// <summary>
@@ -86,4 +115,7 @@ internal static class BlockBehaviors
 
     private static BlockBinding? Binding(IBlock block) =>
         BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out var type) ? type.Binding : null;
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "{Block}'s {Hook} hook failed")]
+    private static partial void HookFailed(ILogger logger, Exception exception, string block, string hook);
 }

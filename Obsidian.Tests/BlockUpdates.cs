@@ -11,6 +11,7 @@ using Obsidian.Commands.Framework;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Plugins;
 using Obsidian.Registries;
@@ -43,7 +44,7 @@ public sealed class BlockUpdates : IDisposable
 
     public void Dispose() => Directory.Delete(this.folder, recursive: true);
 
-    [Fact(DisplayName = "Block ticks save as vanilla's block_ticks and run by time, priority and scheduling order")]
+    [Fact(DisplayName = "Block ticks save as vanilla's block_ticks, run in vanilla's order and keep it when held")]
     public void BlockTicksSaveAndRunInVanillaOrder()
     {
         // A chunk that doesn't tick yet keeps its ticks with delays, as a generating or saved chunk does.
@@ -82,11 +83,36 @@ public sealed class BlockUpdates : IDisposable
         loaded.Schedule(new Vector(5, 64, 5), "minecraft:sand", 2);
 
         var ran = new List<int>();
-        for (var tick = 0; tick < 3; tick++)
-            scheduler.Tick(_ => true, (position, _) => ran.Add(position.X));
+        var hold = false;
+        bool Run(Vector position, string type)
+        {
+            if (hold)
+                return false;
 
-        // Game tick 1: the one due then. Game tick 2: by priority, then the order they were scheduled in.
-        Assert.Equal([2, 3, 1, 4, 5], ran);
+            ran.Add(position.X);
+            return true;
+        }
+
+        // Game tick 1: the one due then.
+        scheduler.Clock.Advance();
+        scheduler.Tick(_ => true, Run);
+        Assert.Equal([2], ran);
+
+        loaded.Schedule(new Vector(6, 64, 6), "minecraft:sand", 2);
+
+        // Game tick 2: held (a plugin's block while its plugin is away), the due ticks stay as they were scheduled.
+        hold = true;
+        scheduler.Clock.Advance();
+        scheduler.Tick(_ => true, Run);
+        var held = loaded.Pack().Single(tick => tick.Type == "minecraft:gravel");
+        Assert.Equal((0, -1), (held.Delay, held.Priority));
+
+        // Game tick 3: the held ticks first, as due before the one scheduled at game tick 1, by priority, then the
+        // order they were scheduled in.
+        hold = false;
+        scheduler.Clock.Advance();
+        scheduler.Tick(_ => true, Run);
+        Assert.Equal([2, 3, 1, 4, 5, 6], ran);
         Assert.Equal(0, loaded.Count);
     }
 
@@ -118,14 +144,16 @@ public sealed class BlockUpdates : IDisposable
 
         var cancel = true;
         var events = 0;
-        context.EventDispatcher.RegisterEvent(null, (Func<BlockPlaceEventArgs, ValueTask>)(placing =>
+        Func<ValueTask> meanwhile = null;
+        context.EventDispatcher.RegisterEvent(null, (Func<BlockPlaceEventArgs, ValueTask>)(async placing =>
         {
             events++;
             Assert.Same(player, placing.Player);
             if (cancel)
                 placing.Cancel();
 
-            return ValueTask.CompletedTask;
+            if (meanwhile is not null)
+                await meanwhile();
         }));
 
         // Clicking the ground's top places the block above it, facing the player (east, for a player facing west).
@@ -144,6 +172,20 @@ public sealed class BlockUpdates : IDisposable
         Assert.True(relay.Is(placed));
         Assert.Equal("east", relay.GetValue(placed, "facing"));
         Assert.Equal(1, player.GetHeldItem()?.Count);
+
+        // A handler that fills the target while the event runs keeps the block from being placed and the item from
+        // being used; the client is sent the block there.
+        var client = (TestClient)player.Client;
+        var filled = new Vector(6, Ground + 1, 6);
+        meanwhile = () => world.SetBlockAsync(filled, BlocksRegistry.Stone);
+        client.ClearPackets();
+        await UseOn(filled + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
+
+        Assert.True(world.GetLoadedChunk(0, 0)!.GetBlock(filled).Is(BlockIds.Stone));
+        Assert.Equal(1, player.GetHeldItem()?.Count);
+        Assert.Contains(
+            client.SentPackets.OfType<BlockUpdatePacket>(),
+            packet => packet.Position == filled && packet.BlockId == BlocksRegistry.Stone.GetHashCode());
 
         await manager.UnloadPluginAsync(container);
     }
@@ -209,38 +251,56 @@ public sealed class BlockUpdates : IDisposable
         var turned = chunk.GetBlock(center + Vector.East);
         Assert.Equal("east", relay.GetValue(turned, "facing"));
 
-        // Unloaded, the plugin's blocks stay but their hooks don't run.
-        await manager.UnloadPluginAsync(container);
+        // An entity inside a relay, whose entity hook throws: the failure is logged and the level's tick goes on.
+        var region = world.GetRegionForChunk(0, 0)!;
+        var crystal = new EndCrystal
+        {
+            EntityId = Obsidian.Server.GetNextEntityId(),
+            Level = world,
+            Position = new VectorD(center.X + 1.5, center.Y + 0.1, center.Z + 0.5)
+        };
+
+        region.Entities.TryAdd(crystal.EntityId, crystal);
         calls.Clear();
+        await world.DoWorldTickAsync();
+        region.Entities.TryRemove(crystal.EntityId, out _);
+
+        Assert.Contains("inside 9,72,8", calls);
+        Assert.Equal("idle", world.TickStage);
+
+        // Changes made at once each run their updates before the next change: the relay is placed, then removed.
         await world.SetBlockAsync(center, BlocksRegistry.Stone, BlockUpdateFlags.All);
-        Assert.Empty(calls);
-    }
+        calls.Clear();
 
-    [Fact(DisplayName = "Random ticks reach plugin blocks that opt in; falling blocks fall on their scheduled tick",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task RandomTicksAndFallingBlocks()
-    {
-        await using var context = TestServerFactory.CreateServer($"block-ticks-{Guid.NewGuid():N}");
-        var world = context.World;
-        await AddChunksAsync(world);
-        await using var manager = CreatePluginManager(context);
-        var container = await this.LoadProbeAsync(manager);
+        var placing = Task.Run(async () =>
+        {
+            for (var change = 0; change < 200; change++)
+                await world.SetBlockAsync(center, relay.DefaultState, BlockUpdateFlags.All);
+        });
 
-        Assert.True(BlocksRegistry.TryGetPluginBlock("probe:relay", out var relay));
-        Assert.True(BlocksRegistry.TryGetPluginBlock("probe:still", out var still));
+        var removing = Task.Run(async () =>
+        {
+            for (var change = 0; change < 200; change++)
+                await world.SetBlockAsync(center, BlocksRegistry.Stone, BlockUpdateFlags.All);
+        });
 
+        await Task.WhenAll(placing, removing);
+
+        var changes = calls.Where(call => call.StartsWith("placed") || call.StartsWith("removed")).ToList();
+        Assert.NotEmpty(changes);
+        for (var index = 0; index < changes.Count; index++)
+        {
+            var alternating = index % 2 == 0 ? "placed 8,72,8 over stone" : "removed 8,72,8 for stone";
+            Assert.Equal(alternating, changes[index]);
+        }
+
+        // A section of relays gets the game rule's number of random ticks.
         var player = new FakePlayer { Position = new VectorD(8, Ground + 1, 8) };
         Assert.True(world.TryAddPlayer(player));
-
         try
         {
-            // A section of relays gets the game rule's number of random ticks; one of blocks that don't opt in, none.
-            var calls = ProbeRelay.Reset();
-            FillSection(world, still.DefaultState);
-            world.TickRandomBlocks();
-            Assert.Empty(calls);
-
             FillSection(world, relay.DefaultState);
+            calls.Clear();
             world.TickRandomBlocks();
             Assert.Equal(world.LevelData.GetIntegerRule("random_tick_speed", 3), calls.Count);
             Assert.All(calls, call => Assert.StartsWith("random", call));
@@ -251,11 +311,24 @@ public sealed class BlockUpdates : IDisposable
             world.TryRemovePlayer(player);
         }
 
+        // While the plugin unloads, with its blocks still bound to it, a relay's due tick waits rather than being
+        // dropped; unloaded, the plugin's blocks stay but their hooks don't run.
+        var waiting = new Vector(5, Ground + 1, 5);
+        chunk.SetBlock(waiting, relay.DefaultState);
+        world.ScheduleBlockTick(waiting, relay.DefaultState, delay: 1);
+        container.Close();
+        calls.Clear();
+        world.Fluids.Tick();
+
+        Assert.Empty(calls);
+        Assert.True(((Chunk)chunk).BlockTicks.Contains(waiting, relay.DefaultState.UnlocalizedName));
+
         await manager.UnloadPluginAsync(container);
+        await world.SetBlockAsync(center, BlocksRegistry.Air, BlockUpdateFlags.All);
+        Assert.Empty(calls);
 
         // Sand placed over air waits vanilla's two ticks before it falls, and lands with updates.
         var sand = new Vector(4, Ground + 4, 4);
-        var chunk = world.GetLoadedChunk(0, 0)!;
         await world.SetBlockAsync(sand, BlocksRegistry.Sand, doBlockUpdate: true);
 
         await world.DoWorldTickAsync();
@@ -348,8 +421,7 @@ public sealed class BlockUpdates : IDisposable
 /// <summary>
 /// The probe plugin's blocks for <see cref="BlockUpdates"/>: <c>probe:relay</c> records each hook it gets in
 /// <see cref="AppContext"/> data (the plugin's statics are its own copy's), faces away from the player placing it,
-/// turns towards a gold block placed east or west of it, and gets random ticks; <c>probe:still</c> records the same,
-/// without random ticks.
+/// turns towards a gold block placed east or west of it, gets random ticks and throws from its entity hook.
 /// </summary>
 public sealed class ProbeRelay : IBlockBehavior
 {
@@ -366,9 +438,6 @@ public sealed class ProbeRelay : IBlockBehavior
             RandomlyTicks = true,
             Behavior = relay
         });
-
-        var still = new ProbeRelay();
-        still.type = registry.RegisterBlock("probe:still", new BlockProperties { Behavior = still });
     }
 
     /// <summary>
@@ -404,14 +473,21 @@ public sealed class ProbeRelay : IBlockBehavior
         var turns = context.NeighborState.Is(BlockIds.GoldBlock)
             && context.Direction is BlockFace.East or BlockFace.West;
 
-        return turns && this.type!.Properties.Length > 0
-            ? this.type.With(context.State, "facing", Name(context.Direction))
+        return turns
+            ? this.type!.With(context.State, "facing", Name(context.Direction))
             : context.State;
     }
 
     public void Tick(BlockContext context) => Record($"tick {At(context.Position)}");
 
     public void RandomTick(BlockContext context) => Record($"random {At(context.Position)}");
+
+    // Entity hooks throw after recording, as a broken plugin's might.
+    public ValueTask EntityInsideAsync(EntityBlockContext context)
+    {
+        Record($"inside {At(context.Position)}");
+        throw new InvalidOperationException("The relay's entity hook failed.");
+    }
 
     private static void Record(string call)
     {

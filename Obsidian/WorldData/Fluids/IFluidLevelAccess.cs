@@ -1,3 +1,5 @@
+using Obsidian.API.Blocks;
+
 namespace Obsidian.WorldData.Fluids;
 
 /// <summary>
@@ -32,10 +34,20 @@ internal interface IFluidLevelAccess
     public IBlock GetBlock(Vector position);
 
     /// <summary>
-    /// Stores a block without any side effects besides keeping its chunk consistent (heightmaps, block entities, clients).
+    /// Stores a block without any side effects besides keeping its chunk consistent (heightmaps, block entities):
+    /// players and portals hear of it through <see cref="OnBlockStored"/>, as the change's flags ask.
     /// </summary>
     /// <returns>Whether the block could be stored; <c>false</c> outside the build range or the reachable chunks.</returns>
     public bool SetBlock(Vector position, IBlock block);
+
+    /// <summary>
+    /// A block was stored with <paramref name="flags"/>, before its updates run: the live level shows it to players
+    /// (<see cref="BlockUpdateFlags.Clients"/>) and has portals check their frames
+    /// (<see cref="BlockUpdateFlags.Neighbors"/>).
+    /// </summary>
+    public void OnBlockStored(Vector position, IBlock block, BlockUpdateFlags flags)
+    {
+    }
 
     /// <summary>
     /// Schedules a tick of <paramref name="fluid"/> at <paramref name="position"/> in <paramref name="delay"/> ticks, in the

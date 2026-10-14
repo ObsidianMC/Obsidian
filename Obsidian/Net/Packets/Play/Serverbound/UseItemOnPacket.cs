@@ -341,10 +341,25 @@ public partial class UseItemOnPacket
             return;
         }
 
+        // The event's handlers may have filled the target or changed the player's hand while it ran: both are checked
+        // again in the same step as the block is placed, and the item is only used once it is.
+        var stored = await placeLevel.TrySetBlockAsync(
+            position,
+            block,
+            BlockUpdateFlags.All,
+            current => (pouring || current.CanBeReplaced())
+                && ReferenceEquals(player.Inventory.GetItem(handSlot), currentItem)
+                && currentItem.Count > 0);
+
+        if (!stored)
+        {
+            await this.RejectPlacementAsync(player, handSlot);
+            return;
+        }
+
         if (player.GameMode != GameMode.Creative)
             player.Inventory.RemoveItem(handSlot, 1);
 
-        await placeLevel.SetBlockAsync(position, block, BlockUpdateFlags.All);
         var center = (VectorD)position + new VectorD(0.5, 0.5, 0.5);
         placeLevel.EmitGameEvent(MobGameEvent.BlockPlace, center, player, affectedBlock: block);
         player.Client.SendPacket(new BlockChangedAckPacket

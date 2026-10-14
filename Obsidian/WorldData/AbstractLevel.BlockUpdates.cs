@@ -74,21 +74,17 @@ public abstract partial class AbstractLevel
     }
 
     /// <summary>
-    /// Runs the side effects of a block <see cref="SetBlockUntrackedAsync(int, int, int, IBlock, BlockUpdateFlags)"/>
-    /// stored in place of <paramref name="old"/>, as <paramref name="flags"/> ask, like vanilla's <c>setBlock</c>:
-    /// players see it first, then the old block's removal, the new block's placement and its neighbours' updates run
-    /// (see <see cref="FluidLevel.OnBlockChanged"/>), and portals check their frames.
+    /// Runs the side effects of a block <see cref="TrySetBlockUntrackedAsync"/> stored in place of
+    /// <paramref name="old"/>, as <paramref name="flags"/> ask, like vanilla's <c>setBlock</c>: players see it, then
+    /// the old block's removal, the new block's placement and its neighbours' updates run, and portals check their
+    /// frames (see <see cref="FluidLevel.OnBlockChanged"/>).
     /// </summary>
-    private void AfterBlockSet(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
-    {
-        if ((flags & BlockUpdateFlags.Clients) != 0)
-            this.BroadcastBlockChange(block, position);
-
+    /// <remarks>
+    /// Runs under the tick lock the block was stored under, so that the updates of block changes don't interleave: a
+    /// change made meanwhile on another thread waits for them, and its updates follow these.
+    /// </remarks>
+    private void AfterBlockSet(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags) =>
         this.Fluids.OnBlockChanged(position, old, block, flags);
-
-        if ((flags & BlockUpdateFlags.Neighbors) != 0)
-            this.Portals.OnBlockChanged(position);
-    }
 
     private async ValueTask TouchAsync(IEntity entity, Vector position, bool inside)
     {
@@ -104,8 +100,8 @@ public abstract partial class AbstractLevel
         };
 
         if (inside)
-            await BlockBehaviors.EntityInsideAsync(context);
+            await BlockBehaviors.EntityInsideAsync(context, this.Logger);
         else
-            await BlockBehaviors.SteppedOnAsync(context);
+            await BlockBehaviors.SteppedOnAsync(context, this.Logger);
     }
 }

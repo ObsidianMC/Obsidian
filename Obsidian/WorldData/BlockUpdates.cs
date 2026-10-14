@@ -28,7 +28,7 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     /// <summary>
     /// The level's block tick scheduler, which the chunks' <see cref="Chunk.BlockTicks"/> are ticked by.
     /// </summary>
-    public TickScheduler<string> Scheduler { get; } = new();
+    public TickScheduler<string> Scheduler { get; } = new(fluids.Clock);
 
     /// <inheritdoc/>
     public ILevel Level => level;
@@ -102,22 +102,23 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     /// for. Plugin blocks run their <see cref="IBlockBehavior.Tick"/>, and vanilla's falling blocks fall; other
     /// vanilla blocks' ticks (a repeater's, from a vanilla save) do nothing yet.
     /// </summary>
-    /// <remarks>
-    /// The ticks of a plugin's block wait while its plugin is unloaded, a tick at a time, so that they're kept (and
-    /// saved) until it's back to run them.
-    /// </remarks>
-    public void RunScheduledTick(Vector position, string type)
+    /// <returns>
+    /// False to hold the tick: a plugin's block's tick waits while its plugin is unloading or unloaded, as it was
+    /// scheduled, so that it's kept (and saved) until the plugin is back to run it.
+    /// </returns>
+    public bool RunScheduledTick(Vector position, string type)
     {
         var state = this.GetBlock(position);
         if (state.UnlocalizedName != type)
-            return;
+            return true;
 
-        if (BlocksRegistry.TryGetPluginBlock(state.GetHashCode(), out var pluginBlock) && pluginBlock.Owner is null)
-            this.ScheduleTick(position, state, delay: 1);
-        else if (BlockBehaviors.HasBehavior(state))
-            this.RunHook(state, nameof(IBlockBehavior.Tick), behavior => behavior.Tick(this.Context(position, state)));
-        else if (IsVanillaFalling(state))
+        if (BlocksRegistry.TryGetPluginBlock(state.GetHashCode(), out var pluginBlock))
+            return this.RunPluginTick(position, state, pluginBlock);
+
+        if (IsVanillaFalling(state))
             this.Fall(position, state);
+
+        return true;
     }
 
     /// <summary>
@@ -240,6 +241,31 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
 
         updates.SetBlockOutsideFluids(position, FluidState.Of(state).CreateLegacyBlock(), BlockUpdateFlags.All);
         level.SpawnFallingBlock(position, BlocksRegistry.GetDefault(state.RegistryId));
+    }
+
+    // Runs a plugin block's tick in a call into its plugin, or holds it (false) while the plugin can't be called:
+    // unloaded, or unloading with its blocks still bound to it. Blocks without a behaviour have nothing to run.
+    private bool RunPluginTick(Vector position, IBlock state, BlockType pluginBlock)
+    {
+        if (pluginBlock.Binding is { Behavior: null })
+            return true;
+
+        if (!BlockBehaviors.TryEnter(state, out var behavior, out var call))
+            return false;
+
+        using (call)
+        {
+            try
+            {
+                behavior.Tick(this.Context(position, state));
+            }
+            catch (Exception exception)
+            {
+                this.LogHookFailure(exception, nameof(IBlockBehavior.Tick), state);
+            }
+        }
+
+        return true;
     }
 
     private BlockContext Context(Vector position, IBlock state) => new()

@@ -67,7 +67,10 @@ public class VanillaFluids(VanillaFluids.ScenarioFixture fixture) : IClassFixtur
                 world.Fluids.SetBlock(action.Position, action.Block, BlockUpdateFlags.All);
 
             if (tick > 0)
+            {
+                world.Scheduler.Clock.Advance();
                 world.Scheduler.Tick(_ => true, world.Fluids.RunScheduledTick);
+            }
 
             if (checkpoints.TryGetValue(tick, out var checkpoint))
                 diffs.AddRange(Compare(world, checkpoint, min, max));

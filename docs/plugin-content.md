@@ -86,13 +86,15 @@ The hooks with a `Level` run synchronously while the level's block updates wait 
 change blocks through that `IBlockLevel` (`GetBlock`, `SetBlock`, `RemoveBlock`, `ScheduleTick`,
 `HasScheduledTick`, `UpdateNeighbors`, and the level's `Random`), not through `ILevel`'s asynchronous methods, and
 keep them short. The updates a hook's change causes run after the hook returns, in vanilla's order. A hook that
-throws is logged and the updates go on. Like `UseAsync`, every hook runs as a call into the plugin, and none runs
-once it starts unloading.
+throws is logged and the updates, and the level's tick, go on. Like `UseAsync`, every hook runs as a call into the
+plugin, and none runs once it starts unloading. A block change and the updates it causes run as one step: a change
+made meanwhile on another thread waits for them.
 
 Block changes run vanilla's side effects as `BlockUpdateFlags` ask, with vanilla's values: `ILevel.SetBlockAsync`
 with `doBlockUpdate: true`, a player placing or breaking a block, and explosions use `All` (neighbours hear of the
-change, then get shape updates); `SetBlockAsync(position, block, flags)` takes any. Without `Neighbors`, the old
-block isn't told it was removed and the neighbours don't get `NeighborChanged`; `KnownShape` skips shape updates,
+change, then get shape updates); `SetBlockAsync(position, block, flags)` and `IBlockLevel.SetBlock` take any.
+Without `Clients`, players aren't sent the change. Without `Neighbors`, the old block isn't told it was removed, the
+neighbours don't get `NeighborChanged` and nether portals don't check their frames; `KnownShape` skips shape updates,
 and `SkipOnPlace` skips `OnPlaced`. `doBlockUpdate: false` is a plain change, without hooks or updates. Of vanilla's
 blocks, liquids react to the updates (they flow), falling blocks fall two ticks after they're placed or a neighbour
 changes, and the other vanilla blocks only change shape when water or lava changes blocks (see
@@ -101,11 +103,13 @@ changes, and the other vanilla blocks only change shape when water or lava chang
 `ILevel.ScheduleBlockTick` and `IBlockLevel.ScheduleTick` schedule a block's tick in a number of game ticks, with a
 `TickPriority`, like vanilla's `scheduleTick`: one per block and position, run if the block is still there then.
 Ticks due the same game tick run by priority, then in the order they were scheduled, before fluid ticks and
-entities. They're saved with their chunk as vanilla's `block_ticks`; a plugin's block's ticks wait while the plugin
-is unloaded and run once it's back.
+entities. They're saved with their chunk as vanilla's `block_ticks`. A plugin's block's ticks wait while the plugin
+unloads or is unloaded, keeping their priority and place in the order, and run once it's back.
 
 A cancellable `BlockPlaceEventArgs`, next to `BlockBreakEventArgs`, is raised before a player places a block, with
-the state they'd place. Cancelling it keeps the block from being placed, and the player keeps the item.
+the state they'd place. Cancelling it keeps the block from being placed, and the player keeps the item. So does a
+handler that fills the target or changes the player's hand: both are checked again as the block is placed, and the
+item is only used once it is.
 
 ### Runtime light
 

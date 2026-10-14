@@ -91,6 +91,11 @@ scheduled ticks of vanilla blocks other than falling blocks (a repeater's or an 
 nothing when they come due. Vanilla's own blocks don't react to entities inside them or standing on them through
 the hooks either, and placing a block doesn't check that it can survive there or that no entity is in the way.
 
+Saved `block_ticks` and `fluid_ticks` lists are written in the order the ticks would run, where vanilla writes its
+priority queue's internal heap order. Both reload the list in file order, so after a save and reload Obsidian keeps
+running ticks due the same game tick with the same priority in their original order, while vanilla runs them in a
+different one. Obsidian deliberately doesn't emulate Java's heap layout for this.
+
 **Where to start:**
 
 - Make `FluidLevel.DestroyBlock` drop the block's loot (vanilla's `Level.destroyBlock`, unless `SuppressDrops`),

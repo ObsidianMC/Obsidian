@@ -22,7 +22,7 @@ internal sealed class LevelFluids : IFluidLevelAccess
     private const int PruneInterval = 100;
 
     private readonly AbstractLevel level;
-    private readonly TickScheduler<FluidKind> scheduler = new();
+    private readonly TickScheduler<FluidKind> scheduler;
     private readonly Dictionary<long, Chunk> chunks = [];
     private readonly Lock sync = new();
     private readonly FluidLevel fluidLevel;
@@ -30,6 +30,7 @@ internal sealed class LevelFluids : IFluidLevelAccess
     public LevelFluids(AbstractLevel level)
     {
         this.level = level;
+        this.scheduler = new TickScheduler<FluidKind>(this.Clock);
         this.fluidLevel = new FluidLevel(this);
         this.Blocks = new LevelBlockUpdates(level, this, this.fluidLevel);
     }
@@ -38,6 +39,11 @@ internal sealed class LevelFluids : IFluidLevelAccess
     /// The level's block ticks and the reactions of plugin and falling blocks to block updates.
     /// </summary>
     public LevelBlockUpdates Blocks { get; }
+
+    /// <summary>
+    /// The game time block and fluid ticks are scheduled against, like vanilla's level game time.
+    /// </summary>
+    public TickClock Clock { get; } = new();
 
     /// <inheritdoc/>
     public IBlockReactions? Reactions => this.Blocks;
@@ -95,13 +101,18 @@ internal sealed class LevelFluids : IFluidLevelAccess
     /// <summary>
     /// Runs one level tick of block ticks and then fluid ticks, like vanilla.
     /// </summary>
+    /// <remarks>
+    /// The game time advances before either runs, as vanilla's does, so that a fluid tick a block tick schedules is
+    /// due as many ticks later as one scheduled anywhere else.
+    /// </remarks>
     public void Tick()
     {
         lock (this.sync)
         {
+            this.Clock.Advance();
             this.Blocks.Scheduler.Tick(this.IsTicking, this.Blocks.RunScheduledTick);
             this.scheduler.Tick(this.IsTicking, this.fluidLevel.RunScheduledTick);
-            if (this.scheduler.GameTime % PruneInterval == 0)
+            if (this.Clock.GameTime % PruneInterval == 0)
                 this.PruneUnloaded();
         }
     }
@@ -173,9 +184,21 @@ internal sealed class LevelFluids : IFluidLevelAccess
         if (chunk.GetBlockEntity(position.X, position.Y, position.Z) is DataBlockEntity data && data.Id != block.BlockEntityType())
             chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
 
-        this.level.BroadcastBlockChange(block, position);
-        this.level.Portals.OnBlockChanged(position);
         return true;
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Players see the change with <see cref="BlockUpdateFlags.Clients"/>, and portals check their frames around it
+    /// with <see cref="BlockUpdateFlags.Neighbors"/>.
+    /// </remarks>
+    public void OnBlockStored(Vector position, IBlock block, BlockUpdateFlags flags)
+    {
+        if ((flags & BlockUpdateFlags.Clients) != 0)
+            this.level.BroadcastBlockChange(block, position);
+
+        if ((flags & BlockUpdateFlags.Neighbors) != 0)
+            this.level.Portals.OnBlockChanged(position);
     }
 
     /// <inheritdoc/>

@@ -120,8 +120,9 @@ internal sealed class FluidLevel
 
     /// <summary>
     /// Runs the side effects of a block something else stored (a player, a plugin or an explosion), as
-    /// <c>Level.setBlock</c> runs them: <paramref name="old"/>'s removal, <paramref name="block"/>'s placement, then
-    /// its neighbors' updates as the flags ask.
+    /// <c>Level.setBlock</c> runs them: players and portals hear of it (see
+    /// <see cref="IFluidLevelAccess.OnBlockStored"/>), then <paramref name="old"/>'s removal,
+    /// <paramref name="block"/>'s placement and its neighbors' updates run, as the flags ask.
     /// </summary>
     /// <remarks>
     /// Of vanilla's blocks, only liquids, waterlogged blocks and falling blocks react to the chain's shape updates:
@@ -130,6 +131,9 @@ internal sealed class FluidLevel
     /// </remarks>
     public void OnBlockChanged(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
     {
+        // Players are sent even an unchanged block, which corrects a client that predicted another.
+        this.access.OnBlockStored(position, block, flags);
+
         if (!old.IsSameState(block))
             this.OnChanged(position, old, block, flags, UpdateLimit, VanillaShapes.Fluids);
     }
@@ -222,6 +226,7 @@ internal sealed class FluidLevel
         if (old.IsSameState(block) || !this.access.SetBlock(position, block))
             return false;
 
+        this.access.OnBlockStored(position, block, flags);
         this.OnChanged(position, old, block, flags, updateLimit, shapes);
         return true;
     }
