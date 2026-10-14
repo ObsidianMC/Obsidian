@@ -42,6 +42,7 @@ public partial class Player
         {
             if (await ShootCrossbowAsync(item, loaded))
             {
+                this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
                 item[DataComponentType.ChargedProjectiles] = ComponentBuilder.ChargedProjectiles with { Value = [] };
                 var fireworks = loaded.Any(projectile => projectile.Is(ItemsRegistry.FireworkRocket));
                 await DamageInventoryItemAsync(slot, fireworks ? 3 : 1);
@@ -122,6 +123,7 @@ public partial class Player
                     && CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Infinity) > 0;
             if (!ShootArrow(item, ammunition, draw * 3, draw == 1, infinite ? ArrowPickup.CreativeOnly : ArrowPickup.Allowed)) return;
             if (!infinite && ammunitionSlot >= 0) { Inventory.RemoveItem(ammunitionSlot, 1); await SyncInventorySlotAsync(ammunitionSlot); }
+            this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
             await DamageInventoryItemAsync(slot, 1);
         }
         else if (item.Is(ItemsRegistry.Trident) && ticks >= 10)
@@ -131,6 +133,7 @@ public partial class Player
             {
                 if (!IsWet()) return;
                 await DamageInventoryItemAsync(slot, 1);
+                this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
                 riptideTicks = 20;
                 riptideDamage = CombatItems.Attribute(item, "attack_damage", "mainhand", 0);
                 LivingBitMask |= LivingBitMask.InRiptideSpinAttack;
@@ -147,6 +150,7 @@ public partial class Player
                 LoyaltyLevel = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Loyalty)
             };
             if (!Level.TryAddEntity(thrown)) return;
+            this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
             await DamageInventoryItemAsync(slot, 1);
             thrown.PickupItem = new ItemStack(item);
             if (GameMode != GameMode.Creative) { Inventory.RemoveItem(slot, 1); await SyncInventorySlotAsync(slot); }

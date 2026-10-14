@@ -68,6 +68,12 @@ public partial class ItemEntity : Entity
             return false;
         }
 
+        if (player is Player droppingPlayer)
+        {
+            droppingPlayer.Statistics.Increment(stack.Holder.UnlocalizedName, stack.Count, "minecraft:dropped");
+            droppingPlayer.Statistics.Increment("minecraft:drop");
+        }
+
         item.SpawnEntity(new Velocity(motion.X, motion.Y, motion.Z));
         return true;
 

@@ -447,7 +447,9 @@ public sealed partial class PluginManager : IAsyncDisposable
             container.RecipeFiles = PluginRecipeFiles.Read(files, this.logger);
             container.TagFiles.InsertRange(0, this.ReadTagFiles(files));
             container.LootTableFiles = PluginLootTables.Read(files, this.logger);
+            container.AdvancementFiles = AdvancementsRegistry.Read(files, this.logger);
             this.ApplyLootTables();
+            this.ApplyAdvancements();
             container.FeatureFiles = this.ReadFeatureFiles(files);
             container.CodecFiles = this.ReadCodecFiles(files, container.FeatureFiles);
 
@@ -571,6 +573,8 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         ItemsRegistry.ReleasePlugin(pluginContainer);
         SoundEventsRegistry.ReleasePlugin(pluginContainer);
+        CustomStatisticsRegistry.ReleasePlugin(pluginContainer);
+        AdvancementTriggersRegistry.ReleasePlugin(pluginContainer);
         PortalTypesRegistry.ReleasePlugin(pluginContainer);
         DataComponentTypesRegistry.ReleasePlugin(pluginContainer);
         var blocks = BlocksRegistry.ReleasePlugin(pluginContainer);
@@ -591,6 +595,7 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         this.plugins = this.plugins.Remove(pluginContainer);
         this.ApplyLootTables();
+        this.ApplyAdvancements();
         this.ApplyCodecs();
         this.ApplyTags();
         this.ApplyRecipeFiles();
@@ -1120,6 +1125,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         {
             pack.TagFiles.AddRange(this.ReadTagFiles(pack.Files));
             pack.LootTableFiles = PluginLootTables.Read(pack.Files, this.logger);
+            pack.AdvancementFiles = AdvancementsRegistry.Read(pack.Files, this.logger);
             pack.FeatureFiles = this.ReadFeatureFiles(pack.Files);
             (pack.StructureFiles, pack.StructureTemplates) = this.ReadStructureFiles(pack.Files);
         }
@@ -1131,6 +1137,7 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         this.dataPacks = [.. packs];
         this.ApplyLootTables();
+        this.ApplyAdvancements();
         this.ApplyCodecs();
         this.ApplyTags();
         this.ApplyRecipeFiles();
@@ -1153,6 +1160,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         {
             var read = pack.TagFiles.Count
                 + pack.LootTableFiles.Length
+                + pack.AdvancementFiles.Length
                 + pack.FeatureFiles.Length
                 + pack.CodecFiles.Length
                 + pack.NoiseFiles.Length
@@ -1176,6 +1184,7 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         return PluginTags.FindFiles(paths).Any()
             || PluginLootTables.FindFiles(paths).Any()
+            || AdvancementsRegistry.FindFiles(paths).Any()
             || PluginFeatures.FindFiles(paths).Any()
             || PluginCodecs.FindFiles(paths).Any()
             || PluginNoise.FindFiles(paths).Any()
@@ -1183,6 +1192,9 @@ public sealed partial class PluginManager : IAsyncDisposable
             || PluginStructures.FindFiles(paths).Any()
             || PluginStructures.FindTemplates(paths).Any();
     }
+
+    private void ApplyAdvancements() => AdvancementsRegistry.Apply(
+        this.DataFilesOf(plugin => plugin.AdvancementFiles, pack => pack.AdvancementFiles));
 
     private void ApplyLootTables() => PluginLootTables.Apply(
         this.DataFilesOf(plugin => plugin.LootTableFiles, pack => pack.LootTableFiles));

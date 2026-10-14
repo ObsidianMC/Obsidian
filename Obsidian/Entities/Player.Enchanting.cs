@@ -133,6 +133,8 @@ public partial class Player
             // Enchanting deducts levels, preserving progress and total experience as vanilla does.
             await Client.QueuePacketAsync(new SetExperiencePacket(XpP, XpLevel, XpTotal));
         }
+        this.Statistics.Increment("minecraft:enchant_item");
+        await this.FireProgressAsync("enchanted_item", item: item, levels: paidLevels);
         EnchantmentSeed = Globals.Random.Next();
         await Client.QueuePacketAsync(new ContainerSetContentPacket(CurrentContainerId,
             table.Concat(Inventory.Skip(9).Take(36)).ToList()) { CarriedItem = CarriedItem });

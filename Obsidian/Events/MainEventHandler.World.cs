@@ -134,6 +134,9 @@ public partial class MainEventHandler
             return;
         }
 
+        if (player is Player statisticsMiner)
+            statisticsMiner.Statistics.Increment(block.UnlocalizedName, type: "minecraft:mined");
+
         // Like vanilla's Item.mineBlock, the tool wears once the drops were decided with it as it was.
         if (player is Player miner && tool is not null && wear > 0)
             await miner.DamageInventoryItemAsync(toolSlot, wear, expected: tool);

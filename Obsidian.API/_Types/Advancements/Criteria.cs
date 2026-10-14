@@ -2,7 +2,7 @@
 
 /// <summary>
 /// Criteria for advancements.
-/// If this is a custom critera developers will have to track the players themselves to ensure they achieve the required criteria
+/// Runtime progress belongs to each player's IAdvancements; these legacy fields are only for callers building packets.
 /// </summary>
 public class Criteria
 {
@@ -16,8 +16,8 @@ public class Criteria
 
     public DateTimeOffset? AchievedAt { get; private set; }
 
-    //TODO
-    //public IReadOnlyDictionary<string, INbtTag> Conditions { get; private set; } = new();
+    /// <summary>Detached vanilla-shaped conditions, evaluated by the registered trigger.</summary>
+    public System.Text.Json.JsonElement Conditions { get; init; }
 
     public Criteria(string name, bool required)
     {

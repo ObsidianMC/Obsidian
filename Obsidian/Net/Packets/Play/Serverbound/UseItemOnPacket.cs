@@ -104,6 +104,7 @@ public partial class UseItemOnPacket
             return;
         }
         var currentItem = bucket;
+        var progressItem = bucket is not null ? new ItemStack(bucket, bucket.Count) : null;
         var position = this.Position;
 
         var b = await player.Level.GetBlockAsync(position);
@@ -190,6 +191,10 @@ public partial class UseItemOnPacket
 
             if (used)
             {
+                if (player is Entities.Player progressing)
+                    await progressing.FireProgressAsync("item_used_on_block",
+                        item: progressItem, block: b, position: this.Position);
+
                 player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
                 return;
             }
@@ -244,6 +249,13 @@ public partial class UseItemOnPacket
                         Seed = Random.Shared.NextInt64()
                     });
                 }
+                if (player is Entities.Player progressing)
+                {
+                    progressing.Statistics.Increment(currentItem.Holder.UnlocalizedName, type: "minecraft:used");
+                    await progressing.FireProgressAsync("item_used_on_block",
+                        item: progressItem, block: b, position: this.Position);
+                }
+
                 await this.ConsumePortalItemAsync(player, currentItem);
             }
             player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
@@ -395,6 +407,15 @@ public partial class UseItemOnPacket
         {
             await this.RejectPlacementAsync(player, handSlot);
             return;
+        }
+
+        if (player is Entities.Player progressPlayer)
+        {
+            progressPlayer.Statistics.Increment(currentItem.Holder.UnlocalizedName, type: "minecraft:used");
+            await progressPlayer.FireProgressAsync("placed_block",
+                item: progressItem, block: block, position: position);
+            await progressPlayer.FireProgressAsync("item_used_on_block",
+                item: progressItem, block: b, position: this.Position);
         }
 
         placeLevel.BlockUpdates.OnPlacedByPlayer(position, block);

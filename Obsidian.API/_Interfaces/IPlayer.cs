@@ -6,6 +6,10 @@ namespace Obsidian.API;
 
 public interface IPlayer : ILiving
 {
+    public Progress.IStatistics Statistics => throw new NotSupportedException("Player statistics are unavailable.");
+    public Advancements.IAdvancements Advancements =>
+        throw new NotSupportedException("Player advancements are unavailable.");
+
     public ValueTask ShowDialogAsync(Registry.Codecs.Dialogs.DialogElement dialog);
     public ValueTask ClearDialogAsync();
 

@@ -9,6 +9,9 @@ public partial class ClientCommandPacket
 
     public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
+        if (this.Action == ClientAction.RequestStats && player is Entities.Player statisticsPlayer)
+            await player.QueuePacketAsync(statisticsPlayer.ProgressStatistics.CreatePacket());
+
         if (Action == ClientAction.PerformRespawn && player.Health <= 0)
         {
             if (player is Entities.Player concrete && await concrete.FinishEndCreditsAsync())

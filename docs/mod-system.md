@@ -608,6 +608,20 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine; animations a server
      triggers beyond arm swings for mods' entities; client lifecycle events (joining and leaving a server).
 
+### Engine phase 5: progress
+
+Connected players now expose statistics and advancement criteria through `IPlayer.Statistics` and
+`IPlayer.Advancements`. Vanilla/plugin/data-pack advancement JSON, criterion requirements, join/incremental
+packets, experience/loot/recipe rewards and vanilla-shaped player progress files use the same runtime. Plugins
+register namespaced custom statistics (synced through `minecraft:custom_stat`) and condition codecs for their own
+advancement triggers; unloading releases behavior while preserving identities and saved values. The engine
+sample's grinder advancement exercises inventory criteria and an experience reward. The command system supports
+`/advancement grant|revoke <player> only <id> [criterion]`.
+
+This is the core implementation, not full vanilla parity: richer predicates/triggers, visibility rules, selective
+recipe unlocking and some event coverage remain in [known-gaps.md](known-gaps.md#progress-parity).
+See [Progress](plugin-content.md#progress) for the public API.
+
 ## Porting from NeoForge
 
 Obsidian.Porting, a console tool in this repository, converts a NeoForge mod's data and metadata to Obsidian's

@@ -127,6 +127,7 @@ public partial class Player
             respawnChunkRetryTicks = 20;
         }
         await base.TickAsync();
+        await this.TickProgressAsync();
         if (!Alive || Respawning)
         {
             foodPosition = null;
@@ -162,6 +163,8 @@ public partial class Player
                     FoodLevel = Math.Min(20, FoodLevel + food.Nutrition);
                     FoodSaturationLevel = Math.Min(FoodLevel, FoodSaturationLevel + food.Saturation);
                     ApplyFoodEffects(item);
+                    this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
+                    await this.FireProgressAsync("consume_item", item: new ItemStack(item, item.Count));
                     if (GameMode != GameMode.Creative)
                     {
                         Inventory.RemoveItem(eatingSlot, 1);

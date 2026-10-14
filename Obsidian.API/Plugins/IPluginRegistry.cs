@@ -9,6 +9,17 @@ using Obsidian.API.World.Features;
 namespace Obsidian.API.Plugins;
 public interface IPluginRegistry
 {
+    /// <summary>Registers a synced custom statistic in the plugin's namespace during ConfigureRegistry.</summary>
+    public int RegisterCustomStatistic(string identifier) =>
+        throw new NotSupportedException("Custom statistics are unavailable.");
+
+    /// <summary>
+    /// Registers server advancement conditions during ConfigureRegistry; unloaded triggers are inert.
+    /// </summary>
+    public Advancements.AdvancementTrigger<TInstance> RegisterAdvancementTrigger<TInstance>(
+        string identifier, Advancements.AdvancementConditionsCodec<TInstance> conditions) =>
+        throw new NotSupportedException("Advancement triggers are unavailable.");
+
     /// <summary>Registers a server portal in the plugin's namespace; its behaviour is removed on unload.</summary>
     public World.PortalType RegisterPortal(string identifier, World.PortalProperties properties) =>
         throw new NotSupportedException("This side doesn't support portals.");

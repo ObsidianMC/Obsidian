@@ -127,14 +127,19 @@ internal static partial class ItemBehaviors
         }
     }
 
-    private static ValueTask<bool> RunUseAsync(IPlayer player, Item item, Func<IItemBehavior, ValueTask<bool>> use)
+    private static async ValueTask<bool> RunUseAsync(
+        IPlayer player, Item item, Func<IItemBehavior, ValueTask<bool>> use)
     {
         if (item.Binding is not { Behavior: not null })
-            return ValueTask.FromResult(false);
+            return false;
 
-        return player is Entities.Player concrete
-            ? concrete.RunItemUseAsync(() => RunAsync(item, use))
-            : RunAsync(item, use);
+        var used = player is Entities.Player concrete
+            ? await concrete.RunItemUseAsync(() => RunAsync(item, use))
+            : await RunAsync(item, use);
+        if (used && player is Entities.Player statisticsPlayer)
+            statisticsPlayer.Statistics.Increment(item.UnlocalizedName, type: "minecraft:used");
+
+        return used;
     }
 
     private static async ValueTask<bool> RunAsync(Item item, Func<IItemBehavior, ValueTask<bool>> use)

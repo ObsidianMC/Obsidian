@@ -68,6 +68,7 @@ public partial class Player
         if (absorbed > 0) SyncFoodMetadata();
         if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile && !ReferenceEquals(source, this))
             CombatEffects.Knockback(this, Position - source.Position, 0.4f);
+        this.RecordProgressDamage(source, amount);
         await base.DamageAsync(source, amount);
     }
 
@@ -81,6 +82,7 @@ public partial class Player
         List<ClientboundPacket> updates = [];
         ClickWindowState state;
         bool broke;
+        string brokenIdentifier;
         using (await this.Inventory.LockAsync())
         {
             if (this.GameMode == GameMode.Creative
@@ -90,6 +92,7 @@ public partial class Player
                 return;
             }
 
+            brokenIdentifier = item.Holder.UnlocalizedName;
             var previous = item.Damage;
             broke = CombatItems.HurtItem(item, amount, armor);
             if (broke && item.Count == 0)
@@ -103,6 +106,9 @@ public partial class Player
         }
 
         await this.WindowSnapshots.SendChangeAsync(this, state, updates);
+        if (broke)
+            this.Statistics.Increment(brokenIdentifier, type: "minecraft:broken");
+
         if (broke)
             PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket
             { EntityId = EntityId, Event = (byte)(slot switch { 5 => 49, 6 => 50, 7 => 51, 8 => 52, 45 => 48, _ => 47 }) });
@@ -246,6 +252,9 @@ public partial class Player
         if (!supported) return;
         var floor = terrain.GetBlock((Vector)(Position - new VectorD(0, 0.2, 0)).Floor());
         var distance = FallDistance;
+        if (distance >= 2)
+            this.Statistics.Increment("minecraft:fall_one_cm", Centimetres(distance));
+
         FallDistance = 0;
         if (floor?.RegistryId == BlockIds.SlimeBlock && !Sneaking) return;
         var jump = ActivePotionEffects.TryGetValue((int)PotionEffect.JumpBoost - 1, out var effect) ? effect.EffectData.Amplifier + 1 : 0;

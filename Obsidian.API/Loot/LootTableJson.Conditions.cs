@@ -158,7 +158,7 @@ public static partial class LootTableJson
         return tool.Enchantments.FirstOrDefault(value => value.Id == enchantment.Id).Level;
     }
 
-    private static bool MatchesTool(ItemStack? tool, JsonElement predicate)
+    internal static bool MatchesTool(ItemStack? tool, JsonElement predicate)
     {
         if (tool is null || tool.Count <= 0 || tool.Holder == ItemsRegistry.Air)
             return false;
@@ -223,7 +223,7 @@ public static partial class LootTableJson
             && (property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() == value
                 : int.TryParse(value, out var number) && MatchesRange(number, property.Value)));
 
-    private static bool MatchesRange(int value, JsonElement range) => range.ValueKind == JsonValueKind.Number
+    internal static bool MatchesRange(int value, JsonElement range) => range.ValueKind == JsonValueKind.Number
         ? value == (int)range.GetSingle()
         : (!range.TryGetProperty("min", out var min) || value >= ReadInteger(min))
             && (!range.TryGetProperty("max", out var max) || value <= ReadInteger(max));
