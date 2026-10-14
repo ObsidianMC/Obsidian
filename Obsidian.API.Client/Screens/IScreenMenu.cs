@@ -28,7 +28,8 @@ public interface IScreenMenu
     public int SlotCount { get; }
 
     /// <summary>
-    /// The stack in one of the menu's slots, the player's inventory included; null for an empty or unknown slot.
+    /// An isolated copy of the stack in a menu slot, the player's inventory included, retaining its count and
+    /// components; null for an empty or unknown slot. Changing the copy doesn't change the menu.
     /// </summary>
     public ItemStack? GetItem(int slot);
 
