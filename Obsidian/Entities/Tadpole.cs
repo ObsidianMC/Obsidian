@@ -41,18 +41,22 @@ public sealed partial class Tadpole : PathfinderMob
         if (InWater) Air = 300;
         else if (--Air <= -20) { Air = 0; await DamageEnvironmentAsync(2); }
     }
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (await TryCaptureInBucketAsync(player, hand, ItemsRegistry.TadpoleBucket)) return;
+        if (await TryCaptureInBucketAsync(player, hand, ItemsRegistry.TadpoleBucket))
+            return true;
         if (!Alive || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4))
-            return;
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (item is { Count: > 0, Holder.Id: ItemIds.SlimeBall })
         {
             Age += Math.Max(1, (MaturationTicks - Age) / 10);
             await ConsumeInteractionItemAsync(player, hand);
             SendEntityEvent(18);
+            return true;
         }
+
+        return false;
     }
     public override void Write(INetStreamWriter writer)
     {

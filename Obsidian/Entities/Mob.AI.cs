@@ -130,7 +130,14 @@ public partial class Mob
     protected virtual int DeathDuration => 20;
     protected virtual ValueTask TickDeathAsync() => default;
     protected virtual ValueTask OnHurtAsync(IEntity source) => default;
-    internal virtual ValueTask InteractAsync(IPlayer player, InteractionHand hand) => default;
+
+    /// <summary>
+    /// The mob's own reaction to a player using it (right-clicking it), like vanilla's <c>mobInteract</c>.
+    /// </summary>
+    /// <returns>
+    /// Whether the mob used the interaction, as vanilla's result would: the held item is then not used on the mob.
+    /// </returns>
+    internal virtual ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand) => ValueTask.FromResult(false);
 
     internal async ValueTask<Mob> ConvertToAsync(EntityType type)
     {

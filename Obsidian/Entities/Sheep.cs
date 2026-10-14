@@ -47,11 +47,11 @@ public sealed partial class Sheep : FarmAnimal
         };
     }
 
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Level != Level || player.Health <= 0 || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
-            return;
+            return false;
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (!IsBaby && !Sheared && held is { Count: > 0, Holder.Id: ItemIds.Shears })
         {
@@ -59,7 +59,7 @@ public sealed partial class Sheep : FarmAnimal
             DropItem(wools[Color], Random.Next(1, 4));
             await DamageInteractionToolAsync(player, hand);
             SynchronizeMetadata();
-            return;
+            return true;
         }
         if (held is { Count: > 0 })
         {
@@ -74,10 +74,10 @@ public sealed partial class Sheep : FarmAnimal
                     await player.SendInventorySlotAsync(slot);
                 }
                 SynchronizeMetadata();
-                return;
+                return true;
             }
         }
-        await base.FeedAsync(player, hand);
+        return await base.FeedAsync(player, hand);
     }
 
     protected override IEntity CreateOffspring(Animal mate)

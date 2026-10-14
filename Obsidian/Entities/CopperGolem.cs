@@ -123,9 +123,15 @@ public sealed partial class CopperGolem : PathfinderMob
         var nonempty = container.Where(item => item != null && !item.IsAir && item.Count > 0).ToArray();
         return (nonempty.Length == 0 || nonempty.Any(item => item == held)) && Enumerable.Range(0, container.Size).Any(i => container[i] == null || container[i]!.IsAir || container[i] == held && container[i]!.Count < held.MaxStackSize);
     }
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || IsRemoved || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player)) return;
+        if (!Alive
+            || IsRemoved
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4)
+            || !CanSee(player))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (item is { Count: > 0, Holder.Id: ItemIds.Honeycomb } && nextWeather != -2)
         { nextWeather = -2; await ConsumeInteractionItemAsync(player, hand); }
@@ -135,6 +141,10 @@ public sealed partial class CopperGolem : PathfinderMob
             nextWeather = Level.LevelData.Time + Random.Next(504000, 552001);
             await DamageInteractionToolAsync(player, hand, 1); SynchronizeMetadata();
         }
+        else
+            return false;
+
+        return true;
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {

@@ -32,11 +32,11 @@ public sealed partial class Ocelot : Animal
         targets.AddGoal(1, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.Chicken));
     }
 
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 3) || !CanSee(player))
-            return;
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (!Trusting && CanEat(item))
         {
@@ -46,9 +46,9 @@ public sealed partial class Ocelot : Animal
                 PersistenceRequired = true;
             SendEntityEvent(Trusting ? (byte)41 : (byte)40);
             SynchronizeMetadata();
-            return;
+            return true;
         }
-        await base.FeedAsync(player, hand);
+        return await base.FeedAsync(player, hand);
     }
 
     public override void Write(INetStreamWriter writer)

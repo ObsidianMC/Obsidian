@@ -23,21 +23,23 @@ public sealed partial class CamelHusk : Camel
         actions.AddGoal(7, new LookAtPlayerGoal(this, 6));
         actions.AddGoal(8, new RandomLookAroundGoal(this));
     }
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
-            !IsInRange(player, 4) || !CanSee(player)) return;
+            !IsInRange(player, 4) || !CanSee(player))
+            return false;
         SetSitting(false);
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (CanEat(item))
         {
-            if (Health >= GetAttributeValue("minecraft:generic.max_health")) return;
+            if (Health >= GetAttributeValue("minecraft:generic.max_health"))
+                return false;
             Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 2);
             await ConsumeInteractionItemAsync(player, hand);
             SynchronizeMetadata();
-            return;
+            return true;
         }
-        await base.FeedAsync(player, hand);
+        return await base.FeedAsync(player, hand);
     }
     protected override async ValueTask OnDeathAsync(IEntity source)
     {

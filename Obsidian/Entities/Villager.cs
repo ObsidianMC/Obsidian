@@ -88,9 +88,15 @@ public sealed partial class Villager : AgeableMob
         }
     }
 
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (IsBaby || VillagerProfession is 0 or 11 || !CanSee(player)) return;
+        if (!CanSee(player))
+            return false;
+
+        // Like vanilla, a baby or a villager without trades (no profession or a nitwit) still takes the interaction.
+        if (IsBaby || VillagerProfession is 0 or 11)
+            return true;
+
         EnsureTrades();
         await MerchantTrading.OpenAsync(this, player, offers, VillagerLevel, VillagerXp, true, offer =>
         {
@@ -98,6 +104,7 @@ public sealed partial class Villager : AgeableMob
             var newLevel = VillagerXp >= 250 ? 5 : VillagerXp >= 150 ? 4 : VillagerXp >= 70 ? 3 : VillagerXp >= 10 ? 2 : 1;
             if (newLevel > VillagerLevel) { VillagerLevel = newLevel; Health = GetAttributeValue("minecraft:generic.max_health"); SynchronizeMetadata(); }
         });
+        return true;
     }
 
     private async ValueTask TickVillageAsync(AbstractLevel level)

@@ -55,8 +55,12 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
         await this.RunBehaviorAsync(behavior => behavior.TickAsync(this));
     }
 
-    internal override ValueTask InteractAsync(IPlayer player, InteractionHand hand) =>
-        this.RunBehaviorAsync(behavior => behavior.InteractAsync(this, player, hand));
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
+    {
+        var used = false;
+        await this.RunBehaviorAsync(async behavior => used = await behavior.InteractAsync(this, player, hand));
+        return used;
+    }
 
     // Runs the type's behaviour as a call into its plugin, so that the plugin can't be released meanwhile.
     private async ValueTask RunBehaviorAsync(Func<IEntityBehavior, ValueTask> run)

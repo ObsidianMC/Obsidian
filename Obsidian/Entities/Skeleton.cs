@@ -256,19 +256,20 @@ public sealed class Bogged : Skeleton
     internal override int ArrowEffect => 18;
     internal override int ArrowEffectDuration => 100;
     internal override int AttackInterval => Level.LevelData.Difficulty == Difficulty.Hard ? 50 : 70;
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (Sheared || !Alive || IsRemoved || player.Level != Level || player.Health <= 0 || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
-            return;
+            return false;
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (held is not { Count: > 0, Holder.Id: ItemIds.Shears })
-            return;
+            return false;
         Sheared = true;
         for (var index = 0; index < 2; index++)
             DropItem(Random.Next(2) == 0 ? ItemsRegistry.RedMushroom : ItemsRegistry.BrownMushroom);
         await DamageInteractionToolAsync(player, hand);
         SynchronizeMetadata();
+        return true;
     }
     public override void Write(INetStreamWriter writer)
     {

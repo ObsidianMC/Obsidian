@@ -39,10 +39,10 @@ public sealed partial class SnowGolem : PathfinderMob
                 await Level.SetBlockAsync(snow, BlocksRegistry.Snow, true);
         }
     }
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 3) || !CanSee(player))
-            return;
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (Pumpkin && item?.Is(ItemsRegistry.Shears) == true)
         {
@@ -51,7 +51,10 @@ public sealed partial class SnowGolem : PathfinderMob
             PlayMobSound("shear");
             await DamageInteractionToolAsync(player, hand);
             SynchronizeMetadata();
+            return true;
         }
+
+        return false;
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {

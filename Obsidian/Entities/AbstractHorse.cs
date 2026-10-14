@@ -60,11 +60,11 @@ public class AbstractHorse : Animal
             or ItemIds.GoldenCarrot
             or ItemIds.GoldenApple;
 
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!HasAi || !Alive || IsRemoved || player.Health <= 0 || player.Level != Level ||
             player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player))
-            return;
+            return false;
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var item = player.Inventory.GetItem(slot);
         var tamed = HorseMask.HasFlag(HorseMask.Tamed);
@@ -82,7 +82,7 @@ public class AbstractHorse : Animal
             var breedingFood = IsBreedingFood(food);
             if (Health >= GetAttributeValue("minecraft:generic.max_health") && !IsBaby &&
                 (tamed || Temper >= MaximumTemper) && !(tamed && breedingFood && Age == 0 && LoveTicks == 0))
-                return;
+                return false;
             Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + heal);
             Temper = Math.Min(MaximumTemper, Temper + (breedingFood ? 5 : 3));
             if (IsBaby)
@@ -94,18 +94,28 @@ public class AbstractHorse : Animal
             }
             await ConsumeItemAsync(player, slot);
             SynchronizeMetadata();
-            return;
+            return true;
         }
         if (IsBaby)
-            return;
+            return false;
         if (SupportsSaddle && tamed && !HasSaddle && item is { Count: > 0, Holder.Id: ItemIds.Saddle })
         {
             HasSaddle = true;
             await ConsumeItemAsync(player, slot);
-            return;
+            return true;
         }
+
+        // Like vanilla's horses, a tamed one gives the held item its use before the player mounts.
+        if (tamed && await Obsidian.Plugins.ItemBehaviors.UseOnEntityAsync(player, hand, this))
+            return true;
+
         if (!player.Sneaking && player is Player rider && Mount(rider))
+        {
             GoalController?.Pause();
+            return true;
+        }
+
+        return false;
     }
 
     private static async ValueTask ConsumeItemAsync(IPlayer player, int slot)

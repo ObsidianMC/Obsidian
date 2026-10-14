@@ -1,7 +1,6 @@
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
-using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -63,7 +62,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         if (e.IsCancelled || e.TargetPosition != null)
             return;
 
-        // The item's use and the entity's interaction run on the entity's level tick, like the entity's own tick.
+        // The entity's interaction and the item's use run on the entity's level tick, like the entity's own tick.
         ValueTask Interact() => InteractWithEntityAsync(e.Player, e.Entity, e.Hand ?? InteractionHand.MainHand);
         if (e.Entity.Level is Obsidian.WorldData.AbstractLevel level)
             level.EnqueueEntityAction(Interact);
@@ -71,31 +70,23 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             await Interact();
     }
 
-    private static async ValueTask InteractWithEntityAsync(IPlayer player, IEntity entity, InteractionHand hand)
+    /// <summary>
+    /// A player's use of an entity (right-clicking it) with the item in <paramref name="hand"/>.
+    /// </summary>
+    internal static async ValueTask InteractWithEntityAsync(IPlayer player, IEntity entity, InteractionHand hand)
     {
-        // A plugin item's use on a living entity goes first. Vanilla's Player.interactOn gives the entity's own
-        // interaction the first turn and the item's interactLivingEntity the next, when the entity's did nothing, but
-        // Obsidian's entity interactions don't say whether they did anything.
-        var stack = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (entity is ILiving living && stack is { Count: > 0 } && Plugins.ItemBehaviors.CanUseItems(player))
+        // Like vanilla's Player.interactOn, the entity's own interaction goes first, and the held item is used on a
+        // living entity only when the entity didn't use the interaction. A plugin's projectile or object does what
+        // its type's behaviour does, like a mob.
+        var used = entity switch
         {
-            var context = new ItemUseOnEntityContext
-            {
-                Player = player,
-                Stack = stack,
-                Hand = hand,
-                Entity = living
-            };
+            PluginEntity pluginEntity => await pluginEntity.InteractAsync(player, hand),
+            Mob { HasAi: true } mob => await mob.InteractAsync(player, hand),
+            _ => false
+        };
 
-            if (await Plugins.ItemBehaviors.UseOnEntityAsync(context))
-                return;
-        }
-
-        // A plugin's projectile or object does what its type's behaviour does, like a mob.
-        if (entity is PluginEntity pluginEntity)
-            await pluginEntity.InteractAsync(player, hand);
-        else if (entity is Mob { HasAi: true } mob)
-            await mob.InteractAsync(player, hand);
+        if (!used && entity is ILiving living)
+            await Plugins.ItemBehaviors.UseOnEntityAsync(player, hand, living);
     }
 
     //TODO fix sounds

@@ -274,8 +274,13 @@ internal sealed class PluginEntity(EntityDefinition definition) : Entity
     // The type's gravity, unless the entity was saved without gravity.
     private float Gravity => this.NoGravity ? 0 : definition.Settings.Gravity;
 
-    internal ValueTask InteractAsync(IPlayer player, InteractionHand hand) =>
-        this.RunBehaviorAsync(behavior => behavior.InteractAsync(this, player, hand));
+    /// <returns>Whether the type's behaviour used the interaction.</returns>
+    internal async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
+    {
+        var used = false;
+        await this.RunBehaviorAsync(async behavior => used = await behavior.InteractAsync(this, player, hand));
+        return used;
+    }
 
     // Runs the type's behaviour as a call into its plugin, so that the plugin can't be released meanwhile. The
     // behaviour may move or turn the entity: the level learns of a move first (one it can't make, into an unloaded

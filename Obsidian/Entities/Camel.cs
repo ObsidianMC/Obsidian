@@ -59,16 +59,16 @@ public partial class Camel : AbstractHorse
         SynchronizeMetadata();
     }
 
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
-            return;
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (CanEat(item))
         {
             if (Health >= GetAttributeValue("minecraft:generic.max_health") && !IsBaby && (Age != 0 || LoveTicks > 0))
-                return;
+                return false;
             Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 2);
             if (IsBaby)
                 Age = Math.Min(0, Age + 200);
@@ -79,27 +79,37 @@ public partial class Camel : AbstractHorse
             }
             await ConsumeInteractionItemAsync(player, hand);
             SynchronizeMetadata();
-            return;
+            return true;
         }
         if (IsBaby)
-            return;
+            return false;
         if (!HasSaddle && item is { Count: > 0, Holder.Id: ItemIds.Saddle })
         {
             HasSaddle = true;
             await ConsumeInteractionItemAsync(player, hand);
-            return;
+            return true;
         }
+
+        // An adult camel takes a sneaking player's interaction, as vanilla's does to open its inventory.
         if (player.Sneaking)
         {
             if (item == null || item.IsAir)
                 SetSitting(!IsSitting);
-            return;
+            return true;
         }
+
+        // Like vanilla's, the camel gives the held item its use before the player mounts.
+        if (await Obsidian.Plugins.ItemBehaviors.UseOnEntityAsync(player, hand, this))
+            return true;
+
         if (player is Player rider && Mount(rider))
         {
             GoalController?.Pause();
             SetSitting(false);
+            return true;
         }
+
+        return false;
     }
 
     internal bool RequestDash(IPlayer player, int charge)

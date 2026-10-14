@@ -67,7 +67,7 @@ public sealed partial class Piglin : PathfinderMob
             or ItemIds.GoldenChestplate
             or ItemIds.GoldenLeggings
             or ItemIds.GoldenBoots);
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (!CanFight
@@ -79,10 +79,11 @@ public sealed partial class Piglin : PathfinderMob
             || !IsInRange(player, 4)
             || !CanSee(player)
             || held is not { Count: > 0, Holder.Id: ItemIds.GoldIngot })
-            return;
+            return false;
 
         await ConsumeInteractionItemAsync(player, hand);
         BeginAdmiring();
+        return true;
     }
     private void BeginAdmiring()
     {
