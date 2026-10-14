@@ -245,12 +245,36 @@ public sealed class BlockUpdates : IDisposable
 
         Assert.True(BlocksRegistry.TryGetPluginBlock("probe:relay", out var relay));
         var chunk = world.GetLoadedChunk(0, 0)!;
+        var calls = ProbeRelay.Reset();
+
+        // Count random ticks before the other scenarios leave relays in another section. Every draw must hit a
+        // relay in this full section, so the count is exact regardless of the level's random starting position.
+        var player = new FakePlayer { Position = new VectorD(8, Ground + 1, 8) };
+        Assert.True(world.TryAddPlayer(player));
+        try
+        {
+            FillSection(world, relay.DefaultState);
+            for (var tick = 0; tick < 32; tick++)
+            {
+                calls.Clear();
+                world.TickRandomBlocks();
+                Assert.Equal(world.LevelData.GetIntegerRule("random_tick_speed", 3), calls.Count);
+                Assert.All(calls, call => Assert.StartsWith("random", call));
+            }
+
+            FillSection(world, BlocksRegistry.Air);
+        }
+        finally
+        {
+            world.TryRemovePlayer(player);
+        }
+
         var center = new Vector(8, Ground + 3, 8);
         Vector[] around = [Vector.Up, Vector.Down, Vector.North, Vector.South, Vector.West, Vector.East];
         foreach (var offset in around)
             chunk.SetBlock(center + offset, relay.DefaultState);
 
-        var calls = ProbeRelay.Reset();
+        calls.Clear();
         await world.SetBlockAsync(center, BlocksRegistry.Stone, BlockUpdateFlags.All);
 
         // Vanilla's neighborChanged order (west, east, down, up, north, south), then its updateShape order (west,
@@ -360,23 +384,6 @@ public sealed class BlockUpdates : IDisposable
         {
             var alternating = index % 2 == 0 ? "placed 8,72,8 over stone" : "removed 8,72,8 for stone";
             Assert.Equal(alternating, changes[index]);
-        }
-
-        // A section of relays gets the game rule's number of random ticks.
-        var player = new FakePlayer { Position = new VectorD(8, Ground + 1, 8) };
-        Assert.True(world.TryAddPlayer(player));
-        try
-        {
-            FillSection(world, relay.DefaultState);
-            calls.Clear();
-            world.TickRandomBlocks();
-            Assert.Equal(world.LevelData.GetIntegerRule("random_tick_speed", 3), calls.Count);
-            Assert.All(calls, call => Assert.StartsWith("random", call));
-            FillSection(world, BlocksRegistry.Air);
-        }
-        finally
-        {
-            world.TryRemovePlayer(player);
         }
 
         // While the plugin unloads, with its blocks still bound to it, a relay's due tick waits rather than being
