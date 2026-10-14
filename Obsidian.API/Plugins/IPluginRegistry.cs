@@ -126,6 +126,32 @@ public interface IPluginRegistry
     public MenuDefinition RegisterMenu(string identifier, int rows, int columns = 9);
 
     /// <summary>
+    /// Registers a block entity type, like a NeoForge mod's <c>BlockEntityType</c>: <paramref name="blocks"/> get a
+    /// <typeparamref name="TBlockEntity"/> wherever they're set, which is saved, ticked and sent to clients (see
+    /// <see cref="BlockEntities.BlockEntity"/>). Its identifier is in the plugin's namespace, and it gets the next free
+    /// block entity type id. Registering it again, e.g. when the plugin reloads, gives back the same type with the new
+    /// blocks and class.
+    /// </summary>
+    /// <typeparam name="TBlockEntity">The block entity, created with its parameterless constructor.</typeparam>
+    /// <param name="identifier">The type's identifier, like <c>myplugin:counter</c>.</param>
+    /// <param name="blocks">The plugin's blocks that have the block entity.</param>
+    /// <returns>The block entity type.</returns>
+    /// <remarks>
+    /// Like a plugin's blocks, its block entity types need NeoForge or Fabric clients with a matching mod, and stay
+    /// registered until the server stops. When the plugin unloads, its block entities are saved into their chunks and
+    /// let go of; they're kept as saved until the plugin loads again, which creates them again from what was saved.
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// The identifier isn't in the plugin's namespace or isn't valid, or a block isn't one of the plugin's, or has
+    /// another block entity type.
+    /// </exception>
+    public BlockEntities.BlockEntityType RegisterBlockEntity<TBlockEntity>(
+        string identifier,
+        params IEnumerable<BlockType> blocks)
+        where TBlockEntity : BlockEntities.BlockEntity, new() =>
+        throw new NotSupportedException("This side doesn't support block entity types.");
+
+    /// <summary>
     /// Adds entries to a tag, vanilla's or a new one, like a tag file in the plugin's <c>data/</c> folder would: the
     /// entries are identifiers, or other tags' identifiers after a <c>#</c>, and the tag fails (keeping its earlier
     /// entries) when one doesn't exist. The entries are removed when the plugin unloads.

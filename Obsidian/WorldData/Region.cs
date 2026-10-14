@@ -805,8 +805,10 @@ public class Region : IRegion
         }
         writer.EndList();
 
-        // Data block entities and containers; other block entities aren't saved yet.
-        var blockEntities = chunk.GetBlockEntities().Select(blockEntity => BlockEntityNbt.Save(blockEntity, chunk)).OfType<NbtCompound>().ToList();
+        var blockEntities = chunk.GetBlockEntities()
+            .Select(BlockEntityNbt.Save)
+            .OfType<NbtCompound>()
+            .ToList();
         writer.WriteListStart("block_entities", NbtTagType.Compound, blockEntities.Count);
         foreach (var blockEntity in blockEntities)
             writer.WriteListTag(blockEntity);

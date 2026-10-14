@@ -1,0 +1,423 @@
+using Microsoft.Extensions.Logging;
+using Obsidian.API.BlockEntities;
+using Obsidian.API.Inventory;
+using Obsidian.API.Loot;
+using Obsidian.Entities;
+using Obsidian.Nbt;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Plugins;
+using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Maps;
+using System.Threading;
+
+namespace Obsidian.WorldData;
+
+/// <summary>
+/// The level's side of block entities: creating and removing them as blocks change, ticking them, taking in their
+/// changes, and sending their updates.
+/// </summary>
+public abstract partial class AbstractLevel
+{
+    // Vanilla's Containers.dropItemStack spreads drops by the width of an item entity, and tosses them with this
+    // spread around their motion.
+    private const double ItemEntityWidth = 0.25;
+    private const double DropMotionSpread = 0.11485000171139836;
+
+    private LevelBlockEntityHost? blockEntityHost;
+
+    // The block entity type registry's revision the level last created kept block entities for (see
+    // RestoreKeptBlockEntities).
+    private int restoredBlockEntityRevision;
+
+    // Vanilla shares one set of random sequences between a server's levels and saves it; containers' loot rolls with
+    // this level's, kept in memory.
+    private RandomSequences? lootSequences;
+
+    private LevelBlockEntityHost BlockEntityHost =>
+        LazyInitializer.EnsureInitialized(ref this.blockEntityHost, () => new LevelBlockEntityHost(this));
+
+    /// <summary>
+    /// Places a block entity in the level, which it reaches through <see cref="BlockEntity.Level"/> from then on.
+    /// </summary>
+    internal void AttachBlockEntity(IBlockEntity? blockEntity)
+    {
+        if (blockEntity is not BlockEntity placed || placed.Host is not null)
+            return;
+
+        var host = this.BlockEntityHost;
+        placed.Host = host;
+
+        // A change announced before it was placed is taken in like the others.
+        if (placed.HasPendingChange)
+            host.OnChanged(placed);
+    }
+
+    /// <summary>
+    /// Keeps a chunk's block entity in step with its block after the block at <paramref name="position"/> was set to
+    /// <paramref name="block"/>: the block entity stays when the block has its type, and otherwise is removed, and the
+    /// block's own type, if any, is created.
+    /// </summary>
+    /// <returns>
+    /// The block entity removed, whose removal side effects the caller runs with
+    /// <see cref="RunBlockEntityRemoval"/> once it let go of its locks; or null.
+    /// </returns>
+    internal BlockEntity? UpdateBlockEntity(IChunk chunk, Vector position, IBlock block)
+    {
+        // The flag is much cheaper than the type lookup, and blocks without it have no type.
+        var type = block.HasBlockEntity() ? block.BlockEntityType() : null;
+        var existing = chunk.GetBlockEntity(position.X, position.Y, position.Z);
+
+        if (existing is not null && string.Equals(existing.Id, type, StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        BlockEntity? removed = null;
+        if (existing is not null)
+        {
+            chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
+
+            if (existing is BlockEntity gone)
+            {
+                gone.IsRemoved = true;
+                removed = gone;
+            }
+        }
+
+        if (type is not null)
+        {
+            var created = BlockEntityNbt.Create(type, position, logger: this.Logger);
+            this.AttachBlockEntity(created);
+            chunk.SetBlockEntity(position.X, position.Y, position.Z, created);
+        }
+
+        return removed;
+    }
+
+    /// <summary>
+    /// Runs what removing a block entity's block does, like vanilla's <c>preRemoveSideEffects</c>: the block
+    /// entity's <see cref="BlockEntity.OnRemoved"/>, and a container's items dropping, with the loot it was waiting
+    /// for.
+    /// </summary>
+    internal void RunBlockEntityRemoval(BlockEntity removed)
+    {
+        if (removed.Owner is PluginContainer plugin)
+        {
+            using var call = plugin.TryEnter();
+
+            if (call is not null)
+            {
+                try
+                {
+                    removed.OnRemoved();
+                }
+                catch (Exception ex)
+                {
+                    Log.BlockEntityFailed(this.Logger, ex, removed.Id, removed.BlockPosition);
+                }
+            }
+        }
+        else
+        {
+            removed.OnRemoved();
+        }
+
+        switch (removed)
+        {
+            case ContainerBlockEntity { DropsContents: true } container:
+                this.UnpackLootTable(container, null);
+                this.DropContents(container.BlockPosition, container.Inventory);
+                break;
+            case DataBlockEntity { DropsItems: true } data:
+                this.DropSavedItems(data);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Fills a container waiting for its loot table from the table, like vanilla's
+    /// <c>RandomizableContainer.unpackLootTable</c>: when a player opens it (<paramref name="opener"/>), or it's
+    /// removed. The table is rolled once.
+    /// </summary>
+    internal void UnpackLootTable(ContainerBlockEntity container, IEntity? opener)
+    {
+        lock (container.LootLock)
+        {
+            if (container.LootTable is not string lootTable)
+                return;
+
+            container.LootTable = null;
+
+            // Vanilla generates nothing for unknown tables.
+            var table = LootTables.All.GetValueOrDefault(lootTable, LootTable.Empty);
+            var sequences = LazyInitializer.EnsureInitialized(
+                ref this.lootSequences,
+                () => new RandomSequences(RandomState.ParseSeed(this.Seed)));
+            var position = container.BlockPosition;
+
+            // Players have no luck attribute yet, so their luck is vanilla's default of 0.
+            table.Fill(container.Inventory, new LootContext
+            {
+                Random = table.CreateRandom(container.LootTableSeed, sequences),
+                Origin = new VectorD(position.X + 0.5, position.Y + 0.5, position.Z + 0.5),
+                ThisEntity = opener,
+                ExplorationMaps = ExplorationMaps.For(this)
+            });
+
+            container.LootTableSeed = 0;
+        }
+    }
+
+    /// <summary>
+    /// Ticks the block entities of the chunks that tick, like vanilla's block entity tickers: those whose block still
+    /// has their type. Then takes in the changes they announced (see <see cref="BlockEntity.SetChanged"/>).
+    /// </summary>
+    internal async ValueTask TickBlockEntitiesAsync()
+    {
+        this.RestoreKeptBlockEntities();
+
+        foreach (var chunk in this.Regions.Values.SelectMany(region => region.GeneratedChunks()).OfType<Chunk>())
+        {
+            if (chunk.BlockEntities.IsEmpty || !this.IsMobTicking(new VectorD(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8)))
+                continue;
+
+            foreach (var blockEntity in chunk.BlockEntities.Values.OfType<BlockEntity>())
+            {
+                var position = blockEntity.BlockPosition;
+                var type = chunk.GetBlock(position.X, position.Y, position.Z).BlockEntityType();
+
+                if (blockEntity.IsRemoved || !string.Equals(type, blockEntity.Id, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                this.AttachBlockEntity(blockEntity);
+                await this.TickBlockEntityAsync(blockEntity);
+
+                // A plugin's container is saved as of its last change, which players make by moving its items.
+                if (blockEntity is ContainerBlockEntity { SavesOnAnyThread: false } container
+                    && container.Inventory.Revision != container.SavedRevision)
+                {
+                    container.SetChanged();
+                }
+            }
+        }
+
+        this.TakeBlockEntityChanges();
+    }
+
+    /// <summary>
+    /// Takes in the changes block entities announced: the data a plugin's block entity saves is what its
+    /// <see cref="BlockEntity.Save"/> wrote now, on the level's thread.
+    /// </summary>
+    internal void TakeBlockEntityChanges()
+    {
+        if (this.blockEntityHost is not LevelBlockEntityHost host)
+            return;
+
+        while (host.Changed.TryDequeue(out var blockEntity))
+        {
+            if (!blockEntity.TakeChange() || blockEntity.IsRemoved || blockEntity.SavesOnAnyThread)
+                continue;
+
+            var plugin = blockEntity.Owner as PluginContainer;
+            using var call = plugin?.TryEnter();
+
+            if (plugin is not null && call is null)
+                continue;
+
+            var revision = (blockEntity as ContainerBlockEntity)?.Inventory.Revision;
+
+            try
+            {
+                blockEntity.SavedData = BlockEntityNbt.SaveData(blockEntity);
+            }
+            catch (Exception ex)
+            {
+                Log.BlockEntityFailed(this.Logger, ex, blockEntity.Id, blockEntity.BlockPosition);
+                continue;
+            }
+
+            if (blockEntity is ContainerBlockEntity container && revision is long saved)
+                container.SavedRevision = saved;
+        }
+    }
+
+    private async ValueTask TickBlockEntityAsync(BlockEntity blockEntity)
+    {
+        if (blockEntity.Owner is not PluginContainer plugin)
+        {
+            await blockEntity.TickAsync();
+            return;
+        }
+
+        // A call into the plugin, so that it can't be released meanwhile; and its failures stay its own.
+        using var call = plugin.TryEnter();
+        if (call is null)
+            return;
+
+        try
+        {
+            await blockEntity.TickAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.BlockEntityFailed(this.Logger, ex, blockEntity.Id, blockEntity.BlockPosition);
+        }
+    }
+
+    /// <summary>
+    /// Creates the block entities of plugins' types that were kept as saved while their plugins were gone (see
+    /// <see cref="PluginBlockEntities"/>), once a plugin bound its types again: on the level's next tick. Those of
+    /// chunks loaded later are created as the chunks load.
+    /// </summary>
+    private void RestoreKeptBlockEntities()
+    {
+        var revision = BlockEntityTypesRegistry.Revision;
+        if (revision == this.restoredBlockEntityRevision)
+            return;
+
+        this.restoredBlockEntityRevision = revision;
+
+        foreach (var chunk in this.Regions.Values.SelectMany(region => region.GeneratedChunks()).OfType<Chunk>())
+        {
+            foreach (var kept in chunk.BlockEntities.Values.OfType<DataBlockEntity>())
+            {
+                if (!BlockEntityTypesRegistry.TryGet(kept.Id, out var type) || type.Binding is null)
+                    continue;
+
+                var position = kept.BlockPosition;
+                var blockType = chunk.GetBlock(position.X, position.Y, position.Z).BlockEntityType();
+
+                if (blockType != type.Identifier)
+                    continue;
+
+                var created = BlockEntityNbt.Create(type.Identifier, position, kept.SnapshotData(), this.Logger);
+                if (created is DataBlockEntity)
+                    continue;
+
+                this.AttachBlockEntity(created);
+
+                if (chunk.ReplaceBlockEntity(kept, created))
+                    kept.IsRemoved = true;
+            }
+        }
+    }
+
+    // Vanilla's Containers.dropContents: each stack drops where dropItemStack puts it, and leaves the container.
+    private void DropContents(Vector position, BaseContainer inventory)
+    {
+        for (var slot = 0; slot < inventory.Size; slot++)
+        {
+            var item = inventory[slot];
+            if (item is null || item.IsAir || item.Count <= 0)
+                continue;
+
+            inventory.SetItem(slot, null);
+            this.DropItemStack(position, item);
+        }
+    }
+
+    // The saved items of a block entity kept as data, dropped like a container's, in slot order.
+    private void DropSavedItems(DataBlockEntity blockEntity)
+    {
+        var data = blockEntity.SnapshotData();
+        if (!data.TryGetTag<NbtList>("Items", out var items))
+            return;
+
+        var stacks = items
+            .OfType<NbtCompound>()
+            .OrderBy(item => item.TryGetTagValue<byte>("Slot", out var slot) ? slot : 0)
+            .Select(item => item.ItemFromNbt())
+            .OfType<ItemStack>();
+
+        foreach (var stack in stacks)
+        {
+            if (!stack.IsAir && stack.Count > 0)
+                this.DropItemStack(blockEntity.BlockPosition, stack);
+        }
+    }
+
+    /// <summary>
+    /// Vanilla's <c>Containers.dropItemStack</c>: the stack drops at a random point of the block's lower part, in
+    /// item entities of 10 to 30 items, each tossed up with a little random motion. Draws from the level's random in
+    /// vanilla's order, the motion the item entity's constructor draws included.
+    /// </summary>
+    private void DropItemStack(Vector position, ItemStack stack)
+    {
+        var random = this.GrowthRandom;
+        var spread = 1 - ItemEntityWidth;
+        var x = position.X + random.NextDouble() * spread + ItemEntityWidth / 2;
+        var y = position.Y + random.NextDouble() * spread;
+        var z = position.Z + random.NextDouble() * spread + ItemEntityWidth / 2;
+
+        var remaining = stack.Count;
+        while (remaining > 0)
+        {
+            var count = Math.Min(remaining, random.NextInt(21) + 10);
+            remaining -= count;
+
+            // The item entity's own motion, which the drop replaces.
+            random.NextDouble();
+            random.NextDouble();
+
+            var motion = new VectorD(
+                random.Triangle(0.0, DropMotionSpread),
+                random.Triangle(0.2, DropMotionSpread),
+                random.Triangle(0.0, DropMotionSpread));
+
+            var item = new ItemEntity
+            {
+                Level = this,
+                EntityId = Server.GetNextEntityId(),
+                Position = new VectorD(x, y, z),
+                Item = new ItemStack(stack, count),
+                Motion = motion
+            };
+
+            if (this.TryAddEntity(item))
+                item.SpawnEntity(new Velocity(motion.X, motion.Y, motion.Z));
+        }
+    }
+
+    /// <summary>
+    /// What the level's block entities reach of it.
+    /// </summary>
+    private sealed class LevelBlockEntityHost(AbstractLevel level) : BlockEntityHost
+    {
+        /// <summary>
+        /// The block entities whose changes the level takes in at the end of its tick.
+        /// </summary>
+        public ConcurrentQueue<BlockEntity> Changed { get; } = new();
+
+        public override ILevel Level => level;
+
+        public override void OnChanged(BlockEntity blockEntity) => this.Changed.Enqueue(blockEntity);
+
+        // Like vanilla's ClientboundBlockEntityDataPacket, to the players who have the chunk.
+        public override void SendUpdate(BlockEntity blockEntity)
+        {
+            if (blockEntity.IsRemoved)
+                return;
+
+            var data = blockEntity.GetUpdateData();
+            blockEntity.ClientData = data;
+
+            var type = BlockEntityTypesRegistry.NetworkId(blockEntity.Id);
+            if (data is null || type < 0)
+                return;
+
+            var packet = new BlockEntityDataPacket
+            {
+                Position = blockEntity.BlockPosition,
+                Type = type,
+                NBTData = data
+            };
+
+            foreach (var player in level.PlayersInRange(blockEntity.BlockPosition))
+                player.SendPacket(packet);
+        }
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Error, Message = "Block entity {Type} at {Position} failed")]
+        public static partial void BlockEntityFailed(ILogger logger, Exception exception, string type, Vector position);
+    }
+}

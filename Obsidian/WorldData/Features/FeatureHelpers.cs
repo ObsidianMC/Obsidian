@@ -27,18 +27,13 @@ internal static class FeatureHelpers
     /// <param name="lootTable">The loot table id, e.g. <c>minecraft:chests/simple_dungeon</c>.</param>
     public static void SetLootTable(IWorldGenLevel level, IRandomSource random, Vector position, string lootTable)
     {
-        var container = level.GetBlockEntity(position) as DataBlockEntity;
-        if (container is null || !randomizableContainers.Contains(container.Id))
+        if (level.GetBlockEntity(position) is not IBlockEntity container
+            || !randomizableContainers.Contains(container.Id))
+        {
             return;
+        }
 
-        container.Set("LootTable", lootTable);
-
-        // Like vanilla, a zero seed isn't saved.
-        var seed = random.NextLong();
-        if (seed != 0L)
-            container.Set("LootTableSeed", seed);
-        else
-            container.Data.Remove("LootTableSeed");
+        BlockEntityNbt.SetLootTable(container, lootTable, random.NextLong());
     }
 
     /// <summary>

@@ -96,6 +96,15 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      vanilla's, and `IPluginRegistry.AddPotionMix` and `AddContainerMix` add a plugin's mixes after vanilla's, removed
      when it unloads (see [plugin-content.md](plugin-content.md#brewing)). Mixes aren't synced: clients know only
      vanilla's, as vanilla's client builds them itself.
+   - Done for block entities: `IPluginRegistry.RegisterBlockEntity` gives a plugin's blocks a `BlockEntity` subclass,
+     with a type id after vanilla's synced with the `minecraft:block_entity_type` registry (refusing vanilla clients
+     once there are any). Block entities are created and removed with their blocks however they're set, saved with
+     the chunk as of their last `SetChanged`, ticked in ticking chunks, and sent with the chunk and by `SendUpdate`.
+     Vanilla's containers and brewing stands are `ContainerBlockEntity`s on the same contract, loaded with their
+     chunk (unopened chests included, keeping their loot table), whose items drop when their block goes; vanilla's
+     other types stay data kept as saved. Unloading the plugin keeps its block entities in their chunks as saved and
+     a reload creates them again (see [plugin-content.md](plugin-content.md#block-entities)). The Obsidian client
+     doesn't register block entity types or tick block entities yet.
    - Done for saplings: `BlockProperties.TreeGrower` makes a plugin's block a sapling that grows the configured
      features it names, vanilla's or files', on random ticks and with bone meal like vanilla's saplings, 2x2 mega
      trees included; the grower is the plugin's, like its behaviour (see

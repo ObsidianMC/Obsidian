@@ -78,15 +78,12 @@ internal static class BlockPhysics
     public static bool IsSignalSource(this IBlock block) => data.Value.SignalSources.Contains(block.UnlocalizedName);
 
     /// <summary>
-    /// The type of the block entity vanilla creates for the block (e.g. <c>minecraft:mob_spawner</c> for spawners), or
-    /// <c>null</c> when it has none.
+    /// The type of the block entity the block has (e.g. <c>minecraft:mob_spawner</c> for spawners): vanilla's, or the
+    /// one a plugin registered for its block. <c>null</c> when it has none.
     /// </summary>
-    public static string? BlockEntityType(this IBlock block) => data.Value.BlockEntityTypes.GetValueOrDefault(block.UnlocalizedName);
-
-    /// <summary>
-    /// The network id of a block entity type, or -1 when it's unknown.
-    /// </summary>
-    public static int BlockEntityTypeId(string type) => data.Value.BlockEntityTypeIds.GetValueOrDefault(type, -1);
+    public static string? BlockEntityType(this IBlock block) => block is API.Blocks.PluginBlock plugin
+        ? BlockEntityTypesRegistry.Of(plugin.Type)?.Identifier
+        : data.Value.BlockEntityTypes.GetValueOrDefault(block.UnlocalizedName);
 
     /// <summary>
     /// Vanilla <c>isFaceSturdy(..., face, SupportType.FULL)</c>.
@@ -268,7 +265,8 @@ internal static class BlockPhysics
     private const int TemplateFlags = 1 << 1 | 1 << 2 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 0b111111 << 11
         | 1 << 28 | 1 << 29 | 1 << 30 | 1 << 31;
 
-    // A plugin block's flags: its template state's (see BlocksRegistry.TemplateStateOf), with its own light emission.
+    // A plugin block's flags: its template state's (see BlocksRegistry.TemplateStateOf), with its own light emission,
+    // and a block entity when the plugin registered a block entity type for it.
     private static int PluginFlags(BlockType type)
     {
         var settings = type.Settings;
@@ -277,6 +275,9 @@ internal static class BlockPhysics
         // Cobweb, the template without collision, is still solid in vanilla's legacy sense; the block isn't.
         if (!settings.HasCollision)
             flags &= ~(1 << 1 | 1 << 2);
+
+        if (BlockEntityTypesRegistry.Of(type) is not null)
+            flags |= 1 << 10;
 
         return flags | Math.Clamp(settings.LightEmission, 0, 15) << 17;
     }

@@ -135,8 +135,45 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         return RegisterMenu(container, identifier, rows, columns);
     }
 
+    public API.BlockEntities.BlockEntityType RegisterBlockEntity<TBlockEntity>(
+        string identifier,
+        params IEnumerable<BlockType> blocks)
+        where TBlockEntity : API.BlockEntities.BlockEntity, new()
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        return RegisterBlockEntity(container, identifier, blocks, static () => new TBlockEntity());
+    }
+
     // The content registrations below are shared with the Obsidian client, which registers its mods' content the
     // same way, so that it gets the same ids as a server running the same mods.
+
+    /// <summary>
+    /// Registers <paramref name="container"/>'s block entity type for its blocks, created with
+    /// <paramref name="factory"/>.
+    /// </summary>
+    internal static API.BlockEntities.BlockEntityType RegisterBlockEntity(
+        PluginContainer container,
+        string identifier,
+        IEnumerable<BlockType> blocks,
+        Func<API.BlockEntities.BlockEntity> factory)
+    {
+        CheckIdentifier(container, identifier);
+
+        var covered = blocks.ToList();
+        foreach (var block in covered)
+        {
+            if (block.Owner != container)
+                throw new ArgumentException($"{block} isn't a block of {container.Info.Name}.", nameof(blocks));
+        }
+
+        var type = BlockEntityTypesRegistry.Register(identifier, covered);
+
+        if (!BlockEntityTypesRegistry.TryBind(type, factory, container, () => container.IsClosing))
+            throw new InvalidOperationException($"{container.Info.Name} is unloading.");
+
+        return type;
+    }
 
     /// <summary>
     /// Registers <paramref name="container"/>'s block, and the item that places it unless it has none.

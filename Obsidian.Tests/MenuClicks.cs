@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Obsidian.API;
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
@@ -288,6 +289,12 @@ public sealed class MenuClicks
         ];
         var position = new Vector(0, 64, 0);
 
+        // A chest without its block entity yet, as in a world saved before chests got theirs when placed.
+        var chunk = new Chunk(0, 0);
+        chunk.SetChunkStatus(ChunkGenStage.full);
+        chunk.SetBlock(position.X, position.Y, position.Z, BlocksRegistry.Chest);
+        context.World.LoadRegionByChunk(0, 0).SetChunk(chunk);
+
         await Task.WhenAll(players.Select(player => Task.Run(async () =>
             await context.Server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, context.Server)
             {
@@ -295,7 +302,8 @@ public sealed class MenuClicks
                 BlockLocation = position
             }))));
 
-        var stored = Assert.IsAssignableFrom<BaseContainer>(await context.World.GetBlockEntityAsync(position));
+        var blockEntity = await context.World.GetBlockEntityAsync(position);
+        var stored = Assert.IsAssignableFrom<ContainerBlockEntity>(blockEntity).Inventory;
         Assert.All(players, player => Assert.Same(stored, player.OpenedContainer));
         Assert.Equal(2, stored.Viewers.Count);
     }
@@ -502,8 +510,8 @@ public sealed class MenuClicks
         await InteractAsync(first, left, new Vector(0, 64, 0));
         await InteractAsync(second, right, new Vector(1, 64, 0));
 
-        var leftHalf = await context.World.GetBlockEntityAsync(new Vector(0, 64, 0));
-        var rightHalf = await context.World.GetBlockEntityAsync(new Vector(1, 64, 0));
+        var leftHalf = await HalfAsync(new Vector(0, 64, 0));
+        var rightHalf = await HalfAsync(new Vector(1, 64, 0));
         foreach (var player in new[] { first, second })
         {
             var window = Assert.IsType<DoubleChestContainer>(player.OpenedContainer);
@@ -516,7 +524,7 @@ public sealed class MenuClicks
         first.CarriedItem = new ItemStack(ItemsRegistry.Diamond, 3);
         await ClickAsync(context.Server, first, 27, 0, ClickType.Pickup);
 
-        Assert.Equal(3, ((BaseContainer)leftHalf).GetItem(0)?.Count);
+        Assert.Equal(3, leftHalf.GetItem(0)?.Count);
         var shown = ((TestClient)second.Client).SentPackets.OfType<ContainerSetContentPacket>().Last();
         Assert.Equal(second.CurrentContainerId, shown.ContainerId);
         Assert.Equal(3, shown.Items[27]?.Count);
@@ -527,6 +535,9 @@ public sealed class MenuClicks
                 Block = block,
                 BlockLocation = position
             });
+
+        async Task<BaseContainer> HalfAsync(Vector position) =>
+            Assert.IsAssignableFrom<ContainerBlockEntity>(await context.World.GetBlockEntityAsync(position)).Inventory;
     }
 
     [Fact(DisplayName = "An item picked up while plugins decide makes the click stale, and Item shares nothing",

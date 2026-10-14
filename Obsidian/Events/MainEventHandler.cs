@@ -1,3 +1,4 @@
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
@@ -106,8 +107,8 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             ? [chest.First, chest.Second]
             : [e.Container];
 
-        foreach (var blockEntity in parts.OfType<IBlockEntity>())
-            await AnimateCloseAsync(player, blockEntity.BlockPosition);
+        foreach (var part in parts.OfType<Container>())
+            await AnimateCloseAsync(player, part.BlockPosition);
     }
 
     private static async ValueTask AnimateCloseAsync(Player player, Vector position)
@@ -383,9 +384,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
     };
 
     /// <summary>
-    /// The container stored at <paramref name="position"/>, or <paramref name="fresh"/>, which is stored there if
-    /// none is; a container from world generation gets its loot first. Containers that aren't block entities are
-    /// returned as they are.
+    /// The inventory of the container block entity at <paramref name="position"/>, filled from the loot table it was
+    /// waiting for, if any; or <paramref name="fresh"/> for blocks without one, whose menus each player gets their
+    /// own of (anvils, enchanting tables).
     /// </summary>
     private static async ValueTask<BaseContainer> StoredContainerAsync(
         Player player,
@@ -393,38 +394,13 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         Vector position,
         BaseContainer fresh)
     {
-        if (fresh is not IBlockEntity freshEntity)
+        if (await level.GetOrCreateBlockEntityAsync(position) is not ContainerBlockEntity stored)
             return fresh;
 
-        // Stored and looked up in one step, so that players opening a new chest at once share one container.
-        var tileEntity = await level.GetOrAddBlockEntityAsync(position, freshEntity);
+        level.UnpackLootTable(stored, player);
 
-        // The stored container itself is opened, so changes reach the block entity that's saved with the chunk.
-        if (tileEntity is BaseContainer stored)
-            return stored;
-
-        if (tileEntity is not DataBlockEntity dataBlockEntity)
-            return fresh;
-
-        // A container from world generation: fill it once, then keep it as the block entity. Players opening it
-        // before it's stored get the first one's container, so its loot isn't generated twice.
-        var container = fresh;
-        lock (generatedContainers)
-        {
-            if (generatedContainers.TryGetValue(dataBlockEntity, out var generated))
-            {
-                container = generated;
-            }
-            else
-            {
-                FillGeneratedContainer(dataBlockEntity, container, player);
-                generatedContainers.Add(dataBlockEntity, container);
-            }
-        }
-
-        await player.Level.SetBlockEntity(position, (IBlockEntity)container);
-
-        return container;
+        // The stored inventory itself is opened, so changes reach the block entity that's saved with the chunk.
+        return stored.Inventory;
     }
 
     /// <summary>

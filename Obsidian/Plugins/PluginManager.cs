@@ -563,6 +563,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         BlocksRegistry.ReleasePlugin(pluginContainer);
         BrewingRegistry.ReleasePlugin(pluginContainer);
         EntityDefinitionsRegistry.ReleasePlugin(pluginContainer);
+        BlockEntityTypesRegistry.ReleasePlugin(pluginContainer);
         PluginGenerators.Release(pluginContainer);
 
         // Once its handlers and its types' behaviours are gone, so that nothing of the plugin's runs as they go.
@@ -642,8 +643,8 @@ public sealed partial class PluginManager : IAsyncDisposable
     }
 
     /// <summary>
-    /// Removes the server players <paramref name="plugin"/> added, and the entities it owns from every level (see
-    /// <see cref="PluginEntities"/>), as it unloads.
+    /// Removes the server players <paramref name="plugin"/> added, and the entities and block entities it owns from
+    /// every level (see <see cref="PluginEntities"/> and <see cref="PluginBlockEntities"/>), as it unloads.
     /// </summary>
     /// <remarks>
     /// Each level's entities are removed between its ticks. Inside a call into a plugin, which a tick may be waiting
@@ -674,7 +675,11 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         foreach (var level in this.Levels())
         {
-            void Remove() => PluginEntities.RemoveFrom(level, plugin);
+            void Remove()
+            {
+                PluginEntities.RemoveFrom(level, plugin);
+                PluginBlockEntities.RemoveFrom(level, plugin);
+            }
 
             if (!PluginCall.InsideAny && await level.TryRunBetweenTicksAsync(Remove, drainTimeout))
                 continue;

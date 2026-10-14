@@ -300,7 +300,7 @@ public sealed class StructureTemplate
             if (!settings.KnownShape && postProcessBlocks.Contains(state))
                 level.MarkForPostProcessing(target);
 
-            if (info.Nbt is not null && level.GetBlockEntity(target) is DataBlockEntity blockEntity)
+            if (info.Nbt is not null && level.GetBlockEntity(target) is API.BlockEntities.BlockEntity blockEntity)
                 LoadBlockEntity(blockEntity, info.Nbt, random);
 
             if (existing is not null)
@@ -394,7 +394,10 @@ public sealed class StructureTemplate
     /// Fills a placed block entity from template data like vanilla's <c>loadWithComponents</c>, keeping what vanilla would
     /// save. Containers get a loot table seed from <paramref name="random"/>.
     /// </summary>
-    private static void LoadBlockEntity(DataBlockEntity blockEntity, NbtCompound nbt, IRandomSource random)
+    private static void LoadBlockEntity(
+        API.BlockEntities.BlockEntity blockEntity,
+        NbtCompound nbt,
+        IRandomSource random)
     {
         var data = NbtCopy.Copy(nbt, "id", "x", "y", "z");
         if (randomizableContainers.Contains(blockEntity.Id))
@@ -410,9 +413,7 @@ public sealed class StructureTemplate
             }
         }
 
-        blockEntity.Data.Clear();
-        foreach (var (_, tag) in data.ToList())
-            blockEntity.Set(tag);
+        BlockEntityNbt.LoadInto(blockEntity, data);
     }
 
     /// <summary>

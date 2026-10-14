@@ -132,9 +132,9 @@ internal sealed class LevelFluids : IFluidLevelAccess
 
         chunk.SetBlock(position.X, position.Y, position.Z, block);
 
-        // Generated block entity data doesn't carry over to another block, like AbstractLevel.SetBlockUntrackedAsync.
-        if (chunk.GetBlockEntity(position.X, position.Y, position.Z) is DataBlockEntity data && data.Id != block.BlockEntityType())
-            chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
+        // Like AbstractLevel.SetBlockUntrackedAsync.
+        if (this.level.UpdateBlockEntity(chunk, position, block) is API.BlockEntities.BlockEntity removed)
+            this.level.RunBlockEntityRemoval(removed);
 
         this.level.BroadcastBlockChange(block, position);
         this.level.Portals.OnBlockChanged(position);

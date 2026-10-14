@@ -193,6 +193,19 @@ public sealed class Chunk : IChunk
 
     public void RemoveBlockEntity(int x, int y, int z) => this.BlockEntities.TryRemove(this.BlockEntityKey(x, y, z), out _);
 
+    /// <summary>
+    /// Stores <paramref name="replacement"/> in place of <paramref name="current"/>, at its position, unless another
+    /// block entity took its place meanwhile.
+    /// </summary>
+    /// <returns>Whether <paramref name="current"/> was replaced.</returns>
+    internal bool ReplaceBlockEntity(IBlockEntity current, IBlockEntity replacement)
+    {
+        var position = current.BlockPosition;
+        var key = this.BlockEntityKey(position.X, position.Y, position.Z);
+
+        return this.BlockEntities.TryUpdate(key, replacement, current);
+    }
+
     public IReadOnlyCollection<IBlockEntity> GetBlockEntities() => [.. this.BlockEntities.Values];
 
     private int BlockEntityKey(int x, int y, int z) =>

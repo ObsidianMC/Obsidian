@@ -1,12 +1,12 @@
 # Plugin blocks, entities, tags and data
 
-Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, add entity types,
-particle types, menu types, worldgen types and level generators in code, and add tags, biomes, dimension types, damage
-types, worldgen features, biome modifiers, noise settings and dimensions with data pack files, much like NeoForge and
-Fabric mods. Clients need the matching mod for blocks, items, entity types, particle types and menu types: NeoForge
-and Fabric clients, and the Obsidian client, are sent those registries and map the server's ids to their own, so the
-mods may load in any order. Biomes, dimension types and
-damage types are sent with their data, so vanilla clients can join too. On the Obsidian client, a mod adds its client
+Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, add block entity
+types, entity types, particle types, menu types, worldgen types and level generators in code, and add tags, biomes,
+dimension types, damage types, worldgen features, biome modifiers, noise settings and dimensions with data pack files,
+much like NeoForge and Fabric mods. Clients need the matching mod for blocks, block entity types, items, entity types,
+particle types and menu types: NeoForge and Fabric clients, and the Obsidian client, are sent those registries and
+map the server's ids to their own, so the mods may load in any order. Biomes, dimension types and damage types are sent
+with their data, so vanilla clients can join too. On the Obsidian client, a mod adds its client
 side in code (see [Client](#client)).
 
 ## Blocks in code
@@ -138,6 +138,69 @@ modifiers adding spawners (see [Biome modifiers](#biome-modifiers)) spawn a plug
 plugin is loaded, and they count against their category's cap; misc mobs don't spawn naturally, since plugin mobs
 don't despawn. They spawn with the rules of the list they're chosen from: on grass in light as creatures, in water in
 the water categories, and in the dark otherwise.
+
+## Block entities
+
+```csharp
+public sealed class Counter : BlockEntity
+{
+    private int ticks;
+
+    protected override void Load(NbtCompound tag) =>
+        this.ticks = tag.TryGetTagValue<int>("ticks", out var ticks) ? ticks : 0;
+
+    protected override void Save(NbtCompound tag) => tag.Add(new NbtTag<int>("ticks", this.ticks));
+
+    protected override ValueTask TickAsync()
+    {
+        this.ticks++;
+        this.SetChanged();
+
+        if (this.ticks % 20 == 0)
+            this.SendUpdate();
+
+        return ValueTask.CompletedTask;
+    }
+
+    protected override NbtCompound? GetUpdateData() => new() { new NbtTag<int>("ticks", this.ticks) };
+}
+
+var counter = registry.RegisterBlock("ruby:counter");
+registry.RegisterBlockEntity<Counter>("ruby:counter", counter);
+```
+
+A block entity type, like a NeoForge mod's `BlockEntityType`, gives the plugin's blocks a `BlockEntity`: the server
+creates one whenever one of its blocks is set, however it's set (placed by a player, by plugin code, by world
+generation or a structure), and removes it when its position changes to a block without its type. Removing it calls
+`OnRemoved` first, like vanilla's `preRemoveSideEffects`. The type's identifier is in the plugin's namespace, and its
+id follows vanilla's in the `minecraft:block_entity_type` registry, synced to NeoForge and Fabric clients, whose mod
+registers the same type for the same blocks. The Obsidian client doesn't register block entity types yet.
+
+- **Saving.** The block entity is saved in its chunk's `block_entities` with the type's `id` and its position, and
+  `Load` reads back what `Save` wrote. Call `SetChanged` whenever the saved data changes, like vanilla's
+  `setChanged`: the level calls `Save` at the end of its tick, and saves the chunk with what it wrote.
+- **Ticking.** `TickAsync` runs once a tick while the chunk ticks (a player is within the simulation distance), and
+  only while the block still has the type. `Level` is the level it's in, and `BlockPosition` its block.
+- **Clients.** `GetUpdateData` is what clients get (vanilla's `getUpdateTag`): with the chunk, and when the block
+  entity calls `SendUpdate`, as a `BlockEntityData` packet to the players who have the chunk. The client mod's block
+  entity reads it.
+- **Threads.** The server calls `Save` and `TickAsync` on the level's thread, and `GetUpdateData` there or from
+  `SendUpdate`; chunks are saved and sent from what they returned last, so the block entity's code needs no locks
+  of its own.
+
+A `ContainerBlockEntity` holds a `BaseContainer` (its `Inventory`), saved like vanilla's containers (`Items`,
+`CustomName`, and a `LootTable` it's waiting for), which drops when the block is removed unless `DropsContents` is
+false. Changes to its items are saved without `SetChanged`. Vanilla's block entities work the same way: chests,
+barrels, dispensers, droppers, hoppers, shulker boxes, furnaces and brewing stands are `ContainerBlockEntity`s, so
+`await level.GetBlockEntityAsync(position) is ContainerBlockEntity chest` reaches a chest's items, an unopened one's
+too (its `LootTable` is rolled when a player opens it or it's broken), and the others keep vanilla's saved data. Like
+vanilla's, containers drop their items when their block goes by any cause, and brewing stands brew on the block
+entity tick.
+
+When the plugin unloads, its block entities are saved into their chunks as of their last change (one not taken in
+yet is saved then) and let go of; nothing of the plugin's runs after that. While it's gone they're kept as they were
+saved, in loaded chunks and in chunks loaded meanwhile, like saved entities of its types; once it loads again, the
+level creates them again from what they saved on its next tick, and chunks loaded later create them as they load.
 
 ## Particles
 
