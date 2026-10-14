@@ -13,8 +13,8 @@ namespace Obsidian.WorldData.Features;
 /// Positions in chunks that aren't loaded and complete read as a barrier and can't be written (see
 /// <see cref="ReachedUnloaded"/>); positions outside the build range read as void air and can't be written. Use it on
 /// the level's tick while holding the level's <see cref="Fluids.LevelFluids.TickLock"/>, which players' block writes
-/// take too, so that what a feature reads is still there when it writes. Light isn't worked out again, as for blocks
-/// players place.
+/// take too, so that what a feature reads is still there when it writes. The chunk's runtime light hook batches
+/// relighting with other block changes on the level's tick.
 /// </remarks>
 internal sealed class LiveFeatureLevel(AbstractLevel level) : IWorldGenLevel
 {

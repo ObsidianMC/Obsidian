@@ -176,10 +176,12 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         // A state id outside the registry can only come from a block the caller passed.
         var knownState = (uint)stateId < (uint)writeInfos.Length;
         var section = this.areaSections[index * this.sectionCount + ((position.Y - this.MinY) >> 4)];
-        if (section is not null && knownState)
-            section.SetStateId(position.X & 15, position.Y & 15, position.Z & 15, stateId);
+        if (chunk.IsGenerated)
+            chunk.SetBlock(position.X, position.Y, position.Z, block ??= BlocksRegistry.Get(stateId));
+        else if (section is not null && knownState)
+            section.SetStateIdUntracked(position.X & 15, position.Y & 15, position.Z & 15, stateId);
         else if (section is not null)
-            section.SetBlock(position.X & 15, position.Y & 15, position.Z & 15, block!);
+            section.SetBlockUntracked(position.X & 15, position.Y & 15, position.Z & 15, block!);
         else
             chunk.SetBlock(position.X, position.Y, position.Z, block ??= BlocksRegistry.Get(stateId));
 

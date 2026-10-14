@@ -60,7 +60,7 @@ The base every mod needs: blocks with state that save, tick, react and sync.
   each side, each selected and broken on its own).
 - **Drops.** Block drops from loot tables (vanilla's and a plugin's `data/<ns>/loot_table`), with tool checks,
   silk touch and fortune, and container contents dropped on break.
-- **Runtime light.** The light engine's decrease pass, so placing and breaking blocks relights the area. This
+- **Runtime light.** (done) The light engine's decrease pass, so placing and breaking blocks relights the area. This
   closes the plant-growth light gap in [known-gaps.md](known-gaps.md) too.
 - **Redstone signals.** A signal API (a block's output power by side, the power a position receives) used by
   vanilla's basic components: wire, torch, repeater, comparator, lever, button, pressure plate. Pistons and
