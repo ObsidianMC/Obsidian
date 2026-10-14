@@ -38,12 +38,15 @@ internal sealed class RecipeSet
                 : ((ShapelessRecipe)recipe).Ingredients.Count)
             .ToFrozenDictionary(group => group.Key, group => group.ToList());
         this.cookingRecipes = [.. recipes.Values.OfType<SmeltingRecipe>()];
+        this.UpdatePacket = new(recipes);
     }
 
     /// <summary>
     /// Every recipe, by identifier.
     /// </summary>
     public FrozenDictionary<string, IRecipe> Recipes { get; }
+
+    internal Net.Packets.Play.Clientbound.UpdateRecipesPacket UpdatePacket { get; }
 
     /// <summary>The configured content when this set was published; null for vanilla's shared set.</summary>
     internal ContentVersion? RequiredContent { get; init; }
