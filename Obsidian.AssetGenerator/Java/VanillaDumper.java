@@ -115,6 +115,7 @@ public final class VanillaDumper {
         dumper.dumpBlockPhysics();
         dumper.dumpCollisionShapes();
         dumper.dumpBlastResistance();
+        dumper.dumpFuelValues();
         dumper.dumpBlockTransforms();
         dumper.dumpMapColors();
         dumper.dumpWallShapeCovers();
@@ -340,6 +341,33 @@ public final class VanillaDumper {
             resistance.put(key(blockRegistry, block), (float) Mojang.call(getExplosionResistance, block));
 
         Json.write(output.resolve("blast_resistance.json"), resistance, false);
+    }
+
+    /**
+     * Furnace fuel burn times, from the same builder vanilla's server uses ({@code MinecraftServer.fuelValues}). Read by
+     * Obsidian/WorldData/Furnaces/FurnaceRules.cs.
+     */
+    private void dumpFuelValues() throws IOException {
+        var provider = "net.minecraft.core.HolderLookup$Provider";
+        var flagSet = "net.minecraft.world.flag.FeatureFlagSet";
+        var fuelType = "net.minecraft.world.level.block.entity.FuelValues";
+        var stackType = "net.minecraft.world.item.ItemStack";
+        var builtins = Mojang.call(mojang.method("net.minecraft.core.RegistryAccess", "fromRegistryOfRegistries", REGISTRY),
+            null, mojang.get(REGISTRIES, "REGISTRY"));
+        var flags = mojang.get("net.minecraft.world.flag.FeatureFlags", "DEFAULT_FLAGS");
+        var fuel = Mojang.call(mojang.method(fuelType, "vanillaBurnTimes", provider, flagSet), null, builtins, flags);
+        var burnDuration = mojang.method(fuelType, "burnDuration", stackType);
+        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+        var newStack = mojang.constructor(stackType, "net.minecraft.world.level.ItemLike", "int");
+
+        var result = new LinkedHashMap<String, Integer>();
+        for (var item : (Iterable<?>) itemRegistry) {
+            var burnTime = (int) Mojang.call(burnDuration, fuel, Mojang.create(newStack, item, 1));
+            if (burnTime > 0)
+                result.put(key(itemRegistry, item), burnTime);
+        }
+
+        Json.write(output.resolve("fuel_values.json"), result, false);
     }
 
     private static long[] maskWords(String hex) {
