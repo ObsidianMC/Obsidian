@@ -1,5 +1,6 @@
 using Obsidian.API.Networking;
 using Obsidian.API.Blocks;
+using Obsidian.API.Client.Screens;
 
 namespace Obsidian.API.Client;
 
@@ -11,7 +12,7 @@ namespace Obsidian.API.Client;
 /// What the mod registers takes effect when <see cref="IClientPlugin.ConfigureClient"/> returns and stays until the
 /// client exits or the player reloads its mods; if it throws, none of it does. The registry is sealed then, since the
 /// client loads what depends on it afterwards: registering through it later throws
-/// <see cref="InvalidOperationException"/>, while <see cref="Connection"/> stays usable.
+/// <see cref="InvalidOperationException"/>, while <see cref="Connection"/> and <see cref="Screens"/> stay usable.
 /// </para>
 /// <para>
 /// Like the server's content, what the mod registers is its own: identifiers are in its namespace (its mod id) and
@@ -36,6 +37,12 @@ public interface IClientRegistry
     /// handler, like when one of its keys is pressed.
     /// </summary>
     public IClientConnection Connection { get; }
+
+    /// <summary>
+    /// Opens the mod's screens, like a settings screen opened with one of its keys. Like <see cref="Connection"/>, it
+    /// stays usable after <see cref="IClientPlugin.ConfigureClient"/>.
+    /// </summary>
+    public IClientScreens Screens { get; }
 
     /// <summary>
     /// Handles the payloads the server sends on <typeparamref name="TPayload"/>'s channel, in the phases the mod
@@ -134,4 +141,20 @@ public interface IClientRegistry
     /// </exception>
     /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
     public IClientRegistry RegisterMenuScreen(string menuType, MenuScreenProperties screen);
+
+    /// <summary>
+    /// Shows a mod's menu type with a screen built in code: <paramref name="screen"/> makes one for the menu each time
+    /// the server opens it, for the widgets its <see cref="ModScreen.Init"/> adds. Use it rather than
+    /// <see cref="MenuScreenProperties"/> for a menu with more than slots on a background: progress, buttons, text
+    /// fields, lists.
+    /// </summary>
+    /// <param name="menuType">
+    /// The identifier of a menu type the mod registered, like <c>examplemod:grinder</c>.
+    /// </param>
+    /// <param name="screen">Makes the screen for an opened menu.</param>
+    /// <exception cref="ArgumentException">
+    /// The menu type isn't one the mod registered, or the mod gave it a screen already.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+    public IClientRegistry RegisterMenuScreen(string menuType, Func<IScreenMenu, ModMenuScreen> screen);
 }
