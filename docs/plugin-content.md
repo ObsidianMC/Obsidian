@@ -3833,7 +3833,12 @@ public sealed class RubyMod : PluginBase, IClientPlugin
   item is tinted too, on every `tintindex`, unless its item definition gives the model `tints` of its own (which
   then apply by index): with vanilla's grass block item colour (the grass colormap at temperature 0.5 and downfall
   1), its default foliage colour (`#48B518`), dry foliage colour (`#5C3C32`) or water colour (`#3F76E4`), or the
-  fixed colour.
+  fixed colour. For different colours on a block's faces, register
+  `BlockTint.FixedByIndex(0x303030, 0x808080, 0xFFFFFF)`: its copied, read-only `Colors` list maps directly to
+  `tintindex` 0, 1 and 2, in the block's model, block entity model data and its item. Missing indexes and faces
+  without a tint index stay untinted. `BlockTint.Fixed` and the biome sources still colour every tinted face alike.
+  Item definitions' own `tints` arrays already select by index (including `minecraft:constant` colours in mod assets)
+  and take precedence over the registered block tint; they need no extra registration.
 - **Animated textures.** A block, item, entity, GUI sprite or particle texture with a `.png.mcmeta` animation plays
   like vanilla's water, lava and fire, with no code: its frames in the order and for the ticks the animation gives,
   blended into each other with `interpolate`, advancing once in each frame that runs a client tick, in menus too, and

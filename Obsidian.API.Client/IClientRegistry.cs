@@ -125,7 +125,7 @@ public interface IClientRegistry
     /// <summary>
     /// Tints a block: the faces of its models with a <c>tintindex</c> are multiplied by the tint's colour, and so are
     /// its item's when the item's definition (<c>assets/&lt;ns&gt;/items/...</c>) gives the model no tints of its
-    /// own.
+    /// own. Use <see cref="BlockTint.FixedByIndex"/> for a separate colour per tint index.
     /// </summary>
     /// <param name="block">The identifier of a block the mod registered, like <c>examplemod:mossy_bricks</c>.</param>
     /// <param name="tint">The tint.</param>
