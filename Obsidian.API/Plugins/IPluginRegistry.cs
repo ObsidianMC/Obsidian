@@ -2,6 +2,7 @@
 using Obsidian.API.Events;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Networking;
 using Obsidian.API.World.Features;
 
@@ -158,6 +159,31 @@ public interface IPluginRegistry
         params IEnumerable<BlockType> blocks)
         where TBlockEntity : BlockEntities.BlockEntity, new() =>
         throw new NotSupportedException("This side doesn't support block entity types.");
+
+    /// <summary>
+    /// Registers a data component type, like a NeoForge mod's <c>DataComponentType</c>: stacks hold values of it (see
+    /// <see cref="ItemStack.Set"/>), saved with <paramref name="codec"/> under its identifier beside vanilla's
+    /// components. Its identifier is in the plugin's namespace, and it gets the next free id after vanilla's types.
+    /// Registering it again, e.g. when the plugin reloads, gives back a type with the same id and the new codecs.
+    /// </summary>
+    /// <param name="identifier">The type's identifier, like <c>myplugin:charge</c>.</param>
+    /// <param name="codec">Saves and loads the type's values.</param>
+    /// <param name="networkCodec">
+    /// Sends the type's values to clients, whose mod registers the same type with the same codec. Without one, the
+    /// type is the server's own, like vanilla's components that aren't synced: clients never get its values.
+    /// </param>
+    /// <returns>The type, to read and set its values on stacks with.</returns>
+    /// <remarks>
+    /// A type with a network codec is synced to clients like a plugin's items, so only NeoForge and Fabric clients
+    /// with a matching mod can join, and stays synced until the server stops. When the plugin unloads, stacks keep its
+    /// values as they were saved, saving and loading them unchanged, and its codecs read them again once it's back.
+    /// </remarks>
+    /// <exception cref="ArgumentException">The identifier isn't in the plugin's namespace, or isn't valid.</exception>
+    public PluginComponentType<TValue> RegisterComponentType<TValue>(
+        string identifier,
+        ComponentCodec<TValue> codec,
+        ComponentNetworkCodec<TValue>? networkCodec = null) =>
+        throw new NotSupportedException("This side doesn't support data component types.");
 
     /// <summary>
     /// Adds entries to a tag, vanilla's or a new one, like a tag file in the plugin's <c>data/</c> folder would: the

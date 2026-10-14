@@ -75,8 +75,8 @@ its surroundings, and drops its loot table.
 
 - **Item hooks.** (done) Use on an entity, inventory tick, and default components on plugin items (tool and mining
   speed, food, equipment and armour, attribute modifiers).
-- **Data component types.** Plugins register their own component types with a codec and a network codec, saved on
-  stacks and synced to modded clients. Today `DataComponentType` is a generated, closed enum.
+- **Data component types.** (done) Plugins register their own component types with a codec and a network codec,
+  saved on stacks and synced to modded clients. Their ids follow the generated `DataComponentType` enum's.
 - **Inventory access.** (done) One way to reach the items of whatever is at a position from a side (like NeoForge's
   item handler capability): vanilla's chests, barrels, shulker boxes, furnaces, brewing stands and hoppers, and plugin
   block entities. Inserting and extracting can be simulated first, so a network can plan a transfer without

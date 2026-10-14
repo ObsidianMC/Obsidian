@@ -97,6 +97,51 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         return copy;
     }
 
+    /// <summary>
+    /// Reads the stack's value of a plugin's component type, decoded with the type's codec.
+    /// </summary>
+    /// <returns>Whether the stack has a value of the type.</returns>
+    /// <remarks>
+    /// A value saved before the type was first registered in this process is read too.
+    /// </remarks>
+    public bool TryGet<TValue>(PluginComponentType<TValue> type, [MaybeNullWhen(false)] out TValue value)
+    {
+        INbtTag? saved = null;
+        if (this.InternalStorage.GetValueOrDefault(type.Type) is PluginDataComponent component)
+            saved = component.ToNbt();
+        else if (this.UnmodeledComponents?.TryGetTag(type.Identifier, out var unmodeled) == true)
+            saved = new PluginDataComponent(type.Type, type.Identifier, unmodeled).ToNbt();
+
+        value = saved is not null ? type.Codec.Decode(saved) : default;
+        return saved is not null;
+    }
+
+    /// <summary>
+    /// The stack's value of a plugin's component type, or <c>default</c> when it has none.
+    /// </summary>
+    public TValue? Get<TValue>(PluginComponentType<TValue> type) => this.TryGet(type, out var value) ? value : default;
+
+    /// <summary>
+    /// Sets the stack's value of a plugin's component type, encoded with the type's codec. The stack keeps only the
+    /// saved form, so it holds nothing of the plugin's.
+    /// </summary>
+    public void Set<TValue>(PluginComponentType<TValue> type, TValue value)
+    {
+        this[type.Type] = new PluginDataComponent(type.Type, type.Identifier, type.Codec.Encode(value));
+        this.UnmodeledComponents?.Remove(type.Identifier);
+    }
+
+    /// <summary>
+    /// Removes the stack's value of a plugin's component type.
+    /// </summary>
+    /// <returns>Whether the stack had one.</returns>
+    public bool Remove<TValue>(PluginComponentType<TValue> type)
+    {
+        var unmodeled = this.UnmodeledComponents?.Remove(type.Identifier) == true;
+
+        return this.Remove(type.Type) || unmodeled;
+    }
+
     public static ItemStack operator -(ItemStack item, int value)
     {
         if (item.Count <= 0)

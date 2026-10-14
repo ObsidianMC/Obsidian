@@ -1,13 +1,13 @@
 # Plugin blocks, entities, tags and data
 
 Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, add block entity
-types, entity types, particle types, menu types, worldgen types and level generators in code, and add tags, biomes,
-dimension types, damage types, worldgen features, biome modifiers, noise settings, loot tables and dimensions with data
-pack files, like NeoForge and Fabric mods. Clients need the matching mod for blocks, block entity types, items, entity
-types, particle types and menus: NeoForge and Fabric clients, and the Obsidian client, receive those registries and map
-the server's ids to their own. The mods may load in any order. Biomes, dimension types and damage types are sent with
-their data, so vanilla clients can join too. On the Obsidian client, a mod adds its client
-side in code (see [Client](#client)).
+types, data component types, entity types, particle types, menu types, worldgen types and level generators in code,
+and add tags, biomes, dimension types, damage types, worldgen features, biome modifiers, noise settings, loot tables
+and dimensions with data pack files, like NeoForge and Fabric mods. Clients need the matching mod for blocks, block
+entity types, data component types sent to clients, items, entity types, particle types and menus: NeoForge and
+Fabric clients, and the Obsidian client, receive those registries and map the server's ids to their own. The mods
+may load in any order. Biomes, dimension types and damage types are sent with their data, so vanilla clients can join
+too. On the Obsidian client, a mod adds its client side in code (see [Client](#client)).
 
 `samples/EngineSample` is a working plugin built on this API alone, which the tests load like any plugin: its tick
 counter is a block with state, hooks, a block entity, redstone, light and a loot table together.
@@ -393,8 +393,9 @@ first `container` item and queue their initial client data. Removing a decorated
 from the pot or sherd drops, like vanilla; its loot table copies only decorations. A failed shulker loot evaluation
 restores retirement while the box is still standing; malformed `limit_count` bounds are rejected when the table is
 loaded.
-Banner patterns, bees and skull profiles aren't taken yet, and neither is a plugin's block entity data: keeping it on
-the dropped item waits for plugin data component types.
+Banner patterns, bees and skull profiles aren't taken yet, and neither is a plugin's block entity data: plugin
+[component types](#item-components) can hold it, but block entities have no hook to fill them on drop yet (see
+[known-gaps.md](known-gaps.md#plugin-block-entity-data-on-items)).
 
 ## Items
 
@@ -506,6 +507,42 @@ keep the defaults they were made with until then.
 
 The hooks are calls into the plugin: none starts once the plugin begins unloading, and one that throws during the
 inventory tick is logged without stopping the tick.
+
+### Item components
+
+```csharp
+var charge = registry.RegisterComponentType(
+    "ruby:charge",
+    new ComponentCodec<int>(value => new NbtTag<int>("", value), tag => ((NbtTag<int>)tag).Value),
+    new ComponentNetworkCodec<int>((writer, value) => writer.WriteVarInt(value), reader => reader.ReadVarInt()));
+
+stack.Set(charge, stack.Get(charge) + 1);
+if (stack.TryGet(charge, out var charges)) { /* ... */ }
+stack.Remove(charge);
+```
+
+A data component type, like a NeoForge mod's `DataComponentType`, holds a plugin's own data on stacks of any item.
+`IPluginRegistry.RegisterComponentType<TValue>(identifier, codec, networkCodec)` returns a
+`PluginComponentType<TValue>`, which `ItemStack.TryGet`, `Get`, `Set` and `Remove` take. The identifier is in the
+plugin's namespace, and the type's id (`Type`, a `DataComponentType` value) follows vanilla's last one, in
+registration order, and stays for the process: registering it again, as a reload does, gives the same id with the new
+codecs. Values are immutable on the stack: `Set` a new one to change it. Like vanilla's component types, a plugin's
+type is never an item's default, so removing it just takes it off the stack.
+
+- **Saving.** The `ComponentCodec` saves a value as NBT, in the stack's `components` under the type's identifier
+  beside vanilla's (`{ id, count, components: { "minecraft:damage": 3, "ruby:charge": 2 } }`), and reads it back.
+  The stack keeps only that saved form, so it holds nothing of the plugin's: `Set` encodes and `Get` decodes.
+- **Clients.** With a `ComponentNetworkCodec`, the type is in the `minecraft:data_component_type` registry synced to
+  NeoForge, Fabric and Obsidian clients, which must register the same type (the Obsidian client registers its mods'
+  with the same `ConfigureRegistry` code), and its values are sent with stacks. Like a plugin's items, a synced type
+  keeps vanilla clients out and stays synced until the server stops. Without a network codec, the type is the
+  server's own, like vanilla's components that aren't synced: it isn't in the synced registry and its values never
+  leave the server, so it doesn't keep vanilla clients out. Click predictions hash a plugin's component from its saved
+  NBT, as vanilla's `HashOps` hashes a codec's value; the Obsidian client hashes it the same way.
+- **Unloading.** When the plugin unloads, its types lose their codecs but keep their ids, and stacks keep their
+  values as saved, saving and loading them unchanged, and comparing them, so they still stack. They aren't sent to
+  clients meanwhile. Once the plugin is back, its codecs read the values again. A value saved under an identifier no
+  plugin registered since the server started is kept the same way, and read once one does.
 
 ## Entities
 

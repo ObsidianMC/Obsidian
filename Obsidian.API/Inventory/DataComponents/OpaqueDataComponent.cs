@@ -10,6 +10,9 @@ public sealed record OpaqueDataComponent(DataComponentType ComponentType, Immuta
 
     public static string GetIdentifier(DataComponentType type)
     {
+        if (Registries.DataComponentTypesRegistry.TryGet(type, out var plugin))
+            return plugin.Identifier;
+
         var name = type.ToString().ToSnakeCase();
         if ((int)type >= 79)
         {

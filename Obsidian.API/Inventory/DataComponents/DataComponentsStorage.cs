@@ -89,7 +89,9 @@ public abstract class DataComponentsStorage
     {
         this.Placeholders.Remove(type);
         this.patchOrder.Remove(type);
-        if (!this.RemoveComponents.Contains(type))
+
+        // Like vanilla's patch, only a default can be removed; a plugin's type is never an item's default.
+        if (Registries.DataComponentTypesRegistry.IsVanilla(type) && !this.RemoveComponents.Contains(type))
             this.RemoveComponents.Add(type);
 
         this.MarkChanged();

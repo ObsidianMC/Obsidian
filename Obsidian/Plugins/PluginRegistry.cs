@@ -2,6 +2,7 @@
 using Obsidian.API.Events;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Networking;
 using Obsidian.API.Plugins;
 using Obsidian.API.World.Generator;
@@ -162,8 +163,38 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         return RegisterBlockEntity(container, identifier, blocks, static () => new TBlockEntity());
     }
 
+    public PluginComponentType<TValue> RegisterComponentType<TValue>(
+        string identifier,
+        ComponentCodec<TValue> codec,
+        ComponentNetworkCodec<TValue>? networkCodec = null)
+    {
+        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+
+        return RegisterComponentType(container, identifier, codec, networkCodec);
+    }
+
     // The content registrations below are shared with the Obsidian client, which registers its mods' content the
     // same way, so that it gets the same ids as a server running the same mods.
+
+    /// <summary>
+    /// Registers <paramref name="container"/>'s data component type with its codecs.
+    /// </summary>
+    internal static PluginComponentType<TValue> RegisterComponentType<TValue>(
+        PluginContainer container,
+        string identifier,
+        ComponentCodec<TValue> codec,
+        ComponentNetworkCodec<TValue>? networkCodec)
+    {
+        CheckIdentifier(container, identifier);
+        ArgumentNullException.ThrowIfNull(codec);
+
+        var entry = DataComponentTypesRegistry.Register(identifier);
+
+        if (!DataComponentTypesRegistry.TryBind(entry, codec, networkCodec, container, () => container.IsClosing))
+            throw new InvalidOperationException($"{container.Info.Name} is unloading.");
+
+        return new PluginComponentType<TValue>(entry.Type, entry.Identifier, codec);
+    }
 
     /// <summary>
     /// Registers <paramref name="container"/>'s block entity type for its blocks, created with

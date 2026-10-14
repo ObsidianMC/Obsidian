@@ -14,8 +14,33 @@ public partial class NetworkBuffer
     private sealed record ComponentEncoding(byte[] Original, byte[] Normalized);
     private int componentDepth;
 
+    /// <summary>
+    /// The components of a stack's patch that clients get: vanilla's, and plugins' whose type has a network codec,
+    /// taken with it. Plugins' types without one are the server's own, like vanilla's components that aren't synced.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla clients can't join while a plugin's type has a network codec (see SyncedRegistries), so they never get
+    /// a plugin's component.
+    /// </remarks>
+    internal static List<DataComponent> SentPatch(ItemStack stack) =>
+    [
+        .. stack.Patch
+            .Select(component => component is PluginDataComponent plugin ? plugin.ForNetwork() : component)
+            .OfType<DataComponent>()
+    ];
+
     public DataComponent ReadDataComponent(DataComponentType type)
     {
+        // A plugin's component, read with its type's network codec and kept in its saved form. Without the codec, its
+        // bytes can't be told apart from what follows them.
+        if (DataComponentTypesRegistry.TryGet(type, out var plugin))
+        {
+            var read = plugin.Binding?.ReadNetwork
+                ?? throw new InvalidDataException($"{plugin.Identifier} isn't read from the network.");
+
+            return new PluginDataComponent(type, plugin.Identifier, read(this));
+        }
+
         var start = this.offset;
         this.SkipComponent(type);
         var bytes = this.data.AsSpan(start, this.offset - start).ToArray();
@@ -550,6 +575,10 @@ public partial class NetworkBuffer
                     this.SkipOptional(this.SkipNbt);
                     this.SkipOptional(this.SkipNbt);
                 });
+                break;
+            case var _ when DataComponentTypesRegistry.TryGet(type, out _):
+                // A plugin's component in a nested stack: its codec is the only way past it.
+                this.ReadDataComponent(type);
                 break;
             default:
                 throw new InvalidDataException($"Unknown 1.21.11 component ID {(int)type}.");
