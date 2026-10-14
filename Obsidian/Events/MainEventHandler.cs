@@ -84,6 +84,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         //Player successfully exited container
         player.OpenedContainer = null;
+        e.Container.Viewers.Remove(player);
 
         if (e.Container is not IBlockEntity blockEntity)
             return;
@@ -204,6 +205,14 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             player.LastClickedBlock = block;
 
             var type = block.Material;
+
+            if (type is Material.Campfire or Material.SoulCampfire && item is { IsAir: false, Count: > 0 } && player != null
+                && player.Level is Obsidian.WorldData.AbstractLevel campfireLevel
+                && Obsidian.WorldData.Furnaces.FurnaceRules.FindRecipe(Obsidian.API.Crafting.CraftingType.CampfireCooking, item) is not null)
+            {
+                campfireLevel.EnqueueEntityAction(() => CookOnCampfireAsync(player, campfireLevel, blockPosition, item, e.Hand));
+                return;
+            }
 
             BaseContainer? container = type switch
             {
@@ -346,6 +355,10 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     tileEntity = containerTileEntity.Clone();
 
                     await player.Level.SetBlockEntity(blockPosition, tileEntity);
+
+                    // A furnace's timers live on the object, so open the stored copy rather than the unstored one.
+                    if (tileEntity is SmeltingContainer && container is SmeltingContainer)
+                        container = (BaseContainer)tileEntity;
                 }
                 else if (tileEntity is BaseContainer tileEntityContainer)
                 {
@@ -371,6 +384,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
                     await player.Level.SetBlockEntity(blockPosition, (IBlockEntity)container);
                 }
+
+                if (container is SmeltingContainer)
+                    (player.Level as AbstractLevel)?.TrackFurnace(blockPosition);
             }
 
             await player.OpenInventoryAsync(container);

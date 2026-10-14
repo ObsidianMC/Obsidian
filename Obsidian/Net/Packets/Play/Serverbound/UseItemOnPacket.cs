@@ -104,6 +104,20 @@ public partial class UseItemOnPacket
 
         if (await TryUseMusicBlockAsync(player, handSlot, bucket, b)) return;
 
+        // Food held against a campfire is placed on it, not eaten. Sneaking skips block use, as in vanilla.
+        if (b.Material is Material.Campfire or Material.SoulCampfire && !player.Sneaking && currentItem is { IsAir: false, Count: > 0 }
+            && player.Level is AbstractLevel && Obsidian.WorldData.Furnaces.FurnaceRules.FindRecipe(Obsidian.API.Crafting.CraftingType.CampfireCooking, currentItem) is not null)
+        {
+            await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)
+            {
+                Item = currentItem,
+                Block = b,
+                BlockLocation = this.Position,
+            });
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });
+            return;
+        }
+
         if (interactableBlocks.Contains(b.Material) && !player.Sneaking)
         {
             await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)

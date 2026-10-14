@@ -30,6 +30,27 @@ internal static class BlockEntityNbt
 
                 return tag;
             }
+            case CampfireBlockEntity campfire:
+            {
+                // Vanilla CampfireBlockEntity keys: Items with their Slot, then the cooking progress and totals.
+                var tag = Header(campfire.Id, position);
+                var items = new NbtList(NbtTagType.Compound, "Items");
+                for (var slot = 0; slot < CampfireBlockEntity.SlotCount; slot++)
+                {
+                    var item = campfire.Items[slot];
+                    if (item is null || item.IsAir || item.Count <= 0)
+                        continue;
+
+                    var itemTag = item.ToNbt();
+                    itemTag.Add(new NbtTag<byte>("Slot", (byte)slot));
+                    items.Add(itemTag);
+                }
+
+                tag.Add(items);
+                tag.Add(new NbtArray<int>("CookingTimes", (int[])campfire.CookingProgress.Clone()));
+                tag.Add(new NbtArray<int>("CookingTotalTimes", (int[])campfire.CookingTotal.Clone()));
+                return tag;
+            }
             case BaseContainer container:
             {
                 // Container ids are Obsidian's own, so the id comes from the block; a container whose block is gone isn't saved.
@@ -54,6 +75,15 @@ internal static class BlockEntityNbt
                 }
 
                 tag.Add(items);
+                if (container is SmeltingContainer furnace)
+                {
+                    // Vanilla AbstractFurnaceBlockEntity keys.
+                    tag.Add(new NbtTag<short>("lit_time_remaining", furnace.FuelBurnTime));
+                    tag.Add(new NbtTag<short>("lit_total_time", furnace.FuelBurnTotal));
+                    tag.Add(new NbtTag<short>("cooking_time_spent", furnace.CookTime));
+                    tag.Add(new NbtTag<short>("cooking_total_time", furnace.CookTimeTotal));
+                }
+
                 return tag;
             }
             default:
@@ -67,9 +97,14 @@ internal static class BlockEntityNbt
     /// </summary>
     public static IBlockEntity Load(NbtCompound tag, string id, Vector position)
     {
+        if (id is "minecraft:campfire" or "minecraft:soul_campfire")
+            return LoadCampfire(tag, id, position);
+
         if (tag.HasTag("Items") && !tag.HasTag("LootTable") && CreateContainer(id, position) is BaseContainer container)
         {
             LoadContents(tag, container);
+            if (container is SmeltingContainer furnace)
+                LoadFurnaceState(tag, furnace);
             return (IBlockEntity)container;
         }
 
@@ -105,6 +140,46 @@ internal static class BlockEntityNbt
             container.CustomName = name;
             container.Title = name;
         }
+    }
+
+    private static CampfireBlockEntity LoadCampfire(NbtCompound tag, string id, Vector position)
+    {
+        var campfire = new CampfireBlockEntity { Id = id, BlockPosition = position };
+        if (tag.TryGetTag<NbtList>("Items", out var items))
+        {
+            foreach (var itemTag in items.OfType<NbtCompound>())
+            {
+                if (!itemTag.TryGetTag<NbtTag<byte>>("Slot", out var slot) || slot.Value >= CampfireBlockEntity.SlotCount)
+                    continue;
+
+                campfire.Items[slot.Value] = itemTag.ItemFromNbt();
+            }
+        }
+
+        if (tag.TryGetTag<NbtArray<int>>("CookingTimes", out var progress))
+            CopyCampfireInts(progress.GetArray(), campfire.CookingProgress);
+        if (tag.TryGetTag<NbtArray<int>>("CookingTotalTimes", out var total))
+            CopyCampfireInts(total.GetArray(), campfire.CookingTotal);
+
+        return campfire;
+    }
+
+    private static void CopyCampfireInts(int[] source, int[] destination)
+    {
+        for (var slot = 0; slot < Math.Min(source.Length, destination.Length); slot++)
+            destination[slot] = Math.Max(0, source[slot]);
+    }
+
+    private static void LoadFurnaceState(NbtCompound tag, SmeltingContainer furnace)
+    {
+        if (tag.TryGetTag<NbtTag<short>>("lit_time_remaining", out var litTime))
+            furnace.FuelBurnTime = Math.Max((short)0, litTime.Value);
+        if (tag.TryGetTag<NbtTag<short>>("lit_total_time", out var litTotal))
+            furnace.FuelBurnTotal = Math.Max((short)0, litTotal.Value);
+        if (tag.TryGetTag<NbtTag<short>>("cooking_time_spent", out var spent))
+            furnace.CookTime = Math.Max((short)0, spent.Value);
+        if (tag.TryGetTag<NbtTag<short>>("cooking_total_time", out var total))
+            furnace.CookTimeTotal = Math.Max((short)0, total.Value);
     }
 
     private static NbtCompound Header(string id, Vector position) => new()

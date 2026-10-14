@@ -35,6 +35,8 @@ public partial class MainEventHandler
 
         if (await HandleEnchantingClickAsync(args)) return;
 
+        if (HandleSmeltingClick(args)) return;
+
         if (await HandleCraftingAsync(args))
             return;
 

@@ -276,6 +276,11 @@ public sealed partial class Player : Avatar, IClientPlayer
             await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.Concat(Inventory.Skip(9).Take(36)).ToList()));
             await RefreshEnchantingAsync();
         }
+        if (container is SmeltingContainer furnace)
+        {
+            furnace.Viewers.Add(this);
+            await AbstractLevel.SendFurnaceStateAsync(furnace, false);
+        }
     }
 
     public async override ValueTask TeleportAsync(VectorD pos)
