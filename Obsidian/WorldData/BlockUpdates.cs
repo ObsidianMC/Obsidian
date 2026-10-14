@@ -234,7 +234,7 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         {
             try
             {
-                return behavior.UpdateShape(new ShapeUpdateContext
+                var updated = behavior.UpdateShape(new ShapeUpdateContext
                 {
                     Level = this,
                     Position = position,
@@ -243,6 +243,14 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
                     NeighborPosition = neighborPosition,
                     NeighborState = neighbor
                 }) ?? state;
+
+                if (updated.IsAir && !state.IsAir)
+                {
+                    this.DestroyBlock(position, dropItems: true);
+                    return state;
+                }
+
+                return updated;
             }
             catch (Exception exception)
             {

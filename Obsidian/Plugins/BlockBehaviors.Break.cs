@@ -2,6 +2,7 @@ using Obsidian.API.Blocks;
 using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.API.BlockEntities;
+using Obsidian.API.Inventory;
 using Obsidian.WorldData;
 
 namespace Obsidian.Plugins;
@@ -9,11 +10,12 @@ namespace Obsidian.Plugins;
 internal static partial class BlockBehaviors
 {
     /// <summary>Validates a plugin block's target and invokes its cancellable break hook on the level tick.</summary>
-    public static async ValueTask<bool> CancelPlayerBreakAsync(IPlayer player, Vector position, IBlock block)
+    public static async ValueTask<PlayerBreakResult> EvaluatePlayerBreakAsync(
+        IPlayer player, Vector position, IBlock block)
     {
         if (!TryEnter(block, out var behavior, out var call))
-            return HasBehavior(block)
-                || (BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out var type) && type.Binding is null);
+            return new PlayerBreakResult(HasBehavior(block)
+                || (BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out var type) && type.Binding is null), []);
 
         using (call)
         {
@@ -22,7 +24,7 @@ internal static partial class BlockBehaviors
             var end = eye + (VectorD)player.GetLookDirection() * range;
             var hit = new MobTerrain(player.Level).RaycastOutlines(eye, end);
             if (hit is null || hit.Value.Position != position)
-                return true;
+                return new PlayerBreakResult(true, []);
 
             var context = new BlockBreakContext
             {
@@ -41,6 +43,7 @@ internal static partial class BlockBehaviors
                     HookFailed(failed.Logger, exception, block.UnlocalizedName, nameof(IBlockBehavior.BreakAsync));
 
                 context.IsCancelled = true;
+                context.ExtraDrops.Clear();
             }
 
             // A second queued break must see the remaining parts, even before end-of-tick publication.
@@ -50,7 +53,11 @@ internal static partial class BlockBehaviors
                 level.RefreshBlockEntitySnapshot(entity);
             }
 
-            return context.IsCancelled;
+            return new PlayerBreakResult(context.IsCancelled,
+                context.ExtraDrops.Where(stack => !stack.IsAir && stack.Count > 0)
+                    .Select(stack => new ItemStack(stack, stack.Count)).ToArray());
         }
     }
+
+    internal sealed record PlayerBreakResult(bool IsCancelled, IReadOnlyList<ItemStack> ExtraDrops);
 }

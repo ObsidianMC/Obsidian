@@ -13,6 +13,19 @@ namespace Obsidian.API.World;
 public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
 {
     /// <summary>
+    /// Requests destruction of a loaded block on the next level tick, with optional loot and its fluid left behind.
+    /// Returns whether it was queued. A changed block or block entity cancels the request before it runs.
+    /// Player break hooks and tool checks do not run. Container removal still spills ordinary contents.
+    /// </summary>
+    public bool DestroyBlock(Vector position, bool dropItems, IEntity? breaker = null) => false;
+
+    /// <summary>
+    /// Spawns a host-owned item entity from a detached copy of stack, independent of plugin lifetime. Returns false
+    /// for an empty stack or a failed insertion. This direct helper does not apply creative or block-drop rules.
+    /// </summary>
+    public bool SpawnItem(VectorD position, Inventory.ItemStack stack) => false;
+
+    /// <summary>
     /// Lights an empty registered frame containing position (an interior block).
     /// Item/block callbacks may call this to implement their own ignition rules.
     /// </summary>

@@ -253,6 +253,13 @@ internal sealed class PluginServer(Server server, PluginContainer plugin, IServi
 
     public void RegisterRecipes(params IRecipe[] recipes) => server.RegisterRecipes(recipes, plugin);
 
+    public long CraftingRecipeRevision => server.CraftingRecipeRevision;
+
+    public CraftingEvaluation? EvaluateCrafting(IReadOnlyList<API.Inventory.ItemStack?> grid, int width) =>
+        server.EvaluateCrafting(grid, width);
+
+    public IRecipe? GetRecipe(string identifier) => server.GetRecipe(identifier);
+
     public TRecipe? FindRecipe<TRecipe>(RecipeType<TRecipe> type, IReadOnlyList<API.Inventory.ItemStack?> inputs)
         where TRecipe : class => server.FindRecipe(type, inputs);
 

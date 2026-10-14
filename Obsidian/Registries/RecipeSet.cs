@@ -12,6 +12,10 @@ namespace Obsidian.Registries;
 /// </summary>
 internal sealed class RecipeSet
 {
+    private static long nextRevision;
+
+    internal long Revision { get; } = System.Threading.Interlocked.Increment(ref nextRevision);
+
     public static readonly RecipeSet Empty = new(FrozenDictionary<string, IRecipe>.Empty, []);
 
     private readonly FrozenDictionary<int, List<IRecipeWithResult>> craftingRecipes;
@@ -124,7 +128,45 @@ internal sealed class RecipeSet
     /// </summary>
     public IRecipeWithResult? FindRecipe(BaseContainer grid, int width)
     {
-        var occupiedSlots = Enumerable.Range(1, width * width)
+        return this.FindCraftingRecipe(Enumerable.Range(1, width * width).Select(slot => grid[slot]).ToArray(), width);
+    }
+
+    /// <summary>Evaluates caller-owned copies against this single snapshot.</summary>
+    internal CraftingEvaluation? EvaluateCrafting(IReadOnlyList<ItemStack?> grid, int width)
+    {
+        ArgumentNullException.ThrowIfNull(grid);
+        if (width is not (2 or 3) || grid.Count != width * width)
+            throw new ArgumentException("A crafting grid must contain width squared slots, with width 2 or 3.");
+
+        var inputs = grid.Select(item => item is null ? null : new ItemStack(item, item.Count)).ToArray();
+        var recipe = this.FindCraftingRecipe(inputs, width);
+        if (recipe?.Result.FirstOrDefault() is not ItemStack output)
+            return null;
+
+        var consumed = inputs.Select(item => item.IsNullOrAir() || item!.Count <= 0 ? 0 : 1).ToArray();
+        var remainders = inputs.Select(CraftingRemainder).ToArray();
+        return new CraftingEvaluation(new ItemStack(output, output.Count), recipe.Identifier,
+            Array.AsReadOnly(consumed), Array.AsReadOnly(remainders), this.Revision);
+    }
+
+    /// <summary>Vanilla CraftingRecipe.getRemainingItems, shared with result-slot consumption.</summary>
+    internal static ItemStack? CraftingRemainder(ItemStack? ingredient)
+    {
+        if (ingredient.IsNullOrAir() || ingredient!.Count <= 0)
+            return null;
+
+        return ingredient.Holder.Id switch
+        {
+            ItemIds.MilkBucket or ItemIds.WaterBucket or ItemIds.LavaBucket
+                => new ItemStack(ItemsRegistry.Bucket, 1),
+            ItemIds.HoneyBottle => new ItemStack(ItemsRegistry.GlassBottle, 1),
+            _ => null
+        };
+    }
+
+    private IRecipeWithResult? FindCraftingRecipe(IReadOnlyList<ItemStack?> grid, int width)
+    {
+        var occupiedSlots = Enumerable.Range(0, width * width)
             .Where(slot => !grid[slot].IsNullOrAir() && grid[slot]!.Count > 0)
             .ToList();
         if (occupiedSlots.Count == 0)
@@ -133,10 +175,10 @@ internal sealed class RecipeSet
         if (!this.craftingRecipes.TryGetValue(occupiedSlots.Count, out var candidates))
             return null;
 
-        int minX = occupiedSlots.Min(slot => (slot - 1) % width);
-        int minY = occupiedSlots.Min(slot => (slot - 1) / width);
-        int maxX = occupiedSlots.Max(slot => (slot - 1) % width);
-        int maxY = occupiedSlots.Max(slot => (slot - 1) / width);
+        int minX = occupiedSlots.Min(slot => slot % width);
+        int minY = occupiedSlots.Min(slot => slot / width);
+        int maxX = occupiedSlots.Max(slot => slot % width);
+        int maxY = occupiedSlots.Max(slot => slot / width);
         var items = occupiedSlots.Select(slot => grid[slot]!).ToList();
 
         foreach (var recipe in candidates)
@@ -186,7 +228,7 @@ internal sealed class RecipeSet
     }
 
     private static bool MatchesShaped(
-        BaseContainer grid,
+        IReadOnlyList<ItemStack?> grid,
         int width,
         int minX,
         int minY,
@@ -199,7 +241,7 @@ internal sealed class RecipeSet
             for (int x = 0; x < row.Length; x++)
             {
                 char symbol = row[mirrored ? row.Length - x - 1 : x];
-                var item = grid[1 + (minY + y) * width + minX + x];
+                var item = grid[(minY + y) * width + minX + x];
                 if (symbol == ' ')
                 {
                     if (!item.IsNullOrAir() && item!.Count > 0)

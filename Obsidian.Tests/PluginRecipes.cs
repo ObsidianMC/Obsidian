@@ -38,6 +38,67 @@ namespace Obsidian.Tests;
 public sealed class PluginRecipes
 {
     [Fact]
+    public async Task CraftingEvaluationOwnsItsStacksAndTracksRecipeChanges()
+    {
+        await using var context = TestServerFactory.CreateServer($"craft-evaluation-{Guid.NewGuid():N}");
+        IServer server = context.Server;
+        ItemStack?[] grid =
+        [
+            new(ItemsRegistry.MilkBucket, 1),
+            new(ItemsRegistry.MilkBucket, 1),
+            new(ItemsRegistry.MilkBucket, 1),
+            new(ItemsRegistry.Sugar, 2),
+            new(ItemsRegistry.Egg, 2),
+            new(ItemsRegistry.Sugar, 2),
+            new(ItemsRegistry.Wheat, 2),
+            new(ItemsRegistry.Wheat, 2),
+            new(ItemsRegistry.Wheat, 2)
+        ];
+        var result = Assert.IsType<CraftingEvaluation>(server.EvaluateCrafting(grid, 3));
+        Assert.Equal("cake", result.RecipeIdentifier);
+        Assert.True(result.Output.Is(ItemsRegistry.Cake));
+        Assert.Equal(1, result.Output.Count);
+        Assert.All(result.ConsumedCounts, count => Assert.Equal(1, count));
+        Assert.All(result.Remainders.Take(3), stack =>
+        {
+            Assert.True(stack!.Is(ItemsRegistry.Bucket));
+            Assert.Equal(1, stack.Count);
+        });
+        Assert.All(result.Remainders.Skip(3), Assert.Null);
+        Assert.Equal(2, grid[3]!.Count);
+        Assert.Equal(server.CraftingRecipeRevision, result.RecipeRevision);
+
+        // Both the evaluation and identifier lookup are detached, including a lookup's result stacks.
+        result.Output.Count = 17;
+        result.Remainders[0]!.Count = 17;
+        var recipe = Assert.IsType<ShapedRecipe>(server.GetRecipe(result.RecipeIdentifier));
+        recipe.Result.First().Count = 17;
+        var again = Assert.IsType<CraftingEvaluation>(server.EvaluateCrafting(grid, 3));
+        Assert.Equal(1, again.Output.Count);
+        Assert.Equal(1, again.Remainders[0]!.Count);
+        grid[4] = null;
+        Assert.Null(server.EvaluateCrafting(grid, 3));
+        Assert.Null(server.GetRecipe("probe:missing"));
+
+        var plugin = Plugin();
+        var custom = Shaped($"probe:evaluation_{Guid.NewGuid():N}");
+        try
+        {
+            context.Server.RegisterRecipes([custom], plugin);
+            Assert.NotEqual(result.RecipeRevision, server.CraftingRecipeRevision);
+            Assert.NotNull(server.GetRecipe(custom.Identifier));
+            var registeredRevision = server.CraftingRecipeRevision;
+            plugin.UndoHostAdditions();
+            Assert.NotEqual(registeredRevision, server.CraftingRecipeRevision);
+            Assert.Null(server.GetRecipe(custom.Identifier));
+        }
+        finally
+        {
+            plugin.UndoHostAdditions();
+        }
+    }
+
+    [Fact]
     public void UpdateRecipesUsesVanillaPropertyListsAndStonecutterDisplays()
     {
         var recipes = RecipesRegistry.Current;

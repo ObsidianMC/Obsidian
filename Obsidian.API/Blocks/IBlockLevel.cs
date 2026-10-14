@@ -53,6 +53,17 @@ public interface IBlockLevel : ISignalReader
     public bool RemoveBlock(Vector position);
 
     /// <summary>
+    /// Requests destruction of a loaded block, optionally with loot, leaving its fluid. The host queues the whole
+    /// transaction to the level tick to collect block entity components safely. Returns whether it was queued;
+    /// replacing the block or its block entity before execution cancels it. Does not call the player break hook.
+    /// </summary>
+    public bool DestroyBlock(Vector position, bool dropItems, IEntity? breaker = null) =>
+        this.Level.DestroyBlock(position, dropItems, breaker);
+
+    /// <summary>Spawns a host-owned item entity from a detached copy; it survives plugin unloading.</summary>
+    public bool SpawnItem(VectorD position, Inventory.ItemStack stack) => this.Level.SpawnItem(position, stack);
+
+    /// <summary>
     /// Schedules a tick of <paramref name="block"/>'s block at <paramref name="position"/> in <paramref name="delay"/>
     /// game ticks, unless one is scheduled there already, like vanilla's <c>scheduleTick</c>. It runs if that block is
     /// still there then.

@@ -104,6 +104,20 @@ public interface IServer : IDisposable
     /// </exception>
     public void RegisterRecipes(params IRecipe[] recipes);
 
+    /// <summary>The current recipe snapshot's process-local revision, changing whenever it is replaced.</summary>
+    public long CraftingRecipeRevision => 0;
+
+    /// <summary>
+    /// Evaluates a square crafting grid of width 2 or 3, without changing its stacks. Uses the same recipes and
+    /// matching as the player's grid and crafting table. Returns null when nothing matches.
+    /// </summary>
+    public CraftingEvaluation? EvaluateCrafting(IReadOnlyList<ItemStack?> grid, int width) => null;
+
+    /// <summary>
+    /// Gets a detached built-in recipe by its identifier, or null. Custom plugin recipe types use GetRecipes.
+    /// </summary>
+    public IRecipe? GetRecipe(string identifier) => null;
+
     /// <summary>
     /// Finds the first matching recipe of a plugin's type in the current set, by lexical recipe identifier.
     /// Returns null when none matches or the type is unloaded. Do not retain a result across reloads.

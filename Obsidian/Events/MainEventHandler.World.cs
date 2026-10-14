@@ -48,7 +48,9 @@ public partial class MainEventHandler
             return;
         }
 
-        if (await Plugins.BlockBehaviors.CancelPlayerBreakAsync(player, location, block))
+        var hook = await Plugins.BlockBehaviors.EvaluatePlayerBreakAsync(player, location, block);
+        SpawnExtraDrops(world, player, location, hook.ExtraDrops);
+        if (hook.IsCancelled)
         {
             current = await world.GetBlockAsync(location) ?? BlocksRegistry.Air;
             await RestoreBreakAsync(player, world, location, current);
@@ -210,5 +212,16 @@ public partial class MainEventHandler
         var f = Globals.Random.NextSingle();
 
         return f * 0.1f;
+    }
+
+    private static void SpawnExtraDrops(
+        ILevel world, IPlayer player, Vector position, IReadOnlyList<ItemStack> drops)
+    {
+        if (player.GameMode is GameMode.Creative or GameMode.Spectator
+            || !world.LevelData.GetBooleanRule("block_drops", true))
+            return;
+
+        foreach (var stack in drops)
+            world.SpawnItem((VectorD)position + 0.5, stack);
     }
 }

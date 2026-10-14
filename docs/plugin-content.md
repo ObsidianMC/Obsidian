@@ -86,7 +86,7 @@ public sealed class PipeBehavior : IBlockBehavior
     {
         // It breaks when the block below it goes.
         if (context.Level.GetBlock(context.Position + Vector.Down).IsAir)
-            context.Level.RemoveBlock(context.Position);
+            context.Level.DestroyBlock(context.Position, dropItems: true);
     }
 
     public void Tick(BlockContext context) => context.Level.ScheduleTick(context.Position, context.State, delay: 4);
@@ -107,7 +107,7 @@ A block's `Behavior` gets vanilla's block hooks; each defaults to doing nothing:
   replaced), like vanilla's `neighborChanged`.
 - `UpdateShape`: the block's state after the neighbour in `Direction` became `NeighborState`, like vanilla's
   `updateShape`: a fence's connections, or air for a block that lost its support, which destroys it (leaving the
-  fluid it held, without drops).
+  fluid it held, with drops on the next level tick).
 - `Tick`: a tick scheduled for the block came due, like vanilla's `tick`.
 - `RandomTick`: a random tick, like vanilla's `randomTick`, for blocks registered with `RandomlyTicks = true`. Random
   ticks reach sections near players like vanilla's (see [Saplings](#saplings)): at the default speed, each block
@@ -115,7 +115,7 @@ A block's `Behavior` gets vanilla's block hooks; each defaults to doing nothing:
 - `EntityInsideAsync` and `SteppedOnAsync`: each tick an entity's box overlaps the block, or the entity stands on it.
 
 The hooks with a `Level` run synchronously while the level's block updates wait for them, like vanilla's: read and
-change blocks through that `IBlockLevel` (`GetBlock`, `SetBlock`, `RemoveBlock`, `ScheduleTick`,
+change blocks through that `IBlockLevel` (`GetBlock`, `SetBlock`, `RemoveBlock`, `DestroyBlock`, `ScheduleTick`,
 `HasScheduledTick`, `UpdateNeighbors`, its [redstone](#redstone) signals and the level's `Random`), not through
 `ILevel`'s asynchronous methods, and keep them short. Neighbour and shape updates triggered inside another neighbour
 or shape callback wait until that callback returns, in vanilla's order. Placement and removal callbacks
@@ -335,6 +335,22 @@ Obsidian.MSBuild gives the data folder's files to the generator; without it, add
 as `AdditionalFiles`.
 
 ## Block drops
+
+`IBlockLevel.DestroyBlock(Vector position, bool dropItems, IEntity? breaker = null)` and the same method on
+`ILevel` request a host-owned destruction transaction. Use it when a block loses its support; `RemoveBlock` still
+removes without block loot. The request returns true when queued, false for air, an unavailable chunk or an already
+pending request. It runs on the next level tick, verifying the original state and block entity first; replacing
+either cancels it. It leaves the block's fluid behind, removes two-part partners once, and uses ordinary block loot
+with an empty tool, without the player's harvesting check or `BreakAsync`. `breaker` supplies the loot entity and
+game event source, independently of game mode. Loot respects `block_drops`. Ordinary containers still spill their
+contents through removal even with `dropItems: false`; shulker contents go into their box item when loot is enabled.
+Plugin `CollectComponents` runs only in the serial tick transaction. Failed loot evaluation is logged and keeps the
+block. A plugin's `UpdateShape` returning air uses this path too; the block remains until that queued break runs.
+
+`IBlockLevel.SpawnItem(VectorD position, ItemStack stack)` and `ILevel.SpawnItem` immediately spawn a host-owned item
+entity from a detached copy, returning whether it was inserted (empty stacks return false). The item survives
+plugin unloading. Direct calls apply neither creative suppression nor `block_drops`; use the break context's
+`ExtraDrops` for drops belonging to a player's break. Positions must have finite coordinates.
 
 Blocks use vanilla loot tables when players break them and when explosions destroy them. Vanilla's blocks use their
 declared table, including aliases such as wall torches using the torch table. A plugin block `ruby:ore` uses
@@ -1246,12 +1262,19 @@ acknowledgement, state correction and retained block entity data on cancellation
 the resulting break transaction run together on the level's tick, in turn with block entity callbacks, inside a
 call into the plugin. The outline ray starts at the player's pose- and scale-dependent eye position.
 
+Add the removed part's stack to `BlockBreakContext.ExtraDrops`. The host copies the stacks when the hook finishes
+and spawns them in that break transaction, including on cancellation. Creative and spectator attempts and disabled
+`block_drops` suppress these extra drops. Their item entities belong to the host and survive plugin unloading;
+subsequent changes to stacks the hook retained do not change them. An exception discards the extra drops and
+cancels the break. The list adds to ordinary loot when the host block is removed.
+
 ```csharp
 public async ValueTask BreakAsync(BlockBreakContext context)
 {
     if (await context.Player.Level.GetBlockEntityAsync(context.Hit.Position) is CableBus cable
-        && cable.RemovePart(context.Hit.BoxIndex))
+        && cable.RemovePart(context.Hit.BoxIndex) is ItemStack removed)
     {
+        context.ExtraDrops.Add(removed);
         cable.SetChanged();
         cable.SendUpdate();
         context.IsCancelled = true;
@@ -1802,6 +1825,26 @@ know yet. This check also applies during the initial join if content changed dur
 vanilla recipes first and the rest after reconfiguration. A failed delivery does not stop other players syncing;
 the next recipe change retries the affected player. Recipes are made of items, so a vanilla client sees a plugin's
 recipes of vanilla items.
+
+### Crafting evaluation
+
+`IServer.EvaluateCrafting(IReadOnlyList<ItemStack?> grid, int width)` evaluates one craft from a square grid of
+width 2 or 3. Pass exactly `width * width` slots in row-major order, without a result slot; null and empty stacks
+are empty inputs. It copies the inputs and never changes them. Invalid dimensions throw `ArgumentException`.
+It uses the current server recipe snapshot and the player's shaped/shapeless matcher, including offsets,
+mirroring and overlapping ingredients; null means no match. Special recipes are not implemented by that matcher.
+
+The detached `CraftingEvaluation` contains `Output`, `RecipeIdentifier`, `ConsumedCounts`, `Remainders` and
+`RecipeRevision`. Counts and remainders use the original slot indexes and describe one craft: one item per occupied
+slot, with bucket and bottle remainders shared with the player's result-slot consumption. The caller owns these
+stacks. Compare `RecipeRevision` with `IServer.CraftingRecipeRevision` to invalidate cached patterns after a recipe
+change; revisions are process-local and are not save identifiers. Evaluation does not reserve ingredients or
+commit a menu transaction; the caller must validate its inventory and revision when committing.
+
+`IServer.GetRecipe(string identifier)` returns a detached copy of a built-in recipe descriptor by its existing
+identifier, or null. Vanilla's current identifiers are unqualified (for example `cake`); plugin recipes retain
+their namespace. This lookup includes cooking and other built-in descriptors; custom plugin recipe values still
+use `GetRecipes(type)`. Unloading or reloading a recipe's plugin changes the snapshot revision and lookup results.
 
 ### Custom recipe types
 
