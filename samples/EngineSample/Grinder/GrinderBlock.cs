@@ -1,5 +1,6 @@
 using Obsidian.API;
 using Obsidian.API.Blocks;
+using Obsidian.API.Client;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
@@ -13,7 +14,9 @@ namespace EngineSample.Grinder;
 /// container above, grinds them by <c>sample:grinding</c> recipes (<see cref="GrindingRecipe"/>, read from
 /// <c>data/sample/recipe/grinding/</c>) and pushes the results into whatever is below, stamped with the grinder that
 /// made them (<see cref="GroundBy"/>). Breaking it drops it through its loot table and its items as a container's.
-/// Using it opens its menu (<see cref="GrinderMenu"/>).
+/// Using it opens its menu (<see cref="GrinderMenu"/>). On the client, its model is
+/// <c>assets/sample/models/block/grinder.json</c>, and a block entity renderer spins its wheel while it grinds (see
+/// <see cref="RegisterClient"/>).
 /// </summary>
 /// <remarks>
 /// What it registers is held in statics of the plugin's own: a reload loads a new copy of the plugin, which registers
@@ -22,6 +25,9 @@ namespace EngineSample.Grinder;
 public sealed class GrinderBlock : IBlockBehavior
 {
     public const string Identifier = "sample:grinder";
+
+    // The wheel its renderer spins: assets/sample/models/part/grinder_wheel.json.
+    private const string WheelModel = "sample:part/grinder_wheel";
 
     /// <summary>
     /// The registered block, whose item the block's properties give it by default.
@@ -61,12 +67,31 @@ public sealed class GrinderBlock : IBlockBehavior
         Block = registry.RegisterBlock(Identifier, new BlockProperties
         {
             Hardness = 3.5f,
+
+            // Its model is lower than a block, with its wheel on top, so it doesn't hide its neighbours' faces.
+            Opaque = false,
             Behavior = new GrinderBlock()
         });
         registry.RegisterBlockEntity<GrinderBlockEntity>(Identifier, Block);
 
         // Its menu's two slots, the input and the output, in a row.
         Menu = registry.RegisterMenu(GrinderMenu.Identifier, rows: 1, columns: 2);
+    }
+
+    /// <summary>
+    /// Registers the grinder's client side: its wheel, drawn by a block entity renderer on top of the block's model,
+    /// spinning about its centre while the grinder grinds. The block entity's update data says since when (see
+    /// <see cref="GrinderBlockEntity.GetUpdateData"/>); the client turns the wheel each frame from that, without
+    /// calling the mod.
+    /// </summary>
+    /// <param name="registry">The registry <c>ConfigureClient</c> is given.</param>
+    public static void RegisterClient(IClientRegistry registry)
+    {
+        registry.RegisterBlockEntityRenderer(Identifier, new BlockEntityRendererProperties
+        {
+            Models = [WheelModel],
+            Provider = (data, block) => [Wheel(data)]
+        });
     }
 
     /// <summary>
@@ -81,6 +106,18 @@ public sealed class GrinderBlock : IBlockBehavior
 
         return true;
     }
+
+    // The wheel, still, or turning half a turn a second (9 degrees a tick) about the vertical axis through the
+    // block's centre from the game tick it started grinding.
+    private static BlockEntityRenderPart Wheel(IReadOnlyDictionary<string, object?> data) =>
+        data.TryGetValue("working_since", out var value) && value is long since
+            ? new BlockEntityRenderPart
+            {
+                Model = new BlockModelPart(WheelModel),
+                Speed = 9,
+                Since = since
+            }
+            : new BlockEntityRenderPart { Model = new BlockModelPart(WheelModel) };
 
     // Saved as vanilla saves a block position: an int array of x, y and z.
     private static INbtTag SavePosition(Vector position) =>

@@ -10,7 +10,8 @@ namespace EngineSample.Grinder;
 /// <summary>
 /// The grinder's block entity: a container with an input slot and an output slot, the ticks spent grinding the input
 /// and whether it pulls from above, saved with its chunk. Each tick it pulls an item it can grind from the container
-/// above (unless its menu's button turned that off), grinds, and pushes what it made into whatever is below.
+/// above (unless its menu's button turned that off), grinds, and pushes what it made into whatever is below. Clients
+/// are told when it grinds, and spin its wheel meanwhile.
 /// </summary>
 /// <remarks>
 /// Other blocks reach its slots too, through item access: the top and sides reach the input, which takes only what
@@ -33,6 +34,10 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
     // Changed by a click in the grinder's menu, on the player's thread, and read on the level's tick: a field written
     // whole, which the tick sees once it's set.
     private volatile bool pulls = true;
+
+    // The level's game time when it started grinding, or null while it isn't: what clients spin its wheel from (see
+    // GetUpdateData). Not saved: the first tick after loading works it out again.
+    private long? workingSince;
 
     /// <summary>
     /// The ticks spent grinding the input's item, up to its recipe's time.
@@ -128,8 +133,9 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
         if (this.pulls)
             this.Pull(level, own);
 
-        this.Grind();
+        var working = this.Grind();
         this.Push(level, own);
+        this.ShowWorking(level, working);
 
         return ValueTask.CompletedTask;
     }
@@ -163,13 +169,13 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
     }
 
     // Grinds the input's item a tick further. Once its recipe's time is up and the output has room, one of it turns
-    // into the recipe's result; until then it waits at full progress.
-    private void Grind()
+    // into the recipe's result; until then it waits at full progress. Returns whether it ground this tick.
+    private bool Grind()
     {
         // Selection and conversion share the menu's lock: neither slot can change between the two.
         using var held = this.LockInventory();
         if (held is null)
-            return;
+            return false;
 
         var item = this.Inventory[InputSlot];
         var recipe = item is { IsAir: false, Count: > 0 } ? this.FindRecipe(item) : null;
@@ -184,12 +190,14 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
         if (recipe is null)
         {
             this.SetProgress(0);
-            return;
+            return false;
         }
 
+        // Waiting at full progress for room in the output isn't grinding.
+        var ground = this.progress < recipe.Time;
         this.SetProgress(Math.Min(this.progress + 1, recipe.Time));
         if (this.progress < recipe.Time)
-            return;
+            return ground;
 
         var result = new ItemStack(recipe.Result, recipe.Count);
         result.Set(GrinderBlock.GroundBy, this.BlockPosition);
@@ -199,13 +207,41 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
         if (result.Count > result.MaxStackSize
             || !empty && (!existing!.Equals(result) || existing.Count > result.MaxStackSize - result.Count))
         {
-            return;
+            return ground;
         }
 
         // Consume the ingredient we matched before publishing its result, still under the same lock.
         this.Inventory.SetItem(InputSlot, item!.Count > 1 ? new ItemStack(item, item.Count - 1) : null);
         this.Inventory.SetItem(OutputSlot, new ItemStack(result, result.Count + (empty ? 0 : existing!.Count)));
         this.SetProgress(0);
+
+        return true;
+    }
+
+    // Phase 4: tells watching players when the grinder starts or stops grinding; their client spins its wheel
+    // meanwhile. The update says from which tick, so the client turns the wheel each frame without hearing from the
+    // server again.
+    private void ShowWorking(ILevel level, bool working)
+    {
+        if (working == this.workingSince.HasValue)
+            return;
+
+        this.workingSince = working ? level.Time : null;
+        this.SendUpdate();
+    }
+
+    /// <summary>
+    /// What clients get, with the chunk and from <see cref="BlockEntity.SendUpdate"/>: while it grinds,
+    /// <c>working_since</c>, the level's game time when it started, which the client mod's renderer spins the wheel
+    /// from. It's a compound even while idle, so that the client draws the wheel as soon as the grinder is placed.
+    /// </summary>
+    protected override NbtCompound? GetUpdateData()
+    {
+        var data = new NbtCompound();
+        if (this.workingSince is long since)
+            data.Add(new NbtTag<long>("working_since", since));
+
+        return data;
     }
 
     // Pushes as much of the output as fits into whatever is below, through its top face.

@@ -295,6 +295,11 @@ public sealed partial class SamplePlugin : IDisposable
         Assert.Equal(3, Count(world, machine, ItemsRegistry.IronOre));
         Assert.Equal(10, Saved(world, machine).GetInt("progress"));
 
+        // Phase 4: clients are told it's grinding, and since which tick, to spin its wheel; once it's done, that it
+        // stopped.
+        var grinding = Assert.IsAssignableFrom<BlockEntity>(await world.GetBlockEntityAsync(machine));
+        Assert.True(grinding.ClientData!.HasTag("working_since"));
+
         // Its recipe, data/sample/recipe/grinding/iron_ore.json, grinds each ore into two raw iron over 20 ticks,
         // which it pushes into the hopper, stamped with where they were ground. Nothing is lost or made twice.
         for (var tick = 10; tick < 70; tick++)
@@ -307,8 +312,9 @@ public sealed partial class SamplePlugin : IDisposable
             [chest, machine, hopper],
             position => Assert.Equal(0, Count(world, position, ItemsRegistry.IronOre)));
         Assert.Equal(0, Saved(world, machine).GetInt("progress"));
+        Assert.False(grinding.ClientData!.HasTag("working_since"));
 
-        var ground = world.GetItemAccess(hopper, side: null)!.GetItem(0)!.ToNbt();
+        var ground =world.GetItemAccess(hopper, side: null)!.GetItem(0)!.ToNbt();
         Assert.True(ground.TryGetTag<NbtCompound>("components", out var components));
         Assert.True(components.TryGetTag<NbtArray<int>>("sample:ground_by", out var groundBy));
         Assert.Equal([machine.X, machine.Y, machine.Z], groundBy.GetArray());
@@ -380,6 +386,58 @@ public sealed partial class SamplePlugin : IDisposable
         await world.DoWorldTickAsync();
         Assert.Equal(1, Saved(world, machine).GetInt("progress"));
         Assert.Equal(1, Count(world, machine, ItemsRegistry.IronOre));
+    }
+
+    [Fact(DisplayName = "Phase 4: cables connect to the cables, grinder and chests beside them, and players ride the "
+        + "moth", Timeout = TestServerFactory.TestTimeout)]
+    public async Task CableAndMoth()
+    {
+        await using var context = TestServerFactory.CreateServer($"sample-{Guid.NewGuid():N}");
+        var world = context.World;
+        await BlockUpdates.AddChunksAsync(world);
+        world.LevelData.GameRules["spawn_mobs"] = "false";
+        var player = await WorldBlockEntities.JoinAsync(context);
+
+        await using var manager = BlockUpdates.CreatePluginManager(context);
+        Assert.NotNull(await manager.LoadPluginAsync(await this.PackSampleAsync()));
+        Assert.True(BlocksRegistry.TryGetPluginBlock("sample:cable", out var cable));
+        Assert.True(BlocksRegistry.TryGetPluginBlock("sample:grinder", out var grinder));
+
+        // The sides a cable connects on, from its state.
+        string[] Connected(Vector position)
+        {
+            var state = world.GetLoadedChunk(0, 0)!.GetBlock(position);
+            Assert.True(cable.Is(state));
+            string[] sides = ["north", "south", "east", "west", "up", "down"];
+
+            return [.. sides.Where(side => cable.GetValue(state, side) == "true")];
+        }
+
+        // A cable a player places north of a grinder connects to it, and one placed west of that to the first, which
+        // connects back.
+        var machine = new Vector(4, BlockUpdates.Ground + 1, 4);
+        var first = machine + Vector.North;
+        var second = first + Vector.West;
+        await world.SetBlockAsync(machine, grinder.DefaultState);
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(cable.Item!, 2));
+        await BlockUpdates.UseOn(first + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
+        await BlockUpdates.UseOn(second + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
+
+        Assert.Equal(["south", "west"], Connected(first));
+        Assert.Equal(["east"], Connected(second));
+
+        // Neighbours changing update them: a chest set beside one connects, and the grinder's going disconnects.
+        await world.SetBlockAsync(second + Vector.North, BlocksRegistry.Chest, BlockUpdateFlags.All);
+        await world.SetBlockAsync(machine, BlocksRegistry.Air, BlockUpdateFlags.All);
+
+        Assert.Equal(["west"], Connected(first));
+        Assert.Equal(["north", "east"], Connected(second));
+
+        // Using the moth seats the player on it.
+        Assert.True(EntityDefinitionsRegistry.TryGet("sample:moth", out var moth));
+        var mob = Assert.IsType<PluginMob>(world.SpawnEntity(player.Position + new VectorD(0, 0, 2), moth));
+        Assert.True(await mob.InteractAsync(player, InteractionHand.MainHand));
+        Assert.Same(mob, ((IPlayer)player).Vehicle);
     }
 
     // The data slots the client was sent, by index, with the last value sent.

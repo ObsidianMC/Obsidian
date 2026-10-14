@@ -1,0 +1,20 @@
+{
+  "textures": {
+    "particle": "minecraft:block/cut_copper",
+    "core": "minecraft:block/cut_copper"
+  },
+  "elements": [
+    {
+      "from": [5, 5, 5],
+      "to": [11, 11, 11],
+      "faces": {
+        "down": { "uv": [5, 5, 11, 11], "texture": "#core" },
+        "up": { "uv": [5, 5, 11, 11], "texture": "#core" },
+        "north": { "uv": [5, 5, 11, 11], "texture": "#core" },
+        "south": { "uv": [5, 5, 11, 11], "texture": "#core" },
+        "west": { "uv": [5, 5, 11, 11], "texture": "#core" },
+        "east": { "uv": [5, 5, 11, 11], "texture": "#core" }
+      }
+    }
+  ]
+}

@@ -322,6 +322,19 @@ mob's equipment.
 **Where to start:** client prediction in `VehicleControl` for plugin types, driven like a horse or a happy ghast from
 the type's movement mode and speeds, with the server reading `MoveVehicle` from the controlling rider.
 
+## Plugin block shapes by state
+
+**Status:** open. A plugin block's collision and outline come from its block entity (`BlockEntity.GetShapes`, with
+`RegisterBlockEntityShapes` on the client) or are a full block. A block without a block entity can't give each
+state a shape of its own, as vanilla's fences, walls and panes do from their connections, so the engine sample's
+cable (`sample:cable`), whose connections are block state properties, collides and is outlined as a full block
+while its model is thin.
+
+**Where to start:** a `BlockProperties` shape function of a state's property values, asked once per state as the
+block registers (like `StateLightEmission`), so that both sides, which both run `ConfigureRegistry`, get the same
+shapes; the server's collision, navigation and outline raycasts and the client's picking and player collision then
+read it where they read a block entity's published shapes.
+
 ## Block entity data on items
 
 **Status:** partly done. A plugin's block entity keeps its data on its block's item (`BlockEntity.CollectComponents`

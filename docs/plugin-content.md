@@ -3055,7 +3055,9 @@ in the provider call. Malformed declared parts are cached as failures and fall b
 discarding the section's mesh. Each new update meshes the block's section again. The provider sees only its own
 block: a model that follows its neighbours, like a cable connecting to them, has the server work out the connections,
 put them in `GetUpdateData` (or in block state properties) and
-`SendUpdate` when they change, as the shapes do.
+`SendUpdate` when they change, as the shapes do. Connections alone need no block entity: the engine sample's cable
+(`samples/EngineSample`) keeps them in block state properties, set by its `GetStateForPlacement` and `UpdateShape`
+hooks, and its multipart blockstate draws an arm for each.
 
 ```csharp
 string[] sides = ["north", "east", "south", "west"];

@@ -1,4 +1,6 @@
+using EngineSample.Cable;
 using EngineSample.Grinder;
+using EngineSample.Moth;
 using EngineSample.TickCounter;
 using Obsidian.API.Client;
 using Obsidian.API.Plugins;
@@ -35,6 +37,11 @@ public sealed class EngineSamplePlugin : PluginBase, IClientPlugin
         // of its own, and pushes the results into a hopper. Phase 3 gives it a menu.
         GrinderBlock.Register(registry);
 
+        // Phase 4, rendering: a cable whose model follows its neighbours through its block state, and a mob that
+        // flies, can be ridden and has glowing eyes. The grinder's wheel spins on the client (see ConfigureClient).
+        CableBlock.Register(registry);
+        MothMob.Register(registry);
+
         // Phase 5: state shared by a network rather than owned by one block entity.
         this.SavedState = new SavedState(registry);
     }
@@ -45,5 +52,10 @@ public sealed class EngineSamplePlugin : PluginBase, IClientPlugin
         // screen built in code, which registers with RegisterMenuScreen(GrinderMenu.Identifier, menu => new
         // GrinderScreen(menu)).
         registry.RegisterMenuScreen<GrinderView>(GrinderMenu.Identifier);
+
+        // Phase 4, rendering: the grinder's wheel spins while it grinds, and the moth is drawn with glowing eyes. The
+        // cable needs no code: its multipart blockstate draws it from its state.
+        GrinderBlock.RegisterClient(registry);
+        MothMob.RegisterClient(registry);
     }
 }

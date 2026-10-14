@@ -23,11 +23,11 @@
 		<ProjectReference Include="..\..\Obsidian.Nbt\Nbt\Obsidian.Nbt.csproj" Private="false" />
 	</ItemGroup>
 
-	<!-- What a plugin archive holds besides the assembly: its metadata and its data pack files. -->
+	<!-- What a plugin archive holds besides the assembly: its metadata, its data pack files and its client assets. -->
 	<ItemGroup>
 		<None Include="obsidian.mod.json" CopyToOutputDirectory="PreserveNewest" />
 		<None Include="data\**\*.json" CopyToOutputDirectory="PreserveNewest" />
-		<None Include="assets\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="assets\**\*.json;assets\**\*.png" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 </Project>

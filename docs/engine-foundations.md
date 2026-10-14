@@ -129,6 +129,8 @@ its client side, by the client's tests)
 
 **Sample:** the machine's block entity spins a part while working; a cable block's model follows its neighbours;
 a mod entity glows and can be ridden.
+(done: `samples/EngineSample`, its grinder's wheel, its cable and its moth, loaded by `Obsidian.Tests/SamplePlugin.cs`
+and, with its client side, by the client's tests)
 
 ## Phase 5: world, players and entities
 
