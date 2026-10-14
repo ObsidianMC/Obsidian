@@ -122,8 +122,8 @@ public abstract class BlockEntity : IBlockEntity
 
     /// <summary>
     /// Overrides this block's collision and outline boxes from its data, or returns null for the state's shapes.
-    /// Called when created or loaded, and at the end of a tick after SetChanged or SendUpdate. Call both when a
-    /// shape change must be saved and shown to clients; GetUpdateData must include the data the client uses for it.
+    /// Called when created or loaded, after a player's break hook, and at tick end after SetChanged or SendUpdate.
+    /// Call both when a shape change must be saved and shown to clients; GetUpdateData includes the client's data.
     /// </summary>
     protected internal virtual BlockShapes? GetShapes() => null;
 

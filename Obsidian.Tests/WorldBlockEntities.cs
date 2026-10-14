@@ -57,6 +57,7 @@ public sealed class WorldBlockEntities : IDisposable
         await using var context = TestServerFactory.CreateServer($"multipart-{Guid.NewGuid():N}");
         var chunk = AddEmptyChunk(context.World);
         var human = await JoinAsync(context);
+        var client = (TestClient)human.Client;
         await using var manager = new PluginManager(
             context.Server,
             context.Provider,
@@ -70,7 +71,14 @@ public sealed class WorldBlockEntities : IDisposable
 
         Assert.True(BlocksRegistry.TryGetPluginBlock("probe:parts", out var block));
         var position = new Vector(4, 70, 4);
+        human.LoadedChunks.Add(NumericsHelper.IntsToLong(0, 0));
+        client.ClearPackets();
         await context.World.SetBlockAsync(position, block.DefaultState);
+        await context.World.DoWorldTickAsync();
+        var placedPackets = client.SentPackets.ToList();
+        var initial = Assert.Single(placedPackets.OfType<BlockEntityDataPacket>());
+        Assert.True(initial.NBTData.GetBool("front"));
+        Assert.IsType<BlockUpdatePacket>(placedPackets[placedPackets.IndexOf(initial) - 1]);
         var terrain = new MobTerrain(context.World);
         var eye = new VectorD(4.5, 70.5, 2);
         var end = new VectorD(4.5, 70.5, 7);
@@ -98,11 +106,13 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.Equal(hit.ClickedAt, AppContext.GetData(ProbePartsBehavior.UseKey));
 
         human.GameMode = GameMode.Creative;
-        human.Position = new VectorD(4.5, 68.88, 2);
-        human.HeadY = eye.Y;
+        human.Pose = Pose.Sneaking;
+        Assert.True(human.TryUpdateAttribute("minecraft:scale", 0.5f)
+            || human.TryAddAttribute("minecraft:scale", 0.5f));
+        human.Position = new VectorD(4.5, eye.Y - 1.27f * 0.5f, 2);
+        human.HeadY = eye.Y + 5; // The stored standing eye position must not drive the break ray.
         human.Yaw = 0;
         human.Pitch = 0;
-        human.LoadedChunks.Add(NumericsHelper.IntsToLong(0, 0));
 
         using var breakData = new NetworkBuffer();
         breakData.WriteVarInt((int)PlayerActionStatus.StartedDigging);
@@ -117,15 +127,22 @@ public sealed class WorldBlockEntities : IDisposable
         AppContext.SetData(ProbePartsBehavior.BreakKey, null);
         await context.World.SetBlockAsync(new Vector(4, 70, 3), BlocksRegistry.Stone);
         await breaking.HandleAsync(context.Server, human);
+        await context.World.DoWorldTickAsync();
         Assert.Null(AppContext.GetData(ProbePartsBehavior.BreakKey));
         await context.World.SetBlockAsync(new Vector(4, 70, 3), BlocksRegistry.Air);
 
+        client.ClearPackets();
         await breaking.HandleAsync(context.Server, human);
+        Assert.Null(AppContext.GetData(ProbePartsBehavior.BreakKey));
+        await context.World.DoWorldTickAsync();
         Assert.Equal(hit, AppContext.GetData(ProbePartsBehavior.BreakKey));
         Assert.Equal(block.DefaultState.GetHashCode(),
             chunk.GetBlock(position.X, position.Y, position.Z).GetHashCode());
-        await context.World.DoWorldTickAsync();
         Assert.False(BlockEntityNbt.Save(chunk.GetBlockEntity(4, 70, 4)!)!.GetBool("front"));
+        var correctedPackets = client.SentPackets.ToList();
+        var correction = correctedPackets.OfType<BlockEntityDataPacket>().First();
+        Assert.False(correction.NBTData.GetBool("front"));
+        Assert.IsType<BlockUpdatePacket>(correctedPackets[correctedPackets.IndexOf(correction) - 1]);
         Assert.Equal(0.625, terrain.RaycastOutlines(eye, end)!.Value.ClickedAt.Z);
         Assert.True(terrain.IsFree(new BoundingBox(new VectorD(4.4, 70.4, 4.2), new VectorD(4.6, 70.6, 4.3))));
 
@@ -134,14 +151,28 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.Null(BlockEntityShapes.Get(context.World, position, block.DefaultState));
         Assert.IsType<DataBlockEntity>(chunk.GetBlockEntity(4, 70, 4));
         await manager.LoadPluginAsync(path);
+        client.ClearPackets();
         await context.World.DoWorldTickAsync();
         Assert.Equal(0.625, terrain.RaycastOutlines(eye, end)!.Value.ClickedAt.Z);
+        Assert.False(Assert.Single(client.SentPackets.OfType<BlockEntityDataPacket>()).NBTData.GetBool("front"));
 
         // The final part permits ordinary block removal.
-        human.HeadY = eye.Y;
+        human.Pose = Pose.Swimming;
+        human.Position = new VectorD(4.5, eye.Y - 0.4f * 0.5f, 2);
         await breaking.HandleAsync(context.Server, human);
+        await context.World.DoWorldTickAsync();
         Assert.True(chunk.GetBlock(position.X, position.Y, position.Z).IsAir);
         Assert.Null(chunk.GetBlockEntity(4, 70, 4));
+
+        // Both attempts run in one tick: the second must select index zero of the remaining outline list.
+        await context.World.SetBlockAsync(position, block.DefaultState);
+        await breaking.HandleAsync(context.Server, human);
+        await breaking.HandleAsync(context.Server, human);
+        await context.World.DoWorldTickAsync();
+        var lastHit = Assert.IsType<BlockShapeHit>(AppContext.GetData(ProbePartsBehavior.BreakKey));
+        Assert.Equal(0, lastHit.BoxIndex);
+        Assert.Equal(0.625, lastHit.ClickedAt.Z);
+        Assert.True(chunk.GetBlock(position.X, position.Y, position.Z).IsAir);
     }
 
     [Fact(DisplayName = "Vanilla's block entities save what they load, the fields the server doesn't model included")]
@@ -725,9 +756,11 @@ public sealed class ProbeParts : BlockEntity
 
     protected internal override void Load(NbtCompound tag) => this.Front = tag.GetBool("front");
 
-    protected internal override void Save(NbtCompound tag) => tag.Add(new NbtTag<bool>("front", this.Front));
+    protected internal override void Save(NbtCompound tag) =>
+        tag.Add(new NbtTag<byte>("front", this.Front ? (byte)1 : (byte)0));
 
-    protected internal override NbtCompound? GetUpdateData() => new() { new NbtTag<bool>("front", this.Front) };
+    protected internal override NbtCompound? GetUpdateData() =>
+        new() { new NbtTag<byte>("front", this.Front ? (byte)1 : (byte)0) };
 
     protected internal override BlockShapes? GetShapes()
     {

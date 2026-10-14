@@ -28,6 +28,7 @@ public interface IBlockBehavior
     /// <summary>
     /// Runs before a player breaks this block. Set IsCancelled to keep it, for example after removing one part.
     /// The hit comes from the server's outline raycast, since vanilla's break packet carries no hit location.
+    /// Runs on the level tick, in turn with block entity callbacks and the resulting break transaction.
     /// </summary>
     public ValueTask BreakAsync(BlockBreakContext context) => ValueTask.CompletedTask;
 

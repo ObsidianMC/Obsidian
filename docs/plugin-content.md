@@ -361,7 +361,8 @@ type and its update data from chunk packets and `BlockEntityData`, and remapping
   only while the block still has the type. `Level` is the level it's in, and `BlockPosition` its block.
 - **Clients.** `GetUpdateData` is what clients get (vanilla's `getUpdateTag`): with the chunk, and at the end of the
   tick after the block entity calls `SendUpdate` (once however many times it called it), as a `BlockEntityData`
-  packet to the players who have the chunk. The Obsidian client retains that data as a snapshot; it doesn't create
+  packet to the players who have the chunk. Attachment and restoration also queue an initial update, with the block
+  state sent before its data. The Obsidian client retains that data as a snapshot; it doesn't create
   or tick the server's subclass. A client shape provider reads the snapshot (see [Client](#client)).
 - **Threads.** The server calls `Load`, `Save`, `TickAsync`, `GetUpdateData` and `OnRemoved` on the level's tick,
   one at a time, inside calls into the plugin: a block removed from elsewhere (a player's break) runs `OnRemoved` on
@@ -379,7 +380,8 @@ block-local coordinates. Each box must have positive volume and finite coordinat
 returning null keeps the state's usual shapes (a plugin block's template). Collision and outline may differ.
 
 The server publishes the shapes when it creates or loads the block entity and at the end of a tick after
-`SetChanged` or `SendUpdate`. Collision, navigation and outline raycasts read that immutable snapshot without
+`SetChanged` or `SendUpdate`, and immediately after each player's break hook so the next attempt sees the remaining
+parts. Collision, navigation and outline raycasts read that immutable snapshot without
 calling plugin code from their threads. A shape change that clients must see calls `SetChanged` and `SendUpdate`,
 and includes its deciding data in `GetUpdateData`. The client registers a provider that builds the same shapes
 from that data. Unloading drops both sides' behaviour, keeping the saved data and type id for the next load.
@@ -394,8 +396,9 @@ has no hit location, so neither its face claim nor client-provided coordinates d
 
 Set `BlockBreakContext.IsCancelled` to keep the block after removing one selected part, then mark and sync the
 block entity's change. Leave it false for ordinary removal when the last part goes. The client receives a block
-acknowledgement and correction on cancellation. Like `UseAsync`, the hook runs on the player's packet flow,
-inside a call into its plugin; synchronise changes to data shared with block entity ticks.
+acknowledgement, state correction and retained block entity data on cancellation. Target validation, the hook and
+the resulting break transaction run together on the level's tick, in turn with block entity callbacks, inside a
+call into the plugin. The outline ray starts at the player's pose- and scale-dependent eye position.
 
 ```csharp
 public async ValueTask BreakAsync(BlockBreakContext context)
