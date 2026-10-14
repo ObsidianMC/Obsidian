@@ -3014,7 +3014,7 @@ stay in `options.txt`.
 ```csharp
 // The crusher's screen (see Machine menus): its progress, a button pausing it, and the ores it takes, searched and
 // scrolled.
-public sealed class CrusherScreen(IScreenMenu menu) : ModMenuScreen(menu)
+public sealed class CrusherScreen : ModMenuScreen
 {
     private static readonly Item[] ores = [ItemsRegistry.IronOre, ItemsRegistry.GoldOre, ItemsRegistry.CopperOre];
 
@@ -3043,6 +3043,13 @@ public sealed class CrusherScreen(IScreenMenu menu) : ModMenuScreen(menu)
     };
 
     private bool paused;
+
+    public CrusherScreen(IScreenMenu menu)
+        : base(menu)
+    {
+        // Init runs each time the screen is shown, so the widgets kept across showings subscribe once, here.
+        this.scroll.Scrolled += row => this.list.FirstRow = row;
+    }
 
     protected override void Init()
     {
@@ -3081,7 +3088,6 @@ public sealed class CrusherScreen(IScreenMenu menu) : ModMenuScreen(menu)
         search.Changed += this.Search;
 
         this.scroll.WheelArea = this.list;
-        this.scroll.Scrolled += row => this.list.FirstRow = row;
         this.Add(this.list);
         this.Add(this.scroll);
         this.Search(string.Empty);
