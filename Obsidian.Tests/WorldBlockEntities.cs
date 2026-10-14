@@ -190,7 +190,7 @@ public sealed class WorldBlockEntities : IDisposable
     {
         (string Id, Type Class, INbtTag[] Fields)[] rows =
         [
-            ("minecraft:furnace", typeof(VanillaContainerBlockEntity),
+            ("minecraft:furnace", typeof(FurnaceBlockEntity),
             [
                 Items(
                     Slotted(new ItemStack(ItemsRegistry.Stone, 3), 0),
@@ -213,7 +213,7 @@ public sealed class WorldBlockEntities : IDisposable
                 new NbtTag<short>("BrewTime", 100),
                 new NbtTag<byte>("Fuel", 5)
             ]),
-            ("minecraft:hopper", typeof(VanillaContainerBlockEntity),
+            ("minecraft:hopper", typeof(HopperBlockEntity),
             [
                 Items(Slotted(new ItemStack(ItemsRegistry.Diamond, 1), 4)),
                 new NbtTag<int>("TransferCooldown", 3)
@@ -635,7 +635,7 @@ public sealed class WorldBlockEntities : IDisposable
         }
     }
 
-    private static async Task<Obsidian.Entities.Player> JoinAsync(RealServerContext context)
+    internal static async Task<Obsidian.Entities.Player> JoinAsync(RealServerContext context)
     {
         var human = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Human", (VectorD)origin);
         await TestServerFactory.JoinConnectedPlayerAsync(context.Server, human);
@@ -644,9 +644,9 @@ public sealed class WorldBlockEntities : IDisposable
     }
 
     // An empty plains chunk where the test's player stands, complete, so that it ticks.
-    private static Chunk AddEmptyChunk(World world)
+    internal static Chunk AddEmptyChunk(World world, int chunkX = 0, int chunkZ = 0)
     {
-        var chunk = new Chunk(0, 0);
+        var chunk = new Chunk(chunkX, chunkZ);
 
         for (var x = 0; x < 16; x += 4)
         {
@@ -658,7 +658,7 @@ public sealed class WorldBlockEntities : IDisposable
         }
 
         chunk.SetChunkStatus(ChunkGenStage.full);
-        world.LoadRegionByChunk(0, 0).SetChunk(chunk);
+        world.LoadRegionByChunk(chunkX, chunkZ).SetChunk(chunk);
 
         return chunk;
     }

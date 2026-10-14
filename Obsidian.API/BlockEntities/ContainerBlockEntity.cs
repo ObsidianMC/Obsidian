@@ -1,3 +1,4 @@
+using Obsidian.API.Inventory;
 using Obsidian.API.Utilities;
 using Obsidian.Nbt;
 using System.Threading;
@@ -13,20 +14,33 @@ namespace Obsidian.API.BlockEntities;
 /// Saved like vanilla's <c>RandomizableContainerBlockEntity</c>: <c>CustomName</c>, and the loot table it's waiting
 /// for (<c>LootTable</c>, <c>LootTableSeed</c>) or else its <c>Items</c>, each with its <c>Slot</c>. Slots past the
 /// inventory's size are skipped. Changes to the inventory are saved without calling
-/// <see cref="BlockEntity.SetChanged"/>.
+/// <see cref="BlockEntity.SetChanged"/>. Vanilla saves a slot's number as a byte, so an inventory holds at most
+/// <see cref="MaxSlots"/> slots.
 /// </para>
 /// <para>
 /// A container with a loot table, like an unopened dungeon chest, is empty until a player opens it, or it's removed,
 /// which fills it from the table.
 /// </para>
+/// <para>
+/// Other blocks reach its items through <see cref="GetItemAccess"/>, from every side to every slot unless a subclass
+/// overrides <see cref="GetSlots"/>, <see cref="CanInsert"/> and <see cref="CanExtract"/>, like vanilla's
+/// <c>WorldlyContainer</c>.
+/// </para>
 /// </remarks>
-/// <param name="inventory">The items it holds.</param>
-public class ContainerBlockEntity(BaseContainer inventory) : BlockEntity
+/// <param name="inventory">The items it holds, at most <see cref="MaxSlots"/>.</param>
+public partial class ContainerBlockEntity(BaseContainer inventory) : BlockEntity, IItemAccessProvider
 {
+    /// <summary>
+    /// The most slots a container block entity holds: vanilla saves each slot's number as a byte.
+    /// </summary>
+    public const int MaxSlots = 256;
+
     /// <summary>
     /// The items the block entity holds, which opening its block shows.
     /// </summary>
-    public BaseContainer Inventory { get; } = inventory;
+    public BaseContainer Inventory { get; } = inventory.Size <= MaxSlots
+        ? inventory
+        : throw new ArgumentException($"A container block entity holds at most {MaxSlots} slots.", nameof(inventory));
 
     /// <summary>
     /// The loot table the container is filled from when it's first opened, like

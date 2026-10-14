@@ -20,7 +20,7 @@ internal static class VanillaBlockEntities
     {
         "minecraft:chest" or "minecraft:trapped_chest" => Chest(new Container { Title = "Chest" }, position),
         "minecraft:barrel" => Chest(new Container { Title = "Barrel" }, position),
-        "minecraft:shulker_box" => new VanillaContainerBlockEntity(new Container
+        "minecraft:shulker_box" => new ShulkerBoxBlockEntity(new Container
         {
             Title = "Shulker Box",
             BlockPosition = position
@@ -31,7 +31,7 @@ internal static class VanillaBlockEntities
         },
         "minecraft:dispenser" => Chest(new Container(9) { Title = "Dispenser" }, position),
         "minecraft:dropper" => Chest(new Container(9) { Title = "Dropper" }, position),
-        "minecraft:hopper" => Chest(new Container(5) { Title = "Hopper" }, position),
+        "minecraft:hopper" => new HopperBlockEntity(position),
         "minecraft:furnace" => Smelting(InventoryType.Furnace, "furnace", "Furnace", position),
         "minecraft:blast_furnace" => Smelting(InventoryType.BlastFurnace, "blast_furnace", "Blast Furnace", position),
         "minecraft:smoker" => Smelting(InventoryType.Smoker, "smoker", "Smoker", position),
@@ -50,8 +50,8 @@ internal static class VanillaBlockEntities
 
     // Vanilla's furnaces save their cooking progress and the recipes they used, which the server keeps as they were
     // loaded until it cooks.
-    private static VanillaContainerBlockEntity Smelting(InventoryType type, string id, string title, Vector position) =>
-        new VanillaContainerBlockEntity(new SmeltingContainer(type, id)
+    private static FurnaceBlockEntity Smelting(InventoryType type, string id, string title, Vector position) =>
+        new FurnaceBlockEntity(new SmeltingContainer(type, id)
         {
             Title = title,
             BlockPosition = position
@@ -123,7 +123,7 @@ internal class VanillaContainerBlockEntity(BaseContainer inventory, params strin
 /// <summary>
 /// A brewing stand's block entity, which brews in its <see cref="BrewingStand"/> while its chunk ticks.
 /// </summary>
-internal sealed class BrewingStandBlockEntity : VanillaContainerBlockEntity
+internal sealed partial class BrewingStandBlockEntity : VanillaContainerBlockEntity
 {
     public BrewingStandBlockEntity(Vector position)
         : base(new BrewingStand { BlockPosition = position }, "BrewTime", "Fuel")

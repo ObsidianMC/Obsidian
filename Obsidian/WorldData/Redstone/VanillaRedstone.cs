@@ -6,7 +6,7 @@ namespace Obsidian.WorldData.Redstone;
 
 /// <summary>
 /// Vanilla's redstone components by block: dust, torches, repeaters, comparators, levers, buttons, pressure plates,
-/// the redstone block and the redstone lamp.
+/// the redstone block, the redstone lamp, and the power switches of hoppers, droppers and dispensers.
 /// </summary>
 internal static class VanillaRedstone
 {
@@ -49,6 +49,9 @@ internal static class VanillaRedstone
         var comparator = new Diode(DiodeKind.Comparator);
         var lamp = new RedstoneLamp();
         var redstoneBlock = new RedstoneBlock();
+        var hopper = new HopperComponent();
+        var dispenser = new DispenserComponent(dropper: false);
+        var dropper = new DispenserComponent(dropper: true);
 
         for (var id = 0; id < table.Length; id++)
         {
@@ -68,6 +71,9 @@ internal static class VanillaRedstone
                 "WeightedPressurePlateBlock" => PressurePlate.Weighted(name),
                 "RedstoneLampBlock" => lamp,
                 "PoweredBlock" => redstoneBlock,
+                "HopperBlock" => hopper,
+                "DispenserBlock" => dispenser,
+                "DropperBlock" => dropper,
                 _ => null
             };
         }

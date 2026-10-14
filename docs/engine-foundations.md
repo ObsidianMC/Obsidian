@@ -77,11 +77,11 @@ its surroundings, and drops its loot table.
   food, equipment and armour, attribute modifiers).
 - **Data component types.** Plugins register their own component types with a codec and a network codec, saved on
   stacks and synced to modded clients. Today `DataComponentType` is a generated, closed enum.
-- **Inventory access.** One way to reach the items of whatever is at a position from a side (like NeoForge's item
-  handler capability): vanilla's chests, barrels, shulker boxes, furnaces, brewing stands and hoppers, and plugin
+- **Inventory access.** (done) One way to reach the items of whatever is at a position from a side (like NeoForge's
+  item handler capability): vanilla's chests, barrels, shulker boxes, furnaces, brewing stands and hoppers, and plugin
   block entities. Inserting and extracting can be simulated first, so a network can plan a transfer without
-  duplicating or losing items. Hoppers, droppers and dispensers move items through it. A fluid equivalent follows
-  the same shape when a mod needs it.
+  duplicating or losing items. Hoppers, droppers and dispensers move items through it. A fluid equivalent follows the
+  same shape when a mod needs it.
 - **Recipe types.** Plugins register recipe types with their own serializers and matching, loaded from
   `data/<ns>/recipe` like vanilla's. The `UpdateRecipes` packet is sent. Furnaces, smokers, blast furnaces and
   campfires cook, which closes the cooking entry in [known-gaps.md](known-gaps.md).

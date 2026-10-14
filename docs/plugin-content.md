@@ -530,6 +530,90 @@ plugin is absent. While it's gone they're kept as they were saved, in loaded chu
 like saved entities of its types; once it loads again, the level creates them again from what they saved on its next
 tick, and so do chunks loaded later.
 
+### Item access
+
+```csharp
+// A machine that takes ore from the side it's fed from, and gives its output from below.
+public sealed class Crusher() : ContainerBlockEntity(new Container(9) { Title = "Crusher" })
+{
+    protected override IReadOnlyList<int> GetSlots(BlockFace? side) => side switch
+    {
+        BlockFace.Down => [8],
+        null => base.GetSlots(side),
+        _ => [0, 1, 2, 3]
+    };
+
+    protected override bool CanInsert(int slot, ItemStack stack, BlockFace? side) =>
+        side is null || slot < 8 && stack.Is(ItemsRegistry.IronOre);
+
+    protected override ValueTask TickAsync()
+    {
+        // Push one item a tick into whatever is below, through its top face, planning both ends first.
+        var below = this.Level?.GetItemAccess(this.BlockPosition + Vector.Down, BlockFace.Up);
+        var output = this.GetItemAccess(side: null)!;
+
+        if (below is not null
+            && output.Extract(8, 1, simulate: true) is ItemStack planned
+            && below.Insert(planned, simulate: true) is null
+            && output.Extract(8, 1) is ItemStack taken
+            && below.Insert(taken) is ItemStack refused)
+        {
+            // A player's click came between the plan and the move: put back what was refused.
+            output.Insert(8, refused);
+        }
+
+        return ValueTask.CompletedTask;
+    }
+}
+```
+
+`IItemAccess`, like NeoForge's item handler capability, is one way to reach the items of whatever is at a position,
+from a side: `ILevel.GetItemAccess(position, side)`, or `IBlockLevel.GetItemAccess` inside a block hook, both
+synchronous (they read loaded, complete chunks and never load one). The side is the face of that block the caller
+reaches through: a hopper above a furnace reaches it through `BlockFace.Up`; null means no particular side, like
+the block's own code. It has `SlotCount`, `GetItem(slot)`, `Insert(slot, stack)`, `Insert(stack)` (into the slots in
+order, like a hopper) and `Extract(slot, count)`. Inserting returns what didn't go in and extracting what came out
+(null for nothing); stacks passed in aren't changed and stacks returned are the caller's. Every call takes
+`simulate`: simulated, it reports what it would do and changes nothing, so a pipe or network plans both ends of a
+transfer before doing either. Each call is atomic, but two calls aren't a transaction, so check what the real call
+returns: a player's click can come between them.
+
+Slots are the side's: a furnace's top reaches only its ingredient slot, which is slot 0 of that access. Vanilla's
+containers follow vanilla's `WorldlyContainer` rules. Chests, trapped chests, barrels, hoppers, droppers and
+dispensers give every slot to every side, and a double chest is one 54-slot inventory, its right half first.
+Furnaces, smokers and blast furnaces give the ingredient to the top, the fuel to the sides, and the result then the
+fuel to the bottom; nothing goes into the result, only fuel (or one bucket) into the fuel slot, and only a bucket
+comes out of the fuel slot from below. Brewing stands give the ingredient to the top, the bottles and ingredient to
+the bottom, and the bottles and fuel to the sides, with one bottle a slot and only a glass bottle leaving the
+ingredient slot through a face. Shulker boxes take anything but shulker boxes. A container still waiting for its
+loot table rolls it first, as vanilla's hoppers do.
+
+A `ContainerBlockEntity` gives this access from every side to every slot. Override `GetSlots(side)`,
+`CanInsert(slot, stack, side)` and `CanExtract(slot, stack, side)` for per-side and per-slot rules (they run with the
+inventory's lock held, so read `Inventory` and don't wait on anything), or override `GetItemAccess(side)` to give
+your own. Any other block entity exposes items by implementing `IItemAccessProvider`, and a block without a block
+entity, like vanilla's composter, by returning one from `IBlockBehavior.GetItemAccess(ItemAccessContext)`, which
+is asked first. A plugin's access is called inside calls into its plugin, from any thread, and gives nothing once
+the plugin is unloading; make it thread-safe. A container block entity holds at most `ContainerBlockEntity.MaxSlots`
+(256) slots, since vanilla saves a slot's number as a byte; a bigger inventory throws when it's constructed.
+
+A container's access shares its click lock with players' windows, so a call never sees a click half applied, and it
+takes and gives nothing once the block entity is removed (its inventory is retired), so a hopper can't move items in
+or out of a broken chest. A change calls `SetChanged`, and at the end of the level's tick the comparators reading
+the container update and the players with it open get its new contents. Inside a block hook, which holds the level's
+tick lock, a container busy with a click at that moment, or still waiting for its loot table, takes and gives nothing
+for that call (its loot is rolled on the next tick), so that a hook never waits on a click or loads a chunk.
+
+Hoppers, droppers and dispensers move items through it, so they reach plugins' blocks like vanilla's. A hopper ticks
+with its block entity like vanilla's: when it's off cooldown and not powered, it pushes one item, from its first
+slot that has one that fits, into the block it faces, then pulls one from the first slot the block above gives up
+(or takes in the item entities in its bowl and the block above, when there's no container there and it isn't a full
+block), and waits 8 ticks after moving anything. Items reaching an empty hopper hold its next transfer back 8 ticks,
+7 when another hopper that ticked no later pushed them, so chains move at vanilla's pace whatever order hoppers tick
+in. A dropper or dispenser fires 4 ticks after a redstone signal reaches it or the block above, picking a slot like
+vanilla; a dropper puts the item into the block it faces when it has item access (keeping it when it doesn't fit),
+and otherwise both drop it.
+
 ## Particles
 
 ```csharp

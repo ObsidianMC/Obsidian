@@ -242,6 +242,7 @@ public abstract partial class AbstractLevel
             }
         }
 
+        await this.FlushItemAccessChangesAsync();
         this.TakeBlockEntityChanges();
         this.SendBlockEntityUpdates();
     }
@@ -586,7 +587,7 @@ public abstract partial class AbstractLevel
     /// <summary>
     /// What the level's block entities reach of it.
     /// </summary>
-    private sealed class LevelBlockEntityHost(AbstractLevel level) : BlockEntityHost
+    private sealed class LevelBlockEntityHost(AbstractLevel level) : BlockEntityHost, IContainerItemsHost
     {
         /// <summary>
         /// The block entities whose changes the level takes in at the end of its tick.
@@ -601,6 +602,12 @@ public abstract partial class AbstractLevel
         public override ILevel Level => level;
 
         public override void OnChanged(BlockEntity blockEntity) => this.Changed.Enqueue(blockEntity);
+
+        public bool HoldsTickLock => level.HoldsTickLock;
+
+        public bool PrepareItems(ContainerBlockEntity container) => level.PrepareContainerItems(container);
+
+        public void OnItemsChanged(ContainerBlockEntity container) => level.OnContainerItemsChanged(container);
 
         public override void SendUpdate(BlockEntity blockEntity)
         {

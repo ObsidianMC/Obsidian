@@ -1,3 +1,5 @@
+using Obsidian.API.Inventory;
+
 namespace Obsidian.API.Blocks;
 
 /// <summary>
@@ -132,6 +134,16 @@ public interface IBlockBehavior
     /// Called each tick an entity stands on the block, like vanilla's <c>stepOn</c>.
     /// </summary>
     public ValueTask SteppedOnAsync(EntityBlockContext context) => ValueTask.CompletedTask;
+
+    /// <summary>
+    /// The block's items as another block reaches them through <see cref="ItemAccessContext.Side"/>, for a block
+    /// that holds items without a block entity (like vanilla's composter), or that answers for its block entity.
+    /// Null, the default, leaves it to the block entity (see <see cref="IItemAccessProvider"/>).
+    /// </summary>
+    /// <remarks>
+    /// The server calls the access it returns inside calls into the plugin, from any thread: make it thread-safe.
+    /// </remarks>
+    public IItemAccess? GetItemAccess(ItemAccessContext context) => null;
 }
 
 /// <summary>
