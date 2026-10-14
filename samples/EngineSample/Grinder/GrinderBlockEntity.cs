@@ -91,8 +91,10 @@ public sealed class GrinderBlockEntity() : ContainerBlockEntity(new Slots())
             if (above.Extract(slot, 1) is ItemStack taken && own.Insert(InputSlot, taken) is ItemStack refused)
             {
                 // A player's click swapped the chest's slot between the plan and the move, and the input doesn't
-                // take what came out: it goes back where it came from, which has room for it again.
-                above.Insert(slot, refused);
+                // take what came out: it goes back where it came from or, if another click filled that, anywhere in
+                // the chest.
+                if (above.Insert(slot, refused) is ItemStack left)
+                    above.Insert(left);
             }
 
             return;
