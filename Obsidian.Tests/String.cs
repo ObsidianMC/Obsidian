@@ -1,6 +1,5 @@
 ﻿using Obsidian.Net;
 
-using System;
 using System.Collections.Generic;
 
 using Xunit;
@@ -22,27 +21,23 @@ public class String
         string actualValue = stream.ReadString();
 
         Assert.Equal(expectedValue, actualValue);
+        Assert.Equal(stream.Size, stream.Offset);
+
+        using var encrypted = new EncryptedNetworkBuffer(new byte[16]);
+        encrypted.WriteString(expectedValue);
+        encrypted.Reset();
+
+        Assert.Equal(expectedValue, encrypted.ReadString());
+        Assert.Equal(encrypted.Size, encrypted.Offset);
     }
 
-    public static IEnumerable<object[]> StringData
-    {
-        get {
-            var random = new Random();
-            var values = new List<object[]>();
-
-            for (int i = 0; i < 5; i++)
-            {
-                string value = "";
-
-                for (int l = 0; l < random.Next(500); l++)
-                {
-                    value += (char)random.Next(' ', '~');
-                }
-
-                values.Add([value]);
-            }
-
-            return values;
-        }
-    }
+    // Keep five deterministic cases: empty, short ASCII, spaces, multibyte UTF-8 and a two-byte length prefix.
+    public static IEnumerable<object[]> StringData =>
+    [
+        [string.Empty],
+        ["a"],
+        ["hello world"],
+        ["é漢😀"],
+        [new string('x', 128)]
+    ];
 }

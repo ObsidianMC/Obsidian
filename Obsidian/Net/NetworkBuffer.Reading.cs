@@ -307,6 +307,11 @@ public partial class NetworkBuffer : INetStreamReader
     public string ReadString(int maxLength = 32767)
     {
         var length = ReadVarInt();
+
+        // An empty string can end a packet, including on encrypted buffers: there is no payload to read.
+        if (length == 0)
+            return string.Empty;
+
         var buffer = this.ReadUntil(length);
 
         var value = Encoding.UTF8.GetString(buffer);
