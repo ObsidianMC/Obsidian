@@ -9,18 +9,12 @@ public partial class Player
 {
     /// <summary>
     /// Drops the items of the player's item attachments a death doesn't keep, like vanilla's
-    /// <c>Player.dropEquipment</c> drops the inventory: when the <c>keep_inventory</c> rule is off, the attachments
-    /// registered without <c>copyOnDeath</c> are emptied, their items with the curse of vanishing destroyed and the
-    /// others dropped around the player.
+    /// <c>Player.dropEquipment</c> drops the inventory: the attachments registered without <c>copyOnDeath</c> are
+    /// emptied, their items with the curse of vanishing destroyed and the others dropped around the player. The
+    /// caller checks that the player doesn't keep their items (see <see cref="DropDeathLootAsync"/>).
     /// </summary>
-    /// <remarks>
-    /// Obsidian doesn't drop the player's own inventory at a death yet (see known-gaps.md).
-    /// </remarks>
     private void DropItemAttachments()
     {
-        if (this.Level.LevelData.GetBooleanRule("keep_inventory", defaultValue: false))
-            return;
-
         foreach (var item in AttachmentStorage.For(this).TakeDeathDrops(this))
         {
             if (!Vanishes(item))

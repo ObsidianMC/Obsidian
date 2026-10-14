@@ -264,19 +264,16 @@ respawn anchor next to water explodes like any other.
 **Where to start:** sleeping (vanilla's `Player.startSleepInBed` and the night skip) and players' respawn points,
 which `bed_rule`'s `can_sleep` and `can_set_spawn` and `respawn_anchor_works` then decide (see `LevelEnvironment`).
 
-## Player death drops
+## Mods' menus in the inventory screen
 
-**Status:** open; mods' item attachments only.
+**Status:** open.
 
-A player's death drops the items of mods' item attachments (see
-[plugin content](plugin-content.md#player-extensions)) when `keep_inventory` is off, like vanilla's
-`Player.dropEquipment`, but not the player's own inventory, armour and offhand, or their experience: players keep
-those through a death whatever the rule says. The Obsidian client's inventory screen also has no button or tab for
-mods' menus, like Curios' inventory button; a mod opens its menu with a key binding's payload or its own screen.
+The Obsidian client's inventory screen has no button or tab for mods' menus, like Curios' inventory button, to open
+the menu of a mod's extra player slots (see [plugin content](plugin-content.md#player-extensions)); a mod opens its
+menu with a key binding's payload or its own screen.
 
-**Where to start:** drop the inventory in `Player.KillAsync` next to `DropItemAttachments`, with
-`ItemEntity.DropAround` and the curse of vanishing, and vanilla's experience drop and reset at respawn. Add the inventory button only once a
-mod needs one, as an `IClientRegistry` registration the inventory screen shows.
+**Where to start:** add the inventory button only once a mod needs one, as an `IClientRegistry` registration the
+inventory screen shows.
 
 ## Concurrent downloads into the shared test cache
 

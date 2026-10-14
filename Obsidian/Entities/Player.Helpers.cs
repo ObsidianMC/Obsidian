@@ -238,7 +238,7 @@ public partial class Player
         await Client.QueuePacketAsync(new ContainerSetContentPacket(0, Inventory.ToList())
         {
             StateId = Inventory.StateId++,
-            CarriedItem = GetHeldItem(),
+            CarriedItem = CarriedItem,
         });
 
         await Client.QueuePacketAsync(new SetEntityDataPacket

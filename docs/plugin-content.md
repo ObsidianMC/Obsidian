@@ -1710,10 +1710,10 @@ in it.
   Obsidian client, whose mod registers the same type and reads the charms with `TryGetPlayerAttachment`, to show them
   on its HUD say. Like any attachment it's saved with the player and kept through dimension changes.
 - **Deaths.** The engine knows these attachments hold items. With the `keep_inventory` rule off, a player's death
-  empties those registered without `copyOnDeath`: items with the curse of vanishing are destroyed, and the rest
-  dropped around the player like vanilla drops the inventory. With the rule on, or `copyOnDeath`, they're kept.
-  A type whose plugin isn't loaded is left as saved. (Obsidian doesn't drop the player's own inventory at a death
-  yet; see [known-gaps.md](known-gaps.md#player-death-drops).)
+  empties those registered without `copyOnDeath`, after the player's own inventory, armour and off hand, like
+  vanilla's `Player.dropEquipment`: items with the curse of vanishing are destroyed, and the rest dropped around the
+  player. With the rule on, for a spectator, or with `copyOnDeath`, they're kept, like vanilla keeps the inventory
+  and experience. A type whose plugin isn't loaded is left as saved.
 - **Access.** `holder.GetItemAccess(type, slotCount)` is [item access](#item-access) to the first `slotCount` slots,
   which a menu shows with `new MenuSlot(access, index)` and its rules (`MayPlace`, `MaxStackSize`), and the plugin
   uses itself. Each call reads and changes the saved value in one step, so the attachment stays the only copy of the
