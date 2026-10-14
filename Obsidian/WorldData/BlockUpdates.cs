@@ -129,6 +129,11 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         return true;
     }
 
+    /// <summary>Unavailable plugin types wait outside the runnable tick budget until their binding returns.</summary>
+    internal static bool CanRunTickType(string type) =>
+        !BlocksRegistry.TryGetPluginBlock(type, out var block)
+        || (block.Binding is BlockBinding binding && binding.Owner is not PluginContainer { IsClosing: true });
+
     /// <summary>
     /// Runs a random tick of a plugin block that gets them (see <see cref="BlockProperties.RandomlyTicks"/>); other
     /// blocks are left to <see cref="Growth"/>.

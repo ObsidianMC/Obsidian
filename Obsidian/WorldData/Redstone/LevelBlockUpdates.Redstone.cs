@@ -130,18 +130,51 @@ internal sealed partial class LevelBlockUpdates
         lock (fluids.TickLock)
         {
             foreach (var position in this.FindBlocksOf(types))
+                this.RefreshPluginSignal(position);
+        }
+    }
+
+    /// <summary>
+    /// Reconciles saved circuits when a chunk becomes available. Palette checks skip vanilla-only sections; only
+    /// placed plugin blocks in this chunk or across its border send updates, including currently unbound types.
+    /// </summary>
+    internal void RefreshPluginBlocksIn(Chunk chunk)
+    {
+        if (BlocksRegistry.PluginBlocks.Count == 0)
+            return;
+
+        using var host = PluginCall.EnterHost();
+        var nearby = new List<Chunk> { chunk };
+        foreach (var face in horizontal)
+        {
+            var step = Vector.Zero.Offset(face);
+            var position = new Vector((chunk.X + step.X) * 16, chunk.MinY, (chunk.Z + step.Z) * 16);
+            if (fluids.TryGetChunk(position, out var neighbor))
+                nearby.Add(neighbor);
+        }
+
+        foreach (var position in this.FindBlocksOf(BlocksRegistry.PluginBlocks, nearby))
+        {
+            // Include sources just outside the loading chunk: a vanilla-only circuit may have missed their reload.
+            if (position.X >= chunk.X * 16 - 2 && position.X <= chunk.X * 16 + 17
+                && position.Z >= chunk.Z * 16 - 2 && position.Z <= chunk.Z * 16 + 17)
             {
-                var state = this.GetBlock(position);
-                updates.UpdateNeighborsAt(position, state);
-                foreach (var direction in signalOrder)
-                    updates.UpdateNeighborsAt(position.Offset(direction), state);
-
-                foreach (var direction in signalOrder)
-                    this.ShapeUpdateAt(position.Offset(direction), direction.Opposite(), RefreshShapeFlags, ShapeLimit);
-
-                this.UpdateComparatorsAround(position, state);
+                this.RefreshPluginSignal(position);
             }
         }
+    }
+
+    private void RefreshPluginSignal(Vector position)
+    {
+        var state = this.GetBlock(position);
+        updates.UpdateNeighborsAt(position, state);
+        foreach (var direction in signalOrder)
+            updates.UpdateNeighborsAt(position.Offset(direction), state);
+
+        foreach (var direction in signalOrder)
+            this.ShapeUpdateAt(position.Offset(direction), direction.Opposite(), RefreshShapeFlags, ShapeLimit);
+
+        this.UpdateComparatorsAround(position, state);
     }
 
     /// <summary>
@@ -413,12 +446,11 @@ internal sealed partial class LevelBlockUpdates
     internal void LevelEvent(int type, Vector position, int data) => fluids.LevelEvent(type, position, data);
 
     /// <summary>
-    /// The items of a container, its pending loot rolled first (with nobody opening it), as reading vanilla's
-    /// containers' slots does.
+    /// Reads only stored items. Rolling pending loot can load structure chunks, so must not happen under the tick
+    /// lock. Unopened loot containers therefore differ from vanilla until their loot is unpacked by an opener.
     /// </summary>
     internal BaseContainer ItemsOf(ContainerBlockEntity container)
     {
-        level.UnpackLootTable(container, opener: null);
         return container.Inventory;
     }
 
@@ -448,12 +480,12 @@ internal sealed partial class LevelBlockUpdates
     }
 
     // Where blocks of the types are in the complete chunks, found before any changes, which the updates make.
-    private List<Vector> FindBlocksOf(IReadOnlyCollection<BlockType> types)
+    private List<Vector> FindBlocksOf(IReadOnlyCollection<BlockType> types, IEnumerable<Chunk>? chunks = null)
     {
-        bool Matches(int stateId) => types.Any(type => (uint)(stateId - type.FirstStateId) < (uint)type.StateCount);
+        bool Matches(int stateId) => BlocksRegistry.TryGetPluginBlock(stateId, out var type) && types.Contains(type);
 
         var found = new List<Vector>();
-        foreach (var chunk in fluids.TrackedChunks())
+        foreach (var chunk in chunks ?? fluids.TrackedChunks())
         {
             var sections = chunk.Sections;
             for (var index = 0; index < sections.Length; index++)

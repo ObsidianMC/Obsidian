@@ -22,13 +22,24 @@ internal static partial class BlockBehaviors
     /// <returns>
     /// The state the player places, or null to not place it: the block's default state for blocks without behaviour.
     /// </returns>
-    public static IBlock? GetStateForPlacement(BlockPlaceContext context)
+    public static IBlock? GetStateForPlacement(BlockPlaceContext context, ILogger logger)
     {
         if (!TryEnter(context.Block, out var behavior, out var call))
             return context.Block;
 
         using (call)
-            return behavior.GetStateForPlacement(context);
+        {
+            try
+            {
+                return behavior.GetStateForPlacement(context);
+            }
+            catch (Exception exception)
+            {
+                HookFailed(
+                    logger, exception, context.Block.UnlocalizedName, nameof(IBlockBehavior.GetStateForPlacement));
+                return null;
+            }
+        }
     }
 
     /// <summary>

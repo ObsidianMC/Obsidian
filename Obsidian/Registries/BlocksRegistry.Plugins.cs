@@ -12,6 +12,7 @@ namespace Obsidian.Registries;
 internal static partial class BlocksRegistry
 {
     private static readonly Lock registering = new();
+    private static readonly HashSet<BlockType> configuredBlocks = [];
 
     // Registering replaces the table whole, so lookups never lock. Set by the static constructor, which runs after the
     // generated tables are initialized.
@@ -174,7 +175,15 @@ internal static partial class BlocksRegistry
             if (closing())
                 return false;
 
-            type.Settings = BlockSettings.From(properties, type);
+            var settings = BlockSettings.From(properties, type);
+            if (configuredBlocks.Contains(type) && !SameLightAndCollision(type, settings))
+            {
+                throw new InvalidOperationException(
+                    $"{type.Identifier}'s light emission, opacity and collision require a server restart to change.");
+            }
+
+            type.Settings = settings;
+            configuredBlocks.Add(type);
             type.Binding = new BlockBinding(
                 plugin,
                 properties.Behavior,
@@ -182,6 +191,25 @@ internal static partial class BlocksRegistry
                 properties.RandomlyTicks);
             return true;
         }
+    }
+
+    /// <summary>
+    /// Whether <paramref name="settings"/> keep <paramref name="type"/>'s collision, opacity and every state's light
+    /// level, which placed blocks' light and sky heights were worked out from.
+    /// </summary>
+    private static bool SameLightAndCollision(BlockType type, BlockSettings settings)
+    {
+        var current = type.Settings;
+        if (current.Opaque != settings.Opaque || current.HasCollision != settings.HasCollision)
+            return false;
+
+        for (var index = 0; index < type.StateCount; index++)
+        {
+            if (current.LightEmissionOf(index) != settings.LightEmissionOf(index))
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>

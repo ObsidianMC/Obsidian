@@ -433,7 +433,7 @@ public abstract partial class AbstractLevel : ILevel
         API.BlockEntities.BlockEntity? removed;
         lock (this.Fluids.TickLock)
         {
-            if (c is Chunk { EntitiesUnloaded: true })
+            if (!this.Fluids.IsResident(c) || c is Chunk { EntitiesUnloaded: true })
                 return false;
 
             using var handLock = placement?.LockHand();
@@ -744,6 +744,7 @@ public abstract partial class AbstractLevel : ILevel
                 FlushLight = this.Lighting.Flush,
                 LightLoaded = this.Lighting.Track,
                 LightUnloaded = this.Lighting.Untrack,
+                BlockAccessUnloaded = this.Fluids.Untrack,
                 EntitiesLoaded = this.QueueEntitySpawn,
                 SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null
             };

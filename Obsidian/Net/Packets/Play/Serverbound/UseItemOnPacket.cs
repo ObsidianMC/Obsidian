@@ -336,7 +336,7 @@ public partial class UseItemOnPacket
             // Like the block's other hooks, while the level's block updates wait, so what it reads stays as it read.
             IBlock? state;
             lock (placeLevel.Fluids.TickLock)
-                state = Plugins.BlockBehaviors.GetStateForPlacement(context);
+                state = Plugins.BlockBehaviors.GetStateForPlacement(context, placeLevel.Logger);
 
             if (state is null)
             {

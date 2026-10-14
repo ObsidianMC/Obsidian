@@ -23,6 +23,7 @@ internal sealed class ChunkTicks<T> where T : notnull
     private readonly Lock sync = new();
     private readonly List<SavedTick<T>> pending = [];
     private readonly PriorityQueue<ScheduledTick<T>, ScheduledTick<T>> queue = new(ScheduledTick<T>.DrainOrder);
+    private readonly Dictionary<T, List<ScheduledTick<T>>> held = [];
     private readonly HashSet<(Vector Position, T Type)> scheduled = [];
     private TickScheduler<T>? scheduler;
 
@@ -34,7 +35,7 @@ internal sealed class ChunkTicks<T> where T : notnull
         get
         {
             lock (this.sync)
-                return this.pending.Count + this.queue.Count;
+                return this.pending.Count + this.queue.Count + this.held.Values.Sum(ticks => ticks.Count);
         }
     }
 
@@ -102,6 +103,7 @@ internal sealed class ChunkTicks<T> where T : notnull
                 var now = this.scheduler.GameTime;
                 var queued = this.queue.UnorderedItems
                     .Select(entry => entry.Element)
+                    .Concat(this.held.Values.SelectMany(ticks => ticks))
                     .Order(ScheduledTick<T>.DrainOrder)
                     .Select(tick => tick.ToSaved(now));
 
@@ -218,9 +220,15 @@ internal sealed class ChunkTicks<T> where T : notnull
                 return;
 
             var now = this.scheduler.GameTime;
-            while (this.queue.TryDequeue(out var tick, out _))
+            var ticks = this.queue.UnorderedItems
+                .Select(entry => entry.Element)
+                .Concat(this.held.Values.SelectMany(entries => entries))
+                .Order(ScheduledTick<T>.DrainOrder);
+            foreach (var tick in ticks)
                 this.pending.Add(tick.ToSaved(now));
 
+            this.queue.Clear();
+            this.held.Clear();
             this.scheduler.Unregister(this);
             Volatile.Write(ref this.scheduler, null);
         }
@@ -256,6 +264,51 @@ internal sealed class ChunkTicks<T> where T : notnull
 
             this.queue.Enqueue(tick, tick);
             this.scheduler.OnTickAdded(this, tick);
+        }
+    }
+
+    /// <summary>Holds an unavailable type outside the runnable heap, preserving its original tick and order.</summary>
+    internal void Suspend(ScheduledTick<T> tick, long now)
+    {
+        lock (this.sync)
+        {
+            if (!this.scheduled.Add((tick.Position, tick.Type)))
+                return;
+
+            if (this.scheduler is null)
+            {
+                this.pending.Add(tick.ToSaved(now));
+                return;
+            }
+
+            if (!this.held.TryGetValue(tick.Type, out var ticks))
+                this.held[tick.Type] = ticks = [];
+
+            ticks.Add(tick);
+        }
+    }
+
+    /// <summary>Checks availability once per held type and restores its ticks to their original heap order.</summary>
+    internal void RestoreHeld(Func<T, bool> canRunType)
+    {
+        lock (this.sync)
+        {
+            if (this.held.Count == 0)
+                return;
+
+            foreach (var type in this.held.Keys.ToArray())
+            {
+                if (!canRunType(type))
+                    continue;
+
+                var ticks = this.held[type];
+                this.held.Remove(type);
+                foreach (var tick in ticks)
+                    this.queue.Enqueue(tick, tick);
+            }
+
+            if (this.queue.TryPeek(out var first, out _) && this.scheduler is not null)
+                this.scheduler.OnTickAdded(this, first);
         }
     }
 

@@ -86,6 +86,9 @@ internal sealed class LevelFluids : IFluidLevelAccess
 
         lock (this.sync)
         {
+            if (!this.IsResident(complete) || complete.FluidTicks.IsTicking)
+                return;
+
             var key = NumericsHelper.IntsToLong(complete.X, complete.Z);
             if (this.chunks.TryGetValue(key, out var previous) && previous != complete)
             {
@@ -96,8 +99,28 @@ internal sealed class LevelFluids : IFluidLevelAccess
             this.chunks[key] = complete;
             complete.FluidTicks.StartTicking(this.scheduler, key);
             complete.BlockTicks.StartTicking(this.Blocks.Scheduler, key);
+            this.Blocks.RefreshPluginBlocksIn(complete);
         }
     }
+
+    /// <summary>Retires a chunk's tick containers and block access under the slot's retirement lock.</summary>
+    public void Untrack(IChunk chunk)
+    {
+        lock (this.sync)
+        {
+            var key = NumericsHelper.IntsToLong(chunk.X, chunk.Z);
+            if (!this.chunks.TryGetValue(key, out var stored) || !ReferenceEquals(stored, chunk))
+                return;
+
+            stored.FluidTicks.StopTicking();
+            stored.BlockTicks.StopTicking();
+            this.chunks.Remove(key);
+        }
+    }
+
+    /// <summary>Checks the slot identity while holding TickLock, including in-flight unloading saves.</summary>
+    internal bool IsResident(IChunk chunk) =>
+        this.level.GetRegionForChunk(chunk.X, chunk.Z) is Region region && region.IsChunkResident(chunk);
 
     /// <summary>
     /// Runs one level tick of block ticks and then fluid ticks, like vanilla.
@@ -111,7 +134,8 @@ internal sealed class LevelFluids : IFluidLevelAccess
         lock (this.sync)
         {
             this.Clock.Advance();
-            this.Blocks.Scheduler.Tick(this.IsTicking, this.Blocks.RunScheduledTick);
+            this.Blocks.Scheduler.Tick(
+                this.IsTicking, this.Blocks.RunScheduledTick, canRunType: LevelBlockUpdates.CanRunTickType);
             this.scheduler.Tick(this.IsTicking, this.fluidLevel.RunScheduledTick);
             if (this.Clock.GameTime % PruneInterval == 0)
                 this.PruneUnloaded();
@@ -142,8 +166,14 @@ internal sealed class LevelFluids : IFluidLevelAccess
     /// The complete chunk holding <paramref name="position"/>, if it's loaded. Call it under <see cref="TickLock"/>,
     /// which tracking chunks takes.
     /// </summary>
-    public bool TryGetChunk(Vector position, [NotNullWhen(true)] out Chunk? chunk) =>
-        this.chunks.TryGetValue(TickScheduler<FluidKind>.ChunkKey(position), out chunk);
+    public bool TryGetChunk(Vector position, [NotNullWhen(true)] out Chunk? chunk)
+    {
+        if (this.chunks.TryGetValue(TickScheduler<FluidKind>.ChunkKey(position), out chunk) && this.IsResident(chunk))
+            return true;
+
+        chunk = null;
+        return false;
+    }
 
     /// <summary>
     /// The complete chunks whose ticks run, as of now. Take <see cref="TickLock"/> first.
