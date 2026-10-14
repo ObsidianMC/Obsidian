@@ -516,10 +516,20 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      and faces with matrices from the live client instance, since frames are built on the game thread that ticks it.
      Both run in the mod's call guard; a failure is logged and stops the block entity's drawing until its next update.
      They go when the mod unloads. See [plugin-content.md](plugin-content.md#client).
+   - Done, engine phase 4 entity renderers: `EntityRendererProperties` gains `Layers` drawn over the model and posed
+     like it (an `EntityRenderLayer`: the model or another model layer, a texture, a tint and a cutout, translucent or
+     emissive render type, emissive being vanilla's full-bright `eyes`), a `TextureProvider` choosing the texture from
+     the entity's synced metadata (and a provider per layer choosing its texture and tint, or hiding it), and an
+     `IEntityRenderer`, the code escape hatch like vanilla's `EntityRenderer.render`, which draws declared model
+     layers' parts with matrices each frame from an `EntityRenderContext` (interpolated position, yaws and pitch,
+     age, metadata and the model's transform). Providers run once per metadata change, cached weakly per entity; all
+     of them run in the mod's call guard on the game thread, falling back to the defaults, or skipping the code until
+     the metadata changes, when they fail. `EntityProperties.PassengerAttachments` declares a type's seats on both
+     sides, like vanilla's passenger attachments: the server's plugin mobs place riders there, and the client places
+     riders, and the riding player's camera, there. See [plugin-content.md](plugin-content.md#client).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
-     move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine; entity render layers
-     (emissive and translucent ones) and animations a server triggers beyond arm swings for mods' entities; client lifecycle events
-     (joining and leaving a server).
+     move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine; animations a server
+     triggers beyond arm swings for mods' entities; client lifecycle events (joining and leaving a server).
 
 ## Porting from NeoForge
 

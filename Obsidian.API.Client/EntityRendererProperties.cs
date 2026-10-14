@@ -1,8 +1,9 @@
 namespace Obsidian.API.Client;
 
 /// <summary>
-/// How the Obsidian client draws a mod's entity type: a model layer and a texture from the mod's assets, and the
-/// keyframed animations it plays. Register it with <see cref="IClientRegistry.RegisterEntityRenderer"/>.
+/// How the Obsidian client draws a mod's entity type: a model layer and a texture from the mod's assets, the
+/// keyframed animations it plays, layers drawn over it, and code drawing anything else. Register it with
+/// <see cref="IClientRegistry.RegisterEntityRenderer"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -15,6 +16,16 @@ namespace Obsidian.API.Client;
 /// hands of <c>right_arm</c> and <c>left_arm</c>, and armour pieces on the parts vanilla's humanoid armour covers
 /// (<c>head</c>, <c>body</c>, <c>right_arm</c>, <c>left_arm</c>, <c>right_leg</c> and <c>left_leg</c>), following them.
 /// A model without such a part doesn't show what would go on it.
+/// </para>
+/// <para>
+/// <see cref="TextureProvider"/> and the layers' providers choose how the entity looks from its synced metadata, once
+/// each time it changes, and <see cref="Renderer"/> runs each frame. They all run on the client's game thread inside a
+/// call into the mod. A provider that throws is logged and its defaults are used until the metadata changes again; a
+/// renderer that throws is logged, what it drew that frame is dropped, and it isn't called for the entity until its
+/// metadata changes.
+/// </para>
+/// <para>
+/// Layers and the renderer aren't drawn while the entity is invisible.
 /// </para>
 /// </remarks>
 public sealed class EntityRendererProperties
@@ -60,4 +71,31 @@ public sealed class EntityRendererProperties
     /// none.
     /// </summary>
     public string? AttackAnimation { get; init; }
+
+    /// <summary>
+    /// Chooses the texture from the entity's synced metadata, for variants: a texture named like <see cref="Texture"/>,
+    /// or null for <see cref="Texture"/>. Null for none.
+    /// </summary>
+    /// <remarks>
+    /// The metadata is like <see cref="IClientEntity.Metadata"/>: by protocol index, with values as decoded, missing
+    /// what the server hasn't sent. It's the entity's own table, read-only, so keep the function pure and don't change
+    /// values in it. It runs at most once per metadata change.
+    /// </remarks>
+    public Func<IReadOnlyDictionary<byte, object?>, string?>? TextureProvider { get; init; }
+
+    /// <summary>
+    /// Layers drawn over the model, in order, like vanilla's render layers: glowing eyes, a saddle, an overlay.
+    /// </summary>
+    public IReadOnlyList<EntityRenderLayer> Layers { get; init; } = [];
+
+    /// <summary>
+    /// More model layers <see cref="Renderer"/> may draw, named like <see cref="Model"/>, for the client to read with
+    /// the assets.
+    /// </summary>
+    public IReadOnlyList<string> Models { get; init; } = [];
+
+    /// <summary>
+    /// Code that draws more of the entity each frame, after its model and layers, for what they can't describe.
+    /// </summary>
+    public IEntityRenderer? Renderer { get; init; }
 }

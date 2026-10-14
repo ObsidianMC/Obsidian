@@ -44,6 +44,19 @@ public sealed class EntityProperties
     public MobCategory Category { get; init; } = MobCategory.Misc;
 
     /// <summary>
+    /// Where the entity's passengers sit, like a vanilla entity type's passenger attachments: a point per seat, in
+    /// blocks from the entity's position at its feet, for the entity facing south (+Z ahead, +X to its left), turned
+    /// with its yaw. The first passenger sits at the first point, the second at the second, and passengers past the
+    /// last point at the last. A rider's feet go to the point, or 0.6 blocks below it for a player, as vanilla places
+    /// players. None, the default, seats every passenger on top of the hitbox, vanilla's default.
+    /// </summary>
+    /// <remarks>
+    /// The server places riders at the points, and the Obsidian client places them there as it draws them and the
+    /// player's camera, so give the type the same points on both sides.
+    /// </remarks>
+    public IReadOnlyList<VectorF> PassengerAttachments { get; init; } = [];
+
+    /// <summary>
     /// What the entity does each tick, when a player uses it and, for a projectile, when it hits something; or null for
     /// nothing.
     /// </summary>

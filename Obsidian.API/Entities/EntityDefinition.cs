@@ -65,7 +65,8 @@ internal sealed record EntitySettings(
     float MaxHealth,
     float MovementSpeed,
     float Gravity,
-    MobCategory Category)
+    MobCategory Category,
+    VectorF[] PassengerAttachments)
 {
     public static EntitySettings From(EntityProperties properties) => new(
         properties.Width,
@@ -73,5 +74,29 @@ internal sealed record EntitySettings(
         properties.MaxHealth,
         properties.MovementSpeed,
         properties.Gravity,
-        properties.Category);
+        properties.Category,
+        [.. properties.PassengerAttachments]);
+
+    /// <summary>
+    /// Where a passenger sits, from the entity's position, for the entity turned to <paramref name="yaw"/> degrees.
+    /// </summary>
+    /// <remarks>
+    /// Matches vanilla's <c>EntityAttachments.getClamped</c> for passengers, which clients position riders with: the
+    /// point of the passenger's index, clamped to the last, turned about Y by the yaw; without points, the top of the
+    /// hitbox, vanilla's default attachment.
+    /// </remarks>
+    /// <param name="index">The passenger's index among the entity's passengers.</param>
+    /// <param name="yaw">The entity's yaw, in degrees.</param>
+    public VectorF PassengerAttachment(int index, float yaw)
+    {
+        if (this.PassengerAttachments.Length == 0)
+            return new VectorF(0, this.Height, 0);
+
+        var point = this.PassengerAttachments[Math.Clamp(index, 0, this.PassengerAttachments.Length - 1)];
+        var angle = yaw * MathF.PI / 180;
+        var sin = MathF.Sin(angle);
+        var cos = MathF.Cos(angle);
+
+        return new VectorF(point.X * cos - point.Z * sin, point.Y, point.Z * cos + point.X * sin);
+    }
 }

@@ -284,6 +284,9 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         if (properties.Width <= 0 || properties.Height <= 0 || properties.MaxHealth <= 0 || properties.Gravity < 0)
             throw new ArgumentException("An entity needs a size, health and no negative gravity.", nameof(properties));
 
+        if (properties.PassengerAttachments is null)
+            throw new ArgumentException("An entity's passenger attachments can't be null.", nameof(properties));
+
         var definition = EntityDefinitionsRegistry.Register(identifier, properties.Kind);
 
         if (!EntityDefinitionsRegistry.TryBind(definition, properties, container, () => container.IsClosing))

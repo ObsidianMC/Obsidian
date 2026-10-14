@@ -141,9 +141,10 @@ public interface IClientRegistry
     /// <param name="entityType">
     /// The identifier of an entity type the mod registered, like <c>examplemod:golem</c>.
     /// </param>
-    /// <param name="renderer">The model and texture.</param>
+    /// <param name="renderer">The model and texture, and any layers and code.</param>
     /// <exception cref="ArgumentException">
-    /// The entity type isn't one the mod registered, or the mod gave it a renderer already.
+    /// The entity type isn't one the mod registered, the mod gave it a renderer already, or the renderer is missing its
+    /// model, its texture or a layer's texture.
     /// </exception>
     /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
     public IClientRegistry RegisterEntityRenderer(string entityType, EntityRendererProperties renderer);
