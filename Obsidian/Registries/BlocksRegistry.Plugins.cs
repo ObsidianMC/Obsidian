@@ -188,7 +188,8 @@ internal static partial class BlocksRegistry
                 plugin,
                 properties.Behavior,
                 properties.TreeGrower,
-                properties.RandomlyTicks);
+                properties.RandomlyTicks,
+                properties.SoundType);
             return true;
         }
     }

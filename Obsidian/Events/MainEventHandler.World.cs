@@ -96,6 +96,8 @@ public partial class MainEventHandler
         }
 
         await parts.RemovePartnerAsync(world);
+        BlockSoundPlayback.Play(world, block, location, breaking: true, player.EntityId);
+
         if (world is AbstractLevel gameEvents)
         {
             if (block.Is(BlockIds.Jukebox))

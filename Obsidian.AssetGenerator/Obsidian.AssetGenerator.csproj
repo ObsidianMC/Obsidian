@@ -35,6 +35,7 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)client-entity-metadata-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)client-screens-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_sounds.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_loot_tables.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\blocks.json" />
 		</ItemGroup>

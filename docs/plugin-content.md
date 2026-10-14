@@ -888,6 +888,67 @@ reloads and stays registered until the server stops. Clients draw it: a NeoForge
 type with the same identifier and a provider, and the Obsidian client draws it with the mod's sprites (see
 [Client](#client)).
 
+## Sounds
+
+Declare sound events in `ConfigureRegistry` on both sides. `RegisterSound(string identifier, float? fixedRange = null)`
+returns a `SoundEvent` for the existing `IPlayer.SendSoundAsync` API and for local client playback:
+
+```csharp
+var chime = registry.RegisterSound("ruby:machine.chime", fixedRange: 24);
+var effect = SoundEffectBuilder.Create(chime, SoundCategory.Blocks)
+    .WithSoundPosition(new SoundPosition(4.5, 70.5, 4.5))
+    .WithVolume(0.7f)
+    .WithPitch(1)
+    .Build();
+await player.SendSoundAsync(effect);
+```
+
+The identifier must be in the plugin's namespace. A fixed range is a finite, nonnegative number; null means variable
+range. Unloading removes the declaration and registering it on reload replaces its range under the same identifier.
+The returned value is a snapshot: obtain it again during each load. No numeric ids are assigned or synced. Vanilla
+1.21.11's sound holders permit zero followed by the identifier and optional range, and both positional and entity
+sound packets already use this inline form. A sound-only plugin therefore allows vanilla clients, which hear the
+event if their resource packs provide it, and otherwise ignore it. Unlike this path, NeoForge registers and syncs
+`minecraft:sound_event` to send registry references; see `NeoForgeRegistriesSetup.java` in its
+[registry setup sources][sound-sync].
+Mod blocks still require matching client code as before.
+
+Set `BlockProperties.SoundType` to a `BlockSoundProperties`. `Break`, `Step`, `Place`, `Hit` and `Fall` are sound
+events; `Volume` and `Pitch` default to 1. Build it with vanilla identifiers, registered events, or a mix:
+
+```csharp
+registry.RegisterBlock("ruby:machine", new BlockProperties
+{
+    SoundType = BlockSoundProperties.Stone with
+    {
+        Break = chime,
+        Place = chime,
+        Volume = 0.7f
+    }
+});
+```
+
+Declare the same type on both sides. Vanilla block sounds come from the captured per-state sound types; mod blocks
+use their declaration for the client's hit, step, placement and break prediction. The server sends placement and
+break sounds to nearby players, excluding the acting player whose client predicts them. Unloading resets mod blocks
+to stone sounds and reloading replaces them. `Fall` is available on the type; landing audio awaits the client's
+landing-sound behavior.
+
+In `ConfigureClient`, keep `IClientRegistry.Sounds`, an `IClientSounds`. After configuration, call
+`Play(sound, position, category = SoundCategory.Master, volume = 1, pitch = 1)`
+or `PlayUi(SoundEvent sound, float volume = 1, float pitch = 1)` from screens, client ticks or payload handlers. Calls
+may run on any thread: the facade queues playback on the game thread; asset I/O and OpenAL use the engine's workers.
+UI audio is non-positional, plays while the world is paused, and works without a server connection. Calls return false
+while the mod is inactive or audio is unavailable; true means queued, and missing assets remain silent. Unload disables
+the old facade and discards queued requests from that load; get the new facade when configuring again.
+
+Supply `assets/<namespace>/sounds.json` and `assets/<namespace>/sounds/<path>.ogg` in the mod archive, like vanilla
+resource packs. Definitions merge with vanilla and player packs, including `replace`, event references and subtitles;
+an archive needs no `pack.mcmeta`. `samples/EngineSample` declares `sample:counter.chime`, referring to vanilla's
+amethyst chime in its `sounds.json`, and uses it for its counter's placement and break sounds.
+
+[sound-sync]: https://github.com/neoforged/NeoForge/tree/1.21.11/src/main/java/net/neoforged/neoforge/registries
+
 ## Menus
 
 ```csharp

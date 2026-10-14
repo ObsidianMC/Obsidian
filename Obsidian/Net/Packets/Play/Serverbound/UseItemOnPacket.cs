@@ -395,6 +395,9 @@ public partial class UseItemOnPacket
 
         placeLevel.BlockUpdates.OnPlacedByPlayer(position, block);
 
+        if (!pouring)
+            BlockSoundPlayback.Play(placeLevel, block, position, breaking: false, player.EntityId);
+
         var center = (VectorD)position + new VectorD(0.5, 0.5, 0.5);
         placeLevel.EmitGameEvent(MobGameEvent.BlockPlace, center, player, affectedBlock: block);
         player.Client.SendPacket(new BlockChangedAckPacket

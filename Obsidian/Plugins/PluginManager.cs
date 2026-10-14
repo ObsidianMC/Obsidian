@@ -567,6 +567,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             Log.UndoFailed(this.logger, failure, pluginContainer.Info.Name);
 
         ItemsRegistry.ReleasePlugin(pluginContainer);
+        SoundEventsRegistry.ReleasePlugin(pluginContainer);
         DataComponentTypesRegistry.ReleasePlugin(pluginContainer);
         var blocks = BlocksRegistry.ReleasePlugin(pluginContainer);
         this.RefreshPlacedBlocks(blocks);

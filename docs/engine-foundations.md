@@ -15,19 +15,20 @@ plugin that exercises it.
   `Obsidian.API.Client` project (its own assembly, which servers ship too) and the Obsidian client. A mod uses the
   same API from either side, as today.
 - **Reloadable.** Whatever a plugin registers is its own and goes when it unloads, like its entities and recipes do
-  now. Identity stays for the process (ids of new registries like block entity types and sound events don't change
-  across reloads); behaviour is replaced. Saved data of an unloaded plugin's types is kept as saved, like its
-  entities, and comes back with it.
+  now. Identity stays for the process (ids of new registries like block entity types don't change across reloads;
+  sounds keep their identifiers); behaviour is replaced. Saved data of an unloaded plugin's types is kept as saved,
+  like its entities, and comes back with it.
 - **Vanilla first where vanilla has it.** Many gaps below are vanilla parity gaps too (runtime light, loot tables,
   furnaces, hoppers, redstone, animated textures). Build the general mechanism, make vanilla's blocks use it, and let
   plugins in through the same door, rather than a plugin-only path next to a hard-coded vanilla one. The vanilla
   parity rules in AGENTS.md apply.
 - **NeoForge-shaped, not NeoForge-copied.** Mod authors should recognise the concepts (block entities, capabilities,
   data attachments, menu types with extra data, registry sync), but the API is designed for Obsidian.
-- **Registry sync.** Every new registry clients need (block entity types, sound events, data component types, recipe
+- **Registry sync.** Every new registry clients need (block entity types, data component types, recipe
   serializers) is synced to modded clients with NeoForge's and Fabric's registry sync, like items and blocks, and a
   vanilla client is refused once a mod adds to it. Creative tabs aren't: like vanilla's and NeoForge's, nothing on
-  the wire names one.
+  the wire names one. Sound events use vanilla's inline holders (identifier and optional range), so they need no
+  numeric ids or registry sync and do not themselves require a modded client.
 - **A sample per phase.** Each phase adds to a sample plugin, in the repository and loaded by the tests, that uses
   every new hook, so later phases and the test mod build on proven pieces.
 
@@ -121,7 +122,8 @@ pushes them into a hopper below.
 - **Dimension effects.** Per-dimension sky, cloud and fog rendering for mods: data-driven settings first (cloud
   texture, colour and height, sky colour, fog), a code hook for anything else. The Nether and End special cases stop
   being keyed on vanilla dimension names.
-- **Sounds.** A sound event registry for mods (synced ids), sound types for mod blocks, and a client play API.
+- **Sounds.** (done) Sound declarations for mods (inline holders; no synced ids needed), sound types for mod blocks,
+  and a client play API. See [plugin-content.md](plugin-content.md#sounds).
 
 **Sample:** the machine's block entity spins a part while working; a cable block's model follows its neighbours;
 a mod entity glows and can be ridden.
