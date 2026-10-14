@@ -111,6 +111,25 @@ with partly transparent ones (an animated texture's most transparent frame decid
 bottom, or `{"index": 2, "time": 5}`; all of them in turn by default), the ticks each one shows (`frametime`, 1 by
 default) and whether one blends into the next (`interpolate`). Version 1 archives have no assets.
 
+A block model can choose its faces' layer itself with NeoForge's `render_type`, which its children inherit:
+`"render_type": "minecraft:cutout"`, or `solid`, `cutout_mipped` (drawn as cutout) or `translucent`. Names the client
+doesn't know leave the texture's layer. A model element glows with vanilla's `light_emission`, a light level from 0 to
+15 its faces are lit with at least, however dark it is around them: a lamp's glowing core or a machine's display. It
+doesn't light other blocks, which the block's `LightEmission` does, and a value outside 0 to 15 makes the model
+malformed.
+
+```json
+{
+  "parent": "minecraft:block/block",
+  "render_type": "minecraft:cutout",
+  "textures": {"cage": "ruby:block/lamp_cage", "core": "ruby:block/lamp_core", "particle": "#cage"},
+  "elements": [
+    {"from": [0, 0, 0], "to": [16, 16, 16], "faces": {"north": {"texture": "#cage"}, "up": {"texture": "#cage"}}},
+    {"from": [5, 5, 5], "to": [11, 11, 11], "light_emission": 15, "faces": {"north": {"texture": "#core"}}}
+  ]
+}
+```
+
 ## Reloading
 
 Changing a plugin's file reloads the plugin; deleting it unloads it. The plugins that depend on it reload, or wait,

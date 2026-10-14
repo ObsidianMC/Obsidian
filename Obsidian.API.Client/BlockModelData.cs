@@ -59,4 +59,10 @@ public sealed record BlockModelFace(VectorF From, VectorF To, BlockFace Face, st
     /// Whether the face is shaded by its direction, like a model element's <c>shade</c>.
     /// </summary>
     public bool Shade { get; init; } = true;
+
+    /// <summary>
+    /// The light level, from 0 to 15, the face is lit with at least, like a model element's <c>light_emission</c>:
+    /// 15 for a face that glows in the dark. It lights the face alone, not the blocks around it.
+    /// </summary>
+    public int LightEmission { get; init; }
 }

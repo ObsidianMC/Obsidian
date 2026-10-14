@@ -116,7 +116,7 @@ its client side, by the client's tests)
   animated by the block entity's synced data) with a code escape hatch, on the same path as vanilla's hand-coded ones.
 - **Model data beyond the block state.** (done) A block entity can give the mesher extra model parts or quads (cable
   connections, facades), re-meshed when its data changes.
-- **Render layers and light.** Mods set a block's render layer, and models can mark faces emissive.
+- **Render layers and light.** (done) Mods set a block's render layer, and models can mark faces emissive.
 - **Animated textures.** `.mcmeta` animations, for vanilla's water, lava, fire and portals as much as mods'.
 - **Entity renderers.** (done) Several layers per entity (emissive eyes, overlays), textures chosen by synced data,
   code renderers, and passenger offsets so mod mounts can be ridden.
