@@ -63,8 +63,7 @@ lists of what furnaces and the smithing table accept, and its stonecutter recipe
 Random ticks grow saplings and the mangrove propagule, and bone meal grows saplings, azaleas, crops, grass blocks and
 short grass and ferns (see [plugin content](plugin-content.md#saplings)). Crops don't grow on random ticks, and bone
 meal does nothing to vanilla's other plants (stems, berries, mushrooms, moss, nylium, cocoa, water plants and the
-like). Light isn't worked out again when blocks change while the server runs, so a sapling sees the light its spot
-had when the chunk was generated.
+like).
 
 Random ticks sample the same sections and draw the same positions as vanilla's, but only saplings and the propagule
 do anything with them: leaves don't decay, ice and snow don't melt, copper doesn't weather, and so on. Lava's random

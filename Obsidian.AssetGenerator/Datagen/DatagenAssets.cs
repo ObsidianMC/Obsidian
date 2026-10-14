@@ -16,8 +16,9 @@ internal static class DatagenAssets
     private static readonly string[] enumRegistries =
         ["minecraft:data_component_type", "minecraft:map_decoration_type", "minecraft:mob_effect", "minecraft:potion"];
 
-    // The loot table categories the server fills containers from (see LootRegistryGenerator).
-    private static readonly string[] lootTableCategories = ["archaeology", "chests", "dispensers", "pots", "spawners"];
+    // Container and block tables evaluated by the server (see LootRegistryGenerator).
+    private static readonly string[] lootTableCategories =
+        ["archaeology", "blocks", "chests", "dispensers", "pots", "spawners"];
 
     /// <param name="generatedDirectory">The data generators' output (<c>data</c> and <c>reports</c>).</param>
     /// <param name="worldgenGroupsPath">The Java dumper's vanilla classes declaring each feature (see <see cref="WorldgenAssets"/>).</param>

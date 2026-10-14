@@ -13,6 +13,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
 using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators;
+using Obsidian.WorldData.Lighting;
 using Obsidian.WorldData.Portals;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
@@ -139,6 +140,8 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal LevelFluids Fluids { get; }
 
+    internal RuntimeLightEngine Lighting { get; }
+
     internal LevelPortals Portals { get; }
 
     internal void PinPortalChunk(int x, int z, int delta)
@@ -183,9 +186,13 @@ public abstract partial class AbstractLevel : ILevel
         return false;
     }
 
-    internal IChunk? GetLoadedChunk(int chunkX, int chunkZ) => GetRegionForChunk(chunkX, chunkZ) is Region region
-        ? region.GetLoadedChunk(NumericsHelper.Modulo(chunkX, 32), NumericsHelper.Modulo(chunkZ, 32))
-        : null;
+    internal IChunk? GetLoadedChunk(int chunkX, int chunkZ)
+    {
+        // Entity initialization calls this under EntityLock; reads must never acquire the fluid tick lock.
+        return GetRegionForChunk(chunkX, chunkZ) is Region region
+            ? region.GetLoadedChunk(NumericsHelper.Modulo(chunkX, 32), NumericsHelper.Modulo(chunkZ, 32))
+            : null;
+    }
 
     internal bool TryMoveEntity(IEntity entity, VectorD from, VectorD to)
     {
@@ -225,6 +232,8 @@ public abstract partial class AbstractLevel : ILevel
         this.Name = name;
         this.Seed = seed;
         this.Fluids = new LevelFluids(this);
+        this.Lighting = new RuntimeLightEngine(
+            this.Fluids.TickLock, () => this.DimensionType?.Element.HasSkylight ?? true);
         this.Portals = new LevelPortals(this);
 
         var spawnChunkCount = 2 * this.Configuration.SpawnChunkRadius + 1;
@@ -559,6 +568,7 @@ public abstract partial class AbstractLevel : ILevel
 
         // Like vanilla's chunk ticks, with natural spawning and before entities.
         TickStage = "random ticks";
+        this.Lighting.Flush();
         this.TickRandomBlocks();
 
         // Snapshot once so crossing a region boundary cannot tick an entity twice.
@@ -587,6 +597,14 @@ public abstract partial class AbstractLevel : ILevel
         foreach (var region in Regions.Values.OfType<Region>())
             region.MoveEntitiesToTheirRegions();
 
+        TickStage = "runtime light";
+        foreach (var packet in this.Lighting.TakeUpdates())
+        {
+            var location = new Vector(packet.Chunk.X << 4, 0, packet.Chunk.Z << 4);
+            foreach (var watcher in this.PlayersInRange(location))
+                watcher.SendPacket(packet);
+        }
+
         foreach (var player in Players.Values)
         {
             TickStage = $"tracking for {player.Username}";
@@ -603,16 +621,17 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal void SendLightUpdate(IChunk chunk)
     {
-        var packet = new LightUpdatePacket(chunk);
-        foreach (var player in this.GetPlayersInChunkRange(new Vector(chunk.X << 4, 0, chunk.Z << 4)))
-            player.SendPacket(packet);
+        this.Lighting.QueueChunkUpdate(chunk);
     }
 
     /// <summary>
     /// Queues a complete chunk's pending entities (<see cref="Chunk.PendingEntities"/>) to spawn on the next tick, like
     /// vanilla when a proto chunk becomes a level chunk or an entity chunk is loaded.
     /// </summary>
-    internal void QueueEntitySpawn(Chunk chunk) => this.entitySpawns.Enqueue(chunk);
+    internal void QueueEntitySpawn(Chunk chunk)
+    {
+        this.entitySpawns.Enqueue(chunk);
+    }
 
     /// <remarks>
     /// Pending entities are loaded like saved ones (see <see cref="EntityNbt.Load"/>), so generated entities get the saved
@@ -673,6 +692,9 @@ public abstract partial class AbstractLevel : ILevel
             {
                 LockChunk = this.Generator.LockChunkAsync,
                 FluidTickLock = this.Fluids.TickLock,
+                FlushLight = this.Lighting.Flush,
+                LightLoaded = this.Lighting.Track,
+                LightUnloaded = this.Lighting.Untrack,
                 EntitiesLoaded = this.QueueEntitySpawn,
                 SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null
             };
@@ -695,7 +717,20 @@ public abstract partial class AbstractLevel : ILevel
         await simulationGate.WaitAsync();
         try
         {
-            if (Regions.TryRemove(value, out var r))
+            IRegion? r;
+            lock (this.Fluids.TickLock)
+            {
+                if (!Regions.TryGetValue(value, out r))
+                    return;
+
+                // Retire publication and detach lighting before another reader can create a replacement region.
+                if (r is Region concrete)
+                    concrete.RetireLighting();
+
+                Regions.TryRemove(KeyValuePair.Create(value, r));
+            }
+
+            if (r is not null)
                 await r.FlushAsync();
         }
         finally

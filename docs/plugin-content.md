@@ -2,10 +2,10 @@
 
 Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, add entity types,
 particle types, menu types, worldgen types and level generators in code, and add tags, biomes, dimension types, damage
-types, worldgen features, biome modifiers, noise settings and dimensions with data pack files, much like NeoForge and
-Fabric mods. Clients need the matching mod for blocks, items, entity types, particle types and menu types: NeoForge
-and Fabric clients, and the Obsidian client, are sent those registries and map the server's ids to their own, so the
-mods may load in any order. Biomes, dimension types and
+types, worldgen features, biome modifiers, noise settings, loot tables and dimensions with data pack files, like
+NeoForge and Fabric mods. Clients need the matching mod for blocks, items, entity types, particle types and menus:
+NeoForge and Fabric clients, and the Obsidian client, receive those registries and map the server's ids to their own.
+The mods may load in any order. Biomes, dimension types and
 damage types are sent with their data, so vanilla clients can join too. On the Obsidian client, a mod adds its client
 side in code (see [Client](#client)).
 
@@ -28,8 +28,8 @@ public override void ConfigureRegistry(IPluginRegistry registry)
 ```
 
 The block's identifier is in the plugin's namespace (its id). Unless `Item` is null, an item with the same identifier
-places the block and is what it drops. A client mod has to declare the same block with the same properties and values
-in the same order: bool properties are `true, false`, int ones ascending, enum ones in the order given.
+places the block and is its fallback drop when it has no loot table. A client mod declares the same properties and
+values in the same order: bool properties are `true, false`, int ones ascending, enum ones in the order given.
 
 Structures turn and mirror the block, in templates and pool elements, by its properties named like vanilla's: a
 `facing` of `north`, `east`, `south`, `west`, `up` or `down` turns, an `axis` of `x`, `y` or `z` swaps `x` and `z` on a
@@ -107,6 +107,30 @@ is unloaded and run once it's back.
 A cancellable `BlockPlaceEventArgs`, next to `BlockBreakEventArgs`, is raised before a player places a block, with
 the state they'd place. Cancelling it keeps the block from being placed, and the player keeps the item.
 
+### Runtime light
+
+Placed and removed blocks update block light and sky light, including a plugin block's `LightEmission` and its
+template's opacity and light-occluding shapes. Player and plugin changes, fluids, explosions and growing trees share
+the same runtime engine. Changes are batched on the level's tick; light is resolved before random ticks, so saplings
+read the current light, and before a chunk is saved. Players watching a changed chunk receive one light packet per
+tick containing the changed sections, including sections that became dark. Dimensions without `HasSkylight` do not
+propagate sky light.
+
+Direct `IChunk.SetBlock` and `IChunkSection.SetBlock` calls on loaded, complete chunks use the same lock and relight
+hook, with section coordinates local to its 16-block cube. Unfinished generation writes keep their direct storage
+path. Loading, generation completion and unloading attach or detach lighting with the chunk slot's lifecycle;
+reading a loaded chunk does not acquire the tick lock.
+
+Light stops at unloaded or unfinished chunks. When a complete neighbor loads, both sides of its shared borders are
+reconciled on the next tick. Unlike vanilla's chunk light storage, Obsidian stores arrays only inside the build
+range; the top sky source is virtual, and the extra sections outside the build range are not sent. Lighting does
+not load or generate missing neighbors to finish an update.
+
+Runtime updates clear dependent light and spread surviving sources again; they do not recompute complete chunks
+for each changed block. A deterministic test times 288 edits batched over nine 64-layer chunks against a fresh
+generation-engine computation after each batch. Timing is reported by `BatchedEditsMatchFullComputationAndReportTiming`
+in `Obsidian.Tests/RuntimeLight.cs`; large skylight changes can still affect an entire column and its surroundings.
+
 ### Saplings
 
 ```csharp
@@ -165,8 +189,8 @@ blocks report:
 
 True and false make a bool property and consecutive numbers an int one; anything else is an enum property in the
 order listed. The other keys are `BlockProperties`' (`hasCollision`, `opaque`, `hardness`, `explosionResistance`,
-`requiresCorrectTool`, `lightEmission`), `behavior` is an `IBlockBehavior` type's full name, `treeGrower` makes a
-sapling (`{"tree": "ruby:ruby_tree"}`, with `TreeGrower`'s other members in camel case), and `item` is false for a
+`requiresCorrectTool`, `lightEmission`, `lootTable`), `behavior` is an `IBlockBehavior` type's full name, and
+`treeGrower` makes a sapling (`{"tree": "ruby:ruby_tree"}`, with its other members in camel case). `item` is false for a
 block without an item.
 
 The generator makes a `RubyBlocks` class (from the namespace) in the plugin assembly's namespace, with a property per
@@ -180,6 +204,76 @@ var state = new RubyBlocks.LampState(Lit: true, Power: 2, Color: RubyBlocks.Lamp
 
 Obsidian.MSBuild gives the data folder's files to the generator; without it, add the project's `data` folder's files
 as `AdditionalFiles`.
+
+## Block drops
+
+Blocks use vanilla loot tables when players break them and when explosions destroy them. Vanilla's blocks use their
+declared table, including aliases such as wall torches using the torch table. A plugin block `ruby:ore` uses
+`ruby:blocks/ore`, loaded from `data/ruby/loot_table/blocks/ore.json`:
+
+```json
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "ruby:gem",
+          "functions": [
+            { "function": "minecraft:set_count", "count": 2 },
+            { "function": "minecraft:explosion_decay" }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`BlockProperties.LootTable` names another table, such as `ruby:rewards/ore`; JSON block definitions use `lootTable`.
+Without an explicit table, a plugin block whose default table is absent drops its own item. An explicit table that
+is missing, or a table with no pools, drops nothing. Creative and spectator players receive no drops.
+
+Tables can add or replace any namespace's tables. Files are applied in plugin load order, then the server's data
+packs in their name order. Reload replaces the plugin's tables; unloading removes them and restores the previous
+table or vanilla's. Nested `minecraft:loot_table` entries resolve through the same overrides. A malformed table or
+unsupported loot type is logged and omitted, without preventing the plugin from loading.
+Each block evaluation captures one table version for its random sequence, location checks and nested references;
+an in-progress evaluation finishes against that version if a plugin reloads. Table entries require `value` to name
+a table or contain an inline table. An evaluation failure during an explosion is logged for that block, and the
+explosion continues removing blocks and evaluating their drops.
+
+The evaluator supports item, empty, dynamic and table entries; alternatives, groups and sequences; constant,
+uniform and binomial number providers; and the block conditions `match_tool`, `block_state_property`, `table_bonus`,
+`random_chance`, `survives_explosion`, `all_of`, `any_of` and `inverted`. Tool predicates accept item ids or item tags,
+counts and active enchantments, including silk touch and fortune. `location_check` supports block ids or tags and
+state properties at an offset; vanilla's empty `entity_properties` predicate requires the breaking entity.
+
+Functions include `set_count`, `limit_count`, all three vanilla `apply_bonus` formulas, `explosion_decay`,
+`copy_state` and `copy_components`. Explosion decay samples each item with probability `1 / radius`; survival
+conditions sample once. The explosion's drop-decay game rule decides whether a radius is supplied. Conditions and
+functions run in table order, with vanilla's short circuiting and random draws. Named random sequences are kept
+per level in memory, shared with container loot; persisting them remains a separate save-format task.
+Evaluations sharing a named sequence serialize their complete draws; unrelated sequences remain independent.
+
+Breaking either part of a vanilla door, bed or double plant removes its matching partner and evaluates the
+drop-bearing state once, before removal. Creative breaks suppress both parts' drops. Infested blocks keep table
+results, including plugin overrides; silverfish spawning without silk touch is handled separately.
+
+`RequiresCorrectTool` applies to vanilla and plugin blocks when players break them. A tool's `minecraft:tool`
+component uses the first matching `correct_for_drops` rule. Vanilla's defaults read the live `mineable/*` and
+`incorrect_for_*_tool` block tags, including tier restrictions. A plugin can add its blocks to those tags or supply
+rules on a tool stack. Removing the tool component makes the stack unsuitable for required-tool blocks. Explosions
+evaluate tables with an empty tool and bypass the player's correct-tool check.
+Their direct source entity, when present, supplies `this_entity`, independently of its game mode.
+
+For direct evaluation, `LootTableJson.Parse(string json, string identifier = "")` builds a `LootTable`.
+`LootContext` adds `Tool`, `BlockState`, `BlockProperties`, `ExplosionRadius`, `BlockEntityComponents`,
+`DynamicDrops` and `TestLocation`. Block entity code supplies components and dynamic contents to the context;
+`copy_components` respects `include` and `exclude`, and `copy_state` copies requested properties onto the stack's
+`minecraft:block_state` component. Container contents and block entity lifecycle are handled by their own subsystem.
 
 ## Entities
 
@@ -1488,7 +1582,7 @@ overworld instead of vanilla's. The data comes from two places:
   plugins, so the operator's packs win. Obsidian reads the same files of a pack as of a plugin's `data/` folder:
   biomes, dimension and damage types, features, carvers, processor lists, structures, structure sets, template pools,
   structure templates, noise settings, density functions, noises, parameter lists, level stems and tags (blocks,
-  items, entity types, biomes, placed features and configured carvers). Other files, like recipes or loot tables, are
+  items, entity types, biomes, placed features and configured carvers), and loot tables. Other files, like recipes, are
   left out unread, and how many is logged. Like vanilla, a pack's `overlays` whose formats include vanilla
   1.21.11's data pack format (94.1) are applied over its root, the last listed winning, with vanilla's checks of
   `min_format`, `max_format` and `formats` (an overlays section that fails them is logged and not applied), and its
@@ -1778,10 +1872,12 @@ The rules:
 ## Client
 
 A mod whose side is `client` or `both` also runs on the Obsidian client, which registers its content like a server
-(see [mod-system.md](mod-system.md)). Its plugin class implements `IClientPlugin`, from `Obsidian.API.Client`, to
-register its client side. The client calls `ConfigureClient` when it loads its mods, after `ConfigureRegistry`: at
-startup, and on a new instance of the plugin when the player reloads them (see below); servers never call it, so a
-`both` mod runs on a server without any client code.
+(see [mod-system.md](mod-system.md)). Its plugin class implements `IClientPlugin` to register its client side. The
+client API is its own assembly and package, `Obsidian.API.Client`, which the mod references besides `Obsidian.API`;
+it's interfaces and data only, and servers ship it too, so the same plugin class loads on them. The client calls
+`ConfigureClient` when it loads its mods, after `ConfigureRegistry`: at startup, and on a new instance of the plugin
+when the player reloads them (see below); servers never call it, so a `both` mod runs on a server without any client
+code.
 
 What `ConfigureClient` registers takes effect when it returns and stays until the client exits or reloads its mods;
 if it throws, the mod fails to load and none of it does. The registry only takes registrations during

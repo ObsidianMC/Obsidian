@@ -52,6 +52,9 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      vanilla's registries. A plugin's items
      stay registered, and synced, until the server stops, even if the plugin unloads for good: stacks of them can
      still be anywhere, so clients need the mod until then.
+   - Done for block loot: players and explosions evaluate vanilla's or plugins' `data/<ns>/loot_table` tables,
+     with state and tool predicates, silk touch, fortune and explosion decay. Required-tool blocks check the tool
+     component's ordered rules and live mining and tier tags; unloading a plugin restores the previous loot tables.
    - Done for blocks: plugins register blocks with `IPluginRegistry.RegisterBlock`, with state properties, simple
      physics (collision, opacity, hardness, light emission), an `IBlockBehavior` for using, placing, updating and
      ticking them and, by default, an item that places them. Their states get ids after vanilla's, numbered like
@@ -59,6 +62,9 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      states the same way. Physics, light and shapes come from a vanilla template block (stone, glass or cobweb).
      Vanilla blocks keep their generated types. Saved worlds store blocks by name, so a plugin block loads as air
      once its plugin is gone.
+   - Done for runtime light: block emission, opacity and light-occluding shapes relight on block changes, across
+     loaded chunk borders, with decrease and increase passes. Changed light sections are sent to watching players
+     in tick batches and flushed before saves and random ticks (see [Runtime light](plugin-content.md#runtime-light)).
    - Done for block, item and entity type tags: like a NeoForge or Fabric mod's data pack, a plugin's
      `data/<namespace>/tags/<registry>/<path>.json` files (`values` with `#` tag references and optional entries,
      `replace`, and NeoForge's `remove`) are merged with vanilla's tags in load order, and again when plugins load or
@@ -391,7 +397,8 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      colour modifier, and temperature and downfall for the colormaps); vanilla's biomes keep the registry's colours
      (see [plugin-archives.md](plugin-archives.md#assets)). The client's mods load before its assets, so their
      blocks are baked from the start.
-   - Done, slice 4c, the client API: `Obsidian.API.Client` holds interfaces and records only. A mod's plugin
+   - Done, slice 4c, the client API: `Obsidian.API.Client`, now its own project and assembly (which servers ship,
+     so a `both` mod's plugin class loads on them), holds interfaces and records only. A mod's plugin
      implements `IClientPlugin`, whose `ConfigureClient(IClientRegistry)` the Obsidian client calls after
      `ConfigureRegistry` and servers never call, so a `both` mod runs on a server without client code. Through
      `IClientRegistry` a mod handles the payloads servers send on the channels it declared with `MapPayload`

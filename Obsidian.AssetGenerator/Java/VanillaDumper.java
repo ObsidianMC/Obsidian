@@ -115,6 +115,7 @@ public final class VanillaDumper {
         dumper.dumpBlockPhysics();
         dumper.dumpCollisionShapes();
         dumper.dumpBlastResistance();
+        dumper.dumpBlockLootTables();
         dumper.dumpBlockTransforms();
         dumper.dumpMapColors();
         dumper.dumpWallShapeCovers();
@@ -159,6 +160,20 @@ public final class VanillaDumper {
 
         var currentVersion = Mojang.call(mojang.method(sharedConstants, "getCurrentVersion"), null);
         return (String) Mojang.call(mojang.method("net.minecraft.WorldVersion", "name"), currentVersion);
+    }
+
+    /** Records aliases such as wall torches, and blocks that deliberately have no drop table. */
+    private void dumpBlockLootTables() throws IOException {
+        var tableOf = mojang.method("net.minecraft.world.level.block.state.BlockBehaviour", "getLootTable");
+        var keyId = mojang.method("net.minecraft.resources.ResourceKey", "identifier");
+        var tables = new TreeMap<String, Object>();
+        for (var block : (Iterable<?>) blockRegistry) {
+            var id = Mojang.call(registryKey, blockRegistry, block).toString();
+            var table = (Optional<?>) Mojang.call(tableOf, block);
+            tables.put(id, table.map(key -> Mojang.call(keyId, key).toString()).orElse(null));
+        }
+
+        Json.write(output.resolve("block_loot_tables.json"), tables, false);
     }
 
     private VanillaDumper(Mojang mojang, Path output, String version) {

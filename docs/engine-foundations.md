@@ -11,8 +11,9 @@ plugin that exercises it.
 
 ## Rules for every phase
 
-- **Both sides, one API.** Server pieces go in Obsidian.API and Obsidian; client pieces go in `Obsidian.API.Client`
-  and the Obsidian client. A mod uses the same API from either side, as today.
+- **Both sides, one API.** Server pieces go in Obsidian.API and Obsidian; client pieces go in the
+  `Obsidian.API.Client` project (its own assembly, which servers ship too) and the Obsidian client. A mod uses the
+  same API from either side, as today.
 - **Reloadable.** Whatever a plugin registers is its own and goes when it unloads, like its entities and recipes do
   now. Identity stays for the process (ids of new registries like block entity types and sound events don't change
   across reloads); behaviour is replaced. Saved data of an unloaded plugin's types is kept as saved, like its
@@ -60,7 +61,7 @@ The base every mod needs: blocks with state that save, tick, react and sync.
   each side, each selected and broken on its own).
 - **Drops.** Block drops from loot tables (vanilla's and a plugin's `data/<ns>/loot_table`), with tool checks,
   silk touch and fortune, and container contents dropped on break.
-- **Runtime light.** The light engine's decrease pass, so placing and breaking blocks relights the area. This
+- **Runtime light.** (done) The light engine's decrease pass, so placing and breaking blocks relights the area. This
   closes the plant-growth light gap in [known-gaps.md](known-gaps.md) too.
 - **Redstone signals.** A signal API (a block's output power by side, the power a position receives) used by
   vanilla's basic components: wire, torch, repeater, comparator, lever, button, pressure plate. Pistons and

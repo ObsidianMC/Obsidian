@@ -2,6 +2,9 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.API.Loot;
+using Obsidian.WorldData;
+using Obsidian.WorldData.Structures;
 
 namespace Obsidian.Events;
 
@@ -27,13 +30,24 @@ public partial class MainEventHandler
             return;
         }
 
+        var tool = player.GetHeldItem();
+        var parts = await TwoPartBlockBreak.PrepareAsync(world, location, block);
+        // Block entity integration supplies blockEntityComponents/dynamicDrops here, from parts.DropPosition.
+        var drops = await BlockLoot.GetDropsAsync(world, parts.DropPosition, parts.DropState, tool, breaker: player);
+
+        await parts.RemovePartnerAsync(world);
         await world.SetBlockAsync(location, BlocksRegistry.Air, true);
-        if (world is Obsidian.WorldData.AbstractLevel gameEvents)
+        if (world is AbstractLevel gameEvents)
         {
-            if (block.Is(BlockIds.Jukebox)) gameEvents.StopJukebox(location);
-            gameEvents.EmitGameEvent(Obsidian.WorldData.MobGameEvent.BlockDestroy, (VectorD)location + new VectorD(0.5, 0.5, 0.5), player, affectedBlock: block);
+            if (block.Is(BlockIds.Jukebox))
+                gameEvents.StopJukebox(location);
+
+            gameEvents.EmitGameEvent(MobGameEvent.BlockDestroy, (VectorD)location + 0.5, player,
+                affectedBlock: block);
         }
-        if (player is Player concrete) concrete.AddExhaustion(0.005f);
+
+        if (player is Player concrete)
+            concrete.AddExhaustion(0.005f);
 
         player.SendPacket(new BlockUpdatePacket(location, BlocksRegistry.Air.GetHashCode()));
 
@@ -44,44 +58,47 @@ public partial class MainEventHandler
             DestroyStage = -1
         }, player.EntityId);
 
-        var dropped = block;
-        if (block.UnlocalizedName.StartsWith("minecraft:infested_", StringComparison.Ordinal))
-        {
-            if (player.GameMode == GameMode.Creative)
-                return;
-            var silkTouch = player.GetHeldItem() is { } tool && Obsidian.API.Loot.EnchantmentHelper.GetEnchantments(tool).Any(enchantment =>
-                enchantment.Id == Obsidian.API.Registries.EnchantmentsRegistry.SilkTouch.Id && enchantment.Level > 0);
-            if (!silkTouch)
-            {
-                if (world is Obsidian.WorldData.AbstractLevel level)
-                    level.EnqueueEntityAction(() => { Silverfish.SpawnFromBlock(world, location); return default; });
-                else
-                    Silverfish.SpawnFromBlock(world, location);
-                return;
-            }
-            if (Obsidian.WorldData.Structures.BlockStateParser.TryParse(block.UnlocalizedName.Replace("infested_", "", StringComparison.Ordinal)) is { } normal)
-                dropped = normal;
-        }
-
-        if (!BlocksRegistry.TryGetItem(dropped, out var droppedHolder))
+        if (player.GameMode is GameMode.Creative or GameMode.Spectator)
             return;
 
-        var droppedItem = new ItemStack(droppedHolder, 1);
-
-        var item = new ItemEntity
+        if (block.UnlocalizedName.StartsWith("minecraft:infested_", StringComparison.Ordinal))
         {
-            EntityId = Server.GetNextEntityId(),
-            Item = droppedItem,
-            Level = player.Level,
-            Position = (VectorD)location + 0.5,
-        };
+            var silkTouch = tool is not null && EnchantmentHelper.GetEnchantments(tool).Any(enchantment =>
+                enchantment.Id == EnchantmentsRegistry.SilkTouch.Id && enchantment.Level > 0);
+            if (!silkTouch)
+            {
+                if (world is AbstractLevel level)
+                {
+                    level.EnqueueEntityAction(() =>
+                    {
+                        Silverfish.SpawnFromBlock(world, location);
+                        return default;
+                    });
+                }
+                else
+                {
+                    Silverfish.SpawnFromBlock(world, location);
+                }
+            }
+        }
 
-        player.Level.TryAddEntity(item);
+        foreach (var droppedItem in drops)
+        {
+            var item = new ItemEntity
+            {
+                EntityId = Server.GetNextEntityId(),
+                Item = droppedItem,
+                Level = player.Level,
+                Position = (VectorD)parts.DropPosition + 0.5
+            };
 
-        var power = GetRandDropVelocity();
-        var direction = Globals.Random.NextSingle() * 6.2f;
+            player.Level.TryAddEntity(item);
 
-        item.SpawnEntity(new Velocity(-Math.Sin(direction) * power, 0.2f, Math.Cos(direction) * power));
+            var power = GetRandDropVelocity();
+            var direction = Globals.Random.NextSingle() * 6.2f;
+
+            item.SpawnEntity(new Velocity(-Math.Sin(direction) * power, 0.2f, Math.Cos(direction) * power));
+        }
     }
 
     private static float GetRandDropVelocity()

@@ -1,10 +1,14 @@
 using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.WorldData;
 using System.Diagnostics;
 
 namespace Obsidian.ChunkData;
 
 public sealed class ChunkSection : IChunkSection
 {
+    // Only live sections have an owner hook; generation writes keep their direct storage path.
+    internal volatile Chunk? LiveChunk;
+
     public int? YBase { get; }
 
     public DataContainer<IBlock> BlockStateContainer { get; }
@@ -139,7 +143,20 @@ public sealed class ChunkSection : IChunkSection
     public IBlock GetBlock(int x, int y, int z) => this.BlockStateContainer.Get(x, y, z);
 
     public BiomeCodec GetBiome(int x, int y, int z) => this.BiomeContainer.Get(x, y, z);
+
     public void SetBlock(int x, int y, int z, IBlock block)
+    {
+        if (this.LiveChunk is Chunk chunk)
+        {
+            chunk.SetBlock(x, (this.YBase!.Value << 4) + y, z, block);
+            return;
+        }
+
+        this.SetBlockUntracked(x, y, z, block);
+    }
+
+    /// <summary>Writes storage directly for generation and the owning chunk's already synchronized write.</summary>
+    internal void SetBlockUntracked(int x, int y, int z, IBlock block)
     {
         if (!block.Is(BlockIds.Air))
             IsEmpty = false;
@@ -147,10 +164,11 @@ public sealed class ChunkSection : IChunkSection
         this.BlockStateContainer.Set(x, y, z, block);
         this.randomTickingStale = true;
     }
+
     /// <summary>
     /// Sets the blocks of layer <paramref name="y"/>: entry <c>z * 16 + x</c> of <paramref name="layer"/> indexes
-    /// <paramref name="blocks"/>, where null blocks are skipped. Same as calling <see cref="SetBlock(int, int, int, IBlock)"/>
-    /// for each block in index order, but much faster.
+    /// <paramref name="blocks"/>, where null blocks are skipped. Generation uses this direct storage path without
+    /// calling the live chunk hook for each block.
     /// </summary>
     internal void SetBlockLayer(int y, ReadOnlySpan<byte> layer, ReadOnlySpan<IBlock?> blocks)
     {
@@ -194,12 +212,25 @@ public sealed class ChunkSection : IChunkSection
     /// </summary>
     public void SetStateId(int x, int y, int z, int stateId)
     {
+        if (this.LiveChunk is Chunk chunk)
+        {
+            chunk.SetBlock(x, (this.YBase!.Value << 4) + y, z, BlocksRegistry.Get(stateId));
+            return;
+        }
+
+        this.SetStateIdUntracked(x, y, z, stateId);
+    }
+
+    /// <summary>Writes a generation state directly, without resolving it or entering the live chunk hook.</summary>
+    internal void SetStateIdUntracked(int x, int y, int z, int stateId)
+    {
         if (stateId != airStateId)
             IsEmpty = false;
 
         ((BlockStateContainer)this.BlockStateContainer).SetStateId(x, y, z, stateId);
         this.randomTickingStale = true;
     }
+
     public void SetLightLevel(int x, int y, int z, LightType lt, int level)
     {
         // each value is 4 bits. So upper 4 bits will be odd, lower even

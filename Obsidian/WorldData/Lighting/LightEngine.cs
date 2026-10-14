@@ -15,8 +15,8 @@ namespace Obsidian.WorldData.Lighting;
 /// can't leave those chunks. Unlit neighbors are left alone; lighting them later pulls this chunk's light in.
 /// </para>
 /// <para>
-/// Light only ever rises here, which is all generation needs. Runtime block updates would also need vanilla's decrease
-/// pass, which takes light away before spreading it again.
+/// Generation uses an increase pass. <see cref="RuntimeLightEngine"/> removes dependent light before spreading it
+/// again when complete chunks' blocks change.
 /// </para>
 /// <para>
 /// Light is stored and spread within the build range. Vanilla also keeps light for one section below and one above it;
@@ -129,7 +129,8 @@ internal sealed class LightEngine
     /// or later.
     /// </summary>
     /// <remarks>
-    /// This takes no locks; like <see cref="LightChunk"/>, it relies on the caller to keep the chunks from changing meanwhile.
+    /// The caller holds generation's chunk locks. For a live level, propagation also takes the fluid tick lock after
+    /// those locks, so runtime writes, light updates and save snapshots cannot interleave with it.
     /// </remarks>
     public static async ValueTask LightChunkAsync(IChunk chunk, ILevel level, bool hasSkyLight = true)
     {
@@ -147,7 +148,15 @@ internal sealed class LightEngine
             }
         }
 
-        LightChunk(chunk, litNeighbors, hasSkyLight);
+        if (level is AbstractLevel live)
+        {
+            lock (live.Fluids.TickLock)
+                LightChunk(chunk, litNeighbors, hasSkyLight);
+        }
+        else
+        {
+            LightChunk(chunk, litNeighbors, hasSkyLight);
+        }
     }
 
     /// <summary>

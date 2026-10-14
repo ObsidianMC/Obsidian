@@ -77,6 +77,18 @@ public class Region : IRegion
     /// </summary>
     internal Lock FluidTickLock { get; init; } = new();
 
+    // Runtime light resolves under FluidTickLock before a save takes its block and light snapshot.
+    internal Action? FlushLight { get; init; }
+
+    // Invoked under FluidTickLock before publishing a slot or completing its still-stored proto chunk.
+    internal Action<IChunk, bool>? LightLoaded { get; init; }
+
+    // Chunk unload detaches after saving; region removal resolves final light before detaching and saving its chunks.
+    internal Action<IChunk>? LightUnloaded { get; init; }
+
+    // A removed region cannot publish or attach chunks, including loads and generation already in flight.
+    private bool lightingRetired;
+
     // The dimension's build range, which decides the section count of loaded chunks.
     private readonly int minY;
     private readonly int height;
@@ -136,9 +148,22 @@ public class Region : IRegion
         await chunkSlotLock.WaitAsync();
         try
         {
-            chunk = loadedChunks[x, z] ?? await GetChunkFromFileAsync(x, z); // Still might be null but that's okay.
-            loadedChunks[x, z] = chunk!;
-            return chunk!;
+            Chunk? fromDisk = null;
+            chunk = loadedChunks[x, z];
+            if (chunk is null)
+            {
+                fromDisk = await GetChunkFromFileAsync(x, z);
+                chunk = fromDisk;
+            }
+
+            lock (this.FluidTickLock)
+            {
+                chunk = loadedChunks[x, z] ?? chunk;
+                if (chunk is not null)
+                    this.PublishChunk(x, z, chunk, ReferenceEquals(chunk, fromDisk));
+
+                return chunk!;
+            }
         }
         finally
         {
@@ -160,9 +185,21 @@ public class Region : IRegion
         await chunkSlotLock.WaitAsync();
         try
         {
-            chunk = loadedChunks[x, z] ?? (this.regionFile.HasChunk(x, z) ? await GetChunkFromFileAsync(x, z) : null) ?? create();
-            loadedChunks[x, z] = chunk;
-            return chunk;
+            Chunk? fromDisk = null;
+            chunk = loadedChunks[x, z];
+            if (chunk is null && this.regionFile.HasChunk(x, z))
+            {
+                fromDisk = await GetChunkFromFileAsync(x, z);
+                chunk = fromDisk;
+            }
+
+            chunk ??= create();
+            lock (this.FluidTickLock)
+            {
+                chunk = loadedChunks[x, z] ?? chunk;
+                this.PublishChunk(x, z, chunk, ReferenceEquals(chunk, fromDisk));
+                return chunk;
+            }
         }
         finally
         {
@@ -173,9 +210,18 @@ public class Region : IRegion
     public async Task UnloadChunk(int x, int z)
     {
         var chunk = loadedChunks[x, z];
-        if (chunk is null) { return; }
+        if (chunk is null)
+            return;
+
         await SerializeChunkAsync(chunk, unloading: true);
-        loadedChunks[x, z] = null;
+        lock (this.FluidTickLock)
+        {
+            if (!ReferenceEquals(loadedChunks[x, z], chunk))
+                return;
+
+            this.DetachLighting(chunk);
+            loadedChunks[x, z] = null;
+        }
     }
 
     internal IChunk? GetLoadedChunk(int x, int z) => loadedChunks[x, z] is { IsGenerated: true } chunk ? chunk : null;
@@ -300,8 +346,6 @@ public class Region : IRegion
                         chunk.UnspawnableEntities.Add(entity);
                 }
             }
-
-            this.EntitiesLoaded?.Invoke(chunk);
         }
 
         return chunk;
@@ -331,9 +375,70 @@ public class Region : IRegion
 
     public void SetChunk(IChunk chunk)
     {
-        if (chunk is null) { return; } // I dunno... maybe we'll need to null out a chunk someday?
-        var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
-        loadedChunks[x, z] = chunk;
+        if (chunk is null)
+            return;
+
+        var x = NumericsHelper.Modulo(chunk.X, CubicRegionSize);
+        var z = NumericsHelper.Modulo(chunk.Z, CubicRegionSize);
+        lock (this.FluidTickLock)
+            this.PublishChunk(x, z, chunk);
+    }
+
+    // Slot changes and lighting attachment share the tick lock; no read can later attach a stale instance.
+    private void PublishChunk(int x, int z, IChunk chunk, bool fromDisk = false)
+    {
+        if (this.lightingRetired)
+            return;
+
+        if (this.loadedChunks[x, z] is IChunk previous && !ReferenceEquals(previous, chunk))
+            this.DetachLighting(previous);
+
+        if (chunk is Chunk concrete)
+            concrete.CompleteGeneration = this.CompleteChunk;
+
+        // Lock-free readers must not see a complete chunk until all its section hooks are ready.
+        this.LightLoaded?.Invoke(chunk, false);
+        this.loadedChunks[x, z] = chunk;
+
+        // Entity initialization reads this slot; queue it only after publication and lighting attachment.
+        if (fromDisk && chunk is Chunk { IsGenerated: true } complete)
+            this.EntitiesLoaded?.Invoke(complete);
+    }
+
+    /// <summary>
+    /// Publishes completion and attaches lighting together, only for the chunk still stored in its slot.
+    /// </summary>
+    private void CompleteChunk(Chunk chunk)
+    {
+        lock (this.FluidTickLock)
+        {
+            var x = NumericsHelper.Modulo(chunk.X, CubicRegionSize);
+            var z = NumericsHelper.Modulo(chunk.Z, CubicRegionSize);
+            if (!this.lightingRetired && ReferenceEquals(this.loadedChunks[x, z], chunk))
+                this.LightLoaded?.Invoke(chunk, true);
+
+            chunk.SetChunkStatusCore(ChunkGenStage.full);
+        }
+    }
+
+    private void DetachLighting(IChunk chunk)
+    {
+        if (chunk is Chunk concrete)
+            concrete.CompleteGeneration = null;
+
+        this.LightUnloaded?.Invoke(chunk);
+    }
+
+    /// <summary>Flushes final light and detaches every chunk when the level removes this region.</summary>
+    internal void RetireLighting()
+    {
+        lock (this.FluidTickLock)
+        {
+            this.lightingRetired = true;
+            this.FlushLight?.Invoke();
+            foreach (var chunk in this.loadedChunks)
+                this.DetachLighting(chunk);
+        }
     }
 
     /// <summary>
@@ -346,8 +451,11 @@ public class Region : IRegion
         var x = NumericsHelper.Modulo(stored.X, CubicRegionSize);
         var z = NumericsHelper.Modulo(stored.Z, CubicRegionSize);
 
-        if (ReferenceEquals(this.loadedChunks[x, z], stored))
-            this.loadedChunks[x, z] = replacement;
+        lock (this.FluidTickLock)
+        {
+            if (ReferenceEquals(this.loadedChunks[x, z], stored))
+                this.PublishChunk(x, z, replacement);
+        }
     }
 
     /// <summary>
@@ -381,6 +489,8 @@ public class Region : IRegion
             using (this.LockChunk is null ? null : await this.LockChunk(chunk.X, chunk.Z))
             lock (this.FluidTickLock)
             {
+                this.FlushLight?.Invoke();
+
                 // The chunk stored now, read under the lock: generation may have replaced the one this save was given
                 // while it waited (see ReplaceChunk). One no longer stored was unloaded and is saved as it was.
                 var current = this.loadedChunks[x, z] ?? chunk;
