@@ -52,13 +52,10 @@ public partial class Player
         AcceptedDamageCount++;
         if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion or CombatDamageKind.FireContact or CombatDamageKind.Thorns)
         {
+            // Worn items' armour is in the attributes' modifiers.
+            UpdateEquipmentAttributes();
             var armor = GetAttributeValue("minecraft:armor");
             var toughness = GetAttributeValue("minecraft:armor_toughness");
-            foreach (var (item, slot) in CombatEffects.Armor(this))
-            {
-                armor += CombatItems.Attribute(item, "armor", slot);
-                toughness += CombatItems.Attribute(item, "armor_toughness", slot);
-            }
             amount = CombatItems.ReduceArmor(amount, armor, toughness,
                 1 - 0.15f * CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Breach));
             for (var slot = 5; slot <= 8; slot++)
@@ -114,8 +111,16 @@ public partial class Player
     internal ValueTask SyncInventorySlotAsync(int slot) => Client.QueuePacketAsync(new ContainerSetSlotPacket
     { ContainerId = 0, Slot = (short)slot, SlotData = Inventory.GetItem(slot), StateId = Inventory.StateId++ });
 
-    internal float AttackCharge => Math.Clamp((attackTicks + 0.5f) *
-        CombatItems.Attribute(GetHeldItem(), "attack_speed", "mainhand", GetAttributeValue("minecraft:attack_speed")) / 20, 0, 1);
+    // The held item's attack speed is in the attribute's modifiers, brought up to date first.
+    internal float AttackCharge
+    {
+        get
+        {
+            UpdateEquipmentAttributes();
+
+            return Math.Clamp((attackTicks + 0.5f) * GetAttributeValue("minecraft:attack_speed") / 20, 0, 1);
+        }
+    }
 
     internal bool CanAttack(IEntity target, ItemStack? item = null)
     {
@@ -137,7 +142,8 @@ public partial class Player
     {
         var item = GetHeldItem();
         var charge = AttackCharge;
-        var damage = CombatItems.Attribute(item, "attack_damage", "mainhand", GetAttributeValue("minecraft:attack_damage"));
+        UpdateEquipmentAttributes();
+        var damage = GetAttributeValue("minecraft:attack_damage");
         if (ActivePotionEffects.TryGetValue((int)PotionEffect.Strength - 1, out var strength)) damage += 3 * (strength.EffectData.Amplifier + 1);
         if (ActivePotionEffects.TryGetValue((int)PotionEffect.Weakness - 1, out var weakness)) damage -= 4 * (weakness.EffectData.Amplifier + 1);
         damage = Math.Max(0, damage) * (0.2f + charge * charge * 0.8f);

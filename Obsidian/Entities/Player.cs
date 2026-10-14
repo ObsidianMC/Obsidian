@@ -673,6 +673,7 @@ public sealed partial class Player : Avatar, IClientPlayer
 
         Respawning = true;
         this.ResetAttachmentSync();
+        this.ResetAttributeSync();
         try
         {
             if (!Alive)
@@ -708,7 +709,7 @@ public sealed partial class Player : Avatar, IClientPlayer
                 Yaw = 0;
                 Pitch = 0;
                 MovementFlags = MovementFlags.None;
-                Health = 20f;
+                Health = MaxHealth;
                 await Level.DestroyEntityAsync(this);
                 Position = Level.LevelData.SpawnPosition;
                 LastPosition = Position;

@@ -6,10 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.Entities;
 
-public class Entity : IEquatable<Entity>, IEntity
+public partial class Entity : IEquatable<Entity>, IEntity
 {
-    protected virtual ConcurrentDictionary<string, float> Attributes { get; } = new();
-
     // Retained for derived classes; built-in serializers use fixed indexes to avoid concurrent-write races.
     protected byte MetadataIndex { get; set; }
 
@@ -613,56 +611,32 @@ public class Entity : IEquatable<Entity>, IEntity
         }
     }
 
-    internal virtual IClientboundPacket CreateSpawnPacket(Velocity? velocity = null, int additionalData = 0) => new BundledPacket
-        (
-             [
-                new AddEntityPacket
-                {
-                    EntityId = this.EntityId,
-                    Uuid = this.Uuid,
-                    Type = this.TypeId,
-                    Position = this.Position,
-                    Pitch = this.Pitch,
-                    Yaw = this.Yaw,
-                    Data = additionalData,
-                    Velocity = velocity ?? new Velocity(0, 0, 0)
-                },
-                new SetEntityDataPacket
-                {
-                    EntityId = this.EntityId,
-                    Entity = this
-                }
-            ]
-        );
-
-    public bool TryAddAttribute(string attributeResourceName, float value) =>
-        Attributes.TryAdd(ResolveAttributeName(attributeResourceName), value);
-
-    public bool TryUpdateAttribute(string attributeResourceName, float newValue)
+    internal virtual IClientboundPacket CreateSpawnPacket(Velocity? velocity = null, int additionalData = 0)
     {
-        attributeResourceName = ResolveAttributeName(attributeResourceName);
-        if (!Attributes.TryGetValue(attributeResourceName, out var value))
-            return false;
+        List<Net.Packets.ClientboundPacket> packets =
+        [
+            new AddEntityPacket
+            {
+                EntityId = this.EntityId,
+                Uuid = this.Uuid,
+                Type = this.TypeId,
+                Position = this.Position,
+                Pitch = this.Pitch,
+                Yaw = this.Yaw,
+                Data = additionalData,
+                Velocity = velocity ?? new Velocity(0, 0, 0)
+            },
+            new SetEntityDataPacket
+            {
+                EntityId = this.EntityId,
+                Entity = this
+            }
+        ];
 
-        return Attributes.TryUpdate(attributeResourceName, newValue, value);
-    }
+        // Like vanilla's pairing data, a living entity's syncable attributes follow its data.
+        if (this is Living && this.CreateAttributesPacket(changedOnly: false) is UpdateAttributesPacket attributes)
+            packets.Add(attributes);
 
-    public bool HasAttribute(string attributeResourceName) =>
-        Attributes.ContainsKey(ResolveAttributeName(attributeResourceName));
-
-    public float GetAttributeValue(string attributeResourceName) =>
-        Attributes.GetValueOrDefault(ResolveAttributeName(attributeResourceName));
-
-    private string ResolveAttributeName(string name)
-    {
-        // Keep saved legacy overrides, while allowing AI to use the regenerated vanilla attribute names.
-        if (Attributes.ContainsKey(name))
-            return name;
-
-        const string genericPrefix = "minecraft:generic.";
-        if (name.StartsWith(genericPrefix, StringComparison.Ordinal))
-            return "minecraft:" + name[genericPrefix.Length..];
-
-        return name == "minecraft:horse.jump_strength" ? "minecraft:jump_strength" : name;
+        return new BundledPacket(packets);
     }
 }

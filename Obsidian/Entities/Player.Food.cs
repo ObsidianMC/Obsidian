@@ -211,16 +211,16 @@ public partial class Player
                 {
                     FoodTickTimer = 0;
                     FoodLevel = Math.Min(20, FoodLevel + 1);
-                    Health = Math.Min(20, Health + 1);
+                    Health = Math.Min(MaxHealth, Health + 1);
                 }
             }
-            else if (Health < 20 && FoodLevel >= 18)
+            else if (Health < MaxHealth && FoodLevel >= 18)
             {
                 var saturated = FoodLevel == 20 && FoodSaturationLevel > 0;
                 if (++FoodTickTimer >= (saturated ? 10 : 80))
                 {
                     var healing = saturated ? Math.Min(FoodSaturationLevel, 6) / 6 : 1;
-                    Health = Math.Min(20, Health + healing);
+                    Health = Math.Min(MaxHealth, Health + healing);
                     AddExhaustion(healing * 6);
                     FoodTickTimer = 0;
                 }

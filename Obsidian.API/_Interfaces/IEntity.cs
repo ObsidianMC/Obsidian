@@ -91,5 +91,33 @@ public interface IEntity : Data.IAttachmentHolder
     public bool TryAddAttribute(string attributeResourceName, float value);
     public bool TryUpdateAttribute(string attributeResourceName, float newValue);
 
+    /// <summary>
+    /// The attribute's value: its base with its modifiers applied, clamped to vanilla's range for it; 0 if the entity
+    /// doesn't have the attribute.
+    /// </summary>
     public float GetAttributeValue(string attributeResourceName);
+
+    /// <summary>
+    /// Adds a modifier to one of the entity's attributes, replacing its modifier with the same <paramref name="id"/>,
+    /// like vanilla's transient modifiers: it isn't saved, and players tracking the entity are sent the change.
+    /// </summary>
+    /// <param name="attribute">The attribute, like <c>minecraft:movement_speed</c>.</param>
+    /// <param name="id">The modifier's identifier, like <c>myplugin:charge</c>.</param>
+    /// <param name="amount">What the modifier adds or multiplies by.</param>
+    /// <param name="operation">
+    /// How the amount applies, in vanilla's order: added to the base, then multiples of that sum added, then the
+    /// result multiplied by one plus the amount.
+    /// </param>
+    /// <returns>Whether the entity has the attribute.</returns>
+    public bool SetAttributeModifier(
+        string attribute,
+        string id,
+        double amount,
+        Inventory.AttributeOperation operation) => false;
+
+    /// <summary>
+    /// Removes the attribute's modifier with the identifier.
+    /// </summary>
+    /// <returns>Whether there was one.</returns>
+    public bool RemoveAttributeModifier(string attribute, string id) => false;
 }

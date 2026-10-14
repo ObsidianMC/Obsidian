@@ -2,7 +2,12 @@ namespace Obsidian.Entities.AI;
 
 internal static class EntityMovement
 {
-    internal static VectorD Move(Mob mob) => Move(mob, mob.Terrain, mob.MoveControl.Acceleration);
+    // A mob falls by its gravity attribute, like vanilla's LivingEntity.getGravity.
+    internal static VectorD Move(Mob mob) => Move(
+        mob,
+        mob.Terrain,
+        mob.MoveControl.Acceleration,
+        mob.HasAttribute("minecraft:gravity") ? mob.GetAttributeValue("minecraft:gravity") : 0.08f);
 
     internal static VectorD Move(Entity mob, MobTerrain terrain, VectorD acceleration, float gravity = 0.08f, float airFriction = 0.91f)
     {
