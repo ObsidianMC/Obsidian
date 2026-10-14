@@ -464,12 +464,23 @@ type and its update data from chunk packets and `BlockEntityData`, and remapping
   `Load` reads back what `Save` wrote. Call `SetChanged` whenever the saved data changes, like vanilla's
   `setChanged`: the level calls `Save` at the end of its tick, and saves the chunk with what it wrote.
 - **Ticking.** `TickAsync` runs once a tick while the chunk ticks (a player is within the simulation distance), and
-  only while the block still has the type. `Level` is the level it's in, and `BlockPosition` its block.
+  only while the block still has the type. `Level` is the level it's in, and `BlockPosition` its block. Clients tick
+  their own instances with `ClientTick` (see **Client ticks**).
 - **Clients.** `GetUpdateData` is what clients get (vanilla's `getUpdateTag`): with the chunk, and at the end of the
   tick after the block entity calls `SendUpdate` (once however many times it called it), as a `BlockEntityData`
   packet to the players who have the chunk. Attachment and restoration also queue an initial update, with the block
-  state sent before its data. The Obsidian client retains that data as a snapshot; it doesn't create
-  or tick the server's subclass. A client shape provider reads the snapshot (see [Client](#client)).
+  state sent before its data. The Obsidian client retains that data as a snapshot, which a client shape provider
+  reads (see [Client](#client)), and keeps a live instance of the mod's class for client ticks (below).
+- **Client ticks.** On the Obsidian client, a mod's block entity gets a live instance of its class, created with
+  the type's registration when the server sends it (with the chunk or `BlockEntityData`) and loaded with `Load`
+  from the update data rather than saved data: again, on the same instance, on each update. Override `ClientTick`
+  for what only players see (animations, particles, sounds), like vanilla's client-side tickers: it runs once a
+  client tick, 20 times a second, on the game's thread while the player is in a world that isn't paused, never on
+  the server. It may use the block entity's own fields, `Id`, `BlockPosition` and client state the mod kept from
+  `ConfigureClient`; `Level` is null there, and `SetChanged` and `SendUpdate` do nothing. The instance is dropped
+  (`IsRemoved`) when its block changes to one without its type, its chunk unloads, the player leaves the server or
+  the mod unloads. A tick or load that throws is logged, and the instance isn't ticked again until the next update.
+  Shapes and rendering keep reading the snapshot, from their own threads, never the live instance.
 - **Threads.** The server calls `Load`, `Save`, `TickAsync`, `GetUpdateData` and `OnRemoved` on the level's tick,
   one at a time, inside calls into the plugin: a block removed from elsewhere (a player's break) runs `OnRemoved` on
   the next tick. Only a new block entity for a block set elsewhere is constructed there. Chunks are saved and sent
@@ -2307,7 +2318,8 @@ public sealed class RubyMod : PluginBase, IClientPlugin
   vanilla binding and a mod's does both, the screenshot and fullscreen keys included.
 - **Ticks.** `OnTick` runs a handler on the game's thread every client tick, 20 times a second, in menus as in game,
   like NeoForge's client tick event: for client logic such as polling `IsDown`. `Connection.Phase` says whether the
-  client is playing on a server. A handler that throws is logged and not run again.
+  client is playing on a server. A handler that throws is logged and not run again. A mod's block entities tick
+  themselves with `BlockEntity.ClientTick` (see [Block entities](#block-entities)).
 - **Block tints.** A tinted block's faces whose model gives them a `tintindex` are multiplied by the tint, like
   vanilla's block colours: the biome's grass, foliage, dry foliage or water colour, blended across nearby biomes with
   the player's biome blend (grass follows the swamp and dark forest modifiers), or `BlockTint.Fixed(0xRRGGBB)`. Its

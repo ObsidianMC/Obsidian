@@ -44,7 +44,7 @@ Bugs the surveys turned up, small enough to fix first:
 
 The base every mod needs: blocks with state that save, tick, react and sync.
 
-- **Block entities.** `IPluginRegistry.RegisterBlockEntity` registers a type for a plugin's blocks, with a base class
+- **Block entities.** (done) `IPluginRegistry.RegisterBlockEntity` registers a type for a plugin's blocks, with a base class
   that saves to and loads from NBT, marks itself changed, ticks (server and, for mods, client), and sends an update
   to players watching its chunk (`BlockEntityData`, and the chunk packet's block entity list). Vanilla's block
   entities move onto the same contract, replacing the hard-coded switch in `BlockEntityNbt` and the lazy

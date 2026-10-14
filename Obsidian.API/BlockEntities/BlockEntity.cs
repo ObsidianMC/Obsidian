@@ -90,7 +90,8 @@ public abstract class BlockEntity : IBlockEntity
 
     /// <summary>
     /// Reads the block entity's saved data, as <see cref="Save"/> wrote it, when its chunk loads, or when a structure
-    /// places it with data. Fields missing from <paramref name="tag"/> mean their defaults.
+    /// places it with data. Fields missing from <paramref name="tag"/> mean their defaults. On the client it reads the
+    /// update data instead (see <see cref="ClientTick"/>).
     /// </summary>
     /// <param name="tag">The saved data, without the id and position.</param>
     protected internal virtual void Load(NbtCompound tag)
@@ -112,11 +113,37 @@ public abstract class BlockEntity : IBlockEntity
     protected internal virtual ValueTask TickAsync() => ValueTask.CompletedTask;
 
     /// <summary>
+    /// Runs once a client tick (20 a second) on the Obsidian client, like vanilla's client-side block entity tickers:
+    /// for what only players see, such as animations, particles or sounds. The server never calls it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A mod whose type is registered on the client too (with <see cref="IPluginRegistry.RegisterBlockEntity{T}"/>
+    /// in <c>ConfigureRegistry</c>) gets a live instance of its class for each of its block entities in the chunks the
+    /// client has, created when the server sends it and loaded with <see cref="Load"/> from what
+    /// <see cref="GetUpdateData"/> returned rather than saved data: again, on the same instance, on each update. It's
+    /// dropped (<see cref="IsRemoved"/>) when its block changes to one without its type, its chunk unloads, the player
+    /// leaves the server, or the mod unloads.
+    /// </para>
+    /// <para>
+    /// It runs on the client's game thread while the player is in a world that isn't paused, one block entity at a
+    /// time, in turn with its <see cref="Load"/> calls. It may use the block entity's own fields, <see cref="Id"/>,
+    /// <see cref="BlockPosition"/>, and client state the mod kept from <c>ConfigureClient</c>; <see cref="Level"/> is
+    /// null, and <see cref="SetChanged"/> and <see cref="SendUpdate"/> do nothing. Keep it short, as the game waits
+    /// for it. A tick that throws is logged, and the block entity isn't ticked again until the server updates it.
+    /// </para>
+    /// </remarks>
+    protected internal virtual void ClientTick()
+    {
+    }
+
+    /// <summary>
     /// The data clients get for the block entity (vanilla's <c>getUpdateTag</c>), with the chunk and from
     /// <see cref="SendUpdate"/>; null, the default, sends none.
     /// </summary>
     /// <remarks>
-    /// A client mod's shape and rendering code reads it, so send only what clients show.
+    /// A client mod's shape and rendering code reads it, and its client instance loads it (see
+    /// <see cref="ClientTick"/>), so send only what clients show.
     /// </remarks>
     protected internal virtual NbtCompound? GetUpdateData() => null;
 
