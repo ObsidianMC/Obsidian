@@ -569,6 +569,14 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      the stack changes, and they go when the mod unloads. Left: NeoForge's custom item model types, special model
      fields, and vanilla's `component` predicates and selects, `bundle/selected_item`, `compass`, `cooldown`,
      `crossbow/pull`, `use_cycle` and other GUI or input properties in the general evaluator. See
+   - Done, engine phase 4 dimension effects: the client draws a dimension's sky, clouds and fog from its dimension
+     type's data, as vanilla 1.21.11 does, instead of its name: `skybox` (with the End's flashes and light tint for
+     `end`), the day timeline when its `timelines` tag holds it, and the `minecraft:visual/` attributes, clouds
+     showing where `cloud_color`'s alpha isn't 0, at `cloud_height`. Types a server sends by name only use the
+     client jar's data. `IClientRegistry.RegisterDimensionEffects` adds a cloud texture, and `IDimensionEffects` code
+     that adjusts the sky colour, fog and clouds each frame or draws quads into the sky, guarded like other client
+     code. Plugins already register dimension types with these fields as data files. Left: see
+     [known-gaps.md](known-gaps.md#dimension-effects-beyond-the-sky-clouds-and-fog). See
      [plugin-content.md](plugin-content.md#client).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
      move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine; animations a server

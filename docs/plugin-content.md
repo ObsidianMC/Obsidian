@@ -2802,9 +2802,9 @@ if it throws, the mod fails to load and none of it does. The registry only takes
 `ConfigureClient`, since the client loads the assets that depend on them afterwards: registering later, through a
 registry the mod kept, throws `InvalidOperationException`. Its `Connection`, and sending payloads on it, stay usable
 for as long as the client runs. Like the server's content, key bindings, tints, renderers, particle providers,
-block entity shape and model providers, block entity renderers, item model properties, item renderers and menu
-screens are the mod's own: their identifiers are in its namespace (its mod id) and valid by vanilla's rules, they're
-for content it registered, and registering one twice throws `ArgumentException`.
+block entity shape and model providers, block entity renderers, item model properties, item renderers, dimension
+effects and menu screens are the mod's own: their identifiers are in its namespace (its mod id) and valid by
+vanilla's rules, they're for content it registered, and registering one twice throws `ArgumentException`.
 
 `IClientRegistry.RegisterBlockEntityShapes(string blockEntityType,
 Func<IReadOnlyDictionary<string, object?>, BlockShapes?> provider)` gives a mod's block entity type its collision
@@ -3305,16 +3305,81 @@ value reached at `time` seconds (`pre`), and, for a jump, the value leaving it (
 to a key is linear, or Catmull-Rom with `cubic`. Like vanilla's, channels add to the part's pose, and time is
 sampled to the millisecond.
 
+A mod's dimension draws its sky, clouds and fog from its dimension type's data (see
+[Biomes, dimension types and damage types](#biomes-dimension-types-and-damage-types)), like vanilla's dimensions do on
+any client: the Obsidian client reads the same fields, never the dimension's name. `skybox` picks the sky:
+`overworld` (the sky disc, sun, moon, stars and sunrise), `end` (the End's sky box, with its flashes and the End's
+light tint) or `none`. `timelines` set to `#minecraft:in_overworld` (or another tag holding `minecraft:day`) moves
+the sun and tints the sky with the time of day. The `minecraft:visual/` attributes of the type, and of its biomes
+where they're positional, set the colours and distances: `sky_color`, `fog_color`, `fog_start_distance`,
+`fog_end_distance`, `sky_fog_end_distance`, `cloud_color` (clouds show only where its alpha isn't 0, which is the
+default) and `cloud_height` (192.33 by default). For example, a dimension with End skies and low pink clouds:
+
+```json
+{
+  "skybox": "end",
+  "has_skylight": true,
+  "has_ceiling": false,
+  "coordinate_scale": 1,
+  "min_y": 0,
+  "height": 256,
+  "logical_height": 256,
+  "infiniburn": "#minecraft:infiniburn_end",
+  "ambient_light": 0.1,
+  "monster_spawn_light_level": 0,
+  "monster_spawn_block_light_limit": 0,
+  "attributes": {
+    "minecraft:visual/fog_color": "#181318",
+    "minecraft:visual/cloud_color": "#ccff99cc",
+    "minecraft:visual/cloud_height": 96
+  }
+}
+```
+
+`IClientRegistry.RegisterDimensionEffects(string dimensionType, DimensionEffectsProperties effects)` adds what that
+format can't say, for a dimension type in the mod's namespace, like NeoForge's dimension special effects:
+`CloudTexture` draws its clouds from the mod's texture instead of vanilla's `clouds.png` (each pixel that isn't
+transparent a 12-block cell in its colour), and `Effects` is an `IDimensionEffects` whose code runs each frame on
+the game thread. Its `Adjust` gets the frame's `DimensionAtmosphere` as the data made it (sky and fog colours, fog
+start and end, cloud colour and height, with the time of day and the camera for reading) and returns it changed;
+the player's view (water, lava, blindness) still applies afterwards. Its `RenderSky` draws quads into the sky after
+the skybox, plain or with one of the textures `SkyTextures` declares, blended or additive like the sun; a type
+with `"skybox": "none"` leaves the whole sky to it. A texture without its file draws as vanilla's clouds or as plain
+colour. If the code throws, the error is logged and the effects aren't called again until the mods reload, so the
+dimension is drawn from its data alone.
+
+```csharp
+registry.RegisterDimensionEffects("ruby:skylands", new DimensionEffectsProperties
+{
+    CloudTexture = "ruby:environment/skylands_clouds",
+    SkyTextures = ["ruby:environment/twin_sun"],
+    Effects = new SkylandsEffects()
+});
+
+public sealed class SkylandsEffects : IDimensionEffects
+{
+    // Fog closes in below the islands.
+    public DimensionAtmosphere Adjust(DimensionAtmosphere atmosphere) => atmosphere.Camera.Y < 32
+        ? atmosphere with { FogEnd = Math.Min(atmosphere.FogEnd, 48) }
+        : atmosphere;
+
+    // A second sun, fixed in the east, 100 blocks away like vanilla's.
+    public void RenderSky(DimensionAtmosphere atmosphere, IDimensionSkyBuffer buffer) =>
+        buffer.Quad(new(100, 20, -10), new(100, 0, -10), new(100, 0, 10), new(100, 20, 10), Vector4.One,
+            "ruby:environment/twin_sun", additive: true);
+}
+```
+
 The title screen's Reload Mods button reloads the client's mods without restarting: it unloads them and loads the
 `mods` folder again, then the assets. It's only on the title screen, so mods never reload while the client is
 connected to a server or running a world, whose channels and ids must stay as agreed. Unloading takes back
 everything mods registered in `ConfigureClient` (payload and tick handlers, key bindings, tints, renderers and what
-they cached for entities, item model properties and item renderers, particle providers, menu screens, HUD overlays),
-closes their open screens and drops their
-payload channels, disposes their plugins and unloads their code; loading runs `ConfigureRegistry` and
-`ConfigureClient` again on new instances. Like a server's plugin reload, content (blocks, items, entity types,
-particle types, menu types) stays registered for the process with its ids, so a reload can change what mods do and
-how they draw, but content a mod adds needs a restart. Keys players bound mods' bindings to stay in `options.txt`.
+they cached for entities, item model properties and item renderers, particle providers, dimension effects, menu
+screens, HUD overlays), closes their open screens and drops their payload channels, disposes their plugins and
+unloads their code; loading runs `ConfigureRegistry` and `ConfigureClient` again on new instances. Like a server's
+plugin reload, content (blocks, items, entity types, particle types, menu types) stays registered for the process
+with its ids, so a reload can change what mods do and how they draw, but content a mod adds needs a restart. Keys
+players bound mods' bindings to stay in `options.txt`.
 
 ### Screens in code
 
