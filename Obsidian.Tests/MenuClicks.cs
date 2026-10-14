@@ -1017,6 +1017,9 @@ public sealed class MenuClicks
                 Assert.Throws<System.IO.InvalidDataException>(() => ItemAttachments.NetworkCodec.Read(reader));
             }
 
+            // The insert and extract above each notified on their own; count only the menu's clicks from here.
+            changes = 0;
+
             // Two charm slots that take one diamond each, next to the player's inventory.
             var menu = new MenuContainer(charmMenu, "Charms")
             {
