@@ -44,7 +44,18 @@ Very early development builds are available over at the [GitHub Actions](https:/
 Easy, isn't it?
 
 ## 🛠️ Building from source
-Building needs the .NET 10 SDK, Java 25 or newer (on the `PATH` or in `JAVA_HOME`) and internet access. The first build downloads the vanilla server jar of the Minecraft version set in `Obsidian/Obsidian.csproj` (`MinecraftVersion`), runs its data generators, and generates `Obsidian/Assets` from them (`Obsidian.AssetGenerator`). Later builds reuse the generated assets until the version changes.
+Building needs the .NET 10 SDK, Java 25 or newer (on the `PATH` or in `JAVA_HOME`) and internet access.
+`dotnet build Obsidian.slnx` downloads the vanilla server jar of the version set in `Obsidian/Obsidian.csproj`
+(`MinecraftVersion`), runs its data generators, and generates the git-ignored `Obsidian/Assets` on the first build.
+Later builds reuse those assets while the version marker and required outputs exist and are newer than the generator's
+C# and Java source inputs and project file.
+
+Use `--artifacts-path <absolute scratch directory>` to keep build outputs and intermediate files outside the checkout.
+This also redirects emitted source-generator files; API XML docs are generated in the intermediate directory and
+copied beside their DLLs and into their NuGet packages for both layouts. Building into a fresh artifacts directory
+reuses current `Obsidian/Assets` without rewriting them. Missing or outdated assets still generate in the checkout,
+so build once normally before a scratch build that must leave the checkout untouched. The generator's downloads and
+Java working files follow the intermediate path, including an absolute artifacts path.
 
 ## 🐟 Docker
 You can now run Obsidian using Docker! As of right now, no image is available on DockerHub yet, but it will be sometime soon.

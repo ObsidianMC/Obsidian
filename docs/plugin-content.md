@@ -12,6 +12,14 @@ too. On the Obsidian client, a mod adds its client side in code (see [Client](#c
 `samples/EngineSample` is a working plugin built on this API alone, which the tests load like any plugin: its tick
 counter is a block with state, hooks, a block entity, redstone, light and a loot table together.
 
+Build and pack a mod as described in [Building and packing](plugin-archives.md#building-and-packing): the archive
+contains the mod and its own libraries, while the host provides the API, NBT and API runtime dependencies. For engine
+project references use `Private="false"`; for NuGet references use `ExcludeAssets="runtime"`. Mods that use NBT
+types need a direct `Obsidian.Nbt` reference because the API packages still keep that dependency private.
+`dotnet publish` lays out the archive contents; `--artifacts-path` keeps builds of the mod and referenced engine
+projects in a scratch directory. Current vanilla assets in the engine checkout are reused, but missing or outdated
+ones require generation there (see the [build notes](../README.md)).
+
 ## Blocks in code
 
 ```csharp
