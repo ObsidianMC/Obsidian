@@ -11,8 +11,11 @@ using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
+using Obsidian.Plugins;
+using Obsidian.Plugins.Archives;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
@@ -832,6 +835,13 @@ public sealed class MenuClicks
         Assert.Equal(5, buffer.Stack?.Count);
         Assert.Null(player.Inventory.GetItem(10));
 
+        // A commit callback that throws before transferring must undo the cursor's predicted pickup too.
+        buffer.ThrowExtract = true;
+        await ClickAsync(context.Server, player, 1, 0, ClickType.Pickup);
+        Assert.Null(player.CarriedItem);
+        Assert.Equal(5, buffer.Stack?.Count);
+        buffer.ThrowExtract = false;
+
         // A click whose buffer lost items before the click ended is undone, so that no item is made.
         buffer.Steal = true;
         await ClickAsync(context.Server, player, 1, 0, ClickType.Pickup);
@@ -865,6 +875,87 @@ public sealed class MenuClicks
         await player.OpenInventoryAsync(new MachineMenu(machine, chest, buffer));
         await context.World.SetBlockAsync(position, BlocksRegistry.Air);
         Assert.Null(player.OpenedContainer);
+
+        var first = new BufferAccess { Stack = new ItemStack(ItemsRegistry.Diamond, 3) };
+        var second = new BufferAccess
+        {
+            Stack = new ItemStack(ItemsRegistry.Diamond, 5),
+            ThrowExtract = true
+        };
+        var rollback = new MenuContainer(machine, "Rollback")
+        {
+            Slots = [new MenuSlot(first, 0), new MenuSlot(second, 0), new MenuSlot()]
+        };
+        await player.OpenInventoryAsync(rollback);
+
+        // Earlier successful extractions are journalled. If returning one throws, it goes to the inventory instead.
+        foreach (var refuseReturn in new[] { false, true })
+        {
+            first.ThrowInsert = refuseReturn;
+            using (await BaseContainer.LockWindowAsync(rollback, player.Inventory))
+            {
+                using var click = MainEventHandler.MenuClick.Start(player, rollback)!;
+                rollback.SetItem(0, null);
+                rollback.SetItem(1, null);
+                player.CarriedItem = new ItemStack(ItemsRegistry.Diamond, 12);
+                Assert.Throws<InvalidOperationException>(() => click.Commit());
+            }
+
+            Assert.Equal(4, player.CarriedItem?.Count);
+            Assert.Equal(refuseReturn ? null : 3, first.Stack?.Count);
+            Assert.Equal(5, second.Stack?.Count);
+            Assert.Equal(refuseReturn ? 3 : 0, player.Inventory.Sum(item => item?.Is(ItemsRegistry.Diamond) == true
+                ? item.Count
+                : 0));
+        }
+
+        // A later insertion failure also reverses earlier insertions. If the access refuses that extraction, the
+        // restored player stacks omit the items still in the access, so rollback cannot duplicate them.
+        first.ThrowInsert = false;
+        second.ThrowInsert = true;
+        foreach (var refuseRecovery in new[] { false, true })
+        {
+            first.ThrowExtract = refuseRecovery;
+            player.CarriedItem = new ItemStack(ItemsRegistry.Diamond, 4);
+            using (await BaseContainer.LockWindowAsync(rollback, player.Inventory))
+            {
+                using var click = MainEventHandler.MenuClick.Start(player, rollback)!;
+                rollback.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 2));
+                rollback.SetItem(1, new ItemStack(ItemsRegistry.Diamond, 7));
+                player.CarriedItem = null;
+                Assert.Throws<InvalidOperationException>(() => click.Commit());
+            }
+
+            var restoredDiamonds = (player.CarriedItem?.Count ?? 0)
+                + player.Inventory.Sum(item => item?.Is(ItemsRegistry.Diamond) == true ? item.Count : 0);
+            Assert.Equal(refuseRecovery ? 5 : 7, restoredDiamonds);
+            Assert.Equal(refuseRecovery ? 2 : null, first.Stack?.Count);
+            Assert.Equal(5, second.Stack?.Count);
+        }
+
+        // Finished player drops stay host-owned even while the menu's plugin call is active.
+        var owner = new PluginContainer
+        {
+            Info = new PluginInfo("dropowner"),
+            Archive = PluginArchive.Open("dropowner.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+            {
+                [PluginMetadata.FileName] = PluginArchives.Metadata("dropowner", "1.0.0", "Drop owner")
+            }))
+        };
+        using (owner.TryEnter())
+        using (await BaseContainer.LockWindowAsync(rollback, player.Inventory))
+        {
+            using var click = MainEventHandler.MenuClick.Start(player, rollback)!;
+            click.Drop(new ItemStack(ItemsRegistry.Emerald, 2));
+            Assert.True(click.Commit());
+        }
+
+        var dropped = Assert.Single(context.World.GetNonPlayerEntitiesInRange(player.Position, 4)
+            .OfType<Obsidian.Entities.ItemEntity>());
+        Assert.Null(dropped.SpawnedBy);
+        owner.Close();
+        Obsidian.Plugins.PluginEntities.RemoveFrom(context.World, owner);
+        Assert.Contains(dropped, context.World.GetNonPlayerEntitiesInRange(player.Position, 4));
     }
 
     private static readonly MenuDefinition machine = MenuTypesRegistry.Register("clicks:machine", 1, 3);
@@ -905,6 +996,10 @@ public sealed class MenuClicks
 
         public bool Steal { get; set; }
 
+        public bool ThrowExtract { get; set; }
+
+        public bool ThrowInsert { get; set; }
+
         public int SlotCount => 1;
 
         public ItemStack? GetItem(int slot) =>
@@ -912,6 +1007,9 @@ public sealed class MenuClicks
 
         public ItemStack? Insert(int slot, ItemStack stack, bool simulate = false)
         {
+            if (this.ThrowInsert)
+                throw new InvalidOperationException("Insertion failed before transferring.");
+
             if (this.Stack is not null && !this.Stack.Equals(stack))
                 return stack;
 
@@ -923,6 +1021,9 @@ public sealed class MenuClicks
 
         public ItemStack? Extract(int slot, int count, bool simulate = false)
         {
+            if (this.ThrowExtract)
+                throw new InvalidOperationException("Extraction failed before transferring.");
+
             if (this.Steal && this.Stack is not null)
                 this.Stack.Count--;
 

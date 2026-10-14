@@ -142,6 +142,30 @@ public sealed class SamplePlugin : IDisposable
         Assert.Equal(0, chunk.GetLightLevel(position.X, position.Y + 1, position.Z, LightType.Block));
         Assert.Equal(counted, Ticks(chunk, position));
 
+        // A child task captures the tick's execution context, but must wait for the simulation gate. The real tick
+        // can still collect inline after an await, without waiting on itself.
+        var blockEntity = Assert.IsAssignableFrom<BlockEntity>(chunk.GetBlockEntity(4, position.Y, 4));
+        var owner = Assert.IsType<Obsidian.Plugins.PluginContainer>(blockEntity.Owner);
+        Task? child = null;
+        world.EnqueueEntityAction(async () =>
+        {
+            await Task.Yield();
+            Assert.NotEmpty(await world.CollectPluginComponentsAsync(blockEntity, owner, counter.Item!));
+            var waiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            child = Task.Run(async () =>
+            {
+                await Task.Yield();
+                var collection = world.CollectPluginComponentsAsync(blockEntity, owner, counter.Item!);
+                var completedOnTick = collection.IsCompleted;
+                waiting.SetResult();
+                Assert.False(completedOnTick);
+                Assert.NotEmpty(await collection);
+            });
+            await waiting.Task;
+        });
+        await world.DoWorldTickAsync();
+        await child!;
+
         // Broken by the player looking at it, on the level's tick, it drops itself through its loot table, which
         // copies the count its block entity gave the item.
         player.Yaw = 0;

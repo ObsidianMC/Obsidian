@@ -36,7 +36,12 @@ public partial class ItemEntity : Entity
         base.SpawnEntity(velocity, additionalData);
     }
 
-    internal static bool Drop(IPlayer player, ItemStack stack)
+    internal static bool Drop(IPlayer player, ItemStack stack) => Drop(player, stack, hostOwned: false);
+
+    // Finished menu clicks drop the player's items, regardless of the menu's ambient plugin call.
+    internal static void DropHostOwned(IPlayer player, ItemStack stack) => Drop(player, stack, hostOwned: true);
+
+    private static bool Drop(IPlayer player, ItemStack stack, bool hostOwned)
     {
         var direction = player.GetLookDirection();
         var motion = new VectorD(direction.X * 0.3, direction.Y * 0.3 + 0.1, direction.Z * 0.3);
@@ -51,10 +56,33 @@ public partial class ItemEntity : Entity
             // collect it again straight away.
             pickupDelay = 40
         };
-        if (!player.Level.TryAddEntity(item))
+        var added = player.Level is AbstractLevel level
+            ? level.TryAddEntity(item, hostOwned)
+            : player.Level.TryAddEntity(item);
+
+        if (!added)
+        {
+            if (hostOwned && player.Level is AbstractLevel pending)
+                pending.EnqueueEntityAction(RetryDrop);
+
             return false;
+        }
+
         item.SpawnEntity(new Velocity(motion.X, motion.Y, motion.Z));
         return true;
+
+        ValueTask RetryDrop()
+        {
+            if (item.Level is AbstractLevel retry)
+            {
+                if (retry.TryAddEntity(item, hostOwned: true))
+                    item.SpawnEntity(new Velocity(item.Motion.X, item.Motion.Y, item.Motion.Z));
+                else
+                    retry.EnqueueEntityAction(RetryDrop);
+            }
+
+            return ValueTask.CompletedTask;
+        }
     }
 
     public override void Write(INetStreamWriter writer)

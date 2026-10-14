@@ -1,5 +1,6 @@
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.Events;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Payloads;
@@ -97,7 +98,18 @@ public sealed class PluginParticlesAndMenus
             return ValueTask.CompletedTask;
         }));
 
-        await player.OpenInventoryAsync(new MenuContainer(bag, "Bag"));
+        var original = new UnloadMenu(bag) { DataSlots = 1 };
+        await player.OpenInventoryAsync(original);
+        var reads = original.Reads;
+        Assert.True(reads > 0);
+
+        // Failed validation must release the call acquired before checking the menu.
+        original.ThrowValidity = true;
+        using (await BaseContainer.LockWindowAsync(original, player.Inventory))
+            Assert.Throws<InvalidOperationException>(() => MainEventHandler.MenuClick.Start(player, original));
+
+        await plugin.WaitForCallsAsync().WaitAsync(TimeSpan.FromSeconds(1));
+        original.ThrowValidity = false;
 
         // Like unloading: the plugin takes no more calls, but its close handler still sees its menu close.
         plugin.Close();
@@ -107,6 +119,9 @@ public sealed class PluginParticlesAndMenus
         Assert.Null(player.OpenedContainer);
         Assert.Single(((TestClient)player.Client).SentPackets.OfType<ContainerClosePacket>());
 
+        await player.SendMenuOpenedAsync(original, player.CurrentContainerId);
+        Assert.Equal(reads, original.Reads);
+
         // Its calls still running can't open the type's menus again, nor register it.
         await player.OpenInventoryAsync(new MenuContainer(bag, "Bag"));
         Assert.Null(player.OpenedContainer);
@@ -114,6 +129,8 @@ public sealed class PluginParticlesAndMenus
 
         // Once the plugin loads again, they open.
         Assert.Same(bag, PluginRegistry.RegisterMenu(Plugin(), "unloadprobe:bag", 1, 9));
+        await player.OpenInventoryAsync(original);
+        Assert.Null(player.OpenedContainer);
         await player.OpenInventoryAsync(new MenuContainer(bag, "Bag"));
         Assert.IsType<MenuContainer>(player.OpenedContainer);
 
@@ -127,6 +144,24 @@ public sealed class PluginParticlesAndMenus
                     [PluginMetadata.FileName] = PluginArchives.Metadata("unloadprobe", "1.0.0", "Unload probe")
                 }))
         };
+    }
+
+    private sealed class UnloadMenu(MenuDefinition menu) : MenuContainer(menu, "Bag")
+    {
+        public bool ThrowValidity { get; set; }
+
+        public int Reads { get; private set; }
+
+        public override short GetData(int index)
+        {
+            this.Reads++;
+
+            return 0;
+        }
+
+        protected internal override bool StillValid(IPlayer player) => this.ThrowValidity
+            ? throw new InvalidOperationException("Validity failed.")
+            : true;
     }
 
     private static int VarIntSize(int value) => Write(writer => writer.WriteVarInt(value)).Length;

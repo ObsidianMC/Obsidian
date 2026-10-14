@@ -19,9 +19,13 @@ namespace Obsidian.WorldData;
 /// </remarks>
 public abstract partial class AbstractLevel
 {
-    // The mark of the flow running a level's tick. A task the tick starts carries it too, so the level also keeps the
-    // mark of the tick running now: a task left running after its tick ended carries a stale one.
-    private static readonly AsyncLocal<object?> tickFlow = new();
+    // Await continuations stay on the serial tick flow. Separately scheduled tasks lose its permission as they
+    // enter their captured execution context, before any child code (or its later awaits) can use it.
+    private static readonly AsyncLocal<object?> tickFlow = new(change =>
+    {
+        if (change.ThreadContextChanged && change.CurrentValue is not null && Task.CurrentId is not null)
+            tickFlow.Value = null;
+    });
 
     private object? runningTick;
 

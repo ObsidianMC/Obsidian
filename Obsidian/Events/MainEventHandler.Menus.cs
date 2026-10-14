@@ -142,12 +142,23 @@ public partial class MainEventHandler
             if (window is not MenuContainer menu)
                 return null;
 
-            var plugin = menu.Menu.Owner as PluginContainer;
+            if (!menu.TryGetOwner(out var owner))
+                return new MenuClick(player, menu, null, refused: true);
+
+            var plugin = owner as PluginContainer;
             var call = plugin?.TryEnter();
 
-            var refused = plugin is not null && call is null || !Player.IsMenuValid(player, menu);
+            try
+            {
+                var refused = plugin is not null && call is null || !Player.IsMenuValid(player, menu);
 
-            return new MenuClick(player, menu, call, refused);
+                return new MenuClick(player, menu, call, refused);
+            }
+            catch
+            {
+                call?.Dispose();
+                throw;
+            }
         }
 
         /// <summary>
@@ -166,18 +177,30 @@ public partial class MainEventHandler
                 return !this.Refused;
 
             var leftovers = new List<ItemStack>();
-            var applied = !this.menu.HasItemAccessSlots || this.menu.CommitStaged(leftovers);
+            var retained = new List<ItemStack>();
+            bool applied;
 
-            this.End();
+            try
+            {
+                applied = !this.menu.HasItemAccessSlots || this.menu.CommitStaged(leftovers);
+            }
+            catch
+            {
+                this.RollBack(leftovers, retained);
+                throw;
+            }
 
             if (applied)
             {
+                this.End();
+
                 foreach (var item in this.drops)
-                    ItemEntity.Drop(this.player, item);
+                    ItemEntity.DropHostOwned(this.player, item);
             }
             else
             {
-                this.Restore();
+                this.RollBack(leftovers, retained);
+                return false;
             }
 
             foreach (var item in leftovers)
@@ -195,7 +218,7 @@ public partial class MainEventHandler
                 return;
 
             this.End();
-            this.Restore();
+            this.Restore([]);
         }
 
         public void Dispose()
@@ -217,22 +240,44 @@ public partial class MainEventHandler
             current = this.outer;
         }
 
-        private void Restore()
+        private void RollBack(List<ItemStack> leftovers, List<ItemStack> retained)
+        {
+            if (this.menu.HasItemAccessSlots)
+                this.menu.UndoStaged(leftovers, retained);
+
+            this.End();
+            this.Restore(retained);
+
+            foreach (var item in leftovers)
+                GiveBack(this.player, item);
+        }
+
+        private void Restore(List<ItemStack> retained)
         {
             var playerInventory = this.player.Inventory;
 
             for (var slot = 0; slot < this.inventory.Length; slot++)
-                playerInventory.SetItem(slot, this.inventory[slot]);
+                playerInventory.SetItem(slot, Restored(this.inventory[slot], retained));
 
-            this.player.CarriedItem = this.cursor;
+            this.player.CarriedItem = Restored(this.cursor, retained);
 
             for (var slot = 0; slot < this.slots.Length; slot++)
             {
                 if (!this.KeptInAccess(slot))
-                    this.menu.SetItem(slot, this.slots[slot]);
+                    this.menu.SetItem(slot, Restored(this.slots[slot], retained));
             }
 
             ResetDrag(this.player);
+        }
+
+        private static ItemStack? Restored(ItemStack? stack, List<ItemStack> retained)
+        {
+            if (stack is null)
+                return null;
+
+            MenuContainer.ConsumeRetained(stack, retained);
+
+            return stack.Count > 0 ? stack : null;
         }
 
         private bool KeptInAccess(int slot) => this.menu.Slots[slot].Items is not null;
@@ -246,7 +291,7 @@ public partial class MainEventHandler
             Player.AddToInventory(player.Inventory, player.CurrentHeldItemSlot, item, infiniteMaterials: false);
 
             if (item.Count > 0)
-                ItemEntity.Drop(player, item);
+                ItemEntity.DropHostOwned(player, item);
         }
     }
 }
