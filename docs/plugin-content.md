@@ -604,6 +604,79 @@ Obsidian client:
 - **Unloading.** A plugin's tabs and additions are removed when it unloads and registered again on reload, on both
   sides; the client builds the tabs again each time the creative inventory opens.
 
+## Saved data and attachments
+
+Register types during `ConfigureRegistry` with the same codec shapes as item components:
+
+```csharp
+var networks = registry.RegisterSavedData("example:networks", new ComponentCodec<List<int>>(
+    values => new NbtArray<int>("", values.ToArray()),
+    tag => ((NbtArray<int>)tag).GetArray().ToList()));
+
+var membership = registry.RegisterAttachment("example:membership", new ComponentCodec<int>(
+    value => new NbtTag<int>("", value),
+    tag => ((NbtTag<int>)tag).Value),
+    new ComponentNetworkCodec<int>((writer, value) => writer.WriteVarInt(value), reader => reader.ReadVarInt()),
+    copyOnDeath: true);
+
+var saved = level.GetSavedData(networks, () => new List<int>());
+saved.Value.Add(42);
+saved.MarkDirty();
+player.SetAttachment(membership, 42);
+var network = player.GetAttachment(membership);
+chunk.RemoveAttachment(membership);
+```
+
+`ILevel.GetSavedData(type, create, scope)` gets one live `SavedData<T>` per type and plugin load. The default scope,
+`SavedDataScope.Level`, is private to that level. `SavedDataScope.World` shares one instance across its world's
+dimensions; `IServer.GetSavedData(type, create)` uses that scope in the default world. A missing file calls `create`
+and starts dirty. `Value` is the live plugin object; after changing it, `MarkDirty()` encodes a detached snapshot
+immediately. Only that snapshot is saved, so forgetting to mark dirty does not silently save partial changes.
+
+Level files are `<level>/data/<namespace>/<path>.dat`. World-wide files use the world's reserved engine directory,
+`<world>/data/obsidian/world/<namespace>/<path>.dat`, to distinguish them from the overworld's own level data. Both
+use vanilla's gzip NBT envelope (`DataVersion`, `data`), with the plugin codec's tag under `data`. Names follow the
+plugin's namespace, with portable path segments; traversal and Windows device names are rejected, and `obsidian`
+is reserved for these types. Saves replace a temporary file atomically. World saves, region flushes and shutdown
+write dirty data. Unloading first flushes any already-published dirty snapshot, without running a codec, then releases
+the live instance. World saves leave its file untouched while the plugin is absent; reload reads it again. Old
+handles throw and cannot overwrite a new load.
+
+Players and entities implement `IAttachmentHolder` through `IEntity`, and chunks through `IChunk` (obtained from
+`ILevel.GetChunkAsync`). `GetAttachment`, `TryGetAttachment`, `SetAttachment` and `RemoveAttachment` are extensions
+in `Obsidian.API.Data`. Holders retain encoded NBT only: a get decodes a detached value, and changing that value
+requires setting it again. Saved holder NBT uses `obsidian:attachments`, with a value under each type's identifier.
+The engine namespace avoids collisions with vanilla tags and does not claim NeoForge save compatibility. Unknown
+or unloaded types stay as saved NBT, including through player saves and chunk unloads, until the plugin returns.
+
+Player death respawn drops attachments registered without `copyOnDeath`; kept values are already detached NBT, so
+no copy callback is needed. Dimension changes retain all attachments. A type absent during death remains untouched:
+an unloaded plugin must not lose its saved player data. `ServerPlayer` follows the same death policy.
+
+A network codec opts a type into sync. The optional, version 1 `obsidian:attachments` play channel carries complete
+replacement snapshots, with names and individually framed network values. Only clients negotiating that channel
+receive it; vanilla clients receive none, and attachment-only plugins do not extend vanilla registries or prevent
+vanilla clients joining. The Obsidian client declares the channel, registers the same type through its mod's
+`ConfigureRegistry`, and reads detached values on `IClientWorld` with `TryGetPlayerAttachment(type, out value)`,
+`TryGetEntityAttachment(entityId, type, out value)` and `TryGetChunkAttachment(chunkX, chunkZ, type, out value)`.
+Players receive their own data, tracked entities' data, and data for chunks they have. Changes and removals follow
+on the level tick; tracking starts and respawns get fresh snapshots. Client entity removal, chunk forgetting and
+dimension changes clear the relevant snapshots. Unknown client types are skipped without calling their codecs.
+
+**Threads and reload.** Access live saved objects on their owning level's tick. World-wide objects can be reached
+from several levels ticking concurrently: give them a plugin-owned lock. Access outside a tick likewise requires
+your own synchronization, held through mutation and `MarkDirty`; the engine cannot synchronize a reference after
+it has been returned. Factories and persistent codecs run on the caller's thread, inside the plugin call guard.
+Attachment reads are detached and holder publication is atomic; synchronize a shared source object before setting
+it. Keep codecs short, with no blocking or shared-state side effects. Network encoding runs on the server level
+tick; network decoding and all typed client queries run on the client game thread. Disk saves use NBT snapshots
+and never call plugins. Unload closes call guards, releases registrations and live saved objects, and rejects late
+publication from an old load. Do not retain typed handles across reloads.
+Client and server registrations have separate bindings, including when an integrated server shares the process.
+
+The phase 5 `samples/EngineSample` registers independent network ids and membership attachments. Its smoke test
+saves player, entity and chunk membership, unloads the plugin, saves again without it, and restores it on reload.
+
 ## Entities
 
 ```csharp

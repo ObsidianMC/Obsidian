@@ -31,7 +31,7 @@ namespace Obsidian.Tests;
 /// </summary>
 // Loading plugins merges their tags into vanilla's, which PluginTagFiles changes too.
 [Collection(nameof(PluginTagFiles))]
-public sealed class SamplePlugin : IDisposable
+public sealed partial class SamplePlugin : IDisposable
 {
     private readonly string folder = Path.Join(Path.GetTempPath(), $"obsidian-sample-{Guid.NewGuid():N}");
 

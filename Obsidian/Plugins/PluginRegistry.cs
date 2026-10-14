@@ -14,7 +14,7 @@ using System.Reflection;
 using System.Text.Json;
 
 namespace Obsidian.Plugins;
-public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher eventDispatcher, 
+public sealed partial class PluginRegistry(PluginManager pluginManager, EventDispatcher eventDispatcher,
     CommandHandler commandHandler) : IPluginRegistry
 {
     private readonly PluginManager pluginManager = pluginManager;

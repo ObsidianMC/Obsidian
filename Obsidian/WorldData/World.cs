@@ -209,6 +209,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
             File.Move(temporaryPath, LevelDataFilePath);
 
         await this.Maps.SaveAsync();
+        this.SavePluginData();
     }
 
     private async Task WriteVanillaLevelDataAsync(Stream fs, NbtCompound data)

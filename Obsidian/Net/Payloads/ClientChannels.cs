@@ -95,6 +95,9 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
             return true;
         }
 
+        if (channel == AttachmentPayload.Channel)
+            return protocol == NetworkProtocol.Play && this.HasNeoForgePlayChannel(channel);
+
         var negotiated = protocol == NetworkProtocol.Configuration ? this.configurationChannels : this.playChannels;
 
         // A reload can replace a channel with another version than the one agreed on; its payloads aren't compatible.

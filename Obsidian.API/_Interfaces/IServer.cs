@@ -9,6 +9,12 @@ namespace Obsidian.API;
 
 public interface IServer : IDisposable
 {
+    /// <summary>
+    /// Gets world-wide data in the default world. Use ILevel.GetSavedData for another world or level.
+    /// </summary>
+    public Data.SavedData<TValue> GetSavedData<TValue>(Data.SavedDataType<TValue> type, Func<TValue> create) =>
+        this.DefaultWorld.GetSavedData(type, create, Data.SavedDataScope.World);
+
     public string Version { get; }
     public int Port { get; }
     public int Tps { get; }

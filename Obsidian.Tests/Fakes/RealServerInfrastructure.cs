@@ -71,7 +71,9 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
     public ValueTask<bool> VerifyProfileAsync() => ValueTask.FromResult(true);
 
     // Payload channels need a real connection's handshake; see ClientChannels.
-    public bool HasChannel(string channel) => false;
+    internal Obsidian.Net.Payloads.ClientChannels? Channels { get; set; }
+
+    public bool HasChannel(string channel) => this.Channels?.HasChannel(channel) ?? false;
 
     public ValueTask<bool> SendPayloadAsync<TPayload>(TPayload payload) where TPayload : ICustomPayload<TPayload> =>
         ValueTask.FromResult(false);

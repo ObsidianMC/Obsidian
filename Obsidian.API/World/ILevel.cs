@@ -12,6 +12,14 @@ namespace Obsidian.API.World;
 /// </remarks>
 public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
 {
+    /// <summary>
+    /// Gets the load's live instance, reading its file lazily. World scope shares across dimensions. Access plugin
+    /// objects on the level tick or synchronize them yourself; call MarkDirty to publish changes for saving.
+    /// </summary>
+    public Data.SavedData<TValue> GetSavedData<TValue>(
+        Data.SavedDataType<TValue> type, Func<TValue> create, Data.SavedDataScope scope = Data.SavedDataScope.Level) =>
+        throw new NotSupportedException("This level doesn't support saved data.");
+
     public string Name { get; }
     public string Seed { get; }
     public string FolderPath { get; }

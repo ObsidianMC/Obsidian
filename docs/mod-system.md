@@ -523,6 +523,12 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      like vanilla, after which the renderer copies only the sprites that changed into the atlas from a staging buffer
      before it draws. Left: the GUI and particle atlases' few animated sprites (some GUI icons, the vibration
      particle) still show their first frame. See [plugin-archives.md](plugin-archives.md#assets).
+   - Done, engine phase 5 saved data and attachments: `RegisterSavedData` gives worlds and levels lazy, dirty-marked
+     gzip NBT files, and `RegisterAttachment` adds detached data to players, entities and chunks. Unknown NBT survives
+     unloading; saved handles cannot write across reloads. Player attachments optionally survive death. An optional
+     Obsidian payload syncs the local player, tracked entities and loaded chunks, read through `IClientWorld` on the
+     game thread. Attachment-only plugins allow vanilla clients. See
+     [plugin-content.md](plugin-content.md#saved-data-and-attachments).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
      move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine; entity render layers
      (emissive and translucent ones) and animations a server triggers beyond arm swings for mods' entities; client lifecycle events

@@ -697,6 +697,7 @@ public class Region : IRegion
         "block_ticks",
         "ObsidianMobEggTicks",
         "ObsidianFrogspawnTicks",
+        "obsidian:attachments",
         "isLightOn"
     ];
 
@@ -706,6 +707,7 @@ public class Region : IRegion
         int z = chunkCompound.GetInt("zPos");
 
         var chunk = new Chunk(x, z, this.minY, this.height);
+        API.Data.AttachmentStorage.For(chunk).Load(chunkCompound);
         if (chunkCompound.TryGetTag<NbtList>("ObsidianMobEggTicks", out var mobEggTicks))
             foreach (NbtCompound tick in mobEggTicks)
                 chunk.MobEggTicks[new Vector(tick.GetInt("x"), tick.GetInt("y"), tick.GetInt("z"))] = Math.Clamp(tick.GetInt("delay"), 0, 8300);
@@ -916,6 +918,7 @@ public class Region : IRegion
     /// </summary>
     internal static void SerializeChunk(NbtWriterStream writer, IChunk chunk, NbtCompound? structureStarts)
     {
+        writer.WriteTag(API.Data.AttachmentStorage.For(chunk).Snapshot());
         writer.WriteLong("InhabitedTime", chunk is Chunk concrete ? concrete.InhabitedTime : 0);
         writer.WriteListStart("sections", NbtTagType.Compound, chunk.Sections.Length);
 
