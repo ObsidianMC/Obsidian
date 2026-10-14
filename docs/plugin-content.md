@@ -2808,8 +2808,8 @@ The title screen's Reload Mods button reloads the client's mods without restarti
 `mods` folder again, then the assets. It's only on the title screen, so mods never reload while the client is
 connected to a server or running a world, whose channels and ids must stay as agreed. Unloading takes back
 everything mods registered in `ConfigureClient` (payload and tick handlers, key bindings, tints, renderers, particle
-providers, menu screens), closes their open screens and drops their payload channels, disposes their plugins and
-unloads their code; loading runs
+providers, menu screens, HUD overlays), closes their open screens and drops their payload channels, disposes their
+plugins and unloads their code; loading runs
 `ConfigureRegistry` and `ConfigureClient` again on new instances. Like a server's plugin reload, content (blocks,
 items, entity types, particle types, menu types) stays registered for the process with its ids, so a reload can
 change what mods do and how they draw, but content a mod adds needs a restart. Keys players bound mods' bindings to
@@ -2957,3 +2957,75 @@ A mod's own screens, like settings, aren't tied to a menu: subclass `ModScreen` 
 `registry.Screens.Open(screen)`, from a key binding's `Pressed` or a payload handler (from another thread it opens on
 the game's shortly after). It shows over the game, or over the screen shown, which Escape or `Close()` goes back to.
 Like `Connection`, `registry.Screens` stays usable after `ConfigureClient`.
+
+### HUD overlays
+
+```csharp
+// The player's mana in the top left corner, a bar and its amount, from what the server last sent.
+public sealed class ManaOverlay : ModOverlay
+{
+    private readonly ProgressBar bar = new()
+    {
+        Y = 10,
+        Width = 81,
+        Height = 5,
+        Source = GuiImage.Sprite("ruby:hud/mana_bar")
+    };
+
+    private readonly Label amount = new()
+    {
+        Color = 0xFF55FFFF,
+        Shadow = true
+    };
+
+    public ManaOverlay()
+    {
+        this.X = 4;
+        this.Y = 4;
+        this.Width = 81;
+        this.Height = 15;
+        this.Add(new Image
+        {
+            Y = 10,
+            Width = 81,
+            Height = 5,
+            Source = GuiImage.Sprite("ruby:hud/mana_bar_background")
+        });
+        this.Add(this.bar);
+        this.Add(this.amount);
+    }
+
+    // Set by the payload handler, on the connection's thread; the widgets change on the game's, in Tick.
+    public int Mana { get; set; }
+
+    protected override void Tick()
+    {
+        var mana = this.Mana;
+        this.bar.Progress = mana / 20f;
+        this.amount.Text = $"{mana} / 20";
+    }
+}
+
+var mana = new ManaOverlay();
+registry.RegisterOverlay(mana);
+registry.HandlePayload<ManaChanged>((changed, _) => mana.Mana = changed.Mana);
+```
+
+A mod draws on the HUD with a `ModOverlay`, registered with `IClientRegistry.RegisterOverlay(overlay)`, like a
+NeoForge mod's GUI layer: widgets from [Screens in code](#screens-in-code) in a box of `Width` by `Height` GUI pixels.
+The box is placed at its `Anchor`, a corner of the screen, the middle of an edge or the centre, which is the same
+point of the box (`TopRight` puts the box's top right corner in the screen's; `TopLeft` is the default), then moved
+`X` pixels right and `Y` down (negative for left and up). Its widgets are placed from its top left. Overlays only
+show: they draw labels, images, progress bars and item grids (without tooltips), and leave out buttons, text fields,
+scroll bars and slot grids, since the HUD takes no input.
+
+`Layer` says which of vanilla's HUD the overlay goes over, like the vanilla layer a NeoForge mod registers its layer
+below or above: `BelowChat`, the default, draws it over the hotbar, the player's bars, boss bars, the scoreboard,
+titles and the debug text, and under the chat and the player list; `AboveAll` over all of them. Overlays in a layer
+are drawn in the order they were registered.
+
+Overlays are part of the HUD: they're drawn while the player is in a world, under any screen like vanilla's HUD, and
+not while the player hides the HUD (F1). Their `Tick` runs on the game's thread every client tick while the player is
+in a world, under screens too, inside a call into the mod, to update the widgets, which are drawn as they are each
+frame; an overlay whose `Tick` throws is logged and removed. A mod's overlays go when it unloads, and its
+`ConfigureClient` registers them again when it reloads.

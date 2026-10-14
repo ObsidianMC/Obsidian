@@ -486,10 +486,15 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      extra open data and clicks its buttons. A `ModScreen` of its own opens with `IClientRegistry.Screens`. The
      client draws them with its own widgets, calls them inside calls into the mod (closing one that fails), and
      closes them when the mod unloads. See [plugin-content.md](plugin-content.md#screens-in-code).
+   - Done, HUD overlays (engine phase 3): `IClientRegistry.RegisterOverlay` adds a `ModOverlay`, a group of the
+     screens' display widgets (labels, images, progress bars, item grids) in a box anchored to a corner, edge or the
+     centre of the screen with an offset, drawn below the chat or above the whole HUD, like NeoForge's GUI layers.
+     The HUD draws overlays, so they hide with it (F1) and show under screens; their `Tick` runs inside a call into
+     the mod while the player is in a world, an overlay that throws is logged and removed, and a mod's overlays go
+     when it unloads. See [plugin-content.md](plugin-content.md#hud-overlays).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
-     move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine; HUD overlays drawn with
-     the screens' widgets; entity render layers (emissive and
-     translucent ones) and animations a server triggers beyond arm swings for mods' entities; client lifecycle events
+     move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine; entity render layers
+     (emissive and translucent ones) and animations a server triggers beyond arm swings for mods' entities; client lifecycle events
      (joining and leaving a server).
 
 ## Porting from NeoForge
