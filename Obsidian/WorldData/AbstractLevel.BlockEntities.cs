@@ -113,6 +113,8 @@ public abstract partial class AbstractLevel
     /// </param>
     internal async ValueTask RunBlockEntityRemovalAsync(BlockEntity removed, bool onLevelTick = false)
     {
+        await removed.WaitForLiveCallAsync();
+
         if (removed.Owner is not PluginContainer plugin)
         {
             removed.OnRemoved();
@@ -250,9 +252,15 @@ public abstract partial class AbstractLevel
             if (revision == container.NotifiedRevision)
                 continue;
 
-            container.NotifiedRevision = revision;
             this.CallPlugin(container, container.Owner as PluginContainer,
-                static blockEntity => ((ContainerBlockEntity)blockEntity).OnItemsChanged());
+                blockEntity => blockEntity.RunIfLive(() =>
+                {
+                    if (container.IsRemoved)
+                        return;
+
+                    container.NotifiedRevision = revision;
+                    container.OnItemsChanged();
+                }));
         }
     }
 

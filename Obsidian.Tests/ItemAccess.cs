@@ -95,6 +95,33 @@ public sealed class ItemAccess
         var stone = new ItemStack(ItemsRegistry.Stone);
         Assert.Same(stone, chest.Insert(stone));
         Assert.Null(chest.Extract(0, 1));
+
+        // Lock acquisition and release use engine state, even when a custom Revision getter always throws.
+        var custom = new ThrowingRevisionContainer();
+        var owner = new ContainerBlockEntity(custom);
+        using (custom.Lock())
+            custom.SetItem(0, stone);
+
+        Assert.Equal(1, custom.TransactionLock.CurrentCount);
+        using (await BaseContainer.LockWindowAsync(custom, custom))
+            custom[0]!.Count++;
+
+        Assert.Equal(0, custom.RevisionReads);
+        Assert.Equal(1, custom.TransactionLock.CurrentCount);
+
+        // Failure to acquire a later part must release the first, for both synchronous and asynchronous callers.
+        var unavailable = new Container(9);
+        unavailable.TransactionLock.Dispose();
+        var combined = new DoubleChestContainer(custom, unavailable, "Unavailable");
+        Assert.Throws<ObjectDisposedException>(() => combined.Lock());
+        Assert.Equal(1, custom.TransactionLock.CurrentCount);
+        await Assert.ThrowsAsync<ObjectDisposedException>(async () =>
+        {
+            using var held = await combined.LockAsync();
+        });
+
+        Assert.Equal(1, custom.TransactionLock.CurrentCount);
+        GC.KeepAlive(owner);
     }
 
     [Fact(DisplayName = "Hoppers move a chest's items to a furnace at vanilla's pace",
@@ -177,6 +204,20 @@ public sealed class ItemAccess
         int Moved,
         int Slot = 0,
         int InSlot = 0);
+
+    private sealed class ThrowingRevisionContainer() : BaseContainer(1)
+    {
+        public int RevisionReads { get; private set; }
+
+        public override long Revision
+        {
+            get
+            {
+                this.RevisionReads++;
+                throw new InvalidOperationException("Custom revision failed.");
+            }
+        }
+    }
 
     // Empty chunks around the origin, loaded as the level loads them, so that their block ticks run.
     private static async Task AddTickingChunksAsync(World world)

@@ -738,6 +738,85 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.Null(loaded.GetBlockEntity(4, 70, 4));
         Assert.Equal(1, ItemsIn(context.World).Where(drop => drop.Item.Is(ItemsRegistry.Diamond))
             .Sum(drop => drop.Item.Count));
+
+        // Removing after the outer liveness check must be revalidated inside the plugin call guard.
+        var racePlugin = (await manager.LoadPluginAsync(path))!;
+        var racePosition = new Vector(6, 70, 4);
+        await context.World.SetBlockAsync(racePosition, crateBlock.DefaultState);
+        var raceInventory = new CallbackInventory();
+        var race = new CallbackContainer(raceInventory)
+        {
+            Owner = racePlugin
+        };
+        await context.World.SetBlockEntity(racePosition, race);
+        raceInventory.BeforeRevision = () => context.World.SetBlockAsync(racePosition, BlocksRegistry.Air)
+            .AsTask()
+            .WaitAsync(TimeSpan.FromSeconds(5))
+            .GetAwaiter()
+            .GetResult();
+        await context.World.DoWorldTickAsync();
+        Assert.True(race.IsRemoved);
+        Assert.Equal(0, race.Calls);
+
+        // Once a callback starts, concurrent removal finishes after it, without exposing IsRemoved during it.
+        await context.World.SetBlockAsync(racePosition, crateBlock.DefaultState);
+        var active = new CallbackContainer(new Container(9))
+        {
+            Owner = racePlugin
+        };
+        await context.World.SetBlockEntity(racePosition, active);
+        Task? concurrentRemoval = null;
+        var removalStarted = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var removalFinishedDuringCall = false;
+        var observedRemoved = false;
+        active.OnChange = () =>
+        {
+            concurrentRemoval = Task.Run(async () =>
+            {
+                var pending = context.World.SetBlockAsync(racePosition, BlocksRegistry.Air).AsTask();
+                removalStarted.SetResult(pending);
+                await pending;
+            });
+            var pending = removalStarted.Task.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+            removalFinishedDuringCall = pending.IsCompleted;
+            observedRemoved = active.IsRemoved;
+        };
+        await context.World.DoWorldTickAsync();
+        Assert.Null(loaded.GetBlockEntity(racePosition.X, racePosition.Y, racePosition.Z));
+        Assert.False(removalFinishedDuringCall);
+        Assert.False(observedRemoved);
+        Assert.Equal(1, active.Calls);
+        await concurrentRemoval!.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(active.IsRemoved);
+    }
+
+    private sealed class CallbackInventory() : BaseContainer(1)
+    {
+        public Action? BeforeRevision { get; set; }
+
+        public override long Revision
+        {
+            get
+            {
+                var code = this.BeforeRevision;
+                this.BeforeRevision = null;
+                code?.Invoke();
+                return base.Revision;
+            }
+        }
+    }
+
+    private sealed class CallbackContainer(BaseContainer inventory) : ContainerBlockEntity(inventory)
+    {
+        public int Calls { get; private set; }
+
+        public Action? OnChange { get; set; }
+
+        protected internal override void OnItemsChanged()
+        {
+            this.Calls++;
+            this.OnChange?.Invoke();
+        }
     }
 
     [Fact(DisplayName = "A container's removal takes its items under the click lock, and closes its windows",
