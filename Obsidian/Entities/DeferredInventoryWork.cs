@@ -90,12 +90,26 @@ internal sealed partial class DeferredInventoryWork
     }
 
     // Synchronous side effects that need an earlier lock in the order also wait for the transaction to finish.
-    internal static bool TryDefer(Action work) =>
-        current.Value is DeferredInventoryWork section && section.TryQueue(() =>
+    // Only inventory transactions hold click locks; travel sections hold none, so they never delay this work
+    // (a vehicle seats its carried passengers again within its own travel).
+    internal static bool TryDefer(Action work)
+    {
+        for (var section = current.Value; section is not null; section = section.Previous)
         {
-            work();
-            return ValueTask.CompletedTask;
-        });
+            if (section.Work.sequenceClient is not null)
+                continue;
+
+            var queued = section.Work.TryQueue(() =>
+            {
+                work();
+                return ValueTask.CompletedTask;
+            });
+            if (queued)
+                return true;
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Enters around a whole click, hook or respawn; dispose after releasing its locks, even on failure.
