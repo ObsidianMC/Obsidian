@@ -206,6 +206,58 @@ public partial class Portals
         Assert.NotEqual(results[0], results[1]);
         Assert.Same(first.RootVehicle, second.RootVehicle);
         Assert.Single(first.Passengers.Concat(second.Passengers));
+
+        // Reads and mutation requests from a click must finish while pickup owns TransferLock. The queued mounts
+        // still check cycles together when delivered, and earlier snapshots keep their original passengers.
+        var vehicle = new Cow { Level = context.World };
+        var rider = new Cow { Level = context.World };
+        var replacement = new Cow { Level = context.World };
+        Assert.True(rider.StartRiding(vehicle));
+        var snapshot = ((IEntity)vehicle).Passengers;
+        using var release = new ManualResetEventSlim();
+        var held = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var holding = Task.Run(() =>
+        {
+            lock (ItemEntity.TransferLock)
+            {
+                held.SetResult();
+                Assert.True(release.Wait(TimeSpan.FromSeconds(10)));
+            }
+        });
+        await held.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await using (DeferredInventoryWork.Begin(NullLogger.Instance))
+        {
+            try
+            {
+                var container = new Container(5);
+                using (await container.LockAsync())
+                {
+                    await Task.Run(() =>
+                    {
+                        Assert.Same(rider, Assert.Single(((IEntity)vehicle).Passengers));
+                        Assert.Same(vehicle, rider.RootVehicle);
+                        Assert.Same(vehicle, ((IEntity)rider).Vehicle);
+                        rider.StopRiding();
+                        Assert.True(vehicle.StartRiding(replacement));
+                        Assert.True(replacement.StartRiding(vehicle));
+                        Assert.Same(vehicle, rider.Vehicle);
+                        Assert.Null(vehicle.Vehicle);
+                    }).WaitAsync(TimeSpan.FromSeconds(2));
+                }
+            }
+            finally
+            {
+                release.Set();
+                await holding.WaitAsync(TimeSpan.FromSeconds(10));
+            }
+        }
+
+        Assert.Null(rider.Vehicle);
+        Assert.Same(replacement, vehicle.Vehicle);
+        Assert.Null(replacement.Vehicle);
+        Assert.Empty(vehicle.Passengers);
+        Assert.Same(vehicle, Assert.Single(replacement.Passengers));
+        Assert.Same(rider, Assert.Single(snapshot));
     }
 
     private static SemaphoreSlim ChunkLock(Entities.Player player) =>

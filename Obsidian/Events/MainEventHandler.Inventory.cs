@@ -996,6 +996,8 @@ public partial class MainEventHandler
     // or another window opened meanwhile.
     internal static async ValueTask RefreshWindowAsync(Player player, BaseContainer window, int stateId)
     {
+        // Item access reads can run plugin code too; their side effects must wait for these click locks.
+        await using var transaction = DeferredInventoryWork.Begin(player.Logger);
         var order = player.WindowSnapshots;
         WindowSnapshot snapshot;
 

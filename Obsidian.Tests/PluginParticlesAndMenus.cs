@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Events;
+using Obsidian.Entities;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Payloads;
@@ -13,6 +14,7 @@ using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -91,6 +93,26 @@ public sealed class PluginParticlesAndMenus
 
         var plugin = Plugin();
         var bag = PluginRegistry.RegisterMenu(plugin, "unloadprobe:bag", 1, 9);
+
+        // A close callback can replace the pending opening. Only the windows still current reach the client.
+        var replacement = new MenuContainer(bag, "Replacement");
+        var replaced = new UnloadMenu(bag)
+        {
+            OnClose = viewer => viewer.OpenInventoryAsync(replacement).GetAwaiter().GetResult()
+        };
+        var packets = ((TestClient)player.Client).SentPackets;
+        await player.OpenInventoryAsync(replaced);
+        var firstWindow = player.CurrentContainerId;
+        await player.OpenInventoryAsync(new MenuContainer(bag, "Obsolete"));
+        Assert.Same(replacement, player.OpenedContainer);
+        Assert.Equal([firstWindow, player.CurrentContainerId],
+            packets.OfType<OpenScreenPacket>().Select(packet => packet.ContainerId));
+        Assert.Equal([firstWindow, player.CurrentContainerId],
+            packets.OfType<ContainerSetContentPacket>().Select(packet => packet.ContainerId));
+        Assert.Equal(1, replaced.Closes);
+        await player.CloseContainerAsync();
+        var previousCloses = packets.OfType<ContainerClosePacket>().Count();
+
         var closes = 0;
         context.EventDispatcher.RegisterEvent(plugin, (Func<ContainerClosedEventArgs, ValueTask>)(_ =>
         {
@@ -112,13 +134,33 @@ public sealed class PluginParticlesAndMenus
         original.ThrowValidity = false;
 
         // Like unloading: the plugin takes no more calls, but its close handler still sees its menu close.
-        plugin.Close();
-        await PluginManager.CloseMenusAsync(context.Server, plugin);
+        await using (DeferredInventoryWork.Begin(player.Logger))
+        {
+            await using (DeferredInventoryWork.Begin(player.Logger))
+            {
+                plugin.Close();
+                await PluginManager.CloseMenusAsync(context.Server, plugin);
+            }
+
+            Assert.Equal(0, original.Closes);
+            Assert.False(plugin.WaitForCallsAsync().IsCompleted);
+
+            // A tick in an independent flow must leave the transaction's close and plugin hold alone.
+            Task fallback;
+            using (ExecutionContext.SuppressFlow())
+                fallback = Task.Run(player.RunMenusClosed);
+
+            await fallback.WaitAsync(TimeSpan.FromSeconds(1));
+            Assert.Equal(0, original.Closes);
+            Assert.False(plugin.WaitForCallsAsync().IsCompleted);
+        }
+
+        await plugin.WaitForCallsAsync().WaitAsync(TimeSpan.FromSeconds(1));
 
         Assert.Equal(1, closes);
         Assert.Equal(1, original.Closes);
         Assert.Null(player.OpenedContainer);
-        Assert.Single(((TestClient)player.Client).SentPackets.OfType<ContainerClosePacket>());
+        Assert.Single(packets.OfType<ContainerClosePacket>().Skip(previousCloses));
 
         await player.SendMenuOpenedAsync(original, player.CurrentContainerId);
         Assert.Equal(reads, original.Reads);
@@ -155,7 +197,13 @@ public sealed class PluginParticlesAndMenus
 
         public int Closes { get; private set; }
 
-        protected internal override void Closed(IPlayer player) => this.Closes++;
+        public Action<IPlayer>? OnClose { get; init; }
+
+        protected internal override void Closed(IPlayer player)
+        {
+            this.Closes++;
+            this.OnClose?.Invoke(player);
+        }
 
         public override short GetData(int index)
         {

@@ -1090,8 +1090,11 @@ A player who isn't sneaking mounts a plugin's mob by using it when the behaviour
 so and `InteractAsync` didn't take the interaction. `IPlayer.StartRiding(mob)` mounts a player from code (any mob
 with a free seat), `IEntity.StopRiding()` takes it off, and `IEntity.Vehicle` is what it rides (other entities ride
 too, see [Travel and portals](#travel-and-portals)); sneaking dismounts,
-as in vanilla. The first passenger steers, and the mob's goals pause meanwhile: a walking mob like a horse (its
-`MovementSpeed`, a quarter of it backwards, half of it sideways, jumping with jump), and a mob with
+as in vanilla. Riding reads use read-only passenger snapshots and never wait for inventory transfers. From an
+inventory hook, mounting and dismounting wait until its transaction releases the click locks; `StartRiding` returns
+true when queued, and the seat and cycle checks run on delivery. The first passenger steers, and the mob's goals
+pause meanwhile: a walking mob like a horse (its `MovementSpeed`, a quarter of it backwards, half of it sideways,
+jumping with jump), and a mob with
 `Movement = EntityMovementMode.Flying` like a happy ghast, towards where the rider looks, strafing sideways and rising
 with jump, gaining a tenth of its `FlyingSpeed` each tick. Flying mobs have no gravity or fall damage, and their goals
 path through the air with Obsidian's flying move control, as vanilla's flying mobs do.
@@ -1766,7 +1769,8 @@ registering the type again does not reactivate an old instance:
 - `Closed(player)` runs once each time the menu stops being open for a player, like vanilla's `removed`: the player
   closes it, another window opens over it, it's no longer valid, the player dies, changes level or leaves, or the
   plugin unloads. Give back what a crafting-grid style slot held there, say. It runs after the window closed (and
-  after `ContainerClosedEventArgs`, when the close raises one), without the server's locks, inside a call into the
+  after `ContainerClosedEventArgs`, when the close raises one). A close inside an inventory hook waits until its
+  transaction releases the click locks. It runs without the server's locks, inside a call into the
   plugin, even while it unloads: the unload waits for it. A leaving player's menu whose plugin finished unloading
   first isn't called. One that throws is logged. Menus a `ServerPlayer` "opens" only set its field; they have no
   window, so they're never closed this way.

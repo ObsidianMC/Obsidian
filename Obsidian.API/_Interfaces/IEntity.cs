@@ -67,7 +67,7 @@ public interface IEntity : Data.IAttachmentHolder
     public IEntity? Vehicle => null;
 
     /// <summary>
-    /// The entities riding this one, in seat order; the first one steers a mount.
+    /// A read-only snapshot of the entities riding this one, in seat order; the first one steers a mount.
     /// </summary>
     public IReadOnlyList<IEntity> Passengers => [];
 
@@ -78,13 +78,14 @@ public interface IEntity : Data.IAttachmentHolder
     /// <remarks>
     /// A player boards only a mob, and only while alive, not a spectator and not already riding. A plugin's mob
     /// carries as many passengers as its type has passenger attachments, at least one, and its first passenger steers
-    /// it.
+    /// it. From an inventory hook, boarding waits until its transaction releases the click locks; the seat and
+    /// cycle checks run then.
     /// </remarks>
-    /// <returns>Whether the entity now rides <paramref name="vehicle"/>.</returns>
+    /// <returns>Whether boarding succeeded, or was queued by an inventory hook.</returns>
     public bool StartRiding(IEntity vehicle) => false;
 
     /// <summary>
-    /// Dismounts the entity from what it rides, if anything.
+    /// Dismounts the entity from what it rides, if anything, after the transaction when called by an inventory hook.
     /// </summary>
     public void StopRiding()
     {

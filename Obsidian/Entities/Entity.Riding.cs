@@ -1,5 +1,6 @@
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
+using System.Threading;
 
 namespace Obsidian.Entities;
 
@@ -8,34 +9,30 @@ namespace Obsidian.Entities;
 // whole passenger tree (see Entity.Travel.cs).
 public partial class Entity
 {
-    private readonly List<Entity> passengers = [];
+    // Published arrays are never mutated or exposed for writing. Reads may happen under a container click lock,
+    // later in the lock order than TransferLock, so they must never wait for the graph's mutation lock.
+    private volatile IReadOnlyList<Entity> passengers = Array.AsReadOnly<Entity>([]);
+    private volatile Entity? vehicle;
 
     /// <summary>The entity this one rides, or null.</summary>
-    internal Entity? Vehicle { get; private set; }
+    internal Entity? Vehicle => this.vehicle;
 
     /// <summary>The entities riding this one, in seat order. The first one controls a mount.</summary>
-    internal IReadOnlyList<Entity> Passengers
-    {
-        get
-        {
-            lock (ItemEntity.TransferLock)
-                return this.passengers.ToArray();
-        }
-    }
+    internal IReadOnlyList<Entity> Passengers => this.passengers;
 
     /// <summary>The bottom of this entity's vehicle chain: itself when it rides nothing.</summary>
     internal Entity RootVehicle
     {
         get
         {
-            lock (ItemEntity.TransferLock)
-            {
-                var root = this;
-                while (root.Vehicle is Entity vehicle)
-                    root = vehicle;
+            var root = this;
+            var visited = new HashSet<Entity>();
+            // Concurrent reparenting can make successive reads revisit a link even though every committed graph
+            // is acyclic. Return a sampled ancestor rather than looping over a changing graph forever.
+            while (visited.Add(root) && root.Vehicle is Entity vehicle)
+                root = vehicle;
 
-                return root;
-            }
+            return root;
         }
     }
 
@@ -67,9 +64,12 @@ public partial class Entity
     /// Boards <paramref name="vehicle"/>, leaving any current vehicle. <paramref name="force"/> skips the seat limit,
     /// as when travel puts passengers back on their vehicle.
     /// </summary>
-    /// <returns>Whether the entity now rides the vehicle.</returns>
+    /// <returns>Whether the entity boarded, or its boarding was queued until the inventory transaction ends.</returns>
     internal bool Ride(Entity vehicle, bool force = false)
     {
+        if (DeferRidingChange(() => this.Ride(vehicle, force)))
+            return true;
+
         // Evaluate the virtual seat policy without the graph lock. The graph shares the transfer lock so its
         // level checks and travel commits agree; never acquire a tick lock or run plugin code while holding it.
         var seats = force ? 0 : vehicle.MaximumPassengers;
@@ -90,14 +90,16 @@ public partial class Entity
                 return false;
 
             previous = this.Vehicle;
-            previous?.passengers.Remove(this);
-            this.Vehicle = vehicle;
+            if (previous is not null)
+                previous.passengers = Array.AsReadOnly(previous.passengers.Where(rider => rider != this).ToArray());
+
+            this.vehicle = vehicle;
 
             // Like vanilla, a player boarding a vehicle that a non-player controls takes the controlling seat.
             if (this is Player && vehicle.passengers.Count > 0 && vehicle.passengers[0] is not Player)
-                vehicle.passengers.Insert(0, this);
+                vehicle.passengers = Array.AsReadOnly<Entity>([this, .. vehicle.passengers]);
             else
-                vehicle.passengers.Add(this);
+                vehicle.passengers = Array.AsReadOnly<Entity>([.. vehicle.passengers, this]);
         }
 
         previous?.SynchronizePassengers();
@@ -108,6 +110,9 @@ public partial class Entity
     /// <summary>Gets off the vehicle the entity rides, if any.</summary>
     internal void LeaveVehicle()
     {
+        if (DeferRidingChange(this.LeaveVehicle))
+            return;
+
         Entity vehicle;
         lock (ItemEntity.TransferLock)
         {
@@ -115,8 +120,8 @@ public partial class Entity
                 return;
 
             vehicle = current;
-            this.Vehicle = null;
-            vehicle.passengers.Remove(this);
+            this.vehicle = null;
+            vehicle.passengers = Array.AsReadOnly(vehicle.passengers.Where(rider => rider != this).ToArray());
         }
 
         vehicle.SynchronizePassengers();
@@ -125,19 +130,27 @@ public partial class Entity
     /// <summary>Takes every passenger off this entity.</summary>
     internal void EjectPassengers()
     {
+        if (DeferRidingChange(this.EjectPassengers))
+            return;
+
         lock (ItemEntity.TransferLock)
         {
             if (this.passengers.Count == 0)
                 return;
 
             foreach (var passenger in this.passengers)
-                passenger.Vehicle = null;
+                passenger.vehicle = null;
 
-            this.passengers.Clear();
+            this.passengers = Array.AsReadOnly<Entity>([]);
         }
 
         this.SynchronizePassengers();
     }
+
+    // Inventory hooks must not acquire TransferLock after a click lock. Travel that already owns TransferLock
+    // can change the graph immediately: it must detach riders atomically with its level commit.
+    private static bool DeferRidingChange(Action change) =>
+        !Monitor.IsEntered(ItemEntity.TransferLock) && DeferredInventoryWork.TryDefer(change);
 
     /// <summary>
     /// Moves every passenger to its seat, and their passengers to theirs. A passenger whose new position its level
