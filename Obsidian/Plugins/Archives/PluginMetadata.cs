@@ -41,6 +41,20 @@ internal sealed class PluginMetadata
 
     public string? ProjectUrl { get; init; }
 
+    /// <summary>
+    /// NeoForge's <c>issueTrackerURL</c>. Keys match case-insensitively, so the JSON spells it as NeoForge does.
+    /// </summary>
+    public string? IssueTrackerUrl { get; init; }
+
+    /// <summary>
+    /// A PNG in the archive that mod lists show as the plugin's icon, like NeoForge's <c>logoFile</c>.
+    /// </summary>
+    public string? LogoFile { get; init; }
+
+    public string? License { get; init; }
+
+    public string? Credits { get; init; }
+
     public PluginSide Side { get; init; }
 
     public DependencyMetadata[] Dependencies { get; init; } = [];
@@ -65,6 +79,10 @@ internal sealed class PluginMetadata
             Authors = [.. this.Authors],
             Description = this.Description,
             ProjectUrl = Uri.TryCreate(this.ProjectUrl, UriKind.Absolute, out var uri) ? uri : null,
+            IssueTrackerUrl = Uri.TryCreate(this.IssueTrackerUrl, UriKind.Absolute, out var issues) ? issues : null,
+            LogoFile = this.LogoFile,
+            License = this.License,
+            Credits = this.Credits,
             Side = this.Side,
             Dependencies = [.. this.Dependencies.Select(dependency => dependency.ToDependency())]
         };

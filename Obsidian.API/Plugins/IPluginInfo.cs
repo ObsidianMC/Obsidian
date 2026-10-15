@@ -15,6 +15,26 @@ public interface IPluginInfo
     public Uri ProjectUrl { get; }
 
     /// <summary>
+    /// Where players report the plugin's bugs, or null.
+    /// </summary>
+    public Uri? IssueTrackerUrl { get; }
+
+    /// <summary>
+    /// The path of a PNG in the plugin's archive that mod lists show as its icon, or null.
+    /// </summary>
+    public string? LogoFile { get; }
+
+    /// <summary>
+    /// The plugin's license as its author names it, e.g. <c>MIT</c>, or null.
+    /// </summary>
+    public string? License { get; }
+
+    /// <summary>
+    /// The people and projects the plugin thanks, or null.
+    /// </summary>
+    public string? Credits { get; }
+
+    /// <summary>
     /// Where the plugin runs: on servers, on clients, or both.
     /// </summary>
     public PluginSide Side { get; }
