@@ -207,8 +207,13 @@ public abstract partial class AbstractLevel
     /// </summary>
     private bool HoldsTickLock => this.Fluids.TickLock.IsHeldByCurrentThread;
 
-    private void OnContainerItemsChanged(ContainerBlockEntity container) =>
+    private void OnContainerItemsChanged(ContainerBlockEntity container)
+    {
         this.itemAccessChanges.TryAdd(container, 0);
+
+        // Also for a call that didn't take the inventory's lock through Lock (see ContainerItemAccess.WithoutWaiting).
+        this.QueueItemsChanged(container);
+    }
 
     private static partial class Log
     {

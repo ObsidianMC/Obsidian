@@ -225,13 +225,13 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     /// </summary>
     internal IDisposable Lock()
     {
-        var gates = Ordered(this.LockParts);
-        var taken = new List<IDisposable>(gates.Length);
+        var parts = Ordered(this.LockParts);
+        var taken = new List<IDisposable>(parts.Length);
 
-        foreach (var gate in gates)
+        foreach (var part in parts)
         {
-            gate.Wait();
-            taken.Add(new LockRelease(gate));
+            part.TransactionLock.Wait();
+            taken.Add(new PartRelease(part));
         }
 
         return new LockSet(taken);
@@ -252,15 +252,15 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     // Takes the containers' locks in order; the returned handle releases them in reverse.
     private static async ValueTask<IDisposable> LockAllAsync(IEnumerable<BaseContainer> parts)
     {
-        var gates = Ordered(parts);
-        var taken = new List<IDisposable>(gates.Length);
+        var ordered = Ordered(parts);
+        var taken = new List<IDisposable>(ordered.Length);
 
         try
         {
-            foreach (var gate in gates)
+            foreach (var part in ordered)
             {
-                await gate.WaitAsync();
-                taken.Add(new LockRelease(gate));
+                await part.TransactionLock.WaitAsync();
+                taken.Add(new PartRelease(part));
             }
         }
         catch
@@ -272,15 +272,52 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         return new LockSet(taken);
     }
 
-    // The distinct containers' locks in the order every lock of several takes them: by a rank each container gets the
+    // The distinct containers in the order every lock of several takes their locks: by a rank each container gets the
     // first time it's locked, which never changes.
-    private static SemaphoreSlim[] Ordered(IEnumerable<BaseContainer> parts) =>
+    private static BaseContainer[] Ordered(IEnumerable<BaseContainer> parts) =>
     [
         .. parts
             .Distinct()
             .OrderBy(part => part.LockRank)
-            .Select(part => part.TransactionLock)
     ];
+
+    /// <summary>
+    /// Releases one container's lock taken by <see cref="Lock"/> or <see cref="LockAsync"/>. A block entity's
+    /// inventory whose items changed while it was held then queues the block entity's
+    /// <see cref="ContainerBlockEntity.OnItemsChanged"/>, so that clicks, loot and item access are all heard.
+    /// </summary>
+    private sealed class PartRelease : IDisposable
+    {
+        private readonly BaseContainer part;
+        private readonly ContainerBlockEntity? owner;
+        private readonly long revision;
+        private int released;
+
+        // Created holding the part's lock, so that the revision is the one the holder starts from.
+        public PartRelease(BaseContainer part)
+        {
+            this.part = part;
+
+            if (part.BlockEntityOwner is not null && part.BlockEntityOwner.TryGetTarget(out var owner))
+            {
+                this.owner = owner;
+                this.revision = part.Revision;
+            }
+        }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref this.released, 1) != 0)
+                return;
+
+            // Read before releasing, so that the change counted is the holder's own.
+            var changed = this.owner is not null && this.part.Revision != this.revision;
+            this.part.TransactionLock.Release();
+
+            if (changed)
+                this.owner?.QueueItemsChanged();
+        }
+    }
 
     private static long nextLockRank;
 

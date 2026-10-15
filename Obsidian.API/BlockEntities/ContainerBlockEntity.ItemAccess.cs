@@ -103,6 +103,11 @@ internal interface IContainerItemsHost
     /// the comparators reading it updated, at the end of the level's tick.
     /// </summary>
     public void OnItemsChanged(ContainerBlockEntity container);
+
+    /// <summary>
+    /// Queues the container's <see cref="ContainerBlockEntity.OnItemsChanged"/> to the end of the level's tick.
+    /// </summary>
+    public void QueueItemsChanged(ContainerBlockEntity container);
 }
 
 /// <summary>

@@ -125,9 +125,15 @@ public abstract partial class AbstractLevel
             return;
 
         blockEntity.LoadPending = false;
-        if (!blockEntity.IsRemoved
-            && ReferenceEquals(this.GetResidentBlockEntity(blockEntity.BlockPosition), blockEntity))
-            this.CallPlugin(blockEntity, blockEntity.Owner as PluginContainer, static loaded => loaded.OnLoad());
+        if (blockEntity.IsRemoved
+            || !ReferenceEquals(this.GetResidentBlockEntity(blockEntity.BlockPosition), blockEntity))
+            return;
+
+        this.CallPlugin(blockEntity, blockEntity.Owner as PluginContainer, static loaded => loaded.OnLoad());
+
+        // A container hears of the items it joined the level with at the end of the tick, whether its chunk ticks.
+        if (blockEntity is ContainerBlockEntity container)
+            this.QueueItemsChanged(container);
     }
 
     /// <summary>
