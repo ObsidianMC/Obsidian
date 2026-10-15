@@ -908,6 +908,12 @@ public sealed class WorldBlockEntities : IDisposable
         retaining.Retained.Add(new NbtTag<int>("later", 1));
         Assert.False(((NbtCompound)BlockEntityNbt.Save(retaining)!["state"]).HasTag("later"));
         Assert.False(((NbtCompound)retaining.ClientData!["state"]).HasTag("later"));
+
+        // A change announced between ticks is taken in by a save with no tick before it, which sends nothing.
+        retaining.SetChanged();
+        await context.World.FlushRegionsAsync();
+        Assert.True(((NbtCompound)BlockEntityNbt.Save(retaining)!["state"]).HasTag("later"));
+        Assert.False(((NbtCompound)retaining.ClientData!["state"]).HasTag("later"));
     }
 
     [Fact(DisplayName = "Broken block entities give their loot what they hold: a shulker box keeps its items",

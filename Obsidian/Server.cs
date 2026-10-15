@@ -636,7 +636,8 @@ public sealed partial class Server : IServer, IPluginScopedServer
         }
     }
     /// <summary>
-    /// Pauses the worlds between two ticks: once this returns, no world tick runs until <see cref="Resume"/>.
+    /// Pauses the worlds between two ticks: once this returns, no world tick runs, and no chunk loads, unloads or
+    /// starts generating, until <see cref="Resume"/>. Saves still run, and connections keep running.
     /// </summary>
     /// <returns>Whether the worlds were running, so this call paused them.</returns>
     public async Task<bool> PauseAsync()
@@ -647,6 +648,10 @@ public sealed partial class Server : IServer, IPluginScopedServer
             var wasRunning = !this.Paused;
             this.Paused = true;
 
+            // Like vanilla's paused integrated server, whose chunk loading and unloading are part of its tick.
+            if (this.WorldManager is WorldData.WorldManager worldManager)
+                await worldManager.PauseChunkManagementAsync();
+
             return wasRunning;
         }
         finally
@@ -656,9 +661,13 @@ public sealed partial class Server : IServer, IPluginScopedServer
     }
 
     /// <summary>
-    /// Lets the worlds tick again from the next tick.
+    /// Lets the worlds tick, and their chunks load and unload, again from the next tick.
     /// </summary>
-    public void Resume() => this.Paused = false;
+    public void Resume()
+    {
+        (this.WorldManager as WorldData.WorldManager)?.ResumeChunkManagement();
+        this.Paused = false;
+    }
 
     /// <summary>
     /// Saves everything: the online players, the worlds with their regions and level data, and the user cache. Saves run

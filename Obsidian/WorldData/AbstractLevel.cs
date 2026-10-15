@@ -794,6 +794,9 @@ public abstract partial class AbstractLevel : ILevel
         await simulationGate.WaitAsync();
         try
         {
+            // The region's final save has its block entities' changes made since the last tick.
+            this.TakeBlockEntityChanges();
+
             IRegion? r;
             lock (this.Fluids.TickLock)
             {
@@ -822,6 +825,18 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
+    /// <summary>
+    /// Whether the server paused chunk management (see <see cref="WorldManager.PauseChunkManagementAsync"/>): the
+    /// generation jobs running finish, but don't start the queued ones.
+    /// </summary>
+    internal bool ChunkManagementPaused
+    {
+        get => Volatile.Read(ref this.chunkManagementPaused);
+        set => Volatile.Write(ref this.chunkManagementPaused, value);
+    }
+
+    private bool chunkManagementPaused;
+
     public async Task ManageChunksAsync()
     {
         if (LevelData.Time > 0 && LevelData.Time % (20 * 30) == 0)
@@ -840,6 +855,9 @@ public abstract partial class AbstractLevel : ILevel
                     // Recheck after entering the gate, against tickets acquired since the candidate snapshot.
                     if (!this.TryReleaseUnneededChunk(chunk))
                         continue;
+
+                    // The chunk's final save has its block entities' changes made since the last tick.
+                    this.TakeBlockEntityChanges();
 
                     NumericsHelper.LongToInts(chunk, out var cx, out var cz);
                     var r = GetRegionForChunk(cx, cz);
@@ -868,8 +886,11 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     private void StartQueuedJobs()
     {
-        // Disposal takes every slot as jobs finish, which new jobs would keep it from.
-        while (Volatile.Read(ref this.disposed) == 0 && this.generationSlots.Wait(0))
+        // Disposal takes every slot as jobs finish, which new jobs would keep it from. While chunk management is
+        // paused, a job that finishes doesn't start the next.
+        while (Volatile.Read(ref this.disposed) == 0
+            && !this.ChunkManagementPaused
+            && this.generationSlots.Wait(0))
         {
             if (!this.TryTakeNearestJob(out var job))
             {
@@ -1002,11 +1023,18 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
+    /// <remarks>
+    /// Takes in the changes block entities announced since the last tick first (see
+    /// <see cref="TakeBlockEntityChanges"/>), like the tick's end does, so that one changed between ticks (by plugin
+    /// code off the tick, a command or a test) is saved with its own data as it is now, like its items.
+    /// </remarks>
     public async virtual Task FlushRegionsAsync()
     {
         await simulationGate.WaitAsync();
         try
         {
+            this.TakeBlockEntityChanges();
+
             Interlocked.Exchange(ref this.jobsSinceFlush, 0);
             SavingEntities = true;
             await Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));

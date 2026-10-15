@@ -270,7 +270,7 @@ public abstract partial class BlockEntity : IBlockEntity
 
     /// <summary>
     /// Tells the server the block entity's saved data changed, so that the next save has it. The server takes the
-    /// change in at the end of the level's tick, calling <see cref="Save"/>.
+    /// change in at the end of the level's tick, or before a save that comes first, calling <see cref="Save"/>.
     /// </summary>
     public void SetChanged()
     {

@@ -1298,7 +1298,9 @@ type and its update data from chunk packets and `BlockEntityData`, and remapping
 
 - **Saving.** The block entity is saved in its chunk's `block_entities` with the type's `id` and its position, and
   `Load` reads back what `Save` wrote. Call `SetChanged` whenever the saved data changes, like vanilla's
-  `setChanged`: the level calls `Save` at the end of its tick, and saves the chunk with what it wrote.
+  `setChanged`: the level calls `Save` at the end of its tick, and saves the chunk with what it wrote. A change
+  made between ticks (off the tick, from a command) is taken in before the next save too, so a save, pause or stop
+  with no tick in between still has it.
 - **Ticking.** `TickAsync` runs once a tick while the chunk ticks (a player is within the simulation distance), and
   only while the block still has the type. `Level` is the level it's in, and `BlockPosition` its block. Clients tick
   their own instances with `ClientTick` (see **Client ticks**).
