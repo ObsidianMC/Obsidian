@@ -1,4 +1,5 @@
 using Obsidian.API.Advancements;
+using Obsidian.Entities;
 using Obsidian.Plugins;
 using System.Threading;
 
@@ -24,7 +25,12 @@ internal static class AdvancementTriggersRegistry
             registrations[identifier] = (owner, identity);
         }
 
-        return new AdvancementTrigger<T>(identifier, async (player, matches) =>
+        // Inventory hooks can fire another player's trigger. Wait until all enclosing transactions release their
+        // locks before taking the player's tick gate, and check the registration/call guard at delivery time.
+        return new AdvancementTrigger<T>(identifier, (player, matches) =>
+            DeferredInventoryWork.RunOrDeferAsync(() => FireAsync(player, matches)));
+
+        async ValueTask FireAsync(IPlayer player, Func<T, bool> matches)
         {
             PluginContainer active;
             IDisposable? call;
@@ -45,7 +51,7 @@ internal static class AdvancementTriggersRegistry
                 if (call is not null && player is Entities.Player concrete)
                     await concrete.ProgressAdvancements.FireAsync(identifier, json => matches(codec.Decode(json)));
             }
-        });
+        }
     }
 
     public static void ReleasePlugin(PluginContainer owner)

@@ -116,11 +116,16 @@ public partial class Player
             await this.FireProgressAsync("inventory_changed");
     }
 
+    // Grants take tickGate to keep criteria and rewards together with saves and leaving. A death must finish
+    // before waiting for that gate: a tick holding it may itself be waiting for the death before respawning.
+    // Other triggers fired from inventory/chunk transactions follow the same lock order.
     internal ValueTask FireProgressAsync(string trigger, ItemStack? item = null, IEntity? entity = null,
         IBlock? block = null, Vector? position = null, string? recipe = null, string? from = null,
-        string? to = null, int? levels = null) => this.ProgressAdvancements.FireAsync($"minecraft:{trigger}",
-            conditions => ProgressConditions.Match(this, trigger, conditions, item, entity, block, position,
-                recipe, from, to, levels));
+        string? to = null, int? levels = null) => DeferredInventoryWork.RunOrDeferAsync(
+            () => this.ProgressAdvancements.FireAsync(
+                $"minecraft:{trigger}",
+                conditions => ProgressConditions.Match(
+                    this, trigger, conditions, item, entity, block, position, recipe, from, to, levels)));
 
     /// <summary>Record only accepted movement. Vanilla's distance stats round blocks to centimetres.</summary>
     private void RecordProgressMovement(VectorD previous, MovementFlags previousFlags)

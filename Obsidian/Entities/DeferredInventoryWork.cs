@@ -126,8 +126,9 @@ internal sealed partial class DeferredInventoryWork
     }
 
     /// <summary>
-    /// Runs the queued work in order, once the lock was let go. Work that throws is logged with
-    /// <paramref name="logger"/>, as it has no caller left to throw to, and the rest still runs.
+    /// Closes the section and hands its queued work to the nearest open parent, or runs it in order if every
+    /// enclosing lock was let go. Work that throws is logged with <paramref name="logger"/>, as it has no caller
+    /// left to throw to, and the rest still runs.
     /// </summary>
     public async ValueTask RunAsync(ILogger logger)
     {
@@ -144,7 +145,7 @@ internal sealed partial class DeferredInventoryWork
         {
             try
             {
-                await work();
+                await RunOrDeferAsync(work);
             }
             catch (Exception exception)
             {

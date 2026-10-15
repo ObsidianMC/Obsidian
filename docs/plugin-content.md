@@ -596,6 +596,8 @@ The use hooks run without the inventory lock, so they may hurt the player and wa
 (`ClickButton`, `QuickMove`, slot rules) run synchronously inside the click's locks: inventory work they request,
 including death and respawn, follows after the click releases them. Attachment `Changed` notifications wait until
 the transaction releases its locks and finishes all transfers or rollback; they observe the final saved value.
+Nested transactions pass queued inventory work to the nearest enclosing open transaction in order. It runs after
+all enclosing locks are released, including when an enclosing operation throws.
 
 The hooks are calls into the plugin: none starts once the plugin begins unloading, and one that throws during the
 inventory tick is logged without stopping the tick.
@@ -774,6 +776,11 @@ The JSON criterion names `"trigger": "ruby:powered"` and `"conditions": { "minim
 Conditions decode only while firing inside the plugin's active call. Throw `NotSupportedException` or a JSON
 validation exception for unsupported conditions. Old handles become inert on unload and cannot fire a replacement
 registration. Player progress never retains plugin condition instances or codecs.
+
+Vanilla and plugin trigger firing inside an inventory, death or travel transaction is deferred until the transaction
+finishes. Grants and their rewards still serialize with the player's tick, saves and leaving; a death releases its
+completion barrier before delivering either player's advancement triggers. Deferred plugin triggers recheck their
+registration and enter the plugin's active call at delivery time, so unloading makes queued old handles inert.
 
 The current vanilla triggers are `inventory_changed`, `recipe_unlocked`, `player_killed_entity`,
 `entity_killed_player`, `changed_dimension`, `location` (every 20 ticks), `consume_item`, `placed_block`,

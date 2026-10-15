@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Data;
+using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Registries;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Nbt;
@@ -306,6 +308,58 @@ public partial class Portals
         var packets = ((TestClient)player.Client).SentPackets;
         Assert.Equal(DataKept.None, Assert.Single(packets.OfType<RespawnPacket>()).DataKept);
         Assert.Single(packets.OfType<PlayerCombatKillPacket>());
+
+        // Closing an inner transaction must hand its death to the outer queue, even if the outer body throws.
+        // Work scheduled by a handed-over item and work after a failing item must each run exactly once.
+        player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Diamond));
+        var order = new List<int>();
+        var failure = new InvalidOperationException("Outer transaction failed");
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await using var outer = DeferredInventoryWork.Begin(NullLogger.Instance);
+            using (await player.Inventory.LockAsync())
+            {
+                await DeferredInventoryWork.RunOrDeferAsync(() => Record(1));
+                var inner = DeferredInventoryWork.Begin(NullLogger.Instance);
+                try
+                {
+                    await player.KillAsync(player, "Nested inventory death");
+                    await DeferredInventoryWork.RunOrDeferAsync(async () =>
+                    {
+                        await using var followup = DeferredInventoryWork.Begin(NullLogger.Instance);
+                        using (await player.Inventory.LockAsync())
+                        {
+                            order.Add(2);
+                            await DeferredInventoryWork.RunOrDeferAsync(() => Record(3));
+                            Assert.Equal<int>([1, 2], order);
+                        }
+                    });
+                    await DeferredInventoryWork.RunOrDeferAsync(
+                        () => throw new InvalidOperationException("Deferred item failed"));
+                }
+                finally
+                {
+                    await inner.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+                }
+
+                Assert.Equal(1, player.Inventory.GetItem(9)?.Count);
+                Assert.Empty(order);
+                await DeferredInventoryWork.RunOrDeferAsync(() => Record(4));
+                throw failure;
+            }
+        });
+        Assert.Same(failure, thrown);
+        Assert.Equal<int>([1, 2, 3, 4], order);
+        Assert.All(player.Inventory, Assert.Null);
+        Assert.Equal(2, packets.OfType<PlayerCombatKillPacket>().Count());
+        Assert.Single(target.World.GetNonPlayerEntitiesInRange(player.Position, 8).OfType<ItemEntity>(),
+            entity => entity.Item.Is(ItemsRegistry.Diamond));
+
+        ValueTask Record(int value)
+        {
+            order.Add(value);
+            return ValueTask.CompletedTask;
+        }
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]

@@ -5,6 +5,7 @@ using Obsidian.API.Advancements;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.Commands.Framework;
+using Obsidian.Entities;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
@@ -16,9 +17,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -73,6 +76,73 @@ public sealed class Progress
         Assert.Equal(1, player.Statistics.Get("minecraft:deaths"));
         Assert.Equal(0, player.Statistics.Get("minecraft:time_since_death"));
         Assert.False(player.Advancements.IsDone("minecraft:adventure/root"));
+
+        // Either the victim's or the killer's tick can be waiting for the death before a deferred respawn.
+        var killer = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Killer");
+        using var deathJson = JsonDocument.Parse("""
+            {
+              "criteria": {
+                "death": { "trigger": "minecraft:entity_killed_player" },
+                "kill": { "trigger": "minecraft:player_killed_entity" }
+              }
+            }
+            """);
+        var definitions = AdvancementsRegistry.Current.Values.ToArray();
+        try
+        {
+            AdvancementsRegistry.Apply([AdvancementsRegistry.Parse("probe:death", deathJson.RootElement)]);
+            Entities.Player[] tickingPlayers = [player, killer];
+            foreach (var ticking in tickingPlayers)
+            {
+                await player.RespawnAsync();
+                player.Advancements.Revoke("probe:death");
+                killer.Advancements.Revoke("probe:death");
+                player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Diamond));
+                var packets = ((TestClient)player.Client).SentPackets;
+                var deaths = packets.OfType<PlayerCombatKillPacket>().Count();
+                var pending = new DeferredInventoryWork();
+                var tickGate = (SemaphoreSlim)typeof(Entities.Player)
+                    .GetField("tickGate", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .GetValue(ticking)!;
+                await tickGate.WaitAsync();
+                Task dying = Task.CompletedTask;
+                Task respawning = Task.CompletedTask;
+                try
+                {
+                    using (await player.Inventory.LockAsync())
+                    {
+                        dying = player.KillAsync(killer, "Death beside a tick").AsTask();
+                        Assert.False(dying.IsCompleted);
+                        using (pending.Enter())
+                            await player.RespawnAsync();
+                    }
+
+                    // This drain stands in for the tick's inventory hook exit, still holding tickGate.
+                    respawning = pending.RunAsync(NullLogger.Instance).AsTask();
+                    await respawning.WaitAsync(TimeSpan.FromSeconds(10));
+                    Assert.True(player.Alive);
+                    Assert.All(player.Inventory, Assert.Null);
+                    Assert.Equal(deaths + 1, packets.OfType<PlayerCombatKillPacket>().Count());
+                    Assert.False(ticking.Advancements.HasCriterion(
+                        "probe:death", ReferenceEquals(ticking, player) ? "death" : "kill"));
+                }
+                finally
+                {
+                    tickGate.Release();
+                    await Task.WhenAll(dying, respawning).WaitAsync(TimeSpan.FromSeconds(10));
+                }
+
+                Assert.True(player.Advancements.HasCriterion("probe:death", "death"));
+                Assert.True(killer.Advancements.HasCriterion("probe:death", "kill"));
+            }
+
+            Assert.Equal(3, player.Statistics.Get("minecraft:deaths"));
+            Assert.Equal(2, killer.Statistics.Get("minecraft:player_kills"));
+        }
+        finally
+        {
+            AdvancementsRegistry.Apply(definitions);
+        }
     }
 
     [Fact]
@@ -231,10 +301,23 @@ public sealed class Progress
             && registry.Entries.Any(entry => entry.Identifier == "probe:steps" && entry.Id == statId));
         await trigger.FireAsync(player, value => value == 99);
         Assert.False(player.Advancements.HasCriterion("probe:progress", "one"));
-        await trigger.FireAsync(player, value => value == 7);
+        await using (DeferredInventoryWork.Begin(NullLogger.Instance))
+        {
+            using (await player.Inventory.LockAsync())
+            {
+                await trigger.FireAsync(player, value => value == 7);
+                Assert.False(player.Advancements.HasCriterion("probe:progress", "one"));
+            }
+        }
+
         Assert.True(player.Advancements.HasCriterion("probe:progress", "one"));
         Assert.False(player.Advancements.IsDone("probe:progress"));
-        await manager.UnloadPluginAsync(container);
+        await using (DeferredInventoryWork.Begin(NullLogger.Instance))
+        {
+            await trigger.FireAsync(player, value => value == 8);
+            await manager.UnloadPluginAsync(container);
+        }
+
         Assert.Throws<ArgumentException>(() => player.Statistics.Increment("probe:steps"));
         await trigger.FireAsync(player, _ => true);
         var saved = player.ProgressAdvancements.Save();
