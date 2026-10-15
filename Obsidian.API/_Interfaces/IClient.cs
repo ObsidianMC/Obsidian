@@ -42,11 +42,21 @@ public interface IClient : IDisposable
 
     public ILogger Logger { get; }
 
+    /// <summary>
+    /// Sends a packet without packet handlers: immediately, or right after the packets queued before it that are still
+    /// on their way.
+    /// </summary>
+    /// <returns>Whether the packet was sent or is on its way.</returns>
     public bool SendPacket(IClientboundPacket packet);
 
     public ReadOnlySpan<byte> SetSharedKeyAndDecodeVerifyToken(ReadOnlySpan<byte> sharedKey, ReadOnlySpan<byte> verifyToken);
 
     public ValueTask DisconnectAsync(ChatMessage reason);
+
+    /// <summary>
+    /// Queues a packet in the client's outgoing pipeline, where packet handlers see it in order before it's sent. The
+    /// call never waits for the handlers.
+    /// </summary>
     public ValueTask QueuePacketAsync(IClientboundPacket packet);
 
     [EditorBrowsable(EditorBrowsableState.Advanced)]

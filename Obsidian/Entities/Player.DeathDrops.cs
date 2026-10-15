@@ -43,11 +43,15 @@ public partial class Player
             return this.deathFinished?.Task ?? Task.CompletedTask;
     }
 
+    // A respawn under way, which holds chunkUpdates until it's done.
+    private Task WaitForRespawnAsync()
+    {
+        lock (this.deathState)
+            return this.Respawning ? this.respawnFinished!.Task : Task.CompletedTask;
+    }
+
     private ValueTask BeginDeathAsync(IEntity source, ChatMessage message)
     {
-        if (DeferredInventoryWork.TryDeferSequence(this.Client, () => this.BeginDeathAsync(source, message)))
-            return ValueTask.CompletedTask;
-
         DeathSnapshot death;
         TaskCompletionSource finished;
         Task transfers;

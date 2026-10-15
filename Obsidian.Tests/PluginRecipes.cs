@@ -415,7 +415,7 @@ public sealed class PluginRecipes
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task InitialAndWaitingBookSyncDeferUnconfiguredContent()
+    public async Task BookSyncDefersUnconfiguredContent()
     {
         await using var context = TestServerFactory.CreateServer($"recipe-content-{Guid.NewGuid():N}");
         using var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -437,59 +437,40 @@ public sealed class PluginRecipes
         var first = Shaped($"probe:configured_{Guid.NewGuid():N}");
         context.Server.RegisterRecipes(first);
         var packets = new List<RecipeBookAddPacket>();
-        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var delay = false;
-        context.EventDispatcher.RegisterEvent(null, (Func<QueuePacketEventArgs, ValueTask>)(async args =>
+        context.EventDispatcher.RegisterEvent(null, (Func<QueuePacketEventArgs, ValueTask>)(args =>
         {
             if (args.Packet is RecipeBookAddPacket book)
-            {
                 packets.Add(book);
 
-                if (delay && book.Replace)
-                {
-                    entered.TrySetResult();
-                    await resume.Task;
-                }
-            }
-
             args.Cancel();
+            return ValueTask.CompletedTask;
         }), Priority.Critical);
 
+        // The handlers see the packets in the client's pipeline, once their turn comes.
         var current = context.Server.GetContentVersion();
         var older = current with { Registries = "before-the-new-items" };
         client.ConfiguredContent = older;
         await player.RecipeBookSync.SendInitialAsync(player);
+        await client.FlushAsync();
         Assert.DoesNotContain(packets.Last().Entries, entry => entry.Recipe.Identifier == first.Identifier);
 
         client.ConfiguredContent = current;
         await player.RecipeBookSync.SendInitialAsync(player);
+        await client.FlushAsync();
         Assert.Contains(packets.Last().Entries, entry => entry.Recipe.Identifier == first.Identifier);
 
-        delay = true;
-        var initial = player.RecipeBookSync.SendInitialAsync(player).AsTask();
-        await entered.Task;
-        var waiting = player.RecipeBookSync.SendChangesAsync(player).AsTask();
-        Assert.False(waiting.IsCompleted);
+        // A change the client's configured content doesn't cover yet waits for it.
         var second = Shaped($"probe:while_waiting_{Guid.NewGuid():N}");
-
-        try
-        {
-            context.Server.RegisterRecipes(second);
-            client.ConfiguredContent = older;
-        }
-        finally
-        {
-            resume.SetResult();
-        }
-
-        await initial;
-        Assert.False(await waiting);
+        context.Server.RegisterRecipes(second);
+        client.ConfiguredContent = older;
+        Assert.False(await player.RecipeBookSync.SendChangesAsync(player));
+        await client.FlushAsync();
         Assert.DoesNotContain(packets.SelectMany(packet => packet.Entries),
             entry => entry.Recipe.Identifier == second.Identifier);
 
         client.ConfiguredContent = context.Server.GetContentVersion();
         Assert.True(await player.RecipeBookSync.SendChangesAsync(player));
+        await client.FlushAsync();
         Assert.False(packets.Last().Replace);
         Assert.Equal(second.Identifier, Assert.Single(packets.Last().Entries).Recipe.Identifier);
     }

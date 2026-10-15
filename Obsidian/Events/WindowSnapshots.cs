@@ -21,9 +21,10 @@ internal sealed record WindowSnapshot(
 /// </summary>
 /// <remarks>
 /// <para>
-/// Every packet goes through plugins' packet handlers first, outside any lock. Whether it's still current is checked
-/// after them, and it's queued in the same step, under this object's lock, which changes made outside clicks are
-/// checked and queued under too (see <see cref="SendChangeAsync"/>).
+/// Sending takes its turn in the player's packet pipeline (see <c>Client.QueueInTurn</c>): there, every packet goes
+/// through plugins' packet handlers first, outside any lock; whether it's still current is checked after them, and
+/// it's sent in the same step, under this object's lock, which changes made outside clicks are checked and sent under
+/// too (see <see cref="SendChangeAsync"/>). The caller doesn't wait for any of it.
 /// </para>
 /// <para>
 /// Whatever wasn't sent because the window changed leaves the window <see cref="IsStale"/>: what the client shows
@@ -33,12 +34,19 @@ internal sealed record WindowSnapshot(
 /// </para>
 /// </remarks>
 /// <param name="runHandlers">
-/// Runs plugins' packet handlers for queueing a packet to the player; returns whether it's still to be queued.
+/// Runs plugins' packet handlers for queueing a packet to the player; returns whether it's still to be sent.
 /// </param>
-/// <param name="queue">Queues a packet to the player, behind what's queued already, without the handlers.</param>
+/// <param name="send">
+/// Sends a packet to the player, in the turn <paramref name="inTurn"/> gave, without handlers.
+/// </param>
+/// <param name="inTurn">
+/// Runs a send in turn with the player's other packets, or at once when omitted. The send uses
+/// <paramref name="runHandlers"/> and <paramref name="send"/>.
+/// </param>
 internal sealed class WindowSnapshots(
     Func<IClientboundPacket, ValueTask<bool>> runHandlers,
-    Action<IClientboundPacket> queue)
+    Action<IClientboundPacket> send,
+    Func<Func<ValueTask>, ValueTask>? inTurn = null)
 {
     private readonly Lock gate = new();
 
@@ -68,42 +76,16 @@ internal sealed class WindowSnapshots(
 
     /// <summary>
     /// Sends <paramref name="snapshot"/>, which shows the player's whole window, through plugins' packet handlers,
-    /// unless a later one was sent already or the window changed since it was captured.
+    /// unless a later one was sent already or the window changed since it was captured; the window is then
+    /// <see cref="IsStale"/>.
     /// </summary>
-    /// <returns>Whether it wasn't sent because the window changed, so that a newer snapshot is needed.</returns>
-    public async ValueTask<bool> SendAsync(WindowSnapshot snapshot)
-    {
-        if (snapshot.Sequence <= Volatile.Read(ref this.sent))
-            return false;
-
-        var packets = await this.RunHandlersAsync(snapshot.Packets);
-
-        lock (this.gate)
-        {
-            if (snapshot.Sequence <= this.sent)
-                return false;
-
-            if (!snapshot.State.IsCurrent(snapshot.Player))
-            {
-                this.stale = true;
-                return true;
-            }
-
-            // Current as it's queued, it brings the client up to date, whatever was left out before it.
-            this.sent = snapshot.Sequence;
-            this.stale = false;
-
-            foreach (var packet in packets)
-                queue(packet);
-
-            return false;
-        }
-    }
+    public ValueTask SendAsync(WindowSnapshot snapshot) => this.RunInTurnAsync(() => this.SendInTurnAsync(snapshot));
 
     /// <summary>
     /// Sends <paramref name="changes"/>, which show a change made to <paramref name="player"/>'s inventory outside a
     /// click (an item picked up, say), through plugins' packet handlers, unless the window changed since
-    /// <paramref name="state"/>, taken right after the change.
+    /// <paramref name="state"/>, taken right after the change. The window is then <see cref="IsStale"/>, and sent whole
+    /// later.
     /// </summary>
     /// <param name="player">The player whose inventory changed.</param>
     /// <param name="state">The player's window right after the change.</param>
@@ -112,29 +94,60 @@ internal sealed class WindowSnapshots(
     /// A packet that goes first, bundled with the changes so that the client handles them in the same tick (an item
     /// pickup's animation, say), or <c>null</c>. It's sent on its own when the changes are obsolete.
     /// </param>
-    /// <returns>
-    /// Whether the changes weren't sent because the window changed; the window is then <see cref="IsStale"/>, and sent
-    /// whole later.
-    /// </returns>
     /// <remarks>
     /// The handlers run for each packet, not for the bundle, so that they see the same packets as when each is
     /// queued on its own. The changes don't take a later whole snapshot's place, which may show more than them, so
-    /// they aren't numbered: a snapshot checked before the change is queued ahead of them, and one checked after it
+    /// they aren't numbered: a snapshot checked before the change is sent ahead of them, and one checked after it
     /// shows the change too.
     /// </remarks>
-    public async ValueTask<bool> SendChangeAsync(
+    public ValueTask SendChangeAsync(
         IPlayer player,
         ClickWindowState state,
         IReadOnlyList<ClientboundPacket> changes,
-        ClientboundPacket? lead = null)
+        ClientboundPacket? lead = null) =>
+        this.RunInTurnAsync(() => this.SendChangeInTurnAsync(player, state, changes, lead));
+
+    private ValueTask RunInTurnAsync(Func<ValueTask> work) => inTurn is null ? work() : inTurn(work);
+
+    private async ValueTask SendInTurnAsync(WindowSnapshot snapshot)
+    {
+        if (snapshot.Sequence <= Volatile.Read(ref this.sent))
+            return;
+
+        var packets = await this.RunHandlersAsync(snapshot.Packets);
+
+        lock (this.gate)
+        {
+            if (snapshot.Sequence <= this.sent)
+                return;
+
+            if (!snapshot.State.IsCurrent(snapshot.Player))
+            {
+                this.stale = true;
+                return;
+            }
+
+            // Current as it's sent, it brings the client up to date, whatever was left out before it.
+            this.sent = snapshot.Sequence;
+            this.stale = false;
+
+            foreach (var packet in packets)
+                send(packet);
+        }
+    }
+
+    private async ValueTask SendChangeInTurnAsync(
+        IPlayer player,
+        ClickWindowState state,
+        IReadOnlyList<ClientboundPacket> changes,
+        ClientboundPacket? lead)
     {
         var approvedLead = lead is not null && await runHandlers(lead) ? lead : null;
         var approved = await this.RunHandlersAsync(changes);
 
         lock (this.gate)
         {
-            var obsolete = !state.IsCurrent(player);
-            if (obsolete)
+            if (!state.IsCurrent(player))
             {
                 this.stale = true;
                 approved.Clear();
@@ -144,11 +157,9 @@ internal sealed class WindowSnapshots(
                 approved.Insert(0, approvedLead);
 
             if (approved.Count == 1)
-                queue(approved[0]);
+                send(approved[0]);
             else if (approved.Count > 1)
-                queue(new BundledPacket(approved));
-
-            return obsolete;
+                send(new BundledPacket(approved));
         }
     }
 

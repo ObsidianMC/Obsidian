@@ -1,9 +1,15 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
+using Obsidian.API.Data;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
+using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Plugins;
+using Obsidian.Plugins.Archives;
 using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +17,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -51,187 +56,204 @@ public partial class Portals
         Assert.True(source.World.TryAddPlayer(player));
         Assert.True(source.World.TryAddEntity(player));
         player.OnChunkBatchReceived(64);
-        var outgoing = (Channel<IClientboundPacket>)typeof(Client)
-            .GetField("packetQueue", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(client)!;
-        var first = new SetHealthPacket(20, 20, 5);
-        var second = new SetExperiencePacket(0, 0, 0);
-        var third = new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks);
         using var observer = new Client(
             source.EventDispatcher, source.Server, NullLoggerFactory.Instance,
             new FakeUserCache(), null!, source.Provider, null!);
         typeof(Client).GetProperty(nameof(Client.Socket))!.SetValue(observer, peer);
         observer.SetState(ClientState.Play);
-        var observerOutgoing = (Channel<IClientboundPacket>)typeof(Client)
-            .GetField("packetQueue", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(observer)!;
-        await using (DeferredInventoryWork.Begin(player.Logger, packetClient: client))
-        {
-            await client.QueuePacketAsync(first);
-            Assert.True(client.SendPacket(second));
-            client.QueueWithoutHandlers(third);
-            await observer.QueuePacketAsync(first);
-            await observer.QueuePacketAsync(second);
-            Assert.True(observerOutgoing.Reader.TryRead(out var observedFirst));
-            Assert.True(observerOutgoing.Reader.TryRead(out var observedSecond));
-            Assert.Same(first, observedFirst);
-            Assert.Same(second, observedSecond);
-            Assert.False(outgoing.Reader.TryPeek(out _));
-        }
+        var bystander = TestServerFactory.CreateConnectedPlayer(source.Server, source.World, "Bystander");
+        Assert.True(source.World.TryAddPlayer(bystander));
+        Assert.True(source.World.TryAddEntity(bystander));
 
-        Assert.True(outgoing.Reader.TryRead(out var queuedFirst));
-        Assert.True(outgoing.Reader.TryRead(out var queuedSecond));
-        Assert.True(outgoing.Reader.TryRead(out var queuedThird));
-        Assert.Same(first, queuedFirst);
-        Assert.Same(second, queuedSecond);
-        Assert.Same(third, queuedThird);
-
-        var chunks = ChunkLock(player);
-        var called = false;
-        var kill = true;
-        var reenter = false;
-        var unlocked = true;
-        var chunkUpdatesBlocked = false;
-        var prematureChunks = -1;
+        // What the handlers saw, in each client's pipeline order. They cancel every packet: these clients have no
+        // socket loops to send through.
         var handled = new List<IPacket>();
-        var lockedPackets = new List<string>();
-        Func<QueuePacketEventArgs, ValueTask>? travelProbe = null;
+        var observed = new List<IPacket>();
+        Func<QueuePacketEventArgs, ValueTask> probe = null;
         source.EventDispatcher.RegisterEvent(null, (Func<QueuePacketEventArgs, ValueTask>)(async args =>
         {
-            handled.Add(args.Packet);
-            var free = chunks.Wait(0);
-            unlocked &= free;
-            if (free)
-                chunks.Release();
-            else
-                lockedPackets.Add(args.Packet.GetType().Name);
-
-            if (args.Packet is RespawnPacket)
+            args.Cancel();
+            if (ReferenceEquals(args.Client, observer))
             {
-                called = true;
-                await player.SendPendingChunksAsync();
-                chunkUpdatesBlocked = !await player.UpdateChunksAsync(distance: 2);
-                prematureChunks = handled.OfType<LevelChunkWithLightPacket>().Count();
-                if (kill)
-                    await player.KillAsync(player, "Respawn callback");
-                else if (reenter)
-                {
-                    reenter = false;
-                    await player.RespawnAsync();
-                    await player.TeleportAsync(source.World, new VectorD(8, 70, 8));
-                }
+                observed.Add(args.Packet);
+                return;
             }
 
-            if (travelProbe is not null)
-                await travelProbe(args);
+            handled.Add(args.Packet);
+            if (probe is not null)
+                await probe(args);
         }));
 
+        // Queueing never waits for handlers. One that hasn't returned holds up only its own client's later packets,
+        // a direct send waits behind them, and a send that fails (there's no socket loop) doesn't stop the pipeline.
+        var first = new SetHealthPacket(20, 20, 5);
+        var second = new SetExperiencePacket(0, 0, 0);
+        var third = new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks);
+        var stalled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        probe = async args =>
+        {
+            if (ReferenceEquals(args.Packet, first))
+            {
+                stalled.SetResult();
+                await resume.Task;
+            }
+        };
+        Assert.True(client.QueuePacketAsync(first).IsCompleted);
+        await stalled.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.True(client.SendPacket(second));
+        await client.QueuePacketAsync(third);
+        Assert.Equal(3, Unsent(client));
+        await observer.QueuePacketAsync(first);
+        await observer.FlushAsync().WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Same(first, Assert.Single(observed));
+        resume.SetResult();
+        await client.FlushAsync().WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal<IPacket>([first, third], handled);
+        Assert.Equal(0, Unsent(client));
+
+        // A respawn packet's handler that waits for the chunk lock and kills the player doesn't hold up the level
+        // change that queued it, and nothing of the new level reaches the client before its respawn and position.
+        handled.Clear();
+        probe = async args =>
+        {
+            if (args.Packet is not RespawnPacket)
+                return;
+
+            await player.SendPendingChunksAsync();
+            await player.UpdateChunksAsync(distance: 2);
+            await player.KillAsync(player, "Respawn callback");
+        };
         await player.TeleportAsync(target.World, new VectorD(8, 70, 8))
             .AsTask()
             .WaitAsync(TimeSpan.FromSeconds(10));
-        Assert.True(called);
-        Assert.True(unlocked, string.Join(", ", lockedPackets));
-        Assert.True(chunkUpdatesBlocked);
-        Assert.Equal(0, prematureChunks);
+        await client.FlushAsync().WaitAsync(TimeSpan.FromSeconds(10));
         Assert.False(player.Alive);
         Assert.Equal(0, handled.OfType<SetHealthPacket>().Last().Health);
-        await player.SendPendingChunksAsync();
         Assert.NotEmpty(handled.OfType<LevelChunkWithLightPacket>());
-        var queued = new List<IClientboundPacket>();
-        while (outgoing.Reader.TryRead(out var packet))
-            queued.Add(packet);
-
-        var respawnIndex = queued.FindIndex(packet => packet is RespawnPacket);
-        var positionIndex = queued.FindIndex(packet => packet is PlayerPositionPacket);
+        var respawnIndex = handled.FindIndex(packet => packet is RespawnPacket);
+        var positionIndex = handled.FindIndex(packet => packet is PlayerPositionPacket);
         Assert.True(respawnIndex >= 0 && positionIndex > respawnIndex);
-        Assert.All(queued.OfType<LevelChunkWithLightPacket>(), packet =>
-            Assert.True(queued.IndexOf(packet) > positionIndex));
+        Assert.All(handled.OfType<LevelChunkWithLightPacket>(), packet =>
+            Assert.True(handled.IndexOf(packet) > positionIndex));
 
-        kill = false;
-        reenter = true;
-        unlocked = true;
-        lockedPackets.Clear();
-        handled.Clear();
-        await player.RespawnAsync().WaitAsync(TimeSpan.FromSeconds(10));
-        Assert.True(player.Alive);
-        Assert.True(unlocked, string.Join(", ", lockedPackets));
-        Assert.Same(source.World, player.Level);
-        Assert.Equal(3, handled.OfType<RespawnPacket>().Count());
-
-        // Independent flows cannot overtake a suspended respawn's packet drain.
-        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var suspend = true;
-        travelProbe = async args =>
+        // A handler can wait for another player's death and respawn, and for this player's respawn and level change.
+        // A plugin's attachment callback that asks for a respawn from inside the respawn's own callbacks gets it once
+        // they're done, without waiting for itself.
+        var owner = new PluginContainer
         {
-            if (args.Packet is RespawnPacket && suspend)
+            Info = new PluginInfo("travel"),
+            Archive = PluginArchive.Open("travel.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
             {
-                suspend = false;
-                entered.SetResult();
-                await release.Task;
-            }
+                [PluginMetadata.FileName] = PluginArchives.Metadata("travel", "1.0.0", "Travel")
+            }))
         };
-        handled.Clear();
-        var respawning = player.RespawnAsync();
-        await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        var transferring = player.TeleportAsync(target.World, new VectorD(4, 70, 4)).AsTask();
         try
         {
-            Assert.False(transferring.IsCompleted);
+            var mark = PluginRegistry.RegisterAttachment(owner, "travel:mark", new ComponentCodec<int>(
+                value => new NbtTag<int>("", value),
+                tag => ((NbtTag<int>)tag).Value), null, copyOnDeath: false);
+            player.SetAttachment(mark, 1);
+            mark.Changed += holder =>
+            {
+                if (ReferenceEquals(holder, player))
+                    _ = player.RespawnAsync();
+            };
+            var reenter = true;
+            handled.Clear();
+            probe = async args =>
+            {
+                if (args.Packet is not RespawnPacket || !reenter)
+                    return;
+
+                reenter = false;
+                await bystander.KillAsync(bystander, "Bystander");
+                await bystander.RespawnAsync();
+                await player.RespawnAsync();
+                await player.TeleportAsync(source.World, new VectorD(8, 70, 8));
+            };
+            await player.RespawnAsync().WaitAsync(TimeSpan.FromSeconds(10));
+            await client.FlushAsync().WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.True(player.Alive);
+            Assert.True(bystander.Alive);
+            Assert.False(player.TryGetAttachment(mark, out _));
             Assert.Same(source.World, player.Level);
+            Assert.Equal(4, handled.OfType<RespawnPacket>().Count());
+            Assert.Equal(player.Position, handled.OfType<PlayerPositionPacket>().Last().Position);
         }
         finally
         {
-            release.SetResult();
-            await Task.WhenAll(respawning, transferring).WaitAsync(TimeSpan.FromSeconds(10));
+            owner.Close();
+            owner.UndoHostAdditions();
+            await owner.DisposeAsync();
         }
 
+        // A handler can wait for a flow that shares nothing with it (no deferral can reach it) moving the same player
+        // to another level while the respawn that queued the packet runs.
+        Task worker = null;
+        probe = async args =>
+        {
+            if (args.Packet is not RespawnPacket || worker is not null)
+                return;
+
+            using (ExecutionContext.SuppressFlow())
+                worker = Task.Run(() => player.TeleportAsync(target.World, new VectorD(4, 70, 4)).AsTask());
+
+            await worker;
+        };
+        handled.Clear();
+        await player.RespawnAsync().WaitAsync(TimeSpan.FromSeconds(10));
+        await client.FlushAsync().WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Same(target.World, player.Level);
         Assert.Equal(new VectorD(4, 70, 4), player.Position);
         Assert.Equal(player.Position, handled.OfType<PlayerPositionPacket>().Last().Position);
         Assert.Equal(2, handled.OfType<RespawnPacket>().Count());
 
-        // A same-level teleport awaited by the respawn handler follows the saved respawn position.
+        // A same-level teleport awaited by the respawn handler completes there, after the respawn.
         var teleport = true;
-        var sameLevelDeferred = false;
-        travelProbe = async args =>
+        var teleported = false;
+        probe = async args =>
         {
             if (args.Packet is RespawnPacket && teleport)
             {
                 teleport = false;
-                var before = player.Position;
                 await player.TeleportAsync(player.Level, new VectorD(8, 70, 8));
-                sameLevelDeferred = before == player.Position;
+                teleported = player.Position == new VectorD(8, 70, 8);
             }
         };
         handled.Clear();
         await player.RespawnAsync().WaitAsync(TimeSpan.FromSeconds(10));
-        Assert.True(sameLevelDeferred);
+        await client.FlushAsync().WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.True(teleported);
         Assert.Equal(new VectorD(8, 70, 8), player.Position);
         Assert.Equal(player.Position, handled.OfType<PlayerPositionPacket>().Last().Position);
         Assert.Single(handled.OfType<RespawnPacket>());
 
-        // Later destination handlers and event callbacks belong to the same sequence as the initial drain.
+        // A level change awaited by a handler of the previous one's destination packets follows all of them.
         source.World.LevelData.Time = 12345;
         target.World.LevelData.Time = 67890;
         var returnToTarget = true;
-        var destinationDeferred = false;
-        travelProbe = async args =>
+        var returned = false;
+        probe = async args =>
         {
             if (args.Packet is SetTimePacket && returnToTarget)
             {
                 returnToTarget = false;
                 await player.TeleportAsync(target.World, new VectorD(4, 70, 4));
-                destinationDeferred = ReferenceEquals(source.World, player.Level);
+                returned = ReferenceEquals(target.World, player.Level);
             }
         };
         handled.Clear();
         await player.TeleportAsync(source.World, new VectorD(6, 70, 6))
             .AsTask()
             .WaitAsync(TimeSpan.FromSeconds(10));
-        Assert.True(destinationDeferred);
+        await client.FlushAsync().WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.True(returned);
         Assert.Same(target.World, player.Level);
         Assert.Equal(player.Position, handled.OfType<PlayerPositionPacket>().Last().Position);
         Assert.Equal(new long[] { 12345, 67890 }, handled.OfType<SetTimePacket>().Select(packet => packet.WorldAge));
-        Assert.True(unlocked, string.Join(", ", lockedPackets));
+        var lastRespawn = handled.FindLastIndex(packet => packet is RespawnPacket);
+        Assert.Equal(67890, handled.Skip(lastRespawn).OfType<SetTimePacket>().Single().WorldAge);
 
         // The fake broadcaster uses direct sends for mounts. Switch to its recording client for the passenger
         // checks: a vehicle must await a player passenger's actual transfer before seating it again.
@@ -358,6 +380,10 @@ public partial class Portals
         Assert.Same(vehicle, Assert.Single(replacement.Passengers));
         Assert.Same(rider, Assert.Single(snapshot));
     }
+
+    // Entries in the client's pipeline not yet sent or dropped.
+    private static int Unsent(Client client) =>
+        (int)typeof(Client).GetField("unsent", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(client)!;
 
     private static SemaphoreSlim ChunkLock(Entities.Player player) =>
         (SemaphoreSlim)typeof(Entities.Player)
