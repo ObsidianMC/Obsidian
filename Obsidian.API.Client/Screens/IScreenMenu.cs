@@ -34,6 +34,13 @@ public interface IScreenMenu
     public ItemStack? GetItem(int slot);
 
     /// <summary>
+    /// An isolated copy of the stack the player carries on the cursor, like vanilla's <c>getCarried</c>; null when
+    /// they carry nothing. For a screen whose clicks outside slots do something with it, like putting it into a
+    /// machine's storage.
+    /// </summary>
+    public ItemStack? Carried { get; }
+
+    /// <summary>
     /// The value of one of the menu's data slots, like a furnace's progress (the server's
     /// <c>MenuContainer.GetData</c>); 0 until the server sends it.
     /// </summary>
