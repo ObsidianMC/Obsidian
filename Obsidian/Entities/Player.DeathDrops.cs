@@ -45,6 +45,9 @@ public partial class Player
 
     private ValueTask BeginDeathAsync(IEntity source, ChatMessage message)
     {
+        if (DeferredInventoryWork.TryDeferSequence(this.Client, () => this.BeginDeathAsync(source, message)))
+            return ValueTask.CompletedTask;
+
         DeathSnapshot death;
         TaskCompletionSource finished;
         Task transfers;

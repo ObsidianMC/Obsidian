@@ -93,6 +93,7 @@ public partial class Portals
         var prematureChunks = -1;
         var handled = new List<IPacket>();
         var lockedPackets = new List<string>();
+        Func<QueuePacketEventArgs, ValueTask>? travelProbe = null;
         source.EventDispatcher.RegisterEvent(null, (Func<QueuePacketEventArgs, ValueTask>)(async args =>
         {
             handled.Add(args.Packet);
@@ -118,6 +119,9 @@ public partial class Portals
                     await player.TeleportAsync(source.World, new VectorD(8, 70, 8));
                 }
             }
+
+            if (travelProbe is not null)
+                await travelProbe(args);
         }));
 
         await player.TeleportAsync(target.World, new VectorD(8, 70, 8))
@@ -151,6 +155,101 @@ public partial class Portals
         Assert.True(unlocked, string.Join(", ", lockedPackets));
         Assert.Same(source.World, player.Level);
         Assert.Equal(3, handled.OfType<RespawnPacket>().Count());
+
+        // Independent flows cannot overtake a suspended respawn's packet drain.
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var suspend = true;
+        travelProbe = async args =>
+        {
+            if (args.Packet is RespawnPacket && suspend)
+            {
+                suspend = false;
+                entered.SetResult();
+                await release.Task;
+            }
+        };
+        handled.Clear();
+        var respawning = player.RespawnAsync();
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var transferring = player.TeleportAsync(target.World, new VectorD(4, 70, 4)).AsTask();
+        try
+        {
+            Assert.False(transferring.IsCompleted);
+            Assert.Same(source.World, player.Level);
+        }
+        finally
+        {
+            release.SetResult();
+            await Task.WhenAll(respawning, transferring).WaitAsync(TimeSpan.FromSeconds(10));
+        }
+
+        Assert.Same(target.World, player.Level);
+        Assert.Equal(new VectorD(4, 70, 4), player.Position);
+        Assert.Equal(player.Position, handled.OfType<PlayerPositionPacket>().Last().Position);
+        Assert.Equal(2, handled.OfType<RespawnPacket>().Count());
+
+        // A same-level teleport awaited by the respawn handler follows the saved respawn position.
+        var teleport = true;
+        var sameLevelDeferred = false;
+        travelProbe = async args =>
+        {
+            if (args.Packet is RespawnPacket && teleport)
+            {
+                teleport = false;
+                var before = player.Position;
+                await player.TeleportAsync(player.Level, new VectorD(8, 70, 8));
+                sameLevelDeferred = before == player.Position;
+            }
+        };
+        handled.Clear();
+        await player.RespawnAsync().WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.True(sameLevelDeferred);
+        Assert.Equal(new VectorD(8, 70, 8), player.Position);
+        Assert.Equal(player.Position, handled.OfType<PlayerPositionPacket>().Last().Position);
+        Assert.Single(handled.OfType<RespawnPacket>());
+
+        // Later destination handlers and event callbacks belong to the same sequence as the initial drain.
+        source.World.LevelData.Time = 12345;
+        target.World.LevelData.Time = 67890;
+        var returnToTarget = true;
+        var destinationDeferred = false;
+        travelProbe = async args =>
+        {
+            if (args.Packet is SetTimePacket && returnToTarget)
+            {
+                returnToTarget = false;
+                await player.TeleportAsync(target.World, new VectorD(4, 70, 4));
+                destinationDeferred = ReferenceEquals(source.World, player.Level);
+            }
+        };
+        handled.Clear();
+        await player.TeleportAsync(source.World, new VectorD(6, 70, 6))
+            .AsTask()
+            .WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.True(destinationDeferred);
+        Assert.Same(target.World, player.Level);
+        Assert.Equal(player.Position, handled.OfType<PlayerPositionPacket>().Last().Position);
+        Assert.Equal(new long[] { 12345, 67890 }, handled.OfType<SetTimePacket>().Select(packet => packet.WorldAge));
+        Assert.True(unlocked, string.Join(", ", lockedPackets));
+
+        // The fake broadcaster uses direct sends for mounts. Switch to its recording client for the passenger
+        // checks: a vehicle must await a player passenger's actual transfer before seating it again.
+        var recording = new TestClient(source.Server);
+        recording.Attach(player);
+        player.Client = recording;
+        var rider = TestServerFactory.CreateConnectedPlayer(
+            target.Server, target.World, "SequenceRider", player.Position + VectorD.Up);
+        Assert.True(target.World.TryAddPlayer(rider));
+        Assert.True(target.World.TryAddEntity(rider));
+        Assert.True(rider.Ride(player));
+        await player.TeleportAsync(source.World, new VectorD(6, 70, 6));
+        Assert.Same(source.World, rider.Level);
+        Assert.Equal(player.Position + VectorD.Up, rider.Position);
+        Assert.Same(player, rider.Vehicle);
+        await player.TeleportAsync(source.World, new VectorD(8, 70, 8));
+        Assert.Equal(player.Position + VectorD.Up, rider.Position);
+        Assert.Same(player, rider.Vehicle);
     }
 
     private static async Task AssertTransferWaitsForDeathBeforeCommittingAsync()
@@ -209,7 +308,8 @@ public partial class Portals
     }
 
     private static SemaphoreSlim ChunkLock(Entities.Player player) =>
-        (SemaphoreSlim)typeof(Entities.Player).GetField("chunkUpdates", BindingFlags.Instance | BindingFlags.NonPublic)!
+        (SemaphoreSlim)typeof(Entities.Player)
+            .GetField("chunkUpdates", BindingFlags.Instance | BindingFlags.NonPublic)!
             .GetValue(player)!;
 
     private sealed class GateCow(Barrier gate) : Cow

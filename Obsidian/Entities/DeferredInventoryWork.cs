@@ -8,7 +8,7 @@ namespace Obsidian.Entities;
 /// Work that takes a player's inventory lock, asked for while the current flow runs plugins' code holding a player's
 /// inventory lock, and run as soon as it lets go: like the armour a hurt wears, or a death's drops, when a plugin's
 /// item hurts its holder from its inventory tick. The lock isn't re-entrant, so waiting for it there would never end.
-/// Respawns also defer their packets and plugin callbacks until the player's chunk-update lock is released.
+/// Travel also uses sections to queue reentrant operations through its complete packet and callback sequence.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -38,12 +38,17 @@ namespace Obsidian.Entities;
 internal sealed partial class DeferredInventoryWork
 {
     // The section the current flow is in, if any.
-    private static readonly AsyncLocal<DeferredInventoryWork?> current = new();
+    private static readonly AsyncLocal<Section?> current = new();
 
     private readonly Queue<Func<ValueTask>> queue = new();
     private readonly IClient? packetClient;
+    private readonly IClient? sequenceClient;
 
-    public DeferredInventoryWork(IClient? packetClient = null) => this.packetClient = packetClient;
+    public DeferredInventoryWork(IClient? packetClient = null, IClient? sequenceClient = null)
+    {
+        this.packetClient = packetClient;
+        this.sequenceClient = sequenceClient;
+    }
 
     // Set as the queue runs, after which work runs at once.
     private bool closed;
@@ -53,42 +58,58 @@ internal sealed partial class DeferredInventoryWork
     /// <see cref="Enter"/>), once its flow let go of the lock, after the work queued before it.
     /// </summary>
     /// <returns>The work's task, or a completed one when it was queued.</returns>
-    public static ValueTask RunOrDeferAsync(Func<ValueTask> work) =>
-        current.Value is DeferredInventoryWork section && section.TryQueue(work)
-            ? ValueTask.CompletedTask
-            : work();
+    /// <param name="sequenceClient">
+    /// For travel, the player's client: another player's travel section must not defer a passenger's transfer.
+    /// Omit for inventory work, which must wait for every enclosing section.
+    /// </param>
+    public static ValueTask RunOrDeferAsync(Func<ValueTask> work, IClient? sequenceClient = null)
+    {
+        for (var section = current.Value; section is not null; section = section.Previous)
+        {
+            // Inventory sections protect every player. Travel sections protect their own player, so a vehicle
+            // can still await its player passengers' actual transfers before seating them again.
+            if ((section.Work.sequenceClient is null || sequenceClient is null
+                || ReferenceEquals(section.Work.sequenceClient, sequenceClient)) && section.Work.TryQueue(work))
+                return ValueTask.CompletedTask;
+        }
+
+        return work();
+    }
+
+    // Defer the entire death request before capturing its transaction, rather than reserve a death that the
+    // current travel would then wait for. Inventory-only sections retain their existing death snapshot rules.
+    internal static bool TryDeferSequence(IClient client, Func<ValueTask> work)
+    {
+        for (var section = current.Value; section is not null; section = section.Previous)
+        {
+            if (ReferenceEquals(section.Work.sequenceClient, client) && section.Work.TryQueue(work))
+                return true;
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Enters around a whole click, hook or respawn; dispose after releasing its locks, even on failure.
     /// Set <paramref name="packetClient"/> when its packets must wait for that release too.
-    /// Other clients send normally. <paramref name="packetCallbacks"/> can outlive the packet drain during travel.
-    /// <paramref name="drained"/> runs after disposal finishes, even on failure.
+    /// Other clients send normally.
     /// </summary>
     internal static IAsyncDisposable Begin(
-        ILogger logger, Action? completed = null, IClient? packetClient = null, Action? drained = null,
-        DeferredInventoryWork? packetCallbacks = null) =>
-        new Transaction(logger, completed, packetClient, drained, packetCallbacks);
-
-    // Enters only while packet handlers run; carrying player passengers must still await their actual transfers.
-    internal sealed class PacketCallbacks(ILogger logger) : IAsyncDisposable
-    {
-        internal DeferredInventoryWork Work { get; } = new();
-
-        public ValueTask DisposeAsync() => this.Work.RunAsync(logger);
-    }
+        ILogger logger, Action? completed = null, IClient? packetClient = null) =>
+        new Transaction(logger, completed, packetClient);
 
     /// <summary>
-    /// Queues a packet and its plugin handlers until a respawn or dimension transfer releases chunkUpdates.
+    /// Queues a packet and its plugin handlers until travel releases chunkUpdates.
     /// Queueing the entire send preserves cancellation and packet order when the transaction drains.
     /// </summary>
     internal static bool TryDeferPacket(IClient client, IClientboundPacket packet) =>
-        current.Value is DeferredInventoryWork section && ReferenceEquals(section.packetClient, client)
-            && section.TryQueue(() => client.QueuePacketAsync(packet));
+        current.Value is Section section && ReferenceEquals(section.Work.packetClient, client)
+            && section.Work.TryQueue(() => client.QueuePacketAsync(packet));
 
     // Raw sends join the same FIFO as handled packets, without running their handlers a second time.
     internal static bool TryDeferSend(Client client, IClientboundPacket packet) =>
-        current.Value is DeferredInventoryWork section && ReferenceEquals(section.packetClient, client)
-            && section.TryQueue(() =>
+        current.Value is Section section && ReferenceEquals(section.Work.packetClient, client)
+            && section.Work.TryQueue(() =>
             {
                 client.QueueWithoutHandlers(packet);
                 return ValueTask.CompletedTask;
@@ -98,20 +119,15 @@ internal sealed partial class DeferredInventoryWork
     {
         private readonly ILogger logger;
         private readonly Action? completed;
-        private readonly Action? drained;
-        private readonly DeferredInventoryWork? packetCallbacks;
         private readonly DeferredInventoryWork work;
         private readonly IDisposable section;
         private readonly DeferredAttachmentChanges notifications = new();
 
         internal Transaction(
-            ILogger logger, Action? completed, IClient? packetClient, Action? drained,
-            DeferredInventoryWork? packetCallbacks)
+            ILogger logger, Action? completed, IClient? packetClient)
         {
             this.logger = logger;
             this.completed = completed;
-            this.drained = drained;
-            this.packetCallbacks = packetCallbacks;
             this.work = new DeferredInventoryWork(packetClient);
             this.section = this.work.Enter();
         }
@@ -124,49 +140,12 @@ internal sealed partial class DeferredInventoryWork
                 this.notifications.Dispose();
                 this.completed?.Invoke();
             }
-            catch
-            {
-                this.drained?.Invoke();
-                throw;
-            }
             finally
             {
                 this.section.Dispose();
             }
 
-            return this.DrainAsync();
-        }
-
-        private async ValueTask DrainAsync()
-        {
-            try
-            {
-                if (this.work.packetClient is not null)
-                    await this.DrainPacketsAsync();
-                else
-                    await this.work.RunAsync(this.logger);
-            }
-            finally
-            {
-                this.drained?.Invoke();
-            }
-        }
-
-        private async ValueTask DrainPacketsAsync()
-        {
-            // A packet handler may kill or respawn its player. Finish this packet sequence first, so its saved
-            // health and position cannot arrive after the next death's packets. All locks are already released.
-            // A dimension transfer keeps its callbacks queued through the remaining destination updates too.
-            if (this.packetCallbacks is DeferredInventoryWork callbacks)
-            {
-                using (callbacks.Enter())
-                    await this.work.RunAsync(this.logger);
-
-                return;
-            }
-
-            await using var deferred = Begin(this.logger);
-            await this.work.RunAsync(this.logger);
+            return this.work.RunAsync(this.logger);
         }
     }
 
@@ -177,10 +156,10 @@ internal sealed partial class DeferredInventoryWork
     public IDisposable Enter()
     {
         // Not async, so that the value stays set in the caller's flow.
-        var previous = current.Value;
-        current.Value = this;
+        var section = new Section(this, current.Value);
+        current.Value = section;
 
-        return new Section(previous);
+        return section;
     }
 
     /// <summary>
@@ -226,8 +205,11 @@ internal sealed partial class DeferredInventoryWork
     [LoggerMessage(Level = LogLevel.Error, Message = "Inventory work deferred past a plugin's code failed")]
     private static partial void WorkFailed(ILogger logger, Exception exception);
 
-    private sealed class Section(DeferredInventoryWork? previous) : IDisposable
+    private sealed class Section(DeferredInventoryWork work, Section? previous) : IDisposable
     {
-        public void Dispose() => current.Value = previous;
+        internal DeferredInventoryWork Work { get; } = work;
+        internal Section? Previous { get; } = previous;
+
+        public void Dispose() => current.Value = this.Previous;
     }
 }
