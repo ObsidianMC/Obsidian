@@ -3830,6 +3830,16 @@ public sealed class GemDisplayRenderer : IItemRenderer
 }
 ```
 
+`IClientRegistry.RegisterItemTooltip(string item, Action<ItemStack, IList<string>> lines)` adds lines to one of the
+mod's items' tooltips, under its name, like an item's `appendHoverText` in NeoForge. The lines take vanilla's legacy
+`§` formatting codes; `§7` gives vanilla's grey. They're asked for each time the tooltip is drawn, on the game thread
+inside a call into the mod: keep them short and pure, reading the stack's components. One that throws is logged, and
+the tooltip shows none of its lines.
+
+```csharp
+registry.RegisterItemTooltip("ruby:gem", (stack, lines) => lines.Add($"§7Charge: {stack.Get(this.charge)}"));
+```
+
 ```csharp
 public sealed class RubyMod : PluginBase, IClientPlugin
 {

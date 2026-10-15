@@ -213,6 +213,24 @@ public interface IClientRegistry
     public IClientRegistry RegisterItemRange(string property, Func<ItemStack, ItemModelContext, float> range);
 
     /// <summary>
+    /// Registers lines a mod's item adds to its tooltip under its name, like an item's <c>appendHoverText</c> in
+    /// NeoForge: a storage cell's fill, say, read from its components.
+    /// </summary>
+    /// <remarks>
+    /// The lines take vanilla's legacy <c>§</c> formatting codes, like <see cref="Screens.Widget.Tooltip"/>; start a
+    /// line with <c>§7</c> for vanilla's grey. They're asked for each time the tooltip is drawn, on the client's game
+    /// thread inside a call into the mod, so keep it short and pure. If it throws, the error is logged and the tooltip
+    /// shows none of its lines.
+    /// </remarks>
+    /// <param name="item">The item, one of the mod's, like <c>examplemod:battery</c>.</param>
+    /// <param name="lines">Adds the stack's lines to the list it's given.</param>
+    /// <exception cref="ArgumentException">
+    /// The identifier isn't one of the mod's items, or the mod registered the item's tooltip already.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The mod's <c>ConfigureClient</c> returned already.</exception>
+    public IClientRegistry RegisterItemTooltip(string item, Action<ItemStack, IList<string>> lines);
+
+    /// <summary>
     /// Draws a special item model type with code, like NeoForge's special model renderers: items whose definitions
     /// have a <c>minecraft:special</c> model of the type draw with the renderer in every display context.
     /// </summary>
