@@ -447,7 +447,14 @@ public sealed class WorldBlockEntities : IDisposable
             NullLogger<PluginManager>.Instance,
             new ConfigurationBuilder().Build());
         var path = Path.Join(this.folder, "probe.obby");
-        foreach (var key in new[] { ProbeCrate.LoadsKey, ProbeCrate.UnloadedKey, ProbeCrate.TicksKey })
+        var keys = new[]
+        {
+            ProbeCrate.LoadsKey,
+            ProbeCrate.UnloadedKey,
+            ProbeCrate.TicksKey,
+            ProbeCrate.ItemsChangedKey
+        };
+        foreach (var key in keys)
             AppContext.SetData(key, null);
 
         await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0"));
@@ -625,6 +632,20 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.Equal(2, AppContext.GetData(ProbeCrate.LoadsKey));
         Assert.Equal(2, AppContext.GetData(ProbeCrate.TicksKey));
 
+        // Both live crates heard the items they joined with, and the unloaded crate's clicks and item access nothing.
+        // A click is heard at the tick's end; item access too, once, and a tick with only SetChanged isn't.
+        await human.OpenInventoryAsync(restored.Inventory);
+        human.CarriedItem = new ItemStack(ItemsRegistry.Stone, 1);
+        await MenuClicks.ClickAsync(context.Server, human, 1, 0, ClickType.Pickup);
+        await context.World.DoWorldTickAsync();
+        Assert.Equal(3, AppContext.GetData(ProbeCrate.ItemsChangedKey));
+
+        context.World.GetItemAccess(position, null)!.Extract(1, 1);
+        await context.World.DoWorldTickAsync();
+        restored.SetChanged();
+        await context.World.DoWorldTickAsync();
+        Assert.Equal(4, AppContext.GetData(ProbeCrate.ItemsChangedKey));
+
         // A remote edit is saved immediately, including outside simulation distance and before another tick.
         human.Position = new VectorD(4096, 70, 4096);
         restored.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 2));
@@ -675,7 +696,7 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.Same(afterEviction, context.World.GetLoadedBlockEntity(position));
         Assert.Equal(crateBlock.DefaultState.GetHashCode(), level.GetLoadedBlock(position)?.GetHashCode());
         Assert.Equal(3, AppContext.GetData(ProbeCrate.LoadsKey));
-        Assert.Equal(3, AppContext.GetData(ProbeCrate.TicksKey));
+        Assert.Equal(6, AppContext.GetData(ProbeCrate.TicksKey));
 
         // The unloaded plugin's data still drops its items when any path removes the block.
         var livePlugin = Assert.Single(manager.Plugins);
@@ -709,7 +730,7 @@ public sealed class WorldBlockEntities : IDisposable
 
         // Unloading the plugin removed its ticker.
         await context.World.DoWorldTickAsync();
-        Assert.Equal(3, AppContext.GetData(ProbeCrate.TicksKey));
+        Assert.Equal(6, AppContext.GetData(ProbeCrate.TicksKey));
         var keptBox = Assert.IsType<DataBlockEntity>(loaded.GetBlockEntity(4, 70, 4));
         Assert.False(((NbtCompound)keptBox.Data["obsidian:container"]).GetBool("drops_contents"));
         await context.World.ExplodeAsync((VectorD)position + 0.5, 2, false,
@@ -1009,6 +1030,7 @@ public sealed class ProbeCrate() : ContainerBlockEntity(new Container(9) { Title
     public const string LoadsKey = "Obsidian.Tests.Crate.Loads";
     public const string UnloadedKey = "Obsidian.Tests.Crate.Unloaded";
     public const string TicksKey = "Obsidian.Tests.Crate.Ticks";
+    public const string ItemsChangedKey = "Obsidian.Tests.Crate.ItemsChanged";
 
     // The plugin's own static, so each load of the plugin adds one ticker, like a network runtime would.
     private static IDisposable? ticker;
@@ -1032,6 +1054,8 @@ public sealed class ProbeCrate() : ContainerBlockEntity(new Container(9) { Title
 
     protected internal override void OnChunkUnloaded() =>
         AppContext.SetData(UnloadedKey, this.Level is null ? null : this.BlockPosition);
+
+    protected internal override void OnItemsChanged() => Count(ItemsChangedKey);
 
     private static ValueTask CountTick()
     {

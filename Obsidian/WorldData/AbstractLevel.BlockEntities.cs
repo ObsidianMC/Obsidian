@@ -27,6 +27,9 @@ public abstract partial class AbstractLevel
 
     private LevelBlockEntityHost? blockEntityHost;
 
+    // Containers whose items changed, whose OnItemsChanged runs at the end of the block entity tick.
+    private readonly ConcurrentDictionary<ContainerBlockEntity, byte> itemsChanged = new();
+
     private LevelBlockEntityHost BlockEntityHost =>
         LazyInitializer.EnsureInitialized(ref this.blockEntityHost, () => new LevelBlockEntityHost(this));
 
@@ -195,11 +198,16 @@ public abstract partial class AbstractLevel
                 this.RunLoad(blockEntity);
                 await this.TickBlockEntityAsync(blockEntity);
 
-                // A plugin's container is saved as of its last change, which players make by moving its items.
-                if (blockEntity is ContainerBlockEntity { SavesOnAnyThread: false } container
-                    && container.Inventory.Revision != container.SavedRevision)
+                // A plugin's container is saved as of its last change, which players make by moving its items. Its
+                // own changes made without the inventory's lock are heard here too.
+                if (blockEntity is ContainerBlockEntity { SavesOnAnyThread: false } container)
                 {
-                    container.SetChanged();
+                    var items = container.Inventory.Revision;
+                    if (items != container.SavedRevision)
+                        container.SetChanged();
+
+                    if (items != container.NotifiedRevision)
+                        this.QueueItemsChanged(container);
                 }
 
                 if (blockEntity is ContainerBlockEntity watched)
@@ -210,8 +218,42 @@ public abstract partial class AbstractLevel
         await this.RunTickersAsync();
 
         await this.FlushItemAccessChangesAsync();
+        this.RunItemsChanged();
         this.TakeBlockEntityChanges();
         this.SendBlockEntityUpdates();
+    }
+
+    /// <summary>
+    /// Queues a container's <see cref="ContainerBlockEntity.OnItemsChanged"/> to the end of the block entity tick,
+    /// from any thread and under any lock.
+    /// </summary>
+    private void QueueItemsChanged(ContainerBlockEntity container) => this.itemsChanged.TryAdd(container, 0);
+
+    /// <summary>
+    /// Calls <see cref="ContainerBlockEntity.OnItemsChanged"/> once on each container queued whose items changed since
+    /// its last call, inside a call into its plugin and holding no lock. Runs before the changes are taken in, so
+    /// that what the call saves (see <see cref="BlockEntity.SetChanged"/>) is saved with this tick.
+    /// </summary>
+    private void RunItemsChanged()
+    {
+        foreach (var container in this.itemsChanged.Keys)
+        {
+            // One still waiting for its OnLoad hears of its items after it, on a later tick.
+            if (container.LoadPending && !container.IsRemoved)
+                continue;
+
+            if (!this.itemsChanged.TryRemove(container, out _) || container.IsRemoved)
+                continue;
+
+            // Read before the call, so that a change made meanwhile, by a click or the call itself, calls it again.
+            var revision = container.Inventory.Revision;
+            if (revision == container.NotifiedRevision)
+                continue;
+
+            container.NotifiedRevision = revision;
+            this.CallPlugin(container, container.Owner as PluginContainer,
+                static blockEntity => ((ContainerBlockEntity)blockEntity).OnItemsChanged());
+        }
     }
 
     /// <summary>
@@ -613,6 +655,8 @@ public abstract partial class AbstractLevel
         public bool PrepareItems(ContainerBlockEntity container) => level.PrepareContainerItems(container);
 
         public void OnItemsChanged(ContainerBlockEntity container) => level.OnContainerItemsChanged(container);
+
+        public void QueueItemsChanged(ContainerBlockEntity container) => level.QueueItemsChanged(container);
 
         public override void SendUpdate(BlockEntity blockEntity)
         {

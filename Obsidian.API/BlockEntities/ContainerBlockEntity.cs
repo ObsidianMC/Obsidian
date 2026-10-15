@@ -26,6 +26,10 @@ namespace Obsidian.API.BlockEntities;
 /// overrides <see cref="GetSlots"/>, <see cref="CanInsert"/> and <see cref="CanExtract"/>, like vanilla's
 /// <c>WorldlyContainer</c>.
 /// </para>
+/// <para>
+/// A container that derives state from its items overrides <see cref="OnItemsChanged"/>, which the server calls at
+/// the end of the level's tick after they changed, rather than comparing its slots every tick.
+/// </para>
 /// </remarks>
 public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
 {
@@ -81,6 +85,40 @@ public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
 
     // The inventory's revision when its contents were last saved, to tell when they changed.
     internal long SavedRevision { get; set; } = -1;
+
+    // The inventory's revision when OnItemsChanged was last called; -1 calls it once after the block entity joins
+    // its level.
+    internal long NotifiedRevision { get; set; } = -1;
+
+    /// <summary>
+    /// Called at the end of the level's tick after <see cref="Inventory"/>'s items changed, once however many changes
+    /// the tick made, and once after the block entity joins its level (placed, loaded with its chunk, or its plugin
+    /// reloaded), following <see cref="BlockEntity.OnLoad"/>. Override it to update what the block entity derives
+    /// from its items, like a machine checking the patterns it was given.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It hears every change to the items: players' clicks and shift-clicks in any menu showing the inventory, item
+    /// access inserting and extracting (hoppers' and other plugins' too), the block entity's own changes under
+    /// <see cref="LockInventory"/>, and its loot table filling it. A change made to <see cref="Inventory"/> without
+    /// its lock is heard on the ticks of the block entity's chunk. Calling <see cref="BlockEntity.SetChanged"/>
+    /// alone doesn't call it.
+    /// </para>
+    /// <para>
+    /// Called inside a call into the block entity's plugin, holding no lock, so it may call
+    /// <see cref="LockInventory"/>; a change it makes calls it again on the next tick. Not called once the block
+    /// entity was removed or its plugin is unloading. A call that throws is logged.
+    /// </para>
+    /// </remarks>
+    protected internal virtual void OnItemsChanged()
+    {
+    }
+
+    /// <summary>
+    /// Queues <see cref="OnItemsChanged"/> to the end of the level's tick; nothing until the block entity is in a
+    /// level. Never waits, so it may be called holding the inventory's lock.
+    /// </summary>
+    internal void QueueItemsChanged() => (this.Host as IContainerItemsHost)?.QueueItemsChanged(this);
 
     protected internal override void Load(NbtCompound tag)
     {

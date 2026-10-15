@@ -1458,6 +1458,16 @@ too (its `LootTable` is rolled when a player opens it or it's broken), and the o
 vanilla's, containers drop their items when their block goes by any cause, and brewing stands brew on the block
 entity tick.
 
+A container that derives state from its items, like a machine checking the patterns it holds, overrides
+`protected override void OnItemsChanged()` instead of comparing its slots every tick. The server calls it at the end
+of the level's tick after the items changed, once however many changes came in, and once after the block entity
+joins the level (placed, loaded or its plugin reloaded), following `OnLoad`. Every change is heard: clicks and
+shift-clicks in any menu showing the inventory, item access from hoppers and plugins, the block entity's own
+`LockInventory` changes and its loot table filling it; changes made to `Inventory` without its lock are heard on its
+chunk's ticks. A plain `SetChanged` doesn't call it. It runs inside a call into the plugin, holding no lock (so it
+may take `LockInventory`; what it changes calls it again next tick), and not once the block entity was removed or
+its plugin is unloading.
+
 When the plugin unloads, its block entities are saved into their chunks as of their last change (one not taken in
 yet is saved then) and let go of; nothing of the plugin's runs after that, and the plugin isn't released before. A
 container's inventory is retired first, under its lock, and the windows showing it, or any container of the plugin's
