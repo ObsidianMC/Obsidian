@@ -89,6 +89,14 @@ internal sealed partial class DeferredInventoryWork
         return false;
     }
 
+    // Synchronous side effects that need an earlier lock in the order also wait for the transaction to finish.
+    internal static bool TryDefer(Action work) =>
+        current.Value is DeferredInventoryWork section && section.TryQueue(() =>
+        {
+            work();
+            return ValueTask.CompletedTask;
+        });
+
     /// <summary>
     /// Enters around a whole click, hook or respawn; dispose after releasing its locks, even on failure.
     /// Set <paramref name="packetClient"/> when its packets must wait for that release too.

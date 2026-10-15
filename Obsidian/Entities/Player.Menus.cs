@@ -41,13 +41,28 @@ public partial class Player
     /// released, even while it unloads.
     /// </summary>
     /// <remarks>
-    /// Call it after changing <see cref="OpenedContainer"/>, outside the server's locks. Every path that closes a
-    /// window does; the player's tick does too, for any it missed.
+    /// Call it after changing <see cref="OpenedContainer"/>. Inside an inventory transaction, delivery waits until
+    /// its locks are released, keeping the plugin holds meanwhile. Every close path and the tick fallback use it.
     /// </remarks>
     internal void RunMenusClosed()
     {
-        while (this.closedMenus.TryDequeue(out var closed))
+        if (DeferredInventoryWork.TryDefer(this.RunMenusClosed))
+            return;
+
+        while (true)
         {
+            ClosedMenu closed;
+            lock (this.closedMenus)
+            {
+                // A separate tick must not steal a close from a transaction that still holds its click locks.
+                if (!this.closedMenus.TryPeek(out var next)
+                    || !next.Ready
+                    || !this.closedMenus.TryDequeue(out closed))
+                {
+                    return;
+                }
+            }
+
             using (closed.Hold)
             using (closed.Plugin?.EnterUnloading())
             {
@@ -226,7 +241,7 @@ public partial class Player
             && menu.Id < MenuTypesRegistry.VanillaIdentifiers.Count + client.ConfiguredPluginMenus;
 
     // Records that the player's window stopped showing menu, for RunMenusClosed, holding the plugin the menu was made
-    // by until then. Called by the OpenedContainer setter under menuStateGate, so it takes no other lock.
+    // by until then. Called by the OpenedContainer setter under menuStateGate; it never runs plugin code there.
     private void RecordMenuClosed(MenuContainer menu)
     {
         if (!menu.TryGetGeneration(out var owner))
@@ -247,7 +262,21 @@ public partial class Player
             }
         }
 
-        this.closedMenus.Enqueue(new ClosedMenu(menu, plugin, hold));
+        var closed = new ClosedMenu(menu, plugin, hold);
+        if (!DeferredInventoryWork.TryDefer(Release))
+            closed.Ready = true;
+
+        this.closedMenus.Enqueue(closed);
+
+        void Release()
+        {
+            // A nested transaction may finish while its parent still holds click locks.
+            if (DeferredInventoryWork.TryDefer(Release))
+                return;
+
+            closed.Ready = true;
+            this.RunMenusClosed();
+        }
     }
 
     // The menu's data slot values and item access slots' stacks, read inside a call into its plugin, without the
@@ -342,7 +371,11 @@ public partial class Player
     }
 
     // A menu whose Closed is due, with the plugin it was made by (null for the server's own) and the hold on it.
-    private readonly record struct ClosedMenu(MenuContainer Menu, PluginContainer? Plugin, IDisposable? Hold);
+    private sealed record ClosedMenu(MenuContainer Menu, PluginContainer? Plugin, IDisposable? Hold)
+    {
+        // Becomes visible to independent drains only after the originating transaction releases its locks.
+        public volatile bool Ready;
+    }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Closing menu {Menu} failed")]
     private static partial void MenuClosedFailed(ILogger logger, Exception exception, string menu);

@@ -898,6 +898,48 @@ public sealed class MenuClicks
         await player.ClickMenuButtonAsync(player.CurrentContainerId, 0);
         Assert.True(menu.GetItem(2)?.Is(ItemsRegistry.Emerald));
 
+        // Replacing a menu from its button delivers Closed only after the click locks are released. Its cleanup
+        // returns an item through the same chest's access, which would otherwise wait forever on that click.
+        var cleanupLocksReleased = false;
+        var closed = 0;
+        menu.OnClose = viewer =>
+        {
+            closed++;
+            cleanupLocksReleased = menu.TransactionLock.CurrentCount == 1
+                && chest.Inventory.TransactionLock.CurrentCount == 1
+                && viewer.Inventory.TransactionLock.CurrentCount == 1;
+            if (cleanupLocksReleased)
+                chest.GetItemAccess(null)!.Insert(0, new ItemStack(ItemsRegistry.Coal, 1));
+        };
+        var next = new MachineMenu(machine, chest, buffer);
+        menu.OnButton = viewer =>
+        {
+            viewer.OpenInventoryAsync(next).GetAwaiter().GetResult();
+            Assert.Equal(0, closed);
+        };
+        await player.ClickMenuButtonAsync(player.CurrentContainerId, 0);
+        Assert.Equal(1, closed);
+        Assert.True(cleanupLocksReleased);
+        Assert.Equal(17, chest.Inventory.GetItem(0)?.Count);
+        Assert.Same(next, player.OpenedContainer);
+
+        // A snapshot reads item access under the same locks, so a read hook's riding changes must wait too.
+        var vehicle = new Obsidian.Entities.Cow { Level = context.World };
+        var rider = new Obsidian.Entities.Cow { Level = context.World };
+        Action queueMount = () =>
+        {
+            buffer.OnRead = null;
+            Assert.True(rider.StartRiding(vehicle));
+            Assert.Null(rider.Vehicle);
+        };
+        buffer.OnRead = queueMount;
+        await MainEventHandler.RefreshWindowAsync(player, next, stateId: 0);
+        Assert.Same(vehicle, rider.Vehicle);
+        rider.StopRiding();
+        buffer.OnRead = queueMount;
+        await ClickAsync(context.Server, player, 2, 0, ClickType.Pickup);
+        Assert.Same(vehicle, rider.Vehicle);
+
         // Out of reach the menu closes, and with its block gone it closes too.
         player.Position = new VectorD(0.5, 64, 12.5);
         await player.TickMenuAsync();
@@ -1296,6 +1338,10 @@ public sealed class MenuClicks
     // A machine's menu: its fuel in a chest, a buffer behind item access, and an output a button fills.
     private sealed class MachineMenu : MenuContainer
     {
+        public Action<IPlayer>? OnButton { get; set; }
+
+        public Action<IPlayer>? OnClose { get; set; }
+
         public MachineMenu(MenuDefinition menu, ContainerBlockEntity chest, IItemAccess buffer) : base(menu, "Machine")
         {
             this.Slots =
@@ -1317,9 +1363,12 @@ public sealed class MenuClicks
         protected internal override bool ClickButton(IPlayer player, int button)
         {
             this.SetItem(2, new ItemStack(ItemsRegistry.Emerald, 1));
+            this.OnButton?.Invoke(player);
 
             return true;
         }
+
+        protected internal override void Closed(IPlayer player) => this.OnClose?.Invoke(player);
     }
 
     // One slot of items behind item access, which can lose an item to something else just before one is taken out.
@@ -1333,10 +1382,16 @@ public sealed class MenuClicks
 
         public bool ThrowInsert { get; set; }
 
+        public Action? OnRead { get; set; }
+
         public int SlotCount => 1;
 
-        public ItemStack? GetItem(int slot) =>
-            this.Stack is ItemStack stack ? new ItemStack(stack, stack.Count) : null;
+        public ItemStack? GetItem(int slot)
+        {
+            this.OnRead?.Invoke();
+
+            return this.Stack is ItemStack stack ? new ItemStack(stack, stack.Count) : null;
+        }
 
         public ItemStack? Insert(int slot, ItemStack stack, bool simulate = false)
         {

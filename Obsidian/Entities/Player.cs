@@ -322,8 +322,12 @@ public sealed partial class Player : Avatar, IClientPlayer
 
         // The menu it opened over closed.
         this.RunMenusClosed();
-        if (shown is not byte nextId)
+        if (shown is not byte nextId
+            || !ReferenceEquals(this.OpenedContainer, container)
+            || this.CurrentContainerId != nextId)
+        {
             return;
+        }
 
         await Client.QueuePacketAsync(container is MenuContainer opening
             ? this.OpenMenuPacket(opening, nextId)

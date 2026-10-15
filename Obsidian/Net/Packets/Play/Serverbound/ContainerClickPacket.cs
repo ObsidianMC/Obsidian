@@ -3,6 +3,7 @@ using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
+using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
@@ -101,6 +102,7 @@ public partial class ContainerClickPacket
 
         // What the click applies to: the server applies it only if the window, the player's inventory and the cursor
         // are unchanged when its turn comes. Read in turn with other clicks, so it's never half of one.
+        await using (DeferredInventoryWork.Begin(player.Client.Logger))
         using (await BaseContainer.LockWindowAsync(window, player.Inventory))
             click.Arrive(NetworkBuffer.SnapshotItemStack);
 
