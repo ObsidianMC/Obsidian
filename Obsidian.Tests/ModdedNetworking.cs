@@ -1,16 +1,24 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Networking;
 using Obsidian.API.Plugins;
+using Obsidian.Events.EventArgs;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Common;
+using Obsidian.Net.Packets.Login.Clientbound;
 using Obsidian.Net.Payloads;
+using Obsidian.Services;
 using Obsidian.Tests.Fakes;
 using Obsidian.Utilities;
+using Obsidian.Utilities.Collections;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -128,6 +136,175 @@ public class ModdedNetworking
         registry.UnregisterPluginPayloads(plugin);
         registry.Register<EchoPayload>(plugin, PayloadPhase.Common, PayloadDirection.Bidirectional, null, "3", false);
         Assert.False(channels.HasChannel(EchoPayload.Channel));
+
+        await AssertOutgoingLifecycleAsync();
+    }
+
+    // Real loopback output proves the framing transition and terminal reason, which recording clients cannot see.
+    private static async Task AssertOutgoingLifecycleAsync()
+    {
+        await using var context = TestServerFactory.CreateServer($"pipeline-{Guid.NewGuid():N}");
+        using var metrics = new ServiceCollection().AddMetrics().BuildServiceProvider();
+        var serverMetrics = new ServerMetrics(metrics.GetRequiredService<IMeterFactory>());
+        var pool = new SimpleObjectPool<SocketAsyncEventArgs>(8);
+        var unsent = typeof(Client).GetField("unsent", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var consumer = typeof(Client).GetField("packetQueueTask", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var timeout = TimeSpan.FromSeconds(10);
+
+        Client CreateClient() => new(
+            context.EventDispatcher, context.Server, NullLoggerFactory.Instance,
+            new FakeUserCache(), serverMetrics, context.Provider, pool);
+
+        // Every protocol's refusal follows the earlier handler; login also crosses the compression boundary.
+        foreach (var state in new[] { ClientState.Login, ClientState.Configuration, ClientState.Play })
+        {
+            using var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            using var peer = new TcpClient();
+            await peer.ConnectAsync((IPEndPoint)listener.LocalEndpoint);
+            using var socket = await listener.AcceptSocketAsync();
+            using var client = CreateClient();
+            client.SetState(state);
+            await client.ConnectAsync(socket);
+            var stalled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            IClientboundPacket first = state == ClientState.Login
+                ? new CustomQueryPacket
+                {
+                    MessageId = 7,
+                    Channel = "test:before",
+                    Payload = ReadOnlyMemory<byte>.Empty
+                }
+                : state == ClientState.Play ? CustomPayloadPacket.ClientboundPlay with
+                {
+                    Channel = "test:before",
+                    PluginData = new byte[128_000]
+                }
+                : CustomPayloadPacket.ClientboundConfiguration with
+                {
+                    Channel = "test:before",
+                    PluginData = new byte[128_000]
+                };
+            context.EventDispatcher.RegisterEvent(null, (Func<QueuePacketEventArgs, ValueTask>)(async args =>
+            {
+                if (ReferenceEquals(args.Client, client) && ReferenceEquals(args.Packet, first))
+                {
+                    stalled.TrySetResult();
+                    await resume.Task;
+                }
+            }));
+
+            try
+            {
+                await client.QueuePacketAsync(first);
+                await stalled.Task.WaitAsync(timeout);
+                using var expected = new NetworkBuffer();
+                expected.WritePacket(first);
+                if (state == ClientState.Login)
+                {
+                    typeof(Client).GetMethod("EnableCompression", BindingFlags.Instance | BindingFlags.NonPublic)!
+                        .Invoke(client, null);
+                    Assert.False(client.CompressionEnabled);
+                    expected.WritePacket(new LoginCompressionPacket(256));
+                    Assert.True(client.SendPacket(first));
+                    expected.WriteCompressedPacket(first, 256);
+                }
+
+                Assert.Equal(0, peer.Available);
+                var flush = client.FlushAsync();
+                Assert.True(client.DisconnectAsync("Ordered goodbye").IsCompletedSuccessfully);
+                Assert.False(client.SendPacket(first));
+                IClientboundPacket reason = state == ClientState.Login
+                    ? new LoginDisconnectPacket
+                    {
+                        ReasonJson = ((ChatMessage)"Ordered goodbye").ToString(Globals.JsonOptions)
+                    }
+                    : state == ClientState.Play ? DisconnectPacket.ClientboundPlay with { Reason = "Ordered goodbye" }
+                    : DisconnectPacket.ClientboundConfiguration with { Reason = "Ordered goodbye" };
+                if (state == ClientState.Login)
+                    expected.WriteCompressedPacket(reason, 256);
+                else
+                    expected.WritePacket(reason);
+
+                resume.TrySetResult();
+                var received = new byte[expected.Size];
+                await peer.GetStream().ReadExactlyAsync(received).AsTask().WaitAsync(timeout);
+                Assert.Equal(expected.AsSpan(0, expected.Size).ToArray(), received);
+                Assert.Equal(0, await peer.GetStream().ReadAsync(new byte[1]).AsTask().WaitAsync(timeout));
+                await flush.WaitAsync(timeout);
+                await ((Task)consumer.GetValue(client)!).WaitAsync(timeout);
+                Assert.Equal(0, (int)unsent.GetValue(client)!);
+            }
+            finally
+            {
+                resume.TrySetResult();
+            }
+        }
+
+        // A stuck plugin cannot retain queued packets or a flush marker after disposal, overflow, or a kick deadline.
+        foreach (var ending in new[] { "dispose", "overflow", "deadline" })
+        {
+            using var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            using var peer = new TcpClient();
+            await peer.ConnectAsync((IPEndPoint)listener.LocalEndpoint);
+            using var client = CreateClient();
+            await client.ConnectAsync(await listener.AcceptSocketAsync());
+            client.SetState(ClientState.Login);
+            var stalled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            context.EventDispatcher.RegisterEvent(null, (Func<QueuePacketEventArgs, ValueTask>)(async args =>
+            {
+                if (ReferenceEquals(args.Client, client))
+                {
+                    stalled.TrySetResult();
+                    await resume.Task;
+                    args.Cancel();
+                }
+            }));
+
+            try
+            {
+                var packet = new LoginCompressionPacket(256);
+                await client.QueuePacketAsync(packet);
+                await stalled.Task.WaitAsync(timeout);
+                var flush = client.FlushAsync();
+                for (var i = 0; i < 20_000; i++)
+                    Assert.True(client.QueuePacketAsync(packet).IsCompletedSuccessfully);
+
+                Assert.False(flush.IsCompleted);
+                if (ending == "dispose")
+                {
+                    client.Dispose();
+                }
+                else if (ending == "overflow")
+                {
+                    for (var i = 20_002; i < 65_537; i++)
+                        Assert.True(client.QueuePacketAsync(packet).IsCompletedSuccessfully);
+                }
+                else
+                {
+                    Assert.True(client.DisconnectAsync("Deadline goodbye").IsCompletedSuccessfully);
+                }
+
+                await ((Task)consumer.GetValue(client)!).WaitAsync(timeout);
+                await flush.WaitAsync(timeout);
+                Assert.Equal(0, (int)unsent.GetValue(client)!);
+                Assert.Equal(0, await peer.GetStream().ReadAsync(new byte[1]).AsTask().WaitAsync(timeout));
+            }
+            finally
+            {
+                resume.TrySetResult();
+            }
+        }
+
+        // The consumer must also finish cleanly when disposal wins the constructor's Task.Run race.
+        for (var i = 0; i < 32; i++)
+        {
+            using var client = CreateClient();
+            client.Dispose();
+            await ((Task)consumer.GetValue(client)!).WaitAsync(timeout);
+        }
     }
 
     [Fact]
