@@ -60,6 +60,11 @@ public abstract partial class AbstractLevel : ILevel
     // container), and the second call would wait forever on the generation slots the first one keeps.
     private int disposed;
 
+    /// <summary>
+    /// Whether the level was disposed: saved a last time, with no ticks to come.
+    /// </summary>
+    internal bool IsDisposed => Volatile.Read(ref this.disposed) != 0;
+
     // The chunks kept loaded around the spawn, filled in once the spawn is known.
     protected readonly long[] spawnChunks;
 

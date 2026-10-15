@@ -710,6 +710,11 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         foreach (var level in this.Levels())
         {
+            // The server stopping disposes its worlds before it unloads the plugins: a disposed level saved their
+            // block entities already and has no tick left to remove them on, so there's nothing to wait for.
+            if (level.IsDisposed)
+                continue;
+
             List<BaseContainer> retired = [];
 
             void Remove()
