@@ -99,8 +99,21 @@ public sealed class PluginLoading : IDisposable
     {
         var files = new Dictionary<string, byte[]>
         {
-            [PluginMetadata.FileName] = PluginArchives.Metadata("ruby", "1.2.0-beta", "Ruby",
-                """[{ "modId": "core", "type": "optional", "versionRange": "[1.0,2.0)", "ordering": "AFTER" }]"""),
+            [PluginMetadata.FileName] = Encoding.UTF8.GetBytes("""
+                {
+                  "modId": "ruby",
+                  "displayName": "ruby display",
+                  "version": "1.2.0-beta",
+                  "assembly": "Ruby",
+                  "issueTrackerURL": "https://example.com/ruby/issues",
+                  "logoFile": "ruby.png",
+                  "license": "MIT",
+                  "credits": "Someone Else",
+                  "dependencies": [
+                    { "modId": "core", "type": "optional", "versionRange": "[1.0,2.0)", "ordering": "AFTER" }
+                  ]
+                }
+                """),
             ["Ruby.dll"] = [1, 2, 3],
             ["assets/ruby/lang/en_us.json"] = Encoding.UTF8.GetBytes("{}")
         };
@@ -112,6 +125,10 @@ public sealed class PluginLoading : IDisposable
         Assert.Equal(new Version(1, 2, 0, 0), archive.Info.Version);
         Assert.Equal(PluginDependencyType.Optional, archive.Info.Dependencies.Single().Type);
         Assert.Equal(PluginDependencyOrdering.After, archive.Info.Dependencies.Single().Ordering);
+        Assert.Equal(new Uri("https://example.com/ruby/issues"), archive.Info.IssueTrackerUrl);
+        Assert.Equal("ruby.png", archive.Info.LogoFile);
+        Assert.Equal("MIT", archive.Info.License);
+        Assert.Equal("Someone Else", archive.Info.Credits);
         Assert.Equal("{}", Encoding.UTF8.GetString(archive.Read("assets/ruby/lang/en_us.json")!));
         Assert.Null(archive.Read("missing.txt"));
 

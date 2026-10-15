@@ -22,6 +22,10 @@ public sealed class PluginInfo : IPluginInfo
     public string Description { get; init; } = string.Empty;
     public ImmutableArray<string> Authors { get; init; } = [];
     public Uri? ProjectUrl { get; init; }
+    public Uri? IssueTrackerUrl { get; init; }
+    public string? LogoFile { get; init; }
+    public string? License { get; init; }
+    public string? Credits { get; init; }
 
     [JsonConstructor]
     internal PluginInfo() { }

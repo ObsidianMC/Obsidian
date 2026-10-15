@@ -65,6 +65,10 @@ reference. Whether the API packages should declare NBT as a public dependency re
   "authors": ["Tides"],
   "description": "Adds rubies.",
   "projectUrl": "https://example.com/ruby",
+  "issueTrackerURL": "https://example.com/ruby/issues",
+  "logoFile": "ruby.png",
+  "license": "MIT",
+  "credits": "Gem textures by Someone Else.",
   "side": "both",
   "dependencies": [
     { "modId": "gemlib", "type": "required", "versionRange": "[1.0,2.0)", "ordering": "after", "side": "both" }
@@ -81,6 +85,12 @@ reference. Whether the API packages should declare NBT as a public dependency re
 | `apiVersion` | empty | The Obsidian.API version the plugin was built against. |
 | `side` | `both` | Where the plugin runs: `both`, `server` or `client`. A server skips `client` plugins, and the Obsidian client, which loads mods from its `mods` folder, skips `server` ones. |
 | `dependencies` | none | Other plugins, see below. |
+| `issueTrackerURL` | none | Where players report bugs. The Obsidian client's mod list links it as Issues, and `projectUrl` as Website. |
+| `logoFile` | none | A PNG in the archive, shown at 32 by 32 as the mod's icon in the client's mod list. Without one (or if it doesn't decode) the list shows a placeholder. |
+| `license` | none | The license, as you name it, e.g. `MIT`. |
+| `credits` | none | Thanks to people and projects, shown in the mod list. |
+
+These four are named as in `neoforge.mods.toml`. Keys match case-insensitively, so `issueTrackerUrl` works too.
 
 Each dependency has:
 
