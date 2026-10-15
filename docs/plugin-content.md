@@ -1871,6 +1871,13 @@ belongs to play). Handlers may still change the packet before it's sent.
 - A slow handler holds up only its own client's later packets. A handler that throws is logged; the packet is still
   sent, and the pipeline goes on.
 - Awaiting `QueuePacketAsync` no longer means the handlers ran.
+- Login compression is ordered with outgoing packets: its announcement uses the previous framing, and subsequent
+  packets use the announced threshold.
+- Disconnecting queues a final reason after earlier packets, then closes once socket output drains. Awaiting a kick
+  or disconnect never waits for that pipeline. The final reason skips queue handlers; a three-second deadline closes
+  the connection if a handler or socket stalls.
+- A connection exceeding 65,536 unsent entries is disconnected and logged, without making writers wait. Closing a
+  connection releases its queued entries even if a plugin handler never returns.
 
 ## Player extensions
 

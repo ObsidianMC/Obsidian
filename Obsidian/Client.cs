@@ -26,6 +26,10 @@ public sealed partial class Client : IClient
 {
     private const int MaxBufferSize = 1024 * 8;
 
+    // A full distance-32 view is 3,725 chunks: at most 11,176 entries with one chunk per batch and its center.
+    private const int MaximumOutgoingEntries = 65_536;
+    private static readonly TimeSpan DisconnectTimeout = TimeSpan.FromSeconds(3);
+
     /// <summary>
     /// How many <see cref="KeepAlivePacket"/>s the client has missed.
     /// </summary>
@@ -50,7 +54,7 @@ public sealed partial class Client : IClient
     /// <summary>
     /// Whether this client is disposed.
     /// </summary>
-    private bool disposed;
+    private volatile bool disposed;
 
     /// <summary>
     /// The random token used to encrypt the stream; empty until the encryption request is sent.
@@ -76,6 +80,12 @@ public sealed partial class Client : IClient
 
     // Entries queued and not yet sent or dropped. A direct send waits behind them (see SendPacket).
     private int unsent;
+
+    private readonly Task packetQueueTask;
+    private readonly CancellationToken cancellationToken;
+
+    // Guarded by sendLock: no new entries or direct sends follow the terminal entry.
+    private volatile bool disconnectRequested;
 
     /// <summary>
     /// The cancellation token source used to cancel the packet queue loop and disconnect the client.
@@ -225,13 +235,15 @@ public sealed partial class Client : IClient
 
         this.packetQueue = Channel.CreateUnbounded<Outgoing>(new()
         {
-            SingleReader = true,
+            // Teardown can drain abandoned entries while the consumer is inside a plugin.
+            SingleReader = false,
             SingleWriter = false
         });
 
         // Plugins' handlers run in the pipeline's own flow, which inherits nothing from whoever created the client.
+        this.cancellationToken = this.cancellationSource.Token;
         using (ExecutionContext.SuppressFlow())
-            _ = Task.Run(this.HandlePacketQueueAsync);
+            this.packetQueueTask = Task.Run(this.HandlePacketQueueAsync);
     }
 
     public async ValueTask<bool> TrySetCachedProfileAsync(string username)
@@ -302,23 +314,44 @@ public sealed partial class Client : IClient
         });
     }
 
-    public async ValueTask DisconnectAsync(ChatMessage reason)
+    /// <summary>
+    /// Queues the final reason and starts leaving, without waiting for outgoing handlers or socket output.
+    /// The pipeline closes after output drains; a deadline closes it if a handler or socket stalls.
+    /// </summary>
+    public ValueTask DisconnectAsync(ChatMessage reason)
     {
-        await this.LeaveAsync();
-
-        if (this.State == ClientState.Login)
+        bool startDeadline;
+        lock (this.sendLock)
         {
-            await this.QueuePacketAsync(new LoginDisconnectPacket { ReasonJson = reason.ToString(Globals.JsonOptions) });
+            startDeadline = !this.IsClosing && !this.disconnectRequested;
+            if (startDeadline)
+            {
+                this.disconnectRequested = true;
+                this.WriteOutgoing(new Outgoing(
+                    Packet: null, RunsHandlers: false, Work: null, DisconnectReason: reason));
+                this.packetQueue.Writer.TryComplete();
+            }
         }
-        else
+
+        // Neither engine callers nor a handler kicking its own client wait for the outgoing pipeline.
+        if (startDeadline)
+            this.ObserveOutgoingTask(this.CloseAfterTimeoutAsync());
+
+        return new ValueTask(this.LeaveAsync());
+    }
+
+    private async Task CloseAfterTimeoutAsync()
+    {
+        try
         {
-            var packet = this.State == ClientState.Play ? DisconnectPacket.ClientboundPlay with { Reason = reason }
-               : DisconnectPacket.ClientboundConfiguration with { Reason = reason };
-
-            await this.QueuePacketAsync(packet);
+            await Task.Delay(DisconnectTimeout, this.cancellationToken);
+            Log.DisconnectStalled(this.Logger, DisconnectTimeout);
+            this.Disconnect();
         }
-
-        this.Disconnect();
+        catch (OperationCanceledException) when (this.cancellationToken.IsCancellationRequested)
+        {
+            // The terminal entry or the peer already closed the connection.
+        }
     }
 
     /// <summary>
@@ -341,9 +374,15 @@ public sealed partial class Client : IClient
     /// <returns>Whether it's sent or on its way: the client can receive it.</returns>
     public bool SendPacket(IClientboundPacket packet)
     {
-        // The pipeline counts an entry out only once it's sent, so seeing none left means nothing earlier is unsent.
-        if (Volatile.Read(ref this.unsent) == 0)
-            return this.SendAsync(packet);
+        lock (this.sendLock)
+        {
+            if (this.IsClosing || this.disconnectRequested)
+                return false;
+
+            // Admission and the direct write share the lock, so a new entry cannot slip between them.
+            if (Volatile.Read(ref this.unsent) == 0)
+                return this.SendAsync(packet);
+        }
 
         return this.Enqueue(new Outgoing(packet, RunsHandlers: false, Work: null));
     }
@@ -384,7 +423,7 @@ public sealed partial class Client : IClient
 
             return true;
         }
-        catch (OperationCanceledException) when (this.cancellationSource.IsCancellationRequested)
+        catch (OperationCanceledException) when (this.cancellationToken.IsCancellationRequested)
         {
             // The client disconnected while handlers ran: the packet is dropped.
             return false;
@@ -401,9 +440,27 @@ public sealed partial class Client : IClient
     // back to configuration is dropped here, as later at its turn and when it's written (see Accepts).
     private bool Enqueue(Outgoing entry)
     {
-        if (entry.Packet is IClientboundPacket packet ? !this.CanReceive(packet) : this.IsClosing)
-            return false;
+        lock (this.sendLock)
+        {
+            if (this.disconnectRequested
+                || (entry.Packet is IClientboundPacket packet ? !this.CanReceive(packet) : this.IsClosing))
+                return false;
 
+            if (Volatile.Read(ref this.unsent) < MaximumOutgoingEntries)
+                return this.WriteOutgoing(entry);
+
+            // Like vanilla's overflowing connections, shed the client rather than waiting for its pipeline.
+            Log.OutgoingOverflow(this.Logger, MaximumOutgoingEntries);
+            this.disconnectRequested = true;
+        }
+
+        this.Disconnect();
+        return false;
+    }
+
+    // Called under sendLock, including for the one terminal entry allowed beyond the admission limit.
+    private bool WriteOutgoing(Outgoing entry)
+    {
         Interlocked.Increment(ref this.unsent);
         if (this.packetQueue.Writer.TryWrite(entry))
             return true;
@@ -412,7 +469,7 @@ public sealed partial class Client : IClient
         return false;
     }
 
-    private bool IsClosing => this.disposed || this.cancellationSource.IsCancellationRequested;
+    private bool IsClosing => this.disposed || this.cancellationToken.IsCancellationRequested;
 
     private bool CanReceive(IClientboundPacket packet) => !this.IsClosing && this.Connected && this.Accepts(packet);
 
@@ -452,10 +509,17 @@ public sealed partial class Client : IClient
         if (threshold < 0 || this.CompressionEnabled)
             return;
 
-        // The packet itself still goes out uncompressed: it's written now, never queued behind anything, before the
-        // threshold is set. Nothing else is sent or received during login meanwhile.
-        this.SendAsync(new LoginCompressionPacket(threshold));
-        this.compressionThreshold = threshold;
+        // Its announcement uses the old framing; the threshold changes under the same lock as every write.
+        this.QueueInTurn(() =>
+        {
+            lock (this.sendLock)
+            {
+                if (!this.CompressionEnabled && this.SendAsync(new LoginCompressionPacket(threshold)))
+                    this.compressionThreshold = threshold;
+            }
+
+            return ValueTask.CompletedTask;
+        });
     }
 
     internal void Login(MojangProfile user)
@@ -484,15 +548,31 @@ public sealed partial class Client : IClient
                 return;
 
             this.disposed = true;
-
-            try
-            {
-                this.cancellationSource.Cancel();
-                this.cancellationSource.Dispose();
-                this.Socket.Dispose();
-            }
-            catch (ObjectDisposedException) { }
         }
+
+        lock (this.sendLock)
+        {
+            this.packetQueue.Writer.TryComplete();
+            while (this.packetQueue.Reader.TryRead(out var entry))
+            {
+                entry.Flushed?.TrySetResult(0);
+                Interlocked.Decrement(ref this.unsent);
+            }
+
+            this.outputDrained?.TrySetResult();
+        }
+
+        this.cancellationSource.Cancel();
+        this.cancellationSource.Dispose();
+        try
+        {
+            this.Socket?.Shutdown(SocketShutdown.Both);
+        }
+        catch (SocketException) { }
+        catch (ObjectDisposedException) { }
+
+        this.Socket?.Dispose();
+        this.ObserveOutgoingTask(this.packetQueueTask);
 
         GC.SuppressFinalize(this);
     }
@@ -519,9 +599,9 @@ public sealed partial class Client : IClient
                 return;
 
             this.disconnected = true;
-            this.cancellationSource.Cancel();
         }
 
+        this.Dispose();
         Disconnected?.Invoke(this);
 
         // A player whose client closed the connection (as vanilla's clients do to quit) leaves too and is saved, and
@@ -530,38 +610,33 @@ public sealed partial class Client : IClient
         if (this.State == ClientState.Play)
             _ = this.LeaveAsync();
 
-        this.receiveEvent.Completed -= this.OnAsyncCompleted;
-        this.sendEvent.Completed -= this.OnAsyncCompleted;
-
-        this.pool.Return(this.receiveEvent);
-        this.pool.Return(this.sendEvent);
-
-        var removed = this.HostServer.Connections.Remove(this.Id, out _);
-
-        if (this.Player != null)
-            this.HostServer.RemovePlayer(this.Player);
-
-        try
+        if (this.receiveEvent is not null)
         {
-            this.Socket.Shutdown(SocketShutdown.Both);
+            this.receiveEvent.Completed -= this.OnAsyncCompleted;
+            this.pool.Return(this.receiveEvent);
         }
-        catch (SocketException) { }
-        catch (ObjectDisposedException) { }
 
-        this.Socket.Close();
+        if (this.sendEvent is not null)
+        {
+            this.sendEvent.Completed -= this.OnAsyncCompleted;
+            this.pool.Return(this.sendEvent);
+        }
+
+        this.HostServer.Connections.Remove(this.Id, out _);
+
+        if (this.Player is not null)
+            this.HostServer.RemovePlayer(this.Player);
 
         this.receiving = false;
         this.sending = false;
 
         lock (this.sendLock)
         {
-            this.sendBufferMain.Clear();
-            this.sendBufferFlush.Clear();
+            this.sendBufferMain?.Clear();
+            this.sendBufferFlush?.Clear();
 
             this.sendBufferFlushOffset = 0;
         }
-
-        this.Dispose();
     }
 
     private async Task<MojangProfile?> HasJoinedAsync() => await this.userCache.HasJoinedAsync(this.Player!.Username, this.ServerId!);
@@ -570,17 +645,36 @@ public sealed partial class Client : IClient
     // long holds up only this client's later packets; one that fails is logged and the pipeline goes on.
     private async Task HandlePacketQueueAsync()
     {
-        var cancellationToken = this.cancellationSource.Token;
+        var cancellationToken = this.cancellationToken;
 
         try
         {
-            while (true)
+            while (await this.packetQueue.Reader.WaitToReadAsync(cancellationToken))
             {
-                var entry = await this.packetQueue.Reader.ReadAsync(cancellationToken);
+                if (!this.packetQueue.Reader.TryRead(out var entry))
+                    continue;
 
                 try
                 {
-                    await this.SendQueuedAsync(entry);
+                    var pending = this.SendQueuedAsync(entry);
+                    if (pending.IsCompleted)
+                    {
+                        await pending;
+                    }
+                    else
+                    {
+                        var task = pending.AsTask();
+                        try
+                        {
+                            await task.WaitAsync(cancellationToken);
+                        }
+                        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                        {
+                            // A plugin may never return; release the consumer and observe a possible late failure.
+                            this.ObserveOutgoingTask(task);
+                            throw;
+                        }
+                    }
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -592,11 +686,12 @@ public sealed partial class Client : IClient
                 }
                 finally
                 {
+                    entry.Flushed?.TrySetResult(0);
                     Interlocked.Decrement(ref this.unsent);
                 }
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             // The client disconnected: what's left in the pipeline is dropped.
         }
@@ -604,6 +699,44 @@ public sealed partial class Client : IClient
 
     private async ValueTask SendQueuedAsync(Outgoing entry)
     {
+        if (this.IsClosing)
+            return;
+
+        if (entry.DisconnectReason is ChatMessage reason)
+        {
+            try
+            {
+                Task drained;
+                lock (this.sendLock)
+                {
+                    IClientboundPacket terminal = this.State == ClientState.Login
+                        ? new LoginDisconnectPacket { ReasonJson = reason.ToString(Globals.JsonOptions) }
+                        : this.State == ClientState.Play ? DisconnectPacket.ClientboundPlay with { Reason = reason }
+                        : DisconnectPacket.ClientboundConfiguration with { Reason = reason };
+
+                    // Terminal packets cannot be cancelled by plugins or rejected during reconfiguration.
+                    this.SendAsync(terminal, terminal: true);
+                    drained = this.sending
+                        ? (this.outputDrained ??= new(TaskCreationOptions.RunContinuationsAsynchronously)).Task
+                        : Task.CompletedTask;
+                }
+
+                await drained.WaitAsync(this.cancellationToken);
+            }
+            finally
+            {
+                this.Disconnect();
+            }
+
+            return;
+        }
+
+        if (entry.Flushed is TaskCompletionSource<int> flushed)
+        {
+            flushed.TrySetResult(Volatile.Read(ref this.unsent) - 1);
+            return;
+        }
+
         if (entry.Work is not null)
         {
             await entry.Work();
@@ -625,32 +758,40 @@ public sealed partial class Client : IClient
         {
             // How many entries were queued behind the marker by the time it ran.
             var flushed = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-            if (!this.Enqueue(new Outgoing(Packet: null, RunsHandlers: false, Flush)))
+            if (!this.Enqueue(new Outgoing(Packet: null, RunsHandlers: false, Work: null, Flushed: flushed)))
                 return;
 
             if (await flushed.Task == 0)
                 return;
-
-            ValueTask Flush()
-            {
-                // The marker is still counted while it runs.
-                flushed.SetResult(Volatile.Read(ref this.unsent) - 1);
-                return ValueTask.CompletedTask;
-            }
         }
     }
 
+    // Disposal is synchronous and plugins may hang, so observe tasks without waiting on their code.
+    private void ObserveOutgoingTask(Task task) => _ = task.ContinueWith(
+        failed => Log.QueuedPacketFailed(this.Logger, failed.Exception!, null),
+        CancellationToken.None,
+        TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+        TaskScheduler.Default);
+
     // An entry of the pipeline: a packet, which plugins' handlers see first unless it's sent as is, or work run in turn
     // with the packets (see QueueInTurn).
-    private readonly record struct Outgoing(IClientboundPacket? Packet, bool RunsHandlers, Func<ValueTask>? Work);
+    private readonly record struct Outgoing(
+        IClientboundPacket? Packet,
+        bool RunsHandlers,
+        Func<ValueTask>? Work,
+        TaskCompletionSource<int>? Flushed = null,
+        ChatMessage? DisconnectReason = null);
 
 
     private async ValueTask<bool> HandlePacketAsync(PacketData packetData)
     {
         // A closing connection's packets still buffered aren't handled: the player has left, and a packet that joins
         // them (finishing configuration, say) would bring them back.
-        if (this.cancellationSource.IsCancellationRequested)
-            return false;
+        lock (this.sendLock)
+        {
+            if (this.IsClosing || this.disconnectRequested)
+                return false;
+        }
 
         // Between packets nothing else of this client's is running, so the player can leave the world unchanged.
         if (this.reconfigurationRequested && this.State == ClientState.Play && !this.AwaitingReconfiguration)
@@ -680,7 +821,7 @@ public sealed partial class Client : IClient
         lock (this.lifecycleLock)
         {
             // Login awaits, and the client may have disconnected meanwhile; it stays out of the connections then.
-            if (this.disconnected)
+            if (this.disconnected || this.IsClosing || this.disconnectRequested)
                 return;
 
             this.HostServer.Connections.Remove(this.Id, out _);
@@ -911,6 +1052,14 @@ public sealed partial class Client : IClient
 
     private static partial class Log
     {
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "Disconnect output did not drain within {Timeout}; closing client")]
+        public static partial void DisconnectStalled(ILogger logger, TimeSpan timeout);
+
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "Outgoing packet backlog exceeded {Limit}; disconnecting client")]
+        public static partial void OutgoingOverflow(ILogger logger, int limit);
+
         [LoggerMessage(Level = LogLevel.Error, Message = "Handling {Username} leaving failed")]
         public static partial void LeaveFailed(ILogger logger, Exception exception, string username);
 

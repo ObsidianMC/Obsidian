@@ -25,6 +25,9 @@ public partial class Client
 
     private readonly Lock sendLock = new();
 
+    // Completed only when both socket buffers have emptied, or teardown abandons them.
+    private TaskCompletionSource? outputDrained;
+
     public Socket Socket { get; private set; }
 
     private bool loginPending;
@@ -48,14 +51,14 @@ public partial class Client
         await this.TryReceiveAsync();
     }
 
-    private bool SendAsync(IClientboundPacket packet)
+    private bool SendAsync(IClientboundPacket packet, bool terminal = false)
     {
         if (!this.Connected)
             return false;
 
         lock (this.sendLock)
         {
-            if (!this.Accepts(packet))
+            if (this.IsClosing || !this.Connected || (!terminal && !this.Accepts(packet)))
                 return false;
 
             this.sendBufferMain.WritesPluginEntityData = this.ReadsPluginEntityData(packet);
@@ -132,10 +135,9 @@ public partial class Client
                     {
                         empty = true;
                         this.sending = false;
+                        this.outputDrained?.TrySetResult();
                     }
                 }
-                else
-                    return;
             }
 
             if (empty)
@@ -143,7 +145,10 @@ public partial class Client
 
             try
             {
-                this.sendEvent.SetBuffer(this.sendBufferFlush.GetBuffer(), this.sendBufferFlushOffset, this.sendBufferFlush.Offset);
+                this.sendEvent.SetBuffer(
+                    this.sendBufferFlush.GetBuffer(),
+                    this.sendBufferFlushOffset,
+                    this.sendBufferFlush.Offset - this.sendBufferFlushOffset);
 
                 if (!this.Socket.SendAsync(this.sendEvent))
                     process = this.ProcessSend(this.sendEvent);
@@ -320,26 +325,27 @@ public partial class Client
 
     private bool ProcessSend(SocketAsyncEventArgs e)
     {
-        if (!this.Connected)
-            return false;
-
-        var size = e.BytesTransferred;
-
-        if (size > 0)
+        lock (this.sendLock)
         {
-            this.serverMetrics.AddBytesSent(size);
+            if (this.IsClosing || !this.Connected)
+                return false;
 
-            this.sendBufferFlushOffset += size;
-
-            if (this.sendBufferFlushOffset == this.sendBufferFlush.Offset)
+            var size = e.BytesTransferred;
+            if (size > 0)
             {
-                this.sendBufferFlush.Clear();
-                this.sendBufferFlushOffset = 0;
-            }
-        }
+                this.serverMetrics.AddBytesSent(size);
 
-        if (e.SocketError == SocketError.Success)
-            return true;
+                this.sendBufferFlushOffset += size;
+                if (this.sendBufferFlushOffset == this.sendBufferFlush.Offset)
+                {
+                    this.sendBufferFlush.Clear();
+                    this.sendBufferFlushOffset = 0;
+                }
+            }
+
+            if (e.SocketError == SocketError.Success && size > 0)
+                return true;
+        }
 
         this.Disconnect();
 
