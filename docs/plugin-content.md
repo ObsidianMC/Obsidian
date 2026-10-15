@@ -816,10 +816,11 @@ level get off; players also get off by sneaking.
 Mount validation and the relationship change share the entity transfer lock, so concurrent mounts cannot form a
 cycle. Respawn and dimension-transfer packet handlers run after the player's chunk-update lock is released. Later
 chunk sends wait until the respawn, position and initial chunks have entered the connection's queue, in order;
-direct sends in that flow join the same queue. Observer packets are not deferred. A handler can await death,
-respawn or another dimension transfer: the requested work runs after the current sequence, including a dimension
-transfer's remaining destination updates. A death that starts while travel waits for the lock completes before
-the destination is committed.
+direct sends in that flow join the same queue. Observer packets are not deferred. Teleports (including within a
+level), respawns and dimension transfers serialize through all their packets and destination callbacks. An awaited
+teleport, respawn or kill requested from a packet handler during a sequence queues the work and returns; the work
+completes after that sequence ends. A death that starts independently while travel waits for the lock completes
+before the destination is committed.
 
 Leads are modelled as far as saved worlds and travel need. A mob's vanilla `leash` field (a holder's UUID) is read and
 saved, players tracking the mob see the lead, and the lead drops as a lead item, as in vanilla, when either end dies
