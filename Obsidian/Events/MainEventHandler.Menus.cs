@@ -28,6 +28,15 @@ public partial class MainEventHandler
         // The player's main inventory and hotbar (their slots 9 to 44) follow the menu's slots in its window.
         var windowSlot = source == menu ? slot : menu.Size + slot - 9;
 
+        // A stack of the player's the menu takes elsewhere, like into a network's storage.
+        if (source != menu && Math.Clamp(menu.QuickMoveIn(player, new ItemStack(stack, stack.Count)), 0, stack.Count)
+            is > 0 and var taken)
+        {
+            source.SetItem(slot, stack.Count > taken ? new ItemStack(stack, stack.Count - taken) : null);
+
+            return true;
+        }
+
         foreach (var range in menu.QuickMove(player, windowSlot, new ItemStack(stack, stack.Count)))
         {
             if (!MoveItemStackTo(player, stack, WindowRange(player, menu, range, windowSlot)))

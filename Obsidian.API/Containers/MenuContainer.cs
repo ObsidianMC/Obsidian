@@ -210,6 +210,21 @@ public class MenuContainer : BaseContainer
             : [new MenuSlotRange(0, this.Size)];
 
     /// <summary>
+    /// Takes a stack the player shift-clicks in their inventory somewhere other than the menu's slots, before
+    /// <see cref="QuickMove"/>'s ranges are tried: like an AE2 terminal's <c>quickMoveStack</c>, which stores it in its
+    /// network. Nothing by default.
+    /// </summary>
+    /// <param name="player">The player shift-clicking.</param>
+    /// <param name="stack">What the clicked slot holds. Don't change it.</param>
+    /// <returns>How many of the stack it took, which leave the player's slot; 0 to leave it to the ranges.</returns>
+    /// <remarks>
+    /// Called with the window's lock held, like <see cref="QuickMove"/>, and only for the player's own slots. It may
+    /// take a container's lock whose holders take no other, as a block entity's inventory lock is held, but must not
+    /// wait on anything else.
+    /// </remarks>
+    protected internal virtual int QuickMoveIn(IPlayer player, ItemStack stack) => 0;
+
+    /// <summary>
     /// Handles a button of the menu's screen that the player clicked, like vanilla's <c>clickMenuButton</c>: the
     /// screen sends the button's number, which means whatever the menu says.
     /// </summary>
