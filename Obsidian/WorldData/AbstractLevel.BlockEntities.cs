@@ -267,8 +267,10 @@ public abstract partial class AbstractLevel
     /// <summary>
     /// Takes in the changes block entities announced: the data a plugin's block entity saves is a copy of what its
     /// <see cref="BlockEntity.Save"/> wrote now, on the level's thread, so that the plugin changing what it wrote
-    /// later doesn't change what's saved. Like vanilla's <c>setChanged</c>, the comparators reading a changed block
-    /// entity's block hear of it then (a container's hear when its items move, see <c>UpdateComparatorsOf</c>).
+    /// later doesn't change what's saved. Runs at the end of the tick, and before a save (a flush, or a chunk or
+    /// region unloading), under the simulation gate either way and holding no lock while it calls the plugins. Like
+    /// vanilla's <c>setChanged</c>, the comparators reading a changed block entity's block hear of it then (a
+    /// container's hear when its items move, see <c>UpdateComparatorsOf</c>).
     /// </summary>
     internal void TakeBlockEntityChanges()
     {

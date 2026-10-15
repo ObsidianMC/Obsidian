@@ -40,6 +40,12 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     // The lock on the single world's folder (see LoadSingleWorldAsync), held until the worlds are disposed.
     private SessionLock? sessionLock;
 
+    // Held while the levels manage their chunks, so pausing waits for the pass in progress.
+    private readonly SemaphoreSlim chunkGate = new(1, 1);
+
+    // Set under chunkGate by a pause, so that no pass runs once it returns; cleared at once by a resume.
+    private volatile bool chunksPaused;
+
     public bool ReadyToJoin { get; private set; }
 
     /// <summary>
@@ -74,12 +80,19 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
             while (await timer.WaitForNextTickAsync())
             {
-                // Every level manages its chunks, the dimensions too: it's what generates the chunks players ask for.
-                var levels = this.worlds.Values
-                    .Cast<World>()
-                    .SelectMany(world => world.dimensions.Values.Cast<AbstractLevel>().Prepend(world));
-
-                await Task.WhenAll(levels.Select(level => level.ManageChunksAsync()));
+                // Under the gate, so a pause lands between two passes (see PauseChunkManagementAsync).
+                await this.chunkGate.WaitAsync(stoppingToken);
+                try
+                {
+                    // Every level manages its chunks, the dimensions too: it's what generates the chunks players ask
+                    // for.
+                    if (!this.chunksPaused)
+                        await Task.WhenAll(this.Levels.Select(level => level.ManageChunksAsync()));
+                }
+                finally
+                {
+                    this.chunkGate.Release();
+                }
             }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -387,6 +400,43 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
         world = default;
         return false;
+    }
+
+    // Every world and its dimensions.
+    private IEnumerable<AbstractLevel> Levels => this.worlds.Values
+        .Cast<World>()
+        .SelectMany(world => world.dimensions.Values.Cast<AbstractLevel>().Prepend(world));
+
+    /// <summary>
+    /// Stops managing the levels' chunks once the pass in progress ends, until
+    /// <see cref="ResumeChunkManagement"/>: no chunk loads for a ticket, unloads, or starts generating. Like vanilla's
+    /// paused integrated server, whose chunk loading and unloading are part of the tick it stops. Saves still run.
+    /// </summary>
+    internal async Task PauseChunkManagementAsync()
+    {
+        await this.chunkGate.WaitAsync();
+        try
+        {
+            this.chunksPaused = true;
+
+            foreach (var level in this.Levels)
+                level.ChunkManagementPaused = true;
+        }
+        finally
+        {
+            this.chunkGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Manages the levels' chunks again from the next pass, after <see cref="PauseChunkManagementAsync"/>.
+    /// </summary>
+    internal void ResumeChunkManagement()
+    {
+        foreach (var level in this.Levels)
+            level.ChunkManagementPaused = false;
+
+        this.chunksPaused = false;
     }
 
     public Task TickWorldsAsync() => ReadyToJoin ? Task.WhenAll(this.worlds.Values.Select(world => world.DoWorldTickAsync())) : Task.CompletedTask;
