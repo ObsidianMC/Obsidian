@@ -1,5 +1,6 @@
 using System.Numerics;
 using Obsidian.API.BlockEntities;
+using Obsidian.API.Inventory;
 
 namespace Obsidian.API.Client;
 
@@ -57,4 +58,16 @@ public interface IBlockEntityRenderBuffer
     /// <param name="face">The face, in sixteenths of a block like model data's.</param>
     /// <param name="transform">Where the face's block space goes, in blocks from the block's lowest corner.</param>
     public void Face(BlockModelFace face, Matrix4x4 transform);
+
+    /// <summary>
+    /// Draws an item stack as vanilla's item renderer does: its item model, with the model's transform for
+    /// <paramref name="display"/>, about the transform's origin, like a dropped item (<see
+    /// cref="ItemDisplayContext.Ground"/>) or one in an item frame (<see cref="ItemDisplayContext.Fixed"/>). An
+    /// item a block entity shows, like a machine's input.
+    /// </summary>
+    /// <param name="stack">The stack; an empty one draws nothing.</param>
+    /// <param name="transform">Where the item's origin goes, in blocks from the block's lowest corner.</param>
+    /// <param name="display">The model's display transform: ground or fixed.</param>
+    /// <exception cref="ArgumentException"><paramref name="display"/> is neither ground nor fixed.</exception>
+    public void Item(ItemStack stack, Matrix4x4 transform, ItemDisplayContext display = ItemDisplayContext.Ground);
 }

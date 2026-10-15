@@ -79,6 +79,12 @@ public sealed class ItemUseOnBlockContext : ItemUseContext
     public required BlockFace Face { get; init; }
 
     public required IBlock Block { get; init; }
+
+    /// <summary>
+    /// Where the player's aim hit the block, relative to its lowest corner: for a block of several parts, which one
+    /// the item was used on.
+    /// </summary>
+    public VectorD ClickedAt { get; init; }
 }
 
 /// <summary>
