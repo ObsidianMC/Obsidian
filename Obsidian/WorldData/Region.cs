@@ -541,6 +541,7 @@ public class Region : IRegion
             // Saved and retired, the block entities hear their chunk unloaded while they still reach their level.
             foreach (var blockEntity in unloaded)
             {
+                await blockEntity.WaitForLiveCallAsync();
                 this.BlockEntityUnloaded?.Invoke(blockEntity);
                 BlockEntityLifecycle.Detach(blockEntity);
             }

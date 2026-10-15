@@ -1468,6 +1468,9 @@ chunk's ticks. A plain `SetChanged` doesn't call it. It runs inside a call into 
 may take `LockInventory`; what it changes calls it again next tick), and not once the block entity was removed or
 its plugin is unloading.
 
+Concurrent removal stops new item-change callbacks and completes after an already running callback returns.
+The server rechecks liveness inside the plugin call guard, without holding engine locks over the callback.
+
 When the plugin unloads, its block entities are saved into their chunks as of their last change (one not taken in
 yet is saved then) and let go of; nothing of the plugin's runs after that, and the plugin isn't released before. A
 container's inventory is retired first, under its lock, and the windows showing it, or any container of the plugin's

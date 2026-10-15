@@ -36,7 +36,7 @@ namespace Obsidian.API.BlockEntities;
 /// returned.
 /// </para>
 /// </remarks>
-public abstract class BlockEntity : IBlockEntity
+public abstract partial class BlockEntity : IBlockEntity
 {
     // 1 from SetChanged until the server took the change in (see TakeChange).
     private int changed;
@@ -66,7 +66,19 @@ public abstract class BlockEntity : IBlockEntity
     /// Whether the block entity was removed from its level: its block changed to one without its type, its chunk
     /// unloaded, or its plugin unloaded. A removed block entity isn't ticked, saved or sent again.
     /// </summary>
-    public bool IsRemoved { get; internal set; }
+    public bool IsRemoved
+    {
+        get => Volatile.Read(ref this.removed);
+        internal set
+        {
+            lock (this.liveCallLock)
+            {
+                this.removalRequested = value;
+                if (this.liveCall is null)
+                    Volatile.Write(ref this.removed, value);
+            }
+        }
+    }
 
     /// <summary>
     /// The level side of the block entity, set once it's placed in a level.

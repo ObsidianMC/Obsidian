@@ -1086,7 +1086,10 @@ public abstract partial class AbstractLevel : ILevel
         c.SetBlockEntity(x, y, z, tileEntityData);
 
         if (previous is API.BlockEntities.BlockEntity replaced && !ReferenceEquals(previous, tileEntityData))
+        {
             replaced.IsRemoved = true;
+            await replaced.WaitForLiveCallAsync();
+        }
     }
 
     /// <summary>

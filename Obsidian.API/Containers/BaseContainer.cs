@@ -1,6 +1,7 @@
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using System.Collections;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace Obsidian.API;
@@ -62,7 +63,10 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     /// Component values are immutable. Assign a replacement through the stack's component indexer, for example
     /// <c>stack[food.Type] = food with { Nutrition = 5 }</c>; the slot's revision then advances automatically.
     /// </remarks>
-    public virtual long Revision
+    public virtual long Revision => this.EngineRevision;
+
+    // Lock bookkeeping must never dispatch to a plugin's virtual Revision getter.
+    private long EngineRevision
     {
         get
         {
@@ -227,14 +231,25 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     {
         var parts = Ordered(this.LockParts);
         var taken = new List<IDisposable>(parts.Length);
+        var release = new LockSet(taken);
 
-        foreach (var part in parts)
+        try
         {
-            part.TransactionLock.Wait();
-            taken.Add(new PartRelease(part));
+            foreach (var part in parts)
+            {
+                var handle = new PartRelease(part);
+                part.TransactionLock.Wait();
+                taken.Add(handle);
+                handle.CaptureRevision();
+            }
+        }
+        catch
+        {
+            release.Dispose();
+            throw;
         }
 
-        return new LockSet(taken);
+        return release;
     }
 
     /// <summary>
@@ -254,22 +269,25 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     {
         var ordered = Ordered(parts);
         var taken = new List<IDisposable>(ordered.Length);
+        var release = new LockSet(taken);
 
         try
         {
             foreach (var part in ordered)
             {
+                var handle = new PartRelease(part);
                 await part.TransactionLock.WaitAsync();
-                taken.Add(new PartRelease(part));
+                taken.Add(handle);
+                handle.CaptureRevision();
             }
         }
         catch
         {
-            new LockSet(taken).Dispose();
+            release.Dispose();
             throw;
         }
 
-        return new LockSet(taken);
+        return release;
     }
 
     // The distinct containers in the order every lock of several takes their locks: by a rank each container gets the
@@ -289,21 +307,22 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     private sealed class PartRelease : IDisposable
     {
         private readonly BaseContainer part;
+        private readonly SemaphoreSlim gate;
         private readonly ContainerBlockEntity? owner;
-        private readonly long revision;
+        private long revision;
         private int released;
 
-        // Created holding the part's lock, so that the revision is the one the holder starts from.
+        // Allocate the handle before waiting; register it before reading any bookkeeping under the lock.
         public PartRelease(BaseContainer part)
         {
             this.part = part;
+            this.gate = part.TransactionLock;
 
             if (part.BlockEntityOwner is not null && part.BlockEntityOwner.TryGetTarget(out var owner))
-            {
                 this.owner = owner;
-                this.revision = part.Revision;
-            }
         }
+
+        public void CaptureRevision() => this.revision = this.owner is not null ? this.part.EngineRevision : 0;
 
         public void Dispose()
         {
@@ -311,8 +330,15 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
                 return;
 
             // Read before releasing, so that the change counted is the holder's own.
-            var changed = this.owner is not null && this.part.Revision != this.revision;
-            this.part.TransactionLock.Release();
+            bool changed;
+            try
+            {
+                changed = this.owner is not null && this.part.EngineRevision != this.revision;
+            }
+            finally
+            {
+                this.gate.Release();
+            }
 
             if (changed)
                 this.owner?.QueueItemsChanged();
@@ -427,8 +453,21 @@ internal sealed class LockSet(List<IDisposable> taken) : IDisposable
 {
     public void Dispose()
     {
+        Exception? failure = null;
         for (var index = taken.Count - 1; index >= 0; index--)
-            taken[index].Dispose();
+        {
+            try
+            {
+                taken[index].Dispose();
+            }
+            catch (Exception ex)
+            {
+                failure ??= ex;
+            }
+        }
+
+        if (failure is not null)
+            ExceptionDispatchInfo.Capture(failure).Throw();
     }
 }
 
