@@ -264,7 +264,7 @@ public sealed partial class Player : Avatar, IClientPlayer
         Health = 20f;
 
         this.Client = client;
-        this.WindowSnapshots = new(this.RunQueueHandlersAsync, this.QueueWithoutHandlers);
+        this.WindowSnapshots = new(this.RunQueueHandlersAsync, this.SendInTurn, this.RunInTurnAsync);
     }
 
     public ItemStack? GetHeldItem() => Inventory.GetItem(CurrentHeldItemSlot);
@@ -285,19 +285,29 @@ public sealed partial class Player : Avatar, IClientPlayer
         return ValueTask.CompletedTask;
     }
 
-    // The two steps of queueing a packet, for a caller that checks what it sends in between. A connection that isn't
-    // a server's (a test's, say) runs no handlers and has no queue, so its packets are sent.
+    // What the window snapshots send through: the client's pipeline, which runs their checks in turn with its other
+    // packets (see Client.QueueInTurn). A connection that isn't a server's (a test's, say) has no pipeline and runs no
+    // handlers: the checks run at once and the packets are sent.
     private ValueTask<bool> RunQueueHandlersAsync(IClientboundPacket packet) =>
         this.Client is Client client
             ? client.RunQueueHandlersAsync(packet)
             : ValueTask.FromResult(true);
 
-    private void QueueWithoutHandlers(IClientboundPacket packet)
+    private void SendInTurn(IClientboundPacket packet)
     {
         if (this.Client is Client client)
-            client.QueueWithoutHandlers(packet);
+            client.SendInTurn(packet);
         else
             this.Client.SendPacket(packet);
+    }
+
+    private ValueTask RunInTurnAsync(Func<ValueTask> work)
+    {
+        if (this.Client is not Client client)
+            return work();
+
+        client.QueueInTurn(work);
+        return ValueTask.CompletedTask;
     }
 
     public async ValueTask OpenInventoryAsync(BaseContainer container)
@@ -487,14 +497,67 @@ public sealed partial class Player : Avatar, IClientPlayer
 
     public override ValueTask TeleportAsync(VectorD pos) => this.TeleportAsync(this.Level, pos);
 
-    private async ValueTask TeleportWithinLevelAsync(VectorD pos, Angle? yaw, Angle? pitch)
+    private async ValueTask TeleportWithinLevelAsync(ILevel level, VectorD pos, Angle? yaw, Angle? pitch)
     {
         FallDistance = 0;
         combatPosition = null;
         CancelWeaponUse();
-        var from = this.Position;
-        var fromYaw = this.Yaw;
-        var fromPitch = this.Pitch;
+
+        // The move, the client's view and the position packet change together under chunkUpdates, like a respawn's
+        // and a level change's, so that the last position packet queued is always the player's position, whichever
+        // travel came last.
+        await this.chunkUpdates.WaitAsync();
+        VectorD from;
+        Angle fromYaw;
+        Angle fromPitch;
+        Entity[] riders;
+        try
+        {
+            from = this.Position;
+            fromYaw = this.Yaw;
+            fromPitch = this.Pitch;
+            riders = this.MoveWithinLevel(level, pos, yaw, pitch);
+        }
+        catch
+        {
+            this.chunkUpdates.Release();
+            throw;
+        }
+
+        await using (DeferredInventoryWork.Begin(this.Logger))
+        {
+            try
+            {
+                await this.UpdateChunksUnderLockAsync(unloadAll: false);
+
+                var tid = Globals.Random.Next(0, 999);
+                await Client.QueuePacketAsync(new PlayerPositionPacket
+                {
+                    Position = pos,
+                    Delta = Motion,
+                    Yaw = Yaw,
+                    Pitch = Pitch,
+                    TeleportId = tid
+                });
+                TeleportId = tid;
+            }
+            finally
+            {
+                this.chunkUpdates.Release();
+            }
+        }
+
+        await EventDispatcher.ExecuteEventAsync(new PlayerTeleportEventArgs(this, this.Server, from, pos));
+        await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
+    }
+
+    // Moves the player within their level, with chunkUpdates held, after the travel that may have come first.
+    // Returns the passengers it took off, to carry along.
+    private Entity[] MoveWithinLevel(ILevel level, VectorD pos, Angle? yaw, Angle? pitch)
+    {
+        if (this.Level != level || !this.Alive)
+            throw new InvalidOperationException("The player died or changed level before the teleport.");
+
         var riders = this.DetachPassengersForTravel();
         LastPosition = Position;
         if (Level is AbstractLevel resident && !resident.TryMoveEntity(this, Position, pos))
@@ -509,40 +572,8 @@ public sealed partial class Player : Avatar, IClientPlayer
         this.Yaw = yaw ?? this.Yaw;
         this.Pitch = pitch ?? this.Pitch;
         BoundingBox = Dimension.CreateBBFromPosition(pos);
-        await this.chunkUpdates.WaitAsync();
-        await using (DeferredInventoryWork.Begin(this.Logger, packetClient: this.Client))
-        {
-            try
-            {
-                await this.UpdateChunksUnderLockAsync(unloadAll: false);
-            }
-            finally
-            {
-                this.chunkUpdates.Release();
-            }
-        }
 
-        var tid = Globals.Random.Next(0, 999);
-
-        await EventDispatcher.ExecuteEventAsync(
-            new PlayerTeleportEventArgs
-            (
-                this,
-                this.Server,
-                LastPosition,
-                pos
-            ));
-
-        await Client.QueuePacketAsync(new PlayerPositionPacket
-        {
-            Position = pos,
-            Delta = Motion,
-            Yaw = Yaw,
-            Pitch = Pitch,
-            TeleportId = tid
-        });
-        TeleportId = tid;
-        await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
+        return riders;
     }
 
     public override ValueTask TeleportAsync(IEntity to) =>
@@ -553,14 +584,18 @@ public sealed partial class Player : Avatar, IClientPlayer
 
     public override ValueTask TeleportAsync(
         ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null) =>
-        this.RunTravelSequenceAsync(() => this.TeleportAfterCallbacksAsync(level, position, yaw, pitch));
+        DeferredInventoryWork.RunOrDeferAsync(() => this.TeleportAfterCallbacksAsync(level, position, yaw, pitch));
 
     private async ValueTask TeleportAfterCallbacksAsync(
         ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null)
     {
         ValidateTravel(level, position, yaw, pitch);
-        if (!this.Alive || this.Respawning)
-            throw new InvalidOperationException("A dead or respawning player cannot travel.");
+
+        // A respawn under way (one whose packets a plugin's handler sees, say) finishes first. The respawn's own flow
+        // never gets here meanwhile: travel it asks for is deferred past it.
+        await this.WaitForRespawnAsync();
+        if (!this.Alive)
+            throw new InvalidOperationException("A dead player cannot travel.");
 
         await this.CancelPortalTravelAsync();
         if (this.Level != level)
@@ -577,7 +612,7 @@ public sealed partial class Player : Avatar, IClientPlayer
         if (level is AbstractLevel && area is null)
             throw new InvalidOperationException("The player moved while the destination was loading.");
 
-        await this.TeleportWithinLevelAsync(position, yaw, pitch);
+        await this.TeleportWithinLevelAsync(level, position, yaw, pitch);
     }
 
     public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
@@ -641,7 +676,7 @@ public sealed partial class Player : Avatar, IClientPlayer
     internal Task TransferDimensionAsync(
         ILevel destination, VectorD? position = null, Angle? yaw = null, Angle? pitch = null,
         VectorD? motion = null, bool portal = false, bool relativeMotion = false)
-        => this.RunTravelSequenceAsync(() => new ValueTask(this.TransferDimensionAfterCallbacksAsync(
+        => DeferredInventoryWork.RunOrDeferAsync(() => new ValueTask(this.TransferDimensionAfterCallbacksAsync(
             destination, position, yaw, pitch, motion, portal, relativeMotion))).AsTask();
 
     private async Task TransferDimensionAfterCallbacksAsync(
@@ -671,14 +706,18 @@ public sealed partial class Player : Avatar, IClientPlayer
         while (true)
         {
             await this.WaitForDeathAsync();
-            // Held from the level change until the respawn resets the client's view.
+            // Held from the level change until the destination's packets are queued, so that another travel's packets
+            // can't come in between.
             await this.chunkUpdates.WaitAsync();
-            await using var callbacks = DeferredInventoryWork.Begin(this.Logger, packetClient: this.Client);
+            await using var callbacks = DeferredInventoryWork.Begin(this.Logger);
             try
             {
                 if (await this.RespawnUnderLockAsync(
                     DataKept.Attributes | DataKept.Metadata, levelChange: true, transfer: Commit))
+                {
+                    await this.QueueDestinationAsync(destination);
                     break;
+                }
             }
             finally
             {
@@ -687,29 +726,6 @@ public sealed partial class Player : Avatar, IClientPlayer
             }
         }
 
-        // Vanilla 1.21.11 sends the shared world's GlobalPos spawn, including while in a child dimension.
-        var sharedSpawn = destination is IDimension child ? child.ParentWorld : destination;
-        await Client.QueuePacketAsync(new SetTimePacket(destination.LevelData.Time, destination.LevelData.DayTime, true));
-        await Client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
-        {
-            Dimension = sharedSpawn.DimensionName,
-            Pos = (Vector)sharedSpawn.LevelData.SpawnPosition.Floor()
-        }, 0, 0));
-        var weather = destination.LevelData.Raining
-            ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining;
-        await Client.QueuePacketAsync(new GameEventPacket(weather));
-        foreach (var (id, effect) in ActivePotionEffects)
-            await Client.QueuePacketAsync(new UpdateMobEffectPacket(EntityId, id, effect.CurrentDuration)
-            {
-                Amplifier = effect.EffectData.Amplifier,
-                Flags = EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon
-            });
-        await Client.QueuePacketAsync(new GameEventPacket(
-            ChangeGameStateReason.RainLevelChange, destination.LevelData.Raining ? 1 : 0));
-        await Client.QueuePacketAsync(new GameEventPacket(
-            ChangeGameStateReason.ThunderLevelChange, destination.LevelData.Thundering ? 1 : 0));
-        await Client.QueuePacketAsync(new SetExperiencePacket(this.XpP, this.XpLevel, this.XpTotal));
-        await Client.QueuePacketAsync(new PlayerAbilitiesPacket { Abilities = this.Abilities });
         await this.EventDispatcher.ExecuteEventAsync(new PlayerTeleportEventArgs(this, this.Server, from, spawn));
         await this.FireProgressAsync("changed_dimension", from: origin.DimensionName, to: destination.DimensionName);
         this.progressDimension = destination.DimensionName;
@@ -746,19 +762,49 @@ public sealed partial class Player : Avatar, IClientPlayer
         }
     }
 
+    // What a level change sends after the respawn packets, with chunkUpdates held.
+    private async ValueTask QueueDestinationAsync(ILevel destination)
+    {
+        // Vanilla 1.21.11 sends the shared world's GlobalPos spawn, including while in a child dimension.
+        var sharedSpawn = destination is IDimension child ? child.ParentWorld : destination;
+        var time = destination.LevelData;
+        await Client.QueuePacketAsync(new SetTimePacket(time.Time, time.DayTime, true));
+        await Client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
+        {
+            Dimension = sharedSpawn.DimensionName,
+            Pos = (Vector)sharedSpawn.LevelData.SpawnPosition.Floor()
+        }, 0, 0));
+        var weather = destination.LevelData.Raining
+            ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining;
+        await Client.QueuePacketAsync(new GameEventPacket(weather));
+        foreach (var (id, effect) in ActivePotionEffects)
+            await Client.QueuePacketAsync(new UpdateMobEffectPacket(EntityId, id, effect.CurrentDuration)
+            {
+                Amplifier = effect.EffectData.Amplifier,
+                Flags = EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon
+            });
+        await Client.QueuePacketAsync(new GameEventPacket(
+            ChangeGameStateReason.RainLevelChange, destination.LevelData.Raining ? 1 : 0));
+        await Client.QueuePacketAsync(new GameEventPacket(
+            ChangeGameStateReason.ThunderLevelChange, destination.LevelData.Thundering ? 1 : 0));
+        await Client.QueuePacketAsync(new SetExperiencePacket(this.XpP, this.XpLevel, this.XpTotal));
+        await Client.QueuePacketAsync(new PlayerAbilitiesPacket { Abilities = this.Abilities });
+    }
+
+    /// <summary>
+    /// Respawns the player, once a death under way finished, or sends them their level again if they're alive. A
+    /// respawn asked for during another waits for it, then respawns the player again.
+    /// </summary>
     public Task RespawnAsync(DataKept dataKept = DataKept.Metadata) =>
-        this.RunTravelSequenceAsync(() => new ValueTask(this.RespawnAfterDeathAsync(dataKept))).AsTask();
+        DeferredInventoryWork.RunOrDeferAsync(() => new ValueTask(this.RespawnAfterDeathAsync(dataKept))).AsTask();
 
     private async Task RespawnAfterDeathAsync(DataKept dataKept)
     {
-        if (Respawning)
-            return;
-
         while (true)
         {
             await this.WaitForDeathAsync();
             await this.chunkUpdates.WaitAsync();
-            await using var callbacks = DeferredInventoryWork.Begin(this.Logger, packetClient: this.Client);
+            await using var callbacks = DeferredInventoryWork.Begin(this.Logger);
             try
             {
                 if (await this.RespawnUnderLockAsync(dataKept))
@@ -772,7 +818,9 @@ public sealed partial class Player : Avatar, IClientPlayer
     }
 
     /// <summary>
-    /// Respawns the player, with <see cref="chunkUpdates"/> held and packet callbacks deferred until its release.
+    /// Respawns the player, with <see cref="chunkUpdates"/> held, inside a transaction that defers plugins' callbacks
+    /// (attachment changes, travel or deaths they ask for) until its release. Its packets are queued in order ahead of
+    /// any chunk sent after it, and plugins' packet handlers see them in the client's pipeline, never in this flow.
     /// A dimension transfer commits through <paramref name="transfer"/> after the death check reserves this respawn.
     /// Returns false if death must finish first; the caller must release the lock before waiting and retrying.
     /// </summary>
@@ -1169,14 +1217,6 @@ public sealed partial class Player : Avatar, IClientPlayer
         await this.chunkUpdates.WaitAsync();
         try
         {
-            if (Volatile.Read(ref this.travelSequenceRunning))
-            {
-                // Travel owns the client's view through its last destination update. Retry on the next tick.
-                this.pendingRespawnChunks = true;
-                this.respawnChunkRetryTicks = 1;
-                return false;
-            }
-
             return await this.UpdateChunksUnderLockAsync(unloadAll, distance);
         }
         finally
@@ -1282,9 +1322,6 @@ public sealed partial class Player : Avatar, IClientPlayer
 
         try
         {
-            if (Volatile.Read(ref this.travelSequenceRunning))
-                return;
-
             await this.SendReadyChunksAsync();
         }
         catch (OperationCanceledException)

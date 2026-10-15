@@ -19,10 +19,6 @@ public partial class MainEventHandler
     // The off hand, as vanilla's player inventory numbers it in the set-slot packet.
     private const int OffhandInventorySlot = 40;
 
-    // How many times a click's window is sent, captured again whenever it changed before being sent, before it's
-    // left to the player's tick (see SendWindowAsync).
-    private const int MaxWindowSends = 2;
-
     /// <summary>
     /// Applies a player's click in their open window, after plugins' handlers had their say, and sends the window to
     /// its viewers.
@@ -108,7 +104,9 @@ public partial class MainEventHandler
         if (cookingExperience > 0 && player.Level is AbstractLevel level)
             level.DropCookingExperience(player.Position, cookingExperience);
 
-        await SendWindowAsync(args, window, sync);
+        // A viewer's window that changed before its contents went through plugins' packet handlers is left stale, for
+        // the viewer's tick to send (see RefreshStaleWindowAsync).
+        await sync.SendAsync();
     }
 
     // Whether the player still has the window open, under the click's id.
@@ -928,31 +926,6 @@ public partial class MainEventHandler
     }
 
     /// <summary>
-    /// Sends a click's captured window to its viewers, leaving out what's obsolete (see <see cref="WindowSnapshots"/>).
-    /// When a viewer's window changed before its contents went through plugins' packet handlers, the window is
-    /// captured again, a few times at most; after that, a window still changing is left stale, for the viewer's tick
-    /// to send (see <see cref="RefreshStaleWindowAsync"/>).
-    /// </summary>
-    private static async ValueTask SendWindowAsync(ContainerClickEventArgs args, BaseContainer window, WindowSync sync)
-    {
-        for (var sends = 1; sends < MaxWindowSends; sends++)
-        {
-            if (!await sync.SendAsync())
-                return;
-
-            using (await BaseContainer.LockWindowAsync(window, args.Player.Inventory))
-            {
-                if (!IsOpen(args.Player, window, args.ContainerId))
-                    return;
-
-                sync = CaptureWindow(args, window);
-            }
-        }
-
-        await sync.SendAsync();
-    }
-
-    /// <summary>
     /// Sends <paramref name="player"/> their whole window, through plugins' packet handlers, if something about it
     /// wasn't sent because it changed first (see <see cref="WindowSnapshots.IsStale"/>). The player's tick calls it,
     /// once a tick: a window that changed again meanwhile stays stale until a later tick.
@@ -1111,26 +1084,21 @@ public partial class MainEventHandler
         }
 
         /// <summary>
-        /// Sends each viewer's snapshot unless it's obsolete.
+        /// Sends each viewer's snapshot unless it's obsolete (see <see cref="WindowSnapshots"/>).
         /// </summary>
-        /// <returns>Whether a viewer's window changed since its snapshot's capture, so that it wasn't sent.</returns>
-        public async ValueTask<bool> SendAsync()
+        public async ValueTask SendAsync()
         {
-            var outdated = false;
-
             foreach (var snapshot in this.snapshots)
             {
                 if (snapshot.Player is Player { WindowSnapshots: WindowSnapshots order })
                 {
-                    outdated |= await order.SendAsync(snapshot);
+                    await order.SendAsync(snapshot);
                     continue;
                 }
 
                 foreach (var packet in snapshot.Packets)
                     await snapshot.Player.QueuePacketAsync(packet);
             }
-
-            return outdated;
         }
     }
 

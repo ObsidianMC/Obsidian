@@ -306,11 +306,11 @@ then extract and write the `structure.complete` marker as now.
 they're sent. Displays, updates and removals stay in order with each other, since they're all queued under the
 scoreboard's lock. A packet a plugin sends the player directly afterwards may still arrive first.
 
-Waiting for delivery was tried and reverted: the broadcaster runs plugins' packet handlers as it sends, so a handler
-that displays a scoreboard would wait on the broadcaster, which waits on it.
+Waiting for delivery was tried and reverted: plugins' packet handlers run in the player's outgoing pipeline as it
+sends, so a handler that displays a scoreboard would wait on the pipeline it runs in.
 
-**Where to start, if it's ever needed:** give the broadcaster a way to flush a player's queue that packet handlers
-can't reach, rather than a delivery wait.
+**Where to start, if it's ever needed:** a delivery wait that packet handlers can't reach, such as one that refuses
+to run inside the pipeline.
 
 ## Item components the server doesn't apply yet
 

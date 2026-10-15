@@ -67,7 +67,15 @@ public sealed partial class Client : IClient
     /// </summary>
     private CachedProfile? profile;
 
-    private readonly Channel<IClientboundPacket> packetQueue;
+    /// <summary>
+    /// The client's outgoing pipeline: every packet queued to it, in order. Its one reader runs plugins' queue handlers
+    /// for each packet and then sends it, so that queueing a packet never waits for plugins' code (see
+    /// <see cref="QueuePacketAsync"/>).
+    /// </summary>
+    private readonly Channel<Outgoing> packetQueue;
+
+    // Entries queued and not yet sent or dropped. A direct send waits behind them (see SendPacket).
+    private int unsent;
 
     /// <summary>
     /// The cancellation token source used to cancel the packet queue loop and disconnect the client.
@@ -163,7 +171,8 @@ public sealed partial class Client : IClient
 
     public string? Brand { get; set; }
 
-    public bool Connected => this.Socket.Connected;
+    // No socket yet: the pipeline starts with the client, before it connects.
+    public bool Connected => this.Socket?.Connected == true;
 
     /// <summary>
     /// The connection's payload channels and NeoForge handshake.
@@ -214,7 +223,15 @@ public sealed partial class Client : IClient
         var concreteServer = (Server)server;
         this.Channels = new ClientChannels(this, concreteServer.PayloadChannels, concreteServer.GetModdedRegistries);
 
-        packetQueue = Channel.CreateUnbounded<IClientboundPacket>(new() { SingleReader = true, SingleWriter = false });
+        this.packetQueue = Channel.CreateUnbounded<Outgoing>(new()
+        {
+            SingleReader = true,
+            SingleWriter = false
+        });
+
+        // Plugins' handlers run in the pipeline's own flow, which inherits nothing from whoever created the client.
+        using (ExecutionContext.SuppressFlow())
+            _ = Task.Run(this.HandlePacketQueueAsync);
     }
 
     public async ValueTask<bool> TrySetCachedProfileAsync(string username)
@@ -304,33 +321,54 @@ public sealed partial class Client : IClient
         this.Disconnect();
     }
 
-    public async ValueTask QueuePacketAsync(IClientboundPacket packet)
+    /// <summary>
+    /// Queues <paramref name="packet"/> behind the packets queued already. Plugins' <see cref="QueuePacketEventArgs"/>
+    /// handlers see it as its turn comes, in the client's pipeline, and it's sent right after them unless one cancelled
+    /// it or the client can no longer receive it.
+    /// </summary>
+    /// <returns>A completed task: queueing never waits for the handlers, which may wait for the caller.</returns>
+    public ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
-        if (DeferredInventoryWork.TryDeferPacket(this, packet))
-            return;
+        this.Enqueue(new Outgoing(packet, RunsHandlers: true, Work: null));
 
-        if (await this.RunQueueHandlersAsync(packet))
-            this.QueueWithoutHandlers(packet);
+        return ValueTask.CompletedTask;
     }
 
     /// <summary>
-    /// The first step of <see cref="QueuePacketAsync"/>: runs plugins' handlers for queueing <paramref name="packet"/>,
-    /// without queueing it.
+    /// Sends <paramref name="packet"/> without plugins' handlers: at once when nothing queued before it is still on its
+    /// way, or else behind what is, so that it never overtakes a packet queued earlier.
     /// </summary>
-    /// <returns>Whether it's still to be queued: the client can receive it and no handler cancelled it.</returns>
+    /// <returns>Whether it's sent or on its way: the client can receive it.</returns>
+    public bool SendPacket(IClientboundPacket packet)
+    {
+        // The pipeline counts an entry out only once it's sent, so seeing none left means nothing earlier is unsent.
+        if (Volatile.Read(ref this.unsent) == 0)
+            return this.SendAsync(packet);
+
+        return this.Enqueue(new Outgoing(packet, RunsHandlers: false, Work: null));
+    }
+
+    /// <summary>
+    /// Runs <paramref name="work"/> in the client's pipeline, in turn with its packets: after those queued before it
+    /// were sent, and before those queued after it. The work can run plugins' handlers for a packet
+    /// (<see cref="RunQueueHandlersAsync"/>), check what it sends after them and send it (<see cref="SendInTurn"/>).
+    /// </summary>
     /// <remarks>
-    /// With <see cref="QueueWithoutHandlers"/>, a caller can check what it sends after the handlers, which may take
-    /// a while, and queue it right after the check.
+    /// It runs where plugins' handlers run, so it must never wait for anything the pipeline sends. It's dropped, like
+    /// packets, once the client disconnected. A failure is logged.
     /// </remarks>
+    internal void QueueInTurn(Func<ValueTask> work) =>
+        this.Enqueue(new Outgoing(Packet: null, RunsHandlers: false, work));
+
+    /// <summary>
+    /// Runs plugins' handlers for queueing <paramref name="packet"/>, without queueing it; for work run in turn (see
+    /// <see cref="QueueInTurn"/>), where the pipeline runs them for queued packets.
+    /// </summary>
+    /// <returns>Whether it's still to be sent: the client can receive it and no handler cancelled it.</returns>
     internal async ValueTask<bool> RunQueueHandlersAsync(IClientboundPacket packet)
     {
-        if (this.disposed
-            || this.cancellationSource.IsCancellationRequested
-            || !this.Connected
-            || !this.Accepts(packet))
-        {
+        if (!this.CanReceive(packet))
             return false;
-        }
 
         try
         {
@@ -348,28 +386,35 @@ public sealed partial class Client : IClient
         }
         catch (OperationCanceledException) when (this.cancellationSource.IsCancellationRequested)
         {
-            // A disconnect cancels this client's send, not the world tick awaiting it.
+            // The client disconnected while handlers ran: the packet is dropped.
             return false;
         }
     }
 
     /// <summary>
-    /// Queues <paramref name="packet"/> behind the packets queued already, without running plugins' handlers: the
-    /// second step of <see cref="QueuePacketAsync"/> (see <see cref="RunQueueHandlersAsync"/>).
+    /// Sends <paramref name="packet"/> now, without plugins' handlers; only from work run in turn (see
+    /// <see cref="QueueInTurn"/>), whose turn it is.
     /// </summary>
-    internal void QueueWithoutHandlers(IClientboundPacket packet)
+    internal bool SendInTurn(IClientboundPacket packet) => this.SendAsync(packet);
+
+    // Adds an entry to the pipeline, unless the client can't receive it. A play packet queued while the client goes
+    // back to configuration is dropped here, as later at its turn and when it's written (see Accepts).
+    private bool Enqueue(Outgoing entry)
     {
-        if (DeferredInventoryWork.TryDeferSend(this, packet))
-            return;
+        if (entry.Packet is IClientboundPacket packet ? !this.CanReceive(packet) : this.IsClosing)
+            return false;
 
-        if (this.disposed || this.cancellationSource.IsCancellationRequested)
-            return;
+        Interlocked.Increment(ref this.unsent);
+        if (this.packetQueue.Writer.TryWrite(entry))
+            return true;
 
-        this.packetQueue.Writer.TryWrite(packet);
+        Interlocked.Decrement(ref this.unsent);
+        return false;
     }
 
-    public bool SendPacket(IClientboundPacket packet) =>
-        DeferredInventoryWork.TryDeferSend(this, packet) || this.SendAsync(packet);
+    private bool IsClosing => this.disposed || this.cancellationSource.IsCancellationRequested;
+
+    private bool CanReceive(IClientboundPacket packet) => !this.IsClosing && this.Connected && this.Accepts(packet);
 
     // While the client goes back to configuration, nothing but the switch reaches it, and once it's there, play
     // packets still sent for the player who left (a chunk send under way, say) don't either: it would misread them.
@@ -407,8 +452,9 @@ public sealed partial class Client : IClient
         if (threshold < 0 || this.CompressionEnabled)
             return;
 
-        // The packet itself still goes out uncompressed. Nothing else is sent or received during login meanwhile.
-        this.SendPacket(new LoginCompressionPacket(threshold));
+        // The packet itself still goes out uncompressed: it's written now, never queued behind anything, before the
+        // threshold is set. Nothing else is sent or received during login meanwhile.
+        this.SendAsync(new LoginCompressionPacket(threshold));
         this.compressionThreshold = threshold;
     }
 
@@ -520,26 +566,83 @@ public sealed partial class Client : IClient
 
     private async Task<MojangProfile?> HasJoinedAsync() => await this.userCache.HasJoinedAsync(this.Player!.Username, this.ServerId!);
 
+    // The pipeline's reader: takes each entry in turn, runs plugins' handlers for it and sends it. A handler that takes
+    // long holds up only this client's later packets; one that fails is logged and the pipeline goes on.
     private async Task HandlePacketQueueAsync()
     {
+        var cancellationToken = this.cancellationSource.Token;
+
         try
         {
-            var cancellationToken = this.cancellationSource.Token;
-            while (this.Connected && !this.disposed && !cancellationToken.IsCancellationRequested)
+            while (true)
             {
-                var packet = await this.packetQueue.Reader.ReadAsync(cancellationToken);
+                var entry = await this.packetQueue.Reader.ReadAsync(cancellationToken);
 
-                if (packet is null)
-                    continue;
-
-                this.SendPacket(packet);
+                try
+                {
+                    await this.SendQueuedAsync(entry);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+                catch (Exception exception)
+                {
+                    Log.QueuedPacketFailed(this.Logger, exception, entry.Packet?.Id);
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref this.unsent);
+                }
             }
         }
-        catch (Exception ex) when (ex is OperationCanceledException or TaskCanceledException)
+        catch (OperationCanceledException)
         {
-            // The client disconnected.
+            // The client disconnected: what's left in the pipeline is dropped.
         }
     }
+
+    private async ValueTask SendQueuedAsync(Outgoing entry)
+    {
+        if (entry.Work is not null)
+        {
+            await entry.Work();
+            return;
+        }
+
+        var packet = entry.Packet!;
+        if (!entry.RunsHandlers || await this.RunQueueHandlersAsync(packet))
+            this.SendAsync(packet);
+    }
+
+    /// <summary>
+    /// Completes once everything queued so far was sent or dropped, along with what plugins' handlers queued meanwhile.
+    /// For tests: called from a handler, it would wait for itself.
+    /// </summary>
+    internal async Task FlushAsync()
+    {
+        while (!this.IsClosing)
+        {
+            // How many entries were queued behind the marker by the time it ran.
+            var flushed = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (!this.Enqueue(new Outgoing(Packet: null, RunsHandlers: false, Flush)))
+                return;
+
+            if (await flushed.Task == 0)
+                return;
+
+            ValueTask Flush()
+            {
+                // The marker is still counted while it runs.
+                flushed.SetResult(Volatile.Read(ref this.unsent) - 1);
+                return ValueTask.CompletedTask;
+            }
+        }
+    }
+
+    // An entry of the pipeline: a packet, which plugins' handlers see first unless it's sent as is, or work run in turn
+    // with the packets (see QueueInTurn).
+    private readonly record struct Outgoing(IClientboundPacket? Packet, bool RunsHandlers, Func<ValueTask>? Work);
 
 
     private async ValueTask<bool> HandlePacketAsync(PacketData packetData)
@@ -816,6 +919,9 @@ public sealed partial class Client : IClient
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Handling packet {PacketId} in state {State} failed")]
         public static partial void PacketHandlingFailed(ILogger logger, Exception exception, int packetId, ClientState state);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Sending queued packet {PacketId} failed")]
+        public static partial void QueuedPacketFailed(ILogger logger, Exception exception, int? packetId);
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Disconnecting client after socket error {SocketError}")]
         public static partial void SocketFailed(ILogger logger, SocketError socketError);

@@ -101,14 +101,16 @@ public interface IPlayer : ILiving
     public Task LoadAsync(bool loadFromPersistentWorld = true);
 
     /// <summary>
-    /// Sends a packet to the player's client immediately. Players without a client ignore it.
+    /// Sends a packet to the player's client without packet handlers: immediately, or right after the packets queued
+    /// before it that are still on their way. Players without a client ignore it.
     /// </summary>
-    /// <returns>Whether the packet was sent.</returns>
+    /// <returns>Whether the packet was sent or is on its way.</returns>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public bool SendPacket(IClientboundPacket packet);
 
     /// <summary>
-    /// Queues a packet for the player's client. Players without a client ignore it.
+    /// Queues a packet for the player's client. Packet handlers see it in the client's outgoing pipeline, after the
+    /// call returned; the call never waits for them. Players without a client ignore it.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public ValueTask QueuePacketAsync(IClientboundPacket packet);

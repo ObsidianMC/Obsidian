@@ -814,13 +814,16 @@ boarding a vehicle a non-player steers takes the steering seat, as in vanilla. P
 level get off; players also get off by sneaking.
 
 Mount validation and the relationship change share the entity transfer lock, so concurrent mounts cannot form a
-cycle. Respawn and dimension-transfer packet handlers run after the player's chunk-update lock is released. Later
-chunk sends wait until the respawn, position and initial chunks have entered the connection's queue, in order;
-direct sends in that flow join the same queue. Observer packets are not deferred. Teleports (including within a
-level), respawns and dimension transfers serialize through all their packets and destination callbacks. An awaited
-teleport, respawn or kill requested from a packet handler during a sequence queues the work and returns; the work
-completes after that sequence ends. A death that starts independently while travel waits for the lock completes
-before the destination is committed.
+cycle. A teleport, respawn or level change moves the player and queues all its packets (respawn, position, the
+destination's time, weather and abilities, the first chunks) while it holds the player's chunk-update lock, so they
+reach the client in order, ahead of any chunk sent later, and another travel's packets can't come in between: the
+last position the client is sent is the player's. Packet handlers see them in the client's pipeline (see
+[Outgoing packets](#outgoing-packets)), never inside the travel, so a handler can await a teleport, respawn or kill
+of this or another player and it completes. A teleport asked for during a respawn waits for it; a respawn asked for
+during another follows it. Travel or a death asked for by plugin code the travel itself runs (an attachment's
+`Changed` callback, say) is deferred until the travel let go of its lock. A death that starts independently while
+travel waits for the lock completes before the destination is committed. `PlayerTeleportEventArgs` handlers run
+once the teleport's packets are queued.
 
 Leads are modelled as far as saved worlds and travel need. A mob's vanilla `leash` field (a holder's UUID) is read and
 saved, players tracking the mob see the lead, and the lead drops as a lead item, as in vanilla, when either end dies
@@ -1835,9 +1838,27 @@ viewers.
   window the event is about.
 - What the server sends about a window (a click's contents, the slots an item or arrow picked up fills) goes through
   `QueuePacketEventArgs` handlers like any packet, each packet on its own even when it's then bundled with others
-  (an item pickup's animation with its slots). One that the window outdated while they ran isn't sent; the window
-  is captured again instead, and if it keeps changing, the player's next ticks send it whole, through the handlers
-  too, once it holds still.
+  (an item pickup's animation with its slots). One that the window outdated while they ran isn't sent; the player's
+  next ticks send the window whole instead, through the handlers too, once it holds still.
+
+## Outgoing packets
+
+Each client has one ordered outgoing pipeline. `QueuePacketAsync` (on `IClient` or `IPlayer`) adds the packet to it
+and returns at once, without waiting for any plugin's code. `QueuePacketEventArgs` handlers then see each packet in
+the order it was queued, in the pipeline's own flow, and the packet is sent right after them, unless a handler called
+`Cancel()` or the client can no longer receive it (it disconnected, or it's going back to configuration and the packet
+belongs to play). Handlers may still change the packet before it's sent.
+
+- Handlers run after the code that queued the packet has moved on, not inside it: they don't inherit its async-local
+  state (an inventory transaction, a travel's lock), and it may already have queued more packets or finished. A
+  handler can therefore await anything, such as a teleport, respawn or kill of the player whose packet it handles,
+  without holding up the code that queued it.
+- A packet a handler queues or sends goes after the one it handles.
+- `SendPacket` skips the handlers. It sends at once when nothing queued earlier is still on its way, and otherwise
+  waits behind it, so it never overtakes a queued packet.
+- A slow handler holds up only its own client's later packets. A handler that throws is logged; the packet is still
+  sent, and the pipeline goes on.
+- Awaiting `QueuePacketAsync` no longer means the handlers ran.
 
 ## Player extensions
 

@@ -676,17 +676,17 @@ public sealed class MenuClicks
             player.WindowSnapshots = new WindowSnapshots(Decide, packet => client.SendPacket(packet));
             var sent = client.SentPackets.Count;
 
-            // Each snapshot the click sends meets a change, so none is sent, and the window is left stale.
+            // The snapshot the click sends meets a change, so it isn't sent, and the window is left stale.
             await ClickAsync(context.Server, player, 9, 0, ClickType.Pickup);
 
-            Assert.Equal(2, handled.Count);
+            Assert.Single(handled);
             Assert.Empty(client.SentPackets.Skip(sent));
             Assert.True(player.WindowSnapshots.IsStale);
 
             // A tick tries once, not again and again while the window keeps changing.
             await MainEventHandler.RefreshStaleWindowAsync(player);
 
-            Assert.Equal(3, handled.Count);
+            Assert.Equal(2, handled.Count);
             Assert.Empty(client.SentPackets.Skip(sent));
 
             // Once it holds still, the window is sent as it is now, through the handlers.
@@ -695,7 +695,7 @@ public sealed class MenuClicks
 
             var shown = Assert.IsType<ContainerSetContentPacket>(Assert.Single(client.SentPackets.Skip(sent)));
             Assert.Contains(shown, handled);
-            Assert.Equal(4, shown.Items[36]?.Count);
+            Assert.Equal(3, shown.Items[36]?.Count);
             Assert.False(player.WindowSnapshots.IsStale);
 
             // Stands in for a plugin's queue handler during which the held stack grows, as a pickup would grow it.
@@ -721,15 +721,16 @@ public sealed class MenuClicks
             var older = Snapshot(order.Next());
             var newer = Snapshot(order.Next());
 
-            Assert.False(await order.SendAsync(newer));
-            Assert.False(await order.SendAsync(older));
+            await order.SendAsync(newer);
+            await order.SendAsync(older);
             Assert.Same(newer.Packets[0], Assert.Single(client.SentPackets.Skip(sent)));
+            Assert.False(order.IsStale);
 
             // The held stack changed in place since it was captured: a newer snapshot is needed.
             var changed = Snapshot(order.Next());
             player.Inventory.GetItem(36)!.Count++;
 
-            Assert.True(await order.SendAsync(changed));
+            await order.SendAsync(changed);
             Assert.Single(client.SentPackets.Skip(sent));
             Assert.True(order.IsStale);
 
