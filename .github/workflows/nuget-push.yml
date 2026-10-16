@@ -29,6 +29,11 @@ jobs:
   nuget-publish:
     name: Package Commit
     runs-on: ubuntu-latest
+    # Trusted publishing: NuGet/login trades the job's OIDC token for a short-lived API key, so there's no key to
+    # store or rotate. It needs a nuget.org trusted publishing policy for this repository and workflow file.
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -49,7 +54,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 25
-      - name: Pack n Push
+      - name: Pack
         # Nightlies are 1.1.0-nightly.<run>: a dot-separated number sorts numerically, so mods can float on
         # 1.1.0-nightly.*. The older 1.0.0-nightly-<run> versions compare as text, which puts nightly-100 below
         # nightly-99. The client API depends on the API package of the same version.
@@ -58,5 +63,13 @@ jobs:
         run: |
           dotnet pack Obsidian.API/Obsidian.API.csproj -c Release -o build -p:Version=$VERSION
           dotnet pack Obsidian.API.Client/Obsidian.API.Client.csproj -c Release -o build -p:Version=$VERSION
-          dotnet nuget push "build/*.nupkg" --skip-duplicate -k ${{ secrets.NUGET }} \
+      # After packing, which can take a while: the key it gives lasts an hour.
+      - name: NuGet login
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+      - name: Push
+        run: |
+          dotnet nuget push "build/*.nupkg" --skip-duplicate -k ${{ steps.login.outputs.NUGET_API_KEY }} \
             -s https://api.nuget.org/v3/index.json
