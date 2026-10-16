@@ -156,7 +156,7 @@ public abstract partial class AbstractLevel : ILevel
     {
         if (ReferenceEquals(GetLoadedChunk(chunk.X, chunk.Z), chunk))
         {
-            if (chunk is Chunk concrete) RegisterChunkMusic(concrete);
+            if (chunk is Chunk concrete) { RegisterChunkMusic(concrete); RegisterChunkFurnaces(concrete); RegisterChunkCampfires(concrete); }
             (mobSpawner ??= new MobSpawner(this)).PopulateChunk(chunk);
         }
         return default;
@@ -583,6 +583,8 @@ public abstract partial class AbstractLevel : ILevel
         await TickRaidsAsync();
         await TickMobGameEventsAsync();
         await TickMobEggsAsync();
+        await TickFurnacesAsync();
+        TickCampfires();
 
         TickStage = "random ticks";
         await TickRandomBlocksAsync();
@@ -638,6 +640,8 @@ public abstract partial class AbstractLevel : ILevel
                     continue;
 
                 RegisterChunkMusic(chunk);
+                RegisterChunkFurnaces(chunk);
+                RegisterChunkCampfires(chunk);
                 RegisterMobEggs(chunk);
 
                 foreach (var pending in chunk.PendingEntities)

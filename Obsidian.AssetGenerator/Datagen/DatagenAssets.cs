@@ -14,7 +14,7 @@ internal static class DatagenAssets
 {
     // The registries of reports/registries.json written to enums.json, which become enums in Obsidian.API.
     private static readonly string[] enumRegistries =
-        ["minecraft:data_component_type", "minecraft:map_decoration_type", "minecraft:mob_effect", "minecraft:potion"];
+        ["minecraft:block_entity_type", "minecraft:data_component_type", "minecraft:map_decoration_type", "minecraft:mob_effect", "minecraft:potion"];
 
     // The loot table categories the server reads (see LootRegistryGenerator): containers are filled from the first five,
     // and the block tables decide what breaking a block drops.
