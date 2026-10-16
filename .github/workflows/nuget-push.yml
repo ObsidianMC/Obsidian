@@ -58,11 +58,15 @@ jobs:
         # Nightlies are 1.1.0-nightly.<run>: a dot-separated number sorts numerically, so mods can float on
         # 1.1.0-nightly.*. The older 1.0.0-nightly-<run> versions compare as text, which puts nightly-100 below
         # nightly-99. The client API depends on the API package of the same version.
+        # The projects set GeneratePackageOnBuild, under which pack skips building the project itself; turning it
+        # off makes pack build first, and stops Obsidian.Nbt, bundled in the API package, packing on its own.
         env:
           VERSION: 1.1.0-nightly.${{ github.run_number }}
         run: |
-          dotnet pack Obsidian.API/Obsidian.API.csproj -c Release -o build -p:Version=$VERSION
-          dotnet pack Obsidian.API.Client/Obsidian.API.Client.csproj -c Release -o build -p:Version=$VERSION
+          dotnet pack Obsidian.API/Obsidian.API.csproj -c Release -o build -p:Version=$VERSION \
+            -p:GeneratePackageOnBuild=false
+          dotnet pack Obsidian.API.Client/Obsidian.API.Client.csproj -c Release -o build -p:Version=$VERSION \
+            -p:GeneratePackageOnBuild=false
       # After packing, which can take a while: the key it gives lasts an hour.
       - name: NuGet login
         id: login
