@@ -116,7 +116,7 @@ public abstract partial class AbstractLevel
         if (current is null || current.IsAir)
             return true;
 
-        return current.Type == output.Type && current.Count + output.Count <= current.MaxStackSize;
+        return current == output && current.Count + output.Count <= current.MaxStackSize;
     }
 
     private static void ConsumeFuel(SmeltingContainer furnace, ItemStack fuel)
@@ -149,7 +149,7 @@ public abstract partial class AbstractLevel
         var current = furnace.GetResult();
         if (current is null || current.IsAir)
         {
-            furnace.SetResult(new ItemStack(output.Holder, output.Count));
+            furnace.SetResult(new ItemStack(output, output.Count));
             return;
         }
 

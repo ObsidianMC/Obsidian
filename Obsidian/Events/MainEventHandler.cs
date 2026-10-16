@@ -407,6 +407,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             await ReturnCraftingItemsAsync(player, table, 3);
         if (player.OpenedContainer is EnchantmentTable enchantingTable)
             await ReturnEnchantingItemsAsync(player, enchantingTable);
+        player.OpenedContainer?.Viewers.Remove(player);
         await ReturnCraftingItemsAsync(player, player.Inventory, 2);
 
         if (player is Player portalPlayer)

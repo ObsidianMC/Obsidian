@@ -256,6 +256,8 @@ public sealed partial class Player : Avatar, IClientPlayer
 
     public async ValueTask OpenInventoryAsync(BaseContainer container)
     {
+        // Opening another container can replace the open one without a close event, so leave the old furnace here.
+        OpenedContainer?.Viewers.Remove(this);
         if (OpenedContainer is EnchantmentTable previousTable)
             await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, previousTable);
         if (container is EnchantmentTable table)
@@ -583,6 +585,8 @@ public sealed partial class Player : Avatar, IClientPlayer
             await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, table);
             OpenedContainer = null;
         }
+        // A furnace stays open across death without a close event; stop it sending this player's view to the furnace.
+        OpenedContainer?.Viewers.Remove(this);
         Vehicle?.Dismount(this);
         await Client.QueuePacketAsync(new SetHealthPacket(0, FoodLevel, FoodSaturationLevel));
         await Client.QueuePacketAsync(new PlayerCombatKillPacket { PlayerID = EntityId, Message = deathMessage });

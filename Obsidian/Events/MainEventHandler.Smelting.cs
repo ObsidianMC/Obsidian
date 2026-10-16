@@ -92,23 +92,23 @@ public partial class MainEventHandler
         var destination = furnace.GetItem(target);
         if (destination.IsNullOrAir())
         {
-            furnace.SetItem(target, new ItemStack(source.Holder, source.Count));
+            furnace.SetItem(target, new ItemStack(source, source.Count));
             player.Inventory.RemoveItem(fromSlot);
             return true;
         }
 
-        if (destination.Type != source.Type)
+        if (destination != source)
             return true;
 
         var moved = Math.Min(destination.MaxStackSize - destination.Count, source.Count);
         if (moved <= 0)
             return true;
 
-        furnace.SetItem(target, new ItemStack(destination.Holder, destination.Count + moved));
+        furnace.SetItem(target, new ItemStack(destination, destination.Count + moved));
         if (source.Count - moved <= 0)
             player.Inventory.RemoveItem(fromSlot);
         else
-            player.Inventory.SetItem(fromSlot, new ItemStack(source.Holder, source.Count - moved));
+            player.Inventory.SetItem(fromSlot, new ItemStack(source, source.Count - moved));
         return true;
     }
 }
