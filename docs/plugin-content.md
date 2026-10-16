@@ -9,8 +9,10 @@ Fabric clients, and the Obsidian client, receive those registries and map the se
 may load in any order. Biomes, dimension types and damage types are sent with their data, so vanilla clients can join
 too. On the Obsidian client, a mod adds its client side in code (see [Client](#client)).
 
-`samples/EngineSample` is a working plugin built on this API alone, which the tests load like any plugin: its tick
-counter is a block with state, hooks, a block entity, redstone, light and a loot table together.
+[ObsidianMod](https://github.com/ObsidianMC/ObsidianMod) is a working mod built on this API alone: its tick counter
+is a block with state, hooks, a block entity, redstone, light and a loot table together.
+[ObsidianPlugin](https://github.com/ObsidianMC/ObsidianPlugin) is a server-side plugin that vanilla clients can join.
+The tests load the same mod as a fixture, `Obsidian.Tests.EngineSample`, whose identifiers use `sample:`.
 
 Build and pack a mod as described in [Building and packing](plugin-archives.md#building-and-packing): the archive
 contains the mod and its own libraries, while the host provides the API, NBT and API runtime dependencies. For engine
@@ -744,7 +746,7 @@ unload, while incrementing an unloaded statistic is refused. Saved values and un
 This server API does not add custom-stat registration to the Obsidian client's plugin registry yet.
 
 Advancements are vanilla JSON in `data/<ns>/advancement/<path>.json`, loaded from the generated vanilla assets,
-then plugins, then data packs. The engine sample's `sample:grinder` advancement demonstrates `inventory_changed`
+then plugins, then data packs. ObsidianMod's `obsidianmod:grinder` advancement demonstrates `inventory_changed`
 and an experience reward. Criteria have a trigger and detached conditions. Requirements are an AND of rows, each
 an OR of criterion names; omitting requirements makes each criterion its own required row. Parent, display,
 rewards and `sends_telemetry_event` are read. Join sends a reset and every definition/progress entry, and tick-end
@@ -872,8 +874,9 @@ var portal = registry.RegisterPortal("ruby:crystal_gate", new PortalProperties
 `ResolveTarget` disables lighting and travel in that source level. The target can also be a level retained from
 `ILevelFactory`. Dimension data is still registered as described in [Dimensions](#dimensions). Portals are the
 server's: on the Obsidian client, which runs a `both` mod's `ConfigureRegistry` too, `RegisterPortal` returns the
-portal type without registering anything, and the client draws the portal blocks like any. The engine sample's
-dusk portal (`samples/EngineSample/Portal`) leads to a flat dimension defined in data.
+portal type without registering anything, and the client draws the portal blocks like any. ObsidianMod's dusk
+portal (`ObsidianMod/Portal`) leads to a flat dimension defined in data. ObsidianPlugin's fills with vanilla's Nether
+portal block instead of its own, so that vanilla clients can join.
 
 `IsFrame` accepts frame materials; `FrameBlock` supplies the material for newly built exits and their safety
 platforms. The portal block needs `axis=x,z` states. Frames have optional corners, a 2–21 wide by 3–21 high
@@ -964,7 +967,7 @@ ticket.Dispose();
   loaded border. Vanilla forced tickets and `/forceload` are deferred; see
   [known-gaps.md](known-gaps.md#chunk-ticket-parity).
 
-`samples/EngineSample` exposes `KeepChunks` to keep a machine active; its smoke test loads and ticks the counter
+ObsidianMod exposes `KeepChunks` to keep a machine active; the engine's smoke test loads and ticks its counter
 without players, then unloads the plugin to release even forgotten handles.
 
 ## Saved data and attachments
@@ -1044,7 +1047,7 @@ and never call plugins. Unload closes call guards, releases registrations and li
 publication from an old load. Do not retain typed handles across reloads.
 Client and server registrations have separate bindings, including when an integrated server shares the process.
 
-The phase 5 `samples/EngineSample` registers independent network ids and membership attachments. Its smoke test
+ObsidianMod registers independent network ids and membership attachments (`SavedState`). The engine's smoke test
 saves player, entity and chunk membership, unloads the plugin, saves again without it, and restores it on reload.
 
 ## Entities
@@ -1221,7 +1224,7 @@ a placement a mob follows its spawn list's rules, as above.
 Set `EntityProperties.SpawnEgg = true` when registering a mob to register `<namespace>:<path>_spawn_egg` too.
 `EntityDefinition.SpawnEgg` is its item; put it in a `CreativeTabProperties.Items` list. Both sides register it, so
 its item id and default `minecraft:entity_data` component agree. Supply `assets/<ns>/items/<path>_spawn_egg.json`,
-its model and its texture, just as for any item: vanilla 1.21.11 eggs have individual textures. The engine sample's
+its model and its texture, just as for any item: vanilla 1.21.11 eggs have individual textures. ObsidianMod's
 moth demonstrates all three and a creative tab. For an explicitly registered item, `ItemProperties.EntityData`
 sets the same component; its `RegistryId` is the mob type's id and `Data` holds additional saved fields.
 
@@ -1337,7 +1340,7 @@ type and its update data from chunk packets and `BlockEntityData`, and remapping
   explosion, and `ApplyComponents(ItemStack item)` reads them back when a player places the block with that item.
   What `CollectComponents` sets goes to the block's loot like a vanilla block entity's components: a block without a
   loot table drops its item with the plugin's component values, and a loot table copies them with
-  `copy_components` (`"source": "block_entity"`, `"include": ["ruby:ticks"]`), as the engine sample's tick counter
+  `copy_components` (`"source": "block_entity"`, `"include": ["ruby:ticks"]`), as ObsidianMod's tick counter
   does. `ApplyComponents` runs on the new block entity before anything else reaches it, on the placing thread, with
   `Level` still null; the server saves the block entity after it (like vanilla's `setChanged` there). A hook that
   throws is logged, and the drop or the block goes without the data. Neither runs once the plugin starts unloading:
@@ -1673,8 +1676,8 @@ when configuring again.
 
 Supply `assets/<namespace>/sounds.json` and `assets/<namespace>/sounds/<path>.ogg` in the mod archive, like vanilla
 resource packs. Definitions merge with vanilla and player packs, including `replace`, event references and subtitles;
-an archive needs no `pack.mcmeta`. `samples/EngineSample` declares `sample:counter.chime`, referring to vanilla's
-amethyst chime in its `sounds.json`, and uses it for its counter's placement and break sounds.
+an archive needs no `pack.mcmeta`. ObsidianMod declares `obsidianmod:counter.chime`, referring to vanilla's amethyst
+chime in its `sounds.json`, and uses it for its counter's placement and break sounds.
 
 [sound-sync]: https://github.com/neoforged/NeoForge/tree/1.21.11/src/main/java/net/neoforged/neoforge/registries
 
@@ -2022,8 +2025,8 @@ in it.
 **Reload.** Unloading closes the plugin's menus and releases its menu screens, slot rules, `Changed` handlers and key
 bindings. The items stay in the attachment's saved NBT, through saves and deaths, until the plugin loads again.
 
-The [engine sample](../samples/EngineSample)'s charm slots (`Charms/`) are this example built out, with a screen in
-Razor, and its moth counts its rides in an entity attachment.
+[ObsidianMod](https://github.com/ObsidianMC/ObsidianMod)'s charm slots (`Charms/`) are this example built out, with a
+screen in Razor, and its moth counts its rides in an entity attachment.
 
 ## Recipes
 
@@ -2120,10 +2123,10 @@ book displays and client input property sets all use the rebuilt tags. A snapsho
 `IServer.FindRecipe<TRecipe>(RecipeType<TRecipe> type, IReadOnlyList<ItemStack?> inputs)` returns the first matching
 recipe, by lexical recipe identifier, or null. `IServer.GetRecipes<TRecipe>(RecipeType<TRecipe> type)` returns all
 the type's current recipes in that order, for a machine's screen to list (the
-[engine sample](../samples/EngineSample)'s grinder sends them as its menu opens). Look up the current result each tick
-rather than retaining recipe values across reloads. Registrations belong to their server and plugin; unloading
-removes the serializer and its recipes, and refuses new calls while callbacks already running drain. Plugin recipe
-JSON is kept as host-owned data, so rebuilding snapshots never keeps an unloaded serializer alive.
+[ObsidianMod](https://github.com/ObsidianMC/ObsidianMod)'s grinder sends them as its menu opens). Look up the current
+result each tick rather than retaining recipe values across reloads. Registrations belong to their server and
+plugin; unloading removes the serializer and its recipes, and refuses new calls while callbacks already running
+drain. Plugin recipe JSON is kept as host-owned data, so rebuilding snapshots never keeps an unloaded serializer alive.
 
 Custom types are server-side processing rules. Vanilla's 1.21.11 `UpdateRecipes` carries fixed input property sets
 and stonecutter result displays; it has no field for arbitrary recipe types, serializers or matching. Custom types
@@ -3663,8 +3666,8 @@ in the provider call. Malformed declared parts are cached as failures and fall b
 discarding the section's mesh. Each new update meshes the block's section again. The provider sees only its own
 block: a model that follows its neighbours, like a cable connecting to them, has the server work out the connections,
 put them in `GetUpdateData` (or in block state properties) and
-`SendUpdate` when they change, as the shapes do. Connections alone need no block entity: the engine sample's cable
-(`samples/EngineSample`) keeps them in block state properties, set by its `GetStateForPlacement` and `UpdateShape`
+`SendUpdate` when they change, as the shapes do. Connections alone need no block entity: ObsidianMod's cable
+(`ObsidianMod/Cable`) keeps them in block state properties, set by its `GetStateForPlacement` and `UpdateShape`
 hooks; its multipart blockstate draws an arm for each, and its `StateShapes` give each arm a box.
 
 ```csharp
@@ -4347,7 +4350,7 @@ client's side of the menu: its `Type`, `Title`, `SlotCount`, isolated copies of 
 their count and components), its data slots' values as last sent (`GetData`, 0 until sent), the extra data it was
 opened with (`ReadOpenData()`, a new reader each call, reading what `WriteOpenData` wrote) and `ClickButton(number)`,
 which the server's `ClickButton` gets. Escape or the inventory key close the screen and the menu, as does `Close()`.
-The [engine sample](../samples/EngineSample)'s grinder is a complete machine menu and screen.
+[ObsidianMod](https://github.com/ObsidianMC/ObsidianMod)'s grinder is a complete machine menu and screen.
 
 A mod's own screens, like settings, aren't tied to a menu: subclass `ModScreen` and open it with
 `registry.Screens.Open(screen)`, from a key binding's `Pressed` or a payload handler (from another thread it opens on
@@ -4488,8 +4491,8 @@ them, and unloading waits for active asynchronous calls before disposing the mod
 timeout logs a warning and leaves disposal pending until those calls finish.
 When the mod unloads, its screens close and
 their navigation history goes, like screens in code, and the client forgets its component types in Blazor's caches,
-so that its code unloads. The [engine sample](../samples/EngineSample)'s grinder registers `GrinderView.razor`, the
-Razor form of its `GrinderScreen`.
+so that its code unloads. [ObsidianMod](https://github.com/ObsidianMC/ObsidianMod)'s grinder registers
+`GrinderView.razor`, the Razor form of its `GrinderScreen`.
 
 ### HUD overlays
 

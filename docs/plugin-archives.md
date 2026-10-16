@@ -24,10 +24,17 @@ first needed, so the file on disk can be replaced while the plugin runs, which r
 ## Building and packing
 
 Reference `Obsidian.API` (and `Obsidian.API.Client` for a client side) with `ExcludeAssets="runtime"` on package
-references, or `Private="false"` on project references to an engine checkout. Do the same for a direct
-`Obsidian.Nbt` reference when saving block entities or other NBT data. The host supplies these assemblies and its API
-dependencies, including `CommunityToolkit.HighPerformance`, logging and dependency-injection abstractions, and
-`SharpNoise`; they must not be bundled with a mod.
+references, or `Private="false"` on project references to an engine checkout. The `Obsidian.API` package carries the
+`Obsidian.Nbt` assembly it was built with, for saving block entities or other NBT data; a project reference to the
+engine needs a direct `Obsidian.Nbt` project reference with `Private="false"` too. The host supplies these assemblies
+and its API dependencies, including `CommunityToolkit.HighPerformance`, logging and dependency-injection abstractions,
+and `SharpNoise`; they must not be bundled with a mod.
+
+The [Obsidian.MSBuild](https://www.nuget.org/packages/Obsidian.MSBuild) package, version 2.0 or later, packs a version
+2 archive as the project builds, writing `obsidian.mod.json` from its properties. The template repositories
+[ObsidianMod](https://github.com/ObsidianMC/ObsidianMod) (a mod for both sides) and
+[ObsidianPlugin](https://github.com/ObsidianMC/ObsidianPlugin) (a server-side plugin) are set up this way. Without
+it:
 
 For a project whose metadata, `assets/` and `data/` files have `CopyToOutputDirectory="PreserveNewest"`, publish into
 an empty staging directory:
@@ -38,8 +45,8 @@ dotnet publish path/to/Mod.csproj -c Release --artifacts-path C:\tmp\mod-build -
 
 ZIP the staging contents (with `obsidian.mod.json` and the main DLL at the root, and `/` entry separators), and name
 the archive `.obby`. Inspect its DLLs before distributing it: include the mod and its private libraries only.
-`samples/EngineSample` shows the project-reference setup. Its published output contains only `EngineSample.dll`,
-its symbols and dependency manifest, metadata, and its assets and data.
+The engine's test fixture, `Obsidian.Tests.EngineSample`, shows the project-reference setup. Its published output
+contains only `EngineSample.dll`, its symbols and dependency manifest, metadata, and its assets and data.
 
 With project references, `--artifacts-path` also builds the engine projects there. Current generated vanilla assets
 are reused from the engine checkout; generate them once with a normal engine build first if the scratch build must

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
@@ -58,10 +58,10 @@
 		<None Include="data\**\*.json" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
-	<!-- The engine sample plugin, built first; its output, laid out like its archive, is copied into EngineSample/,
+	<!-- The engine sample fixture, built first; its output, laid out like its archive, is copied into EngineSample/,
 	     which the tests pack and load like a real plugin's. -->
 	<ItemGroup>
-		<ProjectReference Include="..\samples\EngineSample\EngineSample.csproj"
+		<ProjectReference Include="..\Obsidian.Tests.EngineSample\Obsidian.Tests.EngineSample.csproj"
 		                  OutputItemType="EngineSampleAssembly"
 		                  ReferenceOutputAssembly="false" />
 	</ItemGroup>

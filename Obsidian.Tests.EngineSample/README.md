@@ -1,6 +1,11 @@
-# Engine sample
+# Engine sample (test fixture)
 
-A mod that uses what each phase of [the engine plan](../../docs/engine-foundations.md) adds, through the public API
+This is a test fixture, not the documented sample. The same mod, set up to build on its own from Obsidian's packages,
+is [ObsidianMod](https://github.com/ObsidianMC/ObsidianMod), with `obsidianmod:` identifiers instead of `sample:`;
+[ObsidianPlugin](https://github.com/ObsidianMC/ObsidianPlugin) is a server-side plugin trimmed from it. Keep
+ObsidianMod in step when you change what this fixture shows.
+
+A mod that uses what each phase of [the engine plan](../docs/engine-foundations.md) adds, through the public API
 alone (`Obsidian.API` and `Obsidian.API.Client`, and `Obsidian.Nbt` for saved data and component values). Its side is
 `both`: servers run its `ConfigureRegistry`, and the Obsidian client runs it too, then its `ConfigureClient`. It's
 documentation by example, and a smoke test: `Obsidian.Tests/SamplePlugin.cs` packs its build output (laid out like its
@@ -76,4 +81,4 @@ the charm slots with the payload, wears a charm (dirt isn't taken) and takes it 
 `SamplePlugin.cs` checks the moth's rides after a save and load, and its charm drop. The client's
 `EngineSampleShowsItsGrinderScreen` checks the charm key binding and the charm menu's screen.
 
-See [plugin-content.md](../../docs/plugin-content.md) for the API it uses.
+See [plugin-content.md](../docs/plugin-content.md) for the API it uses.

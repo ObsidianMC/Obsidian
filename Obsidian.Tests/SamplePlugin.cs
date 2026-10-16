@@ -27,9 +27,9 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// The engine sample plugin (samples/EngineSample), packed from its build output and loaded through the plugin
-/// manager like any plugin: a smoke test per block it adds, through what a player does, each covering the phases of
-/// docs/engine-foundations.md that block uses.
+/// The engine sample fixture (Obsidian.Tests.EngineSample), packed from its build output and loaded through the
+/// plugin manager like any plugin: a smoke test per block it adds, through what a player does, each covering the
+/// phases of docs/engine-foundations.md that block uses.
 /// </summary>
 // Loading plugins merges their tags into vanilla's, which PluginTagFiles changes too.
 [Collection(nameof(PluginTagFiles))]

@@ -12,7 +12,7 @@
   <Project Path="Obsidian.Tests/Obsidian.Tests.csproj" />
   <Project Path="Obsidian/Obsidian.csproj" />
   <Project Path="Obsidian.WorldgenBench/Obsidian.WorldgenBench.csproj" />
-  <Project Path="samples/EngineSample/EngineSample.csproj" />
+  <Project Path="Obsidian.Tests.EngineSample/Obsidian.Tests.EngineSample.csproj" />
 </Solution>
 
 

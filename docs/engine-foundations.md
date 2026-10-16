@@ -30,7 +30,8 @@ plugin that exercises it.
   the wire names one. Sound events use vanilla's inline holders (identifier and optional range), so they need no
   numeric ids or registry sync and do not themselves require a modded client.
 - **A sample per phase.** Each phase adds to a sample plugin, in the repository and loaded by the tests, that uses
-  every new hook, so later phases and the test mod build on proven pieces.
+  every new hook, so later phases and the test mod build on proven pieces. It's now a test fixture,
+  `Obsidian.Tests.EngineSample`; the documented samples are ObsidianMC/ObsidianMod and ObsidianMC/ObsidianPlugin.
 
 ## Fixes found along the way
 
@@ -72,7 +73,7 @@ The base every mod needs: blocks with state that save, tick, react and sync.
 
 **Sample:** a block with a block entity that counts ticks, is powered by redstone, faces where it's placed, relights
 its surroundings, and drops its loot table.
-(done: `samples/EngineSample`, its tick counter, loaded by `Obsidian.Tests/SamplePlugin.cs`)
+(done: `Obsidian.Tests.EngineSample`, its tick counter, loaded by `Obsidian.Tests/SamplePlugin.cs`)
 
 ## Phase 2: items, inventories and recipes
 
@@ -91,7 +92,7 @@ its surroundings, and drops its loot table.
 
 **Sample:** a machine block that pulls items from a chest above, processes them with a plugin recipe type, and
 pushes them into a hopper below.
-(done: `samples/EngineSample`, its grinder, loaded by `Obsidian.Tests/SamplePlugin.cs`)
+(done: `Obsidian.Tests.EngineSample`, its grinder, loaded by `Obsidian.Tests/SamplePlugin.cs`)
 
 ## Phase 3: menus and screens
 
@@ -108,8 +109,8 @@ pushes them into a hopper below.
   and their metadata.
 
 **Sample:** the phase 2 machine gets a screen with a progress bar, a mode button and a searchable, scrolling list.
-(done: `samples/EngineSample`, its grinder's menu and screen, loaded by `Obsidian.Tests/SamplePlugin.cs` and, with
-its client side, by the client's tests)
+(done: `Obsidian.Tests.EngineSample`, its grinder's menu and screen, loaded by `Obsidian.Tests/SamplePlugin.cs`
+and, with its client side, by the client's tests)
 
 ## Phase 4: rendering
 
@@ -130,8 +131,8 @@ its client side, by the client's tests)
 
 **Sample:** the machine's block entity spins a part while working; a cable block's model follows its neighbours;
 a mod entity glows and can be ridden.
-(done: `samples/EngineSample`, its grinder's wheel, its cable and its moth, loaded by `Obsidian.Tests/SamplePlugin.cs`
-and, with its client side, by the client's tests)
+(done: `Obsidian.Tests.EngineSample`, its grinder's wheel, its cable and its moth, loaded by
+`Obsidian.Tests/SamplePlugin.cs` and, with its client side, by the client's tests)
 
 ## Phase 5: world, players and entities
 
@@ -158,8 +159,8 @@ and, with its client side, by the client's tests)
 
 **Sample:** a portal to a sample dimension, a rideable flying mob with saved data and a loot table, and a player
 attachment shown in an extra inventory slot.
-(done: `samples/EngineSample`, its dusk portal and dimension, its moth's rides and loot, and its charm slots, loaded by
-`Obsidian.Tests/SamplePlugin.cs` and, with its client side, by the client's tests)
+(done: `Obsidian.Tests.EngineSample`, its dusk portal and dimension, its moth's rides and loot, and its charm slots,
+loaded by `Obsidian.Tests/SamplePlugin.cs` and, with its client side, by the client's tests)
 
 ## The test mod
 
