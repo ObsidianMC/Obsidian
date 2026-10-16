@@ -82,6 +82,23 @@ public static class EnchantmentHelper
     }
 
     /// <summary>
+    /// The level of <paramref name="enchantment"/> on <paramref name="stack"/>, 0 when absent or when there is no stack.
+    /// </summary>
+    public static int GetLevel(ItemStack? stack, EnchantmentDefinition enchantment)
+    {
+        if (stack is null)
+            return 0;
+
+        foreach (var applied in GetEnchantments(stack))
+        {
+            if (applied.Id == enchantment.Id)
+                return applied.Level;
+        }
+
+        return 0;
+    }
+
+    /// <summary>
     /// The stack's enchantments, or the stored enchantments of an enchanted book. The array is a copy.
     /// </summary>
     public static Enchantment[] GetEnchantments(ItemStack stack)

@@ -63,6 +63,9 @@ public sealed class BeeParity
     {
         await using var context = TestServerFactory.CreateServer($"bee-counter-{Guid.NewGuid():N}");
         var chunk = AddChunk(context.World);
+        // The carrots sit on farmland; the wheat above them has no farmland under it, so once the carrots grow it loses its
+        // support to the shape update, as in vanilla. The counter still counts both growths.
+        chunk.SetBlock(8, 67, 8, BlocksRegistry.Get(Material.Farmland).WithProperty("moisture", 7));
         chunk.SetBlock(8, 69, 8, BlocksRegistry.Get(Material.Wheat).WithProperty("age", 0));
         chunk.SetBlock(8, 68, 8, BlocksRegistry.Get(Material.Carrots).WithProperty("age", 0));
         var bee = new Bee { Level = context.World, Position = new VectorD(8.5, 70, 8.5), HasNectar = true };

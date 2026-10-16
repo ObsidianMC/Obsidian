@@ -1,0 +1,706 @@
+[
+  {
+    "name": "stone bare hands",
+    "table": "minecraft:blocks/stone",
+    "state": 1,
+    "seed": 1,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ]
+  },
+  {
+    "name": "stone diamond pickaxe",
+    "table": "minecraft:blocks/stone",
+    "state": 1,
+    "seed": 1,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1
+    }
+  },
+  {
+    "name": "stone silk touch",
+    "table": "minecraft:blocks/stone",
+    "state": 1,
+    "seed": 1,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:silk_touch": 1
+        }
+      }
+    }
+  },
+  {
+    "name": "grass block diamond pickaxe",
+    "table": "minecraft:blocks/grass_block",
+    "state": 9,
+    "seed": 2,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1
+    }
+  },
+  {
+    "name": "grass block silk touch",
+    "table": "minecraft:blocks/grass_block",
+    "state": 9,
+    "seed": 2,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:silk_touch": 1
+        }
+      }
+    }
+  },
+  {
+    "name": "oak leaves bare hands",
+    "table": "minecraft:blocks/oak_leaves",
+    "state": 278,
+    "seed": 3,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ]
+  },
+  {
+    "name": "oak leaves bare hands seed 4",
+    "table": "minecraft:blocks/oak_leaves",
+    "state": 278,
+    "seed": 4,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ]
+  },
+  {
+    "name": "oak leaves shears",
+    "table": "minecraft:blocks/oak_leaves",
+    "state": 278,
+    "seed": 3,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:shears",
+      "count": 1
+    }
+  },
+  {
+    "name": "oak leaves silk touch",
+    "table": "minecraft:blocks/oak_leaves",
+    "state": 278,
+    "seed": 3,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:silk_touch": 1
+        }
+      }
+    }
+  },
+  {
+    "name": "oak leaves fortune 3",
+    "table": "minecraft:blocks/oak_leaves",
+    "state": 278,
+    "seed": 3,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:fortune": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "oak leaves fortune 3 seed 9",
+    "table": "minecraft:blocks/oak_leaves",
+    "state": 278,
+    "seed": 9,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:fortune": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "diamond ore fortune 1",
+    "table": "minecraft:blocks/diamond_ore",
+    "state": 5106,
+    "seed": 11,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:fortune": 1
+        }
+      }
+    }
+  },
+  {
+    "name": "diamond ore fortune 2",
+    "table": "minecraft:blocks/diamond_ore",
+    "state": 5106,
+    "seed": 11,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:fortune": 2
+        }
+      }
+    }
+  },
+  {
+    "name": "diamond ore fortune 3",
+    "table": "minecraft:blocks/diamond_ore",
+    "state": 5106,
+    "seed": 11,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:fortune": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "diamond ore silk touch",
+    "table": "minecraft:blocks/diamond_ore",
+    "state": 5106,
+    "seed": 11,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:silk_touch": 1
+        }
+      }
+    }
+  },
+  {
+    "name": "coal ore fortune 3",
+    "table": "minecraft:blocks/coal_ore",
+    "state": 133,
+    "seed": 12,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:fortune": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "redstone ore fortune 3",
+    "table": "minecraft:blocks/redstone_ore",
+    "state": 6681,
+    "seed": 13,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:fortune": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "lapis ore fortune 3",
+    "table": "minecraft:blocks/lapis_ore",
+    "state": 563,
+    "seed": 14,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:fortune": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "copper ore fortune 3",
+    "table": "minecraft:blocks/copper_ore",
+    "state": 25111,
+    "seed": 15,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:fortune": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "nether gold ore fortune 3",
+    "table": "minecraft:blocks/nether_gold_ore",
+    "state": 135,
+    "seed": 16,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:fortune": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "wheat mature",
+    "table": "minecraft:blocks/wheat",
+    "state": 5117,
+    "seed": 17,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ]
+  },
+  {
+    "name": "wheat immature",
+    "table": "minecraft:blocks/wheat",
+    "state": 5113,
+    "seed": 17,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ]
+  },
+  {
+    "name": "snow layers 4",
+    "table": "minecraft:blocks/snow",
+    "state": 6721,
+    "seed": 18,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1
+    }
+  },
+  {
+    "name": "snow layers 8",
+    "table": "minecraft:blocks/snow",
+    "state": 6725,
+    "seed": 18,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1
+    }
+  },
+  {
+    "name": "tall grass lower",
+    "table": "minecraft:blocks/tall_grass",
+    "state": 12722,
+    "seed": 19,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:shears",
+      "count": 1
+    },
+    "unsupportedHeadless": "location_check reads the level around the block, which a headless capture has no world for"
+  },
+  {
+    "name": "tall grass upper",
+    "table": "minecraft:blocks/tall_grass",
+    "state": 12721,
+    "seed": 19,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:shears",
+      "count": 1
+    },
+    "unsupportedHeadless": "location_check reads the level around the block, which a headless capture has no world for"
+  },
+  {
+    "name": "sea lantern",
+    "table": "minecraft:blocks/sea_lantern",
+    "state": 12690,
+    "seed": 20,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1
+    }
+  },
+  {
+    "name": "glowstone",
+    "table": "minecraft:blocks/glowstone",
+    "state": 6815,
+    "seed": 21,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1
+    }
+  },
+  {
+    "name": "melon",
+    "table": "minecraft:blocks/melon",
+    "state": 8132,
+    "seed": 22,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:fortune": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "stone explosion radius 3",
+    "table": "minecraft:blocks/stone",
+    "state": 1,
+    "seed": 5,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "explosionRadius": 3.0
+  },
+  {
+    "name": "stone explosion radius 1",
+    "table": "minecraft:blocks/stone",
+    "state": 1,
+    "seed": 5,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "explosionRadius": 1.0
+  },
+  {
+    "name": "diamond ore explosion radius 4",
+    "table": "minecraft:blocks/diamond_ore",
+    "state": 5106,
+    "seed": 6,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "explosionRadius": 4.0
+  },
+  {
+    "name": "oak leaves explosion radius 4",
+    "table": "minecraft:blocks/oak_leaves",
+    "state": 278,
+    "seed": 6,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "explosionRadius": 4.0
+  },
+  {
+    "name": "bedrock empty table",
+    "table": "minecraft:blocks/bedrock",
+    "state": 85,
+    "seed": 7,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ]
+  },
+  {
+    "name": "bee nest honey 5 silk touch",
+    "table": "minecraft:blocks/bee_nest",
+    "state": 21571,
+    "seed": 1,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:silk_touch": 1
+        }
+      }
+    }
+  },
+  {
+    "name": "bee nest honey 5 bare hands",
+    "table": "minecraft:blocks/bee_nest",
+    "state": 21571,
+    "seed": 1,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ]
+  },
+  {
+    "name": "copper golem statue sitting pickaxe",
+    "table": "minecraft:blocks/copper_golem_statue",
+    "state": 27094,
+    "seed": 1,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1
+    }
+  },
+  {
+    "name": "candle three bare hands",
+    "table": "minecraft:blocks/candle",
+    "state": 22905,
+    "seed": 2,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ]
+  },
+  {
+    "name": "candle three pickaxe",
+    "table": "minecraft:blocks/candle",
+    "state": 22905,
+    "seed": 2,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1
+    }
+  },
+  {
+    "name": "stone slab bottom pickaxe",
+    "table": "minecraft:blocks/stone_slab",
+    "state": 13197,
+    "seed": 3,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1
+    }
+  },
+  {
+    "name": "stone slab double pickaxe",
+    "table": "minecraft:blocks/stone_slab",
+    "state": 13199,
+    "seed": 3,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1
+    }
+  },
+  {
+    "name": "carrots mature fortune 3",
+    "table": "minecraft:blocks/carrots",
+    "state": 10464,
+    "seed": 5,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:fortune": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "carrots immature fortune 3",
+    "table": "minecraft:blocks/carrots",
+    "state": 10460,
+    "seed": 5,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ],
+    "tool": {
+      "id": "minecraft:diamond_pickaxe",
+      "count": 1,
+      "components": {
+        "minecraft:enchantments": {
+          "minecraft:fortune": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "beetroots seedling bare hands",
+    "table": "minecraft:blocks/beetroots",
+    "state": 14609,
+    "seed": 6,
+    "origin": [
+      0.5,
+      64.5,
+      0.5
+    ]
+  }
+]

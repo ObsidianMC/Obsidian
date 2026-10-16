@@ -52,6 +52,8 @@ public sealed partial class Ravager : PathfinderMob
             }
         }
         if (AiTick % 5 != 0 || Motion.MagnitudeSquared() < 0.0001) return;
+        // Vanilla only breaks leaves when mobGriefing is on.
+        if (!Level.LevelData.GetBooleanRule("mob_griefing")) return;
         var bounds = Dimension.CreateBBFromPosition(Position + new VectorD(Motion.X, 0, Motion.Z));
         if (Terrain.IsFree(bounds)) return;
         for (var x = (int)Math.Floor(bounds.Min.X); x <= (int)Math.Floor(bounds.Max.X); x++)

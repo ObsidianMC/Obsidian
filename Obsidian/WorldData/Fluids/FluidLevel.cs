@@ -73,6 +73,16 @@ internal sealed class FluidLevel
     public void ScheduleTick(Vector position, FluidKind fluid, int delay) => this.access.ScheduleFluidTick(position, fluid, delay);
 
     /// <summary>
+    /// Vanilla <c>updateShape</c>'s fluid tick: the fluid at <paramref name="position"/> ticks after its own delay, if it has one.
+    /// </summary>
+    public void ScheduleShapeTick(Vector position)
+    {
+        var fluid = this.GetFluid(position);
+        if (!fluid.IsEmpty)
+            this.ScheduleTick(position, fluid.Kind, fluid.Type!.GetTickDelay(this));
+    }
+
+    /// <summary>
     /// Vanilla's lava fizz (level event 1501).
     /// </summary>
     public void Fizz(Vector position) => this.access.LevelEvent(1501, position, 0);
@@ -179,15 +189,25 @@ internal sealed class FluidLevel
     /// Vanilla <c>Level.destroyBlock</c>: the block is replaced by its fluid (air, or the water a waterlogged block held).
     /// </summary>
     /// <remarks>
-    /// Vanilla also plays the break effect and drops the block's loot, which Obsidian doesn't do for these yet.
+    /// Vanilla <c>destroyBlock</c>: drops the block's loot unless <paramref name="drops"/> is off. The break effect isn't
+    /// played yet.
     /// </remarks>
-    private bool DestroyBlock(Vector position, int updateLimit)
+    private bool DestroyBlock(Vector position, int updateLimit, bool drops)
     {
-        if (this.GetBlock(position).IsAir)
+        var block = this.GetBlock(position);
+        if (block.IsAir)
             return false;
+
+        if (drops)
+            this.access.OnBlockDestroyed(position, block);
 
         return this.SetBlock(position, this.GetFluid(position).CreateLegacyBlock(), BlockUpdateFlags.All, updateLimit);
     }
+
+    /// <summary>
+    /// Drops the loot of a block a fluid is about to replace (vanilla <c>FlowingFluid.beforeDestroyingBlock</c>, water only).
+    /// </summary>
+    public void DropDestroyedBlock(Vector position, IBlock block) => this.access.OnBlockDestroyed(position, block);
 
     // Block.onPlace: only liquids react, and they react like to a neighbor change.
     private void OnPlace(Vector position, IBlock block) => this.NeighborChanged(position, block);
@@ -250,7 +270,7 @@ internal sealed class FluidLevel
             return;
 
         if (updated.IsAir)
-            this.DestroyBlock(position, updateLimit);
+            this.DestroyBlock(position, updateLimit, drops: (flags & BlockUpdateFlags.SuppressDrops) == 0);
         else
             this.SetBlock(position, updated, flags & ~BlockUpdateFlags.SuppressDrops, updateLimit);
     }

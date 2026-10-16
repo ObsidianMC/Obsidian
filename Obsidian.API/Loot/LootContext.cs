@@ -1,3 +1,5 @@
+using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.API.World.Generator.RandomSources;
 
@@ -32,6 +34,41 @@ public sealed class LootContext
     /// The entity the loot is generated for (vanilla's <c>this_entity</c> parameter), e.g. the player opening a container.
     /// </summary>
     public IEntity? ThisEntity { get; init; }
+
+    /// <summary>
+    /// The block state being broken or exploded (vanilla <c>BLOCK_STATE</c>), read before the block is removed.
+    /// </summary>
+    public IBlock? Block { get; init; }
+
+    /// <summary>
+    /// The tool the block was broken with (vanilla <c>TOOL</c>): an empty stack for bare hands. Null when no tool was given,
+    /// which makes tool-dependent functions leave the stack unchanged, as vanilla does.
+    /// </summary>
+    public ItemStack? Tool { get; init; }
+
+    /// <summary>
+    /// The explosion radius (vanilla <c>EXPLOSION_RADIUS</c>); null for ordinary breaks.
+    /// </summary>
+    public float? ExplosionRadius { get; init; }
+
+    /// <summary>
+    /// Reads a vanilla block state property (e.g. <c>half</c>) of a block; null when the block doesn't have it. Required
+    /// by block-state conditions and <c>copy_state</c>.
+    /// </summary>
+    public Func<IBlock, string, string?>? BlockProperty { get; init; }
+
+    /// <summary>
+    /// Returns the block at a block position, or null when it isn't loaded. Required by <c>location_check</c>.
+    /// </summary>
+    public Func<int, int, int, IBlock?>? BlockAt { get; init; }
+
+    /// <summary>
+    /// The components the block's block entity contributes (vanilla's <c>copy_components</c> with source
+    /// <c>block_entity</c>), read before the block is removed. Null when the block had no block entity, which copies
+    /// nothing. Returns null for a component the block entity doesn't hold; throws <see cref="NotSupportedException"/>
+    /// for one it holds but that isn't modelled yet.
+    /// </summary>
+    public Func<string, DataComponent?>? BlockEntityComponent { get; init; }
 
     /// <summary>
     /// Resolves the tables referenced by <c>minecraft:loot_table</c> entries. Defaults to the vanilla tables in

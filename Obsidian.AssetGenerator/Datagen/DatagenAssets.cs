@@ -16,8 +16,9 @@ internal static class DatagenAssets
     private static readonly string[] enumRegistries =
         ["minecraft:block_entity_type", "minecraft:data_component_type", "minecraft:map_decoration_type", "minecraft:mob_effect", "minecraft:potion"];
 
-    // The loot table categories the server fills containers from (see LootRegistryGenerator).
-    private static readonly string[] lootTableCategories = ["archaeology", "chests", "dispensers", "pots", "spawners"];
+    // The loot table categories the server reads (see LootRegistryGenerator): containers are filled from the first five,
+    // and the block tables decide what breaking a block drops.
+    private static readonly string[] lootTableCategories = ["archaeology", "blocks", "chests", "dispensers", "pots", "spawners"];
 
     /// <param name="generatedDirectory">The data generators' output (<c>data</c> and <c>reports</c>).</param>
     /// <param name="worldgenGroupsPath">The Java dumper's vanilla classes declaring each feature (see <see cref="WorldgenAssets"/>).</param>
@@ -41,6 +42,8 @@ internal static class DatagenAssets
         WriteJson(Path.Combine(outputDirectory, "enchantments.json"), Combine(Path.Combine(data, "enchantment"), ToId));
         WriteJson(Path.Combine(outputDirectory, "dialogs.json"), Combine(Path.Combine(data, "dialog"), ToId));
         WriteJson(Path.Combine(outputDirectory, "instruments.json"), Combine(Path.Combine(data, "instrument"), ToId));
+        // Banner layers are sent inline with their asset and translation keys (the server has no banner pattern registry IDs).
+        WriteJson(Path.Combine(outputDirectory, "banner_patterns.json"), Combine(Path.Combine(data, "banner_pattern"), ToId));
 
         foreach (var category in lootTableCategories)
         {

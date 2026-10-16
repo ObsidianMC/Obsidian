@@ -128,7 +128,8 @@ public sealed partial class Wither : BossMob
             var point = position + new Vector(x, y, z);
             var block = Terrain.GetBlock(point);
             if (block == null || block.IsAir || TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId)) continue;
-            await Level.SetBlockAsync(point, BlocksRegistry.Air);
+            // Vanilla destroyBlock(pos, true, this): the block's loot drops.
+            await Level.DestroyBlockAsync(point, this, drop: true);
             broken = true;
         }
         if (broken) PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelEventPacket(1022, position, 0));

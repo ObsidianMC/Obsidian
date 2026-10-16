@@ -1,3 +1,4 @@
+using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -91,19 +92,23 @@ public abstract partial class AbstractLevel
                 knockbacks[target.EntityId] = knockback;
         }
         if ((source is Mob || owner is Mob) && !LevelData.GetBooleanRule("mob_griefing")) destroyed.Clear();
-        foreach (var position in destroyed)
+
+        // Drops decay by the explosion radius when the gamerule for the explosion's cause says so, like vanilla's block drops.
+        var decays = LevelData.GetBooleanRule(source is Mob || owner is Mob ? "mob_explosion_drop_decay" : "block_explosion_drop_decay");
+        var drops = new List<(Vector Position, ItemStack Stack)>();
+
+        // Vanilla visits the destroyed blocks in random order, which decides which stack a drop merges into.
+        foreach (var position in destroyed.OrderBy(_ => random.Next()))
         {
             var block = terrain.GetBlock(position)!;
+            foreach (var stack in await BlockDrops.ForExplosionAsync(this, block, (VectorD)position, radius, decays))
+                AddMergedDrop(drops, position, stack);
             await SetBlockAsync(position, BlocksRegistry.Air, true);
-            if (!LevelData.GetBooleanRule("mob_explosion_drop_decay") || random.NextSingle() <= 1 / radius)
-            {
-                if (ItemsRegistry.TryGet(block.Material, out var holder))
-                {
-                    var item = new Obsidian.API.Inventory.ItemStack(holder, 1);
-                    SpawnEntity(new ItemEntity { Level = this, EntityId = Server.GetNextEntityId(), Position = (VectorD)position + 0.5f, Item = item });
-                }
-            }
         }
+
+        foreach (var (position, stack) in drops)
+            BlockDrops.SpawnDrop(this, () => Server.GetNextEntityId(), position, stack);
+
         var sound = new SoundEffect { SoundId = "minecraft:entity.generic.explode", SoundCategory = SoundCategory.Blocks,
             Volume = 4, Pitch = 1, Seed = random.NextInt64() };
         foreach (var player in GetPlayersInRange(source.Position, 64))
@@ -116,6 +121,24 @@ public abstract partial class AbstractLevel
                 ExplosionParticle = new ExplosionParticleData(), ExplosionSound = sound, ExplosionParticleInfo = []
             });
         }
+    }
+
+    /// <summary>
+    /// Adds a drop to the first stack of the same item it still fits in, like vanilla's explosion drops.
+    /// </summary>
+    private static void AddMergedDrop(List<(Vector Position, ItemStack Stack)> drops, Vector position, ItemStack stack)
+    {
+        for (var index = 0; index < drops.Count; index++)
+        {
+            var existing = drops[index].Stack;
+            if (existing.Equals(stack) && existing.Count + stack.Count <= existing.MaxStackSize)
+            {
+                existing.Count += stack.Count;
+                return;
+            }
+        }
+
+        drops.Add((position, stack));
     }
 
     private sealed class ExplosionParticleData : ParticleData

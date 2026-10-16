@@ -198,6 +198,11 @@ internal static class TestServerFactory
 {
     public static RealServerContext CreateServer(string worldName)
     {
+        // A run that was killed never disposes its world, which would leave the region files behind for the next run.
+        var stale = Path.Combine("worlds", worldName);
+        if (Directory.Exists(stale))
+            Directory.Delete(stale, recursive: true);
+
         var configuration = new ServerConfiguration
         {
             OnlineMode = false,

@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.ChunkData;
+using Obsidian.API.Inventory;
 using Obsidian.API.Entities;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using System.Collections.Concurrent;
@@ -69,6 +70,19 @@ public interface ILevel : IAsyncDisposable
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block);
 
     public ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate);
+
+    /// <summary>
+    /// Vanilla <c>destroyBlock</c>: destroys the block at <paramref name="location"/>, dropping its loot when <paramref name="drop"/>
+    /// is set. Returns false for air.
+    /// </summary>
+    public ValueTask<bool> DestroyBlockAsync(Vector location, IEntity? cause, bool drop);
+
+    /// <summary>
+    /// The stacks the block at <paramref name="location"/> drops when a player breaks it with <paramref name="tool"/> (bare
+    /// hands when null), from its vanilla loot table. Empty for air, when the tool can't harvest the block, or when doTileDrops
+    /// is off. Nothing is removed or spawned, and the game mode isn't checked.
+    /// </summary>
+    public ValueTask<List<ItemStack>> GetBlockDropsAsync(Vector location, ItemStack? tool = null, IEntity? breaker = null);
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate);
     public bool TryRemovePlayer(IPlayer player);
     public ValueTask<bool> HandleBlockUpdateAsync(IBlockUpdate update);

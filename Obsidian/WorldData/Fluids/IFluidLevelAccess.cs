@@ -44,6 +44,14 @@ internal interface IFluidLevelAccess
     public void ScheduleFluidTick(Vector position, FluidKind fluid, int delay);
 
     /// <summary>
+    /// Vanilla <c>Block.dropResources</c> for a block a fluid or a lost support destroys. Called before the block is
+    /// replaced. The live level queues the drops; generation ignores them.
+    /// </summary>
+    public void OnBlockDestroyed(Vector position, IBlock block)
+    {
+    }
+
+    /// <summary>
     /// Vanilla <c>levelEvent</c> (sounds and particles, like 1501 for lava fizzing).
     /// </summary>
     public void LevelEvent(int type, Vector position, int data)

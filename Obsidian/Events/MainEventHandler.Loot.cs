@@ -10,9 +10,6 @@ namespace Obsidian.Events;
 
 public sealed partial class MainEventHandler
 {
-    // Vanilla shares one set of random sequences between a server's levels and saves it; these live per level, in memory.
-    private static readonly ConditionalWeakTable<ILevel, RandomSequences> randomSequences = [];
-
     // The containers filled from world generation's block entities, until the block entity is gone. Also the lock that
     // makes one player fill each.
     private static readonly ConditionalWeakTable<DataBlockEntity, BaseContainer> generatedContainers = [];
@@ -38,7 +35,7 @@ public sealed partial class MainEventHandler
 
         // Vanilla generates nothing for unknown tables.
         var table = LootTables.All.GetValueOrDefault(lootTable.Value!, LootTable.Empty);
-        var sequences = randomSequences.GetValue(player.Level, level => new RandomSequences(RandomState.ParseSeed(level.Seed)));
+        var sequences = LevelLoot.Sequences(player.Level);
         var position = blockEntity.BlockPosition;
 
         // Players have no luck attribute yet, so their luck is vanilla's default of 0.
