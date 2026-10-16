@@ -30,19 +30,16 @@ public partial class Player
     internal bool IsSingleplayerOwner { get; init; }
 
     /// <summary>
-    /// Vanilla <c>Player.blockInteractionRange</c>: how far the player reaches blocks, the
+    /// Vanilla <c>Player.blockInteractionRange</c>: how far <paramref name="player"/> reaches blocks, the
     /// <c>minecraft:block_interaction_range</c> attribute (vanilla's base 4.5 when it isn't set), half a block farther in
     /// creative, as vanilla's creative modifier adds.
     /// </summary>
-    internal double BlockInteractionRange
+    internal static double BlockInteractionRange(IPlayer player)
     {
-        get
-        {
-            const string attribute = "minecraft:block_interaction_range";
-            var range = this.HasAttribute(attribute) ? this.GetAttributeValue(attribute) : 4.5;
+        const string attribute = "minecraft:block_interaction_range";
+        var range = player.HasAttribute(attribute) ? player.GetAttributeValue(attribute) : 4.5;
 
-            return this.GameMode == GameMode.Creative ? range + 0.5 : range;
-        }
+        return player.GameMode == GameMode.Creative ? range + 0.5 : range;
     }
 
     /// <summary>
@@ -58,8 +55,8 @@ public partial class Player
             Pose.Sleeping => 0.2f,
             _ => 1.62f
         };
-        var scale = player is Player scaled && scaled.HasAttribute("minecraft:scale")
-            ? Math.Clamp(scaled.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
+        var scale = player.HasAttribute("minecraft:scale")
+            ? Math.Clamp(player.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
             : 1f;
 
         return player.Position + new VectorD(0, eyeHeight * scale, 0);

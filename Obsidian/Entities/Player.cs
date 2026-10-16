@@ -141,6 +141,15 @@ public sealed partial class Player : Avatar, IClientPlayer
     /// </summary>
     internal Events.RecipeBookSync RecipeBookSync { get; } = new();
 
+    async ValueTask IPlayer.SynchronizeRecipeBookAsync()
+    {
+        if (await this.RecipeBookSync.SendChangesAsync(this))
+            await Events.MainEventHandler.RefreshCraftingResultAsync(this);
+    }
+
+    ValueTask IPlayer.RefreshWindowAsync() =>
+        Events.MainEventHandler.RefreshWindowAsync(this, this.OpenedContainer ?? this.Inventory, stateId: 0);
+
     public IBlock? LastClickedBlock { get; internal set; }
 
     public GameMode GameMode
@@ -440,6 +449,9 @@ public sealed partial class Player : Avatar, IClientPlayer
     /// The plugin whose unloading closes the container. Its handlers of the close event still run, although it no
     /// longer takes other calls.
     /// </param>
+    ValueTask IPlayer.CloseContainerAsync(API.Plugins.IPluginContainer? unloading) =>
+        this.CloseContainerAsync(unloading as PluginContainer);
+
     internal async ValueTask CloseContainerAsync(PluginContainer? unloading = null)
     {
         // Death owns mandatory window removal. A concurrent close must not return its transient inputs to inventory.

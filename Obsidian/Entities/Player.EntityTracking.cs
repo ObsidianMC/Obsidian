@@ -9,6 +9,8 @@ public partial class Player
     // Explicit, because the hooks are internal to IPlayer and fall back to its no-op defaults if left unimplemented.
     void IPlayer.TrackEntity(IEntity entity) => TrackedEntities[entity.EntityId] = entity.Uuid;
 
+    void IPlayer.UntrackEntity(int entityId) => TrackedEntities.TryRemove(entityId, out _);
+
     void IPlayer.ForgetVisiblePlayer(IPlayer player) => this.visiblePlayers.Remove(player);
 
     ValueTask IPlayer.SynchronizeTrackedEntitiesAsync() => SynchronizeTrackedEntitiesAsync();

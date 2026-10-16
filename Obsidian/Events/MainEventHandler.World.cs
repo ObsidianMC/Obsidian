@@ -110,8 +110,7 @@ public partial class MainEventHandler
                 affectedBlock: block);
         }
 
-        if (player is Player concrete)
-            concrete.AddExhaustion(0.005f);
+        player.AddExhaustion(0.005f);
 
         player.SendPacket(new BlockUpdatePacket(location, BlocksRegistry.Air.GetHashCode()));
 
@@ -136,12 +135,11 @@ public partial class MainEventHandler
             return;
         }
 
-        if (player is Player statisticsMiner)
-            statisticsMiner.Statistics.Increment(block.UnlocalizedName, type: "minecraft:mined");
+        player.Statistics.Increment(block.UnlocalizedName, type: "minecraft:mined");
 
         // Like vanilla's Item.mineBlock, the tool wears once the drops were decided with it as it was.
-        if (player is Player miner && tool is not null && wear > 0)
-            await miner.DamageInventoryItemAsync(toolSlot, wear, expected: tool);
+        if (tool is not null && wear > 0)
+            await player.DamageInventoryItemAsync(toolSlot, wear, expected: tool);
 
         if (block.UnlocalizedName.StartsWith("minecraft:infested_", StringComparison.Ordinal))
         {

@@ -23,7 +23,7 @@ public partial class Mob
         {
             if (passenger.Level != this.Level
                 || !passenger.IsActive
-                || passenger is Player && passenger.Sneaking
+                || passenger is IPlayer && passenger.Sneaking
                 || !this.Alive)
                 passenger.LeaveVehicle();
         }

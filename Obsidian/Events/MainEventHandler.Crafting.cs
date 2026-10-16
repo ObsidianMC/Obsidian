@@ -100,10 +100,7 @@ public partial class MainEventHandler
         }
 
         foreach (var viewer in WindowViewers(player, window))
-        {
-            if (viewer is Player shown)
-                await RefreshWindowAsync(shown, shown.OpenedContainer ?? shown.Inventory, stateId: 0);
-        }
+            await viewer.RefreshWindowAsync();
     }
 
     private static void RefreshCraftingResult(IPlayer player, BaseContainer grid, int width)
@@ -193,9 +190,8 @@ public partial class MainEventHandler
                     return;
             }
 
-            if (player is Player progressing
-                && PlayerRecipes(player).FindRecipe(grid, width) is IRecipeWithResult recipe)
-                progressing.RecordProgressCraft(recipe.Identifier, result);
+            if (PlayerRecipes(player).FindRecipe(grid, width) is IRecipeWithResult recipe)
+                player.RecordProgressCraft(recipe.Identifier, result);
 
             ConsumeCraftingIngredients(player, grid, width);
 

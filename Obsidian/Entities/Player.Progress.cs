@@ -37,6 +37,11 @@ public partial class Player
         return changed;
     }
 
+    void IPlayer.RecordProgressCraft(string identifier, ItemStack result) =>
+        this.RecordProgressCraft(identifier, result);
+
+    ValueTask IPlayer.RecordProgressKillAsync(IEntity victim) => this.RecordProgressKillAsync(victim);
+
     internal void RecordProgressCraft(string identifier, ItemStack result)
     {
         this.Statistics.Increment(result.Holder.UnlocalizedName, result.Count, "minecraft:crafted");
@@ -168,7 +173,7 @@ public partial class Player
     {
         var points = (int)Math.Clamp(Math.Floor(amount * 10 + 0.5), 0, int.MaxValue);
         this.Statistics.Increment("minecraft:damage_taken", points);
-        if (source is Player attacker && !ReferenceEquals(source, this))
+        if (source is IPlayer attacker && !ReferenceEquals(source, this))
             attacker.Statistics.Increment("minecraft:damage_dealt",
                 (int)Math.Clamp(Math.Floor(Math.Min(this.Health, amount) * 10 + 0.5), 0, int.MaxValue));
     }
@@ -187,7 +192,7 @@ public partial class Player
 
         if (!ReferenceEquals(source, this))
             await this.FireProgressAsync("entity_killed_player", entity: source);
-        if (source is Player killer && !ReferenceEquals(source, this))
+        if (source is IPlayer killer && !ReferenceEquals(source, this))
             await killer.RecordProgressKillAsync(this);
     }
 

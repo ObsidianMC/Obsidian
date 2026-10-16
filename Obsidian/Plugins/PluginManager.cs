@@ -659,7 +659,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             }
         }
 
-        foreach (var player in server.OnlinePlayers.Values.OfType<Player>())
+        foreach (var player in server.OnlinePlayers.Values)
         {
             if (player.OpenedContainer is MenuContainer open && owned.Contains(open.Menu))
                 await player.CloseContainerAsync(pluginContainer);

@@ -131,8 +131,8 @@ public partial class Player
                 Event = 3
             }, this.EntityId);
 
-            foreach (var observer in death.Level.GetPlayersInRange(death.Position, float.MaxValue).OfType<Player>())
-                observer.visiblePlayers.Remove(this);
+            foreach (var observer in death.Level.GetPlayersInRange(death.Position, float.MaxValue))
+                observer.ForgetVisiblePlayer(this);
         }
         catch (Exception exception)
         {

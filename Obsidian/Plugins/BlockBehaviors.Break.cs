@@ -20,7 +20,7 @@ internal static partial class BlockBehaviors
         using (call)
         {
             var eye = Player.EyePosition(player);
-            var range = player is Player concrete ? concrete.BlockInteractionRange : 4.5;
+            var range = Player.BlockInteractionRange(player);
             var end = eye + (VectorD)player.GetLookDirection() * range;
             var hit = new MobTerrain(player.Level).RaycastOutlines(eye, end);
             if (hit is null || hit.Value.Position != position)

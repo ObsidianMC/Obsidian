@@ -544,12 +544,8 @@ public abstract partial class AbstractLevel
     {
         foreach (var viewer in inventory.GetViewers())
         {
-            if (viewer is Player player
-                && player.OpenedContainer is BaseContainer shown
-                && shown.SharesSlotsWith(inventory))
-            {
-                await player.CloseContainerAsync(unloading);
-            }
+            if (viewer.OpenedContainer is BaseContainer shown && shown.SharesSlotsWith(inventory))
+                await viewer.CloseContainerAsync(unloading);
         }
     }
 

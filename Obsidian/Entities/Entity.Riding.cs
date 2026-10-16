@@ -96,7 +96,7 @@ public partial class Entity
             this.vehicle = vehicle;
 
             // Like vanilla, a player boarding a vehicle that a non-player controls takes the controlling seat.
-            if (this is Player && vehicle.passengers.Count > 0 && vehicle.passengers[0] is not Player)
+            if (this is IPlayer && vehicle.passengers.Count > 0 && vehicle.passengers[0] is not IPlayer)
                 vehicle.passengers = Array.AsReadOnly<Entity>([this, .. vehicle.passengers]);
             else
                 vehicle.passengers = Array.AsReadOnly<Entity>([.. vehicle.passengers, this]);

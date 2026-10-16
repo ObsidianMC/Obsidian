@@ -41,6 +41,8 @@ public partial class Player
     private int sentFood = -1;
     private float sentSaturation = -1;
 
+    void IPlayer.AddExhaustion(float amount) => this.AddExhaustion(amount);
+
     internal void AddExhaustion(float amount)
     {
         if (Alive && GameMode is not GameMode.Creative and not GameMode.Spectator && Level.LevelData.Difficulty != Difficulty.Peaceful)

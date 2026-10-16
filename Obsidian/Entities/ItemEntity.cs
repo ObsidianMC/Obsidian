@@ -110,10 +110,10 @@ public partial class ItemEntity : Entity
             return false;
         }
 
-        if (around is null && player is Player droppingPlayer)
+        if (around is null)
         {
-            droppingPlayer.Statistics.Increment(stack.Holder.UnlocalizedName, stack.Count, "minecraft:dropped");
-            droppingPlayer.Statistics.Increment("minecraft:drop");
+            player.Statistics.Increment(stack.Holder.UnlocalizedName, stack.Count, "minecraft:dropped");
+            player.Statistics.Increment("minecraft:drop");
         }
 
         item.SpawnEntity(new Velocity(motion.X, motion.Y, motion.Z));

@@ -347,12 +347,11 @@ public sealed partial class Server : IServer, IPluginScopedServer
         await this.recipeSync.WaitAsync();
         try
         {
-            foreach (var player in this.OnlinePlayers.Values.OfType<Player>())
+            foreach (var player in this.OnlinePlayers.Values)
             {
                 try
                 {
-                    if (await player.RecipeBookSync.SendChangesAsync(player))
-                        await MainEventHandler.RefreshCraftingResultAsync(player);
+                    await player.SynchronizeRecipeBookAsync();
                 }
                 catch (Exception ex)
                 {

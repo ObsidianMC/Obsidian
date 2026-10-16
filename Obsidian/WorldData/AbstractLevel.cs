@@ -684,11 +684,7 @@ public abstract partial class AbstractLevel : ILevel
         {
             TickStage = $"tracking for {player.Username}";
             await player.SynchronizeTrackedEntitiesAsync();
-            if (player is Player connectedPlayer)
-            {
-                connectedPlayer.SynchronizeAttachments();
-                connectedPlayer.SynchronizeMovementAbilities();
-            }
+            player.SynchronizeOwnState();
         }
         TickStage = "idle";
     }

@@ -83,7 +83,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
         var scale = passenger.HasAttribute("minecraft:scale")
             ? Math.Clamp(passenger.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
             : 1f;
-        var vehicleAttachment = passenger is Player ? 0.6 * scale : 0;
+        var vehicleAttachment = passenger is IPlayer ? 0.6 * scale : 0;
 
         return new VectorD(
             seat.X * this.AttributeScale,

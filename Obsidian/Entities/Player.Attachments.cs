@@ -25,6 +25,12 @@ public partial class Player
             this.attachmentsSent.Clear();
     }
 
+    void IPlayer.SynchronizeOwnState()
+    {
+        this.SynchronizeAttachments();
+        this.SynchronizeMovementAbilities();
+    }
+
     /// <summary>On the level tick after tracking. Never sends plugin attachment payloads to vanilla clients.</summary>
     internal void SynchronizeAttachments()
     {

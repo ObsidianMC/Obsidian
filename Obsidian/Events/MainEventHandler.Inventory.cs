@@ -956,12 +956,8 @@ public partial class MainEventHandler
     {
         foreach (var viewer in container.GetViewers())
         {
-            if (viewer is Player player
-                && player.OpenedContainer is BaseContainer shown
-                && shown.SharesSlotsWith(container))
-            {
-                await RefreshWindowAsync(player, shown, stateId: 0);
-            }
+            if (viewer.OpenedContainer is BaseContainer shown && shown.SharesSlotsWith(container))
+                await viewer.RefreshWindowAsync();
         }
     }
 

@@ -9,7 +9,7 @@ internal static class CombatEffects
 {
     internal static IEnumerable<(ItemStack Item, string Slot)> Armor(Living entity)
     {
-        if (entity is Player player)
+        if (entity is IPlayer player)
         {
             for (var index = 0; index < 4; index++)
                 if (player.Inventory.GetItem(5 + index) is { Count: > 0 } item)
@@ -73,7 +73,7 @@ internal static class CombatEffects
             var thorns = CombatItems.EnchantmentLevel(armor, EnchantmentsRegistry.Thorns);
             if (thorns <= 0 || Globals.Random.NextSingle() >= thorns * 0.15f) continue;
             await attacker.DamageCombatAsync(target, thorns > 10 ? thorns - 10 : Globals.Random.Next(1, 5), CombatDamageKind.Magic);
-            if (target is Player player)
+            if (target is IPlayer player)
                 await player.DamageInventoryItemAsync(slot switch { "head" => 5, "chest" => 6, "legs" => 7, _ => 8 }, 2, true);
             else if (target is Mob mob)
                 mob.DamageEquipment(slot switch { "head" => EquipmentSlot.Helmet, "chest" => EquipmentSlot.Chestplate, "legs" => EquipmentSlot.Leggings, "feet" => EquipmentSlot.Boots, _ => EquipmentSlot.Body }, 2);

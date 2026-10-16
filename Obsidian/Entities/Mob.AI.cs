@@ -543,7 +543,7 @@ public partial class Mob
         amount -= absorbed;
         var previousHealth = Health;
         await base.DamageAsync(source, amount);
-        if (source is Player attackingPlayer && Health < previousHealth)
+        if (source is IPlayer attackingPlayer && Health < previousHealth)
             attackingPlayer.Statistics.Increment("minecraft:damage_dealt",
                 (int)Math.Clamp(Math.Floor(Math.Min(previousHealth, amount) * 10 + 0.5), 0, int.MaxValue));
 
@@ -583,7 +583,7 @@ public partial class Mob
             return;
         Health = 0;
         deathStarted = true;
-        if (source is Player killingPlayer)
+        if (source is IPlayer killingPlayer)
             await killingPlayer.RecordProgressKillAsync(this);
         goals.Cancel();
         TargetGoals.Cancel();

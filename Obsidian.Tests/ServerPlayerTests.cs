@@ -1,5 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.API.Inventory;
+using Obsidian.API.Registries;
 using Obsidian.Entities;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -51,6 +53,12 @@ public sealed class ServerPlayerTests
         Assert.Contains(client.SentPackets.OfType<PlayerInfoUpdatePacket>(), packet =>
             packet.Players.TryGetValue(player.Uuid, out var actions)
             && actions.OfType<UpdateGamemodeInfoAction>().Any());
+
+        // Gameplay takes server-side players too: what they drop counts in their statistics, and creative adds to
+        // their reach.
+        Assert.True(ItemEntity.Drop(player, new ItemStack(ItemsRegistry.Get("minecraft:stone"), 3)));
+        Assert.Equal(3, player.Statistics.Get("minecraft:stone", "minecraft:dropped"));
+        Assert.Equal(5, Entities.Player.BlockInteractionRange(player));
 
         await ((Obsidian.WorldData.AbstractLevel)context.World).ExplodeAsync(player, 1f);
         Assert.Contains(client.SentPackets, packet => packet is ExplodePacket);

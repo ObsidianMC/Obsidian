@@ -252,7 +252,7 @@ public sealed partial class EyeOfEnder : Entity
     {
         var eye = new VectorD(player.Position.X, player.HeadY, player.Position.Z);
         var look = player.GetLookDirection();
-        var range = player.BlockInteractionRange;
+        var range = Player.BlockInteractionRange(player);
         var end = eye + new VectorD(look.X * range, look.Y * range, look.Z * range);
 
         return new MobTerrain(level).ClipOutlines(eye, end) is (_, IBlock block) && block.Is(BlockIds.EndPortalFrame);

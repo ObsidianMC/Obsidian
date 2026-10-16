@@ -163,10 +163,10 @@ internal static class PluginEntities
 
         // Like vanilla's removal, to the level's players; they stop tracking the entities, so that tracking doesn't
         // remove them again.
-        foreach (var player in level.Players.Values.OfType<Player>())
+        foreach (var player in level.Players.Values)
         {
             foreach (var id in ids)
-                player.TrackedEntities.TryRemove(id, out _);
+                player.UntrackEntity(id);
         }
 
         level.PacketBroadcaster.QueuePacketToLevel(level, new RemoveEntitiesPacket(ids));

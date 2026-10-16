@@ -119,7 +119,28 @@ public interface IPlayer : ILiving
     // keep in sync; the server's network player overrides them.
     internal ValueTask SynchronizeTrackedEntitiesAsync() => default;
     internal void TrackEntity(IEntity entity) { }
+    internal void UntrackEntity(int entityId) { }
     internal void ForgetVisiblePlayer(IPlayer player) { }
+
+    // After entity tracking each tick: what changed in the player's attachments and movement abilities.
+    internal void SynchronizeOwnState() { }
+
+    // The recipe book's changes, and the crafting result they change.
+    internal ValueTask SynchronizeRecipeBookAsync() => default;
+
+    // The window the player has open, or else their inventory, sent again whole.
+    internal ValueTask RefreshWindowAsync() => default;
+
+    // Closes the player's container for the server, as when its block goes or the plugin unloading owns it.
+    internal ValueTask CloseContainerAsync(Plugins.IPluginContainer? unloading) => default;
+
+    // Gameplay that the server's network player keeps and players without a client don't take part in yet: hunger,
+    // item wear and advancements. Gameplay code calls these rather than testing for the network player's type.
+    internal void AddExhaustion(float amount) { }
+    internal ValueTask DamageInventoryItemAsync(int slot, int amount, bool armor = false, ItemStack? expected = null) =>
+        default;
+    internal void RecordProgressCraft(string identifier, ItemStack result) { }
+    internal ValueTask RecordProgressKillAsync(IEntity victim) => default;
 
     // Runs after every level has ticked, like vanilla's per-player inventory tick.
     internal ValueTask TickAfterLevelsAsync() => default;

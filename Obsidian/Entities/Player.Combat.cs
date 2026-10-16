@@ -81,6 +81,9 @@ public partial class Player
     /// the lock is let go (see <see cref="DeferredInventoryWork"/>). Either way it wears the stack the slot holds as
     /// it's asked for, not one put there meanwhile.
     /// </remarks>
+    ValueTask IPlayer.DamageInventoryItemAsync(int slot, int amount, bool armor, ItemStack? expected) =>
+        this.DamageInventoryItemAsync(slot, amount, armor, expected);
+
     internal ValueTask DamageInventoryItemAsync(int slot, int amount, bool armor = false, ItemStack? expected = null)
     {
         if ((expected ?? this.Inventory.GetItem(slot)) is not ItemStack stack)

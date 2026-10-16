@@ -121,7 +121,7 @@ internal static class PluginBlockEntities
     /// </summary>
     public static async ValueTask CloseWindowsAsync(IServer server, PluginContainer plugin, List<BaseContainer> retired)
     {
-        foreach (var player in server.OnlinePlayers.Values.OfType<Player>())
+        foreach (var player in server.OnlinePlayers.Values)
         {
             if (player.OpenedContainer is not BaseContainer open)
                 continue;

@@ -176,8 +176,8 @@ public partial class Entity
 
             if (source != destination)
             {
-                foreach (var observer in source.Players.Values.OfType<Player>())
-                    observer.TrackedEntities.TryRemove(this.EntityId, out _);
+                foreach (var observer in source.Players.Values)
+                    observer.UntrackEntity(this.EntityId);
             }
         }
     }

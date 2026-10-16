@@ -352,7 +352,7 @@ public partial class Player
         if (blockEntity.IsRemoved || !ReferenceEquals(blockEntity.Level, player.Level))
             return false;
 
-        var range = (player is Player concrete ? concrete.BlockInteractionRange : 4.5) + MenuReachBuffer;
+        var range = BlockInteractionRange(player) + MenuReachBuffer;
         var eye = EyePosition(player);
         var block = (VectorD)blockEntity.BlockPosition;
         var x = eye.X - Math.Clamp(eye.X, block.X, block.X + 1);

@@ -1,5 +1,7 @@
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
+using Obsidian.API.Progress;
+using Obsidian.Progress;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Collections.Generic;
@@ -48,6 +50,9 @@ public sealed partial class ServerPlayer : Avatar, IPlayer
     }
 
     public IServer Server { get; }
+
+    // Kept like the network player's, though not saved, like the rest of a server-side player.
+    public IStatistics Statistics { get; } = new PlayerStatistics();
 
     public string Username { get; }
 
