@@ -3,7 +3,7 @@ using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class BambooFlora(GenHelper helper, IChunk chunk) : BaseTallFlora(helper, chunk, Material.Bamboo, 15)
+public class BambooFlora(GenHelper helper, IChunk chunk) : BaseTallFlora(helper, chunk, BlocksRegistry.Bamboo, 15)
 {
 
     /// <summary>
@@ -17,10 +17,12 @@ public class BambooFlora(GenHelper helper, IChunk chunk) : BaseTallFlora(helper,
         int growHeight = await GetGrowHeightAsync(placeVector);
         if (growHeight == 0) { return false; }
 
-        var bambooBase = BlocksRegistry.Get(this.FloraMat, new BambooStateBuilder().WithAge(1).WithLeaves(LeavesType.None).WithStage(1).Build());
-        var bambooLeaves = BlocksRegistry.Get(this.FloraMat, new BambooStateBuilder().WithAge(1).WithLeaves(LeavesType.Small).WithStage(1).Build());
-        var bambooLeavesFull = BlocksRegistry.Get(this.FloraMat,
-            new BambooStateBuilder().WithAge(1).WithLeaves(LeavesType.Large).WithStage(1).Build());
+        var bambooBase = BlocksRegistry.Get(
+            new BambooStateBuilder().WithAge(1).WithLeaves(LeavesType.None).WithStage(1).Build().Id);
+        var bambooLeaves = BlocksRegistry.Get(
+            new BambooStateBuilder().WithAge(1).WithLeaves(LeavesType.Small).WithStage(1).Build().Id);
+        var bambooLeavesFull = BlocksRegistry.Get(
+            new BambooStateBuilder().WithAge(1).WithLeaves(LeavesType.Large).WithStage(1).Build().Id);
 
         // Grow base
         for (int y = 0; y < growHeight - 3; y++)

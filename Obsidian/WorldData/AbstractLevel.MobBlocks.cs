@@ -7,7 +7,7 @@ public abstract partial class AbstractLevel
 {
     private void CheckWither(Vector position, IBlock block)
     {
-        if (block.Material is not Material.WitherSkeletonSkull and not Material.WitherSkeletonWallSkull ||
+        if (block.RegistryId is not BlockIds.WitherSkeletonSkull and not BlockIds.WitherSkeletonWallSkull ||
             LevelData.Difficulty == Difficulty.Peaceful) return;
         EnqueueEntityAction(async () =>
         {
@@ -18,8 +18,11 @@ public abstract partial class AbstractLevel
                 var center = position + axis * offset;
                 var body = center - new Vector(0, 1, 0);
                 var basePosition = center - new Vector(0, 2, 0);
-                bool IsSkull(Vector point) => terrain.GetBlock(point)?.Material is Material.WitherSkeletonSkull or Material.WitherSkeletonWallSkull;
-                bool IsSoul(Vector point) => terrain.GetBlock(point)?.Material is Material.SoulSand or Material.SoulSoil;
+                bool IsSkull(Vector point) =>
+                    terrain.GetBlock(point)?.RegistryId is BlockIds.WitherSkeletonSkull
+                        or BlockIds.WitherSkeletonWallSkull;
+                bool IsSoul(Vector point) =>
+                    terrain.GetBlock(point)?.RegistryId is BlockIds.SoulSand or BlockIds.SoulSoil;
                 if (!IsSkull(center - axis) || !IsSkull(center) || !IsSkull(center + axis) ||
                     !IsSoul(body - axis) || !IsSoul(body) || !IsSoul(body + axis) || !IsSoul(basePosition) ||
                     terrain.GetBlock(basePosition - axis)?.IsAir != true || terrain.GetBlock(basePosition + axis)?.IsAir != true) continue;
@@ -37,15 +40,16 @@ public abstract partial class AbstractLevel
 
     private void CheckSnowGolem(Vector position, IBlock block)
     {
-        if (block.Material is not Material.CarvedPumpkin and not Material.JackOLantern)
+        if (block.RegistryId is not BlockIds.CarvedPumpkin and not BlockIds.JackOLantern)
             return;
         EnqueueEntityAction(async () =>
         {
             var terrain = new MobTerrain(this);
             var middle = new Vector(position.X, position.Y - 1, position.Z);
             var bottom = new Vector(position.X, position.Y - 2, position.Z);
-            if (terrain.GetBlock(position)?.Material is not Material.CarvedPumpkin and not Material.JackOLantern ||
-                terrain.GetBlock(middle)?.Material != Material.SnowBlock || terrain.GetBlock(bottom)?.Material != Material.SnowBlock)
+            if (terrain.GetBlock(position)?.RegistryId is not BlockIds.CarvedPumpkin and not BlockIds.JackOLantern
+                || terrain.GetBlock(middle)?.RegistryId != BlockIds.SnowBlock
+                || terrain.GetBlock(bottom)?.RegistryId != BlockIds.SnowBlock)
                 return;
             await SetBlockAsync(position, BlocksRegistry.Air, true);
             await SetBlockAsync(middle, BlocksRegistry.Air, true);

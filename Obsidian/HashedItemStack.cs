@@ -13,14 +13,12 @@ public sealed class HashedItemStack(Item holder, int count = 1) : IHashedItemSta
 
     public Item Holder { get; } = holder;
 
-    public Material Type => this.Holder.Type;
-
     public bool Compare(ItemStack? other)
     {
         if(other == null) 
             return false;
 
-        if(other.Type != this.Type) 
+        if (other.Holder != this.Holder)
             return false;
 
         var passed = true;

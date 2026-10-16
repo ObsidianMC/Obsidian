@@ -8,15 +8,18 @@ public partial class Cow : FarmAnimal
     protected override string? SoundName => "cow";
     protected override void FinalizeSpawn() => Variant = GetFarmVariant();
 
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!CanInteract(player))
-            return;
+            return false;
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (!IsBaby && held is { Count: > 0, Type: Material.Bucket })
-            await GiveInteractionItemAsync(player, hand, Material.MilkBucket);
-        else
-            await base.FeedAsync(player, hand);
+        if (!IsBaby && held is { Count: > 0, Holder.Id: ItemIds.Bucket })
+        {
+            await GiveInteractionItemAsync(player, hand, ItemsRegistry.MilkBucket);
+            return true;
+        }
+
+        return await base.FeedAsync(player, hand);
     }
 
     protected bool CanInteract(IPlayer player) => Alive && !IsRemoved && player.Health > 0 && player.Level == Level &&
@@ -32,11 +35,7 @@ public partial class Cow : FarmAnimal
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (!IsBaby)
-        {
-            DropItem(Material.Leather, Random.Next(3));
-            DropItem(Burning ? Material.CookedBeef : Material.Beef, Random.Next(1, 4));
-        }
+        this.DropVanillaLoot(source);
         return default;
     }
 

@@ -1,3 +1,4 @@
+using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
@@ -7,8 +8,8 @@ namespace Obsidian.Entities;
 public abstract class Fish : PathfinderMob
 {
     public bool FromBucket { get; set; }
-    protected abstract Material BucketItem { get; }
-    protected abstract Material FishItem { get; }
+    protected abstract Item BucketItem { get; }
+    protected abstract Item FishItem { get; }
     protected override bool UsesAi => true;
     internal override bool SwimmingNavigation => true;
     protected override bool CanDespawn => !FromBucket;
@@ -41,15 +42,19 @@ public abstract class Fish : PathfinderMob
         else if (--Air <= -20) { Air = 0; await DamageEnvironmentAsync(2); }
     }
 
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
-    {
-        await TryCaptureInBucketAsync(player, hand, BucketItem);
-    }
+    internal override ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand) =>
+        TryCaptureInBucketAsync(player, hand, BucketItem);
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Burning ? FishItem switch { Material.Cod => Material.CookedCod, Material.Salmon => Material.CookedSalmon, _ => FishItem } : FishItem);
-        if (Random.NextSingle() < 0.05f) DropItem(Material.BoneMeal);
+        var cooked = FishItem.Id switch
+        {
+            ItemIds.Cod => ItemsRegistry.CookedCod,
+            ItemIds.Salmon => ItemsRegistry.CookedSalmon,
+            _ => FishItem
+        };
+        DropItem(Burning ? cooked : FishItem);
+        if (Random.NextSingle() < 0.05f) DropItem(ItemsRegistry.BoneMeal);
         return default;
     }
 
@@ -154,8 +159,8 @@ public sealed partial class Cod : SchoolingFish
 {
     public Cod() => Type = EntityType.Cod;
     protected override string? SoundName => "cod";
-    protected override Material BucketItem => Material.CodBucket;
-    protected override Material FishItem => Material.Cod;
+    protected override Item BucketItem => ItemsRegistry.CodBucket;
+    protected override Item FishItem => ItemsRegistry.Cod;
     internal override int MaximumSchoolSize => 9;
 }
 
@@ -168,8 +173,8 @@ public sealed partial class Salmon : SchoolingFish
     public int Size { get => size; set => size = (uint)value < 3 ? value : throw new ArgumentOutOfRangeException(nameof(value)); }
     protected override float DimensionScale => Size switch { 0 => 0.5f, 2 => 1.5f, _ => 1 };
     protected override string? SoundName => "salmon";
-    protected override Material BucketItem => Material.SalmonBucket;
-    protected override Material FishItem => Material.Salmon;
+    protected override Item BucketItem => ItemsRegistry.SalmonBucket;
+    protected override Item FishItem => ItemsRegistry.Salmon;
     internal override int MaximumSchoolSize => 5;
     protected override void FinalizeSpawn()
     {
@@ -205,8 +210,8 @@ public sealed partial class TropicalFish : SchoolingFish
     public TropicalFish() => Type = EntityType.TropicalFish;
     public int Variant { get; set; }
     protected override string? SoundName => "tropical_fish";
-    protected override Material BucketItem => Material.TropicalFishBucket;
-    protected override Material FishItem => Material.TropicalFish;
+    protected override Item BucketItem => ItemsRegistry.TropicalFishBucket;
+    protected override Item FishItem => ItemsRegistry.TropicalFish;
     internal override bool CanJoinSchool(SchoolingFish leader) => leader is TropicalFish other && other.Variant == Variant;
     protected override void FinalizeSpawn()
     {
@@ -243,10 +248,11 @@ public sealed partial class Pufferfish : Fish
     public Pufferfish() => Type = EntityType.Pufferfish;
     protected override float DimensionScale => PuffState switch { 0 => 0.5f, 1 => 0.7f, _ => 1 };
     protected override string? SoundName => "puffer_fish";
-    protected override Material BucketItem => Material.PufferfishBucket;
-    protected override Material FishItem => Material.Pufferfish;
+    protected override Item BucketItem => ItemsRegistry.PufferfishBucket;
+    protected override Item FishItem => ItemsRegistry.Pufferfish;
     private bool IsThreat(IEntity target) => IsValidTarget(target) && target is Living &&
-        target.Type != EntityType.Axolotl && !TagsRegistry.EntityType.Aquatic.Entries.Contains((int)target.Type);
+        target.Type != EntityType.Axolotl
+        && !IsIn(target, TagsRegistry.EntityType.Aquatic);
 
     protected override async ValueTask TickMobAsync()
     {

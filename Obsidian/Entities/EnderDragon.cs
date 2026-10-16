@@ -258,7 +258,7 @@ public sealed partial class EnderDragon : BossMob
                 if (Terrain.GetBlock(position) is not { IsAir: false } block ||
                     TagsRegistry.Block.DragonTransparent.Entries.Contains(block.RegistryId)) continue;
                 if (TagsRegistry.Block.DragonImmune.Entries.Contains(block.RegistryId)) blocked = true;
-                else await level.SetBlockAsync(position, BlocksRegistry.Get(Material.Air), true);
+                else await level.SetBlockAsync(position, BlocksRegistry.Air, true);
             }
         }
         if (blocked) Motion *= 0.8f;

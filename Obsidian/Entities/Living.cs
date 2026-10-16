@@ -13,7 +13,21 @@ public partial class Living : Entity, ILiving
     internal IEntity? IncomingDirectSource { get; private set; }
     internal int AcceptedDamageCount { get; set; }
 
-    internal virtual async ValueTask DamageCombatAsync(IEntity source, float amount, CombatDamageKind kind, ItemStack? weapon = null, IEntity? directSource = null)
+    /// <summary>
+    /// Damages the entity as <paramref name="kind"/> of damage that <paramref name="source"/> deals, through
+    /// <paramref name="directSource"/> (a projectile, say) when that isn't the source itself.
+    /// </summary>
+    /// <param name="sourcePosition">
+    /// Where the damage comes from when that isn't the direct source's position, like an explosion's centre; players
+    /// block with shields facing it (vanilla's <c>DamageSource.getSourcePosition</c>).
+    /// </param>
+    internal virtual async ValueTask DamageCombatAsync(
+        IEntity source,
+        float amount,
+        CombatDamageKind kind,
+        ItemStack? weapon = null,
+        IEntity? directSource = null,
+        VectorD? sourcePosition = null)
     {
         var previousKind = IncomingDamageKind;
         var previousWeapon = IncomingWeapon;
@@ -63,8 +77,19 @@ public partial class Living : Entity, ILiving
         activePotionEffects = new ConcurrentDictionary<int, EffectWithCurrentDuration>();
     }
 
+    /// <summary>
+    /// Applies the attribute modifiers of what the entity holds and wears, as they change; nothing for entities
+    /// without that.
+    /// </summary>
+    internal virtual void UpdateEquipmentAttributes()
+    {
+    }
+
     public override async ValueTask TickAsync()
     {
+        this.UpdateEquipmentAttributes();
+        this.SendAttributeChanges();
+
         effectTicks++;
         foreach (var (potion, active) in activePotionEffects)
         {
@@ -77,7 +102,7 @@ public partial class Living : Entity, ILiving
             var effectTime = data.CurrentDuration == -1 ? effectTicks : data.CurrentDuration;
             if (Alive && potion == (int)PotionEffect.Regeneration - 1 &&
                 effectTime % Math.Max(1, 50 >> Math.Min(30, data.EffectData.Amplifier)) == 0)
-                Health = Math.Min(this is Player ? 20 : GetAttributeValue("minecraft:generic.max_health"), Health + 1);
+                Health = Math.Min(GetAttributeValue("minecraft:max_health"), Health + 1);
             var poisonInterval = Math.Max(1, 25 >> Math.Min(30, data.EffectData.Amplifier));
             if (potion == (int)PotionEffect.Poison - 1 && effectTime % poisonInterval == 0 && Health > 1)
             {
@@ -195,6 +220,7 @@ public partial class Living : Entity, ILiving
     {
         base.WriteNbt(tag);
 
+        tag.Set(this.SaveAttributes());
         tag.Set(new NbtTag<float>("Health", this.Health));
         tag.Set(new NbtTag<float>("AbsorptionAmount", this.AbsorptionHealth));
         tag.Set(new NbtTag<bool>("PersistenceRequired", this.PersistenceRequired));
@@ -203,6 +229,8 @@ public partial class Living : Entity, ILiving
     internal override void ReadNbt(NbtCompound tag)
     {
         base.ReadNbt(tag);
+
+        this.LoadAttributes(tag);
 
         if (tag.TryGetTag<NbtTag<float>>("Health", out var health))
             this.Health = health.Value;

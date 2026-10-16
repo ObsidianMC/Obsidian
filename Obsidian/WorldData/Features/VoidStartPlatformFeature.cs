@@ -12,9 +12,9 @@ public sealed class VoidStartPlatformFeature : ConfiguredFeatureBase
 
     public override string Type => "minecraft:void_start_platform";
 
-    private static IBlock Stone => field ??= BlocksRegistry.Get(Material.Stone);
+    private static IBlock Stone => field ??= BlocksRegistry.Stone;
 
-    private static IBlock Cobblestone => field ??= BlocksRegistry.Get(Material.Cobblestone);
+    private static IBlock Cobblestone => field ??= BlocksRegistry.Cobblestone;
 
     public override bool Place(FeatureContext context)
     {

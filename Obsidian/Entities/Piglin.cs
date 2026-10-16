@@ -5,6 +5,7 @@ using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -29,10 +30,21 @@ public sealed partial class Piglin : PathfinderMob
     protected override void FinalizeSpawn()
     {
         IsBaby |= Random.NextSingle() < 0.2f;
-        if (!IsBaby) SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(Random.Next(2) == 0 ? Material.GoldenSword : Material.Crossbow));
-        foreach (var (slot, material) in new[] { (EquipmentSlot.Helmet, Material.GoldenHelmet), (EquipmentSlot.Chestplate, Material.GoldenChestplate),
-            (EquipmentSlot.Leggings, Material.GoldenLeggings), (EquipmentSlot.Boots, Material.GoldenBoots) })
-            if (!IsBaby && Random.NextSingle() < 0.1f) SetEquipment(slot, ItemsRegistry.GetSingleItem(material));
+        if (!IsBaby)
+        {
+            var weapon = Random.Next(2) == 0 ? ItemsRegistry.GoldenSword : ItemsRegistry.Crossbow;
+            SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(weapon));
+        }
+
+        (EquipmentSlot Slot, Item Armor)[] armor =
+        [
+            (EquipmentSlot.Helmet, ItemsRegistry.GoldenHelmet),
+            (EquipmentSlot.Chestplate, ItemsRegistry.GoldenChestplate),
+            (EquipmentSlot.Leggings, ItemsRegistry.GoldenLeggings),
+            (EquipmentSlot.Boots, ItemsRegistry.GoldenBoots)
+        ];
+        foreach (var (slot, piece) in armor)
+            if (!IsBaby && Random.NextSingle() < 0.1f) SetEquipment(slot, ItemsRegistry.GetSingleItem(piece));
     }
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
@@ -50,19 +62,33 @@ public sealed partial class Piglin : PathfinderMob
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, target => CanFight && target is IPlayer player && !WearsGold(player)));
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, target => CanFight && (target.Type is EntityType.WitherSkeleton or EntityType.Wither)));
     }
-    private static bool WearsGold(IPlayer player) => Enumerable.Range(5, 4).Any(slot => player.Inventory.GetItem(slot)?.Type is
-        Material.GoldenHelmet or Material.GoldenChestplate or Material.GoldenLeggings or Material.GoldenBoots);
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    private static bool WearsGold(IPlayer player) => Enumerable.Range(5, 4).Any(slot =>
+        player.Inventory.GetItem(slot)?.Holder.Id is ItemIds.GoldenHelmet
+            or ItemIds.GoldenChestplate
+            or ItemIds.GoldenLeggings
+            or ItemIds.GoldenBoots);
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!CanFight || !Alive || IsRemoved || player.Level != Level || player.Health <= 0 || player.GameMode == GameMode.Spectator ||
-            !IsInRange(player, 4) || !CanSee(player) || (hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem()) is not { Count: > 0, Type: Material.GoldIngot }) return;
+        var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
+        if (!CanFight
+            || !Alive
+            || IsRemoved
+            || player.Level != Level
+            || player.Health <= 0
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4)
+            || !CanSee(player)
+            || held is not { Count: > 0, Holder.Id: ItemIds.GoldIngot })
+            return false;
+
         await ConsumeInteractionItemAsync(player, hand);
         BeginAdmiring();
+        return true;
     }
     private void BeginAdmiring()
     {
         admireTicks = 120;
-        SetEquipment(EquipmentSlot.OffHand, ItemsRegistry.GetSingleItem(Material.GoldIngot));
+        SetEquipment(EquipmentSlot.OffHand, ItemsRegistry.GetSingleItem(ItemsRegistry.GoldIngot));
         AttackTarget = null;
         SynchronizeMetadata();
     }
@@ -81,7 +107,7 @@ public sealed partial class Piglin : PathfinderMob
     protected override async ValueTask TickMobAsync()
     {
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
-        var safe = CodecRegistry.TryGetDimension(Level.DimensionName, out var dimension) ? dimension.Element.PiglinSafe : Level.DimensionName == "minecraft:the_nether";
+        var safe = Level.PiglinsSafe((Vector)Position.Floor());
         if (safe || IsImmuneToZombification) TimeInOverworld = 0;
         else if (++TimeInOverworld > 300)
         {
@@ -106,7 +132,9 @@ public sealed partial class Piglin : PathfinderMob
         }
         if (AttackTarget == null && AiTick % 10 == 0 && (!IsBaby || GetEquipment(EquipmentSlot.OffHand).IsAir))
         {
-            var gold = GetEntitiesNear(1.5f).OfType<ItemEntity>().FirstOrDefault(item => item.CanPickup && item.Item is { Count: > 0, Type: Material.GoldIngot });
+            var gold = GetEntitiesNear(1.5f)
+                .OfType<ItemEntity>()
+                .FirstOrDefault(item => item.CanPickup && item.Item is { Count: > 0, Holder.Id: ItemIds.GoldIngot });
             if (gold != null)
             {
                 gold.Item.Count--;
@@ -120,9 +148,12 @@ public sealed partial class Piglin : PathfinderMob
     internal void LoadCrossbow(bool loaded)
     {
         var weapon = GetEquipment(EquipmentSlot.MainHand);
-        if (weapon.Type != Material.Crossbow) return;
+        if (!weapon.Is(ItemsRegistry.Crossbow)) return;
         var copy = new ItemStack(weapon, weapon.Count);
-        copy[DataComponentType.ChargedProjectiles] = ComponentBuilder.ChargedProjectiles with { Value = loaded ? [ItemsRegistry.GetSingleItem(Material.Arrow)] : [] };
+        copy[DataComponentType.ChargedProjectiles] = ComponentBuilder.ChargedProjectiles with
+        {
+            Value = loaded ? [ItemsRegistry.GetSingleItem(ItemsRegistry.Arrow)] : []
+        };
         SetEquipment(EquipmentSlot.MainHand, copy);
     }
     internal void Shoot(IEntity target)
@@ -176,8 +207,12 @@ internal sealed class PiglinAdmireGoal(Piglin piglin) : Goal
 }
 internal sealed class PiglinMeleeGoal(Piglin piglin) : MeleeAttackGoal(piglin)
 {
-    public override bool CanUse() => piglin.CanFight && piglin.GetEquipment(EquipmentSlot.MainHand).Type != Material.Crossbow && base.CanUse();
-    public override bool CanContinue() => piglin.CanFight && piglin.GetEquipment(EquipmentSlot.MainHand).Type != Material.Crossbow && base.CanContinue();
+    public override bool CanUse() =>
+        piglin.CanFight && !piglin.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Crossbow) && base.CanUse();
+    public override bool CanContinue() =>
+        piglin.CanFight
+        && !piglin.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Crossbow)
+        && base.CanContinue();
 }
 internal sealed class PiglinCrossbowGoal(Piglin piglin) : NavigationGoal(piglin, 1)
 {
@@ -186,7 +221,11 @@ internal sealed class PiglinCrossbowGoal(Piglin piglin) : NavigationGoal(piglin,
     private bool loaded;
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
-    public override bool CanUse() => piglin.CanFight && piglin.GetEquipment(EquipmentSlot.MainHand).Type == Material.Crossbow && piglin.AttackTarget is { } target && piglin.IsValidTarget(target);
+    public override bool CanUse() =>
+        piglin.CanFight
+        && piglin.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Crossbow)
+        && piglin.AttackTarget is { } target
+        && piglin.IsValidTarget(target);
     public override void Start() => piglin.SetAggressive(true);
     public override ValueTask TickAsync()
     {

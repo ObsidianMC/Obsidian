@@ -1,11 +1,17 @@
 ﻿using Obsidian.Nbt;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Lighting;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
 public partial class LevelChunkWithLightPacket(IChunk chunk)
 {
     public IChunk Chunk { get; } = chunk;
+
+    // Capture before the packet enters the send queue, whose serialization holds the client's send lock.
+    private readonly LightUpdatePacket light = chunk is Chunk { RuntimeLight: RuntimeLightEngine engine }
+        ? engine.SnapshotLight(chunk)
+        : new LightUpdatePacket(chunk);
 
     public override void Serialize(INetStreamWriter writer)
     {
@@ -44,41 +50,26 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
         writer.Write(sectionBuffer);
 
 
-        // Block entities kept as data; clients create the others from the block states when they're placed.
-        var blockEntities = Chunk.GetBlockEntities().OfType<DataBlockEntity>()
-            .Where(blockEntity => BlockPhysics.BlockEntityTypeId(blockEntity.Id) >= 0)
+        // Like vanilla's, every block entity of a type clients know, with its update data. A plugin's block entity
+        // sends what it gave last (see BlockEntity.ClientData), so that its code doesn't run on this thread.
+        var blockEntities = Chunk.GetBlockEntities()
+            .OfType<API.BlockEntities.BlockEntity>()
+            .Select(blockEntity => (BlockEntity: blockEntity, Type: BlockEntityTypesRegistry.NetworkId(blockEntity.Id)))
+            .Where(entry => entry.Type >= 0)
             .ToList();
 
-        var campfires = Chunk.GetBlockEntities().OfType<CampfireBlockEntity>().ToList();
-        writer.WriteVarInt(blockEntities.Count + campfires.Count);
-        foreach (var blockEntity in blockEntities)
+        writer.WriteVarInt(blockEntities.Count);
+        foreach (var (blockEntity, type) in blockEntities)
         {
             var position = blockEntity.BlockPosition;
             writer.WriteByte((sbyte)((position.X & 15) << 4 | (position.Z & 15)));
             writer.WriteShort((short)position.Y);
-            writer.WriteVarInt(BlockPhysics.BlockEntityTypeId(blockEntity.Id));
-            WriteNbt(writer, blockEntity.GetClientData());
-        }
-
-        // Campfires send the items they're cooking, like vanilla's getUpdateTag.
-        foreach (var campfire in campfires)
-        {
-            var position = campfire.BlockPosition;
-            writer.WriteByte((sbyte)((position.X & 15) << 4 | (position.Z & 15)));
-            writer.WriteShort((short)position.Y);
-            writer.WriteVarInt(BlockPhysics.BlockEntityTypeId(campfire.Id));
-            WriteNbt(writer, BlockEntityNbt.Save(campfire, Chunk) ?? new NbtCompound());
+            writer.WriteVarInt(type);
+            WriteNbt(writer, blockEntity.SavesOnAnyThread ? blockEntity.GetUpdateData() : blockEntity.ClientData);
         }
 
         // Lighting
-        Chunk.WriteLightMaskTo(writer, LightType.Sky);
-        Chunk.WriteLightMaskTo(writer, LightType.Block);
-
-        Chunk.WriteEmptyLightMaskTo(writer, LightType.Sky);
-        Chunk.WriteEmptyLightMaskTo(writer, LightType.Block);
-
-        Chunk.WriteLightTo(writer, LightType.Sky);
-        Chunk.WriteLightTo(writer, LightType.Block);
+        this.light.WriteLight(writer);
     }
 
     /// <summary>

@@ -32,7 +32,8 @@ public sealed partial class Vindicator : PathfinderMob
             target.Type is not (EntityType.Vindicator or EntityType.Pillager or EntityType.Evoker or EntityType.Illusioner)));
     }
 
-    protected override void FinalizeSpawn() => SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(Material.IronAxe));
+    protected override void FinalizeSpawn() =>
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.IronAxe));
     protected override ValueTask TickMobAsync()
     {
         if (CustomName?.Text == "Johnny") Johnny = true;
@@ -40,7 +41,7 @@ public sealed partial class Vindicator : PathfinderMob
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (source is IPlayer) DropItem(Material.Emerald, Random.Next(2));
+        if (source is IPlayer) DropItem(ItemsRegistry.Emerald, Random.Next(2));
         foreach (var slot in Enum.GetValues<EquipmentSlot>())
             if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot))
                 DropItem(GetEquipment(slot));

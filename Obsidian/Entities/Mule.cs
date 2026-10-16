@@ -1,3 +1,5 @@
+using Obsidian.API.Inventory;
+
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:mule")]
@@ -6,10 +8,18 @@ public sealed partial class Mule : ChestedHorse
     public Mule() => Type = EntityType.Mule;
     protected override bool UsesAi => true;
     protected override string? SoundName => "mule";
-    protected override bool CanEat(Obsidian.API.Inventory.ItemStack? item) => item is { Count: > 0,
-        Type: Material.Wheat or Material.Sugar or Material.Apple or Material.HayBlock or Material.GoldenCarrot or Material.GoldenApple };
+    protected override bool CanEat(ItemStack? item) => item is
+    {
+        Count: > 0,
+        Holder.Id: ItemIds.Wheat
+            or ItemIds.Sugar
+            or ItemIds.Apple
+            or ItemIds.HayBlock
+            or ItemIds.GoldenCarrot
+            or ItemIds.GoldenApple
+    };
     internal override bool CanBreed => false;
-    protected override bool IsBreedingFood(Material food) => false;
+    protected override bool IsBreedingFood(Item food) => false;
     protected override void RegisterGoals(AI.GoalSelector actions, AI.GoalSelector targets)
     {
         base.RegisterGoals(actions, targets);

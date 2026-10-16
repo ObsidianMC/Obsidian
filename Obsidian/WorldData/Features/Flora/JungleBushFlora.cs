@@ -3,9 +3,10 @@ using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class JungleBushFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, Material.JungleLeaves)
+public class JungleBushFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, BlocksRegistry.JungleLeaves)
 {
-    private static readonly IBlock jungleLogBlock = BlocksRegistry.Get(Material.JungleLog, new JungleLogStateBuilder().WithAxis(Axis.Y).Build());
+    private static readonly IBlock jungleLogBlock =
+        BlocksRegistry.Get(new JungleLogStateBuilder().WithAxis(Axis.Y).Build().Id);
 
     public override async Task GenerateFloraAsync(Vector origin, int seed, int radius, int density)
     {

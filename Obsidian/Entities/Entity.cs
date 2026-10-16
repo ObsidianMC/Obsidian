@@ -6,10 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.Entities;
 
-public class Entity : IEquatable<Entity>, IEntity
+public partial class Entity : IEquatable<Entity>, IEntity
 {
-    protected virtual ConcurrentDictionary<string, float> Attributes { get; } = new();
-
     // Retained for derived classes; built-in serializers use fixed indexes to avoid concurrent-write races.
     protected byte MetadataIndex { get; set; }
 
@@ -43,9 +41,64 @@ public class Entity : IEquatable<Entity>, IEntity
     public virtual EntityDimension Dimension { get; protected set; } = EntityDimension.Zero;
     protected virtual float DimensionScale => 1;
 
+    // LivingEntity.getScale clamps the attribute; age/type scaling remains independent.
+    internal float AttributeScale => this.HasAttribute("minecraft:scale")
+        ? Math.Clamp(this.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
+        : 1;
+
+    protected EntityDimension ScaleDimensions(float width, float height) => new()
+    {
+        Width = width * this.DimensionScale * this.AttributeScale,
+        Height = height * this.DimensionScale * this.AttributeScale
+    };
+
     public int PowderedSnowTicks { get; set; }
 
-    public EntityType Type { get; set; }
+    public EntityType? Type { get; set; }
+
+    public virtual API.Entities.EntityDefinition? Definition => null;
+
+    /// <summary>
+    /// The plugin whose code spawned the entity, which unloading the plugin removes it for, or null for the server's
+    /// (see <see cref="Plugins.PluginEntities"/>).
+    /// </summary>
+    internal Plugins.PluginContainer? SpawnedBy { get; set; }
+
+    /// <summary>
+    /// The entity's type's id in the entity type registry, which clients are sent: its vanilla type's, or its plugin
+    /// type's.
+    /// </summary>
+    internal int TypeId => this.Definition?.Id
+        ?? (int)(this.Type ?? throw new InvalidOperationException($"Entity {this.EntityId} has no type."));
+
+    /// <summary>
+    /// Drops what an unloading plugin, whose code is in <paramref name="context"/>, gave the entity through the API: a
+    /// navigator or goal controller, which would keep the plugin loaded. Run on the entity's level's tick.
+    /// </summary>
+    internal virtual void ReleasePluginObjects(System.Runtime.Loader.AssemblyLoadContext context)
+    {
+        if (this.GoalController is AI.GoalSelector selector)
+            selector.RemoveGoalsFrom(context);
+        else if (IsFrom(this.GoalController, context))
+            this.GoalController = null;
+
+        if (IsFrom(this.Navigator, context))
+            this.Navigator = null;
+    }
+
+    /// <summary>
+    /// Whether an object's code is in <paramref name="context"/>.
+    /// </summary>
+    internal static bool IsFrom(object? value, System.Runtime.Loader.AssemblyLoadContext context) =>
+        value is not null
+        && System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(value.GetType().Assembly) == context;
+
+    /// <summary>
+    /// Whether an entity's type, vanilla's or a plugin's, is in an entity type tag.
+    /// </summary>
+    internal static bool IsIn(IEntity entity, Tag tag) => entity.Definition?.Id is int id
+        ? tag.Entries.Contains(id)
+        : entity.Type is EntityType type && tag.Entries.Contains((int)type);
 
     public short Air { get; set; } = 300;
 
@@ -92,6 +145,7 @@ public class Entity : IEquatable<Entity>, IEntity
     /// </remarks>
     internal virtual void WriteNbt(NbtCompound tag)
     {
+        API.Data.AttachmentStorage.For(this).Save(tag);
         tag.Set(EntityNbt.DoubleList("Pos", this.Position));
         tag.Set(EntityNbt.DoubleList("Motion", this.Motion));
         tag.Set(new NbtList(NbtTagType.Float, "Rotation")
@@ -117,6 +171,7 @@ public class Entity : IEquatable<Entity>, IEntity
     /// </summary>
     internal virtual void ReadNbt(NbtCompound tag)
     {
+        API.Data.AttachmentStorage.For(this).Load(tag);
         if (EntityNbt.TryReadVector(tag, "Pos", out var position))
             this.Position = position;
         if (EntityNbt.TryReadVector(tag, "Motion", out var motion))
@@ -363,7 +418,14 @@ public class Entity : IEquatable<Entity>, IEntity
         return new(-cosPitch * sinYaw, -sinPitch, cosPitch * cosYaw);
     }
 
-    public async virtual ValueTask RemoveAsync() => await this.Level.DestroyEntityAsync(this);
+    public virtual async ValueTask RemoveAsync()
+    {
+        ValueTask<bool> removal;
+        lock (ItemEntity.TransferLock)
+            removal = this.Level.DestroyEntityAsync(this);
+
+        await removal;
+    }
 
     protected virtual EntityBitMask GenerateBitmask()
     {
@@ -497,54 +559,13 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public override int GetHashCode() => EntityId.GetHashCode();
 
-    public virtual ValueTask TeleportAsync(IWorld world) => default;
+    public virtual ValueTask TeleportAsync(IWorld world) =>
+        this.TeleportAsync(world, world.LevelData.SpawnPosition);
 
-    public async virtual ValueTask TeleportAsync(IEntity to)
-    {
-        if (to is not Entity target)
-            return;
+    public virtual ValueTask TeleportAsync(IEntity to) =>
+        this.TeleportAsync(to.Level, to.Position, to.Yaw, to.Pitch);
 
-        if (to.Level != Level)
-        {
-            await Level.DestroyEntityAsync(this);
-
-            Level = target.Level;
-            Level.SpawnEntity(to.Position, Type);
-
-            return;
-        }
-
-        await this.TeleportAsync(to.Position);
-    }
-
-    public virtual ValueTask TeleportAsync(VectorD pos)
-    {
-        var delta = MoveDelta(Position, pos);
-        if (!IsRelativeMove(delta))
-        {
-            this.PacketBroadcaster.QueuePacketToLevel(this.Level, 0, new TeleportEntityPacket
-            {
-                EntityId = EntityId,
-                OnGround = MovementFlags.HasFlag(MovementFlags.OnGround),
-                Position = pos,
-                Pitch = Pitch,
-                Yaw = Yaw
-            });
-
-            return default;
-        }
-
-        this.PacketBroadcaster.QueuePacketToLevel(this.Level, 0, new MoveEntityPosRotPacket
-        {
-            EntityId = EntityId,
-            Delta = delta,
-            OnGround = MovementFlags.HasFlag(MovementFlags.OnGround),
-            Pitch = Pitch,
-            Yaw = Yaw
-        });
-
-        return default;
-    }
+    public virtual ValueTask TeleportAsync(VectorD pos) => this.TeleportAsync(this.Level, pos);
 
     public virtual void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
     {
@@ -563,56 +584,32 @@ public class Entity : IEquatable<Entity>, IEntity
         }
     }
 
-    internal virtual IClientboundPacket CreateSpawnPacket(Velocity? velocity = null, int additionalData = 0) => new BundledPacket
-        (
-             [
-                new AddEntityPacket
-                {
-                    EntityId = this.EntityId,
-                    Uuid = this.Uuid,
-                    Type = this.Type,
-                    Position = this.Position,
-                    Pitch = this.Pitch,
-                    Yaw = this.Yaw,
-                    Data = additionalData,
-                    Velocity = velocity ?? new Velocity(0, 0, 0)
-                },
-                new SetEntityDataPacket
-                {
-                    EntityId = this.EntityId,
-                    Entity = this
-                }
-            ]
-        );
-
-    public bool TryAddAttribute(string attributeResourceName, float value) =>
-        Attributes.TryAdd(ResolveAttributeName(attributeResourceName), value);
-
-    public bool TryUpdateAttribute(string attributeResourceName, float newValue)
+    internal virtual IClientboundPacket CreateSpawnPacket(Velocity? velocity = null, int additionalData = 0)
     {
-        attributeResourceName = ResolveAttributeName(attributeResourceName);
-        if (!Attributes.TryGetValue(attributeResourceName, out var value))
-            return false;
+        List<Net.Packets.ClientboundPacket> packets =
+        [
+            new AddEntityPacket
+            {
+                EntityId = this.EntityId,
+                Uuid = this.Uuid,
+                Type = this.TypeId,
+                Position = this.Position,
+                Pitch = this.Pitch,
+                Yaw = this.Yaw,
+                Data = additionalData,
+                Velocity = velocity ?? new Velocity(0, 0, 0)
+            },
+            new SetEntityDataPacket
+            {
+                EntityId = this.EntityId,
+                Entity = this
+            }
+        ];
 
-        return Attributes.TryUpdate(attributeResourceName, newValue, value);
-    }
+        // Like vanilla's pairing data, a living entity's syncable attributes follow its data.
+        if (this is Living && this.CreateAttributesPacket(changedOnly: false) is UpdateAttributesPacket attributes)
+            packets.Add(attributes);
 
-    public bool HasAttribute(string attributeResourceName) =>
-        Attributes.ContainsKey(ResolveAttributeName(attributeResourceName));
-
-    public float GetAttributeValue(string attributeResourceName) =>
-        Attributes.GetValueOrDefault(ResolveAttributeName(attributeResourceName));
-
-    private string ResolveAttributeName(string name)
-    {
-        // Keep saved legacy overrides, while allowing AI to use the regenerated vanilla attribute names.
-        if (Attributes.ContainsKey(name))
-            return name;
-
-        const string genericPrefix = "minecraft:generic.";
-        if (name.StartsWith(genericPrefix, StringComparison.Ordinal))
-            return "minecraft:" + name[genericPrefix.Length..];
-
-        return name == "minecraft:horse.jump_strength" ? "minecraft:jump_strength" : name;
+        return new BundledPacket(packets);
     }
 }

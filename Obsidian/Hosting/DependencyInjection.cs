@@ -8,6 +8,7 @@ using Obsidian.API.Configuration;
 using Obsidian.Commands.Framework;
 using Obsidian.Console;
 using Obsidian.Integrated;
+using Obsidian.Plugins;
 using Obsidian.Services;
 using Obsidian.WorldData;
 using OpenTelemetry.Logs;
@@ -83,10 +84,8 @@ public static class DependencyInjection
     {
         var integrated = builder.Configuration.GetValue<bool>("Integrated:Enabled");
 
-        // filename with date,time
         Directory.CreateDirectory(ServerConstants.LogsPath);
-        var logFile = Path.Combine(ServerConstants.LogsPath, $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.log");
-        var logFileStream = new FileStream(logFile, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+        var logFileStream = OpenLogFile(DateTime.Now);
 
         // Clear the host's default providers first; clearing later would also remove OpenTelemetry.
         builder.Logging.ClearProviders();
@@ -132,6 +131,7 @@ public static class DependencyInjection
         builder.Services.AddSingleton<IServer, Server>();
         builder.Services.AddSingleton<IUserCache, UserCache>();
         builder.Services.AddSingleton<EventDispatcher>();
+        builder.Services.AddSingleton<PluginStartup>();
         builder.Services.AddSingleton<ILevelFactory, LevelFactory>();
 
         builder.Services.AddSingleton<IConsoleCommandHandler, RegistryConsoleCommandHandler>();
@@ -175,6 +175,25 @@ public static class DependencyInjection
         builder.Services.AddSingleton<ServerMetrics>();
 
         return builder;
+    }
+
+    // A new log for each start, named for its time. A second start within the same second, like a world opened again
+    // right after it was closed, gets a numbered name rather than the first one's file, which may still be open.
+    private static FileStream OpenLogFile(DateTime started)
+    {
+        var name = $"{started:yyyy-MM-dd_HH-mm-ss}";
+        for (var attempt = 1; ; attempt++)
+        {
+            var file = attempt == 1 ? $"{name}.log" : $"{name}_{attempt}.log";
+            var path = Path.Combine(ServerConstants.LogsPath, file);
+            try
+            {
+                return new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+            }
+            catch (IOException) when (File.Exists(path))
+            {
+            }
+        }
     }
 
     private static IHostApplicationBuilder AddOpenTelemetryExporters(this IHostApplicationBuilder builder)

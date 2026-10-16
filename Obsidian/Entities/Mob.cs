@@ -20,6 +20,7 @@ public partial class Mob : Living
 
         tag.Set(new NbtTag<bool>("LeftHanded", this.MobBitMask.HasFlag(MobBitmask.LeftHanded)));
         tag.SetFlag("NoAI", this.MobBitMask.HasFlag(MobBitmask.NoAi));
+        this.WriteLeash(tag);
 
         if (HasAi)
         {
@@ -48,6 +49,8 @@ public partial class Mob : Living
             this.MobBitMask |= MobBitmask.LeftHanded;
         if (tag.TryGetBool("NoAI", out var noAi) && noAi)
             this.MobBitMask |= MobBitmask.NoAi;
+
+        this.ReadLeash(tag);
     }
 }
 

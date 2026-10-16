@@ -8,6 +8,7 @@ using Obsidian.API;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
+using Obsidian.API.Utilities;
 using Obsidian.Net;
 using Xunit;
 
@@ -17,12 +18,15 @@ public class ItemComponentWire
 {
     internal static JsonDocument Fixture()
     {
-        using var stream = typeof(NetworkBuffer).Assembly.GetManifestResourceStream("Obsidian.Assets.item-components-1.21.11.json")!;
+        using var stream = typeof(
+            NetworkBuffer).Assembly.GetManifestResourceStream("Obsidian.Assets.item-components-1.21.11.json")!;
         return JsonDocument.Parse(stream);
     }
 
     private static Func<string, int, string?> Resolver(JsonDocument fixture) => (registry, id) =>
-        fixture.RootElement.GetProperty("registries").TryGetProperty(registry, out var entries) && id >= 0 && id < entries.GetArrayLength()
+        fixture.RootElement.GetProperty("registries").TryGetProperty(registry, out var entries)
+            && id >= 0
+            && id < entries.GetArrayLength()
             ? entries[id].GetString()
             : registry == "minecraft:item" ? ItemsRegistry.Get(id).UnlocalizedName : null;
 
@@ -30,12 +34,29 @@ public class ItemComponentWire
     {
         using var fixture = Fixture();
         foreach (var row in fixture.RootElement.GetProperty("cases").EnumerateArray())
-            yield return [row.GetProperty("name").GetString()!, row.GetProperty("wire").GetString()!, row.GetProperty("untrusted").GetString()!];
+            yield return
+            [
+                row.GetProperty("name").GetString()!,
+                row.GetProperty("wire").GetString()!,
+                row.GetProperty("untrusted").GetString()!
+            ];
     }
 
-    [Theory]
-    [MemberData(nameof(Stacks))]
-    public void VanillaStacksRoundTrip(string name, string wire, string untrusted)
+    [Fact]
+    public void ItemComponentsMatchVanillaCapture()
+    {
+        foreach (var row in Stacks())
+            AssertVanillaStackRoundTrip((string)row[0], (string)row[1], (string)row[2]);
+
+        AssertSupportedHashesMatchVanilla();
+        AssertModeledComponentsSurviveSaving();
+        AssertMerchantOffersMatchVanilla();
+        AssertComponentIdsMatchVanillaRegistry();
+        AssertHashedStacksMatchVanillaAndDetectDesync();
+        AssertUnicodeAndMixedChatListsRemainDisplayable();
+    }
+
+    private static void AssertVanillaStackRoundTrip(string name, string wire, string untrusted)
     {
         Assert.NotEmpty(name);
         foreach (var delimited in new[] { false, true })
@@ -58,8 +79,7 @@ public class ItemComponentWire
         }
     }
 
-    [Fact]
-    public void SupportedHashesMatchVanilla()
+    private static void AssertSupportedHashesMatchVanilla()
     {
         using var fixture = Fixture();
         var hasher = new NetworkBuffer { ComponentRegistryName = Resolver(fixture) };
@@ -72,22 +92,64 @@ public class ItemComponentWire
                 if (!hasher.TryHashDataComponent(component, out var hash))
                     continue;
 
-                Assert.True(row.GetProperty("hashes").TryGetProperty(((int)component.Type).ToString(), out var expected));
-                Assert.True(expected.GetInt32() == hash, $"{row.GetProperty("name")} {component.Type}: expected {expected.GetInt32()}, got {hash}");
+                Assert.True(
+                    row.GetProperty("hashes").TryGetProperty(((int)component.Type).ToString(), out var expected));
+                Assert.True(
+                    expected.GetInt32() == hash,
+                    $"{row.GetProperty("name")} {component.Type}: expected {expected.GetInt32()}, got {hash}");
                 supported.Add(component.Type);
             }
         }
 
         Assert.Equal(64, supported.Count);
-        foreach (var required in new[] { DataComponentType.Damage, DataComponentType.MaxDamage, DataComponentType.RepairCost,
-            DataComponentType.CustomName, DataComponentType.ItemName, DataComponentType.Lore, DataComponentType.Enchantments,
-            DataComponentType.Unbreakable, DataComponentType.PotionContents, DataComponentType.DyedColor,
-            DataComponentType.Container, DataComponentType.BundleContents, DataComponentType.WrittenBookContent })
+        DataComponentType[] requiredTypes =
+        [
+            DataComponentType.Damage,
+            DataComponentType.MaxDamage,
+            DataComponentType.RepairCost,
+            DataComponentType.CustomName,
+            DataComponentType.ItemName,
+            DataComponentType.Lore,
+            DataComponentType.Enchantments,
+            DataComponentType.Unbreakable,
+            DataComponentType.PotionContents,
+            DataComponentType.DyedColor,
+            DataComponentType.Container,
+            DataComponentType.BundleContents,
+            DataComponentType.WrittenBookContent
+        ];
+        foreach (var required in requiredTypes)
             Assert.Contains(required, supported);
     }
 
-    [Fact]
-    public void MerchantOffersMatchVanilla()
+    private static void AssertModeledComponentsSurviveSaving()
+    {
+        foreach (var row in Stacks())
+        {
+            using var reader = new NetworkBuffer(Convert.FromHexString((string)row[1]));
+            var stack = reader.ReadItemStack()!;
+            foreach (var component in stack.Patch)
+            {
+                if (ComponentBuilder.Create(component.Type) is null
+                    || component.Type is DataComponentType.CreativeSlotLock or DataComponentType.MapPostProcessing)
+                {
+                    continue;
+                }
+
+                var saved = new ItemStack(ItemsRegistry.Stone, 1, component).ToNbt();
+                var restored = saved.ItemFromNbt()!;
+                Assert.True(restored.TryGetComponent(component.Type, out var reloaded), component.Identifier);
+                using var before = new NetworkBuffer();
+                using var after = new NetworkBuffer();
+                component.Write(before);
+                reloaded.Write(after);
+                Assert.True(before.AsSpan(0, before.Size).SequenceEqual(after.AsSpan(0, after.Size)),
+                    $"{row[0]}: {component.Identifier} changed after saving.");
+            }
+        }
+    }
+
+    private static void AssertMerchantOffersMatchVanilla()
     {
         using var fixture = Fixture();
         foreach (var row in fixture.RootElement.GetProperty("merchantOffers").EnumerateArray())
@@ -104,8 +166,7 @@ public class ItemComponentWire
         }
     }
 
-    [Fact]
-    public void ComponentIdsMatchVanillaRegistry()
+    private static void AssertComponentIdsMatchVanillaRegistry()
     {
         using var fixture = Fixture();
         var names = fixture.RootElement.GetProperty("componentTypes").EnumerateArray().ToArray();
@@ -114,8 +175,7 @@ public class ItemComponentWire
             Assert.Equal(names[id].GetString(), OpaqueDataComponent.GetIdentifier((DataComponentType)id));
     }
 
-    [Fact]
-    public void HashedStacksMatchVanillaAndDetectDesync()
+    private static void AssertHashedStacksMatchVanillaAndDetectDesync()
     {
         using var fixture = Fixture();
         foreach (var row in fixture.RootElement.GetProperty("cases").EnumerateArray())
@@ -168,7 +228,8 @@ public class ItemComponentWire
 
         Assert.Throws<InvalidDataException>(() => new NetworkBuffer([0]).ReadRequiredItemStack());
         Assert.Throws<InvalidDataException>(() => new NetworkBuffer([1, 1, 1, 0, 104]).ReadItemStack());
-        Assert.Throws<InvalidDataException>(() => new NetworkBuffer([1, 1, 1, 0, 3, 2, 12, 0]).ReadUntrustedItemStack());
+        Assert.Throws<InvalidDataException>(
+            () => new NetworkBuffer([1, 1, 1, 0, 3, 2, 12, 0]).ReadUntrustedItemStack());
 
         using var fixture = Fixture();
         var bytes = Convert.FromHexString(fixture.RootElement.GetProperty("cases")[0].GetProperty("wire").GetString()!);
@@ -196,17 +257,18 @@ public class ItemComponentWire
         Assert.DoesNotContain(DataComponentType.MaxDamage, copy.RemoveComponents);
         Assert.Equal(500, copy.MaxDamage);
 
-        var book = new ItemStack(ItemsRegistry.Get(Material.EnchantedBook));
+        var book = new ItemStack(ItemsRegistry.EnchantedBook);
         Assert.True(book.HasEnchantmentGlint);
         book.Remove(DataComponentType.EnchantmentGlintOverride);
         Assert.False(book.HasEnchantmentGlint);
     }
 
-    [Fact]
-    public void UnicodeAndMixedChatListsRemainDisplayable()
+    private static void AssertUnicodeAndMixedChatListsRemainDisplayable()
     {
         using var fixture = Fixture();
-        var row = fixture.RootElement.GetProperty("cases").EnumerateArray().Single(row => row.GetProperty("name").GetString() == "chat_unicode");
+        var row = fixture.RootElement.GetProperty("cases")
+            .EnumerateArray()
+            .Single(row => row.GetProperty("name").GetString() == "chat_unicode");
         var stack = new NetworkBuffer(Convert.FromHexString(row.GetProperty("wire").GetString()!)).ReadItemStack()!;
         Assert.Equal("NUL\0 \ud83d\ude00 music \ud834\udd1e", stack.CustomName!.Text);
         Assert.Equal("key.test", stack.Lore[0].Translate);
@@ -216,7 +278,8 @@ public class ItemComponentWire
     [Fact]
     public void EmptyKeysAndLongStringsRoundTrip()
     {
-        // Empty keys and unsigned string lengths are legal Java NBT, so custom data with them must be written back as read.
+        // Empty keys and unsigned string lengths are legal Java NBT, so custom data with them must be written back as
+        // read.
         foreach (var length in new[] { 1, 40000 })
         {
             var payload = new NetworkBuffer();
@@ -250,7 +313,8 @@ public class ItemComponentWire
         Assert.Equal(2, stack.Enchantments.Count);
         Assert.True(stack.HasEnchantmentGlint);
 
-        stack.GetComponent<SimpleDataComponent<int>>(DataComponentType.Damage)!.Value = 42;
+        var damage = stack.GetComponent<SimpleDataComponent<int>>(DataComponentType.Damage)!;
+        stack[DataComponentType.Damage] = damage with { Value = 42 };
         var writer = new NetworkBuffer();
         writer.WriteItemStack(stack);
         writer.Reset();

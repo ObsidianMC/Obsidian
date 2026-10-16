@@ -18,7 +18,8 @@ public sealed partial class Frog : FarmAnimal
     protected override bool TakesFallDamage => false;
     protected override float DimensionScale => 1;
     protected override string? SoundName => "frog";
-    protected override bool CanEat(ItemStack? item) => !Pregnant && item is { Count: > 0, Type: Material.SlimeBall };
+    protected override bool CanEat(ItemStack? item) =>
+        !Pregnant && item is { Count: > 0, Holder.Id: ItemIds.SlimeBall };
     protected override void FinalizeSpawn() => SelectVariant();
     internal void SelectVariant()
     {
@@ -50,8 +51,13 @@ public sealed partial class Frog : FarmAnimal
         SynchronizeMetadata();
         await prey.RemoveAsync();
         if (prey is MagmaCube)
-            DropItem(Variant switch { 0 => Material.VerdantFroglight, 2 => Material.PearlescentFroglight, _ => Material.OchreFroglight });
-        else DropItem(Material.SlimeBall);
+            DropItem(Variant switch
+            {
+                0 => ItemsRegistry.VerdantFroglight,
+                2 => ItemsRegistry.PearlescentFroglight,
+                _ => ItemsRegistry.OchreFroglight
+            });
+        else DropItem(ItemsRegistry.SlimeBall);
     }
     protected override VectorD Travel() => VolumeMovement.Travel(this, InWater);
     protected override async ValueTask TickMobAsync()
@@ -74,9 +80,9 @@ public sealed partial class Frog : FarmAnimal
             {
                 var water = new Vector(origin.X + x, origin.Y - 1, origin.Z + z);
                 var above = new Vector(water.X, water.Y + 1, water.Z);
-                if (Terrain.GetBlock(water)?.Material != Material.Water || Terrain.GetBlock(above)?.IsAir != true)
+                if (Terrain.GetBlock(water)?.RegistryId != BlockIds.Water || Terrain.GetBlock(above)?.IsAir != true)
                     continue;
-                await level.SetBlockAsync(above, BlocksRegistry.Get(Material.Frogspawn), true);
+                await level.SetBlockAsync(above, BlocksRegistry.Frogspawn, true);
                 level.ScheduleFrogspawn(above, Random.Next(3600, 12001));
                 Pregnant = false;
                 PlayMobSound("lay_spawn");

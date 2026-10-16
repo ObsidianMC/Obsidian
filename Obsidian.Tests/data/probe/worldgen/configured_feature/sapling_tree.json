@@ -1,0 +1,8 @@
+{
+  "type": "probe:pillar",
+  "config": {
+    "state": { "Name": "minecraft:oak_log" },
+    "height": 5,
+    "replaceable": ["minecraft:air"]
+  }
+}

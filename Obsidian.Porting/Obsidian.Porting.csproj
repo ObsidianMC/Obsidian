@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- Converts a NeoForge mod's data and metadata to Obsidian's formats; see Program.cs for usage. -->
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<RootNamespace>Obsidian.Porting</RootNamespace>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+	</PropertyGroup>
+
+</Project>

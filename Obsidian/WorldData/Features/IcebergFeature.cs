@@ -22,11 +22,11 @@ public sealed class IcebergFeature : ConfiguredFeatureBase
 
     private IBlock Block => field ??= BlocksRegistry.GetFromSimpleState(this.State);
 
-    private static IBlock Air => field ??= BlocksRegistry.Get(Material.Air);
+    private static IBlock Air => field ??= BlocksRegistry.Air;
 
-    private static IBlock Water => field ??= BlocksRegistry.Get(Material.Water);
+    private static IBlock Water => field ??= BlocksRegistry.Water;
 
-    private static IBlock SnowBlock => field ??= BlocksRegistry.Get(Material.SnowBlock);
+    private static IBlock SnowBlock => field ??= BlocksRegistry.SnowBlock;
 
     public override bool Place(FeatureContext context)
     {
@@ -134,7 +134,7 @@ public sealed class IcebergFeature : ConfiguredFeatureBase
 
                 var position = origin + new Vector(x, y, z);
                 var existing = level.GetBlock(position);
-                if (!IsIcebergState(existing) && existing.Material != Material.SnowBlock)
+                if (!IsIcebergState(existing) && !existing.Is(BlockIds.SnowBlock))
                     continue;
 
                 if (underwater)
@@ -145,7 +145,7 @@ public sealed class IcebergFeature : ConfiguredFeatureBase
                 {
                     level.SetBlock(position, Air);
 
-                    if (level.GetBlock(position + Vector.Up).Material == Material.Snow)
+                    if (level.GetBlock(position + Vector.Up).RegistryId == BlockIds.Snow)
                         level.SetBlock(position + Vector.Up, Air);
                 }
             }
@@ -173,12 +173,12 @@ public sealed class IcebergFeature : ConfiguredFeatureBase
         bool snowOnTop, IBlock state)
     {
         var existing = level.GetBlock(position);
-        if (!existing.IsAir && existing.Material is not (Material.SnowBlock or Material.Ice or Material.Water))
+        if (!existing.IsAir && existing.RegistryId is not (BlockIds.SnowBlock or BlockIds.Ice or BlockIds.Water))
             return;
 
         var snowAllowed = !ellipse || random.NextDouble() > 0.05;
         var divisor = ellipse ? 3 : 2;
-        if (snowOnTop && existing.Material != Material.Water
+        if (snowOnTop && !existing.Is(BlockIds.Water)
             && heightAbove <= random.NextInt(Math.Max(1, height / divisor)) + height * 0.6 && snowAllowed)
         {
             level.SetBlock(position, SnowBlock);
@@ -241,7 +241,8 @@ public sealed class IcebergFeature : ConfiguredFeatureBase
         return FeatureHelpers.Ceil(radius / 2.0f);
     }
 
-    private static bool IsIcebergState(IBlock block) => block.Material is Material.PackedIce or Material.SnowBlock or Material.BlueIce;
+    private static bool IsIcebergState(IBlock block) =>
+        block.RegistryId is BlockIds.PackedIce or BlockIds.SnowBlock or BlockIds.BlueIce;
 
     private static void Smooth(IWorldGenLevel level, Vector origin, int width, int height, bool ellipse, int ellipseA)
     {
@@ -255,7 +256,7 @@ public sealed class IcebergFeature : ConfiguredFeatureBase
                 {
                     var position = origin + new Vector(x, y, z);
                     var existing = level.GetBlock(position);
-                    if (!IsIcebergState(existing) && existing.Material != Material.Snow)
+                    if (!IsIcebergState(existing) && !existing.Is(BlockIds.Snow))
                         continue;
 
                     if (level.GetBlock(position + Vector.Down).IsAir)

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Obsidian.API;
 using Obsidian.API.Configuration;
+using Obsidian.API.Networking;
 using Obsidian.API.World;
 using Obsidian.Commands.Framework;
 using Obsidian.Entities;
@@ -68,6 +69,14 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
     public void SetState(ClientState state) => this.State = state;
 
     public ValueTask<bool> VerifyProfileAsync() => ValueTask.FromResult(true);
+
+    // Payload channels need a real connection's handshake; see ClientChannels.
+    internal Obsidian.Net.Payloads.ClientChannels? Channels { get; set; }
+
+    public bool HasChannel(string channel) => this.Channels?.HasChannel(channel) ?? false;
+
+    public ValueTask<bool> SendPayloadAsync<TPayload>(TPayload payload) where TPayload : ICustomPayload<TPayload> =>
+        ValueTask.FromResult(false);
 
     public void ClearPackets() => this.packets.Clear();
 
@@ -196,13 +205,14 @@ internal sealed class RealServerContext : IAsyncDisposable
 
 internal static class TestServerFactory
 {
+    /// <summary>
+    /// The timeout, in milliseconds, of a test running a server: a guard against hangs, with room for the slowdown
+    /// of the whole suite running at once, under which a test taking a fraction of a second alone can take several.
+    /// </summary>
+    public const int TestTimeout = 30_000;
+
     public static RealServerContext CreateServer(string worldName)
     {
-        // A run that was killed never disposes its world, which would leave the region files behind for the next run.
-        var stale = Path.Combine("worlds", worldName);
-        if (Directory.Exists(stale))
-            Directory.Delete(stale, recursive: true);
-
         var configuration = new ServerConfiguration
         {
             OnlineMode = false,
@@ -232,6 +242,9 @@ internal static class TestServerFactory
         services.AddSingleton<IServerEnvironment, FakeServerEnvironment>();
         services.AddSingleton(eventDispatcher);
         services.AddSingleton(commandHandler);
+
+        // Boss bars the server creates send through it.
+        services.AddSingleton<IPacketBroadcaster>(broadcaster);
         var provider = services.BuildServiceProvider();
 
         var server = new Server(
@@ -269,11 +282,12 @@ internal static class TestServerFactory
     public static Obsidian.Entities.Player CreateConnectedPlayer(Server server, IWorld world, string username, VectorD? position = null)
     {
         var client = new TestClient(server);
+        var spawn = position ?? world.LevelData.SpawnPosition;
         var player = new Obsidian.Entities.Player(Guid.NewGuid(), username, client, world)
         {
             Server = server,
-            Position = position ?? world.LevelData.SpawnPosition,
-            LastPosition = position ?? world.LevelData.SpawnPosition,
+            Position = spawn,
+            LastPosition = spawn
         };
         client.Attach(player);
         server.Connections.TryAdd(client.Id, client);
@@ -314,12 +328,8 @@ internal static class TestServerFactory
                 MonsterSpawnBlockLightLimit = 0,
                 MonsterSpawnLightLevel = new Obsidian.API.Registry.Codecs.Dimensions.MonsterSpawnLightLevel { IntValue = 0 },
                 PiglinSafe = false,
-                Natural = true,
                 AmbientLight = 0,
-                RespawnAnchorWorks = false,
                 HasSkylight = true,
-                BedWorks = true,
-                HasRaids = true,
                 MinY = -64,
                 Height = 384,
                 LogicalHeight = 384,

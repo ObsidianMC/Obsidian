@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
@@ -44,25 +45,38 @@ public partial class Player
     {
         random = new LegacyRandomSource(unchecked(EnchantmentSeed + option));
         var selected = EnchantmentHelper.SelectEnchantments(random, item, cost, tableEnchantments);
-        if (item.Type == Material.Book && selected.Count > 1) selected.RemoveAt(random.NextInt(selected.Count));
+        if (item.Is(ItemsRegistry.Book) && selected.Count > 1) selected.RemoveAt(random.NextInt(selected.Count));
         return selected;
     }
 
     internal async ValueTask RefreshEnchantingAsync()
     {
-        if (OpenedContainer is not EnchantmentTable table) return;
+        foreach (var property in this.PrepareEnchantingProperties())
+            await Client.QueuePacketAsync(property);
+    }
+
+    /// <summary>
+    /// Works out the open enchanting table's offers from its item, and the window properties that show them, without
+    /// sending them, so that a click can capture them inside the table's lock and send them after it.
+    /// </summary>
+    internal List<ContainerSetDataPacket> PrepareEnchantingProperties()
+    {
+        var properties = new List<ContainerSetDataPacket>();
+        if (OpenedContainer is not EnchantmentTable table) return properties;
         var item = table.GetItem(0);
         var random = new LegacyRandomSource(EnchantmentSeed);
         var shelves = CountBookshelves(table.BlockPosition);
         var enchantable = item is { Count: 1 } && !item.RemoveComponents.Contains(DataComponentType.Enchantable) &&
-            (item.GetComponent<SimpleDataComponent<int>>(DataComponentType.Enchantable)?.Value ?? item.Holder.Enchantable) > 0 &&
-            (item.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value?.Length ?? 0) == 0;
+            (item.GetComponent<SimpleDataComponent<int>>(
+                DataComponentType.Enchantable)?.Value ?? item.Holder.Enchantable) > 0 &&
+            (item.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+                DataComponentType.Enchantments)?.Value.Length ?? 0) == 0;
         for (var option = 0; option < 3; option++)
         {
             enchantmentCosts[option] = enchantable ? EnchantingCost(random, option, shelves) : 0;
             if (enchantmentCosts[option] < option + 1) enchantmentCosts[option] = 0;
         }
-        await SetEnchantingPropertyAsync(3, (short)(EnchantmentSeed & ~15));
+        properties.Add(EnchantingProperty(3, (short)(EnchantmentSeed & ~15)));
         for (var option = 0; option < 3; option++)
         {
             var cost = enchantmentCosts[option];
@@ -78,33 +92,38 @@ public partial class Player
                     level = chosen.Level;
                 }
             }
-            await SetEnchantingPropertyAsync(option, (short)cost);
-            await SetEnchantingPropertyAsync(option + 4, (short)clue);
-            await SetEnchantingPropertyAsync(option + 7, (short)level);
+            properties.Add(EnchantingProperty(option, (short)cost));
+            properties.Add(EnchantingProperty(option + 4, (short)clue));
+            properties.Add(EnchantingProperty(option + 7, (short)level));
         }
+
+        return properties;
     }
 
-    private ValueTask SetEnchantingPropertyAsync(int property, short value) => Client.QueuePacketAsync(new ContainerSetDataPacket
+    private ContainerSetDataPacket EnchantingProperty(int property, short value) => new()
     {
         ContainerId = CurrentContainerId,
         WindowProperty = new EnchantmentTableWindowProperty((EnchantmentTableProperty)property, value)
-    });
+    };
 
     internal async ValueTask EnchantAsync(int containerId, int option)
     {
         if (containerId != CurrentContainerId || option is < 0 or > 2 || OpenedContainer is not EnchantmentTable table ||
             !Alive || Respawning || GameMode == GameMode.Spectator || (Position - (VectorD)table.BlockPosition).Magnitude > 8 ||
-            new MobTerrain(Level).GetBlock(table.BlockPosition)?.Material != Material.EnchantingTable) return;
+            new MobTerrain(Level).GetBlock(table.BlockPosition)?.RegistryId != BlockIds.EnchantingTable) return;
         await RefreshEnchantingAsync();
         var item = table.GetItem(0);
         var lapis = table.GetItem(1);
         var cost = enchantmentCosts[option];
         var paidLevels = option + 1;
         if (item is not { Count: 1 } || cost <= 0 || GameMode != GameMode.Creative &&
-            (XpLevel < cost || XpLevel < paidLevels || lapis is not { Type: Material.LapisLazuli } || lapis.Count < paidLevels)) return;
+            (XpLevel < cost
+                || XpLevel < paidLevels
+                || lapis is not { Holder.Id: ItemIds.LapisLazuli }
+                || lapis.Count < paidLevels)) return;
         var selected = EnchantingSelection(item, option, cost, out _);
         if (selected.Count == 0) return;
-        if (item.Type == Material.Book) item = item.TransmuteCopy(ItemsRegistry.EnchantedBook);
+        if (item.Is(ItemsRegistry.Book)) item = item.TransmuteCopy(ItemsRegistry.EnchantedBook);
         foreach (var (enchantment, level) in selected) EnchantmentHelper.Enchant(item, enchantment, level);
         table.SetItem(0, item);
         if (GameMode != GameMode.Creative)
@@ -114,6 +133,8 @@ public partial class Player
             // Enchanting deducts levels, preserving progress and total experience as vanilla does.
             await Client.QueuePacketAsync(new SetExperiencePacket(XpP, XpLevel, XpTotal));
         }
+        this.Statistics.Increment("minecraft:enchant_item");
+        await this.FireProgressAsync("enchanted_item", item: item, levels: paidLevels);
         EnchantmentSeed = Globals.Random.Next();
         await Client.QueuePacketAsync(new ContainerSetContentPacket(CurrentContainerId,
             table.Concat(Inventory.Skip(9).Take(36)).ToList()) { CarriedItem = CarriedItem });

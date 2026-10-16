@@ -49,7 +49,7 @@ public sealed partial class Wither : BossMob
     }
 
     private bool CanAttack(IEntity target) => target is Living && IsValidTarget(target) &&
-        !TagsRegistry.EntityType.WitherFriends.Entries.Contains((int)target.Type);
+        !IsIn(target, TagsRegistry.EntityType.WitherFriends);
 
     protected override async ValueTask TickMobAsync()
     {
@@ -97,7 +97,7 @@ public sealed partial class Wither : BossMob
                 SetHeadTarget(head, choices.Length == 0 ? 0 : choices[Random.Next(choices.Length)].EntityId);
             }
         }
-        if (breakBlocksTicks > 0 && --breakBlocksTicks == 0) await BreakBlocksAsync();
+        if (breakBlocksTicks > 0 && --breakBlocksTicks == 0) BreakBlocks();
     }
 
     private void SetHeadTarget(int head, int id)
@@ -116,7 +116,7 @@ public sealed partial class Wither : BossMob
         PlayMobSound("shoot");
     }
 
-    private async ValueTask BreakBlocksAsync()
+    private void BreakBlocks()
     {
         if (!Level.LevelData.GetBooleanRule("mob_griefing")) return;
         var position = (Vector)Position.Floor();
@@ -129,14 +129,14 @@ public sealed partial class Wither : BossMob
             var block = Terrain.GetBlock(point);
             if (block == null || block.IsAir || TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId)) continue;
             // Vanilla destroyBlock(pos, true, this): the block's loot drops.
-            await Level.DestroyBlockAsync(point, this, drop: true);
+            Level.DestroyBlock(point, dropItems: true, this);
             broken = true;
         }
         if (broken) PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelEventPacket(1022, position, 0));
     }
 
     protected override bool CanTakeDamage(IEntity source) => invulnerableTicks == 0 && source.Type != EntityType.Wither &&
-        !TagsRegistry.EntityType.WitherFriends.Entries.Contains((int)source.Type) &&
+        !IsIn(source, TagsRegistry.EntityType.WitherFriends) &&
         (!Armored || (IncomingDirectSource ?? source).Type is not (EntityType.Arrow or EntityType.SpectralArrow or EntityType.Trident or EntityType.WindCharge or EntityType.BreezeWindCharge));
 
     protected override ValueTask OnHurtAsync(IEntity source)
@@ -151,7 +151,7 @@ public sealed partial class Wither : BossMob
         if (Level.LevelData.GetBooleanRule("mob_drops"))
         {
             var star = new ItemEntity { Level = Level, EntityId = Server.GetNextEntityId(), Position = Position,
-                Item = ItemsRegistry.GetSingleItem(Material.NetherStar) };
+                Item = ItemsRegistry.GetSingleItem(ItemsRegistry.NetherStar) };
             star.SetExtendedLifetime();
             Level.SpawnEntity(star);
         }

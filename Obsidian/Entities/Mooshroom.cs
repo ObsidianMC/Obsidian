@@ -1,3 +1,5 @@
+using Obsidian.API.Inventory;
+
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:mooshroom")]
@@ -7,24 +9,27 @@ public sealed partial class Mooshroom : Cow
     public bool Brown { get; set; }
     internal Obsidian.API.Effects.SuspiciousStewEffect? StewEffect { get; set; }
 
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!CanInteract(player))
-            return;
+            return false;
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (!IsBaby && held is { Count: > 0, Type: Material.Bowl })
+        if (!IsBaby && held is { Count: > 0, Holder.Id: ItemIds.Bowl })
         {
-            var item = ItemsRegistry.GetSingleItem(StewEffect == null ? Material.MushroomStew : Material.SuspiciousStew);
+            var stew = StewEffect == null ? ItemsRegistry.MushroomStew : ItemsRegistry.SuspiciousStew;
+            var item = ItemsRegistry.GetSingleItem(stew);
             if (StewEffect is { } effect)
             {
-                var component = Obsidian.API.Inventory.DataComponents.ComponentBuilder.SuspiciousStewEffects;
-                component.Value = [effect];
+                var component = Obsidian.API.Inventory.DataComponents.ComponentBuilder.SuspiciousStewEffects with
+                {
+                    Value = [effect]
+                };
                 item[DataComponentType.SuspiciousStewEffects] = component;
                 StewEffect = null;
             }
             await GiveInteractionItemAsync(player, hand, item);
         }
-        else if (Brown && held is { Count: > 0 } && GetFlowerEffect(held.Type) is { } effect)
+        else if (Brown && held is { Count: > 0, Holder: Item flower } && GetFlowerEffect(flower) is { } effect)
         {
             if (StewEffect == null)
             {
@@ -37,31 +42,36 @@ public sealed partial class Mooshroom : Cow
                 }
             }
         }
-        else if (!IsBaby && held is { Count: > 0, Type: Material.Shears })
+        else if (!IsBaby && held is { Count: > 0, Holder.Id: ItemIds.Shears })
         {
-            DropItem(Brown ? Material.BrownMushroom : Material.RedMushroom, 5);
+            DropItem(Brown ? ItemsRegistry.BrownMushroom : ItemsRegistry.RedMushroom, 5);
             await DamageInteractionToolAsync(player, hand);
             await ConvertToAsync(EntityType.Cow);
         }
         else
-            await base.FeedAsync(player, hand);
+            return await base.FeedAsync(player, hand);
+
+        return true;
     }
 
-    private static Obsidian.API.Effects.SuspiciousStewEffect? GetFlowerEffect(Material flower)
+    private static Obsidian.API.Effects.SuspiciousStewEffect? GetFlowerEffect(Item flower)
     {
-        (PotionEffect Effect, int Duration)? value = flower switch
+        (PotionEffect Effect, int Duration)? value = flower.Id switch
         {
-            Material.Dandelion or Material.BlueOrchid => (PotionEffect.Saturation, 7),
-            Material.Poppy or Material.Torchflower => (PotionEffect.NightVision, 100),
-            Material.Allium => (PotionEffect.FireResistance, 80),
-            Material.AzureBluet => (PotionEffect.Blindness, 160),
-            Material.RedTulip or Material.OrangeTulip or Material.WhiteTulip or Material.PinkTulip => (PotionEffect.Weakness, 180),
-            Material.OxeyeDaisy => (PotionEffect.Regeneration, 160),
-            Material.Cornflower => (PotionEffect.JumpBoost, 120),
-            Material.LilyOfTheValley => (PotionEffect.Poison, 240),
-            Material.WitherRose => (PotionEffect.Wither, 160),
-            Material.OpenEyeblossom => (PotionEffect.Blindness, 220),
-            Material.ClosedEyeblossom => (PotionEffect.Nausea, 140),
+            ItemIds.Dandelion or ItemIds.BlueOrchid => (PotionEffect.Saturation, 7),
+            ItemIds.Poppy or ItemIds.Torchflower => (PotionEffect.NightVision, 100),
+            ItemIds.Allium => (PotionEffect.FireResistance, 80),
+            ItemIds.AzureBluet => (PotionEffect.Blindness, 160),
+            ItemIds.RedTulip
+                or ItemIds.OrangeTulip
+                or ItemIds.WhiteTulip
+                or ItemIds.PinkTulip => (PotionEffect.Weakness, 180),
+            ItemIds.OxeyeDaisy => (PotionEffect.Regeneration, 160),
+            ItemIds.Cornflower => (PotionEffect.JumpBoost, 120),
+            ItemIds.LilyOfTheValley => (PotionEffect.Poison, 240),
+            ItemIds.WitherRose => (PotionEffect.Wither, 160),
+            ItemIds.OpenEyeblossom => (PotionEffect.Blindness, 220),
+            ItemIds.ClosedEyeblossom => (PotionEffect.Nausea, 140),
             _ => null
         };
         return value is { } effect ? new() { EffectId = (int)effect.Effect - 1, Duration = effect.Duration } : null;

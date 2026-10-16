@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Events;
 using Obsidian.API.Loot;
 using Obsidian.Entities.AI;
+using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Entities;
@@ -20,12 +21,22 @@ public partial class Player
     public override ValueTask DamageAsync(IEntity source, float amount = 1)
         => DamageCombatAsync(source, amount, ReferenceEquals(source, this) ? CombatDamageKind.Magic : CombatDamageKind.Melee);
 
-    internal override async ValueTask DamageCombatAsync(IEntity source, float amount, CombatDamageKind kind, ItemStack? weapon = null, IEntity? directSource = null)
+    internal override async ValueTask DamageCombatAsync(
+        IEntity source,
+        float amount,
+        CombatDamageKind kind,
+        ItemStack? weapon = null,
+        IEntity? directSource = null,
+        VectorD? sourcePosition = null)
     {
         if (!float.IsFinite(amount) || amount <= 0 || !Alive || Respawning || source.Level != Level ||
             GameMode is GameMode.Creative or GameMode.Spectator || Abilities.HasFlag(PlayerAbility.Invulnerable)) return;
         if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact && HasPotionEffect((int)PotionEffect.FireResistance - 1)) return;
-        if (await TryBlockDamageAsync(source, amount, kind, weapon, directSource)) return;
+
+        var incomingFrom = sourcePosition ?? (directSource ?? source).Position;
+        if (await TryBlockDamageAsync(source, amount, kind, weapon, incomingFrom))
+            return;
+
         var incoming = amount;
         if (damageCooldown > 0)
         {
@@ -41,13 +52,10 @@ public partial class Player
         AcceptedDamageCount++;
         if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion or CombatDamageKind.FireContact or CombatDamageKind.Thorns)
         {
+            // Worn items' armour is in the attributes' modifiers.
+            UpdateEquipmentAttributes();
             var armor = GetAttributeValue("minecraft:armor");
             var toughness = GetAttributeValue("minecraft:armor_toughness");
-            foreach (var (item, slot) in CombatEffects.Armor(this))
-            {
-                armor += CombatItems.Attribute(item, "armor", slot);
-                toughness += CombatItems.Attribute(item, "armor_toughness", slot);
-            }
             amount = CombatItems.ReduceArmor(amount, armor, toughness,
                 1 - 0.15f * CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Breach));
             for (var slot = 5; slot <= 8; slot++)
@@ -60,17 +68,62 @@ public partial class Player
         if (absorbed > 0) SyncFoodMetadata();
         if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile && !ReferenceEquals(source, this))
             CombatEffects.Knockback(this, Position - source.Position, 0.4f);
+        this.RecordProgressDamage(source, amount);
         await base.DamageAsync(source, amount);
     }
 
-    internal async ValueTask DamageInventoryItemAsync(int slot, int amount, bool armor = false)
+    /// <summary>
+    /// Damages a slot under the click lock. Delayed operations supply the original stack as <paramref name="expected"/>
+    /// so replacing it cannot damage another item; packets are captured under the lock and sent after it.
+    /// </summary>
+    /// <remarks>
+    /// Asked for while plugins' code holds the lock, like an item's inventory tick hurting its holder, it waits until
+    /// the lock is let go (see <see cref="DeferredInventoryWork"/>). Either way it wears the stack the slot holds as
+    /// it's asked for, not one put there meanwhile.
+    /// </remarks>
+    ValueTask IPlayer.DamageInventoryItemAsync(int slot, int amount, bool armor, ItemStack? expected) =>
+        this.DamageInventoryItemAsync(slot, amount, armor, expected);
+
+    internal ValueTask DamageInventoryItemAsync(int slot, int amount, bool armor = false, ItemStack? expected = null)
     {
-        if (GameMode == GameMode.Creative || Inventory.GetItem(slot) is not { Count: > 0 } item) return;
-        var previous = item.Damage;
-        var broke = CombatItems.HurtItem(item, amount, armor);
-        if (broke && item.Count == 0) Inventory.RemoveItem(slot);
-        if (!broke && item.Damage == previous) return;
-        await SyncInventorySlotAsync(slot);
+        if ((expected ?? this.Inventory.GetItem(slot)) is not ItemStack stack)
+            return ValueTask.CompletedTask;
+
+        return DeferredInventoryWork.RunOrDeferAsync(() => this.WearInventoryItemAsync(slot, amount, armor, stack));
+    }
+
+    private async ValueTask WearInventoryItemAsync(int slot, int amount, bool armor, ItemStack expected)
+    {
+        List<ClientboundPacket> updates = [];
+        ClickWindowState state;
+        bool broke;
+        string brokenIdentifier;
+        using (await this.Inventory.LockAsync())
+        {
+            if (this.GameMode == GameMode.Creative
+                || this.Inventory.GetItem(slot) is not { Count: > 0 } item
+                || !ReferenceEquals(item, expected))
+            {
+                return;
+            }
+
+            brokenIdentifier = item.Holder.UnlocalizedName;
+            var previous = item.Damage;
+            broke = CombatItems.HurtItem(item, amount, armor);
+            if (broke && item.Count == 0)
+                this.Inventory.RemoveItem(slot);
+
+            if (!broke && item.Damage == previous)
+                return;
+
+            state = ClickWindowState.Of(this);
+            this.CaptureInventorySlot(slot, updates);
+        }
+
+        await this.WindowSnapshots.SendChangeAsync(this, state, updates);
+        if (broke)
+            this.Statistics.Increment(brokenIdentifier, type: "minecraft:broken");
+
         if (broke)
             PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket
             { EntityId = EntityId, Event = (byte)(slot switch { 5 => 49, 6 => 50, 7 => 51, 8 => 52, 45 => 48, _ => 47 }) });
@@ -79,8 +132,16 @@ public partial class Player
     internal ValueTask SyncInventorySlotAsync(int slot) => Client.QueuePacketAsync(new ContainerSetSlotPacket
     { ContainerId = 0, Slot = (short)slot, SlotData = Inventory.GetItem(slot), StateId = Inventory.StateId++ });
 
-    internal float AttackCharge => Math.Clamp((attackTicks + 0.5f) *
-        CombatItems.Attribute(GetHeldItem(), "attack_speed", "mainhand", GetAttributeValue("minecraft:attack_speed")) / 20, 0, 1);
+    // The held item's attack speed is in the attribute's modifiers, brought up to date first.
+    internal float AttackCharge
+    {
+        get
+        {
+            UpdateEquipmentAttributes();
+
+            return Math.Clamp((attackTicks + 0.5f) * GetAttributeValue("minecraft:attack_speed") / 20, 0, 1);
+        }
+    }
 
     internal bool CanAttack(IEntity target, ItemStack? item = null)
     {
@@ -102,7 +163,8 @@ public partial class Player
     {
         var item = GetHeldItem();
         var charge = AttackCharge;
-        var damage = CombatItems.Attribute(item, "attack_damage", "mainhand", GetAttributeValue("minecraft:attack_damage"));
+        UpdateEquipmentAttributes();
+        var damage = GetAttributeValue("minecraft:attack_damage");
         if (ActivePotionEffects.TryGetValue((int)PotionEffect.Strength - 1, out var strength)) damage += 3 * (strength.EffectData.Amplifier + 1);
         if (ActivePotionEffects.TryGetValue((int)PotionEffect.Weakness - 1, out var weakness)) damage -= 4 * (weakness.EffectData.Amplifier + 1);
         damage = Math.Max(0, damage) * (0.2f + charge * charge * 0.8f);
@@ -111,7 +173,7 @@ public partial class Player
             new MobTerrain(Level).GetBlock((Vector)Position.Floor()) is { } feet && !TagsRegistry.Block.Climbable.Entries.Contains(feet.RegistryId);
         if (critical) damage *= 1.5f;
         damage += CombatEffects.DamageBonus(item, target) * charge;
-        if (item?.Type == Material.Mace && FallDistance > 1.5f && !FlyingWithElytra)
+        if (item?.Is(ItemsRegistry.Mace) == true && FallDistance > 1.5f && !FlyingWithElytra)
             damage += CombatItems.SmashBonus(FallDistance) + 0.5f * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Density) * FallDistance;
         return (damage, critical);
     }
@@ -129,12 +191,14 @@ public partial class Player
         if (attack.ChargeAttack && target is Living chargedTarget)
         {
             if (attack.ChargeKnockback) CombatEffects.Knockback(chargedTarget, chargedTarget.Position - Position, 0.4f);
-            if (attack.ChargeDismount && chargedTarget is Player rider) rider.Vehicle?.Dismount(rider);
-            if (attack.ChargeDismount && chargedTarget is Mob mob) mob.Dismount();
+            if (attack.ChargeDismount && chargedTarget is Player rider) rider.LeaveVehicle();
+            if (attack.ChargeDismount && chargedTarget is Mob mob) mob.EjectPassengers();
         }
         if (damage <= 0) return;
         var charged = AttackCharge > 0.9f;
-        var smashDistance = item?.Type == Material.Mace && FallDistance > 1.5f && !FlyingWithElytra ? FallDistance : 0;
+        var smashDistance = item?.Is(ItemsRegistry.Mace) == true && FallDistance > 1.5f && !FlyingWithElytra
+            ? FallDistance
+            : 0;
         if (!attack.PiercingAttack && !attack.ChargeAttack) attackTicks = 0;
         var health = target.Health;
         var accepted = (target as Living)?.AcceptedDamageCount;
@@ -172,7 +236,11 @@ public partial class Player
                     }
             }
         }
-        await DamageInventoryItemAsync(slot, attack.ChargeAttack || attack.PiercingAttack || item?.Holder.UnlocalizedName.EndsWith("_sword", StringComparison.Ordinal) == true || item?.Type is Material.Trident or Material.Mace ? 1 : 2);
+        var lightWear = attack.ChargeAttack
+            || attack.PiercingAttack
+            || item?.Holder.UnlocalizedName.EndsWith("_sword", StringComparison.Ordinal) == true
+            || item?.Holder.Id is ItemIds.Trident or ItemIds.Mace;
+        await DamageInventoryItemAsync(slot, lightWear ? 1 : 2);
     }
 
     internal void ApplyImpulse(VectorD impulse)
@@ -184,26 +252,33 @@ public partial class Player
     private async ValueTask UpdateFallAsync(VectorD previous, MovementFlags flags)
     {
         var terrain = new MobTerrain(Level);
+        var bounds = Dimension.CreateBBFromPosition(Position);
+        var supported = flags.HasFlag(MovementFlags.OnGround)
+            && terrain.GetCollisions(new BoundingBox(bounds.Min - new VectorD(0, 0.05, 0), bounds.Max))
+                .Any(shape => shape.Max.Y <= Position.Y + 0.001 && shape.Max.Y >= Position.Y - 0.05
+                    && shape.Max.X > bounds.Min.X && shape.Min.X < bounds.Max.X
+                    && shape.Max.Z > bounds.Min.Z && shape.Min.Z < bounds.Max.Z);
+
+        this.TrackMovementAbilities(flags, supported);
+
         var feet = terrain.GetBlock((Vector)Position.Floor());
         if (Vehicle != null || Abilities.HasFlag(PlayerAbility.Flying) || GameMode is GameMode.Creative or GameMode.Spectator ||
             HasPotionEffect((int)PotionEffect.Levitation - 1) || HasPotionEffect((int)PotionEffect.SlowFalling - 1) ||
-            feet?.Material is Material.Water or Material.Lava or Material.Cobweb or Material.PowderSnow ||
+            feet?.RegistryId is BlockIds.Water or BlockIds.Lava or BlockIds.Cobweb or BlockIds.PowderSnow ||
             feet != null && TagsRegistry.Block.Climbable.Entries.Contains(feet.RegistryId))
         { FallDistance = 0; return; }
         if (previous.Y > Position.Y) FallDistance += (float)(previous.Y - Position.Y);
-        if (!flags.HasFlag(MovementFlags.OnGround)) return;
-        var bounds = Dimension.CreateBBFromPosition(Position);
-        var supported = terrain.GetCollisions(new BoundingBox(bounds.Min - new VectorD(0, 0.05, 0), bounds.Max))
-            .Any(shape => shape.Max.Y <= Position.Y + 0.001 && shape.Max.Y >= Position.Y - 0.05 &&
-                shape.Max.X > bounds.Min.X && shape.Min.X < bounds.Max.X && shape.Max.Z > bounds.Min.Z && shape.Min.Z < bounds.Max.Z);
         if (!supported) return;
         var floor = terrain.GetBlock((Vector)(Position - new VectorD(0, 0.2, 0)).Floor());
         var distance = FallDistance;
+        if (distance >= 2)
+            this.Statistics.Increment("minecraft:fall_one_cm", Centimetres(distance));
+
         FallDistance = 0;
-        if (floor?.Material == Material.SlimeBlock && !Sneaking) return;
+        if (floor?.RegistryId == BlockIds.SlimeBlock && !Sneaking) return;
         var jump = ActivePotionEffects.TryGetValue((int)PotionEffect.JumpBoost - 1, out var effect) ? effect.EffectData.Amplifier + 1 : 0;
         var damage = Math.Max(0, MathF.Ceiling((distance - GetAttributeValue("minecraft:safe_fall_distance") - jump) * GetAttributeValue("minecraft:fall_damage_multiplier")));
-        if (floor?.Material is Material.HayBlock or Material.HoneyBlock) damage *= 0.2f;
+        if (floor?.RegistryId is BlockIds.HayBlock or BlockIds.HoneyBlock) damage *= 0.2f;
         else if (floor != null && TagsRegistry.Block.Beds.Entries.Contains(floor.RegistryId)) damage *= 0.5f;
         await DamageCombatAsync(this, damage, CombatDamageKind.Fall);
     }

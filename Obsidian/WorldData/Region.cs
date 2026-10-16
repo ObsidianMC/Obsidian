@@ -1,7 +1,9 @@
+using Obsidian.API.BlockEntities;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Utilities.Collections;
+using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators.Mojang;
 using System.Diagnostics;
 using System.IO;
@@ -46,8 +48,6 @@ public class Region : IRegion
     // Reading the region files' headers; every file operation waits for it, since regions are loaded without waiting.
     private readonly Lazy<Task> initialization;
 
-    private readonly ConcurrentDictionary<Vector, IBlockUpdate> blockUpdates = new();
-
     // Serializes filling empty chunk slots, so concurrent callers never end up with different instances of a chunk.
     private readonly SemaphoreSlim chunkSlotLock = new(1, 1);
 
@@ -78,6 +78,28 @@ public class Region : IRegion
     /// </summary>
     internal Lock FluidTickLock { get; init; } = new();
 
+    // Runtime light resolves under FluidTickLock before a save takes its block and light snapshot.
+    internal Action? FlushLight { get; init; }
+
+    // Invoked under FluidTickLock before publishing a slot or completing its still-stored proto chunk.
+    internal Action<IChunk, bool>? LightLoaded { get; init; }
+
+    // Chunk unload detaches at its final snapshot; region removal flushes before detaching and saving its chunks.
+    internal Action<IChunk>? LightUnloaded { get; init; }
+
+    // Tick containers and block access retire at the final save snapshot, before asynchronous compression and I/O.
+    internal Action<IChunk>? BlockAccessUnloaded { get; init; }
+
+    /// <summary>
+    /// Tells a block entity its chunk unloaded (the level's <see cref="AbstractLevel.OnBlockEntityUnloaded"/>), after
+    /// the chunk's final save, holding no lock.
+    /// </summary>
+    internal Action<BlockEntity>? BlockEntityUnloaded { get; init; }
+    private readonly HashSet<IChunk> retiredBlockAccess = [];
+
+    // A removed region cannot publish or attach chunks, including loads and generation already in flight.
+    private bool lightingRetired;
+
     // The dimension's build range, which decides the section count of loaded chunks.
     private readonly int minY;
     private readonly int height;
@@ -105,14 +127,6 @@ public class Region : IRegion
         this.initialization = new(() => Task.WhenAll(this.regionFile.InitializeAsync(), this.entityRegionFile.InitializeAsync()));
     }
 
-    public void AddBlockUpdate(IBlockUpdate bu)
-    {
-        if (!blockUpdates.TryAdd(bu.Position, bu))
-        {
-            blockUpdates[bu.Position] = bu;
-        }
-    }
-
     public async Task<bool> InitAsync()
     {
         await this.initialization.Value;
@@ -124,7 +138,7 @@ public class Region : IRegion
         await this.initialization.Value;
 
         foreach (Chunk c in loadedChunks.Cast<Chunk>())
-            await SerializeChunkAsync(c);
+            await SerializeChunkAsync(c, unloading: this.lightingRetired);
 
         regionFile.Flush();
         this.entityRegionFile.Flush();
@@ -145,9 +159,22 @@ public class Region : IRegion
         await chunkSlotLock.WaitAsync();
         try
         {
-            chunk = loadedChunks[x, z] ?? await GetChunkFromFileAsync(x, z); // Still might be null but that's okay.
-            loadedChunks[x, z] = chunk!;
-            return chunk!;
+            Chunk? fromDisk = null;
+            chunk = loadedChunks[x, z];
+            if (chunk is null)
+            {
+                fromDisk = await GetChunkFromFileAsync(x, z);
+                chunk = fromDisk;
+            }
+
+            lock (this.FluidTickLock)
+            {
+                chunk = loadedChunks[x, z] ?? chunk;
+                if (chunk is not null)
+                    this.PublishChunk(x, z, chunk, ReferenceEquals(chunk, fromDisk));
+
+                return chunk!;
+            }
         }
         finally
         {
@@ -169,9 +196,21 @@ public class Region : IRegion
         await chunkSlotLock.WaitAsync();
         try
         {
-            chunk = loadedChunks[x, z] ?? (this.regionFile.HasChunk(x, z) ? await GetChunkFromFileAsync(x, z) : null) ?? create();
-            loadedChunks[x, z] = chunk;
-            return chunk;
+            Chunk? fromDisk = null;
+            chunk = loadedChunks[x, z];
+            if (chunk is null && this.regionFile.HasChunk(x, z))
+            {
+                fromDisk = await GetChunkFromFileAsync(x, z);
+                chunk = fromDisk;
+            }
+
+            chunk ??= create();
+            lock (this.FluidTickLock)
+            {
+                chunk = loadedChunks[x, z] ?? chunk;
+                this.PublishChunk(x, z, chunk, ReferenceEquals(chunk, fromDisk));
+                return chunk;
+            }
         }
         finally
         {
@@ -182,12 +221,139 @@ public class Region : IRegion
     public async Task UnloadChunk(int x, int z)
     {
         var chunk = loadedChunks[x, z];
-        if (chunk is null) { return; }
+        if (chunk is null)
+            return;
+
         await SerializeChunkAsync(chunk, unloading: true);
-        loadedChunks[x, z] = null;
+        lock (this.FluidTickLock)
+        {
+            if (!ReferenceEquals(loadedChunks[x, z], chunk))
+                return;
+
+            this.DetachLighting(chunk);
+            loadedChunks[x, z] = null;
+            this.retiredBlockAccess.Remove(chunk);
+        }
+    }
+
+    /// <summary>Validates a captured chunk under FluidTickLock, including an unloading save still doing I/O.</summary>
+    internal bool IsChunkResident(IChunk chunk)
+    {
+        var x = NumericsHelper.Modulo(chunk.X, CubicRegionSize);
+        var z = NumericsHelper.Modulo(chunk.Z, CubicRegionSize);
+        return !this.lightingRetired
+            && !this.retiredBlockAccess.Contains(chunk)
+            && ReferenceEquals(this.loadedChunks[x, z], chunk);
     }
 
     internal IChunk? GetLoadedChunk(int x, int z) => loadedChunks[x, z] is { IsGenerated: true } chunk ? chunk : null;
+
+    /// <summary>
+    /// Takes an entity out of the region as the plugin owning it unloads (see <see cref="Plugins.PluginEntities"/>).
+    /// </summary>
+    /// <param name="entity">The entity.</param>
+    /// <param name="keepSaved">
+    /// Whether to keep the entity in its chunk as it would be saved, among the saved entities the server can't spawn,
+    /// when the chunk is loaded.
+    /// </param>
+    /// <returns>Whether the entity was in the region.</returns>
+    internal bool Evict(IEntity entity, bool keepSaved)
+    {
+        lock (ItemEntity.TransferLock)
+            return this.EvictUnderTransferLock(entity, keepSaved);
+    }
+
+    private bool EvictUnderTransferLock(IEntity entity, bool keepSaved)
+    {
+        var entry = new KeyValuePair<int, IEntity>(entity.EntityId, entity);
+        var (chunkX, chunkZ) = ChunkOf(entity.Position);
+        var local = this.GetLoadedChunk(
+            NumericsHelper.Modulo(chunkX, CubicRegionSize),
+            NumericsHelper.Modulo(chunkZ, CubicRegionSize));
+
+        API.Data.AttachmentStorage.For(entity).Retire();
+
+        if (!keepSaved || entity is not Entity concrete || local is not Chunk { X: var x, Z: var z } chunk
+            || (x, z) != (chunkX, chunkZ))
+        {
+            if (!this.Entities.TryRemove(entry))
+                return false;
+        }
+        else
+        {
+            // Under the chunk's entity lock, so a save finds the entity either in the level or kept.
+            using (chunk.EntityLock.EnterScope())
+            {
+                if (!this.Entities.TryRemove(entry))
+                    return false;
+
+                if (!chunk.EntitiesUnloaded && EntityNbt.Save(concrete) is NbtCompound saved)
+                    chunk.UnspawnableEntities.Add(saved);
+            }
+        }
+
+        if (entity is Mob mob)
+            mob.DetachForPluginUnload();
+
+        if (entity is Entity host)
+        {
+            host.CancelEntityPortalTravel();
+            host.Navigator = null;
+            host.GoalController = null;
+            host.SpawnedBy = null;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Spawns again the entities kept in the loaded chunks whose plugin entity types are loaded again (see
+    /// <see cref="Evict"/>), on the level's next tick.
+    /// </summary>
+    internal void RespawnKeptEntities(AbstractLevel level)
+    {
+        foreach (var chunk in this.loadedChunks.OfType<Chunk>())
+        {
+            if (!chunk.IsGenerated)
+                continue;
+
+            var respawning = false;
+
+            using (chunk.EntityLock.EnterScope())
+            {
+                // An unloaded chunk saved its kept entities; they spawn when it's loaded again.
+                if (chunk.EntitiesUnloaded)
+                    continue;
+
+                var stillKept = new List<NbtCompound>();
+
+                foreach (var kept in chunk.UnspawnableEntities)
+                {
+                    if (HasBoundPluginType(kept) && EntityNbt.ToGeneratedEntity(kept) is GeneratedEntity pending)
+                        chunk.PendingEntities.Add(pending);
+                    else
+                        stillKept.Add(kept);
+                }
+
+                respawning = stillKept.Count != chunk.UnspawnableEntities.Count;
+
+                if (respawning)
+                {
+                    chunk.UnspawnableEntities.Clear();
+                    chunk.UnspawnableEntities.AddRange(stillKept);
+                }
+            }
+
+            if (respawning)
+                level.QueueEntitySpawn(chunk);
+        }
+    }
+
+    // Whether a saved entity is of a plugin's entity type whose plugin is loaded.
+    private static bool HasBoundPluginType(NbtCompound saved) =>
+        saved.TryGetTagValue<string>("id", out var id)
+        && EntityDefinitionsRegistry.TryGet(id, out var definition)
+        && definition.Binding is not null;
 
     private async Task<Chunk?> GetChunkFromFileAsync(int x, int z)
     {
@@ -204,15 +370,13 @@ public class Region : IRegion
             {
                 foreach (var entity in entities.OfType<NbtCompound>())
                 {
-                    if (entity.TryGetTagValue<string>("id", out var id) && EntityNbt.TryParseType(id, out _) &&
+                    if (entity.TryGetTagValue<string>("id", out var id) && EntityNbt.IsKnownType(id) &&
                         EntityNbt.ToGeneratedEntity(entity) is GeneratedEntity pending)
                         chunk.PendingEntities.Add(pending);
                     else
                         chunk.UnspawnableEntities.Add(entity);
                 }
             }
-
-            this.EntitiesLoaded?.Invoke(chunk);
         }
 
         return chunk;
@@ -229,6 +393,18 @@ public class Region : IRegion
         return new NbtReader(bytesStream).ReadNextTag() as NbtCompound;
     }
 
+    /// <summary>
+    /// The chunks the region holds, complete or still generating.
+    /// </summary>
+    internal IEnumerable<IChunk> ResidentChunks()
+    {
+        foreach (var chunk in loadedChunks)
+        {
+            if (chunk is not null)
+                yield return chunk;
+        }
+    }
+
     public IEnumerable<IChunk> GeneratedChunks()
     {
         foreach (var c in loadedChunks)
@@ -242,9 +418,100 @@ public class Region : IRegion
 
     public void SetChunk(IChunk chunk)
     {
-        if (chunk is null) { return; } // I dunno... maybe we'll need to null out a chunk someday?
-        var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
-        loadedChunks[x, z] = chunk;
+        if (chunk is null)
+            return;
+
+        var x = NumericsHelper.Modulo(chunk.X, CubicRegionSize);
+        var z = NumericsHelper.Modulo(chunk.Z, CubicRegionSize);
+        lock (this.FluidTickLock)
+            this.PublishChunk(x, z, chunk);
+    }
+
+    // Slot changes and lighting attachment share the tick lock; no read can later attach a stale instance.
+    private void PublishChunk(int x, int z, IChunk chunk, bool fromDisk = false)
+    {
+        if (this.lightingRetired)
+            return;
+
+        if (this.loadedChunks[x, z] is IChunk previous && !ReferenceEquals(previous, chunk))
+        {
+            this.DetachLighting(previous);
+            this.retiredBlockAccess.Remove(previous);
+        }
+
+        if (chunk is Chunk concrete)
+            concrete.CompleteGeneration = this.CompleteChunk;
+
+        // Lock-free readers must not see a complete chunk until all its section hooks are ready.
+        this.LightLoaded?.Invoke(chunk, false);
+        this.loadedChunks[x, z] = chunk;
+
+        // Entity initialization reads this slot; queue it only after publication and lighting attachment.
+        if (fromDisk && chunk is Chunk { IsGenerated: true } complete)
+            this.EntitiesLoaded?.Invoke(complete);
+    }
+
+    /// <summary>
+    /// Publishes completion and attaches lighting together, only for the chunk still stored in its slot.
+    /// </summary>
+    private void CompleteChunk(Chunk chunk)
+    {
+        lock (this.FluidTickLock)
+        {
+            if (this.IsChunkResident(chunk))
+                this.LightLoaded?.Invoke(chunk, true);
+
+            chunk.SetChunkStatusCore(ChunkGenStage.full);
+        }
+    }
+
+    private void DetachLighting(IChunk chunk)
+    {
+        if (chunk is Chunk concrete)
+            concrete.CompleteGeneration = null;
+
+        this.RetireBlockAccess(chunk);
+    }
+
+    private void RetireBlockAccess(IChunk chunk)
+    {
+        if (chunk is not null)
+            API.Data.AttachmentStorage.For(chunk).Retire();
+
+        if (this.retiredBlockAccess.Add(chunk))
+        {
+            this.LightUnloaded?.Invoke(chunk);
+            this.BlockAccessUnloaded?.Invoke(chunk);
+        }
+    }
+
+    /// <summary>Flushes final light and detaches every chunk when the level removes this region.</summary>
+    internal void RetireLighting()
+    {
+        lock (this.FluidTickLock)
+        {
+            this.lightingRetired = true;
+            this.FlushLight?.Invoke();
+            foreach (var chunk in this.loadedChunks)
+                this.DetachLighting(chunk);
+        }
+    }
+
+    /// <summary>
+    /// Stores <paramref name="replacement"/> in place of <paramref name="stored"/>, if that's the chunk stored at its
+    /// position. Generation replaces a chunk it failed on under the chunk's lock, so a save waiting for the lock
+    /// serializes the replacement (see <see cref="WriteChunkAsync"/>).
+    /// </summary>
+    internal void ReplaceChunk(IChunk stored, IChunk replacement)
+    {
+        var x = NumericsHelper.Modulo(stored.X, CubicRegionSize);
+        var z = NumericsHelper.Modulo(stored.Z, CubicRegionSize);
+
+        lock (this.FluidTickLock)
+        {
+            if (ReferenceEquals(this.loadedChunks[x, z], stored))
+                this.PublishChunk(x, z, replacement);
+        }
     }
 
     /// <summary>
@@ -255,18 +522,34 @@ public class Region : IRegion
     {
         await this.initialization.Value;
 
+        var retired = new List<BaseContainer>();
+        var unloaded = new List<BlockEntity>();
         await this.saveLock.WaitAsync();
         try
         {
-            await this.WriteChunkAsync(chunk, unloading);
+            await this.WriteChunkAsync(chunk, unloading, retired, unloaded);
         }
         finally
         {
             this.saveLock.Release();
+
+            // Inventories were frozen before the snapshot. Handlers may flush this region after persistence
+            // releases its semaphore; a failed write must still close the retired windows.
+            foreach (var inventory in retired)
+                await AbstractLevel.CloseWindowsAsync(inventory);
+
+            // Saved and retired, the block entities hear their chunk unloaded while they still reach their level.
+            foreach (var blockEntity in unloaded)
+            {
+                await blockEntity.WaitForLiveCallAsync();
+                this.BlockEntityUnloaded?.Invoke(blockEntity);
+                BlockEntityLifecycle.Detach(blockEntity);
+            }
         }
     }
 
-    private async Task WriteChunkAsync(IChunk chunk, bool unloading)
+    private async Task WriteChunkAsync(
+        IChunk chunk, bool unloading, List<BaseContainer> retired, List<BlockEntity> unloaded)
     {
         var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
 
@@ -278,12 +561,27 @@ public class Region : IRegion
             using (this.LockChunk is null ? null : await this.LockChunk(chunk.X, chunk.Z))
             lock (this.FluidTickLock)
             {
-                var loadedStarts = (chunk as Chunk)?.StructureStarts;
-                var structureStarts = this.SaveStructureStarts is null ? loadedStarts : this.SaveStructureStarts(chunk.X, chunk.Z, loadedStarts);
+                this.FlushLight?.Invoke();
 
-                SerializeChunk(writer, chunk, structureStarts);
+                // The chunk stored now, read under the lock: generation may have replaced the one this save was given
+                // while it waited (see ReplaceChunk). One no longer stored was unloaded and is saved as it was.
+                var current = this.loadedChunks[x, z] ?? chunk;
 
-                if (chunk.IsGenerated && chunk is Chunk complete)
+                // No block hooks or async setters may change this instance after its final snapshot.
+                if (unloading && ReferenceEquals(current, chunk))
+                    this.RetireBlockAccess(current);
+
+                var loadedStarts = (current as Chunk)?.StructureStarts;
+                var structureStarts = this.SaveStructureStarts is null
+                    ? loadedStarts
+                    : this.SaveStructureStarts(current.X, current.Z, loadedStarts);
+
+                if (unloading && current is Chunk retiring)
+                    BlockEntityLifecycle.Retire(retiring, retired, unloaded);
+
+                SerializeChunk(writer, current, structureStarts);
+
+                if (current.IsGenerated && current is Chunk complete)
                     entities = this.CollectEntities(complete, unloading);
             }
 
@@ -308,6 +606,7 @@ public class Region : IRegion
     {
         var entities = new NbtList(NbtTagType.Compound, "Entities");
 
+        lock (ItemEntity.TransferLock)
         using (chunk.EntityLock.EnterScope())
         {
             if (chunk.EntitiesUnloaded)
@@ -323,6 +622,9 @@ public class Region : IRegion
             {
                 if (entity is not Entity levelEntity || ChunkOf(levelEntity.Position) != (chunk.X, chunk.Z))
                     continue;
+
+                if (unloading && levelEntity is not IPlayer)
+                    API.Data.AttachmentStorage.For(levelEntity).Retire();
 
                 if (EntityNbt.Save(levelEntity) is not NbtCompound saved)
                 {
@@ -386,49 +688,30 @@ public class Region : IRegion
             cts.ThrowIfCancellationRequested();
             await entity.TickAsync();
         }
-        await TickBlocksAsync();
-    }
 
-    internal async Task TickBlocksAsync()
-    {
         this.MoveEntitiesToTheirRegions();
-
-        List<IBlockUpdate> neighborUpdates = [];
-        List<IBlockUpdate> delayed = [];
-
-        foreach (var pos in blockUpdates.Keys)
-        {
-            blockUpdates.Remove(pos, out var bu);
-            if (bu.DelayCounter > 0)
-            {
-                bu.DelayCounter--;
-                delayed.Add(bu);
-            }
-            else
-            {
-                bool updateNeighbor = await bu.Level.HandleBlockUpdateAsync(bu);
-                if (updateNeighbor) { neighborUpdates.Add(bu); }
-            }
-        }
-        delayed.ForEach(AddBlockUpdate);
-        foreach (var update in neighborUpdates)
-            await update.Level.BlockUpdateNeighborsAsync(update);
     }
 
     /// <summary>
     /// Hands entities that moved into another loaded region's chunks over to that region, which saves them with its chunks.
     /// </summary>
-    private void MoveEntitiesToTheirRegions()
+    internal void MoveEntitiesToTheirRegions()
     {
         foreach (var entity in this.Entities.Values)
         {
-            var (chunkX, chunkZ) = ChunkOf(entity.Position);
-            if (chunkX >> CubicRegionSizeShift == this.X && chunkZ >> CubicRegionSizeShift == this.Z)
-                continue;
+            lock (ItemEntity.TransferLock)
+            {
+                if (!this.Entities.TryGetValue(entity.EntityId, out var resident) || !ReferenceEquals(resident, entity))
+                    continue;
 
-            if (entity.Level is AbstractLevel level && level.GetRegionForChunk(chunkX, chunkZ) is Region target
-                && target.Entities.TryAdd(entity.EntityId, entity))
-                this.Entities.TryRemove(entity.EntityId, out _);
+                var (chunkX, chunkZ) = ChunkOf(entity.Position);
+                if (chunkX >> CubicRegionSizeShift == this.X && chunkZ >> CubicRegionSizeShift == this.Z)
+                    continue;
+
+                if (entity.Level is AbstractLevel level && level.GetRegionForChunk(chunkX, chunkZ) is Region target
+                    && target.Entities.TryAdd(entity.EntityId, entity))
+                    this.Entities.TryRemove(new KeyValuePair<int, IEntity>(entity.EntityId, entity));
+            }
         }
     }
 
@@ -450,8 +733,11 @@ public class Region : IRegion
         "structures",
         "PostProcessing",
         "fluid_ticks",
+        "block_ticks",
         "ObsidianMobEggTicks",
         "ObsidianFrogspawnTicks",
+        Portals.PortalOwnership.NbtKey,
+        "obsidian:attachments",
         "isLightOn"
     ];
 
@@ -461,6 +747,8 @@ public class Region : IRegion
         int z = chunkCompound.GetInt("zPos");
 
         var chunk = new Chunk(x, z, this.minY, this.height);
+        API.Data.AttachmentStorage.For(chunk).Load(chunkCompound);
+        Portals.PortalOwnership.Read(chunk, chunkCompound);
         if (chunkCompound.TryGetTag<NbtList>("ObsidianMobEggTicks", out var mobEggTicks))
             foreach (NbtCompound tick in mobEggTicks)
                 chunk.MobEggTicks[new Vector(tick.GetInt("x"), tick.GetInt("y"), tick.GetInt("z"))] = Math.Clamp(tick.GetInt("delay"), 0, 8300);
@@ -537,6 +825,9 @@ public class Region : IRegion
 
         if (chunkCompound.TryGetTag<NbtList>("block_entities", out var blockEntities))
         {
+            // Plugins' block entities load as saved data, which the level makes theirs on its tick once the chunk is
+            // complete (see AbstractLevel.RestoreKeptBlockEntities), in turn with plugins unloading.
+
             foreach (var blockEntityCompound in blockEntities.Cast<NbtCompound>())
             {
                 if (!blockEntityCompound.TryGetTag<NbtTag<string>>("id", out var id))
@@ -546,7 +837,8 @@ public class Region : IRegion
                 if (position.Y < this.minY || position.Y >= this.minY + this.height)
                     continue;
 
-                chunk.SetBlockEntity(position.X, position.Y, position.Z, BlockEntityNbt.Load(blockEntityCompound, id.Value!, position));
+                var blockEntity = BlockEntityNbt.Load(blockEntityCompound, id.Value!, position, pluginInstances: false);
+                chunk.SetBlockEntity(position.X, position.Y, position.Z, blockEntity);
             }
         }
 
@@ -554,7 +846,10 @@ public class Region : IRegion
             ReadPostProcessing(chunkCompound, chunk);
 
         if (chunkCompound.TryGetTag<NbtList>("fluid_ticks", out var fluidTicks))
-            chunk.FluidTicks.Read(fluidTicks, x, z);
+            chunk.FluidTicks.Read(fluidTicks, x, z, FluidNames.TryParse);
+
+        if (chunkCompound.TryGetTag<NbtList>("block_ticks", out var blockTicks))
+            chunk.BlockTicks.Read(blockTicks, x, z, LevelBlockUpdates.TryParseTickType);
 
         // Entities of a chunk that isn't complete yet, like a vanilla proto chunk's "entities".
         if (chunkCompound.TryGetTag<NbtList>("entities", out var entities))
@@ -664,6 +959,7 @@ public class Region : IRegion
     /// </summary>
     internal static void SerializeChunk(NbtWriterStream writer, IChunk chunk, NbtCompound? structureStarts)
     {
+        writer.WriteTag(API.Data.AttachmentStorage.For(chunk).Snapshot());
         writer.WriteLong("InhabitedTime", chunk is Chunk concrete ? concrete.InhabitedTime : 0);
         writer.WriteListStart("sections", NbtTagType.Compound, chunk.Sections.Length);
 
@@ -687,8 +983,10 @@ public class Region : IRegion
         }
         writer.EndList();
 
-        // Data block entities and containers; other block entities aren't saved yet.
-        var blockEntities = chunk.GetBlockEntities().Select(blockEntity => BlockEntityNbt.Save(blockEntity, chunk)).OfType<NbtCompound>().ToList();
+        var blockEntities = chunk.GetBlockEntities()
+            .Select(BlockEntityNbt.Save)
+            .OfType<NbtCompound>()
+            .ToList();
         writer.WriteListStart("block_entities", NbtTagType.Compound, blockEntities.Count);
         foreach (var blockEntity in blockEntities)
             writer.WriteListTag(blockEntity);
@@ -731,8 +1029,9 @@ public class Region : IRegion
             if (generated.PostProcessing.Count > 0)
                 WritePostProcessing(writer, generated);
 
-            // Scheduled fluid ticks, like vanilla's "fluid_ticks".
-            generated.FluidTicks.Write(writer);
+            // Scheduled block and fluid ticks, like vanilla's "block_ticks" and "fluid_ticks".
+            generated.BlockTicks.Write(writer, "block_ticks", name => name);
+            generated.FluidTicks.Write(writer, "fluid_ticks", FluidNames.Name);
             var mobEggTicks = generated.MobEggTicks.ToArray();
             writer.WriteListStart("ObsidianMobEggTicks", NbtTagType.Compound, mobEggTicks.Length);
             foreach (var (position, delay) in mobEggTicks)
@@ -757,6 +1056,7 @@ public class Region : IRegion
                 writer.EndCompound();
             }
             writer.EndList();
+            Portals.PortalOwnership.Write(writer, generated);
         }
 
         writer.WriteInt("xPos", chunk.X);
@@ -790,6 +1090,12 @@ public class Region : IRegion
 
     public async ValueTask DisposeAsync()
     {
+        // Loading a region starts reading its headers without waiting (see AbstractLevel.LoadRegion). Closing the
+        // files under that read can leave them open until it ends, after the level is disposed, so it's waited out.
+        // A failed read fails the region's other operations, which wait for it too, not its disposal.
+        if (this.initialization.IsValueCreated)
+            await this.initialization.Value.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+
         await regionFile.DisposeAsync();
         await this.entityRegionFile.DisposeAsync();
     }

@@ -56,7 +56,8 @@ public sealed partial class Bee : FarmAnimal
         if (HasStung && ++stingTicks >= 1200)
             await DamageEnvironmentAsync(Health);
         if (searchCooldown > 0) searchCooldown--;
-        if (HivePosition is Vector hive && Terrain.GetBlock(hive)?.Material is not Material.BeeNest and not Material.Beehive)
+        if (HivePosition is Vector hive
+            && Terrain.GetBlock(hive)?.RegistryId is not BlockIds.BeeNest and not BlockIds.Beehive)
             HivePosition = null;
         if (FlowerPosition is Vector flower && (Terrain.GetBlock(flower) is not { } plant || !TagsRegistry.Block.Flowers.Entries.Contains(plant.RegistryId)))
         {
@@ -74,7 +75,7 @@ public sealed partial class Bee : FarmAnimal
             {
                 var point = new Vector(origin.X + x, origin.Y + y, origin.Z + z);
                 if (Terrain.GetBlock(point) is not { } block) continue;
-                if (HivePosition == null && block.Material is Material.BeeNest or Material.Beehive &&
+                if (HivePosition == null && block.RegistryId is BlockIds.BeeNest or BlockIds.Beehive &&
                     GetHive(point) is DataBlockEntity entity &&
                     (!entity.Data.TryGetTag<NbtList>("bees", out var occupants) || occupants.Count < 3))
                     candidates.Add((point, ((VectorD)point - Position).MagnitudeSquared()));
@@ -124,6 +125,7 @@ public sealed partial class Bee : FarmAnimal
                 {
                     if (!entity.Data.TryGetTag<NbtList>("bees", out var occupants)) occupants = new NbtList(NbtTagType.Compound, "bees");
                     if (occupants.Count >= 3) return;
+                    API.Data.AttachmentStorage.For(this).Retire();
                     var data = EntityNbt.Save(this)!;
                     data.Name = "entity_data";
                     occupants.Add(new NbtCompound { data, new NbtTag<int>("ticks_in_hive", 0), new NbtTag<int>("min_ticks_in_hive", HasNectar ? 2400 : 600) });
@@ -151,7 +153,7 @@ public sealed partial class Bee : FarmAnimal
 
     internal bool HasValidHive => HivePosition is Vector hive &&
         ((VectorD)hive - Position.Floor()).MagnitudeSquared() < 48 * 48 &&
-        Terrain.GetBlock(hive)?.Material is Material.BeeNest or Material.Beehive &&
+        Terrain.GetBlock(hive)?.RegistryId is BlockIds.BeeNest or BlockIds.Beehive &&
         GetHive(hive)?.Id is "minecraft:beehive" or "beehive";
 
     internal async ValueTask GrowCropsAsync()
@@ -161,19 +163,19 @@ public sealed partial class Bee : FarmAnimal
         {
             var point = origin - new Vector(0, depth, 0);
             if (Terrain.GetBlock(point) is not { } block) continue;
-            var maxAge = block.Material switch
+            var maxAge = block.RegistryId switch
             {
-                Material.Wheat or Material.Carrots or Material.Potatoes or Material.MelonStem or Material.PumpkinStem => 7,
-                Material.Beetroots or Material.SweetBerryBush => 3,
-                Material.TorchflowerCrop => 2,
+                BlockIds.Wheat or BlockIds.Carrots or BlockIds.Potatoes or BlockIds.MelonStem or BlockIds.PumpkinStem => 7,
+                BlockIds.Beetroots or BlockIds.SweetBerryBush => 3,
+                BlockIds.TorchflowerCrop => 2,
                 _ => -1
             };
             IBlock? grown = null;
             if (maxAge >= 0 && int.TryParse(block.GetProperty("age"), out var age) && age < maxAge)
-                grown = block.Material == Material.TorchflowerCrop && age + 1 == maxAge
-                    ? BlocksRegistry.Get(Material.Torchflower)
+                grown = block.RegistryId == BlockIds.TorchflowerCrop && age + 1 == maxAge
+                    ? BlocksRegistry.Torchflower
                     : block.WithProperty("age", age + 1);
-            else if (block.Material is Material.CaveVines or Material.CaveVinesPlant && block.GetProperty("berries") == "false")
+            else if (block.RegistryId is BlockIds.CaveVines or BlockIds.CaveVinesPlant && block.GetProperty("berries") == "false")
                 grown = block.WithProperty("berries", true);
             if (grown == null) continue;
             if (Level is AbstractLevel level) level.BroadcastLevelEvent(2011, point, 15);

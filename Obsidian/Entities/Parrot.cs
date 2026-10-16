@@ -48,17 +48,32 @@ public sealed partial class Parrot : Animal
         actions.AddGoal(7, new LookAtPlayerGoal(this, 8));
         actions.AddGoal(8, new RandomLookAroundGoal(this));
     }
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4)) return;
+        if (!Alive
+            || player.Health <= 0
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (item is { Count: > 0, Type: Material.Cookie })
+        if (item is { Count: > 0, Holder.Id: ItemIds.Cookie })
         {
             await ConsumeInteractionItemAsync(player, hand);
             AddPotionEffect((int)PotionEffect.Poison - 1, 900);
             await DamageEnvironmentAsync(Health);
         }
-        else if (!Tamed && item is { Count: > 0, Type: Material.WheatSeeds or Material.MelonSeeds or Material.PumpkinSeeds or Material.BeetrootSeeds or Material.TorchflowerSeeds or Material.PitcherPod })
+        else if (!Tamed
+            && item is
+            {
+                Count: > 0,
+                Holder.Id: ItemIds.WheatSeeds
+                    or ItemIds.MelonSeeds
+                    or ItemIds.PumpkinSeeds
+                    or ItemIds.BeetrootSeeds
+                    or ItemIds.TorchflowerSeeds
+                    or ItemIds.PitcherPod
+            })
         {
             await ConsumeInteractionItemAsync(player, hand);
             if (Random.Next(10) == 0) { Owner = player.Uuid; PersistenceRequired = true; }
@@ -71,6 +86,10 @@ public sealed partial class Parrot : Animal
             ((Navigator)Navigator!).Stop();
             SynchronizeMetadata();
         }
+        else
+            return false;
+
+        return true;
     }
     protected override ValueTask OnHurtAsync(IEntity source)
     {
@@ -83,12 +102,12 @@ public sealed partial class Parrot : Animal
         await base.TickMobAsync();
         if (Random.Next(400) != 0 || !Alive || Silent || Random.Next(2) != 0) return;
         var bounds = Dimension.CreateBBFromPosition(Position);
-        var nearby = Level.GetEntitiesInRange(Position, float.MaxValue).OfType<Mob>().Where(mob => ImitationSounds.ContainsKey(mob.Type) &&
+        var nearby = Level.GetEntitiesInRange(Position, float.MaxValue).OfType<Mob>().Where(mob => mob.Type is EntityType type && ImitationSounds.ContainsKey(type) &&
             mob.BoundingBox.Max.X > bounds.Min.X - 20 && mob.BoundingBox.Min.X < bounds.Max.X + 20 &&
             mob.BoundingBox.Max.Y > bounds.Min.Y - 20 && mob.BoundingBox.Min.Y < bounds.Max.Y + 20 &&
             mob.BoundingBox.Max.Z > bounds.Min.Z - 20 && mob.BoundingBox.Min.Z < bounds.Max.Z + 20).ToArray();
         if (nearby.Length > 0 && nearby[Random.Next(nearby.Length)] is { Silent: false } selected)
-            PlayImitation(ImitationSounds[selected.Type], 0.7f);
+            PlayImitation(ImitationSounds[selected.Type!.Value], 0.7f);
     }
     protected internal override void PlayMobSound(string kind)
     {
@@ -108,7 +127,7 @@ public sealed partial class Parrot : Animal
         });
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.Feather, Random.Next(1, 3));
+        DropItem(ItemsRegistry.Feather, Random.Next(1, 3));
         return default;
     }
     public override void Write(INetStreamWriter writer)

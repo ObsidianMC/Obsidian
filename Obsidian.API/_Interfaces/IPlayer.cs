@@ -6,6 +6,10 @@ namespace Obsidian.API;
 
 public interface IPlayer : ILiving
 {
+    public Progress.IStatistics Statistics => throw new NotSupportedException("Player statistics are unavailable.");
+    public Advancements.IAdvancements Advancements =>
+        throw new NotSupportedException("Player advancements are unavailable.");
+
     public ValueTask ShowDialogAsync(Registry.Codecs.Dialogs.DialogElement dialog);
     public ValueTask ClearDialogAsync();
 
@@ -39,7 +43,37 @@ public interface IPlayer : ILiving
 
     public PlayerAbility Abilities { get; set; }
 
+    /// <summary>
+    /// What the player's movement grants add up to (see <see cref="SetMovementAbilities"/>).
+    /// </summary>
+    public MovementAbilities MovementAbilities => default;
+
+    /// <summary>
+    /// Grants the player movement abilities under <paramref name="id"/>, replacing an earlier grant with the same id;
+    /// grants with other ids add up (see <see cref="MovementAbilities.Combine"/>). Grants aren't saved, and a plugin's
+    /// are taken back when it unloads.
+    /// </summary>
+    /// <param name="id">The grant's identifier, like <c>ruby:cloud_boots</c>.</param>
+    /// <param name="abilities">The abilities; negative extra jumps count as none.</param>
+    public void SetMovementAbilities(string id, MovementAbilities abilities)
+    {
+    }
+
+    /// <summary>
+    /// Takes back the grant <see cref="SetMovementAbilities"/> made under <paramref name="id"/>.
+    /// </summary>
+    /// <returns>Whether there was one.</returns>
+    public bool RemoveMovementAbilities(string id) => false;
+
     public bool IsDragging { get; set; }
+
+    /// <summary>
+    /// How the player started dragging items across slots, while <see cref="IsDragging"/>:
+    /// <see cref="DraggingState.StartLeft"/> splits the carried stack evenly, <see cref="DraggingState.StartRight"/>
+    /// places one item per slot and <see cref="DraggingState.StartMiddle"/> (creative only) a full stack.
+    /// </summary>
+    public DraggingState DragStart { get; set; }
+
     public bool Sleeping { get; set; }
     public bool InHorseInventory { get; set; }
 
@@ -67,14 +101,16 @@ public interface IPlayer : ILiving
     public Task LoadAsync(bool loadFromPersistentWorld = true);
 
     /// <summary>
-    /// Sends a packet to the player's client immediately. Players without a client ignore it.
+    /// Sends a packet to the player's client without packet handlers: immediately, or right after the packets queued
+    /// before it that are still on their way. Players without a client ignore it.
     /// </summary>
-    /// <returns>Whether the packet was sent.</returns>
+    /// <returns>Whether the packet was sent or is on its way.</returns>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public bool SendPacket(IClientboundPacket packet);
 
     /// <summary>
-    /// Queues a packet for the player's client. Players without a client ignore it.
+    /// Queues a packet for the player's client. Packet handlers see it in the client's outgoing pipeline, after the
+    /// call returned; the call never waits for them. Players without a client ignore it.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public ValueTask QueuePacketAsync(IClientboundPacket packet);
@@ -83,7 +119,28 @@ public interface IPlayer : ILiving
     // keep in sync; the server's network player overrides them.
     internal ValueTask SynchronizeTrackedEntitiesAsync() => default;
     internal void TrackEntity(IEntity entity) { }
+    internal void UntrackEntity(int entityId) { }
     internal void ForgetVisiblePlayer(IPlayer player) { }
+
+    // After entity tracking each tick: what changed in the player's attachments and movement abilities.
+    internal void SynchronizeOwnState() { }
+
+    // The recipe book's changes, and the crafting result they change.
+    internal ValueTask SynchronizeRecipeBookAsync() => default;
+
+    // The window the player has open, or else their inventory, sent again whole.
+    internal ValueTask RefreshWindowAsync() => default;
+
+    // Closes the player's container for the server, as when its block goes or the plugin unloading owns it.
+    internal ValueTask CloseContainerAsync(Plugins.IPluginContainer? unloading) => default;
+
+    // Gameplay that the server's network player keeps and players without a client don't take part in yet: hunger,
+    // item wear and advancements. Gameplay code calls these rather than testing for the network player's type.
+    internal void AddExhaustion(float amount) { }
+    internal ValueTask DamageInventoryItemAsync(int slot, int amount, bool armor = false, ItemStack? expected = null) =>
+        default;
+    internal void RecordProgressCraft(string identifier, ItemStack result) { }
+    internal ValueTask RecordProgressKillAsync(IEntity victim) => default;
 
     // Runs after every level has ticked, like vanilla's per-player inventory tick.
     internal ValueTask TickAfterLevelsAsync() => default;
@@ -96,6 +153,15 @@ public interface IPlayer : ILiving
     public ValueTask KickAsync(ChatMessage reason);
     public ValueTask KickAsync(string reason);
     public ValueTask OpenInventoryAsync(BaseContainer container);
+    /// <summary>
+    /// Shows <paramref name="scoreboard"/>'s objective and scores to the player in <paramref name="position"/>. The
+    /// player must have been added to the scoreboard first.
+    /// </summary>
+    /// <remarks>
+    /// The packets are queued with the scoreboard's other updates and removals, which the player gets in order, and
+    /// sent shortly after this returns. A packet sent to the player directly afterwards may arrive first, so change
+    /// the scoreboard through <see cref="IScoreboard"/> rather than with packets of your own.
+    /// </remarks>
     public ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot position);
 
     [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -106,6 +172,13 @@ public interface IPlayer : ILiving
 
     public Task<bool> UpdateChunksAsync(bool unloadAll = false, int distance = 0);
     public Task RespawnAsync(DataKept dataKept = DataKept.Metadata);
+
+    /// <summary>
+    /// Sends the player to the spawn of a dimension of their world, by its name: the world's own (like
+    /// <c>minecraft:overworld</c>), vanilla's other dimensions, or a plugin's, like <c>ruby:crystal_world</c>.
+    /// </summary>
+    /// <returns>Whether the player was sent: not when their world has no such dimension, or they're dead.</returns>
+    public Task<bool> TeleportToDimensionAsync(string dimension);
 
     /// <summary>
     /// Sends a title message to the player.

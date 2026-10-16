@@ -70,11 +70,21 @@ internal sealed class FeatureDecorator
     /// which must hold that chunk and its 8 neighbors.
     /// </summary>
     /// <param name="areaChunks">The 3x3 chunks around the chunk; their biomes decide which features run.</param>
-    /// <param name="structures">The world's structures, or <c>null</c> when structures aren't generated.</param>
+    /// <param name="structures">The structure starts reaching the chunk, all of one layout, or <c>null</c> when
+    /// structures aren't generated.</param>
     /// <param name="terrain">The noise terrain, for structure pieces that read it.</param>
     /// <param name="onPlaced">Optional callback with the step, global index, feature and whether it placed anything.</param>
-    public void Decorate(WorldGenRegion region, IReadOnlyCollection<IChunk> areaChunks, int chunkX, int chunkZ,
-        StructureManager? structures, IStructureTerrain terrain, Action<int, int, PlacedFeature, bool>? onPlaced = null)
+    /// <param name="skip">Optionally, whether to leave a feature out, such as one of a plugin that's unloading. The
+    /// other features' seeds don't change.</param>
+    public void Decorate(
+        WorldGenRegion region,
+        IReadOnlyCollection<IChunk> areaChunks,
+        int chunkX,
+        int chunkZ,
+        ReachingStarts? structures,
+        IStructureTerrain terrain,
+        Action<int, int, PlacedFeature, bool>? onPlaced = null,
+        Func<PlacedFeature, bool>? skip = null)
     {
         var origin = new Vector(chunkX << 4, region.MinY, chunkZ << 4);
         // Like vanilla's PlacementContext: the level's min Y, but at most the generator's depth (128 in the nether), so
@@ -91,22 +101,19 @@ internal sealed class FeatureDecorator
         // Vanilla's getWritableArea: the chunk, above the bottom layer.
         var writableArea = BlockBox.Create(origin.X, region.MinY + 1, origin.Z, origin.X + 15, region.MinY + region.Height - 1, origin.Z + 15);
 
-        // Few structures reach a chunk, and looking for the starts of one structure scans as many chunks as looking for
-        // all of them; the others have nothing to place.
-        var reachingStructures = structures?.GetStartsReaching(chunkX, chunkZ).Select(start => start.Structure)
-            .ToHashSet(ReferenceEqualityComparer.Instance) ?? [];
-
         // The features of the area's biomes in a step, one bit per index in the step's features.
         Span<ulong> chosen = stackalloc ulong[this.maxStepWords];
 
         for (var step = 0; step < stepCount; step++)
         {
-            if (structures is not null && step < structures.StructuresPerStep.Count)
+            // Every step places the structures of the starts' layout.
+            if (structures is not null && step < structures.Layout.StructuresPerStep.Count)
             {
-                var stepStructures = structures.StructuresPerStep[step];
+                var stepStructures = structures.Layout.StructuresPerStep[step];
                 for (var index = 0; index < stepStructures.Count; index++)
                 {
-                    if (!reachingStructures.Contains(stepStructures[index]))
+                    // Few structures reach a chunk; the others have nothing to place.
+                    if (!structures.Reaches(stepStructures[index]))
                         continue;
 
                     random.SetFeatureSeed(decorationSeed, index, step);
@@ -116,18 +123,7 @@ internal sealed class FeatureDecorator
                         Generation = generation
                     };
 
-                    foreach (var start in structures.GetReferencingStarts(chunkX, chunkZ, stepStructures[index]))
-                    {
-                        try
-                        {
-                            start.PlaceInChunk(context);
-                        }
-                        catch (Exception exception)
-                        {
-                            throw new InvalidOperationException(
-                                $"Failed to place structure '{start.Structure.Identifier}' in chunk ({chunkX}, {chunkZ}).", exception);
-                        }
-                    }
+                    PlaceStructure(structures.Of(stepStructures[index]), context);
                 }
             }
 
@@ -153,6 +149,9 @@ internal sealed class FeatureDecorator
                 {
                     var index = (word << 6) + BitOperations.TrailingZeroCount(bits);
                     var feature = stepFeatures.Features[index];
+                    if (skip is not null && skip(feature))
+                        continue;
+
                     random.SetFeatureSeed(decorationSeed, index, step);
 
                     try
@@ -162,9 +161,43 @@ internal sealed class FeatureDecorator
                     }
                     catch (Exception exception)
                     {
-                        throw new InvalidOperationException(
-                            $"Failed to place feature '{feature.Identifier}' in chunk ({chunkX}, {chunkZ}) (decoration seed {decorationSeed}).", exception);
+                        throw new FeaturePlacementException(
+                            feature,
+                            $"Failed to place feature '{feature.Identifier}' in chunk ({chunkX}, {chunkZ}) "
+                            + $"(decoration seed {decorationSeed}).",
+                            exception);
                     }
+                }
+            }
+        }
+    }
+
+    // Places the starts of a structure reaching the chunk. A start made of plugins' types runs their code, so placing
+    // it is a call into the plugins it started with: one whose plugins are unloading is left out, like their features,
+    // and its failing is theirs.
+    private static void PlaceStructure(List<StructureStart> starts, StructurePieceContext context)
+    {
+        foreach (var start in starts)
+        {
+            var owners = start.Owners;
+            if (!GeneratorCalls.TryEnter(owners, out var calls))
+                continue;
+
+            using (calls)
+            {
+                try
+                {
+                    start.PlaceInChunk(context);
+                }
+                catch (Exception exception) when (exception is not OutOfMemoryException)
+                {
+                    var message = $"Failed to place structure '{start.Structure.Identifier}' in chunk "
+                        + $"({context.ChunkX}, {context.ChunkZ}).";
+
+                    if (owners.IsEmpty)
+                        throw new InvalidOperationException(message, exception);
+
+                    throw new PluginGenerationException(owners, message, exception);
                 }
             }
         }
@@ -250,4 +283,13 @@ internal sealed class FeatureDecorator
             }
         }
     }
+}
+
+/// <summary>
+/// Placing a feature failed; the feature tells whose code ran (see <see cref="ChunkBuilder.Decorate"/>).
+/// </summary>
+internal sealed class FeaturePlacementException(PlacedFeature feature, string message, Exception innerException)
+    : InvalidOperationException(message, innerException)
+{
+    public PlacedFeature Feature { get; } = feature;
 }

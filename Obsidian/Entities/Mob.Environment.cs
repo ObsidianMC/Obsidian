@@ -78,14 +78,17 @@ public partial class Mob
 
         var feet = Terrain.GetBlock((Vector)Position.Floor());
         var floor = Terrain.GetBlock((Vector)(Position - new VectorD(0, 0.01f, 0)).Floor());
-        if (feet?.Material is Material.Fire or Material.SoulFire && !IsFireImmune)
+        if (feet?.RegistryId is BlockIds.Fire or BlockIds.SoulFire && !IsFireImmune)
         {
             Ignite(8);
             await DamageCombatAsync(this, 1, CombatDamageKind.FireContact);
         }
-        if (floor?.Material == Material.MagmaBlock && !IsFireImmune && !Sneaking && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
+        if (floor?.RegistryId == BlockIds.MagmaBlock
+            && !IsFireImmune
+            && !Sneaking
+            && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
             await DamageCombatAsync(this, 1, CombatDamageKind.FireContact);
-        if (this is not Fox && feet?.Material == Material.SweetBerryBush && !IsRemoved &&
+        if (this is not Fox && feet?.RegistryId == BlockIds.SweetBerryBush && !IsRemoved &&
             (LastPosition - Position).MagnitudeSquared() > 0.000025f)
             await ApplyDamageAsync(this, 1, true);
         await TickBlockHazardsAsync(feet);
@@ -93,8 +96,10 @@ public partial class Mob
 
     protected virtual async ValueTask TickAirSupplyAsync()
     {
-        if (Terrain.IsInFluid(EyePosition, water: true) &&
-              !TagsRegistry.EntityType.CanBreatheUnderWater.Entries.Contains((int)Type) && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1) && !HasPotionEffect((int)PotionEffect.BreathOfTheNautilus - 1))
+        if (Terrain.IsInFluid(EyePosition, water: true)
+            && !TagsRegistry.EntityType.CanBreatheUnderWater.Entries.Contains(TypeId)
+            && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1)
+            && !HasPotionEffect((int)PotionEffect.BreathOfTheNautilus - 1))
         {
             Air--;
             if (Air == -20)

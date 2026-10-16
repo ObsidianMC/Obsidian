@@ -1,26 +1,20 @@
+using Obsidian.API.Blocks;
+using Obsidian.API.World.Features.Trees;
+using Obsidian.WorldData.Redstone;
+
 namespace Obsidian.WorldData.Features.Tree;
 
 /// <summary>
-/// Neighbor shape updates during generation: vanilla <c>StructureTemplate.updateShapeAtEdge</c> after tree and template
-/// placement, and <c>Block.updateFromNeighbourShapes</c> for blocks marked for post-processing.
+/// Vanilla neighbour shape rules shared by live block updates, generation post-processing, trees and templates.
 /// </summary>
 /// <remarks>
-/// Obsidian has no general <c>updateShape</c> implementation, so only the block behaviors that matter for generated
-/// blocks and structure templates are reproduced: vines re-checking their supports, double plants, doors and beds losing
-/// their other half, snowy dirt (<c>snowy</c> from the block above), hanging moss (<c>tip</c>), liquids and waterlogged
-/// blocks scheduling a fluid tick, fence, bar, wall and double chest connections, stair shapes, fence gates in walls, and
-/// torches, ladders, lanterns, levers, wall signs and banners, vegetation and carpets dropping without support. Other
-/// blocks keep their state, which matches vanilla for logs, leaves (they only schedule ticks), roots and most others;
-/// redstone wire connections aren't updated.
+/// These rules cover support loss, two-part partners, connections, stair shapes, snowy ground and fluid scheduling.
+/// The live level supplies plugin and redstone reactions first, then applies these rules to vanilla blocks.
+/// Other blocks keep their state; scheduled survival checks and other missing reactions are tracked in known gaps.
 /// </remarks>
 internal static class ShapeUpdater
 {
     private static readonly IBlock air = BlockStateProperties.GetState("minecraft:air");
-
-    // Vanilla's Direction.Plane.HORIZONTAL order, which redstone wire connects its sides in.
-    private static readonly BlockFace[] wireDirections = [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West];
-
-    private static readonly BlockSet farmland = new("minecraft:farmland");
 
     private static readonly BlockSet fences = new("#minecraft:fences");
 
@@ -29,6 +23,8 @@ internal static class ShapeUpdater
     private static readonly BlockSet walls = new("#minecraft:walls");
 
     private static readonly BlockSet wallPostOverride = new("#minecraft:wall_post_override");
+
+    private static readonly BlockSet wallHangingSigns = new("#minecraft:wall_hanging_signs");
 
     // Blocks fences and bars never connect to for having a sturdy face (Block.isExceptionForConnection, besides leaves).
     private static readonly BlockSet connectionExceptions = new("minecraft:barrier", "minecraft:carved_pumpkin", "minecraft:jack_o_lantern",
@@ -72,7 +68,13 @@ internal static class ShapeUpdater
     /// Vanilla <c>updateShape</c>: the state of <paramref name="state"/> after its neighbor in <paramref name="direction"/>
     /// became <paramref name="neighbor"/>, scheduling the fluid tick vanilla schedules there.
     /// </summary>
-    internal static IBlock UpdateShape(IWorldGenLevel level, IBlock state, Vector position, BlockFace direction, IBlock neighbor)
+    internal static IBlock UpdateShape(
+        IWorldGenLevel level,
+        IBlock state,
+        Vector position,
+        BlockFace direction,
+        IBlock neighbor,
+        int rawBrightness = 15)
     {
         ScheduleFluidTick(level, state, position, neighbor);
 
@@ -94,9 +96,12 @@ internal static class ShapeUpdater
                 return IsUnsupportedWallBlock(level, state, position, direction) ? air : state;
             case "VineBlock":
                 return direction == BlockFace.Down ? state : UpdateVine(level, state, position);
-            case "DoublePlantBlock" or "TallFlowerBlock":
+            case "DoublePlantBlock" or "TallFlowerBlock" or "TallSeagrassBlock" or "SmallDripleafBlock":
                 return UpdateDoublePlant(level, state, position, direction, neighbor);
             case "HangingMossBlock":
+                if (direction == BlockFace.Up && !state.CanSurvive(level, position))
+                    return air;
+
                 return state.WithProperty("tip", level.GetBlock(position + Vector.Down).RegistryId != state.RegistryId);
             case "StairBlock" or "WeatheringCopperStairBlock":
                 return IsHorizontal(direction) ? state.WithProperty("shape", GetStairsShape(level, state, position)) : state;
@@ -119,6 +124,16 @@ internal static class ShapeUpdater
                 // These drop when the block behind them isn't solid.
                 return direction == FeatureHelpers.ParseFace(state.GetProperty("facing")).Opposite()
                     && !level.GetBlock(position.Offset(direction)).IsSolid() ? air : state;
+            case "BannerBlock" or "StandingSignBlock":
+                return direction == BlockFace.Down && !level.GetBlock(position + Vector.Down).IsSolid() ? air : state;
+            case "CeilingHangingSignBlock":
+                return direction == BlockFace.Up
+                    && !level.GetBlock(position + Vector.Up).IsFaceSturdy(BlockFace.Down, SupportType.Center)
+                    ? air : state;
+            case "WallHangingSignBlock":
+                var sideways = FeatureHelpers.ParseFace(state.GetProperty("facing")).ClockWise();
+                return SameAxis(direction, sideways) && !WallHangingSignSupported(level, state, position, sideways)
+                    ? air : state;
             case "LeverBlock" or "ButtonBlock":
                 return UpdateFaceAttached(level, state, position, direction);
             case "LanternBlock":
@@ -129,12 +144,17 @@ internal static class ShapeUpdater
                 return direction == BlockFace.Down && !level.GetBlock(position + Vector.Down).IsTopCenterSturdy() ? air : state;
             case "RedstoneWallTorchBlock":
                 return IsUnsupportedWallBlock(level, state, position, direction) ? air : state;
-            case "CarpetBlock" or "WoolCarpetBlock" or "FlowerBlock" or "TallGrassBlock" or "SweetBerryBushBlock" or "BushBlock"
-                or "SaplingBlock" or "CropBlock" or "CarrotBlock" or "PotatoBlock" or "BeetrootBlock" or "StemBlock" or "MushroomBlock"
-                or "WaterlilyBlock" or "FlowerBedBlock" or "FireflyBushBlock" or "DryVegetationBlock" or "ShortDryGrassBlock"
-                or "TallDryGrassBlock" or "LeafLitterBlock":
+            case "CarpetBlock" or "WoolCarpetBlock" or "FlowerBlock" or "TallGrassBlock"
+                or "SweetBerryBushBlock" or "BushBlock" or "SaplingBlock" or "CropBlock"
+                or "CarrotBlock" or "PotatoBlock" or "BeetrootBlock" or "StemBlock" or "MushroomBlock"
+                or "WaterlilyBlock" or "FlowerBedBlock" or "FireflyBushBlock"
+                or "DryVegetationBlock" or "ShortDryGrassBlock"
+                or "TallDryGrassBlock" or "LeafLitterBlock" or "VegetationBlock" or "EyeblossomBlock"
+                or "WitherRoseBlock" or "AzaleaBlock" or "FungusBlock" or "RootsBlock" or "NetherSproutsBlock"
+                or "SeagrassBlock" or "SnowLayerBlock" or "HangingRootsBlock" or "SporeBlossomBlock"
+                or "CocoaBlock" or "CactusFlowerBlock":
                 // Vegetation and carpets turn into air whenever they're updated without support.
-                return state.CanSurvive(level, position) ? state : air;
+                return state.CanSurvive(level, position, rawBrightness) ? state : air;
         }
 
         // SnowyDirtBlock and its subclasses (grass blocks, mycelium, podzol).
@@ -145,111 +165,21 @@ internal static class ShapeUpdater
     }
 
     /// <summary>
-    /// Vanilla <c>RedStoneWireBlock.updateShape</c>: the wire drops without support, and reconnects its sides to the wires and
-    /// signal sources around it, climbing blocks unless a conductor covers it.
+    /// Vanilla <c>RedStoneWireBlock.updateShape</c> (see <see cref="WireConnections.Reconnect"/>), with vanilla's
+    /// signal sources: generation has no plugin blocks to ask.
     /// </summary>
-    private static IBlock UpdateRedstoneWire(IWorldGenLevel level, IBlock state, Vector position, BlockFace direction, IBlock neighbor)
-    {
-        if (direction == BlockFace.Down)
-            return CanWireSurviveOn(neighbor) ? state : air;
-
-        if (direction == BlockFace.Up)
-            return GetWireConnectionState(level, state, position);
-
-        var side = GetWireConnectingSide(level, position, direction, !level.GetBlock(position + Vector.Up).IsRedstoneConductor());
-        var property = direction.PropertyName();
-        if ((side != "none") == IsWireConnected(state, property) && !IsWireCross(state))
-            return state.WithProperty(property, side);
-
-        var cross = BlocksRegistry.Get(Material.RedstoneWire).WithProperty("power", state.GetProperty("power"));
-        foreach (var face in wireDirections)
-            cross = cross.WithProperty(face.PropertyName(), "side");
-
-        return GetWireConnectionState(level, cross.WithProperty(property, side), position);
-    }
-
-    /// <summary>
-    /// Vanilla <c>getConnectionState</c>: connects every side it can; a wire connected on one axis only extends across it,
-    /// and a dot stays a dot.
-    /// </summary>
-    private static IBlock GetWireConnectionState(IWorldGenLevel level, IBlock state, Vector position)
-    {
-        var wasDot = IsWireDot(state);
-        var canClimb = !level.GetBlock(position + Vector.Up).IsRedstoneConductor();
-        state = BlocksRegistry.Get(Material.RedstoneWire).WithProperty("power", state.GetProperty("power"));
-        foreach (var face in wireDirections)
-            state = state.WithProperty(face.PropertyName(), GetWireConnectingSide(level, position, face, canClimb));
-
-        if (wasDot && IsWireDot(state))
-            return state;
-
-        var north = IsWireConnected(state, "north");
-        var south = IsWireConnected(state, "south");
-        var east = IsWireConnected(state, "east");
-        var west = IsWireConnected(state, "west");
-        var noZ = !north && !south;
-        var noX = !east && !west;
-        if (!west && noZ)
-            state = state.WithProperty("west", "side");
-
-        if (!east && noZ)
-            state = state.WithProperty("east", "side");
-
-        if (!north && noX)
-            state = state.WithProperty("north", "side");
-
-        if (!south && noX)
-            state = state.WithProperty("south", "side");
-
-        return state;
-    }
-
-    /// <summary>
-    /// Vanilla <c>getConnectingSide</c>: <c>up</c> to a wire on top of the neighbor, <c>side</c> to a wire or signal source
-    /// beside or below it, else <c>none</c>.
-    /// </summary>
-    private static string GetWireConnectingSide(IWorldGenLevel level, Vector position, BlockFace direction, bool canClimb)
-    {
-        var neighborPosition = position.Offset(direction);
-        var neighbor = level.GetBlock(neighborPosition);
-        if (canClimb)
-        {
-            var climbable = neighbor.BlockClass() is "TrapDoorBlock" or "WeatheringCopperTrapDoorBlock" || CanWireSurviveOn(neighbor);
-            if (climbable && WireConnectsTo(level.GetBlock(neighborPosition + Vector.Up), null))
-                return neighbor.IsFaceSturdy(direction.Opposite()) ? "up" : "side";
-        }
-
-        return !WireConnectsTo(neighbor, direction)
-            && (neighbor.IsRedstoneConductor() || !WireConnectsTo(level.GetBlock(neighborPosition + Vector.Down), null))
-            ? "none"
-            : "side";
-    }
-
-    /// <summary>
-    /// Vanilla <c>shouldConnectTo</c>: wires always; repeaters along their axis, observers from their face, and other signal
-    /// sources from any side.
-    /// </summary>
-    private static bool WireConnectsTo(IBlock block, BlockFace? direction)
-    {
-        if (block.Material == Material.RedstoneWire)
-            return true;
-
-        if (block.Material == Material.Repeater)
-            return direction is not null && SameAxis(FeatureHelpers.ParseFace(block.GetProperty("facing")), direction.Value);
-
-        if (block.Material == Material.Observer)
-            return direction is not null && FeatureHelpers.ParseFace(block.GetProperty("facing")) == direction.Value;
-
-        return block.IsSignalSource() && direction is not null;
-    }
-
-    private static bool CanWireSurviveOn(IBlock below) => below.IsFaceSturdy(BlockFace.Up) || below.Material == Material.Hopper;
-
-    private static bool IsWireConnected(IBlock wire, string side) => wire.GetProperty(side) != "none";
-
-    private static bool IsWireDot(IBlock wire) => wireDirections.All(face => !IsWireConnected(wire, face.PropertyName()));
-
-    private static bool IsWireCross(IBlock wire) => wireDirections.All(face => IsWireConnected(wire, face.PropertyName()));
+    private static IBlock UpdateRedstoneWire(
+        IWorldGenLevel level,
+        IBlock state,
+        Vector position,
+        BlockFace direction,
+        IBlock neighbor) =>
+        WireConnections.Reconnect(
+            new WireView(level.GetBlock, block => block.IsSignalSource()),
+            state,
+            position,
+            direction,
+            neighbor);
 
     /// <summary>Vanilla <c>VineBlock.getUpdatedState</c>; a vine left without faces becomes air.</summary>
     private static IBlock UpdateVine(IWorldGenLevel level, IBlock state, Vector position)
@@ -298,9 +228,7 @@ internal static class ShapeUpdater
         {
             if (isLower && direction == BlockFace.Down)
             {
-                // VegetationBlock.mayPlaceOn: dirt or farmland below.
-                var below = level.GetBlock(position + Vector.Down);
-                if (!TreeBlocks.Dirt.Contains(below) && !farmland.Contains(below))
+                if (!state.CanSurvive(level, position))
                     return air;
             }
 
@@ -323,7 +251,8 @@ internal static class ShapeUpdater
             if (state.IsFluidSource() || neighbor.IsFluidSource())
                 level.ScheduleFluidTick(position);
         }
-        else if (state.GetProperty("waterlogged") == "true" || state.Material is Material.Seagrass or Material.Kelp or Material.BubbleColumn)
+        else if (state.GetProperty("waterlogged") == "true"
+            || state.RegistryId is BlockIds.Seagrass or BlockIds.Kelp or BlockIds.BubbleColumn)
         {
             level.ScheduleFluidTick(position);
         }
@@ -363,6 +292,29 @@ internal static class ShapeUpdater
     }
 
     private static bool SameAxis(BlockFace a, BlockFace b) => a == b || a == b.Opposite();
+
+    // Vanilla wall hanging signs need either end of their bar supported, or another aligned wall hanging sign.
+    private static bool WallHangingSignSupported(
+        IWorldGenLevel level, IBlock state, Vector position, BlockFace sideways)
+    {
+        foreach (var side in new[] { sideways, sideways.Opposite() })
+        {
+            var neighbor = level.GetBlock(position.Offset(side));
+            if (wallHangingSigns.Contains(neighbor))
+            {
+                var facing = FeatureHelpers.ParseFace(state.GetProperty("facing"));
+                var neighborFacing = FeatureHelpers.ParseFace(neighbor.GetProperty("facing"));
+                if (SameAxis(facing, neighborFacing))
+                    return true;
+            }
+            else if (neighbor.IsFaceSturdy(side.Opposite()))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static bool IsStairs(IBlock block) => block.BlockClass() is "StairBlock" or "WeatheringCopperStairBlock";
 
@@ -466,10 +418,10 @@ internal static class ShapeUpdater
     }
 
     private static bool IsStemFruit(IBlock stem, IBlock neighbor) =>
-        neighbor.Material == (stem.Material == Material.AttachedMelonStem ? Material.Melon : Material.Pumpkin);
+        neighbor.RegistryId == (stem.Is(BlockIds.AttachedMelonStem) ? BlockIds.Melon : BlockIds.Pumpkin);
 
     private static string StemFor(IBlock attached) =>
-        attached.Material == Material.AttachedMelonStem ? "minecraft:melon_stem" : "minecraft:pumpkin_stem";
+        attached.Is(BlockIds.AttachedMelonStem) ? "minecraft:melon_stem" : "minecraft:pumpkin_stem";
 
     /// <summary>
     /// Vanilla <c>FaceAttachedHorizontalDirectionalBlock.updateShape</c> (levers, buttons): drops without a sturdy face to

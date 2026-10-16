@@ -43,9 +43,11 @@ public partial record class KeepAlivePacket
 
         this.KeepAliveId = keepAliveId;
 
-        client.SendPacket(this);
-
-        client.LastKeepAliveId = keepAliveId;
+        // A client going back to configuration isn't sent play packets, and can't answer this one.
+        if (client is Client connection)
+            connection.SendKeepAlive(this);
+        else if (client.SendPacket(this))
+            client.LastKeepAliveId = keepAliveId;
     }
 
     public async override ValueTask HandleAsync(IServer server, IClientPlayer player)

@@ -27,12 +27,12 @@ internal sealed class WalkNodeEvaluator(PathfinderMob mob)
     {
         // Ground navigation follows the surface, including while the mob bobs above it.
         var waterY = (int)Math.Floor(currentY - 0.5f);
-        if (!mob.SwimmingNavigation && mob.Terrain.GetBlock(new Vector(x, waterY, z))?.Material == Material.Water)
+        if (!mob.SwimmingNavigation && mob.Terrain.GetBlock(new Vector(x, waterY, z))?.RegistryId == BlockIds.Water)
         {
             for (var depth = 0; depth < 16; depth++)
             {
                 waterY++;
-                if (mob.Terrain.GetBlock(new Vector(x, waterY, z))?.Material == Material.Water)
+                if (mob.Terrain.GetBlock(new Vector(x, waterY, z))?.RegistryId == BlockIds.Water)
                     continue;
                 var surface = new VectorD(x + 0.5f, waterY, z + 0.5f);
                 if (mob.Terrain.IsFree(mob.Dimension.CreateBBFromPosition(surface), CanOpenDoors) && GetCost(surface) >= 0)
@@ -51,7 +51,7 @@ internal sealed class WalkNodeEvaluator(PathfinderMob mob)
             if (CanOpenDoors && TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId))
                 continue;
 
-            foreach (var shape in BlockCollisionShapes.Get(block))
+            foreach (var shape in BlockCollisionShapes.Get(mob.Level, new Vector(x, y, z), block))
             {
                 if (shape.Min.X <= 0.5f && shape.Max.X >= 0.5f && shape.Min.Z <= 0.5f && shape.Max.Z >= 0.5f)
                     candidates.Add(y + shape.Max.Y);

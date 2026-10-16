@@ -146,7 +146,7 @@ public partial class Arrow : Entity
                 burningTarget.Ignite(FireSeconds);
             if (damaged && target is Living knocked && KnockbackLevel > 0)
                 CombatEffects.Knockback(knocked, Motion, KnockbackLevel * 0.6f);
-            if (damaged && target is Living potionTarget && PickupItem?.Type == Material.TippedArrow)
+            if (damaged && target is Living potionTarget && PickupItem?.Is(ItemsRegistry.TippedArrow) == true)
                 await ApplyTippedEffectsAsync(potionTarget);
             if (damaged && target is Living thornTarget && Owner is Living attacker)
                 await CombatEffects.PostAttackAsync(attacker, thornTarget, Type == EntityType.Trident ? Weapon : null);
@@ -174,7 +174,7 @@ public partial class Arrow : Entity
             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SetEntityDataPacket { EntityId = EntityId, Entity = this });
             return;
         }
-        var water = terrain.GetBlock((Vector)Position.Floor())?.Material == Material.Water;
+        var water = terrain.GetBlock((Vector)Position.Floor())?.RegistryId == BlockIds.Water;
         Motion *= GetDrag(water);
         if (!NoGravity)
             Motion -= new VectorD(0, 0.05f, 0);

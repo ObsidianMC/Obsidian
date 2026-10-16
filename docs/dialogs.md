@@ -20,7 +20,10 @@ DialogBuilder.MultiAction("Quick actions")
 ```
 
 Register during plugin initialization, before players connect. Registration and
-unregistration apply on the player's next connection. `pauseScreen: true` also
+unregistration apply on the player's next connection, or, for players already
+playing, when plugins load or unload: a change to the dialogs sends them back
+through configuration. Players get a dialog as it was when registered: changing it
+afterwards changes nothing they're sent. A plugin's dialogs are removed when it unloads. `pauseScreen: true` also
 adds an entry to the pause menu. Minecraft chooses the quick-action key; G is its
 default. One entry opens directly; multiple entries open the vanilla chooser.
 

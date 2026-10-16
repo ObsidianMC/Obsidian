@@ -4,6 +4,8 @@ using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.Nbt;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.API.Utilities;
 
@@ -14,13 +16,19 @@ public partial class Extensions
     private static readonly Dictionary<string, DataComponentType> componentTypesById =
         Enum.GetValues<DataComponentType>().ToDictionary(OpaqueDataComponent.GetIdentifier);
 
+    // Immutable modeled values retain their original disk representation, including fields beyond the API model.
+    // Replacing a component creates a new value and uses its codec; copied stacks keep the same immutable value.
+    private static readonly ConditionalWeakTable<DataComponent, NbtCompound> savedComponents = new();
+
     /// <summary>
     /// Saves a stack like vanilla's <c>ItemStack.CODEC</c>: its <c>id</c>, <c>count</c> and the <c>components</c> set on
     /// it (its patch).
     /// </summary>
     /// <remarks>
-    /// The components Obsidian models are saved from the stack (damage, names, enchantments, potions, stew effects,
-    /// instruments...), and the others it was loaded with as they were.
+    /// Modeled persistent components and plugins' components are saved in vanilla's patch format. Loaded NBT beyond
+    /// the models is retained. Components vanilla doesn't persist are skipped, as vanilla's codec skips them, and so is
+    /// a component received only from the network that has no saved codec yet: losing that one component is better
+    /// than failing the whole chunk or player save it's part of (see known-gaps.md).
     /// </remarks>
     public static NbtCompound ToNbt(this ItemStack item, string name = "")
     {
@@ -33,8 +41,7 @@ public partial class Extensions
         var components = new NbtCompound("components");
         foreach (var component in item.Patch)
         {
-            var tag = ComponentToNbt(component);
-            if (tag is not null)
+            if (ComponentToNbt(component) is INbtTag tag)
                 components.Add(tag);
         }
 
@@ -42,9 +49,11 @@ public partial class Extensions
         foreach (var type in item.RemoveComponents)
             components.Add(new NbtCompound($"!{OpaqueDataComponent.GetIdentifier(type)}"));
 
-        foreach (var (componentName, tag) in item.UnmodeledComponents ?? [])
+        foreach (var (componentName, tag) in ComponentCopies.Nbt(item.UnmodeledComponents) ?? [])
         {
-            if (!components.HasTag(componentName))
+            var removed = componentTypesById.TryGetValue(componentName, out var type)
+                && item.RemoveComponents.Contains(type);
+            if (!components.HasTag(componentName) && !removed)
                 components.Add(componentName, tag);
         }
 
@@ -67,9 +76,7 @@ public partial class Extensions
         if (item is null || !item.TryGetTag<NbtTag<string>>("id", out var id))
             return null;
 
-        // Unknown ids give the default item.
-        var holder = ItemsRegistry.Get(id.Value!);
-        if (holder.UnlocalizedName is null)
+        if (!ItemsRegistry.TryGet(id.Value!, out var holder))
             return null;
 
         var count = item.TryGetTag<NbtTag<int>>("count", out var countTag) ? countTag.Value
@@ -102,7 +109,7 @@ public partial class Extensions
 
         var stack = new ItemStack(holder, count, components)
         {
-            UnmodeledComponents = unmodeled.Count > 0 ? unmodeled : null
+            UnmodeledComponents = unmodeled.Count > 0 ? ComponentCopies.Nbt(unmodeled) : null
         };
         foreach (var type in removed)
             stack.Remove(type);
@@ -156,29 +163,137 @@ public partial class Extensions
 
     private static INbtTag? ComponentToNbt(DataComponent component)
     {
+        if (savedComponents.TryGetValue(component, out var saved))
+            return ComponentCopies.Nbt(saved)![component.Identifier];
+
+        return EncodeComponent(component);
+    }
+
+    private static INbtTag? EncodeComponent(DataComponent component)
+    {
+        // Transient in vanilla: its patch codec leaves them out of saves.
+        if (component.Type is DataComponentType.CreativeSlotLock or DataComponentType.MapPostProcessing)
+            return null;
+
         var name = component.Identifier;
         return component switch
         {
-            SimpleDataComponent<int> number when component.Type is DataComponentType.Damage or DataComponentType.MaxDamage
-                or DataComponentType.RepairCost or DataComponentType.OminousBottleAmplifier => new NbtTag<int>(name, number.Value),
+            SimpleDataComponent<int> number when component.Type is DataComponentType.Damage
+                or DataComponentType.MaxDamage or DataComponentType.RepairCost
+                or DataComponentType.OminousBottleAmplifier => new NbtTag<int>(name, number.Value),
             // Vanilla's Unit codec: an empty compound.
             SimpleDataComponent<bool> when component.Type == DataComponentType.Unbreakable => new NbtCompound(name),
             SimpleDataComponent<ChatMessage> text when text.Value is not null => text.Value.ToNbt(name),
-            SimpleDataComponent<Enchantment[]> enchantments => EnchantmentsToNbt(name, enchantments.Value ?? []),
-            SimpleDataComponent<SuspiciousStewEffect[]> effects => StewEffectsToNbt(name, effects.Value ?? []),
-            SimpleDataComponent<InstrumentData> instrument when instrument.Value?.Identifier is not null =>
-                new NbtTag<string>(name, instrument.Value.Identifier),
+            SimpleDataComponent<ImmutableArray<Enchantment>> enchantments =>
+                EnchantmentsToNbt(name, enchantments.Value),
+            SimpleDataComponent<ImmutableArray<SuspiciousStewEffect>> effects => StewEffectsToNbt(name, effects.Value),
+            InstrumentDataComponent instrument => InstrumentToNbt(name, instrument),
             PotionContentsDataComponent potion => PotionContentsToNbt(name, potion),
-            SimpleDataComponent<ItemStack[]> projectiles when component.Type == DataComponentType.ChargedProjectiles =>
-                ChargedProjectilesToNbt(name, projectiles.Value ?? []),
+            SimpleDataComponent<ImmutableArray<ItemStack>> projectiles
+                when component.Type == DataComponentType.ChargedProjectiles =>
+                ChargedProjectilesToNbt(name, projectiles.Value),
             FireworksDataComponent fireworks => FireworksToNbt(name, fireworks),
             BucketEntityDataComponent bucket => CopyBucketData(name, bucket.Value),
-            _ => null
+            SimpleDataComponent<ImmutableArray<ItemStack>> container
+                when component.Type == DataComponentType.Container => ContainerToNbt(name, container.Value),
+            SimpleDataComponent<NbtCompound> data
+                when component.Type is DataComponentType.Lock or DataComponentType.ContainerLoot
+                && data.Value is not null => CopyCompound(name, data.Value),
+            SimpleDataComponent<ImmutableArray<Item>> decorations
+                when component.Type == DataComponentType.PotDecorations =>
+                PotDecorationsToNbt(name, decorations.Value),
+            // A plugin's component, saved with its type's codec when it was set, like vanilla's components.
+            PluginDataComponent plugin => plugin.ToNbt(),
+            _ => AdditionalComponentToNbt(component)
         };
+    }
+
+    // Vanilla's ItemContainerContents codec: the non-empty slots, each with its index.
+    private static NbtList ContainerToNbt(string name, ImmutableArray<ItemStack> items)
+    {
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(items.Length, 256, nameof(items));
+        var list = new NbtList(NbtTagType.Compound, name);
+        for (var slot = 0; slot < items.Length; slot++)
+        {
+            var item = items[slot];
+            if (item is null || item.IsAir || item.Count <= 0)
+                continue;
+
+            list.Add(new NbtCompound
+            {
+                new NbtTag<int>("slot", slot),
+                item.ToNbt("item")
+            });
+        }
+
+        return list;
+    }
+
+    private static ImmutableArray<ItemStack> ContainerFromNbt(NbtList list)
+    {
+        var slots = new SortedDictionary<int, ItemStack>();
+        foreach (var entry in list.OfType<NbtCompound>())
+        {
+            if (entry.TryGetTag<NbtTag<int>>("slot", out var slot)
+                && slot.Value is >= 0 and < 256
+                && entry.TryGetTag<NbtCompound>("item", out var itemTag)
+                && itemTag.ItemFromNbt() is ItemStack item)
+            {
+                slots[slot.Value] = item;
+            }
+        }
+
+        var size = slots.Count == 0 ? 0 : slots.Keys.Max() + 1;
+        var items = new ItemStack[size];
+        for (var index = 0; index < size; index++)
+            items[index] = slots.GetValueOrDefault(index) ?? new ItemStack(ItemsRegistry.Air, 0);
+
+        return [.. items];
+    }
+
+    // Vanilla's PotDecorations codec: the back, left, right and front faces' items.
+    private static NbtList PotDecorationsToNbt(string name, ImmutableArray<Item> decorations)
+    {
+        var list = new NbtList(NbtTagType.String, name);
+        foreach (var item in decorations)
+            list.Add(new NbtTag<string>(string.Empty, item.UnlocalizedName));
+
+        return list;
+    }
+
+    private static NbtCompound CopyCompound(string name, NbtCompound value)
+    {
+        var copy = new NbtCompound(name);
+        foreach (var (childName, child) in ComponentCopies.Nbt(value)!)
+            copy.Add(childName, child);
+
+        return copy;
     }
 
     [SuppressMessage("Performance", "CA1859", Justification = "Returns many component types; the analyzer only sees the potion contents one.")]
     private static DataComponent? ComponentFromNbt(string name, INbtTag tag)
+    {
+        DataComponent? component;
+        try
+        {
+            component = DecodeComponent(name, tag);
+        }
+        catch (Exception error) when (error is NotSupportedException or InvalidDataException)
+        {
+            // A registry entry or predicate the current API cannot resolve still survives as saved NBT.
+            return null;
+        }
+
+        if (component is not null)
+        {
+            var wrapper = new NbtCompound { { name, tag } };
+            savedComponents.Add(component, ComponentCopies.Nbt(wrapper)!);
+        }
+
+        return component;
+    }
+
+    private static DataComponent? DecodeComponent(string name, INbtTag tag)
     {
         switch (name)
         {
@@ -199,30 +314,44 @@ public partial class Extensions
             case "minecraft:item_name" when tag.TextFromNbt() is ChatMessage itemName:
                 return ComponentBuilder.ItemName with { Value = itemName };
             case "minecraft:enchantments" when tag is NbtCompound enchantments:
-                return ComponentBuilder.Enchantments with { Value = EnchantmentsFromNbt(enchantments) };
+                return ComponentBuilder.Enchantments with { Value = [.. EnchantmentsFromNbt(enchantments)] };
             case "minecraft:stored_enchantments" when tag is NbtCompound stored:
-                return ComponentBuilder.StoredEnchantments with { Value = EnchantmentsFromNbt(stored) };
+                return ComponentBuilder.StoredEnchantments with { Value = [.. EnchantmentsFromNbt(stored)] };
             case "minecraft:suspicious_stew_effects" when tag is NbtList effects:
-                return ComponentBuilder.SuspiciousStewEffects with { Value = StewEffectsFromNbt(effects) };
+                return ComponentBuilder.SuspiciousStewEffects with { Value = [.. StewEffectsFromNbt(effects)] };
             case "minecraft:instrument" when tag is NbtTag<string> instrument:
-                var registered = InstrumentsRegistry.All.FirstOrDefault(entry => entry.Identifier == instrument.Value);
-                return ComponentBuilder.Instrument with
-                {
-                    Value = registered is not null ? registered.ToInstrumentData() : new() { Identifier = instrument.Value }
-                };
+                return InstrumentFromNbt(instrument);
             case "minecraft:potion_contents":
                 return PotionContentsFromNbt(tag);
             case "minecraft:charged_projectiles" when tag is NbtList projectiles:
-                return ComponentBuilder.ChargedProjectiles with { Value = projectiles.OfType<NbtCompound>()
-                    .Select(projectile => projectile.ItemFromNbt()).OfType<ItemStack>().ToArray() };
+                return ComponentBuilder.ChargedProjectiles with
+                {
+                    Value = projectiles.OfType<NbtCompound>()
+                    .Select(projectile => projectile.ItemFromNbt()).OfType<ItemStack>().ToImmutableArray()
+                };
             case "minecraft:fireworks" when tag is NbtCompound fireworks:
                 return FireworksFromNbt(fireworks);
+            case "minecraft:container" when tag is NbtList container:
+                return ComponentBuilder.Container with { Value = ContainerFromNbt(container) };
+            case "minecraft:lock" when tag is NbtCompound lockPredicate:
+                return ComponentBuilder.Lock with { Value = CopyCompound(string.Empty, lockPredicate) };
+            case "minecraft:container_loot" when tag is NbtCompound loot:
+                return ComponentBuilder.ContainerLoot with { Value = CopyCompound(string.Empty, loot) };
+            case "minecraft:pot_decorations" when tag is NbtList decorations:
+                return ComponentBuilder.PotDecorations with
+                {
+                    Value = [.. decorations.OfType<NbtTag<string>>().Select(item => ItemsRegistry.Get(item.Value!))]
+                };
+            // A plugin's component, kept as saved whether or not its plugin is loaded. A type no plugin registered in
+            // this process stays unmodeled.
+            case var _ when DataComponentTypesRegistry.TryGet(name, out var plugin):
+                return new PluginDataComponent(plugin.Type, plugin.Identifier, tag);
             default:
-                return null;
+                return AdditionalComponentFromNbt(name, tag);
         }
     }
 
-    private static NbtList ChargedProjectilesToNbt(string name, ItemStack[] projectiles)
+    private static NbtList ChargedProjectilesToNbt(string name, ImmutableArray<ItemStack> projectiles)
     {
         var list = new NbtList(NbtTagType.Compound, name);
         foreach (var projectile in projectiles) list.Add(projectile.ToNbt());
@@ -233,13 +362,7 @@ public partial class Extensions
     {
         var explosions = new NbtList(NbtTagType.Compound, "explosions");
         foreach (var explosion in fireworks.Explosions)
-            explosions.Add(new NbtCompound
-            {
-                new NbtTag<string>("shape", ((FireworkExplosionShape)explosion.Shape).ToString().ToSnakeCase()),
-                new NbtArray<int>("colors", explosion.Colors.ToArray()),
-                new NbtArray<int>("fade_colors", explosion.FadeColors.ToArray()),
-                new NbtTag<bool>("has_trail", explosion.HasTrail), new NbtTag<bool>("has_twinkle", explosion.HasTwinkle)
-            });
+            explosions.Add(ExplosionToNbt(string.Empty, explosion));
         return new NbtCompound(name) { new NbtTag<int>("flight_duration", fireworks.FlightDuration), explosions };
     }
 
@@ -267,7 +390,7 @@ public partial class Extensions
         return copy;
     }
 
-    private static NbtCompound EnchantmentsToNbt(string name, Enchantment[] enchantments)
+    private static NbtCompound EnchantmentsToNbt(string name, ImmutableArray<Enchantment> enchantments)
     {
         var compound = new NbtCompound(name);
         foreach (var enchantment in enchantments)
@@ -289,7 +412,7 @@ public partial class Extensions
         return [.. enchantments];
     }
 
-    private static NbtList StewEffectsToNbt(string name, SuspiciousStewEffect[] effects)
+    private static NbtList StewEffectsToNbt(string name, ImmutableArray<SuspiciousStewEffect> effects)
     {
         var list = new NbtList(NbtTagType.Compound, name);
         foreach (var effect in effects)
@@ -333,17 +456,7 @@ public partial class Extensions
         {
             var effects = new NbtList(NbtTagType.Compound, "custom_effects");
             foreach (var effect in potion.CustomEffects)
-            {
-                effects.Add(new NbtCompound
-                {
-                    new NbtTag<string>("id", EnumId((MobEffect)effect.Id)),
-                    new NbtTag<byte>("amplifier", (byte)effect.Amplifier),
-                    new NbtTag<int>("duration", effect.Duration),
-                    new NbtTag<bool>("ambient", effect.Ambient),
-                    new NbtTag<bool>("show_particles", effect.ShowParticles),
-                    new NbtTag<bool>("show_icon", effect.ShowIcon)
-                });
-            }
+                effects.Add(EffectToNbt(effect));
 
             compound.Add(effects);
         }
@@ -365,11 +478,11 @@ public partial class Extensions
 
         var contents = new PotionContentsDataComponent();
         if (compound.TryGetTag<NbtTag<string>>("potion", out var id) && TryParseEnumId<Potion>(id.Value, out var potion))
-            contents.Potion = potion;
+            contents = contents with { Potion = potion };
         if (compound.TryGetTag<NbtTag<int>>("custom_color", out var color))
-            contents.CustomColor = color.Value;
+            contents = contents with { CustomColor = color.Value };
         if (compound.TryGetTag<NbtTag<string>>("custom_name", out var customName))
-            contents.CustomName = customName.Value;
+            contents = contents with { CustomName = customName.Value };
 
         if (compound.TryGetTag<NbtList>("custom_effects", out var effects))
         {
@@ -379,18 +492,10 @@ public partial class Extensions
                 if (!effect.TryGetTag<NbtTag<string>>("id", out var effectId) || !TryParseEnumId<MobEffect>(effectId.Value, out var type))
                     continue;
 
-                customEffects.Add(new PotionEffectData
-                {
-                    Id = (int)type,
-                    Amplifier = effect.TryGetTag<NbtTag<byte>>("amplifier", out var amplifier) ? amplifier.Value : 0,
-                    Duration = effect.TryGetTag<NbtTag<int>>("duration", out var duration) ? duration.Value : 0,
-                    Ambient = effect.TryGetBool("ambient", out var ambient) && ambient,
-                    ShowParticles = !effect.TryGetBool("show_particles", out var particles) || particles,
-                    ShowIcon = !effect.TryGetBool("show_icon", out var icon) || icon
-                });
+                customEffects.Add(EffectDetailsFromNbt(effect, (int)type));
             }
 
-            contents.CustomEffects = [.. customEffects];
+            contents = contents with { CustomEffects = [.. customEffects] };
         }
 
         return contents;

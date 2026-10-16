@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData.Fluids;
@@ -66,7 +67,7 @@ internal abstract class FlowingFluid
         bool IsSolidFace(Vector point, BlockFace face)
         {
             var block = level.GetBlock(point);
-            return !IsSame(block.GetFluid()) && block.Material is not (Material.Ice or Material.FrostedIce) && block.IsFaceSturdy(face);
+            return !IsSame(block.GetFluid()) && block.RegistryId is not (BlockIds.Ice or BlockIds.FrostedIce) && block.IsFaceSturdy(face);
         }
     }
 
@@ -153,6 +154,10 @@ internal abstract class FlowingFluid
             level.PlaceLiquid(position, block, fluid);
             return;
         }
+
+        if (!block.IsAir && FluidState.IsWaterKind(fluid.Kind)
+            && level.TryWashAway(position, fluid.CreateLegacyBlock()))
+            return;
 
         if (!block.IsAir)
             this.BeforeDestroyingBlock(level, position, block);

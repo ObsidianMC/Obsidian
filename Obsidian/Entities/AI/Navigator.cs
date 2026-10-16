@@ -68,6 +68,18 @@ public class Navigator : INavigator
         mob?.MoveControl.Stop();
     }
 
+    // Plugin eviction must not reach a custom MoveControl.Stop override.
+    internal void ClearForUnload()
+    {
+        Target = null;
+        requested = false;
+        IsNavigating = false;
+        path = null;
+        nextNode = 0;
+        stuckTicks = 0;
+        mob?.MoveControl.ClearForUnload();
+    }
+
     internal void Tick()
     {
         if (mob == null || IsPaused || !requested)

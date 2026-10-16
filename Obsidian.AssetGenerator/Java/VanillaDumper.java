@@ -115,7 +115,7 @@ public final class VanillaDumper {
         dumper.dumpBlockPhysics();
         dumper.dumpCollisionShapes();
         dumper.dumpBlastResistance();
-        dumper.dumpFuelValues();
+        dumper.dumpBlockLootTables();
         dumper.dumpBlockTransforms();
         dumper.dumpMapColors();
         dumper.dumpWallShapeCovers();
@@ -160,6 +160,20 @@ public final class VanillaDumper {
 
         var currentVersion = Mojang.call(mojang.method(sharedConstants, "getCurrentVersion"), null);
         return (String) Mojang.call(mojang.method("net.minecraft.WorldVersion", "name"), currentVersion);
+    }
+
+    /** Records aliases such as wall torches, and blocks that deliberately have no drop table. */
+    private void dumpBlockLootTables() throws IOException {
+        var tableOf = mojang.method("net.minecraft.world.level.block.state.BlockBehaviour", "getLootTable");
+        var keyId = mojang.method("net.minecraft.resources.ResourceKey", "identifier");
+        var tables = new TreeMap<String, Object>();
+        for (var block : (Iterable<?>) blockRegistry) {
+            var id = Mojang.call(registryKey, blockRegistry, block).toString();
+            var table = (Optional<?>) Mojang.call(tableOf, block);
+            tables.put(id, table.map(key -> Mojang.call(keyId, key).toString()).orElse(null));
+        }
+
+        Json.write(output.resolve("block_loot_tables.json"), tables, false);
     }
 
     private VanillaDumper(Mojang mojang, Path output, String version) {
@@ -343,35 +357,6 @@ public final class VanillaDumper {
         Json.write(output.resolve("blast_resistance.json"), resistance, false);
     }
 
-    /**
-     * Furnace fuel burn times, from the same builder vanilla's server uses ({@code MinecraftServer.fuelValues}). Read by
-     * Obsidian/WorldData/Furnaces/FurnaceRules.cs.
-     */
-    private void dumpFuelValues() throws IOException {
-        var provider = "net.minecraft.core.HolderLookup$Provider";
-        var flagSet = "net.minecraft.world.flag.FeatureFlagSet";
-        var fuelType = "net.minecraft.world.level.block.entity.FuelValues";
-        var stackType = "net.minecraft.world.item.ItemStack";
-        var builtins = Mojang.call(mojang.method("net.minecraft.core.RegistryAccess", "fromRegistryOfRegistries", REGISTRY),
-            null, mojang.get(REGISTRIES, "REGISTRY"));
-        var flags = mojang.get("net.minecraft.world.flag.FeatureFlags", "DEFAULT_FLAGS");
-        var fuel = Mojang.call(mojang.method(fuelType, "vanillaBurnTimes", provider, flagSet), null, builtins, flags);
-        var burnDuration = mojang.method(fuelType, "burnDuration", stackType);
-        var isFuel = mojang.method(fuelType, "isFuel", stackType);
-        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
-        var newStack = mojang.constructor(stackType, "net.minecraft.world.level.ItemLike", "int");
-
-        var result = new LinkedHashMap<String, Integer>();
-        for (var item : (Iterable<?>) itemRegistry) {
-            var stack = Mojang.create(newStack, item, 1);
-            // Membership is vanilla's FuelValues.isFuel, not a positive burn time, so the table keeps exactly its keys.
-            if ((boolean) Mojang.call(isFuel, fuel, stack))
-                result.put(key(itemRegistry, item), (int) Mojang.call(burnDuration, fuel, stack));
-        }
-
-        Json.write(output.resolve("fuel_values.json"), result, false);
-    }
-
     private static long[] maskWords(String hex) {
         var words = new long[4];
         for (var word = 0; word < 4; word++)
@@ -429,6 +414,8 @@ public final class VanillaDumper {
         var emptyContext = Mojang.call(mojang.method("net.minecraft.world.phys.shapes.CollisionContext", "empty"), null);
         var destroySpeed = mojang.method(STATE_BASE, "getDestroySpeed", BLOCK_GETTER, BLOCK_POS);
         var correctTool = mojang.method(STATE_BASE, "requiresCorrectToolForDrops");
+        var isRandomlyTicking = mojang.method(STATE_BASE, "isRandomlyTicking");
+        var isFluidRandomlyTicking = mojang.method(FLUID_STATE, "isRandomlyTicking");
         var shapeBoxes = new Indexer<List<double[]>>(shape -> shape.stream().map(Arrays::toString).toList());
         var collisionShapes = new int[states.size()];
         var visualShapes = new int[states.size()];
@@ -437,7 +424,16 @@ public final class VanillaDumper {
         var shapeOffsets = new double[states.size()][];
         var hardness = new double[states.size()];
         var requiresTool = new ArrayList<Boolean>();
+        var randomTicking = new ArrayList<Integer>();
         var flags = new int[states.size()];
+        // Six faces per mode (FULL, CENTER, RIGID), independent of collision and tag-based attachment restrictions.
+        var supportFlags = new int[states.size()];
+        var supportTypes = new Object[]
+        {
+            full,
+            center,
+            rigid
+        };
         var fluidFlags = new int[states.size()];
         var faces = new Indexer<List<double[]>>(face -> face.stream().map(Arrays::toString).toList());
         var faceSets = new Indexer<List<Integer>>();
@@ -459,6 +455,10 @@ public final class VanillaDumper {
             }
             hardness[id] = (float) Mojang.call(destroySpeed, state, emptyLevel, origin);
             requiresTool.add((boolean) Mojang.call(correctTool, state));
+            // What a chunk section counts to decide whether random ticks sample it: the block or its fluid ticks.
+            var blockTicks = (boolean) Mojang.call(isRandomlyTicking, state);
+            if (blockTicks || (boolean) Mojang.call(isFluidRandomlyTicking, fluidState))
+                randomTicking.add(id);
 
             var bits = 0;
             bits |= bit(0, Mojang.call(isAir, state));
@@ -485,6 +485,15 @@ public final class VanillaDumper {
             bits |= bit(31, !unstable && (boolean) Mojang.call(isFaceSturdy, state, emptyLevel, origin, down, center));
             flags[id] = bits;
 
+            for (var support = 0; support < supportTypes.length; support++)
+            {
+                for (var face = 0; face < directions.length; face++)
+                {
+                    supportFlags[id] |= bit(support * 6 + face,
+                        Mojang.call(isFaceSturdy, state, emptyLevel, origin, directions[face], supportTypes[support]));
+                }
+            }
+
             var fluidBits = 0;
             fluidBits |= bit(0, collision == blockShape);
             fluidBits |= bit(1, collision == emptyShape);
@@ -506,6 +515,7 @@ public final class VanillaDumper {
         var json = new LinkedHashMap<String, Object>();
         json.put("_notes", "Vanilla " + version + " block state physics, indexed by state id. See BlockPhysics for the bit layouts.");
         json.put("flags", flags);
+        json.put("supportFlags", supportFlags);
         json.put("blockClasses", blockClasses());
         var blockEntityTypes = blockEntityTypes();
         json.put("blockEntityTypes", blockEntityTypes);
@@ -522,6 +532,7 @@ public final class VanillaDumper {
         json.put("shapeOffsets", Arrays.asList(shapeOffsets));
         json.put("hardness", hardness);
         json.put("requiresTool", requiresTool);
+        json.put("randomTicking", randomTicking);
         Json.write(output.resolve("block_physics.json"), json, false);
     }
 
@@ -762,9 +773,10 @@ public final class VanillaDumper {
 
     /**
      * {@code entities.json}, read by {@code Obsidian.SourceGenerators/Registry/EntityGenerator.cs}: every entity type
-     * by id, with its {@code EntityType} properties, default attributes ({@code DefaultAttributes}), Mojang class name,
-     * the synced data ids its class declares ({@code EntityDataAccessor} fields) and its superclass. The abstract
-     * superclasses follow by class name, with their own synced data and superclass.
+     * by id, with its {@code EntityType} properties (its mob category included), default attributes
+     * ({@code DefaultAttributes}), Mojang class name, the synced data ids its class declares
+     * ({@code EntityDataAccessor} fields) and its superclass. The abstract superclasses follow by class name, with
+     * their own synced data and superclass.
      */
     private void dumpEntities() throws IOException {
         var types = mojang.get(REGISTRIES, "ENTITY_TYPE");
@@ -785,6 +797,8 @@ public final class VanillaDumper {
         var width = mojang.method(dimensions, "width");
         var height = mojang.method(dimensions, "height");
         var fixed = mojang.method(dimensions, "fixed");
+        var getCategory = mojang.method(ENTITY_TYPE, "getCategory");
+        var categoryName = mojang.method("net.minecraft.world.entity.MobCategory", "getName");
         var lootTableId = mojang.method("net.minecraft.resources.ResourceKey", "identifier");
         var defaultAttributes = "net.minecraft.world.entity.ai.attributes.DefaultAttributes";
         var hasSupplier = mojang.method(defaultAttributes, "hasSupplier", ENTITY_TYPE);
@@ -810,6 +824,7 @@ public final class VanillaDumper {
             entity.put("width", Mojang.call(width, size));
             entity.put("height", Mojang.call(height, size));
             entity.put("size_fixed", Mojang.call(fixed, size));
+            entity.put("category", Mojang.call(categoryName, Mojang.call(getCategory, type)));
 
             if ((boolean) Mojang.call(hasSupplier, null, type)) {
                 var values = new LinkedHashMap<String, Object>();

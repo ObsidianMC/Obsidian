@@ -70,7 +70,7 @@ internal sealed class MobTerrain(ILevel level)
         if (level is not AbstractLevel concrete || concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4) is not { } chunk)
             return 0.5f;
         var seaLevel = concrete.Generator is Obsidian.WorldData.Generators.MojangGenerator generator
-            ? generator.Builder.RandomState.Settings.SeaLevel : 63;
+            ? generator.SeaLevel : 63;
         return Obsidian.WorldData.Generators.Mojang.BiomeTemperature.GetTemperature(
             chunk.GetBiome(position.X, position.Y, position.Z), position.X, position.Y, position.Z, seaLevel);
     }
@@ -79,11 +79,12 @@ internal sealed class MobTerrain(ILevel level)
         level is AbstractLevel concrete && concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4) is { } chunk &&
         chunk.GetBiome(position.X, position.Y, position.Z).Element.HasPrecipitation && GetTemperature(position) >= 0.15f;
 
-    public float GetFriction(VectorD position) => GetBlock((Vector)(position - new VectorD(0, 0.500001f, 0)).Floor())?.Material switch
+    public float GetFriction(VectorD position) =>
+        GetBlock((Vector)(position - new VectorD(0, 0.500001f, 0)).Floor())?.RegistryId switch
     {
-        Material.Ice or Material.PackedIce or Material.FrostedIce => 0.98f,
-        Material.BlueIce => 0.989f,
-        Material.SlimeBlock => 0.8f,
+        BlockIds.Ice or BlockIds.PackedIce or BlockIds.FrostedIce => 0.98f,
+        BlockIds.BlueIce => 0.989f,
+        BlockIds.SlimeBlock => 0.8f,
         _ => 0.6f
     };
     public IBlock? GetBlock(Vector position)
@@ -94,7 +95,16 @@ internal sealed class MobTerrain(ILevel level)
         return concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetBlock(position);
     }
 
-    public IEnumerable<BoundingBox> GetCollisions(BoundingBox bounds, bool ignoreWoodenDoors = false)
+    public IEnumerable<BoundingBox> GetCollisions(BoundingBox bounds, bool ignoreWoodenDoors = false) =>
+        GetBlockCollisions(bounds, ignoreWoodenDoors).Select(collision => collision.Shape);
+
+    /// <summary>
+    /// The collision shapes near <paramref name="bounds"/>, each with the position of the block it belongs to, which
+    /// it may reach out of (a fence above, a pitcher crop below).
+    /// </summary>
+    public IEnumerable<(BoundingBox Shape, Vector Block)> GetBlockCollisions(
+        BoundingBox bounds,
+        bool ignoreWoodenDoors = false)
     {
         // Shapes such as fences can extend above their block's unit cube.
         for (var x = (int)Math.Floor(bounds.Min.X); x <= (int)Math.Floor(bounds.Max.X); x++)
@@ -105,14 +115,14 @@ internal sealed class MobTerrain(ILevel level)
             var block = GetBlock(position);
             if (block == null)
             {
-                yield return new BoundingBox(new VectorD(x, y, z), new VectorD(x + 1, y + 1, z + 1));
+                yield return (new BoundingBox(new VectorD(x, y, z), new VectorD(x + 1, y + 1, z + 1)), position);
                 continue;
             }
             if (ignoreWoodenDoors && TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId))
                 continue;
 
-            foreach (var shape in BlockCollisionShapes.Get(block))
-                yield return shape.OffsetBy(new VectorD(x, y, z));
+            foreach (var shape in BlockCollisionShapes.Get(level, position, block))
+                yield return (shape.OffsetBy(new VectorD(x, y, z)), position);
         }
     }
 
@@ -127,7 +137,8 @@ internal sealed class MobTerrain(ILevel level)
         {
             var block = GetBlock(new Vector(x, y, z));
             if (block != null && BlockPhysics.Suffocates(block.GetHashCode()) &&
-                BlockCollisionShapes.Get(block).Any(shape => Overlaps(bounds, shape.OffsetBy(new VectorD(x, y, z)))))
+                BlockCollisionShapes.Get(level, new Vector(x, y, z), block)
+                    .Any(shape => Overlaps(bounds, shape.OffsetBy(new VectorD(x, y, z)))))
                 return true;
         }
         return false;
@@ -153,6 +164,85 @@ internal sealed class MobTerrain(ILevel level)
     public bool HasLineOfSight(VectorD start, VectorD end)
     {
         var direction = end - start;
+        var target = (Vector)end.Floor();
+
+        foreach (var cell in CellsAlong(start, end))
+        {
+            var block = GetBlock(cell);
+            if (block == null)
+                return false;
+
+            foreach (var shape in BlockCollisionShapes.Get(level, cell, block))
+            {
+                if (IntersectsSegment(shape.OffsetBy((VectorD)cell), start, direction))
+                    return false;
+            }
+
+            if (cell == target)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Like vanilla's <c>Level.clip</c> with outline shapes and no fluids, which is what a player aims at: the first
+    /// block whose outline shape the segment from <paramref name="start"/> to <paramref name="end"/> crosses, or
+    /// <c>null</c> when it crosses none before it ends or reaches an unloaded chunk.
+    /// </summary>
+    public (Vector Position, IBlock Block)? ClipOutlines(VectorD start, VectorD end)
+    {
+        return this.RaycastOutlines(start, end) is API.Blocks.BlockShapeHit hit
+            && this.GetBlock(hit.Position) is IBlock block ? (hit.Position, block) : null;
+    }
+
+    /// <summary>Returns the nearest outline box hit and the location within its block.</summary>
+    public API.Blocks.BlockShapeHit? RaycastOutlines(VectorD start, VectorD end)
+    {
+        var direction = end - start;
+
+        if (!double.IsFinite(direction.X + direction.Y + direction.Z + start.X + start.Y + start.Z)
+            || direction.MagnitudeSquared() < 1e-12)
+        {
+            return null;
+        }
+
+        foreach (var cell in CellsAlong(start, end))
+        {
+            if (GetBlock(cell) is not IBlock block)
+                return null;
+
+            var shapes = BlockEntityShapes.Get(level, cell, block);
+            IReadOnlyList<BoundingBox> boxes;
+            var offset = VectorD.Zero;
+            if (shapes is not null)
+            {
+                boxes = shapes.Outline;
+            }
+            else
+            {
+                var state = block.GetHashCode();
+                var (offsetX, offsetY, offsetZ) = BlockPhysics.ShapeOffset(state, cell.X, cell.Z);
+                offset = new VectorD(offsetX, offsetY, offsetZ);
+                boxes = BlockPhysics.OutlineBoxes(state)
+                    .Select(box => new BoundingBox(new VectorD(box[0], box[1], box[2]),
+                        new VectorD(box[3], box[4], box[5])))
+                    .ToArray();
+            }
+
+            var hit = BlockShapeRaycast.Clip(boxes, cell, offset, start, direction);
+            if (hit is not null)
+                return hit.Value.Hit;
+        }
+
+        return null;
+    }
+
+    // The cells the segment from start to end passes through, in order, from start's to end's: a voxel walk that
+    // skips none.
+    private static IEnumerable<Vector> CellsAlong(VectorD start, VectorD end)
+    {
+        var direction = end - start;
         var cell = (Vector)start.Floor();
         var target = (Vector)end.Floor();
         var stepX = Math.Sign(direction.X);
@@ -168,18 +258,10 @@ internal sealed class MobTerrain(ILevel level)
         var maxSteps = Math.Abs(target.X - cell.X) + Math.Abs(target.Y - cell.Y) + Math.Abs(target.Z - cell.Z) + 4;
         for (var i = 0; i < maxSteps; i++)
         {
-            var block = GetBlock(cell);
-            if (block == null)
-                return false;
-
-            foreach (var shape in BlockCollisionShapes.Get(block))
-            {
-                if (IntersectsSegment(shape.OffsetBy((VectorD)cell), start, direction))
-                    return false;
-            }
+            yield return cell;
 
             if (cell == target)
-                return true;
+                yield break;
 
             if (nextX <= nextY && nextX <= nextZ)
             {
@@ -197,11 +279,10 @@ internal sealed class MobTerrain(ILevel level)
                 nextZ += deltaZ;
             }
         }
-
-        return false;
     }
 
-    private static bool IntersectsSegment(BoundingBox box, VectorD start, VectorD direction) => RayIntersection(box, start, direction) != null;
+    private static bool IntersectsSegment(BoundingBox box, VectorD start, VectorD direction) =>
+        RayIntersection(box, start, direction) != null;
 
     internal static double? RayIntersection(BoundingBox box, VectorD start, VectorD direction)
     {

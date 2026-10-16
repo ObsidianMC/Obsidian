@@ -31,9 +31,6 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor unknownReference = new("OBSLT003", "Unknown loot reference",
         "Unknown {0} '{1}' (used by {2})", "Loot", DiagnosticSeverity.Error, true);
 
-    private static readonly DiagnosticDescriptor duplicateMember = new("OBSLT004", "Duplicate loot table member",
-        "Loot table '{0}' generates the member name '{1}' that another table in its category already uses", "Loot", DiagnosticSeverity.Error, true);
-
     public void Initialize(IncrementalGeneratorInitializationContext ctx)
     {
         var jsonFiles = ctx.AdditionalTextsProvider
@@ -188,6 +185,9 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
                 if (json.TryGetProperty("primary_items", out var primaryItems))
                     parts.Add($"PrimaryItems = {this.EmitItemSet(primaryItems)}");
 
+                var slots = json.GetProperty("slots").EnumerateArray().Select(slot => Literal(slot.GetString()!));
+                parts.Add($"Slots = [{string.Join(", ", slots)}]");
+
                 parts.Add($"Weight = {json.GetProperty("weight").GetInt32()}");
                 parts.Add($"MaxLevel = {json.GetProperty("max_level").GetInt32()}");
                 parts.Add($"MinCost = {EmitCost(json.GetProperty("min_cost"))}");
@@ -271,7 +271,6 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
                 builder.AppendLine($"    public static class {className}");
                 builder.AppendLine("    {");
 
-                var members = new HashSet<string>(StringComparer.Ordinal);
                 using var document = JsonDocument.Parse(json);
                 foreach (var table in document.RootElement.EnumerateObject())
                 {
@@ -280,13 +279,10 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
                     var memberName = MemberName(table.Name.StartsWith(prefix, StringComparison.Ordinal)
                         ? table.Name.Substring(prefix.Length)
                         : table.Name);
-                    if (!members.Add(memberName))
-                    {
-                        this.Report(duplicateMember, table.Name, memberName);
-                        continue;
-                    }
-
-                    var expression = this.EmitObject(lootTable, table.Value, null, $"Identifier = {Literal(table.Name)}");
+                    var expression = category is "blocks" or "entities"
+                        ? $"global::Obsidian.API.Loot.LootTableJson.Parse({Literal(table.Value.GetRawText())}, "
+                            + $"{Literal(table.Name)})"
+                        : this.EmitObject(lootTable, table.Value, null, $"Identifier = {Literal(table.Name)}");
 
                     builder.AppendLine($"        public static global::Obsidian.API.Loot.LootTable {memberName} {{ get; }} = {expression};");
                     builder.AppendLine();
@@ -317,10 +313,6 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
         {
             if (target is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
                 target = nullable.TypeArguments[0];
-
-            // An item set is a single item, a list or a tag, like the item predicates of block loot tables.
-            if (target.Name == "ItemSet" && target.TypeKind != TypeKind.Error)
-                return this.EmitItemSet(json);
 
             switch (target.SpecialType)
             {

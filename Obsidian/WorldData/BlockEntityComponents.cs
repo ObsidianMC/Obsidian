@@ -1,231 +1,383 @@
-using Obsidian.API;
+using Microsoft.Extensions.Logging;
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
-using Obsidian.API.Registries;
-using Obsidian.API.Utilities;
-using Obsidian.Entities;
-using Obsidian.Registries;
 using Obsidian.Nbt;
-using System.Buffers.Binary;
-using System.Collections.Immutable;
+using Obsidian.Plugins;
 
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// The components a block entity contributes to the items it drops, read from its saved data (vanilla's
-/// <c>collectImplicitComponents</c>). A tag the block entity doesn't save copies nothing. A tag it does save but that
-/// isn't modelled yet fails loudly rather than being left out of the drop.
+/// Block entities' item components, like vanilla's <c>BlockEntity.collectComponents</c> and
+/// <c>applyComponentsFromItemStack</c>: what a broken block entity gives its block's loot (the components
+/// <c>copy_components</c> copies, and the items of <c>dynamic</c> entries), and what a placed block item gives its
+/// block entity back.
 /// </summary>
-internal static class BlockEntityComponents
+/// <remarks>
+/// Covers the components of the types the server models: containers' <c>custom_name</c>, <c>lock</c>,
+/// <c>container_loot</c> and a shulker box's <c>container</c> (and its <c>contents</c> dynamic drop); decorated pots'
+/// <c>pot_decorations</c> (and their <c>sherds</c> dynamic drop); and the <c>custom_name</c> of other named block
+/// entities kept as data. Banner patterns, bees and skull profiles aren't modelled yet. A plugin's block entity adds
+/// what its <see cref="BlockEntity.CollectComponents"/> sets, and reads it back in
+/// <see cref="BlockEntity.ApplyComponents"/>.
+/// </remarks>
+internal sealed partial class BlockEntityComponents : IAsyncDisposable
 {
     /// <summary>
-    /// The lookup for <c>copy_components</c>, or null when there's no block entity.
+    /// Nothing for loot, for blocks without a block entity.
     /// </summary>
-    public static Func<string, DataComponent?>? For(IBlockEntity? blockEntity)
+    public static readonly BlockEntityComponents None = new([], []);
+
+    // Vanilla's PotDecorations: the back, left, right and front faces, bricks where they have no sherd.
+    private const int PotFaces = 4;
+
+    private readonly List<DataComponent> components;
+    private readonly Dictionary<string, List<ItemStack>> dynamic;
+    private ContainerBlockEntity? retirement;
+
+    internal bool CanBreak { get; private init; } = true;
+    internal bool KeepsContents => this.retirement is not null;
+    internal BlockEntity? Source { get; private set; }
+
+    /// <summary>Restores a standing box after an aborted loot evaluation or a rejected removal.</summary>
+    public async ValueTask DisposeAsync()
     {
-        if (blockEntity is null)
-            return null;
+        if (this.retirement is not ContainerBlockEntity container)
+            return;
 
-        if (blockEntity is not DataBlockEntity data)
-            throw new NotSupportedException($"Block entity {blockEntity.GetType().Name} has no component mapping yet.");
-
-        return id => Get(data, id);
-    }
-
-    /// <summary>
-    /// The stacks a container block entity spills when it's removed (vanilla <c>Containers.dropContents</c>, from
-    /// <c>BlockEntity.preRemoveSideEffects</c>). Shulker boxes keep their contents for their drop instead, as vanilla overrides
-    /// that method for them, so they spill nothing.
-    /// </summary>
-    public static IEnumerable<ItemStack> SpilledContents(IBlockEntity? blockEntity)
-    {
-        if (blockEntity is not DataBlockEntity data || data.Id.EndsWith("shulker_box", StringComparison.Ordinal))
-            return [];
-
-        return ParseContents(data.Data) ?? [];
-    }
-
-    /// <summary>
-    /// The saved <c>Items</c> as slots: stacks are kept by slot up to the highest saved slot, and empty slots are air. Null when
-    /// nothing is saved.
-    /// </summary>
-    private static ItemStack[]? ParseContents(NbtCompound tag)
-    {
-        if (!tag.TryGetTag<NbtList>("Items", out var items) || items.Count == 0)
-            return null;
-
-        var slots = new List<(int Slot, ItemStack Item)>();
-        foreach (var itemTag in items.OfType<NbtCompound>())
+        using (await container.Inventory.LockAsync())
         {
-            if (!itemTag.TryGetTag<NbtTag<byte>>("Slot", out var slot))
-                continue;
-            slots.Add((slot.Value, itemTag.ItemFromNbt() ?? ItemStack.Air));
+            if (!container.IsRemoved)
+                container.Inventory.CancelRetirement();
+        }
+    }
+
+    private BlockEntityComponents(List<DataComponent> components, Dictionary<string, List<ItemStack>> dynamic)
+    {
+        this.components = components;
+        this.dynamic = dynamic;
+    }
+
+    /// <summary>
+    /// The components for <c>copy_components</c> with the <c>block_entity</c> source.
+    /// </summary>
+    public IReadOnlyList<DataComponent> Components => this.components;
+
+    /// <summary>
+    /// The items of the <c>dynamic</c> entries the block names, copied for each roll, or null when it names none.
+    /// </summary>
+    public Action<string, Action<ItemStack>>? DynamicDrops => this.dynamic.Count == 0 ? null : this.Drop;
+
+    /// <summary>
+    /// Whether the components hold items in a <c>container</c>: a filled shulker box.
+    /// </summary>
+    public bool HoldsItems => this.Components.Any(component =>
+        component is SimpleDataComponent<ImmutableArray<ItemStack>> { Type: DataComponentType.Container } container
+        && container.Value.Any(item => !item.IsAir && item.Count > 0));
+
+    /// <summary>
+    /// Takes what the block entity at <paramref name="position"/> gives its block's loot, before the block is removed.
+    /// </summary>
+    /// <remarks>
+    /// A shulker box's contents go into the components, so it's retired in the same step, under its lock: no click
+    /// takes an item the box item holds, and its own removal then drops nothing. Like vanilla's
+    /// <c>ShulkerBoxBlock.playerWillDestroy</c>, a player breaking one rolls the loot it was waiting for into it first;
+    /// an explosion copies the loot table instead. Dispose the capture after the removal attempt: retirement is
+    /// undone if the box is still standing, including when loot evaluation throws.
+    /// </remarks>
+    /// <param name="level">The level.</param>
+    /// <param name="position">The block's position.</param>
+    /// <param name="breaker">The player breaking the block, if one is.</param>
+    /// <param name="onLevelTick">True only when the caller is a serial tick operation, never a forked task.</param>
+    public static async ValueTask<BlockEntityComponents> CaptureAsync(
+        ILevel level,
+        Vector position,
+        IPlayer? breaker,
+        bool onLevelTick = false)
+    {
+        if (level is not AbstractLevel concrete)
+            return None;
+
+        var entity = await level.GetBlockEntityAsync(position.X, position.Y, position.Z);
+        var captured = entity switch
+        {
+            ContainerBlockEntity container => await CaptureContainerAsync(concrete, container, breaker),
+            DataBlockEntity data when data.KeptContainer() is ContainerBlockEntity kept =>
+                await CaptureContainerAsync(concrete, kept, breaker),
+            DataBlockEntity data => CaptureData(data),
+            BlockEntity { Owner: PluginContainer } => new BlockEntityComponents([], []),
+            _ => None
+        };
+
+        // A plugin's block entity adds its own; one kept as data while its plugin is gone gives none.
+        if (captured.CanBreak
+            && entity is BlockEntity { Owner: PluginContainer plugin } owned
+            && owned is not DataBlockEntity
+            && await level.GetBlockAsync(position) is IBlock block
+            && BlocksRegistry.TryGetItem(block, out var item))
+        {
+            captured.components.AddRange(await concrete.CollectPluginComponentsAsync(
+                owned, plugin, item, onLevelTick));
         }
 
-        var contents = new ItemStack[slots.Count == 0 ? 0 : slots.Max(entry => entry.Slot) + 1];
-        Array.Fill(contents, ItemStack.Air);
-        foreach (var (slot, item) in slots)
-            contents[slot] = item;
+        if (!ReferenceEquals(captured, None))
+            captured.Source = entity as BlockEntity;
 
-        return contents.Length == 0 ? null : contents;
+        return captured;
     }
 
-    private static DataComponent? Get(DataBlockEntity entity, string id)
+    /// <summary>
+    /// Gives the block entity at <paramref name="position"/> what the block item placed there holds, like vanilla's
+    /// <c>applyImplicitComponents</c>: a container's name, items, lock and loot table.
+    /// </summary>
+    public static async ValueTask ApplyAsync(ILevel level, Vector position, ItemStack item)
     {
-        var tag = entity.Data;
-        switch (id)
+        if (await level.GetBlockEntityAsync(position.X, position.Y, position.Z) is BlockEntity entity)
+            Apply(entity, item);
+    }
+
+    /// <summary>
+    /// Initializes an unpublished entity from its item before another handler can reach it. A plugin's block entity
+    /// reads it in a call into its plugin, unless the plugin started unloading.
+    /// </summary>
+    /// <param name="entity">The new block entity.</param>
+    /// <param name="item">One of the stack placed.</param>
+    /// <param name="logger">Where a plugin's failing hook is logged.</param>
+    internal static void Apply(BlockEntity entity, ItemStack item, ILogger? logger = null)
+    {
+        if (entity is DataBlockEntity data)
         {
-            case "minecraft:custom_name":
-                return tag.TryGetTag("CustomName", out var name) && name.TextFromNbt() is { } chat
-                    ? ComponentBuilder.CustomName with { Value = chat }
-                    : null;
+            if (item.GetComponent<SimpleDataComponent<ChatMessage>>(DataComponentType.CustomName)?.Value
+                is ChatMessage dataName)
+                data.Set(dataName.ToNbt("CustomName"));
 
-            case "minecraft:container":
-                return ParseContents(tag) is { } parsed ? ComponentBuilder.Container with { Value = parsed } : null;
-
-            case "minecraft:container_loot":
+            if (data.Id == "minecraft:decorated_pot")
             {
-                if (!tag.TryGetTag<NbtTag<string>>("LootTable", out var table))
-                    return null;
-
-                var seed = tag.TryGetTag<NbtTag<long>>("LootTableSeed", out var saved) ? saved.Value : 0L;
-                return ComponentBuilder.ContainerLoot with
+                var decorations = item.GetComponent<SimpleDataComponent<ImmutableArray<Item>>>(
+                    DataComponentType.PotDecorations);
+                if (decorations is not null)
                 {
-                    Value = new NbtCompound { new NbtTag<string>("loot_table", table.Value), new NbtTag<long>("seed", seed) }
-                };
+                    var sherds = new NbtList(NbtTagType.String, "sherds");
+                    foreach (var face in decorations.Value.Take(PotFaces))
+                        sherds.Add(new NbtTag<string>(string.Empty, face.UnlocalizedName));
+
+                    data.Set(sherds);
+                }
+
+                var potItems = item.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
+                    DataComponentType.Container);
+                if (potItems is not null && potItems.Value.FirstOrDefault() is ItemStack first && !first.IsAir)
+                    data.Set(first.ToNbt("item"));
             }
 
-            case "minecraft:lock":
-                // The saved lock is the item predicate a container opens with (vanilla's LockCode), kept as saved.
-                if (!tag.TryGetTag<NbtCompound>("lock", out var lockTag))
-                    return null;
-                return ComponentBuilder.Lock with { Value = lockTag };
-
-            case "minecraft:note_block_sound":
-                return tag.TryGetTag<NbtTag<string>>("note_block_sound", out var sound)
-                    ? ComponentBuilder.NoteBlockSound with { Value = sound.Value }
-                    : null;
-
-            case "minecraft:bees":
-                return tag.TryGetTag<NbtList>("bees", out var bees) && bees.Count > 0
-                    ? new BeesDataComponent { Occupants = bees.OfType<NbtCompound>().Select(Occupant).ToArray() }
-                    : null;
-
-            case "minecraft:pot_decorations":
-                return tag.TryGetTag<NbtList>("sherds", out var sherds) && sherds.Count > 0
-                    ? ComponentBuilder.PotDecorations with { Value = Sherds(sherds) }
-                    : null;
-
-            case "minecraft:profile":
-                return tag.TryGetTag<NbtCompound>("profile", out var profile) ? Profile(profile) : null;
-
-            case "minecraft:banner_patterns":
-                return tag.TryGetTag<NbtList>("patterns", out var patterns) && patterns.Count > 0
-                    ? new BannerPatternsDataComponent { Value = BannerLayers(patterns) }
-                    : null;
-
-            // Components no block entity supplies here.
-            case "minecraft:item_name":
-            case "minecraft:rarity":
-            case "minecraft:tooltip_display":
-                return null;
-
-            default:
-                throw new NotSupportedException($"copy_components of {id} isn't supported yet.");
+            data.SendUpdate();
+            return;
         }
+
+        if (entity is ContainerBlockEntity container)
+            ApplyContainer(container, item);
+
+        if (entity.Owner is PluginContainer plugin)
+            ApplyPlugin(entity, plugin, item, logger);
     }
 
-    /// <summary>A saved bee: its entity data (with the type moved into the registry ID, as vanilla's TypedEntityData) and its ticks.</summary>
-    private static (EntityDataComponent Entity, int TicksInHive, int MinTicksInHive) Occupant(NbtCompound saved)
+    // Vanilla's BaseContainerBlockEntity and RandomizableContainerBlockEntity applyImplicitComponents.
+    private static void ApplyContainer(ContainerBlockEntity container, ItemStack item)
     {
-        if (!saved.TryGetTag<NbtCompound>("entity_data", out var entityData) || !entityData.TryGetTag<NbtTag<string>>("id", out var type)
-            || !EntityNbt.TryParseType(type.Value, out var entityType))
-            throw new NotSupportedException("A saved bee has no readable entity type.");
-
-        var data = new NbtCompound();
-        foreach (var (key, value) in entityData)
+        var inventory = container.Inventory;
+        using (inventory.Lock())
+        lock (container.LootLock)
         {
-            if (key != "id")
-                data.Add(value);
-        }
+            if (container.IsRemoved || inventory.IsRetired)
+                return;
 
-        var entity = new EntityDataComponent(DataComponentType.EntityData) { RegistryId = (int)entityType, Data = data };
-        return (entity, saved.GetInt("ticks_in_hive"), saved.GetInt("min_ticks_in_hive"));
-    }
-
-    /// <summary>
-    /// The saved banner layers (<c>pattern</c> and <c>color</c>), sent inline with the pattern's asset and translation key.
-    /// </summary>
-    private static BannerPatternLayer[] BannerLayers(NbtList patterns)
-    {
-        var layers = new List<BannerPatternLayer>();
-        foreach (var saved in patterns.OfType<NbtCompound>())
-        {
-            var patternId = saved.GetString("pattern") ?? throw new NotSupportedException("A saved banner layer has no pattern.");
-            var definition = BannerPatternDefinitions.Get(patternId)
-                ?? throw new NotSupportedException($"Banner pattern {patternId} isn't defined by vanilla 1.21.11.");
-            var color = saved.GetString("color") ?? throw new NotSupportedException($"Banner layer {patternId} has no color.");
-            var dye = BannerPatternDefinitions.ParseColor(color)
-                ?? throw new NotSupportedException($"Banner layer {patternId} has an unknown color {color}.");
-
-            layers.Add(new BannerPatternLayer { AssetId = definition.AssetId, TranslationKey = definition.TranslationKey, Color = dye });
-        }
-
-        return layers.ToArray();
-    }
-
-    /// <summary>The four sides in vanilla's order (back, left, right, front). A missing or bare side is a brick.</summary>
-    private static Item[] Sherds(NbtList sherds)
-    {
-        var items = new Item[4];
-        for (var side = 0; side < items.Length; side++)
-        {
-            var name = side < sherds.Count && sherds[side] is NbtTag<string> sherd ? sherd.Value : "minecraft:brick";
-            items[side] = ItemsRegistry.Get(name);
-        }
-
-        return items;
-    }
-
-    /// <summary>
-    /// A saved skull profile. Only the name, id and properties are modelled, so any other saved key fails loudly.
-    /// </summary>
-    private static ProfileDataComponent Profile(NbtCompound saved)
-    {
-        foreach (var (key, _) in saved)
-        {
-            if (key is not ("name" or "id" or "properties"))
-                throw new NotSupportedException($"profile key {key} isn't modelled yet.");
-        }
-
-        var profile = new ProfileDataComponent();
-        if (saved.TryGetTag<NbtTag<string>>("name", out var name))
-            profile.Username = name.Value;
-        if (saved.TryGetTag<NbtArray<int>>("id", out var uuid) && uuid.Count == 4)
-            profile.Id = FromIntArray(uuid);
-        if (saved.TryGetTag<NbtList>("properties", out var properties))
-        {
-            profile.Properties = properties.OfType<NbtCompound>().Select(property => new SkinProperty
+            var customName = item.GetComponent<SimpleDataComponent<ChatMessage>>(DataComponentType.CustomName);
+            if (customName?.Value is ChatMessage name)
             {
-                Name = property.GetString("name") ?? throw new NotSupportedException("A saved profile property has no name."),
-                Value = property.GetString("value") ?? throw new NotSupportedException("A saved profile property has no value."),
-                Signature = property.TryGetTag<NbtTag<string>>("signature", out var signature) ? signature.Value : null
-            }).ToImmutableArray();
+                inventory.CustomName = name;
+                inventory.Title = name;
+            }
+
+            var contents = item.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
+                DataComponentType.Container);
+            if (contents is not null)
+            {
+                for (var slot = 0; slot < inventory.Size && slot < contents.Value.Length; slot++)
+                {
+                    var stack = contents.Value[slot];
+                    inventory.SetItem(slot, stack.IsAir || stack.Count <= 0 ? null : new ItemStack(stack, stack.Count));
+                }
+            }
+
+            if (item.GetComponent<SimpleDataComponent<NbtCompound>>(DataComponentType.Lock)?.Value is NbtCompound key
+                && container is VanillaContainerBlockEntity vanilla)
+            {
+                vanilla.LockPredicate = key;
+            }
+
+            var loot = item.GetComponent<SimpleDataComponent<NbtCompound>>(DataComponentType.ContainerLoot)?.Value;
+            if (loot is not null && loot.TryGetTagValue<string>("loot_table", out var table))
+            {
+                container.LootTable = table;
+                container.LootTableSeed = loot.TryGetTagValue<long>("seed", out var seed) ? seed : 0;
+            }
         }
 
-        profile.IsComplete = profile.Id is not null && profile.Username is not null;
-        return profile;
+        container.SetChanged();
+        container.SendUpdate();
     }
 
-    /// <summary>Vanilla's UUID NBT: four big-endian ints, most significant first.</summary>
-    private static Guid FromIntArray(NbtArray<int> words)
+    // Like vanilla's BlockItem.updateBlockEntityComponents, the block entity is saved after it read its item.
+    private static void ApplyPlugin(BlockEntity entity, PluginContainer plugin, ItemStack item, ILogger? logger)
     {
-        Span<byte> bytes = stackalloc byte[16];
-        for (var i = 0; i < 4; i++)
-            BinaryPrimitives.WriteInt32BigEndian(bytes[(i * 4)..], words[i]);
-        return new Guid(bytes, bigEndian: true);
+        using var call = plugin.TryEnter();
+        if (call is null)
+            return;
+
+        try
+        {
+            entity.ApplyComponents(item);
+        }
+        catch (Exception ex)
+        {
+            if (logger is not null)
+                Log.ApplyFailed(logger, ex, entity.Id, entity.BlockPosition);
+        }
+
+        entity.SetChanged();
     }
 
-    private static bool HasEntries(NbtCompound tag, string name) =>
-        tag.TryGetTag<NbtList>(name, out var list) && list.Count > 0;
+    // Vanilla's BaseContainerBlockEntity and RandomizableContainerBlockEntity collectImplicitComponents.
+    private static async ValueTask<BlockEntityComponents> CaptureContainerAsync(
+        AbstractLevel level,
+        ContainerBlockEntity container,
+        IPlayer? breaker)
+    {
+        var components = new List<DataComponent>();
+        var dynamic = new Dictionary<string, List<ItemStack>>();
+        var inventory = container.Inventory;
+
+        using (await inventory.LockAsync())
+        {
+            // Its contents drop with the block's loot, once: a second break of the same box gets none.
+            if (container.IsRemoved || !container.DropsContents && !inventory.TryRetire())
+                return new BlockEntityComponents([], []) { CanBreak = false };
+        }
+
+        var captured = new BlockEntityComponents(components, dynamic)
+        {
+            retirement = container.DropsContents ? null : container
+        };
+
+        try
+        {
+            if (!container.DropsContents && breaker is not null)
+                level.UnpackLootTable(container, breaker.GameMode == GameMode.Creative ? null : breaker);
+
+            using (await inventory.LockAsync())
+            {
+                if (container.IsRemoved)
+                    return new BlockEntityComponents([], []) { CanBreak = false };
+
+                if (inventory.CustomName is ChatMessage name)
+                    components.Add(ComponentBuilder.CustomName with { Value = name });
+
+                if (container is VanillaContainerBlockEntity { LockPredicate: NbtCompound key })
+                    components.Add(ComponentBuilder.Lock with { Value = key });
+
+                // Vanilla rolls chest loot after its items drop; only containers that keep items supply them here.
+                if (!container.DropsContents)
+                {
+                    var items = Contents(inventory);
+                    components.Add(ComponentBuilder.Container with { Value = items });
+                    dynamic["minecraft:contents"] = [.. items.Where(item => !item.IsAir && item.Count > 0)];
+                }
+
+                lock (container.LootLock)
+                {
+                    if (container.LootTable is string lootTable)
+                    {
+                        var loot = new NbtCompound { new NbtTag<string>("loot_table", lootTable) };
+                        if (container.LootTableSeed != 0)
+                            loot.Add(new NbtTag<long>("seed", container.LootTableSeed));
+
+                        components.Add(ComponentBuilder.ContainerLoot with { Value = loot });
+                    }
+                }
+            }
+        }
+        catch
+        {
+            await captured.DisposeAsync();
+            throw;
+        }
+
+        return captured;
+    }
+
+    // Vanilla's ItemContainerContents.fromItems: copies of the slots up to the last that holds something.
+    private static ImmutableArray<ItemStack> Contents(BaseContainer inventory)
+    {
+        var last = -1;
+        for (var slot = 0; slot < inventory.Size; slot++)
+        {
+            if (inventory[slot] is { IsAir: false, Count: > 0 })
+                last = slot;
+        }
+
+        var items = new ItemStack[last + 1];
+        for (var slot = 0; slot <= last; slot++)
+        {
+            items[slot] = inventory[slot] is { IsAir: false, Count: > 0 } item
+                ? new ItemStack(item, item.Count)
+                : new ItemStack(ItemsRegistry.Air, 0);
+        }
+
+        return [.. items];
+    }
+
+    // The components of the types kept as data: vanilla's DecoratedPotBlockEntity's decorations and
+    // DecoratedPotBlock's sherds dynamic drop, and the names of nameable ones.
+    private static BlockEntityComponents CaptureData(DataBlockEntity blockEntity)
+    {
+        var data = blockEntity.SnapshotData();
+        var components = new List<DataComponent>();
+        var dynamic = new Dictionary<string, List<ItemStack>>();
+
+        if (data.TryGetTag("CustomName", out var customName) && customName.TextFromNbt() is ChatMessage name)
+            components.Add(ComponentBuilder.CustomName with { Value = name });
+
+        if (blockEntity.Id == "minecraft:decorated_pot")
+        {
+            var sherds = data.TryGetTag<NbtList>("sherds", out var list)
+                ? list.OfType<NbtTag<string>>().Select(sherd => ItemsRegistry.Get(sherd.Value!)).ToList()
+                : [];
+
+            var faces = Enumerable.Range(0, PotFaces)
+                .Select(face => face < sherds.Count && sherds[face] != ItemsRegistry.Air
+                    ? sherds[face]
+                    : ItemsRegistry.Brick)
+                .ToImmutableArray();
+
+            components.Add(ComponentBuilder.PotDecorations with { Value = faces });
+            dynamic["minecraft:sherds"] = [.. faces.Select(face => new ItemStack(face))];
+        }
+
+        return components.Count == 0 && dynamic.Count == 0 ? None : new BlockEntityComponents(components, dynamic);
+    }
+
+    private void Drop(string name, Action<ItemStack> output)
+    {
+        if (!this.dynamic.TryGetValue(name, out var items))
+            return;
+
+        foreach (var item in items)
+            output(new ItemStack(item, item.Count));
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Error, Message = "Block entity {Type} at {Position} failed to read its item")]
+        public static partial void ApplyFailed(ILogger logger, Exception exception, string type, Vector position);
+    }
 }

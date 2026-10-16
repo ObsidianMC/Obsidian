@@ -334,7 +334,9 @@ public abstract class StructurePiece
     }
 
     protected static bool IsReplaceableByStructures(IBlock block) =>
-        block.IsAir || block.IsLiquid || block.Material is Material.GlowLichen or Material.Seagrass or Material.TallSeagrass;
+        block.IsAir
+            || block.IsLiquid
+            || block.RegistryId is BlockIds.GlowLichen or BlockIds.Seagrass or BlockIds.TallSeagrass;
 
     /// <summary>
     /// Vanilla <c>createChest</c>: places a chest with <paramref name="lootTable"/> at local coordinates, facing away from a
@@ -348,15 +350,15 @@ public abstract class StructurePiece
     /// </summary>
     protected bool CreateChest(IWorldGenLevel level, BlockBox box, IRandomSource random, Vector position, string lootTable, IBlock? chest)
     {
-        if (!box.IsInside(position) || level.GetBlock(position).Material == Material.Chest)
+        if (!box.IsInside(position) || level.GetBlock(position).RegistryId == BlockIds.Chest)
             return false;
 
-        level.SetBlock(position, chest ?? FeatureHelpers.Reorient(level, position, BlocksRegistry.Get(Material.Chest)));
+        level.SetBlock(position, chest ?? FeatureHelpers.Reorient(level, position, BlocksRegistry.Chest));
 
         // Vanilla only seeds a ChestBlockEntity (chests and trapped chests).
-        var container = level.GetBlockEntity(position) as DataBlockEntity;
+        var container = level.GetBlockEntity(position);
         if (container?.Id is "minecraft:chest" or "minecraft:trapped_chest")
-            SetLootTable(container, lootTable, random.NextLong());
+            BlockEntityNbt.SetLootTable(container, lootTable, random.NextLong());
 
         return true;
     }
@@ -367,25 +369,17 @@ public abstract class StructurePiece
     protected bool CreateDispenser(IWorldGenLevel level, BlockBox box, IRandomSource random, int x, int y, int z, BlockFace facing, string lootTable)
     {
         var position = this.GetWorldPos(x, y, z);
-        if (!box.IsInside(position) || level.GetBlock(position).Material == Material.Dispenser)
+        if (!box.IsInside(position) || level.GetBlock(position).RegistryId == BlockIds.Dispenser)
             return false;
 
-        this.PlaceBlock(level, BlocksRegistry.Get(Material.Dispenser).WithProperty("facing", FeatureHelpers.FaceName(facing)), x, y, z, box);
+        this.PlaceBlock(
+            level, BlocksRegistry.Dispenser.WithProperty("facing", FeatureHelpers.FaceName(facing)), x, y, z, box);
 
-        var container = level.GetBlockEntity(position) as DataBlockEntity;
+        var container = level.GetBlockEntity(position);
         if (container?.Id == "minecraft:dispenser")
-            SetLootTable(container, lootTable, random.NextLong());
+            BlockEntityNbt.SetLootTable(container, lootTable, random.NextLong());
 
         return true;
-    }
-
-    private static void SetLootTable(DataBlockEntity container, string lootTable, long seed)
-    {
-        container.Set("LootTable", lootTable);
-        if (seed != 0L)
-            container.Set("LootTableSeed", seed);
-        else
-            container.Data.Remove("LootTableSeed");
     }
 
     /// <summary>

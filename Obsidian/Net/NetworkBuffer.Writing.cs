@@ -1,13 +1,6 @@
 using Obsidian.API.Advancements;
 using Obsidian.API.Inventory;
-using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
-using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
-using Obsidian.API.Registry.Codecs.Biomes;
-using Obsidian.API.Registry.Codecs.Chat;
-using Obsidian.API.Registry.Codecs.DamageTypes;
-using Obsidian.API.Registry.Codecs.Dimensions;
-using Obsidian.API.Registry.Codecs.PaintingVariant;
-using Obsidian.API.Registry.Codecs.WolfVariant;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
@@ -234,7 +227,7 @@ public partial class NetworkBuffer : INetStreamWriter
         }
     }
 
-    //TODO make sure this is up to date
+    // Vanilla 1.21.11 sends requirements and telemetry here; criteria definitions remain on the server.
     public void WriteAdvancement(Advancement advancement)
     {
         var hasParent = !string.IsNullOrEmpty(advancement.Parent);
@@ -252,7 +245,7 @@ public partial class NetworkBuffer : INetStreamWriter
             this.WriteChat(advancement.Display.Title);
             this.WriteChat(advancement.Display.Description);
 
-            this.WriteItemStack(ItemsRegistry.GetSingleItem(advancement.Display.Icon.Type));
+            this.WriteItemStack(advancement.Display.IconStack ?? new ItemStack(advancement.Display.Icon, 1));
 
             this.WriteVarInt(advancement.Display.AdvancementFrameType);
 
@@ -265,24 +258,19 @@ public partial class NetworkBuffer : INetStreamWriter
             this.WriteSingle(advancement.Display.YCoord);
         }
 
-        this.WriteVarInt(advancement.Criteria.Count);
-
-        foreach (var criteria in advancement.Criteria)
-            this.WriteString(criteria.Identifier);
-
-        var reqired = advancement.Criteria.Where(x => x.Required).ToList();
-
-        //For some reason this takes a array of an array??
-        if (reqired.Count > 0)
+        var requirements = advancement.Requirements.Count > 0
+            ? advancement.Requirements
+            : advancement.Criteria.Where(criterion => criterion.Required)
+                .Select(criterion => new List<string> { criterion.Identifier }).ToList();
+        this.WriteVarInt(requirements.Count);
+        foreach (var row in requirements)
         {
-            //Always gonna be 1 for now
-            this.WriteVarInt(1);
-
-            this.WriteVarInt(reqired.Count);
-
-            foreach (var criteria in reqired)
-                this.WriteString(criteria.Identifier);
+            this.WriteVarInt(row.Count);
+            foreach (var criterion in row)
+                this.WriteString(criterion);
         }
+
+        this.WriteBoolean(advancement.SendsTelemetryEvent);
     }
 
     public void WriteAttributeModifier(AttributeModifier attribute) => AttributeModifier.Write(attribute, this);
@@ -374,23 +362,6 @@ public partial class NetworkBuffer : INetStreamWriter
 
         codec.WriteElement(writer);
 
-        if (codec is DimensionCodec dim)
-            dim.WriteElement(writer);
-        else if (codec is BiomeCodec biome)
-            biome.WriteElement(writer);
-        else if (codec is ChatTypeCodec chat)
-            chat.WriteElement(writer);
-        else if (codec is TrimPatternCodec trimPattern)
-            trimPattern.WriteElement(writer);
-        else if (codec is TrimMaterialCodec trimMaterial)
-            trimMaterial.WriteElement(writer);
-        else if (codec is DamageTypeCodec damageType)
-            damageType.WriteElement(writer);
-        else if (codec is WolfVariantCodec wolfVariant)
-            wolfVariant.WriteElement(writer);
-        else if (codec is PaintingVariantCodec paintingVariant)
-            paintingVariant.WriteElement(writer);
-
         writer.EndCompound();
         writer.TryFinish();
 
@@ -424,52 +395,131 @@ public partial class NetworkBuffer : INetStreamWriter
     /// <summary>Writes the creative-slot codec when delimitedComponents is true.</summary>
     public void WriteItemStack(ItemStack? value, bool delimitedComponents)
     {
+        if (this.IdMaps is null)
+        {
+            this.WriteItemStackPatch(value, delimitedComponents);
+            return;
+        }
+
+        // A stack whose components name an entry the connection lacks is written as nothing, like a missing item, and
+        // so is one whose components hold such a required stack (a bundle's items, a use remainder), which can't be.
+        var encoded = new NetworkBuffer { IdMaps = this.IdMaps };
+        try
+        {
+            encoded.WriteItemStackPatch(value, delimitedComponents);
+        }
+        catch (MissingRegistryEntryException)
+        {
+            this.WriteVarInt(0);
+            return;
+        }
+
+        this.Write(encoded.data.AsSpan(0, encoded.Offset));
+    }
+
+    private void WriteItemStackPatch(ItemStack? value, bool delimitedComponents)
+    {
         value ??= ItemStack.Air;
 
         var item = value.AsItem();
 
-        if (value.Count <= 0 || value.IsAir)
+        // An item the connection lacks, like one of the client's mods' the server doesn't run, is written as nothing.
+        var itemId = this.RemoteItemId(item.Id);
+        if (value.Count <= 0 || value.IsAir || itemId < 0)
         {
             this.WriteVarInt(0);
             return;
         }
         WriteVarInt(value.Count);
 
-        WriteVarInt(item.Id);
+        WriteVarInt(itemId);
 
         // Like vanilla's DataComponentPatch: only the components set on the stack. The client knows the item's defaults,
         // and Obsidian's placeholders for them (e.g. a max stack size of 64) would override them.
-        var components = value.Patch.ToList();
+        // Encode before counting: a plugin may start unloading after projection. No codec delegate escapes its lease,
+        // and values refused at encoding time are omitted from both the count and payload.
+        var components = new List<(DataComponentType Type, byte[] Bytes)>();
+        foreach (var component in SentPatch(value))
+        {
+            using var encoded = new NetworkBuffer { IdMaps = this.IdMaps };
+            if (component is PluginDataComponent plugin)
+            {
+                if (!plugin.TryWriteNetwork(encoded))
+                    continue;
+            }
+            else
+                encoded.WriteDataComponent(component);
+
+            components.Add((component.Type, encoded.data.AsSpan(0, encoded.Offset).ToArray()));
+        }
+
         WriteVarInt(components.Count);
         WriteVarInt(value.RemoveComponents.Count);
 
         foreach (var component in components)
         {
-            this.WriteVarInt(component.Type);
+            this.WriteComponentType(component.Type);
 
             if (delimitedComponents)
             {
-                var encoded = new NetworkBuffer();
-                encoded.WriteDataComponent(component);
-                this.WriteVarInt(encoded.Offset);
-                this.Write(encoded.data.AsSpan(0, encoded.Offset));
+                this.WriteVarInt(component.Bytes.Length);
+                this.Write(component.Bytes);
             }
             else
-                this.WriteDataComponent(component);
+                this.Write(component.Bytes);
         }
 
         foreach (var componentType in value.RemoveComponents)
-            this.WriteVarInt(componentType);
+            this.WriteComponentType(componentType);
+    }
+
+    // An item's and a data component type's id, in the connection's numbering (see IdMaps).
+    private int RemoteItemId(int id) => this.IdMaps is RegistryIdMaps maps ? maps.Item.ToRemote(id) : id;
+
+    // A component type the connection lacks throws, like any registry entry (see ToRemoteId).
+    private void WriteComponentType(DataComponentType type) =>
+        this.WriteVarInt(this.ToRemoteId(RegistryIdMaps.DataComponentTypes, (int)type));
+
+    // Whether the connection has the component type, which an item stack can only be written with if it does.
+    private bool HasComponentType(DataComponentType type) =>
+        this.IdMaps is not RegistryIdMaps maps || maps.DataComponentType.ToRemote((int)type) >= 0;
+
+    public void WriteRegistryId(string registry, int id) => this.WriteVarInt(this.ToRemoteId(registry, id));
+
+    public void WriteRegistryHolder(string registry, int? id) =>
+        this.WriteVarInt(id is int value ? this.ToRemoteId(registry, value) + 1 : 0);
+
+    // The connection's id of this process's id of the registry (see IdMaps). An entry the connection lacks throws, and
+    // the enclosing optional stack (WriteItemStack) is then written as nothing.
+    private int ToRemoteId(string registry, int id)
+    {
+        if (this.IdMaps is not RegistryIdMaps maps)
+            return id;
+
+        var remote = maps.Get(registry).ToRemote(id);
+        return remote >= 0 ? remote : throw new MissingRegistryEntryException(registry, id);
     }
 
     public void WriteUntrustedItemStack(ItemStack? value) => this.WriteItemStack(value, true);
 
+    /// <summary>
+    /// Writes a stack that can't be empty, like vanilla's <c>ItemStack.STREAM_CODEC</c>.
+    /// </summary>
+    /// <remarks>
+    /// Unlike an optional stack, it can't be written as nothing when it names an entry the connection lacks. That
+    /// throws instead, so the enclosing optional stack (<see cref="WriteItemStack(ItemStack?)"/>) is written as
+    /// nothing.
+    /// </remarks>
     public void WriteRequiredItemStack(ItemStack value)
     {
         if (value is null || value.IsAir || value.Count <= 0)
             throw new ArgumentException("Expected a nonempty stack.", nameof(value));
 
-        this.WriteItemStack(value);
+        var item = value.AsItem();
+        if (this.RemoteItemId(item.Id) < 0)
+            throw new MissingRegistryEntryException(RegistryIdMaps.Items, item.Id);
+
+        this.WriteItemStackPatch(value, false);
     }
 
     public void WriteItemStackList(params ReadOnlySpan<ItemStack?> values) => this.WriteLengthPrefixedArray(this.WriteItemStack, values);
@@ -509,7 +559,7 @@ public partial class NetworkBuffer : INetStreamWriter
             return;
         }
 
-        using var packetStream = new NetworkBuffer();
+        using var packetStream = new NetworkBuffer { WritesPluginEntityData = this.WritesPluginEntityData };
 
         packet.Serialize(packetStream);
 
@@ -540,7 +590,7 @@ public partial class NetworkBuffer : INetStreamWriter
             return;
         }
 
-        using var networkBuffer = new NetworkBuffer();
+        using var networkBuffer = new NetworkBuffer { WritesPluginEntityData = this.WritesPluginEntityData };
 
         networkBuffer.WriteVarInt(packet.Id);
         packet.Serialize(networkBuffer);

@@ -255,7 +255,7 @@ public sealed class RuinedPortalPiece : TemplateStructurePiece
     private static void MaybeAddVines(IRandomSource random, IWorldGenLevel level, Vector position)
     {
         var block = level.GetBlock(position);
-        if (block.IsAir || block.Material == Material.Vine)
+        if (block.IsAir || block.Is(BlockIds.Vine))
             return;
 
         var direction = RandomHorizontalDirection(random);
@@ -264,13 +264,16 @@ public sealed class RuinedPortalPiece : TemplateStructurePiece
         if (!level.GetBlock(neighborPosition).IsAir || !block.IsCollisionShapeFullBlock() && !block.IsFaceSturdy(direction))
             return;
 
-        level.SetBlock(neighborPosition, BlocksRegistry.Get(Material.Vine).WithProperty(FeatureHelpers.FaceName(direction.Opposite()), true));
+        level.SetBlock(
+            neighborPosition, BlocksRegistry.Vine.WithProperty(FeatureHelpers.FaceName(direction.Opposite()), true));
     }
 
     private static void MaybeAddLeavesAbove(IRandomSource random, IWorldGenLevel level, Vector position)
     {
-        if (random.NextFloat() < 0.5f && level.GetBlock(position).Material == Material.Netherrack && level.GetBlock(position + Vector.Up).IsAir)
-            level.SetBlock(position + Vector.Up, BlocksRegistry.Get(Material.JungleLeaves).WithProperty("persistent", true));
+        if (random.NextFloat() < 0.5f
+            && level.GetBlock(position).Is(BlockIds.Netherrack)
+            && level.GetBlock(position + Vector.Up).IsAir)
+            level.SetBlock(position + Vector.Up, BlocksRegistry.JungleLeaves.WithProperty("persistent", true));
     }
 
     private void AddNetherrackDripColumnsBelowPortal(IRandomSource random, IWorldGenLevel level)
@@ -281,7 +284,7 @@ public sealed class RuinedPortalPiece : TemplateStructurePiece
             for (var z = box.MinZ + 1; z < box.MaxZ; z++)
             {
                 var position = new Vector(x, box.MinY, z);
-                if (level.GetBlock(position).Material == Material.Netherrack)
+                if (level.GetBlock(position).RegistryId == BlockIds.Netherrack)
                     this.AddNetherrackDripColumn(random, level, position + Vector.Down);
             }
         }
@@ -333,13 +336,15 @@ public sealed class RuinedPortalPiece : TemplateStructurePiece
     private bool CanBeReplacedByNetherrackOrMagma(IWorldGenLevel level, Vector position)
     {
         var block = level.GetBlock(position);
-        return block.Material is not (Material.Air or Material.Obsidian)
+        return block.RegistryId is not (BlockIds.Air or BlockIds.Obsidian)
             && !featuresCannotReplace.Contains(block)
-            && (this.placement == RuinedPortalPlacement.InNether || block.Material != Material.Lava);
+            && (this.placement == RuinedPortalPlacement.InNether || !block.Is(BlockIds.Lava));
     }
 
     private void PlaceNetherrackOrMagma(IRandomSource random, IWorldGenLevel level, Vector position) =>
-        level.SetBlock(position, BlocksRegistry.Get(!this.properties.Cold && random.NextFloat() < 0.07f ? Material.MagmaBlock : Material.Netherrack));
+        level.SetBlock(position, !this.properties.Cold && random.NextFloat() < 0.07f
+            ? BlocksRegistry.MagmaBlock
+            : BlocksRegistry.Netherrack);
 
     private static StructurePlaceSettings MakeSettings(StructureMirror mirror, StructureRotation rotation, RuinedPortalPlacement placement,
         Vector pivot, RuinedPortalProperties properties)

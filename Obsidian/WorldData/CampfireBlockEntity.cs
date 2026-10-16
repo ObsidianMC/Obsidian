@@ -1,57 +1,114 @@
-using Obsidian.API;
+using Obsidian.API.Containers;
+using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
+using Obsidian.Nbt;
+using Obsidian.Net;
 
 namespace Obsidian.WorldData;
 
-/// <summary>
-/// Vanilla <c>CampfireBlockEntity</c>: four food slots, each cooked by its recipe's cook time while the campfire is lit.
-/// </summary>
-/// <remarks>
-/// Saved by <see cref="BlockEntityNbt"/> with vanilla's <c>Items</c>, <c>CookingTimes</c> and <c>CookingTotalTimes</c> keys.
-/// </remarks>
-public sealed class CampfireBlockEntity : IBlockEntity
+/// <summary>Four independent cooking items; vanilla's CookingTimes and CookingTotalTimes are int arrays.</summary>
+internal sealed class CampfireBlockEntity()
+    : VanillaContainerBlockEntity(new CookingItems(), "CookingTimes", "CookingTotalTimes")
 {
-    /// <summary>Vanilla's campfire holds four items.</summary>
-    public const int SlotCount = 4;
+    private sealed class CookingItems() : BaseContainer(4);
 
-    public required string Id { get; init; }
+    private readonly int[] spent = new int[4];
+    private readonly int[] total = new int[4];
 
-    public required Vector BlockPosition { get; init; }
+    // Vanilla campfires don't expose their cooking items to hoppers.
+    public override IItemAccess? GetItemAccess(BlockFace? side) => null;
 
-    /// <summary>The food in each slot, or <c>null</c> when empty.</summary>
-    public ItemStack?[] Items { get; } = new ItemStack?[SlotCount];
-
-    /// <summary>Ticks each slot has cooked so far.</summary>
-    public int[] CookingProgress { get; } = new int[SlotCount];
-
-    /// <summary>Ticks each slot needs to finish cooking.</summary>
-    public int[] CookingTotal { get; } = new int[SlotCount];
-
-    /// <summary>The index of the first empty slot, or -1 when all four hold food.</summary>
-    public int FirstEmptySlot()
+    protected internal override void Load(NbtCompound tag)
     {
-        for (var slot = 0; slot < SlotCount; slot++)
+        base.Load(tag);
+        Read("CookingTimes", this.spent);
+        Read("CookingTotalTimes", this.total);
+
+        void Read(string name, int[] target)
         {
-            if (Items[slot] is not { IsAir: false, Count: > 0 })
-                return slot;
+            if (tag.TryGetTag<NbtArray<int>>(name, out var saved))
+                saved.GetArray().AsSpan(0, Math.Min(saved.Count, target.Length)).CopyTo(target);
+        }
+    }
+
+    internal override void SaveMachineState(NbtCompound tag)
+    {
+        tag.Add(new NbtArray<int>("CookingTimes", [.. this.spent]));
+        tag.Add(new NbtArray<int>("CookingTotalTimes", [.. this.total]));
+    }
+
+    protected internal override NbtCompound? GetUpdateData()
+    {
+        var tag = new NbtCompound();
+        var items = new NbtList(NbtTagType.Compound, "Items");
+        using (this.Inventory.Lock())
+        {
+            for (var slot = 0; slot < 4; slot++)
+            {
+                if (this.Inventory[slot] is not ItemStack stack || stack.IsAir)
+                    continue;
+
+                var saved = NetworkBuffer.ItemUpdateNbt(stack);
+                saved.Add(new NbtTag<byte>("Slot", (byte)slot));
+                items.Add(saved);
+            }
         }
 
-        return -1;
+        tag.Add(items);
+        return tag;
     }
 
-    /// <summary>Whether any slot still holds food.</summary>
-    public bool HasFood() => Items.Any(item => item is { IsAir: false, Count: > 0 });
-
-    public void ToNbt() => throw new NotSupportedException("Campfires are saved by BlockEntityNbt.");
-
-    public void FromNbt() => throw new NotSupportedException("Campfires are loaded by BlockEntityNbt.");
-
-    public IBlockEntity Clone()
+    /// <summary>Called under the inventory lock; inputs are copied and only one item occupies a slot.</summary>
+    internal bool Place(ItemStack input, int cookingTime)
     {
-        var copy = new CampfireBlockEntity { Id = Id, BlockPosition = BlockPosition };
-        Array.Copy(Items, copy.Items, SlotCount);
-        Array.Copy(CookingProgress, copy.CookingProgress, SlotCount);
-        Array.Copy(CookingTotal, copy.CookingTotal, SlotCount);
-        return copy;
+        for (var slot = 0; slot < 4; slot++)
+        {
+            if (!this.Inventory[slot].IsNullOrAir())
+                continue;
+
+            this.Inventory[slot] = NetworkBuffer.SnapshotItemStack(new ItemStack(input, 1));
+            this.spent[slot] = 0;
+            this.total[slot] = cookingTime;
+            this.SetChanged();
+            return true;
+        }
+
+        return false;
     }
+
+    internal IReadOnlyList<ItemStack> Cook(RecipeSet recipes, bool lit)
+    {
+        List<ItemStack>? finished = null;
+        for (var slot = 0; slot < 4; slot++)
+        {
+            if (!lit)
+            {
+                if (this.spent[slot] > 0)
+                {
+                    this.spent[slot] = Math.Max(0, this.spent[slot] - 2);
+                    this.SetChanged();
+                }
+
+                continue;
+            }
+
+            if (this.Inventory[slot] is not ItemStack input || input.IsAir || input.Count <= 0)
+                continue;
+
+            this.spent[slot]++;
+            this.SetChanged();
+            if (this.spent[slot] < this.total[slot])
+                continue;
+
+            // Vanilla checks the current recipe at completion; removal during a reload drops the input instead.
+            var recipe = recipes.FindCooking(CraftingType.CampfireCooking, input);
+            (finished ??= []).Add(NetworkBuffer.SnapshotItemStack(recipe?.Result.FirstOrDefault() ?? input));
+            this.Inventory[slot] = null;
+        }
+
+        return finished is not null ? finished : Array.Empty<ItemStack>();
+    }
+
+    protected internal override ValueTask TickAsync() =>
+        this.Level is AbstractLevel level ? level.TickCampfireAsync(this) : ValueTask.CompletedTask;
 }

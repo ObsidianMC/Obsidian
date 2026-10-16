@@ -73,11 +73,10 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         if (normalized.EndsWith("/Assets/tags.json", StringComparison.Ordinal))
             return "tags";
 
-        var index = normalized.IndexOf("/worldgen/", StringComparison.Ordinal);
-        if (index < 0 || !normalized.EndsWith(".json", StringComparison.Ordinal))
+        var relative = AssetPaths.GetWorldgenRelativePath(normalized);
+        if (relative is null || !relative.EndsWith(".json", StringComparison.Ordinal))
             return null;
 
-        var relative = normalized.Substring(index + "/worldgen/".Length);
         return relative.Substring(0, relative.Length - ".json".Length);
     }
 
@@ -732,14 +731,15 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                         var entries = json.ValueKind == JsonValueKind.Array
                             ? json.EnumerateArray().Select(entry => entry.GetString()!)
                             : [json.GetString()!];
-                        return $"new global::Obsidian.WorldData.Features.BlockSet({string.Join(", ", entries.Select(Literal))})";
+                        var literals = string.Join(", ", entries.Select(Literal));
+                        return $"new global::Obsidian.API.World.Features.BlockSet({literals})";
                     }
                 case "BiomeSet":
                     {
                         var entries = json.ValueKind == JsonValueKind.Array
                             ? json.EnumerateArray().Select(entry => entry.GetString()!)
                             : [json.GetString()!];
-                        return $"new global::Obsidian.WorldData.Structures.BiomeSet({string.Join(", ", entries.Select(Literal))})";
+                        return $"new global::Obsidian.API.World.Features.BiomeSet({string.Join(", ", entries.Select(Literal))})";
                     }
                 case "Vector":
                     {
@@ -748,6 +748,11 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                     }
                 case "VerticalAnchor":
                     return EmitVerticalAnchor(json);
+                case "JigsawMaxDistance":
+                    // A number is both distances; the object form's vertical defaults to 4064, like vanilla's.
+                    return EmitPair(target, json, "horizontal", "vertical", 4064);
+                case "DimensionPadding":
+                    return EmitPair(target, json, "bottom", "top", 0);
             }
 
             if (SymbolEqualityComparer.Default.Equals(target, this.placedFeature))
@@ -907,6 +912,19 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
             var entries = properties.EnumerateObject().Select(property => $"{{ {Literal(property.Name)}, {Literal(property.Value.GetString()!)} }}");
             return $"new global::Obsidian.API.SimpleBlockState {{ Name = {name}, Properties = new() {{ {string.Join(", ", entries)} }} }}";
+        }
+
+        // A pair of ints written as one number for both, or an object of the two whose missing ones take a default.
+        private static string EmitPair(ITypeSymbol type, JsonElement json, string first, string second, int fallback)
+        {
+            int Value(string name) => json.TryGetProperty(name, out var value) ? value.GetInt32() : fallback;
+
+            var (a, b) = json.ValueKind == JsonValueKind.Number
+                ? (json.GetInt32(), json.GetInt32())
+                : (Value(first), Value(second));
+
+            var values = $"{a.ToString(CultureInfo.InvariantCulture)}, {b.ToString(CultureInfo.InvariantCulture)}";
+            return $"new {FullName(type)}({values})";
         }
 
         private static string EmitVerticalAnchor(JsonElement json)

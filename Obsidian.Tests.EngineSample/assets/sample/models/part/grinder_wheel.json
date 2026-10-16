@@ -1,0 +1,22 @@
+{
+  "parent": "sample:block/base",
+  "textures": {
+    "particle": "minecraft:block/grindstone_side",
+    "side": "minecraft:block/grindstone_side",
+    "round": "minecraft:block/grindstone_round"
+  },
+  "elements": [
+    {
+      "from": [3, 12, 3],
+      "to": [13, 16, 13],
+      "faces": {
+        "down": { "uv": [1, 1, 11, 11], "texture": "#side" },
+        "up": { "uv": [1, 1, 11, 11], "texture": "#side" },
+        "north": { "uv": [0, 0, 8, 4], "texture": "#round" },
+        "south": { "uv": [0, 0, 8, 4], "texture": "#round" },
+        "west": { "uv": [0, 0, 8, 4], "texture": "#round" },
+        "east": { "uv": [0, 0, 8, 4], "texture": "#round" }
+      }
+    }
+  ]
+}

@@ -30,7 +30,7 @@ internal static class MapRenderer
         var centerZ = data.CenterZ;
         var playerX = (int)Math.Floor(player.Position.X - centerX) / scale + 64;
         var playerZ = (int)Math.Floor(player.Position.Z - centerZ) / scale + 64;
-        var hasCeiling = CodecRegistry.TryGetDimension(level.DimensionName, out var codec) && codec!.Element.HasCeiling;
+        var hasCeiling = level.DimensionType.Element.HasCeiling;
         var radius = MapData.Size / scale;
         if (hasCeiling)
             radius /= 2;
@@ -169,7 +169,7 @@ internal static class MapRenderer
                 IBlock block;
                 if (y <= minY)
                 {
-                    block = BlocksRegistry.Get(Material.Bedrock);
+                    block = BlocksRegistry.Bedrock;
                 }
                 else
                 {
@@ -209,14 +209,14 @@ internal static class MapRenderer
     {
         var noise = blockX + blockZ * 231871;
         noise = noise * noise * 31287121 + noise * 11;
-        var block = (noise >> 20 & 1) == 0 ? Material.Dirt : Material.Stone;
-        return (MapColors.Get(BlocksRegistry.Get(block)), 100.0, 0);
+        var block = (noise >> 20 & 1) == 0 ? BlocksRegistry.Dirt : BlocksRegistry.Stone;
+        return (MapColors.Get(block), 100.0, 0);
     }
 
     private static IBlock FluidBlock(IBlock block) => block.GetFluid() switch
     {
-        FluidKind.Lava or FluidKind.FlowingLava => BlocksRegistry.Get(Material.Lava),
-        _ => BlocksRegistry.Get(Material.Water)
+        FluidKind.Lava or FluidKind.FlowingLava => BlocksRegistry.Lava,
+        _ => BlocksRegistry.Water
     };
 
     // Vanilla counts colors in a LinkedHashMultiset: the most common wins, the first seen on ties.

@@ -7,8 +7,8 @@ namespace Obsidian.WorldData.Decorators;
 public class OceanDecorator : BaseDecorator
 {
     protected readonly IBlock bubble, sand, dirt, gravel, clay, magma, seaGrass, tallSeaGrass, kelp;
-    protected readonly IBlock tallSeaGrassUpperState = BlocksRegistry.Get(Material.TallSeagrass,
-        new TallSeagrassStateBuilder().WithHalf(BlockHalf.Upper).Build());
+    protected readonly IBlock tallSeaGrassUpperState =
+        BlocksRegistry.Get(new TallSeagrassStateBuilder().WithHalf(BlockHalf.Upper).Build().Id);
 
     protected IBlock primarySurface, secondarySurface, tertiarySurface;
 

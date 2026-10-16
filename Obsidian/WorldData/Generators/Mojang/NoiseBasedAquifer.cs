@@ -114,7 +114,7 @@ internal sealed class NoiseBasedAquifer : IAquifer
             return globalFluid.At(y);
         }
 
-        if (globalFluid.MaterialAt(y) == Material.Lava)
+        if (globalFluid.BlockIdAt(y) == BlockIds.Lava)
         {
             this.ShouldScheduleFluidUpdate = false;
             return BlocksRegistry.Lava;
@@ -158,7 +158,8 @@ internal sealed class NoiseBasedAquifer : IAquifer
             return block;
         }
 
-        if (closest.MaterialAt(y) == Material.Water && this.globalFluidPicker(x, y - 1, z).MaterialAt(y - 1) == Material.Lava)
+        if (closest.BlockIdAt(y) == BlockIds.Water
+            && this.globalFluidPicker(x, y - 1, z).BlockIdAt(y - 1) == BlockIds.Lava)
         {
             this.ShouldScheduleFluidUpdate = true;
             return block;
@@ -207,10 +208,11 @@ internal sealed class NoiseBasedAquifer : IAquifer
 
     private double CalculatePressure(int x, int y, int z, ref double barrier, FluidStatus first, FluidStatus second)
     {
-        var firstBlock = first.MaterialAt(y);
-        var secondBlock = second.MaterialAt(y);
+        var firstBlock = first.BlockIdAt(y);
+        var secondBlock = second.BlockIdAt(y);
 
-        if ((firstBlock == Material.Lava && secondBlock == Material.Water) || (firstBlock == Material.Water && secondBlock == Material.Lava))
+        if ((firstBlock == BlockIds.Lava && secondBlock == BlockIds.Water)
+            || (firstBlock == BlockIds.Water && secondBlock == BlockIds.Lava))
             return 2.0;
 
         var levelDifference = Math.Abs(first.FluidLevel - second.FluidLevel);
@@ -390,7 +392,7 @@ internal sealed class NoiseBasedAquifer : IAquifer
 
     private IBlock ComputeFluidType(int x, int y, int z, FluidStatus globalFluid, int fluidLevel)
     {
-        if (fluidLevel > -10 || fluidLevel == WayBelowMinY || globalFluid.FluidType.Material == Material.Lava)
+        if (fluidLevel > -10 || fluidLevel == WayBelowMinY || globalFluid.FluidType.Is(BlockIds.Lava))
             return globalFluid.FluidType;
 
         // Like the spread noise, the lava noise is sampled at cell indices.

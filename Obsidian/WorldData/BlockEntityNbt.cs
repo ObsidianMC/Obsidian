@@ -1,113 +1,69 @@
-using Obsidian.API.Containers;
+using Microsoft.Extensions.Logging;
+using Obsidian.API.BlockEntities;
 using Obsidian.Nbt;
+using Obsidian.Plugins;
 
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// Saves and loads a chunk's block entities in vanilla's form (the entries of a chunk's <c>block_entities</c>).
+/// Creates block entities of a type, and saves and loads them in vanilla's form (the entries of a chunk's
+/// <c>block_entities</c>: the type's <c>id</c>, the position and the block entity's own fields).
 /// </summary>
-internal static class BlockEntityNbt
+internal static partial class BlockEntityNbt
 {
     /// <summary>
-    /// Saves <paramref name="blockEntity"/> of <paramref name="chunk"/> with its <c>id</c> and position, or returns
-    /// <c>null</c> for block entities that aren't saved yet.
+    /// Saves a block entity with its id and position, or returns null for one that isn't saved: one that isn't a
+    /// <see cref="BlockEntity"/>, or has no type.
     /// </summary>
     /// <remarks>
-    /// Containers are saved like vanilla's <c>BaseContainerBlockEntity</c>: <c>CustomName</c> and their <c>Items</c>, each
-    /// with its <c>Slot</c>. A container is only made once it's opened, so the loot table it was waiting for is gone by
-    /// then; containers that weren't opened are data block entities that keep their <c>LootTable</c>.
+    /// Calls no plugin code: a plugin's block entity is saved as of the last change the level took in (see
+    /// <see cref="BlockEntity.SavedData"/>).
     /// </remarks>
-    public static NbtCompound? Save(IBlockEntity blockEntity, IChunk chunk)
+    public static NbtCompound? Save(IBlockEntity blockEntity)
     {
-        var position = blockEntity.BlockPosition;
-        switch (blockEntity)
+        if (blockEntity is not BlockEntity { Id.Length: > 0 } saved)
+            return null;
+
+        var tag = Header(saved.Id, saved.BlockPosition);
+        var data = saved.SavesOnAnyThread ? SaveData(saved) : saved.SavedData;
+
+        if (data is not null)
         {
-            case DataBlockEntity data:
-            {
-                var tag = Header(data.Id, position);
-                foreach (var (name, child) in data.SnapshotData())
-                    tag.Add(name, child);
-
-                return tag;
-            }
-            case CampfireBlockEntity campfire:
-            {
-                // Vanilla CampfireBlockEntity keys: Items with their Slot, then the cooking progress and totals.
-                var tag = Header(campfire.Id, position);
-                var items = new NbtList(NbtTagType.Compound, "Items");
-                for (var slot = 0; slot < CampfireBlockEntity.SlotCount; slot++)
-                {
-                    var item = campfire.Items[slot];
-                    if (item is null || item.IsAir || item.Count <= 0)
-                        continue;
-
-                    var itemTag = item.ToNbt();
-                    itemTag.Add(new NbtTag<byte>("Slot", (byte)slot));
-                    items.Add(itemTag);
-                }
-
-                tag.Add(items);
-                tag.Add(new NbtArray<int>("CookingTimes", (int[])campfire.CookingProgress.Clone()));
-                tag.Add(new NbtArray<int>("CookingTotalTimes", (int[])campfire.CookingTotal.Clone()));
-                return tag;
-            }
-            case BaseContainer container:
-            {
-                // Container ids are Obsidian's own, so the id comes from the block; a container whose block is gone isn't saved.
-                var id = chunk.GetBlock(position.X, position.Y, position.Z).BlockEntityType();
-                if (id is null)
-                    return null;
-
-                var tag = Header(id, position);
-                if (container.CustomName is not null)
-                    tag.Add(container.CustomName.ToNbt("CustomName"));
-
-                var items = new NbtList(NbtTagType.Compound, "Items");
-                for (var slot = 0; slot < container.Size; slot++)
-                {
-                    var item = container[slot];
-                    if (item is null || item.IsAir || item.Count <= 0)
-                        continue;
-
-                    var itemTag = item.ToNbt();
-                    itemTag.Add(new NbtTag<byte>("Slot", (byte)slot));
-                    items.Add(itemTag);
-                }
-
-                tag.Add(items);
-                if (container is SmeltingContainer furnace)
-                {
-                    // Vanilla AbstractFurnaceBlockEntity keys.
-                    tag.Add(new NbtTag<short>("lit_time_remaining", furnace.FuelBurnTime));
-                    tag.Add(new NbtTag<short>("lit_total_time", furnace.FuelBurnTotal));
-                    tag.Add(new NbtTag<short>("cooking_time_spent", furnace.CookTime));
-                    tag.Add(new NbtTag<short>("cooking_total_time", furnace.CookTimeTotal));
-                }
-
-                return tag;
-            }
-            default:
-                return null;
+            foreach (var (name, child) in DataBlockEntity.Copy(data))
+                tag.Add(name, child);
         }
+
+        if (saved is ContainerBlockEntity { SavesOnAnyThread: false } container)
+        {
+            container.SnapshotContents(tag);
+            // Host-owned semantics survive plugin unloads and server restarts without retaining plugin classes.
+            tag.Remove("obsidian:container");
+            tag.Add(new NbtCompound("obsidian:container")
+            {
+                new NbtTag<int>("size", container.Inventory.Size),
+                new NbtTag<bool>("drops_contents", container.DropsContents)
+            });
+        }
+
+        return tag;
     }
 
     /// <summary>
-    /// Loads a saved block entity: a container when it has <c>Items</c> and Obsidian has a container for its type, or else
-    /// a <see cref="DataBlockEntity"/> keeping the saved fields.
+    /// What a block entity's <see cref="BlockEntity.Save"/> writes, without the id and position.
     /// </summary>
-    public static IBlockEntity Load(NbtCompound tag, string id, Vector position)
+    public static NbtCompound SaveData(BlockEntity blockEntity)
     {
-        if (id is "minecraft:campfire" or "minecraft:soul_campfire")
-            return LoadCampfire(tag, id, position);
+        var tag = new NbtCompound();
+        blockEntity.Save(tag);
 
-        if (tag.HasTag("Items") && !tag.HasTag("LootTable") && CreateContainer(id, position) is BaseContainer container)
-        {
-            LoadContents(tag, container);
-            if (container is SmeltingContainer furnace)
-                LoadFurnaceState(tag, furnace);
-            return (IBlockEntity)container;
-        }
+        return tag;
+    }
 
+    /// <summary>
+    /// Loads a saved block entity (see <see cref="Create"/>).
+    /// </summary>
+    public static BlockEntity Load(NbtCompound tag, string id, Vector position, bool pluginInstances = true)
+    {
         var data = new NbtCompound();
         foreach (var (name, child) in tag)
         {
@@ -115,72 +71,156 @@ internal static class BlockEntityNbt
                 data.Add(name, child);
         }
 
-        return new DataBlockEntity { Id = id, BlockPosition = position, Data = data };
+        return Create(id, position, data, pluginInstances: pluginInstances);
     }
 
     /// <summary>
-    /// Fills <paramref name="container"/> with the <c>Items</c> and <c>CustomName</c> saved in <paramref name="tag"/>,
-    /// like vanilla's <c>BaseContainerBlockEntity.loadAdditional</c>. Slots past the container's size are skipped.
+    /// A new block entity of <paramref name="type"/> at <paramref name="position"/>, loaded from
+    /// <paramref name="data"/> when given: the class of one of vanilla's types the server models (see
+    /// <see cref="VanillaBlockEntities"/>), or of a plugin's while its plugin is loaded; or else a
+    /// <see cref="DataBlockEntity"/> that keeps the data as it is.
     /// </summary>
-    public static void LoadContents(NbtCompound tag, BaseContainer container)
+    /// <param name="type">The block entity type's identifier.</param>
+    /// <param name="position">Where its block is.</param>
+    /// <param name="data">Its saved data, without the id and position; null for a new one.</param>
+    /// <param name="logger">
+    /// Where a plugin's block entity failing to be created or loaded is logged, if anywhere.
+    /// </param>
+    /// <param name="pluginInstances">
+    /// False to keep a plugin's type as a <see cref="DataBlockEntity"/> too, for chunks still generating: those are
+    /// outside the level's tick, which runs plugins' block entities, so they're created once the chunk is complete.
+    /// </param>
+    public static BlockEntity Create(
+        string type,
+        Vector position,
+        NbtCompound? data = null,
+        ILogger? logger = null,
+        bool pluginInstances = true)
     {
-        if (tag.TryGetTag<NbtList>("Items", out var items))
+        var blockEntity = VanillaBlockEntities.Create(type, position);
+        if (blockEntity is not null)
         {
-            foreach (var itemTag in items.OfType<NbtCompound>())
+            blockEntity.Id = type;
+            blockEntity.BlockPosition = position;
+
+            if (data is not null)
+                blockEntity.Load(data);
+
+            return blockEntity;
+        }
+
+        if (pluginInstances
+            && BlockEntityTypesRegistry.TryGet(type, out var pluginType)
+            && pluginType.Binding is BlockEntityBinding binding
+            && CreatePlugin(pluginType, binding, position, data, logger) is BlockEntity created)
+        {
+            return created;
+        }
+
+        var kept = new DataBlockEntity
+        {
+            Id = type,
+            BlockPosition = position
+        };
+
+        if (data is not null)
+            kept.Load(data);
+
+        return kept;
+    }
+
+    /// <summary>
+    /// Loads <paramref name="data"/> into a block entity that's already placed, like vanilla's
+    /// <c>loadWithComponents</c> when a structure places a block entity with data. A plugin's block entity loads
+    /// inside a call into its plugin, and saves what it loaded.
+    /// </summary>
+    public static void LoadInto(BlockEntity blockEntity, NbtCompound data)
+    {
+        if (blockEntity.Owner is not PluginContainer plugin)
+        {
+            blockEntity.Load(data);
+            return;
+        }
+
+        using var call = plugin.TryEnter();
+        if (call is null)
+            return;
+
+        blockEntity.Load(data);
+        blockEntity.SavedData = DataBlockEntity.Copy(data);
+        blockEntity.ClientData = CopyOrNull(blockEntity.GetUpdateData());
+        blockEntity.ShapeData = blockEntity.GetShapes();
+    }
+
+    /// <summary>
+    /// Gives a container block entity a loot table and the seed to roll it with, like vanilla's
+    /// <c>RandomizableContainer.setLootTable</c>: one the server models, or one kept as data (a hopper's, say).
+    /// </summary>
+    public static void SetLootTable(IBlockEntity blockEntity, string lootTable, long seed)
+    {
+        switch (blockEntity)
+        {
+            case ContainerBlockEntity container:
+                container.LootTable = lootTable;
+                container.LootTableSeed = seed;
+                break;
+            case DataBlockEntity data:
+                data.Set("LootTable", lootTable);
+
+                // Like vanilla, a zero seed isn't saved.
+                if (seed != 0L)
+                    data.Set("LootTableSeed", seed);
+                else
+                    data.Remove("LootTableSeed");
+
+                break;
+        }
+    }
+
+    // Creates a plugin's block entity inside a call into the plugin, or returns null when the plugin is unloading or
+    // its code fails.
+    private static BlockEntity? CreatePlugin(
+        BlockEntityType type,
+        BlockEntityBinding binding,
+        Vector position,
+        NbtCompound? data,
+        ILogger? logger)
+    {
+        var plugin = binding.Owner as PluginContainer;
+
+        using var call = plugin?.TryEnter();
+        if (plugin is not null && call is null)
+            return null;
+
+        try
+        {
+            var blockEntity = binding.Factory();
+            blockEntity.Id = type.Identifier;
+            blockEntity.BlockPosition = position;
+            blockEntity.Owner = binding.Owner;
+
+            if (data is not null)
             {
-                if (!itemTag.TryGetTag<NbtTag<byte>>("Slot", out var slot) || slot.Value >= container.Size)
-                    continue;
-
-                container.SetItem(slot.Value, itemTag.ItemFromNbt());
+                blockEntity.Load(data);
+                blockEntity.SavedData = DataBlockEntity.Copy(data);
             }
-        }
 
-        if (tag.TryGetTag("CustomName", out var customName) && customName.TextFromNbt() is ChatMessage name)
+            blockEntity.ClientData = CopyOrNull(blockEntity.GetUpdateData());
+            blockEntity.ShapeData = blockEntity.GetShapes();
+
+            return blockEntity;
+        }
+        catch (Exception ex)
         {
-            container.CustomName = name;
-            container.Title = name;
+            if (logger is not null)
+                Log.CreateFailed(logger, ex, type.Identifier, position);
+
+            return null;
         }
     }
 
-    private static CampfireBlockEntity LoadCampfire(NbtCompound tag, string id, Vector position)
-    {
-        var campfire = new CampfireBlockEntity { Id = id, BlockPosition = position };
-        if (tag.TryGetTag<NbtList>("Items", out var items))
-        {
-            foreach (var itemTag in items.OfType<NbtCompound>())
-            {
-                if (!itemTag.TryGetTag<NbtTag<byte>>("Slot", out var slot) || slot.Value >= CampfireBlockEntity.SlotCount)
-                    continue;
-
-                campfire.Items[slot.Value] = itemTag.ItemFromNbt();
-            }
-        }
-
-        if (tag.TryGetTag<NbtArray<int>>("CookingTimes", out var progress))
-            CopyCampfireInts(progress.GetArray(), campfire.CookingProgress);
-        if (tag.TryGetTag<NbtArray<int>>("CookingTotalTimes", out var total))
-            CopyCampfireInts(total.GetArray(), campfire.CookingTotal);
-
-        return campfire;
-    }
-
-    private static void CopyCampfireInts(int[] source, int[] destination)
-    {
-        for (var slot = 0; slot < Math.Min(source.Length, destination.Length); slot++)
-            destination[slot] = Math.Max(0, source[slot]);
-    }
-
-    private static void LoadFurnaceState(NbtCompound tag, SmeltingContainer furnace)
-    {
-        if (tag.TryGetTag<NbtTag<short>>("lit_time_remaining", out var litTime))
-            furnace.FuelBurnTime = Math.Max((short)0, litTime.Value);
-        if (tag.TryGetTag<NbtTag<short>>("lit_total_time", out var litTotal))
-            furnace.FuelBurnTotal = Math.Max((short)0, litTotal.Value);
-        if (tag.TryGetTag<NbtTag<short>>("cooking_time_spent", out var spent))
-            furnace.CookTime = Math.Max((short)0, spent.Value);
-        if (tag.TryGetTag<NbtTag<short>>("cooking_total_time", out var total))
-            furnace.CookTimeTotal = Math.Max((short)0, total.Value);
-    }
+    // Plugins' update data is copied as the server takes it, so that the plugin changing it later changes nothing sent.
+    private static NbtCompound? CopyOrNull(NbtCompound? data) => data is null ? null : DataBlockEntity.Copy(data);
 
     private static NbtCompound Header(string id, Vector position) => new()
     {
@@ -191,20 +231,11 @@ internal static class BlockEntityNbt
         new NbtTag<bool>("keepPacked", false)
     };
 
-    // The containers MainEventHandler opens for these blocks, with the same titles. Hoppers and the rest stay data block
-    // entities.
-    private static BaseContainer? CreateContainer(string id, Vector position) => id switch
+    private static partial class Log
     {
-        "minecraft:chest" or "minecraft:trapped_chest" => new Container { Id = "chest", Title = "Chest", BlockPosition = position },
-        "minecraft:barrel" => new Container { Id = "barrel", Title = "Barrel", BlockPosition = position },
-        "minecraft:shulker_box" => new Container { Id = "shulker_box", Title = "Shulker Box", BlockPosition = position },
-        "minecraft:dispenser" => new Container(9) { Id = "dispenser", Title = "Dispenser", BlockPosition = position },
-        "minecraft:dropper" => new Container(9) { Id = "dropper", Title = "Dropper", BlockPosition = position },
-        "minecraft:furnace" => new SmeltingContainer(InventoryType.Furnace, "furnace") { Title = "Furnace", BlockPosition = position },
-        "minecraft:blast_furnace" =>
-            new SmeltingContainer(InventoryType.BlastFurnace, "blast_furnace") { Title = "BlastFurnace", BlockPosition = position },
-        "minecraft:smoker" => new SmeltingContainer(InventoryType.Smoker, "smoker") { Title = "Smoker", BlockPosition = position },
-        "minecraft:brewing_stand" => new BrewingStand { BlockPosition = position },
-        _ => null
-    };
+        [LoggerMessage(
+            Level = LogLevel.Error,
+            Message = "Couldn't create block entity {Type} at {Position}; it's kept as saved")]
+        public static partial void CreateFailed(ILogger logger, Exception exception, string type, Vector position);
+    }
 }

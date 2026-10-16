@@ -1,3 +1,5 @@
+using Obsidian.API.Blocks;
+
 namespace Obsidian.WorldData.Fluids;
 
 /// <summary>

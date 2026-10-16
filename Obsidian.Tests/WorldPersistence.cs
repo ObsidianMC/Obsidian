@@ -1,4 +1,6 @@
+using System.Collections.Immutable;
 using Obsidian.API;
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
@@ -19,9 +21,9 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// What a complete chunk keeps across a restart: its entities, its opened containers, and the state of the structure
-/// starting in it. The fixture saves the chunk through a region, then reads it back with a fresh region and structure
-/// manager, like a server starting again.
+/// What a complete chunk keeps across a restart: its entities, its opened containers, its portal claims and the state
+/// of the structure starting in it. The fixture saves the chunk through a region, then reads it back with a fresh
+/// region and structure manager, like a server starting again.
 /// </summary>
 public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) : IClassFixture<WorldPersistence.RestartedChunk>
 {
@@ -47,41 +49,51 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
         var frame = Assert.IsType<ItemFrame>(Assert.Single(entities, entity => entity.Type == EntityType.ItemFrame));
         Assert.Equal(BlockFace.West, frame.Facing);
         Assert.Equal(3, frame.Rotation);
-        Assert.Equal(Material.Elytra, frame.Item!.Type);
+        Assert.Same(ItemsRegistry.Elytra, frame.Item!.Holder);
 
         var minecart = Assert.IsType<ChestMinecart>(Assert.Single(entities, entity => entity.Type == EntityType.ChestMinecart));
         Assert.Equal("minecraft:chests/abandoned_mineshaft", minecart.LootTable);
         Assert.Equal(-77L, minecart.LootTableSeed);
 
         var item = Assert.IsType<ItemEntity>(Assert.Single(entities, entity => entity.Type == EntityType.Item));
-        Assert.Equal(Material.Apple, item.Item.Type);
+        Assert.Same(ItemsRegistry.Apple, item.Item.Holder);
         Assert.Equal(7, item.Item.Count);
 
         // Generated before the chunk was saved, but not spawned yet.
         Assert.Single(entities, entity => entity.Type == EntityType.EndCrystal);
 
-        var chest = Assert.IsType<Container>(chunk.GetBlockEntity(RestartedChunk.Chest.X, RestartedChunk.Chest.Y, RestartedChunk.Chest.Z));
+        var chest = Assert.IsAssignableFrom<ContainerBlockEntity>(
+            chunk.GetBlockEntity(RestartedChunk.Chest.X, RestartedChunk.Chest.Y, RestartedChunk.Chest.Z)).Inventory;
         Assert.Equal("Loot", chest.CustomName!.Text);
         Assert.Equal("Loot", chest.Title.Text);
 
         var sword = chest[0]!;
-        Assert.Equal(Material.DiamondSword, sword.Type);
+        Assert.Same(ItemsRegistry.DiamondSword, sword.Holder);
         Assert.Equal(12, sword.Damage);
         Assert.Equal("Edge", sword.CustomName!.Text);
 
         var book = chest[4]!;
-        var enchantment = Assert.Single(book.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.StoredEnchantments)!.Value!);
+        var enchantment = Assert.Single(book.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+            DataComponentType.StoredEnchantments)!.Value!);
         Assert.Equal(new Enchantment { Id = EnchantmentsRegistry.Sharpness.Id, Level = 3 }, enchantment);
 
         Assert.Equal(Potion.Swiftness, chest[13]!.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents)!.Potion);
         Assert.Equal(23, chest[26]!.Count);
         Assert.Equal(4, chest.Count(slot => slot is not null));
 
-        // A container that wasn't opened stays waiting for its loot.
-        var unopened = Assert.IsType<DataBlockEntity>(chunk.GetBlockEntity(RestartedChunk.UnopenedChest.X, RestartedChunk.UnopenedChest.Y,
+        // A container that wasn't opened is a container too, still waiting for its loot.
+        var unopened = Assert.IsAssignableFrom<ContainerBlockEntity>(chunk.GetBlockEntity(
+            RestartedChunk.UnopenedChest.X,
+            RestartedChunk.UnopenedChest.Y,
             RestartedChunk.UnopenedChest.Z));
-        Assert.Equal("minecraft:chests/simple_dungeon", unopened.Data.GetString("LootTable"));
-        Assert.Equal(99L, unopened.Data.GetLong("LootTableSeed"));
+        Assert.Equal("minecraft:chests/simple_dungeon", unopened.LootTable);
+        Assert.Equal(99L, unopened.LootTableSeed);
+        Assert.False(unopened.Inventory.HasItems());
+
+        // So does the portal type that lit a portal block, whether or not that type is registered.
+        Assert.Equal(
+            new WorldData.Portals.PortalOwner("travelprobe:shared", "minecraft:nether_portal"),
+            chunk.PortalOwners[RestartedChunk.Chest + Vector.Up]);
     }
 
     [Fact]
@@ -196,21 +208,30 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
             chunk.SetChunkStatus(ChunkGenStage.full);
 
             // A chest a player opened (its loot generated) and filled.
-            chunk.SetBlock(Chest.X, Chest.Y, Chest.Z, BlocksRegistry.Get(Material.Chest));
-            var chest = new Container { Id = "chest", Title = "Loot", CustomName = "Loot", BlockPosition = Chest };
-            chest[0] = new ItemStack(ItemsRegistry.Get(Material.DiamondSword), 1, ComponentBuilder.Damage with { Value = 12 },
+            chunk.SetBlock(Chest.X, Chest.Y, Chest.Z, BlocksRegistry.Chest);
+            var chestEntity = (ContainerBlockEntity)BlockEntityNbt.Create("minecraft:chest", Chest);
+            var chest = chestEntity.Inventory;
+            chest.CustomName = "Loot";
+            chest[0] = new ItemStack(ItemsRegistry.DiamondSword, 1, ComponentBuilder.Damage with { Value = 12 },
                 ComponentBuilder.CustomName with { Value = "Edge" });
-            chest[4] = new ItemStack(ItemsRegistry.Get(Material.EnchantedBook), 1,
+            chest[4] = new ItemStack(ItemsRegistry.EnchantedBook, 1,
                 ComponentBuilder.StoredEnchantments with { Value = [new Enchantment { Id = EnchantmentsRegistry.Sharpness.Id, Level = 3 }] });
-            chest[13] = new ItemStack(ItemsRegistry.Get(Material.Potion), 1, new PotionContentsDataComponent { Potion = Potion.Swiftness });
-            chest[26] = new ItemStack(ItemsRegistry.Get(Material.Apple), 23);
-            chunk.SetBlockEntity(Chest.X, Chest.Y, Chest.Z, chest);
+            chest[13] = new ItemStack(
+                ItemsRegistry.Potion,
+                1,
+                new PotionContentsDataComponent { Potion = Potion.Swiftness });
+            chest[26] = new ItemStack(ItemsRegistry.Apple, 23);
+            chunk.SetBlockEntity(Chest.X, Chest.Y, Chest.Z, chestEntity);
 
-            chunk.SetBlock(UnopenedChest.X, UnopenedChest.Y, UnopenedChest.Z, BlocksRegistry.Get(Material.Chest));
-            var unopened = new DataBlockEntity { Id = "minecraft:chest", BlockPosition = UnopenedChest };
-            unopened.Set("LootTable", "minecraft:chests/simple_dungeon");
-            unopened.Set("LootTableSeed", 99L);
+            chunk.SetBlock(UnopenedChest.X, UnopenedChest.Y, UnopenedChest.Z, BlocksRegistry.Chest);
+            var unopened = (ContainerBlockEntity)BlockEntityNbt.Create("minecraft:chest", UnopenedChest);
+            unopened.LootTable = "minecraft:chests/simple_dungeon";
+            unopened.LootTableSeed = 99L;
             chunk.SetBlockEntity(UnopenedChest.X, UnopenedChest.Y, UnopenedChest.Z, unopened);
+
+            // A portal block a plugin's portal type lit, sharing vanilla's block.
+            chunk.PortalOwners[Chest + Vector.Up] = new WorldData.Portals.PortalOwner(
+                "travelprobe:shared", "minecraft:nether_portal");
 
             // Entities of the level standing in the chunk.
             var witch = new Living
@@ -233,7 +254,7 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
                 Position = new VectorF((ChunkX << 4) + 0.96875f, 72.5f, (ChunkZ << 4) + 8.5f),
                 Facing = BlockFace.West,
                 Rotation = 3,
-                Item = new ItemStack(ItemsRegistry.Get(Material.Elytra))
+                Item = new ItemStack(ItemsRegistry.Elytra)
             };
             var minecart = new ChestMinecart
             {
@@ -248,7 +269,7 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
                 Level = null!,
                 EntityId = 4,
                 Position = new VectorF((ChunkX << 4) + 12.25f, 65f, (ChunkZ << 4) + 15.75f),
-                Item = new ItemStack(ItemsRegistry.Get(Material.Apple), 7)
+                Item = new ItemStack(ItemsRegistry.Apple, 7)
             };
             foreach (var entity in new Entity[] { witch, frame, minecart, item })
                 region.Entities.TryAdd(entity.EntityId, entity);

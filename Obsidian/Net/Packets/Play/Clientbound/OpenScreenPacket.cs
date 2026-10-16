@@ -17,7 +17,10 @@ public partial class OpenScreenPacket
     {
         Title = inventory.Title;
 
-        if (Enum.TryParse<WindowType>(inventory.Type.ToString(), true, out var type))
+        // A plugin's menu type has an id after vanilla's, which WindowType doesn't name.
+        if (inventory is MenuContainer menu)
+            Type = (WindowType)menu.Menu.Id;
+        else if (Enum.TryParse<WindowType>(inventory.Type.ToString(), true, out var type))
             Type = type;
         else if (Enum.TryParse($"generic9x{inventory.Size / 9}", true, out type))
             Type = type;
@@ -35,7 +38,8 @@ public partial class OpenScreenPacket
     public override string ToString() => $"{this.ContainerId}:{this.Type}";
 }
 
-// The order of vanilla's menu registry (minecraft:menu), which gives the ids sent to clients.
+// The order of vanilla's menu registry (minecraft:menu), which gives the ids sent to clients; plugins' menu types
+// follow (see MenuTypesRegistry).
 public enum WindowType : int
 {
     Generic9x1,

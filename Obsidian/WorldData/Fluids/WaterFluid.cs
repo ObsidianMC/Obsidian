@@ -31,9 +31,9 @@ internal sealed class WaterFluid : FlowingFluid
     protected override bool CanConvertToSource(FluidLevel level) => level.Rules.WaterSourceConversion;
 
     /// <remarks>
-    /// Vanilla <c>WaterFluid.beforeDestroyingBlock</c> calls <c>Block.dropResources</c>, so water that flows into a block
-    /// drops its loot. Lava only fizzes (see <see cref="LavaFluid"/>).
+    /// Live levels queue the loot and replacement together in FlowingFluid.SpreadTo; generation spawns no items.
     /// </remarks>
-    protected override void BeforeDestroyingBlock(FluidLevel level, Vector position, IBlock block) =>
-        level.DropDestroyedBlock(position, block);
+    protected override void BeforeDestroyingBlock(FluidLevel level, Vector position, IBlock block)
+    {
+    }
 }

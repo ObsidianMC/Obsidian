@@ -41,6 +41,11 @@ public sealed class LootTable
     /// </summary>
     public ImmutableArray<LootFunction> Functions { get; init; } = [];
 
+    // Location predicates need asynchronous world reads before the synchronous evaluator runs. These are populated
+    // by the JSON reader and contain no plugin objects. References let the level prepare nested tables as well.
+    internal ImmutableArray<System.Text.Json.JsonElement> LocationChecks { get; init; } = [];
+    internal ImmutableArray<string> References { get; init; } = [];
+
     /// <summary>
     /// Creates the random source vanilla uses for a stored loot table seed: a non-zero seed seeds a fresh
     /// <see cref="LegacyRandomSource"/>; seed 0 means "unseeded" and takes the next values of the level's random

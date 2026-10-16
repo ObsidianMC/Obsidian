@@ -14,23 +14,49 @@ public partial class NetworkBuffer
     private sealed record ComponentEncoding(byte[] Original, byte[] Normalized);
     private int componentDepth;
 
+    /// <summary>
+    /// The components of a stack's patch that clients get: vanilla's, and plugins' whose type has a network codec,
+    /// while its plugin accepts calls. Types without one are the server's own, like vanilla's unsynced components.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla clients can't join while a plugin's type has a network codec (see SyncedRegistries), so they never get
+    /// a plugin's component.
+    /// </remarks>
+    internal static List<DataComponent> SentPatch(ItemStack stack) =>
+    [
+        .. stack.ProjectComponents(stack.Patch)
+            .Select(component => component is PluginDataComponent plugin ? plugin.ForNetwork() : component)
+            .OfType<DataComponent>()
+    ];
+
     public DataComponent ReadDataComponent(DataComponentType type)
     {
+        // A plugin's component, read with its type's network codec and kept in its saved form. Without the codec, its
+        // bytes can't be told apart from what follows them.
+        if (DataComponentTypesRegistry.TryGet(type, out var plugin))
+        {
+            using var call = DataComponentTypesRegistry.TryEnter(type, out var binding);
+            var read = binding?.ReadNetwork
+                ?? throw new InvalidDataException($"{plugin.Identifier} isn't read from the network.");
+
+            return new PluginDataComponent(type, plugin.Identifier, read(this));
+        }
+
         var start = this.offset;
         this.SkipComponent(type);
         var bytes = this.data.AsSpan(start, this.offset - start).ToArray();
         var component = ComponentBuilder.Create(type);
         if (component is null)
-            return new OpaqueDataComponent(type, bytes);
+            return new OpaqueDataComponent(type, [.. bytes]);
 
         try
         {
-            var reader = new NetworkBuffer(bytes) { componentDepth = this.componentDepth };
-            component.Read(reader);
+            var reader = new NetworkBuffer(bytes) { componentDepth = this.componentDepth, IdMaps = this.IdMaps };
+            component = component.Read(reader);
             if (reader.Offset != bytes.Length)
                 throw new InvalidDataException($"The {type} model consumed {reader.Offset} of {bytes.Length} bytes.");
 
-            var normalized = new NetworkBuffer();
+            var normalized = new NetworkBuffer { IdMaps = this.IdMaps };
             component.Write(normalized);
             ComponentEncodings.Add(component, new(bytes, normalized.data.AsSpan(0, normalized.Offset).ToArray()));
             return component;
@@ -40,7 +66,7 @@ public partial class NetworkBuffer
         {
             // E.g. valid custom NBT with empty compound keys cannot be expressed by the public NBT model.
             // Framing has already been checked. Retain the complete value instead of rejecting the enclosing packet.
-            return new OpaqueDataComponent(type, bytes);
+            return new OpaqueDataComponent(type, [.. bytes]);
         }
     }
 
@@ -48,7 +74,7 @@ public partial class NetworkBuffer
     {
         if (ComponentEncodings.TryGetValue(component, out var encoding))
         {
-            var current = new NetworkBuffer();
+            var current = new NetworkBuffer { IdMaps = this.IdMaps };
             component.Write(current);
             this.Write(current.data.AsSpan(0, current.Offset).SequenceEqual(encoding.Normalized)
                 ? encoding.Original : current.data.AsSpan(0, current.Offset));
@@ -285,7 +311,7 @@ public partial class NetworkBuffer
                         });
                     }));
                     this.SkipOptional(this.SkipNbt);
-                    this.SkipList(() => this.SkipComponent((DataComponentType)this.ReadVarInt()));
+                    this.SkipList(() => this.SkipComponent(this.ReadComponentType()));
                     this.SkipList(() =>
                     {
                         this.SkipBytes(1);
@@ -551,6 +577,10 @@ public partial class NetworkBuffer
                     this.SkipOptional(this.SkipNbt);
                 });
                 break;
+            case var _ when DataComponentTypesRegistry.TryGet(type, out _):
+                // A plugin's component in a nested stack: its codec is the only way past it.
+                this.ReadDataComponent(type);
+                break;
             default:
                 throw new InvalidDataException($"Unknown 1.21.11 component ID {(int)type}.");
         }
@@ -574,7 +604,7 @@ public partial class NetworkBuffer
         var added = this.ReadComponentCount();
         var removed = this.ReadComponentCount();
         for (var i = 0; i < added; i++)
-            this.SkipComponent((DataComponentType)this.ReadVarInt());
+            this.SkipComponent(this.ReadComponentType());
 
         for (var i = 0; i < removed; i++)
             this.ReadVarInt();

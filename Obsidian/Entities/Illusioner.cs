@@ -18,7 +18,8 @@ public sealed partial class Illusioner : Skeleton
     protected override bool BurnsInSun => false;
     protected override string? SoundName => "illusioner";
     internal override int AttackInterval => 20;
-    protected override void FinalizeSpawn() => SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(Material.Bow));
+    protected override void FinalizeSpawn() =>
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.Bow));
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(0, new FloatGoal(this));

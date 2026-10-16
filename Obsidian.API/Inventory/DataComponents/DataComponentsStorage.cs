@@ -1,4 +1,7 @@
+using System.Threading;
+
 namespace Obsidian.API.Inventory.DataComponents;
+
 public abstract class DataComponentsStorage
 {
     protected Dictionary<DataComponentType, DataComponent> InternalStorage { get; } = [];
@@ -7,14 +10,24 @@ public abstract class DataComponentsStorage
 
     /// <summary>
     /// Components that only stand in for the item's own defaults (see <see cref="ComponentBuilder.DefaultItemComponents"/>),
-    /// as they were when added. A placeholder isn't part of <see cref="Patch"/> until its value changes; setting or
-    /// removing a component of the type drops it.
+    /// as they were when added. Immutable placeholders aren't part of <see cref="Patch"/>; setting or removing a
+    /// component of the type drops its placeholder.
     /// </summary>
     protected Dictionary<DataComponentType, DataComponent> Placeholders { get; } = [];
 
     public List<DataComponentType> RemoveComponents { get; } = [];
 
     public int TotalComponents => this.InternalStorage.Count;
+
+    private long version;
+
+    /// <summary>
+    /// The <see cref="ChangeStamp"/> of the storage's last change: a component set, added or removed through its
+    /// methods, or, for a stack, its count. Component values are immutable: use a <c>with</c> expression and assign
+    /// the replacement through the indexer to record a change. Editing <see cref="RemoveComponents"/> directly
+    /// doesn't count.
+    /// </summary>
+    internal long Version => Volatile.Read(ref this.version);
 
     /// <summary>
     /// The components that were set on this storage, as opposed to placeholders for the item's defaults. Like vanilla's
@@ -41,6 +54,7 @@ public abstract class DataComponentsStorage
             this.InternalStorage[type] = value;
             this.RemoveComponents.Remove(type);
             this.Placeholders.Remove(type);
+            this.MarkChanged();
         }
     }
 
@@ -50,6 +64,8 @@ public abstract class DataComponentsStorage
             return false;
 
         this.RemoveComponents.Remove(component.Type);
+        this.MarkChanged();
+
         return true;
     }
 
@@ -73,16 +89,26 @@ public abstract class DataComponentsStorage
     {
         this.Placeholders.Remove(type);
         this.patchOrder.Remove(type);
-        if (!this.RemoveComponents.Contains(type))
+
+        // Like vanilla's patch, only a default can be removed; a plugin's type is never an item's default.
+        if (Registries.DataComponentTypesRegistry.IsVanilla(type) && !this.RemoveComponents.Contains(type))
             this.RemoveComponents.Add(type);
+
+        this.MarkChanged();
 
         return this.InternalStorage.Remove(type);
     }
 
+    /// <summary>
+    /// Records a change to the storage (see <see cref="Version"/>).
+    /// </summary>
+    private protected void MarkChanged() => Volatile.Write(ref this.version, ChangeStamp.Next());
+
     public TComponent? GetComponent<TComponent>(DataComponentType type) where TComponent : DataComponent =>
         this.InternalStorage.GetValueOrDefault(type) as TComponent;
 
-    public bool TryGetComponent<TComponent>(DataComponentType componentType, out DataComponent component) where TComponent : DataComponent =>
+    public bool TryGetComponent<TComponent>(
+        DataComponentType componentType, out DataComponent component) where TComponent : DataComponent =>
         this.InternalStorage.TryGetValue(componentType, out component);
 
     public bool TryGetComponent(DataComponentType componentType, out DataComponent component) =>

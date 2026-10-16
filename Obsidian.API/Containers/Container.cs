@@ -2,7 +2,7 @@
 
 namespace Obsidian.API;
 
-public sealed class Container : BaseContainer, IBlockEntity
+public sealed class Container : BaseContainer
 {
     private const int PlayerHotbarStart = 36;
     private const int PlayerHotbarEnd = PlayerHotbarStart + 8;
@@ -57,35 +57,24 @@ public sealed class Container : BaseContainer, IBlockEntity
         {
             var invItem = this.items[i];
 
-            if (invItem?.Type == item.Type)
+            if (invItem is not null && invItem.Holder == item.Holder)
             {
                 if (invItem.Count >= 64)
                     continue;
 
                 invItem.Count += item.Count;
+                this.MarkChanged();
 
                 return i;
             }
 
             if (invItem == null)
             {
-                this.items[i] = item;
+                this.SetItem(i, item);
 
                 return i;
             }
         }
         return null;
     }
-    public void ToNbt() => throw new NotImplementedException();
-    public void FromNbt() => throw new NotImplementedException();
-    public IBlockEntity Clone() => new Container(Type)
-    {
-        Id = this.Id,
-        Title = this.Title,
-        CustomName = this.CustomName,
-        BlockPosition = this.BlockPosition,
-        Owner = this.Owner,
-        items = this.items,
-        IsPlayerInventory = this.IsPlayerInventory,
-    };
 }

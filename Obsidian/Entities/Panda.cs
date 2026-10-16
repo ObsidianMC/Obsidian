@@ -19,7 +19,7 @@ public sealed partial class Panda : FarmAnimal
     public byte ExpressedGene => MainGene is 4 or 5 && MainGene != HiddenGene ? (byte)0 : MainGene;
     protected override string? SoundName => "panda";
     internal override bool PanicsWhenHurt => IsBaby;
-    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.Bamboo };
+    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.Bamboo };
     internal override bool CanBreed => base.CanBreed && HasBreedingBamboo();
     private bool HasBreedingBamboo()
     {
@@ -28,7 +28,8 @@ public sealed partial class Panda : FarmAnimal
         for (var x = -5; x <= 5; x++)
         for (var y = -2; y <= 2; y++)
         for (var z = -5; z <= 5; z++)
-            if (Terrain.GetBlock(new Vector(origin.X + x, origin.Y + y, origin.Z + z))?.Material == Material.Bamboo && ++count >= 8)
+            if (Terrain.GetBlock(new Vector(origin.X + x, origin.Y + y, origin.Z + z))?.RegistryId == BlockIds.Bamboo
+                && ++count >= 8)
                 return true;
         return false;
     }
@@ -68,21 +69,29 @@ public sealed partial class Panda : FarmAnimal
         child.SynchronizeMetadata();
         return child;
     }
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4)) return;
+        if (!Alive
+            || player.Health <= 0
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (item is not { Count: > 0, Type: Material.Bamboo or Material.Cake }) return;
-        if (item.Type == Material.Bamboo && (IsBaby || Age == 0 && HasBreedingBamboo()))
-            await base.FeedAsync(player, hand);
+        if (item is not { Count: > 0, Holder.Id: ItemIds.Bamboo or ItemIds.Cake })
+            return false;
+        var used = true;
+        if (item.Is(ItemsRegistry.Bamboo) && (IsBaby || Age == 0 && HasBreedingBamboo()))
+            used = await base.FeedAsync(player, hand);
         else
         {
-            if (item.Type == Material.Bamboo && Age == 0) UnhappyTicks = 32;
+            if (item.Is(ItemsRegistry.Bamboo) && Age == 0) UnhappyTicks = 32;
             EatingTicks = 80;
             SetEquipment(EquipmentSlot.MainHand, new ItemStack(item, 1));
             await ConsumeInteractionItemAsync(player, hand);
         }
         SynchronizeMetadata();
+        return used;
     }
     protected internal override async ValueTask PerformMeleeAttackAsync(IEntity target)
     {
@@ -107,7 +116,7 @@ public sealed partial class Panda : FarmAnimal
         else if (!IsBaby && AttackTarget == null && Random.Next(600) == 0)
         {
             var item = GetEntitiesNear(2).OfType<ItemEntity>().FirstOrDefault(entity => entity.CanPickup &&
-                entity.Item.Type is Material.Bamboo or Material.Cake);
+                entity.Item.Holder.Id is ItemIds.Bamboo or ItemIds.Cake);
             if (item != null)
             {
                 EatingTicks = 80;
@@ -122,7 +131,7 @@ public sealed partial class Panda : FarmAnimal
             {
                 SneezeTicks = 0;
                 PlayMobSound("sneeze");
-                if (Random.Next(700) == 0) DropItem(Material.SlimeBall);
+                if (Random.Next(700) == 0) DropItem(ItemsRegistry.SlimeBall);
                 foreach (var panda in GetEntitiesNear(10).OfType<Panda>().Where(panda => !panda.IsBaby)) panda.JumpControl.Jump();
                 SynchronizeMetadata();
             }

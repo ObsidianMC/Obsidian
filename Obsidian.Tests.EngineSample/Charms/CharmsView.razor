@@ -1,0 +1,24 @@
+@*
+    Phase 5's screen, the client's side of CharmMenu: the player's two charm slots, in the middle above their
+    inventory. Drawn with vanilla's GUI textures, so the sample ships none.
+*@
+
+@* The slots' frames, then the charm slots. The player's inventory is placed by default. *@
+<Image X="70" Y="34" Width="36" Height="18" Source="Frames" />
+<Image X="7" Y="83" Width="162" Height="54" Source="Frames" />
+<Image X="7" Y="141" Width="162" Height="18" Source="Frames" />
+<SlotGrid X="71" Y="35" Columns="CharmSlots.SlotCount" />
+
+@code {
+    // Vanilla's chest texture, whose rows of slot frames, 18 pixels apart, frame the slots.
+    private static readonly GuiImage Frames = GuiImage.Texture("minecraft:gui/container/generic_54", 7, 17);
+
+    /// <summary>
+    /// The screen, with the menu: the client's cascading value.
+    /// </summary>
+    [CascadingParameter]
+    public ScreenContext Screen { get; set; } = null!;
+
+    protected override void OnInitialized() =>
+        this.Screen.Background = GuiImage.Sprite("minecraft:recipe_book/overlay_recipe");
+}

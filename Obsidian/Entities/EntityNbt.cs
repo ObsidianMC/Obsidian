@@ -16,10 +16,11 @@ internal static class EntityNbt
     /// </summary>
     public static NbtCompound? Save(Entity entity)
     {
-        if (!IsSaved(entity.Type) || entity is Mob { HasAi: true } mob && (!mob.Alive && mob is not EnderDragon || mob.IsRemoved))
+        if (entity.Type is EntityType type && !IsSaved(type)
+            || entity is Mob { HasAi: true } mob && (!mob.Alive && mob is not EnderDragon || mob.IsRemoved))
             return null;
 
-        var tag = new NbtCompound { new NbtTag<string>("id", TypeId(entity.Type)) };
+        var tag = new NbtCompound { new NbtTag<string>("id", TypeId(entity)) };
         foreach (var (name, child) in entity.UnmodeledData)
         {
             if (name != "id")
@@ -36,7 +37,14 @@ internal static class EntityNbt
     /// </summary>
     public static Entity? Load(NbtCompound tag, ILevel level)
     {
-        if (!tag.TryGetTag<NbtTag<string>>("id", out var id) || !TryParseType(id.Value, out var type) || !IsSaved(type))
+        if (!tag.TryGetTag<NbtTag<string>>("id", out var id))
+            return null;
+
+        // A plugin's entity, while its plugin is loaded; one whose plugin is gone stays as it was saved.
+        if (EntityDefinitionsRegistry.TryGet(id.Value!, out var definition))
+            return definition.Binding is null ? null : Restore(PluginEntity.Create(definition, level), tag);
+
+        if (!TryParseType(id.Value, out var type) || !IsSaved(type))
             return null;
 
         Entity entity = type switch
@@ -49,6 +57,12 @@ internal static class EntityNbt
         };
 
         entity.Type = type;
+        return Restore(entity, tag);
+    }
+
+    // Gives a created entity an id and its saved fields.
+    private static Entity? Restore(Entity entity, NbtCompound tag)
+    {
         entity.EntityId = Server.GetNextEntityId();
 
         var unmodeled = new NbtCompound();
@@ -124,12 +138,31 @@ internal static class EntityNbt
     public static string TypeId(EntityType type) => $"minecraft:{type.ToString().ToSnakeCase()}";
 
     /// <summary>
-    /// The entity type of a vanilla id; the inverse of <see cref="TypeId"/>.
+    /// The id an entity is saved with: its vanilla type's, or its plugin type's identifier.
+    /// </summary>
+    public static string TypeId(Entity entity) => entity.Definition?.Identifier
+        ?? TypeId(entity.Type ?? throw new InvalidOperationException($"Entity {entity.EntityId} has no type."));
+
+    /// <summary>
+    /// Whether a saved id is of an entity type the server knows: a vanilla type or a plugin's registered now.
+    /// </summary>
+    public static bool IsKnownType(string? id) =>
+        id is not null && (EntityDefinitionsRegistry.TryGet(id, out _) || TryParseType(id, out _));
+
+    /// <summary>
+    /// The entity type of a vanilla id, in vanilla's namespace or without one; the inverse of <see cref="TypeId"/>.
     /// </summary>
     public static bool TryParseType(string? id, out EntityType type)
     {
         type = default;
-        return id is not null && Enum.TryParse(id[(id.IndexOf(':') + 1)..].Replace("_", string.Empty), ignoreCase: true, out type);
+        if (id is null)
+            return false;
+
+        var colon = id.IndexOf(':');
+        if (colon >= 0 && id[..colon] != "minecraft")
+            return false;
+
+        return Enum.TryParse(id[(colon + 1)..].Replace("_", string.Empty), ignoreCase: true, out type);
     }
 
     /// <summary>

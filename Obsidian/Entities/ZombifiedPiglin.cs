@@ -28,7 +28,7 @@ public sealed partial class ZombifiedPiglin : Zombie
     {
         CanPickUpLoot = Random.NextSingle() < 0.55f * SpecialDifficulty;
         IsBaby |= Random.NextSingle() < 0.05f;
-        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(Material.GoldenSword));
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.GoldenSword));
     }
 
     private void BecomeAngry(IEntity source)
@@ -56,7 +56,7 @@ public sealed partial class ZombifiedPiglin : Zombie
             AttackTarget = null;
             SetAggressive(false);
             return default;
-        }
+    }
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return default;
         if (AiTick >= angrySoundTick)
         {
@@ -75,11 +75,14 @@ public sealed partial class ZombifiedPiglin : Zombie
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.RottenFlesh, Random.Next(2));
-        DropItem(Material.GoldNugget, Random.Next(2));
-        if (source is IPlayer && Random.NextSingle() < 0.025f) DropItem(Material.GoldIngot);
-        foreach (var slot in Enum.GetValues<EquipmentSlot>())
-            if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot)) DropItem(GetEquipment(slot));
+        this.DropVanillaLoot(source);
+        foreach (var slot in Enum.GetValues<Obsidian.API.Inventory.EquipmentSlot>())
+        {
+            var item = this.GetEquipment(slot);
+            if (!item.IsAir && this.Random.NextSingle() < this.GetEquipmentDropChance(slot))
+                this.DropItem(item);
+        }
+
         return default;
     }
 }

@@ -4,19 +4,45 @@ using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Fluids;
+using Obsidian.WorldData.Lighting;
 using Obsidian.WorldData.Generators.Mojang.Features;
+using Obsidian.WorldData.Ticks;
 using System.Threading;
 
 namespace Obsidian.WorldData;
 
 public sealed class Chunk : IChunk
 {
+    private volatile RuntimeLightEngine? runtimeLight;
+
+    internal RuntimeLightEngine? RuntimeLight => this.runtimeLight;
+
+    // The region completes generation and attaches lighting under the tick lock after validating slot identity.
+    internal Action<Chunk>? CompleteGeneration { get; set; }
+
+    /// <summary>Attaches live section writes together with the chunk's runtime light hook.</summary>
+    internal void AttachRuntimeLight(RuntimeLightEngine? light)
+    {
+        this.runtimeLight = light;
+        foreach (var section in this.sections.OfType<ChunkSection>())
+            section.LiveChunk = light is null ? null : this;
+    }
+
     public int X { get; }
     public int Z { get; }
     public long InhabitedTime { get; internal set; }
     internal bool MusicRegistered { get; set; }
+
+    /// <summary>
+    /// The block entity type registry's revision the level last made the chunk's kept plugin block entities its
+    /// plugins' at (see AbstractLevel.RestoreKeptBlockEntities); -1 until it first did.
+    /// </summary>
+    internal int RestoredBlockEntityRevision { get; set; } = -1;
     internal ConcurrentDictionary<Vector, int> MobEggTicks { get; } = new();
     internal ConcurrentDictionary<Vector, int> FrogspawnTicks { get; } = new();
+
+    /// <summary>The portal types that lit or built the chunk's portal blocks (see Portals.PortalOwnership).</summary>
+    internal ConcurrentDictionary<Vector, Portals.PortalOwner> PortalOwners { get; } = new();
 
     public bool IsGenerated => ChunkStatus == ChunkGenStage.full;
 
@@ -75,8 +101,8 @@ public sealed class Chunk : IChunk
     internal NbtCompound? StructureReferences { get; set; }
 
     /// <summary>
-    /// Top-level tags of the saved chunk that Obsidian doesn't model, like vanilla's <c>block_ticks</c>. They're saved
-    /// back as loaded, so saving a vanilla world doesn't drop them.
+    /// Top-level tags of the saved chunk that Obsidian doesn't model, like vanilla's <c>blending_data</c>. They're
+    /// saved back as loaded, so saving a vanilla world doesn't drop them.
     /// </summary>
     internal List<INbtTag> UnmodeledTags { get; } = [];
 
@@ -89,7 +115,13 @@ public sealed class Chunk : IChunk
     /// <summary>
     /// The chunk's scheduled fluid ticks, like vanilla's <c>fluid_ticks</c>.
     /// </summary>
-    internal ChunkFluidTicks FluidTicks { get; } = new();
+    internal ChunkTicks<FluidKind> FluidTicks { get; } = new();
+
+    /// <summary>
+    /// The chunk's scheduled block ticks, like vanilla's <c>block_ticks</c>, by block identifier. Ticks of a plugin's
+    /// block are kept while the plugin is unloaded, and run once it's back.
+    /// </summary>
+    internal ChunkTicks<string> BlockTicks { get; } = new();
 
     /// <summary>
     /// The final heightmaps world generation keeps in step with its block changes, from the chunk's first decoration until
@@ -181,7 +213,30 @@ public sealed class Chunk : IChunk
     public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData) =>
         this.BlockEntities[this.BlockEntityKey(x, y, z)] = tileEntityData;
 
+    /// <summary>
+    /// Stores <paramref name="blockEntity"/> at the position unless a block entity is there already, in one step, so
+    /// that callers racing to create one all get the same.
+    /// </summary>
+    /// <returns>
+    /// The block entity stored at the position: the existing one, or else <paramref name="blockEntity"/>.
+    /// </returns>
+    internal IBlockEntity GetOrAddBlockEntity(int x, int y, int z, IBlockEntity blockEntity) =>
+        this.BlockEntities.GetOrAdd(this.BlockEntityKey(x, y, z), blockEntity);
+
     public void RemoveBlockEntity(int x, int y, int z) => this.BlockEntities.TryRemove(this.BlockEntityKey(x, y, z), out _);
+
+    /// <summary>
+    /// Stores <paramref name="replacement"/> in place of <paramref name="current"/>, at its position, unless another
+    /// block entity took its place meanwhile.
+    /// </summary>
+    /// <returns>Whether <paramref name="current"/> was replaced.</returns>
+    internal bool ReplaceBlockEntity(IBlockEntity current, IBlockEntity replacement)
+    {
+        var position = current.BlockPosition;
+        var key = this.BlockEntityKey(position.X, position.Y, position.Z);
+
+        return this.BlockEntities.TryUpdate(key, replacement, current);
+    }
 
     public IReadOnlyCollection<IBlockEntity> GetBlockEntities() => [.. this.BlockEntities.Values];
 
@@ -190,6 +245,30 @@ public sealed class Chunk : IChunk
 
     public void SetBlock(int x, int y, int z, IBlock block)
     {
+        if (this.RuntimeLight is RuntimeLightEngine light)
+        {
+            lock (light.TickLock)
+            {
+                var position = new Vector((this.X << 4) + (x & 15), y, (this.Z << 4) + (z & 15));
+                // A caller may have captured the hook just before unload detached it.
+                if (ReferenceEquals(this.RuntimeLight, light))
+                    light.BlockChanging(this, position, block);
+
+                this.SetBlockCore(x, y, z, block);
+            }
+
+            return;
+        }
+
+        this.SetBlockCore(x, y, z, block);
+    }
+
+    private void SetBlockCore(int x, int y, int z, IBlock block)
+    {
+        // The claim belongs to this block, so even two replacements between portal ticks release it.
+        Portals.PortalOwnership.Release(
+            this, new Vector((this.X << 4) + (x & 15), y, (this.Z << 4) + (z & 15)), block);
+
         // Generation writes through its regions' sections; any other write (a live edit of an unfinished chunk) leaves the
         // heights generation keeps stale, so they're computed again.
         this.FinalHeightmaps = null;
@@ -200,7 +279,7 @@ public sealed class Chunk : IChunk
         y = (y & 15);
         z = (z & 15);
 
-        this.sections[i].SetBlock(x, y, z, block);
+        ((ChunkSection)this.sections[i]).SetBlockUntracked(x, y, z, block);
     }
 
     public BlockMeta GetBlockMeta(int x, int y, int z)
@@ -251,7 +330,7 @@ public sealed class Chunk : IChunk
                 for (int y = this.MinY + this.Height - 1; y >= this.MinY; y--)
                 {
                     var block = GetBlock(x, y, z);
-                    if (block.Material == Material.Air)
+                    if (block.Is(BlockIds.Air))
                         continue;
 
                     target.Set(x, z, value: y);
@@ -358,6 +437,20 @@ public sealed class Chunk : IChunk
 
     public void SetChunkStatus(ChunkGenStage status)
     {
+        if (status == ChunkGenStage.full && this.CompleteGeneration is Action<Chunk> complete)
+        {
+            complete(this);
+            return;
+        }
+
+        this.SetChunkStatusCore(status);
+    }
+
+    /// <summary>
+    /// Updates generation storage; the region calls this under its tick lock for a live full transition.
+    /// </summary>
+    internal void SetChunkStatusCore(ChunkGenStage status)
+    {
         this.ChunkStatus = status;
 
         if (this.ChunkStatus == ChunkGenStage.full)
@@ -368,6 +461,23 @@ public sealed class Chunk : IChunk
             this.Heightmaps.Remove(HeightmapType.OceanFloorWG); // no-op if absent
             this.Heightmaps.Remove(HeightmapType.MotionBlockingNoLeaves);
         }
+    }
+
+    /// <summary>
+    /// Takes a chunk that isn't carved yet back to before its biomes, dropping its blocks, biomes, heightmaps and
+    /// post-processing marks, so its steps replay from scratch. Until a chunk is carved, only its own steps have
+    /// written into it; what it was loaded with, like its structure starts, stays.
+    /// </summary>
+    internal void RewindTerrain()
+    {
+        for (var i = 0; i < this.sections.Length; i++)
+            this.sections[i] = new ChunkSection(yBase: i + (this.MinY >> 4));
+
+        foreach (var type in this.Heightmaps.Keys.ToList())
+            this.Heightmaps[type] = new Heightmap(type, this);
+
+        this.PostProcessing.Clear();
+        this.ChunkStatus = ChunkGenStage.structure_references;
     }
 
     private int SectionIndex(int y) => (y - this.MinY) >> 4;

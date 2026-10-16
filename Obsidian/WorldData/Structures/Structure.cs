@@ -1,6 +1,7 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Structures.Pools;
 
 namespace Obsidian.WorldData.Structures;
 
@@ -180,6 +181,12 @@ internal sealed class StructureGenerationContext
     public required int MinY { get; init; }
 
     public required int Height { get; init; }
+
+    /// <summary>
+    /// Looks a template pool up by identifier, or gives <c>null</c>: vanilla's, or plugins' and data packs' (see
+    /// <see cref="Registries.PluginStructures"/>).
+    /// </summary>
+    public Func<string, StructureTemplatePool?> Pools { get; init; } = StructureTemplatePool.Get;
 
     /// <summary>
     /// Vanilla's <c>WorldGenerationContext</c> for height providers: the build range limited to the generator's noise range

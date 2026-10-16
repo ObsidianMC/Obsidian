@@ -106,7 +106,7 @@ public sealed partial class Shulker : PathfinderMob
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (Random.Next(2) == 0) DropItem(Material.ShulkerShell);
+        if (Random.Next(2) == 0) DropItem(ItemsRegistry.ShulkerShell);
         return default;
     }
     public override void Write(INetStreamWriter writer)

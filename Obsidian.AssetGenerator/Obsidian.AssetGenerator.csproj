@@ -9,34 +9,56 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<!-- The generated assets, which Obsidian.API and Obsidian read. Their Minecraft version is set in Obsidian.csproj. -->
+		<!-- The generated assets Obsidian.API and Obsidian read. Obsidian.csproj sets their Minecraft version. -->
 		<VanillaAssetsDirectory>$(MSBuildThisFileDirectory)..\Obsidian\Assets\</VanillaAssetsDirectory>
 		<!-- The downloaded server jars and data generator output, per version. -->
-		<VanillaWorkDirectory>$(MSBuildThisFileDirectory)$(BaseIntermediateOutputPath)vanilla\</VanillaWorkDirectory>
+		<VanillaWorkDirectory>$([MSBuild]::NormalizeDirectory(
+			'$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)', 'vanilla'))</VanillaWorkDirectory>
 	</PropertyGroup>
 
 	<ItemGroup>
+		<!-- Capture source inputs before the build adds generated assembly attributes under obj. -->
+		<VanillaGeneratorInput Include="@(Compile)" />
 		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json;Java\**\*.template" />
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
 		<UpToDateCheckOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />
 	</ItemGroup>
 
 	<Target Name="ReadMinecraftVersion">
-		<XmlPeek XmlInputPath="$(MSBuildThisFileDirectory)..\Obsidian\Obsidian.csproj" Query="/Project/PropertyGroup/MinecraftVersion/text()">
+		<XmlPeek XmlInputPath="$(MSBuildThisFileDirectory)..\Obsidian\Obsidian.csproj"
+		         Query="/Project/PropertyGroup/MinecraftVersion/text()">
 			<Output TaskParameter="Result" PropertyName="MinecraftVersion" />
 		</XmlPeek>
 		<Error Condition="'$(MinecraftVersion)' == ''" Text="Obsidian.csproj doesn't set MinecraftVersion." />
 		<PropertyGroup>
 			<VanillaAssetsStamp>$(VanillaAssetsDirectory).generated-$(MinecraftVersion)</VanillaAssetsStamp>
 		</PropertyGroup>
+		<ItemGroup>
+			<VanillaAssetsOutput Include="$(VanillaAssetsStamp)" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)item-components-$(MinecraftVersion).json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)client-entity-metadata-$(MinecraftVersion).json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)client-screens-$(MinecraftVersion).json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_sounds.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_loot_tables.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\blocks.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\entities.json" />
+		</ItemGroup>
 	</Target>
 
 	<!-- Runs after every build of the generator, which Obsidian.API and Obsidian reference so that it runs before they
-	     compile. Skipped while the assets of the version are newer than the generator. -->
+	     compile. Source inputs keep current assets reusable across configurations and fresh output directories. -->
 	<Target Name="GenerateVanillaAssets" AfterTargets="Build" DependsOnTargets="ReadMinecraftVersion"
-	        Inputs="$(MSBuildProjectFullPath);$(TargetPath);@(VanillaDumperInput->'$(OutDir)%(Identity)')" Outputs="$(VanillaAssetsStamp);$(VanillaAssetsDirectory)item-components-$(MinecraftVersion).json;$(VanillaAssetsDirectory)client-entity-metadata-$(MinecraftVersion).json;$(VanillaAssetsDirectory)client-screens-$(MinecraftVersion).json;$(VanillaAssetsDirectory)block-loot-fixtures-$(MinecraftVersion).json;$(VanillaAssetsDirectory)collision_shapes.json">
-		<!-- Java logs warnings (e.g. deprecated Unsafe use by vanilla's libraries) to stderr; failures still fail by exit code. -->
-		<Exec IgnoreStandardErrorWarningFormat="true" Command="dotnet &quot;$(TargetPath)&quot; $(MinecraftVersion) &quot;$(VanillaWorkDirectory).&quot; &quot;$(VanillaAssetsDirectory).&quot;" />
+	        Inputs="$(MSBuildProjectFullPath);@(VanillaGeneratorInput);@(VanillaDumperInput)"
+	        Outputs="@(VanillaAssetsOutput)">
+		<PropertyGroup>
+			<VanillaAssetsCommand>dotnet &quot;$(TargetPath)&quot; $(MinecraftVersion)</VanillaAssetsCommand>
+			<VanillaAssetsCommand>$(VanillaAssetsCommand) &quot;$(VanillaWorkDirectory).&quot;</VanillaAssetsCommand>
+			<VanillaAssetsCommand>$(VanillaAssetsCommand) &quot;$(VanillaAssetsDirectory).&quot;</VanillaAssetsCommand>
+		</PropertyGroup>
+
+		<!-- Java logs warnings to stderr (e.g. deprecated Unsafe use); failures still fail by exit code. -->
+		<Exec IgnoreStandardErrorWarningFormat="true" Command="$(VanillaAssetsCommand)" />
 		<Touch Files="$(VanillaAssetsStamp)" AlwaysCreate="true" />
 	</Target>
 </Project>

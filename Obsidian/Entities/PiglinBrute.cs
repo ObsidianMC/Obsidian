@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -21,7 +22,7 @@ public sealed partial class PiglinBrute : PathfinderMob
     protected override void FinalizeSpawn()
     {
         PersistenceRequired = true;
-        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(Material.GoldenAxe));
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.GoldenAxe));
     }
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
@@ -38,7 +39,7 @@ public sealed partial class PiglinBrute : PathfinderMob
     protected override async ValueTask TickMobAsync()
     {
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
-        var safe = CodecRegistry.TryGetDimension(Level.DimensionName, out var dimension) ? dimension.Element.PiglinSafe : Level.DimensionName == "minecraft:the_nether";
+        var safe = Level.PiglinsSafe((Vector)Position.Floor());
         if (safe || IsImmuneToZombification) { TimeInOverworld = 0; return; }
         if (++TimeInOverworld > 300)
         {

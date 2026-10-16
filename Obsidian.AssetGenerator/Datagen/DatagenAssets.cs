@@ -14,11 +14,11 @@ internal static class DatagenAssets
 {
     // The registries of reports/registries.json written to enums.json, which become enums in Obsidian.API.
     private static readonly string[] enumRegistries =
-        ["minecraft:block_entity_type", "minecraft:data_component_type", "minecraft:map_decoration_type", "minecraft:mob_effect", "minecraft:potion"];
+        ["minecraft:data_component_type", "minecraft:map_decoration_type", "minecraft:mob_effect", "minecraft:potion"];
 
-    // The loot table categories the server reads (see LootRegistryGenerator): containers are filled from the first five,
-    // and the block tables decide what breaking a block drops.
-    private static readonly string[] lootTableCategories = ["archaeology", "blocks", "chests", "dispensers", "pots", "spawners"];
+    // Container, block and supported entity tables evaluated by the server (see LootRegistryGenerator).
+    private static readonly string[] lootTableCategories =
+        ["archaeology", "blocks", "chests", "dispensers", "pots", "spawners", "entities"];
 
     /// <param name="generatedDirectory">The data generators' output (<c>data</c> and <c>reports</c>).</param>
     /// <param name="worldgenGroupsPath">The Java dumper's vanilla classes declaring each feature (see <see cref="WorldgenAssets"/>).</param>
@@ -42,12 +42,18 @@ internal static class DatagenAssets
         WriteJson(Path.Combine(outputDirectory, "enchantments.json"), Combine(Path.Combine(data, "enchantment"), ToId));
         WriteJson(Path.Combine(outputDirectory, "dialogs.json"), Combine(Path.Combine(data, "dialog"), ToId));
         WriteJson(Path.Combine(outputDirectory, "instruments.json"), Combine(Path.Combine(data, "instrument"), ToId));
-        // Banner layers are sent inline with their asset and translation keys (the server has no banner pattern registry IDs).
-        WriteJson(Path.Combine(outputDirectory, "banner_patterns.json"), Combine(Path.Combine(data, "banner_pattern"), ToId));
 
         foreach (var category in lootTableCategories)
         {
             var tables = Combine(Path.Combine(data, "loot_table", category), path => ToId($"{category}/{path}"));
+            if (category == "entities")
+            {
+                // These need entity predicates that the evaluator does not model yet. Keep their old drops until
+                // their behaviour can be checked against vanilla; do not weaken predicates to include them.
+                foreach (var id in new[] { "ghast", "magma_cube", "slime", "turtle", "sheep", "pillager" })
+                    tables.Remove($"minecraft:entities/{id}");
+            }
+
             WriteJson(Path.Combine(outputDirectory, "loot_table", $"{category}.json"), tables);
         }
 
@@ -71,6 +77,20 @@ internal static class DatagenAssets
         WriteJson(Path.Combine(outputDirectory, "sounds.json"), Entries("minecraft:sound_event"));
         WriteJson(Path.Combine(outputDirectory, "fluids.json"), ProtocolIds("minecraft:fluid"));
         WriteJson(Path.Combine(outputDirectory, "command_parsers.json"), ProtocolIds("minecraft:command_argument_type"));
+
+        // Every built-in registry's entries in protocol id order, which the Obsidian client checks a NeoForge server's
+        // registry sync against.
+        var registryIds = new JsonObject();
+        foreach (var (registry, _) in registries)
+        {
+            var names = Entries(registry)
+                .OrderBy(entry => entry.Value!["protocol_id"]!.GetValue<int>())
+                .Select(entry => (JsonNode?)entry.Key);
+
+            registryIds[registry] = new JsonArray([.. names]);
+        }
+
+        WriteJson(Path.Combine(outputDirectory, "registry_ids.json"), registryIds);
 
         var enums = new JsonObject();
         foreach (var registry in enumRegistries)

@@ -1,10 +1,14 @@
 using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.WorldData;
 using System.Diagnostics;
 
 namespace Obsidian.ChunkData;
 
 public sealed class ChunkSection : IChunkSection
 {
+    // Only live sections have an owner hook; generation writes keep their direct storage path.
+    internal volatile Chunk? LiveChunk;
+
     public int? YBase { get; }
 
     public DataContainer<IBlock> BlockStateContainer { get; }
@@ -17,6 +21,33 @@ public sealed class ChunkSection : IChunkSection
     public ReadOnlyMemory<byte> BlockLightArray => blockLight.AsMemory();
 
     public bool IsEmpty { get; private set; } = true;
+
+    /// <summary>
+    /// Whether the section holds a state that random-ticks (see <see cref="BlockPhysics.IsRandomlyTicking(int)"/>),
+    /// like vanilla's per-section ticking block and fluid counts: random ticks skip sections that don't, without
+    /// drawing a position for them.
+    /// </summary>
+    /// <remarks>
+    /// Worked out when read after the blocks changed, rather than counted on every write, so generation's writes
+    /// don't pay for it. A write racing the read leaves it to be worked out again on the next read.
+    /// </remarks>
+    internal bool IsRandomlyTicking
+    {
+        get
+        {
+            if (this.randomTickingStale)
+            {
+                this.randomTickingStale = false;
+                this.randomlyTicking = this.FindRandomlyTicking();
+            }
+
+            return this.randomlyTicking;
+        }
+    }
+
+    private volatile bool randomTickingStale = true;
+
+    private bool randomlyTicking;
 
     private static readonly byte[] FullSkyLight = new byte[2048];
 
@@ -52,17 +83,20 @@ public sealed class ChunkSection : IChunkSection
     }
 
     /// <summary>
-    /// Recomputes <see cref="IsEmpty"/> from the blocks, for sections whose block storage was filled directly (loading).
+    /// Recomputes <see cref="IsEmpty"/> (and <see cref="IsRandomlyTicking"/> when next read) from the blocks, for
+    /// sections whose block storage was filled directly (loading).
     /// </summary>
     public void RecalculateEmpty()
     {
+        this.randomTickingStale = true;
+
         for (var y = 0; y < 16; y++)
         {
             for (var z = 0; z < 16; z++)
             {
                 for (var x = 0; x < 16; x++)
                 {
-                    if (this.GetBlock(x, y, z).Material != Material.Air)
+                    if (this.GetBlock(x, y, z).RegistryId != BlockIds.Air)
                     {
                         this.IsEmpty = false;
                         return;
@@ -74,20 +108,74 @@ public sealed class ChunkSection : IChunkSection
         this.IsEmpty = true;
     }
 
+    /// <summary>
+    /// Whether the section may hold a state <paramref name="matches"/> accepts (by state id): false only when its
+    /// palette, which holds every state in the section (and maybe some that were overwritten), rules it out.
+    /// </summary>
+    internal bool MayHold(Func<int, bool> matches)
+    {
+        if (this.BlockStateContainer.Palette is not IndirectBlockPalette palette)
+            return true;
+
+        for (var index = 0; index < palette.Count; index++)
+        {
+            if (palette.TryGetStateId(index, out var stateId) && matches(stateId))
+                return true;
+        }
+
+        return false;
+    }
+
+    // Most sections are ruled out by their palette without reading their blocks.
+    private bool FindRandomlyTicking()
+    {
+        if (!this.MayHold(BlockPhysics.IsRandomlyTicking))
+            return false;
+
+        for (var y = 0; y < 16; y++)
+        {
+            for (var z = 0; z < 16; z++)
+            {
+                for (var x = 0; x < 16; x++)
+                {
+                    if (BlockPhysics.IsRandomlyTicking(this.GetStateId(x, y, z)))
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public IBlock GetBlock(int x, int y, int z) => this.BlockStateContainer.Get(x, y, z);
 
     public BiomeCodec GetBiome(int x, int y, int z) => this.BiomeContainer.Get(x, y, z);
+
     public void SetBlock(int x, int y, int z, IBlock block)
     {
-        if (block.Material != Material.Air)
+        if (this.LiveChunk is Chunk chunk)
+        {
+            chunk.SetBlock(x, (this.YBase!.Value << 4) + y, z, block);
+            return;
+        }
+
+        this.SetBlockUntracked(x, y, z, block);
+    }
+
+    /// <summary>Writes storage directly for generation and the owning chunk's already synchronized write.</summary>
+    internal void SetBlockUntracked(int x, int y, int z, IBlock block)
+    {
+        if (!block.Is(BlockIds.Air))
             IsEmpty = false;
 
         this.BlockStateContainer.Set(x, y, z, block);
+        this.randomTickingStale = true;
     }
+
     /// <summary>
     /// Sets the blocks of layer <paramref name="y"/>: entry <c>z * 16 + x</c> of <paramref name="layer"/> indexes
-    /// <paramref name="blocks"/>, where null blocks are skipped. Same as calling <see cref="SetBlock(int, int, int, IBlock)"/>
-    /// for each block in index order, but much faster.
+    /// <paramref name="blocks"/>, where null blocks are skipped. Generation uses this direct storage path without
+    /// calling the live chunk hook for each block.
     /// </summary>
     internal void SetBlockLayer(int y, ReadOnlySpan<byte> layer, ReadOnlySpan<IBlock?> blocks)
     {
@@ -95,7 +183,7 @@ public sealed class ChunkSection : IChunkSection
         {
             foreach (var index in layer)
             {
-                if (blocks[index] is { } block && block.Material != Material.Air)
+                if (blocks[index] is { } block && !block.Is(BlockIds.Air))
                 {
                     IsEmpty = false;
                     break;
@@ -106,6 +194,7 @@ public sealed class ChunkSection : IChunkSection
         if (this.BlockStateContainer is BlockStateContainer container)
         {
             container.SetLayer(y, layer, blocks);
+            this.randomTickingStale = true;
             return;
         }
 
@@ -114,6 +203,8 @@ public sealed class ChunkSection : IChunkSection
             if (blocks[layer[i]] is { } block)
                 this.BlockStateContainer.Set(i & 15, y, i >> 4, block);
         }
+
+        this.randomTickingStale = true;
     }
 
     public void SetBiome(int x, int y, int z, BiomeCodec biome) => this.BiomeContainer.Set(x, y, z, biome);
@@ -128,11 +219,25 @@ public sealed class ChunkSection : IChunkSection
     /// </summary>
     public void SetStateId(int x, int y, int z, int stateId)
     {
+        if (this.LiveChunk is Chunk chunk)
+        {
+            chunk.SetBlock(x, (this.YBase!.Value << 4) + y, z, BlocksRegistry.Get(stateId));
+            return;
+        }
+
+        this.SetStateIdUntracked(x, y, z, stateId);
+    }
+
+    /// <summary>Writes a generation state directly, without resolving it or entering the live chunk hook.</summary>
+    internal void SetStateIdUntracked(int x, int y, int z, int stateId)
+    {
         if (stateId != airStateId)
             IsEmpty = false;
 
         ((BlockStateContainer)this.BlockStateContainer).SetStateId(x, y, z, stateId);
+        this.randomTickingStale = true;
     }
+
     public void SetLightLevel(int x, int y, int z, LightType lt, int level)
     {
         // each value is 4 bits. So upper 4 bits will be odd, lower even

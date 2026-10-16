@@ -1,8 +1,11 @@
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
+using Obsidian.API.Progress;
+using Obsidian.Progress;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Obsidian.Entities;
 
@@ -15,6 +18,13 @@ public sealed partial class ServerPlayer : Avatar, IPlayer
 {
     private readonly HashSet<string> permissions = new(StringComparer.OrdinalIgnoreCase);
     private IScoreboard? currentScoreboard;
+
+    // Joining, joined, or removed. A leave can finish while a join handler is awaiting; that join must roll back.
+    private int lifecycle;
+
+    internal bool CompleteJoin() => Interlocked.CompareExchange(ref this.lifecycle, 1, 0) == 0;
+
+    internal void CancelJoin() => Interlocked.Exchange(ref this.lifecycle, 2);
 
     [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
     public ServerPlayer(Guid uuid, string username, IServer server, IWorld world)
@@ -40,6 +50,9 @@ public sealed partial class ServerPlayer : Avatar, IPlayer
     }
 
     public IServer Server { get; }
+
+    // Kept like the network player's, though not saved, like the rest of a server-side player.
+    public IStatistics Statistics { get; } = new PlayerStatistics();
 
     public string Username { get; }
 
@@ -98,6 +111,7 @@ public sealed partial class ServerPlayer : Avatar, IPlayer
     public PlayerAbility Abilities { get; set; }
 
     public bool IsDragging { get; set; }
+    public DraggingState DragStart { get; set; }
     public bool Sleeping { get; set; }
     public bool InHorseInventory { get; set; }
 
@@ -188,8 +202,14 @@ public sealed partial class ServerPlayer : Avatar, IPlayer
 
     public Task<bool> UpdateChunksAsync(bool unloadAll = false, int distance = 0) => Task.FromResult(true);
 
+    // Without a connection there's no client to move to another level.
+    public Task<bool> TeleportToDimensionAsync(string dimension) => Task.FromResult(false);
+
     public Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
     {
+        if (!this.Alive)
+            API.Data.AttachmentStorage.For(this).Respawn(this);
+
         this.Health = 20f;
         this.Position = this.Level.LevelData.SpawnPosition;
         return Task.CompletedTask;

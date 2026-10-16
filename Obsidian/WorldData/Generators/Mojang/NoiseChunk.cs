@@ -954,7 +954,9 @@ internal sealed partial class NoiseChunk
     }
 
     /// <summary>
-    /// Any other function, sampled block by block.
+    /// Any other function, sampled block by block, like vanilla's default <c>fillArray</c>. Plugins' density
+    /// functions evaluate here: their children were mapped to this chunk's caches and seeded noises through their
+    /// <c>MapAll</c>, which registering them requires, so sampling them per block gives their exact values.
     /// </summary>
     private sealed class PointFiller(IDensityFunction function) : CellFiller
     {

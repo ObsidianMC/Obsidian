@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot;
@@ -27,9 +28,63 @@ internal static class CombatItems
 
     internal static int EnchantmentLevel(ItemStack? item, EnchantmentDefinition enchantment)
         => item is { Count: > 0 } && enchantment.CanEnchant(item)
-            ? item.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value?
+            ? item.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(DataComponentType.Enchantments)?.Value
                 .Where(entry => entry.Id == enchantment.Id).Select(entry => entry.Level).DefaultIfEmpty().Max() ?? 0
             : 0;
+
+    // Vanilla's EnchantmentHelper.getEnchantmentLevel takes the maximum across the living attacker's current
+    // equipment in the enchantment's applicable slot groups. It doesn't read the projectile's captured weapon.
+    internal static int LootEnchantmentLevel(IEntity? attacker, string identifier)
+    {
+        var definition = EnchantmentsRegistry.All.FirstOrDefault(enchantment => enchantment.Identifier == identifier);
+        if (definition is null || attacker is not Player && attacker is not Mob)
+            return 0;
+
+        var level = 0;
+        foreach (var slot in Enum.GetValues<EquipmentSlot>())
+        {
+            var name = slot switch
+            {
+                EquipmentSlot.MainHand => "mainhand",
+                EquipmentSlot.OffHand => "offhand",
+                EquipmentSlot.Boots => "feet",
+                EquipmentSlot.Leggings => "legs",
+                EquipmentSlot.Chestplate => "chest",
+                EquipmentSlot.Helmet => "head",
+                EquipmentSlot.Body => "body",
+                _ => "saddle"
+            };
+            if (!definition.Slots.Any(group => MatchesSlot(group, name)))
+                continue;
+
+            var item = attacker switch
+            {
+                Mob mob => mob.GetEquipment(slot),
+                Player player => slot switch
+                {
+                    EquipmentSlot.MainHand => player.GetHeldItem(),
+                    EquipmentSlot.OffHand => player.Inventory.GetItem(45),
+                    EquipmentSlot.Boots => player.Inventory.GetItem(8),
+                    EquipmentSlot.Leggings => player.Inventory.GetItem(7),
+                    EquipmentSlot.Chestplate => player.Inventory.GetItem(6),
+                    EquipmentSlot.Helmet => player.Inventory.GetItem(5),
+                    _ => null
+                },
+                _ => null
+            };
+            if (item is { Count: > 0 })
+            {
+                var equippedLevel = item.Enchantments
+                    .Where(enchantment => enchantment.Id == definition.Id)
+                    .Select(enchantment => enchantment.Level)
+                    .DefaultIfEmpty()
+                    .Max();
+                level = Math.Max(level, equippedLevel);
+            }
+        }
+
+        return level;
+    }
 
     internal static float Attribute(ItemStack? item, string name, string slot, float baseValue = 0)
     {
@@ -43,24 +98,36 @@ internal static class CombatItems
             else if (operation == "add_multiplied_base") baseMultiplier += value;
             else if (operation == "add_multiplied_total") totalMultiplier *= 1 + value;
         }
-        if (item.Patch.FirstOrDefault(component => component.Type == DataComponentType.AttributeModifiers) is
-            SimpleDataComponent<AttributeModifier[]> custom)
+        // Effective components include the defaults captured when this stack was made, even after a plugin reload.
+        var own = item.Holder.Id >= ItemsRegistry.VanillaCount
+            ? item.GetComponent<SimpleDataComponent<ImmutableArray<AttributeModifier>>>(
+                DataComponentType.AttributeModifiers)
+            : item.Patch.FirstOrDefault(component => component.Type == DataComponentType.AttributeModifiers);
+        if (own is SimpleDataComponent<ImmutableArray<AttributeModifier>> custom)
         {
-            // Protocol ids from the 1.21.11 vanilla attribute registry.
             var id = name switch
             {
-                "armor" => 0, "armor_toughness" => 1, "attack_damage" => 2, "attack_knockback" => 3,
-                "attack_speed" => 4, "entity_interaction_range" => 10, "fall_damage_multiplier" => 11,
-                "knockback_resistance" => 16, "safe_fall_distance" => 24, "sweeping_damage_ratio" => 30, _ => -1
+                "armor" => AttributeIds.Armor,
+                "armor_toughness" => AttributeIds.ArmorToughness,
+                "attack_damage" => AttributeIds.AttackDamage,
+                "attack_knockback" => AttributeIds.AttackKnockback,
+                "attack_speed" => AttributeIds.AttackSpeed,
+                "entity_interaction_range" => AttributeIds.EntityInteractionRange,
+                "fall_damage_multiplier" => AttributeIds.FallDamageMultiplier,
+                "knockback_resistance" => AttributeIds.KnockbackResistance,
+                "safe_fall_distance" => AttributeIds.SafeFallDistance,
+                "sweeping_damage_ratio" => AttributeIds.SweepingDamageRatio,
+                _ => -1
             };
-            foreach (var modifier in custom.Value ?? [])
+            foreach (var modifier in custom.Value)
             {
                 if (modifier.Id != id || !MatchesSlot(modifier.Slot.ToString().ToLowerInvariant(), slot)) continue;
                 Apply((float)modifier.Value, modifier.Operation switch
                 { AttributeOperation.Add => "add_value", AttributeOperation.MulBase => "add_multiplied_base", _ => "add_multiplied_total" });
             }
         }
-        else if (Component(item, "attribute_modifiers") is { ValueKind: JsonValueKind.Array } modifiers)
+        else if (item.Holder.Id < ItemsRegistry.VanillaCount
+            && Component(item, "attribute_modifiers") is { ValueKind: JsonValueKind.Array } modifiers)
         {
             foreach (var modifier in modifiers.EnumerateArray())
                 if (modifier.GetProperty("type").GetString() == "minecraft:" + name &&
@@ -68,6 +135,62 @@ internal static class CombatItems
                     Apply(modifier.GetProperty("amount").GetSingle(), modifier.GetProperty("operation").GetString()!);
         }
         return (baseValue + additions) * (1 + baseMultiplier) * totalMultiplier;
+    }
+
+    /// <summary>
+    /// The attribute modifiers an item applies in an equipment slot (<c>mainhand</c>, <c>offhand</c>, <c>head</c>,
+    /// <c>chest</c>, <c>legs</c> or <c>feet</c>), like vanilla's <c>ItemStack.forEachModifier</c>: its own
+    /// <c>attribute_modifiers</c> component, or else its item's default, by attribute name.
+    /// </summary>
+    internal static List<(string Attribute, EntityAttributeModifier Modifier)> Modifiers(ItemStack? item, string slot)
+    {
+        var result = new List<(string, EntityAttributeModifier)>();
+        if (item is not { Count: > 0 } || item.RemoveComponents.Contains(DataComponentType.AttributeModifiers))
+            return result;
+
+        // Effective components include the defaults captured when this stack was made, even after a plugin reload.
+        var own = item.Holder.Id >= ItemsRegistry.VanillaCount
+            ? item.GetComponent<SimpleDataComponent<ImmutableArray<AttributeModifier>>>(
+                DataComponentType.AttributeModifiers)
+            : item.Patch.FirstOrDefault(component => component.Type == DataComponentType.AttributeModifiers);
+
+        if (own is SimpleDataComponent<ImmutableArray<AttributeModifier>> custom)
+        {
+            foreach (var modifier in custom.Value)
+            {
+                var group = modifier.Slot.ToString().ToLowerInvariant();
+                if (VanillaAttributes.NameOf(modifier.Id) is not string attribute || !MatchesSlot(group, slot))
+                    continue;
+
+                result.Add((attribute, new EntityAttributeModifier(modifier.Name, modifier.Value, modifier.Operation)));
+            }
+        }
+        else if (item.Holder.Id < ItemsRegistry.VanillaCount
+            && Component(item, "attribute_modifiers") is { ValueKind: JsonValueKind.Array } modifiers)
+        {
+            foreach (var modifier in modifiers.EnumerateArray())
+            {
+                var group = modifier.TryGetProperty("slot", out var value) ? value.GetString()! : "any";
+                if (!MatchesSlot(group, slot))
+                    continue;
+
+                var operation = modifier.GetProperty("operation").GetString() switch
+                {
+                    "add_multiplied_base" => AttributeOperation.MulBase,
+                    "add_multiplied_total" => AttributeOperation.MulTotal,
+                    _ => AttributeOperation.Add
+                };
+
+                var entry = new EntityAttributeModifier(
+                    modifier.GetProperty("id").GetString()!,
+                    modifier.GetProperty("amount").GetDouble(),
+                    operation);
+
+                result.Add((modifier.GetProperty("type").GetString()!, entry));
+            }
+        }
+
+        return result;
     }
 
     private static bool MatchesSlot(string group, string slot) => group == "any" || group == slot ||
@@ -91,6 +214,27 @@ internal static class CombatItems
     internal static int MaxDamage(ItemStack item) => item.RemoveComponents.Contains(DataComponentType.MaxDamage) ? 0 :
         item.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? item.Holder.MaxDamage;
 
+    /// <summary>
+    /// How much breaking <paramref name="block"/> wears <paramref name="tool"/>, like vanilla's <c>Item.mineBlock</c>:
+    /// its tool component's damage per block, or 0 for a block that breaks instantly or an item that isn't a tool.
+    /// </summary>
+    internal static int ToolDamage(ItemStack? tool, IBlock block)
+    {
+        if (tool is not { Count: > 0 }
+            || tool.RemoveComponents.Contains(DataComponentType.Tool)
+            || BlockPhysics.MiningHardness(block.GetHashCode()) == 0)
+        {
+            return 0;
+        }
+
+        if (tool.GetComponent<ToolDataComponent>(DataComponentType.Tool) is ToolDataComponent component)
+            return component.DamagePerBlock;
+
+        var vanilla = Component(tool, "tool");
+
+        return vanilla.ValueKind == JsonValueKind.Object ? (int)Number(vanilla, "damage_per_block", 1) : 0;
+    }
+
     internal static int PlayerArmorSlot(ItemStack? item)
     {
         if (item == null || item.RemoveComponents.Contains(DataComponentType.Equippable)) return -1;
@@ -99,6 +243,24 @@ internal static class CombatItems
         var component = Component(item, "equippable");
         return component.ValueKind == JsonValueKind.Object && component.TryGetProperty("slot", out var slot)
             ? slot.GetString() switch { "head" => 5, "chest" => 6, "legs" => 7, "feet" => 8, _ => -1 } : -1;
+    }
+
+    /// <summary>
+    /// Whether the item equips in the off hand, like a shield (its <c>equippable</c> component's slot).
+    /// </summary>
+    internal static bool IsOffhandItem(ItemStack? item)
+    {
+        if (item == null || item.RemoveComponents.Contains(DataComponentType.Equippable))
+            return false;
+
+        if (item.GetComponent<EquippableDataComponent>(DataComponentType.Equippable) is { } custom)
+            return custom.Slot == EquipmentSlot.OffHand;
+
+        var component = Component(item, "equippable");
+
+        return component.ValueKind == JsonValueKind.Object
+            && component.TryGetProperty("slot", out var slot)
+            && slot.GetString() == "offhand";
     }
 
     internal static bool HurtItem(ItemStack item, int amount, bool armor = false)

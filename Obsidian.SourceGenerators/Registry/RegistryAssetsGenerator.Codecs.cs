@@ -50,7 +50,7 @@ public partial class RegistryAssetsGenerator
                }
 
                builder.AppendValueType(value, ctx);
-           }, ctx);
+           }, ctx, extensible: true);
 
         builder.GenerateSimpleCodec(codecs["biomes"].ToArray(), "Biomes", "minecraft:worldgen/biome", "BiomeCodec",
             (name, value) =>
@@ -75,7 +75,7 @@ public partial class RegistryAssetsGenerator
                 }
 
                 builder.AppendValueType(value, ctx);
-            }, ctx);
+            }, ctx, extensible: true);
 
         builder.GenerateSimpleCodec(codecs["chat_type"].ToArray(), "ChatType", "minecraft:chat_type", "ChatTypeCodec", ctx);
 
@@ -99,7 +99,7 @@ public partial class RegistryAssetsGenerator
                 }
 
                 builder.AppendValueType(value, ctx);
-            }, ctx);
+            }, ctx, extensible: true);
 
         builder.GenerateSimpleCodec(codecs["trim_material"].ToArray(), "TrimMaterial", "minecraft:trim_material", "TrimMaterialCodec",
             (name, value) =>
@@ -108,7 +108,18 @@ public partial class RegistryAssetsGenerator
 
                 if (value.ValueKind == JsonValueKind.Object)
                 {
-                    builder.ParseProperty(value, ctx, name == "OverrideArmorAssets");
+                    if (name == "OverrideArmorAssets")
+                    {
+                        builder.Append("new Dictionary<string, string> { ");
+                        foreach (var entry in value.EnumerateObject())
+                            builder.Append(
+                                $"{{ {JsonSerializer.Serialize(entry.Name)}, {entry.Value.GetRawText()} }}, ");
+
+                        builder.Append("}, ");
+                        return;
+                    }
+
+                    builder.ParseProperty(value, ctx);
                     return;
                 }
 

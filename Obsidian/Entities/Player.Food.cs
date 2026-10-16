@@ -18,9 +18,9 @@ public partial class Player
             .ToDictionary(item => item.Name, item => item.Value.GetProperty("components").Clone());
     }
 
-    private static (int Nutrition, float Saturation, bool AlwaysEat, float Seconds)? GetFood(ItemStack? item)
+    internal static (int Nutrition, float Saturation, bool AlwaysEat, float Seconds)? GetFood(ItemStack? item)
     {
-        if (item?.Type == Material.OminousBottle) return (0, 0, true, 1.6f);
+        if (item?.Is(ItemsRegistry.OminousBottle) == true) return (0, 0, true, 1.6f);
         if (item == null || item.RemoveComponents.Contains(DataComponentType.Food) || item.RemoveComponents.Contains(DataComponentType.Consumable)) return null;
         foodDefaults.TryGetValue(item.Holder.UnlocalizedName, out var defaults);
         var seconds = item.GetComponent<ConsumableDataComponent>(DataComponentType.Consumable)?.ConsumeSeconds ??
@@ -40,6 +40,8 @@ public partial class Player
     private float sentHealth = -1;
     private int sentFood = -1;
     private float sentSaturation = -1;
+
+    void IPlayer.AddExhaustion(float amount) => this.AddExhaustion(amount);
 
     internal void AddExhaustion(float amount)
     {
@@ -77,7 +79,7 @@ public partial class Player
 
     private void ApplyFoodEffects(ItemStack item)
     {
-        if (item.Type == Material.OminousBottle)
+        if (item.Is(ItemsRegistry.OminousBottle))
         {
             var amplifier = item.GetComponent<SimpleDataComponent<int>>(DataComponentType.OminousBottleAmplifier)?.Value ?? 0;
             AddPotionEffect((int)PotionEffect.BadOmen - 1, 120000, Math.Clamp(amplifier, 0, 4));
@@ -95,7 +97,7 @@ public partial class Player
         foreach (var effect in effects.EnumerateArray())
         {
             var type = effect.GetProperty("type").GetString();
-            if (type == "minecraft:remove_effects" && item.Type == Material.HoneyBottle)
+            if (type == "minecraft:remove_effects" && item.Is(ItemsRegistry.HoneyBottle))
                 RemovePotionEffect((int)PotionEffect.Poison - 1);
             if (type != "minecraft:apply_effects" || effect.TryGetProperty("probability", out var probability) && Globals.Random.NextSingle() >= probability.GetSingle()) continue;
             foreach (var applied in effect.GetProperty("effects").EnumerateArray())
@@ -114,7 +116,9 @@ public partial class Player
         }
     }
 
-    public override async ValueTask TickAsync()
+    public override ValueTask TickAsync() => this.RunTickAsync(this.TickPlayerAsync);
+
+    private async ValueTask TickPlayerAsync()
     {
         if (damageCooldown > 0) damageCooldown--;
         if (HurtTime > 0) HurtTime--;
@@ -125,6 +129,7 @@ public partial class Player
             respawnChunkRetryTicks = 20;
         }
         await base.TickAsync();
+        await this.TickProgressAsync();
         if (!Alive || Respawning)
         {
             foodPosition = null;
@@ -132,6 +137,7 @@ public partial class Player
             CancelWeaponUse();
             return;
         }
+        await TickInventoryItemsAsync();
         TimeSinceRest = Sleeping ? 0 : (int)Math.Min(int.MaxValue, (long)TimeSinceRest + 1);
         var grounded = MovementFlags.HasFlag(MovementFlags.OnGround);
         if (foodPosition is VectorD previous)
@@ -159,12 +165,17 @@ public partial class Player
                     FoodLevel = Math.Min(20, FoodLevel + food.Nutrition);
                     FoodSaturationLevel = Math.Min(FoodLevel, FoodSaturationLevel + food.Saturation);
                     ApplyFoodEffects(item);
+                    this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
+                    await this.FireProgressAsync("consume_item", item: new ItemStack(item, item.Count));
                     if (GameMode != GameMode.Creative)
                     {
                         Inventory.RemoveItem(eatingSlot, 1);
-                        if (item.Type is Material.MushroomStew or Material.RabbitStew or Material.BeetrootSoup or Material.SuspiciousStew)
+                        if (item.Holder.Id is ItemIds.MushroomStew
+                            or ItemIds.RabbitStew
+                            or ItemIds.BeetrootSoup
+                            or ItemIds.SuspiciousStew)
                             Inventory.SetItem(eatingSlot, new ItemStack(ItemsRegistry.Bowl));
-                        else if (item.Type is Material.HoneyBottle or Material.OminousBottle)
+                        else if (item.Holder.Id is ItemIds.HoneyBottle or ItemIds.OminousBottle)
                         {
                             if (item.Count <= 0) Inventory.SetItem(eatingSlot, new ItemStack(ItemsRegistry.GlassBottle));
                             else
@@ -205,16 +216,16 @@ public partial class Player
                 {
                     FoodTickTimer = 0;
                     FoodLevel = Math.Min(20, FoodLevel + 1);
-                    Health = Math.Min(20, Health + 1);
+                    Health = Math.Min(MaxHealth, Health + 1);
                 }
             }
-            else if (Health < 20 && FoodLevel >= 18)
+            else if (Health < MaxHealth && FoodLevel >= 18)
             {
                 var saturated = FoodLevel == 20 && FoodSaturationLevel > 0;
                 if (++FoodTickTimer >= (saturated ? 10 : 80))
                 {
                     var healing = saturated ? Math.Min(FoodSaturationLevel, 6) / 6 : 1;
-                    Health = Math.Min(20, Health + healing);
+                    Health = Math.Min(MaxHealth, Health + healing);
                     AddExhaustion(healing * 6);
                     FoodTickTimer = 0;
                 }

@@ -34,7 +34,7 @@ public partial class Mob
     {
         if (writeCompound)
             writer.WriteCompoundStart();
-        writer.WriteString("id", EntityNbt.TypeId(Type));
+        writer.WriteString("id", EntityNbt.TypeId(this));
         var uuidBytes = Uuid.ToByteArray(true);
         var uuid = new int[4];
         for (var index = 0; index < 4; index++)
@@ -67,15 +67,7 @@ public partial class Mob
             writer.WriteChatMessage(CustomName);
             writer.EndCompound();
         }
-        writer.WriteListStart("attributes", NbtTagType.Compound, Attributes.Count);
-        foreach (var attribute in Attributes)
-        {
-            writer.WriteCompoundStart();
-            writer.WriteString("id", attribute.Key);
-            writer.WriteDouble("base", attribute.Value);
-            writer.EndCompound();
-        }
-        writer.EndList();
+        writer.WriteTag(this.SaveAttributes());
         writer.WriteListStart("ObsidianEquipment", NbtTagType.Compound, equipment.Count);
         foreach (var (slot, item) in equipment)
         {
@@ -225,10 +217,17 @@ public partial class Mob
         var additionalTags = (NbtCompound)new NbtReader(additionalStream).ReadNextTag()!;
         foreach (var (_, child) in additionalTags)
             writer.WriteTag(child);
+
+        // The live attachments, not those it was loaded or spawned with, which the copy below would bring back.
+        writer.WriteTag(API.Data.AttachmentStorage.For(this).Snapshot());
         if (originalSave != null)
             foreach (var tag in originalSave)
-                if (!saveFields.Contains(tag.Key) && !additionalTags.HasTag(tag.Key))
+                if (!saveFields.Contains(tag.Key)
+                    && tag.Key != API.Data.AttachmentStorage.NbtKey
+                    && !additionalTags.HasTag(tag.Key))
+                {
                     writer.WriteTag(tag.Value);
+                }
         if (writeCompound)
             writer.EndCompound();
     }
@@ -236,6 +235,7 @@ public partial class Mob
     internal void ReadSave(NbtCompound tag)
     {
         originalSave = tag;
+        API.Data.AttachmentStorage.For(this).Load(tag);
         Position = ReadVector(tag, "Pos");
         LastPosition = Position;
         InitializeAi(false);
@@ -277,10 +277,7 @@ public partial class Mob
         if (tag.TryGetTag("CustomName", out var name))
             CustomName = name is NbtTag<string> { Value: { } legacy } && legacy.TrimStart().StartsWith('{')
                 ? JsonSerializer.Deserialize<ChatMessage>(legacy) : name.TextFromNbt();
-        if (tag.TryGetTag<NbtList>("attributes", out var attributes))
-            foreach (var attribute in attributes.OfType<NbtCompound>())
-                if (attribute.TryGetTagValue<string>("id", out var id) && attribute.TryGetTagValue<double>("base", out var value))
-                    Attributes[id] = (float)value;
+        this.LoadAttributes(tag);
         if (tag.TryGetTag<NbtList>("ObsidianEquipment", out var savedEquipment))
             foreach (var entry in savedEquipment.OfType<NbtCompound>())
             {

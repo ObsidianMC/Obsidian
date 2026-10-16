@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
@@ -6,6 +6,10 @@
 		<IsPackable>false</IsPackable>
 		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(UseArtifactsOutput)' == 'true'">
+		<CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)generated</CompilerGeneratedFilesOutputPath>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -16,10 +20,15 @@
 	<ItemGroup>
 		<EmbeddedResource Include="Assets\bigtest.nbt" />
 		<EmbeddedResource Include="Assets\fluid_scenarios.json" />
+		<EmbeddedResource Include="Assets\block_loot.json" />
+		<EmbeddedResource Include="Assets\entity_loot.json" />
+		<EmbeddedResource Include="Assets\update-recipes.bin" />
+		<EmbeddedResource Include="Assets\progress-*.*" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
+		<!-- An artifacts build may follow an in-tree build that left generated sources in the checkout. -->
+		<Compile Remove="Generated/**/*.cs;$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
 	</ItemGroup>
 
   <ItemGroup>
@@ -36,6 +45,39 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Obsidian\Obsidian.csproj" />
+		<ProjectReference Include="..\Obsidian.Porting\Obsidian.Porting.csproj" />
 	</ItemGroup>
+
+	<!-- The probe plugin is a plugin project too: its data folder is generated from, like a plugin's, and packed into
+	     its archive by the tests. -->
+	<ItemGroup>
+		<ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj"
+		                  OutputItemType="Analyzer"
+		                  ReferenceOutputAssembly="false" />
+		<AdditionalFiles Include="data\**\*.json" />
+		<None Include="data\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+	<!-- The engine sample fixture, built first; its output, laid out like its archive, is copied into EngineSample/,
+	     which the tests pack and load like a real plugin's. -->
+	<ItemGroup>
+		<ProjectReference Include="..\Obsidian.Tests.EngineSample\Obsidian.Tests.EngineSample.csproj"
+		                  OutputItemType="EngineSampleAssembly"
+		                  ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<Target Name="CopyEngineSample" AfterTargets="Build">
+		<PropertyGroup>
+			<EngineSampleOutput>@(EngineSampleAssembly->'%(RootDir)%(Directory)')</EngineSampleOutput>
+		</PropertyGroup>
+
+		<ItemGroup>
+			<EngineSampleFiles Include="$(EngineSampleOutput)**\*" />
+		</ItemGroup>
+
+		<Copy SourceFiles="@(EngineSampleFiles)"
+		      DestinationFiles="@(EngineSampleFiles->'$(OutDir)EngineSample\%(RecursiveDir)%(Filename)%(Extension)')"
+		      SkipUnchangedFiles="true" />
+	</Target>
 
 </Project>

@@ -2,6 +2,6 @@
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class PumpkinFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, Material.Pumpkin)
+public class PumpkinFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, BlocksRegistry.Pumpkin)
 {
 }

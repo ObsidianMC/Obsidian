@@ -8,7 +8,7 @@ public class Animal : AgeableMob
     internal virtual bool CanBreed => Alive && !IsRemoved && Age == 0 && LoveTicks > 0;
     internal virtual bool CanMateWith(Animal mate) => !ReferenceEquals(this, mate) && mate.Type == Type && mate.CanBreed;
     protected virtual bool CanEat(Obsidian.API.Inventory.ItemStack? item) => false;
-    internal override ValueTask InteractAsync(IPlayer player, InteractionHand hand) => FeedAsync(player, hand);
+    internal override ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand) => FeedAsync(player, hand);
 
     protected override async ValueTask TickMobAsync()
     {
@@ -23,16 +23,21 @@ public class Animal : AgeableMob
             LoveTicks = 0;
     }
 
-    internal virtual async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    /// <summary>
+    /// The animal's interaction (<see cref="InteractAsync"/>): feeding it by default, which grows a baby or makes an
+    /// adult ready to breed.
+    /// </summary>
+    /// <returns>Whether the animal used the interaction.</returns>
+    internal virtual async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.GameMode == GameMode.Spectator || player.Level != Level ||
             !IsInRange(player, 4) || !CanSee(player))
-            return;
+            return false;
 
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var item = player.Inventory.GetItem(slot);
         if (!CanEat(item) || !IsBaby && (Age != 0 || LoveTicks > 0))
-            return;
+            return false;
 
         if (IsBaby)
             Age += (-Age / 20 / 10) * 20;
@@ -48,6 +53,7 @@ public class Animal : AgeableMob
             await player.SendInventorySlotAsync(slot);
         }
         SynchronizeMetadata();
+        return true;
     }
 
     internal void BreedWith(Animal mate)
@@ -62,7 +68,7 @@ public class Animal : AgeableMob
     }
 
     protected virtual IEntity CreateOffspring(Animal mate) =>
-        Level.GetNewEntitySpawner().WithEntityType(Type).AtPosition(Position).AsBaby().Spawn();
+        Level.GetNewEntitySpawner().WithEntityType(Type!.Value).AtPosition(Position).AsBaby().Spawn();
 
     public async override ValueTask TickAsync()
     {

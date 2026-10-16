@@ -31,7 +31,7 @@ public sealed partial class Enderman : PathfinderMob
     }
     internal bool IsStaring(IPlayer player)
     {
-        if (player.Inventory.GetItem(5)?.Type == Material.CarvedPumpkin || !IsValidTarget(player))
+        if (player.Inventory.GetItem(5)?.Is(ItemsRegistry.CarvedPumpkin) == true || !IsValidTarget(player))
             return false;
         var direction = EyePosition - (player.Position + new VectorD(0, (float)(player.HeadY - player.Position.Y), 0));
         var distance = direction.Magnitude;
@@ -166,8 +166,14 @@ public sealed partial class Enderman : PathfinderMob
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.EnderPearl, Random.Next(2));
-        if (CarriedBlock is { } block) DropItem(block.Material, 1);
+        this.DropVanillaLoot(source);
+
+        // The carried block drops as its item, a plugin block's too if it has one.
+        if (CarriedBlock is { } carried && BlocksRegistry.TryGetItem(carried, out var item))
+        {
+            DropItem(item, 1);
+        }
+
         return default;
     }
     public override void Write(INetStreamWriter writer)

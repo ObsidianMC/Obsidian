@@ -1,0 +1,6 @@
+{
+  "parent": "sample:block/tick_counter",
+  "textures": {
+    "top": "minecraft:block/redstone_lamp_on"
+  }
+}

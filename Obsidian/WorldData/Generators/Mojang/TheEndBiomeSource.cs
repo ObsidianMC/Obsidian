@@ -15,17 +15,28 @@ internal sealed class TheEndBiomeSource : IClimateBiomeSource
     private readonly BiomeCodec islands;
     private readonly BiomeCodec barrens;
 
-    public IReadOnlyList<BiomeCodec> PossibleBiomes { get; }
+    public IReadOnlyList<BiomeCodec> PossibleBiomes => Biomes;
+
+    /// <summary>
+    /// The biomes every end source can return, in vanilla's possibleBiomes order.
+    /// </summary>
+    public static IReadOnlyList<BiomeCodec> Biomes => field ??=
+    [
+        GetBiome("minecraft:the_end"),
+        GetBiome("minecraft:end_highlands"),
+        GetBiome("minecraft:end_midlands"),
+        GetBiome("minecraft:small_end_islands"),
+        GetBiome("minecraft:end_barrens")
+    ];
 
     public TheEndBiomeSource(RandomState randomState)
     {
         this.randomState = randomState;
-        this.end = GetBiome("minecraft:the_end");
-        this.highlands = GetBiome("minecraft:end_highlands");
-        this.midlands = GetBiome("minecraft:end_midlands");
-        this.islands = GetBiome("minecraft:small_end_islands");
-        this.barrens = GetBiome("minecraft:end_barrens");
-        this.PossibleBiomes = [this.end, this.highlands, this.midlands, this.islands, this.barrens];
+        this.end = Biomes[0];
+        this.highlands = Biomes[1];
+        this.midlands = Biomes[2];
+        this.islands = Biomes[3];
+        this.barrens = Biomes[4];
     }
 
     public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ) =>

@@ -62,7 +62,7 @@ public sealed partial class Ravager : PathfinderMob
         {
             var point = new Vector(x, y, z);
             if (Terrain.GetBlock(point) is { } block && TagsRegistry.Block.Leaves.Entries.Contains(block.RegistryId))
-                await Level.SetBlockAsync(point, BlocksRegistry.Air, true);
+                Level.DestroyBlock(point, dropItems: true, this);
         }
     }
     protected internal override async ValueTask PerformMeleeAttackAsync(IEntity target)
@@ -83,7 +83,7 @@ public sealed partial class Ravager : PathfinderMob
         if (distance < 0.0001 || strength <= 0) return;
         target.Motion += new VectorD(delta.X / distance * strength, 0.2, delta.Z / distance * strength);
     }
-    protected override ValueTask OnDeathAsync(IEntity source) { DropItem(Material.Saddle); return default; }
+    protected override ValueTask OnDeathAsync(IEntity source) { DropItem(ItemsRegistry.Saddle); return default; }
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);

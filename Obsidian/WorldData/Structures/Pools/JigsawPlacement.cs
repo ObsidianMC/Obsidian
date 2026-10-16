@@ -19,14 +19,18 @@ internal static class JigsawPlacement
     /// <param name="maxDepth">How many pieces away from the start the structure may grow.</param>
     /// <param name="projectStartToHeightmap">Moves the start onto this heightmap, offset by <paramref name="position"/>'s Y.</param>
     /// <param name="maxDistance">How far from the start's center pieces may reach, horizontally and vertically.</param>
-    /// <param name="dimensionPadding">Blocks kept free at the bottom and top of the world, or <c>null</c> for none.</param>
+    /// <param name="dimensionPadding">
+    /// Blocks kept free at the bottom and top of the world. Without it, none are and the start piece may reach outside
+    /// the world's height.
+    /// </param>
     public static StructureStub? AddPieces(StructureGenerationContext context, StructureTemplatePool startPool, string? startJigsawName,
-        int maxDepth, Vector position, bool useExpansionHack, HeightmapType? projectStartToHeightmap, int maxDistance,
-        PoolAliasLookup aliases, int? dimensionPadding, LiquidSettings liquidSettings)
+        int maxDepth, Vector position, bool useExpansionHack, HeightmapType? projectStartToHeightmap,
+        JigsawMaxDistance maxDistance, PoolAliasLookup aliases, DimensionPadding? dimensionPadding,
+        LiquidSettings liquidSettings)
     {
         var random = context.Random;
         var rotation = StructureRotationExtensions.Random(random);
-        var pool = StructureTemplatePool.Get(aliases.Lookup(startPool.Identifier)) ?? startPool;
+        var pool = context.Pools(aliases.Lookup(startPool.Identifier)) ?? startPool;
         var element = pool.GetRandomTemplate(random);
         if (element is EmptyPoolElement)
             return null;
@@ -63,9 +67,17 @@ internal static class JigsawPlacement
             List<PoolElementStructurePiece> pieces = [start];
             if (maxDepth > 0)
             {
-                var bottom = dimensionPadding ?? 0;
-                var limits = BlockBox.Create(centerX - maxDistance, Math.Max(centerY - maxDistance, context.MinY + bottom), centerZ - maxDistance,
-                    centerX + maxDistance, Math.Min(centerY + maxDistance + 1, context.MinY + context.Height - bottom) - 1, centerZ + maxDistance);
+                // Vanilla's free space: the max distance around the center, within the padded world height.
+                var horizontal = maxDistance.Horizontal;
+                var vertical = maxDistance.Vertical;
+                var padding = dimensionPadding ?? default;
+                var limits = BlockBox.Create(
+                    centerX - horizontal,
+                    Math.Max(centerY - vertical, context.MinY + padding.Bottom),
+                    centerZ - horizontal,
+                    centerX + horizontal,
+                    Math.Min(centerY + vertical + 1, context.MinY + context.Height - padding.Top) - 1,
+                    centerZ + horizontal);
                 var free = new FreeSpace(limits);
                 free.Remove(start.BoundingBox);
 
@@ -81,8 +93,17 @@ internal static class JigsawPlacement
     /// <summary>
     /// Vanilla <c>isStartTooCloseToWorldHeightLimits</c>: with padding, the start piece must stay inside the padded range.
     /// </summary>
-    private static bool IsStartTooCloseToWorldHeightLimits(StructureGenerationContext context, int? padding, BlockBox box) =>
-        padding is not null && (box.MinY < context.MinY + padding.Value || box.MaxY > context.MinY + context.Height - 1 - padding.Value);
+    /// <remarks>
+    /// Vanilla skips the check only for its default padding instance, compared by reference, so it matters whether the
+    /// padding was omitted: an explicit zero, as a number or as <c>{}</c>, still keeps the start inside the world.
+    /// </remarks>
+    private static bool IsStartTooCloseToWorldHeightLimits(
+        StructureGenerationContext context,
+        DimensionPadding? padding,
+        BlockBox box) =>
+        padding is DimensionPadding explicitPadding
+        && (box.MinY < context.MinY + explicitPadding.Bottom
+            || box.MaxY > context.MinY + context.Height - 1 - explicitPadding.Top);
 
     /// <summary>
     /// The space pieces may still take, like vanilla's free <c>VoxelShape</c>: a box minus the boxes of placed pieces.
@@ -153,11 +174,11 @@ internal static class JigsawPlacement
                 var relativeY = jigsawPosition.Y - minY;
                 var surfaceY = int.MinValue;
 
-                var pool = StructureTemplatePool.Get(aliases.Lookup(jigsaw.Pool));
+                var pool = context.Pools(aliases.Lookup(jigsaw.Pool));
                 if (pool is null || pool.Size == 0 && pool.Identifier != StructureTemplatePool.EmptyId)
                     continue;
 
-                var fallback = pool.FallbackPool;
+                var fallback = context.Pools(pool.Fallback);
                 if (fallback is null || fallback.Size == 0 && fallback.Identifier != StructureTemplatePool.EmptyId)
                     continue;
 
@@ -299,8 +320,8 @@ internal static class JigsawPlacement
                 if (!candidateBox.IsInside(candidateJigsaw.Info.Position + candidateJigsaw.FrontFacing.ToVector()))
                     continue;
 
-                var pool = StructureTemplatePool.Get(aliases.Lookup(candidateJigsaw.Pool));
-                var fallback = pool?.FallbackPool;
+                var pool = context.Pools(aliases.Lookup(candidateJigsaw.Pool));
+                var fallback = pool is null ? null : context.Pools(pool.Fallback);
                 height = Math.Max(height, Math.Max(pool?.MaxSize ?? 0, fallback?.MaxSize ?? 0));
             }
 

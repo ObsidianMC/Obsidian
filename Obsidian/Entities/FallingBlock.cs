@@ -54,7 +54,8 @@ public sealed partial class FallingBlock : Entity
 
     private async Task ConvertToBlock(Vector loc)
     {
-        await Level.SetBlockAsync(loc, this.Block);
+        // Like vanilla's, with updates: the landed block checks below it again, and its neighbours hear of it.
+        await Level.SetBlockAsync(loc, this.Block, doBlockUpdate: true);
 
         await Level.DestroyEntityAsync(this);
     }

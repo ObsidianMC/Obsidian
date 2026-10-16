@@ -3,7 +3,7 @@ using Obsidian.API.Registry.Codecs.Biomes;
 using System.ComponentModel;
 
 namespace Obsidian.API;
-public interface IChunk
+public interface IChunk : Data.IAttachmentHolder
 {
     public int X { get; }
 

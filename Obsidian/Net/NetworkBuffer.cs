@@ -30,6 +30,20 @@ public partial class NetworkBuffer
     public int BytesPending { get; internal set; }
 
     /// <summary>
+    /// The connection's numbering of synced registries, which item stacks' item and component type ids and the
+    /// registry ids their components hold are translated with when it differs from this process's; null keeps ids as
+    /// they are. Buffers made for nested values take it over.
+    /// </summary>
+    internal RegistryIdMaps? IdMaps { get; set; }
+
+    /// <summary>
+    /// Whether the connection is a modded Obsidian client, which reads the data fields of plugins' entity types
+    /// after vanilla's (see <see cref="Payloads.ChannelPayloads.PluginEntityData"/>). Packets written into the buffer
+    /// take it over.
+    /// </summary>
+    internal bool WritesPluginEntityData { get; set; }
+
+    /// <summary>
     /// Buffer indexer operator
     /// </summary>
     public byte this[long index] => data[index];

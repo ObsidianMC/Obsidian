@@ -1,3 +1,5 @@
+using Obsidian.API.World.Features.Trees;
+
 namespace Obsidian.WorldData.Features.Tree.Decorators;
 
 /// <summary>
@@ -22,7 +24,7 @@ public sealed class CreakingHeartDecorator : TreeDecorator
         TreeDecoratorContext.Shuffle(logs, random);
         foreach (var log in logs)
         {
-            if (TreeDirections.All.All(face => TreeBlocks.Logs.Contains(context.Level.GetBlock(log + face.ToVector()))))
+            if (TreeDirections.All.All(face => TreeBlockRules.Logs.Contains(context.Level.GetBlock(log + face.ToVector()))))
             {
                 context.SetBlock(log, creakingHeart);
                 return;

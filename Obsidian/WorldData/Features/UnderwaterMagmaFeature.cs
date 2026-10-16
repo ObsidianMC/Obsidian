@@ -17,7 +17,7 @@ public sealed class UnderwaterMagmaFeature : ConfiguredFeatureBase
 
     public required float PlacementProbabilityPerValidPosition { get; init; }
 
-    private static IBlock Magma => field ??= BlocksRegistry.Get(Material.MagmaBlock);
+    private static IBlock Magma => field ??= BlocksRegistry.MagmaBlock;
 
     public override bool Place(FeatureContext context)
     {
@@ -27,8 +27,8 @@ public sealed class UnderwaterMagmaFeature : ConfiguredFeatureBase
         if (!level.EnsureCanWrite(origin))
             return false;
 
-        var column = Column.Scan(level, origin, this.FloorSearchRange, block => block.Material == Material.Water,
-            block => block.Material != Material.Water);
+        var column = Column.Scan(level, origin, this.FloorSearchRange, block => block.Is(BlockIds.Water),
+            block => !block.Is(BlockIds.Water));
         if (column?.Floor is not int floor)
             return false;
 
@@ -52,7 +52,7 @@ public sealed class UnderwaterMagmaFeature : ConfiguredFeatureBase
     private static bool IsValidPlacement(IWorldGenLevel level, Vector position)
     {
         var block = level.GetBlock(position);
-        if (block.Material == Material.Water || block.IsAir || IsVisibleFromOutside(level, position + Vector.Down))
+        if (block.Is(BlockIds.Water) || block.IsAir || IsVisibleFromOutside(level, position + Vector.Down))
             return false;
 
         foreach (var face in FeatureHelpers.Horizontal)

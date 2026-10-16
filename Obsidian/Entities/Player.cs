@@ -7,8 +7,10 @@ using Obsidian.API.Inventory;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Net.Scoreboard;
+using Obsidian.Plugins;
+using Obsidian.Services;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Portals;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -32,6 +34,7 @@ public sealed partial class Player : Avatar, IClientPlayer
     internal HashSet<IPlayer> visiblePlayers = [];
 
     public bool IsDragging { get; set; }
+    public DraggingState DragStart { get; set; }
     public List<short> DraggedSlots { get; set; } = [];
     public int TeleportId { get; set; }
 
@@ -47,6 +50,9 @@ public sealed partial class Player : Avatar, IClientPlayer
     private const int MaximumChunkLoadsPerPass = 16;
     private static readonly TimeSpan ChunkLoadTimeBudget = TimeSpan.FromMilliseconds(5);
     private readonly SemaphoreSlim chunkUpdates = new(1, 1);
+
+    // Set once the player left for reconfiguration, after which the client's next player sends its chunks.
+    private bool chunksStopped;
 
     // Vanilla's chunk batch flow control (PlayerChunkSender): chunks go out in batches the client acknowledges with how
     // many chunks a tick it can take, so a slow connection isn't flooded and later packets (keep-alives) don't wait
@@ -65,7 +71,6 @@ public sealed partial class Player : Avatar, IClientPlayer
     public required IServer Server { get; init; }
 
     public PlayerInput Input { get; set; }
-    internal Mob? Vehicle { get; set; }
     internal long LastExperiencePickupTick { get; set; } = -2;
 
     public override bool Sneaking
@@ -87,13 +92,63 @@ public sealed partial class Player : Avatar, IClientPlayer
     public Container Inventory { get; }
     public Container EnderInventory { get; }
 
-    public BaseContainer? OpenedContainer { get; set; }
+    /// <summary>
+    /// The container the player has open. Setting it moves the player between the containers'
+    /// <see cref="BaseContainer.Viewers"/> and ends any drag across slots, which vanilla keeps per menu.
+    /// </summary>
+    public BaseContainer? OpenedContainer
+    {
+        get
+        {
+            lock (this.menuStateGate)
+                return field;
+        }
+        set
+        {
+            lock (this.menuStateGate)
+            {
+                if (ReferenceEquals(field, value))
+                    return;
+
+                if (field is MenuContainer closing)
+                    this.RecordMenuClosed(closing);
+
+                field?.RemoveViewer(this);
+                value?.AddViewer(this);
+                field = value;
+                this.menuSync = null;
+
+                this.IsDragging = false;
+                this.DraggedSlots.Clear();
+            }
+        }
+    }
 
     public List<SkinProperty> SkinProperties { get; set; } = [];
 
     public Vector? LastDeathLocation { get; set; }
 
     public ItemStack? CarriedItem { get; set; }
+
+    /// <summary>
+    /// Keeps what the player is sent about their open window in order and current, through plugins' packet handlers.
+    /// Settable so that a test can stand in for the handlers.
+    /// </summary>
+    internal Events.WindowSnapshots WindowSnapshots { get; set; }
+
+    /// <summary>
+    /// Keeps the player's recipe book up to date with the server's recipes.
+    /// </summary>
+    internal Events.RecipeBookSync RecipeBookSync { get; } = new();
+
+    async ValueTask IPlayer.SynchronizeRecipeBookAsync()
+    {
+        if (await this.RecipeBookSync.SendChangesAsync(this))
+            await Events.MainEventHandler.RefreshCraftingResultAsync(this);
+    }
+
+    ValueTask IPlayer.RefreshWindowAsync() =>
+        Events.MainEventHandler.RefreshWindowAsync(this, this.OpenedContainer ?? this.Inventory, stateId: 0);
 
     public IBlock? LastClickedBlock { get; internal set; }
 
@@ -110,6 +165,7 @@ public sealed partial class Player : Avatar, IClientPlayer
                 GameMode.Survival or GameMode.Adventure => PlayerAbility.None,
                 _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown gamemode.")
             };
+            Abilities |= this.GrantedFlight;
             field = value;
         }
     }
@@ -170,7 +226,9 @@ public sealed partial class Player : Avatar, IClientPlayer
     public int XpTotal { get; set; }
     public float XpP { get; set; }
 
-    public double HeadY { get; internal set; }
+    // Worked out from the position, so that it's right from the moment the player is placed (a player who has just
+    // logged in hasn't sent a movement yet). Standing eye height; poses and scale use EyePosition.
+    public double HeadY => this.Position.Y + 1.62;
 
     public float Absorption { get; set; }
     public float FallDistance { get; set; }
@@ -215,12 +273,13 @@ public sealed partial class Player : Avatar, IClientPlayer
         Health = 20f;
 
         this.Client = client;
+        this.WindowSnapshots = new(this.RunQueueHandlersAsync, this.SendInTurn, this.RunInTurnAsync);
     }
 
     public ItemStack? GetHeldItem() => Inventory.GetItem(CurrentHeldItemSlot);
     public ItemStack? GetOffHandItem() => Inventory.GetItem(45);
 
-    public async ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot slot)//TODO implement new features
+    public ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot slot)//TODO implement new features
     {
         var actualBoard = (Scoreboard)scoreboard;
 
@@ -229,142 +288,343 @@ public sealed partial class Player : Avatar, IClientPlayer
 
         CurrentScoreboard = actualBoard;
 
-        await Client.QueuePacketAsync(new SetObjectivePacket
-        {
-            ObjectiveName = actualBoard.name,
-            Mode = ScoreboardMode.Create,
-            Value = actualBoard.Objective.Value,
-            Type = actualBoard.Objective.DisplayType
-        });
+        // Queued in order with the scoreboard's removal, so a plugin unloading meanwhile can't leave it shown.
+        actualBoard.Display(this.EntityId, slot);
 
-        foreach (var (_, score) in actualBoard.scores)
-        {
-            await Client.QueuePacketAsync(new SetScorePacket
-            {
-                EntityName = score.DisplayText,
-                ObjectiveName = actualBoard.name,
-                Value = score.Value,
-            });
-        }
+        return ValueTask.CompletedTask;
+    }
 
-        await Client.QueuePacketAsync(new SetDisplayObjectivePacket
-        {
-            ObjectiveName = actualBoard.name,
-            DisplaySlot = slot
-        });
+    // What the window snapshots send through: the client's pipeline, which runs their checks in turn with its other
+    // packets (see Client.QueueInTurn). A connection that isn't a server's (a test's, say) has no pipeline and runs no
+    // handlers: the checks run at once and the packets are sent.
+    private ValueTask<bool> RunQueueHandlersAsync(IClientboundPacket packet) =>
+        this.Client is Client client
+            ? client.RunQueueHandlersAsync(packet)
+            : ValueTask.FromResult(true);
+
+    private void SendInTurn(IClientboundPacket packet)
+    {
+        if (this.Client is Client client)
+            client.SendInTurn(packet);
+        else
+            this.Client.SendPacket(packet);
+    }
+
+    private ValueTask RunInTurnAsync(Func<ValueTask> work)
+    {
+        if (this.Client is not Client client)
+            return work();
+
+        client.QueueInTurn(work);
+        return ValueTask.CompletedTask;
     }
 
     public async ValueTask OpenInventoryAsync(BaseContainer container)
     {
-        // Opening another container can replace the open one without a close event, so leave the old furnace here.
-        OpenedContainer?.Viewers.Remove(this);
+        if (!this.Alive)
+            return;
+
         if (OpenedContainer is EnchantmentTable previousTable)
             await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, previousTable);
+
         if (container is EnchantmentTable table)
-            container = new EnchantmentTable { BlockPosition = table.BlockPosition, Title = table.Title, CustomName = table.CustomName };
-        OpenedContainer = container;
-
-        var nextId = GetNextContainerId();
-
-        await Client.QueuePacketAsync(new OpenScreenPacket(container, nextId));
-
-        if (container is CraftingTable { Type: InventoryType.Crafting })
-            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId,
-                container.Concat(this.Inventory.Skip(9).Take(36)).ToList()));
-        else if (container.HasItems())
-            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList()));
-        if (container is EnchantmentTable)
         {
-            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.Concat(Inventory.Skip(9).Take(36)).ToList()));
-            await RefreshEnchantingAsync();
+            container = new EnchantmentTable
+            {
+                BlockPosition = table.BlockPosition,
+                Title = table.Title,
+                CustomName = table.CustomName
+            };
         }
-        if (container is SmeltingContainer furnace)
+
+        var shown = this.TryShow(container);
+
+        // The menu it opened over closed.
+        this.RunMenusClosed();
+        if (shown is not byte nextId
+            || !ReferenceEquals(this.OpenedContainer, container)
+            || this.CurrentContainerId != nextId)
         {
-            furnace.Viewers.Add(this);
-            await AbstractLevel.SendFurnaceStateAsync(furnace, false);
-        }
-    }
-
-    public async override ValueTask TeleportAsync(VectorD pos)
-    {
-        FallDistance = 0;
-        combatPosition = null;
-        CancelWeaponUse();
-        Vehicle?.Dismount(this);
-        LastPosition = Position;
-        Position = pos;
-        await UpdateChunksAsync();
-
-        var tid = Globals.Random.Next(0, 999);
-
-        await EventDispatcher.ExecuteEventAsync(
-            new PlayerTeleportEventArgs
-            (
-                this,
-                this.Server,
-                Position,
-                pos
-            ));
-
-        await Client.QueuePacketAsync(new PlayerPositionPacket
-        {
-            Position = pos,
-            TeleportId = tid
-        });
-        TeleportId = tid;
-    }
-
-    public async override ValueTask TeleportAsync(IEntity to)
-    {
-        FallDistance = 0;
-        combatPosition = null;
-        CancelWeaponUse();
-        LastPosition = Position;
-        Position = to.Position;
-
-        await UpdateChunksAsync();
-
-        TeleportId = Globals.Random.Next(0, 999);
-
-        await Client.QueuePacketAsync(new PlayerPositionPacket
-        {
-            Position = to.Position,
-            TeleportId = TeleportId
-        });
-    }
-
-    public async override ValueTask TeleportAsync(IWorld world)
-    {
-        if (world is not World w)
-        {
-            await base.TeleportAsync(world);
             return;
         }
 
-        // save current world/persistent data 
-        await SaveAsync();
+        await Client.QueuePacketAsync(container is MenuContainer opening
+            ? this.OpenMenuPacket(opening, nextId)
+            : new OpenScreenPacket(container, nextId));
 
-        // Held until the client's view is reset, so the chunk loop can't send chunks of the old world in between.
+        // Like vanilla's menus, a plugin's is sent whole, its slots then the player's inventory, so that clients know
+        // how many slots it has before the player clicks. The packet sets the cursor too, so it always goes, with the
+        // player's carried item, even for an empty container.
+        List<ItemStack> contents;
+        if (container is MenuContainer openedMenu)
+        {
+            // The opening packet can await unloading. Resolve the instance's generation before reading its slots.
+            if (!ReferenceEquals(this.OpenedContainer, openedMenu)
+                || this.CurrentContainerId != nextId
+                || !openedMenu.TryGetOwner(out var owner))
+            {
+                if (this.CurrentContainerId == nextId)
+                    await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = nextId });
+
+                return;
+            }
+
+            var plugin = owner as PluginContainer;
+            using var call = plugin?.TryEnter();
+            if (plugin is not null && call is null)
+            {
+                await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = nextId });
+                return;
+            }
+
+            contents = openedMenu.Concat(this.Inventory.Skip(9).Take(36)).ToList();
+        }
+        else
+        {
+            contents = container is CraftingTable { Type: InventoryType.Crafting } or EnchantmentTable
+                ? container.Concat(this.Inventory.Skip(9).Take(36)).ToList()
+                : container.ToList();
+        }
+
+        await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, contents)
+        {
+            CarriedItem = this.CarriedItem
+        });
+
+        if (container is EnchantmentTable)
+            await RefreshEnchantingAsync();
+
+        if (container is BrewingStand stand)
+            await AbstractLevel.SendBrewingPropertiesAsync(this, stand);
+
+        if (container is SmeltingContainer furnace)
+            await AbstractLevel.SendFurnacePropertiesAsync(this, furnace);
+
+        if (container is MenuContainer menu)
+            await this.SendMenuOpenedAsync(menu, nextId);
+
+        // A plugin's menu can close as it opens, when its plugin unloads, and a block entity's container can be retired
+        // as it opens, when its block goes; the screen that just opened closes too.
+        if (this.CurrentContainerId == nextId && container.ShowsRetired)
+            await this.CloseContainerAsync();
+        else if (this.CurrentContainerId == nextId && !ReferenceEquals(this.OpenedContainer, container))
+            await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = nextId });
+    }
+
+    /// <summary>
+    /// Makes <paramref name="container"/> the open container and numbers its window, unless it's a menu whose type
+    /// doesn't open now (see <see cref="MenuDefinition.IsOpenable"/>), or that the player's client doesn't know (see
+    /// <see cref="KnowsMenu"/>).
+    /// </summary>
+    /// <returns>The window's id, or null when the menu doesn't open.</returns>
+    private byte? TryShow(BaseContainer container)
+    {
+        // A container whose block entity is gone doesn't open again.
+        if (container.ShowsRetired)
+            return null;
+
+        if (container is not MenuContainer menu)
+            return Show();
+
+        lock (menu.Menu.Gate)
+            return menu.TryGetOwner(out _) && this.KnowsMenu(menu.Menu) ? Show() : null;
+
+        byte Show()
+        {
+            // Opening the open menu again ends its last opening, which its Closed hears of.
+            if (container is MenuContainer && ReferenceEquals(this.OpenedContainer, container))
+                this.OpenedContainer = null;
+
+            this.OpenedContainer = container;
+
+            return this.GetNextContainerId();
+        }
+    }
+
+    /// <summary>
+    /// Closes the player's open container from the server, like the player closing it: the close event runs, then
+    /// their screen closes. Unlike the player's close, cancelling the event doesn't keep it open.
+    /// </summary>
+    /// <param name="unloading">
+    /// The plugin whose unloading closes the container. Its handlers of the close event still run, although it no
+    /// longer takes other calls.
+    /// </param>
+    ValueTask IPlayer.CloseContainerAsync(API.Plugins.IPluginContainer? unloading) =>
+        this.CloseContainerAsync(unloading as PluginContainer);
+
+    internal async ValueTask CloseContainerAsync(PluginContainer? unloading = null)
+    {
+        // Death owns mandatory window removal. A concurrent close must not return its transient inputs to inventory.
+        if (!this.Alive)
+            return;
+
+        if (this.OpenedContainer is not BaseContainer container)
+            return;
+
+        var containerId = this.CurrentContainerId;
+        var closed = new ContainerClosedEventArgs(this, this.Server, container, containerId);
+
+        if (unloading is not null && this.EventDispatcher is EventDispatcher dispatcher)
+            await dispatcher.ExecuteEventAsync(closed, unloading);
+        else
+            await this.EventDispatcher.ExecuteEventAsync(closed);
+
+        // A handler may have opened another container instead, which stays open. The server's own handler has
+        // usually let go of the container already, so the window's id tells.
+        if (this.CurrentContainerId != containerId)
+            return;
+
+        if (ReferenceEquals(this.OpenedContainer, container))
+            this.OpenedContainer = null;
+
+        this.RunMenusClosed();
+        await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = containerId });
+    }
+
+    // Vanilla's creative drop throttle: each drop counts 20, each tick (50 ms here) takes one off, and drops stop
+    // from 1480 on. Only the player's own packets, which are handled in turn, count drops.
+    private const int CreativeDropCost = 20;
+    private const int CreativeDropLimit = 1480;
+
+    private int creativeDrops;
+    private long creativeDropsTick;
+
+    /// <summary>
+    /// Counts a drop from the creative inventory screen, unless the player is dropping too fast.
+    /// </summary>
+    /// <returns>Whether the drop happens.</returns>
+    internal bool CountCreativeDrop()
+    {
+        var tick = Environment.TickCount64 / 50;
+        this.creativeDrops = (int)Math.Max(0, this.creativeDrops - (tick - this.creativeDropsTick));
+        this.creativeDropsTick = tick;
+
+        if (this.creativeDrops >= CreativeDropLimit)
+            return false;
+
+        this.creativeDrops += CreativeDropCost;
+
+        return true;
+    }
+
+    public override ValueTask TeleportAsync(VectorD pos) => this.TeleportAsync(this.Level, pos);
+
+    private async ValueTask TeleportWithinLevelAsync(ILevel level, VectorD pos, Angle? yaw, Angle? pitch)
+    {
+        FallDistance = 0;
+        combatPosition = null;
+        CancelWeaponUse();
+
+        // The move, the client's view and the position packet change together under chunkUpdates, like a respawn's
+        // and a level change's, so that the last position packet queued is always the player's position, whichever
+        // travel came last.
         await this.chunkUpdates.WaitAsync();
+        VectorD from;
+        Angle fromYaw;
+        Angle fromPitch;
+        Entity[] riders;
         try
         {
-            Level.TryRemovePlayer(this);
-            w.TryAddPlayer(this);
-
-            Level = w;
-
-            // resync player data
-            await LoadAsync(false);
-
-            // reload world stuff and send rest of the info
-            await this.UpdateChunksUnderLockAsync(true);
+            from = this.Position;
+            fromYaw = this.Yaw;
+            fromPitch = this.Pitch;
+            riders = this.MoveWithinLevel(level, pos, yaw, pitch);
         }
-        finally
+        catch
         {
             this.chunkUpdates.Release();
+            throw;
         }
 
-        await SendPlayerInfoAsync();
+        await using (DeferredInventoryWork.Begin(this.Logger))
+        {
+            try
+            {
+                await this.UpdateChunksUnderLockAsync(unloadAll: false);
+
+                var tid = Globals.Random.Next(0, 999);
+                await Client.QueuePacketAsync(new PlayerPositionPacket
+                {
+                    Position = pos,
+                    Delta = Motion,
+                    Yaw = Yaw,
+                    Pitch = Pitch,
+                    TeleportId = tid
+                });
+                TeleportId = tid;
+            }
+            finally
+            {
+                this.chunkUpdates.Release();
+            }
+        }
+
+        await EventDispatcher.ExecuteEventAsync(new PlayerTeleportEventArgs(this, this.Server, from, pos));
+        await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
+    }
+
+    // Moves the player within their level, with chunkUpdates held, after the travel that may have come first.
+    // Returns the passengers it took off, to carry along.
+    private Entity[] MoveWithinLevel(ILevel level, VectorD pos, Angle? yaw, Angle? pitch)
+    {
+        if (this.Level != level || !this.Alive)
+            throw new InvalidOperationException("The player died or changed level before the teleport.");
+
+        var riders = this.DetachPassengersForTravel();
+        LastPosition = Position;
+        if (Level is AbstractLevel resident && !resident.TryMoveEntity(this, Position, pos))
+        {
+            foreach (var rider in riders)
+                rider.Ride(this, force: true);
+
+            throw new InvalidOperationException("The destination region could not accept the player.");
+        }
+
+        Position = pos;
+        this.Yaw = yaw ?? this.Yaw;
+        this.Pitch = pitch ?? this.Pitch;
+        BoundingBox = Dimension.CreateBBFromPosition(pos);
+
+        return riders;
+    }
+
+    public override ValueTask TeleportAsync(IEntity to) =>
+        this.TeleportAsync(to.Level, to.Position, to.Yaw, to.Pitch);
+
+    public override ValueTask TeleportAsync(IWorld world) =>
+        this.TeleportAsync(world, world.LevelData.SpawnPosition);
+
+    public override ValueTask TeleportAsync(
+        ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null) =>
+        DeferredInventoryWork.RunOrDeferAsync(() => this.TeleportAfterCallbacksAsync(level, position, yaw, pitch));
+
+    private async ValueTask TeleportAfterCallbacksAsync(
+        ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null)
+    {
+        ValidateTravel(level, position, yaw, pitch);
+
+        // A respawn under way (one whose packets a plugin's handler sees, say) finishes first. The respawn's own flow
+        // never gets here meanwhile: travel it asks for is deferred past it.
+        await this.WaitForRespawnAsync();
+        if (!this.Alive)
+            throw new InvalidOperationException("A dead player cannot travel.");
+
+        await this.CancelPortalTravelAsync();
+        if (this.Level != level)
+        {
+            await this.TransferDimensionAfterCallbacksAsync(level, position, yaw, pitch, null, false, false);
+            return;
+        }
+
+        var source = this.Level;
+        using var area = level is AbstractLevel resident
+            ? await PortalArea.LoadAsync(resident, (Vector)position.Floor(), 0,
+                () => this.Client.Connected && this.Alive && this.Level == source)
+            : null;
+        if (level is AbstractLevel && area is null)
+            throw new InvalidOperationException("The player moved while the destination was loading.");
+
+        await this.TeleportWithinLevelAsync(level, position, yaw, pitch);
     }
 
     public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
@@ -407,89 +667,209 @@ public sealed partial class Player : Avatar, IClientPlayer
     public async ValueTask KickAsync(string reason) => await this.Client.DisconnectAsync(reason);
     public async ValueTask KickAsync(ChatMessage reason) => await Client.DisconnectAsync(reason);
 
-    internal async Task TransferDimensionAsync(ILevel destination)
+    public async Task<bool> TeleportToDimensionAsync(string dimension)
     {
+        var world = this.Level is IDimension child ? child.ParentWorld as World : this.Level as World;
+        ILevel? destination = world?.DimensionName == dimension
+            ? world
+            : world?.dimensions.GetValueOrDefault(dimension);
+
+        if (destination is null || !this.Alive || this.Respawning)
+            return false;
+
+        if (destination == this.Level)
+            await this.TeleportAsync(destination.LevelData.SpawnPosition);
+        else
+            await this.TransferDimensionAsync(destination);
+
+        return true;
+    }
+
+    internal Task TransferDimensionAsync(
+        ILevel destination, VectorD? position = null, Angle? yaw = null, Angle? pitch = null,
+        VectorD? motion = null, bool portal = false, bool relativeMotion = false)
+        => DeferredInventoryWork.RunOrDeferAsync(() => new ValueTask(this.TransferDimensionAfterCallbacksAsync(
+            destination, position, yaw, pitch, motion, portal, relativeMotion))).AsTask();
+
+    private async Task TransferDimensionAfterCallbacksAsync(
+        ILevel destination, VectorD? position, Angle? yaw, Angle? pitch,
+        VectorD? motion, bool portal, bool relativeMotion)
+    {
+        await this.CancelPortalTravelAsync();
         CancelEating();
         CancelWeaponUse();
         combatPosition = null;
-        Vehicle?.Dismount(this);
         var origin = Level;
-        var spawn = destination.LevelData.SpawnPosition;
-        await destination.GetChunkAsync((Vector)spawn.Floor());
-        await origin.DestroyEntityAsync(this);
-        origin.TryRemovePlayer(this);
-        foreach (var observer in origin.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
-            observer.visiblePlayers.Remove(this);
-
-        // Held from the level change until the respawn resets the client's view (see RespawnUnderLockAsync).
-        await this.chunkUpdates.WaitAsync();
-        try
-        {
-            Level = destination;
-            Position = spawn;
-            LastPosition = spawn;
-            BoundingBox = Dimension.CreateBBFromPosition(spawn);
-            HeadY = spawn.Y + 1.62;
-            Motion = VectorD.Zero;
-            FallDistance = 0;
-            foodPosition = null;
-            destination.TryAddPlayer(this);
-            destination.TryAddEntity(this);
-            await this.RespawnUnderLockAsync(DataKept.Metadata);
-        }
-        finally
-        {
-            this.chunkUpdates.Release();
-        }
-
-        await Client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
-        { Dimension = destination.DimensionName, Pos = (Vector)spawn.Floor() }, 0, 0));
-        await Client.QueuePacketAsync(new SetTimePacket(destination.LevelData.Time, destination.LevelData.DayTime, true));
-        await Client.QueuePacketAsync(new GameEventPacket(destination.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
-        foreach (var (id, effect) in ActivePotionEffects)
-            await Client.QueuePacketAsync(new UpdateMobEffectPacket(EntityId, id, effect.CurrentDuration)
-            { Amplifier = effect.EffectData.Amplifier, Flags = EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon });
-        await SaveAsync();
-    }
-
-    public async Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
-    {
-        if (Respawning)
+        var from = this.Position;
+        var fromYaw = this.Yaw;
+        var fromPitch = this.Pitch;
+        Entity[] riders = [];
+        var spawn = position ?? destination.LevelData.SpawnPosition;
+        ValidateTravel(destination, spawn, yaw, pitch);
+        using var area = destination is AbstractLevel target
+            ? await PortalArea.LoadAsync(target, (Vector)spawn.Floor(), 0,
+                () => this.Client.Connected && this.Alive && this.IsTravelResident(origin))
+            : null;
+        if (destination is AbstractLevel && area is null)
             return;
 
-        await this.chunkUpdates.WaitAsync();
-        try
+        await this.CloseContainerAsync();
+
+        while (true)
         {
-            await this.RespawnUnderLockAsync(dataKept);
+            await this.WaitForDeathAsync();
+            // Held from the level change until the destination's packets are queued, so that another travel's packets
+            // can't come in between.
+            await this.chunkUpdates.WaitAsync();
+            await using var callbacks = DeferredInventoryWork.Begin(this.Logger);
+            try
+            {
+                if (await this.RespawnUnderLockAsync(
+                    DataKept.Attributes | DataKept.Metadata, levelChange: true, transfer: Commit))
+                {
+                    await this.QueueDestinationAsync(destination);
+                    break;
+                }
+            }
+            finally
+            {
+                this.preservePortalMotion = false;
+                this.chunkUpdates.Release();
+            }
         }
-        finally
+
+        await this.EventDispatcher.ExecuteEventAsync(new PlayerTeleportEventArgs(this, this.Server, from, spawn));
+        await this.FireProgressAsync("changed_dimension", from: origin.DimensionName, to: destination.DimensionName);
+        this.progressDimension = destination.DimensionName;
+        await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
+        await SaveAsync();
+
+        void Commit()
         {
-            this.chunkUpdates.Release();
+            from = this.Position;
+            fromYaw = this.Yaw;
+            fromPitch = this.Pitch;
+            riders = this.DetachPassengersForTravel();
+            try
+            {
+                this.CommitTravel(origin, destination, spawn, yaw, pitch);
+            }
+            catch
+            {
+                foreach (var rider in riders)
+                    rider.Ride(this, force: true);
+
+                throw;
+            }
+
+            foreach (var observer in origin.GetPlayersInRange(from, float.MaxValue).OfType<Player>())
+                observer.visiblePlayers.Remove(this);
+
+            this.Motion = motion ?? this.Motion;
+            this.FallDistance = 0;
+            this.foodPosition = null;
+            this.preservePortalMotion = relativeMotion;
+            if (portal)
+                this.portalCooldown = PlayerPortalCooldown;
+        }
+    }
+
+    // What a level change sends after the respawn packets, with chunkUpdates held.
+    private async ValueTask QueueDestinationAsync(ILevel destination)
+    {
+        // Vanilla 1.21.11 sends the shared world's GlobalPos spawn, including while in a child dimension.
+        var sharedSpawn = destination is IDimension child ? child.ParentWorld : destination;
+        var time = destination.LevelData;
+        await Client.QueuePacketAsync(new SetTimePacket(time.Time, time.DayTime, true));
+        await Client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
+        {
+            Dimension = sharedSpawn.DimensionName,
+            Pos = (Vector)sharedSpawn.LevelData.SpawnPosition.Floor()
+        }, 0, 0));
+        var weather = destination.LevelData.Raining
+            ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining;
+        await Client.QueuePacketAsync(new GameEventPacket(weather));
+        foreach (var (id, effect) in ActivePotionEffects)
+            await Client.QueuePacketAsync(new UpdateMobEffectPacket(EntityId, id, effect.CurrentDuration)
+            {
+                Amplifier = effect.EffectData.Amplifier,
+                Flags = EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon
+            });
+        await Client.QueuePacketAsync(new GameEventPacket(
+            ChangeGameStateReason.RainLevelChange, destination.LevelData.Raining ? 1 : 0));
+        await Client.QueuePacketAsync(new GameEventPacket(
+            ChangeGameStateReason.ThunderLevelChange, destination.LevelData.Thundering ? 1 : 0));
+        await Client.QueuePacketAsync(new SetExperiencePacket(this.XpP, this.XpLevel, this.XpTotal));
+        await Client.QueuePacketAsync(new PlayerAbilitiesPacket { Abilities = this.Abilities });
+    }
+
+    /// <summary>
+    /// Respawns the player, once a death under way finished, or sends them their level again if they're alive. A
+    /// respawn asked for during another waits for it, then respawns the player again.
+    /// </summary>
+    public Task RespawnAsync(DataKept dataKept = DataKept.Metadata) =>
+        DeferredInventoryWork.RunOrDeferAsync(() => new ValueTask(this.RespawnAfterDeathAsync(dataKept))).AsTask();
+
+    private async Task RespawnAfterDeathAsync(DataKept dataKept)
+    {
+        while (true)
+        {
+            await this.WaitForDeathAsync();
+            await this.chunkUpdates.WaitAsync();
+            await using var callbacks = DeferredInventoryWork.Begin(this.Logger);
+            try
+            {
+                if (await this.RespawnUnderLockAsync(dataKept))
+                    return;
+            }
+            finally
+            {
+                this.chunkUpdates.Release();
+            }
         }
     }
 
     /// <summary>
-    /// Respawns the player, with <see cref="chunkUpdates"/> already held. Callers that change the player's level take
-    /// it before the change, so the chunk loop can't send chunks of the old level after the respawn packet, or load
-    /// the new level's chunks into the old view.
+    /// Respawns the player, with <see cref="chunkUpdates"/> held, inside a transaction that defers plugins' callbacks
+    /// (attachment changes, travel or deaths they ask for) until its release. Its packets are queued in order ahead of
+    /// any chunk sent after it, and plugins' packet handlers see them in the client's pipeline, never in this flow.
+    /// A dimension transfer commits through <paramref name="transfer"/> after the death check reserves this respawn.
+    /// Returns false if death must finish first; the caller must release the lock before waiting and retrying.
     /// </summary>
-    private async Task RespawnUnderLockAsync(DataKept dataKept)
+    private async Task<bool> RespawnUnderLockAsync(
+        DataKept dataKept, bool levelChange = false, Action? transfer = null)
     {
-        if (Respawning)
-            return;
+        lock (this.deathState)
+        {
+            if (this.Respawning)
+                return true;
 
-        Respawning = true;
+            // Death may have started while this caller waited for chunkUpdates. Retry outside that lock.
+            if (this.deathFinished is { Task.IsCompleted: false })
+                return false;
+
+            this.Respawning = true;
+            this.respawnFinished = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
         try
         {
-            if (!Alive)
+            // Reserve the respawn before changing levels: a death that won the lock retries without committing,
+            // and a death arriving after the reservation waits for the completed transfer.
+            transfer?.Invoke();
+            this.ResetAttachmentSync();
+            this.ResetAttributeSync();
+            var died = !Alive;
+            if (died)
             {
                 // Death respawns must create fresh client state rather than retain the dead player's metadata.
                 dataKept = DataKept.None;
+                // Death completed before taking chunkUpdates; never drain items again during respawn.
+                API.Data.AttachmentStorage.For(this).Respawn(this);
                 CancelEating();
                 CancelWeaponUse();
                 combatPosition = null;
                 attackTicks = 0;
-                Vehicle?.Dismount(this);
+                LeaveVehicle();
                 ClearPotionEffects();
                 damageCooldown = 0;
                 lastIncomingDamage = 0;
@@ -513,17 +893,17 @@ public sealed partial class Player : Avatar, IClientPlayer
                 Yaw = 0;
                 Pitch = 0;
                 MovementFlags = MovementFlags.None;
-                Health = 20f;
+                Health = MaxHealth;
+                this.progressDead = false;
+                API.Data.AttachmentStorage.For(this).EndDeath();
                 await Level.DestroyEntityAsync(this);
                 Position = Level.LevelData.SpawnPosition;
                 LastPosition = Position;
                 BoundingBox = Dimension.CreateBBFromPosition(Position);
-                HeadY = Position.Y + 1.62;
                 Level.TryAddEntity(this);
             }
 
-            CodecRegistry.TryGetDimension(Level.DimensionName, out var codec);
-            Debug.Assert(codec is not null); // TODO Handle missing codec
+            var codec = Level.DimensionType;
 
             Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
 
@@ -542,6 +922,10 @@ public sealed partial class Player : Avatar, IClientPlayer
                 },
                 DataKept = dataKept,
             });
+
+            // Vanilla's level transfer keeps metadata and attributes, then sends the target difficulty.
+            if (levelChange)
+                await Client.QueuePacketAsync(ChangeDifficultyPacket.Of(Level.LevelData));
 
             visiblePlayers.Clear();
 
@@ -564,36 +948,29 @@ public sealed partial class Player : Avatar, IClientPlayer
             Level.TryAddEntity(this);
             await Client.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
             await SendPlayerInfoAsync();
+
+            // Vanilla's respawn sends the experience the new player starts with.
+            if (died)
+                await Client.QueuePacketAsync(new SetExperiencePacket(this.XpP, this.XpLevel, this.XpTotal));
+
             await TrySpawnPlayerAsync(Position);
             await SynchronizeTrackedEntitiesAsync();
         }
         finally
         {
-            Respawning = false;
+            lock (this.deathState)
+            {
+                this.Respawning = false;
+                this.respawnFinished!.TrySetResult();
+            }
         }
 
+        return true;
     }
 
     //TODO make IDamageSource 
-    public async override ValueTask KillAsync(IEntity source, ChatMessage deathMessage)
-    {
-        Health = 0;
-        CancelEating();
-        CancelWeaponUse();
-        if (OpenedContainer is EnchantmentTable table)
-        {
-            await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, table);
-            OpenedContainer = null;
-        }
-        // A furnace stays open across death without a close event; stop it sending this player's view to the furnace.
-        OpenedContainer?.Viewers.Remove(this);
-        Vehicle?.Dismount(this);
-        await Client.QueuePacketAsync(new SetHealthPacket(0, FoodLevel, FoodSaturationLevel));
-        await Client.QueuePacketAsync(new PlayerCombatKillPacket { PlayerID = EntityId, Message = deathMessage });
-        PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket { EntityId = EntityId, Event = 3 }, EntityId);
-        foreach (var observer in Level.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
-            observer.visiblePlayers.Remove(this);
-    }
+    public override ValueTask KillAsync(IEntity source, ChatMessage deathMessage) =>
+        this.BeginDeathAsync(source, deathMessage);
 
     public override void Write(INetStreamWriter writer)
     {
@@ -804,10 +1181,10 @@ public sealed partial class Player : Avatar, IClientPlayer
         var oldPosition = Position;
         var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, movementFlags);
+        this.PositionPassengers();
+        this.RecordProgressMovement(oldPosition, oldMovementFlags);
         await UpdateFallAsync(oldPosition, movementFlags);
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
-
-        HeadY = position.Y + 1.62f;
 
         await TrySpawnPlayerAsync(position);
     }
@@ -821,10 +1198,10 @@ public sealed partial class Player : Avatar, IClientPlayer
         var oldPosition = Position;
         var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, yaw, pitch, movementFlags);
+        this.PositionPassengers();
+        this.RecordProgressMovement(oldPosition, oldMovementFlags);
         await UpdateFallAsync(oldPosition, movementFlags);
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
-
-        HeadY = position.Y + 1.62f;
 
         await TrySpawnPlayerAsync(position);
     }
@@ -930,6 +1307,17 @@ public sealed partial class Player : Avatar, IClientPlayer
     /// Sends the chunks in view that weren't generated when they were last asked for and are now. The server's chunk
     /// loop calls it every tick, independently of the world tick; it skips the tick while the chunks are being updated.
     /// </summary>
+    /// <summary>
+    /// Waits for a chunk send under way and stops sending this player chunks: they left to go back through
+    /// configuration, and the client's next player gets its chunks.
+    /// </summary>
+    internal async Task StopSendingChunksAsync()
+    {
+        await this.chunkUpdates.WaitAsync();
+        this.chunksStopped = true;
+        this.chunkUpdates.Release();
+    }
+
     internal async Task SendPendingChunksAsync()
     {
         lock (this.chunkBatchLock)
@@ -963,6 +1351,9 @@ public sealed partial class Player : Avatar, IClientPlayer
     // retrying ungenerated chunks, so they can't prevent the rest of the view from being requested. Called under chunkUpdates.
     private async Task<bool> SendReadyChunksAsync()
     {
+        if (this.chunksStopped)
+            return true;
+
         if (this.pendingChunks.Count == 0 || this.chunkCacheCenter is not var (centerX, centerZ))
             return this.pendingChunks.Count == 0;
 

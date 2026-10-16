@@ -1,18 +1,54 @@
-﻿using Obsidian.API.Inventory;
+using Obsidian.API.Inventory;
 
 namespace Obsidian.API.Events;
 
+/// <summary>
+/// A player's click in their open window, raised before the server applies it.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Handlers run outside the container's lock, so a handler may wait, even for another viewer's click. The server's
+/// own handler runs last: inside the lock it checks that the window is still open and that neither the container,
+/// the player's inventory nor the cursor changed since the click arrived (see <see cref="BaseContainer.Revision"/>:
+/// a slot set, or a stack in one changing its count or components), then applies the click, unless it's cancelled,
+/// and sends the window's contents and cursor to its viewers. A click whose slots changed meanwhile isn't applied, so
+/// a handler's decision is never applied to contents it didn't see; the player's window is corrected instead, like
+/// after a cancelled click.
+/// </para>
+/// <para>
+/// A handler may cancel the click and read <see cref="Item"/>, a copy of what the slot held as the click arrived.
+/// To change slots as part of the click, register the change with <see cref="ApplyWithClick"/>, which runs it inside
+/// the lock with the click. A handler that changes the container itself, through its methods, makes its own click
+/// stale, and its change may race other viewers' clicks.
+/// </para>
+/// </remarks>
 public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
 {
+    private readonly List<Action> changes = [];
+
+    private bool arrived;
+
+    private ItemStack? arrivalItem;
+
+    private Func<ItemStack, ItemStack>? copy;
+
     /// <summary>
-    /// Gets the current item that was clicked. />
+    /// What the clicked slot held when the click arrived, as a copy made each time it's read: it shares nothing with
+    /// the slot's stack or with other reads, components included, so changing it changes nothing.
     /// </summary>
-    public ItemStack? Item => this.ClickedSlot != -999 ? this.Container.GetItem(this.ClickedSlot) : null;
+    public ItemStack? Item => this.arrived
+        ? this.arrivalItem is ItemStack item ? this.copy!(item) : null
+        : this.SlotItem;
+
+    /// <summary>
+    /// What the clicked slot holds now, which the server's handler changes.
+    /// </summary>
+    internal ItemStack? SlotItem => this.ClickedSlot >= 0 ? this.Container.GetItem(this.ClickedSlot) : null;
 
     public bool IsPlayerInventory => this.ContainerId == 0;
 
     /// <summary>
-    /// The ID of the inventory. Usually incremented by one every time an inventory is opened and resets when it reaches 255. 
+    /// The ID of the inventory. Usually incremented by one every time an inventory is opened and resets when it reaches 255.
     /// </summary>
     /// <remarks>
     /// This value is unique per client.
@@ -23,6 +59,12 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     /// Gets the slot that was clicked
     /// </summary>
     public required short ClickedSlot { get; init; }
+
+    /// <summary>
+    /// The clicked slot as the open window numbers it: the open container's slots, then the player's inventory.
+    /// <see cref="ClickedSlot"/> is the same slot in <see cref="ContainerEventArgs.Container"/>.
+    /// </summary>
+    internal short WindowSlot { get; init; }
 
     /// <summary>
     /// The button that was clicked in the inventory. Can vary depending on the inventory type.
@@ -36,6 +78,16 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     /// <inheritdoc />
     public bool IsCancelled { get; private set; }
 
+    /// <summary>
+    /// What the player's window showed when the click arrived: the server applies the click only if it's still current.
+    /// </summary>
+    internal ClickWindowState ArrivalState { get; private set; }
+
+    /// <summary>
+    /// The changes plugins registered with <see cref="ApplyWithClick"/>, in order.
+    /// </summary>
+    internal IReadOnlyList<Action> Changes => this.changes;
+
     internal ContainerClickEventArgs(IPlayer player, IServer server, BaseContainer container) : base(player, server, container) { }
 
     /// <inheritdoc />
@@ -43,6 +95,41 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     {
         IsCancelled = true;
     }
+
+    /// <summary>
+    /// Registers a change to make with the click: the server runs <paramref name="change"/> inside the container's
+    /// lock, right after applying the click, or in its place when the click is cancelled, and only if the click's
+    /// slots didn't change since it arrived, so the change acts on what <see cref="Item"/> shows. The window's viewers
+    /// then see the result.
+    /// </summary>
+    /// <param name="change">
+    /// The change, which reads and sets slots through the container's methods. It runs on the server's handler, so it
+    /// must not block or wait.
+    /// </param>
+    public void ApplyWithClick(Action change)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+
+        lock (this.changes)
+            this.changes.Add(change);
+    }
+
+    /// <summary>
+    /// Remembers the window's state as the click arrives, which it is checked against before it's applied, and what
+    /// the clicked slot held for <see cref="Item"/>.
+    /// </summary>
+    /// <param name="copy">
+    /// Copies a stack so that the copy shares nothing that can change with it. The clicked slot's stack is copied
+    /// after the state is taken, so that a change in between leaves the state behind.
+    /// </param>
+    internal void Arrive(Func<ItemStack, ItemStack> copy)
+    {
+        this.ArrivalState = ClickWindowState.Of(this.Player);
+        this.arrivalItem = this.SlotItem is ItemStack item ? copy(item) : null;
+        this.copy = copy;
+        this.arrived = true;
+    }
+
     internal static ContainerClickEventArgs Create(
         IPlayer player,
         IServer server,
@@ -57,6 +144,7 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
         {
             ContainerId = containerId,
             ClickedSlot = clickedSlot,
+            WindowSlot = clickedSlot,
             Button = button,
             StateId = stateId,
             ClickType = clickType

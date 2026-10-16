@@ -3,38 +3,88 @@ using Obsidian.API.Registry.Codecs.ArmorTrims;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
 
 namespace Obsidian.API.Inventory.DataComponents;
+
 public sealed record class TrimDataComponent : DataComponent
 {
     public override DataComponentType Type => DataComponentType.Trim;
 
     public override string Identifier => "minecraft:trim";
 
-    public ChatMessage? MaterialDescription { get; set; }
-    public ChatMessage? PatternDescription { get; set; }
-    public int? MaterialRegistryId { get; set; }
-    public int? PatternRegistryId { get; set; }
+    private ChatMessage? materialDescription;
 
-    public TrimMaterialElement Material { get; set; }
+    public ChatMessage? MaterialDescription
+    {
+        get => ComponentCopies.Chat(this.materialDescription);
+        init => this.materialDescription = ComponentCopies.Chat(value);
+    }
 
-    public TrimPatternElement Pattern { get; set; }
+    private ChatMessage? patternDescription;
 
-    public bool ShowInToolTip { get; set; }
+    public ChatMessage? PatternDescription
+    {
+        get => ComponentCopies.Chat(this.patternDescription);
+        init => this.patternDescription = ComponentCopies.Chat(value);
+    }
+
+    private int? materialRegistryId;
+
+    public int? MaterialRegistryId
+    {
+        get => this.materialRegistryId;
+        init => this.materialRegistryId = value;
+    }
+
+    private int? patternRegistryId;
+
+    public int? PatternRegistryId
+    {
+        get => this.patternRegistryId;
+        init => this.patternRegistryId = value;
+    }
+
+    private TrimMaterialElement material;
+
+    public TrimMaterialElement Material
+    {
+        get => this.material;
+        init => this.material = value;
+    }
+
+    private TrimPatternElement pattern;
+
+    public TrimPatternElement Pattern
+    {
+        get => this.pattern;
+        init => this.pattern = value;
+    }
+
+    private bool showInToolTip;
+
+    public bool ShowInToolTip
+    {
+        get => this.showInToolTip;
+        init => this.showInToolTip = value;
+    }
 
     private static TrimDescription LegacyDescription(ChatMessage chat) => new() { Translate = chat.Translate ?? "", Color = chat.Color?.ToString() };
     private static ChatMessage ChatDescription(TrimDescription value) => new()
     { Translate = value.Translate, Color = value.Color is string color ? new HexColor(color) : null };
 
-    public override void Read(INetStreamReader reader)
+    protected override void ReadCore(INetStreamReader reader)
     {
+        this.material = null;
+        this.materialDescription = null;
+        this.pattern = null;
+        this.patternDescription = null;
         var material = reader.ReadVarInt();
-        this.MaterialRegistryId = material == 0 ? null : material - 1;
+        this.materialRegistryId = material == 0 ? null : material - 1;
         if (material == 0)
         {
             var asset = reader.ReadString();
             var overrides = reader.ReadLengthPrefixedArray(() => (Key: reader.ReadString(), Value: reader.ReadString()))
                 .ToDictionary(pair => pair.Key, pair => pair.Value);
-            this.MaterialDescription = reader.ReadChat();
-            this.Material = new()
+            this.materialDescription = reader.ReadChat();
+            this.material = new()
             {
                 AssetName = asset,
                 OverrideArmorAssets = overrides,
@@ -43,12 +93,12 @@ public sealed record class TrimDataComponent : DataComponent
         }
 
         var pattern = reader.ReadVarInt();
-        this.PatternRegistryId = pattern == 0 ? null : pattern - 1;
+        this.patternRegistryId = pattern == 0 ? null : pattern - 1;
         if (pattern == 0)
         {
             var asset = reader.ReadString();
-            this.PatternDescription = reader.ReadChat();
-            this.Pattern = new()
+            this.patternDescription = reader.ReadChat();
+            this.pattern = new()
             {
                 AssetId = asset,
                 Description = LegacyDescription(this.PatternDescription),

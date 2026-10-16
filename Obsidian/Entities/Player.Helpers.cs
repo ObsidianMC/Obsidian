@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API.Inventory;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
+using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -29,11 +30,46 @@ public partial class Player
     internal bool IsSingleplayerOwner { get; init; }
 
     /// <summary>
+    /// Vanilla <c>Player.blockInteractionRange</c>: how far <paramref name="player"/> reaches blocks, the
+    /// <c>minecraft:block_interaction_range</c> attribute (vanilla's base 4.5 when it isn't set), half a block farther in
+    /// creative, as vanilla's creative modifier adds.
+    /// </summary>
+    internal static double BlockInteractionRange(IPlayer player)
+    {
+        const string attribute = "minecraft:block_interaction_range";
+        var range = player.HasAttribute(attribute) ? player.GetAttributeValue(attribute) : 4.5;
+
+        return player.GameMode == GameMode.Creative ? range + 0.5 : range;
+    }
+
+    /// <summary>
+    /// Where <paramref name="player"/>'s eyes are, which they reach blocks from: their pose's eye height, as vanilla's
+    /// pose dimensions give it, scaled like the rest of their body.
+    /// </summary>
+    internal static VectorD EyePosition(IPlayer player)
+    {
+        var eyeHeight = player.Pose switch
+        {
+            Pose.FallFlying or Pose.Swimming or Pose.SpinAttack => 0.4f,
+            Pose.Sneaking => 1.27f,
+            Pose.Sleeping => 0.2f,
+            _ => 1.62f
+        };
+        var scale = player.HasAttribute("minecraft:scale")
+            ? Math.Clamp(player.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
+            : 1f;
+
+        return player.Position + new VectorD(0, eyeHeight * scale, 0);
+    }
+
+    /// <summary>
     /// Saves the player in vanilla's shape to the world's <c>playerdata/&lt;uuid&gt;.dat</c> (and for the singleplayer
     /// owner of a vanilla-shaped world, to its level.dat's <c>Data.Player</c> too), and the world they're in to
     /// <see cref="PersistentDataFile"/>.
     /// </summary>
-    public async Task SaveAsync()
+    public async Task SaveAsync() => await this.RunTickAsync(this.SavePlayerAsync, allowStopped: true);
+
+    private async ValueTask SavePlayerAsync()
     {
         await this.saveLock.WaitAsync();
         try
@@ -51,6 +87,7 @@ public partial class Player
                 vanillaWorld.SingleplayerPlayerData = data;
 
             await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(this.Uuid), data);
+            await this.SaveProgressAsync();
         }
         finally
         {
@@ -82,6 +119,7 @@ public partial class Player
         try
         {
             await this.LoadDataAsync(loadFromPersistentWorld);
+            this.LoadProgress();
             this.dataLoaded = true;
         }
         finally
@@ -197,7 +235,7 @@ public partial class Player
         await Client.QueuePacketAsync(new ContainerSetContentPacket(0, Inventory.ToList())
         {
             StateId = Inventory.StateId++,
-            CarriedItem = GetHeldItem(),
+            CarriedItem = CarriedItem,
         });
 
         await Client.QueuePacketAsync(new SetEntityDataPacket
@@ -225,6 +263,7 @@ public partial class Player
                 visiblePlayers.Add(player);
 
                 player.SpawnEntity();
+                this.ResetVisiblePlayerAttachments(player.EntityId);
             }
         }
 
@@ -283,27 +322,35 @@ public partial class Player
 
     /// <summary>
     /// Moves as much of <paramref name="item"/> into a player <paramref name="inventory"/> as fits, taking it off the
-    /// stack's count, and returns the container slots that changed.
+    /// stack's count, like vanilla's <c>Inventory.add</c>, and returns the container slots that changed.
     /// </summary>
     /// <remarks>
     /// Like vanilla, it tops up matching stacks first (the held slot, the offhand, the hotbar, then the main inventory)
     /// and only then fills empty slots, hotbar first. The held slot has no priority among empty slots, so which slot a
-    /// picked-up item lands in matches the client's expectations. With <paramref name="infiniteMaterials"/> (creative
-    /// mode), a stack none of which fits is used up anyway, as vanilla does; a stack that partly fits keeps the rest.
+    /// picked-up item lands in matches the client's expectations. Damaged stacks don't stack, so they only fill an
+    /// empty slot. With <paramref name="infiniteMaterials"/> (creative mode), what doesn't fit is used up anyway, as
+    /// vanilla does.
     /// </remarks>
-    internal static List<int> AddPickedUpItem(Container inventory, int heldSlot, ItemStack item, bool infiniteMaterials = false)
+    internal static List<int> AddToInventory(
+        Container inventory,
+        int heldSlot,
+        ItemStack item,
+        bool infiniteMaterials = false)
     {
         var changed = new List<int>();
         foreach (var slot in (int[])[heldSlot, 45, .. hotbarThenMainSlots])
         {
             if (item.Count <= 0)
                 break;
+
             var existing = inventory.GetItem(slot);
-            if (existing.IsNullOrAir() || existing.Count <= 0 || existing != item)
+            if (existing.IsNullOrAir() || existing.Count <= 0 || existing != item || !IsStackable(existing))
                 continue;
+
             var count = Math.Min(item.Count, item.MaxStackSize - existing.Count);
             if (count <= 0)
                 continue;
+
             existing.Count += count;
             item.Count -= count;
             changed.Add(slot);
@@ -313,19 +360,26 @@ public partial class Player
         {
             if (item.Count <= 0)
                 break;
+
             var existing = inventory.GetItem(slot);
             if (!existing.IsNullOrAir() && existing.Count > 0)
                 continue;
+
             var count = Math.Min(item.Count, item.MaxStackSize);
             inventory.SetItem(slot, new ItemStack(item, count));
             item.Count -= count;
             changed.Add(slot);
         }
 
-        if (changed.Count == 0 && infiniteMaterials)
+        if (infiniteMaterials)
             item.Count = 0;
+
         return changed;
     }
+
+    // Like vanilla's isStackable: more than one fits in a slot, and it isn't a damaged item.
+    private static bool IsStackable(ItemStack item) =>
+        item.MaxStackSize > 1 && (item.MaxDamage <= 0 || item.Unbreakable || item.Damage <= 0);
 
     /// <summary>
     /// Collects the item entities in the player's pickup area. The world tick calls it once a tick, like vanilla's player
@@ -352,38 +406,54 @@ public partial class Player
                 continue;
 
             bool remove;
+            TakeItemEntityPacket pickup;
+            List<ClientboundPacket> slots;
+            ClickWindowState state;
+
+            // Taken like a click takes it, so that a click's check of the inventory and what it applies see the same
+            // contents (see MainEventHandler.OnInventoryClick).
+            using (await this.Inventory.LockAsync())
             lock (ItemEntity.TransferLock)
             {
                 if (itemEntity.Removed || !itemEntity.CanPickup || itemEntity.Item.Count <= 0)
                     continue;
                 var originalCount = itemEntity.Item.Count;
-                var changed = AddPickedUpItem(this.Inventory, this.CurrentHeldItemSlot, itemEntity.Item,
+                var changed = AddToInventory(this.Inventory, this.CurrentHeldItemSlot, itemEntity.Item,
                     this.GameMode == GameMode.Creative);
                 var collected = originalCount - itemEntity.Item.Count;
                 if (collected == 0)
                     continue;
-                var pickup = new TakeItemEntityPacket
+
+                this.Statistics.Increment(itemEntity.Item.Holder.UnlocalizedName, collected, "minecraft:picked_up");
+                pickup = new TakeItemEntityPacket
                 {
                     CollectedEntityId = itemEntity.EntityId,
                     CollectorEntityId = this.EntityId,
                     PickupItemCount = collected
                 };
-                var packets = new List<ClientboundPacket> { pickup };
+                slots = [];
                 foreach (var slot in changed)
                 {
                     var stack = this.Inventory.GetItem(slot)!;
-                    packets.Add(new SetPlayerInventoryPacket
+                    slots.Add(new SetPlayerInventoryPacket
                     {
                         Slot = slot == 45 ? 40 : slot >= 36 ? slot - 36 : slot,
-                        Contents = new ItemStack(stack, stack.Count)
+                        Contents = NetworkBuffer.SnapshotItemStack(stack)
                     });
                 }
-                this.Client.SendPacket(new BundledPacket(packets));
+
+                state = ClickWindowState.Of(this);
                 this.PacketBroadcaster.QueuePacketToLevel(this.Level, pickup, this.EntityId);
                 remove = itemEntity.Removed = itemEntity.Item.Count == 0;
                 if (!remove)
                     itemEntity.SendItemUpdate();
             }
+
+            // In order with the window snapshots clicks send, which would otherwise overwrite it with what the
+            // inventory held before; the pickup is bundled with the slots. When the inventory changed again first,
+            // its slots are sent later, with the whole window, and the pickup is shown now on its own.
+            await this.WindowSnapshots.SendChangeAsync(this, state, slots, lead: pickup);
+
             if (remove)
                 await itemEntity.RemoveAsync();
         }
@@ -438,11 +508,20 @@ public partial class Player
         tag.Set(new NbtTag<int>("XpTotal", this.XpTotal));
         tag.Set(new NbtTag<float>("XpP", this.XpP));
         tag.Set(new NbtTag<int>("XpSeed", this.EnchantmentSeed));
+        var recipeBook = this.UnmodeledData.TryGetTag<NbtCompound>("recipeBook", out var existingBook)
+            ? existingBook
+            : new NbtCompound("recipeBook");
+        var knownRecipes = new NbtList(NbtTagType.String, "recipes");
+        foreach (var identifier in this.unlockedRecipes.Order(StringComparer.Ordinal))
+            knownRecipes.Add(new NbtTag<string>("", identifier));
+
+        recipeBook.Set(knownRecipes);
+        tag.Set(recipeBook);
 
         tag.Set(new NbtTag<bool>("seenCredits", this.SeenCredits));
         tag.Set(new NbtTag<int>("PortalCooldown", this.portalCooldown));
 
-        // Vanilla counts this in the player's stats, which Obsidian doesn't save; phantoms spawn from it.
+        // Legacy field is retained for older Obsidian saves; stats now supplies the phantom timer.
         tag.Set(new NbtTag<int>("ObsidianTimeSinceRest", this.TimeSinceRest));
 
         tag.Set(new NbtTag<int>("SelectedItemSlot", this.CurrentHeldItemSlot - HotbarStart));
@@ -520,6 +599,16 @@ public partial class Player
         this.XpLevel = Read("XpLevel", 0);
         this.XpTotal = Read("XpTotal", 0);
         this.XpP = Read("XpP", 0f);
+        this.unlockedRecipes.Clear();
+        if (tag.TryGetTag<NbtCompound>("recipeBook", out var book)
+            && book.TryGetTag<NbtList>("recipes", out var recipes))
+        {
+            foreach (var recipe in recipes.OfType<NbtTag<string>>())
+            {
+                if (recipe.Value is string identifier)
+                    this.unlockedRecipes.Add(identifier);
+            }
+        }
 
         var selectedSlot = Read("SelectedItemSlot", 0);
         if (selectedSlot >= HotbarStart)

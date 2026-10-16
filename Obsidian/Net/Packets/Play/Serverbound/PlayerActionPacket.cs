@@ -44,8 +44,12 @@ public partial class PlayerActionPacket
         if (await player.Level.GetBlockAsync(Position) is not IBlock block)
             return;
 
-        if (Status == PlayerActionStatus.StartedDigging && block.Material == Material.NoteBlock && player.Level is Obsidian.WorldData.AbstractLevel notes)
+        if (Status == PlayerActionStatus.StartedDigging
+            && block.Is(BlockIds.NoteBlock)
+            && player.Level is Obsidian.WorldData.AbstractLevel notes)
+        {
             notes.PlayNoteBlock(Position, player);
+        }
 
         if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.GameMode == GameMode.Creative))
         {
@@ -96,7 +100,7 @@ public partial class PlayerActionPacket
     {
         var droppedItem = player.GetHeldItem();
 
-        if (droppedItem is null or { Type: Material.Air } or { Count: <= 0 })
+        if (droppedItem is null or { IsAir: true } or { Count: <= 0 })
             return;
 
         var count = Math.Min(amountToRemove, droppedItem.Count);

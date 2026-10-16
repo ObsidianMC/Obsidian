@@ -3,132 +3,175 @@ using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using System.Collections.Frozen;
 using System.Reflection;
+using System.Text.Json;
+using System.Threading;
 
 namespace Obsidian.Registries;
 
+/// <summary>
+/// Shared vanilla recipes and process-stable book identities. Each server keeps its own registered recipes in
+/// <see cref="ServerRecipeRegistry"/>; static lookups contain vanilla only.
+/// </summary>
 public static partial class RecipesRegistry
 {
-    private static FrozenDictionary<int, List<ShapedRecipe>> shapedRecipeLookup;
-    private static FrozenDictionary<int, List<ShapelessRecipe>> shapelessRecipeLookup;
+    // Guards the registration state below; readers use the published set without it.
+    private static readonly Lock gate = new();
 
-    public static readonly Dictionary<string, IRecipe> Recipes = [];
+    // Every recipe, by identifier.
+    private static readonly Dictionary<string, IRecipe> registered = [];
 
-    internal static IReadOnlyList<IRecipeWithResult> RecipeBookRecipes { get; private set; } = [];
+    // The recipe book's display ids by recipe identifier. An identifier keeps its id for the life of the process,
+    // like a plugin's items keep theirs, so that a reloaded plugin's recipes are the ones players' books had.
+    private static readonly Dictionary<string, int> displayIds = [];
 
-    /// <summary>Every smelting, blasting and smoking recipe, in the order the recipe file lists them.</summary>
-    internal static IReadOnlyList<SmeltingRecipe> SmeltingRecipes { get; private set; } = [];
+    // The recipe book's group ids by group name, assigned the same way.
+    private static readonly Dictionary<string, int> groupIds = [];
+
+    private static bool vanillaLoaded;
+
+    private static volatile RecipeSet current = RecipeSet.Empty;
 
     /// <summary>
-    /// Loads vanilla's recipes. They're static, so a server started again in the same process keeps the loaded ones.
+    /// Vanilla recipes, by identifier.
     /// </summary>
-    public static async Task InitializeAsync()
+    public static IReadOnlyDictionary<string, IRecipe> Recipes => Current.Recipes;
+
+    /// <summary>
+    /// The shared vanilla recipe set.
+    /// </summary>
+    internal static RecipeSet Current
     {
-        if (shapedRecipeLookup is not null)
-            return;
+        get
+        {
+            EnsureVanillaLoaded();
 
-        await using var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Assets.recipes.json")!;
-        var recipes = await fs.FromJsonAsync<IRecipe[]>();
+            return current;
+        }
+    }
 
-        foreach (var recipe in recipes!)
-            Recipes.Add(recipe.Identifier, recipe);
+    /// <summary>
+    /// Loads vanilla's recipes, if they aren't yet.
+    /// </summary>
+    public static Task InitializeAsync()
+    {
+        EnsureVanillaLoaded();
 
-        RecipeBookRecipes = Recipes.Values.Where(recipe => recipe is ShapedRecipe or ShapelessRecipe)
-            .Cast<IRecipeWithResult>().ToList().AsReadOnly();
-
-        SmeltingRecipes = Recipes.Values.OfType<SmeltingRecipe>().ToList().AsReadOnly();
-
-        shapedRecipeLookup = Recipes.Values.OfType<ShapedRecipe>()
-            .GroupBy(recipe => recipe.Pattern.Sum(row => row.Count(symbol => symbol != ' ')))
-            .ToFrozenDictionary(group => group.Key, group => group.ToList());
-        shapelessRecipeLookup = Recipes.Values.OfType<ShapelessRecipe>()
-            .GroupBy(recipe => recipe.Ingredients.Count)
-            .ToFrozenDictionary(group => group.Key, group => group.ToList());
+        return Task.CompletedTask;
     }
 
     public static IRecipeWithResult? FindRecipe(CraftingTable grid) => FindRecipe(grid, 3);
 
-    internal static IRecipeWithResult? FindRecipe(BaseContainer grid, int width)
+    internal static IRecipeWithResult? FindRecipe(BaseContainer grid, int width) => Current.FindRecipe(grid, width);
+
+    /// <summary>
+    /// Whether a recipe of <paramref name="type"/> cooks <paramref name="item"/>, which a furnace of that type
+    /// takes as its ingredient.
+    /// </summary>
+    internal static bool IsCookingIngredient(CraftingType type, ItemStack item) =>
+        Current.IsCookingIngredient(type, item);
+
+    // Loads vanilla's recipes before any other, so that theirs are the first display ids, in vanilla's data order.
+    private static void EnsureVanillaLoaded()
     {
-        var occupiedSlots = Enumerable.Range(1, width * width)
-            .Where(slot => !grid[slot].IsNullOrAir() && grid[slot]!.Count > 0).ToList();
-        if (occupiedSlots.Count == 0)
-            return null;
+        if (Volatile.Read(ref vanillaLoaded))
+            return;
 
-        if (shapedRecipeLookup.TryGetValue(occupiedSlots.Count, out var shapedRecipes))
+        lock (gate)
         {
-            int minX = occupiedSlots.Min(slot => (slot - 1) % width);
-            int minY = occupiedSlots.Min(slot => (slot - 1) / width);
-            int maxX = occupiedSlots.Max(slot => (slot - 1) % width);
-            int maxY = occupiedSlots.Max(slot => (slot - 1) / width);
+            if (vanillaLoaded)
+                return;
 
-            foreach (var recipe in shapedRecipes)
-            {
-                if (recipe.Pattern.Count != maxY - minY + 1 || recipe.Pattern[0].Length != maxX - minX + 1)
-                    continue;
+            using var stream = Assembly.GetExecutingAssembly()
+                .GetManifestResourceStream("Obsidian.Assets.recipes.json")!;
+            var recipes = JsonSerializer.Deserialize<IRecipe[]>(stream, Globals.JsonOptions)!;
 
-                if (MatchesShaped(grid, width, minX, minY, recipe, false) ||
-                    MatchesShaped(grid, width, minX, minY, recipe, true))
-                    return recipe;
-            }
+            foreach (var recipe in recipes)
+                Add(recipe.Identifier, recipe);
+
+            Publish();
+            Volatile.Write(ref vanillaLoaded, true);
         }
-
-        if (shapelessRecipeLookup.TryGetValue(occupiedSlots.Count, out var shapelessRecipes))
-        {
-            var items = occupiedSlots.Select(slot => grid[slot]!).ToList();
-            foreach (var recipe in shapelessRecipes)
-            {
-                if (MatchesShapeless(items, recipe.Ingredients, 0, new bool[items.Count]))
-                    return recipe;
-            }
-        }
-
-        return null;
     }
 
-    private static bool MatchesShaped(BaseContainer grid, int width, int minX, int minY, ShapedRecipe recipe, bool mirrored)
+    // Under the gate.
+    private static void Add(string key, IRecipe recipe)
     {
-        for (int y = 0; y < recipe.Pattern.Count; y++)
-        {
-            var row = recipe.Pattern[y];
-            for (int x = 0; x < row.Length; x++)
-            {
-                char symbol = row[mirrored ? row.Length - x - 1 : x];
-                var item = grid[1 + (minY + y) * width + minX + x];
-                if (symbol == ' ')
-                {
-                    if (!item.IsNullOrAir() && item!.Count > 0)
-                        return false;
-                }
-                else if (item.IsNullOrAir() || item!.Count <= 0 || !MatchesIngredient(recipe.Key[symbol], item))
-                    return false;
-            }
-        }
+        registered.Add(key, recipe);
 
-        return true;
+        if (recipe is ShapedRecipe or ShapelessRecipe)
+            displayIds.TryAdd(key, displayIds.Count);
     }
 
-    private static bool MatchesIngredient(Ingredient ingredient, ItemStack item) =>
-        ingredient.Any(candidate => candidate.Type == item.Type);
-
-    private static bool MatchesShapeless(List<ItemStack> items, IReadOnlyList<Ingredient> ingredients, int index, bool[] used)
+    // Under the gate: builds the set from the registered recipes and makes it the current one.
+    private static void Publish()
     {
-        if (index == ingredients.Count)
-            return true;
+        var book = new RecipeBookEntry?[displayIds.Count];
 
-        // Backtrack because overlapping tags may need the same item assigned to a different ingredient.
-        for (int i = 0; i < items.Count; i++)
+        foreach (var (key, displayId) in displayIds)
         {
-            if (used[i] || !MatchesIngredient(ingredients[index], items[i]))
+            if (!registered.TryGetValue(key, out var recipe) || recipe is not IRecipeWithResult crafting)
                 continue;
 
-            used[i] = true;
-            if (MatchesShapeless(items, ingredients, index + 1, used))
-                return true;
-            used[i] = false;
+            // Only shaped and shapeless recipes have book displays.
+            if (crafting is not (ShapedRecipe or ShapelessRecipe))
+                continue;
+
+            book[displayId] = new RecipeBookEntry(displayId, crafting, GroupId(crafting.Group));
         }
 
-        return false;
+        current = new RecipeSet(registered.ToFrozenDictionary(), book);
     }
 
-    public record CanonicalRecipe(Dictionary<int, Ingredient> IngredientsByOffset, ShapedRecipe OriginalRecipe);
+    // Identities contain no plugin objects and stay stable across servers and reloads.
+    internal static RecipeSet BuildSet(
+        IReadOnlyDictionary<string, IRecipe> recipes,
+        IReadOnlyDictionary<string, long> revisions,
+        ContentVersion content,
+        IReadOnlyList<PluginRecipeValue>? pluginRecipes = null)
+    {
+        lock (gate)
+        {
+            foreach (var (key, recipe) in recipes)
+            {
+                if (recipe is ShapedRecipe or ShapelessRecipe)
+                    displayIds.TryAdd(key, displayIds.Count);
+            }
+
+            var book = new RecipeBookEntry?[displayIds.Count];
+
+            foreach (var (key, id) in displayIds)
+            {
+                if (recipes.TryGetValue(key, out var recipe) && recipe is ShapedRecipe or ShapelessRecipe)
+                {
+                    book[id] = new RecipeBookEntry(id, (IRecipeWithResult)recipe, GroupId(recipe.Group))
+                    {
+                        Revision = revisions.GetValueOrDefault(key)
+                    };
+                }
+            }
+
+            return new RecipeSet(recipes.ToFrozenDictionary(), book, pluginRecipes) { RequiredContent = content };
+        }
+    }
+
+    internal static string BookIdentifier(int displayId)
+    {
+        lock (gate)
+            return displayIds.FirstOrDefault(pair => pair.Value == displayId).Key ?? string.Empty;
+    }
+
+    // Under the gate.
+    private static int? GroupId(string? group)
+    {
+        if (string.IsNullOrEmpty(group))
+            return null;
+
+        if (!groupIds.TryGetValue(group, out var id))
+        {
+            id = groupIds.Count;
+            groupIds.Add(group, id);
+        }
+
+        return id;
+    }
 }

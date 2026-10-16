@@ -80,7 +80,7 @@ public static partial class Extensions
 
     internal static bool IsNonLiving(this EntityType type) => nonLiving.Contains(type);
 
-    public static Item AsItem(this ItemStack itemStack) => ItemsRegistry.Get(itemStack.Type);
+    public static Item AsItem(this ItemStack itemStack) => itemStack.Holder;
 
     public static void ForEach<T>(this IEnumerable<T> collection, Action<T> action)
     {

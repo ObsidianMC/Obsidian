@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
+using System.Runtime.Loader;
 
 namespace Obsidian.Entities;
 
@@ -58,6 +59,7 @@ public partial class Mob
     private int deathTicks;
     private bool deathStarted;
     private long lastPlayerHurtTick = -1000;
+    private IPlayer? lastHurtByPlayer;
     private Angle lastSentHeadYaw;
     private Angle lastSentYaw;
     private Angle lastSentPitch;
@@ -105,13 +107,38 @@ public partial class Mob
             FinalizeSpawn();
     }
 
+    /// <summary>
+    /// Drops what an unloading plugin, whose code is in <paramref name="context"/>, gave the mob through the API:
+    /// goals, a navigator or a goal controller, which would keep the plugin loaded. Run on the mob's level's tick.
+    /// </summary>
+    internal override void ReleasePluginObjects(AssemblyLoadContext context)
+    {
+        goals.RemoveGoalsFrom(context);
+        TargetGoals.RemoveGoalsFrom(context);
+
+        if (GoalController is GoalSelector replacement)
+            replacement.RemoveGoalsFrom(context);
+        else if (IsFrom(GoalController, context))
+            GoalController = goals;
+
+        if (IsFrom(Navigator, context))
+            Navigator = this is PathfinderMob pathfinder ? new Navigator(pathfinder) : null;
+    }
+
     protected virtual void RegisterGoals(GoalSelector actionGoals, GoalSelector targetGoals) { }
     protected virtual void FinalizeSpawn() { }
     protected virtual ValueTask TickMobAsync() => default;
     protected virtual int DeathDuration => 20;
     protected virtual ValueTask TickDeathAsync() => default;
     protected virtual ValueTask OnHurtAsync(IEntity source) => default;
-    internal virtual ValueTask InteractAsync(IPlayer player, InteractionHand hand) => default;
+
+    /// <summary>
+    /// The mob's own reaction to a player using it (right-clicking it), like vanilla's <c>mobInteract</c>.
+    /// </summary>
+    /// <returns>
+    /// Whether the mob used the interaction, as vanilla's result would: the held item is then not used on the mob.
+    /// </returns>
+    internal virtual ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand) => ValueTask.FromResult(false);
 
     internal async ValueTask<Mob> ConvertToAsync(EntityType type)
     {
@@ -169,8 +196,10 @@ public partial class Mob
         var maximum = item.GetComponent<Obsidian.API.Inventory.DataComponents.SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? 0;
         if (maximum <= 0)
             return;
-        var damage = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage;
-        damage.Value = item.Damage + amount;
+        var damage = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage with
+        {
+            Value = item.Damage + amount
+        };
         item[DataComponentType.Damage] = damage;
         if (damage.Value >= maximum)
             player.Inventory.SetItem(slot, null);
@@ -221,7 +250,11 @@ public partial class Mob
     public override async ValueTask TickAsync()
     {
         await base.TickAsync();
-        if (!UsesAi || IsRemoved)
+        if (IsRemoved)
+            return;
+
+        TickLeash();
+        if (!UsesAi)
             return;
 
         InitializeAi();
@@ -301,7 +334,16 @@ public partial class Mob
 
         var oldPosition = Position;
         var oldMovementFlags = MovementFlags;
-        var position = Travel();
+
+        // A passenger is carried: its vehicle moves it to its seat (see PositionPassengers). It gets off a vehicle
+        // that's gone or elsewhere, as players' vehicles don't check their passengers.
+        if (Vehicle is Entity vehicle && (!vehicle.IsActive || vehicle.Level != Level))
+            LeaveVehicle();
+
+        if (Vehicle is not null)
+            Motion = VectorD.Zero;
+
+        var position = Vehicle is null ? Travel() : Position;
         LastPosition = oldPosition;
         if (Level is AbstractLevel level && !level.TryMoveEntity(this, oldPosition, position))
         {
@@ -312,7 +354,7 @@ public partial class Mob
 
         Position = position;
         BoundingBox = Dimension.CreateBBFromPosition(position);
-        UpdateRider();
+        PositionPassengers();
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
         SynchronizeMovement(oldPosition);
     }
@@ -413,6 +455,21 @@ public partial class Mob
     internal ValueTask DamageEnvironmentAsync(float amount) => ApplyDamageAsync(this, amount, false);
     internal ValueTask DamageMagicAsync(IEntity source, float amount, bool ignoreHurtCooldown = false) => ApplyDamageAsync(source, amount, false, ignoreHurtCooldown);
     protected virtual bool CanTakeDamage(IEntity source) => true;
+
+    /// <summary>
+    /// Lets a mob change damage it's about to take, after its immunities: the amount it takes, or null for none.
+    /// </summary>
+    private protected virtual ValueTask<float?> FilterIncomingDamageAsync(
+        IEntity source,
+        float amount,
+        CombatDamageKind kind) => ValueTask.FromResult<float?>(amount);
+
+    /// <summary>
+    /// The player who hurt the mob in the last 100 ticks, like vanilla's <c>lastHurtByPlayer</c>, which loot tables'
+    /// <c>killed_by_player</c> conditions test.
+    /// </summary>
+    internal IPlayer? RecentPlayerAttacker => AiTick - lastPlayerHurtTick <= 100 ? lastHurtByPlayer : null;
+
     private protected virtual bool TryAbsorbDamage(float amount, CombatDamageKind kind) => false;
 
     private async ValueTask ApplyDamageAsync(IEntity source, float amount, bool applyArmor, bool ignoreHurtCooldown = false)
@@ -428,6 +485,13 @@ public partial class Mob
             return;
         if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact &&
             (IsFireImmune || HasPotionEffect((int)PotionEffect.FireResistance - 1))) return;
+
+        if (await FilterIncomingDamageAsync(source, amount, kind) is not float filtered)
+            return;
+
+        amount = filtered;
+        if (!float.IsFinite(amount) || amount <= 0 || IsRemoved || !Alive)
+            return;
 
         var incoming = amount;
         var recentlyHurt = !ignoreHurtCooldown && AiTick - lastDamageTick < 10;
@@ -449,8 +513,11 @@ public partial class Mob
         lastDamage = incoming;
         AcceptedDamageCount++;
         despawnAge = 0;
-        if (source is IPlayer)
+        if (source is IPlayer player)
+        {
             lastPlayerHurtTick = AiTick;
+            lastHurtByPlayer = player;
+        }
         if (!ReferenceEquals(source, this))
         {
             LastAttacker = source;
@@ -474,7 +541,12 @@ public partial class Mob
         var absorbed = Math.Min(AbsorptionHealth, amount);
         AbsorptionHealth -= absorbed;
         amount -= absorbed;
+        var previousHealth = Health;
         await base.DamageAsync(source, amount);
+        if (source is IPlayer attackingPlayer && Health < previousHealth)
+            attackingPlayer.Statistics.Increment("minecraft:damage_dealt",
+                (int)Math.Clamp(Math.Floor(Math.Min(previousHealth, amount) * 10 + 0.5), 0, int.MaxValue));
+
         await OnHurtAsync(source);
         if (Alive && !absorbedByEquipment)
             PlayMobSound("hurt");
@@ -485,7 +557,8 @@ public partial class Mob
 
     public override async ValueTask RemoveAsync()
     {
-        Dismount();
+        EjectPassengers();
+        LeaveVehicle();
         IsRemoved = true;
         goals.Cancel();
         TargetGoals.Cancel();
@@ -510,6 +583,8 @@ public partial class Mob
             return;
         Health = 0;
         deathStarted = true;
+        if (source is IPlayer killingPlayer)
+            await killingPlayer.RecordProgressKillAsync(this);
         goals.Cancel();
         TargetGoals.Cancel();
         (Navigator as Navigator)?.Stop();

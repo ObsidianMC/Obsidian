@@ -1,0 +1,20 @@
+{
+  "criteria": {
+    "grinder": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          { "items": "sample:grinder" }
+        ]
+      }
+    }
+  },
+  "display": {
+    "title": "Grinding away",
+    "description": "Obtain the engine sample grinder",
+    "icon": { "id": "sample:grinder" },
+    "background": "minecraft:gui/advancements/backgrounds/stone",
+    "announce_to_chat": false
+  },
+  "rewards": { "experience": 5 }
+}

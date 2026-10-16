@@ -33,6 +33,10 @@
 		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(UseArtifactsOutput)' == 'true'">
+		<CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)generated</CompilerGeneratedFilesOutputPath>
+	</PropertyGroup>
+
 	<PropertyGroup>
 		<Deterministic>False</Deterministic>
 		<SourceRevisionId>$(GIT_SHA)</SourceRevisionId>
@@ -55,6 +59,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- Obsidian's convention (c:) tags, merged with vanilla's tags like a built-in data pack. -->
+		<EmbeddedResource Include="Registries\convention_tags.json" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="NuGet.Versioning" Version="7.0.1" />
 		<PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.14.0" />
 		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
@@ -66,15 +75,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
+		<!-- An artifacts build may follow an in-tree build that left generated sources in the checkout. -->
+		<Compile Remove="Generated/**/*.cs;$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
 	</ItemGroup>
 
 	<!-- Assets is generated when Obsidian.AssetGenerator builds, so it's included once the reference is built rather than
 	     at evaluation, when a fresh clone has none. -->
 	<Target Name="IncludeVanillaAssets" AfterTargets="ResolveProjectReferences">
 		<ItemGroup>
-			<!-- Biome parameter lists, configured carvers block physics and collision shapes are only read at runtime; keep them away from the source generators. -->
-			<AdditionalFiles Include="Assets\**\*.json" Exclude="Assets\biome_parameters\**;Assets\configured_carver\**;Assets\block_physics.json;Assets\collision_shapes.json" />
+			<!-- Biome parameter lists, configured carvers, block physics, collision shapes and registry ids are only read at runtime; keep them away from the source generators. -->
+			<AdditionalFiles Include="Assets\**\*.json" Exclude="Assets\biome_parameters\**;Assets\configured_carver\**;Assets\block_physics.json;Assets\collision_shapes.json;Assets\registry_ids.json" />
 			<EmbeddedResource Include="Assets\**\*.*" Exclude="Assets\.generated-*" />
 		</ItemGroup>
 	</Target>
@@ -82,6 +92,9 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Obsidian.AssetGenerator\Obsidian.AssetGenerator.csproj" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
+		<!-- The server never calls the client API, but ships it so that mods whose plugin class implements
+		     IClientPlugin load on servers too. -->
+		<ProjectReference Include="..\Obsidian.API.Client\Obsidian.API.Client.csproj" />
       <ProjectReference Include="..\Obsidian.Nbt\Nbt\Obsidian.Nbt.csproj" />
 		<ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>

@@ -55,7 +55,9 @@ internal sealed class FakeEventDispatcher : IEventDispatcher
     public void Dispose() { }
 }
 
-internal sealed class FakeWorldManager(IWorld defaultWorld) : IWorldManager
+/// <param name="worldsLoaded">Whether the default world is loaded; during startup, before it is, no world is
+/// available.</param>
+internal sealed class FakeWorldManager(IWorld defaultWorld, bool worldsLoaded = true) : IWorldManager
 {
     public bool ReadyToJoin => true;
     public int GeneratingChunkCount => 0;
@@ -63,7 +65,7 @@ internal sealed class FakeWorldManager(IWorld defaultWorld) : IWorldManager
     public int RegionCount => 0;
     public IWorld DefaultWorld { get; } = defaultWorld;
 
-    public IReadOnlyCollection<IWorld> GetAvailableWorlds() => [this.DefaultWorld];
+    public IReadOnlyCollection<IWorld> GetAvailableWorlds() => worldsLoaded ? [this.DefaultWorld] : [];
 
     public Task FlushLoadedWorldsAsync() => Task.CompletedTask;
 
@@ -86,7 +88,8 @@ internal sealed class FakeWorldManager(IWorld defaultWorld) : IWorldManager
 
 internal static class TestWorldFactory
 {
-    public static World Create(string name)
+    /// <param name="generator">The world's generator; an empty world's by default.</param>
+    public static World Create(string name, ILevelGenerator? generator = null)
     {
         var configuration = new ServerConfiguration { SpawnChunkRadius = 0, TimeTickSpeedMultiplier = 1 };
         var world = new World(
@@ -95,7 +98,7 @@ internal static class TestWorldFactory
             new FakePacketBroadcaster(),
             new TestOptionsMonitor<ServerConfiguration>(configuration),
             new FakeEventDispatcher(),
-            new EmptyWorldGenerator(),
+            generator ?? new EmptyWorldGenerator(),
             name,
             "test-seed");
 
@@ -108,12 +111,8 @@ internal static class TestWorldFactory
                 MonsterSpawnBlockLightLimit = 0,
                 MonsterSpawnLightLevel = new MonsterSpawnLightLevel { IntValue = 0 },
                 PiglinSafe = false,
-                Natural = true,
                 AmbientLight = 0,
-                RespawnAnchorWorks = false,
                 HasSkylight = true,
-                BedWorks = true,
-                HasRaids = true,
                 MinY = -64,
                 Height = 384,
                 LogicalHeight = 384,

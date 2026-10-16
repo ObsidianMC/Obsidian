@@ -209,6 +209,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
             File.Move(temporaryPath, LevelDataFilePath);
 
         await this.Maps.SaveAsync();
+        this.SavePluginData();
     }
 
     private async Task WriteVanillaLevelDataAsync(Stream fs, NbtCompound data)
@@ -286,8 +287,11 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
     public async Task UnloadPlayerAsync(Guid uuid)
     {
-        Players.TryRemove(uuid, out var player);
-        await player.SaveAsync();
+        if (Players.TryRemove(uuid, out var player))
+        {
+            API.Data.AttachmentStorage.For(player).Retire();
+            await player.SaveAsync();
+        }
     }
 
     /// <summary>
@@ -303,17 +307,20 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         }
     }
 
-    public void RegisterDimension(DimensionCodec codec, IDimension dimension)
+    public ILevel? GetLevel(string identifier) =>
+        this.DimensionName == identifier ? this : this.dimensions.GetValueOrDefault(identifier);
+
+    public void RegisterDimension(IDimension dimension)
     {
-        if (!dimensions.TryAdd(codec.Name, dimension))
-            throw new ArgumentException($"World already contains dimension with name: {codec.Name}");
+        if (!dimensions.TryAdd(dimension.DimensionName, dimension))
+            throw new ArgumentException($"World already contains dimension with name: {dimension.DimensionName}");
     }
 
     public override void Initialize(DimensionCodec codec)
     {
         this.FolderPath = this.vanillaFolder ?? Path.Combine(ServerConstants.WorldsPath, Name);
 
-        this.SetDimension(codec);
+        this.SetDimension(codec.Name, codec);
 
         this.LevelData = new LevelData
         {

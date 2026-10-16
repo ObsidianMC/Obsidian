@@ -255,6 +255,27 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
         return this;
     }
 
+    // Component values must not retain mutable chat objects supplied by their callers.
+    internal ChatMessage CopyForComponent() => this with
+    {
+        ClickEvent = this.ClickEvent is null ? null : new ClickComponent
+        {
+            Action = this.ClickEvent.Action,
+            Value = this.ClickEvent.Value
+        },
+        HoverEvent = this.HoverEvent is null ? null : this.HoverEvent with
+        {
+            Contents = this.HoverEvent.Contents switch
+            {
+                HoverChatContent chat => chat with { ChatMessage = chat.ChatMessage.CopyForComponent() },
+                HoverItemContent item => item with { Item = new(item.Item, item.Item.Count) },
+                _ => throw new NotSupportedException("This hover content cannot be stored in an item component.")
+            }
+        },
+        Extra = this.Extra?.Select(message => message.CopyForComponent()).ToList(),
+        With = this.With?.Select(message => message.CopyForComponent()).ToList()
+    };
+
     public static ChatMessage Empty => Simple(string.Empty);
 
     public string ToString(JsonSerializerOptions options) => JsonSerializer.Serialize(this, options);

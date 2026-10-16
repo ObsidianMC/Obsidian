@@ -11,7 +11,7 @@ public sealed class BasaltPillarFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:basalt_pillar";
 
-    private static IBlock Basalt => field ??= BlocksRegistry.Get(Material.Basalt);
+    private static IBlock Basalt => field ??= BlocksRegistry.Basalt;
 
     public override bool Place(FeatureContext context)
     {

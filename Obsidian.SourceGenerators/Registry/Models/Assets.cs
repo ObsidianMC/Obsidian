@@ -32,8 +32,8 @@ internal sealed class Assets
         Dictionary<string, Codec[]> codecs = GetCodecs(files);
         BiomeEntry[] biomes = [.. codecs["biomes"].Select(biome => new BiomeEntry(biome.Name, biome.RegistryId))];
         EnchantmentEntry[] enchantments = GetEnchantments(files.GetJsonFromArray("enchantments"));
-        EntityEntry[] entities = GetEntities(files.GetJsonFromArray("entities"));
-        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids, biomes, enchantments, entities);
+        EntityTypeEntry[] entityTypes = GetEntityTypes(files.GetJsonFromArray("entities"));
+        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids, biomes, enchantments, entityTypes);
 
         IDictionary<string, List<Sound>> sounds = GetSounds(files.GetJsonFromArray("sounds"));
 
@@ -119,6 +119,20 @@ internal sealed class Assets
         }
 
         return splitSounds;
+    }
+
+    // Vanilla's entity types by identifier, from Assets/entities.json; entries without an id are base classes.
+    public static EntityTypeEntry[] GetEntityTypes(string? json)
+    {
+        if (json is null)
+            return [];
+
+        using var document = JsonDocument.Parse(json);
+
+        return document.RootElement.EnumerateObject()
+            .Where(property => property.Value.TryGetProperty("id", out _))
+            .Select(property => new EntityTypeEntry(property.Name, property.Value.GetProperty("id").GetInt32()))
+            .ToArray();
     }
 
     public static Fluid[] GetFluids(string? json)
@@ -208,16 +222,8 @@ internal sealed class Assets
         return items.ToArray();
     }
 
-    private static EntityEntry[] GetEntities(string? json)
-    {
-        if (json is null) return [];
-        using var document = JsonDocument.Parse(json);
-        return [.. document.RootElement.EnumerateObject().Where(entry => entry.Value.TryGetProperty("id", out _))
-            .Select(entry => new EntityEntry(entry.Name, entry.Value.GetProperty("id").GetInt32()))];
-    }
-
     public static Tag[] GetTags(string? json, Block[] blocks, Item[] items, Fluid[] fluids, BiomeEntry[] biomes,
-        EnchantmentEntry[] enchantments, EntityEntry[] entities)
+        EnchantmentEntry[] enchantments, EntityTypeEntry[] entityTypes)
     {
         if (json is null)
             return [];
@@ -229,7 +235,7 @@ internal sealed class Assets
         taggables.AddRange(fluids);
         taggables.AddRange(biomes);
         taggables.AddRange(enchantments);
-        taggables.AddRange(entities);
+        taggables.AddRange(entityTypes);
 
         using var document = JsonDocument.Parse(json);
 

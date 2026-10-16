@@ -14,9 +14,9 @@ public sealed class SeagrassFeature : ConfiguredFeatureBase
     /// </summary>
     public required float Probability { get; init; }
 
-    private static IBlock Seagrass => field ??= BlocksRegistry.Get(Material.Seagrass);
+    private static IBlock Seagrass => field ??= BlocksRegistry.Seagrass;
 
-    private static IBlock TallSeagrass => field ??= BlocksRegistry.Get(Material.TallSeagrass);
+    private static IBlock TallSeagrass => field ??= BlocksRegistry.TallSeagrass;
 
     public override bool Place(FeatureContext context)
     {
@@ -31,7 +31,7 @@ public sealed class SeagrassFeature : ConfiguredFeatureBase
         var x = origin.X + dx;
         var z = origin.Z + dz;
         var position = new Vector(x, level.GetHeight(HeightmapType.OceanFloor, x, z), z);
-        if (level.GetBlock(position).Material != Material.Water)
+        if (level.GetBlock(position).RegistryId != BlockIds.Water)
             return false;
 
         var tall = random.NextDouble() < this.Probability;
@@ -42,7 +42,7 @@ public sealed class SeagrassFeature : ConfiguredFeatureBase
         if (tall)
         {
             var above = position + Vector.Up;
-            if (level.GetBlock(above).Material == Material.Water)
+            if (level.GetBlock(above).RegistryId == BlockIds.Water)
             {
                 level.SetBlock(position, state);
                 level.SetBlock(above, state.WithProperty("half", "upper"));

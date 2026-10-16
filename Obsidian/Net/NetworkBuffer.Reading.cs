@@ -130,12 +130,12 @@ public partial class NetworkBuffer : INetStreamReader
             if (count <= 0)
                 return null;
 
-            var itemStack = new ItemStack(ItemsRegistry.Get(this.ReadVarInt()), count);
+            var itemStack = new ItemStack(ItemsRegistry.Get(this.ReadItemId()), count);
             var added = this.ReadComponentCount();
             var removed = this.ReadComponentCount();
             for (var i = 0; i < added; i++)
             {
-                var type = (DataComponentType)this.ReadVarInt();
+                var type = this.ReadComponentType();
                 var end = delimitedComponents ? checked(this.ReadComponentLength() + this.offset) : -1;
                 itemStack[type] = this.ReadDataComponent(type);
                 if (delimitedComponents && this.offset != end)
@@ -144,7 +144,7 @@ public partial class NetworkBuffer : INetStreamReader
 
             for (var i = 0; i < removed; i++)
             {
-                var type = (DataComponentType)this.ReadVarInt();
+                var type = this.ReadComponentType();
                 if (!Enum.IsDefined(type))
                     throw new InvalidDataException("Unknown removed component.");
 
@@ -159,6 +159,15 @@ public partial class NetworkBuffer : INetStreamReader
         }
     }
 
+    // An item's and a data component type's id, in this process's numbering (see IdMaps).
+    private int ReadItemId() => this.IdMaps is RegistryIdMaps maps
+        ? maps.Item.ToLocal(this.ReadVarInt())
+        : this.ReadVarInt();
+
+    private DataComponentType ReadComponentType() => this.IdMaps is RegistryIdMaps maps
+        ? (DataComponentType)maps.DataComponentType.ToLocal(this.ReadVarInt())
+        : (DataComponentType)this.ReadVarInt();
+
     public ItemStack? ReadUntrustedItemStack() => this.ReadItemStack(true);
     public ItemStack ReadRequiredItemStack() => this.ReadItemStack() ?? throw new InvalidDataException("Expected a nonempty item stack.");
     public ItemStack?[] ReadItemStackList() => this.ReadLengthPrefixedArray(this.ReadItemStack);
@@ -168,7 +177,7 @@ public partial class NetworkBuffer : INetStreamReader
         if (!this.ReadBoolean())
             return null;
 
-        var item = ItemsRegistry.Get(ReadVarInt());
+        var item = ItemsRegistry.Get(this.ReadItemId());
         var count = this.ReadVarInt();
 
         var itemStack = new ReceivedHashedStack(item, count, this.ComponentRegistryName);
@@ -179,7 +188,7 @@ public partial class NetworkBuffer : INetStreamReader
 
         for (int i = 0; i < componentsToAdd; i++)
         {
-            var type = this.ReadVarInt<DataComponentType>();
+            var type = this.ReadComponentType();
 
             itemStack.HashedComponents.Add(type, this.ReadInt());
         }
@@ -189,7 +198,7 @@ public partial class NetworkBuffer : INetStreamReader
             throw new InvalidDataException("Too many removed hashed components.");
 
         for (int i = 0; i < componentsToRemove; i++)
-            itemStack.ComponentsToRemove.Add(this.ReadVarInt<DataComponentType>());
+            itemStack.ComponentsToRemove.Add(this.ReadComponentType());
 
         return itemStack;
     }
@@ -298,6 +307,11 @@ public partial class NetworkBuffer : INetStreamReader
     public string ReadString(int maxLength = 32767)
     {
         var length = ReadVarInt();
+
+        // An empty string can end a packet, including on encrypted buffers: there is no payload to read.
+        if (length == 0)
+            return string.Empty;
+
         var buffer = this.ReadUntil(length);
 
         var value = Encoding.UTF8.GetString(buffer);
@@ -521,7 +535,31 @@ public partial class NetworkBuffer : INetStreamReader
         return result;
     }
 
+    public int ReadRegistryId(string registry) => this.ToLocalId(registry, this.ReadVarInt());
+
+    public int? ReadRegistryHolder(string registry)
+    {
+        var id = this.ReadVarInt();
+        return id == 0 ? null : this.ToLocalId(registry, id - 1);
+    }
+
+    public IdSet ReadIdSet(string registry) => IdSet.Read(this, registry);
+
+    /// <inheritdoc cref="INetStreamReader.ReadIdSet()"/>
+    [Obsolete("Name the set's registry with ReadIdSet(string), so its ids are translated across a connection.")]
     public IdSet ReadIdSet() => IdSet.Read(this);
+
+    // The local id of the connection's id of the registry (see IdMaps). An entry this process lacks throws, so a
+    // component naming it keeps its bytes (ReadDataComponent).
+    private int ToLocalId(string registry, int id)
+    {
+        if (this.IdMaps is not RegistryIdMaps maps)
+            return id;
+
+        var local = maps.Get(registry).ToLocal(id);
+        return local >= 0 ? local : throw new MissingRegistryEntryException(registry, id);
+    }
+
     public SoundEvent ReadSoundEvent() => new()
     {
         ResourceLocation = this.ReadString(),

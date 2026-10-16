@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Events;
+using Obsidian.API.Inventory;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -27,7 +28,32 @@ public partial class UseItemPacket
             Hand = this.Hand,
         };
         await server.EventDispatcher.ExecuteEventAsync(args);
-        if (!args.IsCancelled && player is Obsidian.Entities.Player concrete)
-            await concrete.StartUsingItemAsync(Hand);
+        if (args.IsCancelled)
+            return;
+
+        if (args.Item is { Count: > 0 } stack && Plugins.ItemBehaviors.CanUseItems(player))
+        {
+            var used = await Plugins.ItemBehaviors.UseAsync(new ItemUseContext
+            {
+                Player = player,
+                Stack = stack,
+                Hand = this.Hand
+            });
+
+            if (used)
+                return;
+        }
+
+        if (player is not Obsidian.Entities.Player concrete)
+            return;
+
+        // Eyes of ender fly toward the nearest structure they find, or do nothing.
+        if (args.Item is { Count: > 0 } eye && eye.Is(ItemsRegistry.EnderEye))
+        {
+            await Obsidian.Entities.EyeOfEnder.ThrowAsync(concrete, this.Hand, eye);
+            return;
+        }
+
+        await concrete.StartUsingItemAsync(Hand);
     }
 }

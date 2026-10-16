@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API;
+using Obsidian.API.Blocks;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
 using Obsidian.API.Inventory;
@@ -9,8 +10,10 @@ using Obsidian.Entities;
 using Obsidian.Entities.Factories;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Plugins;
 using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators;
+using Obsidian.WorldData.Lighting;
 using Obsidian.WorldData.Portals;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
@@ -33,7 +36,7 @@ public abstract partial class AbstractLevel : ILevel
     public ConcurrentQueue<long> ChunksToGen { get; protected set; } = [];
 
     // The chunks queued or generating, so a chunk is queued once however often it's asked for.
-    private readonly ConcurrentDictionary<long, byte> queuedChunks = [];
+    private readonly ConcurrentDictionary<long, GenerationDemand> queuedChunks = [];
 
     // The chunks queued while the level runs, taken from ChunksToGen and started nearest to a player first (see
     // TryTakeNearestJob), so chunks players wait for don't queue behind ones they've moved away from. Locked on itself.
@@ -56,6 +59,11 @@ public abstract partial class AbstractLevel : ILevel
     // Set once DisposeAsync starts. A level can be disposed twice (by the server's shutdown and again by the host's
     // container), and the second call would wait forever on the generation slots the first one keeps.
     private int disposed;
+
+    /// <summary>
+    /// Whether the level was disposed: saved a last time, with no ticks to come.
+    /// </summary>
+    internal bool IsDisposed => Volatile.Read(ref this.disposed) != 0;
 
     // The chunks kept loaded around the spawn, filled in once the spawn is known.
     protected readonly long[] spawnChunks;
@@ -97,7 +105,15 @@ public abstract partial class AbstractLevel : ILevel
     public ServerConfiguration Configuration { get; private set; }
     public GameMode DefaultGamemode => LevelData.DefaultGamemode;
 
+    /// <summary>
+    /// The level's name, which clients know it by: its dimension's identifier, like <c>minecraft:the_nether</c>.
+    /// </summary>
     public string DimensionName { get; protected set; } = string.Empty;
+
+    /// <summary>
+    /// The level's dimension type. Vanilla's dimensions are named after theirs; plugins' dimensions may use any.
+    /// </summary>
+    public DimensionCodec DimensionType { get; private set; } = default!;
 
     /// <summary>
     /// The dimension's lowest block Y.
@@ -122,12 +138,14 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal Action<int, int>? GenerationProgress { get; set; }
 
-    protected ILogger Logger { get; }
+    protected internal ILogger Logger { get; }
 
     /// <summary>
     /// The level's fluids and their scheduled ticks.
     /// </summary>
     internal LevelFluids Fluids { get; }
+
+    internal RuntimeLightEngine Lighting { get; }
 
     internal LevelPortals Portals { get; }
 
@@ -146,17 +164,11 @@ public abstract partial class AbstractLevel : ILevel
 
     internal void EnqueueEntityAction(Func<ValueTask> action) => entityActions.Enqueue(action);
 
-    /// <summary>
-    /// Records a block whose loot needs data that isn't modelled yet. Its drops are left out, and the log says why.
-    /// </summary>
-    internal void ReportUnsupportedLoot(IBlock block, Exception exception) =>
-        this.Logger.LogError(exception, "No drops for {Block} at this position: its loot needs unsupported data", block.UnlocalizedName);
-
     internal void QueueChunkPopulation(IChunk chunk) => EnqueueEntityAction(() =>
     {
         if (ReferenceEquals(GetLoadedChunk(chunk.X, chunk.Z), chunk))
         {
-            if (chunk is Chunk concrete) { RegisterChunkMusic(concrete); RegisterChunkFurnaces(concrete); RegisterChunkCampfires(concrete); }
+            if (chunk is Chunk concrete) RegisterChunkMusic(concrete);
             (mobSpawner ??= new MobSpawner(this)).PopulateChunk(chunk);
         }
         return default;
@@ -167,6 +179,9 @@ public abstract partial class AbstractLevel : ILevel
         var (x, z) = Region.ChunkOf(position);
         if (GetLoadedChunk(x, z) == null)
             return false;
+
+        if (this.IsTicketTicking(x, z))
+            return true;
 
         var simulationDistance = Configuration.SimulationDistance;
         foreach (var player in Players.Values)
@@ -179,9 +194,13 @@ public abstract partial class AbstractLevel : ILevel
         return false;
     }
 
-    internal IChunk? GetLoadedChunk(int chunkX, int chunkZ) => GetRegionForChunk(chunkX, chunkZ) is Region region
-        ? region.GetLoadedChunk(NumericsHelper.Modulo(chunkX, 32), NumericsHelper.Modulo(chunkZ, 32))
-        : null;
+    internal IChunk? GetLoadedChunk(int chunkX, int chunkZ)
+    {
+        // Entity initialization calls this under EntityLock; reads must never acquire the fluid tick lock.
+        return GetRegionForChunk(chunkX, chunkZ) is Region region
+            ? region.GetLoadedChunk(NumericsHelper.Modulo(chunkX, 32), NumericsHelper.Modulo(chunkZ, 32))
+            : null;
+    }
 
     internal bool TryMoveEntity(IEntity entity, VectorD from, VectorD to)
     {
@@ -221,6 +240,8 @@ public abstract partial class AbstractLevel : ILevel
         this.Name = name;
         this.Seed = seed;
         this.Fluids = new LevelFluids(this);
+        this.Lighting = new RuntimeLightEngine(
+            this.Fluids.TickLock, () => this.DimensionType?.Element.HasSkylight ?? true);
         this.Portals = new LevelPortals(this);
 
         var spawnChunkCount = 2 * this.Configuration.SpawnChunkRadius + 1;
@@ -231,15 +252,27 @@ public abstract partial class AbstractLevel : ILevel
 
     public ValueTask<bool> DestroyEntityAsync(IEntity entity)
     {
-        var destroyed = new RemoveEntitiesPacket(entity.EntityId);
+        lock (ItemEntity.TransferLock)
+            return ValueTask.FromResult(this.RemoveEntity(entity, transferring: false));
+    }
 
-        this.PacketBroadcaster.QueuePacketToLevel(this, destroyed, entity is IPlayer ? [entity.EntityId] : []);
+    // Transfers reuse the instance and its attachment holder; only a real removal retires storage.
+    // The caller holds TransferLock, shared with transfer commits and the entity save snapshot.
+    internal bool RemoveEntity(IEntity entity, bool transferring)
+    {
+        var region = this.GetRegionForLocation(entity.Position);
+        if (region is null || !region.Entities.TryRemove(new KeyValuePair<int, IEntity>(entity.EntityId, entity)))
+            return false;
 
-        var (chunkX, chunkZ) = Region.ChunkOf(entity.Position);
+        if (entity is Entity concrete)
+            concrete.CancelEntityPortalTravel();
 
-        var region = GetRegionForChunk(chunkX, chunkZ);
+        if (!transferring && entity is not IPlayer)
+            API.Data.AttachmentStorage.For(entity).Retire();
 
-        return region is null ? ValueTask.FromResult(false) : ValueTask.FromResult(region.Entities.TryRemove(entity.EntityId, out _));
+        this.PacketBroadcaster.QueuePacketToLevel(
+            this, new RemoveEntitiesPacket(entity.EntityId), entity is IPlayer ? [entity.EntityId] : []);
+        return true;
     }
 
     public abstract Task<bool> LoadAsync(DimensionCodec codec);
@@ -262,7 +295,11 @@ public abstract partial class AbstractLevel : ILevel
 
     public IRegion? GetRegionForChunk(Vector location) => GetRegionForChunk(location.X, location.Z);
 
-    public async ValueTask<IChunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true)
+    public ValueTask<IChunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true) =>
+        this.GetChunkAsync(chunkX, chunkZ, scheduleGeneration, ticketOnly: false);
+
+    private async ValueTask<IChunk?> GetChunkAsync(
+        int chunkX, int chunkZ, bool scheduleGeneration, bool ticketOnly)
     {
         var region = GetRegionForChunk(chunkX, chunkZ) ?? LoadRegion(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
 
@@ -278,7 +315,7 @@ public abstract partial class AbstractLevel : ILevel
         {
             if (!chunk.IsGenerated && scheduleGeneration)
             {
-                this.QueueGeneration(packedXZ);
+                this.QueueGeneration(packedXZ, ticketOnly);
                 return null;
             }
 
@@ -289,7 +326,7 @@ public abstract partial class AbstractLevel : ILevel
 
         if (scheduleGeneration)
         {
-            this.QueueGeneration(packedXZ);
+            this.QueueGeneration(packedXZ, ticketOnly);
             return null;
         }
 
@@ -300,7 +337,7 @@ public abstract partial class AbstractLevel : ILevel
     {
         // Like vanilla, everything outside the build range reads as void air.
         if (this.IsOutsideBuildHeight(y))
-            return BlocksRegistry.Get(Material.VoidAir);
+            return BlocksRegistry.VoidAir;
 
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         return c?.GetBlock(x, y, z);
@@ -318,28 +355,40 @@ public abstract partial class AbstractLevel : ILevel
             .GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
     }
 
-    public async ValueTask SetBlockAsync(int x, int y, int z, IBlock block)
+    public ValueTask SetBlockAsync(int x, int y, int z, IBlock block) =>
+        this.SetBlockAsync(x, y, z, block, doBlockUpdate: false);
+
+    public ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate) =>
+        this.SetBlockAsync(new Vector(x, y, z), block, UpdateFlags(doBlockUpdate) | BlockUpdateFlags.Clients);
+
+    public async ValueTask SetBlockAsync(Vector location, IBlock block, BlockUpdateFlags flags) =>
+        await this.TrySetBlockAsync(location, block, flags, canReplace: null);
+
+    /// <summary>
+    /// Changes a block like <see cref="SetBlockAsync(Vector, IBlock, BlockUpdateFlags)"/> if
+    /// <paramref name="canReplace"/> accepts the block there, deciding and changing it in one step, so that nothing
+    /// changes the block in between.
+    /// </summary>
+    /// <param name="canReplace">
+    /// Whether the block there may be replaced, or null for any; it runs under the level's tick lock, so it mustn't
+    /// wait on anything.
+    /// </param>
+    /// <returns>Whether the block was changed.</returns>
+    internal async ValueTask<bool> TrySetBlockAsync(
+        Vector location,
+        IBlock block,
+        BlockUpdateFlags flags,
+        Func<IBlock, bool>? canReplace,
+        BlockPlacement? placement = null)
     {
-        if (this.IsOutsideBuildHeight(y))
-            return;
+        if (!await this.TrySetBlockUntrackedAsync(
+            location.X, location.Y, location.Z, block, flags, canReplace, placement))
+            return false;
 
-        await SetBlockUntrackedAsync(x, y, z, block);
-        this.BroadcastBlockChange(block, new(x, y, z));
-        TrackMobEgg(new Vector(x, y, z), block);
-        CheckWither(new Vector(x, y, z), block);
-        CheckSnowGolem(new Vector(x, y, z), block);
-    }
-
-    public async ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate)
-    {
-        if (this.IsOutsideBuildHeight(y))
-            return;
-
-        await SetBlockUntrackedAsync(x, y, z, block, doBlockUpdate);
-        this.BroadcastBlockChange(block, new(x, y, z));
-        TrackMobEgg(new Vector(x, y, z), block);
-        CheckWither(new Vector(x, y, z), block);
-        CheckSnowGolem(new Vector(x, y, z), block);
+        TrackMobEgg(location, block);
+        CheckWither(location, block);
+        CheckSnowGolem(location, block);
+        return true;
     }
 
     internal void BroadcastBlockChange(IBlock block, Vector location)
@@ -373,42 +422,65 @@ public abstract partial class AbstractLevel : ILevel
         SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 
     public ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false) =>
-        SetBlockUntrackedAsync(x, y, z, block, doBlockUpdate, ShapeUpdateLimit);
+        SetBlockUntrackedAsync(x, y, z, block, UpdateFlags(doBlockUpdate));
 
-    internal async ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate, int updateLimit)
+    /// <summary>
+    /// Changes a block, with the side effects <paramref name="flags"/> ask for (see <see cref="AfterBlockSet"/>).
+    /// </summary>
+    internal async ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, BlockUpdateFlags flags) =>
+        await this.TrySetBlockUntrackedAsync(x, y, z, block, flags, canReplace: null);
+
+    /// <summary>
+    /// Changes a block if <paramref name="canReplace"/> (null for any) accepts the block there, with the side effects
+    /// <paramref name="flags"/> ask for (see <see cref="AfterBlockSet"/>).
+    /// </summary>
+    /// <returns>Whether the block was changed.</returns>
+    internal async ValueTask<bool> TrySetBlockUntrackedAsync(
+        int x,
+        int y,
+        int z,
+        IBlock block,
+        BlockUpdateFlags flags,
+        Func<IBlock, bool>? canReplace,
+        BlockPlacement? placement = null)
     {
         if (this.IsOutsideBuildHeight(y))
-            return;
+            return false;
 
-        if (doBlockUpdate)
-        {
-            await ScheduleBlockUpdateAsync(new BlockUpdate(this, new Vector(x, y, z), block));
-            await BlockUpdateNeighborsAsync(new BlockUpdate(this, new Vector(x, y, z), block));
-        }
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         if (c is null)
-            return;
+            return false;
 
-        var previous = c.GetBlock(x, y, z);
-        c.SetBlock(x, y, z, block);
-
-        // Generated block entity data (e.g. a dungeon chest's loot) doesn't carry over to another block. A removed container
-        // spills its contents, as vanilla's preRemoveSideEffects does.
-        if (c.GetBlockEntity(x, y, z) is DataBlockEntity data && data.Id != block.BlockEntityType())
+        // Under the lock fluid ticks and growth hold, so that neither reads a block, has it changed here, and then
+        // writes what it worked out from the old block over the change; and with the change's updates, so that
+        // another change's can't run between the block and its own.
+        API.BlockEntities.BlockEntity? removed;
+        lock (this.Fluids.TickLock)
         {
-            BlockDrops.SpillContainer(this, () => Server.GetNextEntityId(), new Vector(x, y, z), data);
-            c.RemoveBlockEntity(x, y, z);
+            if (!this.Fluids.IsResident(c) || c is Chunk { EntitiesUnloaded: true })
+                return false;
+
+            using var handLock = placement?.LockHand();
+            var old = c.GetBlock(x, y, z);
+            if (canReplace is not null && !canReplace(old))
+                return false;
+
+            using var prepared = placement?.Prepare(block, new Vector(x, y, z), this.Logger);
+            if (placement is not null && prepared is null)
+                return false;
+
+            // Publish the initialized entity first: lock-free readers must never see a filled box as empty.
+            removed = this.UpdateBlockEntity(c, new Vector(x, y, z), block, prepared?.Entity);
+            c.SetBlock(x, y, z, block);
+            placement?.Consume();
+            this.CompleteBlockEntityPlacement(c, prepared?.Entity);
+            this.AfterBlockSet(new Vector(x, y, z), old, block, flags);
         }
 
-        if (doBlockUpdate)
-        {
-            this.Fluids.OnBlockChanged(new Vector(x, y, z), block);
-            this.Portals.OnBlockChanged(new Vector(x, y, z));
+        if (removed is not null)
+            await this.RunBlockEntityRemovalAsync(removed);
 
-            // Vanilla updates the neighbors' shapes once the block has changed; setting the same state changes nothing.
-            if (!previous.IsSameState(block))
-                await this.UpdateNeighbourShapesAsync(new Vector(x, y, z), updateLimit);
-        }
+        return true;
     }
 
     public IEnumerable<IEntity> GetEntitiesInRange(VectorD location, float distance = 10f)
@@ -543,11 +615,9 @@ public abstract partial class AbstractLevel : ILevel
         LevelData.Time += this.Configuration.TimeTickSpeedMultiplier;
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
-        this.SpawnPendingEntities();
-
-        // Like vanilla, fluid ticks run before entities tick.
+        // Like vanilla, block ticks and then fluid ticks run before entities tick.
+        TickStage = "block and fluid ticks";
         this.Fluids.Tick();
-        await BlockDrops.SpawnDestroyedByFluidsAsync(this, () => Server.GetNextEntityId());
 
         await this.Portals.TickAsync();
 
@@ -561,10 +631,18 @@ public abstract partial class AbstractLevel : ILevel
             await action();
         }
 
+        // Deferred unloads keep old-generation state first; a rebound type can respawn it in this same tick.
+        this.SpawnPendingEntities();
+
         await TickEndFightAsync();
 
         TickStage = "natural spawning";
         (mobSpawner ??= new MobSpawner(this)).Tick();
+
+        // Like vanilla's chunk ticks, with natural spawning and before entities.
+        TickStage = "random ticks";
+        this.Lighting.Flush();
+        this.TickRandomBlocks();
 
         // Snapshot once so crossing a region boundary cannot tick an entity twice.
         var entities = Regions.Values.SelectMany(region => region.Entities.Values)
@@ -577,30 +655,36 @@ public abstract partial class AbstractLevel : ILevel
             {
                 TickStage = $"entity {entity.EntityId} ({entity.GetType().Name})";
                 await entity.TickAsync();
+                await this.TouchPluginBlocksAsync(entity);
+                if (entity is Entity concrete && entity is not Player && entity.Level == this)
+                    await concrete.TickEntityPortalAsync();
             }
         }
 
         await TickRaidsAsync();
         await TickMobGameEventsAsync();
         await TickMobEggsAsync();
-        await TickFurnacesAsync();
-        TickCampfires();
 
-        TickStage = "random ticks";
-        await TickRandomBlocksAsync();
+        TickStage = "block entities";
+        await TickBlockEntitiesAsync();
 
-        foreach (var region in Regions.Values)
+        TickStage = "moving entities between regions";
+        foreach (var region in Regions.Values.OfType<Region>())
+            region.MoveEntitiesToTheirRegions();
+
+        TickStage = "runtime light";
+        foreach (var packet in this.Lighting.TakeUpdates())
         {
-            if (region is Region concrete)
-            {
-                TickStage = "block updates";
-                await concrete.TickBlocksAsync();
-            }
+            var location = new Vector(packet.Chunk.X << 4, 0, packet.Chunk.Z << 4);
+            foreach (var watcher in this.PlayersInRange(location))
+                watcher.SendPacket(packet);
         }
+
         foreach (var player in Players.Values)
         {
             TickStage = $"tracking for {player.Username}";
             await player.SynchronizeTrackedEntitiesAsync();
+            player.SynchronizeOwnState();
         }
         TickStage = "idle";
     }
@@ -613,16 +697,17 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal void SendLightUpdate(IChunk chunk)
     {
-        var packet = new LightUpdatePacket(chunk);
-        foreach (var player in this.GetPlayersInChunkRange(new Vector(chunk.X << 4, 0, chunk.Z << 4)))
-            player.SendPacket(packet);
+        this.Lighting.QueueChunkUpdate(chunk);
     }
 
     /// <summary>
     /// Queues a complete chunk's pending entities (<see cref="Chunk.PendingEntities"/>) to spawn on the next tick, like
     /// vanilla when a proto chunk becomes a level chunk or an entity chunk is loaded.
     /// </summary>
-    internal void QueueEntitySpawn(Chunk chunk) => this.entitySpawns.Enqueue(chunk);
+    internal void QueueEntitySpawn(Chunk chunk)
+    {
+        this.entitySpawns.Enqueue(chunk);
+    }
 
     /// <remarks>
     /// Pending entities are loaded like saved ones (see <see cref="EntityNbt.Load"/>), so generated entities get the saved
@@ -640,8 +725,6 @@ public abstract partial class AbstractLevel : ILevel
                     continue;
 
                 RegisterChunkMusic(chunk);
-                RegisterChunkFurnaces(chunk);
-                RegisterChunkCampfires(chunk);
                 RegisterMobEggs(chunk);
 
                 foreach (var pending in chunk.PendingEntities)
@@ -651,7 +734,11 @@ public abstract partial class AbstractLevel : ILevel
                         chunk.UnspawnableEntities.Add(tag);
                     else if ((entity is not Mob { HasAi: true, Alive: false } || entity is EnderDragon) &&
                         !this.Regions.Values.Any(region => region.Entities.Values.Any(existing => existing.Uuid == entity.Uuid)))
-                        this.SpawnEntity(entity);
+                    {
+                        // One whose plugin type started unloading since it was loaded stays as saved.
+                        if (!this.TrySpawnEntity(entity, hostOwned: true))
+                            chunk.UnspawnableEntities.Add(tag);
+                    }
                 }
 
                 chunk.PendingEntities.Clear();
@@ -681,6 +768,11 @@ public abstract partial class AbstractLevel : ILevel
             {
                 LockChunk = this.Generator.LockChunkAsync,
                 FluidTickLock = this.Fluids.TickLock,
+                FlushLight = this.Lighting.Flush,
+                LightLoaded = this.TrackPublishedChunk,
+                LightUnloaded = this.Lighting.Untrack,
+                BlockAccessUnloaded = this.Fluids.Untrack,
+                BlockEntityUnloaded = this.OnBlockEntityUnloaded,
                 EntitiesLoaded = this.QueueEntitySpawn,
                 SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null
             };
@@ -703,8 +795,30 @@ public abstract partial class AbstractLevel : ILevel
         await simulationGate.WaitAsync();
         try
         {
-            if (Regions.TryRemove(value, out var r))
+            // The region's final save has its block entities' changes made since the last tick.
+            this.TakeBlockEntityChanges();
+
+            IRegion? r;
+            lock (this.Fluids.TickLock)
+            {
+                if (!Regions.TryGetValue(value, out r))
+                    return;
+
+                if (this.HasRegionTickets(regionX, regionZ))
+                    return;
+
+                // Retire publication and detach lighting before another reader can create a replacement region.
+                if (r is Region concrete)
+                    concrete.RetireLighting();
+
+                Regions.TryRemove(KeyValuePair.Create(value, r));
+            }
+
+            if (r is not null)
+            {
                 await r.FlushAsync();
+                await r.DisposeAsync();
+            }
         }
         finally
         {
@@ -712,13 +826,17 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
-    public async ValueTask ScheduleBlockUpdateAsync(IBlockUpdate blockUpdate)
+    /// <summary>
+    /// Whether the server paused chunk management (see <see cref="WorldManager.PauseChunkManagementAsync"/>): the
+    /// generation jobs running finish, but don't start the queued ones.
+    /// </summary>
+    internal bool ChunkManagementPaused
     {
-        blockUpdate.Block ??= await GetBlockAsync(blockUpdate.Position);
-        (int chunkX, int chunkZ) = blockUpdate.Position.ToChunkCoord();
-        var region = GetRegionForChunk(chunkX, chunkZ);
-        region?.AddBlockUpdate(blockUpdate);
+        get => Volatile.Read(ref this.chunkManagementPaused);
+        set => Volatile.Write(ref this.chunkManagementPaused, value);
     }
+
+    private bool chunkManagementPaused;
 
     public async Task ManageChunksAsync()
     {
@@ -730,22 +848,28 @@ public abstract partial class AbstractLevel : ILevel
                 chunksToKeep.AddRange(p.LoadedChunks);
             });
 
-            foreach (var chunk in LoadedChunks.Except(chunksToKeep).Except(this.spawnChunks).Where(chunk => !this.generationPins.ContainsKey(chunk)))
+            foreach (var chunk in LoadedChunks.Except(chunksToKeep).Except(this.spawnChunks))
             {
-                if (LoadedChunks.TryRemove(chunk))
+                await simulationGate.WaitAsync();
+                try
                 {
+                    // Recheck after entering the gate, against tickets acquired since the candidate snapshot.
+                    if (!this.TryReleaseUnneededChunk(chunk))
+                        continue;
+
+                    // The chunk's final save has its block entities' changes made since the last tick.
+                    this.TakeBlockEntityChanges();
+
                     NumericsHelper.LongToInts(chunk, out var cx, out var cz);
-                    await simulationGate.WaitAsync();
-                    try
-                    {
-                        var r = GetRegionForChunk(cx, cz);
-                        if (r is not null)
-                            await r.UnloadChunk(NumericsHelper.Modulo(cx, Region.CubicRegionSize), NumericsHelper.Modulo(cz, Region.CubicRegionSize));
-                    }
-                    finally
-                    {
-                        simulationGate.Release();
-                    }
+                    var r = GetRegionForChunk(cx, cz);
+                    if (r is not null)
+                        await r.UnloadChunk(
+                            NumericsHelper.Modulo(cx, Region.CubicRegionSize),
+                            NumericsHelper.Modulo(cz, Region.CubicRegionSize));
+                }
+                finally
+                {
+                    simulationGate.Release();
                 }
             }
         }
@@ -753,6 +877,7 @@ public abstract partial class AbstractLevel : ILevel
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
             ExceptionDispatchInfo.Throw(failure);
 
+        await this.LoadTicketChunksAsync();
         this.StartQueuedJobs();
     }
 
@@ -762,8 +887,11 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     private void StartQueuedJobs()
     {
-        // Disposal takes every slot as jobs finish, which new jobs would keep it from.
-        while (Volatile.Read(ref this.disposed) == 0 && this.generationSlots.Wait(0))
+        // Disposal takes every slot as jobs finish, which new jobs would keep it from. While chunk management is
+        // paused, a job that finishes doesn't start the next.
+        while (Volatile.Read(ref this.disposed) == 0
+            && !this.ChunkManagementPaused
+            && this.generationSlots.Wait(0))
         {
             if (!this.TryTakeNearestJob(out var job))
             {
@@ -781,10 +909,10 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     private bool TryTakeNearestJob(out long job)
     {
+        lock (this.chunkTicketLock)
         lock (this.waitingJobs)
         {
-            while (this.ChunksToGen.TryDequeue(out var queued))
-                this.waitingJobs.Add(queued);
+            this.DiscardUnneededGeneration(moveToWaiting: true);
 
             if (this.waitingJobs.Count == 0)
             {
@@ -816,14 +944,28 @@ public abstract partial class AbstractLevel : ILevel
 
             job = this.waitingJobs[nearest];
             this.waitingJobs.RemoveAt(nearest);
+            this.queuedChunks[job] = GenerationDemand.Running;
             return true;
         }
     }
 
-    private void QueueGeneration(long packedXZ)
+    private void QueueGeneration(long packedXZ, bool ticketOnly = false)
     {
-        if (this.queuedChunks.TryAdd(packedXZ, 0))
-            this.ChunksToGen.Enqueue(packedXZ);
+        lock (this.chunkTicketLock)
+        lock (this.waitingJobs)
+        {
+            // An asynchronous ticket load may return after its last handle was released.
+            if (ticketOnly && !this.IsTicketLoaded(packedXZ))
+                return;
+
+            var demand = ticketOnly ? GenerationDemand.Ticket : GenerationDemand.Retained;
+            if (this.queuedChunks.TryAdd(packedXZ, demand))
+                this.ChunksToGen.Enqueue(packedXZ);
+            else if (!ticketOnly
+                && this.queuedChunks.TryGetValue(packedXZ, out var existing)
+                && existing == GenerationDemand.Ticket)
+                this.queuedChunks[packedXZ] = GenerationDemand.Retained;
+        }
     }
 
     private void PinGenerationArea(int chunkX, int chunkZ, int delta)
@@ -882,14 +1024,22 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
+    /// <remarks>
+    /// Takes in the changes block entities announced since the last tick first (see
+    /// <see cref="TakeBlockEntityChanges"/>), like the tick's end does, so that one changed between ticks (by plugin
+    /// code off the tick, a command or a test) is saved with its own data as it is now, like its items.
+    /// </remarks>
     public async virtual Task FlushRegionsAsync()
     {
         await simulationGate.WaitAsync();
         try
         {
+            this.TakeBlockEntityChanges();
+
             Interlocked.Exchange(ref this.jobsSinceFlush, 0);
             SavingEntities = true;
             await Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
+            this.SavePluginData();
         }
         finally
         {
@@ -898,7 +1048,10 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
-    public IEntity SpawnFallingBlock(VectorD position, Material mat)
+    /// <summary>
+    /// Spawns a falling block entity of the given block state, centered on the block at the position.
+    /// </summary>
+    public IEntity SpawnFallingBlock(VectorD position, IBlock block)
     {
         position.X += 0.5f;
         position.Z += 0.5f;
@@ -908,7 +1061,7 @@ public abstract partial class AbstractLevel : ILevel
             Type = EntityType.FallingBlock,
             EntityId = Server.GetNextEntityId(),
             Level = this,
-            Block = BlocksRegistry.Get(mat),
+            Block = block,
         };
 
         entity.SpawnEntity(null, entity.Block.GetHashCode());
@@ -924,21 +1077,79 @@ public abstract partial class AbstractLevel : ILevel
     public async ValueTask<IBlockEntity?> GetBlockEntityAsync(int x, int y, int z)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
-        return c?.GetBlockEntity(x, y, z);
+        var blockEntity = c?.GetBlockEntity(x, y, z);
+
+        this.AttachBlockEntity(blockEntity);
+
+        return blockEntity;
     }
 
     public ValueTask SetBlockEntity(Vector blockPosition, IBlockEntity tileEntityData) =>
         SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
+
+    /// <remarks>
+    /// The block entity replaces the one there without the side effects of removing it. One created by plugin code
+    /// takes the position, and the type of the block there unless it has one.
+    /// </remarks>
     public async ValueTask SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
-        c?.SetBlockEntity(x, y, z, tileEntityData);
+        if (c is null)
+            return;
+
+        if (tileEntityData is API.BlockEntities.BlockEntity placed)
+        {
+            placed.BlockPosition = new Vector(x, y, z);
+
+            if (placed.Id.Length == 0)
+            {
+                placed.Id = c.GetBlock(x, y, z).BlockEntityType()
+                    ?? throw new ArgumentException($"The block at {placed.BlockPosition} has no block entity type.");
+            }
+
+            placed.Owner ??= Plugins.PluginProviders.PluginLoadContext.OwnerOf(placed.GetType().Assembly);
+            this.AttachBlockEntity(placed);
+        }
+
+        var previous = c.GetBlockEntity(x, y, z);
+        c.SetBlockEntity(x, y, z, tileEntityData);
+
+        if (previous is API.BlockEntities.BlockEntity replaced && !ReferenceEquals(previous, tileEntityData))
+        {
+            replaced.IsRemoved = true;
+            await replaced.WaitForLiveCallAsync();
+        }
+    }
+
+    /// <summary>
+    /// The block entity at <paramref name="blockPosition"/>, created for the block there when it has a type but no
+    /// block entity, as in worlds saved before the server created them with their blocks.
+    /// </summary>
+    /// <returns>The block entity, or null when there's none or the chunk isn't loaded.</returns>
+    internal async ValueTask<IBlockEntity?> GetOrCreateBlockEntityAsync(Vector blockPosition)
+    {
+        var (x, y, z) = (blockPosition.X, blockPosition.Y, blockPosition.Z);
+        if (await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false) is not Chunk chunk)
+            return null;
+
+        var blockEntity = chunk.GetBlockEntity(x, y, z);
+        var block = chunk.GetBlock(x, y, z);
+
+        if (blockEntity is null && block.HasBlockEntity() && block.BlockEntityType() is string type)
+        {
+            var created = BlockEntityNbt.Create(type, blockPosition, logger: this.Logger);
+            blockEntity = chunk.GetOrAddBlockEntity(x, y, z, created);
+        }
+
+        this.AttachBlockEntity(blockEntity);
+
+        return blockEntity;
     }
 
     public IEntity SpawnEntity(VectorD position, EntityType type)
     {
         if (type == EntityType.FallingBlock)
-            return SpawnFallingBlock(position + (0, 20, 0), Material.Sand);
+            return SpawnFallingBlock(position + (0, 20, 0), BlocksRegistry.Sand);
 
         return GetNewEntitySpawner()
             .WithEntityType(type)
@@ -946,7 +1157,38 @@ public abstract partial class AbstractLevel : ILevel
             .Spawn();
     }
 
+    public IEntity SpawnEntity(
+        VectorD position,
+        API.Entities.EntityDefinition definition,
+        VectorD motion = default,
+        IEntity? owner = null)
+    {
+        var entity = PluginEntity.Create(definition, this);
+
+        entity.EntityId = Server.GetNextEntityId();
+        entity.Position = position;
+        entity.Motion = motion;
+
+        if (entity is PluginEntity projectile)
+            projectile.SetOwner(owner);
+
+        return this.SpawnEntity(entity);
+    }
+
     public IEntity SpawnEntity(IEntity entity)
+    {
+        if (!this.TrySpawnEntity(entity))
+            throw new InvalidOperationException($"Could not register entity {entity.EntityId}.");
+
+        return entity;
+    }
+
+    /// <summary>
+    /// Spawns an entity, unless it can't be added to the level (see <see cref="TryAddEntity"/>).
+    /// </summary>
+    /// <returns>Whether the entity spawned.</returns>
+    /// <exception cref="InvalidOperationException">The plugin spawning the entity is unloading.</exception>
+    internal bool TrySpawnEntity(IEntity entity, bool hostOwned = false)
     {
         if (entity is EnderDragon dragon) dragon.EnsureMultipartIds();
         if (entity is Mob mob)
@@ -955,65 +1197,90 @@ public abstract partial class AbstractLevel : ILevel
             // Summoned vexes, offspring and slime splits inherit the enclosure they spawn in.
             if (Generator is MobTestGenerator testWorld) testWorld.AssignPen(mob);
         }
-        if (!TryAddEntity(entity))
-            throw new InvalidOperationException($"Could not register entity {entity.EntityId}.");
+        if (!TryAddEntity(entity, hostOwned))
+            return false;
         entity.SpawnEntity();
-        return entity;
+        return true;
     }
 
     public void SpawnExperienceOrbs(VectorD position, short count = 1)
     {
+        // Resolve once for the batch. An empty ambient call does not prove there is no plugin caller.
+        var spawner = count > 0 ? PluginEntities.FindSpawner() : null;
+
         while (count > 0)
         {
             var value = ExperienceOrb.SplitValue(count);
-            SpawnEntity(new ExperienceOrb { Level = this, EntityId = Server.GetNextEntityId(), Position = position, Value = value });
+            var orb = new ExperienceOrb
+            {
+                Level = this,
+                EntityId = Server.GetNextEntityId(),
+                Position = position,
+                Value = value,
+                SpawnedBy = spawner
+            };
+
+            if (!this.TrySpawnEntity(orb, hostOwned: true))
+                throw new InvalidOperationException($"Could not register entity {orb.EntityId}.");
+
             count -= (short)value;
         }
     }
 
-    public async ValueTask<bool> HandleBlockUpdateAsync(IBlockUpdate update)
+    public void SpawnParticles(
+        ParticleData particle,
+        VectorD position,
+        int count = 1,
+        VectorF spread = default,
+        float speed = 0,
+        bool force = false)
     {
-        if (update.Block is not IBlock block)
-            return false;
+        ArgumentNullException.ThrowIfNull(particle);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
-        // A leaf's scheduled tick recomputes its distance from the logs (see LeafDecay).
-        if (LeafDecay.IsLeaves(block))
+        var packet = new LevelParticlesPacket
         {
-            await LeafDecay.TickAsync(this, update.Position);
-            return false;
-        }
+            OverrideLimiter = force,
+            Position = position,
+            Offset = spread,
+            MaxSpeed = speed,
+            ParticleCount = count,
+            Data = particle
+        };
 
-        // Fluids react to block changes through their scheduled ticks instead (see LevelFluids).
-        if (block.IsGravityAffected())
-            return await BlockUpdates.HandleFallingBlock(update);
+        var range = force ? 512.0 : 32.0;
+        var players = this.Players.Values
+            .Where(player => IsInParticleRange(player.Position, position, range))
+            .Select(player => player.EntityId)
+            .ToArray();
 
-        return false;
+        if (players.Length > 0)
+            this.PacketBroadcaster.QueuePacketTo(packet, players);
     }
 
-    public async ValueTask BlockUpdateNeighborsAsync(IBlockUpdate update)
+    // Vanilla's ServerLevel.sendParticles range, which decides who sees them: closer than 32 blocks (512 when the
+    // limiter is overridden) in 3D, measured from the centre of the block the player stands in.
+    internal static bool IsInParticleRange(VectorD player, VectorD particle, double range)
     {
-        // Each neighbor is offset from the original position, not from the previous neighbor.
-        var origin = update.Position;
+        var x = Math.Floor(player.X) + 0.5 - particle.X;
+        var y = Math.Floor(player.Y) + 0.5 - particle.Y;
+        var z = Math.Floor(player.Z) + 0.5 - particle.Z;
 
-        Vector[] directions = Vector.AllDirections;
-        for (int i = 0; i < directions.Length; i++)
-        {
-            var neighbor = new BlockUpdate(this, origin + directions[i]);
-            await ScheduleBlockUpdateAsync(neighbor);
-        }
+        return x * x + y * y + z * z < range * range;
     }
 
     public abstract void Initialize(DimensionCodec codec);
 
     /// <summary>
-    /// Takes the dimension's name and build range from its codec.
+    /// Sets the level's dimension name, and takes its build range from its dimension type.
     /// </summary>
-    protected void SetDimension(DimensionCodec codec)
+    protected void SetDimension(string dimensionName, DimensionCodec codec)
     {
-        this.DimensionName = codec.Name;
+        this.DimensionName = dimensionName;
+        this.DimensionType = codec;
         this.MinY = codec.Element.MinY;
         this.Height = codec.Element.Height;
-        this.Fluids.Rules = FluidRules.ForDimension(codec.Name, codec.Element.Ultrawarm);
+        this.Fluids.Rules = FluidRules.ForDimension(codec);
     }
 
     /// <summary>
@@ -1065,6 +1332,10 @@ public abstract partial class AbstractLevel : ILevel
         var stopwatch = new Stopwatch();
         stopwatch.Start();
         Log.Generating(this.Logger, startChunks, this.Name);
+
+        // Generating starts with the staging below, which does most of the work of a noise generator's chunks, so a
+        // listener hears of it now rather than once the staging is done.
+        this.GenerationProgress?.Invoke(0, startChunks);
 
         // Most of the work is staged across every core first, without the lock waits of completing chunks one by one, so the
         // jobs below only complete the chunks.
@@ -1155,7 +1426,7 @@ public abstract partial class AbstractLevel : ILevel
                     var by = chunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(bx, bz);
                     IBlock block = chunk.GetBlock(bx, by, bz);
 
-                    if (by < 64 || !block.Is(Material.GrassBlock) && !block.Is(Material.Sand))
+                    if (by < 64 || !block.Is(BlockIds.GrassBlock) && !block.Is(BlockIds.Sand))
                     {
                         continue;
                     }
@@ -1198,13 +1469,75 @@ public abstract partial class AbstractLevel : ILevel
         Log.SpawnNotFound(this.Logger, this.Name);
     }
 
-    public bool TryAddEntity(IEntity entity)
+    /// <summary>
+    /// Adds an entity to the level, credited to the plugin whose code adds it, if any, so that unloading the plugin
+    /// removes it (see <see cref="PluginEntities"/>).
+    /// </summary>
+    /// <returns>
+    /// Whether the entity was added: not when its region isn't loaded, an entity with its id is in it, or it's of a
+    /// plugin's entity type whose plugin is unloaded or unloading.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">The plugin adding the entity is unloading.</exception>
+    public bool TryAddEntity(IEntity entity) => this.TryAddEntity(entity, hostOwned: false);
+
+    // Only known host paths or batches that already credited their caller may bypass the attribution stack walk.
+    internal bool TryAddEntity(IEntity entity, bool hostOwned)
     {
+        if (!PluginEntities.HasLoadedType(entity))
+            return false;
+
+        var spawner = PluginEntities.Credit(entity, hostOwned);
+
+        if (!PluginEntities.HasLoadedType(entity))
+            return false;
+
         var (chunkX, chunkZ) = Region.ChunkOf(entity.Position);
 
         var region = GetRegionForChunk(chunkX, chunkZ);
 
-        return region is not null && region.Entities.TryAdd(entity.EntityId, entity);
+        if (region is null || !region.Entities.TryAdd(entity.EntityId, entity))
+            return false;
+
+        // Unloading closes a plugin before removing its entities, so one added meanwhile is removed there or here.
+        if (spawner is { IsClosing: true } || !PluginEntities.HasLoadedType(entity))
+        {
+            region.Entities.TryRemove(new KeyValuePair<int, IEntity>(entity.EntityId, entity));
+            spawner?.ThrowIfClosing();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Runs <paramref name="action"/> between the level's ticks, once the tick running now ends.
+    /// </summary>
+    /// <param name="action">What to run.</param>
+    /// <param name="timeout">How long to wait for the tick to end.</param>
+    /// <returns>Whether the action ran: not if the tick didn't end in time, or the level was disposed.</returns>
+    internal async Task<bool> TryRunBetweenTicksAsync(Action action, TimeSpan timeout)
+    {
+        try
+        {
+            if (!await simulationGate.WaitAsync(timeout))
+                return false;
+        }
+        catch (ObjectDisposedException)
+        {
+            return false;
+        }
+
+        try
+        {
+            action();
+        }
+        finally
+        {
+            simulationGate.Release();
+        }
+
+        return true;
     }
 
     protected void BroadcastTime() =>
@@ -1217,12 +1550,18 @@ public abstract partial class AbstractLevel : ILevel
 
         GC.SuppressFinalize(this);
 
+        this.ClearChunkTickets();
         this.optionsMonitor.Dispose();
+        this.SavePluginData();
 
         // Waits out the generation jobs, holding every slot so no new one starts, and saves what jobs finished since the
         // last save started, including jobs that were still running during the server's save on stop.
         for (var i = 0; i < Environment.ProcessorCount; i++)
             await this.generationSlots.WaitAsync();
+
+        // Nothing generates any more, so the level's generator can let go of what it holds (a plugin's generator, see
+        // PluginLevelGenerator); the saves below still lock chunks through it.
+        (this.Generator as IDisposable)?.Dispose();
 
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
             Log.ChunkGenerationFailed(this.Logger, failure);

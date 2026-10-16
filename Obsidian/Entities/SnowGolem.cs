@@ -26,7 +26,8 @@ public sealed partial class SnowGolem : PathfinderMob
     {
         var point = (Vector)Position.Floor();
         var temperature = Terrain.GetTemperature(point);
-        if (temperature > 1)
+        // Vanilla's snow_golem_melts, which its hot biomes and the nether set.
+        if (Level.Gameplay(LevelEnvironment.SnowGolemMelts, point))
             await DamageEnvironmentAsync(1);
         if (!Alive || temperature >= 0.8f || MobBitMask.HasFlag(MobBitmask.NoAi) || !Level.LevelData.GetBooleanRule("mob_griefing"))
             return;
@@ -35,26 +36,29 @@ public sealed partial class SnowGolem : PathfinderMob
             var snow = (Vector)(Position + new VectorD((index % 2 * 2 - 1) * 0.25f, 0, (index / 2 * 2 - 1) * 0.25f)).Floor();
             if (Terrain.GetBlock(snow)?.IsAir == true && Terrain.GetBlock(new Vector(snow.X, snow.Y - 1, snow.Z)) is { } floor &&
                 floor.IsCollisionShapeFullBlock() && !floor.IsLiquid)
-                await Level.SetBlockAsync(snow, BlocksRegistry.Get(Material.Snow), true);
+                await Level.SetBlockAsync(snow, BlocksRegistry.Snow, true);
         }
     }
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 3) || !CanSee(player))
-            return;
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (Pumpkin && item?.Type == Material.Shears)
+        if (Pumpkin && item?.Is(ItemsRegistry.Shears) == true)
         {
             Pumpkin = false;
-            DropItem(Material.CarvedPumpkin, 1);
+            DropItem(ItemsRegistry.CarvedPumpkin, 1);
             PlayMobSound("shear");
             await DamageInteractionToolAsync(player, hand);
             SynchronizeMetadata();
+            return true;
         }
+
+        return false;
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.Snowball, Random.Next(16));
+        DropItem(ItemsRegistry.Snowball, Random.Next(16));
         return default;
     }
     public override void Write(INetStreamWriter writer)

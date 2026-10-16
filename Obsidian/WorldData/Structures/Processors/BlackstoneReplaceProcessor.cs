@@ -1,3 +1,4 @@
+using Obsidian.API.World.Structures;
 using System.Collections.Frozen;
 
 namespace Obsidian.WorldData.Structures.Processors;
@@ -38,8 +39,13 @@ public sealed class BlackstoneReplaceProcessor : StructureProcessor
         ["minecraft:iron_bars"] = "minecraft:iron_chain"
     }.ToFrozenDictionary();
 
-    public override StructureBlockInfo? ProcessBlock(IWorldGenLevel level, Vector origin, Vector pivot, StructureBlockInfo original,
-        StructureBlockInfo current, StructurePlaceSettings settings)
+    public override StructureBlockInfo? ProcessBlock(
+        IWorldGenLevel level,
+        Vector origin,
+        Vector pivot,
+        StructureBlockInfo original,
+        StructureBlockInfo current,
+        TemplatePlacement placement)
     {
         if (!replacements.TryGetValue(current.Block.UnlocalizedName, out var replacement))
             return current;

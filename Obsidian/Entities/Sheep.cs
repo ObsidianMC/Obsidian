@@ -1,3 +1,4 @@
+using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 
 namespace Obsidian.Entities;
@@ -5,7 +6,21 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:sheep")]
 public sealed partial class Sheep : FarmAnimal
 {
-    private static readonly string[] colors = ["White", "Orange", "Magenta", "LightBlue", "Yellow", "Lime", "Pink", "Gray", "LightGray", "Cyan", "Purple", "Blue", "Brown", "Green", "Red", "Black"];
+    // Indexed by the sheep's color id, in vanilla's dye color order.
+    private static readonly Item[] wools =
+    [
+        ItemsRegistry.WhiteWool, ItemsRegistry.OrangeWool, ItemsRegistry.MagentaWool, ItemsRegistry.LightBlueWool,
+        ItemsRegistry.YellowWool, ItemsRegistry.LimeWool, ItemsRegistry.PinkWool, ItemsRegistry.GrayWool,
+        ItemsRegistry.LightGrayWool, ItemsRegistry.CyanWool, ItemsRegistry.PurpleWool, ItemsRegistry.BlueWool,
+        ItemsRegistry.BrownWool, ItemsRegistry.GreenWool, ItemsRegistry.RedWool, ItemsRegistry.BlackWool
+    ];
+    private static readonly Item[] dyes =
+    [
+        ItemsRegistry.WhiteDye, ItemsRegistry.OrangeDye, ItemsRegistry.MagentaDye, ItemsRegistry.LightBlueDye,
+        ItemsRegistry.YellowDye, ItemsRegistry.LimeDye, ItemsRegistry.PinkDye, ItemsRegistry.GrayDye,
+        ItemsRegistry.LightGrayDye, ItemsRegistry.CyanDye, ItemsRegistry.PurpleDye, ItemsRegistry.BlueDye,
+        ItemsRegistry.BrownDye, ItemsRegistry.GreenDye, ItemsRegistry.RedDye, ItemsRegistry.BlackDye
+    ];
     public Sheep() => Type = EntityType.Sheep;
     public byte Color { get; set; }
     public bool Sheared { get; set; }
@@ -32,23 +47,23 @@ public sealed partial class Sheep : FarmAnimal
         };
     }
 
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Level != Level || player.Health <= 0 || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
-            return;
+            return false;
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (!IsBaby && !Sheared && held is { Count: > 0, Type: Material.Shears })
+        if (!IsBaby && !Sheared && held is { Count: > 0, Holder.Id: ItemIds.Shears })
         {
             Sheared = true;
-            DropItem(Enum.Parse<Material>(colors[Color] + "Wool"), Random.Next(1, 4));
+            DropItem(wools[Color], Random.Next(1, 4));
             await DamageInteractionToolAsync(player, hand);
             SynchronizeMetadata();
-            return;
+            return true;
         }
         if (held is { Count: > 0 })
         {
-            var dye = Array.FindIndex(colors, color => held.Type.ToString() == color + "Dye");
+            var dye = Array.IndexOf(dyes, held.Holder);
             if (dye >= 0 && Color != dye)
             {
                 Color = (byte)dye;
@@ -59,10 +74,10 @@ public sealed partial class Sheep : FarmAnimal
                     await player.SendInventorySlotAsync(slot);
                 }
                 SynchronizeMetadata();
-                return;
+                return true;
             }
         }
-        await base.FeedAsync(player, hand);
+        return await base.FeedAsync(player, hand);
     }
 
     protected override IEntity CreateOffspring(Animal mate)
@@ -96,9 +111,9 @@ public sealed partial class Sheep : FarmAnimal
     {
         if (!IsBaby)
         {
-            DropItem(Burning ? Material.CookedMutton : Material.Mutton, Random.Next(1, 3));
+            DropItem(Burning ? ItemsRegistry.CookedMutton : ItemsRegistry.Mutton, Random.Next(1, 3));
             if (!Sheared)
-                DropItem(Enum.Parse<Material>(colors[Color] + "Wool"));
+                DropItem(wools[Color]);
         }
         return default;
     }
@@ -117,8 +132,9 @@ internal sealed class EatGrassGoal(Sheep sheep) : Goal
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look | GoalFlags.Jump;
     public override bool RequiresUpdateEveryTick => true;
     public override bool CanUse() => sheep.Random.Next(sheep.IsBaby ? 50 : 1000) == 0 &&
-        (sheep.Terrain.GetBlock((Vector)sheep.Position.Floor())?.Material == Material.ShortGrass ||
-         sheep.Terrain.GetBlock((Vector)sheep.Position.Floor() - new Vector(0, 1, 0))?.Material == Material.GrassBlock);
+        (sheep.Terrain.GetBlock((Vector)sheep.Position.Floor())?.RegistryId == BlockIds.ShortGrass
+            || sheep.Terrain.GetBlock((Vector)sheep.Position.Floor() - new Vector(0, 1, 0))?.RegistryId
+                == BlockIds.GrassBlock);
     public override bool CanContinue() => ticks > 0;
     public override void Start()
     {
@@ -131,7 +147,7 @@ internal sealed class EatGrassGoal(Sheep sheep) : Goal
         if (--ticks != 4)
             return;
         var position = (Vector)sheep.Position.Floor();
-        if (sheep.Terrain.GetBlock(position)?.Material == Material.ShortGrass)
+        if (sheep.Terrain.GetBlock(position)?.RegistryId == BlockIds.ShortGrass)
         {
             if (sheep.Level.LevelData.GetBooleanRule("mob_griefing"))
                 await sheep.Level.SetBlockAsync(position, BlocksRegistry.Air, true);
@@ -139,7 +155,7 @@ internal sealed class EatGrassGoal(Sheep sheep) : Goal
         else
         {
             position -= new Vector(0, 1, 0);
-            if (sheep.Terrain.GetBlock(position)?.Material != Material.GrassBlock)
+            if (sheep.Terrain.GetBlock(position)?.RegistryId != BlockIds.GrassBlock)
                 return;
             if (sheep.Level.LevelData.GetBooleanRule("mob_griefing"))
                 await sheep.Level.SetBlockAsync(position, BlocksRegistry.Dirt, true);

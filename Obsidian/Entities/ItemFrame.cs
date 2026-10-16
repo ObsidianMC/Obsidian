@@ -15,6 +15,39 @@ public partial class ItemFrame : Entity
     public BlockFace Facing { get; set; } = BlockFace.South;
 
     /// <summary>
+    /// The frame's box, worked out from where it hangs whenever it's read, so that it holds for frames loaded,
+    /// generated or moved alike.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla's hanging box, which comparators find frames by: centred 0.46875 from the middle of its block toward
+    /// the block it hangs on, a sixteenth of a block deep, and three quarters of a block across, or a whole block
+    /// holding a filled map. Its block is the one its position is in, as saved in <c>block_pos</c>.
+    /// </remarks>
+    public override BoundingBox BoundingBox
+    {
+        get
+        {
+            const double offset = 0.46875;
+            const double depth = 0.0625;
+
+            var position = this.Position;
+            var step = (VectorD)this.Facing.ToVector();
+            var center = new VectorD(
+                Math.Floor(position.X) + 0.5 - step.X * offset,
+                Math.Floor(position.Y) + 0.5 - step.Y * offset,
+                Math.Floor(position.Z) + 0.5 - step.Z * offset);
+
+            var across = this.Item is { } item && item.Is(ItemsRegistry.FilledMap) ? 1.0 : 0.75;
+            var half = new VectorD(
+                (step.X != 0 ? depth : across) / 2,
+                (step.Y != 0 ? depth : across) / 2,
+                (step.Z != 0 ? depth : across) / 2);
+
+            return new BoundingBox(center - half, center + half);
+        }
+    }
+
+    /// <summary>
     /// Like vanilla, the spawn packet carries the facing (as a 3D direction id), which the client needs to hang the frame.
     /// </summary>
     public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0) => base.SpawnEntity(velocity, FacingId(this.Facing));

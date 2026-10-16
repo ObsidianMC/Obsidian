@@ -2,6 +2,7 @@ using Obsidian.API.Effects;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot.Numbers;
+using Obsidian.API.Registries;
 
 namespace Obsidian.API.Loot.Functions;
 
@@ -15,7 +16,7 @@ public sealed class SetStewEffectFunction : LootFunction
 
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
-        if (!LootItems.Is(stack, Material.SuspiciousStew) || this.Effects.Length == 0)
+        if (!LootItems.Is(stack, ItemsRegistry.SuspiciousStew) || this.Effects.Length == 0)
             return stack;
 
         var effect = this.Effects[context.Random.NextInt(this.Effects.Length)];
@@ -25,7 +26,8 @@ public sealed class SetStewEffectFunction : LootFunction
         if (effect.Type is not (MobEffect.InstantHealth or MobEffect.InstantDamage or MobEffect.Saturation))
             duration *= 20;
 
-        var current = stack.GetComponent<SimpleDataComponent<SuspiciousStewEffect[]>>(DataComponentType.SuspiciousStewEffects)?.Value ?? [];
+        var current = stack.GetComponent<SimpleDataComponent<ImmutableArray<SuspiciousStewEffect>>>(
+            DataComponentType.SuspiciousStewEffects)?.Value ?? [];
         var added = new SuspiciousStewEffect { EffectId = (int)effect.Type, Duration = duration };
 
         LootItems.Set(stack, ComponentBuilder.SuspiciousStewEffects with { Value = [.. current, added] });

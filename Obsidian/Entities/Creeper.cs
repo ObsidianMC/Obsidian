@@ -1,3 +1,4 @@
+using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 
 namespace Obsidian.Entities;
@@ -32,17 +33,17 @@ public sealed partial class Creeper : PathfinderMob
 
     protected internal override ValueTask PerformMeleeAttackAsync(IEntity target) => default;
 
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Level != Level || player.Health <= 0 || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
-            return;
+            return false;
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (held is not { Count: > 0 } || held.Type is not Material.FlintAndSteel and not Material.FireCharge)
-            return;
+        if (held is not { Count: > 0 } || held.Holder.Id is not ItemIds.FlintAndSteel and not ItemIds.FireCharge)
+            return false;
         Ignited = true;
         SynchronizeMetadata();
-        if (held.Type == Material.FlintAndSteel)
+        if (held.Is(ItemsRegistry.FlintAndSteel))
             await DamageInteractionToolAsync(player, hand);
         else if (player.GameMode != GameMode.Creative)
         {
@@ -50,6 +51,8 @@ public sealed partial class Creeper : PathfinderMob
             var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
             await player.SendInventorySlotAsync(slot);
         }
+
+        return true;
     }
 
     protected override async ValueTask TickMobAsync()
@@ -80,14 +83,7 @@ public sealed partial class Creeper : PathfinderMob
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.Gunpowder, Random.Next(3));
-        if (source is Skeleton)
-        {
-            Material[] discs = [Material.MusicDisc13, Material.MusicDiscCat, Material.MusicDiscBlocks, Material.MusicDiscChirp,
-                Material.MusicDiscFar, Material.MusicDiscMall, Material.MusicDiscMellohi, Material.MusicDiscStal,
-                Material.MusicDiscStrad, Material.MusicDiscWard, Material.MusicDisc11, Material.MusicDiscWait];
-            DropItem(discs[Random.Next(discs.Length)]);
-        }
+        this.DropVanillaLoot(source);
         return default;
     }
 

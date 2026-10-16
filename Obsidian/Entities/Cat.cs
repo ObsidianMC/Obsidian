@@ -39,7 +39,8 @@ public sealed partial class Cat : Animal
     }
     protected override bool UsesAi => true;
     protected override string? SoundName => "cat";
-    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.Cod or Material.Salmon };
+    protected override bool CanEat(ItemStack? item) =>
+        item is { Count: > 0, Holder.Id: ItemIds.Cod or ItemIds.Salmon };
     protected override int GetExperienceReward() => IsBaby ? 0 : Random.Next(1, 4);
     protected override void FinalizeSpawn() => Variant = Random.Next(VariantNames.Length);
 
@@ -61,11 +62,11 @@ public sealed partial class Cat : Animal
         actions.AddGoal(10, new RandomLookAroundGoal(this));
     }
 
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 3) || !CanSee(player))
-            return;
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (CanEat(item))
         {
@@ -80,41 +81,42 @@ public sealed partial class Cat : Animal
                 }
                 SendEntityEvent(Tamed ? (byte)7 : (byte)6);
                 SynchronizeMetadata();
-                return;
+                return true;
             }
             if (Health < GetAttributeValue("minecraft:generic.max_health"))
             {
                 Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 2);
                 await ConsumeInteractionItemAsync(player, hand);
                 SynchronizeMetadata();
-                return;
+                return true;
             }
             if (IsBaby || Age == 0 && LoveTicks == 0)
             {
                 OrderedToSit = false;
-                await base.FeedAsync(player, hand);
-                return;
+                return await base.FeedAsync(player, hand);
             }
         }
         if (!Tamed || Owner != player.Uuid)
-            return;
+            return false;
         if (item is { Count: > 0 })
         {
             var color = Array.FindIndex(DyeNames, name => item.Holder.UnlocalizedName == $"minecraft:{name}_dye");
             if (color >= 0)
             {
+                // Vanilla's cat takes the interaction anyway (it sits down or stands up).
                 if (color == CollarColor)
-                    return;
+                    return true;
                 CollarColor = (byte)color;
                 await ConsumeInteractionItemAsync(player, hand);
                 SynchronizeMetadata();
-                return;
+                return true;
             }
         }
         OrderedToSit = !OrderedToSit;
         if (OrderedToSit)
             (Navigator as Navigator)?.Stop();
         SynchronizeMetadata();
+        return true;
     }
 
     protected override ValueTask OnHurtAsync(IEntity source)

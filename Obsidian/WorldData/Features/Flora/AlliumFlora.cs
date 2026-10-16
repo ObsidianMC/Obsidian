@@ -2,6 +2,6 @@
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class AlliumFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, Material.Allium)
+public class AlliumFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, BlocksRegistry.Allium)
 {
 }

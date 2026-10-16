@@ -25,6 +25,9 @@ public partial class Client
 
     private readonly Lock sendLock = new();
 
+    // Completed only when both socket buffers have emptied, or teardown abandons them.
+    private TaskCompletionSource? outputDrained;
+
     public Socket Socket { get; private set; }
 
     private bool loginPending;
@@ -45,18 +48,21 @@ public partial class Client
 
         this.receiveBuffer.Reserve(MaxBufferSize);
 
-        _ = this.HandlePacketQueueAsync();
-
         await this.TryReceiveAsync();
     }
 
-    private bool SendAsync(IClientboundPacket packet)
+    private bool SendAsync(IClientboundPacket packet, bool terminal = false)
     {
         if (!this.Connected)
             return false;
 
         lock (this.sendLock)
         {
+            if (this.IsClosing || !this.Connected || (!terminal && !this.Accepts(packet)))
+                return false;
+
+            this.sendBufferMain.WritesPluginEntityData = this.ReadsPluginEntityData(packet);
+
             if (this.compressionThreshold >= 0)
                 this.sendBufferMain.WriteCompressedPacket(packet, this.compressionThreshold);
             else
@@ -72,6 +78,12 @@ public partial class Client
 
         return true;
     }
+
+    // Whether the packet may hold entity data and the client reads plugins' data fields in it.
+    private bool ReadsPluginEntityData(IClientboundPacket packet) =>
+        packet is Net.Packets.Play.Clientbound.SetEntityDataPacket or Net.Packets.Play.Clientbound.BundledPacket
+        && this.Channels.HasNeoForgePlayChannel(Net.Payloads.ChannelPayloads.PluginEntityData);
+
     #region Processing 
     private async ValueTask TryReceiveAsync()
     {
@@ -123,10 +135,9 @@ public partial class Client
                     {
                         empty = true;
                         this.sending = false;
+                        this.outputDrained?.TrySetResult();
                     }
                 }
-                else
-                    return;
             }
 
             if (empty)
@@ -134,7 +145,10 @@ public partial class Client
 
             try
             {
-                this.sendEvent.SetBuffer(this.sendBufferFlush.GetBuffer(), this.sendBufferFlushOffset, this.sendBufferFlush.Offset);
+                this.sendEvent.SetBuffer(
+                    this.sendBufferFlush.GetBuffer(),
+                    this.sendBufferFlushOffset,
+                    this.sendBufferFlush.Offset - this.sendBufferFlushOffset);
 
                 if (!this.Socket.SendAsync(this.sendEvent))
                     process = this.ProcessSend(this.sendEvent);
@@ -186,9 +200,14 @@ public partial class Client
                 case ClientState.Status: // Server ping/list
                     if (packetData.Id == 0x00)
                     {
-                        var status = new ServerStatus(this.Server, ServerConstants.ServerIcon);
+                        var status = new ServerStatus(this.HostServer, ServerConstants.ServerIcon)
+                        {
+                            IsModded = ((Server)this.HostServer).PayloadChannels.HasChannels
+                                || ((Server)this.HostServer).GetModdedRegistries().Count > 0
+                        };
 
-                        await this.eventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.Server, status));
+                        var request = new ServerStatusRequestEventArgs(this.HostServer, status);
+                        await this.eventDispatcher.ExecuteEventAsync(request);
 
                         SendPacket(new StatusResponsePacket(status));
                     }
@@ -214,7 +233,7 @@ public partial class Client
                     Debug.Assert(Player is not null);
 
                     var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player,
-                        this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
+                        this.HostServer, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
 
                     if (result == EventResult.Cancelled)
                         return;
@@ -225,7 +244,7 @@ public partial class Client
                     Debug.Assert(Player is not null);
 
                     result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player,
-                        this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
+                        this.HostServer, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
 
                     if (result == EventResult.Cancelled)
                         return;
@@ -306,26 +325,27 @@ public partial class Client
 
     private bool ProcessSend(SocketAsyncEventArgs e)
     {
-        if (!this.Connected)
-            return false;
-
-        var size = e.BytesTransferred;
-
-        if (size > 0)
+        lock (this.sendLock)
         {
-            this.serverMetrics.AddBytesSent(size);
+            if (this.IsClosing || !this.Connected)
+                return false;
 
-            this.sendBufferFlushOffset += size;
-
-            if (this.sendBufferFlushOffset == this.sendBufferFlush.Offset)
+            var size = e.BytesTransferred;
+            if (size > 0)
             {
-                this.sendBufferFlush.Clear();
-                this.sendBufferFlushOffset = 0;
-            }
-        }
+                this.serverMetrics.AddBytesSent(size);
 
-        if (e.SocketError == SocketError.Success)
-            return true;
+                this.sendBufferFlushOffset += size;
+                if (this.sendBufferFlushOffset == this.sendBufferFlush.Offset)
+                {
+                    this.sendBufferFlush.Clear();
+                    this.sendBufferFlushOffset = 0;
+                }
+            }
+
+            if (e.SocketError == SocketError.Success && size > 0)
+                return true;
+        }
 
         this.Disconnect();
 

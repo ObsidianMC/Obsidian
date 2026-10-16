@@ -85,7 +85,7 @@ public partial class Slime : PathfinderMob
         return default;
     }
     protected virtual Slime CreateSplitChild() => new Slime { Level = Level };
-    protected virtual void DropSmallLoot() => DropItem(Material.SlimeBall, Random.Next(3));
+    protected virtual void DropSmallLoot() => DropItem(ItemsRegistry.SlimeBall, Random.Next(3));
 
     public override void Write(INetStreamWriter writer)
     {

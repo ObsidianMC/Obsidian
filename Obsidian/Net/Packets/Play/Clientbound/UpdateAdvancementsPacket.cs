@@ -1,47 +1,44 @@
-﻿using Obsidian.API.Advancements;
-using Obsidian.Serialization.Attributes;
+using Obsidian.API.Advancements;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-//TODO finish this packet PLEASE
+/// <summary>Vanilla 1.21.11 definitions, removals and independent per-player criterion progress.</summary>
 public partial class UpdateAdvancementsPacket
 {
-    [Field(0)]
     public bool Reset { get; set; }
-
-    [Field(1)]
     public List<Advancement> Added { get; set; } = [];
-
-    [Field(2)]
     public List<string> Removed { get; set; } = [];
+    public Dictionary<string, Dictionary<string, DateTimeOffset?>> Progress { get; set; } = [];
+    public bool ShowAdvancements { get; set; } = true;
 
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteBoolean(this.Reset);
-
         writer.WriteVarInt(this.Added.Count);
         foreach (var advancement in this.Added)
-            writer.WriteAdvancement(advancement);
-
-        //Not sure what this is for
-        writer.WriteVarInt(this.Removed.Count);
-        foreach (var removed in this.Removed)
-            writer.WriteString(removed);
-
-        //Write progress for advancements
-        foreach (var advancement in this.Added)
         {
-            writer.WriteVarInt(advancement.Criteria.Count);
+            writer.WriteString(advancement.Identifier);
+            writer.WriteAdvancement(advancement);
+        }
 
-            foreach (var criteria in advancement.Criteria)
+        writer.WriteVarInt(this.Removed.Count);
+        foreach (var identifier in this.Removed)
+            writer.WriteString(identifier);
+
+        writer.WriteVarInt(this.Progress.Count);
+        foreach (var (identifier, criteria) in this.Progress)
+        {
+            writer.WriteString(identifier);
+            writer.WriteVarInt(criteria.Count);
+            foreach (var (criterion, achieved) in criteria)
             {
-                writer.WriteString(criteria.Identifier);
-
-                writer.WriteBoolean(criteria.Achieved);
-
-                if (criteria.Achieved)
-                    writer.WriteLong(criteria.AchievedAt!.Value.ToUnixTimeMilliseconds());
+                writer.WriteString(criterion);
+                writer.WriteBoolean(achieved.HasValue);
+                if (achieved is DateTimeOffset date)
+                    writer.WriteLong(date.ToUnixTimeMilliseconds());
             }
         }
+
+        writer.WriteBoolean(this.ShowAdvancements);
     }
 }

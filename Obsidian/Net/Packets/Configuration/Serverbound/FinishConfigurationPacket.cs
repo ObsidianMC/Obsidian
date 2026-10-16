@@ -26,9 +26,7 @@ public sealed partial class FinishConfigurationPacket
             return;
         }
 
-        if (!CodecRegistry.TryGetDimension(player.Level.DimensionName, out var codec)
-            && !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
-            throw new UnreachableException("Failed to retrieve proper dimension for player.");
+        var codec = player.Level.DimensionType;
 
         await client.QueuePacketAsync(new LoginPacket
         {
@@ -36,12 +34,12 @@ public sealed partial class FinishConfigurationPacket
             Hardcore = player.Level.LevelData.Hardcore,
             ViewDistance = server.Configuration.ViewDistance,
             SimulationDistance = server.Configuration.SimulationDistance,
-            DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
+            DimensionNames = LevelNames(server.WorldManager),
             CommonPlayerSpawnInfo = new()
             {
                 GameMode = player.GameMode,
                 DimensionType = codec.Id,
-                DimensionName = codec.Name,
+                DimensionName = player.Level.DimensionName,
                 HashedSeed = 0,
                 Flat = false,
                 PortalCooldown = player is Entities.Player concrete ? concrete.PortalCooldown : 0
@@ -71,7 +69,12 @@ public sealed partial class FinishConfigurationPacket
         await client.QueuePacketAsync(EntityEventPacket.PermissionLevel(player.EntityId, permissionLevel));
         await client.QueuePacketAsync(CommandsRegistry.Packet);
         await client.QueuePacketAsync(new RecipeBookSettingsPacket());
-        await client.QueuePacketAsync(new RecipeBookAddPacket());
+
+        if (player is Entities.Player joined)
+        {
+            await joined.RecipeBookSync.SendInitialAsync(player);
+            await joined.ProgressAdvancements.FlushAsync(initial: true);
+        }
 
         await player.UpdatePlayerInfoAsync();
         await player.SendPlayerInfoAsync();
@@ -99,4 +102,16 @@ public sealed partial class FinishConfigurationPacket
         [LoggerMessage(Level = LogLevel.Warning, Message = "Disconnected {Username}: adding them to the online players failed")]
         public static partial void AddPlayerFailed(ILogger logger, string username);
     }
+
+    // Like vanilla's server.levelKeys(): the names of the levels players can be in, plugins' dimensions included,
+    // which vanilla clients suggest in commands.
+    private static List<string> LevelNames(IWorldManager worldManager) =>
+    [
+        .. worldManager.GetAvailableWorlds()
+            .OfType<WorldData.World>()
+            .SelectMany(world => world.dimensions.Values
+                .Select(dimension => dimension.DimensionName)
+                .Prepend(world.DimensionName))
+            .Distinct()
+    ];
 }

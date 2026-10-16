@@ -1,26 +1,36 @@
+using Obsidian.API.Inventory;
+
 namespace Obsidian.Entities;
 
 public class ChestedHorse : AbstractHorse
 {
     public bool HasChest { get; set; }
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4)) return;
+        if (!Alive
+            || player.Health <= 0
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (HorseMask.HasFlag(HorseMask.Tamed) && !IsBaby && !HasChest && item is { Count: > 0, Type: Material.Chest })
+        if (HorseMask.HasFlag(HorseMask.Tamed)
+            && !IsBaby
+            && !HasChest
+            && item is { Count: > 0, Holder.Id: ItemIds.Chest })
         {
             HasChest = true;
             await ConsumeInteractionItemAsync(player, hand);
             SynchronizeMetadata();
-            return;
+            return true;
         }
-        await base.InteractAsync(player, hand);
+        return await base.InteractAsync(player, hand);
     }
     protected override async ValueTask OnDeathAsync(IEntity source)
     {
         await base.OnDeathAsync(source);
-        if (HasChest) DropItem(Material.Chest);
-        if (!IsBaby) DropItem(Material.Leather, Random.Next(0, 3));
+        if (HasChest) DropItem(ItemsRegistry.Chest);
+        if (!IsBaby) DropItem(ItemsRegistry.Leather, Random.Next(0, 3));
     }
     protected override void WriteAdditionalSave(Obsidian.Nbt.Interfaces.INbtWriter writer) => writer.WriteBool("ChestedHorse", HasChest);
     protected override void ReadAdditionalSave(Obsidian.Nbt.NbtCompound tag) => HasChest = tag.TryGetBool("ChestedHorse", out var chest) && chest;
@@ -47,8 +57,9 @@ public partial class Llama : ChestedHorse
     internal override bool PanicsWhenHurt => false;
     protected override int MaximumTemper => 30;
     protected override bool SupportsSaddle => false;
-    protected override bool IsBreedingFood(Material food) => food == Material.HayBlock;
-    protected override bool CanEat(Obsidian.API.Inventory.ItemStack? item) => item is { Count: > 0, Type: Material.Wheat or Material.HayBlock };
+    protected override bool IsBreedingFood(Item food) => food == ItemsRegistry.HayBlock;
+    protected override bool CanEat(ItemStack? item) =>
+        item is { Count: > 0, Holder.Id: ItemIds.Wheat or ItemIds.HayBlock };
     protected override void FinalizeSpawn()
     {
         Strength = Random.Next(1, Random.NextSingle() < 0.04f ? 6 : 4);
@@ -73,9 +84,14 @@ public partial class Llama : ChestedHorse
         child.SynchronizeMetadata();
         return child;
     }
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4)) return;
+        if (!Alive
+            || player.Health <= 0
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (HorseMask.HasFlag(HorseMask.Tamed) && item is { Count: > 0 } && item.Holder.UnlocalizedName.EndsWith("_carpet", StringComparison.Ordinal))
         {
@@ -86,10 +102,10 @@ public partial class Llama : ChestedHorse
                 if (!old.IsAir) DropItem(old);
                 CarpetColor = color;
                 await ConsumeInteractionItemAsync(player, hand);
-                return;
+                return true;
             }
         }
-        await base.InteractAsync(player, hand);
+        return await base.InteractAsync(player, hand);
     }
     protected override void WriteAdditionalSave(Obsidian.Nbt.Interfaces.INbtWriter writer)
     {

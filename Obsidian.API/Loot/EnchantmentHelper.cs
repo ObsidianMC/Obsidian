@@ -19,7 +19,7 @@ public static class EnchantmentHelper
     public static ItemStack EnchantItem(IRandomSource random, ItemStack stack, int level, IReadOnlyList<EnchantmentDefinition> options)
     {
         var selected = SelectEnchantments(random, stack, level, options);
-        if (LootItems.Is(stack, Material.Book))
+        if (LootItems.Is(stack, ItemsRegistry.Book))
             stack = new ItemStack(ItemsRegistry.EnchantedBook);
 
         foreach (var (enchantment, enchantmentLevel) in selected)
@@ -82,30 +82,15 @@ public static class EnchantmentHelper
     }
 
     /// <summary>
-    /// The level of <paramref name="enchantment"/> on <paramref name="stack"/>, 0 when absent or when there is no stack.
-    /// </summary>
-    public static int GetLevel(ItemStack? stack, EnchantmentDefinition enchantment)
-    {
-        if (stack is null)
-            return 0;
-
-        foreach (var applied in GetEnchantments(stack))
-        {
-            if (applied.Id == enchantment.Id)
-                return applied.Level;
-        }
-
-        return 0;
-    }
-
-    /// <summary>
     /// The stack's enchantments, or the stored enchantments of an enchanted book. The array is a copy.
     /// </summary>
     public static Enchantment[] GetEnchantments(ItemStack stack)
     {
-        var enchantments = LootItems.Is(stack, Material.EnchantedBook)
-            ? stack.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.StoredEnchantments)?.Value
-            : stack.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value;
+        var enchantments = LootItems.Is(stack, ItemsRegistry.EnchantedBook)
+            ? stack.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+                DataComponentType.StoredEnchantments)?.Value
+            : stack.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+                DataComponentType.Enchantments)?.Value;
 
         return enchantments is null ? [] : [.. enchantments];
     }
@@ -115,10 +100,10 @@ public static class EnchantmentHelper
     /// </summary>
     public static void SetEnchantments(ItemStack stack, Enchantment[] enchantments)
     {
-        if (LootItems.Is(stack, Material.EnchantedBook))
-            LootItems.Set(stack, ComponentBuilder.StoredEnchantments with { Value = enchantments });
+        if (LootItems.Is(stack, ItemsRegistry.EnchantedBook))
+            LootItems.Set(stack, ComponentBuilder.StoredEnchantments with { Value = [.. enchantments] });
         else
-            LootItems.Set(stack, ComponentBuilder.Enchantments with { Value = enchantments });
+            LootItems.Set(stack, ComponentBuilder.Enchantments with { Value = [.. enchantments] });
     }
 
     /// <summary>
@@ -129,7 +114,7 @@ public static class EnchantmentHelper
         IReadOnlyList<EnchantmentDefinition> options)
     {
         var available = new List<(EnchantmentDefinition Enchantment, int Level)>();
-        var isBook = LootItems.Is(stack, Material.Book);
+        var isBook = LootItems.Is(stack, ItemsRegistry.Book);
 
         foreach (var enchantment in options)
         {

@@ -6,6 +6,7 @@ using Obsidian.API.Boss;
 using Obsidian.API.Commands;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
+using Obsidian.API.Inventory;
 using Obsidian.API.Events;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Modules;
@@ -16,6 +17,7 @@ using Obsidian.Net;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
+using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Services;
 using Obsidian.WorldData;
 using System.Diagnostics;
@@ -25,13 +27,14 @@ using System.Threading;
 
 namespace Obsidian;
 
-public sealed partial class Server : IServer
+public sealed partial class Server : IServer, IPluginScopedServer
 {
     private static int EntityCounter;
 
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
 
-    private readonly ConcurrentDictionary<Task, byte> pendingLeaves = new();
+    // Leaves under way, with the name of the player leaving.
+    private readonly ConcurrentDictionary<Task, string> pendingLeaves = new();
 
     internal readonly CancellationTokenSource cancelTokenSource;
     internal readonly ILogger logger;
@@ -77,6 +80,90 @@ public sealed partial class Server : IServer
     private ConcurrentDictionary<string, Guid> UsernameToUuidMappings { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public HashSet<string> RegisteredChannels { get; } = [];
+
+    /// <summary>
+    /// The payload channels plugins registered; the plugin manager removes a plugin's when it unloads.
+    /// </summary>
+    internal Net.Payloads.PayloadChannelRegistry PayloadChannels { get; } = new();
+
+    /// <summary>
+    /// The registries plugins added to, which clients must agree with the server on: vanilla clients can't join while
+    /// there are any, and NeoForge and Fabric clients are sent them. Clients number block states from the block
+    /// registry's order, so syncing it gives plugins' block states the same ids as on the server.
+    /// </summary>
+    internal IReadOnlyList<Net.Payloads.SyncedRegistry> GetModdedRegistries() =>
+        Net.Payloads.SyncedRegistries.GetModded();
+
+    /// <summary>
+    /// What clients configure with that plugins change: the registries plugins added to, whose ids only grow, so their
+    /// sizes tell them apart, with how many times plugins' data files changed biomes, dimension types or damage types
+    /// (whose data clients are sent), and the plugins' payload channels.
+    /// </summary>
+    internal ContentVersion GetContentVersion()
+    {
+        var registries = $"{ItemsRegistry.All.Count}/{BlocksRegistry.PluginBlocks.Count}/"
+            + $"{EntityDefinitionsRegistry.PluginDefinitions.Count}/{CodecRegistry.Biomes.All.Count}/"
+            + $"{CodecRegistry.Dimensions.All.Count}/{CodecRegistry.DamageType.All.Count}/{PluginCodecs.Revision}/"
+            + $"{MenuTypesRegistry.PluginMenus.Count}/{ParticleTypesRegistry.PluginParticles.Count}/"
+            + $"{BlockEntityTypesRegistry.PluginTypes.Count}/"
+            + $"{DataComponentTypesRegistry.PluginTypes.Count(type => type.IsSynced)}/"
+            + $"{CustomStatisticsRegistry.Plugins.Length}/"
+            + DialogRegistry.Fingerprint;
+
+        Net.Payloads.NetworkProtocol[] protocols =
+            [Net.Payloads.NetworkProtocol.Configuration, Net.Payloads.NetworkProtocol.Play];
+
+        var channels = string.Join(';', protocols
+            .SelectMany(protocol => this.PayloadChannels
+                .GetComponents(protocol)
+                .Select(component => $"{protocol}:{component.Id}={component.Version}:{component.Flow}:"
+                    + $"{component.Optional}"))
+            .Order(StringComparer.Ordinal));
+
+        return new ContentVersion(registries, channels, PluginTags.Revision);
+    }
+
+    /// <summary>
+    /// Has each connected client catch up once plugins changed the content: one configured with other registries, or,
+    /// for a client that agreed on channels, other channels, goes back through configuration; the others get the
+    /// current tags, like vanilla's <c>/reload</c> sends them.
+    /// </summary>
+    internal async Task RefreshClientsAsync()
+    {
+        // One at a time, so an earlier refresh can't send its older tags after a later one.
+        await this.refreshing.WaitAsync();
+        try
+        {
+            await this.RefreshClientsOnceAsync();
+        }
+        finally
+        {
+            this.refreshing.Release();
+        }
+    }
+
+    private readonly SemaphoreSlim refreshing = new(1, 1);
+
+    private async Task RefreshClientsOnceAsync()
+    {
+        var current = this.GetContentVersion();
+        var tags = this.CreateDialogConfiguration().Tags;
+
+        foreach (var client in this.Connections.Values.OfType<Client>())
+        {
+            if (client.State != ClientState.Play
+                || client.AwaitingReconfiguration
+                || client.ConfiguredContent is null)
+            {
+                continue;
+            }
+
+            if (client.NeedsReconfiguration(current))
+                client.RequestReconfiguration();
+            else
+                await client.QueuePacketAsync(UpdateTagsPacket.ClientboundPlay with { Tags = tags });
+        }
+    }
 
     public ICommandHandler CommandHandler { get; }
     public ServerConfiguration Configuration { get; set; }
@@ -169,11 +256,117 @@ public sealed partial class Server : IServer
     public static int GetNextEntityId() => Interlocked.Increment(ref EntityCounter);
     internal static int ReserveEntityIds(int count) => Interlocked.Add(ref EntityCounter, count) - count + 1;
 
-    public void RegisterRecipes(params IRecipe[] recipes)
+    private ServerRecipeRegistry? recipeRegistry;
+
+    internal ServerRecipeRegistry RecipeRegistry => LazyInitializer.EnsureInitialized(
+        ref this.recipeRegistry, () => new ServerRecipeRegistry(this.GetContentVersion));
+
+    /// <remarks>
+    /// Recipes registered through a plugin's <see cref="IServer"/> are the plugin's, which unloading removes.
+    /// </remarks>
+    public void RegisterRecipes(params IRecipe[] recipes) => this.RegisterRecipes(recipes, owner: null);
+
+    public long CraftingRecipeRevision => this.RecipeRegistry.Current.Revision;
+
+    public CraftingEvaluation? EvaluateCrafting(IReadOnlyList<ItemStack?> grid, int width) =>
+        this.RecipeRegistry.Current.EvaluateCrafting(grid, width);
+
+    public IRecipe? GetRecipe(string identifier)
     {
-        foreach (var recipe in recipes)
-            RecipesRegistry.Recipes.Add(recipe.Identifier.ToSnakeCase(), recipe);
+        ArgumentNullException.ThrowIfNull(identifier);
+        return this.RecipeRegistry.Current.Recipes.TryGetValue(identifier, out var recipe)
+            ? RecipesRegistry.Snapshot(recipe)
+            : null;
     }
+
+    public TRecipe? FindRecipe<TRecipe>(RecipeType<TRecipe> type, IReadOnlyList<ItemStack?> inputs)
+        where TRecipe : class
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(inputs);
+        return this.RecipeRegistry.Current.FindPluginRecipe(type, inputs);
+    }
+
+    public IReadOnlyList<TRecipe> GetRecipes<TRecipe>(RecipeType<TRecipe> type)
+        where TRecipe : class
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        return this.RecipeRegistry.Current.GetPluginRecipes(type);
+    }
+
+    internal void LoadRecipeFiles(
+        IEnumerable<(PluginContainer Owner, IEnumerable<RecipeFile> Files)> sources)
+    {
+        this.RecipeRegistry.ReplaceFiles(sources, this.logger);
+        this.OnRecipesChanged();
+    }
+
+    /// <summary>
+    /// Registers recipes for <paramref name="owner"/>, whose unloading removes them, or for the server. They're used
+    /// like vanilla's from now on, and online players' recipe books follow (see <see cref="SyncRecipesAsync"/>).
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The owner is unloading; the recipes were removed.</exception>
+    internal void RegisterRecipes(IRecipe[] recipes, PluginContainer? owner)
+    {
+        var added = new List<IRecipe>();
+
+        try
+        {
+            this.RecipeRegistry.Register(recipes, added);
+        }
+        finally
+        {
+            if (added.Count > 0)
+                this.OnRecipesChanged();
+
+            owner?.TrackAddition(() => this.RemoveRecipes(added));
+        }
+    }
+
+    // Removes recipes a plugin added, unless another recipe took their identifier since.
+    private void RemoveRecipes(List<IRecipe> added)
+    {
+        this.RecipeRegistry.Unregister(added);
+        this.OnRecipesChanged();
+    }
+
+    // Players catch up with the recipes without the change (a plugin unloading, say) waiting for them.
+    private void OnRecipesChanged() => _ = this.SyncRecipesAsync();
+
+    /// <summary>
+    /// Has online players catch up with the current recipes: their recipe books get the recipes added and removed
+    /// since they were last sent theirs, and an open crafting grid's result is worked out again. Players whose client
+    /// goes back through configuration for other content are left out; they get the whole book when they join again,
+    /// as the new recipes may show items their client doesn't know yet.
+    /// </summary>
+    /// <remarks>
+    /// Runs one at a time, so that awaiting it after a change also waits for the sync the change started.
+    /// </remarks>
+    internal async Task SyncRecipesAsync()
+    {
+        await this.recipeSync.WaitAsync();
+        try
+        {
+            foreach (var player in this.OnlinePlayers.Values)
+            {
+                try
+                {
+                    await player.SynchronizeRecipeBookAsync();
+                }
+                catch (Exception ex)
+                {
+                    // A failed book keeps its last-sent identities; the next change also resends the window.
+                    Log.RecipeSyncFailed(this.logger, ex, player.Username);
+                }
+            }
+        }
+        finally
+        {
+            this.recipeSync.Release();
+        }
+    }
+
+    private readonly SemaphoreSlim recipeSync = new(1, 1);
 
     public bool IsPlayerOnline(string username) => this.UsernameToUuidMappings.ContainsKey(username);
 
@@ -263,8 +456,8 @@ public sealed partial class Server : IServer
 
         Directory.CreateDirectory(ServerConstants.PermissionPath);
         Directory.CreateDirectory(ServerConstants.PersistentDataPath);
-        Directory.CreateDirectory(ServerConstants.AcceptedKeysPath);
         Directory.CreateDirectory(ServerConstants.PluginsPath);
+        Directory.CreateDirectory(ServerConstants.DataPacksPath);
 
         StartTime = DateTimeOffset.Now;
         this.Connections = new ConcurrentDictionary<int, IClient>(-1, this.MaxConnections);
@@ -346,8 +539,43 @@ public sealed partial class Server : IServer
         return true;
     }
 
-    public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) =>
-        ActivatorUtilities.CreateInstance<BossBar>(this.serviceProvider, title, health, color, divisionType, flags);
+    /// <remarks>
+    /// Boss bars created through a plugin's <see cref="IServer"/> are the plugin's: unloading it hides them and
+    /// refuses their later changes.
+    /// </remarks>
+    public IBossBar CreateBossBar(
+        ChatMessage title,
+        float health,
+        BossBarColor color,
+        BossBarDivisionType divisionType,
+        BossBarFlags flags) =>
+        this.CreateBossBar(title, health, color, divisionType, flags, owner: null);
+
+    /// <summary>
+    /// Creates a boss bar for <paramref name="owner"/>, whose unloading retires it, or for the server.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The owner is unloading.</exception>
+    internal BossBar CreateBossBar(
+        ChatMessage title,
+        float health,
+        BossBarColor color,
+        BossBarDivisionType divisionType,
+        BossBarFlags flags,
+        PluginContainer? owner)
+    {
+        var bar = ActivatorUtilities.CreateInstance<BossBar>(
+            this.serviceProvider,
+            title,
+            health,
+            color,
+            divisionType,
+            flags);
+
+        if (owner is not null && !owner.BossBars.TryAdd(bar))
+            throw new InvalidOperationException($"{owner.Info.Name} is unloading.");
+
+        return bar;
+    }
 
     public async Task ExecuteCommand(string input)
     {
@@ -407,7 +635,8 @@ public sealed partial class Server : IServer
         }
     }
     /// <summary>
-    /// Pauses the worlds between two ticks: once this returns, no world tick runs until <see cref="Resume"/>.
+    /// Pauses the worlds between two ticks: once this returns, no world tick runs, and no chunk loads, unloads or
+    /// starts generating, until <see cref="Resume"/>. Saves still run, and connections keep running.
     /// </summary>
     /// <returns>Whether the worlds were running, so this call paused them.</returns>
     public async Task<bool> PauseAsync()
@@ -418,6 +647,10 @@ public sealed partial class Server : IServer
             var wasRunning = !this.Paused;
             this.Paused = true;
 
+            // Like vanilla's paused integrated server, whose chunk loading and unloading are part of its tick.
+            if (this.WorldManager is WorldData.WorldManager worldManager)
+                await worldManager.PauseChunkManagementAsync();
+
             return wasRunning;
         }
         finally
@@ -427,9 +660,13 @@ public sealed partial class Server : IServer
     }
 
     /// <summary>
-    /// Lets the worlds tick again from the next tick.
+    /// Lets the worlds tick, and their chunks load and unload, again from the next tick.
     /// </summary>
-    public void Resume() => this.Paused = false;
+    public void Resume()
+    {
+        (this.WorldManager as WorldData.WorldManager)?.ResumeChunkManagement();
+        this.Paused = false;
+    }
 
     /// <summary>
     /// Saves everything: the online players, the worlds with their regions and level data, and the user cache. Saves run
@@ -482,9 +719,27 @@ public sealed partial class Server : IServer
         return false;
     }
 
-    public async Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null)
+    public Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null) =>
+        this.AddServerPlayerAsync(uuid, username, world, PluginEntities.FindSpawner());
+
+    /// <summary>
+    /// Adds a server-side player for <paramref name="plugin"/>, which unloading the plugin removes, or for the server.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// The player is online already, joining failed, or <paramref name="plugin"/> is unloading.
+    /// </exception>
+    internal async Task<IPlayer> AddServerPlayerAsync(
+        Guid uuid,
+        string username,
+        IWorld? world,
+        PluginContainer? plugin)
     {
-        var player = new ServerPlayer(uuid, username, this, world ?? this.DefaultWorld);
+        plugin?.ThrowIfClosing();
+
+        var player = new ServerPlayer(uuid, username, this, world ?? this.DefaultWorld)
+        {
+            SpawnedBy = plugin
+        };
         await player.LoadAsync();
 
         if (!this.AddPlayer(player))
@@ -497,7 +752,9 @@ public sealed partial class Server : IServer
             if (result != EventResult.Completed)
                 throw new InvalidOperationException($"Joining server-side player '{username}' failed with result {result}.");
 
-            return player;
+            plugin?.ThrowIfClosing();
+            if (!player.CompleteJoin())
+                throw new InvalidOperationException($"Joining server-side player '{username}' was cancelled.");
         }
         catch
         {
@@ -507,21 +764,34 @@ public sealed partial class Server : IServer
             }
             finally
             {
+                player.CancelJoin();
+                player.Level.TryRemovePlayer(player);
                 this.RemovePlayer(player);
             }
             throw;
         }
+
+        return player;
     }
 
     /// <summary>
-    /// Keeps track of a player leaving after their connection closed, whose save stopping the server waits for.
+    /// The server as the code running now sees it: a plugin's own instance during the plugin's calls (see
+    /// <see cref="PluginCall.CurrentPlugin"/>), so that event arguments, command contexts and connections hand each
+    /// plugin its own.
     /// </summary>
-    internal void TrackLeave(Task leave)
+    IServer IPluginScopedServer.ForCurrentCall() =>
+        PluginCall.CurrentPlugin?.HostServices?.Server is PluginServer own && own.Wraps(this) ? own : this;
+
+    /// <summary>
+    /// Keeps track of a player leaving after their connection closed, whose save stopping the server, and the player
+    /// joining again (<see cref="WaitForLeavesAsync"/>), waits for.
+    /// </summary>
+    internal void TrackLeave(Task leave, string username)
     {
         if (leave.IsCompleted)
             return;
 
-        this.pendingLeaves.TryAdd(leave, 0);
+        this.pendingLeaves.TryAdd(leave, username);
         _ = leave.ContinueWith(finished => this.pendingLeaves.TryRemove(finished, out _), TaskScheduler.Default);
     }
 
@@ -531,6 +801,13 @@ public sealed partial class Server : IServer
 
     // Leaves log their own failures, so waiting for them never throws.
     private Task PendingLeavesAsync() => Task.WhenAll(this.pendingLeaves.Keys);
+
+    /// <summary>
+    /// Waits until a player's earlier connection has left and saved them, so that joining again loads what it saved.
+    /// </summary>
+    internal Task WaitForLeavesAsync(string username) => Task.WhenAll(this.pendingLeaves
+        .Where(entry => string.Equals(entry.Value, username, StringComparison.OrdinalIgnoreCase))
+        .Select(entry => entry.Key));
 
     public bool RemovePlayer(IPlayer player)
     {
@@ -553,8 +830,11 @@ public sealed partial class Server : IServer
     public async Task<bool> RemoveServerPlayerAsync(IPlayer player)
     {
         // Claiming the registration first means concurrent removals run the leave lifecycle only once.
-        if (player is not ServerPlayer || !this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
+        if (player is not ServerPlayer serverPlayer
+            || !this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
             return false;
+
+        serverPlayer.CancelJoin();
 
         var result = EventResult.Failed;
         try
@@ -642,8 +922,11 @@ public sealed partial class Server : IServer
             // Stopping.
         }
 
+        // A client going back to configuration gets no keep-alives, but times out if it doesn't acknowledge it.
         static ValueTask SendKeepAliveAsync(IClient client) => client.State switch
         {
+            _ when client is Client { AwaitingReconfiguration: true } awaiting
+                => awaiting.CheckReconfigurationTimeoutAsync(),
             ClientState.Play => KeepAlivePacket.ClientboundPlay.HandleAsync(client),
             ClientState.Configuration => KeepAlivePacket.ClientboundConfiguration.HandleAsync(client),
             _ => ValueTask.CompletedTask
@@ -917,5 +1200,8 @@ public sealed partial class Server : IServer
 
         [LoggerMessage(Level = LogLevel.Information, Message = "Rejected {Ip}: not whitelisted")]
         public static partial void NotWhitelisted(ILogger logger, string ip);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Sending changed recipes to {Username} failed")]
+        public static partial void RecipeSyncFailed(ILogger logger, Exception exception, string username);
     }
 }

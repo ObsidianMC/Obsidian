@@ -8,11 +8,24 @@ internal static class BlockCollisionShapes
 {
     private static readonly Dictionary<int, BoundingBox[]> shapes = Load();
 
+    public static IReadOnlyList<BoundingBox> Get(ILevel level, Vector position, IBlock block) =>
+        WorldData.BlockEntityShapes.Get(level, position, block)?.Collision ?? Get(block);
+
     public static IReadOnlyList<BoundingBox> Get(IBlock block) => Get(block.State?.Id ?? block.DefaultId);
 
-    public static IReadOnlyList<BoundingBox> Get(int stateId) => shapes.TryGetValue(stateId, out var shape)
-        ? shape
-        : throw new InvalidDataException($"No collision shape for block state {stateId}.");
+    public static IReadOnlyList<BoundingBox> Get(int stateId)
+    {
+        // A plugin's block collides with the shapes its state was registered with, or else like its template state.
+        if (BlockPhysics.PluginShapes(stateId) is API.Blocks.PluginStateShapes own)
+            return own.Shapes.Collision;
+
+        if (BlocksRegistry.TryGetPluginBlock(stateId, out var type))
+            stateId = BlocksRegistry.TemplateStateOf(type);
+
+        return shapes.TryGetValue(stateId, out var shape)
+            ? shape
+            : throw new InvalidDataException($"No collision shape for block state {stateId}.");
+    }
 
     private static Dictionary<int, BoundingBox[]> Load()
     {

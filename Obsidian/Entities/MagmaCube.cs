@@ -26,7 +26,7 @@ public sealed partial class MagmaCube : Slime
     protected override async ValueTask OnDeathAsync(IEntity source)
     {
         if (Size > 1)
-            DropItem(Material.MagmaCream, Random.Next(2));
+            DropItem(ItemsRegistry.MagmaCream, Random.Next(2));
         await base.OnDeathAsync(source);
     }
     protected override VectorD Travel()

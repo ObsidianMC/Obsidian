@@ -12,15 +12,17 @@ public partial class PlayerAbilitiesPacket
         Abilities = reader.ReadUnsignedByte<PlayerAbility>();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
+    // Like vanilla's handlePlayerAbilities: the client only says whether it flies, which counts while it may fly (in
+    // creative or spectator, or with flight granted, see MovementAbilities.CanFly).
+    public override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
-        if (Abilities.HasFlag(PlayerAbility.Flying)
-            && !Abilities.HasFlag(PlayerAbility.AllowFlying)
-            && player.GameMode is not (GameMode.Creative or GameMode.Spectator))
-        {
-            await player.KickAsync("Cheating is not allowed!");
-        }
+        var flying = this.Abilities.HasFlag(PlayerAbility.Flying)
+            && player.Abilities.HasFlag(PlayerAbility.AllowFlying);
 
-        player.Abilities |= Abilities;
+        player.Abilities = flying
+            ? player.Abilities | PlayerAbility.Flying
+            : player.Abilities & ~PlayerAbility.Flying;
+
+        return default;
     }
 }

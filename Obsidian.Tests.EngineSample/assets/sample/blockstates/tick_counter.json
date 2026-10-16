@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "powered=false": { "model": "sample:block/tick_counter" },
+    "powered=true": { "model": "sample:block/tick_counter_on" }
+  }
+}

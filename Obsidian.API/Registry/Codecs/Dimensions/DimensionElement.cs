@@ -1,185 +1,168 @@
 ﻿using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
-using System.Text.Json.Serialization;
 
 namespace Obsidian.API.Registry.Codecs.Dimensions;
 
+/// <summary>
+/// The parts of a 1.21.11 dimension type the server uses. Its environment attributes, timelines, skybox and cardinal
+/// light are only sent to clients, for plugins' entries.
+/// </summary>
 public sealed record class DimensionElement : INbtSerializable
 {
+    /// <summary>
+    /// The block light level at or below which monsters can spawn, 0 to 15.
+    /// </summary>
     public int MonsterSpawnBlockLightLimit { get; set; }
 
-    public MonsterSpawnLightLevel MonsterSpawnLightLevel { get; set; }
+    /// <summary>
+    /// The light level monsters can spawn at, 0 to 15.
+    /// </summary>
+    public MonsterSpawnLightLevel MonsterSpawnLightLevel { get; set; } = new() { IntValue = 0 };
 
     /// <summary>
-    /// Whether piglins shake and transform to zombified piglins.
+    /// The monster spawn light level as the provider a plugin's type decodes to, which the server samples; null for
+    /// vanilla's types and ones made in code, whose <see cref="MonsterSpawnLightLevel"/> is sampled. Not written:
+    /// clients get <see cref="MonsterSpawnLightLevel"/>.
+    /// </summary>
+    public IIntProvider? MonsterSpawnLightProvider { get; set; }
+
+    /// <summary>
+    /// Whether piglins don't turn into zombified piglins. Not part of 1.21.11's dimension types (its
+    /// <c>minecraft:gameplay/piglins_zombify</c> attribute), so false unless set in code.
     /// </summary>
     public bool PiglinSafe { get; set; }
 
     /// <summary>
-    /// Whether this dimension is considered natural.
+    /// How much light the dimension has, 0.0 to 1.0.
     /// </summary>
-    /// <remarks>
-    /// When false, compasses spin randomly, and using a bed to set the respawn point or sleep, is disabled. When true, nether portals can spawn zombified piglins.
-    /// </remarks>
-    public bool Natural { get; set; }
-
-    /// <summary>
-    /// How much light the dimension has.
-    /// </summary>
-    /// <remarks>
-    /// Can be 0.0 to 1.0.
-    /// </remarks>
     public float AmbientLight { get; set; }
 
     /// <summary>
-    /// the time of the day is the specified value.
+    /// The fixed time of day. Not part of 1.21.11's dimension types, so null unless set in code.
     /// </summary>
-    /// <remarks>
-    /// Can be anything from 0 to 24000. If the value is not set this will cause the world to have constant sunrise. 
-    /// </remarks>
     public long? FixedTime { get; set; }
 
     /// <summary>
-    /// A resource location defining what block tag to use for infiniburn.
+    /// The block tag of blocks fire burns on forever, like <c>#minecraft:infiniburn_overworld</c>.
     /// </summary>
-    /// <remarks>
-    /// If undefined, the value will be automatically set to "minecraft:infiniburn_overworld" .
-    /// </remarks>
-    public string Infiniburn { get; set; } = "minecraft:infiniburn_overworld";
+    public string Infiniburn { get; set; } = "#minecraft:infiniburn_overworld";
 
     /// <summary>
-    /// Whether players can charge and use respawn anchors.
-    /// </summary>
-    public bool RespawnAnchorWorks { get; set; }
-
-    /// <summary>
-    /// Whether the dimension has skylight access or not.
+    /// Whether the dimension has sky light.
     /// </summary>
     public bool HasSkylight { get; set; }
 
     /// <summary>
-    /// Whether players can use a bed to sleep.
+    /// The lowest Y blocks can be at: a multiple of 16 from -2032 to 2016.
     /// </summary>
-    /// <remarks>
-    /// When false, the bed blows up when trying to sleep.
-    /// </remarks>
-    public bool BedWorks { get; set; }
-
-    /// <summary>
-    /// Determines the dimension effect used for this dimension. 
-    /// </summary>
-    /// <remarks>
-    /// Setting to overworld makes the dimension have clouds, sun, stars and moon. 
-    /// Setting to the nether makes the dimension have thick fog blocking that sight, similar to the nether. 
-    /// Setting to the end makes the dimension have dark spotted sky similar to the end, ignoring the sky and fog color. 
-    /// If undefined, the value will be automatically set to "minecraft:overworld".
-    /// </remarks>
-    public string Effects { get; set; } = "minecraft:overworld";
-
-    /// <summary>
-    /// Whether players with the Bad Omen effect can cause a raid.
-    /// </summary>
-    public bool HasRaids { get; set; }
-
-    /// <summary>
-    /// The minimum height in which blocks can exist within this dimension. 
-    /// </summary>
-    /// <remarks>
-    /// Should be between -2032 and 2031 and be a multiple of 16 (effectively making 2016 the maximum).
-    /// Setting it lower than -2048 will only allow the temporary placement of blocks below it as they won't be saved. 
-    /// Furthermore, lighting won't work correctly at Y-coordinate -2048 and below.
-    /// </remarks>
     public int MinY { get; set; } = -64;
 
     /// <summary>
-    /// The total height in which blocks can exist within this dimension.
+    /// How many blocks high the dimension is: a multiple of 16 from 16 to 4064, with <see cref="MinY"/> + height at
+    /// most 2032.
     /// </summary>
-    /// <remarks>
-    /// Should be between 0 and 4064 and be a multiple of 16. 
-    /// It can be set higher than the maximum by the same amount of temporary layers + 16. Max y = min y + height, and may not be more than 2032.
-    /// </remarks>
     public int Height { get; set; } = 384;
 
     /// <summary>
-    /// The maximum height to which chorus fruits and nether portals can bring players within this dimension. 
+    /// The highest chorus fruits and nether portals can take players, at most <see cref="Height"/>.
     /// </summary>
-    /// <remarks> 
-    /// This excludes portals that were already built above the limit as they still connect normally.
-    /// May not be greater than height.
-    /// </remarks>
     public int LogicalHeight { get; set; } = 384;
 
     /// <summary>
-    ///  The multiplier applied to coordinates when leaving the dimension.
+    /// The multiplier applied to coordinates when leaving the dimension, 0.00001 to 30,000,000.
     /// </summary>
-    public float CoordinateScale { get; set; } = 1.0f;
+    public double CoordinateScale { get; set; } = 1.0;
 
     /// <summary>
-    /// Whether the dimensions behaves like the nether (water evaporates and sponges dry) or not.
+    /// Whether water evaporates, sponges dry and lava flows faster. Not part of 1.21.11's dimension types (its
+    /// <c>minecraft:gameplay/water_evaporates</c> attribute), so false unless set in code.
     /// </summary>
-    /// <remarks>
-    ///  Also lets stalactites drip lava and causes lava to spread faster and thinner.
-    /// </remarks>
     public bool Ultrawarm { get; set; }
 
     /// <summary>
-    /// Whether the dimension has a bedrock ceiling or not.
+    /// Whether the dimension has a bedrock ceiling.
     /// </summary>
     public bool HasCeiling { get; set; }
 
+    /// <summary>
+    /// The tag of a plugin's dimension type's timelines, like <c>#minecraft:in_overworld</c>, or null for none or for
+    /// vanilla's types. The server reads it for the day cycle. It isn't written: clients get it from the type's data.
+    /// </summary>
+    public string? Timelines { get; set; }
+
+    /// <summary>
+    /// Whether undead monsters burn in daylight at any time of day: the type's own
+    /// <c>minecraft:gameplay/monsters_burn</c> attribute, which the overworld's day timeline otherwise sets by day.
+    /// Not written, like <see cref="Timelines"/>.
+    /// </summary>
+    public bool MonstersBurn { get; set; }
+
+    /// <summary>
+    /// The type's own <c>minecraft:gameplay/sky_light_level</c> attribute applied to its default of 15, before the
+    /// day and the weather change it; null for vanilla's types, which the server knows. Not written, like
+    /// <see cref="Timelines"/>.
+    /// </summary>
+    public float? SkyLightLevel { get; set; }
+
+    /// <summary>
+    /// Whether the type's time is fixed (its <c>has_fixed_time</c>), so it's never dark outside for beds; null for
+    /// vanilla's types, which the server knows. Not written, like <see cref="Timelines"/>.
+    /// </summary>
+    public bool? HasFixedTime { get; set; }
+
+    /// <summary>
+    /// The boolean <c>minecraft:gameplay/...</c> attributes the server applies, by identifier, as the type's own map
+    /// sets them (its values applied to the attributes' defaults); null for vanilla's types, which the server knows.
+    /// Not written, like <see cref="Timelines"/>.
+    /// </summary>
+    public IReadOnlyDictionary<string, bool>? GameplayAttributes { get; set; }
+
+    /// <summary>
+    /// Writes the fields this element models as vanilla's DimensionType.NETWORK_CODEC does. Clients get vanilla's
+    /// dimension types by name, and plugins' with the data their files decode to, attributes included.
+    /// </summary>
     public void Write(INbtWriter writer)
     {
-        writer.WriteBool("piglin_safe", this.PiglinSafe);
-        writer.WriteBool("natural", this.Natural);
-
+        writer.WriteBool("has_skylight", this.HasSkylight);
+        writer.WriteBool("has_ceiling", this.HasCeiling);
+        writer.WriteDouble("coordinate_scale", this.CoordinateScale);
+        writer.WriteInt("min_y", this.MinY);
+        writer.WriteInt("height", this.Height);
+        writer.WriteInt("logical_height", this.LogicalHeight);
+        writer.WriteString("infiniburn", this.Infiniburn);
         writer.WriteFloat("ambient_light", this.AmbientLight);
 
-        if (this.FixedTime.HasValue)
-            writer.WriteLong("fixed_time", this.FixedTime.Value);
-
-        writer.WriteString("infiniburn", this.Infiniburn);
-
-        writer.WriteBool("respawn_anchor_works", this.RespawnAnchorWorks);
-        writer.WriteBool("has_skylight", this.HasSkylight);
-        writer.WriteBool("bed_works", this.BedWorks);
-
-        writer.WriteString("effects", this.Effects);
-
-        writer.WriteBool("has_raids", this.HasRaids);
-
-        writer.WriteInt("monster_spawn_block_light_limit", this.MonsterSpawnBlockLightLimit);
-
-        if (this.MonsterSpawnLightLevel.IntValue.HasValue)
-            writer.WriteInt("monster_spawn_light_level", this.MonsterSpawnLightLevel.IntValue.Value);
-        else
+        // A constant provider is written as a plain int.
+        if (this.MonsterSpawnLightLevel.IntValue is int level)
         {
-            var monsterLight = this.MonsterSpawnLightLevel.Value!.Value;
+            writer.WriteInt("monster_spawn_light_level", level);
+        }
+        else if (this.MonsterSpawnLightLevel.Value is MonsterSpawnLightLevelValue provider)
+        {
             writer.WriteTag(new NbtCompound("monster_spawn_light_level")
             {
-                new NbtTag<string>("type", monsterLight.Type),
-                new NbtTag<int>("max_inclusive", monsterLight.MaxInclusive),
-                new NbtTag<int>("min_inclusive", monsterLight.MinInclusive)
+                new NbtTag<string>("type", provider.Type ?? "minecraft:uniform"),
+                new NbtTag<int>("min_inclusive", provider.MinInclusive),
+                new NbtTag<int>("max_inclusive", provider.MaxInclusive)
             });
         }
 
-        writer.WriteInt("min_y", this.MinY);
-
-        writer.WriteInt("height", this.Height);
-
-        writer.WriteInt("logical_height", this.LogicalHeight);
-
-        writer.WriteFloat("coordinate_scale", this.CoordinateScale);
-
-        writer.WriteBool("ultrawarm", this.Ultrawarm);
-        writer.WriteBool("has_ceiling", this.HasCeiling);
+        writer.WriteInt("monster_spawn_block_light_limit", this.MonsterSpawnBlockLightLimit);
     }
 }
 
+/// <summary>
+/// A dimension type's monster spawn light level: a constant, or a provider with a range.
+/// </summary>
+/// <remarks>
+/// A plugin's provider other than a constant, uniform or biased-to-bottom one is kept here by its type and bounds;
+/// clients are sent it exactly as its file has it, and the server samples
+/// <see cref="DimensionElement.MonsterSpawnLightProvider"/>.
+/// </remarks>
 public sealed record class MonsterSpawnLightLevel
 {
     public MonsterSpawnLightLevelValue? Value { get; set; }
 
-    [JsonIgnore]
     public int? IntValue { get; set; }
 }
 

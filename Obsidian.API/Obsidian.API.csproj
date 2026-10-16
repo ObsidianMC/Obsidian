@@ -23,17 +23,14 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<Title>Obsidian Plugin API</Title>
 		<PackageIcon>icon.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-		<DocumentationFile>Obsidian.API.xml</DocumentationFile>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<DocumentationFile>Obsidian.API.xml</DocumentationFile>
+	<PropertyGroup Condition="'$(UseArtifactsOutput)' == 'true'">
+		<CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)generated</CompilerGeneratedFilesOutputPath>
 	</PropertyGroup>
 
 	<!-- Obsidian.AssetGenerator generates ..\Obsidian\Assets when it builds, so the assets are included once the reference
@@ -54,6 +51,10 @@
 			<AdditionalFiles Include="..\Obsidian\Assets\worldgen\**\*.*" LinkBase="Assets\worldgen\" />
 			<AdditionalFiles Include="..\Obsidian\Assets\enums.json" Link="Assets\enums.json" />
 			<AdditionalFiles Include="..\Obsidian\Assets\item_components.json" Link="Assets\item_components.json" />
+			<EmbeddedResource Include="..\Obsidian\Assets\registry_ids.json"
+			                  LogicalName="Obsidian.API.registry_ids.json" />
+			<EmbeddedResource Include="..\Obsidian\Assets\component_registry_ids.json"
+			                  LogicalName="Obsidian.API.component_registry_ids.json" />
 			<AdditionalFiles Include="..\Obsidian\Assets\loot_table\*.json" LinkBase="Assets\loot_table\" />
 			<AdditionalFiles Include="..\Obsidian\Assets\enchantments.json" Link="Assets\enchantments.json" />
 			<AdditionalFiles Include="..\Obsidian\Assets\instruments.json" Link="Assets\instruments.json" />
@@ -62,7 +63,8 @@
 	</Target>
 
 	<ItemGroup>
-		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
+		<!-- An artifacts build may follow an in-tree build that left generated sources in the checkout. -->
+		<Compile Remove="Generated/**/*.cs;$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -82,7 +84,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0" />
+		<!-- The host supplies API dependencies; mods compile against them but don't publish their runtime assets. -->
+		<PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0" ExcludeAssets="runtime" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0">
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>
@@ -93,6 +96,22 @@
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>
 	</ItemGroup>
+
+	<!-- The API's public types use Obsidian.Nbt's (codecs, block entity saves), so the package carries the Obsidian.Nbt
+	     assembly it was built with, beside its own, rather than depending on a separately published Nbt nightly that
+	     may not match the submodule. Mods then compile against both from this package alone. -->
+	<PropertyGroup>
+		<TargetsForTfmSpecificBuildOutput>
+			$(TargetsForTfmSpecificBuildOutput);PackNbtWithApi
+		</TargetsForTfmSpecificBuildOutput>
+	</PropertyGroup>
+
+	<Target Name="PackNbtWithApi" DependsOnTargets="ResolveReferences">
+		<ItemGroup>
+			<BuildOutputInPackage Include="@(ReferenceCopyLocalPaths)"
+			                      Condition="'%(Filename)' == 'Obsidian.Nbt' And '%(Extension)' != '.pdb'" />
+		</ItemGroup>
+	</Target>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Obsidian.AssetGenerator\Obsidian.AssetGenerator.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />

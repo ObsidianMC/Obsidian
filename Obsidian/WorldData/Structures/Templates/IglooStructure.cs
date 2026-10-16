@@ -84,8 +84,8 @@ public sealed class IglooPiece : TemplateStructurePiece
         {
             var door = position + StructureTemplate.CalculateRelativePosition(settings, new Vector(3, 0, 5));
             var below = level.GetBlock(door + Vector.Down);
-            if (!below.IsAir && below.Material != Material.Ladder)
-                level.SetBlock(door, BlocksRegistry.Get(Material.SnowBlock));
+            if (!below.IsAir && !below.Is(BlockIds.Ladder))
+                level.SetBlock(door, BlocksRegistry.SnowBlock);
         }
     }
 

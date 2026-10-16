@@ -79,6 +79,7 @@ public sealed class DeltaFeature : ConfiguredFeatureBase
         return true;
     }
 
-    private static bool CannotReplace(IBlock block) => block.Material is Material.Bedrock or Material.NetherBricks
-        or Material.NetherBrickFence or Material.NetherBrickStairs or Material.NetherWart or Material.Chest or Material.Spawner;
+    private static bool CannotReplace(IBlock block) =>
+        block.RegistryId is BlockIds.Bedrock or BlockIds.NetherBricks or BlockIds.NetherBrickFence
+            or BlockIds.NetherBrickStairs or BlockIds.NetherWart or BlockIds.Chest or BlockIds.Spawner;
 }

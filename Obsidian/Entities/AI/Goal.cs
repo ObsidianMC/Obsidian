@@ -1,4 +1,7 @@
 using Obsidian.API.AI;
+using Obsidian.Plugins;
+using Obsidian.Plugins.PluginProviders;
+using System.Runtime.Loader;
 
 namespace Obsidian.Entities.AI;
 
@@ -23,6 +26,9 @@ public abstract class Goal : IGoal
     public virtual void Stop() { }
     public virtual ValueTask TickAsync() => default;
 
+    // Host goals can drop cached targets without Stop callbacks; external plugin goals cannot override this.
+    internal virtual bool ForgetEvictedEntities(HashSet<IEntity> removed) => false;
+
     // Preserve the synchronous plugin entry point; the simulation uses TickAsync.
     public void Run() => TickAsync().AsTask().GetAwaiter().GetResult();
 }
@@ -37,28 +43,73 @@ public sealed class GoalSelector : IGoalController
     public void AddGoal(int priority, Goal goal)
     {
         ArgumentNullException.ThrowIfNull(goal);
-        if (goals.Any(entry => ReferenceEquals(entry.Goal, goal)))
+        if (goals.Any(entry => ReferenceEquals(CodeOf(entry.Goal), goal)))
             return;
 
-        goals.Add(new WrappedGoal(priority, goal));
+        goals.Add(new WrappedGoal(priority, PluginGoal.Wrap(goal)));
     }
 
-    public void AddGoal(IGoal goal) => AddGoal(int.MaxValue, goal as Goal ?? new LegacyGoal(goal));
+    public void AddGoal(IGoal goal)
+    {
+        ArgumentNullException.ThrowIfNull(goal);
+        AddGoal(int.MaxValue, goal as Goal ?? new LegacyGoal(goal));
+    }
+
+    /// <summary>
+    /// Removes the goals whose code is in <paramref name="context"/>, an unloading plugin's: they'd keep it loaded.
+    /// Their plugin is closed by then, so removing them doesn't call into it.
+    /// </summary>
+    internal void RemoveGoalsFrom(AssemblyLoadContext context)
+    {
+        foreach (var entry in goals.ToArray())
+        {
+            if (AssemblyLoadContext.GetLoadContext(CodeOf(entry.Goal).GetType().Assembly) != context)
+                continue;
+
+            entry.Running = false;
+            goals.Remove(entry);
+        }
+
+        conflicts.Clear();
+    }
 
     public void RemoveGoal(IGoal goal)
     {
-        foreach (var entry in goals.Where(entry => ReferenceEquals(entry.Goal, goal) ||
-            entry.Goal is LegacyGoal legacy && ReferenceEquals(legacy.Inner, goal)).ToArray())
+        foreach (var entry in goals.Where(entry => ReferenceEquals(CodeOf(entry.Goal), goal)).ToArray())
         {
             Stop(entry);
             goals.Remove(entry);
         }
     }
 
+    // The goal as it was given: a plugin's goal or API goal is wrapped.
+    private static object CodeOf(Goal goal)
+    {
+        var unwrapped = goal is PluginGoal plugin ? plugin.Inner : goal;
+        return unwrapped is LegacyGoal legacy ? legacy.Inner : unwrapped;
+    }
+
     public void Clear()
     {
         Cancel();
         goals.Clear();
+    }
+
+    internal void Discard()
+    {
+        goals.Clear();
+        conflicts.Clear();
+    }
+
+    internal void ForgetEvictedEntities(HashSet<IEntity> removed)
+    {
+        foreach (var entry in goals)
+        {
+            if (entry.Goal.ForgetEvictedEntities(removed))
+                entry.Running = false;
+        }
+
+        conflicts.Clear();
     }
 
     public void Cancel()
@@ -146,16 +197,75 @@ public sealed class GoalSelector : IGoalController
         public bool Running { get; set; }
     }
 
+    // A goal given through the API as just an IGoal, which runs every tick.
     private sealed class LegacyGoal(IGoal inner) : Goal
     {
         public IGoal Inner { get; } = inner;
         public override bool RequiresUpdateEveryTick => true;
         public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look | GoalFlags.Jump;
         public override bool CanUse() => true;
+
         public override ValueTask TickAsync()
         {
-            Inner.Run();
+            this.Inner.Run();
             return default;
+        }
+    }
+
+    // A goal whose code is a plugin's: every call into it is a call into the plugin, refused once the plugin started
+    // unloading, so none of it runs while the plugin is released; its mobs then drop it (Mob.ReleasePluginObjects).
+    private sealed class PluginGoal(Goal inner, PluginContainer owner) : Goal
+    {
+        public Goal Inner { get; } = inner;
+        public override GoalFlags Flags => this.Inner.Flags;
+        public override bool IsInterruptible => this.Inner.IsInterruptible;
+        public override bool RequiresUpdateEveryTick => this.Inner.RequiresUpdateEveryTick;
+
+        // Plugins give goals through Obsidian.API, as IGoals; the server's own Goal classes aren't plugin API, so goals
+        // built on them aren't wrapped (the unload sweep still removes those whose type is a plugin's).
+        public static Goal Wrap(Goal goal)
+        {
+            if (goal is not LegacyGoal legacy)
+                return goal;
+
+            var context = AssemblyLoadContext.GetLoadContext(legacy.Inner.GetType().Assembly);
+
+            return context is PluginLoadContext { Container: PluginContainer owner }
+                ? new PluginGoal(goal, owner)
+                : goal;
+        }
+
+        public override bool CanUse()
+        {
+            using var call = owner.TryEnter();
+            return call is not null && this.Inner.CanUse();
+        }
+
+        public override bool CanContinue()
+        {
+            using var call = owner.TryEnter();
+            return call is not null && this.Inner.CanContinue();
+        }
+
+        public override void Start()
+        {
+            using var call = owner.TryEnter();
+            if (call is not null)
+                this.Inner.Start();
+        }
+
+        public override void Stop()
+        {
+            using var call = owner.TryEnter();
+            if (call is not null)
+                this.Inner.Stop();
+        }
+
+        public override async ValueTask TickAsync()
+        {
+            using var call = owner.TryEnter();
+            if (call is not null)
+                await this.Inner.TickAsync();
         }
     }
 }

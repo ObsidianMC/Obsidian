@@ -14,7 +14,8 @@ public sealed partial class HappyGhast : FarmAnimal
     protected override VectorD PassengerOffset(int index)
     {
         var angle = (Yaw.Degrees + index * 90) * MathF.PI / 180;
-        return new VectorD(-MathF.Sin(angle) * 1.1f, Dimension.Height, MathF.Cos(angle) * 1.1f);
+        return new VectorD(-MathF.Sin(angle) * 1.1f * this.AttributeScale, Dimension.Height,
+            MathF.Cos(angle) * 1.1f * this.AttributeScale);
     }
     public HappyGhast() => Type = EntityType.HappyGhast;
     internal override bool FlyingNavigation => true;
@@ -49,24 +50,48 @@ public sealed partial class HappyGhast : FarmAnimal
         var fast = Terrain.IsRainingAt((Vector)Position.Floor()) || Terrain.GetTemperature((Vector)Position.Floor()) < 0.15;
         if (AiTick % (fast ? 20 : 600) == 0) Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 1);
     }
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || IsRemoved || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player)) return;
+        if (!Alive
+            || IsRemoved
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4)
+            || !CanSee(player))
+            return false;
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (IsBaby && CanEat(held)) { await base.FeedAsync(player, hand); return; }
-        if (IsBaby) return;
+        if (IsBaby && CanEat(held))
+            return await base.FeedAsync(player, hand);
+        if (IsBaby)
+            return false;
         if (held is { Count: > 0 } && held.Holder.UnlocalizedName.EndsWith("_harness", StringComparison.Ordinal))
         {
             if (!GetEquipment(EquipmentSlot.Body).IsAir) DropItem(GetEquipment(EquipmentSlot.Body));
             SetEquipment(EquipmentSlot.Body, new ItemStack(held));
             await ConsumeInteractionItemAsync(player, hand);
+            return true;
         }
-        else if (held is { Count: > 0, Type: Material.Shears } && !GetEquipment(EquipmentSlot.Body).IsAir && Rider == null)
+
+        if (held is { Count: > 0, Holder.Id: ItemIds.Shears }
+            && !GetEquipment(EquipmentSlot.Body).IsAir
+            && Rider == null)
         {
             DropItem(GetEquipment(EquipmentSlot.Body)); SetEquipment(EquipmentSlot.Body, ItemStack.Air);
             await DamageInteractionToolAsync(player, hand, 1);
+            return true;
         }
-        else if (!player.Sneaking && !GetEquipment(EquipmentSlot.Body).IsAir && player is Player rider && Mount(rider)) GoalController?.Pause();
+
+        // Like vanilla's, an adult happy ghast gives the held item its use before the player mounts.
+        if (await Obsidian.Plugins.ItemBehaviors.UseOnEntityAsync(player, hand, this))
+            return true;
+
+        if (!player.Sneaking && !GetEquipment(EquipmentSlot.Body).IsAir && player is Player rider && Mount(rider))
+        {
+            GoalController?.Pause();
+            return true;
+        }
+
+        return false;
     }
     protected override void TickRidden()
     {

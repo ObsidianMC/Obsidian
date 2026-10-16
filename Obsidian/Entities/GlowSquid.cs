@@ -24,7 +24,7 @@ public sealed partial class GlowSquid : Squid
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (!IsBaby) DropItem(Material.GlowInkSac, Random.Next(1, 4));
+        if (!IsBaby) DropItem(ItemsRegistry.GlowInkSac, Random.Next(1, 4));
         return default;
     }
     public override void Write(INetStreamWriter writer)

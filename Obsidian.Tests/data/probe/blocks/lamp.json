@@ -1,0 +1,12 @@
+{
+  "properties": {
+    "lit": ["false", "true"],
+    "power": ["0", "1", "2", "3"],
+    "color": ["red", "green"]
+  },
+  "default": { "lit": "false" },
+  "hardness": 0.5,
+  "lightEmission": 7,
+  "behavior": "Obsidian.Tests.ProbeLampBehavior",
+  "item": { "maxStackSize": 16 }
+}

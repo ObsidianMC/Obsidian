@@ -9,8 +9,10 @@ using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Commands.Builders;
 using Obsidian.Commands.Modules;
 using Obsidian.Plugins;
+using Obsidian.Plugins.PluginProviders;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Loader;
 
 namespace Obsidian.Commands.Framework;
 
@@ -64,6 +66,7 @@ public sealed class CommandHandler : ICommandHandler
     /// <summary>
     /// Finds the parser registered for <paramref name="type"/>. An enum without one gets an
     /// <see cref="EnumArgumentParser"/>, kept for later lookups, so a plugin's parser for an enum must be added first.
+    /// A plugin's enums get a new one each time instead: keeping it would keep the plugin loaded.
     /// </summary>
     private bool TryGetArgumentParser(Type type, [NotNullWhen(true)] out BaseArgumentParser? parser)
     {
@@ -73,17 +76,38 @@ public sealed class CommandHandler : ICommandHandler
         if (!type.IsEnum)
             return false;
 
-        parser = this._argumentParsers.GetOrAdd(type, enumType => new EnumArgumentParser(enumType));
+        parser = type.Assembly.IsCollectible
+            ? new EnumArgumentParser(type)
+            : this._argumentParsers.GetOrAdd(type, enumType => new EnumArgumentParser(enumType));
         return true;
     }
 
     public Command[] GetAllCommands() => _commands.ToArray();
 
-    private void AddCommand(Command command) => ImmutableInterlocked.Update(ref _commands, commands => commands.Add(command));
+    // Refuses an unloading plugin's command: unloading closes the plugin before removing its commands, so one added
+    // meanwhile is removed either then or here.
+    private void AddCommand(Command command)
+    {
+        var owner = command.PluginContainer as PluginContainer;
+        owner?.ThrowIfClosing();
+
+        ImmutableInterlocked.Update(ref _commands, commands => commands.Add(command));
+
+        if (owner is not { IsClosing: true })
+            return;
+
+        ImmutableInterlocked.Update(
+            ref _commands,
+            commands => commands.Remove(command, ReferenceEqualityComparer.Instance));
+        owner.ThrowIfClosing();
+    }
 
     public void RegisterCommand(PluginContainer? pluginContainer, string name, Delegate commandDelegate)
     {
         var method = commandDelegate.Method;
+
+        // A plugin's command is the plugin's, so unloading it removes the command, even when no container is given.
+        pluginContainer ??= PluginLoadContext.OwnerOf(method.Module.Assembly);
 
         var commandInfo = method.GetCustomAttribute<CommandInfoAttribute>();
         var checks = method.GetCustomAttributes<BaseExecutionCheckAttribute>();
@@ -107,8 +131,41 @@ public sealed class CommandHandler : ICommandHandler
         AddCommand(command);
     }
 
-    public bool TryAddArgumentParser<TValue>(BaseArgumentParser<TValue> parser) =>
-        _argumentParsers.TryAdd(typeof(TValue), parser);
+    /// <summary>
+    /// Adds a parser for a type unless one is registered. An unloading plugin's parser is refused, like its commands:
+    /// one added while the plugin closes is removed either by the unload or here.
+    /// </summary>
+    public bool TryAddArgumentParser<TValue>(BaseArgumentParser<TValue> parser)
+    {
+        var owner = PluginLoadContext.OwnerOf(parser.GetType().Assembly)
+            ?? PluginLoadContext.OwnerOf(typeof(TValue).Assembly);
+        owner?.ThrowIfClosing();
+
+        if (!_argumentParsers.TryAdd(typeof(TValue), parser))
+            return false;
+
+        if (owner is not { IsClosing: true })
+            return true;
+
+        _argumentParsers.TryRemove(new KeyValuePair<Type, BaseArgumentParser>(typeof(TValue), parser));
+        owner.ThrowIfClosing();
+
+        return false;
+    }
+
+    /// <summary>
+    /// Removes the argument parsers for, or from, a plugin's assemblies as the plugin unloads, including the enum
+    /// parsers created for its enums, which would otherwise keep its load context alive.
+    /// </summary>
+    public void UnregisterArgumentParsers(AssemblyLoadContext pluginContext)
+    {
+        foreach (var (type, parser) in _argumentParsers)
+        {
+            if (AssemblyLoadContext.GetLoadContext(type.Assembly) == pluginContext
+                || AssemblyLoadContext.GetLoadContext(parser.GetType().Assembly) == pluginContext)
+                _argumentParsers.TryRemove(type, out _);
+        }
+    }
 
     public void UnregisterPluginCommands(IPluginContainer? plugin) =>
         ImmutableInterlocked.Update(ref _commands, commands => commands.RemoveAll(x => x.PluginContainer == plugin));
@@ -117,6 +174,8 @@ public sealed class CommandHandler : ICommandHandler
 
     public void RegisterCommandClass(IPluginContainer? plugin, Type moduleType)
     {
+        plugin ??= PluginLoadContext.OwnerOf(moduleType.Assembly);
+
         if (moduleType.GetCustomAttribute<CommandGroupAttribute>() is not null)
         {
             this.RegisterGroupCommand(moduleType, plugin, null);
@@ -365,6 +424,11 @@ public sealed class CommandHandler : ICommandHandler
     private async Task<SuggestionGroup?> SuggestArgumentAsync(
         Command command, IExecutor<CommandContext> overload, List<(int Start, string Value)> words, CommandContext ctx)
     {
+        // The plugin's parsers, checks and provider run as part of a call into it, like the command itself.
+        using var call = TryEnter(command, out var refused);
+        if (refused)
+            return null;
+
         // Parsers, checks and the provider see the command's plugin, as when it runs.
         ctx.Plugin = command.PluginContainer?.Plugin;
 
@@ -392,7 +456,10 @@ public sealed class CommandHandler : ICommandHandler
         var typed = string.Join(' ', words[index..].Select(word => word.Value));
         var isWord = parameters[index].GetCustomAttribute<RemainingAttribute>() is null;
 
-        return new SuggestionGroup(words[index].Start, typed, isWord, await provider.GetSuggestionsAsync(ctx));
+        // Read now, while the plugin can't unload: a lazy sequence would run its code later.
+        var suggestions = (await provider.GetSuggestionsAsync(ctx)).ToList();
+
+        return new SuggestionGroup(words[index].Start, typed, isWord, suggestions);
     }
 
     /// <summary>
@@ -431,6 +498,11 @@ public sealed class CommandHandler : ICommandHandler
     /// </summary>
     private static async Task<bool> CanSuggestNameAsync(Command command, Command[] commands, CommandContext ctx)
     {
+        // The checks are the plugin's code, run as part of a call into it.
+        using var call = TryEnter(command, out var refused);
+        if (refused)
+            return false;
+
         if (!await CanUseAsync(command, ctx))
             return false;
 
@@ -452,6 +524,11 @@ public sealed class CommandHandler : ICommandHandler
     /// </summary>
     private static async Task<bool> CanUseAsync(Command command, CommandContext ctx)
     {
+        // The checks are the plugin's code, run as part of a call into it.
+        using var call = TryEnter(command, out var refused);
+        if (refused)
+            return false;
+
         ctx.Plugin = command.PluginContainer?.Plugin;
 
         if (!command.AllowedIssuers.HasFlag(ctx.Sender.Issuer))
@@ -492,12 +569,38 @@ public sealed class CommandHandler : ICommandHandler
             args = Enumerable.Skip(args, 1).ToArray();
         }
 
-        if (cmd is not null)
+        if (cmd is null)
         {
-            ctx.Plugin = cmd.PluginContainer?.Plugin;
-            await cmd.ExecuteAsync(ctx, args);
-        }
-        else
             await ctx.Sender.SendMessageAsync("No such command was found!");
+            return;
+        }
+
+        using var call = TryEnter(cmd, out var refused);
+        if (refused)
+        {
+            await ctx.Sender.SendMessageAsync("This command's plugin is reloading; try again.");
+            return;
+        }
+
+        ctx.Plugin = cmd.PluginContainer?.Plugin;
+        await cmd.ExecuteAsync(ctx, args);
+    }
+
+    /// <summary>
+    /// Starts a call into a command's plugin, which releasing the plugin waits for.
+    /// </summary>
+    /// <param name="refused">Whether the plugin is unloading, so the command mustn't run.</param>
+    /// <remarks>
+    /// The call gives the command's context its plugin's own server, and a server's command run inside a plugin's call
+    /// the server's (see <see cref="PluginCall.EnterHost"/>).
+    /// </remarks>
+    /// <returns>The call to end, or null for a refused command or a server's command run outside any plugin.</returns>
+    private static PluginCall? TryEnter(Command command, out bool refused)
+    {
+        var plugin = command.PluginContainer as PluginContainer;
+        var call = plugin is null ? PluginCall.EnterHost() : plugin.TryEnter();
+        refused = plugin is not null && call is null;
+
+        return call;
     }
 }

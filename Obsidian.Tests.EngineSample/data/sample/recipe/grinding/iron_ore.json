@@ -1,0 +1,9 @@
+{
+  "type": "sample:grinding",
+  "ingredient": "minecraft:iron_ore",
+  "result": {
+    "id": "minecraft:raw_iron",
+    "count": 2
+  },
+  "grinding_time": 20
+}

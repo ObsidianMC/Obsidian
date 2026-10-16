@@ -21,6 +21,11 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
     private void Generate(SourceProductionContext context, (Compilation compilation, ImmutableArray<(string name, string json)> files) output)
     {
         var assembly = output.compilation.AssemblyName;
+
+        // Only Obsidian's own projects have vanilla's assets; a plugin's JSON files are its own.
+        if (assembly is not ("Obsidian" or "Obsidian.API"))
+            return;
+
         var assets = Assets.Get(output.files, context);
 
         if (assembly == "Obsidian")
@@ -31,8 +36,8 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
         {
             GenerateTags(assets, context);
             GenerateItems(assets, context);
+            GenerateBlockIdConstants(assets, context);
             GenerateCodecs(assets, context);
-            GenerateMaterials(assets, context);
             GenerateSounds(assets, context);
             GenerateEnum(output.files.GetJsonFromArray("enums"), context);
         }

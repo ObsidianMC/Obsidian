@@ -19,10 +19,10 @@ public sealed class SwampHutStructure : Structure
 /// </summary>
 public sealed class SwampHutPiece : ScatteredFeaturePiece
 {
-    private static readonly IBlock sprucePlanks = BlocksRegistry.Get(Material.SprucePlanks);
-    private static readonly IBlock oakLog = BlocksRegistry.Get(Material.OakLog);
-    private static readonly IBlock oakFence = BlocksRegistry.Get(Material.OakFence);
-    private static readonly IBlock spruceStairs = BlocksRegistry.Get(Material.SpruceStairs);
+    private static readonly IBlock sprucePlanks = BlocksRegistry.SprucePlanks;
+    private static readonly IBlock oakLog = BlocksRegistry.OakLog;
+    private static readonly IBlock oakFence = BlocksRegistry.OakFence;
+    private static readonly IBlock spruceStairs = BlocksRegistry.SpruceStairs;
 
     private bool spawnedWitch;
     private bool spawnedCat;
@@ -70,9 +70,9 @@ public sealed class SwampHutPiece : ScatteredFeaturePiece
         this.PlaceBlock(level, BlocksRegistry.Air, 1, 3, 4, box);
         this.PlaceBlock(level, BlocksRegistry.Air, 5, 3, 4, box);
         this.PlaceBlock(level, BlocksRegistry.Air, 5, 3, 5, box);
-        this.PlaceBlock(level, BlocksRegistry.Get(Material.PottedRedMushroom), 1, 3, 5, box);
-        this.PlaceBlock(level, BlocksRegistry.Get(Material.CraftingTable), 3, 2, 6, box);
-        this.PlaceBlock(level, BlocksRegistry.Get(Material.Cauldron), 4, 2, 6, box);
+        this.PlaceBlock(level, BlocksRegistry.PottedRedMushroom, 1, 3, 5, box);
+        this.PlaceBlock(level, BlocksRegistry.CraftingTable, 3, 2, 6, box);
+        this.PlaceBlock(level, BlocksRegistry.Cauldron, 4, 2, 6, box);
         this.PlaceBlock(level, oakFence, 1, 2, 1, box);
         this.PlaceBlock(level, oakFence, 5, 2, 1, box);
 
