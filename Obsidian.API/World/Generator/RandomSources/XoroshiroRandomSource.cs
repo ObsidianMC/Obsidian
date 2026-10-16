@@ -20,6 +20,15 @@ public sealed class XoroshiroRandomSource : IRandomSource
     /// <summary>Creates a source from a raw 128-bit state (no mixing).</summary>
     public XoroshiroRandomSource(long seedLo, long seedHi) => this.state = new Xoroshiro128PlusPlus(seedLo, seedHi);
 
+    private XoroshiroRandomSource(XoroshiroRandomSource other)
+    {
+        this.state = other.state;
+        this.gaussian = other.gaussian;
+    }
+
+    /// <summary>Returns an independent source that continues from this source's current state.</summary>
+    public XoroshiroRandomSource Copy() => new(this);
+
     public IRandomSource Fork()
     {
         var seedLo = this.state.NextLong();

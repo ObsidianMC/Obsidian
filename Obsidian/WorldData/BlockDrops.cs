@@ -21,14 +21,15 @@ internal static class BlockDrops
     /// <summary>
     /// The stacks <paramref name="block"/> drops when a player breaks it at <paramref name="location"/> with
     /// <paramref name="tool"/> (an empty stack for bare hands). Empty when doTileDrops is off, the tool can't harvest the
-    /// block, or the block has no loot table.
+    /// block, or the block has no loot table. <paramref name="sequences"/> is what the loot draws from; null uses the
+    /// level's live sequences.
     /// </summary>
-    public static async ValueTask<List<ItemStack>> ForPlayerBreakAsync(AbstractLevel level, IBlock block, VectorD location, ItemStack tool, IEntity? breaker)
+    public static async ValueTask<List<ItemStack>> ForPlayerBreakAsync(AbstractLevel level, IBlock block, VectorD location, ItemStack tool, IEntity? breaker, RandomSequences? sequences = null)
     {
         if (block.IsAir || !level.LevelData.GetBooleanRule("do_tile_drops") || !CanHarvest(block, tool))
             return [];
 
-        return await EvaluateAsync(level, block, location, tool, breaker, explosionRadius: null, await BlockEntityAt(level, location));
+        return await EvaluateAsync(level, block, location, tool, breaker, explosionRadius: null, await BlockEntityAt(level, location), sequences);
     }
 
     /// <summary>
@@ -91,7 +92,7 @@ internal static class BlockDrops
     private static ValueTask<IBlockEntity?> BlockEntityAt(AbstractLevel level, VectorD location) =>
         level.GetBlockEntityAsync(new Vector((int)Math.Floor(location.X), (int)Math.Floor(location.Y), (int)Math.Floor(location.Z)));
 
-    private static async ValueTask<List<ItemStack>> EvaluateAsync(AbstractLevel level, IBlock block, VectorD location, ItemStack? tool, IEntity? breaker, float? explosionRadius, IBlockEntity? blockEntity)
+    private static async ValueTask<List<ItemStack>> EvaluateAsync(AbstractLevel level, IBlock block, VectorD location, ItemStack? tool, IEntity? breaker, float? explosionRadius, IBlockEntity? blockEntity, RandomSequences? sequences = null)
     {
         var tableId = "minecraft:blocks/" + block.UnlocalizedName[(block.UnlocalizedName.IndexOf(':') + 1)..];
         if (!LootTables.All.TryGetValue(tableId, out var table))
@@ -109,7 +110,7 @@ internal static class BlockDrops
             // Built inside the try: BlockEntityComponents.For throws NotSupportedException for unmodelled block entities.
             var context = new LootContext
             {
-                Random = table.CreateRandom(0, LevelLoot.Sequences(level)),
+                Random = table.CreateRandom(0, sequences ?? LevelLoot.Sequences(level)),
                 Origin = new VectorD(x + 0.5, y + 0.5, z + 0.5),
                 ThisEntity = breaker,
                 Block = block,

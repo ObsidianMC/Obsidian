@@ -17,7 +17,8 @@ public abstract partial class AbstractLevel
         if (block is null || block.IsAir)
             return [];
 
-        return await BlockDrops.ForPlayerBreakAsync(this, block, (VectorD)location, tool ?? ItemStack.Air, breaker);
+        // A copy of the sequences: the query must not advance the sequences a real break draws from.
+        return await BlockDrops.ForPlayerBreakAsync(this, block, (VectorD)location, tool ?? ItemStack.Air, breaker, LevelLoot.Sequences(this).Snapshot());
     }
 
     /// <summary>

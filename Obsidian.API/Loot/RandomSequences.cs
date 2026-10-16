@@ -14,7 +14,7 @@ namespace Obsidian.API.Loot;
 public sealed class RandomSequences
 {
     private readonly long worldSeed;
-    private readonly Dictionary<string, IRandomSource> sequences = [];
+    private readonly Dictionary<string, XoroshiroRandomSource> sequences = [];
     private readonly Lock sequencesLock = new();
 
     public RandomSequences(long worldSeed) => this.worldSeed = worldSeed;
@@ -35,6 +35,23 @@ public sealed class RandomSequences
             }
 
             return sequence;
+        }
+    }
+
+    /// <summary>
+    /// Returns a copy of every sequence at its current state. Draws from the copy don't advance this instance, so a
+    /// query (like a plugin asking what a block would drop) can use it without changing what the next real use gets.
+    /// Sequences not yet created here are created in the copy on first use, from the same seed.
+    /// </summary>
+    public RandomSequences Snapshot()
+    {
+        lock (this.sequencesLock)
+        {
+            var copy = new RandomSequences(this.worldSeed);
+            foreach (var (id, sequence) in this.sequences)
+                copy.sequences[id] = sequence.Copy();
+
+            return copy;
         }
     }
 }
