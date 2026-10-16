@@ -49,7 +49,8 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
             .Where(blockEntity => BlockPhysics.BlockEntityTypeId(blockEntity.Id) >= 0)
             .ToList();
 
-        writer.WriteVarInt(blockEntities.Count);
+        var campfires = Chunk.GetBlockEntities().OfType<CampfireBlockEntity>().ToList();
+        writer.WriteVarInt(blockEntities.Count + campfires.Count);
         foreach (var blockEntity in blockEntities)
         {
             var position = blockEntity.BlockPosition;
@@ -57,6 +58,16 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
             writer.WriteShort((short)position.Y);
             writer.WriteVarInt(BlockPhysics.BlockEntityTypeId(blockEntity.Id));
             WriteNbt(writer, blockEntity.GetClientData());
+        }
+
+        // Campfires send the items they're cooking, like vanilla's getUpdateTag.
+        foreach (var campfire in campfires)
+        {
+            var position = campfire.BlockPosition;
+            writer.WriteByte((sbyte)((position.X & 15) << 4 | (position.Z & 15)));
+            writer.WriteShort((short)position.Y);
+            writer.WriteVarInt(BlockPhysics.BlockEntityTypeId(campfire.Id));
+            WriteNbt(writer, BlockEntityNbt.Save(campfire, Chunk) ?? new NbtCompound());
         }
 
         // Lighting

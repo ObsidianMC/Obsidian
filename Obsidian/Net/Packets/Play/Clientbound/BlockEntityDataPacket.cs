@@ -9,15 +9,19 @@ public partial class BlockEntityDataPacket
     public Vector Position { get; init; }
 
     [Field(1), VarLength]
-    private EntityType Type { get; init; }
+    private BlockEntityType Type { get; init; }
 
     [Field(2)]
     public NbtCompound NBTData { get; init; } = default!;
 
+    /// <summary>Creates the update for a block entity of the given type, e.g. <see cref="BlockEntityType.Campfire"/>.</summary>
+    public static BlockEntityDataPacket Create(Vector position, BlockEntityType blockEntityType, NbtCompound nbt) =>
+        new() { Position = position, Type = blockEntityType, NBTData = nbt };
+
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WritePosition(Position);
-        writer.WriteVarInt(Type);
+        writer.WriteVarInt((int)Type);
         writer.WriteNbtCompound(this.NBTData);
     }
 }

@@ -10,9 +10,6 @@ public sealed class FurnaceWindowProperty : IWindowProperty
     {
         this.Property = (short)property;
 
-        if (property == FurnaceProperty.ProgressArrow && value > 200)
-            throw new InvalidOperationException();
-
         this.Value = value;
     }
 }

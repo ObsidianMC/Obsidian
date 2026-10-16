@@ -15,6 +15,9 @@ public static partial class RecipesRegistry
 
     internal static IReadOnlyList<IRecipeWithResult> RecipeBookRecipes { get; private set; } = [];
 
+    /// <summary>Every smelting, blasting and smoking recipe, in the order the recipe file lists them.</summary>
+    internal static IReadOnlyList<SmeltingRecipe> SmeltingRecipes { get; private set; } = [];
+
     /// <summary>
     /// Loads vanilla's recipes. They're static, so a server started again in the same process keeps the loaded ones.
     /// </summary>
@@ -31,6 +34,8 @@ public static partial class RecipesRegistry
 
         RecipeBookRecipes = Recipes.Values.Where(recipe => recipe is ShapedRecipe or ShapelessRecipe)
             .Cast<IRecipeWithResult>().ToList().AsReadOnly();
+
+        SmeltingRecipes = Recipes.Values.OfType<SmeltingRecipe>().ToList().AsReadOnly();
 
         shapedRecipeLookup = Recipes.Values.OfType<ShapedRecipe>()
             .GroupBy(recipe => recipe.Pattern.Sum(row => row.Count(symbol => symbol != ' ')))
