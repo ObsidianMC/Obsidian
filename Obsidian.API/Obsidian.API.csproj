@@ -97,6 +97,22 @@
 		</PackageReference>
 	</ItemGroup>
 
+	<!-- The API's public types use Obsidian.Nbt's (codecs, block entity saves), so the package carries the Obsidian.Nbt
+	     assembly it was built with, beside its own, rather than depending on a separately published Nbt nightly that
+	     may not match the submodule. Mods then compile against both from this package alone. -->
+	<PropertyGroup>
+		<TargetsForTfmSpecificBuildOutput>
+			$(TargetsForTfmSpecificBuildOutput);PackNbtWithApi
+		</TargetsForTfmSpecificBuildOutput>
+	</PropertyGroup>
+
+	<Target Name="PackNbtWithApi" DependsOnTargets="ResolveReferences">
+		<ItemGroup>
+			<BuildOutputInPackage Include="@(ReferenceCopyLocalPaths)"
+			                      Condition="'%(Filename)' == 'Obsidian.Nbt' And '%(Extension)' != '.pdb'" />
+		</ItemGroup>
+	</Target>
+
 	<ItemGroup>
 		<ProjectReference Include="..\Obsidian.AssetGenerator\Obsidian.AssetGenerator.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
       <ProjectReference Include="..\Obsidian.Nbt\Nbt\Obsidian.Nbt.csproj" PrivateAssets="all" />

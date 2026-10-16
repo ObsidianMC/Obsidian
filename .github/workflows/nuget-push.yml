@@ -10,6 +10,9 @@ on:
     paths:
       - "Obsidian.API/**/*.cs"
       - "Obsidian.API/*.csproj"
+      - "Obsidian.API.Client/**/*.cs"
+      - "Obsidian.API.Client/**/*.razor"
+      - "Obsidian.API.Client/*.csproj"
       - "Obsidian/Obsidian.csproj"
       - "Obsidian.AssetGenerator/**"
       - "Obsidian.SourceGenerators/**/*.cs"
@@ -47,8 +50,13 @@ jobs:
           distribution: temurin
           java-version: 25
       - name: Pack n Push
+        # Nightlies are 1.1.0-nightly.<run>: a dot-separated number sorts numerically, so mods can float on
+        # 1.1.0-nightly.*. The older 1.0.0-nightly-<run> versions compare as text, which puts nightly-100 below
+        # nightly-99. The client API depends on the API package of the same version.
+        env:
+          VERSION: 1.1.0-nightly.${{ github.run_number }}
         run: |
-          cd Obsidian.API
-          dotnet build -c Release -p:Version=1.0.0-${{ github.run_number }}-${{ github.sha }}
-          dotnet pack -c Release -o build -p:Version=1.0.0-nightly-${{ github.run_number }}
-          dotnet nuget push "build/*" --skip-duplicate -k ${{ secrets.NUGET }} -s https://api.nuget.org/v3/index.json
+          dotnet pack Obsidian.API/Obsidian.API.csproj -c Release -o build -p:Version=$VERSION
+          dotnet pack Obsidian.API.Client/Obsidian.API.Client.csproj -c Release -o build -p:Version=$VERSION
+          dotnet nuget push "build/*.nupkg" --skip-duplicate -k ${{ secrets.NUGET }} \
+            -s https://api.nuget.org/v3/index.json
