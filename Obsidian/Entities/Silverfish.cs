@@ -46,7 +46,8 @@ public sealed partial class Silverfish : PathfinderMob
                     continue;
                 if (Level.LevelData.GetBooleanRule("mob_griefing"))
                 {
-                    await Level.SetBlockAsync(point, BlocksRegistry.Air, true);
+                    // Vanilla destroyBlock(pos, true, this): infested blocks drop only with Silk Touch.
+                    Level.DestroyBlock(point, dropItems: true, this);
                     SpawnFromBlock(Level, point);
                 }
                 else if (BlockStateParser.TryParse("minecraft:" + block.UnlocalizedName[19..]) is { } host)

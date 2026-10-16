@@ -97,7 +97,7 @@ public sealed partial class Wither : BossMob
                 SetHeadTarget(head, choices.Length == 0 ? 0 : choices[Random.Next(choices.Length)].EntityId);
             }
         }
-        if (breakBlocksTicks > 0 && --breakBlocksTicks == 0) await BreakBlocksAsync();
+        if (breakBlocksTicks > 0 && --breakBlocksTicks == 0) BreakBlocks();
     }
 
     private void SetHeadTarget(int head, int id)
@@ -116,7 +116,7 @@ public sealed partial class Wither : BossMob
         PlayMobSound("shoot");
     }
 
-    private async ValueTask BreakBlocksAsync()
+    private void BreakBlocks()
     {
         if (!Level.LevelData.GetBooleanRule("mob_griefing")) return;
         var position = (Vector)Position.Floor();
@@ -128,7 +128,8 @@ public sealed partial class Wither : BossMob
             var point = position + new Vector(x, y, z);
             var block = Terrain.GetBlock(point);
             if (block == null || block.IsAir || TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId)) continue;
-            await Level.SetBlockAsync(point, BlocksRegistry.Air);
+            // Vanilla destroyBlock(pos, true, this): the block's loot drops.
+            Level.DestroyBlock(point, dropItems: true, this);
             broken = true;
         }
         if (broken) PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelEventPacket(1022, position, 0));
