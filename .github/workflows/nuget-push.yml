@@ -70,6 +70,9 @@ jobs:
         with:
           user: ${{ secrets.NUGET_USER }}
       - name: Push
+        # Through the environment rather than expanded into the script, which the shell would parse.
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: |
-          dotnet nuget push "build/*.nupkg" --skip-duplicate -k ${{ steps.login.outputs.NUGET_API_KEY }} \
+          dotnet nuget push "build/*.nupkg" --skip-duplicate -k "$NUGET_API_KEY" \
             -s https://api.nuget.org/v3/index.json
