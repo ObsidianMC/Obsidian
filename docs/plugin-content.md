@@ -883,8 +883,8 @@ platforms. The portal block needs `axis=x,z` states. Frames have optional corner
 interior by default; `MinWidth`, `MaxWidth`, `MinHeight` and `MaxHeight` narrow those limits. Builders use the
 minimum width and height.
 
-Portal types can share a portal block, vanilla's `minecraft:nether_portal` included (`PortalBlock =
-BlocksRegistry.NetherPortal`). Each portal block a type lights or builds is claimed for that type, saved with its
+Portal types can share a portal block, vanilla's `minecraft:nether_portal` included (`PortalBlock = new
+SimpleBlockState { Name = "minecraft:nether_portal" }.ToBlock()`). Each portal block a type lights or builds is claimed for that type, saved with its
 chunk, so contact, exit searches and frame checks treat it as that type's: a Nether portal search skips a plugin's
 portals made of the same block, and the other way round. While its type isn't registered, after the plugin unloads
 or across a restart without it, a claimed block is inert, never a Nether portal, and comes back to its type when the
