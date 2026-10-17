@@ -5,7 +5,7 @@ using System.Threading;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:camel")]
-public partial class Camel : AbstractHorse
+public partial class Camel : AbstractHorse, IRideableJumping
 {
     internal const int DashCooldownTicks = 55;
     private int pendingDashCharge = -1;
@@ -105,7 +105,7 @@ public partial class Camel : AbstractHorse
         if (await Obsidian.Plugins.ItemBehaviors.UseOnEntityAsync(player, hand, this))
             return true;
 
-        if (player is PlayerBase rider && Mount(rider))
+        if (Mount(player))
         {
             GoalController?.Pause();
             SetSitting(false);
@@ -115,7 +115,7 @@ public partial class Camel : AbstractHorse
         return false;
     }
 
-    internal bool RequestDash(IPlayer player, int charge)
+    public bool RequestJump(IPlayer player, int charge)
     {
         if (!ReferenceEquals(Rider, player) || !HasSaddle || IsSitting || DashCooldown > 0 ||
             !MovementFlags.HasFlag(MovementFlags.OnGround) || InWater || InLava || MobBitMask.HasFlag(MobBitmask.NoAi))

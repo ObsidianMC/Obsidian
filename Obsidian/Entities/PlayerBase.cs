@@ -132,9 +132,16 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
     /// <summary>
     /// Keeps what the player is sent about their open window in order and current, through plugins' packet handlers.
-    /// Settable so that a test can stand in for the handlers.
+    /// Settable so that a test can stand in for the handlers; the click pipeline finds them through
+    /// <see cref="Events.WindowSnapshots.Of"/>.
     /// </summary>
-    internal Events.WindowSnapshots WindowSnapshots { get; set; }
+    internal Events.WindowSnapshots WindowSnapshots
+    {
+        get => this.windowSnapshots;
+        set => this.windowSnapshots = value.For(this);
+    }
+
+    private Events.WindowSnapshots windowSnapshots = null!;
 
     /// <summary>
     /// Keeps the player's recipe book up to date with the server's recipes.
@@ -150,7 +157,6 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     ValueTask IPlayer.RefreshWindowAsync() =>
         Events.MainEventHandler.RefreshWindowAsync(this, this.OpenedContainer ?? this.Inventory, stateId: 0);
 
-    public IBlock? LastClickedBlock { get; internal set; }
 
     public GameMode GameMode
     {

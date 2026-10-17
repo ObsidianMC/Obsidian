@@ -197,7 +197,7 @@ public sealed class PluginLoading : IDisposable
 
         var context = new ItemUseContext
         {
-            Player = null!,
+            Player = new FakePlayer(),
             Stack = charged,
             Hand = InteractionHand.MainHand
         };
@@ -265,7 +265,7 @@ public sealed class PluginLoading : IDisposable
 
         var blockContext = new BlockUseContext
         {
-            Player = null!,
+            Player = new FakePlayer(),
             Position = Vector.Zero,
             Block = ore.DefaultState,
             Face = BlockFace.Up,
@@ -746,7 +746,7 @@ public sealed class PluginLoading : IDisposable
         var charged = new ItemStack(gem);
         var context = new ItemUseContext
         {
-            Player = null!,
+            Player = new FakePlayer(),
             Stack = charged,
             Hand = InteractionHand.MainHand
         };

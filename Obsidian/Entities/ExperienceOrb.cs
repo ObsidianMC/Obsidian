@@ -30,7 +30,7 @@ public sealed partial class ExperienceOrb : Entity
             await RemoveAsync();
             return;
         }
-        var player = Level.GetPlayersInRange(Position, 8).OfType<PlayerBase>()
+        var player = Level.GetPlayersInRange(Position, 8)
             .Where(candidate => candidate.Alive && candidate.GameMode != GameMode.Spectator)
             .OrderBy(candidate => (candidate.Position - Position).MagnitudeSquared()).FirstOrDefault();
         if (player != null)
@@ -39,20 +39,8 @@ public sealed partial class ExperienceOrb : Entity
             var distance = difference.Magnitude;
             if (distance is > 0 and < 8)
                 motion += difference / distance * (Math.Pow(1 - distance / 8, 2) * 0.1f);
-            if ((player.Position - Position).MagnitudeSquared() < 1 &&
-                Level.LevelData.Time - player.LastExperiencePickupTick >= 2)
+            if ((player.Position - Position).MagnitudeSquared() < 1 && await player.PickUpExperienceAsync(Value))
             {
-                player.LastExperiencePickupTick = Level.LevelData.Time;
-                var experience = await player.RepairWithMendingAsync(Value);
-                player.XpTotal += experience;
-                var points = player.XpP * XpHelper.ExperienceRequiredForNextLevel(player.XpLevel) + experience;
-                while (points >= XpHelper.ExperienceRequiredForNextLevel(player.XpLevel))
-                {
-                    points -= XpHelper.ExperienceRequiredForNextLevel(player.XpLevel);
-                    player.XpLevel++;
-                }
-                player.XpP = points / XpHelper.ExperienceRequiredForNextLevel(player.XpLevel);
-                await player.QueuePacketAsync(new SetExperiencePacket(player.XpP, player.XpLevel, player.XpTotal));
                 await RemoveAsync();
                 return;
             }

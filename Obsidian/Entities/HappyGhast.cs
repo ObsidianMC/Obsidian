@@ -6,7 +6,7 @@ using Obsidian.Nbt.Interfaces;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:happy_ghast")]
-public sealed partial class HappyGhast : FarmAnimal
+public sealed partial class HappyGhast : FarmAnimal, IRideable
 {
     private int stillTimeout;
     private VectorD? home;
@@ -38,7 +38,7 @@ public sealed partial class HappyGhast : FarmAnimal
         home ??= Position;
         if (Rider != null) home = Position;
         if (stillTimeout > 0) stillTimeout--;
-        if (!IsBaby && Level.GetPlayersInRange(Position, 5).Any(player => player is IPlayer { Vehicle: null } &&
+        if (!IsBaby && Level.GetPlayersInRange(Position, 5).Any(player => player.Vehicle is null &&
             player.Position.Y >= Position.Y + Dimension.Height - 0.2 && player.Position.Y <= Position.Y + Dimension.Height + 1 &&
             Math.Abs(player.Position.X - Position.X) <= Dimension.Width / 2 && Math.Abs(player.Position.Z - Position.Z) <= Dimension.Width / 2))
             stillTimeout = 10;
@@ -85,7 +85,7 @@ public sealed partial class HappyGhast : FarmAnimal
         if (await Obsidian.Plugins.ItemBehaviors.UseOnEntityAsync(player, hand, this))
             return true;
 
-        if (!player.Sneaking && !GetEquipment(EquipmentSlot.Body).IsAir && player is PlayerBase rider && Mount(rider))
+        if (!player.Sneaking && !GetEquipment(EquipmentSlot.Body).IsAir && Mount(player))
         {
             GoalController?.Pause();
             return true;

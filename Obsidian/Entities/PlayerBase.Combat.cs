@@ -4,6 +4,7 @@ using Obsidian.API.Loot;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -178,7 +179,28 @@ public partial class PlayerBase
         return (damage, critical);
     }
 
-    internal async ValueTask AttackAsync(PlayerAttackEntityEventArgs attack)
+    public async ValueTask<bool> AttackAsync(IEntity target, bool sneaking = false)
+    {
+        if (!CanAttack(target)) return false;
+        var attack = new PlayerAttackEntityEventArgs(this, target, Server, sneaking);
+        (attack.Damage, attack.IsCrit) = GetAttackDamage(target);
+        await Server.EventDispatcher.ExecuteEventAsync(attack);
+        return !attack.IsCancelled;
+    }
+
+    public async ValueTask<bool> InteractAsync(IEntity target, InteractionHand hand = InteractionHand.MainHand,
+        bool sneaking = false)
+    {
+        if (!Alive || Respawning || target.Level != Level || !target.IsInRange(this, GameMode == GameMode.Creative ? 8 : 6))
+            return false;
+        if (Level is AbstractLevel events)
+            events.EmitGameEvent(MobGameEvent.EntityInteract, target.Position, this);
+        var interaction = new EntityInteractEventArgs(this, target, Server, hand, sneaking);
+        await Server.EventDispatcher.ExecuteEventAsync(interaction);
+        return !interaction.IsCancelled;
+    }
+
+    internal async ValueTask ResolveAttackAsync(PlayerAttackEntityEventArgs attack)
     {
         var target = attack.Entity;
         var damage = attack.Damage;
@@ -191,7 +213,7 @@ public partial class PlayerBase
         if (attack.ChargeAttack && target is Living chargedTarget)
         {
             if (attack.ChargeKnockback) CombatEffects.Knockback(chargedTarget, chargedTarget.Position - Position, 0.4f);
-            if (attack.ChargeDismount && chargedTarget is PlayerBase rider) rider.LeaveVehicle();
+            if (attack.ChargeDismount && chargedTarget is IPlayer) chargedTarget.LeaveVehicle();
             if (attack.ChargeDismount && chargedTarget is Mob mob) mob.EjectPassengers();
         }
         if (damage <= 0) return;
@@ -302,6 +324,17 @@ public partial class PlayerBase
         }
         if (equipment.Count > 0)
             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SetEquipmentPacket { EntityId = EntityId, Equipment = equipment }, EntityId);
+    }
+
+    // Takes an experience orb's experience, at most every other tick, mending items with it first.
+    internal async ValueTask<bool> PickUpExperienceAsync(int experience)
+    {
+        if (Level.LevelData.Time - LastExperiencePickupTick < 2)
+            return false;
+
+        LastExperiencePickupTick = Level.LevelData.Time;
+        await GiveExperienceAsync(await RepairWithMendingAsync(experience));
+        return true;
     }
 
     internal async ValueTask<int> RepairWithMendingAsync(int experience)

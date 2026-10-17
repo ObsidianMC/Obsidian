@@ -71,6 +71,10 @@ public sealed class FakePlayer : IPlayer
     public int FoodTickTimer { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public int XpLevel { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public int XpTotal { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public float XpP { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public bool Respawning => false;
+    public IServer Server { get; set; } = null!;
+    public Microsoft.Extensions.Logging.ILogger Logger => Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
 
     public double HeadY { get; set; }
 
@@ -205,4 +209,13 @@ public sealed class FakePlayer : IPlayer
     public ValueTask UpdateDisplayNameAsync(string newDisplayName) => throw new NotImplementedException();
     public ValueTask UpdatePlayerInfoAsync() => throw new NotImplementedException();
     public void Write(INetStreamWriter writer) => throw new NotImplementedException();
+    public ValueTask<bool> AttackAsync(IEntity target, bool sneaking = false) => throw new NotImplementedException();
+    public ValueTask<bool> InteractAsync(IEntity target, InteractionHand hand = InteractionHand.MainHand, bool sneaking = false) =>
+        throw new NotImplementedException();
+    public ValueTask UseItemAsync(InteractionHand hand = InteractionHand.MainHand) => throw new NotImplementedException();
+    public ValueTask ReleaseUsingItemAsync() => throw new NotImplementedException();
+    public void StopUsingItem() => throw new NotImplementedException();
+    public ValueTask StabAsync() => throw new NotImplementedException();
+    public ValueTask GiveExperienceAsync(int points) => throw new NotImplementedException();
+    public bool TryStartGliding() => throw new NotImplementedException();
 }

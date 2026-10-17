@@ -18,7 +18,7 @@ public sealed class AdvancementCommandModule : CommandModuleBase
 
     private async Task ChangeAsync(IPlayer target, string mode, string identifier, string? criterion, bool grant)
     {
-        if (mode != "only" || target is not Entities.PlayerBase player)
+        if (mode != "only" || target is not IPlayer player)
         {
             await this.Sender.SendMessageAsync("Use an online player and the 'only' mode.");
             return;
@@ -28,7 +28,7 @@ public sealed class AdvancementCommandModule : CommandModuleBase
         var changed = grant
             ? await player.Advancements.GrantAsync(identifier, criterion)
             : player.Advancements.Revoke(identifier, criterion);
-        await player.ProgressAdvancements.FlushAsync();
+        await player.FlushAdvancementsAsync();
         await this.Sender.SendMessageAsync(
             changed ? "Advancement progress changed." : "No advancement progress changed.");
     }

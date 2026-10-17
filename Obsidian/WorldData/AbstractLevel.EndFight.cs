@@ -129,7 +129,7 @@ public abstract partial class AbstractLevel
     {
         foreach (var id in endPortalCooldowns.Keys.ToArray())
             if (--endPortalCooldowns[id] <= 0) endPortalCooldowns.Remove(id);
-        foreach (var player in Players.Values.OfType<PlayerBase>().ToArray())
+        foreach (var player in Players.Values.ToArray())
         {
             if (player.GameMode == GameMode.Spectator || endPortalCooldowns.ContainsKey(player.Uuid)) continue;
             var position = (Vector)player.Position.Floor();

@@ -6,7 +6,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Entities;
 
-public class AbstractHorse : Animal
+public class AbstractHorse : Animal, IRideable
 {
     public HorseMask HorseMask { get; set; }
 
@@ -109,7 +109,7 @@ public class AbstractHorse : Animal
         if (tamed && await Obsidian.Plugins.ItemBehaviors.UseOnEntityAsync(player, hand, this))
             return true;
 
-        if (!player.Sneaking && player is PlayerBase rider && Mount(rider))
+        if (!player.Sneaking && Mount(player))
         {
             GoalController?.Pause();
             return true;

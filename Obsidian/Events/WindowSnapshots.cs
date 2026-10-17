@@ -1,5 +1,6 @@
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Obsidian.Events;
@@ -48,6 +49,10 @@ internal sealed class WindowSnapshots(
     Action<IClientboundPacket> send,
     Func<Func<ValueTask>, ValueTask>? inTurn = null)
 {
+    // The players' snapshots, for the click pipeline, which knows players only as IPlayer. A player without them, like
+    // another engine's, is sent its windows' packets as they come.
+    private static readonly ConditionalWeakTable<IPlayer, WindowSnapshots> players = new();
+
     private readonly Lock gate = new();
 
     private long captured;
@@ -73,6 +78,20 @@ internal sealed class WindowSnapshots(
     /// Numbers a snapshot as it's captured, inside the window's lock.
     /// </summary>
     public long Next() => Interlocked.Increment(ref this.captured);
+
+    /// <summary>
+    /// Gives <paramref name="player"/> these snapshots, for <see cref="Of"/>.
+    /// </summary>
+    public WindowSnapshots For(IPlayer player)
+    {
+        players.AddOrUpdate(player, this);
+        return this;
+    }
+
+    /// <summary>
+    /// The snapshots <see cref="For"/> gave <paramref name="player"/>, if any.
+    /// </summary>
+    public static WindowSnapshots? Of(IPlayer player) => players.TryGetValue(player, out var snapshots) ? snapshots : null;
 
     /// <summary>
     /// Sends <paramref name="snapshot"/>, which shows the player's whole window, through plugins' packet handlers,
