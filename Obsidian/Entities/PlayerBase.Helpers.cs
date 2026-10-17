@@ -191,7 +191,8 @@ public partial class PlayerBase
         // Save permissions to JSON file
         var file = new FileInfo(Path.Combine(ServerConstants.PermissionPath, $"{Uuid}.json"));
 
-        await using var fs = file.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite);
+        // Truncated, so that a shorter save (after a revoke) leaves no trailing bytes of the last.
+        await using var fs = file.Open(FileMode.Create, FileAccess.Write);
 
         await PlayerPermissions.ToJsonAsync(fs);
     }
