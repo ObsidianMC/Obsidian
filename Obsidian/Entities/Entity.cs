@@ -518,7 +518,7 @@ public partial class Entity : IEquatable<Entity>, IEntity
                 Yaw = (float)(Math.Atan2(source.Position.Z - Position.Z, source.Position.X - Position.X) * 180 / Math.PI - Yaw.Degrees)
             });
 
-            if (living is PlayerBase player)
+            if (living is IPlayer player)
             {
                 player.AddExhaustion(0.1f);
                 await player.QueuePacketAsync(new SetHealthPacket(Math.Max(0, Health), player.FoodLevel, player.FoodSaturationLevel));

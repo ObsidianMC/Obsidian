@@ -175,7 +175,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task ForceChunkReloadAsync()
     {
-        if (this.Player is PlayerBase player)
+        if (this.Player is IPlayer player)
         {
             await player.UpdateChunksAsync(true);
         }
@@ -215,7 +215,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [CommandOverload]
     public async Task GiveAsync(string item, int amount = 1)
     {
-        if (this.Player is not PlayerBase player)
+        if (this.Player is not IPlayer player)
             return;
 
         // An item's identifier, vanilla's namespace being optional.
@@ -277,7 +277,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [RequirePermission(op: true, permissions: "obsidian.gamemode")]
     public async Task GamemodeAsync(GameMode gamemode)
     {
-        if (this.Player is not PlayerBase player)
+        if (this.Player is not IPlayer player)
             return;
 
         var name = gamemode.ToString().ToSnakeCase();
@@ -481,7 +481,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [RequirePermission(permissions: "obsidian.weather")]
     public async Task WeatherAsync()
     {
-        if (this.Player is PlayerBase player)
+        if (this.Player is IPlayer player)
         {
             player.Level.LevelData.RainTime = 0;
             await this.Sender.SendMessageAsync("Toggled weather for this world.");
@@ -527,7 +527,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task HungerAsync(int hunger)
     {
-        if (Player is not PlayerBase player) return;
+        if (Player is not IPlayer player) return;
         if (hunger is < 0 or > 20)
         {
             await player.SendMessageAsync(SendCommandUsage("/hunger <0-20>"));
@@ -546,7 +546,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task HealthAsync(float health)
     {
-        if (Player is not PlayerBase player) return;
+        if (Player is not IPlayer player) return;
         if (!float.IsFinite(health) || health is < 0 or > 20)
         {
             await player.SendMessageAsync(SendCommandUsage("/health <0-20>"));
@@ -603,7 +603,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task SpawnAsync()
     {
-        if (Player is not PlayerBase player || !player.Alive) return;
+        if (Player is not IPlayer player || !player.Alive) return;
         await player.TeleportAsync(player.Level.LevelData.SpawnPosition);
         await player.SendMessageAsync("Teleported to spawn.");
     }
@@ -613,7 +613,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task SetSpawnAsync()
     {
-        if (Player is not PlayerBase player || !player.Alive) return;
+        if (Player is not IPlayer player || !player.Alive) return;
         var block = (Vector)player.Position.Floor();
         player.Level.LevelData.SpawnPosition = (VectorD)block + new VectorD(0.5, 0, 0.5);
         await player.Level.SaveAsync();
