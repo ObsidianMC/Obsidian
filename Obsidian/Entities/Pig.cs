@@ -1,7 +1,9 @@
+using Obsidian.API.Inventory;
+
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:pig")]
-public sealed partial class Pig : Animal
+public sealed partial class Pig : Animal, IItemSteerable
 {
     private int boostTicks;
     public Pig() => Type = EntityType.Pig;
@@ -68,9 +70,9 @@ public sealed partial class Pig : Animal
         var item = player.Inventory.GetItem(slot);
         if (IsFood(item))
             return await base.FeedAsync(player, hand);
-        if (HasSaddle && !player.Sneaking && player is PlayerBase rider)
+        if (HasSaddle && !player.Sneaking)
         {
-            Mount(rider);
+            Mount(player);
             return true;
         }
         if (IsBaby || HasSaddle || item is not { Count: > 0, Holder.Id: ItemIds.Saddle })
@@ -85,7 +87,12 @@ public sealed partial class Pig : Animal
         return true;
     }
 
-    internal bool Boost(IPlayer player)
+    public Item SteeringItem => ItemsRegistry.CarrotOnAStick;
+
+    // Vanilla's wear for a boost with the item, which decides how many boosts it lasts.
+    public int BoostItemDamage => 7;
+
+    public bool Boost(IPlayer player)
     {
         if (!ReferenceEquals(Rider, player) || !HasSaddle || TotalTimeBoost > 0)
             return false;

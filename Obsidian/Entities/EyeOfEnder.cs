@@ -54,7 +54,7 @@ public sealed partial class EyeOfEnder : Entity
     /// instead.
     /// </summary>
     /// <returns>Whether an eye was thrown.</returns>
-    internal static async ValueTask<bool> ThrowAsync(PlayerBase player, InteractionHand hand, ItemStack stack)
+    internal static async ValueTask<bool> ThrowAsync(IPlayer player, InteractionHand hand, ItemStack stack)
     {
         if (player.GameMode == GameMode.Spectator
             || player.Level is not AbstractLevel level
@@ -248,7 +248,7 @@ public sealed partial class EyeOfEnder : Entity
 
     // Vanilla leaves an eye used on an end portal frame to the frame: the block the player aims at within their block
     // interaction range, by outline shapes, fluids aside.
-    private static bool LooksAtPortalFrame(PlayerBase player, AbstractLevel level)
+    private static bool LooksAtPortalFrame(IPlayer player, AbstractLevel level)
     {
         var eye = new VectorD(player.Position.X, player.HeadY, player.Position.Z);
         var look = player.GetLookDirection();

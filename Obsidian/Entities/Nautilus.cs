@@ -7,7 +7,7 @@ using System.Threading;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:nautilus")]
-public partial class Nautilus : FarmAnimal
+public partial class Nautilus : FarmAnimal, IRideableJumping
 {
     public Guid Owner { get; private set; }
     private int dashCooldown;
@@ -77,8 +77,7 @@ public partial class Nautilus : FarmAnimal
         }
         else if (!player.Sneaking
             && !GetEquipment(EquipmentSlot.Saddle).IsAir
-            && player is PlayerBase rider
-            && Mount(rider))
+            && Mount(player))
             GoalController?.Pause();
         else
             return false;
@@ -102,7 +101,7 @@ public partial class Nautilus : FarmAnimal
             dashCooldown = 40; dashTicks = 10; SynchronizeMetadata(); PlayMobSound("dash");
         }
     }
-    internal bool RequestDash(IPlayer player, int charge) => ReferenceEquals(Rider, player) && !IsBaby &&
+    public bool RequestJump(IPlayer player, int charge) => ReferenceEquals(Rider, player) && !IsBaby &&
         !GetEquipment(EquipmentSlot.Saddle).IsAir && dashCooldown == 0 && !MobBitMask.HasFlag(MobBitmask.NoAi) &&
         Interlocked.CompareExchange(ref pendingDashCharge, Math.Clamp(charge, 0, 100), -1) == -1;
     protected override ValueTask OnDeathAsync(IEntity source)

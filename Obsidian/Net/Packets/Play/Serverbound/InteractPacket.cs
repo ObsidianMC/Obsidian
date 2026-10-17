@@ -46,27 +46,19 @@ public partial class InteractPacket
         if (entity == null)
             return;
 
-        if (Type is InteractionType.Interact or InteractionType.InteractAt && player.Level is Obsidian.WorldData.AbstractLevel events)
-            events.EmitGameEvent(Obsidian.WorldData.MobGameEvent.EntityInteract, entity.Position, player);
-
         switch (Type)
         {
             case InteractionType.Interact:
-                await server.EventDispatcher.ExecuteEventAsync(new EntityInteractEventArgs(player, entity, server, Hand, Sneaking));
+                await player.InteractAsync(entity, Hand, Sneaking);
                 break;
 
             case InteractionType.Attack:
-                var attack = new PlayerAttackEntityEventArgs(player, entity, server, Sneaking);
-                if (player is PlayerBase combatPlayer)
-                {
-                    if (!combatPlayer.CanAttack(entity)) return;
-                    (attack.Damage, attack.IsCrit) = combatPlayer.GetAttackDamage(entity);
-                }
-                else attack.Damage = 1;
-                await server.EventDispatcher.ExecuteEventAsync(attack);
+                await player.AttackAsync(entity, Sneaking);
                 break;
 
             case InteractionType.InteractAt:
+                if (player.Level is Obsidian.WorldData.AbstractLevel events)
+                    events.EmitGameEvent(Obsidian.WorldData.MobGameEvent.EntityInteract, entity.Position, player);
                 await server.EventDispatcher.ExecuteEventAsync(new EntityInteractEventArgs(player, entity, server, Hand, Target, Sneaking));
                 break;
         }

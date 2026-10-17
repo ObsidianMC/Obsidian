@@ -48,8 +48,8 @@ internal static class AdvancementTriggersRegistry
 
             using (call)
             {
-                if (call is not null && player is Entities.PlayerBase concrete)
-                    await concrete.ProgressAdvancements.FireAsync(identifier, json => matches(codec.Decode(json)));
+                if (call is not null)
+                    await player.FireAdvancementTriggerAsync(identifier, json => matches(codec.Decode(json)));
             }
         }
     }

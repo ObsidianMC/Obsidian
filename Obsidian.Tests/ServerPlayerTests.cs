@@ -200,8 +200,9 @@ public sealed class ServerPlayerTests
         context.World.LoadRegionByChunk(0, 0).SetChunk(chunk);
         context.World.LevelData.Difficulty = Difficulty.Normal;
 
-        var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
-        var attacker = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Attacker", context.World);
+        // The players are driven only through IPlayer, as a plugin would.
+        var player = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
+        var attacker = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Attacker", context.World);
         await player.SetGamemodeAsync(GameMode.Survival);
         await attacker.SetGamemodeAsync(GameMode.Survival);
         var position = new VectorD(8, 70, 8);
@@ -221,15 +222,12 @@ public sealed class ServerPlayerTests
             await context.World.DoWorldTickAsync();
         Assert.True(player.Health > 10);
 
-        // Combat: another server-side player's attack, raised like a client's (see InteractPacket) and dealt on the
-        // level's tick, can kill them, which drops what they carry, and they respawn.
+        // Combat: another server-side player's attack, dealt on the level's tick, can kill them, which drops what they
+        // carry, and they respawn.
         player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Coal, 2));
         player.Health = 2;
         attacker.Inventory.SetItem(attacker.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.DiamondSword));
-        Assert.True(attacker.CanAttack(player));
-        var attack = new PlayerAttackEntityEventArgs(attacker, player, context.Server, sneaking: false);
-        (attack.Damage, attack.IsCrit) = attacker.GetAttackDamage(player);
-        await context.EventDispatcher.ExecuteEventAsync(attack);
+        Assert.True(await attacker.AttackAsync(player));
         await context.World.DoWorldTickAsync();
         Assert.False(player.Alive);
         Assert.Null(player.Inventory.GetItem(9));
@@ -239,6 +237,15 @@ public sealed class ServerPlayerTests
         await player.RespawnAsync();
         Assert.True(player.Alive);
         Assert.Equal(20, player.Health);
+
+        // Using an item: a hungry player eats bread over the ticks it takes, as a client holding use does.
+        player.FoodLevel = 10;
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Bread));
+        await player.UseItemAsync();
+        for (var tick = 0; tick < 40; tick++)
+            await context.World.DoWorldTickAsync();
+        Assert.Equal(15, player.FoodLevel);
+        Assert.Null(player.GetHeldItem());
 
         // Pickup: items and experience next to them are collected after the levels tick. The attacker leaves first, so
         // that they don't collect them.
@@ -272,15 +279,31 @@ public sealed class ServerPlayerTests
         pig.InitializeAi(false);
         Assert.True(context.World.TryAddEntity(pig));
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Saddle));
-        await context.EventDispatcher.ExecuteEventAsync(
-            new EntityInteractEventArgs(player, pig, context.Server, InteractionHand.MainHand));
+        Assert.True(await player.InteractAsync(pig));
         await context.World.DoWorldTickAsync();
         Assert.True(pig.HasSaddle);
 
-        await context.EventDispatcher.ExecuteEventAsync(
-            new EntityInteractEventArgs(player, pig, context.Server, InteractionHand.MainHand));
+        Assert.True(await player.InteractAsync(pig));
         await context.World.DoWorldTickAsync();
         Assert.Same(pig, player.Vehicle);
+    }
+
+    [Fact]
+    public void PlayerBaseImplementsEveryGameplayHook()
+    {
+        // A hook PlayerBase doesn't implement falls back to IPlayer's default without any error, so a renamed or
+        // retyped method would quietly do nothing for every player. Only what a client is shown is left to Player.
+        string[] connectionHooks =
+        [
+            "SynchronizeTrackedEntitiesAsync", "TrackEntity", "UntrackEntity", "ForgetVisiblePlayer",
+            "SynchronizeOwnState"
+        ];
+        var map = typeof(PlayerBase).GetInterfaceMap(typeof(IPlayer));
+        var defaulted = map.InterfaceMethods
+            .Where((method, index) => map.TargetMethods[index].DeclaringType == typeof(IPlayer))
+            .Select(method => method.Name);
+
+        Assert.Equal(connectionHooks.Order(), defaulted.Order());
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]

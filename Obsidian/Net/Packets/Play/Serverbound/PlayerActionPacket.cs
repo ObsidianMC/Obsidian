@@ -33,12 +33,12 @@ public partial class PlayerActionPacket
     {
         if (Status == PlayerActionStatus.ReleaseUseItem)
         {
-            if (player is PlayerBase concrete) await concrete.ReleaseUsingItemAsync();
+            await player.ReleaseUsingItemAsync();
             return;
         }
         if (Status == PlayerActionStatus.Stab)
         {
-            if (player is PlayerBase concrete) await concrete.StabAsync();
+            await player.StabAsync();
             return;
         }
         if (await player.Level.GetBlockAsync(Position) is not IBlock block)

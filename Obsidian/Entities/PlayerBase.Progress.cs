@@ -6,6 +6,7 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Progress;
 using System.IO;
+using System.Text.Json;
 
 namespace Obsidian.Entities;
 
@@ -124,6 +125,11 @@ public partial class PlayerBase
     // Grants take tickGate to keep criteria and rewards together with saves and leaving. A death must finish
     // before waiting for that gate: a tick holding it may itself be waiting for the death before respawning.
     // Other triggers fired from inventory/chunk transactions follow the same lock order.
+    ValueTask IPlayer.FireAdvancementTriggerAsync(string trigger, Func<JsonElement, bool> matches) =>
+        this.ProgressAdvancements.FireAsync(trigger, matches);
+
+    ValueTask IPlayer.FlushAdvancementsAsync() => this.ProgressAdvancements.FlushAsync();
+
     internal ValueTask FireProgressAsync(string trigger, ItemStack? item = null, IEntity? entity = null,
         IBlock? block = null, Vector? position = null, string? recipe = null, string? from = null,
         string? to = null, int? levels = null) => DeferredInventoryWork.RunOrDeferAsync(
@@ -206,24 +212,30 @@ public partial class PlayerBase
         await this.FireProgressAsync("player_killed_entity", entity: victim);
     }
 
+    public async ValueTask GiveExperienceAsync(int points)
+    {
+        if (points <= 0)
+            return;
+
+        this.XpTotal = (int)Math.Min(int.MaxValue, (long)this.XpTotal + points);
+        var progress = this.XpP * XpHelper.ExperienceRequiredForNextLevel(this.XpLevel) + points;
+        while (progress >= XpHelper.ExperienceRequiredForNextLevel(this.XpLevel))
+        {
+            progress -= XpHelper.ExperienceRequiredForNextLevel(this.XpLevel);
+            this.XpLevel++;
+        }
+
+        this.XpP = progress / XpHelper.ExperienceRequiredForNextLevel(this.XpLevel);
+        await this.QueuePacketAsync(new SetExperiencePacket(this.XpP, this.XpLevel, this.XpTotal));
+    }
+
     internal async ValueTask RewardAdvancementAsync(Advancement advancement)
     {
         using var host = Plugins.PluginCall.EnterHost();
         if (advancement.Reward is not AdvancementReward rewards)
             return;
 
-        var experience = Math.Max(0, rewards.Experience ?? 0);
-        this.XpTotal = (int)Math.Min(int.MaxValue, (long)this.XpTotal + experience);
-        var points = this.XpP * XpHelper.ExperienceRequiredForNextLevel(this.XpLevel) + experience;
-        while (points >= XpHelper.ExperienceRequiredForNextLevel(this.XpLevel))
-        {
-            points -= XpHelper.ExperienceRequiredForNextLevel(this.XpLevel);
-            this.XpLevel++;
-        }
-
-        this.XpP = points / XpHelper.ExperienceRequiredForNextLevel(this.XpLevel);
-        if (experience > 0)
-            await this.QueuePacketAsync(new SetExperiencePacket(this.XpP, this.XpLevel, this.XpTotal));
+        await this.GiveExperienceAsync(rewards.Experience ?? 0);
 
         foreach (var identifier in rewards.Loot)
         {

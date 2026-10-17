@@ -58,7 +58,7 @@ public partial class PlayerBase
     /// <summary>
     /// Takes back the grants <paramref name="plugin"/> made, as it unloads.
     /// </summary>
-    internal void ReleaseMovementAbilities(PluginContainer plugin)
+    internal void ReleaseMovementAbilities(API.Plugins.IPluginContainer plugin)
     {
         lock (this.movementGate)
         {
@@ -158,13 +158,14 @@ public partial class PlayerBase
     /// Starts gliding at the client's request, like vanilla's <c>tryToStartFallFlying</c>: in the air, out of fluids,
     /// with a glider on the chest or the <c>CanGlide</c> ability.
     /// </summary>
-    internal void TryStartGliding()
+    public bool TryStartGliding()
     {
         if (this.FlyingWithElytra || !this.MidAir() || !this.CanGlide())
-            return;
+            return false;
 
         this.FlyingWithElytra = true;
         this.BroadcastFlags();
+        return true;
     }
 
     /// <summary>

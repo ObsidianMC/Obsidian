@@ -46,10 +46,8 @@ public partial class PlayerCommandPacket
                 player.Sprinting = false;
                 break;
             case PlayerCommand.StartJumpWithHorse:
-                if (player is { Vehicle: Camel camel })
-                    camel.RequestDash(player, JumpBoost);
-                else if (player is { Vehicle: Nautilus nautilus })
-                    nautilus.RequestDash(player, JumpBoost);
+                if (player.Vehicle is IRideableJumping mount)
+                    mount.RequestJump(player, JumpBoost);
                 break;
             case PlayerCommand.StopJumpWithHorse:
                 break;
@@ -57,7 +55,7 @@ public partial class PlayerCommandPacket
                 player.InHorseInventory = true;
                 break;
             case PlayerCommand.StartFlyingWithElytra:
-                (player as PlayerBase)?.TryStartGliding();
+                player.TryStartGliding();
                 break;
         }
 

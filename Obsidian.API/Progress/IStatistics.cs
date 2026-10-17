@@ -9,3 +9,13 @@ public interface IStatistics
     /// <summary>Increments a registered statistic, saturating at int.MaxValue. Amount must be nonnegative.</summary>
     void Increment(string identifier, int amount = 1, string type = "minecraft:custom");
 }
+
+// The statistics of a player that keeps none: each reads zero and increments are dropped.
+internal sealed class NoStatistics : IStatistics
+{
+    public static readonly NoStatistics Instance = new();
+
+    public int Get(string identifier, string type = "minecraft:custom") => 0;
+
+    public void Increment(string identifier, int amount = 1, string type = "minecraft:custom") { }
+}
