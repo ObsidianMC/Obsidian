@@ -73,14 +73,7 @@ public partial class Mob
             LastDamagePlayer = player,
             EntityEquipment = LootEquipment,
             EntityIsOnFire = entity => entity.Burning || entity is Living { FireTicks: > 0 },
-            EntityIsBaby = entity => entity switch
-            {
-                AgeableMob ageable => ageable.IsBaby,
-                Zombie zombie => zombie.IsBaby,
-                Piglin piglin => piglin.IsBaby,
-                Zoglin zoglin => zoglin.IsBaby,
-                _ => false
-            },
+            EntityIsBaby = entity => entity is IAgeable { IsBaby: true },
             SmeltItem = stack => recipes?.FindCooking(CraftingType.Smelting, stack)?.Result.FirstOrDefault(),
             ResolveAttackerEnchantment = id => CombatItems.LootEnchantmentLevel(attacker, id),
             ResolveTable = resolve ?? PluginLootTables.CaptureResolver()

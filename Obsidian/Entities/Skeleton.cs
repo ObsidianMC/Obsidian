@@ -32,7 +32,7 @@ public partial class Skeleton : PathfinderMob
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, entity => entity is IPlayer));
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.IronGolem));
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.Turtle &&
-            entity is AgeableMob { IsBaby: true } && entity.MovementFlags.HasFlag(MovementFlags.OnGround)));
+            entity is IAgeable { IsBaby: true } && entity.MovementFlags.HasFlag(MovementFlags.OnGround)));
     }
 
     protected override void FinalizeSpawn()

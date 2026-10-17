@@ -95,17 +95,8 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
             living.AbsorbedStingers = absorbedStingers;
         }
 
-        if (entity is AgeableMob ageable && isBaby)
-        {
-            ageable.IsBaby = isBaby;
-        }
-
-        if (entity is Zombie zombie && isBaby)
-            zombie.IsBaby = true;
-        if (entity is Zoglin zoglin && isBaby)
-            zoglin.IsBaby = true;
-        if (entity is Piglin piglin && isBaby)
-            piglin.IsBaby = true;
+        if (entity is IAgeable ageable && isBaby)
+            ageable.IsBaby = true;
 
         entity.Burning = burning;
         entity.Glowing = glowing;
