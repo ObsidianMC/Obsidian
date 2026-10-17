@@ -52,7 +52,7 @@ public abstract partial class AbstractLevel
 
         if (LevelData.Difficulty == Difficulty.Peaceful || !LevelData.GetBooleanRule("raids"))
         { foreach (var raid in raids) ClearRaidBar(raid); raids.Clear(); pendingRaids.Clear(); return; }
-        foreach (var player in Players.Values.OfType<Player>())
+        foreach (var player in Players.Values.OfType<PlayerBase>())
         {
             var village = GetEntitiesInRange(player.Position, 64).OfType<Villager>().Where(villager => villager.Alive && villager.Home != null)
                 .MinBy(villager => (villager.Position - player.Position).MagnitudeSquared());
@@ -93,7 +93,7 @@ public abstract partial class AbstractLevel
             {
                 raid.Bar.UpdateTitle(ChatMessage.Simple("Raid - Victory"));
                 if (++raid.VictoryTicks == 40)
-                    foreach (var hero in Players.Values.OfType<Player>().Where(player => raid.Heroes.Contains(player.Uuid)))
+                    foreach (var hero in Players.Values.OfType<PlayerBase>().Where(player => raid.Heroes.Contains(player.Uuid)))
                         hero.AddPotionEffect((int)PotionEffect.HeroOfTheVillage - 1, 48000, raid.Omen - 1);
                 if (raid.VictoryTicks > 600) { ClearRaidBar(raid); raids.Remove(raid); }
                 continue;

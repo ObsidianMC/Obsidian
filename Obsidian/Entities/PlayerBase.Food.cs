@@ -5,13 +5,13 @@ using System.Text.Json;
 
 namespace Obsidian.Entities;
 
-public partial class Player
+public partial class PlayerBase
 {
     private static readonly Dictionary<string, JsonElement> foodDefaults = LoadFoodDefaults();
 
     private static Dictionary<string, JsonElement> LoadFoodDefaults()
     {
-        using var stream = typeof(Player).Assembly.GetManifestResourceStream("Obsidian.Assets.item_components.json")!;
+        using var stream = typeof(PlayerBase).Assembly.GetManifestResourceStream("Obsidian.Assets.item_components.json")!;
         using var document = JsonDocument.Parse(stream);
         return document.RootElement.EnumerateObject()
             .Where(item => item.Value.GetProperty("components").TryGetProperty("minecraft:food", out _))
@@ -182,7 +182,7 @@ public partial class Player
                             {
                                 var remainderSlot = Inventory.AddItem(new ItemStack(ItemsRegistry.GlassBottle));
                                 if (remainderSlot >= 0)
-                                    await Client.QueuePacketAsync(new ContainerSetSlotPacket
+                                    await this.QueuePacketAsync(new ContainerSetSlotPacket
                                     { ContainerId = 0, Slot = (short)remainderSlot, SlotData = Inventory.GetItem(remainderSlot), StateId = Inventory.StateId++ });
                                 else
                                 {
@@ -192,10 +192,10 @@ public partial class Player
                                 }
                             }
                         }
-                        await Client.QueuePacketAsync(new ContainerSetSlotPacket
+                        await this.QueuePacketAsync(new ContainerSetSlotPacket
                         { ContainerId = 0, Slot = (short)eatingSlot, SlotData = Inventory.GetItem(eatingSlot), StateId = Inventory.StateId++ });
                     }
-                    await Client.QueuePacketAsync(new EntityEventPacket { EntityId = EntityId, Event = 9 });
+                    await this.QueuePacketAsync(new EntityEventPacket { EntityId = EntityId, Event = 9 });
                 }
                 CancelEating();
             }
@@ -243,7 +243,7 @@ public partial class Player
         }
         if (Health != sentHealth || FoodLevel != sentFood || FoodSaturationLevel != sentSaturation)
         {
-            await Client.QueuePacketAsync(new SetHealthPacket(Math.Max(0, Health), FoodLevel, FoodSaturationLevel));
+            await this.QueuePacketAsync(new SetHealthPacket(Math.Max(0, Health), FoodLevel, FoodSaturationLevel));
             sentHealth = Health;
             sentFood = FoodLevel;
             sentSaturation = FoodSaturationLevel;

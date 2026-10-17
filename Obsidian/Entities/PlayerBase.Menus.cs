@@ -14,7 +14,7 @@ namespace Obsidian.Entities;
 
 // Plugins' menus open for the player: opening one with its extra data, sending its data slots, keeping it open only
 // while it's valid, and its buttons.
-public partial class Player
+public partial class PlayerBase
 {
     // How much farther than their block reach a player may be from a menu's block entity: vanilla's
     // Container.DEFAULT_DISTANCE_BUFFER.
@@ -100,7 +100,7 @@ public partial class Player
     /// </summary>
     internal IClientboundPacket OpenMenuPacket(MenuContainer menu, byte containerId)
     {
-        if (this.Client is not Client { Channels: ClientChannels channels }
+        if (this.Connection is not Client { Channels: ClientChannels channels }
             || !channels.HasNeoForgePlayChannel(ChannelPayloads.AdvancedOpenScreen))
         {
             return new OpenScreenPacket(menu, containerId);
@@ -236,7 +236,7 @@ public partial class Player
     // Whether the player's client was sent the menu type with its registries. A vanilla client never is, and a
     // client configured before a plugin registered the type learns it only once it goes through configuration again.
     private bool KnowsMenu(MenuDefinition menu) =>
-        this.Client is not Client client
+        this.Connection is not Client client
         || !client.AwaitingReconfiguration
             && menu.Id < MenuTypesRegistry.VanillaIdentifiers.Count + client.ConfiguredPluginMenus;
 
@@ -330,7 +330,7 @@ public partial class Player
                 if (last is not null && last.Data[index] == read.Data[index])
                     continue;
 
-                await this.Client.QueuePacketAsync(new ContainerSetDataPacket
+                await this.QueuePacketAsync(new ContainerSetDataPacket
                 {
                     ContainerId = read.ContainerId,
                     WindowProperty = new MenuDataProperty((short)index, read.Data[index])

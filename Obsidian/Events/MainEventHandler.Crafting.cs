@@ -11,7 +11,7 @@ namespace Obsidian.Events;
 
 public partial class MainEventHandler
 {
-    internal static RecipeSet PlayerRecipes(IPlayer player) => player is Player { Server: Server server }
+    internal static RecipeSet PlayerRecipes(IPlayer player) => player is PlayerBase { Server: Server server }
         ? server.RecipeRegistry.Current
         : RecipesRegistry.Current;
 
@@ -83,7 +83,7 @@ public partial class MainEventHandler
     /// next recipe change (a plugin's recipes registered or removed), so no grid keeps showing a result whose recipe
     /// is gone, or misses one just added.
     /// </summary>
-    internal static async ValueTask RefreshCraftingResultAsync(Player player)
+    internal static async ValueTask RefreshCraftingResultAsync(PlayerBase player)
     {
         var window = player.OpenedContainer ?? player.Inventory;
 

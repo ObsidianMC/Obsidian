@@ -9,7 +9,7 @@ using System.Text.Json;
 
 namespace Obsidian.Entities;
 
-public partial class Player
+public partial class PlayerBase
 {
     private ItemStack? usingWeapon;
     private int weaponSlot;
@@ -300,7 +300,7 @@ public partial class Player
         {
             if (spearContacts.TryGetValue(target.EntityId, out var tick) && weaponTicks - tick < CombatItems.Number(kinetic, "contact_cooldown_ticks", 10)) continue;
             spearContacts[target.EntityId] = weaponTicks;
-            var targetMotion = target is Player player ? player.CombatMotion : target.Motion;
+            var targetMotion = target is PlayerBase player ? player.CombatMotion : target.Motion;
             var relative = Math.Max(0, speed - (targetMotion.X * look.X + targetMotion.Y * look.Y + targetMotion.Z * look.Z) * 20);
             bool Meets(string name) => kinetic.TryGetProperty(name, out var condition) &&
                 elapsed <= CombatItems.Number(condition, "max_duration_ticks") &&
@@ -343,9 +343,9 @@ public partial class Player
         {
             shieldCooldown = 100;
             CancelWeaponUse();
-            await Client.QueuePacketAsync(new EntityEventPacket { EntityId = EntityId, Event = 30 });
+            await this.QueuePacketAsync(new EntityEventPacket { EntityId = EntityId, Event = 30 });
         }
-        else await Client.QueuePacketAsync(new EntityEventPacket { EntityId = EntityId, Event = 29 });
+        else await this.QueuePacketAsync(new EntityEventPacket { EntityId = EntityId, Event = 29 });
         return true;
     }
 

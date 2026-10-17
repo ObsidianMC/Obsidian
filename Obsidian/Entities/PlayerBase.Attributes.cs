@@ -5,7 +5,7 @@ namespace Obsidian.Entities;
 
 // The player's attribute modifiers from what it holds and wears, and its sprinting modifier, like vanilla's
 // LivingEntity.collectEquipmentChanges and setSprinting.
-public partial class Player
+public partial class PlayerBase
 {
     // Vanilla's sprinting modifier on movement speed, which clients add themselves for their own player.
     private const string SprintingModifier = "minecraft:sprinting";

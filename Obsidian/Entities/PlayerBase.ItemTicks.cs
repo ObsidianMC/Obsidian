@@ -4,7 +4,7 @@ using Obsidian.Plugins;
 
 namespace Obsidian.Entities;
 
-public partial class Player
+public partial class PlayerBase
 {
     /// <summary>
     /// Ticks the plugin items in the player's inventory that tick there (see

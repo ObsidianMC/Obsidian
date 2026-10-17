@@ -18,9 +18,9 @@ public partial class ContainerButtonClickPacket
 
     public override ValueTask HandleAsync(IServer server, IClientPlayer player) => player switch
     {
-        Obsidian.Entities.Player { OpenedContainer: MenuContainer } concrete =>
+        Obsidian.Entities.PlayerBase { OpenedContainer: MenuContainer } concrete =>
             concrete.ClickMenuButtonAsync(this.ContainerId, this.ButtonId),
-        Obsidian.Entities.Player concrete => concrete.EnchantAsync(this.ContainerId, this.ButtonId),
+        Obsidian.Entities.PlayerBase concrete => concrete.EnchantAsync(this.ContainerId, this.ButtonId),
         _ => ValueTask.CompletedTask
     };
 }

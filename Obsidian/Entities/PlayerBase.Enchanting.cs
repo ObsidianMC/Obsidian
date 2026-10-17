@@ -10,7 +10,7 @@ using Obsidian.Net.WindowProperties;
 
 namespace Obsidian.Entities;
 
-public partial class Player
+public partial class PlayerBase
 {
     internal int EnchantmentSeed { get; private set; } = Globals.Random.Next();
     private readonly int[] enchantmentCosts = new int[3];
@@ -52,7 +52,7 @@ public partial class Player
     internal async ValueTask RefreshEnchantingAsync()
     {
         foreach (var property in this.PrepareEnchantingProperties())
-            await Client.QueuePacketAsync(property);
+            await this.QueuePacketAsync(property);
     }
 
     /// <summary>
@@ -131,12 +131,12 @@ public partial class Player
             table.RemoveItem(1, paidLevels);
             XpLevel -= paidLevels;
             // Enchanting deducts levels, preserving progress and total experience as vanilla does.
-            await Client.QueuePacketAsync(new SetExperiencePacket(XpP, XpLevel, XpTotal));
+            await this.QueuePacketAsync(new SetExperiencePacket(XpP, XpLevel, XpTotal));
         }
         this.Statistics.Increment("minecraft:enchant_item");
         await this.FireProgressAsync("enchanted_item", item: item, levels: paidLevels);
         EnchantmentSeed = Globals.Random.Next();
-        await Client.QueuePacketAsync(new ContainerSetContentPacket(CurrentContainerId,
+        await this.QueuePacketAsync(new ContainerSetContentPacket(CurrentContainerId,
             table.Concat(Inventory.Skip(9).Take(36)).ToList()) { CarriedItem = CarriedItem });
         await RefreshEnchantingAsync();
     }

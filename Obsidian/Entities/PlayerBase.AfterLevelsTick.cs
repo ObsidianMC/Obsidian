@@ -3,14 +3,14 @@ using System.Threading;
 
 namespace Obsidian.Entities;
 
-public partial class Player
+public partial class PlayerBase
 {
     // Held while the player ticks, grants advancements or saves. Leaving takes it once and closes ticks and grants,
     // so completion and its rewards cannot be separated by a save or applied after the final leave save.
     private readonly SemaphoreSlim tickGate = new(1, 1);
 
     // The player whose tick, grant or save owns the gate in the current flow.
-    private static readonly AsyncLocal<Player?> tickingPlayer = new();
+    private static readonly AsyncLocal<PlayerBase?> tickingPlayer = new();
 
     private bool stoppedTicking;
 

@@ -37,7 +37,7 @@ internal static class CombatItems
     internal static int LootEnchantmentLevel(IEntity? attacker, string identifier)
     {
         var definition = EnchantmentsRegistry.All.FirstOrDefault(enchantment => enchantment.Identifier == identifier);
-        if (definition is null || attacker is not Player && attacker is not Mob)
+        if (definition is null || attacker is not PlayerBase && attacker is not Mob)
             return 0;
 
         var level = 0;
@@ -60,7 +60,7 @@ internal static class CombatItems
             var item = attacker switch
             {
                 Mob mob => mob.GetEquipment(slot),
-                Player player => slot switch
+                PlayerBase player => slot switch
                 {
                     EquipmentSlot.MainHand => player.GetHeldItem(),
                     EquipmentSlot.OffHand => player.Inventory.GetItem(45),

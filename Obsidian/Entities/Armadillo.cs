@@ -54,7 +54,7 @@ public sealed partial class Armadillo : FarmAnimal
         if (AiTick % 5 == 0 && !InWater && !InLava && Rider == null && GetEntitiesNear(11).Any(entity =>
             entity.Health > 0 && Math.Abs(entity.Position.X - Position.X) <= 7 && Math.Abs(entity.Position.Z - Position.Z) <= 7 &&
             Math.Abs(entity.Position.Y - Position.Y) <= 2 && (entity is IPlayer { GameMode: not (GameMode.Creative or GameMode.Spectator) } &&
-                (entity.Sprinting || entity is Player { Vehicle: not null }) || ReferenceEquals(entity, LastAttacker) ||
+                (entity.Sprinting || entity is PlayerBase { Vehicle: not null }) || ReferenceEquals(entity, LastAttacker) ||
                 entity.Type is EntityType.Zombie or EntityType.Husk or EntityType.Drowned or EntityType.Skeleton or EntityType.Stray or
                     EntityType.WitherSkeleton or EntityType.ZombifiedPiglin or EntityType.Zoglin or EntityType.Bogged or EntityType.Parched or
                     EntityType.ZombieVillager or EntityType.Giant or EntityType.CamelHusk or EntityType.ZombieNautilus or EntityType.Phantom)))

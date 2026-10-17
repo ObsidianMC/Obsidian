@@ -16,13 +16,13 @@ public partial class SwingPacket
         var entities = player.GetEntitiesNear(player.ClientInformation.ViewDistance);
         foreach (var otherEntity in entities)
         {
-            if (otherEntity is not Player otherPlayer)
+            if (otherEntity is not IPlayer otherPlayer)
                 continue;
 
             switch (Hand)
             {
                 case InteractionHand.MainHand:
-                    await otherPlayer.Client.QueuePacketAsync(new AnimatePacket
+                    await otherPlayer.QueuePacketAsync(new AnimatePacket
                     {
                         EntityId = player.EntityId,
                         Animation = EntityAnimationType.SwingMainArm
@@ -30,7 +30,7 @@ public partial class SwingPacket
                     break;
 
                 case InteractionHand.OffHand:
-                    await otherPlayer.Client.QueuePacketAsync(new AnimatePacket
+                    await otherPlayer.QueuePacketAsync(new AnimatePacket
                     {
                         EntityId = player.EntityId,
                         Animation = EntityAnimationType.SwingOffhand

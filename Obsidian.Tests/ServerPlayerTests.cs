@@ -5,8 +5,14 @@ using Obsidian.API.Registries;
 using Obsidian.Entities;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Plugins;
+using Obsidian.Plugins.Archives;
+using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
+using Obsidian.WorldData;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -171,6 +177,117 @@ public sealed class ServerPlayerTests
         Assert.False(context.World.Players.ContainsKey(player.Uuid));
         Assert.DoesNotContain(
             context.World.GetEntitiesInRange(player.Position, 1f), entity => entity.EntityId == player.EntityId);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ServerPlayerTakesPartInSurvivalCombatPickupAndRiding()
+    {
+        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
+        var chunk = new Chunk(0, 0);
+        chunk.SetChunkStatus(ChunkGenStage.full);
+        context.World.LoadRegionByChunk(0, 0).SetChunk(chunk);
+        context.World.LevelData.Difficulty = Difficulty.Normal;
+
+        var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
+        var attacker = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Attacker", context.World);
+        await player.SetGamemodeAsync(GameMode.Survival);
+        await attacker.SetGamemodeAsync(GameMode.Survival);
+        var position = new VectorD(8, 70, 8);
+        await player.TeleportAsync(position);
+        await attacker.TeleportAsync(position + new VectorD(1, 0, 0));
+
+        // Survival: exhaustion past 4 costs a hunger point once saturation is gone, and a fed player regenerates.
+        player.FoodSaturationLevel = 0;
+        player.FoodExhaustionLevel = 4.5f;
+        await context.World.DoWorldTickAsync();
+        Assert.Equal(19, player.FoodLevel);
+
+        player.FoodLevel = 20;
+        player.FoodSaturationLevel = 5;
+        player.Health = 10;
+        for (var tick = 0; tick < 10; tick++)
+            await context.World.DoWorldTickAsync();
+        Assert.True(player.Health > 10);
+
+        // Combat: another server-side player's attack can kill them, which drops what they carry, and they respawn.
+        player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Coal, 2));
+        player.Health = 1;
+        await attacker.AttackAsync(new PlayerAttackEntityEventArgs(attacker, player, context.Server, sneaking: false));
+        Assert.False(player.Alive);
+        Assert.Null(player.Inventory.GetItem(9));
+        Assert.Contains(context.World.GetNonPlayerEntitiesInRange(player.Position, 4).OfType<ItemEntity>(),
+            drop => drop.Item.Is(ItemsRegistry.Coal));
+
+        await player.RespawnAsync();
+        Assert.True(player.Alive);
+        Assert.Equal(20, player.Health);
+
+        // Pickup: items and experience next to them are collected after the levels tick. The attacker leaves first, so
+        // that they don't collect them.
+        Assert.True(await context.Server.RemoveServerPlayerAsync(attacker));
+        await player.TeleportAsync(position);
+        var item = new ItemEntity
+        {
+            Level = context.World,
+            EntityId = Server.GetNextEntityId(),
+            Position = player.Position,
+            Item = new ItemStack(ItemsRegistry.Diamond, 3),
+            CanPickup = true
+        };
+        Assert.True(context.World.TryAddEntity(item));
+        var orb = new ExperienceOrb
+        {
+            Level = context.World,
+            EntityId = Server.GetNextEntityId(),
+            Position = player.Position,
+            Value = 7
+        };
+        Assert.True(context.World.TryAddEntity(orb));
+        await context.World.DoWorldTickAsync();
+        Assert.Contains(player.Inventory, stack => stack?.Is(ItemsRegistry.Diamond) == true && stack.Count == 3);
+        Assert.True(item.Removed);
+        Assert.Equal(7, player.XpTotal);
+        Assert.DoesNotContain(context.World.GetNonPlayerEntitiesInRange(position, 4), entity => ReferenceEquals(entity, orb));
+
+        // Riding: they board rideable mobs.
+        var pig = new Pig { Level = context.World, EntityId = Server.GetNextEntityId(), Position = position };
+        Assert.True(context.World.TryAddEntity(pig));
+        Assert.True(player.StartRiding(pig));
+        Assert.Same(pig, player.Vehicle);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task UnloadingPluginClosesServerPlayersMenus()
+    {
+        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
+        var plugin = new PluginContainer
+        {
+            Info = new PluginInfo("serverplayermenu"),
+            Archive = PluginArchive.Open(
+                "serverplayermenu.obby",
+                PluginArchives.Zip(new Dictionary<string, byte[]>
+                {
+                    [PluginMetadata.FileName] = PluginArchives.Metadata("serverplayermenu", "1.0.0", "Menu probe")
+                }))
+        };
+        var bag = PluginRegistry.RegisterMenu(plugin, "serverplayermenu:bag", 1, 9);
+        var closes = 0;
+        context.EventDispatcher.RegisterEvent(plugin, (Func<ContainerClosedEventArgs, ValueTask>)(_ =>
+        {
+            closes++;
+            return ValueTask.CompletedTask;
+        }));
+
+        var player = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
+        await player.OpenInventoryAsync(new MenuContainer(bag, "Bag"));
+        Assert.IsType<MenuContainer>(player.OpenedContainer);
+
+        // Like unloading: the plugin takes no more calls, but its close handler still sees its menu close.
+        plugin.Close();
+        await PluginManager.CloseMenusAsync(context.Server, plugin);
+
+        Assert.Equal(1, closes);
+        Assert.Null(player.OpenedContainer);
     }
 
     private static bool ContainsPlayerInfo(TestClient client, Guid uuid) =>

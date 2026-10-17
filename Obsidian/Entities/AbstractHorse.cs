@@ -109,7 +109,7 @@ public class AbstractHorse : Animal
         if (tamed && await Obsidian.Plugins.ItemBehaviors.UseOnEntityAsync(player, hand, this))
             return true;
 
-        if (!player.Sneaking && player is Player rider && Mount(rider))
+        if (!player.Sneaking && player is PlayerBase rider && Mount(rider))
         {
             GoalController?.Pause();
             return true;

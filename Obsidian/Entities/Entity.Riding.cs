@@ -43,8 +43,8 @@ public partial class Entity
     internal bool IsActive => this is not Living { Alive: false }
         && this is not Mob { IsRemoved: true }
         && this is not ItemEntity { Removed: true }
-        && this is not Player { GameMode: GameMode.Spectator }
-        && this is not Player { Client.Connected: false };
+        && this is not PlayerBase { GameMode: GameMode.Spectator }
+        && this is not PlayerBase { Connected: false };
 
     /// <summary>How many passengers the entity seats when they board normally.</summary>
     protected virtual int MaximumPassengers => 1;
@@ -174,7 +174,7 @@ public partial class Entity
 
             passenger.LastPosition = passenger.Position;
             passenger.Position = position;
-            if (passenger is not Player)
+            if (passenger is not PlayerBase)
                 passenger.BoundingBox = passenger.Dimension.CreateBBFromPosition(position);
 
             passenger.PositionPassengers();

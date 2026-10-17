@@ -9,7 +9,7 @@ using System.IO;
 
 namespace Obsidian.Entities;
 
-public partial class Player
+public partial class PlayerBase
 {
     internal PlayerStatistics ProgressStatistics { get; } = new();
     internal PlayerAdvancements ProgressAdvancements => System.Threading.LazyInitializer.EnsureInitialized(

@@ -27,7 +27,7 @@ public partial class MoveVehiclePacket
 
     public override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
-        if (player is Player { Vehicle: PluginMob vehicle } rider)
+        if (player is PlayerBase { Vehicle: PluginMob vehicle } rider)
         {
             var move = new VehicleMove(this.Position, this.Yaw, this.Pitch, this.OnGround);
             vehicle.ClientControl.Enqueue(rider, move);

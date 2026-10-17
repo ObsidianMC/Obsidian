@@ -175,7 +175,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task ForceChunkReloadAsync()
     {
-        if (this.Player is Player player)
+        if (this.Player is PlayerBase player)
         {
             await player.UpdateChunksAsync(true);
         }
@@ -215,7 +215,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [CommandOverload]
     public async Task GiveAsync(string item, int amount = 1)
     {
-        if (this.Player is not Player player)
+        if (this.Player is not PlayerBase player)
             return;
 
         // An item's identifier, vanilla's namespace being optional.
@@ -224,7 +224,7 @@ public sealed class MainCommandModule : CommandModuleBase
         {
             var slot = player.Inventory.AddItem(new ItemStack(found, count: amount));
             await player.SendMessageAsync($"Given you {ChatColor.Gold}{amount} {item}(s)");
-            player.Client.SendPacket(new ContainerSetSlotPacket
+            player.SendPacket(new ContainerSetSlotPacket
             {
                 Slot = (short)slot,
                 ContainerId = 0,
@@ -244,7 +244,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [RequirePermission(op: true, permissions: "obsidian.clearinventory")]
     public async Task ClearInventoryAsync()
     {
-        if (this.Player is not Player player)
+        if (this.Player is not PlayerBase player)
             return;
 
         player.CancelEating();
@@ -254,14 +254,14 @@ public sealed class MainCommandModule : CommandModuleBase
         player.CarriedItem = null;
         player.DraggedSlots.Clear();
 
-        await player.Client.QueuePacketAsync(new ContainerSetContentPacket(0, player.Inventory.ToList())
+        await player.QueuePacketAsync(new ContainerSetContentPacket(0, player.Inventory.ToList())
         {
             StateId = player.Inventory.StateId++,
             CarriedItem = null
         });
         if (player.OpenedContainer is { } container)
         {
-            await player.Client.QueuePacketAsync(new ContainerSetContentPacket(player.CurrentContainerId,
+            await player.QueuePacketAsync(new ContainerSetContentPacket(player.CurrentContainerId,
                 container.Concat(player.Inventory.Skip(9).Take(36)).ToList())
             {
                 StateId = player.Inventory.StateId++,
@@ -277,7 +277,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [RequirePermission(op: true, permissions: "obsidian.gamemode")]
     public async Task GamemodeAsync(GameMode gamemode)
     {
-        if (this.Player is not Player player)
+        if (this.Player is not PlayerBase player)
             return;
 
         var name = gamemode.ToString().ToSnakeCase();
@@ -481,7 +481,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [RequirePermission(permissions: "obsidian.weather")]
     public async Task WeatherAsync()
     {
-        if (this.Player is Player player)
+        if (this.Player is PlayerBase player)
         {
             player.Level.LevelData.RainTime = 0;
             await this.Sender.SendMessageAsync("Toggled weather for this world.");
@@ -527,7 +527,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task HungerAsync(int hunger)
     {
-        if (Player is not Player player) return;
+        if (Player is not PlayerBase player) return;
         if (hunger is < 0 or > 20)
         {
             await player.SendMessageAsync(SendCommandUsage("/hunger <0-20>"));
@@ -537,7 +537,7 @@ public sealed class MainCommandModule : CommandModuleBase
         player.FoodSaturationLevel = Math.Min(player.FoodSaturationLevel, hunger);
         player.FoodExhaustionLevel = 0;
         player.FoodTickTimer = 0;
-        await player.Client.QueuePacketAsync(new SetHealthPacket(player.Health, hunger, player.FoodSaturationLevel));
+        await player.QueuePacketAsync(new SetHealthPacket(player.Health, hunger, player.FoodSaturationLevel));
         await player.SendMessageAsync($"Hunger set to {hunger}.");
     }
 
@@ -546,7 +546,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task HealthAsync(float health)
     {
-        if (Player is not Player player) return;
+        if (Player is not PlayerBase player) return;
         if (!float.IsFinite(health) || health is < 0 or > 20)
         {
             await player.SendMessageAsync(SendCommandUsage("/health <0-20>"));
@@ -561,7 +561,7 @@ public sealed class MainCommandModule : CommandModuleBase
         else
         {
             player.Health = health;
-            await player.Client.QueuePacketAsync(new SetHealthPacket(health, player.FoodLevel, player.FoodSaturationLevel));
+            await player.QueuePacketAsync(new SetHealthPacket(health, player.FoodLevel, player.FoodSaturationLevel));
             player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level, new SetEntityDataPacket { EntityId = player.EntityId, Entity = player });
         }
         await player.SendMessageAsync($"Health set to {health}.");
@@ -572,7 +572,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task DimensionAsync(string dimension)
     {
-        if (Player is not Player player) return;
+        if (Player is not PlayerBase player) return;
 
         // A dimension's identifier, like a plugin's ruby:crystal_world, or a short name for vanilla's.
         var name = dimension.ToLowerInvariant() switch
@@ -603,7 +603,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task SpawnAsync()
     {
-        if (Player is not Player player || !player.Alive) return;
+        if (Player is not PlayerBase player || !player.Alive) return;
         await player.TeleportAsync(player.Level.LevelData.SpawnPosition);
         await player.SendMessageAsync("Teleported to spawn.");
     }
@@ -613,7 +613,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task SetSpawnAsync()
     {
-        if (Player is not Player player || !player.Alive) return;
+        if (Player is not PlayerBase player || !player.Alive) return;
         var block = (Vector)player.Position.Floor();
         player.Level.LevelData.SpawnPosition = (VectorD)block + new VectorD(0.5, 0, 0.5);
         await player.Level.SaveAsync();

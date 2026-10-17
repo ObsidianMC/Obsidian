@@ -7,13 +7,12 @@ using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
-using System.Buffers;
 using System.IO;
 using System.Threading;
 
 namespace Obsidian.Entities;
 
-public partial class Player
+public partial class PlayerBase
 {
     // A player's saves run one at a time: autosaves, leaving and changing worlds can overlap, and each replaces the same
     // files. Loading takes it too, so a save never runs while the saved data is still being read.
@@ -67,7 +66,7 @@ public partial class Player
     /// owner of a vanilla-shaped world, to its level.dat's <c>Data.Player</c> too), and the world they're in to
     /// <see cref="PersistentDataFile"/>.
     /// </summary>
-    public async Task SaveAsync() => await this.RunTickAsync(this.SavePlayerAsync, allowStopped: true);
+    public virtual async Task SaveAsync() => await this.RunTickAsync(this.SavePlayerAsync, allowStopped: true);
 
     private async ValueTask SavePlayerAsync()
     {
@@ -113,7 +112,7 @@ public partial class Player
     /// owner's from level.dat when it has it, otherwise from <c>playerdata</c>. A player without data starts at the spawn.
     /// </summary>
     /// <param name="loadFromPersistentWorld">Whether to move the player to the world they were last saved in first.</param>
-    public async Task LoadAsync(bool loadFromPersistentWorld = true)
+    public virtual async Task LoadAsync(bool loadFromPersistentWorld = true)
     {
         await this.saveLock.WaitAsync();
         try
@@ -174,7 +173,7 @@ public partial class Player
             Health = 20f;//Player should never load data that has health at 0
     }
 
-    public async Task LoadPermsAsync()
+    public virtual async Task LoadPermsAsync()
     {
         // Load a JSON file that contains all permissions
         var file = new FileInfo(Path.Combine(ServerConstants.PermissionPath, $"{Uuid}.json"));
@@ -187,7 +186,7 @@ public partial class Player
         }
     }
 
-    public async Task SavePermsAsync()
+    public virtual async Task SavePermsAsync()
     {
         // Save permissions to JSON file
         var file = new FileInfo(Path.Combine(ServerConstants.PermissionPath, $"{Uuid}.json"));
@@ -223,71 +222,26 @@ public partial class Player
             dict.Add(player.Uuid, list);
         }
 
-        await Client.QueuePacketAsync(new PlayerInfoUpdatePacket(dict));
-        await Client.QueuePacketAsync(new PlayerAbilitiesPacket
+        await this.QueuePacketAsync(new PlayerInfoUpdatePacket(dict));
+        await this.QueuePacketAsync(new PlayerAbilitiesPacket
         {
-            Abilities = Client.Player!.Abilities
+            Abilities = this.Abilities
         });
     }
 
     public async ValueTask SendPlayerInfoAsync()
     {
-        await Client.QueuePacketAsync(new ContainerSetContentPacket(0, Inventory.ToList())
+        await this.QueuePacketAsync(new ContainerSetContentPacket(0, Inventory.ToList())
         {
             StateId = Inventory.StateId++,
             CarriedItem = CarriedItem,
         });
 
-        await Client.QueuePacketAsync(new SetEntityDataPacket
+        await this.QueuePacketAsync(new SetEntityDataPacket
         {
             EntityId = EntityId,
             Entity = this
         });
-    }
-
-    internal ValueTask UnloadChunkAsync(int x, int z) => LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z))
-        ? this.Client.QueuePacketAsync(new ForgetLevelChunkPacket(x, z))
-        : default;
-
-    private async ValueTask TrySpawnPlayerAsync(VectorD position)
-    {
-        var entityBroadcastDistance = this.Server.Configuration.EntityBroadcastRangePercentage;
-
-        foreach (var player in Level.GetPlayersInRange(position, entityBroadcastDistance))
-        {
-            if (player.EntityId == this.EntityId)
-                continue;
-
-            if (player.Alive && !visiblePlayers.Contains(player))
-            {
-                visiblePlayers.Add(player);
-
-                player.SpawnEntity();
-                this.ResetVisiblePlayerAttachments(player.EntityId);
-            }
-        }
-
-        if (visiblePlayers.Count == 0)
-            return;
-
-        var removed = ArrayPool<int>.Shared.Rent(visiblePlayers.Count);
-
-        var index = 0;
-        visiblePlayers.RemoveWhere(visiblePlayer =>
-        {
-            // A player who left or changed level isn't in this level anymore, wherever they were last.
-            if (!visiblePlayer.IsInRange(this, entityBroadcastDistance) || !Level.Players.ContainsKey(visiblePlayer.Uuid))
-            {
-                removed[index++] = visiblePlayer.EntityId;
-                return true;
-            }
-            return false;
-        });
-
-        if (index > 0)
-            await Client.QueuePacketAsync(new RemoveEntitiesPacket(removed.AsSpan(0, index).ToArray()));
-
-        ArrayPool<int>.Shared.Return(removed);
     }
 
     // Vanilla grows the player's box by 1 horizontally and 0.5 vertically to find items to pick up; while riding, it

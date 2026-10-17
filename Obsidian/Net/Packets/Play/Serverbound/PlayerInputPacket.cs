@@ -19,7 +19,7 @@ public partial class PlayerInputPacket
         var previous = player.Input;
 
         player.Input = this.Flags;
-        (player as Player)?.TrackJumpInput(previous, this.Flags);
+        (player as PlayerBase)?.TrackJumpInput(previous, this.Flags);
 
         if (player.Sneaking != wasSneaking)
         {

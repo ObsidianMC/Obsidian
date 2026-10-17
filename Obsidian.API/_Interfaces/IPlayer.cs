@@ -134,8 +134,9 @@ public interface IPlayer : ILiving
     // Closes the player's container for the server, as when its block goes or the plugin unloading owns it.
     internal ValueTask CloseContainerAsync(Plugins.IPluginContainer? unloading) => default;
 
-    // Gameplay that the server's network player keeps and players without a client don't take part in yet: hunger,
-    // item wear and advancements. Gameplay code calls these rather than testing for the network player's type.
+    // Gameplay every server player takes part in, with or without a client: hunger, item wear and advancements.
+    // Gameplay code calls these rather than testing for a player type. The defaults are for players the server didn't
+    // make.
     internal void AddExhaustion(float amount) { }
     internal ValueTask DamageInventoryItemAsync(int slot, int amount, bool armor = false, ItemStack? expected = null) =>
         default;

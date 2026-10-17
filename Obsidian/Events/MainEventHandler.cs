@@ -39,10 +39,10 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         {
             async ValueTask Damage()
             {
-                if (entity.Level == attacker.Level && (attacker is Player rangePlayer ? rangePlayer.CanAttack(entity, e.Weapon) : entity.IsInRange(attacker, 4)) &&
+                if (entity.Level == attacker.Level && (attacker is PlayerBase rangePlayer ? rangePlayer.CanAttack(entity, e.Weapon) : entity.IsInRange(attacker, 4)) &&
                     (entity is not Mob mob || mob.CanSee(attacker)))
                 {
-                    if (attacker is Player attackingPlayer) await attackingPlayer.AttackAsync(e);
+                    if (attacker is PlayerBase attackingPlayer) await attackingPlayer.AttackAsync(e);
                     else await entity.DamageAsync(attacker, e.Damage > 0 ? e.Damage : 1);
                     if (entity is Living && attacker is IPlayer owner)
                         Wolf.AlertOwnedWolves(owner, entity);
@@ -96,7 +96,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         if (e.IsCancelled)
             return;
 
-        var player = (e.Player as Player)!;
+        var player = (e.Player as PlayerBase)!;
 
         if (player.Alive && e.Container is CraftingTable { Type: InventoryType.Crafting })
             await ReturnCraftingItemsAsync(player, e.Container, 3);
@@ -118,7 +118,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             await AnimateCloseAsync(player, part.BlockPosition);
     }
 
-    private static async ValueTask AnimateCloseAsync(Player player, Vector position)
+    private static async ValueTask AnimateCloseAsync(PlayerBase player, Vector position)
     {
         var block = await player.Level.GetBlockAsync(position);
 
@@ -130,7 +130,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             case BlockIds.Chest:
             case BlockIds.TrappedChest:
                 {
-                    await player.Client.QueuePacketAsync(new BlockEventPacket
+                    await player.QueuePacketAsync(new BlockEventPacket
                     {
                         Position = position,
                         ActionId = 1,
@@ -146,7 +146,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 }
             case BlockIds.EnderChest:
                 {
-                    await player.Client.QueuePacketAsync(new BlockEventPacket
+                    await player.QueuePacketAsync(new BlockEventPacket
                     {
                         Position = position,
                         ActionId = 1,
@@ -169,7 +169,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 }
             case BlockIds.ShulkerBox:
                 {
-                    await player.Client.QueuePacketAsync(new BlockEventPacket
+                    await player.QueuePacketAsync(new BlockEventPacket
                     {
                         Position = position,
                         ActionId = 1,
@@ -196,7 +196,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         var block = e.Block;
         var server = e.Server as Server;
-        var player = e.Player as Player;
+        var player = e.Player as PlayerBase;
 
         if (block == null && player != null && item is { Count: > 0 } &&
             (player.Vehicle is Pig && item.Is(ItemsRegistry.CarrotOnAStick)
@@ -215,7 +215,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 var slot = e.Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
                 if (component.Value >= (player.Vehicle is Strider ? 100 : 25))
                     player.Inventory.SetItem(slot, ItemsRegistry.GetSingleItem(ItemsRegistry.FishingRod));
-                await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+                await player.QueuePacketAsync(new ContainerSetSlotPacket
                 {
                     ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot)
                 });
@@ -279,7 +279,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 container = NewChest(player, blockPosition);
 
                 // The inventory opens below, once the chest's contents (and loot) are in place.
-                await player.Client.QueuePacketAsync(new BlockEventPacket
+                await player.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,
@@ -300,7 +300,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 };
 
                 await player.OpenInventoryAsync(container);
-                await player.Client.QueuePacketAsync(new BlockEventPacket
+                await player.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,
@@ -337,7 +337,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     Id = "shulker_box"
                 };
 
-                await player.Client.QueuePacketAsync(new BlockEventPacket
+                await player.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,
@@ -382,7 +382,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         }
     }
 
-    private static Container NewChest(Player player, Vector position) => new()
+    private static Container NewChest(PlayerBase player, Vector position) => new()
     {
         Owner = player.Uuid,
         Title = "Chest",
@@ -396,7 +396,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
     /// own of (anvils, enchanting tables).
     /// </summary>
     private static async ValueTask<BaseContainer> StoredContainerAsync(
-        Player player,
+        PlayerBase player,
         AbstractLevel level,
         Vector position,
         BaseContainer fresh)
@@ -417,7 +417,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
     /// </summary>
     /// <returns>The double chest's container, or <paramref name="container"/> for a single chest.</returns>
     private static async ValueTask<BaseContainer> DoubleChestAsync(
-        Player player,
+        PlayerBase player,
         AbstractLevel level,
         IBlock block,
         Vector position,
@@ -443,7 +443,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         var other = await StoredContainerAsync(player, level, neighbourPosition, NewChest(player, neighbourPosition));
 
-        await player.Client.QueuePacketAsync(new BlockEventPacket
+        await player.QueuePacketAsync(new BlockEventPacket
         {
             Position = neighbourPosition,
             ActionId = 1,
@@ -489,7 +489,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             await ReturnEnchantingItemsAsync(player, enchantingTable);
         await ReturnCraftingItemsAsync(player, player.Inventory, 2);
 
-        if (player is Player portalPlayer)
+        if (player is PlayerBase portalPlayer)
             await portalPlayer.CancelPortalTravelAsync();
 
         API.Data.AttachmentStorage.For(player).Retire();
