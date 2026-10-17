@@ -135,13 +135,13 @@ public sealed partial class ElderGuardian : Guardian
     {
         await base.TickMobAsync();
         if (MobBitMask.HasFlag(MobBitmask.NoAi) || (AiTick + EntityId) % 1200 != 0) return;
-        foreach (var player in Level.GetPlayersInRange(Position, 50).OfType<Player>().Where(player =>
+        foreach (var player in Level.GetPlayersInRange(Position, 50).Where(player =>
             player.GameMode is GameMode.Survival or GameMode.Adventure))
         {
             if (player.ActivePotionEffects.TryGetValue((int)PotionEffect.MiningFatigue - 1, out var effect) &&
                 effect.EffectData.Amplifier >= 2 && effect.CurrentDuration >= 1200) continue;
             player.AddPotionEffect((int)PotionEffect.MiningFatigue - 1, 6000, 2, EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
-            await player.Client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.PlayElderGuardianMobAppearance, Silent ? 0 : 1));
+            await player.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.PlayElderGuardianMobAppearance, Silent ? 0 : 1));
         }
     }
     protected override async ValueTask OnDeathAsync(IEntity source)

@@ -656,7 +656,7 @@ public abstract partial class AbstractLevel : ILevel
                 TickStage = $"entity {entity.EntityId} ({entity.GetType().Name})";
                 await entity.TickAsync();
                 await this.TouchPluginBlocksAsync(entity);
-                if (entity is Entity concrete && entity is not Player && entity.Level == this)
+                if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
                     await concrete.TickEntityPortalAsync();
             }
         }

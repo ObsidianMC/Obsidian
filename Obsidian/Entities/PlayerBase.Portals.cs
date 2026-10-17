@@ -7,7 +7,7 @@ using Obsidian.WorldData.Portals;
 
 namespace Obsidian.Entities;
 
-public partial class Player
+public partial class PlayerBase
 {
     private const int PlayerPortalCooldown = 10;
     private const int NetherPortalRelativeFlags = 0x1E0;
@@ -37,7 +37,7 @@ public partial class Player
 
     internal async Task TickPortalsAsync()
     {
-        if (!this.Client.Connected || !this.Alive || this.Respawning || this.AwaitingEndCredits)
+        if (!this.Connected || !this.Alive || this.Respawning || this.AwaitingEndCredits)
         {
             this.portalGeneration++;
             if (this.portalDestination is { IsCompleted: true })
@@ -111,9 +111,14 @@ public partial class Player
             this.GameMode != GameMode.Spectator)
         {
             this.AwaitingEndCredits = true;
-            await this.Client.QueuePacketAsync(new GameEventPacket(this.SeenCredits
+            await this.QueuePacketAsync(new GameEventPacket(this.SeenCredits
                 ? WinStateReason.JustRespawnPlayer : WinStateReason.RollCreditsAndRespawn));
             this.SeenCredits = true;
+
+            // A player without a client has no credits to watch, and nothing would say they finished.
+            if (this.Connection is null)
+                await this.FinishEndCreditsAsync();
+
             return;
         }
         var generation = ++this.portalGeneration;
@@ -146,7 +151,7 @@ public partial class Player
         var world = source is IDimension dimension ? dimension.ParentWorld as World : source as World;
         if (world is null)
             return null;
-        bool CanContinue() => this.Client.Connected && this.Alive && this.Level == source &&
+        bool CanContinue() => this.Connected && this.Alive && this.Level == source &&
             this.portalGeneration == generation;
         try
         {

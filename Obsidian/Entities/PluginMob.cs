@@ -114,7 +114,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
     {
         await base.TickMobAsync();
 
-        if (this.ClientControl.FloatingTooLong && this.Rider is Player rider)
+        if (this.ClientControl.FloatingTooLong && this.Rider is PlayerBase rider)
             await rider.KickAsync(new ChatMessage { Translate = "multiplayer.disconnect.flying" });
 
         await this.RunBehaviorAsync(behavior => behavior.TickAsync(this));
@@ -143,7 +143,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
             mount = !used && !player.Sneaking && behavior.CanMount(this, player);
         });
 
-        if (mount && player is Player rider && this.Mount(rider))
+        if (mount && player is PlayerBase rider && this.Mount(rider))
             used = true;
 
         return used;
@@ -156,7 +156,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
     {
         base.TickRidden();
 
-        if (this.Rider is not Player rider || this.MobBitMask.HasFlag(MobBitmask.NoAi))
+        if (this.Rider is not PlayerBase rider || this.MobBitMask.HasFlag(MobBitmask.NoAi))
         {
             this.ClientControl.Tick(this, null, this.Flying);
 

@@ -67,7 +67,7 @@ internal sealed class MapStorage(string folderPath)
     /// Ticks the maps a player carries, like vanilla's <c>MapItem.inventoryTick</c>: their markers, the terrain under a held
     /// map, then the updates the player is due.
     /// </summary>
-    public async ValueTask TickAsync(Player player)
+    public async ValueTask TickAsync(PlayerBase player)
     {
         var level = (AbstractLevel)player.Level;
         var inventory = player.Inventory;
@@ -89,7 +89,7 @@ internal sealed class MapStorage(string folderPath)
 
             var packet = data.GetUpdatePacket(id, player);
             if (packet is not null)
-                player.Client.SendPacket(packet);
+                player.SendPacket(packet);
         }
     }
 

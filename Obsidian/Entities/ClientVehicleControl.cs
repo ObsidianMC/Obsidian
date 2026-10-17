@@ -36,10 +36,10 @@ internal sealed class ClientVehicleControl
     private const double WronglySquared = 0.0625;
     private const int FloatingTicks = 80;
 
-    private readonly ConcurrentQueue<(Player Sender, VehicleMove Move)> moves = new();
+    private readonly ConcurrentQueue<(PlayerBase Sender, VehicleMove Move)> moves = new();
 
     // The rider whose client moves the mob, from its first move.
-    private Player? controller;
+    private PlayerBase? controller;
 
     // Where the last move the server took put the mob this tick, which the mob travels to.
     private VehicleMove? accepted;
@@ -54,7 +54,7 @@ internal sealed class ClientVehicleControl
     /// <summary>
     /// Whether <paramref name="rider"/>'s client moves the mob, rather than the server steering it.
     /// </summary>
-    public bool ControlledBy(Player? rider) => rider is not null && ReferenceEquals(this.controller, rider);
+    public bool ControlledBy(PlayerBase? rider) => rider is not null && ReferenceEquals(this.controller, rider);
 
     /// <summary>
     /// Whether the controlling rider kept a walking mob floating for too long, for which vanilla kicks it.
@@ -64,7 +64,7 @@ internal sealed class ClientVehicleControl
     /// <summary>
     /// Queues a move a client sent, from any thread.
     /// </summary>
-    public void Enqueue(Player sender, VehicleMove move) => this.moves.Enqueue((sender, move));
+    public void Enqueue(PlayerBase sender, VehicleMove move) => this.moves.Enqueue((sender, move));
 
     /// <summary>
     /// Checks the moves <paramref name="rider"/>'s client sent since the last tick, on the mob's tick before it
@@ -73,7 +73,7 @@ internal sealed class ClientVehicleControl
     /// <param name="vehicle">The mob.</param>
     /// <param name="rider">The mob's controlling passenger, or null.</param>
     /// <param name="flying">Whether the mob flies, which vanilla never counts as floating.</param>
-    public void Tick(Mob vehicle, Player? rider, bool flying)
+    public void Tick(Mob vehicle, PlayerBase? rider, bool flying)
     {
         if (!ReferenceEquals(rider, this.controller))
         {
@@ -124,7 +124,7 @@ internal sealed class ClientVehicleControl
     /// </summary>
     public VehicleMove? Accepted => this.accepted;
 
-    private void Reset(Player? rider)
+    private void Reset(PlayerBase? rider)
     {
         this.controller = null;
         this.floating = false;

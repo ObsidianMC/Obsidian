@@ -11,7 +11,7 @@ namespace Obsidian.Entities;
 // MovementAbilitiesPayload and vanilla's abilities packet, by the player's client. The server doesn't simulate
 // players: like vanilla, it takes their positions, so these only keep its own state (gliding, fall distance, flight)
 // in step with what the client does.
-public partial class Player
+public partial class PlayerBase
 {
     private readonly Lock movementGate = new();
 
@@ -115,7 +115,7 @@ public partial class Player
     internal void SynchronizeMovementAbilities()
     {
         // A client back in configuration (a reload, say) is sent them again once it plays.
-        if (this.Client.State != ClientState.Play)
+        if (this.Connection is not { State: ClientState.Play } client)
         {
             this.movementAbilitiesSent = null;
             return;
@@ -125,7 +125,7 @@ public partial class Player
         if (this.movementAbilitiesSent == abilities)
             return;
 
-        if (!this.Client.HasChannel(MovementAbilitiesPayload.Channel))
+        if (!client.HasChannel(MovementAbilitiesPayload.Channel))
             return;
 
         var packet = CustomPayloadPacket.ClientboundPlay with
@@ -134,7 +134,7 @@ public partial class Player
             PluginData = MovementAbilitiesPayload.Encode(abilities)
         };
 
-        if (this.Client.SendPacket(packet))
+        if (this.SendPacket(packet))
             this.movementAbilitiesSent = abilities;
     }
 

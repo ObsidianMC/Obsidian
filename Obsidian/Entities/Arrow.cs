@@ -186,8 +186,8 @@ public partial class Arrow : Entity
     protected async ValueTask PickupAsync()
     {
         if (Pickup == ArrowPickup.Disallowed || PickupItem is not { Count: > 0 }) return;
-        foreach (var player in Level.GetPlayersInRange(Position, 1.5f).OfType<Player>())
-            if ((Owner is not Player || this is not Trident { LoyaltyLevel: > 0 } || Owner.Uuid == player.Uuid) &&
+        foreach (var player in Level.GetPlayersInRange(Position, 1.5f).OfType<PlayerBase>())
+            if ((Owner is not IPlayer || this is not Trident { LoyaltyLevel: > 0 } || Owner.Uuid == player.Uuid) &&
                 await player.ReceiveProjectileAsync(PickupItem, Pickup == ArrowPickup.CreativeOnly))
             {
                 PacketBroadcaster.QueuePacketToLevel(Level, new TakeItemEntityPacket

@@ -5,7 +5,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Entities;
 
-public partial class Player
+public partial class PlayerBase
 {
     // Capture identities and versions under the inventory lock; hooks can replace a stack or edit it in place.
     private (ItemStack? Stack, long Version)[] CaptureInventoryItems()

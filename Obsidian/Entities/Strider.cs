@@ -60,7 +60,7 @@ public sealed partial class Strider : FarmAnimal
         { SetEquipment(EquipmentSlot.Saddle, new ItemStack(item)); await ConsumeInteractionItemAsync(player, hand); }
         else if (!player.Sneaking
             && !GetEquipment(EquipmentSlot.Saddle).IsAir
-            && player is Player rider
+            && player is PlayerBase rider
             && Mount(rider))
             GoalController?.Pause();
         else
@@ -68,7 +68,7 @@ public sealed partial class Strider : FarmAnimal
 
         return true;
     }
-    internal bool Boost(Player player)
+    internal bool Boost(PlayerBase player)
     {
         if (!ReferenceEquals(Rider, player) || boostDuration > 0) return false;
         boostDuration = Random.Next(140, 981); boostTicks = 0; SynchronizeMetadata(); return true;

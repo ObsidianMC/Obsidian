@@ -101,7 +101,7 @@ public sealed class Progress
                 var packets = ((TestClient)player.Client).SentPackets;
                 var deaths = packets.OfType<PlayerCombatKillPacket>().Count();
                 var pending = new DeferredInventoryWork();
-                var tickGate = (SemaphoreSlim)typeof(Entities.Player)
+                var tickGate = (SemaphoreSlim)typeof(Entities.PlayerBase)
                     .GetField("tickGate", BindingFlags.Instance | BindingFlags.NonPublic)!
                     .GetValue(ticking)!;
                 await tickGate.WaitAsync();

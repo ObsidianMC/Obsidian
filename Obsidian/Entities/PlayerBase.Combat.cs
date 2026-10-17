@@ -7,7 +7,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Entities;
 
-public partial class Player
+public partial class PlayerBase
 {
     private int damageCooldown;
     private float lastIncomingDamage;
@@ -129,7 +129,7 @@ public partial class Player
             { EntityId = EntityId, Event = (byte)(slot switch { 5 => 49, 6 => 50, 7 => 51, 8 => 52, 45 => 48, _ => 47 }) });
     }
 
-    internal ValueTask SyncInventorySlotAsync(int slot) => Client.QueuePacketAsync(new ContainerSetSlotPacket
+    internal ValueTask SyncInventorySlotAsync(int slot) => this.QueuePacketAsync(new ContainerSetSlotPacket
     { ContainerId = 0, Slot = (short)slot, SlotData = Inventory.GetItem(slot), StateId = Inventory.StateId++ });
 
     // The held item's attack speed is in the attribute's modifiers, brought up to date first.
@@ -191,7 +191,7 @@ public partial class Player
         if (attack.ChargeAttack && target is Living chargedTarget)
         {
             if (attack.ChargeKnockback) CombatEffects.Knockback(chargedTarget, chargedTarget.Position - Position, 0.4f);
-            if (attack.ChargeDismount && chargedTarget is Player rider) rider.LeaveVehicle();
+            if (attack.ChargeDismount && chargedTarget is PlayerBase rider) rider.LeaveVehicle();
             if (attack.ChargeDismount && chargedTarget is Mob mob) mob.EjectPassengers();
         }
         if (damage <= 0) return;

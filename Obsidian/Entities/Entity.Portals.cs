@@ -44,7 +44,7 @@ public partial class Entity
     internal virtual bool CanUsePortals => true;
 
     // Vanilla's getDimensionChangingDelay: a vehicle whose first passenger is a player waits like a player.
-    private int TravelPortalCooldown => this is IPlayer || this.Passengers is [Player, ..] ? 10 : 300;
+    private int TravelPortalCooldown => this is IPlayer || this.Passengers is [IPlayer, ..] ? 10 : 300;
 
     /// <summary>Called once after each non-player entity tick, independently of its movement implementation.</summary>
     internal async Task TickEntityPortalAsync()

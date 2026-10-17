@@ -556,7 +556,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         }
 
         // Movement abilities aren't saved, so only online players hold the plugin's grants.
-        foreach (var player in this.server.OnlinePlayers.Values.OfType<Player>())
+        foreach (var player in this.server.OnlinePlayers.Values.OfType<PlayerBase>())
             player.ReleaseMovementAbilities(pluginContainer);
 
         // Before its handlers go, so that the plugin sees its menus close (to keep their contents, say). Its handlers

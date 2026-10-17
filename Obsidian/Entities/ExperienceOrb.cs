@@ -30,7 +30,7 @@ public sealed partial class ExperienceOrb : Entity
             await RemoveAsync();
             return;
         }
-        var player = Level.GetPlayersInRange(Position, 8).OfType<Player>()
+        var player = Level.GetPlayersInRange(Position, 8).OfType<PlayerBase>()
             .Where(candidate => candidate.Alive && candidate.GameMode != GameMode.Spectator)
             .OrderBy(candidate => (candidate.Position - Position).MagnitudeSquared()).FirstOrDefault();
         if (player != null)
@@ -52,7 +52,7 @@ public sealed partial class ExperienceOrb : Entity
                     player.XpLevel++;
                 }
                 player.XpP = points / XpHelper.ExperienceRequiredForNextLevel(player.XpLevel);
-                await player.Client.QueuePacketAsync(new SetExperiencePacket(player.XpP, player.XpLevel, player.XpTotal));
+                await player.QueuePacketAsync(new SetExperiencePacket(player.XpP, player.XpLevel, player.XpTotal));
                 await RemoveAsync();
                 return;
             }

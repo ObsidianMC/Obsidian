@@ -44,7 +44,7 @@ public partial class UseItemPacket
                 return;
         }
 
-        if (player is not Obsidian.Entities.Player concrete)
+        if (player is not Obsidian.Entities.PlayerBase concrete)
             return;
 
         // Eyes of ender fly toward the nearest structure they find, or do nothing.

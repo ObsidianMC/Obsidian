@@ -105,7 +105,7 @@ public partial class Camel : AbstractHorse
         if (await Obsidian.Plugins.ItemBehaviors.UseOnEntityAsync(player, hand, this))
             return true;
 
-        if (player is Player rider && Mount(rider))
+        if (player is PlayerBase rider && Mount(rider))
         {
             GoalController?.Pause();
             SetSitting(false);

@@ -18,7 +18,7 @@ public sealed class AdvancementCommandModule : CommandModuleBase
 
     private async Task ChangeAsync(IPlayer target, string mode, string identifier, string? criterion, bool grant)
     {
-        if (mode != "only" || target is not Entities.Player player)
+        if (mode != "only" || target is not Entities.PlayerBase player)
         {
             await this.Sender.SendMessageAsync("Use an online player and the 'only' mode.");
             return;

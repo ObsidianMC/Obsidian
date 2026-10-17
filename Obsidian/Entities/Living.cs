@@ -141,7 +141,7 @@ public partial class Living : Entity, ILiving
             }
         }
 
-        if (!Alive || this is not Player and not Mob { HasAi: true } || !Burning && fireTicks == 0)
+        if (!Alive || this is not IPlayer and not Mob { HasAi: true } || !Burning && fireTicks == 0)
             return;
         var terrain = new MobTerrain(Level);
         var feet = (Vector)(Position + new VectorD(0, 0.1f, 0)).Floor();

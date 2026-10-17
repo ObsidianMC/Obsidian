@@ -518,10 +518,10 @@ public partial class Entity : IEquatable<Entity>, IEntity
                 Yaw = (float)(Math.Atan2(source.Position.Z - Position.Z, source.Position.X - Position.X) * 180 / Math.PI - Yaw.Degrees)
             });
 
-            if (living is Player player)
+            if (living is IPlayer player)
             {
                 player.AddExhaustion(0.1f);
-                await player.Client.QueuePacketAsync(new SetHealthPacket(Math.Max(0, Health), player.FoodLevel, player.FoodSaturationLevel));
+                await player.QueuePacketAsync(new SetHealthPacket(Math.Max(0, Health), player.FoodLevel, player.FoodSaturationLevel));
 
                 if (!player.Alive)
                     await player.KillAsync(source, ChatMessage.Simple("You died xd"));
