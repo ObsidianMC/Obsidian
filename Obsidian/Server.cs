@@ -736,6 +736,18 @@ public sealed partial class Server : IServer, IPluginScopedServer
     {
         plugin?.ThrowIfClosing();
 
+        // A player with the name may still be leaving: one removed from its own tick leaves once the tick ends (see
+        // RemoveServerPlayerAsync). The join waits for that, like a network player's, unless it's that tick asking,
+        // which would wait for itself.
+        var leaving = this.WaitForLeavesAsync(username);
+        if (!leaving.IsCompleted)
+        {
+            if (string.Equals(PlayerBase.TickingPlayer?.Username, username, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"Player '{username}' is still leaving; add them once their tick ends.");
+
+            await leaving;
+        }
+
         var player = new ServerPlayer(uuid, username, this, world ?? this.DefaultWorld)
         {
             SpawnedBy = plugin

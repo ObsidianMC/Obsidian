@@ -14,6 +14,8 @@ using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -279,6 +281,31 @@ public sealed class ServerPlayerTests
             new EntityInteractEventArgs(player, pig, context.Server, InteractionHand.MainHand));
         await context.World.DoWorldTickAsync();
         Assert.Same(pig, player.Vehicle);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task RemovalFromOwnTick_LeavesAfterTheTick()
+    {
+        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
+        var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
+        var runTick = typeof(PlayerBase).GetMethod("RunTickAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        Task<IPlayer>? replacing = null;
+
+        // As a plugin might from the player's tick: the leave waits for the tick, so adding the name again from the
+        // tick fails, and from elsewhere waits for the leave.
+        await (ValueTask)runTick.Invoke(player, [(Func<ValueTask>)(async () =>
+        {
+            Assert.True(await context.Server.RemoveServerPlayerAsync(player));
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World));
+
+            using (ExecutionContext.SuppressFlow())
+                replacing = Task.Run(() => context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World));
+        }), false])!;
+
+        var replacement = await replacing!;
+        Assert.Same(replacement, context.Server.GetPlayer("ServerBot"));
+        Assert.False(context.World.Players.ContainsKey(player.Uuid));
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]

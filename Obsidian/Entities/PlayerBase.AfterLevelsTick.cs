@@ -21,6 +21,11 @@ public partial class PlayerBase
     internal bool IsInOwnTick => ReferenceEquals(tickingPlayer.Value, this);
 
     /// <summary>
+    /// The player whose tick, grant or save the current flow is in, if any.
+    /// </summary>
+    internal static PlayerBase? TickingPlayer => tickingPlayer.Value;
+
+    /// <summary>
     /// Waits for the player's current tick, grant or save and closes ticks and grants: they're leaving. Never call
     /// it from a flow that already owns the player's tick gate.
     /// </summary>
