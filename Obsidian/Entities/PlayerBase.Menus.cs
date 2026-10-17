@@ -32,8 +32,9 @@ public partial class PlayerBase
     private MenuSync? menuSync;
 
     // The menus the player's window stopped showing whose Closed is due (see RecordMenuClosed), in the order they
-    // closed.
-    private readonly ConcurrentQueue<ClosedMenu> closedMenus = new();
+    // closed, guarded by locking it. Not a ConcurrentQueue: peeking at one keeps the items dequeued after, which would
+    // keep a closed menu, and its plugin's load context, alive.
+    private readonly Queue<ClosedMenu> closedMenus = new();
 
     /// <summary>
     /// Runs <see cref="MenuContainer.Closed"/> of the menus the player's window stopped showing, each once, in the
@@ -266,7 +267,8 @@ public partial class PlayerBase
         if (!DeferredInventoryWork.TryDefer(Release))
             closed.Ready = true;
 
-        this.closedMenus.Enqueue(closed);
+        lock (this.closedMenus)
+            this.closedMenus.Enqueue(closed);
 
         void Release()
         {

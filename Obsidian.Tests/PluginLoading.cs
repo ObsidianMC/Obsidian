@@ -884,6 +884,11 @@ public sealed class ProbePlugin : PluginBase
     // What its charm's inventory tick hurts the holder with, an (IEntity Source, float Amount) pair, while set.
     public const string HurtKey = "Obsidian.Tests.ProbePlugin.Hurt";
 
+    // How many times its handler saw one of its pouches close.
+    public const string PouchClosesKey = "Obsidian.Tests.ProbePlugin.PouchCloses";
+
+    private MenuDefinition? pouch;
+
     [Inject]
     public ProbeService? Service { get; set; }
 
@@ -920,6 +925,16 @@ public sealed class ProbePlugin : PluginBase
         });
 
         pluginRegistry.MapEvent<IncomingChatMessageEventArgs>(this.OnChatAsync);
+
+        // A menu of the plugin's own type, which keeps its code loaded while a window shows it.
+        this.pouch = pluginRegistry.RegisterMenu("probe:pouch", 1);
+        pluginRegistry.MapEvent<ContainerClosedEventArgs>(e =>
+        {
+            if (e.Container is ProbePouch)
+                AppContext.SetData(PouchClosesKey, (int)(AppContext.GetData(PouchClosesKey) ?? 0) + 1);
+
+            return ValueTask.CompletedTask;
+        });
 
         var gem = pluginRegistry.RegisterItem("probe:gem", new ItemProperties
         {
@@ -1077,6 +1092,10 @@ public sealed class ProbePlugin : PluginBase
     /// Spawns a bat, for a test to call as the plugin's code running outside any call into it, like its own task.
     /// </summary>
     public IEntity SpawnBat(ILevel level, VectorD position) => level.SpawnEntity(position, EntityType.Bat);
+
+    public ValueTask OpenPouchAsync(IPlayer player) => player.OpenInventoryAsync(new ProbePouch(this.pouch!));
+
+    private sealed class ProbePouch(MenuDefinition menu) : MenuContainer(menu, "Pouch");
 
     private sealed class OreBehavior : IBlockBehavior
     {

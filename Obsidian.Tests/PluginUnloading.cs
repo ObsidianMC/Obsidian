@@ -19,6 +19,7 @@ using Obsidian.WorldData;
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -40,7 +41,10 @@ public sealed class PluginUnloading : IDisposable
 
     public void Dispose()
     {
-        string[] keys = [ProbePlugin.BatKey, ProbePlugin.BotKey, ProbePlugin.ServerKey, ProbePlugin.BossBarKey];
+        string[] keys =
+        [
+            ProbePlugin.BatKey, ProbePlugin.BotKey, ProbePlugin.ServerKey, ProbePlugin.BossBarKey, ProbePlugin.PouchClosesKey
+        ];
 
         foreach (var key in keys)
             AppContext.SetData(key, null);
@@ -114,6 +118,54 @@ public sealed class PluginUnloading : IDisposable
         Assert.Contains(
             context.World.Regions.Values.SelectMany(region => region.Entities.Values),
             entity => entity.Definition == golemType);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task Unload_ClosesServerPlayersMenusAndLetsGoOfThePlugin()
+    {
+        await using var context = TestServerFactory.CreateServer($"probe-menu-{Guid.NewGuid():N}");
+        await using var manager = CreateManager(context);
+        var path = Path.Join(this.folder, "probe.obby");
+        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0"));
+
+        // A server-side player the host added, which outlives the plugin, has one of its menus open.
+        var player = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "HostBot", context.World);
+        var loadContext = await LoadAndOpenPouchAsync(manager, path, player);
+        Assert.IsType<MenuContainer>(player.OpenedContainer, exactMatch: false);
+
+        await UnloadAllAsync(manager);
+
+        // The plugin's handler saw its menu close, and nothing holds its code any more.
+        Assert.Equal(1, AppContext.GetData(ProbePlugin.PouchClosesKey));
+        Assert.Null(player.OpenedContainer);
+        Assert.True(context.Server.IsPlayerOnline(player.Uuid));
+
+        for (var i = 0; loadContext.IsAlive && i < 100; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            await Task.Delay(20);
+        }
+
+        Assert.False(loadContext.IsAlive, "The unloaded plugin's load context is still referenced.");
+    }
+
+    // Kept out of the test method so that no local keeps the plugin alive.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<WeakReference> LoadAndOpenPouchAsync(PluginManager manager, string path, IPlayer player)
+    {
+        var container = (await manager.LoadPluginAsync(path))!;
+        var openPouch = container.Plugin!.GetType().GetMethod(nameof(ProbePlugin.OpenPouchAsync))!;
+        await (ValueTask)openPouch.Invoke(container.Plugin, [player])!;
+
+        return new WeakReference(container.LoadContext);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task UnloadAllAsync(PluginManager manager)
+    {
+        foreach (var plugin in manager.Plugins.ToArray())
+            await manager.UnloadPluginAsync(plugin);
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
