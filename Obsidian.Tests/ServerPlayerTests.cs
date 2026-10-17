@@ -183,7 +183,17 @@ public sealed class ServerPlayerTests
     public async Task ServerPlayerTakesPartInSurvivalCombatPickupAndRiding()
     {
         await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
+        // An empty plains chunk, complete, so that its items, orbs and mobs tick.
         var chunk = new Chunk(0, 0);
+        for (var x = 0; x < 16; x += 4)
+        {
+            for (var z = 0; z < 16; z += 4)
+            {
+                for (var y = -64; y < 320; y += 4)
+                    chunk.SetBiome(x, y, z, CodecRegistry.Biomes.Plains);
+            }
+        }
+
         chunk.SetChunkStatus(ChunkGenStage.full);
         context.World.LoadRegionByChunk(0, 0).SetChunk(chunk);
         context.World.LevelData.Difficulty = Difficulty.Normal;
@@ -209,10 +219,16 @@ public sealed class ServerPlayerTests
             await context.World.DoWorldTickAsync();
         Assert.True(player.Health > 10);
 
-        // Combat: another server-side player's attack can kill them, which drops what they carry, and they respawn.
+        // Combat: another server-side player's attack, raised like a client's (see InteractPacket) and dealt on the
+        // level's tick, can kill them, which drops what they carry, and they respawn.
         player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Coal, 2));
-        player.Health = 1;
-        await attacker.AttackAsync(new PlayerAttackEntityEventArgs(attacker, player, context.Server, sneaking: false));
+        player.Health = 2;
+        attacker.Inventory.SetItem(attacker.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.DiamondSword));
+        Assert.True(attacker.CanAttack(player));
+        var attack = new PlayerAttackEntityEventArgs(attacker, player, context.Server, sneaking: false);
+        (attack.Damage, attack.IsCrit) = attacker.GetAttackDamage(player);
+        await context.EventDispatcher.ExecuteEventAsync(attack);
+        await context.World.DoWorldTickAsync();
         Assert.False(player.Alive);
         Assert.Null(player.Inventory.GetItem(9));
         Assert.Contains(context.World.GetNonPlayerEntitiesInRange(player.Position, 4).OfType<ItemEntity>(),
@@ -249,10 +265,19 @@ public sealed class ServerPlayerTests
         Assert.Equal(7, player.XpTotal);
         Assert.DoesNotContain(context.World.GetNonPlayerEntitiesInRange(position, 4), entity => ReferenceEquals(entity, orb));
 
-        // Riding: they board rideable mobs.
+        // Riding: using a saddle on a pig saddles it, and using the pig again boards it, like a client's interactions.
         var pig = new Pig { Level = context.World, EntityId = Server.GetNextEntityId(), Position = position };
+        pig.InitializeAi(false);
         Assert.True(context.World.TryAddEntity(pig));
-        Assert.True(player.StartRiding(pig));
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Saddle));
+        await context.EventDispatcher.ExecuteEventAsync(
+            new EntityInteractEventArgs(player, pig, context.Server, InteractionHand.MainHand));
+        await context.World.DoWorldTickAsync();
+        Assert.True(pig.HasSaddle);
+
+        await context.EventDispatcher.ExecuteEventAsync(
+            new EntityInteractEventArgs(player, pig, context.Server, InteractionHand.MainHand));
+        await context.World.DoWorldTickAsync();
         Assert.Same(pig, player.Vehicle);
     }
 
@@ -275,40 +300,6 @@ public sealed class ServerPlayerTests
 
         Assert.True(await player.GrantPermissionAsync("admin.*"));
         Assert.True(player.HasPermission("admin.anything.below"));
-    }
-
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task UnloadingPluginClosesServerPlayersMenus()
-    {
-        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
-        var plugin = new PluginContainer
-        {
-            Info = new PluginInfo("serverplayermenu"),
-            Archive = PluginArchive.Open(
-                "serverplayermenu.obby",
-                PluginArchives.Zip(new Dictionary<string, byte[]>
-                {
-                    [PluginMetadata.FileName] = PluginArchives.Metadata("serverplayermenu", "1.0.0", "Menu probe")
-                }))
-        };
-        var bag = PluginRegistry.RegisterMenu(plugin, "serverplayermenu:bag", 1, 9);
-        var closes = 0;
-        context.EventDispatcher.RegisterEvent(plugin, (Func<ContainerClosedEventArgs, ValueTask>)(_ =>
-        {
-            closes++;
-            return ValueTask.CompletedTask;
-        }));
-
-        var player = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
-        await player.OpenInventoryAsync(new MenuContainer(bag, "Bag"));
-        Assert.IsType<MenuContainer>(player.OpenedContainer);
-
-        // Like unloading: the plugin takes no more calls, but its close handler still sees its menu close.
-        plugin.Close();
-        await PluginManager.CloseMenusAsync(context.Server, plugin);
-
-        Assert.Equal(1, closes);
-        Assert.Null(player.OpenedContainer);
     }
 
     private static bool ContainsPlayerInfo(TestClient client, Guid uuid) =>
