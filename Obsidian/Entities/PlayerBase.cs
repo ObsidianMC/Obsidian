@@ -1093,28 +1093,31 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     {
         var permissions = permissionNode.ToLower().Trim().Split('.');
 
-        // Set root node and whether we created a new permission (still false)
+        // Only the node at the end of the path goes, with the permissions under it; its parents and siblings stay.
         var parent = PlayerPermissions;
-
-        foreach (var permission in permissions)
+        foreach (var permission in permissions[..^1])
         {
-            if (parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
-            {
-                // child exists remove them
-                var childToRemove = parent.Children.First(x => x.Name.EqualsIgnoreCase(permission));
-
-                parent.Children.Remove(childToRemove);
-
-                await this.SavePermsAsync();
-                await this.Server.EventDispatcher.ExecuteEventAsync(new PermissionRevokedEventArgs(this, this.Server, permissionNode));
-
-                return true;
-            }
+            parent = parent.Children.FirstOrDefault(x => x.Name.EqualsIgnoreCase(permission));
+            if (parent is null)
+                return false;
         }
 
-        return false;
+        var node = parent.Children.FirstOrDefault(x => x.Name.EqualsIgnoreCase(permissions[^1]));
+        if (node is null)
+            return false;
+
+        parent.Children.Remove(node);
+
+        await this.SavePermsAsync();
+        await this.Server.EventDispatcher.ExecuteEventAsync(new PermissionRevokedEventArgs(this, this.Server, permissionNode));
+
+        return true;
     }
 
+    /// <summary>
+    /// Whether the player holds <paramref name="permissionNode"/>: every segment of its path was granted, or a
+    /// wildcard on the way grants everything under it.
+    /// </summary>
     public bool HasPermission(string permissionNode)
     {
         var parent = PlayerPermissions;
@@ -1125,13 +1128,15 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
         foreach (var permission in permissions)
         {
-            if (parent.Children.Any(x => x.Name == Permission.Wildcard) || parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
+            if (parent.Children.Any(x => x.Name == Permission.Wildcard))
                 return true;
 
-            parent = parent.Children.First(x => x.Name.EqualsIgnoreCase(permission));
+            parent = parent.Children.FirstOrDefault(x => x.Name.EqualsIgnoreCase(permission));
+            if (parent is null)
+                return false;
         }
 
-        return false;
+        return true;
     }
 
     public bool HasAnyPermission(IEnumerable<string> permissions) => permissions.Any(x => HasPermission(x));

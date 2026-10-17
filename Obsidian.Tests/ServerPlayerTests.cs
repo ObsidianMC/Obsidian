@@ -257,6 +257,27 @@ public sealed class ServerPlayerTests
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task PermissionsFollowTheWholePath()
+    {
+        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
+        var player = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
+
+        Assert.True(await player.GrantPermissionAsync("obsidian.weather"));
+        Assert.True(await player.GrantPermissionAsync("obsidian.time"));
+        Assert.True(player.HasPermission("obsidian.weather"));
+        Assert.False(player.HasPermission("obsidian.gamemode"));
+        Assert.False(player.HasPermission("other.node"));
+
+        // Revoking a node keeps its siblings.
+        Assert.True(await player.RevokePermissionAsync("obsidian.weather"));
+        Assert.False(player.HasPermission("obsidian.weather"));
+        Assert.True(player.HasPermission("obsidian.time"));
+
+        Assert.True(await player.GrantPermissionAsync("admin.*"));
+        Assert.True(player.HasPermission("admin.anything.below"));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task UnloadingPluginClosesServerPlayersMenus()
     {
         await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
