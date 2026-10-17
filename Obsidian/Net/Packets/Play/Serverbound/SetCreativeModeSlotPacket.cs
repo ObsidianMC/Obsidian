@@ -49,8 +49,7 @@ public partial class SetCreativeModeSlotPacket
         if (this.ClickedSlot < 0
             && fits
             && item is not null
-            && player is PlayerBase dropper
-            && dropper.CountCreativeDrop())
+            && player.CountCreativeDrop())
         {
             ItemEntity.Drop(player, item);
         }

@@ -59,6 +59,8 @@ public partial class PlayerBase
     /// Works out the open enchanting table's offers from its item, and the window properties that show them, without
     /// sending them, so that a click can capture them inside the table's lock and send them after it.
     /// </summary>
+    IEnumerable<IClientboundPacket> IPlayer.EnchantingProperties() => this.PrepareEnchantingProperties();
+
     internal List<ContainerSetDataPacket> PrepareEnchantingProperties()
     {
         var properties = new List<ContainerSetDataPacket>();

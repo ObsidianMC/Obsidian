@@ -18,6 +18,37 @@ public partial class PlayerBase
     private float riptideDamage;
     private readonly Dictionary<int, int> spearContacts = [];
 
+    public async ValueTask UseItemAsync(InteractionHand hand = InteractionHand.MainHand)
+    {
+        var use = new PlayerInteractEventArgs(this, Server)
+        {
+            Item = hand == InteractionHand.MainHand ? GetHeldItem() : GetOffHandItem(),
+            Hand = hand,
+        };
+        await Server.EventDispatcher.ExecuteEventAsync(use);
+        if (use.IsCancelled)
+            return;
+
+        if (use.Item is { Count: > 0 } stack && Plugins.ItemBehaviors.CanUseItems(this) &&
+            await Plugins.ItemBehaviors.UseAsync(new ItemUseContext { Player = this, Stack = stack, Hand = hand }))
+            return;
+
+        // Eyes of ender fly toward the nearest structure they find, or do nothing.
+        if (use.Item is { Count: > 0 } eye && eye.Is(ItemsRegistry.EnderEye))
+        {
+            await EyeOfEnder.ThrowAsync(this, hand, eye);
+            return;
+        }
+
+        await StartUsingItemAsync(hand);
+    }
+
+    public void StopUsingItem()
+    {
+        CancelWeaponUse();
+        CancelEating();
+    }
+
     internal async ValueTask StartUsingItemAsync(InteractionHand hand)
     {
         if (!Alive || Respawning || GameMode == GameMode.Spectator || usingWeapon != null || eatingItem != null) return;
@@ -101,7 +132,7 @@ public partial class PlayerBase
     private int CrossbowChargeTicks(ItemStack item)
         => Math.Max(1, (int)((1.25f - 0.25f * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.QuickCharge)) * 20));
 
-    internal async ValueTask ReleaseUsingItemAsync()
+    public async ValueTask ReleaseUsingItemAsync()
     {
         CancelEating();
         if (usingWeapon is not { } item) return;
@@ -265,7 +296,7 @@ public partial class PlayerBase
                 target.Dimension.CreateBBFromPosition(target.Position).Max + margin), start, ray) != null && CanAttack(target, item));
     }
 
-    internal async ValueTask StabAsync()
+    public async ValueTask StabAsync()
     {
         var item = GetHeldItem();
         if (item == null || CombatItems.Component(item, "piercing_weapon").ValueKind != JsonValueKind.Object || AttackCharge < 1 || !Alive || Respawning || GameMode == GameMode.Spectator) return;

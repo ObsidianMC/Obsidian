@@ -10,7 +10,7 @@ namespace Obsidian.Progress;
 /// <summary>Supported vanilla predicates share loot's item, registry-set and block-state matching.</summary>
 internal static class ProgressConditions
 {
-    public static bool Match(PlayerBase player, string trigger, JsonElement conditions, ItemStack? item,
+    public static bool Match(IPlayer player, string trigger, JsonElement conditions, ItemStack? item,
         IEntity? entity, IBlock? block, Vector? position, string? recipe, string? from, string? to, int? levels)
     {
         foreach (var condition in conditions.EnumerateObject())
@@ -45,7 +45,7 @@ internal static class ProgressConditions
         return trigger != "impossible";
     }
 
-    private static bool LocationEvent(PlayerBase player, JsonElement conditions, ItemStack? item,
+    private static bool LocationEvent(IPlayer player, JsonElement conditions, ItemStack? item,
         IBlock? block, Vector? position)
     {
         if (conditions.ValueKind != JsonValueKind.Array)
@@ -78,13 +78,13 @@ internal static class ProgressConditions
         return true;
     }
 
-    private static bool Inventory(PlayerBase player, JsonElement predicates)
+    private static bool Inventory(IPlayer player, JsonElement predicates)
     {
         var items = player.Inventory.Skip(9).Take(36).Where(item => item is { Count: > 0 }).ToArray();
         return predicates.EnumerateArray().All(predicate => items.Any(item => Item(item, predicate)));
     }
 
-    private static bool Slots(PlayerBase player, JsonElement predicates)
+    private static bool Slots(IPlayer player, JsonElement predicates)
     {
         var slots = player.Inventory.Skip(9).Take(36).ToArray();
         var occupied = slots.Count(item => item is { Count: > 0 });

@@ -20,40 +20,5 @@ public partial class UseItemPacket
         reader.ReadSingle();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
-    {
-        var args = new PlayerInteractEventArgs(player, server)
-        {
-            Item = this.Hand == InteractionHand.MainHand ? player.GetHeldItem() : player.GetOffHandItem(),
-            Hand = this.Hand,
-        };
-        await server.EventDispatcher.ExecuteEventAsync(args);
-        if (args.IsCancelled)
-            return;
-
-        if (args.Item is { Count: > 0 } stack && Plugins.ItemBehaviors.CanUseItems(player))
-        {
-            var used = await Plugins.ItemBehaviors.UseAsync(new ItemUseContext
-            {
-                Player = player,
-                Stack = stack,
-                Hand = this.Hand
-            });
-
-            if (used)
-                return;
-        }
-
-        if (player is not Obsidian.Entities.PlayerBase concrete)
-            return;
-
-        // Eyes of ender fly toward the nearest structure they find, or do nothing.
-        if (args.Item is { Count: > 0 } eye && eye.Is(ItemsRegistry.EnderEye))
-        {
-            await Obsidian.Entities.EyeOfEnder.ThrowAsync(concrete, this.Hand, eye);
-            return;
-        }
-
-        await concrete.StartUsingItemAsync(Hand);
-    }
+    public override ValueTask HandleAsync(IServer server, IClientPlayer player) => player.UseItemAsync(this.Hand);
 }

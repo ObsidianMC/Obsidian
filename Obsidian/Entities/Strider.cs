@@ -6,7 +6,7 @@ using Obsidian.Nbt.Interfaces;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:strider")]
-public sealed partial class Strider : FarmAnimal
+public sealed partial class Strider : FarmAnimal, IItemSteerable
 {
     private bool cold;
     private int boostTicks;
@@ -60,15 +60,19 @@ public sealed partial class Strider : FarmAnimal
         { SetEquipment(EquipmentSlot.Saddle, new ItemStack(item)); await ConsumeInteractionItemAsync(player, hand); }
         else if (!player.Sneaking
             && !GetEquipment(EquipmentSlot.Saddle).IsAir
-            && player is PlayerBase rider
-            && Mount(rider))
+            && Mount(player))
             GoalController?.Pause();
         else
             return false;
 
         return true;
     }
-    internal bool Boost(PlayerBase player)
+    public Item SteeringItem => ItemsRegistry.WarpedFungusOnAStick;
+
+    // Vanilla's wear for a boost with the item, which decides how many boosts it lasts.
+    public int BoostItemDamage => 1;
+
+    public bool Boost(IPlayer player)
     {
         if (!ReferenceEquals(Rider, player) || boostDuration > 0) return false;
         boostDuration = Random.Next(140, 981); boostTicks = 0; SynchronizeMetadata(); return true;

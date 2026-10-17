@@ -244,11 +244,10 @@ public sealed class MainCommandModule : CommandModuleBase
     [RequirePermission(op: true, permissions: "obsidian.clearinventory")]
     public async Task ClearInventoryAsync()
     {
-        if (this.Player is not PlayerBase player)
+        if (this.Player is not IPlayer player)
             return;
 
-        player.CancelEating();
-        player.CancelWeaponUse();
+        player.StopUsingItem();
         for (var slot = 0; slot < player.Inventory.Size; slot++)
             player.Inventory.SetItem(slot, null);
         player.CarriedItem = null;
@@ -572,7 +571,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task DimensionAsync(string dimension)
     {
-        if (Player is not PlayerBase player) return;
+        if (Player is not IPlayer player) return;
 
         // A dimension's identifier, like a plugin's ruby:crystal_world, or a short name for vanilla's.
         var name = dimension.ToLowerInvariant() switch
