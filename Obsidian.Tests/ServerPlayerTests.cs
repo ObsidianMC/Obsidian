@@ -289,14 +289,15 @@ public sealed class ServerPlayerTests
         Assert.Same(pig, player.Vehicle);
     }
 
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    // Longer than other tests': the test world's chunks have their light reconciled across their borders when they're
+    // first saved, which for 169 of them takes several seconds, more alongside the other tests.
+    [Fact(Timeout = 2 * TestServerFactory.TestTimeout)]
     public async Task ServerPlayerKeepsTheChunksAroundItLoaded()
     {
         await using var context = TestServerFactory.CreateServer($"server-player-chunks-{Guid.NewGuid():N}");
         var world = context.World;
-        // The test server's view distance, 3, as the simulation distance too, so that the player keeps 9 by 9 chunks:
-        // saving them when the server stops is what takes this test's time.
-        context.Server.Configuration.SimulationDistance = 3;
+        // The least simulation distance, 5, so that the player keeps 13 by 13 chunks.
+        context.Server.Configuration.SimulationDistance = 5;
         var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Wanderer", world);
 
         // Sent far from the spawn and from other players, it loads the chunks around it, and what's in them ticks.
@@ -325,7 +326,7 @@ public sealed class ServerPlayerTests
         // unloads like any player's.
         await player.UpdateAsync(far + new VectorD(16, 0, 0), MovementFlags.None);
         await LoadAroundAsync(101, 100);
-        Assert.DoesNotContain(NumericsHelper.IntsToLong(96, 100), player.LoadedChunks);
+        Assert.DoesNotContain(NumericsHelper.IntsToLong(94, 100), player.LoadedChunks);
 
         // The server's chunk loop calls LoadChunksAsync; here it's called directly, with the level's generation.
         async Task LoadAroundAsync(int centerX, int centerZ)
@@ -342,9 +343,9 @@ public sealed class ServerPlayerTests
 
         bool AllLoaded(int centerX, int centerZ)
         {
-            for (var x = centerX - 4; x <= centerX + 4; x++)
+            for (var x = centerX - 6; x <= centerX + 6; x++)
             {
-                for (var z = centerZ - 4; z <= centerZ + 4; z++)
+                for (var z = centerZ - 6; z <= centerZ + 6; z++)
                 {
                     if (world.GetLoadedChunk(x, z) is null || !player.LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)))
                         return false;
