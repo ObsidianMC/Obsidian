@@ -39,11 +39,10 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         {
             async ValueTask Damage()
             {
-                if (entity.Level == attacker.Level && (attacker is PlayerBase rangePlayer ? rangePlayer.CanAttack(entity, e.Weapon) : entity.IsInRange(attacker, 4)) &&
+                if (entity.Level == attacker.Level && attacker.CanAttack(entity, e.Weapon) &&
                     (entity is not Mob mob || mob.CanSee(attacker)))
                 {
-                    if (attacker is PlayerBase attackingPlayer) await attackingPlayer.AttackAsync(e);
-                    else await entity.DamageAsync(attacker, e.Damage > 0 ? e.Damage : 1);
+                    await attacker.ResolveAttackAsync(e);
                     if (entity is Living && attacker is IPlayer owner)
                         Wolf.AlertOwnedWolves(owner, entity);
                 }
@@ -96,7 +95,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         if (e.IsCancelled)
             return;
 
-        var player = (e.Player as PlayerBase)!;
+        var player = e.Player;
 
         if (player.Alive && e.Container is CraftingTable { Type: InventoryType.Crafting })
             await ReturnCraftingItemsAsync(player, e.Container, 3);
@@ -118,7 +117,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             await AnimateCloseAsync(player, part.BlockPosition);
     }
 
-    private static async ValueTask AnimateCloseAsync(PlayerBase player, Vector position)
+    private static async ValueTask AnimateCloseAsync(IPlayer player, Vector position)
     {
         var block = await player.Level.GetBlockAsync(position);
 
@@ -196,24 +195,22 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         var block = e.Block;
         var server = e.Server as Server;
-        var player = e.Player as PlayerBase;
+        var player = e.Player;
 
         if (block == null && player != null && item is { Count: > 0 } &&
-            (player.Vehicle is Pig && item.Is(ItemsRegistry.CarrotOnAStick)
-                || player.Vehicle is Strider && item.Is(ItemsRegistry.WarpedFungusOnAStick)))
+            player.Vehicle is IItemSteerable steered && item.Is(steered.SteeringItem))
         {
             async ValueTask Boost()
             {
-                var boosted = player.Vehicle switch { Pig pig => pig.Boost(player), Strider strider => strider.Boost(player), _ => false };
-                if (!boosted || player.GameMode == GameMode.Creative)
+                if (!steered.Boost(player) || player.GameMode == GameMode.Creative)
                     return;
                 var component = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage with
                 {
-                    Value = item.Damage + (player.Vehicle is Strider ? 1 : 7)
+                    Value = item.Damage + steered.BoostItemDamage
                 };
                 item[DataComponentType.Damage] = component;
                 var slot = e.Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
-                if (component.Value >= (player.Vehicle is Strider ? 100 : 25))
+                if (component.Value >= steered.SteeringItem.MaxDamage)
                     player.Inventory.SetItem(slot, ItemsRegistry.GetSingleItem(ItemsRegistry.FishingRod));
                 await player.QueuePacketAsync(new ContainerSetSlotPacket
                 {
@@ -234,8 +231,6 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         {
             if (e.BlockLocation is not Vector blockPosition)
                 return;
-
-            player.LastClickedBlock = block;
 
             var type = block.RegistryId;
 
@@ -382,7 +377,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         }
     }
 
-    private static Container NewChest(PlayerBase player, Vector position) => new()
+    private static Container NewChest(IPlayer player, Vector position) => new()
     {
         Owner = player.Uuid,
         Title = "Chest",
@@ -396,7 +391,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
     /// own of (anvils, enchanting tables).
     /// </summary>
     private static async ValueTask<BaseContainer> StoredContainerAsync(
-        PlayerBase player,
+        IPlayer player,
         AbstractLevel level,
         Vector position,
         BaseContainer fresh)
@@ -417,7 +412,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
     /// </summary>
     /// <returns>The double chest's container, or <paramref name="container"/> for a single chest.</returns>
     private static async ValueTask<BaseContainer> DoubleChestAsync(
-        PlayerBase player,
+        IPlayer player,
         AbstractLevel level,
         IBlock block,
         Vector position,
@@ -489,8 +484,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             await ReturnEnchantingItemsAsync(player, enchantingTable);
         await ReturnCraftingItemsAsync(player, player.Inventory, 2);
 
-        if (player is PlayerBase portalPlayer)
-            await portalPlayer.CancelPortalTravelAsync();
+        await player.CancelPortalTravelAsync();
 
         API.Data.AttachmentStorage.For(player).Retire();
         await player.SaveAsync();

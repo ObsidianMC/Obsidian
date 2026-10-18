@@ -44,7 +44,7 @@ public partial class Entity
         && this is not Mob { IsRemoved: true }
         && this is not ItemEntity { Removed: true }
         && this is not IPlayer { GameMode: GameMode.Spectator }
-        && this is not PlayerBase { Connected: false };
+        && this is not IPlayer { Connected: false };
 
     /// <summary>How many passengers the entity seats when they board normally.</summary>
     protected virtual int MaximumPassengers => 1;

@@ -189,6 +189,10 @@ public partial class PlayerBase
     /// <c>handleContainerButtonClick</c>: the menu handles it (see <see cref="MenuContainer.ClickButton"/>) inside its
     /// window's lock, like a click, and its viewers are sent its slots if it says they changed.
     /// </summary>
+    internal ValueTask ClickContainerButtonAsync(int containerId, int button) => this.OpenedContainer is MenuContainer
+        ? this.ClickMenuButtonAsync(containerId, button)
+        : this.EnchantAsync(containerId, button);
+
     internal async ValueTask ClickMenuButtonAsync(int containerId, int button)
     {
         await using var transaction = DeferredInventoryWork.Begin(this.Logger);

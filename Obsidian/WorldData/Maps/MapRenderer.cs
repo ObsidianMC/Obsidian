@@ -20,7 +20,7 @@ internal static class MapRenderer
     /// <remarks>
     /// Only loaded chunks are drawn; vanilla loads the chunks under the map.
     /// </remarks>
-    public static async ValueTask UpdateAsync(AbstractLevel level, PlayerBase player, MapData data)
+    public static async ValueTask UpdateAsync(AbstractLevel level, IPlayer player, MapData data)
     {
         if (level.DimensionName != data.Dimension)
             return;
