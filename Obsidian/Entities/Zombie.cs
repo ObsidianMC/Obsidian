@@ -5,7 +5,7 @@ using Obsidian.WorldData;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:zombie")]
-public partial class Zombie : PathfinderMob
+public partial class Zombie : PathfinderMob, IAgeable
 {
     public Zombie() => Type = EntityType.Zombie;
 
@@ -47,7 +47,7 @@ public partial class Zombie : PathfinderMob
         targetGoals.AddGoal(3, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.Villager, mustSee: false));
         targetGoals.AddGoal(3, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.IronGolem));
         targetGoals.AddGoal(5, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.Turtle &&
-            entity is AgeableMob { IsBaby: true } && entity.MovementFlags.HasFlag(MovementFlags.OnGround)));
+            entity is IAgeable { IsBaby: true } && entity.MovementFlags.HasFlag(MovementFlags.OnGround)));
     }
 
     protected override async ValueTask TickMobAsync()

@@ -10,7 +10,7 @@ using Obsidian.WorldData;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:piglin")]
-public sealed partial class Piglin : PathfinderMob
+public sealed partial class Piglin : PathfinderMob, IAgeable
 {
     public bool IsBaby { get; set; }
     public bool IsImmuneToZombification { get; set; }

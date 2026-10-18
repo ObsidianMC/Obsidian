@@ -117,7 +117,7 @@ public partial class Mob
     {
         if (Silent || SoundName == null || kind == "ambient" && this is Creeper or Slime)
             return;
-        var baby = this is AgeableMob { IsBaby: true } or Zombie { IsBaby: true };
+        var baby = this is IAgeable { IsBaby: true };
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new Obsidian.Net.Packets.Play.Clientbound.SoundEntityPacket
         {
             EntityId = EntityId, SoundLocation = $"minecraft:entity.{(this is Wolf && kind == "shake" ? "wolf" : SoundName)}.{kind}{(this is Slime { Size: 1 } && (this is not MagmaCube || kind != "jump") ? "_small" : "")}", Category = MobSoundCategory,

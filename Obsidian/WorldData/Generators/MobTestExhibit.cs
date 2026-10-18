@@ -39,7 +39,7 @@ internal sealed record MobTestExhibit(EntityType Type, string Label, bool Frozen
             var mob = EntitySpawner.CreateMob(level, type);
             yield return new(type, mob is { HasAi: true } ? "active" : "implementation unavailable", false, new());
             yield return new(type, "display", true, new());
-            if (mob is AgeableMob || mob is Zombie or Piglin or Zoglin)
+            if (mob is IAgeable)
                 yield return new(type, "baby", true, new() { new NbtTag<int>("Age", -24000), new NbtTag<bool>("IsBaby", true) });
 
             if (type is EntityType.Horse or EntityType.Donkey or EntityType.Mule or EntityType.Camel or

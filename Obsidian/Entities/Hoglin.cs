@@ -102,7 +102,7 @@ internal sealed class HoglinAvoidFungusGoal(Hoglin hoglin) : NavigationGoal(hogl
 }
 
 [MinecraftEntity("minecraft:zoglin")]
-public sealed partial class Zoglin : PathfinderMob
+public sealed partial class Zoglin : PathfinderMob, IAgeable
 {
     public Zoglin() => Type = EntityType.Zoglin;
     public bool IsBaby { get; set; }

@@ -28,7 +28,7 @@ public sealed partial class Drowned : Zombie
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, target => target is IPlayer && CanAttackNow(target)));
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, target => target.Type is EntityType.Villager or EntityType.IronGolem or EntityType.Axolotl));
         targets.AddGoal(5, new NearestAttackableTargetGoal(this, target => target.Type == EntityType.Turtle &&
-            target is AgeableMob { IsBaby: true } && target.MovementFlags.HasFlag(MovementFlags.OnGround)));
+            target is IAgeable { IsBaby: true } && target.MovementFlags.HasFlag(MovementFlags.OnGround)));
     }
 
     protected override void FinalizeSpawn()

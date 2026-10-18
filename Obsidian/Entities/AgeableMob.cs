@@ -2,7 +2,7 @@ using Obsidian.Nbt;
 
 namespace Obsidian.Entities;
 
-public class AgeableMob : PathfinderMob
+public class AgeableMob : PathfinderMob, IAgeable
 {
     private bool legacyBaby;
     public int Age { get; internal set; }
