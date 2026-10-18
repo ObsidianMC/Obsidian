@@ -5,6 +5,7 @@ namespace Obsidian.API.Configuration;
 public sealed class ServerConfiguration
 {
     private const byte DefaultViewDistance = 10;
+    private const byte DefaultSimulationDistance = 10;
     private const ushort DefaultEntityBroadcastRangePercentage = 100;
 
     // Anything lower than 3 will cause weird artifacts on the client.
@@ -90,10 +91,18 @@ public sealed class ServerConfiguration
         set => field = value >= MinimumViewDistance ? value : MinimumViewDistance;
     }
 
+    /// <summary>
+    /// How far from players, in chunks, mobs move and blocks tick, like vanilla's <c>simulation-distance</c>.
+    /// </summary>
+    /// <remarks>
+    /// Like vanilla's, it doesn't depend on the view distance: a lower one leaves the edge of what players see still,
+    /// which saves the server work. Players only load the chunks they see, though, so a higher one ticks no further
+    /// than the view distance.
+    /// </remarks>
     public byte SimulationDistance
     {
-        get => field == 0 ? DefaultViewDistance : field;
-        set => field = value > this.ViewDistance ? value >= MinimumSimulationDistance ? value : MinimumSimulationDistance : ViewDistance;
+        get => field == 0 ? DefaultSimulationDistance : field;
+        set => field = Math.Max(value, MinimumSimulationDistance);
     }
 
     public ushort EntityBroadcastRangePercentage
