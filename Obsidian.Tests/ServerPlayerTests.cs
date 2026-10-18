@@ -10,6 +10,7 @@ using Obsidian.Plugins.Archives;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
+using Obsidian.Utilities;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
@@ -286,6 +287,73 @@ public sealed class ServerPlayerTests
         Assert.True(await player.InteractAsync(pig));
         await context.World.DoWorldTickAsync();
         Assert.Same(pig, player.Vehicle);
+    }
+
+    // Longer than other tests': the test world's chunks have their light reconciled across their borders when they're
+    // first saved, which for 169 of them takes several seconds, more alongside the other tests.
+    [Fact(Timeout = 2 * TestServerFactory.TestTimeout)]
+    public async Task ServerPlayerKeepsTheChunksAroundItLoaded()
+    {
+        await using var context = TestServerFactory.CreateServer($"server-player-chunks-{Guid.NewGuid():N}");
+        var world = context.World;
+        // The least simulation distance, 5, so that the player keeps 13 by 13 chunks.
+        context.Server.Configuration.SimulationDistance = 5;
+        var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Wanderer", world);
+
+        // Sent far from the spawn and from other players, it loads the chunks around it, and what's in them ticks.
+        var far = new VectorD(100 * 16 + 8, 100, 100 * 16 + 8);
+        // The teleport waits for its destination to generate, which the world tick drives.
+        var teleport = player.TeleportAsync(far).AsTask();
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        while (!teleport.IsCompleted)
+        {
+            Assert.True(DateTime.UtcNow < deadline, "The teleport didn't finish.");
+            await world.ManageChunksAsync();
+            await Task.Delay(10);
+        }
+
+        await teleport;
+        await LoadAroundAsync(100, 100);
+        Assert.True(world.IsMobTicking(far));
+
+        // The level's unloading pass, every 600 ticks, keeps them while the player is there.
+        world.LevelData.Time = 600;
+        await world.ManageChunksAsync();
+        Assert.True(AllLoaded(100, 100));
+        world.LevelData.Time = 601;
+
+        // Walking on, as a plugin moves it, it loads the chunks ahead and lets go of those behind, which the level then
+        // unloads like any player's.
+        await player.UpdateAsync(far + new VectorD(16, 0, 0), MovementFlags.None);
+        await LoadAroundAsync(101, 100);
+        Assert.DoesNotContain(NumericsHelper.IntsToLong(94, 100), player.LoadedChunks);
+
+        // The server's chunk loop calls LoadChunksAsync; here it's called directly, with the level's generation.
+        async Task LoadAroundAsync(int centerX, int centerZ)
+        {
+            var loading = DateTime.UtcNow.AddSeconds(15);
+            while (!AllLoaded(centerX, centerZ))
+            {
+                Assert.True(DateTime.UtcNow < loading, "The chunks around the player didn't load.");
+                await player.LoadChunksAsync();
+                await world.ManageChunksAsync();
+                await Task.Delay(10);
+            }
+        }
+
+        bool AllLoaded(int centerX, int centerZ)
+        {
+            for (var x = centerX - 6; x <= centerX + 6; x++)
+            {
+                for (var z = centerZ - 6; z <= centerZ + 6; z++)
+                {
+                    if (world.GetLoadedChunk(x, z) is null || !player.LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)))
+                        return false;
+                }
+            }
+
+            return true;
+        }
     }
 
     [Fact]

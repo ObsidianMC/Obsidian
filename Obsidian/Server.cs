@@ -983,7 +983,8 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
     /// <summary>
     /// Sends players their chunks on its own timer, so a slow or stuck world tick doesn't leave them without terrain.
-    /// Chunks go out in batches the clients acknowledge (see <see cref="Player.SendPendingChunksAsync"/>).
+    /// Chunks go out in batches the clients acknowledge (see <see cref="Player.SendPendingChunksAsync"/>). Server-side
+    /// players load theirs here too (see <see cref="ServerPlayer.LoadChunksAsync"/>).
     /// </summary>
     private async Task ChunkLoopAsync()
     {
@@ -992,7 +993,10 @@ public sealed partial class Server : IServer, IPluginScopedServer
         try
         {
             while (await timer.WaitForNextTickAsync())
+            {
                 await this.ForEachConnectionAsync(SendPendingChunksAsync, this.chunkFailures);
+                await this.ForEachServerPlayerAsync(player => new(player.LoadChunksAsync()), this.chunkFailures);
+            }
         }
         catch (OperationCanceledException) when (cancelTokenSource.IsCancellationRequested)
         {
@@ -1010,13 +1014,24 @@ public sealed partial class Server : IServer, IPluginScopedServer
     /// Runs <paramref name="service"/> for every connection. A client that fails (one closing its socket, say) is
     /// logged to <paramref name="failures"/> and skipped, so it can't hold up the clients after it.
     /// </summary>
-    private async Task ForEachConnectionAsync(Func<IClient, ValueTask> service, ThrottledFailures failures)
+    private Task ForEachConnectionAsync(Func<IClient, ValueTask> service, ThrottledFailures failures) =>
+        this.ForEachAsync(this.Connections.Values, service, failures);
+
+    /// <summary>
+    /// Runs <paramref name="service"/> for every server-side player still online, like
+    /// <see cref="ForEachConnectionAsync"/> for connections.
+    /// </summary>
+    private Task ForEachServerPlayerAsync(Func<ServerPlayer, ValueTask> service, ThrottledFailures failures) =>
+        this.ForEachAsync(
+            this.OnlinePlayers.Values.OfType<ServerPlayer>().Where(player => player.Connected), service, failures);
+
+    private async Task ForEachAsync<T>(IEnumerable<T> targets, Func<T, ValueTask> service, ThrottledFailures failures)
     {
-        foreach (var client in this.Connections.Values)
+        foreach (var target in targets)
         {
             try
             {
-                await service(client);
+                await service(target);
             }
             catch (Exception ex)
                 when (ex is not OperationCanceledException || !cancelTokenSource.IsCancellationRequested)
