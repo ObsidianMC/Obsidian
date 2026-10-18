@@ -114,7 +114,7 @@ internal sealed class MapData
     /// <summary>
     /// The holding state of a player carrying the map, created on first use.
     /// </summary>
-    public HoldingPlayer GetHoldingPlayer(Player player)
+    public HoldingPlayer GetHoldingPlayer(PlayerBase player)
     {
         lock (this.sync)
         {
@@ -130,7 +130,7 @@ internal sealed class MapData
     /// Vanilla <c>tickCarriedBy</c>: updates the markers of the players carrying the map, dropping those who no longer do, and
     /// adds the decorations stored on the item (explorer map targets).
     /// </summary>
-    public void TickCarriedBy(Player player, ItemStack stack, int mapId, long gameTime)
+    public void TickCarriedBy(PlayerBase player, ItemStack stack, int mapId, long gameTime)
     {
         lock (this.sync)
         {
@@ -171,7 +171,7 @@ internal sealed class MapData
     /// Vanilla <c>getUpdatePacket</c>: the changed colors and (every 5 ticks) decorations to send a carrying player, or
     /// <c>null</c> when there's nothing new.
     /// </summary>
-    public MapItemDataPacket? GetUpdatePacket(int mapId, Player player)
+    public MapItemDataPacket? GetUpdatePacket(int mapId, PlayerBase player)
     {
         lock (this.sync)
             return this.carriedBy.Find(holder => holder.Player == player)?.NextUpdatePacket(mapId);
@@ -206,7 +206,7 @@ internal sealed class MapData
         return map;
     }
 
-    private static bool Carries(Player player, int mapId)
+    private static bool Carries(PlayerBase player, int mapId)
     {
         var inventory = player.Inventory;
         for (var slot = 0; slot < inventory.Size; slot++)
@@ -300,7 +300,7 @@ internal sealed class MapData
     /// <summary>
     /// What a player carrying the map still has to be sent, like vanilla's <c>MapItemSavedData.HoldingPlayer</c>.
     /// </summary>
-    public sealed class HoldingPlayer(MapData map, Player player)
+    public sealed class HoldingPlayer(MapData map, PlayerBase player)
     {
         private bool dirtyData = true;
         private int minDirtyX;
@@ -310,7 +310,7 @@ internal sealed class MapData
         private bool dirtyDecorations = true;
         private int tick;
 
-        public Player Player { get; } = player;
+        public PlayerBase Player { get; } = player;
 
         /// <summary>
         /// Which column band the map renders next while held (vanilla's <c>step</c>).

@@ -832,7 +832,7 @@ public partial class MainEventHandler
     /// Swaps a slot with a hotbar slot (buttons 0 to 8) or the off hand (40), like vanilla's swap: a slot gives its
     /// stack only if it may be taken from, and takes the other stack only if it accepts it, up to its limit. When the
     /// slot holds less than the other stack, the rest stays; when that happens with a stack on both sides, the slot's
-    /// stack goes to the player's inventory like a picked-up item (see <see cref="Player.AddToInventory"/>), and what
+    /// stack goes to the player's inventory like a picked-up item (see <see cref="PlayerBase.AddToInventory"/>), and what
     /// doesn't fit drops.
     /// </summary>
     private static void HandleSwap(ContainerClickEventArgs args)
@@ -896,7 +896,7 @@ public partial class MainEventHandler
             source.Count -= limit;
             inventory.SetItem(sourceSlot, source);
 
-            Player.AddToInventory(inventory, player.CurrentHeldItemSlot, item, player.GameMode == GameMode.Creative);
+            PlayerBase.AddToInventory(inventory, player.CurrentHeldItemSlot, item, player.GameMode == GameMode.Creative);
             SpawnThrownItem(player, item);
         }
         else
@@ -930,7 +930,7 @@ public partial class MainEventHandler
     /// wasn't sent because it changed first (see <see cref="WindowSnapshots.IsStale"/>). The player's tick calls it,
     /// once a tick: a window that changed again meanwhile stays stale until a later tick.
     /// </summary>
-    internal static async ValueTask RefreshStaleWindowAsync(Player player)
+    internal static async ValueTask RefreshStaleWindowAsync(PlayerBase player)
     {
         if (!player.WindowSnapshots.IsStale)
             return;
@@ -963,7 +963,7 @@ public partial class MainEventHandler
 
     // Captures the player's whole window, inside its lock, under the given state id, and sends it unless it changed
     // or another window opened meanwhile.
-    internal static async ValueTask RefreshWindowAsync(Player player, BaseContainer window, int stateId)
+    internal static async ValueTask RefreshWindowAsync(PlayerBase player, BaseContainer window, int stateId)
     {
         // Item access reads can run plugin code too; their side effects must wait for these click locks.
         await using var transaction = DeferredInventoryWork.Begin(player.Logger);
@@ -1029,7 +1029,7 @@ public partial class MainEventHandler
             WindowContents(viewer, containerId, stateId)
         };
 
-        if (withEnchanting && viewer is Player { OpenedContainer: EnchantmentTable } enchanter)
+        if (withEnchanting && viewer is PlayerBase { OpenedContainer: EnchantmentTable } enchanter)
             packets.AddRange(enchanter.PrepareEnchantingProperties());
 
         if (viewer.OpenedContainer is not null)
@@ -1074,7 +1074,7 @@ public partial class MainEventHandler
         // Numbers the viewer's snapshot as it's captured, so that it's never sent after a newer one.
         public void Add(IPlayer viewer, ClickWindowState state, IReadOnlyList<IClientboundPacket> packets)
         {
-            var sequence = viewer is Player { WindowSnapshots: WindowSnapshots order } ? order.Next() : 0;
+            var sequence = viewer is PlayerBase { WindowSnapshots: WindowSnapshots order } ? order.Next() : 0;
 
             this.snapshots.Add(new WindowSnapshot(viewer, sequence, state, packets));
         }
@@ -1086,7 +1086,7 @@ public partial class MainEventHandler
         {
             foreach (var snapshot in this.snapshots)
             {
-                if (snapshot.Player is Player { WindowSnapshots: WindowSnapshots order })
+                if (snapshot.Player is PlayerBase { WindowSnapshots: WindowSnapshots order })
                 {
                     await order.SendAsync(snapshot);
                     continue;

@@ -70,7 +70,7 @@ public partial class MainEventHandler
 
     /// <summary>
     /// What a click in a plugin's menu adds to a chest's, inside the window's lock: it runs inside a call into the
-    /// menu's plugin, only while the menu is valid for the player (see <see cref="Player.IsMenuValid"/>); the items it
+    /// menu's plugin, only while the menu is valid for the player (see <see cref="PlayerBase.IsMenuValid"/>); the items it
     /// moves in and out of item access slots move through the access as it ends (see
     /// <see cref="MenuContainer.CommitStaged"/>); and what it drops waits until then.
     /// </summary>
@@ -170,7 +170,7 @@ public partial class MainEventHandler
 
             try
             {
-                var refused = plugin is not null && call is null || !Player.IsMenuValid(player, menu);
+                var refused = plugin is not null && call is null || !PlayerBase.IsMenuValid(player, menu);
 
                 return new MenuClick(player, menu, call, refused);
             }
@@ -329,7 +329,7 @@ public partial class MainEventHandler
         // slot: into their inventory, dropping what doesn't fit.
         private static void GiveBack(IPlayer player, ItemStack item)
         {
-            Player.AddToInventory(player.Inventory, player.CurrentHeldItemSlot, item, infiniteMaterials: false);
+            PlayerBase.AddToInventory(player.Inventory, player.CurrentHeldItemSlot, item, infiniteMaterials: false);
 
             if (item.Count > 0)
                 ItemEntity.DropHostOwned(player, item);

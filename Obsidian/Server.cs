@@ -736,6 +736,18 @@ public sealed partial class Server : IServer, IPluginScopedServer
     {
         plugin?.ThrowIfClosing();
 
+        // A player with the name may still be leaving: one removed from its own tick leaves once the tick ends (see
+        // RemoveServerPlayerAsync). The join waits for that, like a network player's, unless it's that tick asking,
+        // which would wait for itself.
+        var leaving = this.WaitForLeavesAsync(username);
+        if (!leaving.IsCompleted)
+        {
+            if (string.Equals(PlayerBase.TickingPlayer?.Username, username, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"Player '{username}' is still leaving; add them once their tick ends.");
+
+            await leaving;
+        }
+
         var player = new ServerPlayer(uuid, username, this, world ?? this.DefaultWorld)
         {
             SpawnedBy = plugin
@@ -836,9 +848,44 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
         serverPlayer.CancelJoin();
 
+        // Like a network player's leave, it waits for the player's tick under way. One asked for from that tick (a
+        // plugin removing the player as they die, say) runs apart from it, once it's done, and isn't waited for.
+        if (!serverPlayer.IsInOwnTick)
+        {
+            await this.LeaveServerPlayerAsync(serverPlayer);
+            return true;
+        }
+
+        Task leave;
+        using (ExecutionContext.SuppressFlow())
+        {
+            leave = Task.Run(async () =>
+            {
+                // Nobody awaits it, so it logs its own failure, like a network player's leave.
+                try
+                {
+                    await this.LeaveServerPlayerAsync(serverPlayer);
+                }
+                catch (Exception ex)
+                {
+                    Log.ServerPlayerLeaveFailed(this.logger, ex, serverPlayer.Username);
+                }
+            });
+        }
+
+        this.TrackLeave(leave, serverPlayer.Username);
+        return true;
+    }
+
+    // The leave of a server-side player whose registration was claimed.
+    private async Task LeaveServerPlayerAsync(ServerPlayer player)
+    {
         var result = EventResult.Failed;
         try
         {
+            // Its ticks stop first, so that nothing it does runs after it left.
+            await player.StopTickingAsync();
+
             result = await this.EventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this, DateTimeOffset.Now));
         }
         finally
@@ -851,11 +898,12 @@ public sealed partial class Server : IServer, IPluginScopedServer
             }
             finally
             {
+                // No longer a viewer of what they had open, so other viewers' clicks don't update them.
+                player.OpenedContainer = null;
+                player.RunMenusClosed();
                 this.ReleaseRegistrations(player);
             }
         }
-
-        return true;
     }
 
     // When the world tick in progress started (a Stopwatch timestamp), or 0 between ticks; see KeepAliveLoopAsync.
@@ -1159,6 +1207,9 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
     private static partial class Log
     {
+        [LoggerMessage(Level = LogLevel.Error, Message = "Removing server-side player {Username} failed")]
+        public static partial void ServerPlayerLeaveFailed(ILogger logger, Exception exception, string username);
+
         [LoggerMessage(Level = LogLevel.Error, Message = "A world tick failed ({Suppressed} more failures weren't logged since the last one)")]
         public static partial void TickFailed(ILogger logger, Exception exception, int suppressed);
 

@@ -57,7 +57,7 @@ public partial class InteractPacket
 
             case InteractionType.Attack:
                 var attack = new PlayerAttackEntityEventArgs(player, entity, server, Sneaking);
-                if (player is Player combatPlayer)
+                if (player is PlayerBase combatPlayer)
                 {
                     if (!combatPlayer.CanAttack(entity)) return;
                     (attack.Damage, attack.IsCrit) = combatPlayer.GetAttackDamage(entity);

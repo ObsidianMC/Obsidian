@@ -77,7 +77,7 @@ public partial class Nautilus : FarmAnimal
         }
         else if (!player.Sneaking
             && !GetEquipment(EquipmentSlot.Saddle).IsAir
-            && player is Player rider
+            && player is PlayerBase rider
             && Mount(rider))
             GoalController?.Pause();
         else

@@ -86,7 +86,7 @@ public partial class Mob
 
         // Vanilla breaks the lead when either end can't interact with the world. A holder that travelled was replaced
         // by a copy in vanilla, so only a player holder keeps its lead from another level.
-        if (!this.IsActive || !holder.IsActive || holder is not Player && holder.Level != this.Level)
+        if (!this.IsActive || !holder.IsActive || holder is not IPlayer && holder.Level != this.Level)
             this.DropLeash(this.Level.LevelData.GetBooleanRule("entity_drops"));
     }
 

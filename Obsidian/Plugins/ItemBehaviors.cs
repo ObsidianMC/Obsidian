@@ -139,10 +139,10 @@ internal static partial class ItemBehaviors
         if (item.Binding is not { Behavior: not null })
             return false;
 
-        var used = player is Entities.Player concrete
+        var used = player is Entities.PlayerBase concrete
             ? await concrete.RunItemUseAsync(() => RunAsync(item, use))
             : await RunAsync(item, use);
-        if (used && player is Entities.Player statisticsPlayer)
+        if (used && player is Entities.PlayerBase statisticsPlayer)
             statisticsPlayer.Statistics.Increment(item.UnlocalizedName, type: "minecraft:used");
 
         return used;

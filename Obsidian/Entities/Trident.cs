@@ -10,7 +10,7 @@ public sealed partial class Trident : Arrow
     {
         if (Owner == null) { await base.TickAsync(); return; }
         if (LoyaltyLevel <= 0 || !dealtDamage && !embedded) { await base.TickAsync(); return; }
-        if (Owner is not Player owner || !owner.Alive || owner.GameMode == GameMode.Spectator || owner.Level != Level)
+        if (Owner is not PlayerBase owner || !owner.Connected || !owner.Alive || owner.GameMode == GameMode.Spectator || owner.Level != Level)
         {
             if (Pickup == ArrowPickup.Allowed && PickupItem != null)
             {

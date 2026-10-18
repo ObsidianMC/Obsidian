@@ -192,7 +192,7 @@ public partial class UseItemOnPacket
 
             if (used)
             {
-                if (player is Entities.Player progressing)
+                if (player is Entities.PlayerBase progressing)
                     await progressing.FireProgressAsync("item_used_on_block",
                         item: progressItem, block: b, position: this.Position);
 
@@ -253,7 +253,7 @@ public partial class UseItemOnPacket
                         Seed = Random.Shared.NextInt64()
                     });
                 }
-                if (player is Entities.Player progressing)
+                if (player is Entities.PlayerBase progressing)
                 {
                     progressing.Statistics.Increment(currentItem.Holder.UnlocalizedName, type: "minecraft:used");
                     await progressing.FireProgressAsync("item_used_on_block",
@@ -277,7 +277,7 @@ public partial class UseItemOnPacket
             return;
         }
 
-        if (player is Obsidian.Entities.Player eatingPlayer)
+        if (player is Obsidian.Entities.PlayerBase eatingPlayer)
             eatingPlayer.StartEating(Hand);
 
         if (currentItem is null || player.Level is not AbstractLevel placeLevel)
@@ -413,7 +413,7 @@ public partial class UseItemOnPacket
             return;
         }
 
-        if (player is Entities.Player progressPlayer)
+        if (player is Entities.PlayerBase progressPlayer)
         {
             progressPlayer.Statistics.Increment(currentItem.Holder.UnlocalizedName, type: "minecraft:used");
             await progressPlayer.FireProgressAsync("placed_block",

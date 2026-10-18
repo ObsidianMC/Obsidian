@@ -144,8 +144,13 @@ public interface IServer : IDisposable
     public Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null);
 
     /// <summary>
-    /// Removes a server-side player that was added through <see cref="AddServerPlayerAsync"/>.
+    /// Removes a server-side player that was added through <see cref="AddServerPlayerAsync"/>: they leave like a
+    /// network player, once their tick under way has ended.
     /// </summary>
+    /// <returns>
+    /// Whether the player was online and is leaving. Called from the player's own tick, the leave finishes after that
+    /// tick, without being waited for; adding a player with their name waits for it meanwhile.
+    /// </returns>
     public Task<bool> RemoveServerPlayerAsync(IPlayer player);
 
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags);

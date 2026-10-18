@@ -68,7 +68,7 @@ public sealed partial class Pig : Animal
         var item = player.Inventory.GetItem(slot);
         if (IsFood(item))
             return await base.FeedAsync(player, hand);
-        if (HasSaddle && !player.Sneaking && player is Player rider)
+        if (HasSaddle && !player.Sneaking && player is PlayerBase rider)
         {
             Mount(rider);
             return true;

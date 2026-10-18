@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace Obsidian.Entities;
 
-public partial class Player
+public partial class PlayerBase
 {
     // Vanilla's Inventory.dropAll order: hotbar, main inventory, then off hand, feet, legs, chest and head.
     private static readonly int[] deathDropSlots =
@@ -119,8 +119,8 @@ public partial class Player
             await transfers;
             await this.LoseItemsAtDeathAsync(death);
             await this.RecordProgressDeathAsync(source);
-            await this.Client.QueuePacketAsync(new SetHealthPacket(0, this.FoodLevel, this.FoodSaturationLevel));
-            await this.Client.QueuePacketAsync(new PlayerCombatKillPacket
+            await this.QueuePacketAsync(new SetHealthPacket(0, this.FoodLevel, this.FoodSaturationLevel));
+            await this.QueuePacketAsync(new PlayerCombatKillPacket
             {
                 PlayerID = this.EntityId,
                 Message = message
@@ -226,7 +226,7 @@ public partial class Player
         {
             await this.EventDispatcher.ExecuteEventAsync(
                 new ContainerClosedEventArgs(this, this.Server, window, windowId));
-            await this.Client.QueuePacketAsync(new ContainerClosePacket { ContainerId = windowId });
+            await this.QueuePacketAsync(new ContainerClosePacket { ContainerId = windowId });
         }
 
         this.RunMenusClosed();

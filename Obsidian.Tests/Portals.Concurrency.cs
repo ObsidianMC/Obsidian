@@ -440,7 +440,7 @@ public partial class Portals
         (int)typeof(Client).GetField("unsent", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(client)!;
 
     private static SemaphoreSlim ChunkLock(Entities.Player player) =>
-        (SemaphoreSlim)typeof(Entities.Player)
+        (SemaphoreSlim)typeof(Entities.PlayerBase)
             .GetField("chunkUpdates", BindingFlags.Instance | BindingFlags.NonPublic)!
             .GetValue(player)!;
 

@@ -14,7 +14,7 @@ internal sealed partial class MobSpawner
         var time = ((level.DayTime % 24000) + 24000) % 24000;
         if (time is < 13000 or > 23000) return;
         var terrain = new MobTerrain(level);
-        foreach (var player in players.OfType<Player>())
+        foreach (var player in players.OfType<PlayerBase>())
         {
             if (!player.Alive || player.Position.Y < 63 || terrain.GetSkyLight((Vector)player.Position.Floor()) < 15 ||
                 random.Next(Math.Max(1, player.TimeSinceRest)) < 72000) continue;
