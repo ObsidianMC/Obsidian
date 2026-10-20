@@ -1,4 +1,4 @@
-using Obsidian.Entities.Factories;
+﻿using Obsidian.Entities.Factories;
 using Obsidian.Nbt;
 using System.Buffers.Binary;
 
@@ -51,6 +51,8 @@ internal static class EntityNbt
         {
             EntityType.AreaEffectCloud when tag.TryGetBool("ObsidianDragonBreath", out var breath) && breath => new DragonBreathCloud { Level = level },
             EntityType.ItemFrame => new ItemFrame { Level = level },
+            EntityType.GlowItemFrame => new GlowItemFrame { Level = level },
+            EntityType.Painting => new Painting { Level = level },
             EntityType.Item => new ItemEntity { Level = level },
             EntityType.ChestMinecart => new ChestMinecart { Level = level },
             _ => EntitySpawner.Create(type, level)
@@ -239,5 +241,5 @@ internal static class EntityNbt
     // Players have their own files; Obsidian can't restore falling blocks (they need their block state) or experience
     // orbs, and vanilla never saves fishing bobbers or lightning.
     private static bool IsSaved(EntityType type) => type is not (EntityType.Player or EntityType.FallingBlock
-        or EntityType.ExperienceOrb or EntityType.FishingBobber or EntityType.LightningBolt);
+        or EntityType.ExperienceOrb or EntityType.FishingBobber or EntityType.LightningBolt or EntityType.LeashKnot);
 }

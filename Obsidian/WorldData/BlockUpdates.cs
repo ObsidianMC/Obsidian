@@ -224,6 +224,13 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         if (VanillaRedstone.For(state) is RedstoneComponent component)
             return component.UpdateShape(this, position, state, direction, neighbor);
 
+        // A sign comes off when what holds it goes.
+        if (Signs.IsSign(state))
+            return Signs.Survives(this, state, position) ? state : BlocksRegistry.Air;
+
+        if (VanillaPlacement.UpdateShape(state, direction, neighbor) is IBlock vanilla)
+            return vanilla;
+
         if (!BlockBehaviors.TryEnter(state, out var behavior, out var call))
             return null;
 

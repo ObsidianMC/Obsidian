@@ -1,4 +1,4 @@
-using Obsidian.API.Blocks;
+﻿using Obsidian.API.Blocks;
 using Obsidian.API.BlockEntities;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Inventory;
@@ -47,6 +47,10 @@ public abstract partial class AbstractLevel
     /// An explosion without an entity causing it, like a bed's or a respawn anchor's where they don't work. With
     /// <paramref name="fire"/>, like vanilla's, a third of the air it reaches above a solid block catches fire.
     /// </summary>
+    /// <summary>An explosion at <paramref name="center"/>, of <paramref name="source"/> lit by <paramref name="owner"/>.</summary>
+    internal ValueTask ExplodeAsync(VectorD center, float radius, Entity source, IEntity? owner, ExplosionInteraction interaction) =>
+        ExplodeAsync(center, radius, source, owner, fire: false, interaction);
+
     internal ValueTask ExplodeAsync(VectorD center, float radius, bool fire, ExplosionInteraction interaction) =>
         ExplodeAsync(center, radius, source: null, owner: null, fire, interaction);
 
@@ -106,7 +110,7 @@ public abstract partial class AbstractLevel
         var diameter = radius * 2;
         var targets = GetEntitiesInRange(center, diameter + 1)
             .OfType<Entity>()
-            .Where(entity => entity is Living or EndCrystal)
+            .Where(entity => entity is Living or EndCrystal or PrimedTnt or HangingEntity)
             .ToArray();
 
         foreach (var target in targets)
@@ -117,6 +121,13 @@ public abstract partial class AbstractLevel
             var distance = (target.Position - center).Magnitude / diameter;
             if (distance > 1)
                 continue;
+
+            // Like vanilla's, an explosion breaks what hangs in it, which drops its item.
+            if (target is HangingEntity hanging)
+            {
+                await hanging.BreakAsync(dropItems: true);
+                continue;
+            }
             var direction = target.Position + new VectorD(0, target.Dimension.Height * 0.85f, 0) - center;
             if (direction.Magnitude < 0.000001f)
                 continue;
@@ -145,7 +156,7 @@ public abstract partial class AbstractLevel
             var attacker = owner ?? source ?? (IEntity)target;
             if (target is Living living)
                 await living.DamageCombatAsync(attacker, damage, CombatDamageKind.Explosion, sourcePosition: center);
-            else
+            else if (target is not PrimedTnt)
                 await target.DamageAsync(attacker, damage);
             var knockback = direction * exposure
                 * (1 - Math.Clamp(target.GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
@@ -161,9 +172,12 @@ public abstract partial class AbstractLevel
         if (keepsBlocks)
             destroyed.Clear();
 
-        var dropDecay = LevelData.GetBooleanRule(interaction == ExplosionInteraction.Block
-            ? "block_explosion_drop_decay"
-            : "mob_explosion_drop_decay");
+        var dropDecay = interaction switch
+        {
+            ExplosionInteraction.Block => LevelData.GetBooleanRule("block_explosion_drop_decay"),
+            ExplosionInteraction.Tnt => LevelData.GetBooleanRule("tnt_explosion_drop_decay", false),
+            _ => LevelData.GetBooleanRule("mob_explosion_drop_decay")
+        };
 
         var removed = new HashSet<Vector>();
         foreach (var position in destroyed)
@@ -172,6 +186,17 @@ public abstract partial class AbstractLevel
                 continue;
 
             var block = terrain.GetBlock(position)!;
+
+            // Like vanilla's TntBlock.wasExploded, TNT caught in an explosion is lit with a short fuse instead of dropping.
+            if (block.RegistryId == BlockIds.Tnt)
+            {
+                if (LevelData.GetBooleanRule("tnt_explodes")
+                    && await this.TrySetBlockAsync(position, BlocksRegistry.Air, BlockUpdateFlags.All, state => state.RegistryId == BlockIds.Tnt))
+                    PrimedTnt.Prime(this, position, owner ?? source, PrimedTnt.ExplodedFuse());
+
+                continue;
+            }
+
             var expected = this.GetResidentBlockEntity(position);
             if (expected is BlockEntity { Owner: PluginContainer } && expected is not DataBlockEntity)
             {
@@ -331,7 +356,10 @@ public abstract partial class AbstractLevel
         /// A mob's, or its projectile's: breaks blocks only with <c>mob_griefing</c>, and
         /// <c>mob_explosion_drop_decay</c> decays its drops.
         /// </summary>
-        Mob
+        Mob,
+
+        /// <summary>Lit TNT's: breaks blocks, and <c>tnt_explosion_drop_decay</c> decays its drops.</summary>
+        Tnt
     }
 
     private sealed class ExplosionParticleData : ParticleData

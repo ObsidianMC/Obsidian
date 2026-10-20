@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -73,6 +73,12 @@ public sealed partial class Server : IServer, IPluginScopedServer
     public IEventDispatcher EventDispatcher { get; }
 
     public IOperatorList Operators { get; }
+
+    /// <summary>The players and IP addresses banned from the server.</summary>
+    internal BanList Bans { get; }
+
+    /// <summary>The scoreboard <c>/scoreboard</c> manages.</summary>
+    internal VanillaScoreboard CommandScoreboard { get; }
     public IScoreboardManager ScoreboardManager { get; private set; }
     public IWorldManager WorldManager { get; }
 
@@ -249,6 +255,8 @@ public sealed partial class Server : IServer, IPluginScopedServer
         this.Integrated = serviceProvider.GetService<IntegratedSession>();
 
         this.Operators = new OperatorList(this, loggerFactory, this.Integrated);
+        this.CommandScoreboard = new VanillaScoreboard(this);
+        this.Bans = new BanList(loggerFactory.CreateLogger<BanList>(), persistent: this.Integrated is null);
         this.CommandHandler = commandHandler;
         this.PluginManager = ActivatorUtilities.CreateInstance<PluginManager>(this.serviceProvider, this);
     }
@@ -477,6 +485,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
         await this.userCache.LoadAsync(this.cancelTokenSource.Token);
 
         await (Operators as OperatorList).InitializeAsync();
+        await this.Bans.InitializeAsync();
 
         await PluginManager.LoadPluginsAsync();
 

@@ -1,4 +1,4 @@
-using Obsidian.Net.Packets.Play.Clientbound;
+﻿using Obsidian.Net.Packets.Play.Clientbound;
 using System.Threading;
 
 namespace Obsidian;
@@ -155,4 +155,24 @@ public sealed class Team(IScoreboard scoreboard, IPacketBroadcaster packetBroadc
     }
 
     private void SetPacketMode(TeamModeOption mode) => this.packet.Mode = mode;
+
+    /// <summary>A packet creating the team as it is now, for players who join after it was created.</summary>
+    internal SetPlayerTeamPacket CreationPacket()
+    {
+        lock (this.gate)
+        {
+            return new()
+            {
+                TeamName = this.Name,
+                Mode = TeamModeOption.CreateTeam,
+                TeamDisplayName = this.DisplayName,
+                NameTagVisibility = this.NameTagVisibility,
+                CollisionRule = this.CollisionRule,
+                TeamColor = this.Color,
+                TeamPrefix = this.Prefix,
+                TeamSuffix = this.Suffix,
+                Entities = [.. this.Entities]
+            };
+        }
+    }
 }

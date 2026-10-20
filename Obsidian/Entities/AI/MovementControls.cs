@@ -49,7 +49,11 @@ public class MoveControl(Mob mob)
             var next = mob.Position + movement;
             if (!mob.Terrain.IsFree(mob.Dimension.CreateBBFromPosition(next)))
                 movement = new VectorD(-MathF.Sin(strafeYaw), 0, MathF.Cos(strafeYaw));
-            Acceleration = movement * (mob.MovementSpeed * 0.25f * 0.98f);
+            // Like walking, vanilla scales the strafe input by the speed and then by the ground acceleration.
+            var strafeSpeed = mob.MovementSpeed;
+            var strafeFriction = mob.Terrain.GetFriction(mob.Position);
+            var strafeAcceleration = mob.InWater || mob.InLava ? 0.02f : mob.MovementFlags.HasFlag(MovementFlags.OnGround) ? strafeSpeed * 0.21600002f / (strafeFriction * strafeFriction * strafeFriction) : 0.02f;
+            Acceleration = movement * (strafeSpeed * strafeAcceleration * 0.98f);
             return;
         }
         if (wantedPosition is not VectorD target)
@@ -65,7 +69,8 @@ public class MoveControl(Mob mob)
         mob.Yaw = LookControl.RotateTowards(mob.Yaw.Degrees, wantedYaw, 90);
         var speed = mob.MovementSpeed * speedModifier;
         var friction = mob.Terrain.GetFriction(mob.Position);
-        var acceleration = mob.InWater || mob.InLava ? 0.02f : mob.MovementFlags.HasFlag(MovementFlags.OnGround) ? 0.21600002f / (friction * friction * friction) : 0.02f;
+        // Vanilla's Mob.setSpeed also sets zza to the speed, and travel scales that input by the speed again.
+        var acceleration = mob.InWater || mob.InLava ? 0.02f : mob.MovementFlags.HasFlag(MovementFlags.OnGround) ? speed * 0.21600002f / (friction * friction * friction) : 0.02f;
         var yaw = mob.Yaw.Degrees * MathF.PI / 180;
         Acceleration = new VectorD(-MathF.Sin(yaw), 0, MathF.Cos(yaw)) * (acceleration * speed * 0.98f);
         if (delta.Y > mob.GetAttributeValue("minecraft:generic.step_height") && horizontalDistance < MathF.Max(1, mob.Dimension.Width))

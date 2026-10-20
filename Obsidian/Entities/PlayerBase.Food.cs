@@ -118,6 +118,34 @@ public partial class PlayerBase
 
     public override ValueTask TickAsync() => this.RunTickAsync(this.TickPlayerAsync);
 
+    // Like vanilla's LivingEntity.baseTick: a player loses air with their eyes in water, unless they can breathe there
+    // or can't be hurt, and drowns once it runs out; out of it they get it back. Their client shows it as bubbles.
+    private async ValueTask TickAirSupplyAsync()
+    {
+        var previous = Air;
+        var eyeHeight = Swimming ? 0.4 : Sneaking ? 1.27 : 1.62;
+        if (GameMode is GameMode.Survival or GameMode.Adventure
+            && new Obsidian.Entities.AI.MobTerrain(Level).IsInFluid(Position + new VectorD(0, eyeHeight, 0), water: true)
+            && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1)
+            && !HasPotionEffect((int)PotionEffect.ConduitPower - 1))
+        {
+            // Respiration keeps a breath in with a chance of its level in its level plus one.
+            var respiration = CombatItems.EnchantmentLevel(Inventory.GetItem(5), EnchantmentsRegistry.Respiration);
+            if (respiration <= 0 || Globals.Random.Next(respiration + 1) == 0)
+                Air--;
+            if (Air <= -20)
+            {
+                Air = 0;
+                await DamageCombatAsync(this, 2, CombatDamageKind.Drowning);
+            }
+        }
+        else if (Air < 300)
+            Air = (short)Math.Min(300, Air + 4);
+
+        if (Air != previous)
+            await this.QueuePacketAsync(new SetEntityDataPacket { EntityId = EntityId, Entity = this });
+    }
+
     private async ValueTask TickPlayerAsync()
     {
         if (damageCooldown > 0) damageCooldown--;
@@ -138,6 +166,9 @@ public partial class PlayerBase
             return;
         }
         await TickInventoryItemsAsync();
+        await TickAirSupplyAsync();
+        if (!Alive)
+            return;
         TimeSinceRest = Sleeping ? 0 : (int)Math.Min(int.MaxValue, (long)TimeSinceRest + 1);
         var grounded = MovementFlags.HasFlag(MovementFlags.OnGround);
         if (foodPosition is VectorD previous)

@@ -9,6 +9,7 @@ using Obsidian.API.Utilities;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using System;
 using System.Collections.Generic;
@@ -261,6 +262,80 @@ public sealed class Combat
             Assert.Equal(1, effect.Amplifier);
             Assert.Equal(54, effect.Duration / 8);
         }
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task EnderPearlThrowCooldownCollisionTeleportAndNbt()
+    {
+        await using var context = TestServerFactory.CreateServer($"ender-pearl-{Guid.NewGuid():N}");
+        var world = context.World;
+        for (var x = -2; x <= 2; x++)
+            for (var z = -2; z <= 2; z++)
+                world.LoadRegionByChunk(x, z).SetChunk(new Obsidian.WorldData.Chunk(x, z, world.MinY, world.Height, ChunkGenStage.full));
+
+        // Build a wall at z = 5 so a pearl thrown south (+Z) hits it.
+        for (var y = 63; y <= 67; y++)
+            for (var x = -1; x <= 1; x++)
+                await world.SetBlockAsync(new Vector(x, y, 5), BlocksRegistry.Stone);
+
+        var player = TestServerFactory.CreateConnectedPlayer(
+            context.Server, world, "PearlThrower", new VectorD(0.5, 64, 0.5));
+        player.Yaw = 0f;
+        player.Pitch = 0f;
+        Assert.True(world.TryAddPlayer(player));
+        Assert.True(world.TryAddEntity(player));
+        var client = (TestClient)player.Client;
+
+        var pearls = new ItemStack(ItemsRegistry.EnderPearl, 3);
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, pearls);
+        client.ClearPackets();
+
+        // Throwing a pearl spawns EnderPearl, consumes 1 item in Survival, and sends a 20-tick CooldownPacket.
+        await player.UseItemAsync(InteractionHand.MainHand);
+        Assert.Equal(2, player.Inventory.GetItem(player.CurrentHeldItemSlot)!.Count);
+        var cooldown = Assert.Single(client.SentPackets.OfType<CooldownPacket>());
+        Assert.Equal("minecraft:ender_pearl", cooldown.CooldownGroup);
+        Assert.Equal(20, cooldown.CooldownTicks);
+        Assert.True(player.IsOnCooldown(pearls));
+
+        var pearl = Assert.Single(world.GetNonPlayerEntitiesInRange(player.Position, 10).OfType<EnderPearl>());
+        Assert.Same(player, pearl.Owner);
+
+        // Attempting to throw again while on cooldown does nothing.
+        await player.UseItemAsync(InteractionHand.MainHand);
+        Assert.Equal(2, player.Inventory.GetItem(player.CurrentHeldItemSlot)!.Count);
+        Assert.Single(world.GetNonPlayerEntitiesInRange(player.Position, 10).OfType<EnderPearl>());
+
+        // Verify NBT roundtrip of EnderPearl preserves Item and Owner UUID.
+        var tag = new Obsidian.Nbt.NbtCompound();
+        pearl.WriteNbt(tag);
+        var restored = new EnderPearl { Level = world };
+        restored.ReadNbt(tag);
+        Assert.True(restored.Item!.Is(ItemsRegistry.EnderPearl));
+        Assert.True(tag.TryGetTag<Obsidian.Nbt.NbtArray<int>>("Owner", out var savedOwner));
+        Assert.Equal(EntityNbt.UuidToInts(player.Uuid), savedOwner.GetArray());
+
+        // Mount the player on a vehicle to verify pearl impact dismounts them.
+        var pig = new Pig
+        {
+            Level = world,
+            EntityId = Obsidian.Server.GetNextEntityId(),
+            Position = player.Position,
+            Type = EntityType.Pig
+        };
+        Assert.True(world.TryAddEntity(pig));
+        Assert.True(player.Ride(pig, force: true));
+        Assert.Same(pig, player.Vehicle);
+
+        // Tick the pearl until it hits the wall at z = 5.
+        for (var tick = 0; tick < 10 && world.GetNonPlayerEntitiesInRange(player.Position, 20).OfType<EnderPearl>().Any(); tick++)
+            await pearl.TickAsync();
+
+        // Pearl is removed, player is dismounted, teleported to impact site, and takes 5 fall damage (20 -> 15 HP).
+        Assert.Empty(world.GetNonPlayerEntitiesInRange(player.Position, 20).OfType<EnderPearl>());
+        Assert.Null(player.Vehicle);
+        Assert.True(player.Position.Z > 3.5);
+        Assert.Equal(15f, player.Health);
     }
 
 }

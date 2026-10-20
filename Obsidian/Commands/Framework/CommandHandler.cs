@@ -192,7 +192,9 @@ public sealed class CommandHandler : ICommandHandler
 
         // The integrated server's commands are registered by the server when it runs as one.
         var commandRoots = assembly.GetTypes()
-            .Where(type => type.IsSubclassOf(typeof(CommandModuleBase)) && type != typeof(IntegratedCommandModule));
+            .Where(type => type.IsSubclassOf(typeof(CommandModuleBase)) && type != typeof(IntegratedCommandModule))
+            // Nested groups are registered under the module they're declared in.
+            .Where(type => !type.IsNested);
 
         foreach (var root in commandRoots)
         {
@@ -433,33 +435,48 @@ public sealed class CommandHandler : ICommandHandler
         ctx.Plugin = command.PluginContainer?.Plugin;
 
         var parameters = overload.GetParameters();
-        var index = words.Count - 1;
+        var cursor = words.Count - 1;
 
-        // A trailing [Remaining] parameter takes every word from its first, as when the command runs.
-        if (index >= parameters.Length && parameters.Length > 0 && parameters[^1].GetCustomAttribute<RemainingAttribute>() is not null)
-            index = parameters.Length - 1;
+        // Find the parameter the word at the cursor is typed into, each taking as many words as its parser reads. A
+        // trailing [Remaining] parameter takes every word from its first, as when the command runs.
+        int index = 0, first = 0;
+        for (; index < parameters.Length; index++)
+        {
+            var remaining = index == parameters.Length - 1 && parameters[index].GetCustomAttribute<RemainingAttribute>() is not null;
+            var count = IsValidArgumentType(parameters[index].ParameterType) ? GetArgumentParser(parameters[index].ParameterType).WordCount : 1;
+
+            if (remaining || cursor < first + count)
+                break;
+
+            first += Math.Max(1, count);
+        }
 
         if (index >= parameters.Length || FindSuggestionProvider(parameters[index]) is not ISuggestionProvider provider)
+            return null;
+
+        var bound = Command.BindArguments(parameters[..index], [.. words[..first].Select(word => word.Value)],
+            type => IsValidArgumentType(type) ? GetArgumentParser(type).WordCount : 1);
+        if (bound is null)
             return null;
 
         for (var i = 0; i < index; i++)
         {
             var type = parameters[i].ParameterType;
 
-            if (!IsValidArgumentType(type) || !GetArgumentParser(type).TryParseArgument(words[i].Value, ctx, out _))
+            if (!IsValidArgumentType(type) || !GetArgumentParser(type).TryParseArgument(bound[i], ctx, out _))
                 return null;
         }
 
         if (await command.FindFailedCheckAsync(overload, ctx) is not null)
             return null;
 
-        var typed = string.Join(' ', words[index..].Select(word => word.Value));
-        var isWord = parameters[index].GetCustomAttribute<RemainingAttribute>() is null;
+        var typed = string.Join(' ', words[first..].Select(word => word.Value));
+        var isWord = parameters[index].GetCustomAttribute<RemainingAttribute>() is null && first == cursor;
 
         // Read now, while the plugin can't unload: a lazy sequence would run its code later.
         var suggestions = (await provider.GetSuggestionsAsync(ctx)).ToList();
 
-        return new SuggestionGroup(words[index].Start, typed, isWord, suggestions);
+        return new SuggestionGroup(words[first].Start, typed, isWord, suggestions);
     }
 
     /// <summary>

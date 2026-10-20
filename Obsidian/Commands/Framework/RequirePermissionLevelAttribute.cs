@@ -1,4 +1,4 @@
-using Obsidian.API.Commands;
+﻿using Obsidian.API.Commands;
 
 namespace Obsidian.Commands.Framework;
 
@@ -16,9 +16,11 @@ internal sealed class RequirePermissionLevelAttribute(int level) : BaseExecution
         if (context.Sender.Issuer is CommandIssuers.Console or CommandIssuers.RemoteConsole)
             return Task.FromResult(true);
 
-        var allowed = context.Player is not null
+        // The level is the sender's, even for a command /execute runs as another player.
+        var player = context.Sender.Player ?? context.Player;
+        var allowed = player is not null
             && context.Server.Operators is OperatorList operators
-            && operators.GetPermissionLevel(context.Player) >= this.Level;
+            && operators.GetPermissionLevel(player) >= this.Level;
 
         return Task.FromResult(allowed);
     }

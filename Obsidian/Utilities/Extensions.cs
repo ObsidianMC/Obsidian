@@ -30,6 +30,7 @@ public static partial class Extensions
                 EntityType.FallingBlock,
                 EntityType.Item,
                 EntityType.ItemFrame,
+                EntityType.GlowItemFrame,
                 EntityType.Fireball,
                 EntityType.LeashKnot,
                 EntityType.LightningBolt,

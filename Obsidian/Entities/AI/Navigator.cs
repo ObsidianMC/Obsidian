@@ -40,6 +40,7 @@ public class Navigator : INavigator
         if (!requested || TargetType != TargetType.Location || (TargetLocation - to).MagnitudeSquared() > 1)
             repathDelay = 0;
         TargetType = TargetType.Location;
+        ReachedTarget = false;
         Target = null;
         TargetLocation = to;
         requested = true;
@@ -52,6 +53,7 @@ public class Navigator : INavigator
         if (!requested || !ReferenceEquals(Target, to))
             repathDelay = 0;
         TargetType = TargetType.Entity;
+        ReachedTarget = false;
         Target = to;
         TargetLocation = to.Position;
         requested = true;
@@ -137,7 +139,8 @@ public class Navigator : INavigator
             return;
         }
 
-        var tolerance = MathF.Max(0.2f, mob.Dimension.Width / 2);
+        // Vanilla's maxDistanceToWaypoint: narrow mobs count a node as reached from further away, so they don't circle it.
+        var tolerance = mob.Dimension.Width > 0.75f ? mob.Dimension.Width / 2 : 0.75f - mob.Dimension.Width / 2;
         while (nextNode < path.Nodes.Count)
         {
             var difference = path.Nodes[nextNode] - mob.Position;

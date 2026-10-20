@@ -134,12 +134,7 @@ public abstract partial class AbstractLevel
             if (player.GameMode == GameMode.Spectator || endPortalCooldowns.ContainsKey(player.Uuid)) continue;
             var position = (Vector)player.Position.Floor();
             var block = await GetBlockAsync(position);
-            if (block?.RegistryId == BlockIds.EndPortal && this is IDimension dimension)
-            {
-                endPortalCooldowns[player.Uuid] = 100;
-                await player.TransferDimensionAsync(dimension.ParentWorld);
-            }
-            else if (block?.RegistryId == BlockIds.EndGateway)
+            if (block?.RegistryId == BlockIds.EndGateway)
             {
                 if (await FindEndGatewayExitAsync(position) is not Vector destination) continue;
                 endPortalCooldowns[player.Uuid] = 100;

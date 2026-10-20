@@ -8,6 +8,12 @@ public abstract class BaseArgumentParser
     public abstract int Id { get; }
     public abstract string Identifier { get; }
 
+    /// <summary>
+    /// How many words of a command line the argument takes, like the three of a position. The words are passed to
+    /// the parser joined by single spaces.
+    /// </summary>
+    public virtual int WordCount => 1;
+
     public virtual void Write(INetStreamWriter writer) => writer.WriteVarInt(this.Id);
 
     internal abstract bool TryParseArgument(string input, CommandContext ctx, [NotNullWhen(true)] out object? result);

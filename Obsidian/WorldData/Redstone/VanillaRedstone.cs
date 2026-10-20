@@ -1,4 +1,4 @@
-using Obsidian.API.Blocks;
+﻿using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using System.Diagnostics.CodeAnalysis;
 
@@ -52,6 +52,7 @@ internal static class VanillaRedstone
         var hopper = new HopperComponent();
         var dispenser = new DispenserComponent(dropper: false);
         var dropper = new DispenserComponent(dropper: true);
+        var tnt = new TntComponent();
 
         for (var id = 0; id < table.Length; id++)
         {
@@ -74,6 +75,7 @@ internal static class VanillaRedstone
                 "HopperBlock" => hopper,
                 "DispenserBlock" => dispenser,
                 "DropperBlock" => dropper,
+                "TntBlock" => tnt,
                 _ => null
             };
         }

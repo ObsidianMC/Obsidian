@@ -64,17 +64,21 @@ public partial class Mob
             await DamageCombatAsync(this, 4, CombatDamageKind.Void);
         if (InWater || InLava || HasPotionEffect((int)PotionEffect.Levitation - 1))
             fallDistance = 0;
-        else if (MovementFlags.HasFlag(MovementFlags.OnGround))
+        else
         {
-            var damage = MathF.Ceiling(fallDistance - SafeFallDistance);
-            if (this is Creeper creeper)
-                creeper.FuseTicks = Math.Max(0, Math.Min(creeper.Fuse - 5, creeper.FuseTicks + (int)(fallDistance * 1.5f)));
-            fallDistance = 0;
-            if (damage > 0 && TakesFallDamage && this is not Chicken)
-                await DamageCombatAsync(this, damage, CombatDamageKind.Fall);
+            // Count the drop that ended in landing too, as vanilla adds it before checking the ground.
+            if (LastPosition.Y > Position.Y)
+                fallDistance += (float)(LastPosition.Y - Position.Y);
+            if (MovementFlags.HasFlag(MovementFlags.OnGround))
+            {
+                var damage = MathF.Ceiling(fallDistance - SafeFallDistance);
+                if (this is Creeper creeper)
+                    creeper.FuseTicks = Math.Max(0, Math.Min(creeper.Fuse - 5, creeper.FuseTicks + (int)(fallDistance * 1.5f)));
+                fallDistance = 0;
+                if (damage > 0 && TakesFallDamage && this is not Chicken)
+                    await DamageCombatAsync(this, damage, CombatDamageKind.Fall);
+            }
         }
-        else if (LastPosition.Y > Position.Y)
-            fallDistance += (float)(LastPosition.Y - Position.Y);
 
         var feet = Terrain.GetBlock((Vector)Position.Floor());
         var floor = Terrain.GetBlock((Vector)(Position - new VectorD(0, 0.01f, 0)).Floor());

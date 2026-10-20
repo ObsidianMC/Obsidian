@@ -255,6 +255,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
             CombatDamageKind.Suffocation => "minecraft:in_wall",
             CombatDamageKind.Freezing => "minecraft:freeze",
             CombatDamageKind.Thorns => "minecraft:thorns",
+            CombatDamageKind.Drowning => "minecraft:drown",
             _ => "minecraft:magic"
         };
 

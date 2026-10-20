@@ -29,6 +29,8 @@ public partial class PlayerBase
         this.portalGeneration++;
         this.portalTime = 0;
         this.lastPortalType = null;
+        this.AwaitingEndCredits = false;
+        this.returningFromEnd = false;
         if (this.portalDestination is not Task<PortalDestination?> pending)
             return;
         this.portalDestination = null;

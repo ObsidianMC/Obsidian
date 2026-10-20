@@ -507,7 +507,10 @@ public partial class Mob
             var horizontal = Math.Sqrt(direction.X * direction.X + direction.Z * direction.Z);
             var strength = 0.4f * (1 - Math.Clamp(GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
             if (horizontal > 0.0001f && strength > 0)
-                Motion = new VectorD(Motion.X / 2 + direction.X / horizontal * strength, strength, Motion.Z / 2 + direction.Z / horizontal * strength);
+                // Vanilla only knocks a mob upwards while it's on the ground, so hits can't juggle it in the air.
+                Motion = new VectorD(Motion.X / 2 + direction.X / horizontal * strength,
+                    MovementFlags.HasFlag(MovementFlags.OnGround) ? Math.Min(0.4f, Motion.Y / 2 + strength) : Motion.Y,
+                    Motion.Z / 2 + direction.Z / horizontal * strength);
         }
 
         lastDamage = incoming;

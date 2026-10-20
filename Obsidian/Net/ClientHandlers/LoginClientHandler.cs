@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Obsidian.Integrated;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Common;
@@ -120,7 +120,11 @@ internal sealed partial class LoginClientHandler : ClientHandler
             return;
         }
 
-        if (this.Server.Configuration.Whitelist && !this.Server.IsWhitelisted(username))
+        if (this.Server is Server { Bans: var bans } && bans.GetBan(Guid.Empty, username) is BannedPlayer ban)
+        {
+            await this.Client.DisconnectAsync(BanList.DisconnectMessage(ban.Reason));
+        }
+        else if (this.Server.Configuration.Whitelist && !this.Server.IsWhitelisted(username))
         {
             await this.Client.DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
         }

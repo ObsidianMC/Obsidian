@@ -513,6 +513,84 @@ public partial class Portals
         Assert.Equal(90f, item.Yaw.Degrees);
     }
 
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task EndExitPortalAfterDragonDeathRollsCreditsAndClientCommandRespawnsAlivePlayer()
+    {
+        await using var context = TestServerFactory.CreateServer($"end-credits-{Guid.NewGuid():N}");
+        var world = context.World;
+        var end = AddDimension(context, "minecraft:the_end");
+        for (var x = -8; x <= 8; x++)
+            for (var z = -8; z <= 8; z++)
+                end.LoadRegionByChunk(x, z).SetChunk(new Chunk(x, z, end.MinY, end.Height, ChunkGenStage.full));
+        AddChunks(world);
+
+        // Ground at (0, 63, 0) so the End fight initializes exitPortal at (0, 64, 0).
+        await end.SetBlockAsync(new Vector(0, 63, 0), BlocksRegistry.EndStone);
+
+        var player = TestServerFactory.CreateConnectedPlayer(
+            context.Server, world, "DragonSlayer", new VectorD(10.5, 64, 10.5));
+        Assert.True(world.TryAddPlayer(player));
+        Assert.True(world.TryAddEntity(player));
+        await player.TeleportAsync(end, new VectorD(10.5, 64, 10.5));
+        var client = (TestClient)player.Client;
+
+        // First End fight tick spawns the fight dragon and builds the inactive bedrock exit frame.
+        await end.TickEndFightAsync();
+        var dragon = Assert.Single(end.GetEntitiesInRange(new VectorD(0, 128, 0), 256).OfType<EnderDragon>());
+        Assert.NotEqual(BlockIds.EndPortal, (await end.GetBlockAsync(new Vector(1, 64, 0)))!.RegistryId);
+
+        // Killing the dragon lights the exit portal and places the dragon egg.
+        await end.EndFightDragonKilledAsync(dragon);
+        Assert.Equal(BlockIds.EndPortal, (await end.GetBlockAsync(new Vector(1, 64, 0)))!.RegistryId);
+        Assert.Equal(BlockIds.DragonEgg, (await end.GetBlockAsync(new Vector(0, 68, 0)))!.RegistryId);
+
+        // Stepping onto the exit portal's bedrock base at y = 64 contacts the EndPortal block at (1, 64, 0).
+        await player.TeleportAsync(end, new VectorD(1.5, 64, 0.5));
+        for (var tick = 0; tick < 10; tick++)
+            await player.TickPortalsAsync();
+
+        // A world tick must not bypass the credits and teleport the player early.
+        client.ClearPackets();
+        await end.TickEndFightAsync();
+        Assert.Same(end, player.Level);
+        Assert.False(player.SeenCredits);
+
+        // Ticking portals triggers RollCreditsAndRespawn on the first exit and pauses until the client responds.
+        await player.TickPortalsAsync();
+        Assert.True(player.AwaitingEndCredits);
+        Assert.True(player.SeenCredits);
+        Assert.Same(end, player.Level);
+        var creditsPacket = Assert.Single(client.SentPackets.OfType<GameEventPacket>());
+        Assert.Equal(ChangeGameStateReason.WinGame, creditsPacket.Reason);
+        Assert.Equal(1f, creditsPacket.Value);
+
+        // Alive player sending ClientCommandPacket(PerformRespawn) finishes the credits and returns to Overworld.
+        Assert.True(player.Health > 0);
+        await new Obsidian.Net.Packets.Play.Serverbound.ClientCommandPacket().HandleAsync(context.Server, player);
+        Assert.False(player.AwaitingEndCredits);
+
+        for (var tick = 0; tick < 20 && player.Level == end; tick++)
+        {
+            await player.TickPortalsAsync();
+            await Task.Delay(5);
+        }
+
+        Assert.Same(world, player.Level);
+        Assert.Equal(world.LevelData.SpawnPosition, player.Position);
+
+        // Re-entering the End exit portal after having seen credits sends JustRespawnPlayer (0f).
+        await player.TeleportAsync(end, new VectorD(1.5, 64, 0.5));
+        for (var tick = 0; tick < 10; tick++)
+            await player.TickPortalsAsync();
+
+        client.ClearPackets();
+        await player.TickPortalsAsync();
+        Assert.True(player.AwaitingEndCredits);
+        var skipCreditsPacket = Assert.Single(client.SentPackets.OfType<GameEventPacket>());
+        Assert.Equal(ChangeGameStateReason.WinGame, skipCreditsPacket.Reason);
+        Assert.Equal(0f, skipCreditsPacket.Value);
+    }
+
     private static WorldData.Dimension AddDimension(RealServerContext context, string identifier)
     {
         var world = context.World;

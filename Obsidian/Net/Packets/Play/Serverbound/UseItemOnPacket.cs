@@ -164,6 +164,101 @@ public partial class UseItemOnPacket
             return;
         }
 
+        // Doors, trapdoors and fence gates open and close by hand, in adventure mode too.
+        if (!player.Sneaking
+            && player.GameMode != GameMode.Spectator
+            && player.Level is AbstractLevel doorLevel)
+        {
+            string? sound;
+            lock (doorLevel.Fluids.TickLock)
+                sound = VanillaPlacement.Use(doorLevel.BlockUpdates, position, b, player);
+
+            if (sound is not null)
+            {
+                doorLevel.PacketBroadcaster.BroadcastToLevelInRange(doorLevel, position, new SoundPacket
+                {
+                    SoundLocation = sound,
+                    SoundPosition = new SoundPosition(position.X + 0.5, position.Y + 0.5, position.Z + 0.5),
+                    Category = SoundCategory.Blocks,
+                    Volume = 1,
+                    Pitch = 0.9f + Random.Shared.NextSingle() * 0.1f,
+                    Seed = Random.Shared.NextInt64()
+                });
+                player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+                return;
+            }
+        }
+
+        // Signs take dyes, ink, glow ink and honeycomb, and open to be written on otherwise.
+        if (player.GameMode != GameMode.Spectator
+            && (!player.Sneaking || currentItem is not { Count: > 0 })
+            && Signs.IsSign(b))
+        {
+            var (used, consume) = Signs.Use(player.Level, position, b, player, currentItem);
+            if (used)
+            {
+                if (consume && currentItem is { Count: > 0 } && player.GameMode != GameMode.Creative)
+                {
+                    player.Inventory.RemoveItem(handSlot, 1);
+                    await ((Entities.PlayerBase)player).SyncInventorySlotAsync(handSlot);
+                }
+
+                player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+                return;
+            }
+        }
+
+        // Like vanilla's TntBlock.useItemOn, flint and steel or a fire charge lights TNT.
+        if (!player.Sneaking
+            && b.RegistryId == BlockIds.Tnt
+            && currentItem is { Count: > 0, Holder.Id: ItemIds.FlintAndSteel or ItemIds.FireCharge }
+            && player.GameMode is GameMode.Survival or GameMode.Creative
+            && player.Level is AbstractLevel tntLevel
+            && tntLevel.LevelData.GetBooleanRule("tnt_explodes"))
+        {
+            await tntLevel.SetBlockAsync(position, BlocksRegistry.Air, true);
+            Entities.PrimedTnt.Prime(tntLevel, position, player);
+            await this.ConsumePortalItemAsync(player, currentItem);
+            player.Statistics.Increment(currentItem.Holder.UnlocalizedName, type: "minecraft:used");
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
+        }
+
+        // Like vanilla's FenceBlock, using a fence ties the mobs the player leads to it, whatever the player holds.
+        if (player.GameMode != GameMode.Spectator
+            && player.Level is AbstractLevel fenceLevel
+            && Entities.LeashKnot.IsFence(b)
+            && Entities.LeashKnot.TiePlayerMobs(fenceLevel, player, position))
+        {
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
+        }
+
+        // Like vanilla's HangingEntityItem.useOn: item frames and paintings hang in front of the face used.
+        if (currentItem is { Count: > 0, Holder.Id: ItemIds.ItemFrame or ItemIds.GlowItemFrame or ItemIds.Painting }
+            && player.GameMode is GameMode.Survival or GameMode.Creative
+            && (player.Sneaking || !interactableBlocks.Contains(b.RegistryId))
+            && player.Level is AbstractLevel hangLevel
+            && player is Entities.PlayerBase hanger)
+        {
+            var hangAt = position + this.Face.ToVector();
+            Entities.HangingEntity? hanging = currentItem.Holder.Id switch
+            {
+                ItemIds.Painting => await Entities.Painting.CreateAsync(hangLevel, hangAt, this.Face),
+                ItemIds.GlowItemFrame => new Entities.GlowItemFrame { Level = hangLevel },
+                _ => new Entities.ItemFrame { Level = hangLevel }
+            };
+
+            if (hanging is Entities.ItemFrame frame)
+                frame.Hang(hangAt, this.Face);
+
+            if (hanging is not null && await Entities.HangingEntity.PlaceAsync(hanging, hangLevel, hanger, handSlot))
+                player.Statistics.Increment(currentItem.Holder.UnlocalizedName, type: "minecraft:used");
+
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
+        }
+
         if (interactableBlocks.Contains(b.RegistryId) && !player.Sneaking)
         {
             await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)
@@ -337,6 +432,23 @@ public partial class UseItemOnPacket
 
         block = redstoneState;
 
+        // Other vanilla blocks face, turn and pair up as the player places them.
+        if (currentItem.Holder.Block is not BlockType && !pouring && VanillaRedstone.For(block) is null)
+        {
+            IBlock? placedState;
+            lock (placeLevel.Fluids.TickLock)
+                placedState = VanillaPlacement.GetState(placeLevel.BlockUpdates, block, position, player, this.Face,
+                    this.Cursor, replacesClicked);
+
+            if (placedState is null || placeLevel.IsOutsideBuildHeight(position.Y + 1) && placedState.BlockClass() == "DoorBlock")
+            {
+                await this.RejectPlacementAsync(player, handSlot);
+                return;
+            }
+
+            block = placedState;
+        }
+
         var context = new BlockPlaceContext
         {
             Level = placeLevel.BlockUpdates,
@@ -412,9 +524,13 @@ public partial class UseItemOnPacket
             item: progressItem, block: b, position: this.Position);
 
         placeLevel.BlockUpdates.OnPlacedByPlayer(position, block);
+        lock (placeLevel.Fluids.TickLock)
+            VanillaPlacement.OnPlacedByPlayer(placeLevel.BlockUpdates, position, block);
 
         if (!pouring)
             BlockSoundPlayback.Play(placeLevel, block, position, breaking: false, player.EntityId);
+
+        Signs.OnPlacedByPlayer(placeLevel, position, block, player);
 
         var center = (VectorD)position + new VectorD(0.5, 0.5, 0.5);
         placeLevel.EmitGameEvent(MobGameEvent.BlockPlace, center, player, affectedBlock: block);

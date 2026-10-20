@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Obsidian.Utilities.Collections;
 using System.Net;
 using System.Net.Sockets;
@@ -146,6 +146,12 @@ public partial class Server
             return;
 
         var ip = client.Ip;
+        if (this.Bans.GetBan(ip) is BannedIp ipBan)
+        {
+            await client.DisconnectAsync(BanList.DisconnectMessage(ipBan.Reason));
+            return;
+        }
+
         var whitelistedIps = this.WhitelistConfiguration.CurrentValue.WhitelistedIps;
         if (Configuration.Whitelist && !whitelistedIps.Contains("*") && !whitelistedIps.Contains(ip))
         {
