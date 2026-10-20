@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Blocks;
+using Obsidian.WorldData;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.Plugins;
@@ -25,7 +26,7 @@ internal static partial class BlockBehaviors
     public static IBlock? GetStateForPlacement(BlockPlaceContext context, ILogger logger)
     {
         if (!TryEnter(context.Block, out var behavior, out var call))
-            return context.Block;
+            return PlacementBehaviors.For(context.Block)?.GetStateForPlacement(context) ?? context.Block;
 
         using (call)
         {
