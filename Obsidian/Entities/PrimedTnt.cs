@@ -1,4 +1,4 @@
-using Obsidian.Entities.AI;
+﻿using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
@@ -82,24 +82,51 @@ public sealed partial class PrimedTnt : Entity
         if (this.exploded || this.Level is not AbstractLevel level)
             return;
 
+        // Vanilla's PrimedTnt.tick: gravity, then the move, then drag on every axis, without the ground's slipperiness.
         var terrain = new MobTerrain(level);
-        var next = EntityMovement.Move(this, terrain, VectorD.Zero, gravity: 0.04f, airFriction: 0.98f);
+        var velocity = this.Motion;
+        if (!this.NoGravity)
+            velocity.Y -= 0.04;
+
+        var bounds = this.Dimension.CreateBBFromPosition(this.Position);
+        var displacement = EntityMovement.Collide(terrain, bounds, velocity, 0,
+            this.MovementFlags.HasFlag(MovementFlags.OnGround));
+        var onGround = velocity.Y < 0 && Math.Abs(displacement.Y - velocity.Y) > 0.00001;
+        this.MovementFlags = onGround ? MovementFlags.OnGround : MovementFlags.None;
+
+        // Hitting a block stops it on that axis, as landing does.
+        if (Math.Abs(displacement.X - velocity.X) > 0.00001)
+            velocity.X = 0;
+        if (Math.Abs(displacement.Y - velocity.Y) > 0.00001)
+            velocity.Y = 0;
+        if (Math.Abs(displacement.Z - velocity.Z) > 0.00001)
+            velocity.Z = 0;
+
+        velocity *= 0.98;
 
         // Like vanilla's, it slides less and bounces a little once it lands.
-        if (this.MovementFlags.HasFlag(MovementFlags.OnGround))
-            this.Motion = new VectorD(this.Motion.X * 0.7, this.Motion.Y * -0.5, this.Motion.Z * 0.7);
+        if (onGround)
+            velocity = new VectorD(velocity.X * 0.7, velocity.Y * -0.5, velocity.Z * 0.7);
+        this.Motion = velocity;
 
+        var next = this.Position + displacement;
         if (next != this.Position && level.TryMoveEntity(this, this.Position, next))
             await this.UpdateAsync(next, this.MovementFlags);
 
         if (--this.Fuse > 0)
+        {
+            // Flowing water carries it along, as it does vanilla's.
+            var fluidBounds = this.Dimension.CreateBBFromPosition(this.Position);
+            if (terrain.ContainsFluid(fluidBounds, water: true))
+                this.Motion += terrain.FluidPush(fluidBounds, water: true, this.Motion);
             return;
+        }
 
         this.exploded = true;
         await this.RemoveAsync();
 
-        // Vanilla's explosion is a sixteenth of a block above the TNT's feet.
-        var center = this.Position + new VectorD(0, 0.0625, 0);
+        // Vanilla's explosion is a sixteenth of the TNT's height above its feet.
+        var center = this.Position + new VectorD(0, this.Dimension.Height * 0.0625, 0);
         await level.ExplodeAsync(center, Power, this, this.Owner, AbstractLevel.ExplosionInteraction.Tnt);
     }
 

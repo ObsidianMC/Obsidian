@@ -6,6 +6,7 @@ using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
+using Obsidian.WorldData.Fluids;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
@@ -84,11 +85,15 @@ public abstract partial class AbstractLevel
                 var block = terrain.GetBlock(position);
                 if (block == null)
                     break;
-                if (!block.IsAir)
+                // Like vanilla's ExplosionDamageCalculator, a waterlogged block resists as much as its water does.
+                var fluid = FluidState.Of(block);
+                if (!block.IsAir || !fluid.IsEmpty)
                 {
                     var resistance = BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out var pluginBlock)
                         ? pluginBlock.Settings.ExplosionResistance
-                        : blastResistance[block.UnlocalizedName];
+                        : blastResistance.GetValueOrDefault(block.UnlocalizedName);
+                    if (!fluid.IsEmpty)
+                        resistance = Math.Max(resistance, 100);
                     if (source is WitherSkull { Invulnerable: true }
                         && !TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId))
                     {
@@ -108,9 +113,9 @@ public abstract partial class AbstractLevel
         }
         var knockbacks = new Dictionary<int, VectorD>();
         var diameter = radius * 2;
+        // Like vanilla's ServerExplosion.hurtEntities, it reaches every entity, though only some take damage.
         var targets = GetEntitiesInRange(center, diameter + 1)
             .OfType<Entity>()
-            .Where(entity => entity is Living or EndCrystal or PrimedTnt or HangingEntity)
             .ToArray();
 
         foreach (var target in targets)
@@ -128,23 +133,33 @@ public abstract partial class AbstractLevel
                 await hanging.BreakAsync(dropItems: true);
                 continue;
             }
-            var direction = target.Position + new VectorD(0, target.Dimension.Height * 0.85f, 0) - center;
+            // Vanilla pushes lit TNT from its feet, and everything else from its eyes.
+            var eyes = target switch
+            {
+                PrimedTnt => target.Position,
+                IPlayer eyePlayer => PlayerBase.EyePosition(eyePlayer),
+                Mob eyeMob => eyeMob.EyePosition,
+                _ => target.Position + new VectorD(0, target.Dimension.Height * 0.85f, 0)
+            };
+            var direction = eyes - center;
             if (direction.Magnitude < 0.000001f)
                 continue;
             direction /= direction.Magnitude;
             var bounds = target.Dimension.CreateBBFromPosition(target.Position);
             var total = 0;
             var visible = 0;
-            var steps = new VectorD(
-                (float)(1 / (bounds.Width * 2 + 1)),
-                (float)(1 / (bounds.Height * 2 + 1)),
-                (float)(1 / (bounds.Depth * 2 + 1)));
-            for (var a = 0d; a <= 1; a += steps.X)
-            for (var b = 0d; b <= 1; b += steps.Y)
-            for (var c = 0d; c <= 1; c += steps.Z)
+            // Vanilla's ServerExplosion.getSeenPercent: a grid over the box, centred horizontally.
+            var stepX = 1 / (bounds.Width * 2 + 1);
+            var stepY = 1 / (bounds.Height * 2 + 1);
+            var stepZ = 1 / (bounds.Depth * 2 + 1);
+            var offsetX = (1 - Math.Floor(1 / stepX) * stepX) / 2;
+            var offsetZ = (1 - Math.Floor(1 / stepZ) * stepZ) / 2;
+            for (var a = 0d; a <= 1; a += stepX)
+            for (var b = 0d; b <= 1; b += stepY)
+            for (var c = 0d; c <= 1; c += stepZ)
             {
                 total++;
-                var sample = bounds.Min + (bounds.Max - bounds.Min) * new VectorD(a, b, c);
+                var sample = bounds.Min + (bounds.Max - bounds.Min) * new VectorD(a, b, c) + new VectorD(offsetX, 0, offsetZ);
                 if (terrain.HasLineOfSight(sample, center))
                     visible++;
             }
@@ -156,13 +171,27 @@ public abstract partial class AbstractLevel
             var attacker = owner ?? source ?? (IEntity)target;
             if (target is Living living)
                 await living.DamageCombatAsync(attacker, damage, CombatDamageKind.Explosion, sourcePosition: center);
-            else if (target is not PrimedTnt)
+            else if (target is ItemEntity item)
+            {
+                if (await item.HurtByExplosionAsync(damage))
+                    continue;
+            }
+            else if (target is EndCrystal)
                 await target.DamageAsync(attacker, damage);
-            var knockback = direction * exposure
-                * (1 - Math.Clamp(target.GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
-            target.Motion += knockback;
-            if (target is IPlayer)
+
+            // Only living things resist being blown away, by their explosion knockback resistance.
+            var resistance = target is Living
+                ? Math.Clamp(target.GetAttributeValue("minecraft:explosion_knockback_resistance"), 0, 1)
+                : 0;
+            var knockback = direction * exposure * (1 - resistance);
+            if (target is IPlayer pushed)
+            {
+                // Vanilla leaves creative players that are flying where they are.
+                if (pushed.GameMode == GameMode.Creative && pushed.Abilities.HasFlag(PlayerAbility.Flying))
+                    continue;
                 knockbacks[target.EntityId] = knockback;
+            }
+            target.Motion += knockback;
         }
         // Vanilla's ServerLevel.explode: which blocks break, and which rule decays their drops, depend on what kind of
         // explosion it is. Mobs' break nothing without mob_griefing.

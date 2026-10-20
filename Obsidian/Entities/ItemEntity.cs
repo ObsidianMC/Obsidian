@@ -1,4 +1,4 @@
-using Obsidian.API.Inventory;
+﻿using Obsidian.API.Inventory;
 using Obsidian.Nbt;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -216,6 +216,27 @@ public partial class ItemEntity : Entity
 
     internal void SendItemUpdate() => this.PacketBroadcaster.QueuePacketToLevel(this.Level,
         new SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
+
+    // Vanilla's ItemEntity health: what's left of it before damage destroys it.
+    private float itemHealth = 5;
+
+    /// <summary>
+    /// Hurts it by <paramref name="damage"/> from an explosion, as vanilla's <c>ItemEntity.hurtServer</c> does: a nether
+    /// star withstands it, and anything else is gone once its five health is.
+    /// </summary>
+    /// <returns>Whether it was destroyed.</returns>
+    internal async ValueTask<bool> HurtByExplosionAsync(float damage)
+    {
+        if (this.Item.Holder.Id == ItemIds.NetherStar)
+            return false;
+
+        this.itemHealth -= damage;
+        if (this.itemHealth > 0)
+            return false;
+
+        await this.RemoveAsync();
+        return true;
+    }
 
     public override async ValueTask RemoveAsync()
     {
