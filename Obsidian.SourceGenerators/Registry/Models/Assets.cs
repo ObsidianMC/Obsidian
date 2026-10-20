@@ -26,7 +26,8 @@ internal sealed class Assets
 
     public static Assets Get(ImmutableArray<(string name, string json)> files, SourceProductionContext ctx)
     {
-        Block[] blocks = GetBlocks(files.GetJsonFromArray("blocks"), files.GetJsonFromArray("block_placement_classes"));
+        Block[] blocks = GetBlocks(files.GetJsonFromArray("blocks"), files.GetJsonFromArray("block_placement_classes"),
+            files.GetJsonFromArray("block_random_tick_classes"));
         Fluid[] fluids = GetFluids(files.GetJsonFromArray("fluids"));
         Item[] items = GetItems(files.GetJsonFromArray("items"), files.GetJsonFromArray("item_components"));
         Dictionary<string, Codec[]> codecs = GetCodecs(files);
@@ -169,7 +170,7 @@ internal sealed class Assets
             .Select((name, id) => new EnchantmentEntry(name, id))];
     }
 
-    public static Block[] GetBlocks(string? json, string? placementClassesJson)
+    public static Block[] GetBlocks(string? json, string? placementClassesJson, string? randomTickClassesJson)
     {
         if (json is null)
             return [];
@@ -177,6 +178,7 @@ internal sealed class Assets
         var blocks = new List<Block>();
         using var document = JsonDocument.Parse(json);
         using var placementClasses = placementClassesJson is null ? null : JsonDocument.Parse(placementClassesJson);
+        using var randomTickClasses = randomTickClassesJson is null ? null : JsonDocument.Parse(randomTickClassesJson);
 
         int id = 0;
 
@@ -202,7 +204,11 @@ internal sealed class Assets
                 placementClasses.RootElement.TryGetProperty(property.Name, out var classElement)
                 ? classElement.GetString()
                 : null;
-            blocks.Add(Block.Get(property, id++, placementClass));
+            string? randomTickClass = randomTickClasses is not null &&
+                randomTickClasses.RootElement.TryGetProperty(property.Name, out var randomTickElement)
+                ? randomTickElement.GetString()
+                : null;
+            blocks.Add(Block.Get(property, id++, placementClass, randomTickClass));
         }
 
         return blocks.ToArray();

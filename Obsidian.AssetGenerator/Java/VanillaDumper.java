@@ -114,6 +114,7 @@ public final class VanillaDumper {
         dumper.dumpBlockSounds();
         dumper.dumpBlockPhysics();
         dumper.dumpBlockPlacementClasses();
+        dumper.dumpBlockRandomTickClasses();
         dumper.dumpCollisionShapes();
         dumper.dumpBlastResistance();
         dumper.dumpBlockLootTables();
@@ -585,6 +586,37 @@ public final class VanillaDumper {
         }
 
         Json.write(output.resolve("block_placement_classes.json"), classes, false);
+    }
+
+    /**
+     * {@code block_random_tick_classes.json}: the Mojang class that supplies each block's {@code randomTick} override.
+     * Blocks inheriting the base no-op implementation are omitted.
+     */
+    private void dumpBlockRandomTickClasses() throws IOException {
+        var level = "net.minecraft.server.level.ServerLevel";
+        var random = "net.minecraft.util.RandomSource";
+        // Block inherits randomTick's base no-op from BlockBehaviour, which declares it.
+        var behaviour = "net.minecraft.world.level.block.state.BlockBehaviour";
+        var baseMethod = mojang.method(behaviour, "randomTick", BLOCK_STATE, level, BLOCK_POS, random);
+        var parameters = new Class<?>[] { mojang.type(BLOCK_STATE), mojang.type(level), mojang.type(BLOCK_POS), mojang.type(random) };
+        var classes = new TreeMap<String, String>();
+
+        for (var block : (Iterable<?>) blockRegistry) {
+            var owner = block.getClass();
+            while (owner != null) {
+                try {
+                    owner.getDeclaredMethod(baseMethod.getName(), parameters);
+                    break;
+                } catch (NoSuchMethodException ignored) {
+                    owner = owner.getSuperclass();
+                }
+            }
+
+            if (owner != null && owner != mojang.type(behaviour))
+                classes.put(key(blockRegistry, block), mojang.className(owner.getName()));
+        }
+
+        Json.write(output.resolve("block_random_tick_classes.json"), classes, false);
     }
 
     /** The Mojang simple name of each block's class, sorted by block id. */

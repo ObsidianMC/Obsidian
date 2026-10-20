@@ -21,6 +21,8 @@ public partial class BlocksGenerator
         var createState = new CodeBuilder();
         var placementBehavior = new CodeBuilder();
         var placementBehaviors = compilation.GetTypeByMetadataName("Obsidian.WorldData.PlacementBehaviors");
+        var randomTickBehaviors = compilation.GetTypeByMetadataName("Obsidian.WorldData.RandomTickBehaviors");
+        var randomTickBehavior = new CodeBuilder();
 
         foreach (var block in blocks)
         {
@@ -70,9 +72,19 @@ public partial class BlocksGenerator
             if (block.Properties.Length > 0)
                 createState.Indent().Append($"{block.RegistryId} => new {blockName}(stateId),").Line();
 
-            string? placementMember = PlacementMember(block.PlacementClass);
+            string? placementMember = OwnerMember(block.PlacementClass);
             if (placementMember is not null && placementBehaviors?.GetMembers(placementMember).Length > 0)
                 placementBehavior.Indent().Append($"{block.RegistryId} => PlacementBehaviors.{placementMember},").Line();
+
+            // A random tick owner without a counterpart keeps the existing path (Growth, BlockBehaviors); the info
+            // diagnostic lists the owners still to migrate, without a warning.
+            if (randomTickBehaviors is not null && OwnerMember(block.RandomTickClass) is string randomTickMember)
+            {
+                if (randomTickBehaviors.GetMembers(randomTickMember).Length > 0)
+                    randomTickBehavior.Indent().Append($"{block.RegistryId} => RandomTickBehaviors.{randomTickMember},").Line();
+                else
+                    ctx.ReportDiagnostic(Diagnostic.Create(UnmatchedRandomTickOwner, Location.None, block.RandomTickClass));
+            }
         }
 
         blocksBuilder.Line()
@@ -97,18 +109,34 @@ public partial class BlocksGenerator
             .Line("    _ => null,")
             .Line("};");
 
+        if (randomTickBehaviors is not null)
+        {
+            blocksBuilder.Line()
+                .Line("/// <summary>The behaviour supplied by the vanilla class that owns this block's randomTick override, or null.</summary>")
+                .Line("internal static IRandomTickBehavior? GetRandomTickBehavior(int registryId) => registryId switch")
+                .Line("{")
+                .Append(randomTickBehavior.ToString())
+                .Line("    _ => null,")
+                .Line("};");
+        }
+
         blocksBuilder.EndScope();
 
         ctx.AddSource("BlocksRegistry.Blocks.g.cs", blocksBuilder.ToString());
     }
 
-    private static string? PlacementMember(string? placementClass)
+    private static readonly DiagnosticDescriptor UnmatchedRandomTickOwner = new("OBSGEN001",
+        "Vanilla random tick owner has no Obsidian counterpart",
+        "Vanilla random tick owner {0} has no member in Obsidian.WorldData.RandomTickBehaviors; its blocks use the existing growth path",
+        "Blocks", DiagnosticSeverity.Info, isEnabledByDefault: true);
+
+    private static string? OwnerMember(string? ownerClass)
     {
-        if (placementClass is null)
+        if (ownerClass is null)
             return null;
 
-        int separator = Math.Max(placementClass.LastIndexOf('.'), placementClass.LastIndexOf('$'));
-        return placementClass.Substring(separator + 1).SanitizeBlockName();
+        int separator = Math.Max(ownerClass.LastIndexOf('.'), ownerClass.LastIndexOf('$'));
+        return ownerClass.Substring(separator + 1).SanitizeBlockName();
     }
 
 }

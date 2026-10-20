@@ -120,7 +120,9 @@ public abstract partial class AbstractLevel
                 var block = section.GetBlock(x, y, z);
                 var position = new Vector(chunk.X * 16 + x, chunk.MinY + index * 16 + y, chunk.Z * 16 + z);
 
-                if (Growth.IsRandomlyTicking(block))
+                if (Growth.VanillaRandomTick(block) is IRandomTickBehavior vanilla)
+                    vanilla.RandomTick(this, position, block, this.GrowthRandom);
+                else if (Growth.IsRandomlyTicking(block))
                     Growth.RandomTick(this, position, block, this.GrowthRandom);
 
                 this.BlockUpdates.RandomTick(position, block);
