@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
@@ -141,6 +141,48 @@ public sealed class BlockUpdates : IDisposable
         Assert.Equal(0, loaded.Count);
     }
 
+    [Fact]
+    public void VanillaPlacementBehaviorsComeFromGeneratedBlockFamilies()
+    {
+        Assert.Same(PlacementBehaviors.AbstractFurnaceBlock, BlocksRegistry.GetPlacementBehavior(BlockIds.Furnace));
+        Assert.Same(PlacementBehaviors.AbstractFurnaceBlock, BlocksRegistry.GetPlacementBehavior(BlockIds.BlastFurnace));
+        Assert.Same(PlacementBehaviors.VaultBlock, BlocksRegistry.GetPlacementBehavior(BlockIds.Vault));
+        Assert.Same(PlacementBehaviors.DriedGhastBlock, BlocksRegistry.GetPlacementBehavior(BlockIds.DriedGhast));
+        Assert.Same(PlacementBehaviors.CampfireBlock, BlocksRegistry.GetPlacementBehavior(BlockIds.Campfire));
+        Assert.Same(PlacementBehaviors.BarrelBlock, BlocksRegistry.GetPlacementBehavior(BlockIds.Barrel));
+        Assert.Same(PlacementBehaviors.HopperBlock, BlocksRegistry.GetPlacementBehavior(BlockIds.Hopper));
+        Assert.Same(PlacementBehaviors.ShulkerBoxBlock, BlocksRegistry.GetPlacementBehavior(BlockIds.ShulkerBox));
+        Assert.Null(BlocksRegistry.GetPlacementBehavior(BlockIds.Stone));
+
+        IBlock Place(IBlock block, BlockFace horizontal, BlockFace nearest, BlockFace clicked)
+        {
+            var context = new BlockPlaceContext
+            {
+                Level = null!,
+                Player = null!,
+                Hand = InteractionHand.MainHand,
+                Item = null!,
+                Block = block,
+                Position = default,
+                ClickedPosition = default,
+                ClickedFace = clicked,
+                ClickedAt = default,
+                ReplacesClicked = false,
+                HorizontalDirection = horizontal,
+                NearestLookDirection = nearest,
+            };
+
+            return PlacementBehaviors.For(block)!.GetStateForPlacement(context)!;
+        }
+
+        Assert.Equal("east", Place(BlocksRegistry.Furnace, BlockFace.West, BlockFace.Up, BlockFace.North).GetProperty("facing"));
+        Assert.Equal("down", Place(BlocksRegistry.Barrel, BlockFace.West, BlockFace.Up, BlockFace.North).GetProperty("facing"));
+        Assert.Equal("down", Place(BlocksRegistry.Hopper, BlockFace.West, BlockFace.North, BlockFace.Up).GetProperty("facing"));
+        Assert.Equal("west", Place(BlocksRegistry.Hopper, BlockFace.North, BlockFace.Up, BlockFace.East).GetProperty("facing"));
+        Assert.Equal("up", Place(BlocksRegistry.ShulkerBox, BlockFace.North, BlockFace.North, BlockFace.Up).GetProperty("facing"));
+        Assert.Equal("west", Place(BlocksRegistry.Campfire, BlockFace.West, BlockFace.Up, BlockFace.North).GetProperty("facing"));
+    }
+
     [Fact(
         DisplayName = "Players face plugin blocks as vanilla works out their look; a cancelled place keeps the item",
         Timeout = TestServerFactory.TestTimeout)]
@@ -233,6 +275,32 @@ public sealed class BlockUpdates : IDisposable
         Assert.All(["north", "east", "south", "west"], side => Assert.Equal("side", dust.GetProperty(side)));
 
         await manager.UnloadPluginAsync(container);
+    }
+
+    [Fact(DisplayName = "A vanilla furnace and chest placed by a west-facing player face away from the player",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task VanillaFurnaceAndChestFaceAsPlacedByPlayer()
+    {
+        await using var context = TestServerFactory.CreateServer($"vanilla-placement-{Guid.NewGuid():N}");
+        var world = context.World;
+        await AddChunksAsync(world);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Facer");
+        player.GameMode = GameMode.Survival;
+        player.Yaw = 90;
+
+        async Task<IBlock> PlaceAsync(string item, Vector spot)
+        {
+            player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Get(item), 1));
+            await UseOn(spot + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
+            return world.GetLoadedChunk(0, 0)!.GetBlock(spot);
+        }
+
+        var furnace = await PlaceAsync("minecraft:furnace", new Vector(4, Ground + 1, 4));
+        var chest = await PlaceAsync("minecraft:chest", new Vector(6, Ground + 1, 4));
+
+        Assert.Equal("minecraft:furnace", furnace.UnlocalizedName);
+        Assert.Equal("east", furnace.GetProperty("facing"));
+        Assert.Equal("east", chest.GetProperty("facing"));
     }
 
     [Fact(DisplayName = "A plugin block's hooks run in vanilla's update order, its ticks run; unloading drops them",

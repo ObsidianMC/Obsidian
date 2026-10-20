@@ -26,7 +26,7 @@ internal sealed class Assets
 
     public static Assets Get(ImmutableArray<(string name, string json)> files, SourceProductionContext ctx)
     {
-        Block[] blocks = GetBlocks(files.GetJsonFromArray("blocks"));
+        Block[] blocks = GetBlocks(files.GetJsonFromArray("blocks"), files.GetJsonFromArray("block_placement_classes"));
         Fluid[] fluids = GetFluids(files.GetJsonFromArray("fluids"));
         Item[] items = GetItems(files.GetJsonFromArray("items"), files.GetJsonFromArray("item_components"));
         Dictionary<string, Codec[]> codecs = GetCodecs(files);
@@ -169,13 +169,14 @@ internal sealed class Assets
             .Select((name, id) => new EnchantmentEntry(name, id))];
     }
 
-    public static Block[] GetBlocks(string? json)
+    public static Block[] GetBlocks(string? json, string? placementClassesJson)
     {
         if (json is null)
             return [];
 
         var blocks = new List<Block>();
         using var document = JsonDocument.Parse(json);
+        using var placementClasses = placementClassesJson is null ? null : JsonDocument.Parse(placementClassesJson);
 
         int id = 0;
 
@@ -196,7 +197,13 @@ internal sealed class Assets
         }
 
         foreach (var property in newBlocks.OrderBy(x => x.Key).Select(x => x.Value))
-            blocks.Add(Block.Get(property, id++));
+        {
+            string? placementClass = placementClasses is not null &&
+                placementClasses.RootElement.TryGetProperty(property.Name, out var classElement)
+                ? classElement.GetString()
+                : null;
+            blocks.Add(Block.Get(property, id++, placementClass));
+        }
 
         return blocks.ToArray();
     }

@@ -12,11 +12,12 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
     public int DefaultId { get; }
     public int RegistryId { get; }
     public int StatesCount { get; }
+    public string? PlacementClass { get; }
     public BlockProperty[] Properties { get; }
     public Dictionary<int, List<string>> StateValues { get; }
 
-    private Block(string name, string tag, int baseId, int defaultId, int registryId, int statesCount, BlockProperty[] properties,
-        Dictionary<int, List<string>> stateValues)
+    private Block(string name, string tag, int baseId, int defaultId, int registryId, int statesCount,
+        string? placementClass, BlockProperty[] properties, Dictionary<int, List<string>> stateValues)
     {
         Name = name;
         Tag = tag;
@@ -24,18 +25,19 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
         DefaultId = defaultId;
         RegistryId = registryId;
         StatesCount = statesCount;
+        PlacementClass = placementClass;
         Properties = properties;
         StateValues = stateValues;
     }
 
-    public static Block Get(JsonProperty property, int id)
+    public static Block Get(JsonProperty property, int id, string? placementClass)
     {
         string name = property.Name.RemoveNamespace().ToPascalCase();
 
         (int baseId, int defaultId, int statesCount, var stateValues) = GetIds(property);
         BlockProperty[] properties = GetBlockProperties(property).ToArray();
 
-        return new Block(name, property.Name, baseId, defaultId, id, statesCount, properties, stateValues);
+        return new Block(name, property.Name, baseId, defaultId, id, statesCount, placementClass, properties, stateValues);
     }
 
     private static (int baseId, int defaultId, int stateCount, Dictionary<int, List<string>> stateValues) GetIds(JsonProperty property)

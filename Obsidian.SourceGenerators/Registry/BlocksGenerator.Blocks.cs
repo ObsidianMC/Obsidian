@@ -5,11 +5,13 @@ namespace Obsidian.SourceGenerators.Registry;
 
 public partial class BlocksGenerator
 {
-    private static void GenerateBlocks(Block[] blocks, SourceProductionContext ctx)
+    private static void GenerateBlocks(Block[] blocks, Compilation compilation, SourceProductionContext ctx)
     {
         var blocksBuilder = new CodeBuilder()
             .Line("#nullable enable")
+            .Using("Obsidian.API.Blocks")
             .Using("Obsidian.Blocks")
+            .Using("Obsidian.WorldData")
             .Line()
             .Namespace("Obsidian.Registries")
             .Type("internal partial class BlocksRegistry");
@@ -17,6 +19,8 @@ public partial class BlocksGenerator
         // Factories by registry id, so the registry builds its blocks without reflection.
         var createDefault = new CodeBuilder();
         var createState = new CodeBuilder();
+        var placementBehavior = new CodeBuilder();
+        var placementBehaviors = compilation.GetTypeByMetadataName("Obsidian.WorldData.PlacementBehaviors");
 
         foreach (var block in blocks)
         {
@@ -65,6 +69,10 @@ public partial class BlocksGenerator
             createDefault.Indent().Append($"{block.RegistryId} => new {blockName}(),").Line();
             if (block.Properties.Length > 0)
                 createState.Indent().Append($"{block.RegistryId} => new {blockName}(stateId),").Line();
+
+            string? placementMember = PlacementMember(block.PlacementClass);
+            if (placementMember is not null && placementBehaviors?.GetMembers(placementMember).Length > 0)
+                placementBehavior.Indent().Append($"{block.RegistryId} => PlacementBehaviors.{placementMember},").Line();
         }
 
         blocksBuilder.Line()
@@ -80,11 +88,27 @@ public partial class BlocksGenerator
             .Line("{")
             .Append(createState.ToString())
             .Line("    _ => null,")
+            .Line("};")
+            .Line()
+            .Line("/// <summary>The behaviour supplied by the vanilla class that owns this block's placement override.</summary>")
+            .Line("internal static IBlockBehavior? GetPlacementBehavior(int registryId) => registryId switch")
+            .Line("{")
+            .Append(placementBehavior.ToString())
+            .Line("    _ => null,")
             .Line("};");
 
         blocksBuilder.EndScope();
 
         ctx.AddSource("BlocksRegistry.Blocks.g.cs", blocksBuilder.ToString());
+    }
+
+    private static string? PlacementMember(string? placementClass)
+    {
+        if (placementClass is null)
+            return null;
+
+        int separator = Math.Max(placementClass.LastIndexOf('.'), placementClass.LastIndexOf('$'));
+        return placementClass.Substring(separator + 1).SanitizeBlockName();
     }
 
 }

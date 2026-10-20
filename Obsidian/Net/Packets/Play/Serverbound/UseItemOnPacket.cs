@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using Obsidian.API.Blocks;
 using Obsidian.API.Events;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -337,37 +337,34 @@ public partial class UseItemOnPacket
 
         block = redstoneState;
 
-        if (currentItem.Holder.Block is BlockType)
+        var context = new BlockPlaceContext
         {
-            var context = new BlockPlaceContext
-            {
-                Level = placeLevel.BlockUpdates,
-                Player = player,
-                Hand = this.Hand,
-                Item = currentItem,
-                Block = block,
-                Position = position,
-                ClickedPosition = this.Position,
-                ClickedFace = this.Face,
-                ClickedAt = this.Cursor,
-                ReplacesClicked = replacesClicked,
-                HorizontalDirection = PlacementDirections.Horizontal(player.Yaw.Degrees),
-                NearestLookDirection = PlacementDirections.Nearest(player.Yaw.Degrees, player.Pitch.Degrees)
-            };
+            Level = placeLevel.BlockUpdates,
+            Player = player,
+            Hand = this.Hand,
+            Item = currentItem,
+            Block = block,
+            Position = position,
+            ClickedPosition = this.Position,
+            ClickedFace = this.Face,
+            ClickedAt = this.Cursor,
+            ReplacesClicked = replacesClicked,
+            HorizontalDirection = PlacementDirections.Horizontal(player.Yaw.Degrees),
+            NearestLookDirection = PlacementDirections.Nearest(player.Yaw.Degrees, player.Pitch.Degrees)
+        };
 
-            // Like the block's other hooks, while the level's block updates wait, so what it reads stays as it read.
-            IBlock? state;
-            lock (placeLevel.Fluids.TickLock)
-                state = Plugins.BlockBehaviors.GetStateForPlacement(context, placeLevel.Logger);
+        // Like the block's other hooks, while the level's block updates wait, so what it reads stays as it read.
+        IBlock? state;
+        lock (placeLevel.Fluids.TickLock)
+            state = Plugins.BlockBehaviors.GetStateForPlacement(context, placeLevel.Logger);
 
-            if (state is null)
-            {
-                await this.RejectPlacementAsync(player, handSlot);
-                return;
-            }
-
-            block = state;
+        if (state is null)
+        {
+            await this.RejectPlacementAsync(player, handSlot);
+            return;
         }
+
+        block = state;
 
         // Like vanilla's buckets, water poured where it evaporates (the nether) hisses instead of being placed.
         if (block.Is(BlockIds.Water) && placeLevel.Evaporates(player, position))

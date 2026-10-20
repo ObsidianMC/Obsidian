@@ -113,6 +113,7 @@ public final class VanillaDumper {
         dumper.dumpBlockLight();
         dumper.dumpBlockSounds();
         dumper.dumpBlockPhysics();
+        dumper.dumpBlockPlacementClasses();
         dumper.dumpCollisionShapes();
         dumper.dumpBlastResistance();
         dumper.dumpBlockLootTables();
@@ -556,6 +557,34 @@ public final class VanillaDumper {
         for (var box : boxes(slice))
             face.add(new double[] { box[axes[0]], box[axes[1]], box[axes[0] + 3], box[axes[1] + 3] });
         return face;
+    }
+
+    /**
+     * {@code block_placement_classes.json}: the Mojang class that supplies each block's
+     * {@code getStateForPlacement} override. Blocks inheriting the base no-op implementation are omitted.
+     */
+    private void dumpBlockPlacementClasses() throws IOException {
+        var context = "net.minecraft.world.item.context.BlockPlaceContext";
+        var baseMethod = mojang.method(BLOCK, "getStateForPlacement", context);
+        var parameter = mojang.type(context);
+        var classes = new TreeMap<String, String>();
+
+        for (var block : (Iterable<?>) blockRegistry) {
+            var owner = block.getClass();
+            while (owner != null) {
+                try {
+                    owner.getDeclaredMethod(baseMethod.getName(), parameter);
+                    break;
+                } catch (NoSuchMethodException ignored) {
+                    owner = owner.getSuperclass();
+                }
+            }
+
+            if (owner != null && owner != mojang.type(BLOCK))
+                classes.put(key(blockRegistry, block), mojang.className(owner.getName()));
+        }
+
+        Json.write(output.resolve("block_placement_classes.json"), classes, false);
     }
 
     /** The Mojang simple name of each block's class, sorted by block id. */
