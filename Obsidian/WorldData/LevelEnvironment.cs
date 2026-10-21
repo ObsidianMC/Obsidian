@@ -426,6 +426,16 @@ internal sealed record BedRule(string CanSleep, string CanSetSpawn, bool Explode
     };
 
     /// <summary>
+    /// Whether the rule lets a player set their spawn in <paramref name="level"/> now.
+    /// </summary>
+    public bool AllowsSetSpawn(ILevel level) => this.CanSetSpawn switch
+    {
+        "always" => true,
+        "when_dark" => level.IsDarkOutside(),
+        _ => false
+    };
+
+    /// <summary>
     /// The rule an attribute map's entry holds, as <see cref="EnvironmentAttributes"/> reads it; null without one.
     /// </summary>
     public static BedRule? From(INbtTag? entry)

@@ -30,8 +30,9 @@ public partial class PlayerCommandPacket
         switch (Action)
         {
             case PlayerCommand.LeaveBed:
-                player.Sleeping = false;
-                break;
+                if (player is PlayerBase sleeper)
+                    await sleeper.StopSleepingAsync();
+                return;
             case PlayerCommand.StartSprinting:
                 if (player.FoodLevel <= 6 && player.GameMode is not GameMode.Creative and not GameMode.Spectator) break;
                 if ((bool)(block?.IsLiquid))

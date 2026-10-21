@@ -181,6 +181,13 @@ public partial class PlayerBase
                     Take(window, 0, 1);
                     window.RemoveItem(1);
                     break;
+                case BeaconContainer:
+                    Take(window, 0, 1);
+                    break;
+                case SmithingTable:
+                    Take(window, 0, 3);
+                    window.RemoveItem(3);
+                    break;
             }
 
             if (this.CarriedItem is { Count: > 0 } cursor)

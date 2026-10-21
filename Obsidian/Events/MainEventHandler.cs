@@ -116,6 +116,8 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             await ReturnCraftingItemsAsync(player, e.Container, 3);
         if (player.Alive && e.Container is EnchantmentTable enchantingTable)
             await ReturnEnchantingItemsAsync(player, enchantingTable);
+        if (player.Alive && HoldsItemsWhileOpen(e.Container))
+            await ReturnWorkstationItemsAsync(player, e.Container);
 
         // Only the window that is closing: a plugin's handler may have opened another one in its place.
         if (ReferenceEquals(player.OpenedContainer, e.Container) && player.CurrentContainerId == e.WindowId)
@@ -251,10 +253,13 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
             BaseContainer? container = type switch
             {
-                BlockIds.Anvil or BlockIds.SmithingTable => new AnvilContainer(
-                    type == BlockIds.Anvil ? "anvil" : "smithing_table")
+                BlockIds.Anvil or BlockIds.ChippedAnvil or BlockIds.DamagedAnvil => new AnvilContainer
                 {
-                    Title = type == BlockIds.Anvil ? "Anvil" : "Smithing Table"
+                    BlockPosition = blockPosition
+                },
+                BlockIds.SmithingTable => new SmithingTable
+                {
+                    BlockPosition = blockPosition
                 },
                 BlockIds.EnchantingTable => new EnchantmentTable
                 {
@@ -276,10 +281,14 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     BlockPosition = blockPosition
                 },
                 BlockIds.CraftingTable => new CraftingTable(),
-                BlockIds.Loom => new Loom(),
-                BlockIds.CartographyTable => new CartographyTable(),
-                BlockIds.Stonecutter => new Stonecutter(),
-                BlockIds.Grindstone => new Grindstone(),
+                BlockIds.Loom => new Loom { BlockPosition = blockPosition },
+                BlockIds.CartographyTable => new CartographyTable { BlockPosition = blockPosition },
+                BlockIds.Stonecutter => new Stonecutter { BlockPosition = blockPosition },
+                BlockIds.Grindstone => new Grindstone { BlockPosition = blockPosition },
+                BlockIds.Beacon => new BeaconContainer { BlockPosition = blockPosition },
+                // The crafter's and lectern's block entities hold their own (see StoredContainerAsync).
+                BlockIds.Crafter => new CrafterContainer { BlockPosition = blockPosition },
+                BlockIds.Lectern => await LecternUseAsync(player, e.Item, e.Hand, blockPosition),
 
                 _ => null
             };
@@ -337,7 +346,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     Title = actualType.ToString()
                 };
             }
-            else if (type is BlockIds.ShulkerBox) //TODO colored shulker boxes as well
+            else if (TagsRegistry.Block.ShulkerBoxes.Entries.Contains(type))
             {
                 container = new Container // TODO shulker box functionality
                 {
@@ -371,10 +380,6 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 //    .WithSoundPosition(blockPosition.SoundPosition)
                 //    .Build());
             }
-            else if (type == BlockIds.Lectern)
-            {
-                //TODO open lectern??
-            }
 
             if (container is not null && player.Level is AbstractLevel level)
             {
@@ -384,7 +389,8 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     container = await DoubleChestAsync(player, level, block, blockPosition, container);
             }
 
-            await player.OpenInventoryAsync(container);
+            if (container is not null)
+                await player.OpenInventoryAsync(container);
         }
         else
         {
@@ -497,6 +503,8 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             await ReturnCraftingItemsAsync(player, table, 3);
         if (player.OpenedContainer is EnchantmentTable enchantingTable)
             await ReturnEnchantingItemsAsync(player, enchantingTable);
+        if (HoldsItemsWhileOpen(player.OpenedContainer))
+            await ReturnWorkstationItemsAsync(player, player.OpenedContainer!);
         await ReturnCraftingItemsAsync(player, player.Inventory, 2);
 
         await player.CancelPortalTravelAsync();

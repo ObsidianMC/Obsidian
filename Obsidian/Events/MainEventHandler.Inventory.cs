@@ -43,6 +43,7 @@ public partial class MainEventHandler
         var window = player.OpenedContainer ?? player.Inventory;
         WindowSync sync;
         var cookingExperience = 0;
+        List<Func<ValueTask>> workstationWork = [];
 
         using (await BaseContainer.LockWindowAsync(window, player.Inventory))
         {
@@ -65,6 +66,8 @@ public partial class MainEventHandler
                 || !CraftingResultFollowsGrid(player);
             var outputCount = window is SmeltingContainer smelting ? smelting[2]?.Count ?? 0 : 0;
 
+            BeginWorkstationEffects();
+
             try
             {
                 // The client ends its drag on the correction, so the server's ends too.
@@ -86,6 +89,10 @@ public partial class MainEventHandler
                 menuClick.Undo();
                 throw;
             }
+            finally
+            {
+                workstationWork = EndWorkstationEffects();
+            }
 
             if (window is SmeltingContainer furnace
                 && (furnace[2]?.Count ?? 0) < outputCount
@@ -97,12 +104,15 @@ public partial class MainEventHandler
             // After the click and the changes registered with it, whatever they did to the grid, and before the
             // window is captured, so that its viewers see the result that follows.
             RefreshCraftingResult(player);
+            RefreshWorkstationResult(player);
 
             sync = CaptureWindow(args, window);
         }
 
         if (cookingExperience > 0 && player.Level is AbstractLevel level)
             level.DropCookingExperience(player.Position, cookingExperience);
+
+        await RunWorkstationEffectsAsync(workstationWork);
 
         // A viewer's window that changed before its contents went through plugins' packet handlers is left stale, for
         // the viewer's tick to send (see RefreshStaleWindowAsync).
@@ -124,6 +134,9 @@ public partial class MainEventHandler
     {
         // Before any window's own handling, so that crafting follows the same drag rules.
         if (CancelsDrag(args))
+            return;
+
+        if (HandleWorkstation(args))
             return;
 
         if (HandleCrafting(args))
@@ -217,6 +230,8 @@ public partial class MainEventHandler
                 return MoveEnchantingItem(player, table, source, slot);
             case BrewingStand stand:
                 return MoveBrewingItem(args, stand);
+            case BaseContainer station when IsWorkstation(station):
+                return MoveWorkstationItem(player, station, source, slot);
             case MenuContainer menu:
                 return MoveMenuItem(args, menu);
         }
@@ -610,6 +625,10 @@ public partial class MainEventHandler
             CraftingTable { Type: InventoryType.Crafting } => slot != 0,
             EnchantmentTable => slot != 1 || item.Is(ItemsRegistry.LapisLazuli),
             BrewingStand => Brewing.SlotAccepts(slot, item),
+            BaseContainer station when IsWorkstation(station) => WorkstationAccepts(player, station, slot, item),
+            BeaconContainer => TagsRegistry.Item.BeaconPaymentItems.Entries.Contains(item.Holder.Id),
+            CrafterContainer crafter => !crafter.IsSlotDisabled(slot),
+            LecternContainer => false,
             MenuContainer menu => menu.MayPlace(slot, item),
             SmeltingContainer furnace when IsFurnace(furnace) => slot switch
             {
@@ -633,6 +652,7 @@ public partial class MainEventHandler
 
         var single = container == player.Inventory && slot is >= 5 and <= 8
             || container is EnchantmentTable && slot == 0
+            || container is BeaconContainer
             || container is BrewingStand && slot < BrewingStand.IngredientSlot
             || container is SmeltingContainer furnace
                 && IsFurnace(furnace)
@@ -652,6 +672,9 @@ public partial class MainEventHandler
         if (container is MenuContainer menu)
             return menu.MayPickup(slot, player);
 
+        if (container is LecternContainer)
+            return false;
+
         return container != player.Inventory
             || slot is < 5 or > 8
             || player.GameMode == GameMode.Creative
@@ -661,7 +684,8 @@ public partial class MainEventHandler
 
     // Whether the slot is a crafting grid's result, which double-click collecting skips.
     private static bool IsResultSlot(IPlayer player, BaseContainer container, int slot) =>
-        slot == 0 && (container == player.Inventory || container is CraftingTable { Type: InventoryType.Crafting });
+        slot == 0 && (container == player.Inventory || container is CraftingTable { Type: InventoryType.Crafting })
+        || IsWorkstation(container) && slot == WorkstationResultSlot(container);
 
     /// <summary>
     /// Cancels the player's drag if <paramref name="args"/> isn't part of it: like vanilla, any other click while
@@ -1034,6 +1058,8 @@ public partial class MainEventHandler
         if (withEnchanting && viewer.OpenedContainer is EnchantmentTable)
             packets.AddRange(viewer.EnchantingProperties());
 
+        packets.AddRange(WorkstationProperties(viewer));
+
         if (viewer.OpenedContainer is not null)
         {
             packets.Add(new SetPlayerInventoryPacket
@@ -1053,7 +1079,7 @@ public partial class MainEventHandler
     private static ContainerSetContentPacket WindowContents(IPlayer player, int containerId, int stateId)
     {
         IEnumerable<ItemStack> shown = player.OpenedContainer is BaseContainer window
-            ? window.Concat(player.Inventory.Skip(9).Take(36))
+            ? WindowItems(player, window)
             : player.Inventory;
 
         return new ContainerSetContentPacket(containerId, [.. shown.Select(item => Copy(item)!)])
@@ -1062,6 +1088,17 @@ public partial class MainEventHandler
             CarriedItem = Copy(player.CarriedItem)
         };
     }
+
+    /// <summary>
+    /// The slots of a container's window, in the client's order: the container's, then the player's main inventory and
+    /// hotbar; a lectern's window has only its book, and a crafter's ends with its result.
+    /// </summary>
+    internal static IEnumerable<ItemStack> WindowItems(IPlayer player, BaseContainer window) => window switch
+    {
+        LecternContainer => window,
+        CrafterContainer crafter => crafter.Concat(player.Inventory.Skip(9).Take(36)).Append(CrafterResult(player, crafter)!),
+        _ => window.Concat(player.Inventory.Skip(9).Take(36))
+    };
 
     // A copy of a stack to send, which later changes to the stack, its components included, don't reach.
     private static ItemStack? Copy(ItemStack? item) => item is null ? null : NetworkBuffer.SnapshotItemStack(item);

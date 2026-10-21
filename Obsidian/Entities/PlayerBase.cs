@@ -311,6 +311,8 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
         if (OpenedContainer is EnchantmentTable previousTable)
             await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, previousTable);
+        if (Obsidian.Events.MainEventHandler.HoldsItemsWhileOpen(OpenedContainer))
+            await Obsidian.Events.MainEventHandler.ReturnWorkstationItemsAsync(this, OpenedContainer!);
 
         if (container is EnchantmentTable table)
         {
@@ -367,7 +369,9 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         else
         {
             contents = container is CraftingTable { Type: InventoryType.Crafting } or EnchantmentTable
-                ? container.Concat(this.Inventory.Skip(9).Take(36)).ToList()
+                or BeaconContainer or LecternContainer or CrafterContainer
+                || Obsidian.Events.MainEventHandler.IsWorkstation(container)
+                ? Obsidian.Events.MainEventHandler.WindowItems(this, container).ToList()
                 : container.ToList();
         }
 
@@ -378,6 +382,9 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
         if (container is EnchantmentTable)
             await RefreshEnchantingAsync();
+
+        foreach (var property in Obsidian.Events.MainEventHandler.WorkstationProperties(this))
+            await this.QueuePacketAsync(property);
 
         if (container is BrewingStand stand)
             await AbstractLevel.SendBrewingPropertiesAsync(this, stand);
@@ -848,6 +855,8 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 dataKept = DataKept.None;
                 // Death completed before taking chunkUpdates; never drain items again during respawn.
                 API.Data.AttachmentStorage.For(this).Respawn(this);
+                await this.StopSleepingAsync();
+                var (respawnLevel, respawnPosition, respawnYaw) = await this.FindRespawnAsync();
                 CancelEating();
                 CancelWeaponUse();
                 combatPosition = null;
@@ -880,7 +889,17 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 this.progressDead = false;
                 API.Data.AttachmentStorage.For(this).EndDeath();
                 await Level.DestroyEntityAsync(this);
-                Position = Level.LevelData.SpawnPosition;
+
+                // Like vanilla's respawn, the player comes back where their bed or anchor is, or at the world spawn.
+                if (respawnLevel != Level)
+                {
+                    Level.TryRemovePlayer(this);
+                    Level = respawnLevel;
+                    Level.TryAddPlayer(this);
+                }
+
+                Yaw = respawnYaw;
+                Position = respawnPosition;
                 LastPosition = Position;
                 BoundingBox = Dimension.CreateBBFromPosition(Position);
                 Level.TryAddEntity(this);

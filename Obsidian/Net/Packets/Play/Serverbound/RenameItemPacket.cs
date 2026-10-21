@@ -8,4 +8,7 @@ public partial class RenameItemPacket
     public string ItemName { get; private set; } = default!;
 
     public override void Populate(INetStreamReader reader) => this.ItemName = reader.ReadString();
+
+    public override ValueTask HandleAsync(IServer server, IClientPlayer player) =>
+        Obsidian.Events.MainEventHandler.RenameAnvilItemAsync(player, this.ItemName);
 }

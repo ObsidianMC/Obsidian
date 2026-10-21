@@ -645,6 +645,10 @@ public abstract partial class AbstractLevel : ILevel
         LevelData.Time += this.Configuration.TimeTickSpeedMultiplier;
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
+        // Like vanilla's ServerLevel, clients get the time every second, so their clocks don't drift from the server's.
+        if (++this.timeSyncTicks % 20 == 0)
+            this.BroadcastTime();
+
         // Like vanilla, block ticks and then fluid ticks run before entities tick.
         TickStage = "block and fluid ticks";
         this.Fluids.Tick();
@@ -691,6 +695,9 @@ public abstract partial class AbstractLevel : ILevel
             }
         }
         timings.Lap("entities");
+
+        TickStage = "sleeping";
+        await TickSleepingAsync();
 
         await TickRaidsAsync();
         await TickMobGameEventsAsync();
@@ -1796,6 +1803,8 @@ public abstract partial class AbstractLevel : ILevel
 
         return true;
     }
+
+    private int timeSyncTicks;
 
     protected void BroadcastTime() =>
         this.PacketBroadcaster.QueuePacketToLevel(this, new SetTimePacket(LevelData.Time, LevelData.Time % 24000, true));

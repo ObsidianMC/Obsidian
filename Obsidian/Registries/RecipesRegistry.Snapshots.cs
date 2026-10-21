@@ -68,6 +68,7 @@ public static partial class RecipesRegistry
             Base = Snapshot(value.Base),
             Addition = Snapshot(value.Addition),
             Template = Snapshot(value.Template),
+            Pattern = value.Pattern,
         },
         IRecipeWithResult value => new StoredRecipeWithResult
         {

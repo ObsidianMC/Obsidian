@@ -35,7 +35,8 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
                         Group = group,
                         Template = value.GetProperty("template").Deserialize<Ingredient>(options)!,
                         Addition = value.GetProperty("addition").Deserialize<Ingredient>(options)!,
-                        Base = value.GetProperty("base").Deserialize<Ingredient>(options)!
+                        Base = value.GetProperty("base").Deserialize<Ingredient>(options)!,
+                        Pattern = value.TryGetProperty("pattern", out var pattern) ? pattern.GetString() : null
                     });
                 }
 

@@ -474,6 +474,7 @@ public partial class PlayerBase
         tag.Set(recipeBook);
 
         tag.Set(new NbtTag<bool>("seenCredits", this.SeenCredits));
+        this.WriteRespawnPoint(tag);
         tag.Set(new NbtTag<int>("PortalCooldown", this.portalCooldown));
 
         // Legacy field is retained for older Obsidian saves; stats now supplies the phantom timer.
@@ -536,6 +537,7 @@ public partial class PlayerBase
         }
 
         this.SeenCredits = Read("seenCredits", false);
+        this.ReadRespawnPoint(tag);
         this.portalCooldown = Math.Max(0, Read("PortalCooldown", 0));
         this.TimeSinceRest = Math.Max(0, Read("ObsidianTimeSinceRest", 0));
         if (tag.TryGetTagValue<int>("XpSeed", out var enchantmentSeed))

@@ -24,7 +24,7 @@ internal static class AnalogOutputs
     /// Vanilla <c>hasAnalogOutputSignal</c> for vanilla's blocks.
     /// </summary>
     /// <remarks>
-    /// Jukeboxes, lecterns, chiseled bookshelves, crafters, decorated pots, shelves, command blocks, sculk sensors,
+    /// Jukeboxes, chiseled bookshelves, decorated pots, shelves, command blocks, sculk sensors,
     /// detector rails, creaking hearts, copper bulbs and copper golem statues have one in vanilla too, which reads as
     /// 0 here.
     /// </remarks>
@@ -67,6 +67,8 @@ internal static class AnalogOutputs
         "RespawnAnchorBlock" => (int)MathF.Floor(IntProperty(state, "charges") / 4f * 15f),
         "ChestBlock" or "TrappedChestBlock" or "CopperChestBlock" or "WeatheringCopperChestBlock" =>
             ChestSignal(level, state, position),
+        "LecternBlock" => level.GetBlockEntity(position) is LecternBlockEntity lectern ? lectern.AnalogSignal() : 0,
+        "CrafterBlock" => level.GetBlockEntity(position) is CrafterBlockEntity crafter ? crafter.AnalogSignal() : 0,
         _ => ContainerSignal(level, level.GetBlockEntity(position))
     };
 
