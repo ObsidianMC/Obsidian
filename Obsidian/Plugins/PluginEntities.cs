@@ -36,6 +36,11 @@ internal static class PluginEntities
     /// spawning from its ready callback or a task of its own, or else the plugin whose call the async flow is in (see
     /// <see cref="PluginCall.CurrentPlugin"/>), as when server code awaited by a plugin's handler continues.
     /// </summary>
+    /// <remarks>
+    /// A plugin method whose last act is calling the server (<c>=&gt; level.SpawnEntity(...)</c>) may leave no frame:
+    /// optimized code makes that a tail call, which replaces the method's frame with the server's. Such a call is
+    /// still the plugin's when it runs in a call into the plugin, as handlers, commands and tasks they start do.
+    /// </remarks>
     /// <returns>The plugin, or null for the server's code.</returns>
     public static PluginContainer? FindSpawner()
     {

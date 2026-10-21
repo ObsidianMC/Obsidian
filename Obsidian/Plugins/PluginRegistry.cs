@@ -14,9 +14,15 @@ using System.Reflection;
 using System.Text.Json;
 
 namespace Obsidian.Plugins;
+/// <summary>
+/// The registry a plugin registers its content with, in <see cref="PluginBase.ConfigureRegistry"/>. Each plugin gets its
+/// own, bound to its container, so registrations are the plugin's whichever code makes them: finding the caller from
+/// the stack (<see cref="Assembly.GetCallingAssembly"/>) is wrong once the JIT inlines or tail-calls, as Release builds do.
+/// </summary>
 public sealed partial class PluginRegistry(PluginManager pluginManager, EventDispatcher eventDispatcher,
-    CommandHandler commandHandler) : IPluginRegistry
+    CommandHandler commandHandler, PluginContainer container) : IPluginRegistry
 {
+    private readonly PluginContainer container = container;
     private readonly PluginManager pluginManager = pluginManager;
     private readonly EventDispatcher eventDispatcher = eventDispatcher;
     private readonly CommandHandler commandHandler = commandHandler;
@@ -24,7 +30,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
     public RecipeType<TRecipe> RegisterRecipeType<TRecipe>(
         string identifier, IRecipeSerializer<TRecipe> serializer) where TRecipe : class
     {
-        var owner = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var owner = this.container;
         lock (owner.WorldgenTypes)
         {
             if (!owner.RegisteringWorldgenTypes || owner.IsClosing)
@@ -39,9 +45,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
 
     public IPluginRegistry MapCommand(string name, Delegate handler)
     {
-        var asm = Assembly.GetCallingAssembly();
-
-        var container = this.pluginManager.GetPluginContainerByAssembly(asm);
+        var container = this.container;
 
         this.commandHandler.RegisterCommand(container, name, handler);
         return this;
@@ -49,9 +53,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
 
     public IPluginRegistry MapCommand(string name, ValueTaskContextDelegate<CommandContext> contextDelegate)
     {
-        var asm = Assembly.GetCallingAssembly();
-
-        var container = this.pluginManager.GetPluginContainerByAssembly(asm);
+        var container = this.container;
 
         this.commandHandler.RegisterCommand(container, name, contextDelegate);
         return this;
@@ -59,9 +61,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
     
     public IPluginRegistry MapCommands()
     {
-        var asm = Assembly.GetCallingAssembly();
-
-        var container = this.pluginManager.GetPluginContainerByAssembly(asm);
+        var container = this.container;
 
         this.commandHandler.RegisterCommands(container);
 
@@ -71,9 +71,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
     public IPluginRegistry MapEvent<TEventArgs>(ValueTaskContextDelegate<TEventArgs> contextDelegate, Priority priority = Priority.Low)
         where TEventArgs : BaseMinecraftEventArgs
     {
-        var asm = Assembly.GetCallingAssembly();
-
-        var container = this.pluginManager.GetPluginContainerByAssembly(asm);
+        var container = this.container;
 
         this.eventDispatcher.RegisterEvent(container, contextDelegate, priority);
 
@@ -82,9 +80,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
 
     public IPluginRegistry MapEvent(Delegate handler, Priority priority = Priority.Low) 
     {
-        var asm = Assembly.GetCallingAssembly();
-
-        var container = this.pluginManager.GetPluginContainerByAssembly(asm);
+        var container = this.container;
 
         this.eventDispatcher.RegisterEvent(container, handler, priority);
 
@@ -93,9 +89,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
 
     public IPluginRegistry MapEvents()
     {
-        var asm = Assembly.GetCallingAssembly();
-
-        var container = this.pluginManager.GetPluginContainerByAssembly(asm);
+        var container = this.container;
 
         this.eventDispatcher.RegisterEvents(container);
 
@@ -106,9 +100,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
         PayloadHandler<TPayload>? handler = null, string version = "1", bool optional = false)
         where TPayload : ICustomPayload<TPayload>
     {
-        var asm = Assembly.GetCallingAssembly();
-
-        var container = this.pluginManager.GetPluginContainerByAssembly(asm);
+        var container = this.container;
         var server = (Server)this.pluginManager.server;
 
         server.PayloadChannels.Register(container, phase, direction, handler, version, optional);
@@ -118,14 +110,14 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
 
     public Item RegisterItem(string identifier, ItemProperties? properties = null)
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         return RegisterItem(container, identifier, properties ?? new ItemProperties());
     }
 
     public BlockType RegisterBlock(string identifier, BlockProperties? properties = null)
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         return RegisterBlock(container, identifier, properties);
     }
@@ -134,21 +126,21 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
         string identifier,
         API.Entities.EntityProperties? properties = null)
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         return RegisterEntity(container, identifier, properties);
     }
 
     public ParticleDefinition RegisterParticle(string identifier)
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         return RegisterParticle(container, identifier);
     }
 
     public SoundEvent RegisterSound(string identifier, float? fixedRange = null)
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         return RegisterSound(container, identifier, fixedRange);
     }
@@ -162,7 +154,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
 
     public MenuDefinition RegisterMenu(string identifier, int rows, int columns = 9)
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         return RegisterMenu(container, identifier, rows, columns);
     }
@@ -172,7 +164,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
         params IEnumerable<BlockType> blocks)
         where TBlockEntity : API.BlockEntities.BlockEntity, new()
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         return RegisterBlockEntity(container, identifier, blocks, static () => new TBlockEntity());
     }
@@ -182,7 +174,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
         ComponentCodec<TValue> codec,
         ComponentNetworkCodec<TValue>? networkCodec = null)
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         return RegisterComponentType(container, identifier, codec, networkCodec);
     }
@@ -344,7 +336,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
 
     public IPluginRegistry AddToTag(string registry, string tag, params IEnumerable<string> entries)
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         container.TagFiles.Add(PluginTags.FromEntries(registry, tag, $"{container.Info.Id} (code)", entries));
 
@@ -354,7 +346,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
     public IPluginRegistry RegisterFeatureType<TFeature>(string identifier)
         where TFeature : ConfiguredFeatureBase
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         RegisterWorldgenType(container, identifier, typeof(ConfiguredFeatureBase), typeof(TFeature));
 
@@ -364,7 +356,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
     public IPluginRegistry RegisterPlacementModifierType<TModifier>(string identifier)
         where TModifier : PlacementModifierBase
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         RegisterWorldgenType(container, identifier, typeof(PlacementModifierBase), typeof(TModifier));
 
@@ -374,7 +366,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
     public IPluginRegistry RegisterWorldgenType<TBase, TValue>(string identifier)
         where TValue : class, TBase
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         RegisterWorldgenType(container, identifier, typeof(TBase), typeof(TValue));
 
@@ -384,7 +376,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
     public IPluginRegistry RegisterGenerator<TGenerator>(string identifier)
         where TGenerator : class, ILevelGenerator
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         CheckIdentifier(container, identifier);
 
@@ -413,7 +405,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
     {
         ArgumentNullException.ThrowIfNull(replace);
 
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         RegisterBiomeRegion(container, identifier, dimension, weight, writer =>
         {
@@ -436,7 +428,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
     {
         ArgumentNullException.ThrowIfNull(biomes);
 
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         RegisterBiomeRegion(container, identifier, dimension, weight, writer =>
         {
@@ -476,7 +468,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
     {
         ArgumentNullException.ThrowIfNull(ingredient);
 
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         BrewingRegistry.Add(container, new PotionMix(from, ingredient, to), () => container.IsClosing);
 
@@ -489,7 +481,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
         ArgumentNullException.ThrowIfNull(ingredient);
         ArgumentNullException.ThrowIfNull(to);
 
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         BrewingRegistry.Add(container, new ContainerMix(from, ingredient, to), () => container.IsClosing);
 
@@ -499,7 +491,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
     // Checked only: the creative inventory is the client's (see PluginCreativeTabs).
     public IPluginRegistry RegisterCreativeTab(string identifier, CreativeTabProperties properties)
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         PluginCreativeTabs.CheckTab(container, identifier, properties);
 
@@ -508,7 +500,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
 
     public IPluginRegistry AddToCreativeTab(string tab, IEnumerable<Item> items, Item? after = null)
     {
-        var container = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var container = this.container;
 
         PluginCreativeTabs.CheckAddition(container, tab, items);
 

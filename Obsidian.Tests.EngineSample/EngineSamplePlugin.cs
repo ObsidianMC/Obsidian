@@ -9,6 +9,7 @@ using Obsidian.API.Client;
 using Obsidian.API.Inventory;
 using Obsidian.API.Plugins;
 using Obsidian.API.World;
+using System.Runtime.CompilerServices;
 
 namespace EngineSample;
 
@@ -29,6 +30,12 @@ public sealed class EngineSamplePlugin : PluginBase, IClientPlugin
     /// Phase 5: keep a machine's chunks ticking without players. Dispose the handle when the machine stops needing
     /// them; unloading this plugin releases it even if the caller forgets.
     /// </summary>
+    /// <remarks>
+    /// The ticket is the plugin's because its code takes it. Tests call this from outside any call into the plugin,
+    /// where only the call stack shows that, so it's kept unoptimized: optimized, the call becomes a tail call and
+    /// leaves no frame of the plugin's.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.NoOptimization)]
     public IDisposable KeepChunks(ILevel level, int chunkX, int chunkZ, int radius = 0, bool ticking = true) =>
         level.AddChunkTicket(chunkX, chunkZ, radius, ticking);
 
