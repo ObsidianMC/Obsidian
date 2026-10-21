@@ -7,6 +7,7 @@ using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -22,7 +23,7 @@ public sealed class Pregeneration
     public async Task PregeneratedChunksAreSavedAndUnloaded()
     {
         const int range = 2;
-        var configuration = new ServerConfiguration { SpawnChunkRadius = 0, TimeTickSpeedMultiplier = 1, PregenerateChunkRange = range };
+        var configuration = new ServerConfiguration { SpawnChunkRadius = 1, TimeTickSpeedMultiplier = 1, PregenerateChunkRange = range };
         var world = new World(
             Microsoft.Extensions.Logging.Abstractions.NullLogger<World>.Instance,
             new FakeWorldManager(defaultWorld: null!),
@@ -54,9 +55,15 @@ public sealed class Pregeneration
         {
             await world.GenerateAsync();
 
-            // Done with every tile, nothing stays loaded, and every chunk of the area comes back complete from disk.
-            Assert.Empty(world.LoadedChunks);
+            // Done with every tile, only the spawn chunks stay loaded, and every chunk of the area comes back complete
+            // from disk.
             var (centerX, centerZ) = world.LevelData.SpawnPosition.ToChunkCoord();
+            long[] spawnChunks =
+            [
+                NumericsHelper.IntsToLong(centerX - 1, centerZ - 1), NumericsHelper.IntsToLong(centerX - 1, centerZ),
+                NumericsHelper.IntsToLong(centerX, centerZ - 1), NumericsHelper.IntsToLong(centerX, centerZ)
+            ];
+            Assert.Equal(spawnChunks.Order(), world.LoadedChunks.Order());
             for (var x = centerX - range; x < centerX + range; x++)
             {
                 for (var z = centerZ - range; z < centerZ + range; z++)

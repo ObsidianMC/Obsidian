@@ -145,6 +145,9 @@ public abstract partial class AbstractLevel
     // Called under chunkTicketLock and waitingJobs, so release and dispatch agree on which jobs have started.
     private void DiscardUnneededGeneration(bool moveToWaiting = false)
     {
+        // Taken once, since the pass asks it of every queued chunk.
+        Entities.Player[]? viewers = null;
+
         var count = this.ChunksToGen.Count;
         for (var index = 0; index < count && this.ChunksToGen.TryDequeue(out var queued); index++)
         {
@@ -164,7 +167,7 @@ public abstract partial class AbstractLevel
             if (this.queuedChunks.TryGetValue(key, out var demand)
                 && demand is GenerationDemand.Ticket or GenerationDemand.Player
                 && !this.IsTicketLoaded(key)
-                && !this.IsInPlayerView(key))
+                && !IsInView(viewers ??= [.. this.Players.Values.OfType<Entities.Player>()], key))
             {
                 this.queuedChunks.TryRemove(key, out _);
                 return true;
@@ -184,12 +187,12 @@ public abstract partial class AbstractLevel
 
     private bool IsTicketLoaded(long chunk) => Volatile.Read(ref this.ticketChunks).Loaded.Contains(chunk);
 
-    private bool IsInPlayerView(long chunk)
+    private static bool IsInView(Entities.Player[] viewers, long chunk)
     {
         NumericsHelper.LongToInts(chunk, out var x, out var z);
-        foreach (var player in this.Players.Values)
+        foreach (var viewer in viewers)
         {
-            if (player is Entities.Player viewer && viewer.WantsChunk(x, z))
+            if (viewer.WantsChunk(x, z))
                 return true;
         }
 
