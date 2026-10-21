@@ -117,26 +117,33 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                     (new VectorD(x * 16 + 8, player.Position.Y, z * 16 + 8) - player.Position).MagnitudeSquared() <= 16384)
                     chunks.Add(NumericsHelper.IntsToLong(x, z));
         }
-        var mobs = level.Regions.Values.SelectMany(region => region.Entities.Values).OfType<Mob>()
-            .Where(mob => mob.Alive && level.IsMobTicking(mob.Position)).ToArray();
-        var counts = mobs.Where(mob => !mob.PersistenceRequired && mob.CustomName == null)
-            .GroupBy(SpawnCategory).ToDictionary(group => group.Key, group => group.Count());
-        var potential = this.Potential();
+        // Read once a tick rather than for every chunk and category.
+        var spawnMobs = level.LevelData.GetBooleanRule("spawn_mobs");
+        var spawnMonsters = level.LevelData.Difficulty != Difficulty.Peaceful
+            && level.LevelData.GetBooleanRule("spawn_monsters");
+        var spawnCats = spawnMobs && ticks % 1200 == 0;
+
+        var (counts, potential, tickingMobs) = this.TallyMobs(spawnCats);
         foreach (var packed in chunks.OrderBy(_ => random.Next()))
         {
             NumericsHelper.LongToInts(packed, out var cx, out var cz);
             var chunk = level.GetLoadedChunk(cx, cz)!;
-            foreach (var blockEntity in chunk.GetBlockEntities().OfType<DataBlockEntity>().ToArray())
+            if (chunk is Chunk concrete)
             {
-                if (blockEntity.Id == "minecraft:mob_spawner") TickSpawner(blockEntity, players);
-                else if (blockEntity.Id == "minecraft:beehive") TickHive(blockEntity);
+                // Read in place: copying a chunk's block entities takes all their dictionary's locks.
+                foreach (var (_, blockEntity) in concrete.BlockEntities)
+                {
+                    if (blockEntity is not DataBlockEntity data) continue;
+                    if (data.Id == "minecraft:mob_spawner") TickSpawner(data, players);
+                    else if (data.Id == "minecraft:beehive") TickHive(data);
+                }
+
+                TickFrogspawn(concrete);
             }
-            if (chunk is Chunk concrete) TickFrogspawn(concrete);
             TickThunder(chunk);
             foreach (var category in spawnCategories)
             {
-                if (!level.LevelData.GetBooleanRule("spawn_mobs") || category.Rare && ticks % 400 != 0 ||
-                    category.Name == "monster" && (level.LevelData.Difficulty == Difficulty.Peaceful || !level.LevelData.GetBooleanRule("spawn_monsters")))
+                if (!spawnMobs || category.Rare && ticks % 400 != 0 || category.Name == "monster" && !spawnMonsters)
                     continue;
                 var cap = category.Cap * chunks.Count / 289;
                 var count = counts.GetValueOrDefault(category.Name);
@@ -144,43 +151,76 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                     SpawnGroup(chunk, category.Name, players, cap - count, counts: counts, potential: potential);
             }
         }
-        if (level.LevelData.GetBooleanRule("spawn_mobs"))
+        if (spawnMobs)
         {
             TickPhantoms(players);
-            if (ticks % 1200 == 0) SpawnVillageCats(mobs);
+            if (spawnCats) SpawnVillageCats(tickingMobs!);
         }
     }
 
-    // The charges of the loaded mobs that may despawn, whose biomes give their types spawn costs, like vanilla's
-    // NaturalSpawner.createState, which takes every loaded entity, ticking or not.
-    private SpawnPotential Potential()
+    // One pass over the loaded mobs, for what natural spawning reads of them:
+    // - the despawnable ones in ticking chunks, counted by their category against its cap;
+    // - the charges of the despawnable ones whose biomes give their types spawn costs, like vanilla's
+    //   NaturalSpawner.createState, which takes every loaded entity, ticking or not;
+    // - with withTicking, every live mob in a ticking chunk, for SpawnVillageCats.
+    private (Dictionary<string, int> Counts, SpawnPotential Potential, List<Mob>? Ticking) TallyMobs(bool withTicking)
     {
         var spawns = PluginSpawns.Current;
+        var counts = new Dictionary<string, int>();
         var potential = new SpawnPotential();
-        var mobs = level.Regions.Values.SelectMany(region => region.Entities.Values).OfType<Mob>();
+        var ticking = withTicking ? new List<Mob>() : null;
 
-        foreach (var mob in mobs)
+        // Whether each chunk ticks mobs, which depends on the chunk alone, asked once a chunk rather than once a mob.
+        var tickingChunks = new Dictionary<long, bool>();
+
+        // Read in place: copying the regions' entities takes all their dictionaries' locks.
+        foreach (var (_, region) in level.Regions)
         {
-            if (!mob.Alive
-                || mob.PersistenceRequired
-                || mob.CustomName is not null
-                || SpawnCategory(mob) == "misc")
-                continue;
+            foreach (var (_, entity) in region.Entities)
+            {
+                if (entity is not Mob { Alive: true } mob)
+                    continue;
 
-            var position = (Vector)mob.Position;
+                var despawnable = !mob.PersistenceRequired && mob.CustomName is null;
+                if (!despawnable && ticking is null)
+                    continue;
 
-            if (level.GetLoadedChunk(position.X >> 4, position.Z >> 4) is not IChunk chunk)
-                continue;
+                var (chunkX, chunkZ) = Region.ChunkOf(mob.Position);
+                var key = NumericsHelper.IntsToLong(chunkX, chunkZ);
+                if (!tickingChunks.TryGetValue(key, out var inTickingChunk))
+                    tickingChunks[key] = inTickingChunk = level.IsMobTicking(mob.Position);
 
-            var y = Math.Clamp(position.Y, level.MinY, level.MinY + level.Height - 1);
-            var biome = chunk.GetBiome(position.X, y, position.Z);
-            var type = EntityNbt.TypeId(mob);
+                if (inTickingChunk)
+                    ticking?.Add(mob);
 
-            if (spawns.CostOf(biome.Name, type) is SpawnCost cost)
-                potential.Add(position, cost.Charge);
+                if (!despawnable)
+                    continue;
+
+                var category = SpawnCategory(mob);
+                if (inTickingChunk)
+                    counts[category] = counts.GetValueOrDefault(category) + 1;
+
+                if (category != "misc")
+                    AddCharge(potential, spawns, mob);
+            }
         }
 
-        return potential;
+        return (counts, potential, ticking);
+    }
+
+    // Adds a despawnable mob's charge, when the biome it stands in gives its type a spawn cost.
+    private void AddCharge(SpawnPotential potential, BiomeSpawns spawns, Mob mob)
+    {
+        var position = (Vector)mob.Position;
+
+        if (level.GetLoadedChunk(position.X >> 4, position.Z >> 4) is not IChunk chunk)
+            return;
+
+        var y = Math.Clamp(position.Y, level.MinY, level.MinY + level.Height - 1);
+        var biome = chunk.GetBiome(position.X, y, position.Z);
+
+        if (spawns.CostOf(biome.Name, EntityNbt.TypeId(mob)) is SpawnCost cost)
+            potential.Add(position, cost.Charge);
     }
 
     // Counts, when given, each spawned mob against its own type's category, like vanilla's SpawnState.afterSpawn:
@@ -217,14 +257,20 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             choices = fortressSpawns;
 
         // Vanilla's swamps' bogged and desert's parched come from their biome data, so modifiers can remove them.
-        choices = choices.Where(entry => SupportsSpawn(entry.Type)).ToArray();
-        var total = choices.Sum(choice => choice.Weight);
+        var total = 0;
+        foreach (var candidate in choices)
+        {
+            if (SupportsSpawn(candidate.Type))
+                total += candidate.Weight;
+        }
         if (total <= 0)
             return 0;
         var selected = random.Next(total);
         SpawnerMob? choice = null;
         foreach (var candidate in choices)
         {
+            if (!SupportsSpawn(candidate.Type))
+                continue;
             selected -= candidate.Weight;
             if (selected < 0)
             {
@@ -266,17 +312,10 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             if (generation)
                 y = GetSpawnHeight(candidateChunk, x, z);
             var position = new VectorD(x + 0.5f, y, z + 0.5f);
-            if (!generation && (players.Any(player => (player.Position - position).MagnitudeSquared() < 576) ||
-                !players.Any(player => (player.Position - position).MagnitudeSquared() <= 16384) ||
-                (level.LevelData.SpawnPosition - position).MagnitudeSquared() < 576))
+            if (!generation && !this.IsRightDistance(players, position))
                 continue;
             if (type == EntityType.Blaze && (level.Generator is not MojangGenerator fortressGenerator ||
                 !fortressGenerator.IsInsideFortress(new Vector(x, y, z))))
-                continue;
-            var mob = definition is null
-                ? EntitySpawner.CreateMob(level, type)
-                : PluginEntity.Create(definition, level) as Mob;
-            if (mob == null)
                 continue;
             var feet = terrain.GetBlock(new Vector(x, y, z));
             var floor = terrain.GetBlock(new Vector(x, y - 1, z));
@@ -284,9 +323,16 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             // A plugin's type with a spawn placement has its own rules instead of its spawn list's.
             var placement = definition?.Settings.SpawnPlacement;
 
-            if (feet == null || floor == null || !terrain.IsFree(mob.Dimension.CreateBBFromPosition(position)) ||
+            if (feet == null || floor == null ||
                 placement is null && (aquatic ? !feet.Is(BlockIds.Water) :
                     feet.IsLiquid || type is not EntityType.Ghast and not EntityType.Bat && (floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0)))
+                continue;
+
+            // Made once the blocks fit, as vanilla makes it only for a valid position: building a mob is costly.
+            var mob = definition is null
+                ? EntitySpawner.CreateMob(level, type)
+                : PluginEntity.Create(definition, level) as Mob;
+            if (mob == null || !terrain.IsFree(mob.Dimension.CreateBBFromPosition(position)))
                 continue;
             var sky = candidateChunk.GetLightLevel(x, y, z, LightType.Sky);
             var block = candidateChunk.GetLightLevel(x, y, z, LightType.Block);
@@ -398,6 +444,22 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             }
         }
         return spawned;
+    }
+
+    // No player within 24 blocks of the position, one within 128, and the level's spawn at least 24 blocks away.
+    private bool IsRightDistance(IPlayer[] players, VectorD position)
+    {
+        var withinReach = false;
+        foreach (var player in players)
+        {
+            var distance = (player.Position - position).MagnitudeSquared();
+            if (distance < 576)
+                return false;
+
+            withinReach |= distance <= 16384;
+        }
+
+        return withinReach && (level.LevelData.SpawnPosition - position).MagnitudeSquared() >= 576;
     }
 
     private static int GetSpawnHeight(IChunk chunk, int x, int z)

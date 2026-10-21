@@ -154,6 +154,15 @@ public sealed class DataBlockEntity : BlockEntity
     }
 
     /// <summary>
+    /// A deep copy of the field of <see cref="Data"/> named <paramref name="name"/>, or null without one of that type.
+    /// </summary>
+    internal T? SnapshotTag<T>(string name) where T : class, INbtTag
+    {
+        lock (this.Data)
+            return this.Data.TryGetTag<T>(name, out var tag) ? (T)Copy(tag) : null;
+    }
+
+    /// <summary>
     /// Deep copies a compound.
     /// </summary>
     internal static NbtCompound Copy(NbtCompound compound)
