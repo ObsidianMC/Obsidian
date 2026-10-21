@@ -1,5 +1,6 @@
 using Obsidian.API;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.Entities;
 using Obsidian.Registries;
@@ -67,6 +68,33 @@ public sealed class ThrownItems
             await egg.TickAsync();
 
         Assert.Empty(world.GetNonPlayerEntitiesInRange(player.Position, 20).OfType<Egg>());
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout, DisplayName = "Throwing a splash potion spawns a player-owned splash with the potion's effects and uses one up")]
+    public async Task SplashPotionIsThrownWithItsEffects()
+    {
+        await using var context = TestServerFactory.CreateServer($"splash-{Guid.NewGuid():N}");
+        var world = context.World;
+        for (var x = -2; x <= 2; x++)
+            for (var z = -2; z <= 2; z++)
+                world.LoadRegionByChunk(x, z).SetChunk(new Obsidian.WorldData.Chunk(x, z, world.MinY, world.Height, ChunkGenStage.full));
+
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "PotionThrower", new VectorD(0.5, 64, 0.5));
+        player.Yaw = 0f;
+        player.Pitch = 0f;
+        Assert.True(world.TryAddPlayer(player));
+        Assert.True(world.TryAddEntity(player));
+
+        var splash = new ItemStack(ItemsRegistry.SplashPotion, 2, new PotionContentsDataComponent { Potion = Potion.Swiftness });
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, splash);
+
+        await player.UseItemAsync(InteractionHand.MainHand);
+        Assert.Equal(1, player.Inventory.GetItem(player.CurrentHeldItemSlot)!.Count);
+
+        var potion = Assert.Single(world.GetNonPlayerEntitiesInRange(player.Position, 10).OfType<MobProjectile>());
+        Assert.Equal(EntityType.SplashPotion, potion.Type);
+        Assert.Same(player, potion.Owner);
+        Assert.Contains(potion.SplashEffects!, effect => effect.Id == (int)PotionEffect.Speed - 1);
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout, DisplayName = "Throwing a snowball spawns a player-owned snowball projectile that is consumed in survival")]

@@ -76,7 +76,7 @@ public sealed partial class ThrownExperienceBottle : Throwable
     }
 
     // Vanilla's shootFromRotation direction, with its usual slight inaccuracy.
-    private static VectorD Direction(float yaw, float pitch)
+    internal static VectorD Direction(float yaw, float pitch)
     {
         const double ToRadians = Math.PI / 180;
 

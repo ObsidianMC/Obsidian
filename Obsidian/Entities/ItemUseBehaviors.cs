@@ -1,3 +1,4 @@
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Inventory;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
@@ -30,6 +31,7 @@ internal static class ItemUseBehaviors
         ["net.minecraft.world.item.EggItem"] = new EggUse(),
         ["net.minecraft.world.item.SnowballItem"] = new SnowballUse(),
         ["net.minecraft.world.item.EnderpearlItem"] = new EnderPearlUse(),
+        ["net.minecraft.world.item.SplashPotionItem"] = new SplashPotionUse(),
         ["net.minecraft.world.item.EnderEyeItem"] = new EnderEyeUse(),
         ["net.minecraft.world.item.ExperienceBottleItem"] = new ExperienceBottleUse(),
     }.ToFrozenDictionary();
@@ -81,6 +83,48 @@ internal static class ItemUseBehaviors
         public async ValueTask UseAsync(PlayerBase player, InteractionHand hand, ItemStack stack)
         {
             await ThrownExperienceBottle.ThrowAsync(player, hand, stack);
+        }
+    }
+
+    /// <summary>
+    /// Vanilla's <c>ThrowablePotionItem.use</c> for splash potions: throws the potion at pitch -20 and speed 0.5, and
+    /// the splash it makes is the stack's potion effects.
+    /// </summary>
+    private sealed class SplashPotionUse : IItemUseBehavior
+    {
+        // Vanilla's ThrowablePotionItem: shot upward a little, at half the throwable speed.
+        private const float PitchOffset = -20;
+        private const float Speed = 0.5f;
+
+        public async ValueTask UseAsync(PlayerBase player, InteractionHand hand, ItemStack stack)
+        {
+            if (!ThrowableItemUse.CanThrow(player) || player.Level is not AbstractLevel level)
+                return;
+
+            var potion = new MobProjectile(
+                player,
+                EntityType.SplashPotion,
+                new VectorD(player.Position.X, player.HeadY - 0.1, player.Position.Z),
+                ThrownExperienceBottle.Direction(player.Yaw.Degrees, player.Pitch.Degrees + PitchOffset),
+                Speed)
+            {
+                SplashEffects = [.. ArrowPotionEffects.Get(stack.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents))],
+                SplashItem = new ItemStack(stack, 1)
+            };
+            potion.Motion += player.CombatMotion;
+
+            level.PacketBroadcaster.BroadcastToLevelInRange(level, (Vector)player.Position.Floor(), new SoundPacket
+            {
+                SoundLocation = "minecraft:entity.splash_potion.throw",
+                SoundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z),
+                Category = SoundCategory.Neutral,
+                Volume = 0.5f,
+                Pitch = 0.4f / (Globals.Random.NextSingle() * 0.4f + 0.8f),
+                Seed = Globals.Random.NextInt64()
+            });
+
+            level.SpawnEntity(potion);
+            await ThrowableItemUse.ConsumeAsync(player, hand, stack);
         }
     }
 
