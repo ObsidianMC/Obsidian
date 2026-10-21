@@ -175,6 +175,15 @@ public abstract partial class AbstractLevel
                 continue;
 
             var block = terrain.GetBlock(position)!;
+            if (BlocksRegistry.IsTntBlock(block.RegistryId))
+            {
+                // Vanilla's TntBlock.wasExploded: a blast that breaks TNT primes it with a fuse of 10 to 29 ticks and leaves no drop.
+                if (await this.TrySetBlockAsync(position, BlocksRegistry.Air, BlockUpdateFlags.All,
+                    state => state.GetHashCode() == block.GetHashCode()))
+                    this.PrimeTnt(position, this.GrowthRandom.NextInt(20) + 10);
+                continue;
+            }
+
             var expected = this.GetResidentBlockEntity(position);
             if (expected is BlockEntity { Owner: PluginContainer } && expected is not DataBlockEntity)
             {

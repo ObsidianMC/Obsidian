@@ -203,6 +203,22 @@ public partial class UseItemOnPacket
         if (await this.TryUseSpawnEggAsync(player, handSlot, currentItem, b))
             return;
 
+        // Vanilla's TntBlock.useItemOn: flint and steel or a fire charge primes the TNT and removes it, rather than
+        // placing fire beside it. Only flint and steel takes durability; a fire charge is not used up here.
+        if (player.Level is AbstractLevel tntLevel && currentItem is { Count: > 0 }
+            && currentItem.Holder.Id is ItemIds.FlintAndSteel or ItemIds.FireCharge
+            && BlocksRegistry.IsTntBlock(b.RegistryId))
+        {
+            if (tntLevel.PrimeTnt(position))
+            {
+                await tntLevel.SetBlockAsync(position, BlocksRegistry.Air, doBlockUpdate: true);
+                if (currentItem.Is(ItemsRegistry.FlintAndSteel))
+                    await this.ConsumePortalItemAsync(player, currentItem);
+            }
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
+        }
+
         if (player.Level is AbstractLevel level && currentItem is { Count: > 0 } &&
             (currentItem.Holder.Id is ItemIds.EnderEye or ItemIds.FlintAndSteel or ItemIds.FireCharge
                 || level.Portals.HasIgniter(currentItem)))

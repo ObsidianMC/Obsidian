@@ -20,6 +20,8 @@ public sealed partial class PrimedTnt : Entity
 
     public int Fuse { get; set; } = DefaultFuse;
 
+    public PrimedTnt() => Type = EntityType.Tnt;
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
