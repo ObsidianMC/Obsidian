@@ -19,7 +19,7 @@ internal static class BlockSurvival
     private static readonly BlockSet smallDripleafPlaceable = new("#minecraft:small_dripleaf_placeable");
     private static readonly BlockSet bigDripleafPlaceable = new("#minecraft:big_dripleaf_placeable");
     private static readonly BlockSet bambooPlantableOn = new("#minecraft:bamboo_plantable_on");
-    private static readonly BlockSet jungleLogs = new("#minecraft:jungle_logs");
+    internal static readonly BlockSet JungleLogs = new("#minecraft:jungle_logs");
     private static readonly BlockSet snowLayerCannotSurviveOn = new("#minecraft:snow_layer_cannot_survive_on");
     private static readonly BlockSet snowLayerCanSurviveOn = new("#minecraft:snow_layer_can_survive_on");
     private static readonly BlockSet nylium = new("#minecraft:nylium");
@@ -226,7 +226,7 @@ internal static class BlockSurvival
     private static bool CocoaCanSurvive(IBlock block, IWorldGenLevel level, Vector position)
     {
         var facing = FeatureHelpers.ParseFace(block.GetProperty("facing"));
-        return jungleLogs.Contains(level.GetBlock(position.Offset(facing)));
+        return JungleLogs.Contains(level.GetBlock(position.Offset(facing)));
     }
 
     private static bool MossyCarpetCanSurvive(IBlock block, IWorldGenLevel level, Vector position)

@@ -86,6 +86,13 @@ public sealed partial class Warden : PathfinderMob
     protected override ValueTask OnHurtAsync(IEntity source)
     {
         IncreaseAnger(source, 100);
+        // Vanilla's hurtServer: a direct or close attacker becomes the target at once, skipping the roar.
+        var direct = IncomingDirectSource == null || ReferenceEquals(IncomingDirectSource, source);
+        if (AttackTarget == null && CanSense(source) && (direct || IsInRange(source, 5)))
+        {
+            AttackTarget = source;
+            if (Pose is Pose.Sniffing or Pose.Roaring) { poseTicks = 0; SetPose(Pose.Standing); }
+        }
         if (Pose is Pose.Digging or Pose.Sniffing)
         {
             poseTicks = 0;
@@ -140,7 +147,7 @@ public sealed partial class Warden : PathfinderMob
             SynchronizeMetadata();
         }
         if (AiTick % 120 == 0)
-            foreach (var player in Level.GetPlayersInRange(Position, 20).Where(player => player.GameMode != GameMode.Spectator))
+            foreach (var player in Level.GetPlayersInRange(Position, 20).Where(player => player.GameMode is GameMode.Survival or GameMode.Adventure))
                 player.AddPotionEffect((int)PotionEffect.Darkness - 1, 260);
 
         if (poseTicks > 0)
@@ -237,7 +244,7 @@ public sealed partial class Warden : PathfinderMob
         else if (sniffCooldown == 0)
         {
             sniffCooldown = 100 + Random.Next(100);
-            poseTicks = 83;
+            poseTicks = 84;
             SetPose(Pose.Sniffing);
             PlayMobSound("sniff");
         }

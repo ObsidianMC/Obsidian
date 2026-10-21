@@ -314,16 +314,16 @@ public partial class UseItemOnPacket
                     if (existing is { IsAir: true } && !level.IsOutsideBuildHeight(firePosition.Y))
                     {
                         used = await level.Portals.TryIgniteAsync(firePosition, igniter: currentItem);
+                        // Vanilla's BaseFireBlock.canBePlacedAt: an empty space that fire would survive in.
                         if (!used
                             && currentItem.Holder.Id is ItemIds.FlintAndSteel or ItemIds.FireCharge
-                            && await level.GetBlockAsync(firePosition + Vector.Down) is IBlock below
-                            && below.HasFullTopCollisionFace())
+                            && FireBlockBehavior.CanBePlaced(level.BlockUpdates, firePosition))
                         {
-                            var fire = below.RegistryId is BlockIds.SoulSand or BlockIds.SoulSoil
-                                ? BlocksRegistry.SoulFire
-                                : BlocksRegistry.Fire;
+                            var fire = FireBlockBehavior.StateFor(level.BlockUpdates, firePosition);
 
                             await level.SetBlockAsync(firePosition, fire, true);
+                            // Vanilla's FireBlock.onPlace: the fire's first tick, 30 + random(10) ticks on.
+                            level.ScheduleBlockTick(firePosition, fire, 30 + Random.Shared.Next(10));
                             used = true;
                         }
                     }
@@ -368,6 +368,22 @@ public partial class UseItemOnPacket
             return;
         }
 
+        // Vanilla's Item.useOn, by the item class that declares it (see ItemUseOnBehaviors): a hoe tills dirt. Adventure
+        // and spectator players can't use items on blocks.
+        if (player.Level is AbstractLevel useOnLevel
+            && currentItem is { Count: > 0 }
+            && player.GameMode is GameMode.Survival or GameMode.Creative
+            && ItemUseOnBehaviors.For(currentItem.Holder) is { } useOn
+            && await useOn.UseOnAsync(useOnLevel, player, currentItem, handSlot, position, b, this.Face))
+        {
+            player.Statistics.Increment(currentItem.Holder.UnlocalizedName, type: "minecraft:used");
+            await player.FireProgressAsync("item_used_on_block",
+                item: progressItem, block: b, position: this.Position);
+
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
+        }
+
         player.StartEating(Hand);
 
         if (currentItem is null || player.Level is not AbstractLevel placeLevel)
@@ -390,8 +406,8 @@ public partial class UseItemOnPacket
         {
             block = BlocksRegistry.Lava;
         }
-        else if (!BlocksRegistry.TryGetBlock(currentItem.Holder, out var placed)
-            && !VanillaRedstone.TryGetPlacedBlock(currentItem.Holder, out placed))
+        else if (!VanillaRedstone.TryGetPlacedBlock(currentItem.Holder, out var placed)
+            && !BlocksRegistry.TryGetBlock(currentItem.Holder, out placed))
         {
             // The item isn't a block, or it's a plugin's item without one, which does what its behaviour does.
             return;
@@ -411,6 +427,13 @@ public partial class UseItemOnPacket
 
         var target = await placeLevel.GetBlockAsync(position);
         if (placeLevel.IsOutsideBuildHeight(position.Y) || !pouring && target?.CanBeReplaced() != true)
+        {
+            await this.RejectPlacementAsync(player, handSlot);
+            return;
+        }
+
+        // Vanilla's BlockItem.canPlace: a block that can't survive where it would go isn't placed (a crop goes only on farmland).
+        if (!pouring && !PlacementSurvival.CanPlace(placeLevel.Fluids, block, position))
         {
             await this.RejectPlacementAsync(player, handSlot);
             return;
@@ -579,7 +602,7 @@ public partial class UseItemOnPacket
         });
     }
 
-    private static bool ShouldDamageTool(ItemStack item)
+    internal static bool ShouldDamageTool(ItemStack item)
     {
         var enchantments = item.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
             DataComponentType.Enchantments)?.Value;
