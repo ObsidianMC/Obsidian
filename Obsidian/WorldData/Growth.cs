@@ -6,7 +6,6 @@ using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Registries;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Mojang;
-using System.Collections.Frozen;
 
 namespace Obsidian.WorldData;
 
@@ -47,55 +46,17 @@ internal static partial class Growth
 
     private static readonly TreeGrower azalea = new() { Tree = "minecraft:azalea_tree" };
 
-    // Vanilla's TreeGrower constants: which features each sapling grows into, and its secondary chance. They decide
-    // the trees players see grow, so they match vanilla's.
-    private static readonly FrozenDictionary<int, TreeGrower> vanillaGrowers = new Dictionary<int, TreeGrower>
-    {
-        [BlockIds.OakSapling] = new()
-        {
-            Tree = "minecraft:oak",
-            SecondaryTree = "minecraft:fancy_oak",
-            Flowers = "minecraft:oak_bees_005",
-            SecondaryFlowers = "minecraft:fancy_oak_bees_005",
-            SecondaryChance = 0.1f
-        },
-        [BlockIds.SpruceSapling] = new()
-        {
-            MegaTree = "minecraft:mega_spruce",
-            SecondaryMegaTree = "minecraft:mega_pine",
-            Tree = "minecraft:spruce",
-            SecondaryChance = 0.5f
-        },
-        [BlockIds.BirchSapling] = new()
-        {
-            Tree = "minecraft:birch",
-            Flowers = "minecraft:birch_bees_005"
-        },
-        [BlockIds.JungleSapling] = new()
-        {
-            MegaTree = "minecraft:mega_jungle_tree",
-            Tree = "minecraft:jungle_tree_no_vine"
-        },
-        [BlockIds.AcaciaSapling] = new() { Tree = "minecraft:acacia" },
-        [BlockIds.CherrySapling] = new()
-        {
-            Tree = "minecraft:cherry",
-            Flowers = "minecraft:cherry_bees_005"
-        },
-        [BlockIds.DarkOakSapling] = new() { MegaTree = "minecraft:dark_oak" },
-        [BlockIds.PaleOakSapling] = new() { MegaTree = "minecraft:pale_oak_bonemeal" },
-        [BlockIds.MangrovePropagule] = new()
-        {
-            Tree = "minecraft:mangrove",
-            SecondaryTree = "minecraft:tall_mangrove",
-            SecondaryChance = 0.85f
-        }
-    }.ToFrozenDictionary();
-
     /// <summary>
     /// Whether random ticks grow <paramref name="block"/>: saplings and the mangrove propagule.
     /// </summary>
     public static bool IsRandomlyTicking(IBlock block) => KindOf(block, out _) is Kind.Sapling or Kind.Propagule;
+
+    /// <summary>
+    /// The random tick of the vanilla class that owns <paramref name="block"/>'s <c>randomTick</c>, when Obsidian
+    /// implements it (see <see cref="RandomTickBehaviors"/>); null otherwise, and for plugin blocks.
+    /// </summary>
+    public static IRandomTickBehavior? VanillaRandomTick(IBlock block) =>
+        BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out _) ? null : BlocksRegistry.GetRandomTickBehavior(block.RegistryId);
 
     /// <summary>
     /// A random tick of a plant: a sapling in enough light grows a step one time in 7, and a propagule grows a step
@@ -106,7 +67,7 @@ internal static partial class Growth
         switch (KindOf(block, out var grower))
         {
             case Kind.Sapling:
-                if (RawBrightness(level, position + Vector.Up) >= SaplingLight && random.NextInt(7) == 0)
+                if (RawBrightness(level, position + Vector.Up, level.SkyDarken()) >= SaplingLight && random.NextInt(7) == 0)
                     AdvanceTree(level, position, block, grower!, random);
 
                 break;
@@ -182,6 +143,8 @@ internal static partial class Growth
         }
     }
 
+    // A vanilla sapling is classified by the class that owns its random tick (SaplingBlock or MangrovePropaguleBlock),
+    // and grows the tree the generated table names for it (vanilla's treeGrower).
     private static Kind KindOf(IBlock block, out TreeGrower? grower)
     {
         grower = null;
@@ -192,8 +155,13 @@ internal static partial class Growth
             return grower is null ? Kind.None : Kind.Sapling;
         }
 
-        if (vanillaGrowers.TryGetValue(block.RegistryId, out grower))
-            return block.RegistryId == BlockIds.MangrovePropagule ? Kind.Propagule : Kind.Sapling;
+        var owner = BlocksRegistry.GetRandomTickBehavior(block.RegistryId);
+        if (ReferenceEquals(owner, RandomTickBehaviors.SaplingBlock) || ReferenceEquals(owner, RandomTickBehaviors.MangrovePropaguleBlock))
+        {
+            grower = BlocksRegistry.GetTreeGrower(block.RegistryId);
+            if (grower is not null)
+                return ReferenceEquals(owner, RandomTickBehaviors.MangrovePropaguleBlock) ? Kind.Propagule : Kind.Sapling;
+        }
 
         return block.RegistryId switch
         {
@@ -406,11 +374,7 @@ internal static partial class Growth
         };
 
         var age = Math.Min(MaxAge(block), Age(block) + increase);
-        var grown = block.RegistryId == BlockIds.TorchflowerCrop && age == MaxAge(block)
-            ? BlocksRegistry.GetDefault(BlockIds.Torchflower)
-            : block.WithProperty("age", age);
-
-        SetAndShow(level, position, grown);
+        SetAndShow(level, position, GrownState(block, age));
     }
 
     /// <summary>
@@ -535,15 +499,16 @@ internal static partial class Growth
     }
 
     // Sets a block and shows it to the players, like vanilla's setBlock with UPDATE_CLIENTS.
-    private static void SetAndShow(AbstractLevel level, Vector position, IBlock block)
+    internal static void SetAndShow(AbstractLevel level, Vector position, IBlock block)
     {
         var live = new LiveFeatureLevel(level);
         live.SetBlock(position, block);
         live.Commit();
     }
 
-    // Vanilla's getMaxLocalRawBrightness: the sky's light less the level's darkening, or the blocks' light.
-    private static int RawBrightness(AbstractLevel level, Vector position)
+    // Vanilla's getRawBrightness: the sky's light less the ambient darkening, or the blocks' light, whichever is more.
+    // Saplings read it with the level's sky darkening (getMaxLocalRawBrightness); crops with none.
+    internal static int RawBrightness(AbstractLevel level, Vector position, int ambientDarkness)
     {
         if (level.IsOutsideBuildHeight(position.Y)
             || level.GetLoadedChunk(position.X >> 4, position.Z >> 4) is not IChunk chunk)
@@ -551,28 +516,34 @@ internal static partial class Growth
             return 0;
         }
 
-        var sky = chunk.GetLightLevel(position.X, position.Y, position.Z, LightType.Sky) - level.SkyDarken();
+        var sky = chunk.GetLightLevel(position.X, position.Y, position.Z, LightType.Sky) - ambientDarkness;
         var blocks = chunk.GetLightLevel(position.X, position.Y, position.Z, LightType.Block);
 
         return Math.Max(sky, blocks);
     }
 
-    private static IBlock BlockAt(AbstractLevel level, Vector position) =>
+    internal static IBlock BlockAt(AbstractLevel level, Vector position) =>
         level.IsOutsideBuildHeight(position.Y)
             ? BlocksRegistry.VoidAir
             : level.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetBlock(position) ?? BlocksRegistry.Air;
 
     private static bool IsHanging(IBlock block) => block.GetProperty("hanging") == "true";
 
-    private static int Age(IBlock block) => int.TryParse(block.GetProperty("age"), out var age) ? age : 0;
+    internal static int Age(IBlock block) => int.TryParse(block.GetProperty("age"), out var age) ? age : 0;
 
     // A crop's last age: 7, or 3 for beetroots and 2 for torchflowers, whose crop's own states stop at 1.
-    private static int MaxAge(IBlock block) => block.RegistryId switch
+    internal static int MaxAge(IBlock block) => block.RegistryId switch
     {
         BlockIds.Beetroots => 3,
         BlockIds.TorchflowerCrop => 2,
         _ => 7
     };
+
+    // A crop at an age: vanilla's getStateForAge, where a torchflower's last age is the torchflower itself.
+    internal static IBlock GrownState(IBlock block, int age) =>
+        block.RegistryId == BlockIds.TorchflowerCrop && age == MaxAge(block)
+            ? BlocksRegistry.GetDefault(BlockIds.Torchflower)
+            : block.WithProperty("age", age);
 
     private static partial class Log
     {

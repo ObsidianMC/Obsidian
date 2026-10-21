@@ -15,6 +15,7 @@ internal static class PlacementBehaviors
     private static readonly IBlockBehavior NearestOpposite = new NearestFacing();
     private static readonly IBlockBehavior ClickedFace = new ClickedFaceFacing(opposite: false);
     private static readonly IBlockBehavior ClickedFaceOpposite = new ClickedFaceFacing(opposite: true);
+    private static readonly IBlockBehavior Leaves = new LeavesBlockBehavior.Placement();
 
     // One member per Mojang class that owns an implemented placement override. Classes may share an implementation
     // object when their current vanilla algorithms are equivalent; block membership comes only from vanilla's class.
@@ -33,6 +34,7 @@ internal static class PlacementBehaviors
     internal static IBlockBehavior EnderChestBlock => HorizontalOpposite;
     internal static IBlockBehavior HopperBlock => ClickedFaceOpposite;
     internal static IBlockBehavior LecternBlock => HorizontalOpposite;
+    internal static IBlockBehavior LeavesBlock => Leaves;
     internal static IBlockBehavior ShulkerBoxBlock => ClickedFace;
     internal static IBlockBehavior VaultBlock => HorizontalOpposite;
 

@@ -13,11 +13,22 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
     public int RegistryId { get; }
     public int StatesCount { get; }
     public string? PlacementClass { get; }
+    /// <summary>The Mojang class declaring each virtual hook's override, by hook (randomTick, tick, updateShape).</summary>
+    public IReadOnlyDictionary<string, string> OverrideClasses { get; }
     public BlockProperty[] Properties { get; }
     public Dictionary<int, List<string>> StateValues { get; }
+    /// <summary>The sapling's dumped TreeGrower by field (features by identifier, secondaryChance as a float literal), or null.</summary>
+    public IReadOnlyDictionary<string, string>? TreeGrower { get; }
+    /// <summary>The ignite and burn odds vanilla's FireBlock registers for this block, or null if it isn't flammable.</summary>
+    public (int Ignite, int Burn)? FireOdds { get; }
+    /// <summary>Whether vanilla's BlockStateBase.ignitedByLava is true for this block's default state.</summary>
+    public bool IgnitedByLava { get; }
+    /// <summary>Whether this block is a vanilla TntBlock, which fire primes when it replaces it.</summary>
+    public bool IsTnt { get; }
 
     private Block(string name, string tag, int baseId, int defaultId, int registryId, int statesCount,
-        string? placementClass, BlockProperty[] properties, Dictionary<int, List<string>> stateValues)
+        string? placementClass, IReadOnlyDictionary<string, string> overrideClasses, BlockProperty[] properties, Dictionary<int, List<string>> stateValues,
+        IReadOnlyDictionary<string, string>? treeGrower, (int Ignite, int Burn)? fireOdds, bool ignitedByLava, bool isTnt)
     {
         Name = name;
         Tag = tag;
@@ -26,18 +37,24 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
         RegistryId = registryId;
         StatesCount = statesCount;
         PlacementClass = placementClass;
+        OverrideClasses = overrideClasses;
         Properties = properties;
         StateValues = stateValues;
+        TreeGrower = treeGrower;
+        FireOdds = fireOdds;
+        IgnitedByLava = ignitedByLava;
+        IsTnt = isTnt;
     }
 
-    public static Block Get(JsonProperty property, int id, string? placementClass)
+    public static Block Get(JsonProperty property, int id, string? placementClass, IReadOnlyDictionary<string, string> overrideClasses,
+        IReadOnlyDictionary<string, string>? treeGrower, (int Ignite, int Burn)? fireOdds, bool ignitedByLava, bool isTnt)
     {
         string name = property.Name.RemoveNamespace().ToPascalCase();
 
         (int baseId, int defaultId, int statesCount, var stateValues) = GetIds(property);
         BlockProperty[] properties = GetBlockProperties(property).ToArray();
 
-        return new Block(name, property.Name, baseId, defaultId, id, statesCount, placementClass, properties, stateValues);
+        return new Block(name, property.Name, baseId, defaultId, id, statesCount, placementClass, overrideClasses, properties, stateValues, treeGrower, fireOdds, ignitedByLava, isTnt);
     }
 
     private static (int baseId, int defaultId, int stateCount, Dictionary<int, List<string>> stateValues) GetIds(JsonProperty property)
