@@ -89,6 +89,62 @@ public abstract partial class AbstractLevel
         }
     }
 
+    /// <summary>
+    /// Fills a chest boat's or minecart's slots from the loot table they wait for, if any, like vanilla's
+    /// <c>unpackChestVehicleLootTable</c>: the table rolls from the vehicle's position, with <paramref name="opener"/>
+    /// as the entity it's for.
+    /// </summary>
+    internal void UnpackVehicleLoot(Entities.VehicleInventory vehicle, IEntity? opener, VectorD origin)
+    {
+        string lootTable;
+        long seed;
+        var inventory = vehicle.Items;
+        var staged = new LootInventory(inventory.Size);
+        using (inventory.Lock())
+        lock (vehicle.LootLock)
+        {
+            if (vehicle.LootTable is not string pending)
+                return;
+
+            lootTable = pending;
+            seed = vehicle.LootTableSeed;
+            for (var slot = 0; slot < inventory.Size; slot++)
+            {
+                if (inventory[slot] is ItemStack item)
+                    staged.SetItem(slot, new ItemStack(item, item.Count));
+            }
+        }
+
+        var resolver = PluginLootTables.CaptureResolver();
+        var table = resolver(lootTable) ?? LootTable.Empty;
+        var random = table.CreateRandom(seed, BlockLoot.SequencesFor(this));
+        lock (random)
+        {
+            table.Fill(staged, new LootContext
+            {
+                Random = random,
+                Origin = origin,
+                ThisEntity = opener,
+                ResolveTable = resolver,
+                ExplorationMaps = ExplorationMaps.For(this)
+            });
+        }
+
+        using (inventory.Lock())
+        lock (vehicle.LootLock)
+        {
+            // Another opener rolled it meanwhile.
+            if (vehicle.LootTable != lootTable)
+                return;
+
+            for (var slot = 0; slot < inventory.Size; slot++)
+                inventory.SetItem(slot, staged[slot]);
+
+            vehicle.LootTable = null;
+            vehicle.LootTableSeed = 0;
+        }
+    }
+
     // A host-owned buffer accepts every container size without inheriting its plugin's slot behavior.
     private sealed class LootInventory(int size) : BaseContainer(size);
 }

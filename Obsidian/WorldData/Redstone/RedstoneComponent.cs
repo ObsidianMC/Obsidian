@@ -65,6 +65,13 @@ internal abstract class RedstoneComponent
     }
 
     /// <summary>
+    /// Vanilla <c>neighborChanged</c>, for components that care which block changed (<paramref name="source"/>):
+    /// rails at a junction react only to redstone sources.
+    /// </summary>
+    public virtual void NeighborChanged(LevelBlockUpdates level, Vector position, IBlock state, IBlock source) =>
+        this.NeighborChanged(level, position, state);
+
+    /// <summary>
     /// Vanilla <c>updateShape</c>: the state after the neighbour in <paramref name="direction"/> became
     /// <paramref name="neighbor"/>; air when the block loses its support.
     /// </summary>

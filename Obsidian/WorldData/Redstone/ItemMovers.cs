@@ -48,8 +48,8 @@ internal sealed class HopperComponent : RedstoneComponent
 /// dispenser drops it.
 /// </summary>
 /// <remarks>
-/// Vanilla's dispensers use many items (shoot arrows, place water, ...); here every item is dropped, like vanilla's
-/// default behaviour.
+/// Vanilla's dispensers use many items (shoot arrows, place water, ...); here they place boats and minecarts (see
+/// <see cref="VehicleItems.Dispense"/>), and drop every other item, like vanilla's default behaviour.
 /// </remarks>
 internal sealed class DispenserComponent(bool dropper) : RedstoneComponent
 {
@@ -119,6 +119,17 @@ internal sealed class DispenserComponent(bool dropper) : RedstoneComponent
         {
             Hoppers.TryMoveOne(own, slot, target, out var leftover);
             Hoppers.DropLeftover(level, position, leftover);
+            return ValueTask.CompletedTask;
+        }
+
+        // A dispenser places boats and minecarts, like vanilla's boat and minecart dispense behaviours.
+        if (!dropper
+            && own.GetItem(slot) is ItemStack vehicle
+            && VehicleItems.Dispense(level, position, facing, vehicle))
+        {
+            own.Extract(slot, 1);
+            level.BroadcastLevelEvent(DispenseEvent, position, 0);
+            level.BroadcastLevelEvent(SmokeEvent, position, (int)facing);
             return ValueTask.CompletedTask;
         }
 

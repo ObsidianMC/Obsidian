@@ -25,8 +25,7 @@ internal static class AnalogOutputs
     /// </summary>
     /// <remarks>
     /// Jukeboxes, chiseled bookshelves, decorated pots, shelves, command blocks, sculk sensors,
-    /// detector rails, creaking hearts, copper bulbs and copper golem statues have one in vanilla too, which reads as
-    /// 0 here.
+    /// creaking hearts, copper bulbs and copper golem statues have one in vanilla too, which reads as 0 here.
     /// </remarks>
     public static bool Has(IBlock state)
     {
@@ -69,6 +68,7 @@ internal static class AnalogOutputs
             ChestSignal(level, state, position),
         "LecternBlock" => level.GetBlockEntity(position) is LecternBlockEntity lectern ? lectern.AnalogSignal() : 0,
         "CrafterBlock" => level.GetBlockEntity(position) is CrafterBlockEntity crafter ? crafter.AnalogSignal() : 0,
+        "DetectorRailBlock" => DetectorRailComponent.AnalogOutput(level, state, position),
         _ => ContainerSignal(level, level.GetBlockEntity(position))
     };
 

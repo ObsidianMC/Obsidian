@@ -52,6 +52,9 @@ public partial class PlayerBase
             return;
         }
 
+        if (use.Item is { Count: > 0 } boat && await VehicleItems.UseBoatAsync(this, hand, boat))
+            return;
+
         await StartUsingItemAsync(hand);
     }
 

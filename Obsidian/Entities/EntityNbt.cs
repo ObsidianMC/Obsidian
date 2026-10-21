@@ -54,7 +54,6 @@ internal static class EntityNbt
             EntityType.GlowItemFrame => new GlowItemFrame { Level = level },
             EntityType.Painting => new Painting { Level = level },
             EntityType.Item => new ItemEntity { Level = level },
-            EntityType.ChestMinecart => new ChestMinecart { Level = level },
             _ => EntitySpawner.Create(type, level)
         };
 
