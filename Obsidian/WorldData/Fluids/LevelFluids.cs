@@ -212,8 +212,9 @@ internal sealed class LevelFluids : IFluidLevelAccess
     public int GetRawBrightness(Vector position)
     {
         // Shape updates can run before the tick's normal light flush. Resolve pending light first so a newly
-        // darkened room does not lose its mushrooms using the previous light values.
-        this.level.Lighting.Flush();
+        // darkened room does not lose its mushrooms using the previous light values. Borders of newly loaded chunks
+        // are left to the tick's budgeted flush: reconciling them all here stalled whole ticks.
+        this.level.Lighting.Flush(TimeSpan.Zero);
         return this.TryGetChunk(position, out var chunk)
             ? Math.Max(chunk.GetLightLevel(position.X, position.Y, position.Z, LightType.Sky),
                 chunk.GetLightLevel(position.X, position.Y, position.Z, LightType.Block))

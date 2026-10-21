@@ -23,6 +23,7 @@ public sealed partial class EnderDragon : BossMob
     private VectorD arena;
     private bool arenaKnown;
     private bool fightControlled;
+    private VectorD? podium;
     private EndCrystal? crystal;
     private DragonBreathCloud? breath;
     private EnderDragonPart[] parts = [];
@@ -62,6 +63,7 @@ public sealed partial class EnderDragon : BossMob
     {
         arena = fountain;
         arenaKnown = true;
+        podium = null;
         fightControlled = true;
         PreviouslyKilled = previouslyKilled;
     }
@@ -124,6 +126,7 @@ public sealed partial class EnderDragon : BossMob
             }
             arenaKnown = true;
         }
+        if (AiTick % 20 == 0) podium = null;
         RecordFlight();
         UpdateParts();
         phaseTicks++;
@@ -169,7 +172,7 @@ public sealed partial class EnderDragon : BossMob
                 TickLandingApproach();
                 break;
             case DragonPhase.Landing:
-                destination = arena;
+                destination = Podium;
                 if ((destination - Position).MagnitudeSquared() < 1) { SetPhase(DragonPhase.Scanning); flameCount = 0; sittingDamage = 0; }
                 break;
             case DragonPhase.Scanning:
@@ -227,7 +230,7 @@ public sealed partial class EnderDragon : BossMob
                 }
                 break;
             case DragonPhase.Dying:
-                destination = arena;
+                destination = Podium;
                 var deathDistance = (destination - Position).MagnitudeSquared();
                 if (deathDistance < 100 || deathDistance > 22500 || MovementFlags.HasFlag(MovementFlags.HorizontalCollision))
                 {
@@ -244,8 +247,9 @@ public sealed partial class EnderDragon : BossMob
 
     private async ValueTask DestroyBlocksAsync()
     {
-        if (Level is not AbstractLevel level || level.Generator is Obsidian.WorldData.Generators.MobTestGenerator || !Level.LevelData.GetBooleanRule("mob_griefing"))
+        if (Level is not AbstractLevel level || level.Generator is Obsidian.WorldData.Generators.MobTestGenerator)
             return;
+        var griefing = Level.LevelData.GetBooleanRule("mob_griefing");
         var blocked = false;
         foreach (var part in parts.Take(3))
         {
@@ -257,11 +261,27 @@ public sealed partial class EnderDragon : BossMob
                 var position = new Vector(x, y, z);
                 if (Terrain.GetBlock(position) is not { IsAir: false } block ||
                     TagsRegistry.Block.DragonTransparent.Entries.Contains(block.RegistryId)) continue;
-                if (TagsRegistry.Block.DragonImmune.Entries.Contains(block.RegistryId)) blocked = true;
+                if (!griefing || TagsRegistry.Block.DragonImmune.Entries.Contains(block.RegistryId)) blocked = true;
                 else await level.SetBlockAsync(position, BlocksRegistry.Air, true);
             }
         }
         if (blocked) Motion *= 0.8f;
+    }
+
+    // Vanilla's EndPodiumFeature location under the MOTION_BLOCKING_NO_LEAVES heightmap: the top of the
+    // bedrock pillar (or the egg on it), where the dragon perches and dies.
+    private VectorD Podium
+    {
+        get
+        {
+            if (podium is { } cached) return cached;
+            var x = (int)Math.Floor(arena.X);
+            var z = (int)Math.Floor(arena.Z);
+            var top = arena.Y;
+            for (var y = (int)Math.Floor(arena.Y) + 10; y >= (int)Math.Floor(arena.Y); y--)
+                if (Terrain.GetBlock(new Vector(x, y, z)) is { IsAir: false }) { top = y + 1; break; }
+            return (podium = new VectorD(x + 0.5, top, z + 0.5)).Value;
+        }
     }
 
     private void Face(VectorD target)
