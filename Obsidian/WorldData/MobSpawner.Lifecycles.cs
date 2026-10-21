@@ -45,7 +45,7 @@ internal sealed partial class MobSpawner
 
     private void TickFrogspawn(Chunk chunk)
     {
-        if (chunk.FrogspawnTicks.IsEmpty)
+        if (!chunk.HasFrogspawnTicks)
             return;
 
         var terrain = new MobTerrain(level);

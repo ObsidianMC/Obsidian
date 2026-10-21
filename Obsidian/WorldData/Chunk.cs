@@ -214,6 +214,25 @@ public sealed class Chunk : IChunk
     internal ConcurrentDictionary<Vector, int> MobEggTicks { get; } = new();
     internal ConcurrentDictionary<Vector, int> FrogspawnTicks { get; } = new();
 
+    /// <summary>Whether <see cref="MobEggTicks"/> holds any, read without locking (see <see cref="HasAny"/>).</summary>
+    internal bool HasMobEggTicks => HasAny(this.MobEggTicks);
+
+    /// <summary>Whether <see cref="FrogspawnTicks"/> holds any, read without locking (see <see cref="HasAny"/>).</summary>
+    internal bool HasFrogspawnTicks => HasAny(this.FrogspawnTicks);
+
+    /// <summary>Whether <see cref="BlockEntities"/> holds any, read without locking (see <see cref="HasAny"/>).</summary>
+    internal bool HasBlockEntities => HasAny(this.BlockEntities);
+
+    // Whether a dictionary holds anything. The level asks this of every chunk each tick, and most are empty, when
+    // ConcurrentDictionary.IsEmpty (and Count) takes all of the dictionary's locks; enumerating takes none.
+    private static bool HasAny<TKey, TValue>(ConcurrentDictionary<TKey, TValue> dictionary) where TKey : notnull
+    {
+        foreach (var _ in dictionary)
+            return true;
+
+        return false;
+    }
+
     /// <summary>The portal types that lit or built the chunk's portal blocks (see Portals.PortalOwnership).</summary>
     internal ConcurrentDictionary<Vector, Portals.PortalOwner> PortalOwners { get; } = new();
 

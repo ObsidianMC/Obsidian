@@ -55,7 +55,7 @@ public abstract partial class AbstractLevel
     {
         foreach (var chunk in Regions.Values.SelectMany(region => region.GeneratedChunks()).OfType<Chunk>())
         {
-            if (chunk.MobEggTicks.IsEmpty || !IsMobTicking(new VectorD(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8))) continue;
+            if (!chunk.HasMobEggTicks || !IsMobTicking(new VectorD(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8))) continue;
             try
             {
                 foreach (var (point, delay) in chunk.MobEggTicks.ToArray())
