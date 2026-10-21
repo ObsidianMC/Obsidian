@@ -70,6 +70,11 @@ public abstract partial class AbstractLevel : ILevel
 
     public ConcurrentHashSet<long> LoadedChunks { get; protected set; } = [];
 
+    /// <summary>
+    /// The level's non-player entities by chunk, for range queries.
+    /// </summary>
+    internal EntityGrid EntityGrid { get; } = new();
+
     public string Name { get; }
     public string Seed { get; }
     public string FolderPath { get; protected set; } = string.Empty;
@@ -227,9 +232,9 @@ public abstract partial class AbstractLevel : ILevel
             return false;
         if (ReferenceEquals(origin, destination))
             return true;
-        if (!destination.Entities.TryAdd(entity.EntityId, entity))
+        if (destination is not Region target || !target.TryAddEntity(entity))
             return false;
-        origin?.Entities.TryRemove(entity.EntityId, out _);
+        (origin as Region)?.TryRemoveEntity(entity);
         return true;
     }
 
@@ -275,9 +280,10 @@ public abstract partial class AbstractLevel : ILevel
     // The caller holds TransferLock, shared with transfer commits and the entity save snapshot.
     internal bool RemoveEntity(IEntity entity, bool transferring)
     {
-        var region = this.GetRegionForLocation(entity.Position);
-        if (region is null || !region.Entities.TryRemove(new KeyValuePair<int, IEntity>(entity.EntityId, entity)))
+        if (this.GetRegionForLocation(entity.Position) is not Region region || !region.TryRemoveEntity(entity))
             return false;
+
+        EntityGrid.Leave(entity);
 
         if (entity is Entity concrete)
             concrete.CancelEntityPortalTravel();
@@ -526,50 +532,28 @@ public abstract partial class AbstractLevel : ILevel
             yield break;
         }
 
-        // The regions' entities are read as they go: copying a ConcurrentDictionary's values takes all its locks, and
-        // this runs several times per entity per tick.
         var distanceSquared = (double)distance * distance;
-        foreach (var region in GetRegions())
+
+        // Owner lookups use float.MaxValue: those look through every region rather than the chunks in range.
+        if (distance >= Region.CubicRegionSize * 16)
         {
-            foreach (var (_, entity) in region.Entities)
+            foreach (var (_, region) in Regions)
             {
-                if (entity.Type == EntityType.Player)
-                    continue;
-
-                var difference = entity.Position - location;
-                if (difference.MagnitudeSquared() <= distanceSquared)
-                    yield return entity;
-            }
-        }
-
-        IEnumerable<IRegion> GetRegions()
-        {
-            // Owner lookups use float.MaxValue. Scan loaded regions before converting such ranges to chunk coordinates.
-            if (distance >= Region.CubicRegionSize * 16)
-            {
-                foreach (var (_, region) in Regions)
-                    yield return region;
-                yield break;
-            }
-
-            var (left, top) = Region.ChunkOf(location - new VectorD(distance));
-            var (right, bottom) = Region.ChunkOf(location + new VectorD(distance));
-
-            left >>= Region.CubicRegionSizeShift;
-            right >>= Region.CubicRegionSizeShift;
-            top >>= Region.CubicRegionSizeShift;
-            bottom >>= Region.CubicRegionSizeShift;
-
-            for (int x = left; x <= right; x++)
-            {
-                for (int z = top; z <= bottom; z++)
+                foreach (var (_, entity) in region.Entities)
                 {
-                    if (GetRegionForChunk(x << Region.CubicRegionSizeShift, z << Region.CubicRegionSizeShift) is not Region region)
-                        continue;
-
-                    yield return region;
+                    if (entity.Type != EntityType.Player && (entity.Position - location).MagnitudeSquared() <= distanceSquared)
+                        yield return entity;
                 }
             }
+
+            yield break;
+        }
+
+        // The entities in the chunks in range, by entity id (see EntityGrid).
+        foreach (var entity in this.EntityGrid.InChunksAround(location - new VectorD(distance), location + new VectorD(distance)))
+        {
+            if (entity.Type != EntityType.Player && (entity.Position - location).MagnitudeSquared() <= distanceSquared)
+                yield return entity;
         }
     }
 
@@ -1824,15 +1808,16 @@ public abstract partial class AbstractLevel : ILevel
 
         var (chunkX, chunkZ) = Region.ChunkOf(entity.Position);
 
-        var region = GetRegionForChunk(chunkX, chunkZ);
-
-        if (region is null || !region.Entities.TryAdd(entity.EntityId, entity))
+        if (GetRegionForChunk(chunkX, chunkZ) is not Region region || !region.TryAddEntity(entity))
             return false;
+
+        this.EntityGrid.Add(entity);
 
         // Unloading closes a plugin before removing its entities, so one added meanwhile is removed there or here.
         if (spawner is { IsClosing: true } || !PluginEntities.HasLoadedType(entity))
         {
-            region.Entities.TryRemove(new KeyValuePair<int, IEntity>(entity.EntityId, entity));
+            region.TryRemoveEntity(entity);
+            EntityGrid.Leave(entity);
             spawner?.ThrowIfClosing();
 
             return false;

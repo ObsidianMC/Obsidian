@@ -136,13 +136,13 @@ public sealed class ChunkSaves
                     Position = new VectorF(8.5f, 65f, 8.5f),
                     Item = new ItemStack(ItemsRegistry.Apple, 3)
                 };
-                region.Entities.TryAdd(item.EntityId, item);
+                region.TryAddEntity(item);
 
                 await region.FlushAsync();
                 Assert.Equal(1, chunk.SavedEntityCount);
 
                 // The chunk itself is unchanged, but its entity file still lists the item.
-                region.Entities.TryRemove(item.EntityId, out _);
+                region.TryRemoveEntity(item);
                 await region.FlushAsync();
             }
 

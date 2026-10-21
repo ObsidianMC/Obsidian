@@ -25,7 +25,21 @@ public class Region : IRegion
 
     public NbtCompression ChunkCompression { get; }
 
-    public ConcurrentDictionary<int, IEntity> Entities { get; } = new();
+    private readonly ConcurrentDictionary<int, IEntity> entities = new();
+
+    public IReadOnlyDictionary<int, IEntity> Entities => this.entities;
+
+    /// <summary>
+    /// Adds the entity to the region's entities. Only the region's level calls this: it also keeps the entity in its
+    /// <see cref="EntityGrid"/>, which a move between regions of the level leaves alone.
+    /// </summary>
+    internal bool TryAddEntity(IEntity entity) => this.entities.TryAdd(entity.EntityId, entity);
+
+    /// <summary>
+    /// Removes this instance of the entity from the region's entities (not another with its id).
+    /// </summary>
+    internal bool TryRemoveEntity(IEntity entity) =>
+        this.entities.TryRemove(new KeyValuePair<int, IEntity>(entity.EntityId, entity));
 
     public int LoadedChunkCount => loadedChunks.Count(c => c.IsGenerated);
 
@@ -299,7 +313,6 @@ public class Region : IRegion
 
     private bool EvictUnderTransferLock(IEntity entity, bool keepSaved)
     {
-        var entry = new KeyValuePair<int, IEntity>(entity.EntityId, entity);
         var (chunkX, chunkZ) = ChunkOf(entity.Position);
         var local = this.GetLoadedChunk(
             NumericsHelper.Modulo(chunkX, CubicRegionSize),
@@ -310,7 +323,7 @@ public class Region : IRegion
         if (!keepSaved || entity is not Entity concrete || local is not Chunk { X: var x, Z: var z } chunk
             || (x, z) != (chunkX, chunkZ))
         {
-            if (!this.Entities.TryRemove(entry))
+            if (!this.TryRemoveEntity(entity))
                 return false;
         }
         else
@@ -318,13 +331,15 @@ public class Region : IRegion
             // Under the chunk's entity lock, so a save finds the entity either in the level or kept.
             using (chunk.EntityLock.EnterScope())
             {
-                if (!this.Entities.TryRemove(entry))
+                if (!this.TryRemoveEntity(entity))
                     return false;
 
                 if (!chunk.EntitiesUnloaded && EntityNbt.Save(concrete) is NbtCompound saved)
                     chunk.UnspawnableEntities.Add(saved);
             }
         }
+
+        EntityGrid.Leave(entity);
 
         if (entity is Mob mob)
             mob.DetachForPluginUnload();
@@ -666,7 +681,7 @@ public class Region : IRegion
     private HashSet<(int X, int Z)> ChunksWithEntities()
     {
         var chunks = new HashSet<(int X, int Z)>();
-        foreach (var entity in this.Entities.Values)
+        foreach (var (_, entity) in this.entities)
         {
             if (entity is Entity levelEntity)
                 chunks.Add(ChunkOf(levelEntity.Position));
@@ -712,7 +727,7 @@ public class Region : IRegion
             foreach (var unsupported in chunk.UnspawnableEntities)
                 entities.Add(unsupported);
 
-            foreach (var entity in this.Entities.Values)
+            foreach (var (_, entity) in this.entities)
             {
                 if (entity is not Entity levelEntity || ChunkOf(levelEntity.Position) != (chunk.X, chunk.Z))
                     continue;
@@ -722,14 +737,14 @@ public class Region : IRegion
 
                 if (EntityNbt.Save(levelEntity) is not NbtCompound saved)
                 {
-                    if (unloading && levelEntity is Mob { HasAi: true })
-                        this.Entities.TryRemove(levelEntity.EntityId, out _);
+                    if (unloading && levelEntity is Mob { HasAi: true } && this.TryRemoveEntity(levelEntity))
+                        EntityGrid.Leave(levelEntity);
                     continue;
                 }
 
                 entities.Add(saved);
-                if (unloading)
-                    this.Entities.TryRemove(levelEntity.EntityId, out _);
+                if (unloading && this.TryRemoveEntity(levelEntity))
+                    EntityGrid.Leave(levelEntity);
             }
 
             if (unloading)
@@ -786,7 +801,7 @@ public class Region : IRegion
 
     public async Task BeginTickAsync(CancellationToken cts = default)
     {
-        foreach (var entity in Entities.Values.OrderBy(entity => entity.EntityId).ToArray())
+        foreach (var entity in this.entities.Values.OrderBy(entity => entity.EntityId).ToArray())
         {
             cts.ThrowIfCancellationRequested();
             await entity.TickAsync();
@@ -800,11 +815,11 @@ public class Region : IRegion
     /// </summary>
     internal void MoveEntitiesToTheirRegions()
     {
-        foreach (var entity in this.Entities.Values)
+        foreach (var (_, entity) in this.entities)
         {
             lock (ItemEntity.TransferLock)
             {
-                if (!this.Entities.TryGetValue(entity.EntityId, out var resident) || !ReferenceEquals(resident, entity))
+                if (!this.entities.TryGetValue(entity.EntityId, out var resident) || !ReferenceEquals(resident, entity))
                     continue;
 
                 var (chunkX, chunkZ) = ChunkOf(entity.Position);
@@ -812,8 +827,8 @@ public class Region : IRegion
                     continue;
 
                 if (entity.Level is AbstractLevel level && level.GetRegionForChunk(chunkX, chunkZ) is Region target
-                    && target.Entities.TryAdd(entity.EntityId, entity))
-                    this.Entities.TryRemove(new KeyValuePair<int, IEntity>(entity.EntityId, entity));
+                    && target.TryAddEntity(entity))
+                    this.TryRemoveEntity(entity);
             }
         }
     }
