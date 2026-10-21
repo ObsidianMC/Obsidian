@@ -31,14 +31,17 @@ public sealed class Chunk : IChunk
     public int X { get; }
     public int Z { get; }
 
+    /// <summary>
+    /// The ticks players spent near the chunk, saved with it, which raise its local difficulty.
+    /// </summary>
+    /// <remarks>
+    /// Like vanilla's ChunkAccess.incrementInhabitedTime, it doesn't mark the chunk unsaved: it goes up on every tick
+    /// near a player, so every simulated chunk would be rewritten on every save. It's saved whenever the chunk is.
+    /// </remarks>
     public long InhabitedTime
     {
         get => Interlocked.Read(ref this.inhabitedTime);
-        internal set
-        {
-            Interlocked.Exchange(ref this.inhabitedTime, value);
-            this.MarkUnsaved();
-        }
+        internal set => Interlocked.Exchange(ref this.inhabitedTime, value);
     }
 
     private long inhabitedTime;
