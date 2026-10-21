@@ -120,6 +120,7 @@ public final class VanillaDumper {
         dumper.dumpIgnitedByLava();
         dumper.dumpTntBlocks();
         dumper.dumpItemUseOnClasses();
+        dumper.dumpItemUseClasses();
         dumper.dumpHoeTillables();
         dumper.dumpItemPlacedBlocks();
         dumper.dumpCollisionShapes();
@@ -764,6 +765,38 @@ public final class VanillaDumper {
         }
 
         Json.write(output.resolve("item_use_on_classes.json"), classes, false);
+    }
+
+    /**
+     * {@code item_use_classes.json}: the Mojang class that supplies each item's {@code use} override (what a right
+     * click does with the item in hand, like throwing an egg). Items inheriting the base implementation are omitted.
+     */
+    private void dumpItemUseClasses() throws IOException {
+        var item = "net.minecraft.world.item.Item";
+        var level = "net.minecraft.world.level.Level";
+        var player = "net.minecraft.world.entity.player.Player";
+        var hand = "net.minecraft.world.InteractionHand";
+        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+        var baseMethod = mojang.method(item, "use", level, player, hand);
+        var parameters = baseMethod.getParameterTypes();
+        var classes = new TreeMap<String, String>();
+
+        for (var entry : (Iterable<?>) itemRegistry) {
+            var owner = entry.getClass();
+            while (owner != null) {
+                try {
+                    owner.getDeclaredMethod(baseMethod.getName(), parameters);
+                    break;
+                } catch (NoSuchMethodException ignored) {
+                    owner = owner.getSuperclass();
+                }
+            }
+
+            if (owner != null && owner != mojang.type(item))
+                classes.put(key(itemRegistry, entry), mojang.className(owner.getName()));
+        }
+
+        Json.write(output.resolve("item_use_classes.json"), classes, false);
     }
 
     /**

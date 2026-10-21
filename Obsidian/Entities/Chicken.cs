@@ -21,6 +21,9 @@ public sealed partial class Chicken : FarmAnimal
             or ItemIds.PitcherPod;
     protected override void FinalizeSpawn() => Variant = GetFarmVariant();
 
+    // Vanilla's egg hatch: a chick takes the variant of its biome, as a spawned chicken does.
+    internal void FinalizeHatchling() => Variant = GetFarmVariant();
+
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();

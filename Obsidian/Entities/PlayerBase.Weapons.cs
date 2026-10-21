@@ -33,22 +33,10 @@ public partial class PlayerBase
             await Plugins.ItemBehaviors.UseAsync(new ItemUseContext { Player = this, Stack = stack, Hand = hand }))
             return;
 
-        // Eyes of ender fly toward the nearest structure they find, or do nothing.
-        if (use.Item is { Count: > 0 } eye && eye.Is(ItemsRegistry.EnderEye))
+        // Vanilla's Item.use for items whose owner class has a counterpart (throwables, eyes of ender), by owner class.
+        if (use.Item is { Count: > 0 } thrown && ItemUseBehaviors.For(thrown) is { } useBehavior)
         {
-            await EyeOfEnder.ThrowAsync(this, hand, eye);
-            return;
-        }
-
-        if (use.Item is { Count: > 0 } pearl && pearl.Is(ItemsRegistry.EnderPearl))
-        {
-            await EnderPearl.ThrowAsync(this, hand, pearl);
-            return;
-        }
-
-        if (use.Item is { Count: > 0 } bottle && bottle.Is(ItemsRegistry.ExperienceBottle))
-        {
-            await ThrownExperienceBottle.ThrowAsync(this, hand, bottle);
+            await useBehavior.UseAsync(this, hand, thrown);
             return;
         }
 

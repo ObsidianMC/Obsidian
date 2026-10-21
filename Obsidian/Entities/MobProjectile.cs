@@ -24,7 +24,7 @@ internal sealed class MobProjectile : Entity
         NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
     }
     [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
-    internal MobProjectile(Mob owner, EntityType type, VectorD position, VectorD direction) : this(owner.Level, type)
+    internal MobProjectile(IEntity owner, EntityType type, VectorD position, VectorD direction, float? speed = null) : this(owner.Level, type)
     {
         Owner = owner;
         ownerUuid = owner.Uuid;
@@ -33,7 +33,7 @@ internal sealed class MobProjectile : Entity
         BoundingBox = Dimension.CreateBBFromPosition(Position);
         if (direction.Magnitude > 0.0001f)
             direction /= direction.Magnitude;
-        Motion = direction * (type == EntityType.SplashPotion ? 0.75f : type == EntityType.Snowball ? 1.6f : type == EntityType.LlamaSpit ? 1.5f : 0.2f);
+        Motion = direction * (speed ?? (type == EntityType.SplashPotion ? 0.75f : type == EntityType.Snowball ? 1.6f : type == EntityType.LlamaSpit ? 1.5f : 0.2f));
         acceleration = type is EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion ? VectorD.Zero : direction * 0.1f;
         NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
     }
@@ -135,6 +135,10 @@ internal sealed class MobProjectile : Entity
                     BlockCollisionShapes.Get(floor).Count > 0)
                     await level.SetBlockAsync(fire, BlocksRegistry.Fire, true);
             }
+            // Vanilla's Snowball.onHit: entity event 3, the client's snowball crack particles.
+            if (Type == EntityType.Snowball)
+                PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new EntityEventPacket { EntityId = EntityId, Event = 3 });
+
             await RemoveAsync();
             return;
         }
