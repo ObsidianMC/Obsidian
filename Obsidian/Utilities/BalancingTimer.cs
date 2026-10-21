@@ -39,8 +39,9 @@ public sealed class BalancingTimer
         long delta = stopwatch.ElapsedTicks;
         stopwatch.Restart();
 
-        // Measure delay
-        delay += delta - ticksInterval;
+        // Measure delay. The debt is capped at one interval: catching up on a long stall by ticking back to back made
+        // mobs and everything else run at several times their speed until the server had caught up.
+        delay = Math.Min(delay + delta - ticksInterval, ticksInterval);
 
         if (delay < 0)
         {
