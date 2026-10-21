@@ -8,7 +8,7 @@ public sealed partial class PluginRegistry
 {
     public SavedDataType<TValue> RegisterSavedData<TValue>(string identifier, ComponentCodec<TValue> codec)
     {
-        var owner = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var owner = this.container;
         return RegisterSavedData(owner, identifier, codec);
     }
 
@@ -18,7 +18,7 @@ public sealed partial class PluginRegistry
         ComponentNetworkCodec<TValue>? networkCodec = null,
         bool copyOnDeath = false)
     {
-        var owner = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var owner = this.container;
         return RegisterAttachment(owner, identifier, codec, networkCodec, copyOnDeath);
     }
 

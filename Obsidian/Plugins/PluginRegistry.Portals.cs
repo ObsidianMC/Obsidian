@@ -7,7 +7,7 @@ public sealed partial class PluginRegistry
 {
     public PortalType RegisterPortal(string identifier, PortalProperties properties)
     {
-        var owner = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var owner = this.container;
         return RegisterPortal(owner, identifier, properties);
     }
 
