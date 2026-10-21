@@ -32,6 +32,7 @@ internal static class ItemUseBehaviors
         ["net.minecraft.world.item.SnowballItem"] = new SnowballUse(),
         ["net.minecraft.world.item.EnderpearlItem"] = new EnderPearlUse(),
         ["net.minecraft.world.item.SplashPotionItem"] = new SplashPotionUse(),
+        ["net.minecraft.world.item.FireworkRocketItem"] = new FireworkRocketUse(),
         ["net.minecraft.world.item.EnderEyeItem"] = new EnderEyeUse(),
         ["net.minecraft.world.item.ExperienceBottleItem"] = new ExperienceBottleUse(),
     }.ToFrozenDictionary();
@@ -83,6 +84,39 @@ internal static class ItemUseBehaviors
         public async ValueTask UseAsync(PlayerBase player, InteractionHand hand, ItemStack stack)
         {
             await ThrownExperienceBottle.ThrowAsync(player, hand, stack);
+        }
+    }
+
+    /// <summary>
+    /// Vanilla's <c>FireworkRocketItem.use</c>: while the player glides, the rocket boosts them, riding at their hand.
+    /// Otherwise it does nothing.
+    /// </summary>
+    private sealed class FireworkRocketUse : IItemUseBehavior
+    {
+        public async ValueTask UseAsync(PlayerBase player, InteractionHand hand, ItemStack stack)
+        {
+            if (!player.FlyingWithElytra || !ThrowableItemUse.CanThrow(player) || player.Level is not AbstractLevel level)
+                return;
+
+            var rocket = new FireworkRocket
+            {
+                Level = level, EntityId = Obsidian.Server.GetNextEntityId(), Owner = player, AttachedTo = player,
+                Item = new ItemStack(stack, 1), Position = player.Position
+            };
+            if (!level.TryAddEntity(rocket))
+                return;
+            rocket.SpawnEntity();
+
+            level.PacketBroadcaster.BroadcastToLevelInRange(level, (Vector)player.Position.Floor(), new SoundPacket
+            {
+                SoundLocation = "minecraft:entity.firework_rocket.launch",
+                SoundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z),
+                Category = SoundCategory.Neutral,
+                Volume = 1,
+                Pitch = 1,
+                Seed = Globals.Random.NextInt64()
+            });
+            await ThrowableItemUse.ConsumeAsync(player, hand, stack);
         }
     }
 

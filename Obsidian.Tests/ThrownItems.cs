@@ -97,6 +97,40 @@ public sealed class ThrownItems
         Assert.Contains(potion.SplashEffects!, effect => effect.Id == (int)PotionEffect.Speed - 1);
     }
 
+    [Fact(Timeout = TestServerFactory.TestTimeout, DisplayName = "A gliding player launches a firework rocket that boosts them and rides at their hand")]
+    public async Task GlidingPlayerLaunchesBoostingRocket()
+    {
+        await using var context = TestServerFactory.CreateServer($"rocket-{Guid.NewGuid():N}");
+        var world = context.World;
+        for (var x = -2; x <= 2; x++)
+            for (var z = -2; z <= 2; z++)
+                world.LoadRegionByChunk(x, z).SetChunk(new Obsidian.WorldData.Chunk(x, z, world.MinY, world.Height, ChunkGenStage.full));
+
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Glider", new VectorD(0.5, 64, 0.5));
+        player.Yaw = 0f;
+        player.Pitch = 0f;
+        Assert.True(world.TryAddPlayer(player));
+        Assert.True(world.TryAddEntity(player));
+
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.FireworkRocket, 2));
+
+        // Not gliding: a rocket does nothing and is kept.
+        await player.UseItemAsync(InteractionHand.MainHand);
+        Assert.Empty(world.GetNonPlayerEntitiesInRange(player.Position, 10).OfType<FireworkRocket>());
+        Assert.Equal(2, player.Inventory.GetItem(player.CurrentHeldItemSlot)!.Count);
+
+        player.FlyingWithElytra = true;
+        await player.UseItemAsync(InteractionHand.MainHand);
+        Assert.Equal(1, player.Inventory.GetItem(player.CurrentHeldItemSlot)!.Count);
+        var rocket = Assert.Single(world.GetNonPlayerEntitiesInRange(player.Position, 10).OfType<FireworkRocket>());
+        Assert.Same(player, rocket.AttachedTo);
+
+        // Looking along +Z, one tick adds (look * 0.1 + (look * 1.5 - motion) * 0.5) to the player's motion.
+        await rocket.TickAsync();
+        Assert.Equal(0.85, player.Motion.Z, 6);
+        Assert.Equal(player.Motion, rocket.Motion);
+    }
+
     [Fact(Timeout = TestServerFactory.TestTimeout, DisplayName = "Throwing a snowball spawns a player-owned snowball projectile that is consumed in survival")]
     public async Task SnowballFliesAsPlayerProjectile()
     {

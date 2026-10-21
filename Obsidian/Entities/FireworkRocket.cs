@@ -17,21 +17,42 @@ public sealed partial class FireworkRocket : Entity
     private int life;
     private int lifetime;
 
+    /// <summary>The player a rocket launched while gliding is attached to, which it boosts and rides with.</summary>
+    internal PlayerBase? AttachedTo { get; set; }
+
+    public FireworkRocket() => Type = EntityType.FireworkRocket;
+
     public override async ValueTask TickAsync()
     {
         if (Level is not Obsidian.WorldData.AbstractLevel level || !level.IsMobTicking(Position)) return;
         var fireworks = Item?.GetComponent<FireworksDataComponent>(DataComponentType.Fireworks);
         if (lifetime == 0) lifetime = 10 * (1 + (fireworks?.FlightDuration ?? 0)) + Globals.Random.Next(6) + Globals.Random.Next(7);
-        if (!ShotAtAngle) Motion = new VectorD(Motion.X * 1.15, Motion.Y + 0.04, Motion.Z * 1.15);
         var terrain = new MobTerrain(Level);
-        var end = Position + Motion;
-        var bounds = new BoundingBox(VectorD.Min(Position, end) - new VectorD(0.1), VectorD.Max(Position, end) + new VectorD(0.1));
-        var collided = terrain.GetCollisions(bounds).Any(shape => MobTerrain.RayIntersection(shape, Position, Motion) != null);
-        var target = Level.GetEntitiesInRange(Position, (float)Motion.Magnitude + 2).OfType<Living>()
-            .FirstOrDefault(entity => !ReferenceEquals(entity, Owner) && MobTerrain.RayIntersection(entity.Dimension.CreateBBFromPosition(entity.Position), Position, Motion) != null);
-        if (!level.TryMoveEntity(this, Position, end)) return;
-        Position = end;
-        if (++life > lifetime || collided || target != null)
+        Living? target = null;
+        var hit = false;
+        if (AttachedTo is { } rider)
+        {
+            // Vanilla's FireworkRocketEntity: while its player glides, the rocket boosts them and rides at their hand.
+            var offset = VectorD.Zero;
+            if (rider.FlyingWithElytra)
+            {
+                var look = (VectorD)rider.GetLookDirection();
+                var motion = rider.Motion;
+                rider.ApplyImpulse(new VectorD(
+                    look.X * 0.1 + (look.X * 1.5 - motion.X) * 0.5,
+                    look.Y * 0.1 + (look.Y * 1.5 - motion.Y) * 0.5,
+                    look.Z * 0.1 + (look.Z * 1.5 - motion.Z) * 0.5));
+                offset = rider.HandHoldingItemAngle(ItemsRegistry.FireworkRocket);
+            }
+            Position = rider.Position + offset;
+            Motion = rider.Motion;
+        }
+        else
+        {
+            if (!ShotAtAngle) Motion = new VectorD(Motion.X * 1.15, Motion.Y + 0.04, Motion.Z * 1.15);
+            if (!MoveFree(level, terrain, out target, out hit)) return;
+        }
+        if (++life > lifetime || hit)
         {
             if (fireworks is { Explosions.Length: > 0 })
             {
@@ -51,13 +72,27 @@ public sealed partial class FireworkRocket : Entity
         { EntityId = EntityId, Position = Position, Delta = Motion, Yaw = Yaw, Pitch = Pitch, OnGround = false });
     }
 
+    /// <summary>Moves a free rocket along its motion; reports whether it hit terrain or a living entity on the way.</summary>
+    private bool MoveFree(Obsidian.WorldData.AbstractLevel level, MobTerrain terrain, out Living? target, out bool hit)
+    {
+        var end = Position + Motion;
+        var bounds = new BoundingBox(VectorD.Min(Position, end) - new VectorD(0.1), VectorD.Max(Position, end) + new VectorD(0.1));
+        var collided = terrain.GetCollisions(bounds).Any(shape => MobTerrain.RayIntersection(shape, Position, Motion) != null);
+        target = Level.GetEntitiesInRange(Position, (float)Motion.Magnitude + 2).OfType<Living>()
+            .FirstOrDefault(entity => !ReferenceEquals(entity, Owner) && MobTerrain.RayIntersection(entity.Dimension.CreateBBFromPosition(entity.Position), Position, Motion) != null);
+        hit = collided || target != null;
+        if (!level.TryMoveEntity(this, Position, end)) return false;
+        Position = end;
+        return true;
+    }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(8, EntityMetadataType.Slot);
         writer.WriteItemStack(Item);
         writer.WriteEntityMetadataType(9, EntityMetadataType.OptionalUnsignedVarInt);
-        writer.WriteVarInt(0);
+        writer.WriteVarInt(AttachedTo is { } rider ? rider.EntityId + 1 : 0);
         writer.WriteEntityMetadataType(10, EntityMetadataType.Boolean);
         writer.WriteBoolean(ShotAtAngle);
     }
