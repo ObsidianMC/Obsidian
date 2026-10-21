@@ -552,21 +552,15 @@ public partial class NetworkBuffer : INetStreamWriter
         if (packet is BundledPacket bp)
         {
             // Wrap the bundle with delimiter packets and writes all content packets
-            this.WritePacket(new BundleDelimiterPacket());
+            this.WritePacket(delimiterPacket);
             foreach (var p in bp.Packets)
                 this.WritePacket(p);
-            this.WritePacket(new BundleDelimiterPacket());
+            this.WritePacket(delimiterPacket);
             return;
         }
 
-        using var packetStream = new NetworkBuffer { WritesPluginEntityData = this.WritesPluginEntityData };
-
-        packet.Serialize(packetStream);
-
-        this.WriteVarInt(packetStream.Size + packet.Id.GetVarIntLength());
-        this.WriteVarInt(packet.Id);
-
-        this.Write(packetStream);
+        using var body = SerializeBody(packet, this.WritesPluginEntityData);
+        this.WriteFrame(body.AsSpan(0, body.Size), compressionThreshold: -1);
     }
 
     private static readonly BundleDelimiterPacket delimiterPacket = new BundleDelimiterPacket();
@@ -590,37 +584,68 @@ public partial class NetworkBuffer : INetStreamWriter
             return;
         }
 
-        using var networkBuffer = new NetworkBuffer { WritesPluginEntityData = this.WritesPluginEntityData };
+        using var body = SerializeBody(packet, this.WritesPluginEntityData);
+        this.WriteFrame(body.AsSpan(0, body.Size), compressionThreshold);
+    }
 
-        networkBuffer.WriteVarInt(packet.Id);
-        packet.Serialize(networkBuffer);
+    /// <summary>
+    /// Serializes <paramref name="packet"/> as the bodies of the frames it's sent in, in order: one, its id and then its
+    /// fields, or for a bundle its packets' between two delimiters. Frame them with <see cref="WriteFrame"/>.
+    /// </summary>
+    internal static void SerializeBodies(IClientboundPacket packet, bool writesPluginEntityData, List<NetworkBuffer> bodies)
+    {
+        if (packet is BundledPacket bundle)
+        {
+            bodies.Add(SerializeBody(delimiterPacket, writesPluginEntityData));
+            foreach (var inner in bundle.Packets)
+                SerializeBodies(inner, writesPluginEntityData, bodies);
+            bodies.Add(SerializeBody(delimiterPacket, writesPluginEntityData));
+            return;
+        }
 
-        var dataLength = (int)networkBuffer.Offset;
+        bodies.Add(SerializeBody(packet, writesPluginEntityData));
+    }
 
-        if (dataLength >= compressionThreshold)
-        {   // Compress the packet
+    private static NetworkBuffer SerializeBody(IClientboundPacket packet, bool writesPluginEntityData)
+    {
+        var body = new NetworkBuffer { WritesPluginEntityData = writesPluginEntityData };
+        body.WriteVarInt(packet.Id);
+        packet.Serialize(body);
+        return body;
+    }
+
+    /// <summary>
+    /// Writes a packet's frame around its <paramref name="body"/> (its id and fields): length-prefixed and, with
+    /// compression on (a <paramref name="compressionThreshold"/> of 0 or more), with its uncompressed length, zlib
+    /// compressed from the threshold and 0 below it.
+    /// </summary>
+    internal void WriteFrame(ReadOnlySpan<byte> body, int compressionThreshold)
+    {
+        if (compressionThreshold < 0)
+        {
+            this.WriteVarInt(body.Length);
+            this.Write(body);
+        }
+        else if (body.Length >= compressionThreshold)
+        {
             using var compressed = new MemoryStream();
             using (ZLibStream zlibStream = new(compressed, CompressionLevel.Optimal, true))
             {
-                zlibStream.Write(networkBuffer.AsSpan(0, dataLength));
+                zlibStream.Write(body);
             }
 
             var compressedLength = (int)compressed.Length;
-            int totalLength = dataLength.GetVarIntLength() + compressedLength;
 
-            this.WriteVarInt(totalLength);
-            this.WriteVarInt(dataLength);
-
+            this.WriteVarInt(body.Length.GetVarIntLength() + compressedLength);
+            this.WriteVarInt(body.Length);
             this.Write(compressed.GetBuffer().AsSpan(0, compressedLength));
         }
         else
-        {   // Do not compress the packet
-            int totalLength = dataLength + 1;
-
-            // same as WritePacket but insert a 0 after length
-            this.WriteVarInt(totalLength);
+        {
+            // Below the threshold, an uncompressed length of 0 marks the body as sent as is.
+            this.WriteVarInt(body.Length + 1);
             this.WriteVarInt(0);
-            this.Write(networkBuffer);
+            this.Write(body);
         }
     }
 

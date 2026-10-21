@@ -49,6 +49,24 @@ public sealed class AesCfbBlockCipher : IDisposable
         return output;
     }
 
+    /// <summary>
+    /// Encrypts <paramref name="data"/> where it is, continuing the stream.
+    /// </summary>
+    public void EncryptInPlace(Span<byte> data)
+    {
+        for (int i = 0; i < data.Length; i++)
+        {
+            this.transform.TransformBlock(this.iv, 0, BlockSize, this.block, 0);
+
+            var cipherByte = (byte)(data[i] ^ this.block[0]);
+
+            Buffer.BlockCopy(this.iv, 1, this.iv, 0, 15);
+
+            this.iv[15] = cipherByte;
+            data[i] = cipherByte;
+        }
+    }
+
     public Span<byte> Encrypt(byte[] buffer, int offset, int count)
     {
         var output = new byte[count];

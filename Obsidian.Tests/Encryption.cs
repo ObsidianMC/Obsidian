@@ -11,22 +11,41 @@ public class Encryption
     const int testDataLength = 1024;
 
     [Fact]
-    public void SwappingSendBuffersPreservesTheEncryptionStream()
+    public void FramerEncryptsTheStreamFromItsEncryptionFrame()
     {
         var key = new byte[16];
-        using var first = new EncryptedNetworkBuffer(key);
-        using var second = new EncryptedNetworkBuffer(key, first);
-        using var receiver = new NetworkBuffer();
-        byte[] plaintext = [1, 2, 3, 4, 5, 6];
-        first.Write(plaintext.AsSpan(0, 2));
-        second.Write(plaintext.AsSpan(2, 2));
-        receiver.Write(first.AsSpan(0, first.Size));
-        receiver.Write(second.AsSpan(0, second.Size));
-        first.Clear();
-        first.Write(plaintext.AsSpan(4, 2));
-        receiver.Write(first.AsSpan(0, first.Size));
+        Random.Shared.NextBytes(key);
+        var large = new byte[600];
+        Random.Shared.NextBytes(large);
+        byte[][] bodies = [[1, 2, 3], large, [4]];
+
+        // The login's order: a plain packet, then encryption, then compressed framing.
+        var framer = new PacketFramer();
+        using var output = new NetworkBuffer();
+        framer.Write(output, new OutgoingFrame(Body(bodies[0]), CompressionThreshold: -1));
+        framer.Write(output, new OutgoingFrame(Body: null, CompressionThreshold: -1, EncryptionKey: key));
+        framer.Write(output, new OutgoingFrame(Body(bodies[1]), CompressionThreshold: 256));
+        framer.Write(output, new OutgoingFrame(Body(bodies[2]), CompressionThreshold: 256));
+
+        using var expected = new NetworkBuffer();
+        expected.WriteFrame(bodies[0], -1);
+        var plainLength = expected.Offset;
+        expected.WriteFrame(bodies[1], 256);
+        expected.WriteFrame(bodies[2], 256);
+
+        Assert.Equal(expected.Offset, output.Offset);
+        Assert.Equal(expected.AsSpan(0, plainLength).ToArray(), output.AsSpan(0, plainLength).ToArray());
+
         using var decryptor = new AesCfbBlockCipher(key);
-        Assert.Equal(plaintext, decryptor.Decrypt(receiver.AsSpan(0, receiver.Size), 0, receiver.Size));
+        var decrypted = decryptor.Decrypt(output.AsSpan(0, output.Offset), plainLength, output.Offset - plainLength);
+        Assert.Equal(expected.AsSpan(plainLength, expected.Offset - plainLength).ToArray(), decrypted);
+
+        static NetworkBuffer Body(byte[] bytes)
+        {
+            var body = new NetworkBuffer();
+            body.Write(bytes);
+            return body;
+        }
     }
 
     [MemberData(nameof(RandomData))]

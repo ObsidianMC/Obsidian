@@ -8,7 +8,7 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
 {
     public IChunk Chunk { get; } = chunk;
 
-    // Capture before the packet enters the send queue, whose serialization holds the client's send lock.
+    // Captured when the packet is made, before it enters the send queue, which serializes it later.
     private readonly LightUpdatePacket light = chunk is Chunk { RuntimeLight: RuntimeLightEngine engine }
         ? engine.SnapshotLight(chunk)
         : new LightUpdatePacket(chunk);
