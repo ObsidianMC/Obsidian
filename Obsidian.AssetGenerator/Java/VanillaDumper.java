@@ -117,6 +117,8 @@ public final class VanillaDumper {
         dumper.dumpBlockOverrideClasses();
         dumper.dumpSaplingGrowers();
         dumper.dumpFireOdds();
+        dumper.dumpIgnitedByLava();
+        dumper.dumpTntBlocks();
         dumper.dumpItemUseOnClasses();
         dumper.dumpHoeTillables();
         dumper.dumpItemPlacedBlocks();
@@ -635,6 +637,39 @@ public final class VanillaDumper {
         }
 
         Json.write(output.resolve("fire_odds.json"), odds, false);
+    }
+
+    /**
+     * {@code ignited_by_lava.json}: the blocks whose default state {@code BlockStateBase.ignitedByLava()} is true, the
+     * flammable set {@code LavaFluid.randomTick} sets fire next to. Keyed by block, with the value {@code true}.
+     */
+    private void dumpIgnitedByLava() throws IOException {
+        var ignited = mojang.method(STATE_BASE, "ignitedByLava");
+        var defaultState = mojang.method(BLOCK, "defaultBlockState");
+        var blocks = new TreeMap<String, Boolean>();
+
+        for (var block : (Iterable<?>) blockRegistry) {
+            if ((boolean) Mojang.call(ignited, Mojang.call(defaultState, block)))
+                blocks.put(key(blockRegistry, block), true);
+        }
+
+        Json.write(output.resolve("ignited_by_lava.json"), blocks, false);
+    }
+
+    /**
+     * {@code tnt_blocks.json}: the blocks that are instances of {@code TntBlock}, whose static {@code explode} FireBlock
+     * calls on the block it replaces. Keyed by block, with the value {@code true}.
+     */
+    private void dumpTntBlocks() throws IOException {
+        var tnt = mojang.type("net.minecraft.world.level.block.TntBlock");
+        var blocks = new TreeMap<String, Boolean>();
+
+        for (var block : (Iterable<?>) blockRegistry) {
+            if (tnt.isInstance(block))
+                blocks.put(key(blockRegistry, block), true);
+        }
+
+        Json.write(output.resolve("tnt_blocks.json"), blocks, false);
     }
 
     /**

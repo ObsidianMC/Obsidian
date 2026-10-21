@@ -198,10 +198,9 @@ public abstract partial class AbstractLevel
         return true;
     }
 
-    // Vanilla's LavaFluid.randomTick, which sets fire to flammable blocks around lava when a player is within the
-    // fire spread game rule's radius. Obsidian has no fire spread or flammability yet, so nothing catches fire, but
-    // the draws are vanilla's, in its order, ending where vanilla's end when nothing nearby is flammable, so that the
-    // level's random stays in step with vanilla's.
+    // Vanilla's LavaFluid.randomTick: within the fire spread radius of a player, lava sets fire to an air block next to
+    // a block that lava ignites (BlockStateBase.ignitedByLava), either by climbing up to three blocks or on the
+    // lava's own level. The draws are vanilla's, in its order.
     private void RandomTickLava(Vector position, List<VectorD> players)
     {
         if (!this.CanSpreadFireAround(position, players))
@@ -218,9 +217,22 @@ public abstract partial class AbstractLevel
                 var dz = random.NextInt(3) - 1;
                 at += new Vector(dx, 1, dz);
 
-                // Vanilla sets fire in air next to a flammable block and stops; a block in the way stops it too.
-                if (GameEventBlock(at) is not IBlock block || block.BlocksMotion())
+                // Vanilla stops at a chunk that isn't loaded, and at a block in the way.
+                if (GameEventBlock(at) is not IBlock block)
                     return;
+
+                if (block.IsAir)
+                {
+                    if (this.LavaIgnitesAnyNeighbour(at))
+                    {
+                        this.SetLavaFire(at);
+                        return;
+                    }
+                }
+                else if (block.BlocksMotion())
+                {
+                    return;
+                }
             }
 
             return;
@@ -230,11 +242,37 @@ public abstract partial class AbstractLevel
         {
             var dx = random.NextInt(3) - 1;
             var dz = random.NextInt(3) - 1;
+            var ground = position + new Vector(dx, 0, dz);
 
-            // Vanilla sets fire on top of a flammable block here; it stops at a chunk that isn't loaded.
-            if (GameEventBlock(position + new Vector(dx, 0, dz)) is null)
+            if (GameEventBlock(ground) is not IBlock groundBlock)
                 return;
+
+            // Vanilla sets fire on the air above a block that lava ignites.
+            var above = ground + Vector.Up;
+            if (GameEventBlock(above) is { IsAir: true } && BlocksRegistry.GetIgnitedByLava(groundBlock.RegistryId))
+                this.SetLavaFire(above);
         }
+    }
+
+    // Vanilla's LavaFluid.b over the six directions around a position.
+    private bool LavaIgnitesAnyNeighbour(Vector position)
+    {
+        Vector[] offsets = [Vector.Up, Vector.Down, new(1, 0, 0), new(-1, 0, 0), new(0, 0, 1), new(0, 0, -1)];
+        foreach (var offset in offsets)
+        {
+            if (GameEventBlock(position + offset) is IBlock neighbour && BlocksRegistry.GetIgnitedByLava(neighbour.RegistryId))
+                return true;
+        }
+
+        return false;
+    }
+
+    // Vanilla's setBlockAndUpdate with BaseFireBlock.getState, which schedules the fire's first tick.
+    private void SetLavaFire(Vector position)
+    {
+        var fire = FireBlockBehavior.StateFor(this.BlockUpdates, position);
+        this.BlockUpdates.SetBlock(position, fire);
+        this.BlockUpdates.ScheduleTick(position, fire, 30 + this.GrowthRandom.NextInt(10));
     }
 
     // Vanilla's canSpreadFireAround: the game rule's radius around a player that isn't a spectator, or everywhere.

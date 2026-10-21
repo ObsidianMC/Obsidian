@@ -22,6 +22,8 @@ public partial class BlocksGenerator
         var placementBehavior = new CodeBuilder();
         var treeGrowers = new CodeBuilder();
         var fireOdds = new CodeBuilder();
+        var ignitedByLava = new CodeBuilder();
+        var tntBlocks = new CodeBuilder();
         var placementBehaviors = compilation.GetTypeByMetadataName("Obsidian.WorldData.PlacementBehaviors");
         // Each virtual hook is bound from the vanilla class that declares its override to a same-named member of the
         // hook's counterpart type.
@@ -91,6 +93,14 @@ public partial class BlocksGenerator
             if (block.FireOdds is { } odds)
                 fireOdds.Indent().Append($"[{block.RegistryId}] = ({odds.Ignite}, {odds.Burn}),").Line();
 
+            // A block that lava sets fire next to, from vanilla's BlockStateBase.ignitedByLava.
+            if (block.IgnitedByLava)
+                ignitedByLava.Indent().Append($"{block.RegistryId},").Line();
+
+            // A TntBlock, which fire primes when it replaces it, from vanilla's FireBlock calling TntBlock.explode.
+            if (block.IsTnt)
+                tntBlocks.Indent().Append($"{block.RegistryId},").Line();
+
             string? placementMember = OwnerMember(block.PlacementClass);
             if (placementMember is not null && placementBehaviors?.GetMembers(placementMember).Length > 0)
                 placementBehavior.Indent().Append($"{block.RegistryId} => PlacementBehaviors.{placementMember},").Line();
@@ -132,6 +142,22 @@ public partial class BlocksGenerator
             .Line("/// <summary>The ignite and burn odds of a flammable block, from vanilla's FireBlock; null for other blocks.</summary>")
             .Line("internal static (int Ignite, int Burn)? GetFireOdds(int registryId) =>")
             .Line("    fireOdds.TryGetValue(registryId, out var odds) ? odds : null;")
+            .Line()
+            .Line("/// <summary>Whether lava sets fire next to this block, from vanilla's BlockStateBase.ignitedByLava; false for other blocks.</summary>")
+            .Line("internal static bool GetIgnitedByLava(int registryId) => ignitedByLava.Contains(registryId);")
+            .Line()
+            .Line("/// <summary>Whether this block is a TntBlock that fire primes when it replaces it; false for other blocks.</summary>")
+            .Line("internal static bool IsTntBlock(int registryId) => tntBlocks.Contains(registryId);")
+            .Line()
+            .Line("private static readonly System.Collections.Generic.HashSet<int> tntBlocks = new()")
+            .Line("{")
+            .Append(tntBlocks.ToString())
+            .Line("};")
+            .Line()
+            .Line("private static readonly System.Collections.Generic.HashSet<int> ignitedByLava = new()")
+            .Line("{")
+            .Append(ignitedByLava.ToString())
+            .Line("};")
             .Line()
             .Line("private static readonly System.Collections.Generic.Dictionary<int, (int Ignite, int Burn)> fireOdds = new()")
             .Line("{")

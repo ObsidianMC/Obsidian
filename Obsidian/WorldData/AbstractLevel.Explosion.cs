@@ -161,9 +161,12 @@ public abstract partial class AbstractLevel
         if (keepsBlocks)
             destroyed.Clear();
 
-        var dropDecay = LevelData.GetBooleanRule(interaction == ExplosionInteraction.Block
-            ? "block_explosion_drop_decay"
-            : "mob_explosion_drop_decay");
+        var dropDecay = LevelData.GetBooleanRule(interaction switch
+        {
+            ExplosionInteraction.Block => "block_explosion_drop_decay",
+            ExplosionInteraction.Tnt => "tnt_explosion_drop_decay",
+            _ => "mob_explosion_drop_decay"
+        });
 
         var removed = new HashSet<Vector>();
         foreach (var position in destroyed)
@@ -331,7 +334,10 @@ public abstract partial class AbstractLevel
         /// A mob's, or its projectile's: breaks blocks only with <c>mob_griefing</c>, and
         /// <c>mob_explosion_drop_decay</c> decays its drops.
         /// </summary>
-        Mob
+        Mob,
+
+        /// <summary>A primed TNT's: always breaks blocks, and <c>tnt_explosion_drop_decay</c> decays its drops.</summary>
+        Tnt
     }
 
     private sealed class ExplosionParticleData : ParticleData

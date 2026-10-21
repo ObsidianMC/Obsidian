@@ -21,10 +21,14 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
     public IReadOnlyDictionary<string, string>? TreeGrower { get; }
     /// <summary>The ignite and burn odds vanilla's FireBlock registers for this block, or null if it isn't flammable.</summary>
     public (int Ignite, int Burn)? FireOdds { get; }
+    /// <summary>Whether vanilla's BlockStateBase.ignitedByLava is true for this block's default state.</summary>
+    public bool IgnitedByLava { get; }
+    /// <summary>Whether this block is a vanilla TntBlock, which fire primes when it replaces it.</summary>
+    public bool IsTnt { get; }
 
     private Block(string name, string tag, int baseId, int defaultId, int registryId, int statesCount,
         string? placementClass, IReadOnlyDictionary<string, string> overrideClasses, BlockProperty[] properties, Dictionary<int, List<string>> stateValues,
-        IReadOnlyDictionary<string, string>? treeGrower, (int Ignite, int Burn)? fireOdds)
+        IReadOnlyDictionary<string, string>? treeGrower, (int Ignite, int Burn)? fireOdds, bool ignitedByLava, bool isTnt)
     {
         Name = name;
         Tag = tag;
@@ -38,17 +42,19 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
         StateValues = stateValues;
         TreeGrower = treeGrower;
         FireOdds = fireOdds;
+        IgnitedByLava = ignitedByLava;
+        IsTnt = isTnt;
     }
 
     public static Block Get(JsonProperty property, int id, string? placementClass, IReadOnlyDictionary<string, string> overrideClasses,
-        IReadOnlyDictionary<string, string>? treeGrower, (int Ignite, int Burn)? fireOdds)
+        IReadOnlyDictionary<string, string>? treeGrower, (int Ignite, int Burn)? fireOdds, bool ignitedByLava, bool isTnt)
     {
         string name = property.Name.RemoveNamespace().ToPascalCase();
 
         (int baseId, int defaultId, int statesCount, var stateValues) = GetIds(property);
         BlockProperty[] properties = GetBlockProperties(property).ToArray();
 
-        return new Block(name, property.Name, baseId, defaultId, id, statesCount, placementClass, overrideClasses, properties, stateValues, treeGrower, fireOdds);
+        return new Block(name, property.Name, baseId, defaultId, id, statesCount, placementClass, overrideClasses, properties, stateValues, treeGrower, fireOdds, ignitedByLava, isTnt);
     }
 
     private static (int baseId, int defaultId, int stateCount, Dictionary<int, List<string>> stateValues) GetIds(JsonProperty property)

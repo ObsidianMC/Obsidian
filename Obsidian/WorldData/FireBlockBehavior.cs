@@ -184,7 +184,8 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
     // catches, by its burn odds out of the chance.
     private static void Spread(IBlockLevel level, Vector position, int chance, IRandomSource random, int age)
     {
-        var burn = BurnOdds(level.GetBlock(position));
+        var replaced = level.GetBlock(position);
+        var burn = BurnOdds(replaced);
         if (random.NextInt(chance) >= burn)
             return;
 
@@ -199,6 +200,10 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
         {
             level.RemoveBlock(position);
         }
+
+        // Vanilla's FireBlock calls TntBlock.explode on the block the fire replaced, after placing the fire.
+        if (BlocksRegistry.IsTntBlock(replaced.RegistryId) && level.Level is AbstractLevel concrete)
+            concrete.PrimeTnt(position);
     }
 
     // Vanilla's FireBlock.tick ignite loop: fire jumps to empty spaces within reach of its own age and the difficulty.
