@@ -34,10 +34,11 @@ public sealed partial class FallingBlock : Entity
         // Sends the move to clients, so they follow the fall instead of seeing it jump to the landing spot.
         await UpdateAsync(next, MovementFlags.None);
 
-        // Check below to see if we're about to hit a solid block.
+        // Vanilla lands the block once its feet pass the top of a solid block. The cell the feet have reached is the
+        // one to check: solid there means it landed in the cell above. Checking the cell below would land it a block early.
         var upcomingBlockPos = new Vector(
             (int)Math.Floor(next.X),
-            (int)Math.Floor(next.Y - 1),
+            (int)Math.Floor(next.Y),
             (int)Math.Floor(next.Z));
 
         if (checkedBlocks.Add(upcomingBlockPos))
