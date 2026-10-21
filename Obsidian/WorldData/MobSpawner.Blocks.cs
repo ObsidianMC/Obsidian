@@ -7,6 +7,13 @@ namespace Obsidian.WorldData;
 
 internal sealed partial class MobSpawner
 {
+    /// <summary>
+    /// A spawner minecart's spawner (vanilla's <c>BaseSpawner.serverTick</c>), from the block the cart is in.
+    /// </summary>
+    internal void TickSpawnerMinecart(DataBlockEntity spawner) => this.TickSpawner(
+        spawner,
+        level.Players.Values.Where(player => player.GameMode != GameMode.Spectator).ToArray());
+
     private void TickSpawner(DataBlockEntity spawner, IPlayer[] players)
     {
         var position = (VectorD)spawner.BlockPosition + 0.5f;

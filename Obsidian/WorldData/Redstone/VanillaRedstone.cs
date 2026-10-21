@@ -6,7 +6,7 @@ namespace Obsidian.WorldData.Redstone;
 
 /// <summary>
 /// Vanilla's redstone components by block: dust, torches, repeaters, comparators, levers, buttons, pressure plates,
-/// the redstone block, the redstone lamp, and the power switches of hoppers, droppers and dispensers.
+/// the redstone block, the redstone lamp, rails, and the power switches of hoppers, droppers and dispensers.
 /// </summary>
 internal static class VanillaRedstone
 {
@@ -38,7 +38,7 @@ internal static class VanillaRedstone
     /// Whether entities inside the block press it: pressure plates, and wooden buttons, which arrows press.
     /// </summary>
     public static bool IsPressedByEntities(IBlock state) =>
-        For(state) is PressurePlate or Switch { PressedByArrows: true };
+        For(state) is PressurePlate or Switch { PressedByArrows: true } or DetectorRailComponent;
 
     private static RedstoneComponent?[] Build()
     {
@@ -55,6 +55,9 @@ internal static class VanillaRedstone
         var tnt = new TntComponent();
         var lectern = new LecternComponent();
         var crafter = new CrafterComponent();
+        var rail = new RailComponent();
+        var poweredRail = new PoweredRailComponent();
+        var detectorRail = new DetectorRailComponent();
 
         for (var id = 0; id < table.Length; id++)
         {
@@ -80,6 +83,9 @@ internal static class VanillaRedstone
                 "TntBlock" => tnt,
                 "LecternBlock" => lectern,
                 "CrafterBlock" => crafter,
+                "RailBlock" => rail,
+                "PoweredRailBlock" => poweredRail,
+                "DetectorRailBlock" => detectorRail,
                 _ => null
             };
         }

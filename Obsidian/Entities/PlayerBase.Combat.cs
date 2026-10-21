@@ -202,6 +202,11 @@ public partial class PlayerBase
         return distance <= reach + 0.3f && distance >= minimum && new MobTerrain(Level).HasLineOfSight(eye, nearest);
     }
 
+    /// <summary>
+    /// Starts the attack charge over, as vanilla's <c>resetAttackStrengthTicker</c> does after a hit.
+    /// </summary>
+    internal void ResetAttackStrength() => attackTicks = 0;
+
     internal (float Damage, bool Critical) GetAttackDamage(IEntity target)
     {
         var item = GetHeldItem();

@@ -593,7 +593,7 @@ public abstract partial class AbstractLevel
     /// item entities of 10 to 30 items, each tossed up with a little random motion. Draws from the level's random in
     /// vanilla's order, the motion the item entity's constructor draws included.
     /// </summary>
-    private void DropItemStack(Vector position, ItemStack stack)
+    internal void DropItemStack(Vector position, ItemStack stack)
     {
         var random = this.GrowthRandom;
         var spread = 1 - ItemEntityWidth;

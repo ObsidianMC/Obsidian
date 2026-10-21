@@ -240,7 +240,7 @@ internal sealed class MobTerrain(ILevel level)
 
     // The cells the segment from start to end passes through, in order, from start's to end's: a voxel walk that
     // skips none.
-    private static IEnumerable<Vector> CellsAlong(VectorD start, VectorD end)
+    internal static IEnumerable<Vector> CellsAlong(VectorD start, VectorD end)
     {
         var direction = end - start;
         var cell = (Vector)start.Floor();

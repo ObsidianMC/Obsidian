@@ -160,6 +160,12 @@ public abstract partial class AbstractLevel : ILevel
     private readonly Lock regionLock = new();
     private readonly ConcurrentQueue<Func<ValueTask>> entityActions = new();
     private MobSpawner? mobSpawner;
+
+    /// <summary>
+    /// Runs a spawner minecart's spawner for a tick, from the block it's in (see <see cref="SpawnerMinecart"/>).
+    /// </summary>
+    internal void TickSpawnerMinecart(DataBlockEntity spawner) =>
+        (mobSpawner ??= new MobSpawner(this)).TickSpawnerMinecart(spawner);
     private readonly SemaphoreSlim simulationGate = new(1, 1);
 
     internal void EnqueueEntityAction(Func<ValueTask> action) => entityActions.Enqueue(action);

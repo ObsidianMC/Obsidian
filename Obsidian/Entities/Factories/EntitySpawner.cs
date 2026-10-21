@@ -129,6 +129,14 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         EntityType.Donkey => new Donkey { Level = level },
         EntityType.SkeletonHorse => new SkeletonHorse { Level = level },
         EntityType.ZombieHorse => new ZombieHorse { Level = level },
+        EntityType.Minecart => new Minecart { Level = level },
+        EntityType.ChestMinecart => new ChestMinecart { Level = level },
+        EntityType.FurnaceMinecart => new FurnaceMinecart { Level = level },
+        EntityType.HopperMinecart => new HopperMinecart { Level = level },
+        EntityType.TntMinecart => new TntMinecart { Level = level },
+        EntityType.SpawnerMinecart => new SpawnerMinecart { Level = level },
+        EntityType.CommandBlockMinecart => new CommandBlockMinecart { Level = level },
+        _ when Boat.IsBoat(type) => Boat.Create(type, level),
         _ => type.IsNonLiving() ? new Entity { Level = level } : new Living { Level = level }
     });
 
