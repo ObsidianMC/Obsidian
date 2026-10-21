@@ -299,6 +299,9 @@ public partial class UseItemOnPacket
             }
         }
 
+        if (await this.TryPlaceMinecartAsync(player, handSlot, currentItem, b))
+            return;
+
         if (await this.TryUseSpawnEggAsync(player, handSlot, currentItem, b))
             return;
 

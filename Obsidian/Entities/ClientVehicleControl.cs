@@ -9,8 +9,8 @@ namespace Obsidian.Entities;
 internal readonly record struct VehicleMove(VectorD Position, float Yaw, float Pitch, bool OnGround);
 
 /// <summary>
-/// Lets the controlling rider's client move a mob, like vanilla's player-controlled vehicles: the client simulates the
-/// mob and sends where it went, and the server checks each move like vanilla's <c>handleMoveVehicle</c> before taking
+/// Lets the controlling rider's client move a mob or a boat, like vanilla's player-controlled vehicles: the client
+/// simulates the vehicle and sends where it went, and the server checks each move like vanilla's <c>handleMoveVehicle</c> before taking
 /// it, putting the client's mob back where the server has it otherwise.
 /// </summary>
 /// <remarks>
@@ -70,10 +70,11 @@ internal sealed class ClientVehicleControl
     /// Checks the moves <paramref name="rider"/>'s client sent since the last tick, on the mob's tick before it
     /// travels. Moves from anyone else, such as a rider that left, are dropped.
     /// </summary>
-    /// <param name="vehicle">The mob.</param>
-    /// <param name="rider">The mob's controlling passenger, or null.</param>
-    /// <param name="flying">Whether the mob flies, which vanilla never counts as floating.</param>
-    public void Tick(Mob vehicle, IPlayer? rider, bool flying)
+    /// <param name="vehicle">The mob or boat.</param>
+    /// <param name="terrain">The blocks around the vehicle.</param>
+    /// <param name="rider">The vehicle's controlling passenger, or null.</param>
+    /// <param name="flying">Whether the vehicle flies, which vanilla never counts as floating.</param>
+    public void Tick(Entity vehicle, MobTerrain terrain, IPlayer? rider, bool flying)
     {
         if (!ReferenceEquals(rider, this.controller))
         {
@@ -94,7 +95,7 @@ internal sealed class ClientVehicleControl
 
             this.controller = rider;
 
-            if (!this.Check(vehicle, queued.Move, firstGood, position, onGround, flying))
+            if (!this.Check(vehicle, terrain, queued.Move, firstGood, position, onGround, flying))
             {
                 rider.SendPacket(new MoveVehiclePacket
                 {
@@ -138,7 +139,8 @@ internal sealed class ClientVehicleControl
 
     // Vanilla's handleMoveVehicle checks, from the position the moves taken so far this tick left the mob at.
     private bool Check(
-        Mob vehicle,
+        Entity vehicle,
+        MobTerrain terrain,
         VehicleMove move,
         VectorD firstGood,
         VectorD from,
@@ -157,7 +159,6 @@ internal sealed class ClientVehicleControl
         if (travelled.MagnitudeSquared() - vehicle.Motion.MagnitudeSquared() > TooQuicklySquared)
             return false;
 
-        var terrain = vehicle.Terrain;
         var bounds = vehicle.Dimension.CreateBBFromPosition(from);
         var delta = target - from;
         var stepHeight = Math.Clamp(vehicle.GetAttributeValue("minecraft:step_height"), 0, 10);
@@ -167,7 +168,7 @@ internal sealed class ClientVehicleControl
         var missZ = target.Z - moved.Z;
         var wrong = missX * missX + missZ * missZ > WronglySquared;
 
-        if (wrong && terrain.IsFree(bounds) || CollidesWithNew(vehicle, bounds, target))
+        if (wrong && terrain.IsFree(bounds) || CollidesWithNew(vehicle, terrain, bounds, target))
             return false;
 
         // Vanilla checks the preceding move's verticalCollisionBelow, then Entity.move records downward collision.
@@ -177,27 +178,27 @@ internal sealed class ClientVehicleControl
             && !wasSupported
             && !flying
             && !vehicle.NoGravity
-            && NoBlocksAround(vehicle, target);
+            && NoBlocksAround(vehicle, terrain, target);
 
         return true;
     }
 
     // Whether the mob at the target overlaps blocks it didn't overlap where it was, like vanilla's
     // isEntityCollidingWithAnythingNew.
-    private static bool CollidesWithNew(Mob vehicle, BoundingBox from, VectorD target)
+    private static bool CollidesWithNew(Entity vehicle, MobTerrain terrain, BoundingBox from, VectorD target)
     {
         var margin = new VectorD(1.0E-5, 1.0E-5, 1.0E-5);
         var old = new BoundingBox(from.Min + margin, from.Max - margin);
         var bounds = vehicle.Dimension.CreateBBFromPosition(target);
         var moved = new BoundingBox(bounds.Min + margin, bounds.Max - margin);
 
-        return vehicle.Terrain
+        return terrain
             .GetCollisions(moved)
             .Any(shape => MobTerrain.Overlaps(shape, moved) && !MobTerrain.Overlaps(shape, old));
     }
 
     // Whether only air surrounds the mob at the target, down to half a block below it, like vanilla's noBlocksAround.
-    private static bool NoBlocksAround(Mob vehicle, VectorD target)
+    private static bool NoBlocksAround(Entity vehicle, MobTerrain terrain, VectorD target)
     {
         var bounds = vehicle.Dimension.CreateBBFromPosition(target);
         var min = (bounds.Min - new VectorD(0.0625, 0.6125, 0.0625)).Floor();
@@ -209,7 +210,7 @@ internal sealed class ClientVehicleControl
             {
                 for (var z = (int)min.Z; z <= (int)max.Z; z++)
                 {
-                    if (vehicle.Terrain.GetBlock(new Vector(x, y, z)) is { IsAir: false })
+                    if (terrain.GetBlock(new Vector(x, y, z)) is { IsAir: false })
                         return false;
                 }
             }
@@ -218,12 +219,15 @@ internal sealed class ClientVehicleControl
         return true;
     }
 
-    // Vanilla's getMaximumFlyingTicks: 80 ticks under vanilla's gravity, longer under less, and no limit without.
-    private static int MaximumFloatingTicks(Mob vehicle)
+    // Vanilla's getMaximumFlyingTicks: 80 ticks under vanilla's gravity, longer under less, and no limit without. A
+    // boat or minecart has its own gravity rather than the attribute.
+    private static int MaximumFloatingTicks(Entity vehicle)
     {
-        var gravity = vehicle.HasAttribute("minecraft:gravity")
-            ? vehicle.GetAttributeValue("minecraft:gravity")
-            : 0.08;
+        var gravity = vehicle is VehicleEntity own
+            ? own.Gravity
+            : vehicle.HasAttribute("minecraft:gravity")
+                ? vehicle.GetAttributeValue("minecraft:gravity")
+                : 0.08;
         if (gravity < 1.0E-5)
             return int.MaxValue;
 

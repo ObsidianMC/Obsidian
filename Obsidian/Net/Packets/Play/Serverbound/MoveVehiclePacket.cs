@@ -4,8 +4,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 
 /// <summary>
 /// Where the client moved the vehicle it controls (vanilla's <c>ServerboundMoveVehiclePacket</c>). The server takes
-/// it for plugins' mobs, after checking it on the mob's tick (see <see cref="ClientVehicleControl"/>), and ignores it
-/// for vanilla's mounts, which it moves from the rider's input.
+/// it for plugins' mobs and for boats, after checking it on the vehicle's tick (see
+/// <see cref="ClientVehicleControl"/>), and ignores it for vanilla's mounts, which it moves from the rider's input.
 /// </summary>
 public partial class MoveVehiclePacket
 {
@@ -27,11 +27,11 @@ public partial class MoveVehiclePacket
 
     public override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
+        var move = new VehicleMove(this.Position, this.Yaw, this.Pitch, this.OnGround);
         if (player.Vehicle is PluginMob vehicle)
-        {
-            var move = new VehicleMove(this.Position, this.Yaw, this.Pitch, this.OnGround);
             vehicle.ClientControl.Enqueue(player, move);
-        }
+        else if (player.Vehicle is Boat boat)
+            boat.ClientControl.Enqueue(player, move);
 
         return default;
     }

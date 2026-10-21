@@ -16,7 +16,10 @@ internal sealed partial class LevelBlockUpdates
             this.DropAndRemove(position, state);
     }
 
-    private bool IsUnsupportedRail(Vector position, IBlock state)
+    /// <summary>
+    /// Vanilla's <c>BaseRailBlock.shouldBeRemoved</c>: nothing rigid under the rail, or under a slope's raised end.
+    /// </summary>
+    internal bool IsUnsupportedRail(Vector position, IBlock state)
     {
         var unsupported = !this.GetBlock(position + Vector.Down).IsFaceSturdy(BlockFace.Up, SupportType.Rigid);
         if (state.GetProperty("shape") is string shape && shape.StartsWith("ascending_", StringComparison.Ordinal))

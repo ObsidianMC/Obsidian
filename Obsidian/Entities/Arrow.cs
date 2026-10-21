@@ -90,7 +90,7 @@ public partial class Arrow : Entity
         IEntity? target = null;
         foreach (var candidate in Level.GetEntitiesInRange(Position, (float)Motion.Magnitude + 20))
         {
-            if (candidate is not Living and not EndCrystal and not MobProjectile { Type: EntityType.Fireball } || ReferenceEquals(candidate, Owner) || candidate.Health <= 0 || piercedEntities.Contains(candidate.EntityId) ||
+            if (candidate is not Living and not EndCrystal and not MobProjectile { Type: EntityType.Fireball } and not VehicleEntity { IsRemoved: false } || ReferenceEquals(candidate, Owner) || candidate.Health <= 0 || piercedEntities.Contains(candidate.EntityId) ||
                 candidate is IPlayer player && player.GameMode is GameMode.Creative or GameMode.Spectator)
                 continue;
             if (candidate is EnderDragon dragon)
@@ -125,6 +125,7 @@ public partial class Arrow : Entity
             level.EmitGameEvent(MobGameEvent.ProjectileLand, Position, this, Owner);
             var health = target.Health;
             var accepted = (target as Living)?.AcceptedDamageCount;
+            var vehicleHit = false;
             if (target is MobProjectile fireball)
                 fireball.Deflect(Owner ?? this, Motion);
             else if ((target is not Shulker { Closed: true } || Type != EntityType.Arrow) &&
@@ -137,9 +138,17 @@ public partial class Arrow : Entity
                     damage += Globals.Random.Next((int)(damage / 2) + 2);
                 if (target is EnderDragonPart part) await part.Parent.DamagePartAsync(Owner ?? this, damage, part.Index, projectile: true);
                 else if (target is Living victim) await victim.DamageCombatAsync(Owner ?? this, damage, CombatDamageKind.Projectile, Weapon, this);
+                // Like vanilla's VehicleEntity.hurtServer, a boat or minecart always takes the hit, and a burning
+                // arrow sets off a TNT minecart.
+                else if (target is VehicleEntity vehicle)
+                {
+                    var kind = FireSeconds > 0 || Burning ? VehicleDamage.BurningProjectile : VehicleDamage.Projectile;
+                    await vehicle.HurtAsync(Owner ?? this, damage, kind, Motion);
+                    vehicleHit = true;
+                }
                 else await target.DamageAsync(Owner ?? this, damage);
             }
-            var damaged = target.Health < health || target is Living hitLiving && hitLiving.AcceptedDamageCount != accepted;
+            var damaged = vehicleHit || target.Health < health || target is Living hitLiving && hitLiving.AcceptedDamageCount != accepted;
             if (damaged && Effect >= 0 && target is Living living)
                 living.AddPotionEffect(Effect, EffectDuration, 0);
             if (damaged && FireSeconds > 0 && target is Living burningTarget)

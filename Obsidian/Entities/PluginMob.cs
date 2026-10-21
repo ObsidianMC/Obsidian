@@ -158,7 +158,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
 
         if (this.Rider is not IPlayer rider || this.MobBitMask.HasFlag(MobBitmask.NoAi))
         {
-            this.ClientControl.Tick(this, null, this.Flying);
+            this.ClientControl.Tick(this, this.Terrain, null, this.Flying);
 
             if (this.riddenPaused && this.GoalController is GoalSelector { IsPaused: true } goals)
                 goals.Resume();
@@ -174,7 +174,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
             this.riddenPaused = true;
         }
 
-        this.ClientControl.Tick(this, rider, this.Flying);
+        this.ClientControl.Tick(this, this.Terrain, rider, this.Flying);
         if (this.ClientControl.ControlledBy(rider))
             return;
 

@@ -181,7 +181,7 @@ internal static class Hoppers
     /// Vanilla's <c>addItem(Container, ItemEntity)</c>: as much of the entity's stack as fits goes in; only taking
     /// all of it counts as a transfer.
     /// </summary>
-    private static async ValueTask<bool> TakeInAsync(IItemAccess own, ItemEntity entity)
+    internal static async ValueTask<bool> TakeInAsync(IItemAccess own, ItemEntity entity)
     {
         bool all;
         lock (ItemEntity.TransferLock)
@@ -206,7 +206,7 @@ internal static class Hoppers
         return all;
     }
 
-    private static bool IsEmpty(IItemAccess access)
+    internal static bool IsEmpty(IItemAccess access)
     {
         for (var slot = 0; slot < access.SlotCount; slot++)
         {
@@ -221,7 +221,7 @@ internal static class Hoppers
         inventory.All(stack => stack is null || stack.IsAir || stack.Count <= 0);
 
     // Vanilla's inventoryFull: every slot holds a full stack.
-    private static bool IsFull(IItemAccess access)
+    internal static bool IsFull(IItemAccess access)
     {
         for (var slot = 0; slot < access.SlotCount; slot++)
         {

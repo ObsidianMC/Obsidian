@@ -197,7 +197,7 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     /// <inheritdoc/>
     public void NeighborChanged(Vector position, IBlock state, IBlock source, Vector sourcePosition)
     {
-        VanillaRedstone.For(state)?.NeighborChanged(this, position, state);
+        VanillaRedstone.For(state)?.NeighborChanged(this, position, state, source);
         this.RemoveUnsupportedRail(position, state);
 
         this.RunHook(

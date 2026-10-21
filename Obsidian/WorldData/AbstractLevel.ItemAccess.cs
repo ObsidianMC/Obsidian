@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
+using Obsidian.Entities.AI;
 using Obsidian.Events;
 using Obsidian.Plugins;
 using Obsidian.WorldData.Features;
@@ -27,7 +28,27 @@ public abstract partial class AbstractLevel
     /// a plugin's block or block entity is asked inside a call into its plugin, and the access it gives is called
     /// inside calls into the plugin too, giving nothing once it's unloading.
     /// </remarks>
-    public IItemAccess? GetItemAccess(Vector position, BlockFace? side)
+    public IItemAccess? GetItemAccess(Vector position, BlockFace? side) =>
+        this.BlockItemAccess(position, side) ?? this.VehicleItemAccess(position);
+
+    // Vanilla's HopperBlockEntity.getEntityContainer: with no container block there, a chest boat or a minecart with a
+    // chest or hopper whose box reaches into the block, a random one of them if there are several.
+    private IItemAccess? VehicleItemAccess(Vector position)
+    {
+        var cube = new BoundingBox((VectorD)position, (VectorD)position + new VectorD(1, 1, 1));
+        var vehicles = this.GetEntitiesInRange((VectorD)position + new VectorD(0.5, 0.5, 0.5), 3)
+            .OfType<VehicleEntity>()
+            .Where(vehicle => vehicle is IVehicleContainer
+                && !vehicle.IsRemoved
+                && MobTerrain.Overlaps(cube, vehicle.Dimension.CreateBBFromPosition(vehicle.Position)))
+            .ToArray();
+
+        return vehicles.Length == 0
+            ? null
+            : ((IVehicleContainer)vehicles[vehicles.Length == 1 ? 0 : Random.Shared.Next(vehicles.Length)]).ItemAccess;
+    }
+
+    private IItemAccess? BlockItemAccess(Vector position, BlockFace? side)
     {
         lock (this.Fluids.TickLock)
         {

@@ -55,13 +55,27 @@ public abstract partial class AbstractLevel
     internal ValueTask ExplodeAsync(VectorD center, float radius, bool fire, ExplosionInteraction interaction) =>
         ExplodeAsync(center, radius, source: null, owner: null, fire, interaction);
 
+    /// <summary>
+    /// An explosion of <paramref name="source"/> that leaves the blocks <paramref name="spares"/> picks, which also
+    /// don't slow it: a lit TNT minecart's leaves rails and the blocks under them.
+    /// </summary>
+    internal ValueTask ExplodeAsync(
+        VectorD center,
+        float radius,
+        Entity source,
+        IEntity? owner,
+        ExplosionInteraction interaction,
+        Func<Vector, IBlock, bool> spares) =>
+        ExplodeAsync(center, radius, source, owner, fire: false, interaction, spares);
+
     private async ValueTask ExplodeAsync(
         VectorD center,
         float radius,
         Entity? source,
         IEntity? owner,
         bool fire,
-        ExplosionInteraction interaction)
+        ExplosionInteraction interaction,
+        Func<Vector, IBlock, bool>? spares = null)
     {
         // Capture the caller once, before awaited damage callbacks, rather than walking for each block drop.
         var spawner = PluginEntities.FindSpawner();
@@ -100,9 +114,12 @@ public abstract partial class AbstractLevel
                         resistance = Math.Min(resistance, 0.8f);
                     }
 
+                    if (spares?.Invoke(position, block) == true)
+                        resistance = 0;
+
                     strength -= (resistance + 0.3f) * 0.3f;
                 }
-                if (strength > 0 && !block.IsAir)
+                if (strength > 0 && !block.IsAir && spares?.Invoke(position, block) != true)
                     destroyed.Add(position);
 
                 if (strength > 0 && fire)
@@ -122,6 +139,11 @@ public abstract partial class AbstractLevel
         {
             if (ReferenceEquals(target, source) || target.Health <= 0 ||
                 target is IPlayer player && player.GameMode == GameMode.Spectator)
+                continue;
+
+            // Vanilla's VehicleEntity.ignoreExplosion: a mob's explosion passes boats and minecarts by without
+            // mob_griefing.
+            if (target is VehicleEntity && (owner ?? source) is Mob && !LevelData.GetBooleanRule("mob_griefing"))
                 continue;
             var distance = (target.Position - center).Magnitude / diameter;
             if (distance > 1)
@@ -178,6 +200,12 @@ public abstract partial class AbstractLevel
             }
             else if (target is EndCrystal)
                 await target.DamageAsync(attacker, damage);
+            else if (target is VehicleEntity vehicle)
+            {
+                await vehicle.HurtAsync(owner ?? source, damage, VehicleDamage.Explosion);
+                if (vehicle.IsRemoved)
+                    continue;
+            }
 
             // Only living things resist being blown away, by their explosion knockback resistance.
             var resistance = target is Living

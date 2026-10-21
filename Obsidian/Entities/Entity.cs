@@ -547,15 +547,15 @@ public partial class Entity : IEquatable<Entity>, IEntity
 
     public static implicit operator int(Entity entity) => entity.EntityId;
 
-    public static bool operator ==(Entity a, Entity b)
+    public static bool operator ==(Entity? a, Entity? b)
     {
         if (ReferenceEquals(a, b))
             return true;
 
-        return a.Equals(b);
+        return a is not null && a.Equals(b);
     }
 
-    public static bool operator !=(Entity a, Entity b) => !(a == b);
+    public static bool operator !=(Entity? a, Entity? b) => !(a == b);
 
     public override int GetHashCode() => EntityId.GetHashCode();
 
