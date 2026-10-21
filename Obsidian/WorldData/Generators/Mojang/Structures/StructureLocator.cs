@@ -212,6 +212,8 @@ internal sealed class StructureLocator(StructureManager structures)
                 structures.LoadStart(start);
                 if (!start.TryAddReference())
                     continue;
+
+                structures.StartChanged?.Invoke(start.ChunkX, start.ChunkZ);
             }
 
             return new LocatedStructure(

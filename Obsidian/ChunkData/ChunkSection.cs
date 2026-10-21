@@ -1,6 +1,7 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.WorldData;
 using System.Diagnostics;
+using System.Threading;
 
 namespace Obsidian.ChunkData;
 
@@ -47,6 +48,10 @@ public sealed class ChunkSection : IChunkSection
 
     private volatile bool randomTickingStale = true;
 
+    // 1 while the section's light changed since its chunk's last save (see TakeUnsaved); its containers track their
+    // own writes. A new section is unsaved.
+    private int unsaved = 1;
+
     private bool randomlyTicking;
 
     private static readonly byte[] FullSkyLight = new byte[2048];
@@ -80,6 +85,30 @@ public sealed class ChunkSection : IChunkSection
         BiomeContainer = biomeContainer;
         YBase = yBase;
         IsEmpty = isEmpty;
+    }
+
+    /// <summary>
+    /// Whether the section changed since <see cref="TakeUnsaved"/> last cleared it: its blocks, biomes or light.
+    /// </summary>
+    internal bool IsUnsaved => Volatile.Read(ref this.unsaved) != 0 || this.BlockStateContainer.IsUnsaved
+        || this.BiomeContainer.IsUnsaved;
+
+    /// <summary>
+    /// Records a change to the section's light. Light writes here do it; callers that write
+    /// <see cref="GetLightStorage"/> without <see cref="MarkLight"/> call it themselves.
+    /// </summary>
+    internal void MarkUnsaved() => Volatile.Write(ref this.unsaved, 1);
+
+    /// <summary>
+    /// Clears the section's unsaved marks, its containers' too, for a save about to snapshot it.
+    /// </summary>
+    /// <returns>Whether any was marked. A write after this marks it again, so the next save has it.</returns>
+    internal bool TakeUnsaved()
+    {
+        // Every mark is cleared, so none of these short-circuit.
+        var unsaved = Interlocked.Exchange(ref this.unsaved, 0) != 0;
+        unsaved |= this.BlockStateContainer.TakeUnsaved();
+        return unsaved | this.BiomeContainer.TakeUnsaved();
     }
 
     /// <summary>
@@ -249,6 +278,7 @@ public sealed class ChunkSection : IChunkSection
         data[index] |= (byte)(level << shift);
         HasSkyLight |= lt == LightType.Sky;
         HasBlockLight |= lt == LightType.Block;
+        this.MarkUnsaved();
     }
 
     /// <summary>
@@ -265,6 +295,7 @@ public sealed class ChunkSection : IChunkSection
     {
         HasSkyLight |= lt == LightType.Sky;
         HasBlockLight |= lt == LightType.Block;
+        this.MarkUnsaved();
     }
 
     public int GetLightLevel(int x, int y, int z, LightType lt)
@@ -276,8 +307,15 @@ public sealed class ChunkSection : IChunkSection
         return ((lt == LightType.Sky ? skyLight : blockLight)[index] & mask) >> shift;
     }
 
+    /// <remarks>
+    /// The section keeps a copy of <paramref name="data"/>, unless it's the section's own storage, so later changes to
+    /// the caller's array don't reach it untracked.
+    /// </remarks>
     public void SetLight(byte[] data, LightType lt)
     {
+        if (!ReferenceEquals(data, lt == LightType.Sky ? skyLight : blockLight))
+            data = (byte[])data.Clone();
+
         foreach (var b in data)
         {
             if (b != 0)
@@ -293,12 +331,15 @@ public sealed class ChunkSection : IChunkSection
             skyLight = data;
         else
             blockLight = data;
+
+        this.MarkUnsaved();
     }
 
     public void FillSkyLight()
     {
         Array.Copy(FullSkyLight, skyLight, 2048);
         HasSkyLight = true;
+        this.MarkUnsaved();
     }
 
     public IBlock GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);

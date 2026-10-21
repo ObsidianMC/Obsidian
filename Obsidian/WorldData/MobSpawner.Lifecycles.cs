@@ -45,25 +45,36 @@ internal sealed partial class MobSpawner
 
     private void TickFrogspawn(Chunk chunk)
     {
-        var terrain = new MobTerrain(level);
-        foreach (var (position, delay) in chunk.FrogspawnTicks.ToArray())
-        {
-            if (terrain.GetBlock(position)?.RegistryId != BlockIds.Frogspawn)
-            { chunk.FrogspawnTicks.TryRemove(position, out _); continue; }
-            if (delay > 1) { chunk.FrogspawnTicks[position] = delay - 1; continue; }
-            chunk.FrogspawnTicks.TryRemove(position, out _);
-            level.EnqueueEntityAction(async () =>
-            {
-                if (terrain.GetBlock(position)?.RegistryId != BlockIds.Frogspawn) return;
-                await level.SetBlockAsync(position, BlocksRegistry.Air, true);
-                if (terrain.GetBlock(new Vector(position.X, position.Y - 1, position.Z))?.RegistryId != BlockIds.Water)
-                    return;
+        if (chunk.FrogspawnTicks.IsEmpty)
+            return;
 
-                for (var index = random.Next(2, 6); index > 0; index--)
-                    level.SpawnEntity(new Tadpole { Level = level, EntityId = Server.GetNextEntityId(),
-                        Position = new VectorD(position.X + 0.2f + random.NextSingle() * 0.6f, position.Y - 0.5f, position.Z + 0.2f + random.NextSingle() * 0.6f),
-                        PersistenceRequired = true });
-            });
+        var terrain = new MobTerrain(level);
+        try
+        {
+            foreach (var (position, delay) in chunk.FrogspawnTicks.ToArray())
+            {
+                if (terrain.GetBlock(position)?.RegistryId != BlockIds.Frogspawn)
+                { chunk.FrogspawnTicks.TryRemove(position, out _); continue; }
+                if (delay > 1) { chunk.FrogspawnTicks[position] = delay - 1; continue; }
+                chunk.FrogspawnTicks.TryRemove(position, out _);
+                level.EnqueueEntityAction(async () =>
+                {
+                    if (terrain.GetBlock(position)?.RegistryId != BlockIds.Frogspawn) return;
+                    await level.SetBlockAsync(position, BlocksRegistry.Air, true);
+                    if (terrain.GetBlock(new Vector(position.X, position.Y - 1, position.Z))?.RegistryId != BlockIds.Water)
+                        return;
+
+                    for (var index = random.Next(2, 6); index > 0; index--)
+                        level.SpawnEntity(new Tadpole { Level = level, EntityId = Server.GetNextEntityId(),
+                            Position = new VectorD(position.X + 0.2f + random.NextSingle() * 0.6f, position.Y - 0.5f, position.Z + 0.2f + random.NextSingle() * 0.6f),
+                            PersistenceRequired = true });
+                });
+            }
+        }
+        finally
+        {
+            // After the delays changed, so a save that takes the mark has them.
+            chunk.MarkUnsaved();
         }
     }
 
@@ -109,6 +120,9 @@ public abstract partial class AbstractLevel
     internal void ScheduleFrogspawn(Vector position, int delay)
     {
         if (GetLoadedChunk(position.X >> 4, position.Z >> 4) is Chunk chunk)
+        {
             chunk.FrogspawnTicks[position] = delay;
+            chunk.MarkUnsaved();
+        }
     }
 }

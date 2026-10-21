@@ -194,6 +194,15 @@ public abstract partial class AbstractLevel : ILevel
         return false;
     }
 
+    /// <summary>
+    /// Has the next flush write every loaded chunk (see <see cref="Region.MarkChunksUnsaved"/>).
+    /// </summary>
+    internal void MarkChunksUnsaved()
+    {
+        foreach (var region in this.Regions.Values.OfType<Region>())
+            region.MarkChunksUnsaved();
+    }
+
     internal IChunk? GetLoadedChunk(int chunkX, int chunkZ)
     {
         // Entity initialization calls this under EntityLock; reads must never acquire the fluid tick lock.

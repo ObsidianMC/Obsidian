@@ -100,11 +100,15 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         if (this.Builder is ChunkBuilder builder)
         {
             builder.RefreshStructures();
-            return;
+        }
+        else
+        {
+            var current = this.Structures?.Invoke() ?? Registries.PluginStructures.Current;
+            this.startCache?.Prune(current);
         }
 
-        var current = this.Structures?.Invoke() ?? Registries.PluginStructures.Current;
-        this.startCache?.Prune(current);
+        // Dropped starts change what their start chunks save, and the cache doesn't know which of those are loaded.
+        (this.world as AbstractLevel)?.MarkChunksUnsaved();
     }
 
     // The builder, for the steps of generation.
@@ -536,7 +540,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         // The pieces placed may have changed, and a start chunk may have been unloaded meanwhile: loading them again keeps
         // each start's current state in a chunk that will be saved.
-        await this.LoadStartChunksAsync(starts);
+        await this.LoadStartChunksAsync(starts, placed: true);
     }
 
     /// <summary>
@@ -613,7 +617,9 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// Done without generation locks, since it may read chunks from disk. Every decoration does this before placing
     /// pieces, and a start is only restored once, so that happens before any of its pieces are placed in this session.
     /// </remarks>
-    private async ValueTask LoadStartChunksAsync(ReachingStarts? starts)
+    /// <param name="placed">Whether the starts' pieces were just placed, which changes the state their start chunks
+    /// save.</param>
+    private async ValueTask LoadStartChunksAsync(ReachingStarts? starts, bool placed = false)
     {
         if (starts is null)
             return;
@@ -622,6 +628,8 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         {
             var startChunk = await this.world.GetChunkAsync(start.ChunkX, start.ChunkZ, scheduleGeneration: false) as Chunk;
             StructureManager.RestoreStart(start, startChunk?.StructureStarts);
+            if (placed)
+                startChunk?.MarkUnsaved();
         }
     }
 
@@ -629,6 +637,10 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     // like vanilla's, which also wait for start chunks on the server thread. Getting a chunk takes no generation locks.
     private NbtCompound? LoadStartChunk(int chunkX, int chunkZ) =>
         (this.world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false).AsTask().GetAwaiter().GetResult() as Chunk)?.StructureStarts;
+
+    // StructureManager.StartChanged: the start chunk LoadStartChunk loaded saves the start's new state.
+    private void MarkStartChunkUnsaved(int chunkX, int chunkZ) =>
+        (this.world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false).AsTask().GetAwaiter().GetResult() as Chunk)?.MarkUnsaved();
 
     internal bool IsInsideFortress(Vector position)
     {
@@ -795,6 +807,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         if (builder.Structures is StructureManager structures)
         {
             structures.LoadStartChunk = this.LoadStartChunk;
+            structures.StartChanged = this.MarkStartChunkUnsaved;
             this.startCache = structures.StartCache;
         }
 

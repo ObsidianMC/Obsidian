@@ -171,7 +171,11 @@ internal sealed class LightEngine
         {
             var section = sections[sectionIndex];
             if (this.storageSections is not null)
-                Array.Clear(this.storageSections[4 * this.sectionCount + sectionIndex]!.GetLightStorage(LightType.Block));
+            {
+                var storage = this.storageSections[4 * this.sectionCount + sectionIndex]!;
+                Array.Clear(storage.GetLightStorage(LightType.Block));
+                storage.MarkUnsaved();
+            }
             else
                 section.SetLight(new byte[2048], LightType.Block);
 

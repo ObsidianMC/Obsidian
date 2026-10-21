@@ -30,7 +30,177 @@ public sealed class Chunk : IChunk
 
     public int X { get; }
     public int Z { get; }
-    public long InhabitedTime { get; internal set; }
+
+    public long InhabitedTime
+    {
+        get => Interlocked.Read(ref this.inhabitedTime);
+        internal set
+        {
+            Interlocked.Exchange(ref this.inhabitedTime, value);
+            this.MarkUnsaved();
+        }
+    }
+
+    private long inhabitedTime;
+
+    // 1 while the chunk holds changes its last save doesn't have, besides those its sections, heightmaps and tick lists
+    // track (see TakeUnsaved). A chunk is unsaved when created or loaded.
+    private int unsaved = 1;
+
+    // The attachments' revision the last save took, so a save can tell whether plugins changed them since.
+    private long savedAttachmentRevision = -1;
+
+    // A hash of the saved data of the block entities saved as they are, as the last save took it (see TakeUnsaved).
+    private ulong savedLiveBlockEntities;
+
+    // Which heightmaps the chunk had at its last save, since entries can be replaced or removed (see HeightmapSet).
+    private int savedHeightmaps;
+
+    // Which block entities the chunk held at its last save, since the dictionary can be changed directly (see
+    // BlockEntitySet).
+    private int savedBlockEntities;
+
+    /// <summary>
+    /// Records a change to what the chunk saves that its sections and tick lists don't track themselves: block
+    /// entities, its status, structure data, and the timers it keeps for eggs, frogspawn and portals.
+    /// </summary>
+    internal void MarkUnsaved() => Volatile.Write(ref this.unsaved, 1);
+
+    /// <summary>
+    /// Whether the chunk may differ from its last save, so a save has to write it. Read without locks: a change racing
+    /// the read marks the chunk again, and the next save writes it.
+    /// </summary>
+    /// <remarks>
+    /// Block entities saved as they are (<c>BlockEntity.SavesOnAnyThread</c>, like spawners counting down) and
+    /// containers, whose items are saved as they are, change without telling the chunk, so a chunk holding one may be
+    /// unsaved: <see cref="TakeUnsaved"/> compares their saved data with the last save's.
+    /// </remarks>
+    internal bool IsUnsaved
+    {
+        get
+        {
+            if (Volatile.Read(ref this.unsaved) != 0 || this.BlockTicks.IsUnsaved || this.FluidTicks.IsUnsaved)
+                return true;
+
+            foreach (var section in this.sections)
+            {
+                if (section is not ChunkSection { IsUnsaved: false })
+                    return true;
+            }
+
+            foreach (var heightmap in this.Heightmaps.Values)
+            {
+                if (heightmap.IsUnsaved)
+                    return true;
+            }
+
+            return this.HeightmapSet() != Volatile.Read(ref this.savedHeightmaps)
+                || this.BlockEntitySet() != Volatile.Read(ref this.savedBlockEntities)
+                || API.Data.AttachmentStorage.For(this).Revision != Interlocked.Read(ref this.savedAttachmentRevision)
+                || this.HoldsLiveSavedBlockEntities();
+        }
+    }
+
+    /// <summary>
+    /// Clears every unsaved mark of the chunk, for a save about to snapshot it. Call it under the locks the snapshot
+    /// takes, before taking it: a change made after it marks the chunk again, so the next save has it. A save that
+    /// fails afterwards marks the chunk again (<see cref="MarkUnsaved"/>).
+    /// </summary>
+    /// <returns>Whether the chunk was unsaved (see <see cref="IsUnsaved"/>).</returns>
+    internal bool TakeUnsaved()
+    {
+        // Every mark is cleared, so none of these short-circuit.
+        var unsaved = Interlocked.Exchange(ref this.unsaved, 0) != 0;
+        unsaved |= this.BlockTicks.TakeUnsaved();
+        unsaved |= this.FluidTicks.TakeUnsaved();
+
+        foreach (var section in this.sections)
+            unsaved |= section is not ChunkSection tracked || tracked.TakeUnsaved();
+
+        foreach (var heightmap in this.Heightmaps.Values)
+            unsaved |= heightmap.TakeUnsaved();
+
+        var heightmaps = this.HeightmapSet();
+        unsaved |= Interlocked.Exchange(ref this.savedHeightmaps, heightmaps) != heightmaps;
+
+        var blockEntities = this.BlockEntitySet();
+        unsaved |= Interlocked.Exchange(ref this.savedBlockEntities, blockEntities) != blockEntities;
+
+        var attachments = API.Data.AttachmentStorage.For(this).Revision;
+        unsaved |= Interlocked.Exchange(ref this.savedAttachmentRevision, attachments) != attachments;
+
+        if (!this.HoldsLiveSavedBlockEntities())
+        {
+            this.savedLiveBlockEntities = 0;
+            return unsaved;
+        }
+
+        var liveBlockEntities = this.HashLiveSavedBlockEntities();
+        unsaved |= liveBlockEntities != this.savedLiveBlockEntities;
+        this.savedLiveBlockEntities = liveBlockEntities;
+        return unsaved;
+    }
+
+    // The heightmaps the chunk has, as instances: an order-independent combination, which changes when one is
+    // replaced or removed.
+    private int HeightmapSet()
+    {
+        var set = 0;
+        foreach (var (type, heightmap) in this.Heightmaps)
+            set += HashCode.Combine(type, System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(heightmap));
+
+        return set;
+    }
+
+    // The block entities the chunk holds, by position and instance: an order-independent combination, like
+    // HeightmapSet's.
+    private int BlockEntitySet()
+    {
+        var set = 0;
+        foreach (var (key, blockEntity) in this.BlockEntities)
+            set += HashCode.Combine(key, System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(blockEntity));
+
+        return set;
+    }
+
+    // The saved data of the block entities saved as they are, hashed in position order.
+    private ulong HashLiveSavedBlockEntities()
+    {
+        var hash = new System.IO.Hashing.XxHash64();
+        foreach (var (_, blockEntity) in this.BlockEntities.OrderBy(entry => entry.Key))
+        {
+            if (!SavesAsItIs(blockEntity) || BlockEntityNbt.Save(blockEntity) is not NbtCompound saved)
+                continue;
+
+            // The writer closes the stream, which can still give its bytes.
+            var stream = new System.IO.MemoryStream();
+            using (var writer = new NbtWriterStream(stream, NbtCompression.None, ""))
+            {
+                writer.WriteTag(saved);
+                writer.EndCompound();
+            }
+
+            hash.Append(stream.ToArray());
+        }
+
+        return hash.GetCurrentHashAsUInt64();
+    }
+
+    private bool HoldsLiveSavedBlockEntities()
+    {
+        foreach (var blockEntity in this.BlockEntities.Values)
+        {
+            if (SavesAsItIs(blockEntity))
+                return true;
+        }
+
+        return false;
+    }
+
+    // Whether a save takes the block entity's data as it is now, rather than as it last announced a change: those
+    // saved on any thread, and containers, whose items are saved as they are.
+    private static bool SavesAsItIs(IBlockEntity blockEntity) =>
+        blockEntity is API.BlockEntities.BlockEntity { SavesOnAnyThread: true } or API.BlockEntities.ContainerBlockEntity;
     internal bool MusicRegistered { get; set; }
 
     /// <summary>
@@ -90,15 +260,37 @@ public sealed class Chunk : IChunk
     internal bool EntitiesUnloaded { get; set; }
 
     /// <summary>
+    /// How many entities the chunk's entity file listed when the region last wrote it, or -1 until it did. A chunk
+    /// whose file lists none needs no entity save while it has no entities.
+    /// </summary>
+    internal int SavedEntityCount { get; set; } = -1;
+
+    /// <summary>
     /// The structure starts saved in the chunk (vanilla's <c>structures.starts</c>), as loaded, or <c>null</c>.
     /// </summary>
-    internal NbtCompound? StructureStarts { get; set; }
+    internal NbtCompound? StructureStarts
+    {
+        get;
+        set
+        {
+            field = value;
+            this.MarkUnsaved();
+        }
+    }
 
     /// <summary>
     /// The structure references saved in the chunk (vanilla's <c>structures.References</c>), as loaded, or <c>null</c>.
     /// Obsidian finds references from the starts around the chunk, but vanilla reads them from the save.
     /// </summary>
-    internal NbtCompound? StructureReferences { get; set; }
+    internal NbtCompound? StructureReferences
+    {
+        get;
+        set
+        {
+            field = value;
+            this.MarkUnsaved();
+        }
+    }
 
     /// <summary>
     /// Top-level tags of the saved chunk that Obsidian doesn't model, like vanilla's <c>blending_data</c>. They're
@@ -210,8 +402,11 @@ public sealed class Chunk : IChunk
 
     public IBlockEntity GetBlockEntity(int x, int y, int z) => this.BlockEntities.GetValueOrDefault(this.BlockEntityKey(x, y, z));
 
-    public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData) =>
+    public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData)
+    {
         this.BlockEntities[this.BlockEntityKey(x, y, z)] = tileEntityData;
+        this.MarkUnsaved();
+    }
 
     /// <summary>
     /// Stores <paramref name="blockEntity"/> at the position unless a block entity is there already, in one step, so
@@ -220,10 +415,20 @@ public sealed class Chunk : IChunk
     /// <returns>
     /// The block entity stored at the position: the existing one, or else <paramref name="blockEntity"/>.
     /// </returns>
-    internal IBlockEntity GetOrAddBlockEntity(int x, int y, int z, IBlockEntity blockEntity) =>
-        this.BlockEntities.GetOrAdd(this.BlockEntityKey(x, y, z), blockEntity);
+    internal IBlockEntity GetOrAddBlockEntity(int x, int y, int z, IBlockEntity blockEntity)
+    {
+        var stored = this.BlockEntities.GetOrAdd(this.BlockEntityKey(x, y, z), blockEntity);
+        if (ReferenceEquals(stored, blockEntity))
+            this.MarkUnsaved();
 
-    public void RemoveBlockEntity(int x, int y, int z) => this.BlockEntities.TryRemove(this.BlockEntityKey(x, y, z), out _);
+        return stored;
+    }
+
+    public void RemoveBlockEntity(int x, int y, int z)
+    {
+        if (this.BlockEntities.TryRemove(this.BlockEntityKey(x, y, z), out _))
+            this.MarkUnsaved();
+    }
 
     /// <summary>
     /// Stores <paramref name="replacement"/> in place of <paramref name="current"/>, at its position, unless another
@@ -235,7 +440,11 @@ public sealed class Chunk : IChunk
         var position = current.BlockPosition;
         var key = this.BlockEntityKey(position.X, position.Y, position.Z);
 
-        return this.BlockEntities.TryUpdate(key, replacement, current);
+        if (!this.BlockEntities.TryUpdate(key, replacement, current))
+            return false;
+
+        this.MarkUnsaved();
+        return true;
     }
 
     public IReadOnlyCollection<IBlockEntity> GetBlockEntities() => [.. this.BlockEntities.Values];
@@ -322,6 +531,8 @@ public sealed class Chunk : IChunk
 
     public void CalculateHeightmap()
     {
+        this.MarkUnsaved();
+
         Heightmap target = Heightmaps[HeightmapType.MotionBlocking];
         for (int x = 0; x < width; x++)
         {
@@ -452,6 +663,7 @@ public sealed class Chunk : IChunk
     internal void SetChunkStatusCore(ChunkGenStage status)
     {
         this.ChunkStatus = status;
+        this.MarkUnsaved();
 
         if (this.ChunkStatus == ChunkGenStage.full)
         {
@@ -478,6 +690,7 @@ public sealed class Chunk : IChunk
 
         this.PostProcessing.Clear();
         this.ChunkStatus = ChunkGenStage.structure_references;
+        this.MarkUnsaved();
     }
 
     private int SectionIndex(int y) => (y - this.MinY) >> 4;
