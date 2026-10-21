@@ -66,7 +66,7 @@ public sealed partial class EyeOfEnder : Entity
 
         // Vanilla searches from the player's block, like /locate.
         var origin = (Vector)player.Position.Floor();
-        var found = await Task.Run(() => generator.LocateStructure(
+        var found = await MojangGenerator.RunSearchAsync(() => generator.LocateStructure(
             locator => locator.Locate(LocatedTag, origin, LocateCommandModule.SearchRadius, false)));
 
         if (found is not LocatedStructure structure)

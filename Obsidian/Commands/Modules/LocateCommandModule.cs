@@ -32,7 +32,7 @@ public sealed class LocateCommandModule : CommandModuleBase
         var generator = (level as AbstractLevel)?.Generator as MojangGenerator;
 
         // Searching computes structure starts, which takes a while for distant ones.
-        var message = await Task.Run(() => LocateStructure(
+        var message = await MojangGenerator.RunSearchAsync(() => LocateStructure(
             structure.Trim(),
             origin,
             PluginStructures.Current.Structures,

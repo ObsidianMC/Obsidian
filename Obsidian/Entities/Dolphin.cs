@@ -67,7 +67,7 @@ public sealed partial class Dolphin : AgeableMob
         {
             GotFish = true;
             TreasurePosition = Level is Obsidian.WorldData.AbstractLevel level && level.Generator is Obsidian.WorldData.Generators.MojangGenerator generator
-                ? generator.FindDolphinTreasure((Vector)Position.Floor()) : null;
+                ? await generator.FindDolphinTreasureAsync((Vector)Position.Floor()) : null;
             SendEntityEvent(38);
         }
         SynchronizeMetadata();
