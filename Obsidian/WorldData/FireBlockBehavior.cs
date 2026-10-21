@@ -38,6 +38,10 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
         // Vanilla schedules the next tick before anything else, 30 + random(10) ticks on.
         level.ScheduleTick(position, block, 30 + random.NextInt(10));
 
+        // Vanilla's FireBlock.tick runs its body only where ServerLevel.j (the fire spread radius) allows it.
+        if (level.Level is AbstractLevel concrete && !concrete.CanSpreadFireAround(position))
+            return;
+
         if (!CanSurvive(level, position))
         {
             level.RemoveBlock(position);

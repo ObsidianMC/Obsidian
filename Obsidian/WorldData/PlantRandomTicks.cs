@@ -1,3 +1,4 @@
+using Obsidian.API.World.Features;
 using Obsidian.API.Blocks;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Registries;
@@ -261,7 +262,7 @@ internal static partial class RandomTickBehaviors
                 var height = 1;
                 for (var i = 0; i < 4; i++)
                 {
-                    var stalk = Growth.BlockAt(level, position + new Vector(0, height + 1, 0));
+                    var stalk = Growth.BlockAt(level, position + new Vector(0, -(height + 1), 0));
                     if (stalk.RegistryId != BlockIds.ChorusPlant)
                     {
                         endStoneAtStalkTop = stalk.Is(BlockIds.EndStone);
@@ -377,11 +378,13 @@ internal static partial class RandomTickBehaviors
             return origin + new Vector(x, y, z);
         }
 
-        // Vanilla MushroomBlock.canSurvive: mycelium below, or a solid render block below with a raw brightness under 13.
+        // Vanilla MushroomBlock.canSurvive: a mushroom grow block below, or a solid render block below with a raw brightness under 13.
+        private static readonly BlockSet MushroomGrowBlock = new("#minecraft:mushroom_grow_block");
+
         private static bool CanSurvive(AbstractLevel level, Vector position, IBlock block)
         {
             var below = Growth.BlockAt(level, position + Vector.Down);
-            if (below.Is(BlockIds.Mycelium))
+            if (MushroomGrowBlock.Contains(below))
                 return true;
 
             return Growth.RawBrightness(level, position, ambientDarkness: 0) < 13 && below.IsSolidRender();

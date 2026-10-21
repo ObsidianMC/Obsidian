@@ -602,7 +602,7 @@ public partial class UseItemOnPacket
         });
     }
 
-    private static bool ShouldDamageTool(ItemStack item)
+    internal static bool ShouldDamageTool(ItemStack item)
     {
         var enchantments = item.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
             DataComponentType.Enchantments)?.Value;

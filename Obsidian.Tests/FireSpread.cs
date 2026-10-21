@@ -75,6 +75,7 @@ public sealed class FireSpread
         await using var context = TestServerFactory.CreateServer($"fire-burnout-{Guid.NewGuid():N}");
         var world = context.World;
         AddChunks(world);
+        world.LevelData.GameRules["fire_spread_radius_around_player"] = "-1";
 
         Held(world).SetBlock(Base, BlocksRegistry.Fire.WithProperty("age", "4"));
         TickBehaviors.FireBlock.Tick(world.BlockUpdates, Base, Held(world).GetBlock(Base), new LegacyRandomSource(1));
@@ -103,6 +104,7 @@ public sealed class FireSpread
         await using var context = TestServerFactory.CreateServer($"fire-log-{Guid.NewGuid():N}");
         var world = context.World;
         AddChunks(world);
+        world.LevelData.GameRules["fire_spread_radius_around_player"] = "-1";
 
         var log = Base + Vector.East;
         Held(world).SetBlock(log, BlocksRegistry.GetDefault(BlockIds.OakLog));

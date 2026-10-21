@@ -118,8 +118,13 @@ internal static partial class ItemUseOnBehaviors
             if (stack.Unbreakable || stack.Holder.MaxDamage <= 0)
                 return;
 
+            // Unbreaking can spare the use, as it does for flint and steel.
+            if (!Net.Packets.Play.Serverbound.UseItemOnPacket.ShouldDamageTool(stack))
+                return;
+
+            var maxDamage = stack.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? stack.Holder.MaxDamage;
             var damage = stack.Damage + 1;
-            if (damage >= stack.Holder.MaxDamage)
+            if (damage >= maxDamage)
                 player.Inventory.RemoveItem(slot, stack.Count);
             else
                 stack[DataComponentType.Damage] = ComponentBuilder.Damage with { Value = damage };

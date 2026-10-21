@@ -135,6 +135,8 @@ public abstract partial class AbstractLevel
 
     // The positions of the players chunks tick around, read once a tick: those that aren't spectators, as for
     // IsMobTicking.
+    internal bool CanSpreadFireAround(Vector position) => this.CanSpreadFireAround(position, this.SimulatingPlayerPositions());
+
     private List<VectorD> SimulatingPlayerPositions()
     {
         var positions = new List<VectorD>();
