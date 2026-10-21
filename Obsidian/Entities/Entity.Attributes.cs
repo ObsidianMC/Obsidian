@@ -348,12 +348,15 @@ public partial class Entity
         return VanillaAttributes.Sanitize(name, result);
     }
 
+    // Older names already renamed, since entities ask for theirs (minecraft:generic.movement_speed, say) every tick.
+    private static readonly ConcurrentDictionary<string, string> renamedAttributes = new(StringComparer.Ordinal);
+
     // The 1.21 name of an attribute saved or asked for by its older name.
     private static string VanillaName(string name)
     {
         const string genericPrefix = "minecraft:generic.";
         if (name.StartsWith(genericPrefix, StringComparison.Ordinal))
-            return "minecraft:" + name[genericPrefix.Length..];
+            return renamedAttributes.GetOrAdd(name, static old => "minecraft:" + old[genericPrefix.Length..]);
 
         return name == "minecraft:horse.jump_strength" ? "minecraft:jump_strength" : name;
     }
