@@ -20,9 +20,8 @@ public abstract partial class AbstractLevel
     private readonly Dictionary<Vector, int> activeSculk = [];
     private readonly Dictionary<Guid, WardenWarning> wardenWarnings = [];
     private long gameEventTick;
-    private readonly ConcurrentDictionary<Guid, double> stepDistances = new();
 
-    internal async ValueTask EmitMovementGameEventsAsync(IEntity entity, VectorD oldPosition, MovementFlags oldFlags)
+    internal async ValueTask EmitMovementGameEventsAsync(Entity entity, VectorD oldPosition, MovementFlags oldFlags)
     {
         var grounded = entity.MovementFlags.HasFlag(MovementFlags.OnGround);
         if (grounded && !oldFlags.HasFlag(MovementFlags.OnGround))
@@ -35,9 +34,9 @@ public abstract partial class AbstractLevel
         if (distance <= 0.00001 || distance > 8 || entity is Warden or Allay) return;
         var water = GameEventBlock((Vector)entity.Position.Floor())?.RegistryId == BlockIds.Water;
         if (!grounded && !water) return;
-        var total = stepDistances.AddOrUpdate(entity.Uuid, distance, (_, accumulated) => accumulated + distance);
+        var total = entity.GameEventStepDistance + distance;
+        entity.GameEventStepDistance = total < 0.6 ? total : total % 0.6;
         if (total < 0.6) return;
-        stepDistances[entity.Uuid] = total % 0.6;
         EmitGameEvent(water ? MobGameEvent.Swim : MobGameEvent.Step, entity.Position, entity);
         if (!water) await TrampleTurtleEggAsync(entity);
     }
@@ -119,10 +118,11 @@ public abstract partial class AbstractLevel
             if (!ValidVibration(vibration)) continue;
             foreach (var listener in GetNonPlayerEntitiesInRange(vibration.Position, 16))
             {
+                // Only wardens and allays listen; the type check comes first since it's the cheapest.
+                if (listener is not Warden and not Allay) continue;
                 if (!IsMobTicking(listener.Position)) continue;
                 if (listener is Warden warden && !warden.AcceptsVibration(vibration)) continue;
                 if (listener is Allay allay && !allay.AcceptsVibration(vibration)) continue;
-                if (listener is not Warden and not Allay) continue;
                 var receiver = listener.Position + new VectorD(0, listener.Dimension.Height * 0.85, 0);
                 var distance = (receiver - vibration.Position).Magnitude;
                 if (distance > 16 || WoolOccludes(vibration.Position, receiver)) continue;
@@ -159,9 +159,11 @@ public abstract partial class AbstractLevel
         for (var cx = (origin.X - radius) >> 4; cx <= (origin.X + radius) >> 4; cx++)
         for (var cz = (origin.Z - radius) >> 4; cz <= (origin.Z + radius) >> 4; cz++)
         {
-            if (GetLoadedChunk(cx, cz) is not { } chunk) continue;
-            foreach (var entity in chunk.GetBlockEntities().OfType<DataBlockEntity>())
-                if ((id == null ? entity.Id is "minecraft:sculk_sensor" or "minecraft:calibrated_sculk_sensor" or "minecraft:sculk_shrieker" : entity.Id == id) &&
+            if (GetLoadedChunk(cx, cz) is not Chunk chunk) continue;
+            // Read in place: each step any mob takes asks for the sculk near it.
+            foreach (var (_, blockEntity) in chunk.BlockEntities)
+                if (blockEntity is DataBlockEntity entity &&
+                    (id == null ? entity.Id is "minecraft:sculk_sensor" or "minecraft:calibrated_sculk_sensor" or "minecraft:sculk_shrieker" : entity.Id == id) &&
                     (entity.BlockPosition - origin).MagnitudeSquared() <= radius * radius && IsMobTicking((VectorD)entity.BlockPosition))
                     yield return entity.BlockPosition;
         }

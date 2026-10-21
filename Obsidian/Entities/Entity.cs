@@ -31,6 +31,9 @@ public partial class Entity : IEquatable<Entity>, IEntity
     public VectorD Motion { get; set; }
     #endregion Location properties
 
+    // The distance walked or swum since the last step or swim game event (see AbstractLevel.EmitMovementGameEventsAsync).
+    internal double GameEventStepDistance { get; set; }
+
     public int EntityId { get; internal set; }
 
     public Guid Uuid { get; set; } = Guid.NewGuid();

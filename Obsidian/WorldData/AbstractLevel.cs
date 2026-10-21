@@ -190,7 +190,7 @@ public abstract partial class AbstractLevel : ILevel
             return true;
 
         var simulationDistance = Configuration.SimulationDistance;
-        foreach (var player in Players.Values)
+        foreach (var (_, player) in Players)
         {
             if (player.GameMode == GameMode.Spectator) continue;
             var playerChunk = Region.ChunkOf(player.Position);
@@ -425,12 +425,20 @@ public abstract partial class AbstractLevel : ILevel
             player.SendPacket(packet);
     }
 
-    public IEnumerable<IPlayer> PlayersInRange(Vector location)
+    public IEnumerable<IPlayer> PlayersInRange(Vector location) => this.PlayersWithChunk(location);
+
+    // The players that have the chunk at the location loaded. It reads the players as it goes rather than copying them
+    // first: a copy of a ConcurrentDictionary's values takes all its locks, and this runs for every block change sent.
+    private IEnumerable<IPlayer> PlayersWithChunk(Vector location)
     {
         var (x, z) = location.ToChunkCoord();
         var packedXZ = NumericsHelper.IntsToLong(x, z);
 
-        return this.Players.Values.Where(player => player.LoadedChunks.Contains(packedXZ));
+        foreach (var (_, player) in this.Players)
+        {
+            if (player.LoadedChunks.Contains(packedXZ))
+                yield return player;
+        }
     }
 
     public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) =>
@@ -518,10 +526,12 @@ public abstract partial class AbstractLevel : ILevel
             yield break;
         }
 
+        // The regions' entities are read as they go: copying a ConcurrentDictionary's values takes all its locks, and
+        // this runs several times per entity per tick.
         var distanceSquared = (double)distance * distance;
         foreach (var region in GetRegions())
         {
-            foreach (var entity in region.Entities.Values)
+            foreach (var (_, entity) in region.Entities)
             {
                 if (entity.Type == EntityType.Player)
                     continue;
@@ -537,7 +547,7 @@ public abstract partial class AbstractLevel : ILevel
             // Owner lookups use float.MaxValue. Scan loaded regions before converting such ranges to chunk coordinates.
             if (distance >= Region.CubicRegionSize * 16)
             {
-                foreach (var region in Regions.Values)
+                foreach (var (_, region) in Regions)
                     yield return region;
                 yield break;
             }
@@ -572,7 +582,7 @@ public abstract partial class AbstractLevel : ILevel
 
         if (distance == 0f)
         {
-            foreach (var player in Players.Values)
+            foreach (var (_, player) in Players)
             {
                 if (player.Position == location)
                 {
@@ -584,7 +594,7 @@ public abstract partial class AbstractLevel : ILevel
 
         distance *= distance;
 
-        foreach (var player in Players.Values)
+        foreach (var (_, player) in Players)
         {
             var difference = player.Position - location;
             if (difference.X * difference.X + difference.Z * difference.Z <= distance)
@@ -594,13 +604,7 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
-    public IEnumerable<IPlayer> GetPlayersInChunkRange(Vector worldPosition)
-    {
-        var (x, z) = worldPosition.ToChunkCoord();
-
-        var packedXZ = NumericsHelper.IntsToLong(x, z);
-        return this.Players.Values.Where(player => player.LoadedChunks.Contains(packedXZ));
-    }
+    public IEnumerable<IPlayer> GetPlayersInChunkRange(Vector worldPosition) => this.PlayersWithChunk(worldPosition);
 
     public bool TryAddPlayer(IPlayer player) => Players.TryAdd(player.Uuid, player);
 
@@ -683,16 +687,13 @@ public abstract partial class AbstractLevel : ILevel
         this.TickRandomBlocks();
         timings.Lap("random ticks");
 
-        // Snapshot once so crossing a region boundary cannot tick an entity twice.
-        var entities = Regions.Values.SelectMany(region => region.Entities.Values)
-            .DistinctBy(entity => entity.EntityId).OrderBy(entity => entity.EntityId).ToArray();
-        foreach (var entity in entities)
+        foreach (var entity in this.SnapshotEntities())
         {
             if (entity is Mob { HasAi: true } or ItemEntity or ExperienceOrb && !IsMobTicking(entity.Position))
                 continue;
             if (GetRegionForLocation(entity.Position)?.Entities.ContainsKey(entity.EntityId) == true)
             {
-                TickStage = $"entity {entity.EntityId} ({entity.GetType().Name})";
+                this.tickingEntity = entity;
                 await entity.TickAsync();
                 await this.TouchPluginBlocksAsync(entity);
                 if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
@@ -784,7 +785,46 @@ public abstract partial class AbstractLevel : ILevel
     // How long a tick spends reconciling light along newly loaded chunks' borders; the rest waits for later ticks.
     private static readonly TimeSpan LightBorderBudget = TimeSpan.FromMilliseconds(10);
 
-    internal string TickStage { get; private set; } = "not started";
+    // The stage the level's tick is at, for the stuck tick warning. The entity being ticked is kept rather than
+    // described up front, since this changes for every entity on every tick and is rarely read.
+    internal string TickStage
+    {
+        get => this.tickingEntity is IEntity entity ? $"entity {entity.EntityId} ({entity.GetType().Name})" : this.tickStage;
+        private set
+        {
+            this.tickStage = value;
+            this.tickingEntity = null;
+        }
+    }
+
+    private string tickStage = "not started";
+    private IEntity? tickingEntity;
+
+    // Reused by every tick's entity snapshot; ticks of a level never overlap (see simulationGate).
+    private readonly List<IEntity> entitySnapshot = [];
+    private readonly HashSet<int> entitySnapshotIds = [];
+
+    /// <summary>
+    /// The level's entities in entity id order, each once, even while crossing a region boundary. Taken once per tick,
+    /// so entities spawned during the tick wait for the next one. Valid until the next call.
+    /// </summary>
+    private List<IEntity> SnapshotEntities()
+    {
+        this.entitySnapshot.Clear();
+        this.entitySnapshotIds.Clear();
+        foreach (var (_, region) in this.Regions)
+        {
+            foreach (var (_, entity) in region.Entities)
+            {
+                if (this.entitySnapshotIds.Add(entity.EntityId))
+                    this.entitySnapshot.Add(entity);
+            }
+        }
+
+        this.entitySnapshot.Sort(static (left, right) => left.EntityId.CompareTo(right.EntityId));
+        return this.entitySnapshot;
+    }
+
     internal bool SavingEntities { get; private set; }
 
     /// <summary>
