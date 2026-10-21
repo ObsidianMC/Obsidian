@@ -16,6 +16,10 @@ internal static class PortalTypesRegistry
     private static readonly Dictionary<string, Binding> bindings = [];
     private static long registrations;
 
+    // The registry ids of the bound portal blocks, replaced as a whole under the gate so entities' portal checks can
+    // rule out the blocks around them without taking it.
+    private static HashSet<int> portalBlockIds = [];
+
     internal static PortalType Nether { get; } = Register(null, "minecraft:nether", new PortalProperties
     {
         IsFrame = block => block.RegistryId == BlockIds.Obsidian,
@@ -71,6 +75,7 @@ internal static class PortalTypesRegistry
 
             type.Generation++;
             bindings[identifier] = new Binding(type, properties, owner, registrations++);
+            UpdatePortalBlockIds();
             return type;
         }
     }
@@ -142,6 +147,18 @@ internal static class PortalTypesRegistry
                 bindings[key].Type.Generation++;
                 bindings.Remove(key);
             }
+
+            UpdatePortalBlockIds();
         }
     }
+
+    /// <summary>
+    /// Whether a block of <paramref name="id"/> may be a portal: some bound type uses it. Lock-free, for checks run on
+    /// every block an entity touches; <see cref="ForBlock"/> finds the type.
+    /// </summary>
+    internal static bool MayBePortalBlock(int id) => Volatile.Read(ref portalBlockIds).Contains(id);
+
+    // Called under the gate.
+    private static void UpdatePortalBlockIds() =>
+        Volatile.Write(ref portalBlockIds, bindings.Values.Select(binding => binding.Properties.PortalBlock.RegistryId).ToHashSet());
 }
