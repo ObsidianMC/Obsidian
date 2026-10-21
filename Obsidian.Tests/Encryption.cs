@@ -2,6 +2,7 @@
 using Obsidian.Net;
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -9,6 +10,45 @@ namespace Obsidian.Tests;
 public class Encryption
 {
     const int testDataLength = 1024;
+
+    [Fact]
+    public void CipherContinuesTheStreamAcrossCalls()
+    {
+        var key = new byte[16];
+        Random.Shared.NextBytes(key);
+        var plaintext = new byte[1200];
+        Random.Shared.NextBytes(plaintext);
+
+        // The protocol's CFB8 one byte at a time: each byte is XORed with the first byte of the encrypted register.
+        using var aes = Aes.Create();
+        aes.Key = key;
+        var register = (byte[])key.Clone();
+        var expected = new byte[plaintext.Length];
+        for (var i = 0; i < plaintext.Length; i++)
+        {
+            expected[i] = (byte)(plaintext[i] ^ aes.EncryptEcb(register, PaddingMode.None)[0]);
+            register.AsSpan(1).CopyTo(register);
+            register[^1] = expected[i];
+        }
+
+        // Splits shorter, equal to and longer than a block, so every way the register carries over is crossed.
+        int[] splits = [1, 15, 16, 17, 3, 500, 648];
+        using var encryptor = new AesCfbBlockCipher(key);
+        using var decryptor = new AesCfbBlockCipher(key);
+        var encrypted = (byte[])plaintext.Clone();
+        var decrypted = new List<byte>();
+        var start = 0;
+        foreach (var length in splits)
+        {
+            encryptor.EncryptInPlace(encrypted.AsSpan(start, length));
+            decrypted.AddRange(decryptor.Decrypt(encrypted, start, length));
+            start += length;
+        }
+
+        Assert.Equal(plaintext.Length, start);
+        Assert.Equal(expected, encrypted);
+        Assert.Equal(plaintext, decrypted);
+    }
 
     [Fact]
     public void FramerEncryptsTheStreamFromItsEncryptionFrame()
