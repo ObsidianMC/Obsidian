@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Threading;
 
 namespace Obsidian.Utilities;
@@ -8,14 +9,15 @@ namespace Obsidian.Utilities;
 /// the levels' ticks, packet handlers and plugins run on: a busy pool doesn't delay it, and it doesn't hold pool threads.
 /// </summary>
 /// <remarks>
-/// Work posted here must not block waiting for other work on the same threads.
+/// Work posted here must not block waiting for other work on the same threads, and should handle and log its own
+/// failures.
 /// </remarks>
 internal sealed class WorkerThreads
 {
     /// <summary>
     /// Where connections' output is written, like vanilla's network threads: compressing, encrypting and sending happen
     /// here rather than on whoever sent the packet, so a tick, the chunk loop or a broadcast only serializes it. Mostly
-    /// compression, so a few threads keep up with many players. Work here must not throw or block.
+    /// compression, so a few threads keep up with many players. Work here must not block.
     /// </summary>
     public static WorkerThreads Network { get; } = new("Network", Math.Clamp(Environment.ProcessorCount / 2, 1, 4));
 
@@ -40,7 +42,8 @@ internal sealed class WorkerThreads
     }
 
     /// <summary>
-    /// Runs <paramref name="work"/> on one of the threads. It must not throw.
+    /// Runs <paramref name="work"/> on one of the threads. It should handle its own failures (see <see cref="RunAsync"/>
+    /// for work whose caller does).
     /// </summary>
     public void Post(Action work) => this.queue.Add(work);
 
@@ -70,6 +73,17 @@ internal sealed class WorkerThreads
     private void Work()
     {
         foreach (var work in this.queue.GetConsumingEnumerable())
-            work();
+        {
+            try
+            {
+                work();
+            }
+            catch (Exception exception)
+            {
+                // A last resort, for work that let a failure escape: it mustn't end a thread the other work shares,
+                // which would crash the server.
+                Trace.TraceError($"{Thread.CurrentThread.Name}: work failed: {exception}");
+            }
+        }
     }
 }

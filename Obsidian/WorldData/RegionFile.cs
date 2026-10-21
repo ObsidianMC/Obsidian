@@ -463,9 +463,16 @@ public sealed class RegionFile : IAsyncDisposable
                 if (this.disposed)
                     return;
 
-                await this.FlushUnderLockAsync();
-                await this.regionFileStream.DisposeAsync();
-                this.disposed = true;
+                // A failed final flush still closes the file, so it doesn't stay locked, and is reported.
+                try
+                {
+                    await this.FlushUnderLockAsync();
+                }
+                finally
+                {
+                    await this.regionFileStream.DisposeAsync();
+                    this.disposed = true;
+                }
             }
             finally
             {

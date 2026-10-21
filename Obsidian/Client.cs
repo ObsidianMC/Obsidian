@@ -1087,6 +1087,9 @@ public sealed partial class Client : IClient
         [LoggerMessage(Level = LogLevel.Error, Message = "Writing the client's output failed; disconnecting it")]
         public static partial void OutputFailed(ILogger logger, Exception exception);
 
+        [LoggerMessage(Level = LogLevel.Error, Message = "Disconnecting the client failed")]
+        public static partial void DisconnectFailed(ILogger logger, Exception exception);
+
         [LoggerMessage(Level = LogLevel.Debug, Message = "Disconnecting client after socket error {SocketError}")]
         public static partial void SocketFailed(ILogger logger, SocketError socketError);
     }

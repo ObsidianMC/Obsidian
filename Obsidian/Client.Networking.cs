@@ -166,7 +166,17 @@ public partial class Client
                 this.flushScheduled = false;
 
             Log.OutputFailed(this.Logger, exception);
-            this.Disconnect();
+
+            // Disconnecting raises Disconnected, whose handlers may fail too; that's logged rather than left to the
+            // network thread.
+            try
+            {
+                this.Disconnect();
+            }
+            catch (Exception disconnectFailure)
+            {
+                Log.DisconnectFailed(this.Logger, disconnectFailure);
+            }
         }
     }
 
