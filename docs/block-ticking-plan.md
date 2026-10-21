@@ -101,7 +101,8 @@ with `obsidian-source-generation`; human check performed or explicitly listed as
   Also done: `ChorusFlowerBlock` and `MushroomBlock`. Open: growing plant head (kelp, cave vines, twisting and weeping
   vines; needs per-subclass direction, chance and `canGrowInto`, plus the head-to-body neighbour update) and `VineBlock`.
   Known gaps: neighbour updates that vanilla sends after cactus and bamboo growth, and growth sounds (chorus, mushroom).
-- **M3. Surface change:** grass and mycelium spread and decay, farmland moisture and drying, dirt to grass. Needs the
+- **M3. Surface change:** grass and mycelium spread and decay, farmland moisture and drying, dirt to grass.
+  **Status:** grass and mycelium spread and decay ported (`SpreadingSnowyDirtBlock` counterpart in `PlantRandomTicks.cs`). Spread is untested beyond the owner association and the decay test; neighbour updates use `UpdateNeighbors`. Farmland and dirt-to-grass remain open. Needs the
   nearby-block scan that vanilla does in each owner, not a shared helper with a block list.
 - **M4. Weather and time blocks:** ice and snow melt (`IceBlock`, `SnowLayerBlock`), copper oxidation
   (`ChangeOverTimeBlock`), and leaves decay (`LeavesBlock`). Needs the light and neighbor helpers from earlier milestones.

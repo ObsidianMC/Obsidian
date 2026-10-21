@@ -2,6 +2,7 @@ using Obsidian.API.Blocks;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Registries;
 using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Fluids;
 
 namespace Obsidian.WorldData;
 
@@ -29,6 +30,8 @@ internal static partial class RandomTickBehaviors
     internal static IRandomTickBehavior ChorusFlowerBlock { get; } = new ChorusFlower();
 
     internal static IRandomTickBehavior MushroomBlock { get; } = new Mushroom();
+
+    internal static IRandomTickBehavior SpreadingSnowyDirtBlock { get; } = new SpreadingSnowyDirt();
 
     // NetherWartBlock.randomTick: below age 3, a draw of nextInt(10) that comes up 0 adds an age.
     private sealed class NetherWart : IRandomTickBehavior
@@ -383,5 +386,60 @@ internal static partial class RandomTickBehaviors
 
             return Growth.RawBrightness(level, position, ambientDarkness: 0) < 13 && below.IsSolidRender();
         }
+    }
+
+    // SpreadingSnowyDirtBlock.randomTick, shared by grass and mycelium: a block that cannot stay grass turns to dirt;
+    // otherwise, with at least 9 raw light above, four random spots within reach that are dirt and can take the grass
+    // become this block (snowy when snow sits above them). Changes update neighbours as vanilla's setBlockAndUpdate does.
+    private sealed class SpreadingSnowyDirt : IRandomTickBehavior
+    {
+        public void RandomTick(AbstractLevel level, Vector position, IBlock block, IRandomSource random)
+        {
+            if (!CanBeGrass(level, position, block))
+            {
+                Replace(level, position, BlocksRegistry.Dirt);
+                return;
+            }
+
+            if (Growth.RawBrightness(level, position + Vector.Up, level.SkyDarken()) < 9)
+                return;
+
+            var spread = BlocksRegistry.GetDefault(block.RegistryId);
+            for (var attempt = 0; attempt < 4; attempt++)
+            {
+                var target = position + new Vector(random.NextInt(3) - 1, random.NextInt(5) - 3, random.NextInt(3) - 1);
+                var targetBlock = Growth.BlockAt(level, target);
+                if (targetBlock.Is(BlockIds.Dirt) && CanPropagate(level, target, spread))
+                {
+                    var snowy = Growth.BlockAt(level, target + Vector.Up).Is(BlockIds.Snow);
+                    Replace(level, target, spread.WithProperty("snowy", snowy));
+                }
+            }
+        }
+
+        private static void Replace(AbstractLevel level, Vector position, IBlock block)
+        {
+            Growth.SetAndShow(level, position, block);
+            level.UpdateNeighbors(position, block);
+        }
+
+        // Vanilla SpreadingSnowyDirtBlock.canBeGrass: a snow layer of one above keeps it; a full water source above
+        // stops it; otherwise the light that gets through the block above must be under 15.
+        private static bool CanBeGrass(AbstractLevel level, Vector position, IBlock block)
+        {
+            var above = Growth.BlockAt(level, position + Vector.Up);
+            if (above.Is(BlockIds.Snow) && above.GetProperty("layers") == "1")
+                return true;
+
+            if (above.FluidAmount() == 8)
+                return false;
+
+            var lightBlock = BlockLight.LightShapesOcclude(block, above, BlockFace.Up) ? 16 : above.LightBlock();
+            return lightBlock < 15;
+        }
+
+        // Vanilla canPropagate: the spot can be grass, and no water lies above it.
+        private static bool CanPropagate(AbstractLevel level, Vector position, IBlock spread) =>
+            CanBeGrass(level, position, spread) && !FluidState.Of(Growth.BlockAt(level, position + Vector.Up)).IsWater;
     }
 }

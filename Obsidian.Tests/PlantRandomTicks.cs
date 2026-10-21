@@ -33,6 +33,8 @@ public sealed class PlantRandomTicks
         Assert.Same(RandomTickBehaviors.BambooStalkBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.Bamboo));
         Assert.Same(RandomTickBehaviors.BambooSaplingBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.BambooSapling));
         Assert.Same(RandomTickBehaviors.ChorusFlowerBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.ChorusFlower));
+        Assert.Same(RandomTickBehaviors.SpreadingSnowyDirtBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.GrassBlock));
+        Assert.Same(RandomTickBehaviors.SpreadingSnowyDirtBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.Mycelium));
         Assert.Null(BlocksRegistry.GetRandomTickBehavior(BlockIds.Dirt));
     }
 
@@ -83,6 +85,22 @@ public sealed class PlantRandomTicks
         Assert.Equal(BlockIds.ChorusPlant, Held(world).GetBlock(Base).RegistryId);
         Assert.Equal(BlockIds.ChorusFlower, Held(world).GetBlock(Base + Vector.Up).RegistryId);
         Assert.Equal("0", Held(world).GetBlock(Base + Vector.Up).GetProperty("age"));
+        await world.DoWorldTickAsync();
+    }
+
+    [Fact(DisplayName = "Grass under an opaque block decays to dirt on a random tick", Timeout = TestServerFactory.TestTimeout)]
+    public async Task GrassDecaysUnderOpaqueBlock()
+    {
+        await using var context = TestServerFactory.CreateServer($"plant-grass-{Guid.NewGuid():N}");
+        var world = context.World;
+        AddChunks(world);
+
+        var grass = Base + Vector.Down;
+        Held(world).SetBlock(Base, BlocksRegistry.GetDefault(BlockIds.Stone));
+        Assert.Equal(BlockIds.GrassBlock, Held(world).GetBlock(grass).RegistryId);
+        RandomTickBehaviors.SpreadingSnowyDirtBlock.RandomTick(world, grass, Held(world).GetBlock(grass), new LegacyRandomSource(1));
+
+        Assert.Equal(BlockIds.Dirt, Held(world).GetBlock(grass).RegistryId);
         await world.DoWorldTickAsync();
     }
 
