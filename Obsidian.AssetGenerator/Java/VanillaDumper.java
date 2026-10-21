@@ -115,6 +115,7 @@ public final class VanillaDumper {
         dumper.dumpBlockPhysics();
         dumper.dumpBlockPlacementClasses();
         dumper.dumpBlockOverrideClasses();
+        dumper.dumpSaplingGrowers();
         dumper.dumpItemUseOnClasses();
         dumper.dumpHoeTillables();
         dumper.dumpItemPlacedBlocks();
@@ -604,6 +605,43 @@ public final class VanillaDumper {
         dumpBlockOverrideClasses("block_update_shape_classes.json", "updateShape", BLOCK_STATE,
             "net.minecraft.world.level.LevelReader", "net.minecraft.world.level.ScheduledTickAccess", BLOCK_POS,
             "net.minecraft.core.Direction", BLOCK_POS, BLOCK_STATE, random);
+    }
+
+    /**
+     * {@code sapling_growers.json}: the {@code TreeGrower} each sapling block holds in its {@code treeGrower} field
+     * (declared by {@code SaplingBlock}, which the mangrove propagule extends): the configured features it names, by
+     * identifier, and its secondary chance. Which class owns each sapling's random tick is in
+     * {@code block_random_tick_classes.json}.
+     */
+    private void dumpSaplingGrowers() throws IOException {
+        var sapling = mojang.type("net.minecraft.world.level.block.SaplingBlock");
+        var growerField = mojang.field("net.minecraft.world.level.block.SaplingBlock", "treeGrower");
+        var grower = "net.minecraft.world.level.block.grower.TreeGrower";
+        var identifier = mojang.method("net.minecraft.resources.ResourceKey", "identifier");
+        var chanceField = mojang.field(grower, "secondaryChance");
+        var features = new TreeMap<String, Field>();
+        for (var feature : new String[] { "megaTree", "secondaryMegaTree", "tree", "secondaryTree", "flowers", "secondaryFlowers" })
+            features.put(feature, mojang.field(grower, feature));
+
+        var blockRegistry = mojang.get(REGISTRIES, "BLOCK");
+        var growers = new TreeMap<String, Map<String, Object>>();
+
+        for (var block : (Iterable<?>) blockRegistry) {
+            if (!sapling.isInstance(block))
+                continue;
+
+            var holder = Mojang.get(growerField, block);
+            var row = new TreeMap<String, Object>();
+            for (var feature : features.entrySet()) {
+                if (Mojang.get(feature.getValue(), holder) instanceof Optional<?> value && value.isPresent())
+                    row.put(feature.getKey(), Mojang.call(identifier, value.get()).toString());
+            }
+
+            row.put("secondaryChance", Mojang.get(chanceField, holder));
+            growers.put(key(blockRegistry, block), row);
+        }
+
+        Json.write(output.resolve("sapling_growers.json"), growers, false);
     }
 
     private void dumpBlockOverrideClasses(String file, String name, String... parameterTypes) throws IOException {

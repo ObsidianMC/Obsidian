@@ -6,7 +6,6 @@ using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Registries;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Mojang;
-using System.Collections.Frozen;
 
 namespace Obsidian.WorldData;
 
@@ -46,51 +45,6 @@ internal static partial class Growth
     }
 
     private static readonly TreeGrower azalea = new() { Tree = "minecraft:azalea_tree" };
-
-    // Vanilla's TreeGrower constants: which features each sapling grows into, and its secondary chance. They decide
-    // the trees players see grow, so they match vanilla's.
-    private static readonly FrozenDictionary<int, TreeGrower> vanillaGrowers = new Dictionary<int, TreeGrower>
-    {
-        [BlockIds.OakSapling] = new()
-        {
-            Tree = "minecraft:oak",
-            SecondaryTree = "minecraft:fancy_oak",
-            Flowers = "minecraft:oak_bees_005",
-            SecondaryFlowers = "minecraft:fancy_oak_bees_005",
-            SecondaryChance = 0.1f
-        },
-        [BlockIds.SpruceSapling] = new()
-        {
-            MegaTree = "minecraft:mega_spruce",
-            SecondaryMegaTree = "minecraft:mega_pine",
-            Tree = "minecraft:spruce",
-            SecondaryChance = 0.5f
-        },
-        [BlockIds.BirchSapling] = new()
-        {
-            Tree = "minecraft:birch",
-            Flowers = "minecraft:birch_bees_005"
-        },
-        [BlockIds.JungleSapling] = new()
-        {
-            MegaTree = "minecraft:mega_jungle_tree",
-            Tree = "minecraft:jungle_tree_no_vine"
-        },
-        [BlockIds.AcaciaSapling] = new() { Tree = "minecraft:acacia" },
-        [BlockIds.CherrySapling] = new()
-        {
-            Tree = "minecraft:cherry",
-            Flowers = "minecraft:cherry_bees_005"
-        },
-        [BlockIds.DarkOakSapling] = new() { MegaTree = "minecraft:dark_oak" },
-        [BlockIds.PaleOakSapling] = new() { MegaTree = "minecraft:pale_oak_bonemeal" },
-        [BlockIds.MangrovePropagule] = new()
-        {
-            Tree = "minecraft:mangrove",
-            SecondaryTree = "minecraft:tall_mangrove",
-            SecondaryChance = 0.85f
-        }
-    }.ToFrozenDictionary();
 
     /// <summary>
     /// Whether random ticks grow <paramref name="block"/>: saplings and the mangrove propagule.
@@ -189,6 +143,8 @@ internal static partial class Growth
         }
     }
 
+    // A vanilla sapling is classified by the class that owns its random tick (SaplingBlock or MangrovePropaguleBlock),
+    // and grows the tree the generated table names for it (vanilla's treeGrower).
     private static Kind KindOf(IBlock block, out TreeGrower? grower)
     {
         grower = null;
@@ -199,8 +155,13 @@ internal static partial class Growth
             return grower is null ? Kind.None : Kind.Sapling;
         }
 
-        if (vanillaGrowers.TryGetValue(block.RegistryId, out grower))
-            return block.RegistryId == BlockIds.MangrovePropagule ? Kind.Propagule : Kind.Sapling;
+        var owner = BlocksRegistry.GetRandomTickBehavior(block.RegistryId);
+        if (ReferenceEquals(owner, RandomTickBehaviors.SaplingBlock) || ReferenceEquals(owner, RandomTickBehaviors.MangrovePropaguleBlock))
+        {
+            grower = BlocksRegistry.GetTreeGrower(block.RegistryId);
+            if (grower is not null)
+                return ReferenceEquals(owner, RandomTickBehaviors.MangrovePropaguleBlock) ? Kind.Propagule : Kind.Sapling;
+        }
 
         return block.RegistryId switch
         {

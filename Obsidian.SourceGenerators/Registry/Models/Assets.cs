@@ -27,6 +27,7 @@ internal sealed class Assets
     public static Assets Get(ImmutableArray<(string name, string json)> files, SourceProductionContext ctx)
     {
         Block[] blocks = GetBlocks(files.GetJsonFromArray("blocks"), files.GetJsonFromArray("block_placement_classes"),
+            files.GetJsonFromArray("sapling_growers"),
             new Dictionary<string, string?>
             {
                 ["randomTick"] = files.GetJsonFromArray("block_random_tick_classes"),
@@ -175,7 +176,8 @@ internal sealed class Assets
             .Select((name, id) => new EnchantmentEntry(name, id))];
     }
 
-    public static Block[] GetBlocks(string? json, string? placementClassesJson, Dictionary<string, string?> overrideClassesJson)
+    public static Block[] GetBlocks(string? json, string? placementClassesJson, string? saplingGrowersJson,
+        Dictionary<string, string?> overrideClassesJson)
     {
         if (json is null)
             return [];
@@ -183,6 +185,7 @@ internal sealed class Assets
         var blocks = new List<Block>();
         using var document = JsonDocument.Parse(json);
         using var placementClasses = placementClassesJson is null ? null : JsonDocument.Parse(placementClassesJson);
+        using var saplingGrowers = saplingGrowersJson is null ? null : JsonDocument.Parse(saplingGrowersJson);
         var overrideClasses = overrideClassesJson
             .Where(entry => entry.Value is not null)
             .ToDictionary(entry => entry.Key, entry => JsonDocument.Parse(entry.Value!));
@@ -218,13 +221,32 @@ internal sealed class Assets
                     owners[hook.Key] = owner;
             }
 
-            blocks.Add(Block.Get(property, id++, placementClass, owners));
+            Dictionary<string, string>? treeGrower = saplingGrowers is not null
+                && saplingGrowers.RootElement.TryGetProperty(property.Name, out var growerElement)
+                ? GetTreeGrower(growerElement)
+                : null;
+
+            blocks.Add(Block.Get(property, id++, placementClass, owners, treeGrower));
         }
 
         foreach (var overrideDocument in overrideClasses.Values)
             overrideDocument.Dispose();
 
         return blocks.ToArray();
+    }
+
+    // A sapling's dumped TreeGrower: its configured features by identifier, and its secondary chance as a float literal.
+    private static Dictionary<string, string> GetTreeGrower(JsonElement element)
+    {
+        var grower = new Dictionary<string, string>();
+        foreach (var property in element.EnumerateObject())
+        {
+            grower[property.Name] = property.Name == "secondaryChance"
+                ? property.Value.GetSingle().ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "f"
+                : property.Value.GetString()!;
+        }
+
+        return grower;
     }
 
     private static Item[] GetItems(string? json, string? componentsJson)

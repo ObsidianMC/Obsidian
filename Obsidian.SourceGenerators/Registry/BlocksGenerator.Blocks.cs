@@ -20,6 +20,7 @@ public partial class BlocksGenerator
         var createDefault = new CodeBuilder();
         var createState = new CodeBuilder();
         var placementBehavior = new CodeBuilder();
+        var treeGrowers = new CodeBuilder();
         var placementBehaviors = compilation.GetTypeByMetadataName("Obsidian.WorldData.PlacementBehaviors");
         // Each virtual hook is bound from the vanilla class that declares its override to a same-named member of the
         // hook's counterpart type.
@@ -75,6 +76,16 @@ public partial class BlocksGenerator
             if (block.Properties.Length > 0)
                 createState.Indent().Append($"{block.RegistryId} => new {blockName}(stateId),").Line();
 
+            // A sapling's TreeGrower, as vanilla's SaplingBlock holds it; the sapling's random tick owner is a separate
+            // association (the hooks below).
+            if (block.TreeGrower is { } grower)
+            {
+                var initializer = string.Join(", ", grower.Select(entry => entry.Key == "secondaryChance"
+                    ? $"SecondaryChance = {entry.Value}"
+                    : $"{entry.Key.ToPascalCase()} = \"{entry.Value}\""));
+                treeGrowers.Indent().Append($"[{block.RegistryId}] = new Obsidian.API.Blocks.TreeGrower {{ {initializer} }},").Line();
+            }
+
             string? placementMember = OwnerMember(block.PlacementClass);
             if (placementMember is not null && placementBehaviors?.GetMembers(placementMember).Length > 0)
                 placementBehavior.Indent().Append($"{block.RegistryId} => PlacementBehaviors.{placementMember},").Line();
@@ -106,6 +117,16 @@ public partial class BlocksGenerator
             .Line("{")
             .Append(createState.ToString())
             .Line("    _ => null,")
+            .Line("};")
+            .Line()
+            .Line("/// <summary>The behaviour supplied by the vanilla class that owns this block's placement override.</summary>")
+            .Line("/// <summary>The tree a sapling block grows into, from vanilla's SaplingBlock.treeGrower, or null for other blocks.</summary>")
+            .Line("internal static Obsidian.API.Blocks.TreeGrower? GetTreeGrower(int registryId) =>")
+            .Line("    treeGrowers.TryGetValue(registryId, out var grower) ? grower : null;")
+            .Line()
+            .Line("private static readonly System.Collections.Generic.Dictionary<int, Obsidian.API.Blocks.TreeGrower> treeGrowers = new()")
+            .Line("{")
+            .Append(treeGrowers.ToString())
             .Line("};")
             .Line()
             .Line("/// <summary>The behaviour supplied by the vanilla class that owns this block's placement override.</summary>")

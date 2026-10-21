@@ -45,9 +45,9 @@ public sealed class CropGrowth
         Assert.Same(RandomTickBehaviors.BeetrootBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.Beetroots));
         Assert.Same(RandomTickBehaviors.TorchflowerCropBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.TorchflowerCrop));
 
-        // Logs and saplings have owners without a counterpart yet, so they keep the existing growth path.
+        // Logs have owners without a counterpart yet; saplings are owned by SaplingBlock (see SaplingOwners).
         Assert.Null(BlocksRegistry.GetRandomTickBehavior(BlockIds.OakLog));
-        Assert.Null(BlocksRegistry.GetRandomTickBehavior(BlockIds.OakSapling));
+        Assert.Same(RandomTickBehaviors.SaplingBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.OakSapling));
     }
 
     [Fact(DisplayName = "A crop in light draws its chance once a tick, and grows a step when it comes up 0")]

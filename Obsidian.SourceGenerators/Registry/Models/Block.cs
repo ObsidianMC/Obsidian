@@ -17,9 +17,12 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
     public IReadOnlyDictionary<string, string> OverrideClasses { get; }
     public BlockProperty[] Properties { get; }
     public Dictionary<int, List<string>> StateValues { get; }
+    /// <summary>The sapling's dumped TreeGrower by field (features by identifier, secondaryChance as a float literal), or null.</summary>
+    public IReadOnlyDictionary<string, string>? TreeGrower { get; }
 
     private Block(string name, string tag, int baseId, int defaultId, int registryId, int statesCount,
-        string? placementClass, IReadOnlyDictionary<string, string> overrideClasses, BlockProperty[] properties, Dictionary<int, List<string>> stateValues)
+        string? placementClass, IReadOnlyDictionary<string, string> overrideClasses, BlockProperty[] properties, Dictionary<int, List<string>> stateValues,
+        IReadOnlyDictionary<string, string>? treeGrower)
     {
         Name = name;
         Tag = tag;
@@ -31,16 +34,18 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
         OverrideClasses = overrideClasses;
         Properties = properties;
         StateValues = stateValues;
+        TreeGrower = treeGrower;
     }
 
-    public static Block Get(JsonProperty property, int id, string? placementClass, IReadOnlyDictionary<string, string> overrideClasses)
+    public static Block Get(JsonProperty property, int id, string? placementClass, IReadOnlyDictionary<string, string> overrideClasses,
+        IReadOnlyDictionary<string, string>? treeGrower)
     {
         string name = property.Name.RemoveNamespace().ToPascalCase();
 
         (int baseId, int defaultId, int statesCount, var stateValues) = GetIds(property);
         BlockProperty[] properties = GetBlockProperties(property).ToArray();
 
-        return new Block(name, property.Name, baseId, defaultId, id, statesCount, placementClass, overrideClasses, properties, stateValues);
+        return new Block(name, property.Name, baseId, defaultId, id, statesCount, placementClass, overrideClasses, properties, stateValues, treeGrower);
     }
 
     private static (int baseId, int defaultId, int stateCount, Dictionary<int, List<string>> stateValues) GetIds(JsonProperty property)

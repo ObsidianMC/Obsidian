@@ -30,6 +30,23 @@ internal static partial class RandomTickBehaviors
 
     internal static IRandomTickBehavior FarmBlock { get; } = new FarmBlockBehavior();
 
+    internal static IRandomTickBehavior LeavesBlock { get; } = new LeavesBlockBehavior();
+
+    // Separate instances, so that Growth can tell the sapling's owner from the propagule's by reference.
+    internal static IRandomTickBehavior SaplingBlock { get; } = new PlantGrowth();
+
+    internal static IRandomTickBehavior MangrovePropaguleBlock { get; } = new PlantGrowth();
+
+    /// <summary>
+    /// Vanilla's <c>SaplingBlock.randomTick</c> and <c>MangrovePropaguleBlock.randomTick</c>: the growth
+    /// <see cref="Growth.RandomTick"/> draws and places, for the tree the owner's <c>treeGrower</c> names.
+    /// </summary>
+    private sealed class PlantGrowth : IRandomTickBehavior
+    {
+        public void RandomTick(AbstractLevel level, Vector position, IBlock block, IRandomSource random) =>
+            Growth.RandomTick(level, position, block, random);
+    }
+
     internal static IRandomTickBehavior BeetrootBlock { get; } = new CropAfterThirdsDraw(Crop);
 
     internal static IRandomTickBehavior TorchflowerCropBlock { get; } = new CropAfterThirdsDraw(Crop);
