@@ -27,7 +27,7 @@ internal sealed class Assets
     public static Assets Get(ImmutableArray<(string name, string json)> files, SourceProductionContext ctx)
     {
         Block[] blocks = GetBlocks(files.GetJsonFromArray("blocks"), files.GetJsonFromArray("block_placement_classes"),
-            files.GetJsonFromArray("sapling_growers"),
+            files.GetJsonFromArray("sapling_growers"), files.GetJsonFromArray("fire_odds"),
             new Dictionary<string, string?>
             {
                 ["randomTick"] = files.GetJsonFromArray("block_random_tick_classes"),
@@ -177,7 +177,7 @@ internal sealed class Assets
     }
 
     public static Block[] GetBlocks(string? json, string? placementClassesJson, string? saplingGrowersJson,
-        Dictionary<string, string?> overrideClassesJson)
+        string? fireOddsJson, Dictionary<string, string?> overrideClassesJson)
     {
         if (json is null)
             return [];
@@ -186,6 +186,7 @@ internal sealed class Assets
         using var document = JsonDocument.Parse(json);
         using var placementClasses = placementClassesJson is null ? null : JsonDocument.Parse(placementClassesJson);
         using var saplingGrowers = saplingGrowersJson is null ? null : JsonDocument.Parse(saplingGrowersJson);
+        using var fireOdds = fireOddsJson is null ? null : JsonDocument.Parse(fireOddsJson);
         var overrideClasses = overrideClassesJson
             .Where(entry => entry.Value is not null)
             .ToDictionary(entry => entry.Key, entry => JsonDocument.Parse(entry.Value!));
@@ -226,7 +227,12 @@ internal sealed class Assets
                 ? GetTreeGrower(growerElement)
                 : null;
 
-            blocks.Add(Block.Get(property, id++, placementClass, owners, treeGrower));
+            (int Ignite, int Burn)? odds = fireOdds is not null
+                && fireOdds.RootElement.TryGetProperty(property.Name, out var oddsElement)
+                ? (oddsElement.GetProperty("ignite").GetInt32(), oddsElement.GetProperty("burn").GetInt32())
+                : null;
+
+            blocks.Add(Block.Get(property, id++, placementClass, owners, treeGrower, odds));
         }
 
         foreach (var overrideDocument in overrideClasses.Values)

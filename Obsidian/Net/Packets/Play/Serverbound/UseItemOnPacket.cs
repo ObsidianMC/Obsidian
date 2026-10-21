@@ -219,16 +219,16 @@ public partial class UseItemOnPacket
                     if (existing is { IsAir: true } && !level.IsOutsideBuildHeight(firePosition.Y))
                     {
                         used = await level.Portals.TryIgniteAsync(firePosition, igniter: currentItem);
+                        // Vanilla's BaseFireBlock.canBePlacedAt: an empty space that fire would survive in.
                         if (!used
                             && currentItem.Holder.Id is ItemIds.FlintAndSteel or ItemIds.FireCharge
-                            && await level.GetBlockAsync(firePosition + Vector.Down) is IBlock below
-                            && below.HasFullTopCollisionFace())
+                            && FireBlockBehavior.CanBePlaced(level.BlockUpdates, firePosition))
                         {
-                            var fire = below.RegistryId is BlockIds.SoulSand or BlockIds.SoulSoil
-                                ? BlocksRegistry.SoulFire
-                                : BlocksRegistry.Fire;
+                            var fire = FireBlockBehavior.StateFor(level.BlockUpdates, firePosition);
 
                             await level.SetBlockAsync(firePosition, fire, true);
+                            // Vanilla's FireBlock.onPlace: the fire's first tick, 30 + random(10) ticks on.
+                            level.ScheduleBlockTick(firePosition, fire, 30 + Random.Shared.Next(10));
                             used = true;
                         }
                     }

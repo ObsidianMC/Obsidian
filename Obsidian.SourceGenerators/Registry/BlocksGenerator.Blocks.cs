@@ -21,6 +21,7 @@ public partial class BlocksGenerator
         var createState = new CodeBuilder();
         var placementBehavior = new CodeBuilder();
         var treeGrowers = new CodeBuilder();
+        var fireOdds = new CodeBuilder();
         var placementBehaviors = compilation.GetTypeByMetadataName("Obsidian.WorldData.PlacementBehaviors");
         // Each virtual hook is bound from the vanilla class that declares its override to a same-named member of the
         // hook's counterpart type.
@@ -86,6 +87,10 @@ public partial class BlocksGenerator
                 treeGrowers.Indent().Append($"[{block.RegistryId}] = new Obsidian.API.Blocks.TreeGrower {{ {initializer} }},").Line();
             }
 
+            // A flammable block's ignite and burn odds, as vanilla's FireBlock.bootStrap registers them.
+            if (block.FireOdds is { } odds)
+                fireOdds.Indent().Append($"[{block.RegistryId}] = ({odds.Ignite}, {odds.Burn}),").Line();
+
             string? placementMember = OwnerMember(block.PlacementClass);
             if (placementMember is not null && placementBehaviors?.GetMembers(placementMember).Length > 0)
                 placementBehavior.Indent().Append($"{block.RegistryId} => PlacementBehaviors.{placementMember},").Line();
@@ -123,6 +128,15 @@ public partial class BlocksGenerator
             .Line("/// <summary>The tree a sapling block grows into, from vanilla's SaplingBlock.treeGrower, or null for other blocks.</summary>")
             .Line("internal static Obsidian.API.Blocks.TreeGrower? GetTreeGrower(int registryId) =>")
             .Line("    treeGrowers.TryGetValue(registryId, out var grower) ? grower : null;")
+            .Line()
+            .Line("/// <summary>The ignite and burn odds of a flammable block, from vanilla's FireBlock; null for other blocks.</summary>")
+            .Line("internal static (int Ignite, int Burn)? GetFireOdds(int registryId) =>")
+            .Line("    fireOdds.TryGetValue(registryId, out var odds) ? odds : null;")
+            .Line()
+            .Line("private static readonly System.Collections.Generic.Dictionary<int, (int Ignite, int Burn)> fireOdds = new()")
+            .Line("{")
+            .Append(fireOdds.ToString())
+            .Line("};")
             .Line()
             .Line("private static readonly System.Collections.Generic.Dictionary<int, Obsidian.API.Blocks.TreeGrower> treeGrowers = new()")
             .Line("{")

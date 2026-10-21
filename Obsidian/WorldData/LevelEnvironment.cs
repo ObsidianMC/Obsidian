@@ -72,6 +72,10 @@ internal static class LevelEnvironment
     public const string FastLava = "minecraft:gameplay/fast_lava";
 
     /// <summary>
+    /// Vanilla's <c>minecraft:gameplay/increased_fire_burnout</c>: whether fire burns out faster there.
+    /// </summary>
+    public const string IncreasedFireBurnout = "minecraft:gameplay/increased_fire_burnout";
+    /// <summary>
     /// Vanilla's <c>minecraft:gameplay/piglins_zombify</c>: whether piglins and hoglins turn into zombified ones.
     /// </summary>
     public const string PiglinsZombify = "minecraft:gameplay/piglins_zombify";
@@ -109,6 +113,7 @@ internal static class LevelEnvironment
         [CanStartRaid] = true,
         [CanPillagerPatrolSpawn] = true,
         [FastLava] = false,
+        [IncreasedFireBurnout] = false,
         [PiglinsZombify] = true,
         [SnowGolemMelts] = false,
         [RespawnAnchorWorks] = false,

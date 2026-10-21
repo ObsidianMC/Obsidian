@@ -19,10 +19,12 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
     public Dictionary<int, List<string>> StateValues { get; }
     /// <summary>The sapling's dumped TreeGrower by field (features by identifier, secondaryChance as a float literal), or null.</summary>
     public IReadOnlyDictionary<string, string>? TreeGrower { get; }
+    /// <summary>The ignite and burn odds vanilla's FireBlock registers for this block, or null if it isn't flammable.</summary>
+    public (int Ignite, int Burn)? FireOdds { get; }
 
     private Block(string name, string tag, int baseId, int defaultId, int registryId, int statesCount,
         string? placementClass, IReadOnlyDictionary<string, string> overrideClasses, BlockProperty[] properties, Dictionary<int, List<string>> stateValues,
-        IReadOnlyDictionary<string, string>? treeGrower)
+        IReadOnlyDictionary<string, string>? treeGrower, (int Ignite, int Burn)? fireOdds)
     {
         Name = name;
         Tag = tag;
@@ -35,17 +37,18 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
         Properties = properties;
         StateValues = stateValues;
         TreeGrower = treeGrower;
+        FireOdds = fireOdds;
     }
 
     public static Block Get(JsonProperty property, int id, string? placementClass, IReadOnlyDictionary<string, string> overrideClasses,
-        IReadOnlyDictionary<string, string>? treeGrower)
+        IReadOnlyDictionary<string, string>? treeGrower, (int Ignite, int Burn)? fireOdds)
     {
         string name = property.Name.RemoveNamespace().ToPascalCase();
 
         (int baseId, int defaultId, int statesCount, var stateValues) = GetIds(property);
         BlockProperty[] properties = GetBlockProperties(property).ToArray();
 
-        return new Block(name, property.Name, baseId, defaultId, id, statesCount, placementClass, overrideClasses, properties, stateValues, treeGrower);
+        return new Block(name, property.Name, baseId, defaultId, id, statesCount, placementClass, overrideClasses, properties, stateValues, treeGrower, fireOdds);
     }
 
     private static (int baseId, int defaultId, int stateCount, Dictionary<int, List<string>> stateValues) GetIds(JsonProperty property)

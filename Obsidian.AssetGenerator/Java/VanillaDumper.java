@@ -116,6 +116,7 @@ public final class VanillaDumper {
         dumper.dumpBlockPlacementClasses();
         dumper.dumpBlockOverrideClasses();
         dumper.dumpSaplingGrowers();
+        dumper.dumpFireOdds();
         dumper.dumpItemUseOnClasses();
         dumper.dumpHoeTillables();
         dumper.dumpItemPlacedBlocks();
@@ -605,6 +606,35 @@ public final class VanillaDumper {
         dumpBlockOverrideClasses("block_update_shape_classes.json", "updateShape", BLOCK_STATE,
             "net.minecraft.world.level.LevelReader", "net.minecraft.world.level.ScheduledTickAccess", BLOCK_POS,
             "net.minecraft.core.Direction", BLOCK_POS, BLOCK_STATE, random);
+    }
+
+    /**
+     * {@code fire_odds.json}: the ignite and burn odds {@code FireBlock.bootStrap} registers for each flammable block,
+     * read from the fire block's {@code igniteOdds} and {@code burnOdds} maps. Blocks it never registered are omitted.
+     */
+    private void dumpFireOdds() throws IOException {
+        var fire = mojang.type("net.minecraft.world.level.block.FireBlock");
+        var igniteField = mojang.field("net.minecraft.world.level.block.FireBlock", "igniteOdds");
+        var burnField = mojang.field("net.minecraft.world.level.block.FireBlock", "burnOdds");
+        var odds = new TreeMap<String, Map<String, Object>>();
+
+        for (var block : (Iterable<?>) blockRegistry) {
+            if (!fire.isInstance(block))
+                continue;
+
+            @SuppressWarnings("unchecked")
+            var ignite = (Map<Object, Object>) Mojang.get(igniteField, block);
+            @SuppressWarnings("unchecked")
+            var burn = (Map<Object, Object>) Mojang.get(burnField, block);
+            for (var entry : ignite.entrySet()) {
+                var row = new TreeMap<String, Object>();
+                row.put("ignite", entry.getValue());
+                row.put("burn", burn.getOrDefault(entry.getKey(), 0));
+                odds.put(key(blockRegistry, entry.getKey()), row);
+            }
+        }
+
+        Json.write(output.resolve("fire_odds.json"), odds, false);
     }
 
     /**

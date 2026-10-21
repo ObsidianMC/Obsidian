@@ -16,7 +16,7 @@ Make vanilla 1.21.11 random ticks and scheduled block ticks owner-driven: each v
 class that overrides it, generated from the vanilla dump, and implemented by an explicit Obsidian counterpart. Replace
 the hand-written block-ID dispatch in `Obsidian/WorldData/Growth.cs` (`KindOf`) over time. Saplings and the propagule are done: owned by `SaplingBlock`/`MangrovePropaguleBlock`, with the tree from the dumped `sapling_growers.json`.
 
-Non-goals for this plan: fire spread, precipitation ticks, protocol changes, and any change to `MinecraftVersion`.
+Non-goals for this plan: precipitation ticks, protocol changes, and any change to `MinecraftVersion`.
 
 ## Current state (evidence)
 
@@ -106,8 +106,12 @@ with `obsidian-source-generation`; human check performed or explicitly listed as
   nearby-block scan that vanilla does in each owner, not a shared helper with a block list.
 - **M4. Weather and time blocks:** ice and snow melt (`IceBlock`, `SnowLayerBlock`), copper oxidation
   (`ChangeOverTimeBlock`), and leaves decay (`LeavesBlock`). Needs the light and neighbor helpers from earlier milestones.
-- **M5. Fluid random ticks:** lava and water owners (fluid dump). Lava fire spread waits on flammability and
-  `ignitedByLava`, which needs its own owner dump.
+- **M5. Fluid random ticks:** lava and water owners (fluid dump). Lava fire spread waits on `ignitedByLava`, which
+  needs its own owner dump. Fire's flammability is now dumped (`fire_odds.json`) and the fire owner exists.
+- **Fire (`FireBlockBehavior`):** scheduled `tick` (burn-out, spread, ignition) and `updateShape`, owned by vanilla's
+  `FireBlock`. Flammability comes from `FireBlock.bootStrap` via the dumper, so logs and leaves can catch fire. Not
+  ported: the block-entity side effect when fire replaces a block, and vanilla's random draw order. Tests:
+  `Obsidian.Tests/FireSpread.cs`.
 - **M6. Scheduled-tick owners:** dump `tick` owners; migrate the state-keyed checks in `BlockUpdates` (falling blocks,
   redstone components) onto owner counterparts, one at a time.
 - **M7. Precipitation and random-sequence parity:** draw `tickPrecipitation` so the random sequence matches vanilla

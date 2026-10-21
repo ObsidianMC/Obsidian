@@ -31,6 +31,8 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior FarmBlock { get; } = new FarmBlockBehavior();
 
     internal static IScheduledTickBehavior LeavesBlock { get; } = new LeavesBlockBehavior();
+
+    internal static IScheduledTickBehavior FireBlock { get; } = new FireBlockBehavior();
 }
 
 /// <summary>
@@ -42,4 +44,6 @@ internal static class ShapeUpdateBehaviors
     internal static IShapeUpdateBehavior FarmBlock { get; } = new FarmBlockBehavior();
 
     internal static IShapeUpdateBehavior LeavesBlock { get; } = new LeavesBlockBehavior();
+
+    internal static IShapeUpdateBehavior FireBlock { get; } = new FireBlockBehavior();
 }
