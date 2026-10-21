@@ -221,6 +221,7 @@ public sealed partial class Client : IClient
         this.serviceProvider = serviceProvider;
         this.pool = pool;
         this.Logger = loggerFactory.CreateLogger("ConnectionHandler");
+        this.flushOutput = this.FlushOutput;
 
         packetCryptography = new();
         this.handlers = new Dictionary<ClientState, ClientHandler>()
@@ -377,7 +378,8 @@ public sealed partial class Client : IClient
 
     /// <summary>
     /// Sends <paramref name="packet"/> without plugins' handlers: at once when nothing queued before it is still on its
-    /// way, or else behind what is, so that it never overtakes a packet queued earlier.
+    /// way, or else behind what is, so that it never overtakes a packet queued earlier. Sending it at once serializes it
+    /// on the caller's thread; the network threads compress, encrypt and write it (see <see cref="WorkerThreads.Network"/>).
     /// </summary>
     /// <returns>Whether it's sent or on its way: the client can receive it.</returns>
     public bool SendPacket(IClientboundPacket packet)
@@ -618,30 +620,32 @@ public sealed partial class Client : IClient
         if (this.State == ClientState.Play)
             _ = this.LeaveAsync();
 
-        if (this.receiveEvent is not null)
-        {
-            this.receiveEvent.Completed -= this.OnAsyncCompleted;
-            this.pool.Return(this.receiveEvent);
-        }
-
-        if (this.sendEvent is not null)
-        {
-            this.sendEvent.Completed -= this.OnAsyncCompleted;
-            this.pool.Return(this.sendEvent);
-        }
-
         this.HostServer.Connections.Remove(this.Id, out _);
 
         if (this.Player is not null)
             this.HostServer.RemovePlayer(this.Player);
 
         this.receiving = false;
-        this.sending = false;
 
+        // Under the lock sends are submitted under, so none sets up the send event once it's returned (see TrySend).
         lock (this.sendLock)
         {
-            this.sendBufferMain?.Clear();
-            this.sendBufferFlush?.Clear();
+            if (this.receiveEvent is not null)
+            {
+                this.receiveEvent.Completed -= this.OnAsyncCompleted;
+                this.pool.Return(this.receiveEvent);
+            }
+
+            if (this.sendEvent is not null)
+            {
+                this.sendEvent.Completed -= this.OnAsyncCompleted;
+                this.pool.Return(this.sendEvent);
+            }
+
+            this.sending = false;
+            this.pendingFrames.Clear();
+            this.sendBufferMain.Clear();
+            this.sendBufferFlush.Clear();
 
             this.sendBufferFlushOffset = 0;
         }
@@ -724,7 +728,7 @@ public sealed partial class Client : IClient
 
                     // Terminal packets cannot be cancelled by plugins or rejected during reconfiguration.
                     this.SendAsync(terminal, terminal: true);
-                    drained = this.sending
+                    drained = this.sending || this.flushScheduled
                         ? (this.outputDrained ??= new(TaskCreationOptions.RunContinuationsAsynchronously)).Task
                         : Task.CompletedTask;
                 }
@@ -1079,6 +1083,12 @@ public sealed partial class Client : IClient
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Sending queued packet {PacketId} failed")]
         public static partial void QueuedPacketFailed(ILogger logger, Exception exception, int? packetId);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Writing the client's output failed; disconnecting it")]
+        public static partial void OutputFailed(ILogger logger, Exception exception);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Disconnecting the client failed")]
+        public static partial void DisconnectFailed(ILogger logger, Exception exception);
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Disconnecting client after socket error {SocketError}")]
         public static partial void SocketFailed(ILogger logger, SocketError socketError);

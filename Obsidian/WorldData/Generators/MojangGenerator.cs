@@ -116,8 +116,32 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         ?? throw new GeneratorStoppedException($"{this.Dimension.Identifier} stopped generating.");
 
     // Vanilla's dolphins look for the structures of this tag.
-    internal Vector? FindDolphinTreasure(Vector position) =>
-        this.LocateStructure(locator => locator.Locate("minecraft:dolphin_located", position, 16, false))?.Position;
+    internal async Task<Vector?> FindDolphinTreasureAsync(Vector position) =>
+        (await RunSearchAsync(() => this.LocateStructure(
+            locator => locator.Locate("minecraft:dolphin_located", position, 16, false))))?.Position;
+
+    /// <summary>
+    /// Runs a structure search (see <see cref="LocateStructure"/>) on a thread of its own. A search waits for the start
+    /// chunks it loads, and distant ones take a while, which would hold a thread the pool's ticks and packet handlers need.
+    /// At most <see cref="ConcurrentSearches"/> run at once; later ones wait for a turn without holding a thread, so
+    /// players throwing eyes of ender or feeding dolphins quickly don't pile up blocked threads.
+    /// </summary>
+    internal static async Task<T> RunSearchAsync<T>(Func<T> search)
+    {
+        await searchTurns.WaitAsync();
+        try
+        {
+            return await Task.Factory.StartNew(search, CancellationToken.None,
+                TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+        }
+        finally
+        {
+            searchTurns.Release();
+        }
+    }
+
+    private const int ConcurrentSearches = 4;
+    private static readonly SemaphoreSlim searchTurns = new(ConcurrentSearches, ConcurrentSearches);
 
     /// <summary>
     /// Searches the level's structures, like vanilla's structure searches (<c>/locate</c>, eyes of ender, dolphins).

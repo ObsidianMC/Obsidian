@@ -3,18 +3,12 @@ public sealed class EncryptedNetworkBuffer : NetworkBuffer
 {
     private readonly AesCfbBlockCipher encryptor;
     private readonly AesCfbBlockCipher decryptor;
-    private readonly bool ownsEncryptor;
 
-    public EncryptedNetworkBuffer(byte[] key, byte[] data) : this(key, data, null) { }
-
-    private EncryptedNetworkBuffer(byte[] key, byte[] data, AesCfbBlockCipher? sharedEncryptor) : base(data)
+    public EncryptedNetworkBuffer(byte[] key, byte[] data) : base(data)
     {
-        encryptor = sharedEncryptor ?? new(key);
+        encryptor = new(key);
         decryptor = new(key);
-        ownsEncryptor = sharedEncryptor is null;
     }
-
-    internal EncryptedNetworkBuffer(byte[] key, EncryptedNetworkBuffer outgoingBuffer) : this(key, [], outgoingBuffer.encryptor) { }
 
     public EncryptedNetworkBuffer(byte[] key) : this(key, 0) { }
     public EncryptedNetworkBuffer(byte[] key, long capacity) : this(key, new byte[capacity]) { }
@@ -52,8 +46,7 @@ public sealed class EncryptedNetworkBuffer : NetworkBuffer
 
     public override void Dispose()
     {
-        if (ownsEncryptor)
-            this.encryptor.Dispose();
+        this.encryptor.Dispose();
         this.decryptor.Dispose();
 
         base.Dispose();

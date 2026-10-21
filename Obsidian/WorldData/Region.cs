@@ -135,6 +135,16 @@ public class Region : IRegion
 
     public async Task FlushAsync(CancellationToken cts = default)
     {
+        await this.WriteChangesAsync();
+        await this.SyncToDiskAsync();
+    }
+
+    /// <summary>
+    /// Writes the chunks that changed since their last save to the region's files, without waiting for the disk (see
+    /// <see cref="SyncToDiskAsync"/>).
+    /// </summary>
+    internal async Task WriteChangesAsync()
+    {
         await this.initialization.Value;
 
         // Like vanilla, only chunks that changed since their last save are written, and only chunks with entities, or
@@ -151,9 +161,12 @@ public class Region : IRegion
                 await SerializeChunkAsync(c, unloading: this.lightingRetired, entities: entities);
         }
 
-        regionFile.Flush();
-        this.entityRegionFile.Flush();
     }
+
+    /// <summary>
+    /// Waits for what was written to the region's files to reach the disk.
+    /// </summary>
+    internal Task SyncToDiskAsync() => Task.WhenAll(this.regionFile.FlushAsync(), this.entityRegionFile.FlushAsync());
 
     public async ValueTask<IChunk> GetChunkAsync(int x, int z)
     {

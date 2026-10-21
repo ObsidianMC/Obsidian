@@ -26,6 +26,9 @@ public sealed class RegionFile : IAsyncDisposable
     private bool disposed;
     private bool initialized;
 
+    // Whether something was written since the file was last flushed to disk; guarded by the semaphore.
+    private bool unflushed;
+
     private bool[] freeSectors = [];
 
     private readonly int[] locations = new int[HeaderTableSize];
@@ -213,20 +216,39 @@ public sealed class RegionFile : IAsyncDisposable
         return locations.AsSpan(0, read).ContainsAnyExcept((byte)0);
     }
 
-    public void Flush()
+    /// <summary>
+    /// Flushes what was written to the disk, unless nothing was since the last flush or the file was closed, which
+    /// flushed it. Waiting for the disk happens on the storage threads (see <see cref="WorkerThreads.Storage"/>), not on
+    /// the caller's.
+    /// </summary>
+    public async Task FlushAsync()
     {
-        this.semaphore.Wait();
+        await this.semaphore.WaitAsync();
         try
         {
-            this.Pad();
-            // Using Flush with true forces C# to dump to disk.
-            // It otherwise wouldn't
-            this.regionFileStream.Flush(true);
+            if (!this.disposed)
+                await this.FlushUnderLockAsync();
         }
         finally
         {
             this.semaphore.Release();
         }
+    }
+
+    private async Task FlushUnderLockAsync()
+    {
+        if (!this.unflushed)
+            return;
+
+        await WorkerThreads.Storage.RunAsync(() =>
+        {
+            this.Pad();
+
+            // Flush(true) also has the operating system write its cache to the disk, like vanilla's synced writes.
+            this.regionFileStream.Flush(true);
+        });
+
+        this.unflushed = false;
     }
 
     /// <summary>
@@ -317,6 +339,7 @@ public sealed class RegionFile : IAsyncDisposable
         }
         this.regionFileStream.Position = 0;
         await this.regionFileStream.WriteAsync(header);
+        this.unflushed = true;
     }
 
     private int FindFreeSector(int sectorCount)
@@ -430,18 +453,31 @@ public sealed class RegionFile : IAsyncDisposable
     #region IDisposable
     private async Task DisposeAsync(bool disposing)
     {
-        if (!this.disposed)
+        if (!this.disposed && disposing)
         {
-            if (disposing)
+            // Closed under the semaphore, so a flush waiting for it finds the file closed rather than closing under it.
+            // The semaphore stays undisposed for those waiters.
+            await this.semaphore.WaitAsync();
+            try
             {
-                this.Flush();
-                await this.regionFileStream.DisposeAsync();
-                this.semaphore.Dispose();
-            }
+                if (this.disposed)
+                    return;
 
-            // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-            // TODO: set large fields to null
-            this.disposed = true;
+                // A failed final flush still closes the file, so it doesn't stay locked, and is reported.
+                try
+                {
+                    await this.FlushUnderLockAsync();
+                }
+                finally
+                {
+                    await this.regionFileStream.DisposeAsync();
+                    this.disposed = true;
+                }
+            }
+            finally
+            {
+                this.semaphore.Release();
+            }
         }
     }
 
