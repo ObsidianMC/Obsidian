@@ -33,12 +33,16 @@ public sealed partial class Player : PlayerBase, IClientPlayer
     // The other players the client has been shown.
     internal HashSet<IPlayer> visiblePlayers = [];
 
-    // Unsent chunks, the current nearest-first loading pass, and the client's view. Guarded by chunkUpdates so packet
-    // handlers and the level tick can't update the client's chunks at the same time.
+    // Unsent chunks, nearest first, and the client's view. Guarded by chunkUpdates so packet handlers and the level tick
+    // can't update the client's chunks at the same time.
     private readonly HashSet<long> pendingChunks = [];
-    private readonly Queue<long> pendingChunkLoads = [];
-    private const int MaximumChunkLoadsPerPass = 16;
+    private long[] pendingOrder = [];
+    private bool pendingOrderStale = true;
+    private int passesSinceRequest;
     private static readonly TimeSpan ChunkLoadTimeBudget = TimeSpan.FromMilliseconds(5);
+
+    // How many sending passes (ticks) go by before the unsent chunks are asked for again (see RequestPendingChunks).
+    private const int PassesPerRequest = 20;
 
     // Set once the player left for reconfiguration, after which the client's next player sends its chunks.
     private bool chunksStopped;
@@ -165,7 +169,7 @@ public sealed partial class Player : PlayerBase, IClientPlayer
 
             LoadedChunks.Clear();
             this.pendingChunks.Clear();
-            this.pendingChunkLoads.Clear();
+            this.pendingOrderStale = true;
             this.chunkCacheCenter = null;
         }
 
@@ -175,14 +179,14 @@ public sealed partial class Player : PlayerBase, IClientPlayer
         if (this.chunkCacheCenter != (centerX, centerZ))
         {
             this.chunkCacheCenter = (centerX, centerZ);
-            this.pendingChunkLoads.Clear();
+            this.pendingOrderStale = true;
             await this.Client.QueuePacketAsync(new SetChunkCacheCenterPacket(centerX, centerZ));
         }
 
         // Like vanilla, at least 2.
         var viewDistance = Math.Max(2, distance < 1 ? ClientInformation.ViewDistance : distance);
         if (this.chunkViewDistance != viewDistance)
-            this.pendingChunkLoads.Clear();
+            this.pendingOrderStale = true;
         this.chunkViewDistance = viewDistance;
 
         foreach (var value in LoadedChunks)
@@ -203,11 +207,12 @@ public sealed partial class Player : PlayerBase, IClientPlayer
             for (var z = centerZ - this.chunkViewDistance - 1; z <= centerZ + this.chunkViewDistance + 1; z++)
             {
                 var value = NumericsHelper.IntsToLong(x, z);
-                if (this.IsInView(x, z) && !LoadedChunks.Contains(value))
-                    this.pendingChunks.Add(value);
+                if (this.IsInView(x, z) && !LoadedChunks.Contains(value) && this.pendingChunks.Add(value))
+                    this.pendingOrderStale = true;
             }
         }
 
+        this.RequestPendingChunks();
         return await this.SendReadyChunksAsync();
     }
 
@@ -255,8 +260,31 @@ public sealed partial class Player : PlayerBase, IClientPlayer
         }
     }
 
-    // Bound disk reads and packet queuing so login and movement don't wait for the entire view. Finish a pass before
-    // retrying ungenerated chunks, so they can't prevent the rest of the view from being requested. Called under chunkUpdates.
+    /// <summary>
+    /// Asks the level for every chunk in view the client doesn't have, like vanilla's player tickets: the level loads or
+    /// generates them, nearest to a player first, however fast the client takes them, and drops the requests once no
+    /// player's view has the chunk. Asked again every few passes, for chunks the level unloaded before they were sent.
+    /// Called under chunkUpdates.
+    /// </summary>
+    private void RequestPendingChunks()
+    {
+        this.passesSinceRequest = 0;
+        if (this.pendingChunks.Count > 0 && this.Level is WorldData.AbstractLevel level)
+            level.RequestChunks(this.pendingChunks);
+    }
+
+    /// <summary>
+    /// Whether the chunk is in the client's view, so the level keeps generating it for the player.
+    /// </summary>
+    /// <remarks>
+    /// Read from the level's generation dispatch without chunkUpdates: a stale answer only drops a request the next
+    /// <see cref="RequestPendingChunks"/> makes again, or keeps one a little longer.
+    /// </remarks>
+    internal bool WantsChunk(int chunkX, int chunkZ) => this.IsInView(chunkX, chunkZ);
+
+    // Sends the nearest chunks in view the level has complete, as many as the client takes (see the chunk batch flow
+    // control above), within a time budget so login and movement don't wait for packets. Asking the level for chunks is
+    // separate (see RequestPendingChunks), so sending them never holds up generating them. Called under chunkUpdates.
     private async Task<bool> SendReadyChunksAsync()
     {
         if (this.chunksStopped)
@@ -265,7 +293,10 @@ public sealed partial class Player : PlayerBase, IClientPlayer
         if (this.pendingChunks.Count == 0 || this.chunkCacheCenter is not var (centerX, centerZ))
             return this.pendingChunks.Count == 0;
 
-        if (this.pendingChunkLoads.Count == 0)
+        if (++this.passesSinceRequest >= PassesPerRequest)
+            this.RequestPendingChunks();
+
+        if (this.pendingOrderStale)
         {
             var chunks = this.pendingChunks.ToArray();
             var distances = new int[chunks.Length];
@@ -276,8 +307,8 @@ public sealed partial class Player : PlayerBase, IClientPlayer
             }
 
             Array.Sort(distances, chunks);
-            foreach (var value in chunks)
-                this.pendingChunkLoads.Enqueue(value);
+            this.pendingOrder = chunks;
+            this.pendingOrderStale = false;
         }
 
         int allowed;
@@ -293,23 +324,25 @@ public sealed partial class Player : PlayerBase, IClientPlayer
 
         var batch = new List<IChunk>();
         var started = Stopwatch.GetTimestamp();
-        for (var count = 0;
-             count < MaximumChunkLoadsPerPass && batch.Count < allowed && this.pendingChunkLoads.TryDequeue(out var value);
-             count++)
+        var level = this.Level as WorldData.AbstractLevel;
+        foreach (var value in this.pendingOrder)
         {
-            if (this.pendingChunks.Contains(value))
-            {
-                NumericsHelper.LongToInts(value, out var x, out var z);
-                if (await Level.GetChunkAsync(x, z) is IChunk { IsGenerated: true } chunk)
-                {
-                    batch.Add(chunk);
-                    LoadedChunks.Add(value);
-                    this.pendingChunks.Remove(value);
-                }
-            }
-
-            if (Stopwatch.GetElapsedTime(started) >= ChunkLoadTimeBudget)
+            if (batch.Count >= allowed || Stopwatch.GetElapsedTime(started) >= ChunkLoadTimeBudget)
                 break;
+
+            if (!this.pendingChunks.Contains(value))
+                continue;
+
+            NumericsHelper.LongToInts(value, out var x, out var z);
+            var chunk = level is not null
+                ? level.GetReadyChunk(x, z)
+                : await Level.GetChunkAsync(x, z) is IChunk { IsGenerated: true } complete ? complete : null;
+            if (chunk is not null)
+            {
+                batch.Add(chunk);
+                LoadedChunks.Add(value);
+                this.pendingChunks.Remove(value);
+            }
         }
 
         if (batch.Count > 0)

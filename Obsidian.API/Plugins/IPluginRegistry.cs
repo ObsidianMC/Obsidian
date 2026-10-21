@@ -255,7 +255,8 @@ public interface IPluginRegistry
     /// configs are read like vanilla's: <c>snake_case</c> keys set the matching settable properties, and properties
     /// typed as worldgen interfaces (<see cref="IIntProvider"/>, <see cref="IBlockStateProvider"/>,
     /// <see cref="IBlockPredicate"/>, <see cref="IRuleTest"/>, ...) take any type of that kind, vanilla's or a
-    /// plugin's.
+    /// plugin's. Worldgen types run on the server's generation threads, which every level shares: don't block them
+    /// waiting for asynchronous work, whose continuations would wait for the thread blocked.
     /// </remarks>
     /// <exception cref="ArgumentException">
     /// The identifier isn't in the plugin's namespace, or is already a feature type of the plugin; or the type can't be

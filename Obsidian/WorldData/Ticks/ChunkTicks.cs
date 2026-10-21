@@ -27,6 +27,9 @@ internal sealed class ChunkTicks<T> where T : notnull
     private readonly HashSet<(Vector Position, T Type)> scheduled = [];
     private TickScheduler<T>? scheduler;
 
+    // Whether ticks were added or removed since the chunk's last save took the mark (see TakeUnsaved).
+    private bool changed;
+
     /// <summary>
     /// The number of scheduled ticks.
     /// </summary>
@@ -45,6 +48,36 @@ internal sealed class ChunkTicks<T> where T : notnull
     public bool IsTicking => Volatile.Read(ref this.scheduler) is not null;
 
     /// <summary>
+    /// Whether the saved ticks differ from the chunk's last save: ticks were added or removed since, or a level ticks
+    /// them, so the delays saved relative to now change every game tick.
+    /// </summary>
+    internal bool IsUnsaved
+    {
+        get
+        {
+            lock (this.sync)
+                return this.HasUnsavedTicks();
+        }
+    }
+
+    /// <summary>
+    /// Clears the mark <see cref="IsUnsaved"/> reads, for a save about to write the ticks.
+    /// </summary>
+    /// <returns>What <see cref="IsUnsaved"/> was.</returns>
+    internal bool TakeUnsaved()
+    {
+        lock (this.sync)
+        {
+            var unsaved = this.HasUnsavedTicks();
+            this.changed = false;
+            return unsaved;
+        }
+    }
+
+    private bool HasUnsavedTicks() =>
+        this.changed || this.scheduler is not null && (this.queue.Count > 0 || this.held.Count > 0);
+
+    /// <summary>
     /// The chunk's key in the scheduler ticking it.
     /// </summary>
     internal long Key { get; private set; }
@@ -60,6 +93,7 @@ internal sealed class ChunkTicks<T> where T : notnull
             if (!this.scheduled.Add((position, type)))
                 return;
 
+            this.changed = true;
             if (this.scheduler is null)
             {
                 this.pending.Add(new SavedTick<T>(position, type, delay, priority));
@@ -124,7 +158,10 @@ internal sealed class ChunkTicks<T> where T : notnull
             foreach (var tick in ticks)
             {
                 if (this.scheduled.Add((tick.Position, tick.Type)))
+                {
                     this.pending.Add(tick);
+                    this.changed = true;
+                }
             }
         }
     }
@@ -225,7 +262,10 @@ internal sealed class ChunkTicks<T> where T : notnull
                 .Concat(this.held.Values.SelectMany(entries => entries))
                 .Order(ScheduledTick<T>.DrainOrder);
             foreach (var tick in ticks)
+            {
                 this.pending.Add(tick.ToSaved(now));
+                this.changed = true;
+            }
 
             this.queue.Clear();
             this.held.Clear();
@@ -255,6 +295,8 @@ internal sealed class ChunkTicks<T> where T : notnull
             if (!this.scheduled.Add((tick.Position, tick.Type)))
                 return;
 
+            this.changed = true;
+
             // The chunk stopped ticking meanwhile: the tick waits with the others, still overdue.
             if (this.scheduler is null)
             {
@@ -275,6 +317,7 @@ internal sealed class ChunkTicks<T> where T : notnull
             if (!this.scheduled.Add((tick.Position, tick.Type)))
                 return;
 
+            this.changed = true;
             if (this.scheduler is null)
             {
                 this.pending.Add(tick.ToSaved(now));
@@ -323,6 +366,7 @@ internal sealed class ChunkTicks<T> where T : notnull
                 return false;
 
             this.scheduled.Remove((tick.Position, tick.Type));
+            this.changed = true;
             return true;
         }
     }

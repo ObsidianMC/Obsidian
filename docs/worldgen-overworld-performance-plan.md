@@ -313,7 +313,8 @@ take jobs in an order that spaces concurrent jobs at least 3 chunks apart.
 
 **Expected:** overworld 1.5 → about 1.0 s at 32 threads with today's per-chunk cost, and further as steps 1–3 cut it.
 
-**Done:** `MojangGenerator.PrepareAreaAsync` does this for pregeneration, and the job loop then only marks chunks
+**Done:** `MojangGenerator.PrepareAreaAsync` (now `PrepareAsync`, run a tile at a time; see
+[Server throughput](#server-throughput)) does this for pregeneration, and the job loop then only marks chunks
 complete. Results (median of interleaved runs, 1,024 chunks):
 
 | Cores | Overworld | Nether |
@@ -435,6 +436,47 @@ Server pregeneration of 1,024 chunks, medians of 3 interleaved runs, original `1
   floor, not the serial cost: a third less serial work didn't move it.
 - **The serial goal of about 6 ms per chunk wasn't reached.** What's left is spread across surface rules (1.4 ms),
   vanilla's feature algorithms (2.4 ms) and noise that's now mostly the blended and cave noises' arithmetic.
+
+## Server throughput
+
+The stage costs above are for generating alone. On the server, three things kept the overworld far slower than
+that, and grew worse with the area. Measured in-process on the setup above (Release build, workstation GC, vanilla
+overworld, seed 12345):
+
+- **Every flush saved every loaded chunk.** Pregeneration flushed every 1,024 chunks, so a pregeneration of N chunks
+  serialized about N²/1,024 of them, at 0.42 ms each. Chunks now track whether they changed since their last save, like
+  vanilla's unsaved flag, and a flush writes only those: repeat flushes of 1,024 unchanged chunks take 3 ms rather than
+  490 ms.
+- **Pregeneration staged its whole area at once,** keeping every chunk loaded until the end. It now stages one region
+  (32 by 32 chunks) at a time, nearest the spawn first, saves it, and unloads what no tile left needs, after the
+  entity work the level's tick would have done for them (populating mobs).
+- **A player only asked for the chunks it was about to send,** at most 16 a tick and none once the client's batch
+  quota ran out. It now asks for its whole view, like vanilla's player tickets, and those requests are dropped once no
+  view has the chunk.
+
+Generation also moved off the thread pool onto its own threads below normal priority (`GenerationThreads`), so it no
+longer delays the network or the levels' ticks.
+
+| Pregeneration (`World.GenerateAsync`) | Before | After |
+|---|---:|---:|
+| Range 32 (4,096 chunks) | 17.5 s, 234 chunks/s | 13.4 s, 306 chunks/s |
+| Range 64 (16,384 chunks) | 111.6 s, 147 chunks/s | 29.9 s, 547 chunks/s |
+| Range 96 (36,864 chunks) | 529 s, 70 chunks/s, 6.3 GB peak | 58.7 s, 628 chunks/s, 1.4 GB peak |
+
+| A player's view, distance 12 (637 chunks), JIT settled | Before | After |
+|---|---:|---:|
+| Client taking 10 chunks a tick | 88 chunks/s sent | limited by the client (~150) |
+| Client taking 64 chunks a tick | 120 chunks/s sent | 650–720 chunks/s sent |
+| 50 ms chunk loop lateness, worst | 180–695 ms | 25–45 ms |
+
+**Tried and not kept**, since none beat the above once the JIT settled:
+- Staging the chunks players wait for in batches, like pregeneration's tiles: the waves' barriers left threads idle,
+  and the nearest chunks came later.
+- Starting jobs apart from each other, so their locks don't meet: no gain beyond noise.
+- Carving the requested chunks ahead of their jobs on idle threads: no gain once warm.
+- Taking every lock of a step at once rather than one after another: steps needing nine locks starved.
+- Making each chunk's structure starts once rather than racing: about a quarter of them are made twice, which is a few
+  percent of a run's work at most.
 
 ## Reproducing
 

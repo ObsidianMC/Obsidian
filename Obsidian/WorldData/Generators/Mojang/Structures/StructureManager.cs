@@ -219,6 +219,12 @@ internal sealed class StructureManager : IStructurePlacementState
     internal Func<int, int, NbtCompound?>? LoadStartChunk { get; set; }
 
     /// <summary>
+    /// Called with a start's start chunk once code outside of chunk decoration changed the start (see
+    /// <see cref="LoadStart"/>), so the chunk saves its new state; set by the generator.
+    /// </summary>
+    internal Action<int, int>? StartChanged { get; set; }
+
+    /// <summary>
     /// Loads a start's start chunk, restoring the start's saved state the first time, for code that changes the start
     /// outside of chunk decoration (structure searches taking references). Keeping the chunk loaded saves the change.
     /// </summary>

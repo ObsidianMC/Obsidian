@@ -21,8 +21,9 @@ public abstract partial class AbstractLevel
 
     private sealed record TicketChunks(HashSet<long> Loaded, HashSet<long> Ticking);
 
-    // A player or explicit world request survives ticket release; a dispatched job finishes under its pins.
-    private enum GenerationDemand { Ticket, Retained, Running }
+    // An explicit world request survives ticket release, and a dispatched job finishes under its pins. Ticket and player
+    // requests are dropped once neither a ticket nor a player's view needs the chunk (see DiscardUnneededGeneration).
+    private enum GenerationDemand { Ticket, Player, Retained, Running }
 
     private sealed class ChunkTicket(
         AbstractLevel level, PluginOwnership? owner, long[] loaded, long[] ticking) : IDisposable
@@ -144,6 +145,9 @@ public abstract partial class AbstractLevel
     // Called under chunkTicketLock and waitingJobs, so release and dispatch agree on which jobs have started.
     private void DiscardUnneededGeneration(bool moveToWaiting = false)
     {
+        // Taken once, since the pass asks it of every queued chunk.
+        Entities.Player[]? viewers = null;
+
         var count = this.ChunksToGen.Count;
         for (var index = 0; index < count && this.ChunksToGen.TryDequeue(out var queued); index++)
         {
@@ -161,8 +165,9 @@ public abstract partial class AbstractLevel
         bool Discard(long key)
         {
             if (this.queuedChunks.TryGetValue(key, out var demand)
-                && demand == GenerationDemand.Ticket
-                && !this.IsTicketLoaded(key))
+                && demand is GenerationDemand.Ticket or GenerationDemand.Player
+                && !this.IsTicketLoaded(key)
+                && !IsInView(viewers ??= [.. this.Players.Values.OfType<Entities.Player>()], key))
             {
                 this.queuedChunks.TryRemove(key, out _);
                 return true;
@@ -181,6 +186,18 @@ public abstract partial class AbstractLevel
     }
 
     private bool IsTicketLoaded(long chunk) => Volatile.Read(ref this.ticketChunks).Loaded.Contains(chunk);
+
+    private static bool IsInView(Entities.Player[] viewers, long chunk)
+    {
+        NumericsHelper.LongToInts(chunk, out var x, out var z);
+        foreach (var viewer in viewers)
+        {
+            if (viewer.WantsChunk(x, z))
+                return true;
+        }
+
+        return false;
+    }
 
     // Called between ticks; serialize the retirement decision with ticket admission, without holding this lock
     // through the chunk's asynchronous save. A ticket acquired during that save reloads on the management pass.

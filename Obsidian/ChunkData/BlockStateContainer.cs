@@ -44,6 +44,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
                     this.DataArray = data = data.Grow(palette.BitCount);
 
                 data[this.GetIndex(x, y, z)] = id;
+                this.MarkUnsaved();
                 return;
             }
 
@@ -58,6 +59,8 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
     /// </summary>
     internal void SetLayer(int y, ReadOnlySpan<byte> layer, ReadOnlySpan<IBlock?> blocks)
     {
+        this.MarkUnsaved();
+
 #if CACHE_VALID_BLOCKS
         validBlockCount.SetDirty();
 #endif
@@ -155,6 +158,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
                     this.DataArray = data = data.Grow(palette.BitCount);
 
                 data[this.GetIndex(x, y, z)] = id;
+                this.MarkUnsaved();
                 return;
             }
 

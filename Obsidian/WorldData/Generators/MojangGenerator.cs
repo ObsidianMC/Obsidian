@@ -100,11 +100,15 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         if (this.Builder is ChunkBuilder builder)
         {
             builder.RefreshStructures();
-            return;
+        }
+        else
+        {
+            var current = this.Structures?.Invoke() ?? Registries.PluginStructures.Current;
+            this.startCache?.Prune(current);
         }
 
-        var current = this.Structures?.Invoke() ?? Registries.PluginStructures.Current;
-        this.startCache?.Prune(current);
+        // Dropped starts change what their start chunks save, and the cache doesn't know which of those are loaded.
+        (this.world as AbstractLevel)?.MarkChunksUnsaved();
     }
 
     // The builder, for the steps of generation.
@@ -446,46 +450,56 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     }
 
     /// <summary>
-    /// Generates the chunks from (<paramref name="minX"/>, <paramref name="minZ"/>) up to (<paramref name="maxX"/>,
-    /// <paramref name="maxZ"/>), exclusive, up to their light, along with the neighbors they need, staged so that steps
+    /// Generates <paramref name="chunks"/> up to their light, along with the neighbors they need, staged so that steps
     /// running at once never wait on each other's locks. Completing the chunks afterwards only marks them complete.
+    /// Pregeneration stages its area a tile at a time, and the level stages the chunks players wait for in batches.
     /// </summary>
     /// <remarks>
     /// Every chunk is carved in parallel first. Decorating, post-processing and lighting then each run in 9 waves, one per
     /// class of a 3 by 3 colouring of chunk positions: chunks of a wave are 3 apart, so the areas they lock never overlap.
-    /// Completing chunks one by one in order instead keeps most concurrent jobs waiting on their neighbors' locks. Light
-    /// doesn't depend on the order chunks are lit in, and decorations meeting at borders already ran in any order.
-    /// Cancelling stops new chunks from starting; steps already running finish.
+    /// Completing chunks one by one instead keeps most concurrent jobs waiting on their neighbors' locks. The colouring
+    /// is of world positions, so stages of different batches agree on it. Light doesn't depend on the order chunks are
+    /// lit in, and decorations meeting at borders already ran in any order. Chunks done already are skipped. Cancelling
+    /// stops new chunks from starting; steps already running finish.
     /// </remarks>
-    internal async Task PrepareAreaAsync(int minX, int minZ, int maxX, int maxZ, CancellationToken cancellationToken = default)
+    internal async Task PrepareAsync(IReadOnlyCollection<(int X, int Z)> chunks, CancellationToken cancellationToken = default)
     {
         // Completing a chunk decorates its neighbors, and decorating a chunk carves its neighbors.
-        await Parallel.ForEachAsync(Area(minX - 2, minZ - 2, maxX + 2, maxZ + 2), cancellationToken,
+        var decorated = Around(chunks);
+        await Parallel.ForEachAsync(Around(decorated), GenerationThreads.Parallel(cancellationToken),
             async (position, _) => await this.CarveAsync(position.X, position.Z));
 
-        await InWavesAsync(Area(minX - 1, minZ - 1, maxX + 1, maxZ + 1), position => this.DecorateAsync(position.X, position.Z));
-        await InWavesAsync(Area(minX, minZ, maxX, maxZ), async position => await this.FinishBlocksAsync(await this.GetChunkAsync(position.X, position.Z)));
-        await InWavesAsync(Area(minX, minZ, maxX, maxZ), async position => await this.LightAsync(await this.GetChunkAsync(position.X, position.Z)));
+        await InWavesAsync(decorated, position => this.DecorateAsync(position.X, position.Z));
+        await InWavesAsync(chunks, async position => await this.FinishBlocksAsync(await this.GetChunkAsync(position.X, position.Z)));
+        await InWavesAsync(chunks, async position => await this.LightAsync(await this.GetChunkAsync(position.X, position.Z)));
 
         async Task InWavesAsync(IEnumerable<(int X, int Z)> positions, Func<(int X, int Z), Task> step)
         {
             var all = positions.ToList();
             for (var wave = 0; wave < 9; wave++)
             {
-                await Parallel.ForEachAsync(all.Where(position => Mod3(position.X) * 3 + Mod3(position.Z) == wave), cancellationToken,
+                await Parallel.ForEachAsync(all.Where(position => Mod3(position.X) * 3 + Mod3(position.Z) == wave),
+                    GenerationThreads.Parallel(cancellationToken),
                     async (position, _) => await step(position));
             }
         }
 
         static int Mod3(int value) => (value % 3 + 3) % 3;
 
-        static IEnumerable<(int X, int Z)> Area(int minX, int minZ, int maxX, int maxZ)
+        // The chunks and their neighbors.
+        static HashSet<(int X, int Z)> Around(IEnumerable<(int X, int Z)> chunks)
         {
-            for (var x = minX; x < maxX; x++)
+            var around = new HashSet<(int X, int Z)>();
+            foreach (var (x, z) in chunks)
             {
-                for (var z = minZ; z < maxZ; z++)
-                    yield return (x, z);
+                for (var dx = -1; dx <= 1; dx++)
+                {
+                    for (var dz = -1; dz <= 1; dz++)
+                        around.Add((x + dx, z + dz));
+                }
             }
+
+            return around;
         }
     }
 
@@ -498,8 +512,8 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         if ((await this.GetChunkAsync(cx, cz)).ChunkStatus >= ChunkGenStage.features)
             return;
 
-        // On the thread pool, so a caller starting several decorations doesn't run them one after another.
-        await this.RunStepAsync(cx, cz, ChunkGenStage.features, () => Task.Run(() => this.DecorateStepAsync(cx, cz)));
+        // On the generation threads, so a caller starting several decorations doesn't run them one after another.
+        await this.RunStepAsync(cx, cz, ChunkGenStage.features, () => GenerationThreads.Run(() => this.DecorateStepAsync(cx, cz)));
     }
 
     private async Task DecorateStepAsync(int cx, int cz)
@@ -536,7 +550,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         // The pieces placed may have changed, and a start chunk may have been unloaded meanwhile: loading them again keeps
         // each start's current state in a chunk that will be saved.
-        await this.LoadStartChunksAsync(starts);
+        await this.LoadStartChunksAsync(starts, placed: true);
     }
 
     /// <summary>
@@ -559,14 +573,14 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     }
 
     /// <summary>
-    /// Generates a chunk up to its carvers, on the thread pool, unless that's done.
+    /// Generates a chunk up to its carvers, on the generation threads, unless that's done.
     /// </summary>
     private async Task CarveAsync(int cx, int cz)
     {
         if ((await this.GetChunkAsync(cx, cz)).ChunkStatus >= ChunkGenStage.carvers)
             return;
 
-        await this.RunStepAsync(cx, cz, ChunkGenStage.carvers, () => Task.Run(async () =>
+        await this.RunStepAsync(cx, cz, ChunkGenStage.carvers, () => GenerationThreads.Run(async () =>
         {
             using var chunkLock = await this.LockAsync(cx, cz, 0);
             this.GenerateUpToCarvers(await this.GetChunkAsync(cx, cz), ChunkGenStage.carvers);
@@ -613,7 +627,9 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// Done without generation locks, since it may read chunks from disk. Every decoration does this before placing
     /// pieces, and a start is only restored once, so that happens before any of its pieces are placed in this session.
     /// </remarks>
-    private async ValueTask LoadStartChunksAsync(ReachingStarts? starts)
+    /// <param name="placed">Whether the starts' pieces were just placed, which changes the state their start chunks
+    /// save.</param>
+    private async ValueTask LoadStartChunksAsync(ReachingStarts? starts, bool placed = false)
     {
         if (starts is null)
             return;
@@ -622,6 +638,8 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         {
             var startChunk = await this.world.GetChunkAsync(start.ChunkX, start.ChunkZ, scheduleGeneration: false) as Chunk;
             StructureManager.RestoreStart(start, startChunk?.StructureStarts);
+            if (placed)
+                startChunk?.MarkUnsaved();
         }
     }
 
@@ -629,6 +647,10 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     // like vanilla's, which also wait for start chunks on the server thread. Getting a chunk takes no generation locks.
     private NbtCompound? LoadStartChunk(int chunkX, int chunkZ) =>
         (this.world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false).AsTask().GetAwaiter().GetResult() as Chunk)?.StructureStarts;
+
+    // StructureManager.StartChanged: the start chunk LoadStartChunk loaded saves the start's new state.
+    private void MarkStartChunkUnsaved(int chunkX, int chunkZ) =>
+        (this.world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false).AsTask().GetAwaiter().GetResult() as Chunk)?.MarkUnsaved();
 
     internal bool IsInsideFortress(Vector position)
     {
@@ -795,6 +817,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         if (builder.Structures is StructureManager structures)
         {
             structures.LoadStartChunk = this.LoadStartChunk;
+            structures.StartChanged = this.MarkStartChunkUnsaved;
             this.startCache = structures.StartCache;
         }
 

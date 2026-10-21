@@ -22,7 +22,10 @@ internal static class PortalOwnership
     internal static void Claim(AbstractLevel level, Vector position, PortalType type, IBlock block)
     {
         if (level.GetLoadedChunk(position.X >> 4, position.Z >> 4) is Chunk chunk)
+        {
             chunk.PortalOwners[position] = new PortalOwner(type.Identifier, block.UnlocalizedName);
+            chunk.MarkUnsaved();
+        }
     }
 
     /// <summary>
@@ -36,8 +39,8 @@ internal static class PortalOwnership
         {
             if (claim.Block == block.UnlocalizedName)
                 owner = claim.Type;
-            else
-                claimed.PortalOwners.TryRemove(position, out _);
+            else if (claimed.PortalOwners.TryRemove(position, out _))
+                claimed.MarkUnsaved();
         }
 
         return PortalTypesRegistry.ForBlock(block.RegistryId, owner);
@@ -48,8 +51,9 @@ internal static class PortalOwnership
     {
         if (chunk is Chunk claimed
             && claimed.PortalOwners.TryGetValue(position, out var claim)
-            && claim.Block != block?.UnlocalizedName)
-            claimed.PortalOwners.TryRemove(position, out _);
+            && claim.Block != block?.UnlocalizedName
+            && claimed.PortalOwners.TryRemove(position, out _))
+            claimed.MarkUnsaved();
     }
 
     internal static void Read(Chunk chunk, NbtCompound compound)
