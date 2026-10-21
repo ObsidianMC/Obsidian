@@ -7,7 +7,7 @@ public sealed partial class PluginRegistry
 {
     public int RegisterCustomStatistic(string identifier)
     {
-        var owner = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var owner = this.container;
         lock (owner.WorldgenTypes)
         {
             if (!owner.RegisteringWorldgenTypes || owner.IsClosing)
@@ -20,7 +20,7 @@ public sealed partial class PluginRegistry
     public AdvancementTrigger<TInstance> RegisterAdvancementTrigger<TInstance>(
         string identifier, AdvancementConditionsCodec<TInstance> conditions)
     {
-        var owner = this.pluginManager.GetPluginContainerByAssembly(Assembly.GetCallingAssembly());
+        var owner = this.container;
         lock (owner.WorldgenTypes)
         {
             if (!owner.RegisteringWorldgenTypes || owner.IsClosing)

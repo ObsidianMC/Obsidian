@@ -264,7 +264,10 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         var chunkX = (int)Math.Floor(entity.Position.X) >> 4;
         var chunkZ = (int)Math.Floor(entity.Position.Z) >> 4;
         if (this.FindChunk(chunkX, chunkZ) is Chunk generated)
+        {
             generated.PendingEntities.Add(entity);
+            generated.MarkUnsaved();
+        }
     }
 
     /// <remarks>
@@ -290,7 +293,10 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     public void MarkForPostProcessing(Vector position)
     {
         if (this.FindChunk(position.X >> 4, position.Z >> 4) is Chunk generated)
+        {
             generated.PostProcessing.Add(position);
+            generated.MarkUnsaved();
+        }
     }
 
     private static byte[] CreateWriteInfos()

@@ -68,7 +68,6 @@ public sealed partial class PluginManager : IAsyncDisposable
     private readonly IServiceProvider serverProvider;
     private readonly CommandHandler commandHandler;
     private readonly EventDispatcher eventDispatcher;
-    private readonly IPluginRegistry pluginRegistry;
     private readonly PluginStartup? startup;
 
     // Loading and unloading change the plugin list and what is registered, so they happen one at a time.
@@ -131,7 +130,6 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.configuration = configuration;
         this.serverProvider = serverProvider;
         this.startup = serverProvider.GetService<PluginStartup>();
-        this.pluginRegistry = new PluginRegistry(this, eventDispatcher, commandHandler);
         API.Data.PluginDataBinding.HandlerFailed = (key, exception) =>
             logger.LogError(exception, "A change handler of {Attachment} failed.", key);
 
@@ -429,7 +427,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             container.Plugin!.ConfigureServices(services);
             container.SetServices(services, baseServices, this.serverProvider);
 
-            // Registering looks the plugin up by its assembly, so it has to be in the list first.
+            // In the list before it registers, since code it calls may look it up (its load context's owner, say).
             this.plugins = this.plugins.Add(container);
 
             lock (container.WorldgenTypes)
@@ -437,7 +435,8 @@ public sealed partial class PluginManager : IAsyncDisposable
 
             try
             {
-                container.Plugin.ConfigureRegistry(this.pluginRegistry);
+                container.Plugin.ConfigureRegistry(
+                    new PluginRegistry(this, this.eventDispatcher, this.commandHandler, container));
             }
             finally
             {

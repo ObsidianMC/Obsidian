@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Utilities;
 using System.Numerics;
+using System.Threading;
 
 namespace Obsidian.API;
 public sealed class Heightmap
@@ -11,6 +12,20 @@ public sealed class Heightmap
     private readonly IChunk chunk;
 
     public Predicate<IBlock> Predicate;
+
+    // 1 while the heights changed since the chunk's last save took the mark (see TakeUnsaved). A new one is unsaved.
+    private int unsaved = 1;
+
+    /// <summary>
+    /// Whether the heights changed since <see cref="TakeUnsaved"/> last cleared the mark.
+    /// </summary>
+    internal bool IsUnsaved => Volatile.Read(ref this.unsaved) != 0;
+
+    /// <summary>
+    /// Clears the mark, for a save about to write the heights.
+    /// </summary>
+    /// <returns>Whether it was marked. A write after this marks it again, so the next save has it.</returns>
+    internal bool TakeUnsaved() => Interlocked.Exchange(ref this.unsaved, 0) != 0;
 
     public Heightmap(HeightmapType type, IChunk chunk)
     {
@@ -71,7 +86,11 @@ public sealed class Heightmap
         return false;
     }
 
-    public void Set(int x, int z, int value) => this.data[GetIndex(x, z)] = value - this.chunk.MinY;
+    public void Set(int x, int z, int value)
+    {
+        this.data[GetIndex(x, z)] = value - this.chunk.MinY;
+        Volatile.Write(ref this.unsaved, 1);
+    }
 
     public int GetHeight(int x, int z) => this.GetHeight(GetIndex(x, z));
 
@@ -79,7 +98,10 @@ public sealed class Heightmap
 
     private static int GetIndex(int x, int z) => x + z * 16;
 
-    public long[] GetDataArray() => this.data.storage;
+    /// <summary>
+    /// A copy of the packed heights, as chunk packets send them. Change heights with <see cref="Set"/>.
+    /// </summary>
+    public long[] GetDataArray() => (long[])this.data.storage.Clone();
 
     public Heightmap Clone() => Clone(chunk);
 

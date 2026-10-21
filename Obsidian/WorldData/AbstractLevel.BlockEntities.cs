@@ -295,6 +295,11 @@ public abstract partial class AbstractLevel
             try
             {
                 blockEntity.SavedData = DataBlockEntity.Copy(BlockEntityNbt.SaveData(blockEntity));
+
+                // Its chunk saves the data just taken.
+                var position = blockEntity.BlockPosition;
+                (this.GetLoadedChunk(position.X >> 4, position.Z >> 4) as Chunk)?.MarkUnsaved();
+
                 blockEntity.ShapeData = blockEntity.GetShapes();
             }
             catch (Exception ex)

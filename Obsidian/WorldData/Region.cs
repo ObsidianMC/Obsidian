@@ -137,8 +137,19 @@ public class Region : IRegion
     {
         await this.initialization.Value;
 
+        // Like vanilla, only chunks that changed since their last save are written, and only chunks with entities, or
+        // that had some, write their entities. A removed region's final save still retires every chunk. Pending light
+        // goes in first, so a chunk it reaches counts as changed.
+        lock (this.FluidTickLock)
+            this.FlushLight?.Invoke();
+
+        var entityChunks = this.ChunksWithEntities();
         foreach (Chunk c in loadedChunks.Cast<Chunk>())
-            await SerializeChunkAsync(c, unloading: this.lightingRetired);
+        {
+            var entities = this.MayHaveEntitiesToSave(c, entityChunks);
+            if (this.lightingRetired || entities || c.IsUnsaved)
+                await SerializeChunkAsync(c, unloading: this.lightingRetired, entities: entities);
+        }
 
         regionFile.Flush();
         this.entityRegionFile.Flush();
@@ -247,6 +258,16 @@ public class Region : IRegion
     }
 
     internal IChunk? GetLoadedChunk(int x, int z) => loadedChunks[x, z] is { IsGenerated: true } chunk ? chunk : null;
+
+    /// <summary>
+    /// Marks every loaded chunk unsaved (see <see cref="Chunk.MarkUnsaved"/>), for changes the chunks can't tell they
+    /// save, like dropped structure starts.
+    /// </summary>
+    internal void MarkChunksUnsaved()
+    {
+        foreach (var chunk in this.loadedChunks.OfType<Chunk>())
+            chunk.MarkUnsaved();
+    }
 
     /// <summary>
     /// Takes an entity out of the region as the plugin owning it unloads (see <see cref="Plugins.PluginEntities"/>).
@@ -515,10 +536,13 @@ public class Region : IRegion
     }
 
     /// <summary>
-    /// Saves a chunk, and once it's complete, its entities to the entity region file.
+    /// Saves a chunk, unless it's unchanged since its last save (see <see cref="Chunk.IsUnsaved"/>), and once it's
+    /// complete, its entities to the entity region file.
     /// </summary>
     /// <param name="unloading">Whether the chunk is being unloaded: its saved entities are also taken out of the level.</param>
-    internal async Task SerializeChunkAsync(IChunk chunk, bool unloading = false)
+    /// <param name="entities">Whether to save the entities of a complete chunk that isn't unloading; unloading always
+    /// saves them.</param>
+    internal async Task SerializeChunkAsync(IChunk chunk, bool unloading = false, bool entities = true)
     {
         await this.initialization.Value;
 
@@ -527,7 +551,7 @@ public class Region : IRegion
         await this.saveLock.WaitAsync();
         try
         {
-            await this.WriteChunkAsync(chunk, unloading, retired, unloaded);
+            await this.WriteChunkAsync(chunk, unloading, entities, retired, unloaded);
         }
         finally
         {
@@ -549,52 +573,109 @@ public class Region : IRegion
     }
 
     private async Task WriteChunkAsync(
-        IChunk chunk, bool unloading, List<BaseContainer> retired, List<BlockEntity> unloaded)
+        IChunk chunk, bool unloading, bool saveEntities, List<BaseContainer> retired, List<BlockEntity> unloaded)
     {
         var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
 
         await using MemoryStream strm = new();
         NbtList? entities = null;
-        await using (NbtWriterStream writer = new(strm, ChunkCompression, ""))
+
+        // The chunk whose unsaved marks this save took, so a save failing before the chunk is written puts them back.
+        Chunk? taken = null;
+        var write = true;
+        try
         {
-            // Snapshot blocks, fluid ticks and entities together; take the generator's lock before the fluid lock.
-            using (this.LockChunk is null ? null : await this.LockChunk(chunk.X, chunk.Z))
-            lock (this.FluidTickLock)
+            await using (NbtWriterStream writer = new(strm, ChunkCompression, ""))
             {
-                this.FlushLight?.Invoke();
+                // Snapshot blocks, fluid ticks and entities together; take the generator's lock before the fluid lock.
+                using (this.LockChunk is null ? null : await this.LockChunk(chunk.X, chunk.Z))
+                lock (this.FluidTickLock)
+                {
+                    this.FlushLight?.Invoke();
 
-                // The chunk stored now, read under the lock: generation may have replaced the one this save was given
-                // while it waited (see ReplaceChunk). One no longer stored was unloaded and is saved as it was.
-                var current = this.loadedChunks[x, z] ?? chunk;
+                    // The chunk stored now, read under the lock: generation may have replaced the one this save was given
+                    // while it waited (see ReplaceChunk). One no longer stored was unloaded and is saved as it was.
+                    var current = this.loadedChunks[x, z] ?? chunk;
 
-                // No block hooks or async setters may change this instance after its final snapshot.
-                if (unloading && ReferenceEquals(current, chunk))
-                    this.RetireBlockAccess(current);
+                    // No block hooks or async setters may change this instance after its final snapshot.
+                    if (unloading && ReferenceEquals(current, chunk))
+                        this.RetireBlockAccess(current);
 
-                var loadedStarts = (current as Chunk)?.StructureStarts;
-                var structureStarts = this.SaveStructureStarts is null
-                    ? loadedStarts
-                    : this.SaveStructureStarts(current.X, current.Z, loadedStarts);
+                    if (unloading && current is Chunk retiring)
+                        BlockEntityLifecycle.Retire(retiring, retired, unloaded);
 
-                if (unloading && current is Chunk retiring)
-                    BlockEntityLifecycle.Retire(retiring, retired, unloaded);
+                    // Taken after the light flush, which may write into the chunk, and the containers' retirement, which
+                    // freezes their items. A chunk unchanged since its last save is on disk as it is, so only its
+                    // entities may need saving.
+                    if (current is Chunk tracked)
+                    {
+                        taken = tracked;
+                        write = tracked.TakeUnsaved();
+                        taken = write ? tracked : null;
+                    }
 
-                SerializeChunk(writer, current, structureStarts);
+                    if (write)
+                    {
+                        var loadedStarts = (current as Chunk)?.StructureStarts;
+                        var structureStarts = this.SaveStructureStarts is null
+                            ? loadedStarts
+                            : this.SaveStructureStarts(current.X, current.Z, loadedStarts);
 
-                if (current.IsGenerated && current is Chunk complete)
-                    entities = this.CollectEntities(complete, unloading);
+                        SerializeChunk(writer, current, structureStarts);
+                    }
+
+                    if ((unloading || saveEntities) && current.IsGenerated && current is Chunk complete)
+                        entities = this.CollectEntities(complete, unloading);
+                }
+
+                writer.EndCompound();
+
+                await writer.TryFinishAsync();
             }
 
-            writer.EndCompound();
-
-            await writer.TryFinishAsync();
+            // Disposing the writer finishes the compression trailer before copying the bytes.
+            if (write)
+                await regionFile.SetChunkAsync(x, z, strm.ToArray());
+        }
+        catch
+        {
+            taken?.MarkUnsaved();
+            throw;
         }
 
-        // Disposing the writer finishes the compression trailer before copying the bytes.
-        await regionFile.SetChunkAsync(x, z, strm.ToArray());
-
         if (entities is not null)
-            await this.WriteEntitiesAsync(chunk.X, chunk.Z, entities);
+            await this.WriteEntitiesAsync(chunk, entities);
+    }
+
+    /// <summary>
+    /// The chunks the region's entities are in, whose entities a flush saves.
+    /// </summary>
+    private HashSet<(int X, int Z)> ChunksWithEntities()
+    {
+        var chunks = new HashSet<(int X, int Z)>();
+        foreach (var entity in this.Entities.Values)
+        {
+            if (entity is Entity levelEntity)
+                chunks.Add(ChunkOf(levelEntity.Position));
+        }
+
+        return chunks;
+    }
+
+    /// <summary>
+    /// Whether a flush saves the entities of <paramref name="chunk"/>: it's complete, and has entities in the level or
+    /// waiting to spawn, or its entity file may still list entities it no longer has.
+    /// </summary>
+    private bool MayHaveEntitiesToSave(Chunk chunk, HashSet<(int X, int Z)> entityChunks)
+    {
+        if (!chunk.IsGenerated)
+            return false;
+
+        if (entityChunks.Contains((chunk.X, chunk.Z)) || chunk.PendingEntities.Count > 0 || chunk.UnspawnableEntities.Count > 0)
+            return true;
+
+        var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
+        return chunk.SavedEntityCount != 0 && this.entityRegionFile.HasChunk(x, z);
     }
 
     /// <summary>
@@ -649,14 +730,20 @@ public class Region : IRegion
     /// Writes a chunk's entities like vanilla's <c>EntityStorage</c>: <c>DataVersion</c>, <c>Position</c> and
     /// <c>Entities</c>.
     /// </summary>
-    private async Task WriteEntitiesAsync(int chunkX, int chunkZ, NbtList entities)
+    private async Task WriteEntitiesAsync(IChunk chunk, NbtList entities)
     {
+        var (chunkX, chunkZ) = (chunk.X, chunk.Z);
         var (x, z) = (NumericsHelper.Modulo(chunkX, CubicRegionSize), NumericsHelper.Modulo(chunkZ, CubicRegionSize));
 
         // Vanilla deletes the entry of a chunk left without entities; region files can't delete entries, so a chunk that had
         // entities keeps an empty list, and one that never had any gets no entry.
         if (entities.Count == 0 && !this.entityRegionFile.HasChunk(x, z))
+        {
+            if (chunk is Chunk empty)
+                empty.SavedEntityCount = 0;
+
             return;
+        }
 
         await using MemoryStream strm = new();
         await using (NbtWriterStream writer = new(strm, ChunkCompression, ""))
@@ -671,6 +758,9 @@ public class Region : IRegion
         }
 
         await this.entityRegionFile.SetChunkAsync(x, z, strm.ToArray());
+
+        if (chunk is Chunk saved)
+            saved.SavedEntityCount = entities.Count;
     }
 
     /// <summary>
