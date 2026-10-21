@@ -1091,6 +1091,11 @@ public sealed class ProbePlugin : PluginBase
     /// <summary>
     /// Spawns a bat, for a test to call as the plugin's code running outside any call into it, like its own task.
     /// </summary>
+    /// <remarks>
+    /// Unoptimized, so the call stays on the stack, which is all that tells the spawn is the plugin's here: optimized,
+    /// the call is a tail call (see PluginEntities.FindSpawner).
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.NoOptimization)]
     public IEntity SpawnBat(ILevel level, VectorD position) => level.SpawnEntity(position, EntityType.Bat);
 
     public ValueTask OpenPouchAsync(IPlayer player) => player.OpenInventoryAsync(new ProbePouch(this.pouch!));

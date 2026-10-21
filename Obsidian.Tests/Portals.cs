@@ -546,16 +546,10 @@ public partial class Portals
 
         // Stepping onto the exit portal's bedrock base at y = 64 contacts the EndPortal block at (1, 64, 0).
         await player.TeleportAsync(end, new VectorD(1.5, 64, 0.5));
-        for (var tick = 0; tick < 10; tick++)
-            await player.TickPortalsAsync();
-
-        // A world tick must not bypass the credits and teleport the player early.
         client.ClearPackets();
-        await end.TickEndFightAsync();
-        Assert.Same(end, player.Level);
-        Assert.False(player.SeenCredits);
 
-        // Ticking portals triggers RollCreditsAndRespawn on the first exit and pauses until the client responds.
+        // Like vanilla's, the End portal has no wait: the first portal tick in it rolls the credits on the first exit,
+        // and travel pauses until the client responds.
         await player.TickPortalsAsync();
         Assert.True(player.AwaitingEndCredits);
         Assert.True(player.SeenCredits);
@@ -563,6 +557,14 @@ public partial class Portals
         var creditsPacket = Assert.Single(client.SentPackets.OfType<GameEventPacket>());
         Assert.Equal(ChangeGameStateReason.WinGame, creditsPacket.Reason);
         Assert.Equal(1f, creditsPacket.Value);
+
+        // Neither a world tick nor more portal ticks bypass the credits and teleport the player early.
+        await end.TickEndFightAsync();
+        for (var tick = 0; tick < 10; tick++)
+            await player.TickPortalsAsync();
+        Assert.Same(end, player.Level);
+        Assert.True(player.AwaitingEndCredits);
+        Assert.Single(client.SentPackets.OfType<GameEventPacket>());
 
         // Alive player sending ClientCommandPacket(PerformRespawn) finishes the credits and returns to Overworld.
         Assert.True(player.Health > 0);
@@ -578,11 +580,13 @@ public partial class Portals
         Assert.Same(world, player.Level);
         Assert.Equal(world.LevelData.SpawnPosition, player.Position);
 
-        // Re-entering the End exit portal after having seen credits sends JustRespawnPlayer (0f).
-        await player.TeleportAsync(end, new VectorD(1.5, 64, 0.5));
+        // Re-entering the End exit portal after having seen credits sends JustRespawnPlayer (0f), once the return's
+        // portal cooldown ran out away from portals: like vanilla's, standing in a portal keeps restarting it.
         for (var tick = 0; tick < 10; tick++)
             await player.TickPortalsAsync();
+        Assert.Equal(0, player.PortalCooldown);
 
+        await player.TeleportAsync(end, new VectorD(1.5, 64, 0.5));
         client.ClearPackets();
         await player.TickPortalsAsync();
         Assert.True(player.AwaitingEndCredits);
