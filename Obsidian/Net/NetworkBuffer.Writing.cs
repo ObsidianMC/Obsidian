@@ -606,9 +606,13 @@ public partial class NetworkBuffer : INetStreamWriter
         bodies.Add(SerializeBody(packet, writesPluginEntityData));
     }
 
+    // Most bodies (movement, entity data, block changes) fit in this, so they're written without regrowing the buffer;
+    // larger ones double from it.
+    private const int BodyStartCapacity = 64;
+
     private static NetworkBuffer SerializeBody(IClientboundPacket packet, bool writesPluginEntityData)
     {
-        var body = new NetworkBuffer { WritesPluginEntityData = writesPluginEntityData };
+        var body = new NetworkBuffer(BodyStartCapacity) { WritesPluginEntityData = writesPluginEntityData };
         body.WriteVarInt(packet.Id);
         packet.Serialize(body);
         return body;
