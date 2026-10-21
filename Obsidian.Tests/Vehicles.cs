@@ -13,8 +13,8 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Smoke tests of boats and minecarts: minecarts follow rails, boats float, players ride both, and each kind keeps its
-/// fields through saving.
+/// Smoke tests of boats and minecarts: minecarts follow rails, boats float, players ride both, hopper minecarts take in
+/// items, and each kind keeps its fields through saving.
 /// </summary>
 public sealed class Vehicles
 {
@@ -91,6 +91,35 @@ public sealed class Vehicles
         var cart = Spawn(world, new Minecart { Level = world }, new VectorD(9.5, Floor + 1, 9.5));
         Assert.True(await cart.InteractAsync(player, InteractionHand.MainHand));
         Assert.Same(cart, player.Vehicle);
+    }
+
+    [Fact(DisplayName = "A hopper minecart takes in an item that was already lying still",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task HopperMinecartsTakeInRestingItems()
+    {
+        await using var context = await CreateAsync();
+        var world = context.World;
+
+        // Items only tick near a player, as in vanilla.
+        await WorldBlockEntities.JoinAsync(context);
+        await StoneAsync(world, 4, 6, 5, 5);
+        await world.SetBlockAsync(new Vector(5, Track, 5), StraightRail(BlocksRegistry.Rail));
+
+        // On the floor from the start, like an item loaded from a save, so it never moves.
+        world.TrySpawnEntity(new ItemEntity
+        {
+            Level = world,
+            EntityId = Server.GetNextEntityId(),
+            Position = new VectorD(5.5, Track, 5.5),
+            MovementFlags = MovementFlags.OnGround,
+            Item = new ItemStack(ItemsRegistry.Diamond, 3)
+        });
+        var cart = Spawn(world, new HopperMinecart { Level = world }, new VectorD(5.5, Track + 0.0625, 5.5));
+
+        for (var tick = 0; tick < 5 && cart.Inventory[0] is null; tick++)
+            await world.DoWorldTickAsync();
+
+        Assert.Equal(3, cart.Inventory[0]?.Count);
     }
 
     [Fact(DisplayName = "Vehicles keep their kind's fields through saving")]

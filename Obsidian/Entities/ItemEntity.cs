@@ -27,6 +27,10 @@ public partial class ItemEntity : Entity
 
     public DateTimeOffset TimeDropped { get; private set; } = DateTimeOffset.UtcNow;
 
+    // Like vanilla's, its box follows its position, which spawning and loading set without moving it: an item that
+    // lies still from the start must still be found by hoppers, hopper minecarts and pressure plates.
+    public override BoundingBox BoundingBox => this.Dimension.CreateBBFromPosition(this.Position);
+
     public ItemEntity() => this.Type = EntityType.Item;
 
     public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
