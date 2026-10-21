@@ -616,6 +616,36 @@ public sealed class MobParity
         Assert.Contains(client.SentPackets.OfType<BossEventPacket>(), packet => packet.Action is BossBarRemoveAction);
     }
 
+    [Fact]
+    public async Task CreeperSwellIsNotCappedWhileItStandsOnTheGround()
+    {
+        await using var context = TestServerFactory.CreateServer($"creeper-swell-{Guid.NewGuid():N}");
+        var chunk = new Chunk(0, 0);
+        chunk.SetChunkStatus(ChunkGenStage.full);
+        for (var x = 0; x < 16; x++)
+        for (var z = 0; z < 16; z++)
+            chunk.SetBlock(x, 69, z, BlocksRegistry.Stone);
+        context.World.LoadRegionByChunk(0, 0).SetChunk(chunk);
+        var pig = new Pig
+        {
+            Level = context.World,
+            Position = new VectorD(10.5, 70, 8.5),
+            NoGravity = true,
+            MobBitMask = MobBitmask.NoAi
+        };
+        pig.InitializeAi(false);
+        var creeper = new Creeper { Level = context.World, Position = new VectorD(8.5, 70, 8.5) };
+        creeper.InitializeAi(false);
+
+        for (var tick = 0; tick < creeper.Fuse + 5 && !creeper.IsRemoved; tick++)
+        {
+            creeper.AttackTarget = pig;
+            await creeper.TickAsync();
+        }
+
+        Assert.True(creeper.IsRemoved);
+    }
+
     private static void AddEmptyChunk(World world)
     {
         var chunk = new Chunk(0, 0);
