@@ -9,6 +9,7 @@ using Obsidian.API.Plugins;
 using Obsidian.API.Registries;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
+using Obsidian.Entities.AI;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Payloads;
@@ -206,11 +207,12 @@ public sealed class PluginMobs
 
         // Walking mounts still count floating when every packet claims to be on the ground in empty air.
         var walkingControl = new ClientVehicleControl();
+        var terrain = new MobTerrain(world);
         drake.NoGravity = false;
         for (var tick = 0; tick < 80; tick++)
         {
             walkingControl.Enqueue(player, new VehicleMove(moved, 90, 0, true));
-            walkingControl.Tick(drake, player, flying: false);
+            walkingControl.Tick(drake, terrain, player, flying: false);
             drake.MovementFlags = MovementFlags.OnGround;
         }
 
@@ -218,7 +220,7 @@ public sealed class PluginMobs
         for (var tick = 80; tick < 100; tick++)
         {
             walkingControl.Enqueue(player, new VehicleMove(moved, 90, 0, true));
-            walkingControl.Tick(drake, player, flying: false);
+            walkingControl.Tick(drake, terrain, player, flying: false);
         }
 
         Assert.True(walkingControl.FloatingTooLong);
