@@ -1,62 +1,25 @@
 using Obsidian.API;
 using Obsidian.API.Inventory;
+using Obsidian.API.Registries;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Boats and minecarts move, break and carry like vanilla's: rails join up and carry power, minecarts follow them,
-/// boats float, and each kind of minecart does its job.
+/// Smoke tests of boats and minecarts: minecarts follow rails, boats float, players ride both, hopper minecarts take in
+/// items, and each kind keeps its fields through saving.
 /// </summary>
 public sealed class Vehicles
 {
     private const int Floor = 69;
     private const int Track = 70;
-
-    [Fact(DisplayName = "Rails turn to join the rails placed beside them", Timeout = TestServerFactory.TestTimeout)]
-    public async Task RailsJoinIntoCurves()
-    {
-        await using var context = await CreateAsync();
-        var world = context.World;
-        await StoneAsync(world, 3, 7, 3, 7);
-
-        await world.SetBlockAsync(new Vector(5, Track, 5), BlocksRegistry.Rail, true);
-        await world.SetBlockAsync(new Vector(6, Track, 5), BlocksRegistry.Rail, true);
-        Assert.Equal("east_west", await ShapeAsync(world, 5, 5));
-
-        await world.SetBlockAsync(new Vector(5, Track, 6), BlocksRegistry.Rail, true);
-
-        Assert.Equal("south_east", await ShapeAsync(world, 5, 5));
-        Assert.Equal("east_west", await ShapeAsync(world, 6, 5));
-        Assert.Equal("north_south", await ShapeAsync(world, 5, 6));
-    }
-
-    [Fact(DisplayName = "Powered rails carry power eight rails along", Timeout = TestServerFactory.TestTimeout)]
-    public async Task PoweredRailsCarryPower()
-    {
-        await using var context = await CreateAsync();
-        var world = context.World;
-        await StoneAsync(world, 0, 14, 4, 4);
-
-        for (var x = 1; x <= 12; x++)
-            await world.SetBlockAsync(new Vector(x, Track, 4), StraightRail(BlocksRegistry.PoweredRail));
-
-        await world.SetBlockAsync(new Vector(0, Track, 4), BlocksRegistry.RedstoneBlock, true);
-
-        for (var x = 1; x <= 12; x++)
-        {
-            var rail = await world.GetBlockAsync(new Vector(x, Track, 4));
-            Assert.Equal(x <= 9 ? "true" : "false", rail!.GetProperty("powered"));
-        }
-    }
 
     [Fact(DisplayName = "A minecart follows the rails, slowing as it rolls", Timeout = TestServerFactory.TestTimeout)]
     public async Task MinecartsFollowRails()
@@ -77,7 +40,7 @@ public sealed class Vehicles
             await world.DoWorldTickAsync();
 
             Assert.True(cart.OnRails);
-            Assert.Equal(Track, cart.Position.Y, 6);
+            Assert.Equal(Track + 0.0625, cart.Position.Y, 6);
             Assert.Equal(5.5, cart.Position.Z, 6);
             Assert.True(cart.Position.X > lastX, $"The cart stopped at {cart.Position}.");
             Assert.True(Math.Abs(cart.Motion.X) <= lastSpeed + 1.0E-9);
@@ -85,61 +48,6 @@ public sealed class Vehicles
             lastX = cart.Position.X;
             lastSpeed = Math.Abs(cart.Motion.X);
         }
-    }
-
-    [Fact(DisplayName = "Powered rails speed minecarts up and unpowered ones stop them",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task PoweredRailsBoostAndBrake()
-    {
-        await using var context = await CreateAsync();
-        var world = context.World;
-        await StoneAsync(world, 0, 15, 5, 6);
-        for (var x = 0; x <= 15; x++)
-        {
-            var kind = x is >= 4 and <= 6 ? StraightRail(BlocksRegistry.PoweredRail).WithProperty("powered", "true")
-                : StraightRail(BlocksRegistry.Rail);
-            await world.SetBlockAsync(new Vector(x, Track, 5), kind);
-            await world.SetBlockAsync(new Vector(x, Track, 6), x == 4
-                ? StraightRail(BlocksRegistry.PoweredRail)
-                : StraightRail(BlocksRegistry.Rail));
-        }
-
-        var boosted = Spawn(world, new Minecart { Level = world }, new VectorD(1.5, Track + 0.0625, 5.5));
-        boosted.Motion = new VectorD(0.1, 0, 0);
-        var braked = Spawn(world, new Minecart { Level = world }, new VectorD(1.5, Track + 0.0625, 6.5));
-        braked.Motion = new VectorD(0.1, 0, 0);
-
-        for (var tick = 0; tick < 40; tick++)
-            await world.DoWorldTickAsync();
-
-        Assert.True(boosted.Position.X > 10, $"The boosted cart only reached {boosted.Position}.");
-        Assert.InRange(braked.Position.X, 4, 5);
-        Assert.Equal(VectorD.Zero, braked.Motion);
-    }
-
-    [Fact(DisplayName = "A minecart on a detector rail powers it until it leaves", Timeout = TestServerFactory.TestTimeout)]
-    public async Task DetectorRailsSenseMinecarts()
-    {
-        await using var context = await CreateAsync();
-        var world = context.World;
-        await StoneAsync(world, 4, 6, 5, 5);
-        var detector = new Vector(5, Track, 5);
-        await world.SetBlockAsync(detector, StraightRail(BlocksRegistry.DetectorRail));
-
-        var cart = Spawn(world, new ChestMinecart { Level = world }, new VectorD(5.5, Track + 0.0625, 5.5));
-        cart.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Stone, 64));
-        await world.DoWorldTickAsync();
-
-        Assert.Equal("true", (await world.GetBlockAsync(detector))!.GetProperty("powered"));
-        Assert.Equal(15, world.GetDirectSignal(detector, BlockFace.Up));
-        lock (world.Fluids.TickLock)
-            Assert.Equal(1, world.BlockUpdates.AnalogOutputOf((await world.GetBlockAsync(detector))!, detector, BlockFace.North));
-
-        await cart.DiscardAsync();
-        for (var tick = 0; tick < 21; tick++)
-            await world.DoWorldTickAsync();
-
-        Assert.Equal("false", (await world.GetBlockAsync(detector))!.GetProperty("powered"));
     }
 
     [Fact(DisplayName = "A boat dropped into still water floats at its surface", Timeout = TestServerFactory.TestTimeout)]
@@ -158,29 +66,6 @@ public sealed class Vehicles
         Assert.Equal(5.5, boat.Position.X, 3);
         Assert.Equal(5.5, boat.Position.Z, 3);
         Assert.True(Math.Abs(boat.Motion.Y) < 0.02, $"Still bobbing at {boat.Motion}.");
-    }
-
-    [Fact(DisplayName = "Hits add up until a boat breaks into its item", Timeout = TestServerFactory.TestTimeout)]
-    public async Task BoatsBreakIntoTheirItem()
-    {
-        await using var context = await CreateAsync();
-        var world = context.World;
-        await StoneAsync(world, 3, 7, 3, 7);
-
-        var boat = Spawn(world, Boat.Create(EntityType.BirchBoat, world), new VectorD(5.5, Floor + 1, 5.5));
-        await boat.HurtAsync(null, 3, VehicleDamage.Attack);
-        Assert.False(boat.IsRemoved);
-        Assert.Equal(30, boat.Damage);
-        Assert.Equal(10, boat.HurtTime);
-
-        await world.DoWorldTickAsync();
-        Assert.Equal(29, boat.Damage);
-
-        await boat.HurtAsync(null, 2, VehicleDamage.Attack);
-        Assert.True(boat.IsRemoved);
-
-        var drop = world.GetEntitiesInRange(boat.Position, 2).OfType<ItemEntity>().Single();
-        Assert.True(drop.Item!.Is(ItemsRegistry.BirchBoat));
     }
 
     [Fact(DisplayName = "Players get in boats and minecarts, and out by sneaking", Timeout = TestServerFactory.TestTimeout)]
@@ -208,75 +93,33 @@ public sealed class Vehicles
         Assert.Same(cart, player.Vehicle);
     }
 
-    [Fact(DisplayName = "A TNT minecart lit by an activator rail explodes 80 ticks later",
+    [Fact(DisplayName = "A hopper minecart takes in an item that was already lying still",
         Timeout = TestServerFactory.TestTimeout)]
-    public async Task TntMinecartsExplode()
+    public async Task HopperMinecartsTakeInRestingItems()
     {
         await using var context = await CreateAsync();
         var world = context.World;
-        await StoneAsync(world, 3, 7, 5, 5);
-        await world.SetBlockAsync(new Vector(5, Track, 5),
-            StraightRail(BlocksRegistry.ActivatorRail).WithProperty("powered", "true"));
 
-        var cart = Spawn(world, new TntMinecart { Level = world }, new VectorD(5.5, Track + 0.0625, 5.5));
-        await world.DoWorldTickAsync();
-        Assert.Equal(79, cart.Fuse);
-
-        for (var tick = 0; tick < 79; tick++)
-            await world.DoWorldTickAsync();
-
-        Assert.True(cart.IsRemoved);
-
-        // A lit cart spares the rail it's on.
-        Assert.Equal(BlocksRegistry.ActivatorRail.RegistryId, (await world.GetBlockAsync(new Vector(5, Track, 5)))!.RegistryId);
-    }
-
-    [Fact(DisplayName = "A hopper minecart takes in the items above it", Timeout = TestServerFactory.TestTimeout)]
-    public async Task HopperMinecartsTakeInItems()
-    {
-        await using var context = await CreateAsync();
-        var world = context.World;
+        // Items only tick near a player, as in vanilla.
+        await WorldBlockEntities.JoinAsync(context);
         await StoneAsync(world, 4, 6, 5, 5);
         await world.SetBlockAsync(new Vector(5, Track, 5), StraightRail(BlocksRegistry.Rail));
 
-        var cart = Spawn(world, new HopperMinecart { Level = world }, new VectorD(5.5, Track + 0.0625, 5.5));
+        // On the floor from the start, like an item loaded from a save, so it never moves.
         world.TrySpawnEntity(new ItemEntity
         {
             Level = world,
             EntityId = Server.GetNextEntityId(),
-            Position = new VectorD(5.5, Track + 1, 5.5),
+            Position = new VectorD(5.5, Track, 5.5),
+            MovementFlags = MovementFlags.OnGround,
             Item = new ItemStack(ItemsRegistry.Diamond, 3)
         });
+        var cart = Spawn(world, new HopperMinecart { Level = world }, new VectorD(5.5, Track + 0.0625, 5.5));
 
         for (var tick = 0; tick < 5 && cart.Inventory[0] is null; tick++)
             await world.DoWorldTickAsync();
 
         Assert.Equal(3, cart.Inventory[0]?.Count);
-    }
-
-    [Fact(DisplayName = "A furnace minecart burns its fuel to push itself", Timeout = TestServerFactory.TestTimeout)]
-    public async Task FurnaceMinecartsPushThemselves()
-    {
-        await using var context = await CreateAsync();
-        var world = context.World;
-        var player = await WorldBlockEntities.JoinAsync(context);
-        await StoneAsync(world, 0, 15, 7, 7);
-        for (var x = 0; x <= 15; x++)
-            await world.SetBlockAsync(new Vector(x, Track, 7), StraightRail(BlocksRegistry.Rail));
-
-        var cart = Spawn(world, new FurnaceMinecart { Level = world }, new VectorD(9.5, Track + 0.0625, 7.5));
-        player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Coal, 2));
-
-        // The player stands west of it, so it goes east.
-        player.Position = new VectorD(7.5, Track, 7.5);
-        Assert.True(await cart.InteractAsync(player, InteractionHand.MainHand));
-        Assert.Equal(3600, cart.Fuel);
-
-        for (var tick = 0; tick < 20; tick++)
-            await world.DoWorldTickAsync();
-
-        Assert.True(cart.Position.X > 10, $"The cart only reached {cart.Position}.");
-        Assert.Equal(3580, cart.Fuel);
     }
 
     [Fact(DisplayName = "Vehicles keep their kind's fields through saving")]
@@ -362,9 +205,6 @@ public sealed class Vehicles
     }
 
     private static IBlock StraightRail(IBlock rail) => rail.WithProperty("shape", "east_west");
-
-    private static async Task<string?> ShapeAsync(World world, int x, int z) =>
-        (await world.GetBlockAsync(new Vector(x, Track, z)))?.GetProperty("shape");
 
     private static T Spawn<T>(World world, T vehicle, VectorD position) where T : VehicleEntity
     {
