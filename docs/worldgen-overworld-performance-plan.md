@@ -64,6 +64,16 @@ heightmaps; `nbt` covers the chunk as saved):
 The vanilla save format (#539) later changed the `nbt` hashes to `f72b36a825c25cc8`, `a3ae9be2af4901ed` and
 `e809ef68a3c4b1cc`. The block hashes were unchanged.
 
+The mod system (#553) changed them again:
+- **Overworld `hash` → `c73225baaf86c6fe`.** One block in the 1,024 chunks differs, at (-134, 56, 48). Tall seagrass now
+  loses its lower half when a neighbour's shape update finds the upper half gone, like vanilla's `DoublePlantBlock`,
+  which `TallSeagrassBlock` extends. Chunk (-9, 2)'s seagrass reaches into chunk (-9, 3) before (-9, 3)'s shipwreck
+  replaces the upper half with a plank, and the shipwreck's edge update now removes the lower half. The serial run
+  decorates in that order. Vanilla's server decorated (-9, 3) first, so it has water there. This is the border-order
+  caveat in [worldgen-benchmarks.md](worldgen-benchmarks.md#caveats), not a generation change.
+- **`nbt` → `0525f8628623dc64`, `badbc176a6e2a3fd` and `9fbd717769bfb03a`.** Every saved chunk gained two empty lists:
+  `block_ticks`, which vanilla writes too, and `ObsidianPortalTypes`. The nether and end block hashes were unchanged.
+
 ### Where the overworld's time goes
 
 From a sampled CPU profile of the single-threaded run. Inclusive times only: the sampler's innermost frames (`PollGC`,

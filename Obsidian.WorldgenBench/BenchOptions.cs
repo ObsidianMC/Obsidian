@@ -57,12 +57,13 @@ internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, in
 internal sealed record BenchDimension(string Name, MojangDimension Dimension, int CenterX, int CenterZ, string ExpectedHash,
     string ExpectedNbtHash)
 {
-    // Recorded at the start of the overworld performance work (origin/1.21.x e2c0e005, see
-    // docs/worldgen-overworld-performance-plan.md). Optimizations must not change them.
+    // Recorded at the start of the overworld performance work (origin/1.21.x e2c0e005), and again after the mod system
+    // (#553) changed one overworld block and the saved chunk format (see docs/worldgen-overworld-performance-plan.md).
+    // Optimizations must not change them.
     public static IReadOnlyList<BenchDimension> All { get; } =
     [
-        new("overworld", MojangDimension.Overworld, 6, -2, "446d8fced8e36799", "f72b36a825c25cc8"),
-        new("nether", MojangDimension.Nether, 0, 0, "af7e0c06757df39c", "a3ae9be2af4901ed"),
-        new("end", MojangDimension.End, 6, 0, "e2618139ae48a1ca", "e809ef68a3c4b1cc"),
+        new("overworld", MojangDimension.Overworld, 6, -2, "c73225baaf86c6fe", "0525f8628623dc64"),
+        new("nether", MojangDimension.Nether, 0, 0, "af7e0c06757df39c", "badbc176a6e2a3fd"),
+        new("end", MojangDimension.End, 6, 0, "e2618139ae48a1ca", "9fbd717769bfb03a"),
     ];
 }
