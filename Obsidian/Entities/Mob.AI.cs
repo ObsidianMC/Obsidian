@@ -269,7 +269,7 @@ public partial class Mob
         if (Alive && CanDespawn && !PersistenceRequired && CustomName == null)
         {
             var nearest = (double)float.MaxValue;
-            foreach (var player in Level.Players.Values)
+            foreach (var (_, player) in Level.Players)
             {
                 if (player.GameMode == GameMode.Spectator) continue;
                 nearest = Math.Min(nearest, (player.Position - Position).MagnitudeSquared());
