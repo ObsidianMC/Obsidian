@@ -30,6 +30,7 @@ public sealed partial class ExperienceOrb : Entity
             await RemoveAsync();
             return;
         }
+        var bounds = Dimension.CreateBBFromPosition(Position);
         var player = Level.GetPlayersInRange(Position, 8)
             .Where(candidate => candidate.Alive && candidate.GameMode != GameMode.Spectator)
             .OrderBy(candidate => (candidate.Position - Position).MagnitudeSquared()).FirstOrDefault();
@@ -39,7 +40,8 @@ public sealed partial class ExperienceOrb : Entity
             var distance = difference.Magnitude;
             if (distance is > 0 and < 8)
                 motion += difference / distance * (Math.Pow(1 - distance / 8, 2) * 0.1f);
-            if ((player.Position - Position).MagnitudeSquared() < 1 && await player.PickUpExperienceAsync(Value))
+            // Vanilla: the orb's box must overlap the player's pickup area (the player's box grown by 1 horizontally and 0.5 vertically).
+            if (bounds.Intersects(PlayerBase.PickupAreaOf(player)) && await player.PickUpExperienceAsync(Value))
             {
                 await RemoveAsync();
                 return;
@@ -47,7 +49,6 @@ public sealed partial class ExperienceOrb : Entity
         }
         var terrain = new MobTerrain(Level);
         motion.Y -= 0.03f;
-        var bounds = Dimension.CreateBBFromPosition(Position);
         var swept = new BoundingBox(VectorD.Min(bounds.Min, bounds.Min + motion), VectorD.Max(bounds.Max, bounds.Max + motion));
         var delta = EntityMovement.Clip(bounds, motion, terrain.GetCollisions(swept).ToArray());
         var grounded = motion.Y < 0 && delta.Y != motion.Y;

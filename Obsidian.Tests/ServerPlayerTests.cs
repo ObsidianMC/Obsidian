@@ -289,6 +289,43 @@ public sealed class ServerPlayerTests
         Assert.Same(pig, player.Vehicle);
     }
 
+    // Vanilla picks up an experience orb whose box overlaps the player's pickup area, not only one at its feet.
+    [Fact(Timeout = 2 * TestServerFactory.TestTimeout)]
+    public async Task ExperienceOrbsAreAbsorbedWhenTheyOverlapThePickupArea()
+    {
+        await using var context = TestServerFactory.CreateServer($"server-player-orb-{Guid.NewGuid():N}");
+        var world = context.World;
+        // An empty plains chunk, complete, so that its orbs tick.
+        var chunk = new Chunk(0, 0);
+        for (var x = 0; x < 16; x += 4)
+        {
+            for (var z = 0; z < 16; z += 4)
+            {
+                for (var y = -64; y < 320; y += 4)
+                    chunk.SetBiome(x, y, z, CodecRegistry.Biomes.Plains);
+            }
+        }
+        chunk.SetChunkStatus(ChunkGenStage.full);
+        world.LoadRegionByChunk(0, 0).SetChunk(chunk);
+        var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "OrbCollector", world);
+        await player.SetGamemodeAsync(GameMode.Survival);
+        var position = new VectorD(8, 70, 8);
+        await player.TeleportAsync(position);
+
+        // Near the head: inside the pickup area (1 block out horizontally, 0.5 above the box), so it's collected.
+        var near = new ExperienceOrb { Level = world, EntityId = Server.GetNextEntityId(), Position = position + new VectorD(0.9, 1.2, 0), Value = 3 };
+        // Two blocks out: outside the pickup area, so it stays.
+        var far = new ExperienceOrb { Level = world, EntityId = Server.GetNextEntityId(), Position = position + new VectorD(2.5, 0, 0), Value = 4 };
+        Assert.True(world.TryAddEntity(near));
+        Assert.True(world.TryAddEntity(far));
+
+        await world.DoWorldTickAsync();
+        var orbs = world.GetNonPlayerEntitiesInRange(position, 4).OfType<ExperienceOrb>().ToArray();
+        Assert.DoesNotContain(near, orbs);
+        Assert.Contains(far, orbs);
+        Assert.Equal(3, player.XpTotal);
+    }
+
     // Longer than other tests': the test world's chunks have their light reconciled across their borders when they're
     // first saved, which for 169 of them takes several seconds, more alongside the other tests.
     [Fact(Timeout = 2 * TestServerFactory.TestTimeout)]

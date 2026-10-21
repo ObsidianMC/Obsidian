@@ -336,6 +336,18 @@ public partial class PlayerBase
     private static bool IsStackable(ItemStack item) =>
         item.MaxStackSize > 1 && (item.MaxDamage <= 0 || item.Unbreakable || item.Damage <= 0);
 
+    /// <summary>The area this player picks up items and experience orbs from, as vanilla's <c>Player.aiStep</c> computes it.</summary>
+    internal static BoundingBox PickupAreaOf(IEntity player)
+    {
+        var halfWidth = (player.Dimension.Width > 0 ? player.Dimension.Width : 0.6) / 2;
+        var height = player.Dimension.Height > 0 ? player.Dimension.Height : player.Swimming ? 0.6 : player.Sneaking ? 1.5 : 1.8;
+        var feet = player.Position;
+        var playerBox = new BoundingBox(new VectorD(feet.X - halfWidth, feet.Y, feet.Z - halfWidth),
+            new VectorD(feet.X + halfWidth, feet.Y + height, feet.Z + halfWidth));
+        var vehicleBox = player.Vehicle is Mob { IsRemoved: false } vehicle ? vehicle.Dimension.CreateBBFromPosition(vehicle.Position) : (BoundingBox?)null;
+        return GetPickupArea(playerBox, vehicleBox);
+    }
+
     /// <summary>
     /// Collects the item entities in the player's pickup area. The world tick calls it once a tick, like vanilla's player
     /// tick; movement doesn't, so pickup delays and timing don't depend on how often the client sends packets.
@@ -344,13 +356,7 @@ public partial class PlayerBase
     {
         if (!this.Alive || this.GameMode == GameMode.Spectator || this.Respawning)
             return;
-        var halfWidth = (this.Dimension.Width > 0 ? this.Dimension.Width : 0.6) / 2;
-        var height = this.Dimension.Height > 0 ? this.Dimension.Height : this.Swimming ? 0.6 : this.Sneaking ? 1.5 : 1.8;
-        var feet = this.Position;
-        var playerBox = new BoundingBox(new VectorD(feet.X - halfWidth, feet.Y, feet.Z - halfWidth),
-            new VectorD(feet.X + halfWidth, feet.Y + height, feet.Z + halfWidth));
-        var vehicleBox = this.Vehicle is Mob { IsRemoved: false } vehicle ? vehicle.Dimension.CreateBBFromPosition(vehicle.Position) : (BoundingBox?)null;
-        var area = GetPickupArea(playerBox, vehicleBox);
+        var area = PickupAreaOf(this);
         // The item positions (the bottom centre of an item's box) that can overlap the area, and a sphere around them.
         var itemMin = area.Min - new VectorD(ItemHalfWidth, ItemHeight, ItemHalfWidth);
         var itemMax = area.Max + new VectorD(ItemHalfWidth, 0, ItemHalfWidth);
