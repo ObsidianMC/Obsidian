@@ -454,6 +454,12 @@ public sealed class Chunk : IChunk
 
     public void SetBlock(int x, int y, int z, IBlock block)
     {
+        // Like vanilla's chunks under generation, a block outside the build height isn't placed, so generation reaching
+        // past the world (the legacy decorators layer blocks under a surface that can be the world's bottom) is dropped
+        // rather than failing the chunk.
+        if ((uint)(y - this.MinY) >= (uint)this.Height)
+            return;
+
         if (this.RuntimeLight is RuntimeLightEngine light)
         {
             lock (light.TickLock)
