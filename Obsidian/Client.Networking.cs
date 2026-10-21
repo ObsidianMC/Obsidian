@@ -106,7 +106,7 @@ public partial class Client
             return;
 
         this.flushScheduled = true;
-        NetworkThreads.Post(this.flushOutput);
+        WorkerThreads.Network.Post(this.flushOutput);
     }
 
     // Runs on a network thread: frames what waits, appends it to the socket's buffer and starts sending it. What's sent
@@ -147,7 +147,7 @@ public partial class Client
 
                 if (!this.IsClosing && this.pendingFrames.Count > 0)
                 {
-                    NetworkThreads.Post(this.flushOutput);
+                    WorkerThreads.Network.Post(this.flushOutput);
                 }
                 else
                 {

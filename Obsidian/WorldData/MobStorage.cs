@@ -129,7 +129,7 @@ internal sealed class MobStorage(AbstractLevel level) : IAsyncDisposable
                 await file.SetChunkAsync(NumericsHelper.Modulo(x, 32), NumericsHelper.Modulo(z, 32), stream.ToArray());
             }
             foreach (var file in files.Values)
-                file.Flush();
+                await file.FlushAsync();
         }
         finally
         {

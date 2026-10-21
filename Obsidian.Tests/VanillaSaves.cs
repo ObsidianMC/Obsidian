@@ -517,7 +517,7 @@ public sealed class VanillaSaves : IDisposable
         await using var file = new RegionFile(Path.Join(regionFolder, "r.0.0.mca"), NbtCompression.ZLib);
         await file.InitializeAsync();
         await file.SetChunkAsync(0, 0, stream.ToArray());
-        file.Flush();
+        await file.FlushAsync();
     }
 
     private static async Task<IChunk> LoadChunkAsync(string worldFolder)

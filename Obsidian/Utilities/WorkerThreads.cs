@@ -1,43 +1,75 @@
 using System.Collections.Concurrent;
 using System.Threading;
 
-namespace Obsidian.Net;
+namespace Obsidian.Utilities;
 
 /// <summary>
-/// The threads connections' output is written on. Like vanilla's network threads, they take the work of getting a packet
-/// onto the wire (compressing, encrypting and sending it) off whoever sent it, so a tick, the chunk loop or a broadcast
-/// only serializes its packets. They're dedicated rather than the thread pool's, so busy ticks or plugins don't delay
-/// players' output either.
+/// Dedicated threads that run work posted to them, for work that shouldn't take or wait for the thread pool, which
+/// the levels' ticks, packet handlers and plugins run on: a busy pool doesn't delay it, and it doesn't hold pool threads.
 /// </summary>
 /// <remarks>
-/// Work posted here must not throw or block: every connection's output shares these threads.
+/// Work posted here must not block waiting for other work on the same threads.
 /// </remarks>
-internal static class NetworkThreads
+internal sealed class WorkerThreads
 {
-    private static readonly BlockingCollection<Action> queue = [];
+    /// <summary>
+    /// Where connections' output is written, like vanilla's network threads: compressing, encrypting and sending happen
+    /// here rather than on whoever sent the packet, so a tick, the chunk loop or a broadcast only serializes it. Mostly
+    /// compression, so a few threads keep up with many players. Work here must not throw or block.
+    /// </summary>
+    public static WorkerThreads Network { get; } = new("Network", Math.Clamp(Environment.ProcessorCount / 2, 1, 4));
 
-    static NetworkThreads()
+    /// <summary>
+    /// Where blocking file work runs, like vanilla's IO workers: flushing region files to disk waits on the disk, which
+    /// would otherwise hold a pool thread for every region an autosave flushes.
+    /// </summary>
+    public static WorkerThreads Storage { get; } = new("Storage", 8);
+
+    private readonly BlockingCollection<Action> queue = [];
+
+    private WorkerThreads(string name, int threadCount)
     {
-        // Mostly compression and the per-byte cipher: a few threads keep up with many players.
-        var threadCount = Math.Clamp(Environment.ProcessorCount / 2, 1, 4);
         for (var i = 0; i < threadCount; i++)
         {
-            new Thread(Work)
+            new Thread(this.Work)
             {
                 IsBackground = true,
-                Name = $"Network {i + 1}"
+                Name = $"{name} {i + 1}"
             }.Start();
         }
     }
 
     /// <summary>
-    /// Runs <paramref name="work"/> on one of the network threads.
+    /// Runs <paramref name="work"/> on one of the threads. It must not throw.
     /// </summary>
-    public static void Post(Action work) => queue.Add(work);
+    public void Post(Action work) => this.queue.Add(work);
 
-    private static void Work()
+    /// <summary>
+    /// Runs <paramref name="work"/> on one of the threads.
+    /// </summary>
+    /// <returns>A task that completes once it ran, or fails with what it threw. Its continuations don't run here.</returns>
+    public Task RunAsync(Action work)
     {
-        foreach (var work in queue.GetConsumingEnumerable())
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        this.Post(() =>
+        {
+            try
+            {
+                work();
+                done.SetResult();
+            }
+            catch (Exception exception)
+            {
+                done.SetException(exception);
+            }
+        });
+
+        return done.Task;
+    }
+
+    private void Work()
+    {
+        foreach (var work in this.queue.GetConsumingEnumerable())
             work();
     }
 }

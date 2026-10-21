@@ -379,7 +379,7 @@ public sealed partial class Client : IClient
     /// <summary>
     /// Sends <paramref name="packet"/> without plugins' handlers: at once when nothing queued before it is still on its
     /// way, or else behind what is, so that it never overtakes a packet queued earlier. Sending it at once serializes it
-    /// on the caller's thread; the network threads compress, encrypt and write it (see <see cref="NetworkThreads"/>).
+    /// on the caller's thread; the network threads compress, encrypt and write it (see <see cref="WorkerThreads.Network"/>).
     /// </summary>
     /// <returns>Whether it's sent or on its way: the client can receive it.</returns>
     public bool SendPacket(IClientboundPacket packet)

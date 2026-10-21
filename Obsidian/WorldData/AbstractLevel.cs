@@ -1166,22 +1166,43 @@ public abstract partial class AbstractLevel : ILevel
     /// </remarks>
     public async virtual Task FlushRegionsAsync()
     {
-        await simulationGate.WaitAsync();
+        Region[] written = [];
         try
         {
-            this.TakeBlockEntityChanges();
+            await simulationGate.WaitAsync();
+            try
+            {
+                this.TakeBlockEntityChanges();
 
-            Interlocked.Exchange(ref this.jobsSinceFlush, 0);
-            SavingEntities = true;
-            await Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
-            this.SavePluginData();
+                Interlocked.Exchange(ref this.jobsSinceFlush, 0);
+                SavingEntities = true;
+                var regions = Regions.Values.ToArray();
+                written = [.. regions.OfType<Region>()];
+                await Task.WhenAll(regions.Select(region => region is Region concrete
+                    ? concrete.WriteChangesAsync()
+                    : region.FlushAsync()));
+                this.SavePluginData();
+            }
+            finally
+            {
+                SavingEntities = false;
+                simulationGate.Release();
+            }
         }
-        finally
+        catch
         {
-            SavingEntities = false;
-            simulationGate.Release();
+            // What was written still reaches the disk when another region or the plugin data fails; that failure is
+            // the one reported.
+            await SyncToDiskAsync(written).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            throw;
         }
+
+        // Like vanilla's autosave, which leaves the disk to its IO workers, the level ticks again while the files
+        // reach the disk; the flush still ends once they have.
+        await SyncToDiskAsync(written);
     }
+
+    private static Task SyncToDiskAsync(Region[] regions) => Task.WhenAll(regions.Select(region => region.SyncToDiskAsync()));
 
     /// <summary>
     /// Spawns a falling block entity of the given block state, centered on the block at the position.
