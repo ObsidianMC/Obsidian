@@ -20,6 +20,8 @@ public partial class OpenScreenPacket
         // A plugin's menu type has an id after vanilla's, which WindowType doesn't name.
         if (inventory is MenuContainer menu)
             Type = (WindowType)menu.Menu.Id;
+        else if (inventory.Type == InventoryType.Crafter)
+            Type = WindowType.CRAFTER3x3;
         else if (Enum.TryParse<WindowType>(inventory.Type.ToString(), true, out var type))
             Type = type;
         else if (Enum.TryParse($"generic9x{inventory.Size / 9}", true, out type))

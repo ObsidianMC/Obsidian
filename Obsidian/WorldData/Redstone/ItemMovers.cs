@@ -149,7 +149,7 @@ internal sealed class DispenserComponent(bool dropper) : RedstoneComponent
 
     // Vanilla's DefaultDispenseItemBehavior.spawnItem: from 0.7 blocks out of the centre, lowered by a little, with the
     // item entity's own motion drawn and replaced by one along the facing.
-    private static void DropItem(AbstractLevel level, Vector position, BlockFace facing, ItemStack item)
+    internal static void DropItem(AbstractLevel level, Vector position, BlockFace facing, ItemStack item)
     {
         var step = facing.ToVector();
         var x = position.X + 0.5 + 0.7 * step.X;

@@ -2056,7 +2056,7 @@ changing the original recipe afterward has no effect:
 - Using a campfire with a campfire-cooking ingredient places one item in its first free slot. Its four items cook
   independently while lit and drop their results; an unlit fire cools progress by two ticks per tick.
 - Clients receive vanilla's seven recipe input property sets and stonecutter choices on join and when recipes
-  change. Stonecutter and smithing result slots are still unimplemented.
+  change. The stonecutter and smithing table make their recipes' results.
 
 An identifier (in snake case) names one recipe: registering a taken one throws. Players online follow changes without
 reconnecting. Registered recipes are added to their books with vanilla's recipe book packet (without the new-recipe

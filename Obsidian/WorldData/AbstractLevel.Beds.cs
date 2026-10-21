@@ -1,4 +1,5 @@
 using Obsidian.API.Inventory;
+using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.WorldData;
@@ -11,6 +12,73 @@ public abstract partial class AbstractLevel
 
     private const int MaxAnchorCharges = 4;
 
+    private const int DayLength = 24000;
+
+    // How many players were asleep at the last tick, to tell players when it changes (vanilla's SleepStatus).
+    private int previousSleepers;
+
+    /// <summary>
+    /// Skips the night like vanilla's <c>ServerLevel.tick</c>: once enough players (by <c>players_sleeping_percentage</c>,
+    /// of those not spectating) are asleep, and have slept long enough, the time moves on to the next morning where
+    /// <c>advance_time</c> lets it, the rain stops where <c>advance_weather</c> lets it, and everyone wakes. Players are
+    /// told how many sleep whenever that changes.
+    /// </summary>
+    private async ValueTask TickSleepingAsync()
+    {
+        var players = this.Players.Values.OfType<PlayerBase>()
+            .Where(player => player.GameMode != GameMode.Spectator)
+            .ToArray();
+        if (players.Length == 0)
+        {
+            previousSleepers = 0;
+            return;
+        }
+
+        var percentage = LevelData.GetIntegerRule("players_sleeping_percentage", 100);
+        var sleeping = players.Count(player => player.Sleeping);
+        var needed = Math.Max(1, (int)Math.Ceiling(players.Length * percentage / 100.0));
+
+        if (sleeping != previousSleepers && (sleeping > 0 || previousSleepers > 0))
+        {
+            var status = sleeping >= needed
+                ? new ChatMessage { Translate = "sleep.skipping_night" }
+                : new ChatMessage { Translate = "sleep.players_sleeping" }
+                    .AddChatComponent(sleeping.ToString())
+                    .AddChatComponent(needed.ToString());
+
+            foreach (var player in players)
+                await player.QueuePacketAsync(new SystemChatPacket(status, overlay: true));
+        }
+
+        previousSleepers = sleeping;
+
+        if (sleeping < needed || players.Count(player => player.SleptLongEnough) < needed)
+            return;
+
+        if (LevelData.GetBooleanRule("advance_time"))
+        {
+            var morning = LevelData.Time + DayLength;
+            this.Time = morning - morning % DayLength;
+        }
+
+        foreach (var player in players.Where(player => player.Sleeping))
+            await player.StopSleepingAsync();
+
+        if (LevelData.GetBooleanRule("advance_weather") && (LevelData.Raining || LevelData.Thundering))
+        {
+            LevelData.RainTime = 0;
+            LevelData.Raining = false;
+            LevelData.ThunderTime = 0;
+            LevelData.Thundering = false;
+
+            PacketBroadcaster.QueuePacketToLevel(this, new GameEventPacket(ChangeGameStateReason.EndRaining));
+            PacketBroadcaster.QueuePacketToLevel(this, new GameEventPacket(ChangeGameStateReason.RainLevelChange, 0));
+            PacketBroadcaster.QueuePacketToLevel(this, new GameEventPacket(ChangeGameStateReason.ThunderLevelChange, 0));
+        }
+
+        previousSleepers = 0;
+    }
+
     // The player inventory's offhand slot.
     private const int OffhandSlot = 45;
 
@@ -20,7 +88,7 @@ public abstract partial class AbstractLevel
     /// otherwise a player is told the bed is occupied, or that they can't sleep now when the rule says so.
     /// </summary>
     /// <remarks>
-    /// Players can't sleep yet, nor set their spawn with a bed: a bed that lets them does nothing more.
+    /// A bed that works sets the player's spawn and puts them to sleep (see <see cref="PlayerBase.StartSleepInBedAsync"/>).
     /// </remarks>
     /// <returns>Whether <paramref name="block"/> is a bed, which the use is then done with.</returns>
     internal async ValueTask<bool> UseBedAsync(IPlayer player, Vector position, IBlock block)
@@ -66,10 +134,13 @@ public abstract partial class AbstractLevel
         {
             var occupied = new ChatMessage { Translate = "block.minecraft.bed.occupied" };
             await player.QueuePacketAsync(new SystemChatPacket(occupied, overlay: true));
+            return true;
         }
-        else if (!rule.AllowsSleep(this) && rule.ErrorMessage is ChatMessage reason)
+
+        if (player is PlayerBase sleeper
+            && await sleeper.StartSleepInBedAsync(head, towardsHead, rule) is ChatMessage problem)
         {
-            await player.QueuePacketAsync(new SystemChatPacket(reason, overlay: true));
+            await player.QueuePacketAsync(new SystemChatPacket(problem, overlay: true));
         }
 
         return true;
@@ -81,8 +152,7 @@ public abstract partial class AbstractLevel
     /// explodes.
     /// </summary>
     /// <remarks>
-    /// Players can't set their spawn with a working anchor yet: using one does nothing more. Unlike vanilla, an anchor
-    /// next to water explodes like any other.
+    /// A working anchor sets the player's spawn. Unlike vanilla, an anchor next to water explodes like any other.
     /// </remarks>
     /// <returns>
     /// Whether the use is done with; an empty anchor, the offhand without glowstone, and the main hand while the
@@ -146,6 +216,12 @@ public abstract partial class AbstractLevel
                 BadRespawnPointPower,
                 fire: true,
                 ExplosionInteraction.Block);
+        }
+        else if (player is PlayerBase owner)
+        {
+            // Like vanilla's RespawnAnchorBlock.useWithoutItem: a working anchor sets the player's spawn.
+            await owner.SetRespawnPointAsync(
+                new RespawnPoint(this.DimensionName, position, player.Yaw, Forced: false), announce: true);
         }
 
         return true;

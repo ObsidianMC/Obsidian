@@ -169,6 +169,7 @@ public partial class PlayerBase
         await TickAirSupplyAsync();
         if (!Alive)
             return;
+        await TickSleepAsync();
         TimeSinceRest = Sleeping ? 0 : (int)Math.Min(int.MaxValue, (long)TimeSinceRest + 1);
         var grounded = MovementFlags.HasFlag(MovementFlags.OnGround);
         if (foodPosition is VectorD previous)

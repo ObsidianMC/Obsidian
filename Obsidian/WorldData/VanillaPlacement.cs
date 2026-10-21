@@ -44,7 +44,12 @@ internal static class VanillaPlacement
             case "SlabBlock":
                 return Waterlog(level, block.WithProperty("type", upperHalf ? "top" : "bottom"), position);
             case "BedBlock":
-                return block.WithProperty("facing", Name(looking));
+                // Vanilla's BedBlock.getStateForPlacement: the head goes in front, the way the player looks, so that
+                // space must take it.
+                if (!level.GetBlock(position + looking.ToVector()).CanBeReplaced())
+                    return null;
+
+                return block.WithProperty("facing", Name(looking)).WithProperty("part", "foot").WithProperty("occupied", false);
             case "AnvilBlock":
                 return block.WithProperty("facing", Name(looking.ClockWise()));
             case "LadderBlock":
@@ -79,13 +84,25 @@ internal static class VanillaPlacement
         replacesClicked ? position.Y : position.Y - face.ToVector().Y;
 
     /// <summary>
-    /// Vanilla <c>setPlacedBy</c>: a door's upper half goes on top of the lower half a player placed.
+    /// Vanilla <c>setPlacedBy</c>: a door's upper half goes on top of the lower half a player placed, and a bed's head
+    /// in front of its foot.
     /// </summary>
     public static void OnPlacedByPlayer(LevelBlockUpdates level, Vector position, IBlock state)
     {
-        if (state.BlockClass() == "DoorBlock" && level.GetBlock(position).IsSameState(state))
-            level.Set(position + Vector.Up, Waterlog(level, state.WithProperty("half", "upper"), position + Vector.Up),
-                BlockUpdateFlags.All);
+        if (!level.GetBlock(position).IsSameState(state))
+            return;
+
+        switch (state.BlockClass())
+        {
+            case "DoorBlock":
+                level.Set(position + Vector.Up, Waterlog(level, state.WithProperty("half", "upper"), position + Vector.Up),
+                    BlockUpdateFlags.All);
+                break;
+            case "BedBlock":
+                var head = position + FeatureHelpers.ParseFace(state.GetProperty("facing")).ToVector();
+                level.Set(head, state.WithProperty("part", "head"), BlockUpdateFlags.All);
+                break;
+        }
     }
 
     /// <summary>

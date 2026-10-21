@@ -38,6 +38,9 @@ internal static class VanillaBlockEntities
         "minecraft:campfire" => new CampfireBlockEntity(),
         "minecraft:brewing_stand" => new BrewingStandBlockEntity(position),
         "minecraft:comparator" => new Redstone.ComparatorBlockEntity(),
+        "minecraft:beacon" => new BeaconBlockEntity(),
+        "minecraft:lectern" => new LecternBlockEntity(position),
+        "minecraft:crafter" => new CrafterBlockEntity(position),
         _ => null
     };
 

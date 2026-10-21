@@ -53,6 +53,8 @@ internal static class VanillaRedstone
         var dispenser = new DispenserComponent(dropper: false);
         var dropper = new DispenserComponent(dropper: true);
         var tnt = new TntComponent();
+        var lectern = new LecternComponent();
+        var crafter = new CrafterComponent();
 
         for (var id = 0; id < table.Length; id++)
         {
@@ -76,6 +78,8 @@ internal static class VanillaRedstone
                 "DispenserBlock" => dispenser,
                 "DropperBlock" => dropper,
                 "TntBlock" => tnt,
+                "LecternBlock" => lectern,
+                "CrafterBlock" => crafter,
                 _ => null
             };
         }

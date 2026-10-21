@@ -190,6 +190,7 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
 
                 parts.Add($"Weight = {json.GetProperty("weight").GetInt32()}");
                 parts.Add($"MaxLevel = {json.GetProperty("max_level").GetInt32()}");
+                parts.Add($"AnvilCost = {json.GetProperty("anvil_cost").GetInt32()}");
                 parts.Add($"MinCost = {EmitCost(json.GetProperty("min_cost"))}");
                 parts.Add($"MaxCost = {EmitCost(json.GetProperty("max_cost"))}");
 

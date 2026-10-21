@@ -150,17 +150,19 @@ or result-slot commit callbacks for custom menus.
 **Where to start:** capture each supported special recipe's output and remainder behavior in vanilla 1.21.11 and
 extend the shared matcher and consumption path together. Add a custom-menu commit API when a concrete menu needs it.
 
-## Stonecutting and smithing result slots
+## Workstation details
 
-**Status:** open, for vanilla's recipes as much as plugins'.
+**Status:** mostly done. The anvil, smithing table, stonecutter, loom, grindstone and cartography table work like
+vanilla's menus (`MainEventHandler.Workstations`), with vanilla's and plugins' stonecutting and smithing recipes.
 
-Furnaces, smokers, blast furnaces and campfires cook vanilla's and plugins' recipes, and `UpdateRecipes` supplies
-clients' input filters and stonecutter choices on join and reload (see [plugin content](plugin-content.md#recipes)).
-The stonecutter and smithing table still have no server-side recipe result slots.
-
-**Where to start:**
-
-- Add the stonecutter's and smithing table's result slots, like the crafting grid's.
+- The smithing table finds a trim's material from a fixed item list rather than the addition's
+  `provides_trim_material` component, so a plugin item can't supply a trim material.
+- The loom's patterns come from `BannerPatternsRegistry`, which only has vanilla's patterns and pattern items.
+- The stonecutter's, loom's and cartography table's take sounds go only to the player using them, and a cartography table's map is made new
+  as it's taken, even when the take then fails.
+- The beacon, lectern and crafter work too (`RedstoneBlockEntities`, `MainEventHandler.RedstoneMenus`). A beacon
+  measures its pyramid and beam all at once every 80 game ticks rather than a layer a tick, and doesn't fire
+  `construct_beacon`. A crafter crafts only shaped and shapeless recipes, like the crafting table.
 
 ## Plant growth beyond saplings
 
@@ -218,11 +220,11 @@ different one. Obsidian deliberately doesn't emulate Java's heap layout for this
 the redstone lamp work (see [plugin content](plugin-content.md#redstone)); the rest of vanilla's redstone doesn't.
 
 - **Consumers.** Doors, trapdoors and fence gates, pistons, note blocks, powered, activator and detector rails, TNT,
-  bells, crafters and copper bulbs don't react to power. Hoppers lock, and droppers and dispensers fire (see
+  bells and copper bulbs don't react to power. Hoppers lock, droppers and dispensers fire, and crafters craft (see
   [item access](#item-access-beyond-containers)).
 - **Sources.** Observers, daylight detectors, target blocks, trapped chests, tripwire hooks, detector rails,
-  lecterns, lightning rods and sculk sensors give no power, though dust connects to them as to any signal source.
-- **Analog outputs.** Comparators read 0 from jukeboxes, lecterns, chiseled bookshelves, crafters, decorated pots,
+  lightning rods and sculk sensors give no power (a lectern pulses as its page turns), though dust connects to them as to any signal source.
+- **Analog outputs.** Comparators read 0 from jukeboxes, chiseled bookshelves, decorated pots,
   shelves, command blocks, sculk sensors, detector rails, creaking hearts, copper bulbs, copper golem statues and
   copper chests.
 - **Timing.** Comparators hear of a container's items changing at the end of the level's block entity tick (through
@@ -248,7 +250,6 @@ hoppers, droppers and dispensers; the rest of vanilla's item movers aren't model
   `block_activate` game event.
 - **Composters** (vanilla's `WorldlyContainerHolder`) give no item access, and **minecarts with chests or hoppers**
   are neither containers hoppers reach (vanilla's `getEntityContainer`) nor hoppers themselves.
-- **Crafters** are saved as data block entities, so they give no item access and don't craft.
 - **Hopper timing.** A hopper takes in item entities on its own tick, not also as they move into it (vanilla's
   `entityInside`), and takes them in entity id order rather than vanilla's entity section order. Hoppers tick in
   their chunk's block entity order, not vanilla's level-wide list; the cooldown rules make chains independent of
@@ -266,15 +267,13 @@ composter is an `IItemAccess` that `AbstractLevel.GetItemAccess` returns before 
 
 ## Sleeping and spawn points
 
-**Status:** open.
+**Status:** mostly done. Players sleep in beds, skip the night by `players_sleeping_percentage`, and respawn at
+their bed or charged respawn anchor, saved in vanilla's `respawn` field (see `PlayerBase.Sleeping`).
 
-Beds and respawn anchors explode where their environment attributes say they don't work (see
-[plugin content](plugin-content.md#whats-checked)), but where they work, players can't sleep in a bed or set their
-spawn point with either: using one does nothing more, and players respawn at the world spawn. Unlike vanilla's, a
-respawn anchor next to water explodes like any other.
-
-**Where to start:** sleeping (vanilla's `Player.startSleepInBed` and the night skip) and players' respawn points,
-which `bed_rule`'s `can_sleep` and `can_set_spawn` and `respawn_anchor_works` then decide (see `LevelEnvironment`).
+- Unlike vanilla's, a respawn anchor next to water explodes like any other.
+- Waking stands the player up on the first free spot around the bed, not by vanilla's
+  `BedBlock.findStandUpPosition` order.
+- `/spawnpoint` doesn't set a forced respawn point yet, and villagers in a bed don't keep players out of it.
 
 ## Mods' menus in the inventory screen
 
@@ -382,8 +381,7 @@ Progress item from being marked done:
   vanilla's compact tree layout; visibility-depth rules, chat announcements and full icon component JSON parsing
   remain. Display flags and telemetry are encoded, but telemetry is not collected.
 - Supported triggers are listed in [Progress](plugin-content.md#progress). `bred_animals` is deferred because
-  breeding currently keeps no responsible-player identity. Other trigger ids never fire. Existing bed use cannot
-  put a player to sleep yet, so `slept_in_bed` currently requires a plugin to set `Sleeping`.
+  breeding currently keeps no responsible-player identity. Other trigger ids never fire.
 - Predicate support is deliberately strict. Unsupported condition fields never match, including component
   predicates other than active enchantments, entity flags/equipment/effects/subpredicates, killing-blow/damage
   predicates, biome/structure/light/fluid/smokey location predicates, `recipe_crafted` ingredients, location
