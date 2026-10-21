@@ -21,8 +21,9 @@ public abstract partial class AbstractLevel
 
     private sealed record TicketChunks(HashSet<long> Loaded, HashSet<long> Ticking);
 
-    // A player or explicit world request survives ticket release; a dispatched job finishes under its pins.
-    private enum GenerationDemand { Ticket, Retained, Running }
+    // An explicit world request survives ticket release, and a dispatched job finishes under its pins. Ticket and player
+    // requests are dropped once neither a ticket nor a player's view needs the chunk (see DiscardUnneededGeneration).
+    private enum GenerationDemand { Ticket, Player, Retained, Running }
 
     private sealed class ChunkTicket(
         AbstractLevel level, PluginOwnership? owner, long[] loaded, long[] ticking) : IDisposable
@@ -161,8 +162,9 @@ public abstract partial class AbstractLevel
         bool Discard(long key)
         {
             if (this.queuedChunks.TryGetValue(key, out var demand)
-                && demand == GenerationDemand.Ticket
-                && !this.IsTicketLoaded(key))
+                && demand is GenerationDemand.Ticket or GenerationDemand.Player
+                && !this.IsTicketLoaded(key)
+                && !this.IsInPlayerView(key))
             {
                 this.queuedChunks.TryRemove(key, out _);
                 return true;
@@ -181,6 +183,18 @@ public abstract partial class AbstractLevel
     }
 
     private bool IsTicketLoaded(long chunk) => Volatile.Read(ref this.ticketChunks).Loaded.Contains(chunk);
+
+    private bool IsInPlayerView(long chunk)
+    {
+        NumericsHelper.LongToInts(chunk, out var x, out var z);
+        foreach (var player in this.Players.Values)
+        {
+            if (player is Entities.Player viewer && viewer.WantsChunk(x, z))
+                return true;
+        }
+
+        return false;
+    }
 
     // Called between ticks; serialize the retirement decision with ticket admission, without holding this lock
     // through the chunk's asynchronous save. A ticket acquired during that save reloads on the management pass.

@@ -464,7 +464,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     internal async Task PrepareAreaAsync(int minX, int minZ, int maxX, int maxZ, CancellationToken cancellationToken = default)
     {
         // Completing a chunk decorates its neighbors, and decorating a chunk carves its neighbors.
-        await Parallel.ForEachAsync(Area(minX - 2, minZ - 2, maxX + 2, maxZ + 2), cancellationToken,
+        await Parallel.ForEachAsync(Area(minX - 2, minZ - 2, maxX + 2, maxZ + 2), GenerationThreads.Parallel(cancellationToken),
             async (position, _) => await this.CarveAsync(position.X, position.Z));
 
         await InWavesAsync(Area(minX - 1, minZ - 1, maxX + 1, maxZ + 1), position => this.DecorateAsync(position.X, position.Z));
@@ -476,7 +476,8 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
             var all = positions.ToList();
             for (var wave = 0; wave < 9; wave++)
             {
-                await Parallel.ForEachAsync(all.Where(position => Mod3(position.X) * 3 + Mod3(position.Z) == wave), cancellationToken,
+                await Parallel.ForEachAsync(all.Where(position => Mod3(position.X) * 3 + Mod3(position.Z) == wave),
+                    GenerationThreads.Parallel(cancellationToken),
                     async (position, _) => await step(position));
             }
         }
@@ -502,8 +503,8 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         if ((await this.GetChunkAsync(cx, cz)).ChunkStatus >= ChunkGenStage.features)
             return;
 
-        // On the thread pool, so a caller starting several decorations doesn't run them one after another.
-        await this.RunStepAsync(cx, cz, ChunkGenStage.features, () => Task.Run(() => this.DecorateStepAsync(cx, cz)));
+        // On the generation threads, so a caller starting several decorations doesn't run them one after another.
+        await this.RunStepAsync(cx, cz, ChunkGenStage.features, () => GenerationThreads.Run(() => this.DecorateStepAsync(cx, cz)));
     }
 
     private async Task DecorateStepAsync(int cx, int cz)
@@ -563,14 +564,14 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     }
 
     /// <summary>
-    /// Generates a chunk up to its carvers, on the thread pool, unless that's done.
+    /// Generates a chunk up to its carvers, on the generation threads, unless that's done.
     /// </summary>
     private async Task CarveAsync(int cx, int cz)
     {
         if ((await this.GetChunkAsync(cx, cz)).ChunkStatus >= ChunkGenStage.carvers)
             return;
 
-        await this.RunStepAsync(cx, cz, ChunkGenStage.carvers, () => Task.Run(async () =>
+        await this.RunStepAsync(cx, cz, ChunkGenStage.carvers, () => GenerationThreads.Run(async () =>
         {
             using var chunkLock = await this.LockAsync(cx, cz, 0);
             this.GenerateUpToCarvers(await this.GetChunkAsync(cx, cz), ChunkGenStage.carvers);

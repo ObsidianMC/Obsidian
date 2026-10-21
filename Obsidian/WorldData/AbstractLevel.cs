@@ -908,8 +908,9 @@ public abstract partial class AbstractLevel : ILevel
                 return;
             }
 
-            // On the thread pool, so a job that finishes at once doesn't start the next one inside it, or run on the tick.
-            _ = Task.Run(() => this.GenerateQueuedChunkAsync(job, startNext: true));
+            // On the generation threads, so a job that finishes at once doesn't start the next one inside it, and
+            // generating never runs on the tick or takes the thread pool from the network.
+            _ = Generators.GenerationThreads.Run(() => this.GenerateQueuedChunkAsync(job, startNext: true));
         }
     }
 
@@ -967,14 +968,53 @@ public abstract partial class AbstractLevel : ILevel
             if (ticketOnly && !this.IsTicketLoaded(packedXZ))
                 return;
 
-            var demand = ticketOnly ? GenerationDemand.Ticket : GenerationDemand.Retained;
-            if (this.queuedChunks.TryAdd(packedXZ, demand))
-                this.ChunksToGen.Enqueue(packedXZ);
-            else if (!ticketOnly
-                && this.queuedChunks.TryGetValue(packedXZ, out var existing)
-                && existing == GenerationDemand.Ticket)
-                this.queuedChunks[packedXZ] = GenerationDemand.Retained;
+            this.QueueGenerationLocked(packedXZ, ticketOnly ? GenerationDemand.Ticket : GenerationDemand.Retained);
         }
+    }
+
+    // Called under chunkTicketLock and waitingJobs. A request kept regardless of tickets and views replaces one that
+    // isn't.
+    private void QueueGenerationLocked(long packedXZ, GenerationDemand demand)
+    {
+        if (this.queuedChunks.TryAdd(packedXZ, demand))
+            this.ChunksToGen.Enqueue(packedXZ);
+        else if (demand == GenerationDemand.Retained
+            && this.queuedChunks.TryGetValue(packedXZ, out var existing)
+            && existing is GenerationDemand.Ticket or GenerationDemand.Player)
+            this.queuedChunks[packedXZ] = GenerationDemand.Retained;
+    }
+
+    /// <summary>
+    /// Queues the chunks a player's view needs that aren't complete in memory, to be loaded or generated nearest to a
+    /// player first, until no player's view has them (see <see cref="Entities.Player.WantsChunk"/>).
+    /// </summary>
+    internal void RequestChunks(IEnumerable<long> chunks)
+    {
+        lock (this.chunkTicketLock)
+        lock (this.waitingJobs)
+        {
+            foreach (var chunk in chunks)
+            {
+                NumericsHelper.LongToInts(chunk, out var x, out var z);
+                if (this.GetLoadedChunk(x, z) is null)
+                    this.QueueGenerationLocked(chunk, GenerationDemand.Player);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The chunk at (<paramref name="chunkX"/>, <paramref name="chunkZ"/>) if it's in memory and complete, without
+    /// loading or generating it: what a player's view sends (see <see cref="RequestChunks"/>).
+    /// </summary>
+    internal IChunk? GetReadyChunk(int chunkX, int chunkZ)
+    {
+        if (this.GetLoadedChunk(chunkX, chunkZ) is not IChunk chunk)
+            return null;
+
+        // Like GetChunkAsync finding a complete chunk.
+        this.LoadedChunks.Add(NumericsHelper.IntsToLong(chunkX, chunkZ));
+        this.Fluids.Track(chunk);
+        return chunk;
     }
 
     private void PinGenerationArea(int chunkX, int chunkZ, int delta)
@@ -1362,7 +1402,7 @@ public abstract partial class AbstractLevel : ILevel
         while (this.ChunksToGen.TryDequeue(out var job))
         {
             await this.generationSlots.WaitAsync(cancellationToken);
-            jobs.Add(this.GenerateQueuedChunkAsync(job));
+            jobs.Add(Generators.GenerationThreads.Run(() => this.GenerateQueuedChunkAsync(job)));
 
             while (completedChunks < jobs.Count && jobs[completedChunks].IsCompleted)
                 completedChunks++;
