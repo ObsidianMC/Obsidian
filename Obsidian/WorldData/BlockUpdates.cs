@@ -127,6 +127,13 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
             return true;
         }
 
+        // A vanilla class's tick override, found from the class that declares it.
+        if (BlocksRegistry.GetTickBehavior(state.RegistryId) is IScheduledTickBehavior owner)
+        {
+            owner.Tick(this, position, state, level.GrowthRandom);
+            return true;
+        }
+
         if (IsVanillaFalling(state))
             this.Fall(position, state);
 
@@ -230,6 +237,9 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
 
         if (VanillaPlacement.UpdateShape(state, direction, neighbor) is IBlock vanilla)
             return vanilla;
+        // A vanilla class's updateShape override, found from the class that declares it.
+        if (BlocksRegistry.GetShapeUpdateBehavior(state.RegistryId) is IShapeUpdateBehavior owner)
+            return owner.UpdateShape(this, position, state, direction, neighborPosition, neighbor) ?? state;
 
         if (!BlockBehaviors.TryEnter(state, out var behavior, out var call))
             return null;

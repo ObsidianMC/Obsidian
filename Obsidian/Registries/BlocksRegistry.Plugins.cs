@@ -82,15 +82,31 @@ internal static partial class BlocksRegistry
         return ItemsRegistry.TryGet(block.UnlocalizedName, out item) && item != ItemsRegistry.Air;
     }
 
+    private static readonly Lazy<Dictionary<string, string>> PlacedBlocks = new(() =>
+    {
+        using var stream = typeof(BlocksRegistry).Assembly.GetManifestResourceStream("Obsidian.Assets.item_placed_blocks.json")
+            ?? throw new InvalidOperationException("Missing item_placed_blocks.json asset.");
+        return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(stream)!;
+    });
+
     /// <summary>
     /// The block an item places as itself: the vanilla block named like a vanilla item, or a plugin item's block.
-    /// Items placing a block named otherwise (wheat seeds placing wheat, say) aren't covered.
+    /// Items placing a block named otherwise (wheat seeds placing wheat, say) are from <c>item_placed_blocks.json</c>,
+    /// vanilla's <c>BlockItem.getBlock</c>.
     /// </summary>
     public static bool TryGetBlock(Item item, [NotNullWhen(true)] out IBlock? block)
     {
         if (item.Block is BlockType type)
         {
             block = type.DefaultState;
+            return true;
+        }
+
+        // Items placing a block named otherwise (wheat seeds placing wheat) are from BlockItem.getBlock, dumped.
+        if (item.Id < ItemsRegistry.VanillaCount && PlacedBlocks.Value.TryGetValue(item.UnlocalizedName, out var placedName)
+            && resourceIdToName.TryGetValue(placedName, out var placedKey))
+        {
+            block = defaultBlockCache[placedKey];
             return true;
         }
 

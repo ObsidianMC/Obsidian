@@ -27,9 +27,8 @@ public sealed partial class EnderDragon
             var angle = 2f * (-MathF.PI + step * (index - offset));
             var x = (int)Math.Floor(Mth.Cos(angle) * radius);
             var z = (int)Math.Floor(Mth.Sin(angle) * radius);
-            var surface = Level is AbstractLevel level && level.GetLoadedChunk(x >> 4, z >> 4) is { } chunk &&
-                chunk.Heightmaps.TryGetValue(HeightmapType.MotionBlockingNoLeaves, out var heightmap)
-                ? heightmap.GetHeight(x & 15, z & 15) : 0;
+            var surface = Level is AbstractLevel level && level.GetLoadedChunk(x >> 4, z >> 4) is { } chunk
+                ? chunk.GetHeight(HeightmapType.MotionBlockingNoLeaves, x, z) : 0;
             flightNodes[index] = new VectorD(x, Math.Max(73, surface + height), z);
         }
     }
@@ -90,7 +89,9 @@ public sealed partial class EnderDragon
     private void SetFlightPath(int end, VectorD? finalDestination = null)
     {
         flightPath.Clear();
-        foreach (var point in FindFlightPath(NearestFlightNode(Position), end).Skip(1)) flightPath.Enqueue(point);
+        var path = FindFlightPath(NearestFlightNode(Position), end);
+        // A one-node path still has to be flown, or the phase waits forever for a destination.
+        foreach (var point in path.Count > 1 ? path.Skip(1) : path) flightPath.Enqueue(point);
         if (finalDestination is { } final) flightPath.Enqueue(final);
         AdvanceFlightPath();
     }
@@ -145,13 +146,12 @@ public sealed partial class EnderDragon
                 approach = direction * -40;
                 approach.Y = 105;
             }
-            SetFlightPath(NearestFlightNode(approach), arena);
+            SetFlightPath(NearestFlightNode(approach), Podium);
         }
         else if ((destination - Position).MagnitudeSquared() < 100 || (destination - Position).MagnitudeSquared() > 22500 || MovementFlags.HasFlag(MovementFlags.HorizontalCollision))
-        {
-            if (flightPath.Count == 0) SetPhase(DragonPhase.Landing);
-            else AdvanceFlightPath();
-        }
+            AdvanceFlightPath();
+        // Like vanilla, landing starts once the podium is the last node left, not after reaching it.
+        if (phase == DragonPhase.LandingApproach && hasFlightDestination && flightPath.Count == 0) SetPhase(DragonPhase.Landing);
     }
 
     private void TickTakeoff()

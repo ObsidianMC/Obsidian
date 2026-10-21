@@ -20,7 +20,16 @@ public partial class BlocksGenerator
         var createDefault = new CodeBuilder();
         var createState = new CodeBuilder();
         var placementBehavior = new CodeBuilder();
+        var treeGrowers = new CodeBuilder();
+        var fireOdds = new CodeBuilder();
+        var ignitedByLava = new CodeBuilder();
+        var tntBlocks = new CodeBuilder();
         var placementBehaviors = compilation.GetTypeByMetadataName("Obsidian.WorldData.PlacementBehaviors");
+        // Each virtual hook is bound from the vanilla class that declares its override to a same-named member of the
+        // hook's counterpart type.
+        var hooks = OwnedHooks
+            .Select(hook => (hook, type: compilation.GetTypeByMetadataName($"Obsidian.WorldData.{hook.Counterparts}"), body: new CodeBuilder()))
+            .ToArray();
 
         foreach (var block in blocks)
         {
@@ -70,9 +79,44 @@ public partial class BlocksGenerator
             if (block.Properties.Length > 0)
                 createState.Indent().Append($"{block.RegistryId} => new {blockName}(stateId),").Line();
 
-            string? placementMember = PlacementMember(block.PlacementClass);
+            // A sapling's TreeGrower, as vanilla's SaplingBlock holds it; the sapling's random tick owner is a separate
+            // association (the hooks below).
+            if (block.TreeGrower is { } grower)
+            {
+                var initializer = string.Join(", ", grower.Select(entry => entry.Key == "secondaryChance"
+                    ? $"SecondaryChance = {entry.Value}"
+                    : $"{entry.Key.ToPascalCase()} = \"{entry.Value}\""));
+                treeGrowers.Indent().Append($"[{block.RegistryId}] = new Obsidian.API.Blocks.TreeGrower {{ {initializer} }},").Line();
+            }
+
+            // A flammable block's ignite and burn odds, as vanilla's FireBlock.bootStrap registers them.
+            if (block.FireOdds is { } odds)
+                fireOdds.Indent().Append($"[{block.RegistryId}] = ({odds.Ignite}, {odds.Burn}),").Line();
+
+            // A block that lava sets fire next to, from vanilla's BlockStateBase.ignitedByLava.
+            if (block.IgnitedByLava)
+                ignitedByLava.Indent().Append($"{block.RegistryId},").Line();
+
+            // A TntBlock, which fire primes when it replaces it, from vanilla's FireBlock calling TntBlock.explode.
+            if (block.IsTnt)
+                tntBlocks.Indent().Append($"{block.RegistryId},").Line();
+
+            string? placementMember = OwnerMember(block.PlacementClass);
             if (placementMember is not null && placementBehaviors?.GetMembers(placementMember).Length > 0)
                 placementBehavior.Indent().Append($"{block.RegistryId} => PlacementBehaviors.{placementMember},").Line();
+
+            // An owner without a counterpart keeps the existing path (Growth, BlockBehaviors); the info diagnostic
+            // lists the owners still to migrate, without a warning.
+            foreach (var (hook, type, body) in hooks)
+            {
+                if (type is null || !block.OverrideClasses.TryGetValue(hook.Name, out var ownerClass) || OwnerMember(ownerClass) is not string member)
+                    continue;
+
+                if (type.GetMembers(member).Length > 0)
+                    body.Indent().Append($"{block.RegistryId} => {hook.Counterparts}.{member},").Line();
+                else
+                    ctx.ReportDiagnostic(Diagnostic.Create(UnmatchedOwner, Location.None, hook.Name, ownerClass, hook.Counterparts));
+            }
         }
 
         blocksBuilder.Line()
@@ -91,24 +135,93 @@ public partial class BlocksGenerator
             .Line("};")
             .Line()
             .Line("/// <summary>The behaviour supplied by the vanilla class that owns this block's placement override.</summary>")
+            .Line("/// <summary>The tree a sapling block grows into, from vanilla's SaplingBlock.treeGrower, or null for other blocks.</summary>")
+            .Line("internal static Obsidian.API.Blocks.TreeGrower? GetTreeGrower(int registryId) =>")
+            .Line("    treeGrowers.TryGetValue(registryId, out var grower) ? grower : null;")
+            .Line()
+            .Line("/// <summary>The ignite and burn odds of a flammable block, from vanilla's FireBlock; null for other blocks.</summary>")
+            .Line("internal static (int Ignite, int Burn)? GetFireOdds(int registryId) =>")
+            .Line("    fireOdds.TryGetValue(registryId, out var odds) ? odds : null;")
+            .Line()
+            .Line("/// <summary>Whether lava sets fire next to this block, from vanilla's BlockStateBase.ignitedByLava; false for other blocks.</summary>")
+            .Line("internal static bool GetIgnitedByLava(int registryId) => ignitedByLava.Contains(registryId);")
+            .Line()
+            .Line("/// <summary>Whether this block is a TntBlock that fire primes when it replaces it; false for other blocks.</summary>")
+            .Line("internal static bool IsTntBlock(int registryId) => tntBlocks.Contains(registryId);")
+            .Line()
+            .Line("private static readonly System.Collections.Generic.HashSet<int> tntBlocks = new()")
+            .Line("{")
+            .Append(tntBlocks.ToString())
+            .Line("};")
+            .Line()
+            .Line("private static readonly System.Collections.Generic.HashSet<int> ignitedByLava = new()")
+            .Line("{")
+            .Append(ignitedByLava.ToString())
+            .Line("};")
+            .Line()
+            .Line("private static readonly System.Collections.Generic.Dictionary<int, (int Ignite, int Burn)> fireOdds = new()")
+            .Line("{")
+            .Append(fireOdds.ToString())
+            .Line("};")
+            .Line()
+            .Line("private static readonly System.Collections.Generic.Dictionary<int, Obsidian.API.Blocks.TreeGrower> treeGrowers = new()")
+            .Line("{")
+            .Append(treeGrowers.ToString())
+            .Line("};")
+            .Line()
+            .Line("/// <summary>The behaviour supplied by the vanilla class that owns this block's placement override.</summary>")
             .Line("internal static IBlockBehavior? GetPlacementBehavior(int registryId) => registryId switch")
             .Line("{")
             .Append(placementBehavior.ToString())
             .Line("    _ => null,")
             .Line("};");
 
+        foreach (var (hook, type, body) in hooks)
+        {
+            if (type is null)
+                continue;
+
+            blocksBuilder.Line()
+                .Line($"/// <summary>The behaviour supplied by the vanilla class that owns this block's {hook.Name} override, or null.</summary>")
+                .Line($"internal static {hook.Interface}? {hook.Method}(int registryId) => registryId switch")
+                .Line("{")
+                .Append(body.ToString())
+                .Line("    _ => null,")
+                .Line("};");
+        }
+
         blocksBuilder.EndScope();
 
         ctx.AddSource("BlocksRegistry.Blocks.g.cs", blocksBuilder.ToString());
     }
 
-    private static string? PlacementMember(string? placementClass)
+    private sealed class OwnedHook(string name, string counterparts, string @interface, string method)
     {
-        if (placementClass is null)
+        public string Name { get; } = name;
+        public string Counterparts { get; } = counterparts;
+        public string Interface { get; } = @interface;
+        public string Method { get; } = method;
+    }
+
+    private static readonly OwnedHook[] OwnedHooks =
+    [
+        new("randomTick", "RandomTickBehaviors", "IRandomTickBehavior", "GetRandomTickBehavior"),
+        new("tick", "TickBehaviors", "IScheduledTickBehavior", "GetTickBehavior"),
+        new("updateShape", "ShapeUpdateBehaviors", "IShapeUpdateBehavior", "GetShapeUpdateBehavior")
+    ];
+
+    private static readonly DiagnosticDescriptor UnmatchedOwner = new("OBSGEN001",
+        "Vanilla behavior owner has no Obsidian counterpart",
+        "Vanilla {0} owner {1} has no member in Obsidian.WorldData.{2}; its blocks use the existing path",
+        "Blocks", DiagnosticSeverity.Info, isEnabledByDefault: true);
+
+    private static string? OwnerMember(string? ownerClass)
+    {
+        if (ownerClass is null)
             return null;
 
-        int separator = Math.Max(placementClass.LastIndexOf('.'), placementClass.LastIndexOf('$'));
-        return placementClass.Substring(separator + 1).SanitizeBlockName();
+        int separator = Math.Max(ownerClass.LastIndexOf('.'), ownerClass.LastIndexOf('$'));
+        return ownerClass.Substring(separator + 1).SanitizeBlockName();
     }
 
 }
