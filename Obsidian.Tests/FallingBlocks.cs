@@ -60,4 +60,47 @@ public sealed class FallingBlocks
 
         Assert.Equal(BlocksRegistry.Sand.UnlocalizedName, (await world.GetBlockAsync(column))!.UnlocalizedName);
     }
+
+    [Fact(DisplayName = "Sand landing on a torch drops as an item and leaves the torch in place",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task SandLandingOnTorchDropsItAndKeepsTorch()
+    {
+        await using var context = TestServerFactory.CreateServer($"fall-torch-{Guid.NewGuid():N}");
+        var world = context.World;
+        AddFlatChunks(world);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Digger", new VectorD(0.5, 64, 0.5));
+        Assert.True(world.TryAddPlayer(player));
+        Assert.True(world.TryAddEntity(player));
+
+        // A torch on the stone, with sand two blocks above it: the sand falls through the torch's cell.
+        var torch = new Vector(0, 60, 0);
+        await world.SetBlockAsync(torch + Vector.Down, BlocksRegistry.Stone);
+        await world.SetBlockAsync(torch, BlocksRegistry.GetDefault(BlockIds.Torch));
+        await world.SetBlockAsync(torch + (0, 2, 0), BlocksRegistry.Sand, true);
+
+        for (var tick = 0; tick < 20; tick++)
+            await world.DoWorldTickAsync();
+
+        Assert.Equal(BlocksRegistry.GetDefault(BlockIds.Torch).UnlocalizedName, (await world.GetBlockAsync(torch))!.UnlocalizedName);
+        Assert.Equal(BlocksRegistry.Air.UnlocalizedName, (await world.GetBlockAsync(torch + Vector.Up))!.UnlocalizedName);
+        Assert.Empty(world.GetNonPlayerEntitiesInRange(new VectorD(0.5, 61, 0.5), 5).OfType<FallingBlock>());
+        var dropped = Assert.Single(world.GetNonPlayerEntitiesInRange(new VectorD(0.5, 60, 0.5), 3).OfType<ItemEntity>());
+        Assert.Equal(ItemsRegistry.Sand, dropped.Item.Holder);
+    }
+
+    private static void AddFlatChunks(WorldData.World world)
+    {
+        for (var chunkX = -1; chunkX <= 1; chunkX++)
+            for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
+            {
+                var chunk = new Obsidian.WorldData.Chunk(chunkX, chunkZ);
+                for (var x = 0; x < 16; x += 4)
+                    for (var z = 0; z < 16; z += 4)
+                        for (var y = -64; y < 320; y += 4)
+                            chunk.SetBiome(x, y, z, CodecRegistry.Biomes.Plains);
+                chunk.SetChunkStatus(ChunkGenStage.full);
+                world.LoadRegionByChunk(chunkX, chunkZ).SetChunk(chunk);
+                world.Fluids.Track(chunk);
+            }
+    }
 }
