@@ -672,6 +672,9 @@ public abstract partial class AbstractLevel : ILevel
         }
         timings.Lap("entities");
 
+        TickStage = "sleeping";
+        await TickSleepingAsync();
+
         await TickRaidsAsync();
         await TickMobGameEventsAsync();
         await TickMobEggsAsync();

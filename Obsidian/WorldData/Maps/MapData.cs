@@ -98,6 +98,28 @@ internal sealed class MapData
     }
 
     /// <summary>
+    /// Vanilla <c>scaled</c>: a blank map of the next scale (up to 4) around this one's center, as a cartography table
+    /// zooms out.
+    /// </summary>
+    public MapData Scaled() =>
+        CreateFresh(this.CenterX, this.CenterZ, (byte)Math.Clamp(this.Scale + 1, 0, 4), this.TrackingPosition,
+            this.UnlimitedTracking, this.Dimension);
+
+    /// <summary>
+    /// Vanilla <c>locked</c>: a copy of the map that no longer changes, as a cartography table locks it.
+    /// </summary>
+    public MapData LockedCopy()
+    {
+        var copy = new MapData(this.CenterX, this.CenterZ, this.Scale, this.TrackingPosition, this.UnlimitedTracking, true,
+            this.Dimension) { IsDirty = true };
+
+        lock (this.sync)
+            copy.Colors = (byte[])this.Colors.Clone();
+
+        return copy;
+    }
+
+    /// <summary>
     /// Vanilla <c>setColor</c>: sets a pixel and marks it for every player carrying the map.
     /// </summary>
     public void SetColor(int x, int z, byte color)

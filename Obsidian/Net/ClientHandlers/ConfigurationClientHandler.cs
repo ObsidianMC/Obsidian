@@ -163,6 +163,8 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
         this.SendPacket(new RegistryDataPacket("minecraft:enchantment", enchantments));
         this.SendPacket(new RegistryDataPacket("minecraft:instrument", instruments));
         this.SendPacket(new RegistryDataPacket("minecraft:jukebox_song", JukeboxSongsRegistry.Identifiers));
+        // Before the tags: the loom's tags are numbered by this registry.
+        this.SendPacket(new RegistryDataPacket(BannerPatternsRegistry.CodecKey, BannerPatternsRegistry.Identifiers));
 
         this.SendPacket(UpdateTagsPacket.ClientboundConfiguration with { Tags = dialogs.Tags });
 

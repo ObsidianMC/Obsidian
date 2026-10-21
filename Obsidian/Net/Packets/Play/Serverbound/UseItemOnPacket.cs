@@ -17,7 +17,10 @@ public partial class UseItemOnPacket
     [
         BlockIds.Chest, BlockIds.EnderChest, BlockIds.TrappedChest, BlockIds.Anvil, BlockIds.ChippedAnvil,
         BlockIds.DamagedAnvil, BlockIds.Hopper, BlockIds.Smoker, BlockIds.Furnace, BlockIds.CraftingTable,
-        BlockIds.Barrel, BlockIds.BlastFurnace, BlockIds.Grindstone, BlockIds.BrewingStand
+        BlockIds.Barrel, BlockIds.BlastFurnace, BlockIds.Grindstone, BlockIds.BrewingStand, BlockIds.EnchantingTable,
+        BlockIds.SmithingTable, BlockIds.Stonecutter, BlockIds.Loom, BlockIds.CartographyTable, BlockIds.Dispenser,
+        BlockIds.Dropper, BlockIds.Beacon, BlockIds.Lectern, BlockIds.Crafter,
+        .. TagsRegistry.Block.ShulkerBoxes.Entries
     ];
 
     [Field(0), ActualType(typeof(int)), VarLength]
@@ -266,6 +269,7 @@ public partial class UseItemOnPacket
                 Item = currentItem,
                 Block = b,
                 BlockLocation = this.Position,
+                Hand = this.Hand,
             });
 
             return;

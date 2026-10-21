@@ -39,6 +39,11 @@ public sealed class SmithingTrimRecipe : IRecipe
 
     public required Ingredient Template { get; init; }
 
+    /// <summary>
+    /// The trim pattern the template applies, like <c>minecraft:bolt</c>.
+    /// </summary>
+    public string? Pattern { get; init; }
+
     //The fact that this has no result makes me 🤪🤪🤪
     //So I make it public :)
     public SmithingTrimRecipe() { }
