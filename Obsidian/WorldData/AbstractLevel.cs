@@ -620,7 +620,8 @@ public abstract partial class AbstractLevel : ILevel
     /// chunks keep pending: the tick's entity work, which pregeneration does too before unloading the chunks it's done
     /// with. Called under the simulation gate.
     /// </summary>
-    private async Task RunEntityActionsAsync()
+    /// <param name="timings">The tick's timings, which time the actions apart from the spawns; none outside a tick.</param>
+    private async Task RunEntityActionsAsync(TickTimings? timings = null)
     {
         var actionCount = entityActions.Count;
         for (var index = 0; index < actionCount && entityActions.TryDequeue(out var action); index++)
@@ -628,6 +629,7 @@ public abstract partial class AbstractLevel : ILevel
             TickStage = $"entity action {index + 1}/{actionCount}";
             await action();
         }
+        timings?.Lap("entity actions");
 
         // Deferred unloads keep old-generation state first; a rebound type can respawn it in this same tick.
         this.SpawnPendingEntities();
@@ -638,6 +640,7 @@ public abstract partial class AbstractLevel : ILevel
         TickStage = "starting";
         if (LevelData is null)
             return;
+        var timings = new TickTimings();
 
         LevelData.Time += this.Configuration.TimeTickSpeedMultiplier;
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
@@ -645,23 +648,30 @@ public abstract partial class AbstractLevel : ILevel
         // Like vanilla, block ticks and then fluid ticks run before entities tick.
         TickStage = "block and fluid ticks";
         this.Fluids.Tick();
+        timings.Lap("fluids");
 
         await this.Portals.TickAsync();
+        timings.Lap("portals");
 
         foreach (var region in Regions.Values.OfType<Region>())
             region.TickInhabitedTime(this);
 
-        await this.RunEntityActionsAsync();
+        await this.RunEntityActionsAsync(timings);
 
+        timings.Lap("pending spawns");
         await TickEndFightAsync();
+        timings.Lap("end fight");
 
         TickStage = "natural spawning";
         (mobSpawner ??= new MobSpawner(this)).Tick();
+        timings.Lap("natural spawning");
 
         // Like vanilla's chunk ticks, with natural spawning and before entities.
         TickStage = "random ticks";
-        this.Lighting.Flush();
+        this.Lighting.Flush(LightBorderBudget);
+        timings.Lap("lighting");
         this.TickRandomBlocks();
+        timings.Lap("random ticks");
 
         // Snapshot once so crossing a region boundary cannot tick an entity twice.
         var entities = Regions.Values.SelectMany(region => region.Entities.Values)
@@ -677,22 +687,27 @@ public abstract partial class AbstractLevel : ILevel
                 await this.TouchPluginBlocksAsync(entity);
                 if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
                     await concrete.TickEntityPortalAsync();
+                timings.LapEntity(entity.GetType().Name);
             }
         }
+        timings.Lap("entities");
 
         await TickRaidsAsync();
         await TickMobGameEventsAsync();
         await TickMobEggsAsync();
+        timings.Lap("raids, game events, eggs");
 
         TickStage = "block entities";
         await TickBlockEntitiesAsync();
+        timings.Lap("block entities");
 
         TickStage = "moving entities between regions";
         foreach (var region in Regions.Values.OfType<Region>())
             region.MoveEntitiesToTheirRegions();
+        timings.Lap("region moves");
 
         TickStage = "runtime light";
-        foreach (var packet in this.Lighting.TakeUpdates())
+        foreach (var packet in this.Lighting.TakeUpdates(LightBorderBudget))
         {
             var location = new Vector(packet.Chunk.X << 4, 0, packet.Chunk.Z << 4);
             foreach (var watcher in this.PlayersInRange(location))
@@ -705,8 +720,56 @@ public abstract partial class AbstractLevel : ILevel
             await player.SynchronizeTrackedEntitiesAsync();
             player.SynchronizeOwnState();
         }
+        timings.Lap("light and tracking");
         TickStage = "idle";
+        timings.ReportIfSlow(this.Logger, DimensionName);
     }
+
+    /// <summary>
+    /// Where a level tick's time went, logged when the tick runs past its 50 ms budget so lag can be traced to a stage
+    /// or an entity type.
+    /// </summary>
+    private sealed class TickTimings
+    {
+        private const double BudgetMs = 50;
+        private readonly long start = Stopwatch.GetTimestamp();
+        private long lap = Stopwatch.GetTimestamp();
+        private long entityLap;
+        private readonly List<(string Stage, double Ms)> stages = [];
+        private Dictionary<string, (double Ms, int Count)>? entityTypes;
+
+        public void Lap(string stage)
+        {
+            var now = Stopwatch.GetTimestamp();
+            stages.Add((stage, Stopwatch.GetElapsedTime(lap, now).TotalMilliseconds));
+            lap = entityLap = now;
+        }
+
+        public void LapEntity(string type)
+        {
+            var now = Stopwatch.GetTimestamp();
+            if (entityLap == 0) entityLap = lap;
+            entityTypes ??= [];
+            var (ms, count) = entityTypes.GetValueOrDefault(type);
+            entityTypes[type] = (ms + Stopwatch.GetElapsedTime(entityLap, now).TotalMilliseconds, count + 1);
+            entityLap = now;
+        }
+
+        public void ReportIfSlow(ILogger logger, string level)
+        {
+            var total = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+            if (total <= BudgetMs || !logger.IsEnabled(LogLevel.Warning)) return;
+            var slowest = string.Join(", ", stages.Where(item => item.Ms >= 1).OrderByDescending(item => item.Ms)
+                .Select(item => $"{item.Stage} {item.Ms:0.#}ms"));
+            var types = entityTypes == null ? "" : string.Join(", ", entityTypes.OrderByDescending(item => item.Value.Ms).Take(5)
+                .Select(item => $"{item.Key} x{item.Value.Count} {item.Value.Ms:0.#}ms"));
+            logger.LogWarning("Slow tick in {Level}: {Total:0.#}ms ({Stages}). Top entity types: {Types}",
+                level, total, slowest, types.Length == 0 ? "none" : types);
+        }
+    }
+
+    // How long a tick spends reconciling light along newly loaded chunks' borders; the rest waits for later ticks.
+    private static readonly TimeSpan LightBorderBudget = TimeSpan.FromMilliseconds(10);
 
     internal string TickStage { get; private set; } = "not started";
     internal bool SavingEntities { get; private set; }

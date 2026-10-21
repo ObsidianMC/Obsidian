@@ -114,6 +114,14 @@ public final class VanillaDumper {
         dumper.dumpBlockSounds();
         dumper.dumpBlockPhysics();
         dumper.dumpBlockPlacementClasses();
+        dumper.dumpBlockOverrideClasses();
+        dumper.dumpSaplingGrowers();
+        dumper.dumpFireOdds();
+        dumper.dumpIgnitedByLava();
+        dumper.dumpTntBlocks();
+        dumper.dumpItemUseOnClasses();
+        dumper.dumpHoeTillables();
+        dumper.dumpItemPlacedBlocks();
         dumper.dumpCollisionShapes();
         dumper.dumpBlastResistance();
         dumper.dumpBlockLootTables();
@@ -585,6 +593,251 @@ public final class VanillaDumper {
         }
 
         Json.write(output.resolve("block_placement_classes.json"), classes, false);
+    }
+
+    /**
+     * {@code block_random_tick_classes.json}, {@code block_tick_classes.json} and
+     * {@code block_update_shape_classes.json}: the Mojang class that supplies each block's {@code randomTick},
+     * {@code tick} and {@code updateShape} override. Blocks inheriting the base no-op are omitted.
+     */
+    private void dumpBlockOverrideClasses() throws IOException {
+        var level = "net.minecraft.server.level.ServerLevel";
+        var random = "net.minecraft.util.RandomSource";
+        dumpBlockOverrideClasses("block_random_tick_classes.json", "randomTick", BLOCK_STATE, level, BLOCK_POS, random);
+        dumpBlockOverrideClasses("block_tick_classes.json", "tick", BLOCK_STATE, level, BLOCK_POS, random);
+        dumpBlockOverrideClasses("block_update_shape_classes.json", "updateShape", BLOCK_STATE,
+            "net.minecraft.world.level.LevelReader", "net.minecraft.world.level.ScheduledTickAccess", BLOCK_POS,
+            "net.minecraft.core.Direction", BLOCK_POS, BLOCK_STATE, random);
+    }
+
+    /**
+     * {@code fire_odds.json}: the ignite and burn odds {@code FireBlock.bootStrap} registers for each flammable block,
+     * read from the fire block's {@code igniteOdds} and {@code burnOdds} maps. Blocks it never registered are omitted.
+     */
+    private void dumpFireOdds() throws IOException {
+        var fire = mojang.type("net.minecraft.world.level.block.FireBlock");
+        var igniteField = mojang.field("net.minecraft.world.level.block.FireBlock", "igniteOdds");
+        var burnField = mojang.field("net.minecraft.world.level.block.FireBlock", "burnOdds");
+        var odds = new TreeMap<String, Map<String, Object>>();
+
+        for (var block : (Iterable<?>) blockRegistry) {
+            if (!fire.isInstance(block))
+                continue;
+
+            @SuppressWarnings("unchecked")
+            var ignite = (Map<Object, Object>) Mojang.get(igniteField, block);
+            @SuppressWarnings("unchecked")
+            var burn = (Map<Object, Object>) Mojang.get(burnField, block);
+            for (var entry : ignite.entrySet()) {
+                var row = new TreeMap<String, Object>();
+                row.put("ignite", entry.getValue());
+                row.put("burn", burn.getOrDefault(entry.getKey(), 0));
+                odds.put(key(blockRegistry, entry.getKey()), row);
+            }
+        }
+
+        Json.write(output.resolve("fire_odds.json"), odds, false);
+    }
+
+    /**
+     * {@code ignited_by_lava.json}: the blocks whose default state {@code BlockStateBase.ignitedByLava()} is true, the
+     * flammable set {@code LavaFluid.randomTick} sets fire next to. Keyed by block, with the value {@code true}.
+     */
+    private void dumpIgnitedByLava() throws IOException {
+        var ignited = mojang.method(STATE_BASE, "ignitedByLava");
+        var defaultState = mojang.method(BLOCK, "defaultBlockState");
+        var blocks = new TreeMap<String, Boolean>();
+
+        for (var block : (Iterable<?>) blockRegistry) {
+            if ((boolean) Mojang.call(ignited, Mojang.call(defaultState, block)))
+                blocks.put(key(blockRegistry, block), true);
+        }
+
+        Json.write(output.resolve("ignited_by_lava.json"), blocks, false);
+    }
+
+    /**
+     * {@code tnt_blocks.json}: the blocks that are instances of {@code TntBlock}, whose static {@code explode} FireBlock
+     * calls on the block it replaces. Keyed by block, with the value {@code true}.
+     */
+    private void dumpTntBlocks() throws IOException {
+        var tnt = mojang.type("net.minecraft.world.level.block.TntBlock");
+        var blocks = new TreeMap<String, Boolean>();
+
+        for (var block : (Iterable<?>) blockRegistry) {
+            if (tnt.isInstance(block))
+                blocks.put(key(blockRegistry, block), true);
+        }
+
+        Json.write(output.resolve("tnt_blocks.json"), blocks, false);
+    }
+
+    /**
+     * {@code sapling_growers.json}: the {@code TreeGrower} each sapling block holds in its {@code treeGrower} field
+     * (declared by {@code SaplingBlock}, which the mangrove propagule extends): the configured features it names, by
+     * identifier, and its secondary chance. Which class owns each sapling's random tick is in
+     * {@code block_random_tick_classes.json}.
+     */
+    private void dumpSaplingGrowers() throws IOException {
+        var sapling = mojang.type("net.minecraft.world.level.block.SaplingBlock");
+        var growerField = mojang.field("net.minecraft.world.level.block.SaplingBlock", "treeGrower");
+        var grower = "net.minecraft.world.level.block.grower.TreeGrower";
+        var identifier = mojang.method("net.minecraft.resources.ResourceKey", "identifier");
+        var chanceField = mojang.field(grower, "secondaryChance");
+        var features = new TreeMap<String, Field>();
+        for (var feature : new String[] { "megaTree", "secondaryMegaTree", "tree", "secondaryTree", "flowers", "secondaryFlowers" })
+            features.put(feature, mojang.field(grower, feature));
+
+        var blockRegistry = mojang.get(REGISTRIES, "BLOCK");
+        var growers = new TreeMap<String, Map<String, Object>>();
+
+        for (var block : (Iterable<?>) blockRegistry) {
+            if (!sapling.isInstance(block))
+                continue;
+
+            var holder = Mojang.get(growerField, block);
+            var row = new TreeMap<String, Object>();
+            for (var feature : features.entrySet()) {
+                if (Mojang.get(feature.getValue(), holder) instanceof Optional<?> value && value.isPresent())
+                    row.put(feature.getKey(), Mojang.call(identifier, value.get()).toString());
+            }
+
+            row.put("secondaryChance", Mojang.get(chanceField, holder));
+            growers.put(key(blockRegistry, block), row);
+        }
+
+        Json.write(output.resolve("sapling_growers.json"), growers, false);
+    }
+
+    private void dumpBlockOverrideClasses(String file, String name, String... parameterTypes) throws IOException {
+        // The base no-op is declared by BlockBehaviour.
+        var behaviour = "net.minecraft.world.level.block.state.BlockBehaviour";
+        var baseMethod = mojang.method(behaviour, name, parameterTypes);
+        var parameters = new Class<?>[parameterTypes.length];
+        for (var i = 0; i < parameters.length; i++)
+            parameters[i] = mojang.type(parameterTypes[i]);
+        var classes = new TreeMap<String, String>();
+
+        for (var block : (Iterable<?>) blockRegistry) {
+            var owner = block.getClass();
+            while (owner != null) {
+                try {
+                    owner.getDeclaredMethod(baseMethod.getName(), parameters);
+                    break;
+                } catch (NoSuchMethodException ignored) {
+                    owner = owner.getSuperclass();
+                }
+            }
+
+            if (owner != null && owner != mojang.type(behaviour))
+                classes.put(key(blockRegistry, block), mojang.className(owner.getName()));
+        }
+
+        Json.write(output.resolve(file), classes, false);
+    }
+
+    /**
+     * {@code item_use_on_classes.json}: the Mojang class that supplies each item's {@code useOn} override. Items
+     * inheriting the base implementation are omitted.
+     */
+    private void dumpItemUseOnClasses() throws IOException {
+        var item = "net.minecraft.world.item.Item";
+        var context = "net.minecraft.world.item.context.UseOnContext";
+        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+        var baseMethod = mojang.method(item, "useOn", context);
+        var parameter = mojang.type(context);
+        var classes = new TreeMap<String, String>();
+
+        for (var entry : (Iterable<?>) itemRegistry) {
+            var owner = entry.getClass();
+            while (owner != null) {
+                try {
+                    owner.getDeclaredMethod(baseMethod.getName(), parameter);
+                    break;
+                } catch (NoSuchMethodException ignored) {
+                    owner = owner.getSuperclass();
+                }
+            }
+
+            if (owner != null && owner != mojang.type(item))
+                classes.put(key(itemRegistry, entry), mojang.className(owner.getName()));
+        }
+
+        Json.write(output.resolve("item_use_on_classes.json"), classes, false);
+    }
+
+    /**
+     * {@code item_placed_blocks.json}: the block each {@code BlockItem} places by {@code BlockItem.getBlock()}, for
+     * the items that place a block named differently from themselves (wheat seeds place wheat).
+     */
+    private void dumpItemPlacedBlocks() throws IOException {
+        var blockItem = mojang.type("net.minecraft.world.item.BlockItem");
+        var getBlock = mojang.method("net.minecraft.world.item.BlockItem", "getBlock");
+        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+        var blockRegistry = mojang.get(REGISTRIES, "BLOCK");
+        var placed = new TreeMap<String, String>();
+
+        for (var entry : (Iterable<?>) itemRegistry) {
+            if (!blockItem.isInstance(entry))
+                continue;
+
+            var itemKey = key(itemRegistry, entry);
+            var blockKey = key(blockRegistry, Mojang.call(getBlock, entry));
+            if (!itemKey.equals(blockKey))
+                placed.put(itemKey, blockKey);
+        }
+
+        Json.write(output.resolve("item_placed_blocks.json"), placed, false);
+    }
+
+    /**
+     * {@code item_use_on_transforms.json}: what {@code HoeItem.TILLABLES} does per tillable block: the block it
+     * becomes, the item it drops (or null), and whether it needs air above. The state and item are the captured
+     * arguments of the map's lambdas; the predicate is "always" when it accepts a null context, and otherwise it is
+     * {@code HoeItem.onlyIfAirAbove}, which dereferences it.
+     */
+    private void dumpHoeTillables() throws IOException {
+        var hoe = "net.minecraft.world.item.HoeItem";
+        var tillables = (Map<?, ?>) mojang.get(hoe, "TILLABLES");
+        var blockRegistry = mojang.get(REGISTRIES, "BLOCK");
+        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+        var getBlock = mojang.method(STATE_BASE, "getBlock");
+        var result = new TreeMap<String, Object>();
+
+        for (var entry : tillables.entrySet()) {
+            try {
+                var pair = entry.getValue();
+                var predicate = (java.util.function.Predicate<Object>) pair.getClass().getMethod("getFirst").invoke(pair);
+                var consumer = pair.getClass().getMethod("getSecond").invoke(pair);
+
+                var always = false;
+                try {
+                    always = predicate.test(null);
+                } catch (NullPointerException expected) {
+                }
+
+                Object target = null;
+                Object drop = null;
+                for (var field : consumer.getClass().getDeclaredFields()) {
+                    field.setAccessible(true);
+                    var value = field.get(consumer);
+                    if (value != null && mojang.type(STATE_BASE).isInstance(value))
+                        target = Mojang.call(getBlock, value);
+                    else if (value != null && mojang.type("net.minecraft.world.item.Item").isInstance(value))
+                        drop = value;
+                }
+
+                var transform = new LinkedHashMap<String, Object>();
+                transform.put("to", key(blockRegistry, target));
+                transform.put("drop", drop == null ? null : key(itemRegistry, drop));
+                transform.put("requiresAirAbove", !always);
+                result.put(key(blockRegistry, entry.getKey()), transform);
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalStateException("Could not read HoeItem.TILLABLES", e);
+            }
+        }
+
+        Json.write(output.resolve("item_use_on_transforms.json"), Map.of(hoe, result), false);
     }
 
     /** The Mojang simple name of each block's class, sorted by block id. */

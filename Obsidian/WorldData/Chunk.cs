@@ -695,3 +695,24 @@ public sealed class Chunk : IChunk
 
     private int SectionIndex(int y) => (y - this.MinY) >> 4;
 }
+
+internal static class ChunkHeights
+{
+    /// <summary>
+    /// The first y above the column's highest block counted by <paramref name="type"/>; scans the column when the
+    /// chunk no longer stores that heightmap (full chunks drop the optional ones).
+    /// </summary>
+    internal static int GetHeight(this IChunk chunk, HeightmapType type, int x, int z)
+    {
+        x &= 15;
+        z &= 15;
+        if (chunk.Heightmaps.TryGetValue(type, out var heightmap))
+            return heightmap.GetHeight(x, z);
+
+        for (var y = chunk.MinY + chunk.Height - 1; y >= chunk.MinY; y--)
+            if (Generators.Mojang.WorldgenHeightmaps.Matches(type, chunk.GetBlock(x, y, z)))
+                return y + 1;
+
+        return chunk.MinY;
+    }
+}

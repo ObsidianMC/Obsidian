@@ -90,7 +90,7 @@ internal static class EndTravel
         return await FinishAsync(spawnArea, () =>
         {
             var chunk = spawnArea.Chunks[(column.X >> 4, column.Z >> 4)];
-            var y = chunk.Heightmaps[HeightmapType.MotionBlockingNoLeaves].GetHeight(column.X & 15, column.Z & 15);
+            var y = chunk.GetHeight(HeightmapType.MotionBlockingNoLeaves, column.X, column.Z);
             var arrival = new VectorD(column.X + 0.5, y, column.Z + 0.5);
             return ValueTask.FromResult<PortalDestination>(
                 new(destination, arrival, entity.Yaw, entity.Pitch, entity.Motion, spawnArea));

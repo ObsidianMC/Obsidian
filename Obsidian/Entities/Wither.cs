@@ -26,7 +26,6 @@ public sealed partial class Wither : BossMob
     protected override int GetExperienceReward() => 50;
     protected override bool CanUpdateTargetGoals => invulnerableTicks == 0;
     internal bool Armored => Health <= GetAttributeValue("minecraft:generic.max_health") / 2;
-    protected override float BarProgress => invulnerableTicks > 0 ? 1 - (float)invulnerableTicks / SpawnCharge : base.BarProgress;
     protected override VectorD Travel() => EntityMovement.Move(this);
     protected override ValueTask TickAirSupplyAsync() { Air = 300; return default; }
 
