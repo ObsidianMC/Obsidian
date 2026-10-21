@@ -615,6 +615,24 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
+    /// <summary>
+    /// Runs the entity actions queued so far, populating complete chunks among them, then spawns the entities complete
+    /// chunks keep pending: the tick's entity work, which pregeneration does too before unloading the chunks it's done
+    /// with. Called under the simulation gate.
+    /// </summary>
+    private async Task RunEntityActionsAsync()
+    {
+        var actionCount = entityActions.Count;
+        for (var index = 0; index < actionCount && entityActions.TryDequeue(out var action); index++)
+        {
+            TickStage = $"entity action {index + 1}/{actionCount}";
+            await action();
+        }
+
+        // Deferred unloads keep old-generation state first; a rebound type can respawn it in this same tick.
+        this.SpawnPendingEntities();
+    }
+
     private async Task TickLevelAsync()
     {
         TickStage = "starting";
@@ -633,15 +651,7 @@ public abstract partial class AbstractLevel : ILevel
         foreach (var region in Regions.Values.OfType<Region>())
             region.TickInhabitedTime(this);
 
-        var actionCount = entityActions.Count;
-        for (var index = 0; index < actionCount && entityActions.TryDequeue(out var action); index++)
-        {
-            TickStage = $"entity action {index + 1}/{actionCount}";
-            await action();
-        }
-
-        // Deferred unloads keep old-generation state first; a rebound type can respawn it in this same tick.
-        this.SpawnPendingEntities();
+        await this.RunEntityActionsAsync();
 
         await TickEndFightAsync();
 
@@ -1369,12 +1379,15 @@ public abstract partial class AbstractLevel : ILevel
                 LoadRegion(x, z);
         }
 
-        for (int x = centerX - pregenerationRange; x < centerX + pregenerationRange; x++)
+        // Mojang generation goes a tile at a time (see PregenerationTiles), so the chunks are queued in that order.
+        var mojang = this.Generator as MojangGenerator;
+        var tiles = mojang is null
+            ? [PregenerationSquare(centerX - pregenerationRange, centerZ - pregenerationRange, 2 * pregenerationRange)]
+            : PregenerationTiles(centerX, centerZ, pregenerationRange);
+        foreach (var tile in tiles)
         {
-            for (int z = centerZ - pregenerationRange; z < centerZ + pregenerationRange; z++)
-            {
+            foreach (var (x, z) in tile)
                 this.QueueGeneration(NumericsHelper.IntsToLong(x, z));
-            }
         }
 
         var startChunks = this.ChunksToGenCount;
@@ -1386,50 +1399,34 @@ public abstract partial class AbstractLevel : ILevel
         // listener hears of it now rather than once the staging is done.
         this.GenerationProgress?.Invoke(0, startChunks);
 
-        // Most of the work is staged across every core first, without the lock waits of completing chunks one by one, so the
-        // jobs below only complete the chunks.
-        if (this.Generator is MojangGenerator mojang)
-        {
-            await mojang.PrepareAreaAsync(centerX - pregenerationRange, centerZ - pregenerationRange,
-                centerX + pregenerationRange, centerZ + pregenerationRange, cancellationToken);
-        }
-
         // A window of jobs in queue order: a new job starts as soon as one finishes.
         var jobs = new List<Task>(startChunks);
         var completedChunks = 0;
         var lastPercent = -1;
         var flushedThousands = 0;
-        while (this.ChunksToGen.TryDequeue(out var job))
+
+        if (mojang is not null)
         {
-            await this.generationSlots.WaitAsync(cancellationToken);
-            jobs.Add(Generators.GenerationThreads.Run(() => this.GenerateQueuedChunkAsync(job)));
-
-            while (completedChunks < jobs.Count && jobs[completedChunks].IsCompleted)
-                completedChunks++;
-
-            var pctComplete = completedChunks * 100 / startChunks;
-            if (pctComplete != lastPercent)
+            // Most of a tile's work is staged across the generation threads first, without the lock waits of completing
+            // chunks one by one, so its jobs only complete its chunks. Then the tile is saved, and the chunks no tile left
+            // needs are unloaded, so memory stays that of a tile or two however large the area.
+            var remaining = tiles.SelectMany(tile => tile).Select(chunk => NumericsHelper.IntsToLong(chunk.X, chunk.Z)).ToHashSet();
+            foreach (var tile in tiles)
             {
-                lastPercent = pctComplete;
+                await mojang.PrepareAsync(tile, cancellationToken);
+                await CompleteQueuedAsync(tile.Count, flushEvery: false);
+                await Task.WhenAll(jobs);
 
-                // Without a listener, the progress goes to the terminal.
-                if (this.GenerationProgress is not null)
-                    this.GenerationProgress(completedChunks, startChunks);
-                else
-                {
-                    var cps = completedChunks / Math.Max(stopwatch.Elapsed.TotalSeconds, 0.001);
-                    var remain = (startChunks - completedChunks) / (int)Math.Max(cps, 1);
-                    System.Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ",
-                        cps.ToString("###.00"), pctComplete, remain);
-                }
-            }
+                foreach (var (x, z) in tile)
+                    remaining.Remove(NumericsHelper.IntsToLong(x, z));
 
-            // The flush after the loop saves the last chunks.
-            if (completedChunks / 1024 > flushedThousands && !this.ChunksToGen.IsEmpty)
-            {
-                flushedThousands = completedChunks / 1024;
                 await this.FlushRegionsAsync();
+                await this.UnloadPregeneratedAsync(remaining);
             }
+        }
+        else
+        {
+            await CompleteQueuedAsync(startChunks, flushEvery: true);
         }
 
         await Task.WhenAll(jobs);
@@ -1448,6 +1445,44 @@ public abstract partial class AbstractLevel : ILevel
         await FlushRegionsAsync();
         await SetWorldSpawnAsync();
 
+        // Starts up to count queued jobs, reporting progress as they complete, and with flushEvery, saving every 1,024
+        // chunks.
+        async Task CompleteQueuedAsync(int count, bool flushEvery)
+        {
+            for (var started = 0; started < count && this.ChunksToGen.TryDequeue(out var job); started++)
+            {
+                await this.generationSlots.WaitAsync(cancellationToken);
+                jobs.Add(Generators.GenerationThreads.Run(() => this.GenerateQueuedChunkAsync(job)));
+
+                while (completedChunks < jobs.Count && jobs[completedChunks].IsCompleted)
+                    completedChunks++;
+
+                var pctComplete = completedChunks * 100 / startChunks;
+                if (pctComplete != lastPercent)
+                {
+                    lastPercent = pctComplete;
+
+                    // Without a listener, the progress goes to the terminal.
+                    if (this.GenerationProgress is not null)
+                        this.GenerationProgress(completedChunks, startChunks);
+                    else
+                    {
+                        var cps = completedChunks / Math.Max(stopwatch.Elapsed.TotalSeconds, 0.001);
+                        var remain = (startChunks - completedChunks) / (int)Math.Max(cps, 1);
+                        System.Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ",
+                            cps.ToString("###.00"), pctComplete, remain);
+                    }
+                }
+
+                // The flush after the loop saves the last chunks.
+                if (flushEvery && completedChunks / 1024 > flushedThousands && !this.ChunksToGen.IsEmpty)
+                {
+                    flushedThousands = completedChunks / 1024;
+                    await this.FlushRegionsAsync();
+                }
+            }
+        }
+
         {
             var index = 0;
             var (x, z) = LevelData.SpawnPosition.ToChunkCoord();
@@ -1457,6 +1492,96 @@ public abstract partial class AbstractLevel : ILevel
         }
 
         this.generated = true;
+    }
+
+    // The width, in chunks, of the tiles pregeneration stages: a region's, so finished regions are saved whole.
+    private const int PregenerationTileSize = Region.CubicRegionSize;
+
+    /// <summary>
+    /// The tiles pregeneration stages the square of <paramref name="range"/> chunks around (<paramref name="centerX"/>,
+    /// <paramref name="centerZ"/>) in: squares of <see cref="PregenerationTileSize"/> chunks, cut to the area, nearest
+    /// to the center first, so the spawn's are ready first.
+    /// </summary>
+    private static List<List<(int X, int Z)>> PregenerationTiles(int centerX, int centerZ, int range)
+    {
+        var (minX, minZ, maxX, maxZ) = (centerX - range, centerZ - range, centerX + range, centerZ + range);
+        var tiles = new List<List<(int X, int Z)>>();
+        for (var tileX = minX; tileX < maxX; tileX += PregenerationTileSize)
+        {
+            for (var tileZ = minZ; tileZ < maxZ; tileZ += PregenerationTileSize)
+            {
+                var width = Math.Min(PregenerationTileSize, maxX - tileX);
+                var depth = Math.Min(PregenerationTileSize, maxZ - tileZ);
+                tiles.Add([.. PregenerationSquare(tileX, tileZ, width, depth)]);
+            }
+        }
+
+        return [.. tiles.OrderBy(tile =>
+        {
+            var (x, z) = tile[tile.Count / 2];
+            return (long)(x - centerX) * (x - centerX) + (long)(z - centerZ) * (z - centerZ);
+        })];
+    }
+
+    private static List<(int X, int Z)> PregenerationSquare(int minX, int minZ, int width, int? depth = null)
+    {
+        var square = new List<(int X, int Z)>();
+        for (var x = minX; x < minX + width; x++)
+        {
+            for (var z = minZ; z < minZ + (depth ?? width); z++)
+                square.Add((x, z));
+        }
+
+        return square;
+    }
+
+    /// <summary>
+    /// Unloads the chunks pregeneration is done with: those more than 2 chunks from every chunk left to generate,
+    /// whose staging decorates and post-processes chunks within 2 of it. They're saved first if they changed.
+    /// </summary>
+    /// <remarks>
+    /// The level hasn't ticked yet, so the entity work it does for complete chunks (populating them with mobs, spawning
+    /// the entities generation placed) runs first, as the tick would before they could unload.
+    /// </remarks>
+    private async Task UnloadPregeneratedAsync(HashSet<long> remaining)
+    {
+        await simulationGate.WaitAsync();
+        try
+        {
+            await this.RunEntityActionsAsync();
+            this.TakeBlockEntityChanges();
+            foreach (var chunk in this.LoadedChunks.ToArray())
+            {
+                NumericsHelper.LongToInts(chunk, out var cx, out var cz);
+                if (Needed(cx, cz) || !this.TryReleaseUnneededChunk(chunk))
+                    continue;
+
+                if (GetRegionForChunk(cx, cz) is Region region)
+                {
+                    await region.UnloadChunk(
+                        NumericsHelper.Modulo(cx, Region.CubicRegionSize),
+                        NumericsHelper.Modulo(cz, Region.CubicRegionSize));
+                }
+            }
+        }
+        finally
+        {
+            simulationGate.Release();
+        }
+
+        bool Needed(int cx, int cz)
+        {
+            for (var dx = -2; dx <= 2; dx++)
+            {
+                for (var dz = -2; dz <= 2; dz++)
+                {
+                    if (remaining.Contains(NumericsHelper.IntsToLong(cx + dx, cz + dz)))
+                        return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     private async Task SetWorldSpawnAsync()

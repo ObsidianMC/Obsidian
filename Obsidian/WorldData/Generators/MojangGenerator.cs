@@ -450,26 +450,28 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     }
 
     /// <summary>
-    /// Generates the chunks from (<paramref name="minX"/>, <paramref name="minZ"/>) up to (<paramref name="maxX"/>,
-    /// <paramref name="maxZ"/>), exclusive, up to their light, along with the neighbors they need, staged so that steps
+    /// Generates <paramref name="chunks"/> up to their light, along with the neighbors they need, staged so that steps
     /// running at once never wait on each other's locks. Completing the chunks afterwards only marks them complete.
+    /// Pregeneration stages its area a tile at a time, and the level stages the chunks players wait for in batches.
     /// </summary>
     /// <remarks>
     /// Every chunk is carved in parallel first. Decorating, post-processing and lighting then each run in 9 waves, one per
     /// class of a 3 by 3 colouring of chunk positions: chunks of a wave are 3 apart, so the areas they lock never overlap.
-    /// Completing chunks one by one in order instead keeps most concurrent jobs waiting on their neighbors' locks. Light
-    /// doesn't depend on the order chunks are lit in, and decorations meeting at borders already ran in any order.
-    /// Cancelling stops new chunks from starting; steps already running finish.
+    /// Completing chunks one by one instead keeps most concurrent jobs waiting on their neighbors' locks. The colouring
+    /// is of world positions, so stages of different batches agree on it. Light doesn't depend on the order chunks are
+    /// lit in, and decorations meeting at borders already ran in any order. Chunks done already are skipped. Cancelling
+    /// stops new chunks from starting; steps already running finish.
     /// </remarks>
-    internal async Task PrepareAreaAsync(int minX, int minZ, int maxX, int maxZ, CancellationToken cancellationToken = default)
+    internal async Task PrepareAsync(IReadOnlyCollection<(int X, int Z)> chunks, CancellationToken cancellationToken = default)
     {
         // Completing a chunk decorates its neighbors, and decorating a chunk carves its neighbors.
-        await Parallel.ForEachAsync(Area(minX - 2, minZ - 2, maxX + 2, maxZ + 2), GenerationThreads.Parallel(cancellationToken),
+        var decorated = Around(chunks);
+        await Parallel.ForEachAsync(Around(decorated), GenerationThreads.Parallel(cancellationToken),
             async (position, _) => await this.CarveAsync(position.X, position.Z));
 
-        await InWavesAsync(Area(minX - 1, minZ - 1, maxX + 1, maxZ + 1), position => this.DecorateAsync(position.X, position.Z));
-        await InWavesAsync(Area(minX, minZ, maxX, maxZ), async position => await this.FinishBlocksAsync(await this.GetChunkAsync(position.X, position.Z)));
-        await InWavesAsync(Area(minX, minZ, maxX, maxZ), async position => await this.LightAsync(await this.GetChunkAsync(position.X, position.Z)));
+        await InWavesAsync(decorated, position => this.DecorateAsync(position.X, position.Z));
+        await InWavesAsync(chunks, async position => await this.FinishBlocksAsync(await this.GetChunkAsync(position.X, position.Z)));
+        await InWavesAsync(chunks, async position => await this.LightAsync(await this.GetChunkAsync(position.X, position.Z)));
 
         async Task InWavesAsync(IEnumerable<(int X, int Z)> positions, Func<(int X, int Z), Task> step)
         {
@@ -484,13 +486,20 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         static int Mod3(int value) => (value % 3 + 3) % 3;
 
-        static IEnumerable<(int X, int Z)> Area(int minX, int minZ, int maxX, int maxZ)
+        // The chunks and their neighbors.
+        static HashSet<(int X, int Z)> Around(IEnumerable<(int X, int Z)> chunks)
         {
-            for (var x = minX; x < maxX; x++)
+            var around = new HashSet<(int X, int Z)>();
+            foreach (var (x, z) in chunks)
             {
-                for (var z = minZ; z < maxZ; z++)
-                    yield return (x, z);
+                for (var dx = -1; dx <= 1; dx++)
+                {
+                    for (var dz = -1; dz <= 1; dz++)
+                        around.Add((x + dx, z + dz));
+                }
             }
+
+            return around;
         }
     }
 
