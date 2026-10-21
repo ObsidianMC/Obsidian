@@ -13,12 +13,13 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
     public int RegistryId { get; }
     public int StatesCount { get; }
     public string? PlacementClass { get; }
-    public string? RandomTickClass { get; }
+    /// <summary>The Mojang class declaring each virtual hook's override, by hook (randomTick, tick, updateShape).</summary>
+    public IReadOnlyDictionary<string, string> OverrideClasses { get; }
     public BlockProperty[] Properties { get; }
     public Dictionary<int, List<string>> StateValues { get; }
 
     private Block(string name, string tag, int baseId, int defaultId, int registryId, int statesCount,
-        string? placementClass, string? randomTickClass, BlockProperty[] properties, Dictionary<int, List<string>> stateValues)
+        string? placementClass, IReadOnlyDictionary<string, string> overrideClasses, BlockProperty[] properties, Dictionary<int, List<string>> stateValues)
     {
         Name = name;
         Tag = tag;
@@ -27,19 +28,19 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
         RegistryId = registryId;
         StatesCount = statesCount;
         PlacementClass = placementClass;
-        RandomTickClass = randomTickClass;
+        OverrideClasses = overrideClasses;
         Properties = properties;
         StateValues = stateValues;
     }
 
-    public static Block Get(JsonProperty property, int id, string? placementClass, string? randomTickClass)
+    public static Block Get(JsonProperty property, int id, string? placementClass, IReadOnlyDictionary<string, string> overrideClasses)
     {
         string name = property.Name.RemoveNamespace().ToPascalCase();
 
         (int baseId, int defaultId, int statesCount, var stateValues) = GetIds(property);
         BlockProperty[] properties = GetBlockProperties(property).ToArray();
 
-        return new Block(name, property.Name, baseId, defaultId, id, statesCount, placementClass, randomTickClass, properties, stateValues);
+        return new Block(name, property.Name, baseId, defaultId, id, statesCount, placementClass, overrideClasses, properties, stateValues);
     }
 
     private static (int baseId, int defaultId, int stateCount, Dictionary<int, List<string>> stateValues) GetIds(JsonProperty property)

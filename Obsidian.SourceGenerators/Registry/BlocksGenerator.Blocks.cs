@@ -21,8 +21,11 @@ public partial class BlocksGenerator
         var createState = new CodeBuilder();
         var placementBehavior = new CodeBuilder();
         var placementBehaviors = compilation.GetTypeByMetadataName("Obsidian.WorldData.PlacementBehaviors");
-        var randomTickBehaviors = compilation.GetTypeByMetadataName("Obsidian.WorldData.RandomTickBehaviors");
-        var randomTickBehavior = new CodeBuilder();
+        // Each virtual hook is bound from the vanilla class that declares its override to a same-named member of the
+        // hook's counterpart type.
+        var hooks = OwnedHooks
+            .Select(hook => (hook, type: compilation.GetTypeByMetadataName($"Obsidian.WorldData.{hook.Counterparts}"), body: new CodeBuilder()))
+            .ToArray();
 
         foreach (var block in blocks)
         {
@@ -76,14 +79,17 @@ public partial class BlocksGenerator
             if (placementMember is not null && placementBehaviors?.GetMembers(placementMember).Length > 0)
                 placementBehavior.Indent().Append($"{block.RegistryId} => PlacementBehaviors.{placementMember},").Line();
 
-            // A random tick owner without a counterpart keeps the existing path (Growth, BlockBehaviors); the info
-            // diagnostic lists the owners still to migrate, without a warning.
-            if (randomTickBehaviors is not null && OwnerMember(block.RandomTickClass) is string randomTickMember)
+            // An owner without a counterpart keeps the existing path (Growth, BlockBehaviors); the info diagnostic
+            // lists the owners still to migrate, without a warning.
+            foreach (var (hook, type, body) in hooks)
             {
-                if (randomTickBehaviors.GetMembers(randomTickMember).Length > 0)
-                    randomTickBehavior.Indent().Append($"{block.RegistryId} => RandomTickBehaviors.{randomTickMember},").Line();
+                if (type is null || !block.OverrideClasses.TryGetValue(hook.Name, out var ownerClass) || OwnerMember(ownerClass) is not string member)
+                    continue;
+
+                if (type.GetMembers(member).Length > 0)
+                    body.Indent().Append($"{block.RegistryId} => {hook.Counterparts}.{member},").Line();
                 else
-                    ctx.ReportDiagnostic(Diagnostic.Create(UnmatchedRandomTickOwner, Location.None, block.RandomTickClass));
+                    ctx.ReportDiagnostic(Diagnostic.Create(UnmatchedOwner, Location.None, hook.Name, ownerClass, hook.Counterparts));
             }
         }
 
@@ -109,13 +115,16 @@ public partial class BlocksGenerator
             .Line("    _ => null,")
             .Line("};");
 
-        if (randomTickBehaviors is not null)
+        foreach (var (hook, type, body) in hooks)
         {
+            if (type is null)
+                continue;
+
             blocksBuilder.Line()
-                .Line("/// <summary>The behaviour supplied by the vanilla class that owns this block's randomTick override, or null.</summary>")
-                .Line("internal static IRandomTickBehavior? GetRandomTickBehavior(int registryId) => registryId switch")
+                .Line($"/// <summary>The behaviour supplied by the vanilla class that owns this block's {hook.Name} override, or null.</summary>")
+                .Line($"internal static {hook.Interface}? {hook.Method}(int registryId) => registryId switch")
                 .Line("{")
-                .Append(randomTickBehavior.ToString())
+                .Append(body.ToString())
                 .Line("    _ => null,")
                 .Line("};");
         }
@@ -125,9 +134,24 @@ public partial class BlocksGenerator
         ctx.AddSource("BlocksRegistry.Blocks.g.cs", blocksBuilder.ToString());
     }
 
-    private static readonly DiagnosticDescriptor UnmatchedRandomTickOwner = new("OBSGEN001",
-        "Vanilla random tick owner has no Obsidian counterpart",
-        "Vanilla random tick owner {0} has no member in Obsidian.WorldData.RandomTickBehaviors; its blocks use the existing growth path",
+    private sealed class OwnedHook(string name, string counterparts, string @interface, string method)
+    {
+        public string Name { get; } = name;
+        public string Counterparts { get; } = counterparts;
+        public string Interface { get; } = @interface;
+        public string Method { get; } = method;
+    }
+
+    private static readonly OwnedHook[] OwnedHooks =
+    [
+        new("randomTick", "RandomTickBehaviors", "IRandomTickBehavior", "GetRandomTickBehavior"),
+        new("tick", "TickBehaviors", "IScheduledTickBehavior", "GetTickBehavior"),
+        new("updateShape", "ShapeUpdateBehaviors", "IShapeUpdateBehavior", "GetShapeUpdateBehavior")
+    ];
+
+    private static readonly DiagnosticDescriptor UnmatchedOwner = new("OBSGEN001",
+        "Vanilla behavior owner has no Obsidian counterpart",
+        "Vanilla {0} owner {1} has no member in Obsidian.WorldData.{2}; its blocks use the existing path",
         "Blocks", DiagnosticSeverity.Info, isEnabledByDefault: true);
 
     private static string? OwnerMember(string? ownerClass)

@@ -28,6 +28,8 @@ internal static partial class RandomTickBehaviors
     // grow; beetroots and torchflowers draw first and then run CropBlock's (see CropAfterThirdsDraw).
     internal static IRandomTickBehavior CropBlock => Crop;
 
+    internal static IRandomTickBehavior FarmBlock { get; } = new FarmBlockBehavior();
+
     internal static IRandomTickBehavior BeetrootBlock { get; } = new CropAfterThirdsDraw(Crop);
 
     internal static IRandomTickBehavior TorchflowerCropBlock { get; } = new CropAfterThirdsDraw(Crop);

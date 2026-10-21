@@ -27,7 +27,12 @@ internal sealed class Assets
     public static Assets Get(ImmutableArray<(string name, string json)> files, SourceProductionContext ctx)
     {
         Block[] blocks = GetBlocks(files.GetJsonFromArray("blocks"), files.GetJsonFromArray("block_placement_classes"),
-            files.GetJsonFromArray("block_random_tick_classes"));
+            new Dictionary<string, string?>
+            {
+                ["randomTick"] = files.GetJsonFromArray("block_random_tick_classes"),
+                ["tick"] = files.GetJsonFromArray("block_tick_classes"),
+                ["updateShape"] = files.GetJsonFromArray("block_update_shape_classes")
+            });
         Fluid[] fluids = GetFluids(files.GetJsonFromArray("fluids"));
         Item[] items = GetItems(files.GetJsonFromArray("items"), files.GetJsonFromArray("item_components"));
         Dictionary<string, Codec[]> codecs = GetCodecs(files);
@@ -170,7 +175,7 @@ internal sealed class Assets
             .Select((name, id) => new EnchantmentEntry(name, id))];
     }
 
-    public static Block[] GetBlocks(string? json, string? placementClassesJson, string? randomTickClassesJson)
+    public static Block[] GetBlocks(string? json, string? placementClassesJson, Dictionary<string, string?> overrideClassesJson)
     {
         if (json is null)
             return [];
@@ -178,7 +183,9 @@ internal sealed class Assets
         var blocks = new List<Block>();
         using var document = JsonDocument.Parse(json);
         using var placementClasses = placementClassesJson is null ? null : JsonDocument.Parse(placementClassesJson);
-        using var randomTickClasses = randomTickClassesJson is null ? null : JsonDocument.Parse(randomTickClassesJson);
+        var overrideClasses = overrideClassesJson
+            .Where(entry => entry.Value is not null)
+            .ToDictionary(entry => entry.Key, entry => JsonDocument.Parse(entry.Value!));
 
         int id = 0;
 
@@ -204,12 +211,18 @@ internal sealed class Assets
                 placementClasses.RootElement.TryGetProperty(property.Name, out var classElement)
                 ? classElement.GetString()
                 : null;
-            string? randomTickClass = randomTickClasses is not null &&
-                randomTickClasses.RootElement.TryGetProperty(property.Name, out var randomTickElement)
-                ? randomTickElement.GetString()
-                : null;
-            blocks.Add(Block.Get(property, id++, placementClass, randomTickClass));
+            var owners = new Dictionary<string, string>();
+            foreach (var hook in overrideClasses)
+            {
+                if (hook.Value.RootElement.TryGetProperty(property.Name, out var ownerElement) && ownerElement.GetString() is string owner)
+                    owners[hook.Key] = owner;
+            }
+
+            blocks.Add(Block.Get(property, id++, placementClass, owners));
         }
+
+        foreach (var overrideDocument in overrideClasses.Values)
+            overrideDocument.Dispose();
 
         return blocks.ToArray();
     }

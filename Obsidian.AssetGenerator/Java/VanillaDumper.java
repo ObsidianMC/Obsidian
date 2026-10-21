@@ -114,7 +114,10 @@ public final class VanillaDumper {
         dumper.dumpBlockSounds();
         dumper.dumpBlockPhysics();
         dumper.dumpBlockPlacementClasses();
-        dumper.dumpBlockRandomTickClasses();
+        dumper.dumpBlockOverrideClasses();
+        dumper.dumpItemUseOnClasses();
+        dumper.dumpHoeTillables();
+        dumper.dumpItemPlacedBlocks();
         dumper.dumpCollisionShapes();
         dumper.dumpBlastResistance();
         dumper.dumpBlockLootTables();
@@ -589,16 +592,27 @@ public final class VanillaDumper {
     }
 
     /**
-     * {@code block_random_tick_classes.json}: the Mojang class that supplies each block's {@code randomTick} override.
-     * Blocks inheriting the base no-op implementation are omitted.
+     * {@code block_random_tick_classes.json}, {@code block_tick_classes.json} and
+     * {@code block_update_shape_classes.json}: the Mojang class that supplies each block's {@code randomTick},
+     * {@code tick} and {@code updateShape} override. Blocks inheriting the base no-op are omitted.
      */
-    private void dumpBlockRandomTickClasses() throws IOException {
+    private void dumpBlockOverrideClasses() throws IOException {
         var level = "net.minecraft.server.level.ServerLevel";
         var random = "net.minecraft.util.RandomSource";
-        // Block inherits randomTick's base no-op from BlockBehaviour, which declares it.
+        dumpBlockOverrideClasses("block_random_tick_classes.json", "randomTick", BLOCK_STATE, level, BLOCK_POS, random);
+        dumpBlockOverrideClasses("block_tick_classes.json", "tick", BLOCK_STATE, level, BLOCK_POS, random);
+        dumpBlockOverrideClasses("block_update_shape_classes.json", "updateShape", BLOCK_STATE,
+            "net.minecraft.world.level.LevelReader", "net.minecraft.world.level.ScheduledTickAccess", BLOCK_POS,
+            "net.minecraft.core.Direction", BLOCK_POS, BLOCK_STATE, random);
+    }
+
+    private void dumpBlockOverrideClasses(String file, String name, String... parameterTypes) throws IOException {
+        // The base no-op is declared by BlockBehaviour.
         var behaviour = "net.minecraft.world.level.block.state.BlockBehaviour";
-        var baseMethod = mojang.method(behaviour, "randomTick", BLOCK_STATE, level, BLOCK_POS, random);
-        var parameters = new Class<?>[] { mojang.type(BLOCK_STATE), mojang.type(level), mojang.type(BLOCK_POS), mojang.type(random) };
+        var baseMethod = mojang.method(behaviour, name, parameterTypes);
+        var parameters = new Class<?>[parameterTypes.length];
+        for (var i = 0; i < parameters.length; i++)
+            parameters[i] = mojang.type(parameterTypes[i]);
         var classes = new TreeMap<String, String>();
 
         for (var block : (Iterable<?>) blockRegistry) {
@@ -616,7 +630,111 @@ public final class VanillaDumper {
                 classes.put(key(blockRegistry, block), mojang.className(owner.getName()));
         }
 
-        Json.write(output.resolve("block_random_tick_classes.json"), classes, false);
+        Json.write(output.resolve(file), classes, false);
+    }
+
+    /**
+     * {@code item_use_on_classes.json}: the Mojang class that supplies each item's {@code useOn} override. Items
+     * inheriting the base implementation are omitted.
+     */
+    private void dumpItemUseOnClasses() throws IOException {
+        var item = "net.minecraft.world.item.Item";
+        var context = "net.minecraft.world.item.context.UseOnContext";
+        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+        var baseMethod = mojang.method(item, "useOn", context);
+        var parameter = mojang.type(context);
+        var classes = new TreeMap<String, String>();
+
+        for (var entry : (Iterable<?>) itemRegistry) {
+            var owner = entry.getClass();
+            while (owner != null) {
+                try {
+                    owner.getDeclaredMethod(baseMethod.getName(), parameter);
+                    break;
+                } catch (NoSuchMethodException ignored) {
+                    owner = owner.getSuperclass();
+                }
+            }
+
+            if (owner != null && owner != mojang.type(item))
+                classes.put(key(itemRegistry, entry), mojang.className(owner.getName()));
+        }
+
+        Json.write(output.resolve("item_use_on_classes.json"), classes, false);
+    }
+
+    /**
+     * {@code item_placed_blocks.json}: the block each {@code BlockItem} places by {@code BlockItem.getBlock()}, for
+     * the items that place a block named differently from themselves (wheat seeds place wheat).
+     */
+    private void dumpItemPlacedBlocks() throws IOException {
+        var blockItem = mojang.type("net.minecraft.world.item.BlockItem");
+        var getBlock = mojang.method("net.minecraft.world.item.BlockItem", "getBlock");
+        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+        var blockRegistry = mojang.get(REGISTRIES, "BLOCK");
+        var placed = new TreeMap<String, String>();
+
+        for (var entry : (Iterable<?>) itemRegistry) {
+            if (!blockItem.isInstance(entry))
+                continue;
+
+            var itemKey = key(itemRegistry, entry);
+            var blockKey = key(blockRegistry, Mojang.call(getBlock, entry));
+            if (!itemKey.equals(blockKey))
+                placed.put(itemKey, blockKey);
+        }
+
+        Json.write(output.resolve("item_placed_blocks.json"), placed, false);
+    }
+
+    /**
+     * {@code item_use_on_transforms.json}: what {@code HoeItem.TILLABLES} does per tillable block: the block it
+     * becomes, the item it drops (or null), and whether it needs air above. The state and item are the captured
+     * arguments of the map's lambdas; the predicate is "always" when it accepts a null context, and otherwise it is
+     * {@code HoeItem.onlyIfAirAbove}, which dereferences it.
+     */
+    private void dumpHoeTillables() throws IOException {
+        var hoe = "net.minecraft.world.item.HoeItem";
+        var tillables = (Map<?, ?>) mojang.get(hoe, "TILLABLES");
+        var blockRegistry = mojang.get(REGISTRIES, "BLOCK");
+        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+        var getBlock = mojang.method(STATE_BASE, "getBlock");
+        var result = new TreeMap<String, Object>();
+
+        for (var entry : tillables.entrySet()) {
+            try {
+                var pair = entry.getValue();
+                var predicate = (java.util.function.Predicate<Object>) pair.getClass().getMethod("getFirst").invoke(pair);
+                var consumer = pair.getClass().getMethod("getSecond").invoke(pair);
+
+                var always = false;
+                try {
+                    always = predicate.test(null);
+                } catch (NullPointerException expected) {
+                }
+
+                Object target = null;
+                Object drop = null;
+                for (var field : consumer.getClass().getDeclaredFields()) {
+                    field.setAccessible(true);
+                    var value = field.get(consumer);
+                    if (value != null && mojang.type(STATE_BASE).isInstance(value))
+                        target = Mojang.call(getBlock, value);
+                    else if (value != null && mojang.type("net.minecraft.world.item.Item").isInstance(value))
+                        drop = value;
+                }
+
+                var transform = new LinkedHashMap<String, Object>();
+                transform.put("to", key(blockRegistry, target));
+                transform.put("drop", drop == null ? null : key(itemRegistry, drop));
+                transform.put("requiresAirAbove", !always);
+                result.put(key(blockRegistry, entry.getKey()), transform);
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalStateException("Could not read HoeItem.TILLABLES", e);
+            }
+        }
+
+        Json.write(output.resolve("item_use_on_transforms.json"), Map.of(hoe, result), false);
     }
 
     /** The Mojang simple name of each block's class, sorted by block id. */
