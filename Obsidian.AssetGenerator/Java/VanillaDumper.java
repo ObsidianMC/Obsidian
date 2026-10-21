@@ -123,6 +123,7 @@ public final class VanillaDumper {
         dumper.dumpItemUseClasses();
         dumper.dumpHoeTillables();
         dumper.dumpItemPlacedBlocks();
+        dumper.dumpItemAttachments();
         dumper.dumpCollisionShapes();
         dumper.dumpBlastResistance();
         dumper.dumpBlockLootTables();
@@ -821,6 +822,49 @@ public final class VanillaDumper {
         }
 
         Json.write(output.resolve("item_placed_blocks.json"), placed, false);
+    }
+
+    /**
+     * {@code item_attachments.json}: the blocks a {@code StandingAndWallBlockItem} places, as its fields hold them: the
+     * standing block, the wall block, and the direction the standing block is placed against (the item places the
+     * wall block against the other horizontal directions). The owner is the class declaring {@code getPlacementState}.
+     */
+    private void dumpItemAttachments() throws IOException {
+        var standingAndWall = "net.minecraft.world.item.StandingAndWallBlockItem";
+        var context = "net.minecraft.world.item.context.BlockPlaceContext";
+        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+        var blockRegistry = mojang.get(REGISTRIES, "BLOCK");
+        var placement = mojang.method(standingAndWall, "getPlacementState", context);
+        var parameter = mojang.type(context);
+        var getBlock = mojang.method("net.minecraft.world.item.BlockItem", "getBlock");
+        var wallBlock = mojang.field(standingAndWall, "wallBlock");
+        var attachment = mojang.field(standingAndWall, "attachmentDirection");
+        var attachments = new TreeMap<String, Map<String, String>>();
+
+        for (var entry : (Iterable<?>) itemRegistry) {
+            if (!mojang.type(standingAndWall).isInstance(entry))
+                continue;
+
+            var owner = entry.getClass();
+            while (owner != null) {
+                try {
+                    owner.getDeclaredMethod(placement.getName(), parameter);
+                    break;
+                } catch (NoSuchMethodException ignored) {
+                    owner = owner.getSuperclass();
+                }
+            }
+
+            var direction = (Enum<?>) Mojang.get(attachment, entry);
+            var row = new TreeMap<String, String>();
+            row.put("owner", mojang.className(owner.getName()));
+            row.put("standing", key(blockRegistry, Mojang.call(getBlock, entry)));
+            row.put("wall", key(blockRegistry, Mojang.get(wallBlock, entry)));
+            row.put("direction", direction.name().toLowerCase(java.util.Locale.ROOT));
+            attachments.put(key(itemRegistry, entry), row);
+        }
+
+        Json.write(output.resolve("item_attachments.json"), attachments, false);
     }
 
     /**

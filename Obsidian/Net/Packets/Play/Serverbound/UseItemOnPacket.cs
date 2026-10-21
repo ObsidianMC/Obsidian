@@ -465,10 +465,23 @@ public partial class UseItemOnPacket
         // Other vanilla blocks face, turn and pair up as the player places them.
         if (currentItem.Holder.Block is not BlockType && !pouring && VanillaRedstone.For(block) is null)
         {
-            IBlock? placedState;
+            IBlock? placedState = block;
+            var onWall = false;
             lock (placeLevel.Fluids.TickLock)
-                placedState = VanillaPlacement.GetState(placeLevel.BlockUpdates, block, position, player, this.Face,
-                    this.Cursor, replacesClicked);
+            {
+                // Vanilla's StandingAndWallBlockItem: a torch or sign goes on the wall it's placed against, if it holds.
+                if (StandingAndWallItems.TryGet(currentItem.Holder, out var attachment))
+                {
+                    var attached = StandingAndWallItems.Place(placeLevel.BlockUpdates, attachment, position, player, this.Face,
+                        replacesClicked);
+                    placedState = attached?.State;
+                    onWall = attached?.OnWall == true;
+                }
+
+                if (!onWall && placedState is not null)
+                    placedState = VanillaPlacement.GetState(placeLevel.BlockUpdates, placedState, position, player,
+                        this.Face, this.Cursor, replacesClicked);
+            }
 
             if (placedState is null || placeLevel.IsOutsideBuildHeight(position.Y + 1) && placedState.BlockClass() == "DoorBlock")
             {
