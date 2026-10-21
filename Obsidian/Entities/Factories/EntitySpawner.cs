@@ -1,4 +1,4 @@
-using Obsidian.API.Entities;
+﻿using Obsidian.API.Entities;
 using Obsidian.API.World;
 using Obsidian.WorldData;
 
@@ -116,6 +116,13 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         EntityType.WitherSkull => new WitherSkull { Level = level },
         EntityType.EndCrystal => new EndCrystal { Level = level },
         EntityType.EyeOfEnder => new EyeOfEnder { Level = level },
+        EntityType.EnderPearl => new EnderPearl { Level = level },
+        EntityType.Tnt => new PrimedTnt { Level = level },
+        EntityType.ItemFrame => new ItemFrame { Level = level },
+        EntityType.GlowItemFrame => new GlowItemFrame { Level = level },
+        EntityType.Painting => new Painting { Level = level },
+        EntityType.LeashKnot => new LeashKnot { Level = level },
+        EntityType.ExperienceBottle => new ThrownExperienceBottle { Level = level },
         EntityType.DragonFireball => new DragonFireball(level),
         EntityType.Horse => new Horse { Level = level },
         EntityType.Llama => new Llama { Level = level },

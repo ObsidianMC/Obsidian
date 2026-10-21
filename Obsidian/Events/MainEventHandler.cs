@@ -1,4 +1,4 @@
-using Obsidian.API.BlockEntities;
+﻿using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
@@ -34,6 +34,18 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         var entity = e.Entity;
         var attacker = e.Attacker;
+
+        // Item frames, paintings and leash knots react to hits themselves.
+        if (entity is IPlayerInteractable hit && attacker is PlayerBase hitter)
+        {
+            ValueTask Hit() => entity.Level == hitter.Level && hitter.CanAttack(entity) ? hit.AttackedAsync(hitter) : default;
+
+            if (entity.Level is Obsidian.WorldData.AbstractLevel hitLevel)
+                hitLevel.EnqueueEntityAction(Hit);
+            else
+                await Hit();
+            return;
+        }
 
         if (entity is IPlayer || entity is Mob { HasAi: true } || entity is EndCrystal or EnderDragonPart || entity is MobProjectile { Type: EntityType.Fireball })
         {
@@ -80,7 +92,10 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         var used = entity switch
         {
             PluginEntity pluginEntity => await pluginEntity.InteractAsync(player, hand),
-            Mob { HasAi: true } mob => await mob.InteractAsync(player, hand),
+            IPlayerInteractable interactable when player is PlayerBase user => await interactable.InteractAsync(user, hand),
+            // Like vanilla's Mob.interact, leads come before the mob's own interaction.
+            Mob { HasAi: true } mob => player is PlayerBase leader && await mob.UseLeashAsync(leader, hand)
+                || await mob.InteractAsync(player, hand),
             _ => false
         };
 

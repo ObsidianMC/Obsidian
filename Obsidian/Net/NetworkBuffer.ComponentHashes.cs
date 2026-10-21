@@ -603,7 +603,7 @@ public partial class NetworkBuffer
                 {
                     var name = this.ReadNbtString();
                     var boolean = chat && name is "bold" or "italic" or "underlined" or "strikethrough" or "obfuscated" or "interpret";
-                    if (chat && name is not ("text" or "translate" or "fallback" or "with" or "extra" or "color" or "shadow_color" or "bold"
+                    if (chat && name is not ("text" or "translate" or "keybind" or "fallback" or "with" or "extra" or "color" or "shadow_color" or "bold"
                         or "italic" or "underlined" or "strikethrough" or "obfuscated" or "insertion" or ""))
                         throw new UnsupportedComponentHashException();
                     if (chat && name == "" && next is not (8 or 9 or 10))

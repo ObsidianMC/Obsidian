@@ -32,13 +32,6 @@ public sealed partial class GuidArgumentParser(Guid guid) : BaseArgumentParser<G
     {
         return Guid.TryParse(input, out result);
     }
-
-    public override void Write(INetStreamWriter writer)
-    {
-        base.Write(writer);
-
-        writer.WriteUuid(this.Guid);
-    }
 }
 
 public enum StringType : int

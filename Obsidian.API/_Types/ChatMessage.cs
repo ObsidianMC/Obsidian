@@ -8,6 +8,9 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
 
     public string? Translate { get; set; }
 
+    /// <summary>The key bound to this keybind, like <c>key.jump</c>, as the client shows it.</summary>
+    public string? Keybind { get; set; }
+
     public HexColor? Color { get; set; }
 
     // The style flags are inherited from the parent component (or the context, like italic custom item names) when null.

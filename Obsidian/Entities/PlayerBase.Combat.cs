@@ -1,10 +1,12 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Events;
 using Obsidian.API.Loot;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
+using System.Text.Json;
 
 namespace Obsidian.Entities;
 
@@ -17,7 +19,47 @@ public partial class PlayerBase
     private VectorD? combatPosition;
     internal VectorD CombatMotion { get; private set; }
     private int shieldCooldown;
+    private readonly Dictionary<string, int> itemCooldowns = [];
     private readonly ItemStack?[] sentEquipment = new ItemStack?[6];
+
+    internal static (string Group, int Ticks)? GetUseCooldown(ItemStack? item)
+    {
+        if (item == null || item.RemoveComponents.Contains(DataComponentType.UseCooldown))
+            return null;
+
+        if (item.GetComponent<UseCooldownDataComponent>(DataComponentType.UseCooldown) is { } custom)
+        {
+            var customTicks = float.IsFinite(custom.Seconds) ? Math.Max(0, (int)Math.Floor(custom.Seconds * 20f)) : 0;
+            return (string.IsNullOrEmpty(custom.CooldownGroup) ? item.Holder.UnlocalizedName : custom.CooldownGroup, customTicks);
+        }
+
+        var defaults = CombatItems.Component(item, "use_cooldown");
+        if (defaults.ValueKind != JsonValueKind.Object)
+            return null;
+
+        var seconds = CombatItems.Number(defaults, "seconds");
+        var ticks = float.IsFinite(seconds) ? Math.Max(0, (int)Math.Floor(seconds * 20f)) : 0;
+        var group = defaults.TryGetProperty("cooldown_group", out var prop) && prop.GetString() is { Length: > 0 } name
+            ? name
+            : item.Holder.UnlocalizedName;
+        return (group, ticks);
+    }
+
+    internal bool IsOnCooldown(ItemStack? item) =>
+        GetUseCooldown(item) is (var group, _) && this.itemCooldowns.TryGetValue(group, out var remaining) && remaining > 0;
+
+    internal async ValueTask StartItemCooldownAsync(ItemStack? item)
+    {
+        if (GetUseCooldown(item) is not (var group, var ticks) || ticks <= 0)
+            return;
+
+        this.itemCooldowns[group] = ticks;
+        await this.QueuePacketAsync(new CooldownPacket
+        {
+            CooldownGroup = group,
+            CooldownTicks = ticks
+        });
+    }
 
     public override ValueTask DamageAsync(IEntity source, float amount = 1)
         => DamageCombatAsync(source, amount, ReferenceEquals(source, this) ? CombatDamageKind.Magic : CombatDamageKind.Melee);
@@ -310,6 +352,14 @@ public partial class PlayerBase
         if (attackTicks < 1000) attackTicks++;
         if (lastAttackItem != GetHeldItem()?.Holder) { attackTicks = 0; lastAttackItem = GetHeldItem()?.Holder; }
         if (shieldCooldown > 0) shieldCooldown--;
+        if (this.itemCooldowns.Count > 0)
+        {
+            foreach (var group in this.itemCooldowns.Keys.ToArray())
+            {
+                if (--this.itemCooldowns[group] <= 0)
+                    this.itemCooldowns.Remove(group);
+            }
+        }
         CombatMotion = combatPosition is VectorD previous ? Position - previous : VectorD.Zero;
         combatPosition = Position;
         await TickWeaponUseAsync();

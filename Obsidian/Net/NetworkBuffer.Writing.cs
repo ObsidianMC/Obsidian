@@ -296,7 +296,7 @@ public partial class NetworkBuffer : INetStreamWriter
         if (chatMessage is null)
             return;
 
-        if (chatMessage.Translate is null && chatMessage.Color is null && chatMessage.Bold is null && chatMessage.Italic is null
+        if (chatMessage.Translate is null && chatMessage.Keybind is null && chatMessage.Color is null && chatMessage.Bold is null && chatMessage.Italic is null
             && chatMessage.Underlined is null && chatMessage.Strikethrough is null && chatMessage.Obfuscated is null
             && chatMessage.ShadowColor is null && chatMessage.Insertion is null && chatMessage.ClickEvent is null && chatMessage.HoverEvent is null
             && !chatMessage.GetExtras().Any() && !chatMessage.GetExtraChatComponents().Any())

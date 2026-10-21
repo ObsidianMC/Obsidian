@@ -63,8 +63,8 @@ public sealed class Command
                 $"Command {GetQualifiedName()} cannot be executed as {context.Sender.Issuer}", restricted.AllowedIssuers);
         }
 
-        var executors = Overloads.Where(x => x.MatchParams(args)
-            || x.GetParameters().LastOrDefault()?.GetCustomAttribute<RemainingAttribute>() is not null);
+        // Overloads whose parameters can't take as many words are skipped as the words are bound.
+        var executors = Overloads;
 
         // Find matching overload
         if (executors is null)
@@ -128,22 +128,43 @@ public sealed class Command
     }
 
     /// <summary>
-    /// Pairs the words of a command with <paramref name="parameters"/>. A trailing parameter marked with
+    /// Pairs the words of a command with <paramref name="parameters"/>, each taking as many words as its parser reads
+    /// (see <see cref="BaseArgumentParser.WordCount"/>). A trailing parameter marked with
     /// <see cref="RemainingAttribute"/> receives the rest of the words joined by spaces.
     /// </summary>
     /// <returns>One argument per parameter, or <see langword="null"/> if the word count does not fit.</returns>
-    private static string[]? BindArguments(ParameterInfo[] parameters, string[] args)
+    private string[]? BindArguments(ParameterInfo[] parameters, string[] args) =>
+        BindArguments(parameters, args, type => this.CommandHandler.IsValidArgumentType(type)
+            ? this.CommandHandler.GetArgumentParser(type).WordCount
+            : 1);
+
+    /// <inheritdoc cref="BindArguments(ParameterInfo[], string[])"/>
+    /// <param name="wordCount">How many words an argument of a type takes.</param>
+    internal static string[]? BindArguments(ParameterInfo[] parameters, IReadOnlyList<string> args, Func<Type, int> wordCount)
     {
-        if (args.Length == parameters.Length)
-            return args;
+        var bound = new string[parameters.Length];
+        var used = 0;
 
-        if (args.Length < parameters.Length || parameters.Length == 0
-            || parameters[^1].GetCustomAttribute<RemainingAttribute>() is null)
-            return null;
+        for (var i = 0; i < parameters.Length; i++)
+        {
+            if (i == parameters.Length - 1 && parameters[i].GetCustomAttribute<RemainingAttribute>() is not null)
+            {
+                if (used >= args.Count)
+                    return null;
 
-        var last = parameters.Length - 1;
+                bound[i] = string.Join(' ', args.Skip(used));
+                return bound;
+            }
 
-        return [.. args[..last], string.Join(' ', args[last..])];
+            var count = Math.Max(1, wordCount(parameters[i].ParameterType));
+            if (used + count > args.Count)
+                return null;
+
+            bound[i] = string.Join(' ', args.Skip(used).Take(count));
+            used += count;
+        }
+
+        return used == args.Count ? bound : null;
     }
 
     private async Task ExecuteAsync(IExecutor<CommandContext> commandExecutor, CommandContext context, string[] args)

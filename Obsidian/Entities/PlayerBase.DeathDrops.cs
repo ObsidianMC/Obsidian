@@ -115,6 +115,7 @@ public partial class PlayerBase
             this.CancelEating();
             this.CancelWeaponUse();
             this.LeaveVehicle();
+            await this.CancelPortalTravelAsync();
 
             await transfers;
             await this.LoseItemsAtDeathAsync(death);

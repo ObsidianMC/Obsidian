@@ -9,10 +9,12 @@ public partial class Extensions
 {
     public static void WriteChatMessage(this INbtWriter writer, ChatMessage chatMessage)
     {
-        if (!chatMessage.Text.IsNullOrEmpty() || chatMessage.Translate is null)
+        if (!chatMessage.Text.IsNullOrEmpty() || chatMessage.Translate is null && chatMessage.Keybind is null)
             writer.WriteString("text", chatMessage.Text ?? string.Empty);
         if (!chatMessage.Translate.IsNullOrEmpty())
             writer.WriteString("translate", chatMessage.Translate);
+        if (!chatMessage.Keybind.IsNullOrEmpty())
+            writer.WriteString("keybind", chatMessage.Keybind);
         if (chatMessage.Color.HasValue)
             writer.WriteString("color", chatMessage.Color.Value.ToString());
         if (!chatMessage.Insertion.IsNullOrEmpty())

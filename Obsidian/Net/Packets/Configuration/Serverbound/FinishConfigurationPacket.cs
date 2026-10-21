@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -69,6 +69,11 @@ public sealed partial class FinishConfigurationPacket
         await client.QueuePacketAsync(EntityEventPacket.PermissionLevel(player.EntityId, permissionLevel));
         await client.QueuePacketAsync(CommandsRegistry.Packet);
         await client.QueuePacketAsync(new RecipeBookSettingsPacket());
+
+        // Objectives and teams made before the player joined.
+        ((Server)server).CommandScoreboard.SendTo(player);
+        foreach (var team in server.ScoreboardManager.DefaultScoreboard.Teams.OfType<Team>())
+            await client.QueuePacketAsync(team.CreationPacket());
 
         if (player is Entities.Player joined)
         {

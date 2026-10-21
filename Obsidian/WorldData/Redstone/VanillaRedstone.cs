@@ -1,4 +1,4 @@
-using Obsidian.API.Blocks;
+﻿using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using System.Diagnostics.CodeAnalysis;
 
@@ -6,7 +6,7 @@ namespace Obsidian.WorldData.Redstone;
 
 /// <summary>
 /// Vanilla's redstone components by block: dust, torches, repeaters, comparators, levers, buttons, pressure plates,
-/// the redstone block, the redstone lamp, TNT, and the power switches of hoppers, droppers and dispensers.
+/// the redstone block, the redstone lamp, and the power switches of hoppers, droppers and dispensers.
 /// </summary>
 internal static class VanillaRedstone
 {

@@ -281,4 +281,4 @@ internal static class CombatItems
     }
 }
 
-internal enum CombatDamageKind { Melee, Projectile, Fall, Fire, Explosion, Magic, Starvation, Void, SonicBoom, Suffocation, Freezing, FireContact, Thorns }
+internal enum CombatDamageKind { Melee, Projectile, Fall, Fire, Explosion, Magic, Starvation, Void, SonicBoom, Suffocation, Freezing, FireContact, Thorns, Drowning }

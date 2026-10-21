@@ -107,6 +107,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case 47:
                 await HandleFromPoolAsync<RenameItemPacket>(data);
                 break;
+            case 59:
+                await HandleFromPoolAsync<SignUpdatePacket>(data);
+                break;
             case 52:
                 await HandleFromPoolAsync<SetCarriedItemPacket>(data);
                 break;

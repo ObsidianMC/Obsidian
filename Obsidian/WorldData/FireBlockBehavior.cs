@@ -203,7 +203,7 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
 
         // Vanilla's FireBlock calls TntBlock.explode on the block the fire replaced, after placing the fire.
         if (BlocksRegistry.IsTntBlock(replaced.RegistryId) && level.Level is AbstractLevel concrete)
-            concrete.PrimeTnt(position);
+            Entities.PrimedTnt.Prime(concrete, position, owner: null);
     }
 
     // Vanilla's FireBlock.tick ignite loop: fire jumps to empty spaces within reach of its own age and the difficulty.

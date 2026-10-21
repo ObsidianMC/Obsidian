@@ -222,6 +222,8 @@ internal sealed class BowAttackGoal(Skeleton skeleton) : NavigationGoal(skeleton
         drawTicks = sightTicks = 0;
         drawing = false;
         skeleton.LivingBitMask &= ~LivingBitMask.HandActive;
+        // Lower the bow on clients too, or it stays drawn after the skeleton gives up its target.
+        skeleton.SynchronizeMetadata();
         skeleton.SetAggressive(false);
     }
 }

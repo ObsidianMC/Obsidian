@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ObjectPool;
 using Obsidian.API.Events;
@@ -258,7 +258,15 @@ public sealed partial class Client : IClient
 
             return false;
         }
-        else if (this.HostServer.Configuration.Whitelist && !this.HostServer.IsWhitelisted(this.profile.Uuid))
+        else if (this.HostServer is Server { Bans: var bans } && bans.GetBan(this.profile.Uuid, this.profile.Name) is BannedPlayer ban)
+        {
+            await DisconnectAsync(BanList.DisconnectMessage(ban.Reason));
+
+            return false;
+        }
+        // Players whitelisted by name before their UUID was known match by name.
+        else if (this.HostServer.Configuration.Whitelist && !this.HostServer.IsWhitelisted(this.profile.Uuid)
+            && !this.HostServer.IsWhitelisted(this.profile.Name))
         {
             await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
 

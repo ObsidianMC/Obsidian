@@ -206,38 +206,6 @@ public sealed class MainCommandModule : CommandModuleBase
         }
     }
 
-    [Command("give")]
-    [CommandInfo("Gives you a block or item", "/get <item> <amount>")]
-    [IssuerScope(CommandIssuers.Client)]
-    [RequirePermission(op: true, permissions: "obsidian.give")]
-    public Task GiveAsync(string item) => GiveAsync(item, 1);
-
-    [CommandOverload]
-    public async Task GiveAsync(string item, int amount = 1)
-    {
-        if (this.Player is not IPlayer player)
-            return;
-
-        // An item's identifier, vanilla's namespace being optional.
-        var identifier = item.Contains(':') ? item : $"minecraft:{item}";
-        if (ItemsRegistry.TryGet(identifier, out var found))
-        {
-            var slot = player.Inventory.AddItem(new ItemStack(found, count: amount));
-            await player.SendMessageAsync($"Given you {ChatColor.Gold}{amount} {item}(s)");
-            player.SendPacket(new ContainerSetSlotPacket
-            {
-                Slot = (short)slot,
-                ContainerId = 0,
-                SlotData = player.Inventory.GetItem(slot)!,
-                StateId = player.Inventory.StateId++
-            });
-        }
-        else
-        {
-            await player.SendMessageAsync($"{ChatColor.Red}Invalid item: {item}");
-        }
-    }
-
     [Command("clearinventory")]
     [CommandInfo("Clears your inventory, armor, offhand, and cursor.", "/clearinventory")]
     [IssuerScope(CommandIssuers.Client)]
@@ -268,39 +236,6 @@ public sealed class MainCommandModule : CommandModuleBase
             });
         }
         await player.SendMessageAsync("Inventory cleared.");
-    }
-
-    [Command("gamemode")]
-    [CommandInfo("Change your gamemode.", "/gamemode <survival/creative/adventure/spectator>")]
-    [IssuerScope(CommandIssuers.Client)]
-    [RequirePermission(op: true, permissions: "obsidian.gamemode")]
-    public async Task GamemodeAsync(GameMode gamemode)
-    {
-        if (this.Player is not IPlayer player)
-            return;
-
-        var name = gamemode.ToString().ToSnakeCase();
-
-        if (player.GameMode != gamemode)
-        {
-            await player.SetGamemodeAsync(gamemode);
-            await player.SendMessageAsync($"{ChatColor.Reset}Gamemode set to {ChatColor.Red}{name}{ChatColor.Reset}.");
-            return;
-        }
-
-        await player.SendMessageAsync($"{ChatColor.Reset}You're already in {ChatColor.Red}{name}{ChatColor.Reset}.");
-    }
-
-    [Command("tp")]
-    [CommandInfo("teleports you to a location", "/tp <x> <y> <z>")]
-    [IssuerScope(CommandIssuers.Client)]
-    public async Task TeleportAsync([Remaining] VectorD location)
-    {
-        if (this.Player is not IPlayer player)
-            return;
-
-        await player.SendMessageAsync($"Teleporting to {location.X} {location.Y} {location.Z}");
-        await player.TeleportAsync(location);
     }
 
     [Command("op")]
@@ -359,17 +294,6 @@ public sealed class MainCommandModule : CommandModuleBase
         }
 
         await player.SendMessageAsync("§cYou have already sent a request");
-    }
-
-    [Command("title")]
-    [CommandInfo("Sends a title", "/title")]
-    [IssuerScope(CommandIssuers.Client)]
-    public async Task SendTitleAsync()
-    {
-        if (this.Player is IPlayer player)
-        {
-            await player.SendTitleAsync("Test Title", "Test subtitle", 20, 40, 20);
-        }
     }
 
     [Command("spawnentity")]
@@ -474,17 +398,6 @@ public sealed class MainCommandModule : CommandModuleBase
         server.BroadcastMessage($"Stopping server...");
 
         await server.StopAsync();
-    }
-
-    [Command("toggleweather", "weather")]
-    [RequirePermission(permissions: "obsidian.weather")]
-    public async Task WeatherAsync()
-    {
-        if (this.Player is IPlayer player)
-        {
-            player.Level.LevelData.RainTime = 0;
-            await this.Sender.SendMessageAsync("Toggled weather for this world.");
-        }
     }
 
     [Command("world")]

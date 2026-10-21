@@ -75,25 +75,24 @@ public static class CommandsRegistry
 
             var type = arg.ParameterType;
 
-            var (id, mctype) = server.CommandHandler.FindMinecraftType(type);
+            var parser = server.CommandHandler.GetArgumentParser(type);
 
-            //TODO make this better 
-            argNode.Parser = mctype switch
-            {
-                "brigadier:string" => new StringArgumentParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute))
+            // Strings are read as one word, a quoted phrase, or the rest of the line, depending on the parameter.
+            argNode.Parser = parser.Identifier == "brigadier:string"
+                ? new StringArgumentParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute))
                     ? StringType.GreedyPhrase
-                    : StringType.QuotablePhrase),
-                "brigadier:double" => new DoubleArgumentParser(),
-                "brigadier:float" => new FloatArgumentParser(),
-                "brigadier:integer" => new UnsignedIntArgumentParser(),
-                "brigadier:long" => new UnsignedLongArgumentParser(),
-                "minecraft:time" => new MinecraftTimeArgumentParser(),
-                _ => new EmptyArgumentParser(id, mctype),
-            };
+                    : parser is StringArgumentParser { Type: var stringType } ? stringType : StringType.SingleWord)
+                : parser;
 
-            // The client sends a CommandSuggestionPacket for nodes with vanilla's ask_server provider.
-            if (arg.GetCustomAttribute<BaseSuggestionProviderAttribute>() is not null
-                || server.CommandHandler.GetArgumentParser(type) is ISuggestionProvider)
+            // The client sends a CommandSuggestionPacket for nodes with vanilla's ask_server provider, and fills in
+            // nodes with one of its own providers, like available_sounds, by itself.
+            if (arg.GetCustomAttribute<ClientSuggestionsAttribute>() is { } clientSuggestions)
+            {
+                argNode.Type |= CommandNodeType.HasSuggestions;
+                argNode.SuggestionType = clientSuggestions.Provider;
+            }
+            else if (arg.GetCustomAttribute<BaseSuggestionProviderAttribute>() is not null
+                || parser is ISuggestionProvider)
             {
                 argNode.Type |= CommandNodeType.HasSuggestions;
                 argNode.SuggestionType = "minecraft:ask_server";

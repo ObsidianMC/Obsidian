@@ -51,7 +51,10 @@ public partial class PlayerActionPacket
             notes.PlayNoteBlock(Position, player);
         }
 
-        if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.GameMode == GameMode.Creative))
+        // A block that breaks instantly (grass, flowers, torches) gets only a start from survival clients, never a finish.
+        var instant = Status == PlayerActionStatus.StartedDigging && player.GameMode != GameMode.Spectator &&
+            (player.GameMode == GameMode.Creative || !block.IsAir && Registries.BlockPhysics.MiningHardness(block.GetHashCode()) == 0);
+        if (Status == PlayerActionStatus.FinishedDigging || instant)
         {
             var args = new BlockBreakEventArgs(server, player, block, Position, player.Level)
             {

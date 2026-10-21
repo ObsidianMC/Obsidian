@@ -34,7 +34,9 @@ public partial class PlayerBase
             .WithPause(false)
             .AfterAction("none");
         if (feedbackEnabled)
-            builder.WithMessage("Press G (the default Quick Actions key) to give feedback in-game. Your feedback helps improve Obsidian!", width: 300);
+            builder.WithMessage(new ChatMessage { Text = "Press " }
+                .AddExtra(new ChatMessage { Keybind = "key.quickActions" })
+                .AddExtra(new ChatMessage { Text = " (the Quick Actions key) to give feedback in-game. Your feedback helps improve Obsidian!" }), width: 300);
         return builder.Build();
     }
 

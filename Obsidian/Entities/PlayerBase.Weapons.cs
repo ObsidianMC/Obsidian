@@ -40,6 +40,18 @@ public partial class PlayerBase
             return;
         }
 
+        if (use.Item is { Count: > 0 } pearl && pearl.Is(ItemsRegistry.EnderPearl))
+        {
+            await EnderPearl.ThrowAsync(this, hand, pearl);
+            return;
+        }
+
+        if (use.Item is { Count: > 0 } bottle && bottle.Is(ItemsRegistry.ExperienceBottle))
+        {
+            await ThrownExperienceBottle.ThrowAsync(this, hand, bottle);
+            return;
+        }
+
         await StartUsingItemAsync(hand);
     }
 
@@ -189,7 +201,7 @@ public partial class PlayerBase
         }
     }
 
-    private VectorD ShotDirection(float angle)
+    internal VectorD ShotDirection(float angle)
     {
         VectorD direction = GetLookDirection();
         var radians = angle * Math.PI / 180;
