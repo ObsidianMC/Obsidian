@@ -64,14 +64,19 @@ public partial class Client
     }
 
     // Serializes the packet here, so it's sent as it is now, and leaves framing (compressing, encrypting) and writing it
-    // to the network threads (see FlushOutput).
-    private bool SendAsync(IClientboundPacket packet, bool terminal = false)
+    // to the network threads (see FlushOutput). Bodies a broadcast serialized already for connections like this one (see
+    // SharedPacketBodies) are framed as they are.
+    private bool SendAsync(IClientboundPacket packet, bool terminal = false, IReadOnlyList<NetworkBuffer>? bodies = null)
     {
         if (this.IsClosing || !this.Connected)
             return false;
 
-        var bodies = new List<NetworkBuffer>(1);
-        NetworkBuffer.SerializeBodies(packet, this.ReadsPluginEntityData(packet), bodies);
+        if (bodies is null)
+        {
+            var serialized = new List<NetworkBuffer>(1);
+            NetworkBuffer.SerializeBodies(packet, this.ReadsPluginEntityData(packet), serialized);
+            bodies = serialized;
+        }
 
         lock (this.sendLock)
         {

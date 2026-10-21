@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API.World;
 using Obsidian.Entities;
 using Obsidian.Hosting;
+using Obsidian.Net;
 using Obsidian.WorldData;
 using System.Threading;
 
@@ -60,20 +61,29 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
 
     public void Broadcast(IClientboundPacket packet, params int[] excludedIds)
     {
+        var shared = new SharedPacketBodies(packet);
         foreach (var (_, player) in this.server.OnlinePlayers)
         {
             if (!excludedIds.Contains(player.EntityId))
-                player.SendPacket(packet);
+                Send(player, shared);
         }
     }
 
     public void BroadcastTo(IClientboundPacket packet, params int[] ids)
     {
+        var shared = new SharedPacketBodies(packet);
         foreach (var (_, player) in this.server.OnlinePlayers)
         {
             if (ids.Contains(player.EntityId))
-                player.SendPacket(packet);
+                Send(player, shared);
         }
+    }
+
+    public void BroadcastTo(IClientboundPacket packet, IEnumerable<IPlayer> players)
+    {
+        var shared = new SharedPacketBodies(packet);
+        foreach (var player in players)
+            Send(player, shared);
     }
 
     public void BroadcastToLevelInRange(ILevel toLevel, VectorD location, IClientboundPacket packet, params int[] excludedIds)
@@ -81,10 +91,11 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
         if (toLevel is not AbstractLevel world)
             return;
 
+        var shared = new SharedPacketBodies(packet);
         foreach (var player in world.GetPlayersInRange(location, world.Configuration.EntityBroadcastRangePercentage))
         {
             if (!excludedIds.Contains(player.EntityId))
-                player.SendPacket(packet);
+                Send(player, shared);
         }
     }
 
@@ -117,11 +128,22 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
         if (toLevel is not AbstractLevel world)
             return;
 
+        var shared = new SharedPacketBodies(packet);
         foreach (var (_, player) in world.Players)
         {
             if (!excludedIds.Contains(player.EntityId))
-                player.SendPacket(packet);
+                Send(player, shared);
         }
+    }
+
+    // Sends a broadcast's packet to a player, with the bodies shared by the connections that write it alike. Other
+    // players than connected ones (the server's own, tests' fakes) send it their own way.
+    private static void Send(IPlayer player, SharedPacketBodies shared)
+    {
+        if (player is Player { Client: Client client })
+            client.SendPacket(shared);
+        else
+            player.SendPacket(shared.Packet);
     }
 
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
