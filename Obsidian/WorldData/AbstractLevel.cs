@@ -414,11 +414,7 @@ public abstract partial class AbstractLevel : ILevel
 
     internal void BroadcastBlockChange(IBlock block, Vector location)
     {
-        var packet = new BlockUpdatePacket(location, block.GetHashCode());
-        foreach (var player in PlayersInRange(location))
-        {
-            player.SendPacket(packet);
-        }
+        this.PacketBroadcaster.BroadcastTo(new BlockUpdatePacket(location, block.GetHashCode()), PlayersInRange(location));
     }
 
     /// <summary>
@@ -426,9 +422,7 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal void BroadcastLevelEvent(int type, Vector location, int data)
     {
-        var packet = new LevelEventPacket(type, location, data);
-        foreach (var player in PlayersInRange(location))
-            player.SendPacket(packet);
+        this.PacketBroadcaster.BroadcastTo(new LevelEventPacket(type, location, data), PlayersInRange(location));
     }
 
     public IEnumerable<IPlayer> PlayersInRange(Vector location) => this.PlayersWithChunk(location);
@@ -708,8 +702,7 @@ public abstract partial class AbstractLevel : ILevel
         foreach (var packet in this.Lighting.TakeUpdates(LightBorderBudget))
         {
             var location = new Vector(packet.Chunk.X << 4, 0, packet.Chunk.Z << 4);
-            foreach (var watcher in this.PlayersInRange(location))
-                watcher.SendPacket(packet);
+            this.PacketBroadcaster.BroadcastTo(packet, this.PlayersInRange(location));
         }
 
         foreach (var player in Players.Values)
