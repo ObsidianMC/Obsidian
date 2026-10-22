@@ -573,6 +573,14 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         if (!joined.Level.TryAddPlayer(joined))
             throw new InvalidOperationException($"Player '{joined.Username}' is already registered in level '{joined.Level.Name}'.");
+        // The saved position may lie in a region that isn't loaded yet (a join doesn't load it), and an entity can only be
+        // added to a loaded region, so load the region first, as the chunk loading does.
+        if (joined.Level is AbstractLevel level)
+        {
+            var (chunkX, chunkZ) = Region.ChunkOf(joined.Position);
+            level.LoadRegionByChunk(chunkX, chunkZ);
+        }
+
         if (!joined.Level.TryAddEntity(joined))
         {
             joined.Level.TryRemovePlayer(joined);
