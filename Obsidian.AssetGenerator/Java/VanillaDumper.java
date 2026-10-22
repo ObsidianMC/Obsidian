@@ -415,6 +415,7 @@ public final class VanillaDumper {
         var visualShape = mojang.method(STATE_BASE, "getVisualShape", BLOCK_GETTER, BLOCK_POS, "net.minecraft.world.phys.shapes.CollisionContext");
         var outlineShape = mojang.method(STATE_BASE, "getShape", BLOCK_GETTER, BLOCK_POS, "net.minecraft.world.phys.shapes.CollisionContext");
         var isSuffocating = mojang.method(STATE_BASE, "isSuffocating", BLOCK_GETTER, BLOCK_POS);
+        var hasPostProcess = mojang.method(STATE_BASE, "hasPostProcess", BLOCK_GETTER, BLOCK_POS);
         var hasOffset = mojang.method(STATE_BASE, "hasOffsetFunction");
         var getOffset = mojang.method(STATE_BASE, "getOffset", BLOCK_POS);
         var maxHorizontalOffset = mojang.method("net.minecraft.world.level.block.state.BlockBehaviour", "getMaxHorizontalOffset");
@@ -432,6 +433,8 @@ public final class VanillaDumper {
         var visualShapes = new int[states.size()];
         var outlineShapes = new int[states.size()];
         var suffocating = new ArrayList<Boolean>();
+        // BlockStateBase.hasPostProcess: ProtoChunk marks such states for post-processing when they are placed in worldgen.
+        var postProcess = new ArrayList<Boolean>();
         var shapeOffsets = new double[states.size()][];
         var hardness = new double[states.size()];
         var requiresTool = new ArrayList<Boolean>();
@@ -457,6 +460,7 @@ public final class VanillaDumper {
             visualShapes[id] = shapeBoxes.indexOf(boxes(Mojang.call(visualShape, state, emptyLevel, origin, emptyContext)));
             outlineShapes[id] = shapeBoxes.indexOf(boxes(Mojang.call(outlineShape, state, emptyLevel, origin, emptyContext)));
             suffocating.add((boolean) Mojang.call(isSuffocating, state, emptyLevel, origin));
+            postProcess.add((boolean) Mojang.call(hasPostProcess, state, emptyLevel, origin));
             shapeOffsets[id] = new double[0];
             if ((boolean) Mojang.call(hasOffset, state)) {
                 var offset = Mojang.call(getOffset, state, origin);
@@ -540,6 +544,7 @@ public final class VanillaDumper {
         json.put("visualShapes", visualShapes);
         json.put("outlineShapes", outlineShapes);
         json.put("suffocating", suffocating);
+        json.put("postProcess", postProcess);
         json.put("shapeOffsets", Arrays.asList(shapeOffsets));
         json.put("hardness", hardness);
         json.put("requiresTool", requiresTool);
@@ -598,9 +603,9 @@ public final class VanillaDumper {
     }
 
     /**
-     * {@code block_random_tick_classes.json}, {@code block_tick_classes.json} and
-     * {@code block_update_shape_classes.json}: the Mojang class that supplies each block's {@code randomTick},
-     * {@code tick} and {@code updateShape} override. Blocks inheriting the base no-op are omitted.
+     * {@code block_random_tick_classes.json}, {@code block_tick_classes.json},
+     * {@code block_update_shape_classes.json} and the other hook-owner files: the Mojang class that supplies each
+     * block's override. Blocks inheriting the base no-op are omitted.
      */
     private void dumpBlockOverrideClasses() throws IOException {
         var level = "net.minecraft.server.level.ServerLevel";
@@ -610,6 +615,11 @@ public final class VanillaDumper {
         dumpBlockOverrideClasses("block_update_shape_classes.json", "updateShape", BLOCK_STATE,
             "net.minecraft.world.level.LevelReader", "net.minecraft.world.level.ScheduledTickAccess", BLOCK_POS,
             "net.minecraft.core.Direction", BLOCK_POS, BLOCK_STATE, random);
+        dumpBlockOverrideClasses("block_entity_inside_classes.json", "entityInside", BLOCK_STATE,
+            "net.minecraft.world.level.Level", BLOCK_POS, ENTITY, "net.minecraft.world.entity.InsideBlockEffectApplier",
+            "boolean");
+        dumpBlockOverrideClasses("block_on_place_classes.json", "onPlace", BLOCK_STATE,
+            "net.minecraft.world.level.Level", BLOCK_POS, BLOCK_STATE, "boolean");
     }
 
     /**

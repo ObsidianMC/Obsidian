@@ -118,6 +118,8 @@ public abstract class VehicleEntity : Entity, IPlayerInteractable
     /// </summary>
     internal double FallDistance { get; set; }
 
+    internal override void ResetFallDistance() => this.FallDistance = 0;
+
     /// <summary>
     /// How far it had fallen when it landed this tick, or 0 when it didn't land (what vanilla's
     /// <c>causeFallDamage</c> gets).

@@ -207,7 +207,9 @@ public partial class BlocksGenerator
     [
         new("randomTick", "RandomTickBehaviors", "IRandomTickBehavior", "GetRandomTickBehavior"),
         new("tick", "TickBehaviors", "IScheduledTickBehavior", "GetTickBehavior"),
-        new("updateShape", "ShapeUpdateBehaviors", "IShapeUpdateBehavior", "GetShapeUpdateBehavior")
+        new("updateShape", "ShapeUpdateBehaviors", "IShapeUpdateBehavior", "GetShapeUpdateBehavior"),
+        new("entityInside", "EntityInsideBehaviors", "IEntityInsideBehavior", "GetEntityInsideBehavior"),
+        new("onPlace", "OnPlaceBehaviors", "IOnPlaceBehavior", "GetOnPlaceBehavior")
     ];
 
     private static readonly DiagnosticDescriptor UnmatchedOwner = new("OBSGEN001",

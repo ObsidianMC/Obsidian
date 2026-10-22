@@ -237,6 +237,8 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
     public float Absorption { get; set; }
     public float FallDistance { get; set; }
+
+    internal override void ResetFallDistance() => this.FallDistance = 0;
     public float FoodExhaustionLevel { get; set; }
     public float FoodSaturationLevel { get; set; } = 5;
 

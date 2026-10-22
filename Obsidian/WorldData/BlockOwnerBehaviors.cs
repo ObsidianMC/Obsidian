@@ -1,5 +1,6 @@
 using Obsidian.API.Blocks;
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Entities;
 
 namespace Obsidian.WorldData;
 
@@ -12,9 +13,35 @@ internal interface IScheduledTickBehavior
     void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random);
 }
 
+/// <summary>A vanilla class's <c>onPlace</c> override, run after one of its blocks replaces another state.</summary>
+internal interface IOnPlaceBehavior
+{
+    void OnPlace(IBlockLevel level, Vector position, IBlock state, IBlock oldState);
+}
+
+/// <summary>
+/// Obsidian implementations of vanilla classes that override <c>onPlace</c>, bound from
+/// <c>block_on_place_classes.json</c> (<c>BlocksRegistry.GetOnPlaceBehavior</c>).
+/// </summary>
+internal static class OnPlaceBehaviors
+{
+    internal static IOnPlaceBehavior SoulSandBlock { get; } = new SoulSandBlockBehavior();
+
+    internal static IOnPlaceBehavior MagmaBlock { get; } = new MagmaBlockBehavior();
+}
+
 /// <summary>
 /// A vanilla class's <c>updateShape</c> override, as Obsidian runs it when a neighbour of a block it owns changes.
 /// </summary>
+/// <summary>
+/// A vanilla class's <c>updateShape</c> as worldgen post-processing runs it: its scheduled checks go to the chunk's
+/// block ticks, since a generating region has no running level.
+/// </summary>
+internal interface IPostProcessBehavior
+{
+    void PostProcess(Generators.Mojang.Features.WorldGenRegion level, Vector position, IBlock state);
+}
+
 internal interface IShapeUpdateBehavior
 {
     /// <returns>The state the block becomes, or null to keep <paramref name="state"/>.</returns>
@@ -33,6 +60,12 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior LeavesBlock { get; } = new LeavesBlockBehavior();
 
     internal static IScheduledTickBehavior FireBlock { get; } = new FireBlockBehavior();
+
+    internal static IScheduledTickBehavior BubbleColumnBlock { get; } = new BubbleColumnBlockBehavior();
+
+    internal static IScheduledTickBehavior SoulSandBlock { get; } = new SoulSandBlockBehavior();
+
+    internal static IScheduledTickBehavior MagmaBlock { get; } = new MagmaBlockBehavior();
 }
 
 /// <summary>
@@ -46,4 +79,28 @@ internal static class ShapeUpdateBehaviors
     internal static IShapeUpdateBehavior LeavesBlock { get; } = new LeavesBlockBehavior();
 
     internal static IShapeUpdateBehavior FireBlock { get; } = new FireBlockBehavior();
+
+    internal static IShapeUpdateBehavior BubbleColumnBlock { get; } = new BubbleColumnBlockBehavior();
+
+    internal static IShapeUpdateBehavior SoulSandBlock { get; } = new SoulSandBlockBehavior();
+
+    internal static IShapeUpdateBehavior MagmaBlock { get; } = new MagmaBlockBehavior();
+}
+
+/// <summary>
+/// A vanilla class's <c>entityInside</c> override, run for an entity whose box overlaps a block it owns.
+/// </summary>
+internal interface IEntityInsideBehavior
+{
+    /// <summary>Runs the contact of <paramref name="entity"/> with <paramref name="block"/> at <paramref name="position"/>.</summary>
+    void EntityInside(IBlockLevel level, Vector position, IBlock block, Entities.Entity entity);
+}
+
+/// <summary>
+/// Obsidian implementations of vanilla classes that override <c>entityInside</c>, bound from
+/// <c>block_entity_inside_classes.json</c> (<c>BlocksRegistry.GetEntityInsideBehavior</c>).
+/// </summary>
+internal static class EntityInsideBehaviors
+{
+    internal static IEntityInsideBehavior BubbleColumnBlock { get; } = new BubbleColumnBlockBehavior();
 }

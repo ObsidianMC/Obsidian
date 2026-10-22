@@ -406,6 +406,7 @@ internal sealed class ChunkBuilder
         using var calls = this.EnterGenerator();
 
         var region = this.CreateRegion(area, chunkX, chunkZ, trackHeightmaps: false);
+        region.MarksPostProcessing = false;
         var minY = this.dimension.MinY;
 
         // Vanilla post-processes on the live level, whose random only varies lava's spread delay; any seed will do.
@@ -429,6 +430,10 @@ internal sealed class ChunkBuilder
             var updated = ShapeUpdater.UpdateFromNeighbourShapes(fluids.ShapeView, block, position);
             if (!updated.IsSameState(block))
                 region.SetBlock(position, updated);
+
+            // The block's own updateShape override, if vanilla has one, runs after the neighbor shapes.
+            if (BlocksRegistry.GetShapeUpdateBehavior(block.RegistryId) is IPostProcessBehavior owner)
+                owner.PostProcess(region, position, block);
         }
 
         // Fluids may have spread into finished neighbors, whose heightmaps are already stored.

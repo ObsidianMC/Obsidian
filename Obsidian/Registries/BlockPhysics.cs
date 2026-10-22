@@ -404,6 +404,9 @@ internal static class BlockPhysics
 
     public static bool Suffocates(int state) => data.Value.Suffocating[ShapeState(state)];
 
+    /// <summary>Vanilla's <c>hasPostProcess</c>: worldgen marks the position of such a state for post-processing.</summary>
+    public static bool HasPostProcess(int state) => (uint)state < (uint)data.Value.PostProcess.Length && data.Value.PostProcess[state];
+
     /// <summary>Moves shapes captured at the origin to a state's position-dependent offset (flowers, bamboo, etc.).</summary>
     public static (double X, double Y, double Z) ShapeOffset(int state, int x, int z)
     {
@@ -484,7 +487,8 @@ internal static class BlockPhysics
                 .ToArray(),
             root.GetProperty("hardness").EnumerateArray().Select(value => value.GetSingle()).ToArray(),
             root.GetProperty("requiresTool").EnumerateArray().Select(value => value.GetBoolean()).ToArray(),
-            RandomTickingStates(root));
+            RandomTickingStates(root),
+            root.GetProperty("postProcess").EnumerateArray().Select(value => value.GetBoolean()).ToArray());
     }
 
     private static bool[] RandomTickingStates(JsonElement root)
@@ -500,7 +504,7 @@ internal static class BlockPhysics
         Dictionary<string, string> BlockClasses, Dictionary<string, string> BlockEntityTypes,
         Dictionary<string, int> BlockEntityTypeIds, HashSet<string> SignalSources, int[] FluidFlags, int[][] CollisionFaceSets,
         double[][][] CollisionFaces, double[][][] ShapeBoxes, int[] CollisionShapes, int[] VisualShapes, int[] OutlineShapes, bool[] Suffocating,
-        double[][] ShapeOffsets, float[] Hardness, bool[] RequiresTool, bool[] RandomTicking)
+        double[][] ShapeOffsets, float[] Hardness, bool[] RequiresTool, bool[] RandomTicking, bool[] PostProcess)
     {
         // Like vanilla's occlusion cache in FlowingFluid: the same pairs of partial blocks come up again and again.
         public ConcurrentDictionary<(int From, int To, BlockFace Direction), bool> FaceOcclusion { get; } = new();

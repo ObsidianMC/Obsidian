@@ -32,7 +32,9 @@ internal sealed class Assets
             {
                 ["randomTick"] = files.GetJsonFromArray("block_random_tick_classes"),
                 ["tick"] = files.GetJsonFromArray("block_tick_classes"),
-                ["updateShape"] = files.GetJsonFromArray("block_update_shape_classes")
+                ["updateShape"] = files.GetJsonFromArray("block_update_shape_classes"),
+                ["entityInside"] = files.GetJsonFromArray("block_entity_inside_classes"),
+                ["onPlace"] = files.GetJsonFromArray("block_on_place_classes")
             });
         Fluid[] fluids = GetFluids(files.GetJsonFromArray("fluids"));
         Item[] items = GetItems(files.GetJsonFromArray("items"), files.GetJsonFromArray("item_components"));

@@ -1,6 +1,7 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.ChunkData;
+using Obsidian.Registries;
 
 namespace Obsidian.WorldData.Generators.Mojang.Features;
 
@@ -185,6 +186,10 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         else
             chunk.SetBlock(position.X, position.Y, position.Z, block ??= BlocksRegistry.Get(stateId));
 
+        // Vanilla's WorldGenRegion.setBlock: a state with hasPostProcess is marked; post-processing's own writes aren't.
+        if (this.MarksPostProcessing && BlockPhysics.HasPostProcess(stateId))
+            this.MarkForPostProcessing(position);
+
         var info = knownState ? writeInfos[stateId] : WriteInfo(block!);
         heightmaps.Update(position.X, position.Y, position.Z, info & HeightmapMask);
         this.writtenAreas |= 1 << index;
@@ -288,6 +293,16 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     {
         if (this.FindChunk(position.X >> 4, position.Z >> 4) is Chunk generated)
             generated.FluidTicks.Schedule(position, fluid, delay);
+    }
+
+    /// <summary>Whether writes mark their positions for post-processing. Off while post-processing itself writes.</summary>
+    internal bool MarksPostProcessing { get; set; } = true;
+
+    /// <summary>Schedules a block tick in the chunk holding <paramref name="position"/>, if the region holds it.</summary>
+    internal void ScheduleBlockTick(Vector position, IBlock block, int delay)
+    {
+        if (this.FindChunk(position.X >> 4, position.Z >> 4) is Chunk generated)
+            generated.BlockTicks.Schedule(position, block.UnlocalizedName, delay);
     }
 
     public void MarkForPostProcessing(Vector position)
