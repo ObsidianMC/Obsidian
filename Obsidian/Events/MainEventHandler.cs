@@ -1,4 +1,4 @@
-﻿using Obsidian.API.BlockEntities;
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
@@ -130,11 +130,13 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             ? [chest.First, chest.Second]
             : [e.Container];
 
+        // Vanilla's ContainerOpenersCounter: the lid sound plays when the last opener leaves.
+        var lastOpener = !HasViewers(e.Container);
         foreach (var part in parts.OfType<Container>())
-            await AnimateCloseAsync(player, part.BlockPosition);
+            await AnimateCloseAsync(player, part.BlockPosition, lastOpener);
     }
 
-    private static async ValueTask AnimateCloseAsync(IPlayer player, Vector position)
+    private static async ValueTask AnimateCloseAsync(IPlayer player, Vector position, bool lastOpener)
     {
         var block = await player.Level.GetBlockAsync(position);
 
@@ -157,6 +159,8 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestClose)
                     //    .WithSoundPosition(position.SoundPosition)
                     //    .Build());
+                    if (lastOpener && player.Level is AbstractLevel level)
+                        PlayChestLidSound(level, position, "minecraft:block.chest.close");
 
                     break;
                 }
@@ -180,10 +184,12 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelClose)
                     //    .WithSoundPosition(position.SoundPosition)
                     //    .Build());
+                    if (lastOpener && player.Level is AbstractLevel barrelLevel)
+                        PlayChestLidSound(barrelLevel, position, "minecraft:block.barrel.close");
 
                     break;
                 }
-            case BlockIds.ShulkerBox:
+            case var shulker when TagsRegistry.Block.ShulkerBoxes.Entries.Contains(shulker):
                 {
                     await player.QueuePacketAsync(new BlockEventPacket
                     {
@@ -196,6 +202,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxClose)
                     //    .WithSoundPosition(position.SoundPosition)
                     //    .Build());
+
+                    if (lastOpener && player.Level is AbstractLevel shulkerLevel)
+                        PlayChestLidSound(shulkerLevel, position, "minecraft:block.shulker_box.close");
 
                     break;
                 }
@@ -390,13 +399,33 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             }
 
             if (container is not null)
+            {
+                var lidSound = LidOpenSound(type);
+                var lidOpening = lidSound is not null && !HasViewers(container);
                 await player.OpenInventoryAsync(container);
+                // Vanilla's ContainerOpenersCounter: the lid sound plays when the first opener arrives.
+                if (lidOpening && lidSound is not null && player.Level is AbstractLevel openLevel)
+                    PlayChestLidSound(openLevel, blockPosition, lidSound);
+            }
         }
         else
         {
             //TODO check for other
         }
     }
+
+    private static string? LidOpenSound(int type) => type switch
+    {
+        BlockIds.Chest or BlockIds.TrappedChest => "minecraft:block.chest.open",
+        BlockIds.Barrel => "minecraft:block.barrel.open",
+        _ when TagsRegistry.Block.ShulkerBoxes.Entries.Contains(type) => "minecraft:block.shulker_box.open",
+        _ => null
+    };
+
+    private static bool HasViewers(BaseContainer container) => container.GetViewers().Length > 0;
+
+    private static void PlayChestLidSound(AbstractLevel level, Vector position, string sound) =>
+        level.BlockUpdates.PlaySound(position, sound, 0.5f, Globals.Random.NextSingle() * 0.1f + 0.9f);
 
     private static Container NewChest(IPlayer player, Vector position) => new()
     {
@@ -512,6 +541,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         API.Data.AttachmentStorage.For(player).Retire();
         await player.SaveAsync();
 
+        await RemoveRiddenVehicleAsync(player);
         await DespawnPlayerAsync(player);
 
         server.BroadcastMessage(string.Format(server.Configuration.Messages.Leave, e.Player.Username));
@@ -534,6 +564,20 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             observer.ForgetVisiblePlayer(player);
     }
 
+    // Like vanilla's PlayerList.remove, the vehicle or mount a leaving player rides alone goes with them: it was saved
+    // with them (see PlayerBase.WriteNbt), so it's removed rather than left empty in the world.
+    private static async ValueTask RemoveRiddenVehicleAsync(IPlayer player)
+    {
+        if (player is not Entities.PlayerBase concrete
+            || concrete.RootVehicle is not { Passengers: [var rider] } root
+            || !ReferenceEquals(rider, concrete)
+            || ReferenceEquals(root, concrete))
+            return;
+
+        concrete.StopRiding();
+        await player.Level.DestroyEntityAsync(root);
+    }
+
     [EventPriority(Priority = Priority.Internal)]
     public ValueTask OnPlayerJoin(PlayerJoinEventArgs e)
     {
@@ -544,11 +588,22 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         if (!joined.Level.TryAddPlayer(joined))
             throw new InvalidOperationException($"Player '{joined.Username}' is already registered in level '{joined.Level.Name}'.");
+        // The saved position may lie in a region that isn't loaded yet (a join doesn't load it), and an entity can only be
+        // added to a loaded region, so load the region first, as the chunk loading does.
+        if (joined.Level is AbstractLevel level)
+        {
+            var (chunkX, chunkZ) = Region.ChunkOf(joined.Position);
+            level.LoadRegionByChunk(chunkX, chunkZ);
+        }
+
         if (!joined.Level.TryAddEntity(joined))
         {
             joined.Level.TryRemovePlayer(joined);
             throw new InvalidOperationException($"Player '{joined.Username}' could not be registered as a level entity.");
         }
+
+        if (joined is Entities.PlayerBase concreteJoined)
+            concreteJoined.RestoreSavedVehicle();
 
         server.BroadcastMessage(new ChatMessage
         {

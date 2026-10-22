@@ -271,7 +271,7 @@ internal static class VanillaPlacement
     }
 
     // A block placed in a water source is waterlogged, if it can be.
-    private static IBlock Waterlog(LevelBlockUpdates level, IBlock block, Vector position)
+    internal static IBlock Waterlog(LevelBlockUpdates level, IBlock block, Vector position)
     {
         if (block.GetProperty("waterlogged") is null)
             return block;

@@ -51,8 +51,6 @@ public abstract partial class AbstractLevel
             (int)Math.Floor(position.Z + halfWidth - inset));
 
         this.PressRedstone(entity, min, max);
-        if (BlocksRegistry.PluginBlocks.Count == 0)
-            return;
 
         for (var x = min.X; x <= max.X; x++)
         {
@@ -90,7 +88,15 @@ public abstract partial class AbstractLevel
 
     private async ValueTask TouchAsync(IEntity entity, Vector position, bool inside)
     {
-        if (this.GameEventBlock(position) is not IBlock state || !BlockBehaviors.HasBehavior(state))
+        if (this.GameEventBlock(position) is not IBlock state)
+            return;
+
+        // A vanilla class's entityInside override, found from the class that declares it.
+        if (inside && entity is Entities.Entity concrete
+            && BlocksRegistry.GetEntityInsideBehavior(state.RegistryId) is IEntityInsideBehavior owner)
+            owner.EntityInside(this.BlockUpdates, position, state, concrete);
+
+        if (!BlockBehaviors.HasBehavior(state))
             return;
 
         var context = new EntityBlockContext

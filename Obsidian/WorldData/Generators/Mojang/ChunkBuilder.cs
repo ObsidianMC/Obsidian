@@ -406,6 +406,7 @@ internal sealed class ChunkBuilder
         using var calls = this.EnterGenerator();
 
         var region = this.CreateRegion(area, chunkX, chunkZ, trackHeightmaps: false);
+        region.MarksPostProcessing = false;
         var minY = this.dimension.MinY;
 
         // Vanilla post-processes on the live level, whose random only varies lava's spread delay; any seed will do.
@@ -429,6 +430,10 @@ internal sealed class ChunkBuilder
             var updated = ShapeUpdater.UpdateFromNeighbourShapes(fluids.ShapeView, block, position);
             if (!updated.IsSameState(block))
                 region.SetBlock(position, updated);
+
+            // The block's own updateShape override, if vanilla has one, runs after the neighbor shapes.
+            if (BlocksRegistry.GetShapeUpdateBehavior(block.RegistryId) is IPostProcessBehavior owner)
+                owner.PostProcess(region, position, block);
         }
 
         // Fluids may have spread into finished neighbors, whose heightmaps are already stored.
@@ -439,7 +444,7 @@ internal sealed class ChunkBuilder
     /// Whether the chunks written keep their final heightmaps (see <see cref="Chunk.FinalHeightmaps"/>). Decorations only
     /// write into chunks that are still generating, but post-processing may spread fluids into complete ones.
     /// </param>
-    private WorldGenRegion CreateRegion(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ, bool trackHeightmaps) =>
+    internal WorldGenRegion CreateRegion(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ, bool trackHeightmaps) =>
         new(area, chunkX, chunkZ, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height, this.settings.SeaLevel, this.biomeSource,
             this.regionRandom.At(chunkX << 4, 0, chunkZ << 4), trackHeightmaps);
 

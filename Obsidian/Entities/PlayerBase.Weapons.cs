@@ -33,22 +33,10 @@ public partial class PlayerBase
             await Plugins.ItemBehaviors.UseAsync(new ItemUseContext { Player = this, Stack = stack, Hand = hand }))
             return;
 
-        // Eyes of ender fly toward the nearest structure they find, or do nothing.
-        if (use.Item is { Count: > 0 } eye && eye.Is(ItemsRegistry.EnderEye))
+        // Vanilla's Item.use for items whose owner class has a counterpart (throwables, eyes of ender), by owner class.
+        if (use.Item is { Count: > 0 } thrown && ItemUseBehaviors.For(thrown) is { } useBehavior)
         {
-            await EyeOfEnder.ThrowAsync(this, hand, eye);
-            return;
-        }
-
-        if (use.Item is { Count: > 0 } pearl && pearl.Is(ItemsRegistry.EnderPearl))
-        {
-            await EnderPearl.ThrowAsync(this, hand, pearl);
-            return;
-        }
-
-        if (use.Item is { Count: > 0 } bottle && bottle.Is(ItemsRegistry.ExperienceBottle))
-        {
-            await ThrownExperienceBottle.ThrowAsync(this, hand, bottle);
+            await useBehavior.UseAsync(this, hand, thrown);
             return;
         }
 
@@ -64,6 +52,31 @@ public partial class PlayerBase
         CancelEating();
     }
 
+    private void PlayEquipSound(ItemStack item)
+    {
+        var sound = item.GetComponent<EquippableDataComponent>(DataComponentType.Equippable)?.EquipSound.ResourceLocation;
+        if (sound is null)
+        {
+            var component = CombatItems.Component(item, "equippable");
+            if (component.ValueKind == JsonValueKind.Object && component.TryGetProperty("equip_sound", out var name)
+                && name.ValueKind == JsonValueKind.String)
+                sound = name.GetString();
+        }
+
+        if (sound is null || Silent)
+            return;
+
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SoundPacket
+        {
+            SoundLocation = sound,
+            SoundPosition = new SoundPosition(Position.X, Position.Y, Position.Z),
+            Category = SoundCategory.Players,
+            Volume = 1,
+            Pitch = 1,
+            Seed = Globals.Random.NextInt64()
+        });
+    }
+
     internal async ValueTask StartUsingItemAsync(InteractionHand hand)
     {
         if (!Alive || Respawning || GameMode == GameMode.Spectator || usingWeapon != null || eatingItem != null) return;
@@ -75,9 +88,13 @@ public partial class PlayerBase
         {
             var existing = Inventory.GetItem(armorSlot);
             if (CombatItems.EnchantmentLevel(existing, EnchantmentsRegistry.BindingCurse) > 0 && GameMode != GameMode.Creative) return;
-            Inventory.SetItem(armorSlot, new ItemStack(item));
+            var equipped = new ItemStack(item);
+            Inventory.SetItem(armorSlot, equipped);
             Inventory.RemoveItem(slot, 1);
             if (existing is { Count: > 0 } && !existing.IsAir) Inventory.SetItem(slot, existing);
+            // Vanilla's LivingEntity.onEquipItem: a changed equipment slot plays its equip sound to everyone nearby.
+            if (!equipped.Equals(existing))
+                PlayEquipSound(equipped);
             await SyncInventorySlotAsync(slot);
             await SyncInventorySlotAsync(armorSlot);
             return;
@@ -202,6 +219,22 @@ public partial class PlayerBase
             if (GameMode != GameMode.Creative) { Inventory.RemoveItem(slot, 1); await SyncInventorySlotAsync(slot); }
             thrown.SpawnEntity();
         }
+    }
+
+    /// <summary>
+    /// Vanilla's <c>Entity.getHandHoldingItemAngle</c> for a player: where a held item sits, half a block out from the
+    /// body, on the arm that holds it (the other arm only when just the off hand holds it, else the main arm).
+    /// </summary>
+    internal VectorD HandHoldingItemAngle(Item item)
+    {
+        var mainHandHolds = Inventory.GetItem(CurrentHeldItemSlot) is { Count: > 0 } main && main.Is(item);
+        var offHandHolds = Inventory.GetItem(45) is { Count: > 0 } off && off.Is(item);
+        // Vanilla Entity.getHandHoldingItemAngle: the opposite arm only when the off hand alone holds the item.
+        var holdingArm = offHandHolds && !mainHandHolds
+            ? (ClientInformation.MainHand == HumanoidArm.Right ? HumanoidArm.Left : HumanoidArm.Right)
+            : ClientInformation.MainHand;
+        var yaw = (Yaw.Degrees + (holdingArm == HumanoidArm.Right ? 80 : -80)) * Math.PI / 180;
+        return new VectorD(-Math.Sin(yaw), 0, Math.Cos(yaw)) * 0.5;
     }
 
     internal VectorD ShotDirection(float angle)

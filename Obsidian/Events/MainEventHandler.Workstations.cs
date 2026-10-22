@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using Obsidian.API.Containers;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
@@ -258,7 +259,7 @@ public partial class MainEventHandler
                 if (cutter.GetItem(Stonecutter.InputSlot).IsNullOrAir())
                     cutter.SelectedRecipe = -1;
 
-                Sound(player, cutter.BlockPosition, "minecraft:ui.stonecutter.take_result");
+                TakeSound(player, cutter, cutter.BlockPosition, "minecraft:ui.stonecutter.take_result");
                 break;
             case Loom loom:
                 Shrink(loom, Loom.BannerSlot);
@@ -266,7 +267,7 @@ public partial class MainEventHandler
                 if (loom.GetItem(Loom.BannerSlot).IsNullOrAir() || loom.GetItem(Loom.DyeSlot).IsNullOrAir())
                     loom.SelectedPattern = -1;
 
-                Sound(player, loom.BlockPosition, "minecraft:ui.loom.take_result");
+                TakeSound(player, loom, loom.BlockPosition, "minecraft:ui.loom.take_result");
                 break;
             case Grindstone grindstone:
                 var experience = GrindstoneExperience(grindstone);
@@ -287,7 +288,7 @@ public partial class MainEventHandler
             case CartographyTable table:
                 Shrink(table, CartographyTable.MapSlot);
                 Shrink(table, CartographyTable.AdditionalSlot);
-                Sound(player, table.BlockPosition, "minecraft:ui.cartography_table.take_result");
+                TakeSound(player, table, table.BlockPosition, "minecraft:ui.cartography_table.take_result");
                 break;
         }
 
@@ -359,19 +360,34 @@ public partial class MainEventHandler
         });
     }
 
-    private static void Sound(IPlayer player, Vector position, string sound)
+    /// <summary>
+    /// Vanilla's result-take sound: <c>Level.playSound(null, pos, …)</c> to everyone near the workstation, at most once
+    /// per game tick per station (the menu's <c>lastSoundTime</c>).
+    /// </summary>
+    private static void TakeSound(IPlayer player, BaseContainer station, Vector position, string sound)
     {
-        var center = (VectorD)position + new VectorD(0.5, 0.5, 0.5);
-        AfterClick(() => player.QueuePacketAsync(new SoundPacket
+        AfterClick(() =>
         {
-            SoundLocation = sound,
-            SoundPosition = new SoundPosition(center.X, center.Y, center.Z),
-            Category = SoundCategory.Blocks,
-            Volume = 1,
-            Pitch = 1,
-            Seed = Globals.Random.NextInt64()
-        }));
+            if (player.Level is not AbstractLevel level)
+                return ValueTask.CompletedTask;
+
+            var clock = TakeSoundClocks.GetValue(station, _ => new TakeSoundClock());
+            var time = level.LevelData.Time;
+            if (clock.LastTime == time)
+                return ValueTask.CompletedTask;
+
+            clock.LastTime = time;
+            level.BlockUpdates.PlaySound(position, sound);
+            return ValueTask.CompletedTask;
+        });
     }
+
+    private sealed class TakeSoundClock
+    {
+        public long LastTime { get; set; } = long.MinValue;
+    }
+
+    private static readonly ConditionalWeakTable<BaseContainer, TakeSoundClock> TakeSoundClocks = new();
 
     /// <summary>
     /// Sets the result slot of the player's open workstation, if they have one open, to what its inputs give.

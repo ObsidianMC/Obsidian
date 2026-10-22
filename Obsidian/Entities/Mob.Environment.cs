@@ -72,7 +72,8 @@ public partial class Mob
             if (MovementFlags.HasFlag(MovementFlags.OnGround))
             {
                 var damage = MathF.Ceiling(fallDistance - SafeFallDistance);
-                if (this is Creeper creeper)
+                // Like vanilla's Creeper.causeFallDamage, only an actual fall swells it, and only up to 5 ticks short of its fuse.
+                if (this is Creeper creeper && fallDistance > 0)
                     creeper.FuseTicks = Math.Max(0, Math.Min(creeper.Fuse - 5, creeper.FuseTicks + (int)(fallDistance * 1.5f)));
                 fallDistance = 0;
                 if (damage > 0 && TakesFallDamage && this is not Chicken)

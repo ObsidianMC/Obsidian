@@ -160,6 +160,7 @@ public partial class PlayerBase
 
         this.UnmodeledData = data;
         this.ReadNbt(data);
+        this.savedVehicle = null;
 
         // ReadNbt moved the player into their saved dimension; one saved in a dimension the world doesn't have starts at
         // the spawn.
@@ -168,6 +169,8 @@ public partial class PlayerBase
             Log.OtherDimension(this.Logger, this.Username, dimension.Value!);
             Position = Level.LevelData.SpawnPosition;
         }
+        else
+            this.savedVehicle = this.ReadRootVehicle(data);
 
         if (!Alive)
             Health = 20f;//Player should never load data that has health at 0
@@ -243,6 +246,9 @@ public partial class PlayerBase
             EntityId = EntityId,
             Entity = this
         });
+
+        // Vanilla's placeNewPlayer and respawn send the selected hotbar slot, which the client otherwise starts at 0.
+        await this.QueuePacketAsync(new SetHeldSlotPacket((byte)(CurrentHeldItemSlot - HotbarStart)));
     }
 
     // Vanilla grows the player's box by 1 horizontally and 0.5 vertically to find items to pick up; while riding, it
@@ -336,6 +342,18 @@ public partial class PlayerBase
     private static bool IsStackable(ItemStack item) =>
         item.MaxStackSize > 1 && (item.MaxDamage <= 0 || item.Unbreakable || item.Damage <= 0);
 
+    /// <summary>The area this player picks up items and experience orbs from, as vanilla's <c>Player.aiStep</c> computes it.</summary>
+    internal static BoundingBox PickupAreaOf(IEntity player)
+    {
+        var halfWidth = (player.Dimension.Width > 0 ? player.Dimension.Width : 0.6) / 2;
+        var height = player.Dimension.Height > 0 ? player.Dimension.Height : player.Swimming ? 0.6 : player.Sneaking ? 1.5 : 1.8;
+        var feet = player.Position;
+        var playerBox = new BoundingBox(new VectorD(feet.X - halfWidth, feet.Y, feet.Z - halfWidth),
+            new VectorD(feet.X + halfWidth, feet.Y + height, feet.Z + halfWidth));
+        var vehicleBox = player.Vehicle is Mob { IsRemoved: false } vehicle ? vehicle.Dimension.CreateBBFromPosition(vehicle.Position) : (BoundingBox?)null;
+        return GetPickupArea(playerBox, vehicleBox);
+    }
+
     /// <summary>
     /// Collects the item entities in the player's pickup area. The world tick calls it once a tick, like vanilla's player
     /// tick; movement doesn't, so pickup delays and timing don't depend on how often the client sends packets.
@@ -344,13 +362,7 @@ public partial class PlayerBase
     {
         if (!this.Alive || this.GameMode == GameMode.Spectator || this.Respawning)
             return;
-        var halfWidth = (this.Dimension.Width > 0 ? this.Dimension.Width : 0.6) / 2;
-        var height = this.Dimension.Height > 0 ? this.Dimension.Height : this.Swimming ? 0.6 : this.Sneaking ? 1.5 : 1.8;
-        var feet = this.Position;
-        var playerBox = new BoundingBox(new VectorD(feet.X - halfWidth, feet.Y, feet.Z - halfWidth),
-            new VectorD(feet.X + halfWidth, feet.Y + height, feet.Z + halfWidth));
-        var vehicleBox = this.Vehicle is Mob { IsRemoved: false } vehicle ? vehicle.Dimension.CreateBBFromPosition(vehicle.Position) : (BoundingBox?)null;
-        var area = GetPickupArea(playerBox, vehicleBox);
+        var area = PickupAreaOf(this);
         // The item positions (the bottom centre of an item's box) that can overlap the area, and a sphere around them.
         var itemMin = area.Min - new VectorD(ItemHalfWidth, ItemHeight, ItemHalfWidth);
         var itemMax = area.Max + new VectorD(ItemHalfWidth, 0, ItemHalfWidth);
@@ -503,6 +515,79 @@ public partial class PlayerBase
             AddSlot(enderItems, this.EnderInventory.GetItem(slot), slot);
 
         tag.Set(enderItems);
+
+        // Like vanilla, a player riding a vehicle saves it with them, so it comes back under them. A vehicle still
+        // waiting for the join to restore it stays in the saved data, so leaving before the join doesn't drop it.
+        if (this.savedVehicle is null)
+            tag.SetOrRemove("RootVehicle", this.SaveRootVehicle());
+    }
+
+    // The vehicle loaded with this player, until they join and board it (see RestoreSavedVehicle).
+    private Entity? savedVehicle;
+
+    // The vehicle or mount this player is the only passenger of, saved with the seat's attachment (the player's UUID),
+    // or null.
+    private NbtCompound? SaveRootVehicle()
+    {
+        var root = this.RootVehicle;
+        if (ReferenceEquals(root, this) || root.Passengers is not [var rider] || !ReferenceEquals(rider, this)
+            || EntityNbt.Save(root) is not NbtCompound saved)
+            return null;
+
+        saved.Name = "Entity";
+        var tag = new NbtCompound("RootVehicle") { new NbtArray<int>("Attach", EntityNbt.UuidToInts(this.Uuid)) };
+        tag.Set(saved);
+        return tag;
+    }
+
+    // The vehicle or mount saved with this player, when it's still in the world they're loading into.
+    private Entity? ReadRootVehicle(NbtCompound data)
+    {
+        if (!data.TryGetTag<NbtCompound>("RootVehicle", out var root)
+            || !root.TryGetTag<NbtArray<int>>("Attach", out var attach) || attach.Count != 4
+            || EntityNbt.UuidFromInts(attach.GetArray()) != this.Uuid
+            || !root.TryGetTag<NbtCompound>("Entity", out var entity))
+            return null;
+
+        return EntityNbt.Load(entity, this.Level);
+    }
+
+    /// <summary>
+    /// Seats the player in the vehicle or mount they were riding when they left, once they've joined: it's reused when
+    /// it's already in the level (a chunk saved it while they rode), otherwise it's added there, and the player boards
+    /// it when it has room.
+    /// </summary>
+    internal void RestoreSavedVehicle()
+    {
+        var saved = this.savedVehicle;
+        this.savedVehicle = null;
+        if (saved is null || this.Level is not Obsidian.WorldData.AbstractLevel level)
+            return;
+
+        var vehicle = level.Regions.Values.SelectMany(region => region.Entities.Values)
+            .OfType<Entity>()
+            .FirstOrDefault(existing => existing.Uuid == saved.Uuid);
+        if (vehicle is null)
+        {
+            var (chunkX, chunkZ) = Region.ChunkOf(saved.Position);
+            level.LoadRegionByChunk(chunkX, chunkZ);
+            if (!level.TrySpawnEntity(saved))
+            {
+                Log.VehicleNotRestored(this.Logger, this.Username);
+                return;
+            }
+
+            vehicle = saved;
+        }
+
+        var seated = vehicle switch
+        {
+            VehicleEntity boatOrMinecart => boatOrMinecart.Board(this),
+            Mob mount => mount.Mount(this),
+            _ => false
+        };
+        if (!seated)
+            Log.VehicleNotRestored(this.Logger, this.Username);
     }
 
     /// <summary>
@@ -536,7 +621,7 @@ public partial class PlayerBase
                 this.Level.TryAddPlayer(this);
         }
 
-        this.SeenCredits = Read("seenCredits", false);
+        this.SeenCredits = tag.TryGetBool("seenCredits", out var seenCredits) && seenCredits;
         this.ReadRespawnPoint(tag);
         this.portalCooldown = Math.Max(0, Read("PortalCooldown", 0));
         this.TimeSinceRest = Math.Max(0, Read("ObsidianTimeSinceRest", 0));

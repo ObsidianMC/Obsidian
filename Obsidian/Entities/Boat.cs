@@ -208,7 +208,6 @@ public partial class Boat : VehicleEntity
         }
 
         this.lastYd = this.Motion.Y;
-        this.CheckBubbleColumns();
         this.TickBubbleColumn();
         this.TickPaddles();
 
@@ -518,41 +517,14 @@ public partial class Boat : VehicleEntity
         }
     }
 
-    // Vanilla's BubbleColumnBlock.entityInside for the columns the boat overlaps: under open water it rides the top of
-    // the column, inside one it's pushed like any entity.
-    private void CheckBubbleColumns()
+    // Vanilla's AbstractBoat.onAboveBubbleColumn: over a column with open water above, the boat rides its top rather
+    // than taking the entity push. Inside a column it's pushed like any entity (see Entity.OnInsideBubbleColumn).
+    internal override void OnAboveBubbleColumn(bool downwards, Vector position)
     {
-        const double inset = 1.0E-5;
-        var bounds = this.Dimension.CreateBBFromPosition(this.Position);
-        for (var x = (int)Math.Floor(bounds.Min.X + inset); x <= (int)Math.Floor(bounds.Max.X - inset); x++)
-        for (var y = (int)Math.Floor(bounds.Min.Y + inset); y <= (int)Math.Floor(bounds.Max.Y - inset); y++)
-        for (var z = (int)Math.Floor(bounds.Min.Z + inset); z <= (int)Math.Floor(bounds.Max.Z - inset); z++)
-        {
-            var position = new Vector(x, y, z);
-            if (this.Terrain.GetBlock(position) is not IBlock column || !column.Is(BlockIds.BubbleColumn))
-                continue;
-
-            var down = column.GetProperty("drag") == "true";
-            var above = this.Terrain.GetBlock(position + Vector.Up);
-            var open = above is not null
-                && !BlockCollisionShapes.Get(this.Level, position + Vector.Up, above).Any()
-                && FluidState.Of(above).IsEmpty;
-
-            if (open)
-            {
-                this.aboveBubbleColumn = true;
-                this.bubbleColumnDown = down;
-                if (this.bubbleTime == 0)
-                    this.SetBubbleTime(BubbleTime);
-            }
-            else
-            {
-                var motion = this.Motion;
-                var y2 = down ? Math.Max(-0.3, motion.Y - 0.03) : Math.Min(0.7, motion.Y + 0.06);
-                this.Motion = new VectorD(motion.X, y2, motion.Z);
-                this.FallDistance = 0;
-            }
-        }
+        this.aboveBubbleColumn = true;
+        this.bubbleColumnDown = downwards;
+        if (this.bubbleTime == 0)
+            this.SetBubbleTime(BubbleTime);
     }
 
     // Vanilla's tickBubbleColumn: a column under the boat counts down, then pulls it under, throwing off its

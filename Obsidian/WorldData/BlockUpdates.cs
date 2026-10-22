@@ -177,6 +177,9 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     /// <inheritdoc/>
     public void OnPlaced(Vector position, IBlock state, IBlock oldState)
     {
+        // A vanilla class's onPlace override, found from the class that declares it.
+        BlocksRegistry.GetOnPlaceBehavior(state.RegistryId)?.OnPlace(this, position, state, oldState);
+
         if (IsVanillaFalling(state))
         {
             this.ScheduleFall(position, state);

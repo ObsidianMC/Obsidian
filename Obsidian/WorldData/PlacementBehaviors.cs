@@ -16,11 +16,13 @@ internal static class PlacementBehaviors
     private static readonly IBlockBehavior ClickedFace = new ClickedFaceFacing(opposite: false);
     private static readonly IBlockBehavior ClickedFaceOpposite = new ClickedFaceFacing(opposite: true);
     private static readonly IBlockBehavior Leaves = new LeavesBlockBehavior.Placement();
+    private static readonly IBlockBehavior BambooStalk = new BambooStalkPlacement();
 
     // One member per Mojang class that owns an implemented placement override. Classes may share an implementation
     // object when their current vanilla algorithms are equivalent; block membership comes only from vanilla's class.
     internal static IBlockBehavior AbstractFurnaceBlock => HorizontalOpposite;
     internal static IBlockBehavior BarrelBlock => NearestOpposite;
+    internal static IBlockBehavior BambooStalkBlock => BambooStalk;
     internal static IBlockBehavior BedBlock => Horizontal;
     internal static IBlockBehavior BeehiveBlock => HorizontalOpposite;
     internal static IBlockBehavior CampfireBlock => Horizontal;
@@ -40,6 +42,35 @@ internal static class PlacementBehaviors
 
     /// <returns>The implemented behaviour of the vanilla class that owns this block's placement override, or null.</returns>
     public static IBlockBehavior? For(IBlock block) => BlocksRegistry.GetPlacementBehavior(block.RegistryId);
+
+    /// <summary>
+    /// Vanilla <c>BambooStalkBlock.getStateForPlacement</c>: a stalk on bamboo or a sapling, a sapling on other
+    /// plantable ground unless bamboo stands two below, and nothing in fluid or on unplantable ground.
+    /// </summary>
+    private sealed class BambooStalkPlacement : IBlockBehavior
+    {
+        public IBlock? GetStateForPlacement(BlockPlaceContext context)
+        {
+            var position = context.Position;
+            if (context.Level.GetBlock(position).GetFluid() != FluidKind.Empty)
+                return null;
+
+            if (!BlockSurvival.BambooMayStay(context.Level.GetBlock, position))
+                return null;
+
+            var below = context.Level.GetBlock(position + Vector.Down);
+            if (below.Is(BlockIds.BambooSapling))
+                return context.Block.WithProperty("leaves", "none");
+
+            if (below.Is(BlockIds.Bamboo))
+                return context.Block.WithProperty("leaves", below.GetProperty("leaves") == "none" ? "none" : "small");
+
+            var belowBelow = context.Level.GetBlock(position + Vector.Down * 2);
+            return belowBelow.Is(BlockIds.Bamboo)
+                ? context.Block.WithProperty("leaves", belowBelow.GetProperty("leaves"))
+                : BlocksRegistry.GetDefault(BlockIds.BambooSapling);
+        }
+    }
 
     private sealed class HorizontalFacing(bool opposite) : IBlockBehavior
     {

@@ -124,8 +124,12 @@ public partial class PlayerBase
     {
         var previous = Air;
         var eyeHeight = Swimming ? 0.4 : Sneaking ? 1.27 : 1.62;
+        var eye = Position + new VectorD(0, eyeHeight, 0);
+        var terrain = new Obsidian.Entities.AI.MobTerrain(Level);
+        // Vanilla's LivingEntity.baseTick: a bubble column at the eye refills air like open air, though it is water.
         if (GameMode is GameMode.Survival or GameMode.Adventure
-            && new Obsidian.Entities.AI.MobTerrain(Level).IsInFluid(Position + new VectorD(0, eyeHeight, 0), water: true)
+            && terrain.IsInFluid(eye, water: true)
+            && terrain.GetBlock((Vector)eye.Floor())?.RegistryId != BlockIds.BubbleColumn
             && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1)
             && !HasPotionEffect((int)PotionEffect.ConduitPower - 1))
         {

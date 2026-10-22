@@ -237,6 +237,8 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
     public float Absorption { get; set; }
     public float FallDistance { get; set; }
+
+    internal override void ResetFallDistance() => this.FallDistance = 0;
     public float FoodExhaustionLevel { get; set; }
     public float FoodSaturationLevel { get; set; } = 5;
 
@@ -1256,5 +1258,8 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
         [LoggerMessage(Level = LogLevel.Warning, Message = "{Username} was saved in {Dimension}; spawning them at the world spawn")]
         public static partial void OtherDimension(ILogger logger, string username, string dimension);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "{Username}'s saved vehicle couldn't be restored; they join without it")]
+        public static partial void VehicleNotRestored(ILogger logger, string username);
     }
 }

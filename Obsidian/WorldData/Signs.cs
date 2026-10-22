@@ -40,6 +40,16 @@ internal static class Signs
     public static bool IsSign(IBlock block) => block.BlockClass() is Standing or Wall or Ceiling or WallHanging;
 
     /// <summary>
+    /// A standing sign already chosen by <see cref="StandingAndWallItems"/>: turned to the player and kept standing,
+    /// without reselecting a wall variant from the clicked face.
+    /// </summary>
+    public static IBlock? GetStandingState(LevelBlockUpdates level, IBlock block, Vector position, IPlayer player)
+    {
+        var state = StandingState(level, block, position, player);
+        return state is null ? null : Waterlog(level, state, position);
+    }
+
+    /// <summary>
     /// The sign a sign item places, like vanilla's <c>StandingAndWallBlockItem</c>: a sign on a block's side hangs on
     /// it as a wall sign and one on top stands; a hanging sign hangs under a block or beside one.
     /// </summary>

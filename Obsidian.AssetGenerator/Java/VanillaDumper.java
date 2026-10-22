@@ -120,8 +120,10 @@ public final class VanillaDumper {
         dumper.dumpIgnitedByLava();
         dumper.dumpTntBlocks();
         dumper.dumpItemUseOnClasses();
+        dumper.dumpItemUseClasses();
         dumper.dumpHoeTillables();
         dumper.dumpItemPlacedBlocks();
+        dumper.dumpItemAttachments();
         dumper.dumpCollisionShapes();
         dumper.dumpBlastResistance();
         dumper.dumpBlockLootTables();
@@ -413,6 +415,7 @@ public final class VanillaDumper {
         var visualShape = mojang.method(STATE_BASE, "getVisualShape", BLOCK_GETTER, BLOCK_POS, "net.minecraft.world.phys.shapes.CollisionContext");
         var outlineShape = mojang.method(STATE_BASE, "getShape", BLOCK_GETTER, BLOCK_POS, "net.minecraft.world.phys.shapes.CollisionContext");
         var isSuffocating = mojang.method(STATE_BASE, "isSuffocating", BLOCK_GETTER, BLOCK_POS);
+        var hasPostProcess = mojang.method(STATE_BASE, "hasPostProcess", BLOCK_GETTER, BLOCK_POS);
         var hasOffset = mojang.method(STATE_BASE, "hasOffsetFunction");
         var getOffset = mojang.method(STATE_BASE, "getOffset", BLOCK_POS);
         var maxHorizontalOffset = mojang.method("net.minecraft.world.level.block.state.BlockBehaviour", "getMaxHorizontalOffset");
@@ -430,6 +433,8 @@ public final class VanillaDumper {
         var visualShapes = new int[states.size()];
         var outlineShapes = new int[states.size()];
         var suffocating = new ArrayList<Boolean>();
+        // BlockStateBase.hasPostProcess: ProtoChunk marks such states for post-processing when they are placed in worldgen.
+        var postProcess = new ArrayList<Boolean>();
         var shapeOffsets = new double[states.size()][];
         var hardness = new double[states.size()];
         var requiresTool = new ArrayList<Boolean>();
@@ -455,6 +460,7 @@ public final class VanillaDumper {
             visualShapes[id] = shapeBoxes.indexOf(boxes(Mojang.call(visualShape, state, emptyLevel, origin, emptyContext)));
             outlineShapes[id] = shapeBoxes.indexOf(boxes(Mojang.call(outlineShape, state, emptyLevel, origin, emptyContext)));
             suffocating.add((boolean) Mojang.call(isSuffocating, state, emptyLevel, origin));
+            postProcess.add((boolean) Mojang.call(hasPostProcess, state, emptyLevel, origin));
             shapeOffsets[id] = new double[0];
             if ((boolean) Mojang.call(hasOffset, state)) {
                 var offset = Mojang.call(getOffset, state, origin);
@@ -538,6 +544,7 @@ public final class VanillaDumper {
         json.put("visualShapes", visualShapes);
         json.put("outlineShapes", outlineShapes);
         json.put("suffocating", suffocating);
+        json.put("postProcess", postProcess);
         json.put("shapeOffsets", Arrays.asList(shapeOffsets));
         json.put("hardness", hardness);
         json.put("requiresTool", requiresTool);
@@ -596,9 +603,9 @@ public final class VanillaDumper {
     }
 
     /**
-     * {@code block_random_tick_classes.json}, {@code block_tick_classes.json} and
-     * {@code block_update_shape_classes.json}: the Mojang class that supplies each block's {@code randomTick},
-     * {@code tick} and {@code updateShape} override. Blocks inheriting the base no-op are omitted.
+     * {@code block_random_tick_classes.json}, {@code block_tick_classes.json},
+     * {@code block_update_shape_classes.json} and the other hook-owner files: the Mojang class that supplies each
+     * block's override. Blocks inheriting the base no-op are omitted.
      */
     private void dumpBlockOverrideClasses() throws IOException {
         var level = "net.minecraft.server.level.ServerLevel";
@@ -608,6 +615,11 @@ public final class VanillaDumper {
         dumpBlockOverrideClasses("block_update_shape_classes.json", "updateShape", BLOCK_STATE,
             "net.minecraft.world.level.LevelReader", "net.minecraft.world.level.ScheduledTickAccess", BLOCK_POS,
             "net.minecraft.core.Direction", BLOCK_POS, BLOCK_STATE, random);
+        dumpBlockOverrideClasses("block_entity_inside_classes.json", "entityInside", BLOCK_STATE,
+            "net.minecraft.world.level.Level", BLOCK_POS, ENTITY, "net.minecraft.world.entity.InsideBlockEffectApplier",
+            "boolean");
+        dumpBlockOverrideClasses("block_on_place_classes.json", "onPlace", BLOCK_STATE,
+            "net.minecraft.world.level.Level", BLOCK_POS, BLOCK_STATE, "boolean");
     }
 
     /**
@@ -767,6 +779,38 @@ public final class VanillaDumper {
     }
 
     /**
+     * {@code item_use_classes.json}: the Mojang class that supplies each item's {@code use} override (what a right
+     * click does with the item in hand, like throwing an egg). Items inheriting the base implementation are omitted.
+     */
+    private void dumpItemUseClasses() throws IOException {
+        var item = "net.minecraft.world.item.Item";
+        var level = "net.minecraft.world.level.Level";
+        var player = "net.minecraft.world.entity.player.Player";
+        var hand = "net.minecraft.world.InteractionHand";
+        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+        var baseMethod = mojang.method(item, "use", level, player, hand);
+        var parameters = baseMethod.getParameterTypes();
+        var classes = new TreeMap<String, String>();
+
+        for (var entry : (Iterable<?>) itemRegistry) {
+            var owner = entry.getClass();
+            while (owner != null) {
+                try {
+                    owner.getDeclaredMethod(baseMethod.getName(), parameters);
+                    break;
+                } catch (NoSuchMethodException ignored) {
+                    owner = owner.getSuperclass();
+                }
+            }
+
+            if (owner != null && owner != mojang.type(item))
+                classes.put(key(itemRegistry, entry), mojang.className(owner.getName()));
+        }
+
+        Json.write(output.resolve("item_use_classes.json"), classes, false);
+    }
+
+    /**
      * {@code item_placed_blocks.json}: the block each {@code BlockItem} places by {@code BlockItem.getBlock()}, for
      * the items that place a block named differently from themselves (wheat seeds place wheat).
      */
@@ -788,6 +832,49 @@ public final class VanillaDumper {
         }
 
         Json.write(output.resolve("item_placed_blocks.json"), placed, false);
+    }
+
+    /**
+     * {@code item_attachments.json}: the blocks a {@code StandingAndWallBlockItem} places, as its fields hold them: the
+     * standing block, the wall block, and the direction the standing block is placed against (the item places the
+     * wall block against the other horizontal directions). The owner is the class declaring {@code getPlacementState}.
+     */
+    private void dumpItemAttachments() throws IOException {
+        var standingAndWall = "net.minecraft.world.item.StandingAndWallBlockItem";
+        var context = "net.minecraft.world.item.context.BlockPlaceContext";
+        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+        var blockRegistry = mojang.get(REGISTRIES, "BLOCK");
+        var placement = mojang.method(standingAndWall, "getPlacementState", context);
+        var parameter = mojang.type(context);
+        var getBlock = mojang.method("net.minecraft.world.item.BlockItem", "getBlock");
+        var wallBlock = mojang.field(standingAndWall, "wallBlock");
+        var attachment = mojang.field(standingAndWall, "attachmentDirection");
+        var attachments = new TreeMap<String, Map<String, String>>();
+
+        for (var entry : (Iterable<?>) itemRegistry) {
+            if (!mojang.type(standingAndWall).isInstance(entry))
+                continue;
+
+            var owner = entry.getClass();
+            while (owner != null) {
+                try {
+                    owner.getDeclaredMethod(placement.getName(), parameter);
+                    break;
+                } catch (NoSuchMethodException ignored) {
+                    owner = owner.getSuperclass();
+                }
+            }
+
+            var direction = (Enum<?>) Mojang.get(attachment, entry);
+            var row = new TreeMap<String, String>();
+            row.put("owner", mojang.className(owner.getName()));
+            row.put("standing", key(blockRegistry, Mojang.call(getBlock, entry)));
+            row.put("wall", key(blockRegistry, Mojang.get(wallBlock, entry)));
+            row.put("direction", direction.name().toLowerCase(java.util.Locale.ROOT));
+            attachments.put(key(itemRegistry, entry), row);
+        }
+
+        Json.write(output.resolve("item_attachments.json"), attachments, false);
     }
 
     /**
