@@ -66,6 +66,10 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior SoulSandBlock { get; } = new SoulSandBlockBehavior();
 
     internal static IScheduledTickBehavior MagmaBlock { get; } = new MagmaBlockBehavior();
+
+    internal static IScheduledTickBehavior SugarCaneBlock { get; } = new SugarCaneBlockBehavior();
+
+    internal static IScheduledTickBehavior CactusBlock { get; } = new CactusBlockBehavior();
 }
 
 /// <summary>
@@ -85,6 +89,10 @@ internal static class ShapeUpdateBehaviors
     internal static IShapeUpdateBehavior SoulSandBlock { get; } = new SoulSandBlockBehavior();
 
     internal static IShapeUpdateBehavior MagmaBlock { get; } = new MagmaBlockBehavior();
+
+    internal static IShapeUpdateBehavior SugarCaneBlock { get; } = new SugarCaneBlockBehavior();
+
+    internal static IShapeUpdateBehavior CactusBlock { get; } = new CactusBlockBehavior();
 }
 
 /// <summary>

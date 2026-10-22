@@ -1,0 +1,48 @@
+using Obsidian.API.Blocks;
+using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.WorldData.Features;
+
+namespace Obsidian.WorldData;
+
+/// <summary>
+/// Vanilla <c>SugarCaneBlock</c>: a neighbour change schedules a survival check, and the check breaks the stalk when it
+/// can't stay, so the stalks above it fall as their own checks fail in turn.
+/// </summary>
+internal sealed class SugarCaneBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
+{
+    /// <summary>Vanilla's <c>updateShape</c>: schedules a tick at delay 1 when the block can't survive, and keeps its state.</summary>
+    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    {
+        if (!BlockSurvival.SugarCaneMayStay(level.GetBlock, position))
+            level.ScheduleTick(position, state, 1);
+
+        return state;
+    }
+
+    /// <summary>Vanilla's <c>tick</c>: a stalk that can't survive breaks and drops itself.</summary>
+    public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
+    {
+        if (!BlockSurvival.SugarCaneMayStay(level.GetBlock, position))
+            level.DestroyBlock(position, dropItems: true);
+    }
+}
+
+/// <summary>Vanilla <c>CactusBlock</c>: the same survival check and break as sugar cane, from its own class.</summary>
+internal sealed class CactusBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
+{
+    /// <summary>Vanilla's <c>updateShape</c>: schedules a tick at delay 1 when the block can't survive, and keeps its state.</summary>
+    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    {
+        if (!BlockSurvival.CactusMayStay(level.GetBlock, position))
+            level.ScheduleTick(position, state, 1);
+
+        return state;
+    }
+
+    /// <summary>Vanilla's <c>tick</c>: a cactus that can't survive breaks and drops itself.</summary>
+    public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
+    {
+        if (!BlockSurvival.CactusMayStay(level.GetBlock, position))
+            level.DestroyBlock(position, dropItems: true);
+    }
+}
