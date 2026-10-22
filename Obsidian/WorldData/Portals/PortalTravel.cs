@@ -35,7 +35,7 @@ internal static class PortalTravel
                 for (var z = (int)Math.Floor(min.Z + 1e-7); z <= (int)Math.Floor(max.Z - 1e-7); z++)
                 {
                     var position = new Vector(x, y, z);
-                    var block = await entity.Level.GetBlockAsync(position);
+                    var block = await BlockAtAsync(entity.Level, position);
                     if (includeEnd && block?.RegistryId == BlockIds.EndPortal
                         && min.Y < y + 0.75 && max.Y > y + 0.375)
                         return new(position, BlockIds.EndPortal, null);
@@ -44,7 +44,8 @@ internal static class PortalTravel
                     if (includeGateways && block?.RegistryId == BlockIds.EndGateway)
                         return new(position, BlockIds.EndGateway, null);
 
-                    if (block is null || TypeAt(entity.Level, position, block) is not PortalType type)
+                    if (block is null || !PortalTypesRegistry.MayBePortalBlock(block.RegistryId)
+                        || TypeAt(entity.Level, position, block) is not PortalType type)
                         continue;
 
                     // Vanilla's thin portal contact shape is a quarter block wide, centred in its plane.
@@ -56,6 +57,12 @@ internal static class PortalTravel
 
         return null;
     }
+
+    // Every entity checks the blocks it touches on every tick, so a resident level's are read from its loaded chunks,
+    // without loading any: a chunk that isn't loaded has no portal in it to touch.
+    private static ValueTask<IBlock?> BlockAtAsync(ILevel level, Vector position) => level is AbstractLevel resident
+        ? ValueTask.FromResult(resident.GetLoadedBlock(position))
+        : level.GetBlockAsync(position);
 
     private static PortalType? TypeAt(ILevel level, Vector position, IBlock block) => level is AbstractLevel resident
         ? resident.Portals.TypeAt(position, block)

@@ -16,7 +16,8 @@ public sealed class EntityRangeQueries
     {
         await using var context = TestServerFactory.CreateServer($"entity-range-{Guid.NewGuid():N}");
         var entity = new Entity { EntityId = 1, Level = context.World, Position = new VectorD(-1024, 64, 1024) };
-        context.World.LoadRegionByChunk(-64, 64).Entities.TryAdd(entity.EntityId, entity);
+        context.World.LoadRegionByChunk(-64, 64);
+        Assert.True(context.World.TryAddEntity(entity));
 
         Assert.Same(entity, Assert.Single(context.World.GetEntitiesInRange(VectorD.Zero, float.MaxValue)));
         var missingOwner = Guid.NewGuid();
@@ -32,11 +33,42 @@ public sealed class EntityRangeQueries
         var origin = new VectorD(511, 64, 0);
         var near = new Entity { EntityId = 1, Level = context.World, Position = new VectorD(512, 64, 0) };
         var far = new Entity { EntityId = 2, Level = context.World, Position = new VectorD(512, 64 + distance + 1, 0) };
-        var region = context.World.LoadRegionByChunk(32, 0);
-        region.Entities.TryAdd(near.EntityId, near);
-        region.Entities.TryAdd(far.EntityId, far);
+        context.World.LoadRegionByChunk(32, 0);
+        Assert.True(context.World.TryAddEntity(near));
+        Assert.True(context.World.TryAddEntity(far));
 
         Assert.Same(near, Assert.Single(context.World.GetNonPlayerEntitiesInRange(origin, distance)));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task QueriesFollowEntitiesBetweenChunksAndOutOfTheLevel()
+    {
+        await using var context = TestServerFactory.CreateServer($"entity-range-{Guid.NewGuid():N}");
+        var world = context.World;
+        var entity = new Entity { EntityId = 1, Level = world, Position = new VectorD(8, 64, 8) };
+        Assert.True(world.TryAddEntity(entity));
+
+        // Moved three chunks over without the level hearing of it, as entities move.
+        entity.Position = new VectorD(56, 64, 8);
+        Assert.Empty(world.GetNonPlayerEntitiesInRange(new VectorD(8, 64, 8), 4));
+        Assert.Same(entity, Assert.Single(world.GetNonPlayerEntitiesInRange(new VectorD(55, 64, 8), 4)));
+
+        await world.DestroyEntityAsync(entity);
+        Assert.Empty(world.GetNonPlayerEntitiesInRange(new VectorD(55, 64, 8), 4));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task UnloadingARegionTakesItsUnsavedEntitiesOutOfQueries()
+    {
+        await using var context = TestServerFactory.CreateServer($"entity-range-{Guid.NewGuid():N}");
+        var world = context.World;
+        // In a chunk never generated, so the region's final save doesn't take it.
+        var entity = new Entity { EntityId = 1, Level = world, Position = new VectorD(8, 64, 8) };
+        Assert.True(world.TryAddEntity(entity));
+
+        await world.UnloadRegionAsync(0, 0);
+
+        Assert.Empty(world.GetNonPlayerEntitiesInRange(new VectorD(8, 64, 8), 4));
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]

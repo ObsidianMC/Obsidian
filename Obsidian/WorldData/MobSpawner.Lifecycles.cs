@@ -8,8 +8,8 @@ internal sealed partial class MobSpawner
 {
     private void TickHive(DataBlockEntity hive)
     {
-        var data = hive.SnapshotData();
-        if (!data.TryGetTag<NbtList>("bees", out var occupants)) return;
+        // Its bees alone, copied: their times change here while the hive may be saved on another thread.
+        if (hive.SnapshotTag<NbtList>("bees") is not NbtList occupants) return;
         var terrain = new MobTerrain(level);
         var block = terrain.GetBlock(hive.BlockPosition);
         if (block?.RegistryId is not BlockIds.BeeNest and not BlockIds.Beehive) return;
@@ -45,7 +45,7 @@ internal sealed partial class MobSpawner
 
     private void TickFrogspawn(Chunk chunk)
     {
-        if (chunk.FrogspawnTicks.IsEmpty)
+        if (!chunk.HasFrogspawnTicks)
             return;
 
         var terrain = new MobTerrain(level);
@@ -94,7 +94,7 @@ internal sealed partial class MobSpawner
             level.SpawnEntity(horse);
     }
 
-    private void SpawnVillageCats(Mob[] mobs)
+    private void SpawnVillageCats(List<Mob> mobs)
     {
         foreach (var villager in mobs.OfType<Villager>().Where(villager => !villager.IsBaby).OrderBy(_ => random.Next()).Take(1))
         {

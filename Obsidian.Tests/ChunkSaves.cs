@@ -46,7 +46,6 @@ public sealed class ChunkSaves
         ["block tick"] = (null, chunk => chunk.BlockTicks.Schedule(new Vector(1, 64, 1), "minecraft:stone", 5)),
         ["fluid tick"] = (null, chunk => chunk.FluidTicks.Schedule(new Vector(1, 64, 1), FluidKind.Water, 5)),
         ["status"] = (null, chunk => chunk.SetChunkStatusCore(ChunkGenStage.full)),
-        ["inhabited time"] = (null, chunk => chunk.InhabitedTime++),
         ["structure starts"] = (null, chunk => chunk.StructureStarts = new NbtCompound("starts")),
     };
 
@@ -66,6 +65,16 @@ public sealed class ChunkSaves
 
         apply(chunk);
         Assert.True(chunk.TakeUnsaved());
+        Assert.False(chunk.TakeUnsaved());
+    }
+
+    [Fact(DisplayName = "Inhabited time doesn't mark a chunk unsaved, like vanilla's")]
+    public void InhabitedTimeLeavesTheChunkSaved()
+    {
+        var chunk = new Chunk(0, 0, ChunkGenStage.light);
+        Assert.True(chunk.TakeUnsaved());
+
+        chunk.InhabitedTime++;
         Assert.False(chunk.TakeUnsaved());
     }
 
@@ -127,13 +136,13 @@ public sealed class ChunkSaves
                     Position = new VectorF(8.5f, 65f, 8.5f),
                     Item = new ItemStack(ItemsRegistry.Apple, 3)
                 };
-                region.Entities.TryAdd(item.EntityId, item);
+                region.TryAddEntity(item);
 
                 await region.FlushAsync();
                 Assert.Equal(1, chunk.SavedEntityCount);
 
                 // The chunk itself is unchanged, but its entity file still lists the item.
-                region.Entities.TryRemove(item.EntityId, out _);
+                region.TryRemoveEntity(item);
                 await region.FlushAsync();
             }
 

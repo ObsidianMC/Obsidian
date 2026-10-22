@@ -70,6 +70,11 @@ public abstract partial class AbstractLevel : ILevel
 
     public ConcurrentHashSet<long> LoadedChunks { get; protected set; } = [];
 
+    /// <summary>
+    /// The level's non-player entities by chunk, for range queries.
+    /// </summary>
+    internal EntityGrid EntityGrid { get; } = new();
+
     public string Name { get; }
     public string Seed { get; }
     public string FolderPath { get; protected set; } = string.Empty;
@@ -190,7 +195,7 @@ public abstract partial class AbstractLevel : ILevel
             return true;
 
         var simulationDistance = Configuration.SimulationDistance;
-        foreach (var player in Players.Values)
+        foreach (var (_, player) in Players)
         {
             if (player.GameMode == GameMode.Spectator) continue;
             var playerChunk = Region.ChunkOf(player.Position);
@@ -227,9 +232,9 @@ public abstract partial class AbstractLevel : ILevel
             return false;
         if (ReferenceEquals(origin, destination))
             return true;
-        if (!destination.Entities.TryAdd(entity.EntityId, entity))
+        if (destination is not Region target || !target.TryAddEntity(entity))
             return false;
-        origin?.Entities.TryRemove(entity.EntityId, out _);
+        (origin as Region)?.TryRemoveEntity(entity);
         return true;
     }
 
@@ -275,9 +280,10 @@ public abstract partial class AbstractLevel : ILevel
     // The caller holds TransferLock, shared with transfer commits and the entity save snapshot.
     internal bool RemoveEntity(IEntity entity, bool transferring)
     {
-        var region = this.GetRegionForLocation(entity.Position);
-        if (region is null || !region.Entities.TryRemove(new KeyValuePair<int, IEntity>(entity.EntityId, entity)))
+        if (this.GetRegionForLocation(entity.Position) is not Region region || !region.TryRemoveEntity(entity))
             return false;
+
+        EntityGrid.Leave(entity);
 
         if (entity is Entity concrete)
             concrete.CancelEntityPortalTravel();
@@ -408,11 +414,7 @@ public abstract partial class AbstractLevel : ILevel
 
     internal void BroadcastBlockChange(IBlock block, Vector location)
     {
-        var packet = new BlockUpdatePacket(location, block.GetHashCode());
-        foreach (var player in PlayersInRange(location))
-        {
-            player.SendPacket(packet);
-        }
+        this.PacketBroadcaster.BroadcastTo(new BlockUpdatePacket(location, block.GetHashCode()), PlayersInRange(location));
     }
 
     /// <summary>
@@ -420,17 +422,23 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal void BroadcastLevelEvent(int type, Vector location, int data)
     {
-        var packet = new LevelEventPacket(type, location, data);
-        foreach (var player in PlayersInRange(location))
-            player.SendPacket(packet);
+        this.PacketBroadcaster.BroadcastTo(new LevelEventPacket(type, location, data), PlayersInRange(location));
     }
 
-    public IEnumerable<IPlayer> PlayersInRange(Vector location)
+    public IEnumerable<IPlayer> PlayersInRange(Vector location) => this.PlayersWithChunk(location);
+
+    // The players that have the chunk at the location loaded. It reads the players as it goes rather than copying them
+    // first: a copy of a ConcurrentDictionary's values takes all its locks, and this runs for every block change sent.
+    private IEnumerable<IPlayer> PlayersWithChunk(Vector location)
     {
         var (x, z) = location.ToChunkCoord();
         var packedXZ = NumericsHelper.IntsToLong(x, z);
 
-        return this.Players.Values.Where(player => player.LoadedChunks.Contains(packedXZ));
+        foreach (var (_, player) in this.Players)
+        {
+            if (player.LoadedChunks.Contains(packedXZ))
+                yield return player;
+        }
     }
 
     public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) =>
@@ -519,47 +527,27 @@ public abstract partial class AbstractLevel : ILevel
         }
 
         var distanceSquared = (double)distance * distance;
-        foreach (var region in GetRegions())
+
+        // Owner lookups use float.MaxValue: those look through every region rather than the chunks in range.
+        if (distance >= Region.CubicRegionSize * 16)
         {
-            foreach (var entity in region.Entities.Values)
+            foreach (var (_, region) in Regions)
             {
-                if (entity.Type == EntityType.Player)
-                    continue;
-
-                var difference = entity.Position - location;
-                if (difference.MagnitudeSquared() <= distanceSquared)
-                    yield return entity;
-            }
-        }
-
-        IEnumerable<IRegion> GetRegions()
-        {
-            // Owner lookups use float.MaxValue. Scan loaded regions before converting such ranges to chunk coordinates.
-            if (distance >= Region.CubicRegionSize * 16)
-            {
-                foreach (var region in Regions.Values)
-                    yield return region;
-                yield break;
-            }
-
-            var (left, top) = Region.ChunkOf(location - new VectorD(distance));
-            var (right, bottom) = Region.ChunkOf(location + new VectorD(distance));
-
-            left >>= Region.CubicRegionSizeShift;
-            right >>= Region.CubicRegionSizeShift;
-            top >>= Region.CubicRegionSizeShift;
-            bottom >>= Region.CubicRegionSizeShift;
-
-            for (int x = left; x <= right; x++)
-            {
-                for (int z = top; z <= bottom; z++)
+                foreach (var (_, entity) in region.Entities)
                 {
-                    if (GetRegionForChunk(x << Region.CubicRegionSizeShift, z << Region.CubicRegionSizeShift) is not Region region)
-                        continue;
-
-                    yield return region;
+                    if (entity.Type != EntityType.Player && (entity.Position - location).MagnitudeSquared() <= distanceSquared)
+                        yield return entity;
                 }
             }
+
+            yield break;
+        }
+
+        // The entities in the chunks in range, by entity id (see EntityGrid).
+        foreach (var entity in this.EntityGrid.InChunksAround(location - new VectorD(distance), location + new VectorD(distance)))
+        {
+            if (entity.Type != EntityType.Player && (entity.Position - location).MagnitudeSquared() <= distanceSquared)
+                yield return entity;
         }
     }
 
@@ -572,7 +560,7 @@ public abstract partial class AbstractLevel : ILevel
 
         if (distance == 0f)
         {
-            foreach (var player in Players.Values)
+            foreach (var (_, player) in Players)
             {
                 if (player.Position == location)
                 {
@@ -584,7 +572,7 @@ public abstract partial class AbstractLevel : ILevel
 
         distance *= distance;
 
-        foreach (var player in Players.Values)
+        foreach (var (_, player) in Players)
         {
             var difference = player.Position - location;
             if (difference.X * difference.X + difference.Z * difference.Z <= distance)
@@ -594,13 +582,7 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
-    public IEnumerable<IPlayer> GetPlayersInChunkRange(Vector worldPosition)
-    {
-        var (x, z) = worldPosition.ToChunkCoord();
-
-        var packedXZ = NumericsHelper.IntsToLong(x, z);
-        return this.Players.Values.Where(player => player.LoadedChunks.Contains(packedXZ));
-    }
+    public IEnumerable<IPlayer> GetPlayersInChunkRange(Vector worldPosition) => this.PlayersWithChunk(worldPosition);
 
     public bool TryAddPlayer(IPlayer player) => Players.TryAdd(player.Uuid, player);
 
@@ -683,16 +665,13 @@ public abstract partial class AbstractLevel : ILevel
         this.TickRandomBlocks();
         timings.Lap("random ticks");
 
-        // Snapshot once so crossing a region boundary cannot tick an entity twice.
-        var entities = Regions.Values.SelectMany(region => region.Entities.Values)
-            .DistinctBy(entity => entity.EntityId).OrderBy(entity => entity.EntityId).ToArray();
-        foreach (var entity in entities)
+        foreach (var entity in this.SnapshotEntities())
         {
             if (entity is Mob { HasAi: true } or ItemEntity or ExperienceOrb && !IsMobTicking(entity.Position))
                 continue;
             if (GetRegionForLocation(entity.Position)?.Entities.ContainsKey(entity.EntityId) == true)
             {
-                TickStage = $"entity {entity.EntityId} ({entity.GetType().Name})";
+                this.tickingEntity = entity;
                 await entity.TickAsync();
                 await this.TouchPluginBlocksAsync(entity);
                 if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
@@ -723,8 +702,7 @@ public abstract partial class AbstractLevel : ILevel
         foreach (var packet in this.Lighting.TakeUpdates(LightBorderBudget))
         {
             var location = new Vector(packet.Chunk.X << 4, 0, packet.Chunk.Z << 4);
-            foreach (var watcher in this.PlayersInRange(location))
-                watcher.SendPacket(packet);
+            this.PacketBroadcaster.BroadcastTo(packet, this.PlayersInRange(location));
         }
 
         foreach (var player in Players.Values)
@@ -784,7 +762,46 @@ public abstract partial class AbstractLevel : ILevel
     // How long a tick spends reconciling light along newly loaded chunks' borders; the rest waits for later ticks.
     private static readonly TimeSpan LightBorderBudget = TimeSpan.FromMilliseconds(10);
 
-    internal string TickStage { get; private set; } = "not started";
+    // The stage the level's tick is at, for the stuck tick warning. The entity being ticked is kept rather than
+    // described up front, since this changes for every entity on every tick and is rarely read.
+    internal string TickStage
+    {
+        get => this.tickingEntity is IEntity entity ? $"entity {entity.EntityId} ({entity.GetType().Name})" : this.tickStage;
+        private set
+        {
+            this.tickStage = value;
+            this.tickingEntity = null;
+        }
+    }
+
+    private string tickStage = "not started";
+    private IEntity? tickingEntity;
+
+    // Reused by every tick's entity snapshot; ticks of a level never overlap (see simulationGate).
+    private readonly List<IEntity> entitySnapshot = [];
+    private readonly HashSet<int> entitySnapshotIds = [];
+
+    /// <summary>
+    /// The level's entities in entity id order, each once, even while crossing a region boundary. Taken once per tick,
+    /// so entities spawned during the tick wait for the next one. Valid until the next call.
+    /// </summary>
+    private List<IEntity> SnapshotEntities()
+    {
+        this.entitySnapshot.Clear();
+        this.entitySnapshotIds.Clear();
+        foreach (var (_, region) in this.Regions)
+        {
+            foreach (var (_, entity) in region.Entities)
+            {
+                if (this.entitySnapshotIds.Add(entity.EntityId))
+                    this.entitySnapshot.Add(entity);
+            }
+        }
+
+        this.entitySnapshot.Sort(static (left, right) => left.EntityId.CompareTo(right.EntityId));
+        return this.entitySnapshot;
+    }
+
     internal bool SavingEntities { get; private set; }
 
     /// <summary>
@@ -913,6 +930,11 @@ public abstract partial class AbstractLevel : ILevel
             {
                 await r.FlushAsync();
                 await r.DisposeAsync();
+
+                // The flush takes out the entities it saves; any it left (such as those in chunks never generated)
+                // go with the region, so they leave the entity index too.
+                foreach (var (_, entity) in r.Entities)
+                    EntityGrid.Leave(entity);
             }
         }
         finally
@@ -1784,15 +1806,16 @@ public abstract partial class AbstractLevel : ILevel
 
         var (chunkX, chunkZ) = Region.ChunkOf(entity.Position);
 
-        var region = GetRegionForChunk(chunkX, chunkZ);
-
-        if (region is null || !region.Entities.TryAdd(entity.EntityId, entity))
+        if (GetRegionForChunk(chunkX, chunkZ) is not Region region || !region.TryAddEntity(entity))
             return false;
+
+        this.EntityGrid.Add(entity);
 
         // Unloading closes a plugin before removing its entities, so one added meanwhile is removed there or here.
         if (spawner is { IsClosing: true } || !PluginEntities.HasLoadedType(entity))
         {
-            region.Entities.TryRemove(new KeyValuePair<int, IEntity>(entity.EntityId, entity));
+            region.TryRemoveEntity(entity);
+            EntityGrid.Leave(entity);
             spawner?.ThrowIfClosing();
 
             return false;

@@ -2,6 +2,7 @@ using Obsidian.API.AI;
 using Obsidian.API.World;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.Entities;
@@ -19,7 +20,24 @@ public partial class Entity : IEquatable<Entity>, IEntity
     #region Location properties
     public VectorD LastPosition { get; set; }
 
-    public VectorD Position { get; set; }
+    public VectorD Position
+    {
+        get => this.position;
+        set
+        {
+            this.position = value;
+
+            // Racy outside the grid's lock, but Move checks again under it.
+            if (this.Grid is EntityGrid grid && EntityGrid.ChunkKey(value) != this.GridChunk)
+                grid.Move(this, value);
+        }
+    }
+
+    private VectorD position;
+
+    // The level's grid the entity is in and the chunk it's filed under there, both kept by the grid (see EntityGrid).
+    internal EntityGrid? Grid { get; set; }
+    internal long GridChunk { get; set; }
 
     public Angle Pitch { get; set; }
 
@@ -30,6 +48,9 @@ public partial class Entity : IEquatable<Entity>, IEntity
     /// </summary>
     public VectorD Motion { get; set; }
     #endregion Location properties
+
+    // The distance walked or swum since the last step or swim game event (see AbstractLevel.EmitMovementGameEventsAsync).
+    internal double GameEventStepDistance { get; set; }
 
     public int EntityId { get; internal set; }
 

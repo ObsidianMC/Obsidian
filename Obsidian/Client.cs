@@ -382,7 +382,16 @@ public sealed partial class Client : IClient
     /// on the caller's thread; the network threads compress, encrypt and write it (see <see cref="WorkerThreads.Network"/>).
     /// </summary>
     /// <returns>Whether it's sent or on its way: the client can receive it.</returns>
-    public bool SendPacket(IClientboundPacket packet)
+    public bool SendPacket(IClientboundPacket packet) => this.SendPacket(packet, shared: null);
+
+    /// <summary>
+    /// Sends a broadcast's packet like <see cref="SendPacket(IClientboundPacket)"/>, with the bodies serialized for the
+    /// connections that write it like this one. Call it on the broadcasting thread, which owns
+    /// <paramref name="shared"/>: a send that waits its turn takes the bodies along rather than serializing it later.
+    /// </summary>
+    internal bool SendPacket(SharedPacketBodies shared) => this.SendPacket(shared.Packet, shared);
+
+    private bool SendPacket(IClientboundPacket packet, SharedPacketBodies? shared)
     {
         lock (this.sendLock)
         {
@@ -391,10 +400,11 @@ public sealed partial class Client : IClient
 
             // Admission and the direct write share the lock, so a new entry cannot slip between them.
             if (Volatile.Read(ref this.unsent) == 0)
-                return this.SendAsync(packet);
+                return this.SendAsync(packet, bodies: shared?.Get(this.ReadsPluginEntityData(packet)));
         }
 
-        return this.Enqueue(new Outgoing(packet, RunsHandlers: false, Work: null));
+        var bodies = shared?.Get(this.ReadsPluginEntityData(packet));
+        return this.Enqueue(new Outgoing(packet, RunsHandlers: false, Work: null, Bodies: bodies));
     }
 
     /// <summary>
@@ -757,7 +767,7 @@ public sealed partial class Client : IClient
 
         var packet = entry.Packet!;
         if (!entry.RunsHandlers || await this.RunQueueHandlersAsync(packet))
-            this.SendAsync(packet);
+            this.SendAsync(packet, bodies: entry.Bodies);
     }
 
     /// <summary>
@@ -786,13 +796,14 @@ public sealed partial class Client : IClient
         TaskScheduler.Default);
 
     // An entry of the pipeline: a packet, which plugins' handlers see first unless it's sent as is, or work run in turn
-    // with the packets (see QueueInTurn).
+    // with the packets (see QueueInTurn). A broadcast's packet sent as is carries the bodies serialized for it.
     private readonly record struct Outgoing(
         IClientboundPacket? Packet,
         bool RunsHandlers,
         Func<ValueTask>? Work,
         TaskCompletionSource<int>? Flushed = null,
-        ChatMessage? DisconnectReason = null);
+        ChatMessage? DisconnectReason = null,
+        IReadOnlyList<NetworkBuffer>? Bodies = null);
 
 
     private async ValueTask<bool> HandlePacketAsync(PacketData packetData)

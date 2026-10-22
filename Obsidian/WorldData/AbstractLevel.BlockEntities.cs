@@ -185,7 +185,7 @@ public abstract partial class AbstractLevel
 
         foreach (var chunk in chunks)
         {
-            if (chunk.BlockEntities.IsEmpty || !this.IsMobTicking(new VectorD(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8)))
+            if (!chunk.HasBlockEntities || !this.IsMobTicking(new VectorD(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8)))
                 continue;
 
             foreach (var blockEntity in chunk.BlockEntities.Values.OfType<BlockEntity>())

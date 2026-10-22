@@ -10,6 +10,9 @@ namespace Obsidian.Entities;
 public partial class ItemEntity : Entity
 {
     private int age;
+
+    // Ticks since it was spawned or loaded, like vanilla's unsaved Entity.tickCount; it paces merging.
+    private int ticksExisted;
     internal void SetExtendedLifetime() => age = -6000;
     // Merges, pickups and removal check and set Removed under this lock, so a stack isn't transferred after its entity
     // is removed, even when the removal comes from outside the level tick.
@@ -169,6 +172,7 @@ public partial class ItemEntity : Entity
     public async override ValueTask TickAsync()
     {
         await base.TickAsync();
+        this.ticksExisted++;
         lock (TransferLock)
         {
             if (this.Removed)
@@ -182,11 +186,18 @@ public partial class ItemEntity : Entity
             return;
         }
         var terrain = new MobTerrain(Level);
+        var from = Position;
         var next = EntityMovement.Move(this, terrain, VectorD.Zero, 0.04f, 0.98f);
         if (Level is AbstractLevel level && !level.TryMoveEntity(this, Position, next))
             return;
         if (next != Position)
             await UpdateAsync(next, MovementFlags);
+
+        // Like vanilla's ItemEntity.tick, it looks for items to merge with every 2 ticks after moving into another
+        // block and every 40 otherwise, which decides how soon dropped items stack up.
+        var movedBlock = (Vector)from.Floor() != (Vector)Position.Floor();
+        if (this.ticksExisted % (movedBlock ? 2 : 40) != 0)
+            return;
 
         foreach (var ent in this.Level.GetNonPlayerEntitiesInRange(this.Position, 0.5f))
         {

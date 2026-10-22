@@ -396,8 +396,13 @@ public class MeleeAttackGoal(PathfinderMob mob, float speed = 1) : NavigationGoa
             return false;
         lastUseTick = Mob.AiTick;
         return Mob.AttackTarget is IEntity target && Mob.IsValidTarget(target) &&
-            (Mob.IsWithinMeleeRange(target) || new PathFinder(Mob).FindPath(target.Position) != null);
+            (Mob.IsWithinMeleeRange(target) || FindPath(target.Position) != null);
     }
+
+    // Through the navigator, which then doesn't look for the same path again when the goal starts.
+    private MobPath? FindPath(VectorD to) => Mob.Navigator is Navigator navigator && navigator.TryFindPath(to, out var path)
+        ? path
+        : new PathFinder(Mob).FindPath(to);
 
     public override bool CanContinue() => Mob.AttackTarget is IEntity target && Mob.IsValidTarget(target) &&
         (Navigation.IsNavigating || Mob.IsWithinMeleeRange(target));

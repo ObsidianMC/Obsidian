@@ -31,14 +31,17 @@ public sealed class Chunk : IChunk
     public int X { get; }
     public int Z { get; }
 
+    /// <summary>
+    /// The ticks players spent near the chunk, saved with it, which raise its local difficulty.
+    /// </summary>
+    /// <remarks>
+    /// Like vanilla's ChunkAccess.incrementInhabitedTime, it doesn't mark the chunk unsaved: it goes up on every tick
+    /// near a player, so every simulated chunk would be rewritten on every save. It's saved whenever the chunk is.
+    /// </remarks>
     public long InhabitedTime
     {
         get => Interlocked.Read(ref this.inhabitedTime);
-        internal set
-        {
-            Interlocked.Exchange(ref this.inhabitedTime, value);
-            this.MarkUnsaved();
-        }
+        internal set => Interlocked.Exchange(ref this.inhabitedTime, value);
     }
 
     private long inhabitedTime;
@@ -210,6 +213,25 @@ public sealed class Chunk : IChunk
     internal int RestoredBlockEntityRevision { get; set; } = -1;
     internal ConcurrentDictionary<Vector, int> MobEggTicks { get; } = new();
     internal ConcurrentDictionary<Vector, int> FrogspawnTicks { get; } = new();
+
+    /// <summary>Whether <see cref="MobEggTicks"/> holds any, read without locking (see <see cref="HasAny"/>).</summary>
+    internal bool HasMobEggTicks => HasAny(this.MobEggTicks);
+
+    /// <summary>Whether <see cref="FrogspawnTicks"/> holds any, read without locking (see <see cref="HasAny"/>).</summary>
+    internal bool HasFrogspawnTicks => HasAny(this.FrogspawnTicks);
+
+    /// <summary>Whether <see cref="BlockEntities"/> holds any, read without locking (see <see cref="HasAny"/>).</summary>
+    internal bool HasBlockEntities => HasAny(this.BlockEntities);
+
+    // Whether a dictionary holds anything. The level asks this of every chunk each tick, and most are empty, when
+    // ConcurrentDictionary.IsEmpty (and Count) takes all of the dictionary's locks; enumerating takes none.
+    private static bool HasAny<TKey, TValue>(ConcurrentDictionary<TKey, TValue> dictionary) where TKey : notnull
+    {
+        foreach (var _ in dictionary)
+            return true;
+
+        return false;
+    }
 
     /// <summary>The portal types that lit or built the chunk's portal blocks (see Portals.PortalOwnership).</summary>
     internal ConcurrentDictionary<Vector, Portals.PortalOwner> PortalOwners { get; } = new();

@@ -10,6 +10,18 @@ public interface IPacketBroadcaster
     public void BroadcastTo(IClientboundPacket packet, params int[] ids);
 
     /// <summary>
+    /// Sends the packet directly to <paramref name="players"/>, like <see cref="IPlayer.SendPacket"/> for each. The
+    /// server's broadcaster serializes it once for all the players' connections that write it alike.
+    /// </summary>
+    /// <param name="packet">The packet to send.</param>
+    /// <param name="players">The players to send it to, enumerated once.</param>
+    public void BroadcastTo(IClientboundPacket packet, IEnumerable<IPlayer> players)
+    {
+        foreach (var player in players)
+            player.SendPacket(packet);
+    }
+
+    /// <summary>
     /// Sends the packets directly to connected clients without processing in a queue.
     /// </summary>
     /// <param name="toLevel">The level to broadcast this packet to.</param>

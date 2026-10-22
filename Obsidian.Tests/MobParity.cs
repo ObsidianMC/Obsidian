@@ -284,7 +284,7 @@ public sealed class MobParity
             };
             wither.InitializeAi(false);
             pig.InitializeAi(false);
-            context.World.GetRegionForChunk(0, 0)!.Entities.TryAdd(pig.EntityId, pig);
+            Assert.True(context.World.TryAddEntity(pig));
             wither.BeginSpawnCharge();
             wither.AlertedTarget = pig;
 

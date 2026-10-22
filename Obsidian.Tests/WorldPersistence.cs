@@ -272,7 +272,7 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
                 Item = new ItemStack(ItemsRegistry.Apple, 7)
             };
             foreach (var entity in new Entity[] { witch, frame, minecart, item })
-                region.Entities.TryAdd(entity.EntityId, entity);
+                region.TryAddEntity(entity);
 
             // One placed by world generation that hasn't spawned yet.
             chunk.PendingEntities.Add(new GeneratedEntity("minecraft:end_crystal", new VectorF((ChunkX << 4) + 2.5f, 80f, (ChunkZ << 4) + 2.5f)));

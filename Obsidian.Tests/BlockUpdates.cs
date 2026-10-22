@@ -534,7 +534,6 @@ public sealed class BlockUpdates : IDisposable
         Assert.Equal("east", relay.GetValue(turned, "facing"));
 
         // An entity inside a relay, whose entity hook throws: the failure is logged and the level's tick goes on.
-        var region = world.GetRegionForChunk(0, 0)!;
         var crystal = new EndCrystal
         {
             EntityId = Obsidian.Server.GetNextEntityId(),
@@ -542,10 +541,10 @@ public sealed class BlockUpdates : IDisposable
             Position = new VectorD(center.X + 1.5, center.Y + 0.1, center.Z + 0.5)
         };
 
-        region.Entities.TryAdd(crystal.EntityId, crystal);
+        Assert.True(world.TryAddEntity(crystal));
         calls.Clear();
         await world.DoWorldTickAsync();
-        region.Entities.TryRemove(crystal.EntityId, out _);
+        await world.DestroyEntityAsync(crystal);
 
         Assert.Contains("inside 9,72,8", calls);
         Assert.Equal("idle", world.TickStage);

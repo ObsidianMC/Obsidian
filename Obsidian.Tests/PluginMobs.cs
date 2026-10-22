@@ -84,6 +84,20 @@ public sealed class PluginMobs
         var vanillaData = Metadata(false);
         Assert.Equal([.. vanillaData[..^1], 16, (byte)EntityMetadataType.Boolean, 1, 0xff], Metadata(true));
 
+        // A broadcast serializes the packet once for each way connections write it, and reuses that for the rest.
+        var dataPacket = new SetEntityDataPacket { EntityId = drake.EntityId, Entity = drake };
+        var shared = new SharedPacketBodies(dataPacket);
+        foreach (var modded in new[] { false, true })
+        {
+            var body = Assert.Single(shared.Get(modded));
+            Assert.Same(body, Assert.Single(shared.Get(modded)));
+
+            var own = new List<NetworkBuffer>();
+            NetworkBuffer.SerializeBodies(dataPacket, modded, own);
+            Assert.Equal(own[0].AsSpan(0, own[0].Size).ToArray(), body.AsSpan(0, body.Size).ToArray());
+        }
+        Assert.NotEqual(shared.Get(false)[0].Size, shared.Get(true)[0].Size);
+
         // API modifiers persist in vanilla's attributes format; metadata is transient like SynchedEntityData.
         Assert.True(drake.SetAttributeModifier(
             "minecraft:max_health", "pluginmobs:health", 5, AttributeOperation.Add));
