@@ -429,12 +429,15 @@ public partial class UseItemOnPacket
         // a block of its own kind), and otherwise next to it on the clicked face, where there must be room. Buckets
         // pour next to the clicked block.
         var pouring = block.Is(BlockIds.Water) || block.Is(BlockIds.Lava);
-        var replacesClicked = !pouring && b.CanBeReplaced() && b.RegistryId != block.RegistryId;
+        var upperHit = this.Cursor.Y > 0.5;
+        var replacesClicked = !pouring && (b.CanBeReplaced() && b.RegistryId != block.RegistryId
+            || VanillaPlacement.SlabCanBeReplaced(b, block, true, this.Face, upperHit));
         if (!replacesClicked)
             position += this.Face.ToVector();
 
         var target = await placeLevel.GetBlockAsync(position);
-        if (placeLevel.IsOutsideBuildHeight(position.Y) || !pouring && target?.CanBeReplaced() != true)
+        if (placeLevel.IsOutsideBuildHeight(position.Y) || !pouring && target?.CanBeReplaced() != true
+            && (target is null || !VanillaPlacement.SlabCanBeReplaced(target, block, replacesClicked, this.Face, upperHit)))
         {
             await this.RejectPlacementAsync(player, handSlot);
             return;

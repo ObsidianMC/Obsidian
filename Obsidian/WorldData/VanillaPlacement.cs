@@ -42,6 +42,10 @@ internal static class VanillaPlacement
                 return Waterlog(level, block.WithProperty("facing", Name(looking))
                     .WithProperty("half", upperHalf ? "top" : "bottom"), position);
             case "SlabBlock":
+                // Vanilla SlabBlock.getStateForPlacement: a slab of the same kind already there becomes a double slab.
+                if (SameSlab(level.GetBlock(position), block))
+                    return block.WithProperty("type", "double").WithProperty("waterlogged", false);
+
                 return Waterlog(level, block.WithProperty("type", upperHalf ? "top" : "bottom"), position);
             case "BedBlock":
                 // Vanilla's BedBlock.getStateForPlacement: the head goes in front, the way the player looks, so that
@@ -78,6 +82,29 @@ internal static class VanillaPlacement
 
         return Waterlog(level, block, position);
     }
+
+    /// <summary>
+    /// Vanilla <c>SlabBlock.canBeReplaced</c>: a slab of the same kind fills the other half of a half slab. When the
+    /// placement replaces the clicked block, the click must land on the open side: the top of a bottom slab, or the
+    /// lower side of a horizontal face of a top slab, and so on. Otherwise the placement adjoins it and any non-double slab works.
+    /// </summary>
+    /// <param name="upperHit">Whether the click landed above the middle of the clicked block.</param>
+    public static bool SlabCanBeReplaced(IBlock target, IBlock placing, bool replacingClicked, BlockFace face, bool upperHit)
+    {
+        if (!SameSlab(target, placing) || target.GetProperty("type") == "double")
+            return false;
+
+        if (!replacingClicked)
+            return true;
+
+        var horizontal = face is BlockFace.North or BlockFace.South or BlockFace.East or BlockFace.West;
+        return target.GetProperty("type") == "bottom"
+            ? face == BlockFace.Up || upperHit && horizontal
+            : face == BlockFace.Down || !upperHit && horizontal;
+    }
+
+    private static bool SameSlab(IBlock block, IBlock other) =>
+        block.BlockClass() == "SlabBlock" && other.BlockClass() == "SlabBlock" && block.BaseId == other.BaseId;
 
     // The clicked block's height: the placed block's own when it replaces the clicked one, else the one it's against.
     private static int ClickedBlockY(Vector position, BlockFace face, bool replacesClicked) =>
