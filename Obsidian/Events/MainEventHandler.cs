@@ -1,4 +1,4 @@
-﻿using Obsidian.API.BlockEntities;
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
@@ -541,6 +541,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         API.Data.AttachmentStorage.For(player).Retire();
         await player.SaveAsync();
 
+        await RemoveRiddenVehicleAsync(player);
         await DespawnPlayerAsync(player);
 
         server.BroadcastMessage(string.Format(server.Configuration.Messages.Leave, e.Player.Username));
@@ -561,6 +562,20 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         await player.Level.DestroyEntityAsync(player);
         foreach (var observer in player.Level.GetPlayersInRange(player.Position, float.MaxValue))
             observer.ForgetVisiblePlayer(player);
+    }
+
+    // Like vanilla's PlayerList.remove, the vehicle or mount a leaving player rides alone goes with them: it was saved
+    // with them (see PlayerBase.WriteNbt), so it's removed rather than left empty in the world.
+    private static async ValueTask RemoveRiddenVehicleAsync(IPlayer player)
+    {
+        if (player is not Entities.PlayerBase concrete
+            || concrete.RootVehicle is not { Passengers: [var rider] } root
+            || !ReferenceEquals(rider, concrete)
+            || ReferenceEquals(root, concrete))
+            return;
+
+        concrete.StopRiding();
+        await player.Level.DestroyEntityAsync(root);
     }
 
     [EventPriority(Priority = Priority.Internal)]
@@ -586,6 +601,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             joined.Level.TryRemovePlayer(joined);
             throw new InvalidOperationException($"Player '{joined.Username}' could not be registered as a level entity.");
         }
+
+        if (joined is Entities.PlayerBase concreteJoined)
+            concreteJoined.RestoreSavedVehicle();
 
         server.BroadcastMessage(new ChatMessage
         {

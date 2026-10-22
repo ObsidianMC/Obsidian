@@ -160,6 +160,7 @@ public partial class PlayerBase
 
         this.UnmodeledData = data;
         this.ReadNbt(data);
+        this.savedVehicle = null;
 
         // ReadNbt moved the player into their saved dimension; one saved in a dimension the world doesn't have starts at
         // the spawn.
@@ -168,6 +169,8 @@ public partial class PlayerBase
             Log.OtherDimension(this.Logger, this.Username, dimension.Value!);
             Position = Level.LevelData.SpawnPosition;
         }
+        else
+            this.savedVehicle = this.ReadRootVehicle(data);
 
         if (!Alive)
             Health = 20f;//Player should never load data that has health at 0
@@ -509,6 +512,77 @@ public partial class PlayerBase
             AddSlot(enderItems, this.EnderInventory.GetItem(slot), slot);
 
         tag.Set(enderItems);
+
+        // Like vanilla, a player riding a vehicle saves it with them, so it comes back under them.
+        tag.SetOrRemove("RootVehicle", this.SaveRootVehicle());
+    }
+
+    // The vehicle loaded with this player, until they join and board it (see RestoreSavedVehicle).
+    private Entity? savedVehicle;
+
+    // The vehicle or mount this player is the only passenger of, saved with the seat's attachment (the player's UUID),
+    // or null.
+    private NbtCompound? SaveRootVehicle()
+    {
+        var root = this.RootVehicle;
+        if (ReferenceEquals(root, this) || root.Passengers is not [var rider] || !ReferenceEquals(rider, this)
+            || EntityNbt.Save(root) is not NbtCompound saved)
+            return null;
+
+        saved.Name = "Entity";
+        var tag = new NbtCompound("RootVehicle") { new NbtArray<int>("Attach", EntityNbt.UuidToInts(this.Uuid)) };
+        tag.Set(saved);
+        return tag;
+    }
+
+    // The vehicle or mount saved with this player, when it's still in the world they're loading into.
+    private Entity? ReadRootVehicle(NbtCompound data)
+    {
+        if (!data.TryGetTag<NbtCompound>("RootVehicle", out var root)
+            || !root.TryGetTag<NbtArray<int>>("Attach", out var attach) || attach.Count != 4
+            || EntityNbt.UuidFromInts(attach.GetArray()) != this.Uuid
+            || !root.TryGetTag<NbtCompound>("Entity", out var entity))
+            return null;
+
+        return EntityNbt.Load(entity, this.Level);
+    }
+
+    /// <summary>
+    /// Seats the player in the vehicle or mount they were riding when they left, once they've joined: it's reused when
+    /// it's already in the level (a chunk saved it while they rode), otherwise it's added there, and the player boards
+    /// it when it has room.
+    /// </summary>
+    internal void RestoreSavedVehicle()
+    {
+        var saved = this.savedVehicle;
+        this.savedVehicle = null;
+        if (saved is null || this.Level is not Obsidian.WorldData.AbstractLevel level)
+            return;
+
+        var vehicle = level.Regions.Values.SelectMany(region => region.Entities.Values)
+            .OfType<Entity>()
+            .FirstOrDefault(existing => existing.Uuid == saved.Uuid);
+        if (vehicle is null)
+        {
+            var (chunkX, chunkZ) = Region.ChunkOf(saved.Position);
+            level.LoadRegionByChunk(chunkX, chunkZ);
+            if (!level.TrySpawnEntity(saved))
+            {
+                Log.VehicleNotRestored(this.Logger, this.Username);
+                return;
+            }
+
+            vehicle = saved;
+        }
+
+        var seated = vehicle switch
+        {
+            VehicleEntity boatOrMinecart => boatOrMinecart.Board(this),
+            Mob mount => mount.Mount(this),
+            _ => false
+        };
+        if (!seated)
+            Log.VehicleNotRestored(this.Logger, this.Username);
     }
 
     /// <summary>
@@ -542,7 +616,7 @@ public partial class PlayerBase
                 this.Level.TryAddPlayer(this);
         }
 
-        this.SeenCredits = Read("seenCredits", false);
+        this.SeenCredits = tag.TryGetBool("seenCredits", out var seenCredits) && seenCredits;
         this.ReadRespawnPoint(tag);
         this.portalCooldown = Math.Max(0, Read("PortalCooldown", 0));
         this.TimeSinceRest = Math.Max(0, Read("ObsidianTimeSinceRest", 0));

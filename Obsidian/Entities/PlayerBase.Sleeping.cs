@@ -343,6 +343,6 @@ public partial class PlayerBase
             respawn.TryGetTagValue<string>("dimension", out var dimension) ? dimension : "minecraft:overworld",
             new Vector(point[0], point[1], point[2]),
             respawn.TryGetTagValue<float>("yaw", out var yaw) ? yaw : 0,
-            respawn.TryGetTagValue<bool>("forced", out var forced) && forced);
+            respawn.TryGetBool("forced", out var forced) && forced);
     }
 }
