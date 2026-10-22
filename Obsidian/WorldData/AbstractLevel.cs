@@ -930,6 +930,11 @@ public abstract partial class AbstractLevel : ILevel
             {
                 await r.FlushAsync();
                 await r.DisposeAsync();
+
+                // The flush takes out the entities it saves; any it left (such as those in chunks never generated)
+                // go with the region, so they leave the entity index too.
+                foreach (var (_, entity) in r.Entities)
+                    EntityGrid.Leave(entity);
             }
         }
         finally

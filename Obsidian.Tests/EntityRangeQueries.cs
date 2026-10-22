@@ -58,6 +58,20 @@ public sealed class EntityRangeQueries
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task UnloadingARegionTakesItsUnsavedEntitiesOutOfQueries()
+    {
+        await using var context = TestServerFactory.CreateServer($"entity-range-{Guid.NewGuid():N}");
+        var world = context.World;
+        // In a chunk never generated, so the region's final save doesn't take it.
+        var entity = new Entity { EntityId = 1, Level = world, Position = new VectorD(8, 64, 8) };
+        Assert.True(world.TryAddEntity(entity));
+
+        await world.UnloadRegionAsync(0, 0);
+
+        Assert.Empty(world.GetNonPlayerEntitiesInRange(new VectorD(8, 64, 8), 4));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task RestoredArrowWithAbsentOwnerCompletesItsTick()
     {
         await using var context = TestServerFactory.CreateServer($"arrow-owner-{Guid.NewGuid():N}");
