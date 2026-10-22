@@ -48,6 +48,23 @@ internal sealed class CactusBlockBehavior : IScheduledTickBehavior, IShapeUpdate
 }
 
 /// <summary>
+/// Vanilla <c>BambooSaplingBlock.updateShape</c>: air at once when the sapling can't survive, bamboo when bamboo grows
+/// above it, and otherwise the state is kept.
+/// </summary>
+internal sealed class BambooSaplingBlockBehavior : IShapeUpdateBehavior
+{
+    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    {
+        if (!BlockSurvival.BambooMayStay(level.GetBlock, position))
+            return BlocksRegistry.Air;
+
+        return direction == BlockFace.Up && neighbor.Is(BlockIds.Bamboo)
+            ? BlocksRegistry.GetDefault(BlockIds.Bamboo)
+            : state;
+    }
+}
+
+/// <summary>
 /// Vanilla <c>BambooStalkBlock</c>: the same delayed survival check and break as sugar cane, on the bamboo-plantable
 /// tag beneath it.
 /// </summary>

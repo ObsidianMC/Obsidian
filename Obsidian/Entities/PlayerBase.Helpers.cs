@@ -516,8 +516,10 @@ public partial class PlayerBase
 
         tag.Set(enderItems);
 
-        // Like vanilla, a player riding a vehicle saves it with them, so it comes back under them.
-        tag.SetOrRemove("RootVehicle", this.SaveRootVehicle());
+        // Like vanilla, a player riding a vehicle saves it with them, so it comes back under them. A vehicle still
+        // waiting for the join to restore it stays in the saved data, so leaving before the join doesn't drop it.
+        if (this.savedVehicle is null)
+            tag.SetOrRemove("RootVehicle", this.SaveRootVehicle());
     }
 
     // The vehicle loaded with this player, until they join and board it (see RestoreSavedVehicle).
