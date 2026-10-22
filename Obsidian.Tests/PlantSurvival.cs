@@ -117,6 +117,50 @@ public sealed class PlantSurvival
         Assert.True(world.BlockUpdates.GetBlock(Base + Vector.Up).IsAir);
     }
 
+    [Fact(DisplayName = "Bamboo placed on grass becomes a sapling, and on bamboo a stalk")]
+    public async Task BambooPlacementFollowsVanillaBaseRules()
+    {
+        await using var context = TestServerFactory.CreateServer($"plant-bamboo-place-{Guid.NewGuid():N}");
+        var world = context.World;
+        AddChunks(world);
+        using var ticket = world.AddChunkTicket(0, 0);
+
+        IBlock Place(Vector at)
+        {
+            var placed = new BlockPlaceContext
+            {
+                Level = world.BlockUpdates,
+                Player = null!,
+                Hand = InteractionHand.MainHand,
+                Item = null!,
+                Block = BlocksRegistry.GetDefault(BlockIds.Bamboo),
+                Position = at,
+                ClickedPosition = at + Vector.Down,
+                ClickedFace = BlockFace.Up,
+                ClickedAt = default,
+                ReplacesClicked = false,
+                HorizontalDirection = BlockFace.North,
+                NearestLookDirection = BlockFace.North,
+            };
+            return PlacementBehaviors.For(placed.Block)!.GetStateForPlacement(placed)!;
+        }
+
+        Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.GrassBlock));
+        Assert.Equal(BlockIds.BambooSapling, Place(Base).RegistryId);
+
+        Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.BambooSapling));
+        var onSapling = Place(Base);
+        Assert.Equal(BlockIds.Bamboo, onSapling.RegistryId);
+        Assert.Equal("none", onSapling.GetProperty("leaves"));
+
+        Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.Bamboo).WithProperty("leaves", "large"));
+        Assert.Equal("small", Place(Base).GetProperty("leaves"));
+
+        Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.Stone));
+        Assert.Null(PlacementBehaviors.For(BlocksRegistry.GetDefault(BlockIds.Bamboo))!
+            .GetStateForPlacement(new BlockPlaceContext { Level = world.BlockUpdates, Player = null!, Hand = InteractionHand.MainHand, Item = null!, Block = BlocksRegistry.GetDefault(BlockIds.Bamboo), Position = Base, ClickedPosition = Base, ClickedFace = BlockFace.Up, ClickedAt = default, ReplacesClicked = false, HorizontalDirection = BlockFace.North, NearestLookDirection = BlockFace.North }));
+    }
+
     private static IChunk Held(WorldData.World world) => world.GetLoadedChunk(0, 0)!;
 
     private static void AddChunks(WorldData.World world)
