@@ -1,5 +1,6 @@
 using Obsidian.API;
 using Obsidian.API.Blocks;
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.ChunkData;
@@ -47,6 +48,36 @@ public class ComposterBlocks
         // Cake is always composted: the level rose by one and one cake was used up.
         Assert.Equal("4", context.World.BlockUpdates.GetBlock(position).GetProperty("level"));
         Assert.Equal(1, player.GetHeldItem()?.Count);
+    }
+
+    private static BaseContainer Inventory(World world, Vector position) =>
+        Assert.IsAssignableFrom<ContainerBlockEntity>(
+            world.GetBlockEntityAsync(position).AsTask().GetAwaiter().GetResult()).Inventory;
+
+    // Vanilla's hopper: one item moves per transfer, not the whole stack.
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AHopperAboveMovesOneItemIntoAComposter()
+    {
+        await using var context = TestServerFactory.CreateServer($"composter-hopper-{Guid.NewGuid():N}");
+        var world = context.World;
+        for (var chunkX = -1; chunkX <= 1; chunkX++)
+        {
+            for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
+                WorldBlockEntities.AddEmptyChunk(world, chunkX, chunkZ);
+        }
+        await WorldBlockEntities.JoinAsync(context);
+        Assert.True(BlocksRegistry.TryGetDefault("minecraft:composter", out var composter));
+
+        var hopper = new Vector(8, 66, 8);
+        var target = new Vector(8, 65, 8);
+        await world.SetBlockAsync(target, composter.WithProperty("level", "2"), true);
+        await world.SetBlockAsync(hopper, BlocksRegistry.Hopper.WithProperty("facing", "down"), true);
+        Inventory(world, hopper).SetItem(0, new ItemStack(ItemsRegistry.Get(ItemIds.Cake), 5));
+
+        await world.DoWorldTickAsync();
+
+        Assert.Equal("3", world.BlockUpdates.GetBlock(target).GetProperty("level"));
+        Assert.Equal(4, Inventory(world, hopper)[0]?.Count);
     }
 
     // Vanilla's ComposterBlock.onPlace and tick: a composter that fills to 7 schedules the tick that makes it ready.
