@@ -53,6 +53,24 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             .ToDictionary(type => type.Name, type => type.Value.GetProperty("category").GetString()!);
     }
 
+    // Vanilla animals' floor rules (their own predicates), for a creature's floor in natural and spawner spawns.
+    internal static bool RejectsCreatureFloor(EntityType? type, IBlock floor, BiomeCodec biome) => type switch
+    {
+        EntityType.Mooshroom => !floor.Is(BlockIds.Mycelium),
+        EntityType.Wolf => !TagsRegistry.Block.WolvesSpawnableOn.Entries.Contains(floor.RegistryId),
+        EntityType.Goat => !TagsRegistry.Block.GoatsSpawnableOn.Entries.Contains(floor.RegistryId),
+        EntityType.Rabbit => !TagsRegistry.Block.RabbitsSpawnableOn.Entries.Contains(floor.RegistryId),
+        EntityType.PolarBear => TagsRegistry.Worldgen.Biome.PolarBearsSpawnOnAlternateBlocks.Entries.Contains(biome.Id)
+            ? !TagsRegistry.Block.PolarBearsSpawnableOnAlternate.Entries.Contains(floor.RegistryId)
+            : !TagsRegistry.Block.AnimalsSpawnableOn.Entries.Contains(floor.RegistryId),
+        EntityType.Frog => !TagsRegistry.Block.FrogsSpawnableOn.Entries.Contains(floor.RegistryId),
+        EntityType.Parrot => !TagsRegistry.Block.ParrotsSpawnableOn.Entries.Contains(floor.RegistryId),
+        EntityType.Camel => !floor.Is(BlockIds.Sand),
+        EntityType.Ocelot => !floor.Is(BlockIds.GrassBlock)
+            && !TagsRegistry.Block.Leaves.Entries.Contains(floor.RegistryId),
+        _ => !floor.Is(BlockIds.GrassBlock)
+    };
+
     internal static bool IsAquatic(EntityType type) => type is EntityType.Squid or EntityType.GlowSquid or EntityType.Dolphin or EntityType.Axolotl or EntityType.Tadpole or
         EntityType.Cod or EntityType.Salmon or EntityType.TropicalFish or EntityType.Pufferfish or EntityType.Drowned or EntityType.Guardian or EntityType.ElderGuardian;
     private static SpawnerMob[] LoadFortressSpawns()
@@ -346,22 +364,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             }
             else if (category == "creature")
             {
-                if ((type switch
-                    {
-                        EntityType.Mooshroom => !floor.Is(BlockIds.Mycelium),
-                        EntityType.Wolf => !TagsRegistry.Block.WolvesSpawnableOn.Entries.Contains(floor.RegistryId),
-                        EntityType.Goat => !TagsRegistry.Block.GoatsSpawnableOn.Entries.Contains(floor.RegistryId),
-                        EntityType.Rabbit => !TagsRegistry.Block.RabbitsSpawnableOn.Entries.Contains(floor.RegistryId),
-                        EntityType.PolarBear => TagsRegistry.Worldgen.Biome.PolarBearsSpawnOnAlternateBlocks.Entries.Contains(candidateChunk.GetBiome(x, y, z).Id)
-                            ? !TagsRegistry.Block.PolarBearsSpawnableOnAlternate.Entries.Contains(floor.RegistryId)
-                            : !TagsRegistry.Block.AnimalsSpawnableOn.Entries.Contains(floor.RegistryId),
-                        EntityType.Frog => !TagsRegistry.Block.FrogsSpawnableOn.Entries.Contains(floor.RegistryId),
-                        EntityType.Parrot => !TagsRegistry.Block.ParrotsSpawnableOn.Entries.Contains(floor.RegistryId),
-                        EntityType.Camel => !floor.Is(BlockIds.Sand),
-                        EntityType.Ocelot => !floor.Is(BlockIds.GrassBlock)
-                            && !TagsRegistry.Block.Leaves.Entries.Contains(floor.RegistryId),
-                        _ => !floor.Is(BlockIds.GrassBlock)
-                    }) ||
+                if (RejectsCreatureFloor(type, floor, candidateChunk.GetBiome(x, y, z)) ||
                     Math.Max(block, Math.Max(0, sky - (!generation && level.DayTime is >= 12000 and < 23000 ? 11 : 0))) <= 8)
                     continue;
             }

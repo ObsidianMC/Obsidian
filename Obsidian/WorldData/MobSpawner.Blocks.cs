@@ -1,3 +1,4 @@
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.Entities.Factories;
@@ -61,7 +62,7 @@ internal sealed partial class MobSpawner
                 (mob.Hostile || mob is Zombie or Skeleton or Creeper))
                 continue;
             if (terrain.GetBlock(blockPoint) is not { } feet
-                || (plugin is null && IsAquatic(type) ? !feet.Is(BlockIds.Water) : !FluidState.Of(feet).IsEmpty)
+                || plugin is null && !FitsVanillaPlacement(type, feet, terrain.GetBlock(blockPoint + Vector.Down), chunk.GetBiome(blockPoint.X, blockPoint.Y, blockPoint.Z))
                 || !terrain.IsFree(mob.Dimension.CreateBBFromPosition(point)))
                 continue;
             var blockLight = chunk.GetLightLevel(blockPoint.X, blockPoint.Y, blockPoint.Z, LightType.Block);
@@ -116,4 +117,20 @@ internal sealed partial class MobSpawner
     }
     private static int ReadShort(NbtCompound tag, string name, int fallback, int minimum, int maximum) =>
         Math.Clamp(tag.TryGetTagValue<short>(name, out var value) ? value : fallback, minimum, maximum);
+
+    // Vanilla's placement predicate for a spawner's mob (BaseSpawner.serverTick: SpawnPlacements.isSpawnPositionOk):
+    // aquatic mobs need water at their feet; the rest need no fluid at their feet, a solid floor that is not liquid,
+    // and a creature's own floor rule. Ghasts and bats fly, so they skip the floor.
+    internal static bool FitsVanillaPlacement(EntityType type, IBlock feet, IBlock? floor, BiomeCodec biome)
+    {
+        if (IsAquatic(type))
+            return feet.Is(BlockIds.Water);
+        if (!FluidState.Of(feet).IsEmpty)
+            return false;
+        if (type is EntityType.Ghast or EntityType.Bat)
+            return true;
+        if (floor is null || floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0)
+            return false;
+        return SpawnCategory(type) != "creature" || !RejectsCreatureFloor(type, floor, biome);
+    }
 }
