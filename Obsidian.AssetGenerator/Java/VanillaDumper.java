@@ -121,6 +121,7 @@ public final class VanillaDumper {
         dumper.dumpTntBlocks();
         dumper.dumpItemUseOnClasses();
         dumper.dumpItemUseClasses();
+        dumper.dumpItemClickClasses();
         dumper.dumpHoeTillables();
         dumper.dumpItemPlacedBlocks();
         dumper.dumpItemAttachments();
@@ -808,6 +809,70 @@ public final class VanillaDumper {
         }
 
         Json.write(output.resolve("item_use_classes.json"), classes, false);
+    }
+
+    /**
+     * {@code item_stacked_on_classes.json}, {@code item_other_stacked_on_classes.json} and
+     * {@code item_container_fit_classes.json}: the Mojang class that supplies each item's
+     * {@code overrideStackedOnOther}, {@code overrideOtherStackedOnMe} and {@code canFitInsideContainerItems}
+     * overrides, which the click path and bundles consult. Items inheriting the base implementation are omitted.
+     */
+    private void dumpItemClickClasses() throws IOException {
+        var item = "net.minecraft.world.item.Item";
+        var stack = "net.minecraft.world.item.ItemStack";
+        var slot = "net.minecraft.world.inventory.Slot";
+        var action = "net.minecraft.world.inventory.ClickAction";
+        var player = "net.minecraft.world.entity.player.Player";
+        var access = "net.minecraft.world.entity.SlotAccess";
+        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+
+        writeItemOwners("item_stacked_on_classes.json", itemRegistry, mojang.method(item, "overrideStackedOnOther", stack, slot, action, player));
+        writeItemOwners("item_other_stacked_on_classes.json", itemRegistry, mojang.method(item, "overrideOtherStackedOnMe", stack, stack, slot, action, player, access));
+        writeItemOwners("item_container_fit_classes.json", itemRegistry, mojang.method(item, "canFitInsideContainerItems"));
+        writeBlockItemBlocks(itemRegistry);
+    }
+
+    /**
+     * {@code item_container_fit_blocks.json}: the Mojang class of the block each {@code BlockItem} that doesn't fit
+     * in container items places, which decides vanilla's {@code BlockItem.canFitInsideContainerItems} override.
+     */
+    private void writeBlockItemBlocks(Object itemRegistry) throws IOException {
+        var blockItem = mojang.type("net.minecraft.world.item.BlockItem");
+        var getBlock = mojang.method("net.minecraft.world.item.BlockItem", "getBlock");
+        var blocks = new TreeMap<String, String>();
+
+        for (var entry : (Iterable<?>) itemRegistry) {
+            if (!blockItem.isInstance(entry))
+                continue;
+
+            var block = Mojang.call(getBlock, entry);
+            blocks.put(key(itemRegistry, entry), mojang.className(block.getClass().getName()));
+        }
+
+        Json.write(output.resolve("item_block_classes.json"), blocks, false);
+    }
+
+    private void writeItemOwners(String file, Object itemRegistry, java.lang.reflect.Method baseMethod) throws IOException {
+        var parameters = baseMethod.getParameterTypes();
+        var classes = new TreeMap<String, String>();
+        var base = mojang.type("net.minecraft.world.item.Item");
+
+        for (var entry : (Iterable<?>) itemRegistry) {
+            var owner = entry.getClass();
+            while (owner != null) {
+                try {
+                    owner.getDeclaredMethod(baseMethod.getName(), parameters);
+                    break;
+                } catch (NoSuchMethodException ignored) {
+                    owner = owner.getSuperclass();
+                }
+            }
+
+            if (owner != null && owner != base)
+                classes.put(key(itemRegistry, entry), mojang.className(owner.getName()));
+        }
+
+        Json.write(output.resolve(file), classes, false);
     }
 
     /**

@@ -65,6 +65,9 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     /// </remarks>
     internal NbtCompound? UnmodeledComponents { get; init; }
 
+    // The bundle slot the player selected (vanilla's selected item index); -1 when none. Not saved or compared.
+    internal int BundleSelection { get; set; } = -1;
+
     public ItemStack(Item holder, int count = 1, params IEnumerable<DataComponent> components)
     {
         this.Holder = holder;
@@ -79,6 +82,7 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
             this.Remove(type);
 
         this.UnmodeledComponents = ComponentCopies.Nbt(item.UnmodeledComponents);
+        this.BundleSelection = item.BundleSelection;
     }
 
     /// <summary>
