@@ -182,6 +182,30 @@ public sealed class BubbleColumns
         return packet;
     }
 
+    [Fact(DisplayName = "A bubble column at a survival player's eye refills air, while plain water drains it")]
+    public async Task BubbleColumnAtEyeRefillsAir()
+    {
+        await using var context = TestServerFactory.CreateServer($"bubble-breath-{Guid.NewGuid():N}");
+        var world = context.World;
+        AddChunks(world);
+
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Diver");
+        player.GameMode = GameMode.Survival;
+        player.Position = new VectorD(8.5, Ground + 1, 8.5);
+        for (var y = Ground + 1; y <= Ground + 3; y++)
+            world.BlockUpdates.SetBlock(new Vector(8, y, 8), BlocksRegistry.Water, BlockUpdateFlags.All);
+
+        // The eye is at 1.62 above the feet, inside the block at Ground + 2, which holds water here.
+        player.Air = 100;
+        await player.TickAsync();
+        Assert.Equal(99, player.Air);
+
+        world.BlockUpdates.SetBlock(new Vector(8, Ground + 2, 8), BlocksRegistry.BubbleColumn.WithProperty("drag", "false"), BlockUpdateFlags.All);
+        player.Air = 100;
+        await player.TickAsync();
+        Assert.Equal(104, player.Air);
+    }
+
     private static void AddChunks(WorldData.World world)
     {
         for (var chunkX = -1; chunkX <= 1; chunkX++)
