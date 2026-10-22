@@ -177,6 +177,10 @@ internal static class BlockSurvival
         return (below.Is(BlockIds.Cactus) || sand.Contains(below)) && !blockAt(position + Vector.Up).IsLiquid;
     }
 
+    /// <summary>Vanilla <c>BambooStalkBlock.canSurvive</c>: the block beneath is on the bamboo-plantable tag.</summary>
+    internal static bool BambooMayStay(Func<Vector, IBlock> blockAt, Vector position) =>
+        bambooPlantableOn.Contains(blockAt(position + Vector.Down));
+
     private static bool CactusFlowerMayPlaceOn(IBlock below) =>
         below.RegistryId is BlockIds.Cactus or BlockIds.Farmland || below.IsTopCenterSturdy();
 

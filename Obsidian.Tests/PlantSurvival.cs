@@ -29,6 +29,8 @@ public sealed class PlantSurvival
         Assert.Same(ShapeUpdateBehaviors.SugarCaneBlock, BlocksRegistry.GetShapeUpdateBehavior(BlockIds.SugarCane));
         Assert.Same(TickBehaviors.CactusBlock, BlocksRegistry.GetTickBehavior(BlockIds.Cactus));
         Assert.Same(ShapeUpdateBehaviors.CactusBlock, BlocksRegistry.GetShapeUpdateBehavior(BlockIds.Cactus));
+        Assert.Same(TickBehaviors.BambooStalkBlock, BlocksRegistry.GetTickBehavior(BlockIds.Bamboo));
+        Assert.Same(ShapeUpdateBehaviors.BambooStalkBlock, BlocksRegistry.GetShapeUpdateBehavior(BlockIds.Bamboo));
     }
 
     [Fact(DisplayName = "Breaking the bottom sugar cane breaks the stalks above it", Timeout = TestServerFactory.TestTimeout)]
@@ -45,6 +47,27 @@ public sealed class PlantSurvival
         Held(world).SetBlock(Base + Vector.Down + Vector.East, BlocksRegistry.GetDefault(BlockIds.Water));
         for (var height = 0; height < 3; height++)
             Held(world).SetBlock(Base + new Vector(0, height, 0), BlocksRegistry.GetDefault(BlockIds.SugarCane));
+
+        Assert.True(world.BlockUpdates.RemoveBlock(Base));
+        for (var tick = 0; tick < 3; tick++)
+            await world.DoWorldTickAsync();
+
+        Assert.True(world.BlockUpdates.GetBlock(Base).IsAir);
+        Assert.True(world.BlockUpdates.GetBlock(Base + Vector.Up).IsAir);
+        Assert.True(world.BlockUpdates.GetBlock(Base + new Vector(0, 2, 0)).IsAir);
+    }
+
+    [Fact(DisplayName = "Breaking the bottom bamboo breaks the stalks above it", Timeout = TestServerFactory.TestTimeout)]
+    public async Task BreakingTheBottomBambooBreaksTheStack()
+    {
+        await using var context = TestServerFactory.CreateServer($"plant-bamboo-{Guid.NewGuid():N}");
+        var world = context.World;
+        AddChunks(world);
+        using var ticket = world.AddChunkTicket(0, 0);
+
+        Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.Sand));
+        for (var height = 0; height < 3; height++)
+            Held(world).SetBlock(Base + new Vector(0, height, 0), BlocksRegistry.GetDefault(BlockIds.Bamboo));
 
         Assert.True(world.BlockUpdates.RemoveBlock(Base));
         for (var tick = 0; tick < 3; tick++)

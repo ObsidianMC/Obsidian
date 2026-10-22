@@ -46,3 +46,26 @@ internal sealed class CactusBlockBehavior : IScheduledTickBehavior, IShapeUpdate
             level.DestroyBlock(position, dropItems: true);
     }
 }
+
+/// <summary>
+/// Vanilla <c>BambooStalkBlock</c>: the same delayed survival check and break as sugar cane, on the bamboo-plantable
+/// tag beneath it.
+/// </summary>
+internal sealed class BambooStalkBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
+{
+    /// <summary>Vanilla's <c>updateShape</c>: schedules a tick at delay 1 when the stalk can't survive, and keeps its state.</summary>
+    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    {
+        if (!BlockSurvival.BambooMayStay(level.GetBlock, position))
+            level.ScheduleTick(position, state, 1);
+
+        return state;
+    }
+
+    /// <summary>Vanilla's <c>tick</c>: a stalk that can't survive breaks and drops itself.</summary>
+    public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
+    {
+        if (!BlockSurvival.BambooMayStay(level.GetBlock, position))
+            level.DestroyBlock(position, dropItems: true);
+    }
+}

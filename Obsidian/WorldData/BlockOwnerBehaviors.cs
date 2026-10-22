@@ -70,6 +70,8 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior SugarCaneBlock { get; } = new SugarCaneBlockBehavior();
 
     internal static IScheduledTickBehavior CactusBlock { get; } = new CactusBlockBehavior();
+
+    internal static IScheduledTickBehavior BambooStalkBlock { get; } = new BambooStalkBlockBehavior();
 }
 
 /// <summary>
@@ -93,6 +95,8 @@ internal static class ShapeUpdateBehaviors
     internal static IShapeUpdateBehavior SugarCaneBlock { get; } = new SugarCaneBlockBehavior();
 
     internal static IShapeUpdateBehavior CactusBlock { get; } = new CactusBlockBehavior();
+
+    internal static IShapeUpdateBehavior BambooStalkBlock { get; } = new BambooStalkBlockBehavior();
 }
 
 /// <summary>
