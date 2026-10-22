@@ -144,6 +144,15 @@ public partial class UseItemOnPacket
             }
         }
 
+        // Vanilla's composter: a compostable item goes in from the held hand, and bone meal comes out when it's ready.
+        if (!player.Sneaking
+            && player.Level is AbstractLevel composterLevel
+            && await composterLevel.UseComposterAsync(player, position, b, handSlot))
+        {
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
+        }
+
         // Vanilla's redstone components react to being used with the main hand: levers, buttons, repeaters,
         // comparators and dust. Adventure mode can't change repeaters, comparators or dust.
         if (!player.Sneaking
