@@ -246,6 +246,9 @@ public partial class PlayerBase
             EntityId = EntityId,
             Entity = this
         });
+
+        // Vanilla's placeNewPlayer and respawn send the selected hotbar slot, which the client otherwise starts at 0.
+        await this.QueuePacketAsync(new SetHeldSlotPacket((byte)(CurrentHeldItemSlot - HotbarStart)));
     }
 
     // Vanilla grows the player's box by 1 horizontally and 0.5 vertically to find items to pick up; while riding, it

@@ -4,6 +4,7 @@ using Obsidian.API.Registries;
 using Obsidian.Registries;
 using Obsidian.Entities;
 
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Tests.Fakes;
 using System;
 using System.Linq;
@@ -107,6 +108,27 @@ public sealed class PlayerSaveState
     }
 
     // Saves the player the way leaving does, takes their vehicle out of the world, then loads them as a joining player.
+    [Fact]
+    public async Task RejoinSendsTheSavedHeldSlotToTheClient()
+    {
+        await using var context = TestServerFactory.CreateServer($"held-slot-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Holder");
+        await player.LoadAsync(loadFromPersistentWorld: false);
+        player.CurrentHeldItemSlot = 5;
+        await player.SaveAsync();
+
+        var client = new TestClient(context.Server);
+        var returning = new Obsidian.Entities.Player(player.Uuid, player.Username, client, context.World) { Server = context.Server };
+        await returning.LoadAsync(loadFromPersistentWorld: false);
+        Assert.Equal(41, returning.CurrentHeldItemSlot);
+
+        // The join's player-info step, which sends the selected hotbar slot the client starts from.
+        await returning.SendPlayerInfoAsync();
+
+        var held = Assert.Single(client.SentPackets.OfType<SetHeldSlotPacket>());
+        Assert.Equal(5, held.Slot);
+    }
+
     private static async Task<Obsidian.Entities.Player> LeaveAndReturnAsync(RealServerContext context, Obsidian.Entities.Player player)
     {
         await player.SaveAsync();
