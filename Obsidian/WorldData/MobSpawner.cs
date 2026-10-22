@@ -6,6 +6,7 @@ using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
 using Obsidian.Providers.IntProviders;
+using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators;
 using System.Reflection;
 using System.Text.Json;
@@ -325,7 +326,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
 
             if (feet == null || floor == null ||
                 placement is null && (aquatic ? !feet.Is(BlockIds.Water) :
-                    feet.IsLiquid || type is not EntityType.Ghast and not EntityType.Bat && (floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0)))
+                    !FluidState.Of(feet).IsEmpty || type is not EntityType.Ghast and not EntityType.Bat && (floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0)))
                 continue;
 
             // Made once the blocks fit, as vanilla makes it only for a valid position: building a mob is costly.

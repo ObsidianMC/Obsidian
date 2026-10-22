@@ -1,3 +1,4 @@
+using Obsidian.Entities.AI;
 using Obsidian.API.Inventory;
 
 namespace Obsidian.Entities;
@@ -42,6 +43,11 @@ public sealed partial class FallingBlock : Entity
         {
             var support = await Level.GetBlockAsync(new Vector((int)Math.Floor(next.X), cell, (int)Math.Floor(next.Z)));
             if (support is null || support.HasEmptyCollision())
+                continue;
+
+            // Only a support whose top the feet have passed stops the fall; a partial-height one below may not yet.
+            var boxes = BlockCollisionShapes.Get(support);
+            if (boxes.Count == 0 || next.Y > cell + boxes.Max(box => box.Max.Y))
                 continue;
 
             await LandAsync(new Vector((int)Math.Floor(next.X), cell + 1, (int)Math.Floor(next.Z)));

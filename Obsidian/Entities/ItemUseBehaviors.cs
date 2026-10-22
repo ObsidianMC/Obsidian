@@ -147,6 +147,9 @@ internal static class ItemUseBehaviors
             };
             potion.Motion += player.CombatMotion;
 
+            if (!level.TrySpawnEntity(potion))
+                return;
+
             level.PacketBroadcaster.BroadcastToLevelInRange(level, (Vector)player.Position.Floor(), new SoundPacket
             {
                 SoundLocation = "minecraft:entity.splash_potion.throw",
@@ -157,7 +160,6 @@ internal static class ItemUseBehaviors
                 Seed = Globals.Random.NextInt64()
             });
 
-            level.SpawnEntity(potion);
             await ThrowableItemUse.ConsumeAsync(player, hand, stack);
         }
     }
@@ -190,6 +192,9 @@ internal static class ItemUseBehaviors
                 1.5f);
             snowball.Motion += player.CombatMotion;
 
+            if (!level.TrySpawnEntity(snowball))
+                return;
+
             level.PacketBroadcaster.BroadcastToLevelInRange(level, (Vector)player.Position.Floor(), new SoundPacket
             {
                 SoundLocation = "minecraft:entity.snowball.throw",
@@ -200,7 +205,6 @@ internal static class ItemUseBehaviors
                 Seed = Globals.Random.NextInt64()
             });
 
-            level.SpawnEntity(snowball);
             await ThrowableItemUse.ConsumeAsync(player, hand, stack);
         }
     }

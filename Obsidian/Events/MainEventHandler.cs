@@ -189,7 +189,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
                     break;
                 }
-            case BlockIds.ShulkerBox:
+            case var shulker when TagsRegistry.Block.ShulkerBoxes.Entries.Contains(shulker):
                 {
                     await player.QueuePacketAsync(new BlockEventPacket
                     {
@@ -422,11 +422,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         _ => null
     };
 
-    private static bool HasViewers(BaseContainer container)
-    {
-        lock (container.Viewers)
-            return container.Viewers.Count > 0;
-    }
+    private static bool HasViewers(BaseContainer container) => container.GetViewers().Length > 0;
 
     private static void PlayChestLidSound(AbstractLevel level, Vector position, string sound) =>
         level.BlockUpdates.PlaySound(position, sound, 0.5f, Globals.Random.NextSingle() * 0.1f + 0.9f);

@@ -101,7 +101,7 @@ internal sealed class Switch(int? pressedFor, bool pressedByArrows, string sound
     public override bool Use(LevelBlockUpdates level, Vector position, IBlock state, IPlayer player, bool mayBuild)
     {
         if (pressedFor is null)
-            this.Turn(level, position, state, !IsOn(state), player: null);
+            this.Turn(level, position, state, !IsOn(state), player);
         else if (!IsOn(state))
             this.Turn(level, position, state, true, player);
 

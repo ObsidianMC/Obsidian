@@ -444,7 +444,7 @@ internal sealed class ChunkBuilder
     /// Whether the chunks written keep their final heightmaps (see <see cref="Chunk.FinalHeightmaps"/>). Decorations only
     /// write into chunks that are still generating, but post-processing may spread fluids into complete ones.
     /// </param>
-    private WorldGenRegion CreateRegion(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ, bool trackHeightmaps) =>
+    internal WorldGenRegion CreateRegion(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ, bool trackHeightmaps) =>
         new(area, chunkX, chunkZ, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height, this.settings.SeaLevel, this.biomeSource,
             this.regionRandom.At(chunkX << 4, 0, chunkZ << 4), trackHeightmaps);
 

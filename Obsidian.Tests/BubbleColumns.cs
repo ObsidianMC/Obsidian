@@ -101,6 +101,24 @@ public sealed class BubbleColumns
         Assert.True(center.BlockTicks.Contains(source, BlocksRegistry.MagmaBlock.UnlocalizedName));
     }
 
+    [Fact(DisplayName = "Worldgen writing magma marks its position for post-processing without a manual mark")]
+    public void WorldGenWritesMagmaMarksPostProcessing()
+    {
+        var dimension = MojangDimension.Overworld;
+        var builder = new ChunkBuilder(dimension, 12345L, generateStructures: false);
+        var area = new Dictionary<(int X, int Z), IChunk>();
+        for (var dx = -1; dx <= 1; dx++)
+            for (var dz = -1; dz <= 1; dz++)
+                area[(dx, dz)] = new Chunk(dx, dz, dimension.MinY, dimension.Height);
+
+        var center = (Chunk)area[(0, 0)];
+        var source = new Vector(8, Ground, 8);
+        var region = builder.CreateRegion(area, 0, 0, trackHeightmaps: false);
+        Assert.True(region.SetBlock(source, BlocksRegistry.MagmaBlock));
+
+        Assert.Contains(source, center.PostProcessing);
+    }
+
     [Fact(DisplayName = "Replacing the block beneath existing water with magma starts a downward column")]
     public async Task MagmaPlacedUnderExistingWaterStartsColumn()
     {

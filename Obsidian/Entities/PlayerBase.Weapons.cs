@@ -223,15 +223,16 @@ public partial class PlayerBase
 
     /// <summary>
     /// Vanilla's <c>Entity.getHandHoldingItemAngle</c> for a player: where a held item sits, half a block out from the
-    /// body, on the arm that holds it (the main arm when only the main hand holds it, else the other).
+    /// body, on the arm that holds it (the other arm only when just the off hand holds it, else the main arm).
     /// </summary>
     internal VectorD HandHoldingItemAngle(Item item)
     {
         var mainHandHolds = Inventory.GetItem(CurrentHeldItemSlot) is { Count: > 0 } main && main.Is(item);
-        var offhand = Inventory.GetItem(45);
-        var holdingArm = mainHandHolds && !(offhand is { Count: > 0 } && offhand.Is(item))
-            ? ClientInformation.MainHand
-            : ClientInformation.MainHand == HumanoidArm.Right ? HumanoidArm.Left : HumanoidArm.Right;
+        var offHandHolds = Inventory.GetItem(45) is { Count: > 0 } off && off.Is(item);
+        // Vanilla Entity.getHandHoldingItemAngle: the opposite arm only when the off hand alone holds the item.
+        var holdingArm = offHandHolds && !mainHandHolds
+            ? (ClientInformation.MainHand == HumanoidArm.Right ? HumanoidArm.Left : HumanoidArm.Right)
+            : ClientInformation.MainHand;
         var yaw = (Yaw.Degrees + (holdingArm == HumanoidArm.Right ? 80 : -80)) * Math.PI / 180;
         return new VectorD(-Math.Sin(yaw), 0, Math.Cos(yaw)) * 0.5;
     }

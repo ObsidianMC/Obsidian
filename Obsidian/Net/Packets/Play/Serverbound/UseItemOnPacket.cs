@@ -480,8 +480,10 @@ public partial class UseItemOnPacket
                 }
 
                 if (!onWall && placedState is not null)
-                    placedState = VanillaPlacement.GetState(placeLevel.BlockUpdates, placedState, position, player,
-                        this.Face, this.Cursor, replacesClicked);
+                    placedState = placedState.BlockClass() == "StandingSignBlock"
+                        ? Signs.GetStandingState(placeLevel.BlockUpdates, placedState, position, player)
+                        : VanillaPlacement.GetState(placeLevel.BlockUpdates, placedState, position, player,
+                            this.Face, this.Cursor, replacesClicked);
             }
 
             if (placedState is null || placeLevel.IsOutsideBuildHeight(position.Y + 1) && placedState.BlockClass() == "DoorBlock")

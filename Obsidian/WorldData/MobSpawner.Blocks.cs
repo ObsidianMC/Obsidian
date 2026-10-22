@@ -2,6 +2,7 @@ using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.Entities.Factories;
 using Obsidian.Nbt;
+using Obsidian.WorldData.Fluids;
 
 namespace Obsidian.WorldData;
 
@@ -60,7 +61,7 @@ internal sealed partial class MobSpawner
                 (mob.Hostile || mob is Zombie or Skeleton or Creeper))
                 continue;
             if (terrain.GetBlock(blockPoint) is not { } feet
-                || (plugin is null && IsAquatic(type) ? !feet.Is(BlockIds.Water) : feet.IsLiquid)
+                || (plugin is null && IsAquatic(type) ? !feet.Is(BlockIds.Water) : !FluidState.Of(feet).IsEmpty)
                 || !terrain.IsFree(mob.Dimension.CreateBBFromPosition(point)))
                 continue;
             var blockLight = chunk.GetLightLevel(blockPoint.X, blockPoint.Y, blockPoint.Z, LightType.Block);
