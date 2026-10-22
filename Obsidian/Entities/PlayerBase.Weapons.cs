@@ -52,6 +52,31 @@ public partial class PlayerBase
         CancelEating();
     }
 
+    private void PlayEquipSound(ItemStack item)
+    {
+        var sound = item.GetComponent<EquippableDataComponent>(DataComponentType.Equippable)?.EquipSound.ResourceLocation;
+        if (sound is null)
+        {
+            var component = CombatItems.Component(item, "equippable");
+            if (component.ValueKind == JsonValueKind.Object && component.TryGetProperty("equip_sound", out var name)
+                && name.ValueKind == JsonValueKind.String)
+                sound = name.GetString();
+        }
+
+        if (sound is null || Silent)
+            return;
+
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SoundPacket
+        {
+            SoundLocation = sound,
+            SoundPosition = new SoundPosition(Position.X, Position.Y, Position.Z),
+            Category = SoundCategory.Players,
+            Volume = 1,
+            Pitch = 1,
+            Seed = Globals.Random.NextInt64()
+        });
+    }
+
     internal async ValueTask StartUsingItemAsync(InteractionHand hand)
     {
         if (!Alive || Respawning || GameMode == GameMode.Spectator || usingWeapon != null || eatingItem != null) return;
@@ -63,9 +88,13 @@ public partial class PlayerBase
         {
             var existing = Inventory.GetItem(armorSlot);
             if (CombatItems.EnchantmentLevel(existing, EnchantmentsRegistry.BindingCurse) > 0 && GameMode != GameMode.Creative) return;
-            Inventory.SetItem(armorSlot, new ItemStack(item));
+            var equipped = new ItemStack(item);
+            Inventory.SetItem(armorSlot, equipped);
             Inventory.RemoveItem(slot, 1);
             if (existing is { Count: > 0 } && !existing.IsAir) Inventory.SetItem(slot, existing);
+            // Vanilla's LivingEntity.onEquipItem: a changed equipment slot plays its equip sound to everyone nearby.
+            if (!equipped.Equals(existing))
+                PlayEquipSound(equipped);
             await SyncInventorySlotAsync(slot);
             await SyncInventorySlotAsync(armorSlot);
             return;

@@ -178,6 +178,7 @@ public partial class UseItemOnPacket
 
             if (sound is not null)
             {
+                // Vanilla's setOpen plays with the acting player as the source, so their own client plays it and nobody else's.
                 doorLevel.PacketBroadcaster.BroadcastToLevelInRange(doorLevel, position, new SoundPacket
                 {
                     SoundLocation = sound,
@@ -186,7 +187,7 @@ public partial class UseItemOnPacket
                     Volume = 1,
                     Pitch = 0.9f + Random.Shared.NextSingle() * 0.1f,
                     Seed = Random.Shared.NextInt64()
-                });
+                }, player.EntityId);
                 player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
                 return;
             }

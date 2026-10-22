@@ -164,7 +164,7 @@ internal sealed class Switch(int? pressedFor, bool pressedByArrows, string sound
 
         if (pressedFor is not int time)
         {
-            level.PlaySound(position, "minecraft:block.lever.click", 0.3f, on ? 0.6f : 0.5f);
+            level.PlaySound(position, "minecraft:block.lever.click", 0.3f, on ? 0.6f : 0.5f, player);
             return;
         }
 

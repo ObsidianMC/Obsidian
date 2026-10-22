@@ -130,11 +130,13 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             ? [chest.First, chest.Second]
             : [e.Container];
 
+        // Vanilla's ContainerOpenersCounter: the lid sound plays when the last opener leaves.
+        var lastOpener = !HasViewers(e.Container);
         foreach (var part in parts.OfType<Container>())
-            await AnimateCloseAsync(player, part.BlockPosition);
+            await AnimateCloseAsync(player, part.BlockPosition, lastOpener);
     }
 
-    private static async ValueTask AnimateCloseAsync(IPlayer player, Vector position)
+    private static async ValueTask AnimateCloseAsync(IPlayer player, Vector position, bool lastOpener)
     {
         var block = await player.Level.GetBlockAsync(position);
 
@@ -157,6 +159,8 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestClose)
                     //    .WithSoundPosition(position.SoundPosition)
                     //    .Build());
+                    if (lastOpener && player.Level is AbstractLevel level)
+                        PlayChestLidSound(level, position, "minecraft:block.chest.close");
 
                     break;
                 }
@@ -180,6 +184,8 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelClose)
                     //    .WithSoundPosition(position.SoundPosition)
                     //    .Build());
+                    if (lastOpener && player.Level is AbstractLevel barrelLevel)
+                        PlayChestLidSound(barrelLevel, position, "minecraft:block.barrel.close");
 
                     break;
                 }
@@ -196,6 +202,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxClose)
                     //    .WithSoundPosition(position.SoundPosition)
                     //    .Build());
+
+                    if (lastOpener && player.Level is AbstractLevel shulkerLevel)
+                        PlayChestLidSound(shulkerLevel, position, "minecraft:block.shulker_box.close");
 
                     break;
                 }
@@ -390,13 +399,37 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             }
 
             if (container is not null)
+            {
+                var lidSound = LidOpenSound(type);
+                var lidOpening = lidSound is not null && !HasViewers(container);
                 await player.OpenInventoryAsync(container);
+                // Vanilla's ContainerOpenersCounter: the lid sound plays when the first opener arrives.
+                if (lidOpening && lidSound is not null && player.Level is AbstractLevel openLevel)
+                    PlayChestLidSound(openLevel, blockPosition, lidSound);
+            }
         }
         else
         {
             //TODO check for other
         }
     }
+
+    private static string? LidOpenSound(int type) => type switch
+    {
+        BlockIds.Chest or BlockIds.TrappedChest => "minecraft:block.chest.open",
+        BlockIds.Barrel => "minecraft:block.barrel.open",
+        _ when TagsRegistry.Block.ShulkerBoxes.Entries.Contains(type) => "minecraft:block.shulker_box.open",
+        _ => null
+    };
+
+    private static bool HasViewers(BaseContainer container)
+    {
+        lock (container.Viewers)
+            return container.Viewers.Count > 0;
+    }
+
+    private static void PlayChestLidSound(AbstractLevel level, Vector position, string sound) =>
+        level.BlockUpdates.PlaySound(position, sound, 0.5f, Globals.Random.NextSingle() * 0.1f + 0.9f);
 
     private static Container NewChest(IPlayer player, Vector position) => new()
     {
