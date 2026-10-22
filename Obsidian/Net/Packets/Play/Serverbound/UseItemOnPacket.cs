@@ -555,7 +555,8 @@ public partial class UseItemOnPacket
             position,
             block,
             BlockUpdateFlags.All,
-            current => (pouring || current.CanBeReplaced())
+            current => (pouring || current.CanBeReplaced()
+                    || VanillaPlacement.SlabCanBeReplaced(current, block, replacesClicked, this.Face, upperHit))
                 && ReferenceEquals(player.Inventory.GetItem(handSlot), currentItem)
                 && currentItem.Count > 0,
             placement);
