@@ -381,17 +381,31 @@ public abstract partial class AbstractLevel : ILevel
     public IRegion? GetRegionForLocation(VectorD location)
     {
         var (chunkX, chunkZ) = Region.ChunkOf(location);
-        long key = NumericsHelper.IntsToLong(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
-        Regions.TryGetValue(key, out var region);
-        return region;
+        return this.GetRegionForChunk(chunkX, chunkZ);
     }
 
     public IRegion? GetRegionForChunk(int chunkX, int chunkZ)
     {
-        long value = NumericsHelper.IntsToLong(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
+        long key = NumericsHelper.IntsToLong(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
+        var version = Volatile.Read(ref this.regionsVersion);
+        if (lastRegion is RegionLookup last && last.Key == key && last.Version == version && ReferenceEquals(last.Level, this))
+            return last.Region;
 
-        return Regions.TryGetValue(value, out var region) ? region : null;
+        if (!Regions.TryGetValue(key, out var region))
+            return null;
+
+        lastRegion = new RegionLookup(this, key, version, region);
+        return region;
     }
+
+    // The region a thread last looked up, trusted while the level's regions are the ones it was looked up among:
+    // blocks and chunks are looked up hundreds of thousands of times a tick, nearly always in the region looked up last.
+    [ThreadStatic] private static RegionLookup? lastRegion;
+
+    // Changed whenever a region is added or removed (see GetRegionForChunk).
+    private int regionsVersion;
+
+    private sealed record RegionLookup(AbstractLevel Level, long Key, int Version, IRegion Region);
 
     public IRegion? GetRegionForChunk(Vector location) => GetRegionForChunk(location.X, location.Z);
 
@@ -1035,7 +1049,10 @@ public abstract partial class AbstractLevel : ILevel
             };
 
             if (this.Regions.TryAdd(value, region))
+            {
+                Interlocked.Increment(ref this.regionsVersion);
                 _ = region.InitAsync();
+            }
             else
             {
                 // Another thread added the region first; discard our copy and return existing
@@ -1068,7 +1085,8 @@ public abstract partial class AbstractLevel : ILevel
                 if (r is Region concrete)
                     concrete.RetireLighting();
 
-                Regions.TryRemove(KeyValuePair.Create(value, r));
+                if (Regions.TryRemove(KeyValuePair.Create(value, r)))
+                    Interlocked.Increment(ref this.regionsVersion);
             }
 
             if (r is not null)

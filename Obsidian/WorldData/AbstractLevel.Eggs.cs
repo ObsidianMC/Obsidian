@@ -58,7 +58,7 @@ public abstract partial class AbstractLevel
 
     internal async ValueTask TickMobEggsAsync()
     {
-        foreach (var chunk in Regions.Values.SelectMany(region => region.GeneratedChunks()).OfType<Chunk>())
+        foreach (var chunk in this.GeneratedChunksThisTick())
         {
             if (!chunk.HasMobEggTicks || !IsMobTicking(new VectorD(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8)))
                 continue;

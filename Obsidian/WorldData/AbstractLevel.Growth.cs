@@ -165,23 +165,34 @@ public abstract partial class AbstractLevel
         var seen = new HashSet<long>();
         var chunks = new List<Chunk>();
 
-        // In the tick, the simulation area has the squares around the players already.
+        // In the tick, the simulation area has the squares around the players already. Each chunk is looked up once:
+        // checking the neighbours of each looked most of them up eight more times.
         if (Volatile.Read(ref this.simulationCurrent))
         {
+            var loaded = this.randomTickLoaded;
+            loaded.Clear();
+            var candidates = new List<(long Key, Chunk Chunk)>();
             foreach (var key in this.simulation.Chunks)
             {
-                NumericsHelper.LongToInts(key, out var x, out var z);
-                if (GetLoadedChunk(x, z) is Chunk chunk && this.HasLoadedNeighbours(x, z))
-                    chunks.Add(chunk);
+                if (this.IsLoaded(key, loaded) is Chunk chunk)
+                    candidates.Add((key, chunk));
             }
 
             foreach (var key in Volatile.Read(ref this.ticketChunks).Ticking)
             {
                 NumericsHelper.LongToInts(key, out var x, out var z);
-                if (!this.simulation.Contains(x, z) && this.GetLoadedChunk(x, z) is Chunk chunk && this.HasLoadedNeighbours(x, z))
+                if (!this.simulation.Contains(x, z) && this.IsLoaded(key, loaded) is Chunk chunk)
+                    candidates.Add((key, chunk));
+            }
+
+            foreach (var (key, chunk) in candidates)
+            {
+                if (this.HasLoadedNeighbours(key, loaded))
                     chunks.Add(chunk);
             }
 
+            // So it doesn't keep chunks unloaded meanwhile.
+            loaded.Clear();
             return chunks;
         }
 
@@ -212,6 +223,35 @@ public abstract partial class AbstractLevel
         }
 
         return chunks;
+    }
+
+    // The loaded chunks a tick's random ticks looked up, and null for those that aren't (see RandomTickingChunks).
+    private readonly Dictionary<long, IChunk?> randomTickLoaded = [];
+
+    private IChunk? IsLoaded(long key, Dictionary<long, IChunk?> loaded)
+    {
+        if (!loaded.TryGetValue(key, out var chunk))
+        {
+            NumericsHelper.LongToInts(key, out var x, out var z);
+            loaded[key] = chunk = this.GetLoadedChunk(x, z);
+        }
+
+        return chunk;
+    }
+
+    private bool HasLoadedNeighbours(long key, Dictionary<long, IChunk?> loaded)
+    {
+        NumericsHelper.LongToInts(key, out var chunkX, out var chunkZ);
+        for (var x = chunkX - 1; x <= chunkX + 1; x++)
+        {
+            for (var z = chunkZ - 1; z <= chunkZ + 1; z++)
+            {
+                if (this.IsLoaded(NumericsHelper.IntsToLong(x, z), loaded) is null)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     private bool HasLoadedNeighbours(int chunkX, int chunkZ)
