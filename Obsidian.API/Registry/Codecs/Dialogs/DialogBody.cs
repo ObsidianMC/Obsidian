@@ -39,7 +39,7 @@ public sealed class DialogBody : INbtSerializable
             if (components is not null)
             {
                 writer.WriteCompoundStart("components");
-                foreach (var (_, tag) in components) writer.WriteTag(tag);
+                writer.WriteEntries(components);
                 writer.EndCompound();
             }
             writer.EndCompound();

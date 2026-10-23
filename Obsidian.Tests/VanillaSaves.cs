@@ -507,8 +507,7 @@ public sealed class VanillaSaves : IDisposable
         await using var stream = new MemoryStream();
         await using (var writer = new NbtWriterStream(stream, NbtCompression.ZLib, ""))
         {
-            foreach (var (_, tag) in chunk)
-                writer.WriteTag(tag);
+            writer.WriteEntries(chunk);
 
             writer.EndCompound();
             await writer.TryFinishAsync();
