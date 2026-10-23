@@ -62,16 +62,39 @@ public partial class Entity : IEquatable<Entity>, IEntity
     public virtual EntityDimension Dimension { get; protected set; } = EntityDimension.Zero;
     protected virtual float DimensionScale => 1;
 
-    // LivingEntity.getScale clamps the attribute; age/type scaling remains independent.
-    internal float AttributeScale => this.HasAttribute("minecraft:scale")
-        ? Math.Clamp(this.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
-        : 1;
-
-    protected EntityDimension ScaleDimensions(float width, float height) => new()
+    // LivingEntity.getScale clamps the attribute; age/type scaling remains independent. It's worked out again only
+    // once the scale attribute changes (see OnAttributeChanged), since dimensions are read many times a tick by
+    // collisions and pathfinding; NaN until then.
+    internal float AttributeScale
     {
-        Width = width * this.DimensionScale * this.AttributeScale,
-        Height = height * this.DimensionScale * this.AttributeScale
-    };
+        get
+        {
+            var scale = this.attributeScale;
+            if (float.IsNaN(scale))
+            {
+                scale = this.HasAttribute("minecraft:scale")
+                    ? Math.Clamp(this.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
+                    : 1;
+                this.attributeScale = scale;
+            }
+
+            return scale;
+        }
+    }
+
+    private float attributeScale = float.NaN;
+
+    // Each scale is read once, and multiplied in the same order as before, so the dimensions round the same.
+    protected EntityDimension ScaleDimensions(float width, float height)
+    {
+        var dimensionScale = this.DimensionScale;
+        var attributeScale = this.AttributeScale;
+        return new()
+        {
+            Width = width * dimensionScale * attributeScale,
+            Height = height * dimensionScale * attributeScale
+        };
+    }
 
     public int PowderedSnowTicks { get; set; }
 
