@@ -89,13 +89,18 @@ internal sealed class EntityGrid
     }
 
     /// <summary>
-    /// The entities in the chunks the box from <paramref name="min"/> to <paramref name="max"/> reaches into, by entity
-    /// id; the caller checks whether each is in range.
+    /// The entities other than players within <paramref name="distance"/> of <paramref name="center"/> that
+    /// <paramref name="filter"/> accepts (all without one), by entity id. The filter runs outside the grid's lock.
     /// </summary>
-    public Entity[] InChunksAround(VectorD min, VectorD max)
+    /// <remarks>
+    /// Only the entities in range are kept and sorted: mobs' AI and players' tracking ask this every tick, and copying
+    /// and sorting every entity in the chunks around cost more than the checks.
+    /// </remarks>
+    public Entity[] NonPlayersInRange(VectorD center, double distance, Func<IEntity, bool>? filter = null)
     {
-        var (minX, minZ) = ((int)Math.Floor(min.X) >> 4, (int)Math.Floor(min.Z) >> 4);
-        var (maxX, maxZ) = ((int)Math.Floor(max.X) >> 4, (int)Math.Floor(max.Z) >> 4);
+        var (minX, minZ) = ((int)Math.Floor(center.X - distance) >> 4, (int)Math.Floor(center.Z - distance) >> 4);
+        var (maxX, maxZ) = ((int)Math.Floor(center.X + distance) >> 4, (int)Math.Floor(center.Z + distance) >> 4);
+        var distanceSquared = distance * distance;
 
         List<Entity>? found = null;
         lock (this.gate)
@@ -104,13 +109,22 @@ internal sealed class EntityGrid
             {
                 for (var z = minZ; z <= maxZ; z++)
                 {
-                    if (this.chunks.TryGetValue(NumericsHelper.IntsToLong(x, z), out var bucket))
-                        (found ??= []).AddRange(bucket);
+                    if (!this.chunks.TryGetValue(NumericsHelper.IntsToLong(x, z), out var bucket))
+                        continue;
+
+                    foreach (var entity in bucket)
+                    {
+                        if (entity.Type != EntityType.Player && (entity.Position - center).MagnitudeSquared() <= distanceSquared)
+                            (found ??= []).Add(entity);
+                    }
                 }
             }
         }
 
-        if (found is null)
+        if (filter is not null)
+            found?.RemoveAll(entity => !filter(entity));
+
+        if (found is not { Count: > 0 })
             return [];
 
         // A stable order whichever chunks the entities are in, for callers that take the first match.

@@ -1,3 +1,4 @@
+using Obsidian.WorldData;
 namespace Obsidian.Entities.AI;
 
 internal static class RandomPosition
@@ -319,8 +320,8 @@ public sealed class NearestAttackableTargetGoal(PathfinderMob zombie, Func<IEnti
     {
         if (zombie.Random.Next(5) != 0)
             return false;
-        candidate = zombie.Level.GetEntitiesInRange(zombie.Position, zombie.FollowRange)
-            .Where(target => predicate(target) && zombie.IsValidTarget(target) && (!mustSee || zombie.CanSee(target)))
+        candidate = zombie.Level.GetEntitiesInRange(zombie.Position, zombie.FollowRange, predicate)
+            .Where(target => zombie.IsValidTarget(target) && (!mustSee || zombie.CanSee(target)))
             .MinBy(target => (target.Position - zombie.Position).MagnitudeSquared());
         return candidate != null;
     }

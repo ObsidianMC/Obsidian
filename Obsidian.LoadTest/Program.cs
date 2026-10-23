@@ -9,7 +9,8 @@
 //
 // Options (defaults in brackets):
 //   --host [localhost]  --port [25565]  --bots [10]  --join-interval ms [250]  --duration s [120]  --report s [10]
-//   --mode idle|roam [roam]  --radius blocks [512]  --speed blocks/s [5.6]  --altitude blocks [10]
+//   --mode idle|roam|spread [roam]  --radius blocks [512]  --wander-radius blocks [16] (spread)
+//   --speed blocks/s [5.6]  --altitude blocks [10]
 //   --view-distance [10]  --nether-fraction 0..1 [0]  --creative true|false [true]  --name-prefix [Bot]
 
 using System.Diagnostics;
@@ -78,7 +79,11 @@ async Task ReportAsync(CancellationToken cancellationToken)
 
 namespace Obsidian.LoadTest
 {
-    internal enum BotMode { Idle, Roam }
+    /// <summary>
+    /// How bots move: idle at the spawn; roam around it, flying over new terrain; or spread, each settling at its own
+    /// home within the radius and wandering slowly around it, like players at their bases.
+    /// </summary>
+    internal enum BotMode { Idle, Roam, Spread }
 
     /// <summary>The load test's settings, from the command line (see Program.cs).</summary>
     internal sealed record BotOptions
@@ -91,6 +96,7 @@ namespace Obsidian.LoadTest
         public int ReportSeconds { get; init; } = 10;
         public BotMode Mode { get; init; } = BotMode.Roam;
         public double Radius { get; init; } = 512;
+        public double WanderRadius { get; init; } = 16;
         public double Speed { get; init; } = 5.6;
         public double Altitude { get; init; } = 10;
         public int ViewDistance { get; init; } = 10;
@@ -114,6 +120,7 @@ namespace Obsidian.LoadTest
                     "--report" => options with { ReportSeconds = int.Parse(value, CultureInfo.InvariantCulture) },
                     "--mode" => options with { Mode = Enum.Parse<BotMode>(value, ignoreCase: true) },
                     "--radius" => options with { Radius = double.Parse(value, CultureInfo.InvariantCulture) },
+                    "--wander-radius" => options with { WanderRadius = double.Parse(value, CultureInfo.InvariantCulture) },
                     "--speed" => options with { Speed = double.Parse(value, CultureInfo.InvariantCulture) },
                     "--altitude" => options with { Altitude = double.Parse(value, CultureInfo.InvariantCulture) },
                     "--view-distance" => options with { ViewDistance = int.Parse(value, CultureInfo.InvariantCulture) },

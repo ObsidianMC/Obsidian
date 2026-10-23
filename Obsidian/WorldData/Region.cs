@@ -1150,7 +1150,7 @@ public class Region : IRegion
             // Scheduled block and fluid ticks, like vanilla's "block_ticks" and "fluid_ticks".
             generated.BlockTicks.Write(writer, "block_ticks", name => name);
             generated.FluidTicks.Write(writer, "fluid_ticks", FluidNames.Name);
-            var mobEggTicks = generated.MobEggTicks.ToArray();
+            var mobEggTicks = generated.HasMobEggTicks ? generated.MobEggTicks.ToArray() : [];
             writer.WriteListStart("ObsidianMobEggTicks", NbtTagType.Compound, mobEggTicks.Length);
             foreach (var (position, delay) in mobEggTicks)
             {
@@ -1162,7 +1162,7 @@ public class Region : IRegion
                 writer.EndCompound();
             }
             writer.EndList();
-            var frogspawnTicks = generated.FrogspawnTicks.ToArray();
+            var frogspawnTicks = generated.HasFrogspawnTicks ? generated.FrogspawnTicks.ToArray() : [];
             writer.WriteListStart("ObsidianFrogspawnTicks", NbtTagType.Compound, frogspawnTicks.Length);
             foreach (var (position, delay) in frogspawnTicks)
             {

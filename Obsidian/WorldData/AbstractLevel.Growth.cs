@@ -39,10 +39,18 @@ public abstract partial class AbstractLevel
             return;
 
         var players = this.SimulatingPlayerPositions();
-        foreach (var chunk in this.RandomTickingChunks(players))
+        var chunks = this.RandomTickingChunks(players);
+
+        // The lock players' block writes take is taken for a batch of chunks rather than each one: taking it tens of
+        // thousands of times a tick cost more than the ticks, while a batch holds it only briefly.
+        const int BatchSize = 64;
+        for (var start = 0; start < chunks.Count; start += BatchSize)
         {
             lock (this.Fluids.TickLock)
-                this.TickChunkBlocks(chunk, speed, players);
+            {
+                for (var index = start; index < Math.Min(start + BatchSize, chunks.Count); index++)
+                    this.TickChunkBlocks(chunks[index], speed, players);
+            }
         }
     }
 
@@ -156,6 +164,26 @@ public abstract partial class AbstractLevel
         var distance = (int)Configuration.SimulationDistance;
         var seen = new HashSet<long>();
         var chunks = new List<Chunk>();
+
+        // In the tick, the simulation area has the squares around the players already.
+        if (Volatile.Read(ref this.simulationCurrent))
+        {
+            foreach (var key in this.simulation.Chunks)
+            {
+                NumericsHelper.LongToInts(key, out var x, out var z);
+                if (GetLoadedChunk(x, z) is Chunk chunk && this.HasLoadedNeighbours(x, z))
+                    chunks.Add(chunk);
+            }
+
+            foreach (var key in Volatile.Read(ref this.ticketChunks).Ticking)
+            {
+                NumericsHelper.LongToInts(key, out var x, out var z);
+                if (!this.simulation.Contains(x, z) && this.GetLoadedChunk(x, z) is Chunk chunk && this.HasLoadedNeighbours(x, z))
+                    chunks.Add(chunk);
+            }
+
+            return chunks;
+        }
 
         foreach (var player in players)
         {

@@ -239,8 +239,15 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public override bool Equals(object obj) => Equals(obj as ItemStack);
 
-    public bool Equals(ItemStack? other) => other is not null && this.Holder.Equals(other.Holder)
-        && this.ProjectComponents(this.InternalStorage.Values).OrderBy(value => value.Type)
+    public bool Equals(ItemStack? other) => other is not null && (ReferenceEquals(this, other) || this.Holder.Equals(other.Holder)
+        && (this.HasNoComponents && other.HasNoComponents || this.ComponentsEqual(other)));
+
+    // Without modeled or saved components there's nothing to compare, which is most stacks: players' equipment is
+    // compared every tick.
+    private bool HasNoComponents => this.InternalStorage.Count == 0 && this.UnmodeledComponents is null;
+
+    private bool ComponentsEqual(ItemStack other) =>
+        this.ProjectComponents(this.InternalStorage.Values).OrderBy(value => value.Type)
             .SequenceEqual(other.ProjectComponents(other.InternalStorage.Values).OrderBy(value => value.Type))
         && new ComponentValueKey(this.UnrecognizedComponents())
             .Equals(new ComponentValueKey(other.UnrecognizedComponents()));

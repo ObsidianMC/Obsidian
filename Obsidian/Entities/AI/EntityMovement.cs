@@ -2,6 +2,9 @@ namespace Obsidian.Entities.AI;
 
 internal static class EntityMovement
 {
+    // The shapes a collision is checked against, reused on the thread: entities move many times a tick.
+    [ThreadStatic] private static List<BoundingBox>? collisionShapes;
+
     // A mob falls by its gravity attribute, like vanilla's LivingEntity.getGravity.
     internal static VectorD Move(Mob mob) => Move(
         mob,
@@ -18,8 +21,11 @@ internal static class EntityMovement
             gravity = 0;
         }
         var fluidBounds = mob.Dimension.CreateBBFromPosition(mob.Position);
-        var inWater = terrain.ContainsFluid(fluidBounds, water: true);
-        var inLava = terrain.ContainsFluid(fluidBounds, water: false);
+
+        // A mob's own terrain has its fluid contact for this tick already.
+        var cached = mob is Mob withTerrain && ReferenceEquals(withTerrain.Terrain, terrain) ? withTerrain : null;
+        var inWater = cached?.InWater ?? terrain.ContainsFluid(fluidBounds, water: true);
+        var inLava = cached?.InLava ?? terrain.ContainsFluid(fluidBounds, water: false);
         if (mob is Mob && mob is not (Fish or Squid or Dolphin or Axolotl or Frog or Turtle or Nautilus or EnderDragon or Drowned { Swimming: true }))
         {
             if (inWater) velocity += terrain.FluidPush(fluidBounds, water: true, velocity);
@@ -83,7 +89,9 @@ internal static class EntityMovement
     {
         var swept = new BoundingBox(VectorD.Min(bounds.Min, bounds.Min + velocity),
             VectorD.Max(bounds.Max, bounds.Max + velocity) + new VectorD(0, stepHeight, 0));
-        var shapes = terrain.GetCollisions(swept).ToArray();
+        var shapes = collisionShapes ??= [];
+        shapes.Clear();
+        terrain.CollectCollisions(swept, shapes);
         var displacement = Clip(bounds, velocity, shapes);
         var horizontalCollision = Math.Abs(displacement.X - velocity.X) > 0.00001f ||
             Math.Abs(displacement.Z - velocity.Z) > 0.00001f;

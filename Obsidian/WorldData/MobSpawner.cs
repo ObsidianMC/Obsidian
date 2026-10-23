@@ -87,6 +87,16 @@ internal sealed partial class MobSpawner(AbstractLevel level)
     // providers sample as vanilla's do.
     private readonly LegacyRandomSource lightRandom = new(Random.Shared.NextInt64());
     private readonly Dictionary<string, bool> supportedSpawns = [];
+
+    // The size of a freshly made mob of each vanilla type, for the obstruction check made before a mob is built.
+    private readonly Dictionary<EntityType, EntityDimension?> spawnSizes = [];
+
+    private EntityDimension? SpawnSizeOf(EntityType type)
+    {
+        if (!spawnSizes.TryGetValue(type, out var size))
+            spawnSizes[type] = size = EntitySpawner.CreateMob(level, type)?.Dimension;
+        return size;
+    }
     private bool SupportsSpawn(string id)
     {
         // A plugin's mobs spawn while their plugin is loaded, unless they're misc: plugin mobs don't despawn, and misc
@@ -143,18 +153,30 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         var spawnCats = spawnMobs && ticks % 1200 == 0;
 
         var (counts, potential, tickingMobs) = this.TallyMobs(spawnCats);
-        foreach (var packed in chunks.OrderBy(_ => random.Next()))
+
+        // Like vanilla, the chunks spawn in a shuffled order.
+        var order = chunks.ToArray();
+        for (var i = order.Length - 1; i > 0; i--)
+        {
+            var j = random.Next(i + 1);
+            (order[i], order[j]) = (order[j], order[i]);
+        }
+
+        foreach (var packed in order)
         {
             NumericsHelper.LongToInts(packed, out var cx, out var cz);
             var chunk = level.GetLoadedChunk(cx, cz)!;
             if (chunk is Chunk concrete)
             {
                 // Read in place: copying a chunk's block entities takes all their dictionary's locks.
-                foreach (var (_, blockEntity) in concrete.BlockEntities)
+                if (concrete.HasBlockEntities)
                 {
-                    if (blockEntity is not DataBlockEntity data) continue;
-                    if (data.Id == "minecraft:mob_spawner") TickSpawner(data, players);
-                    else if (data.Id == "minecraft:beehive") TickHive(data);
+                    foreach (var (_, blockEntity) in concrete.BlockEntities)
+                    {
+                        if (blockEntity is not DataBlockEntity data) continue;
+                        if (data.Id == "minecraft:mob_spawner") TickSpawner(data, players);
+                        else if (data.Id == "minecraft:beehive") TickHive(data);
+                    }
                 }
 
                 TickFrogspawn(concrete);
@@ -271,7 +293,10 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             return 0;
         }
 
+        // Like vanilla's isInNetherFortressBounds, only a position above nether bricks looks for a fortress, which
+        // otherwise searched the structures for every group of monsters.
         if (category == "monster" && level.Generator is MojangGenerator structureGenerator &&
+            terrain.GetBlock(new Vector(x, y - 1, z))?.Is(BlockIds.NetherBricks) == true &&
             structureGenerator.IsInsideFortress(new Vector(x, y, z)))
             choices = fortressSpawns;
 
@@ -347,11 +372,21 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                     !FluidState.Of(feet).IsEmpty || type is not EntityType.Ghast and not EntityType.Bat && (floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0)))
                 continue;
 
-            // Made once the blocks fit, as vanilla makes it only for a valid position: building a mob is costly.
-            var mob = definition is null
-                ? EntitySpawner.CreateMob(level, type)
-                : PluginEntity.Create(definition, level) as Mob;
-            if (mob == null || !terrain.IsFree(mob.Dimension.CreateBBFromPosition(position)))
+            // Like vanilla's getMobForSpawn, a vanilla mob is made only once its position passed the checks, since most
+            // don't and building a mob is costly; the obstruction check before uses its type's size. A plugin's mob is
+            // made here, its size being its own.
+            Mob? mob = null;
+            EntityDimension? size;
+            if (definition is null)
+            {
+                size = this.SpawnSizeOf(type!.Value);
+            }
+            else
+            {
+                mob = PluginEntity.Create(definition, level) as Mob;
+                size = mob?.Dimension;
+            }
+            if (size is not EntityDimension spawnSize || !terrain.IsFree(spawnSize.CreateBBFromPosition(position)))
                 continue;
             var sky = candidateChunk.GetLightLevel(x, y, z, LightType.Sky);
             var block = candidateChunk.GetLightLevel(x, y, z, LightType.Block);
@@ -415,6 +450,10 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 : PluginSpawns.Current.CostOf(candidateChunk.GetBiome(x, y, z).Name, choice.Type);
 
             if (cost is not null && !potential!.Allows(new Vector(x, y, z), cost))
+                continue;
+
+            mob ??= EntitySpawner.CreateMob(level, type);
+            if (mob == null)
                 continue;
 
             mob.EntityId = Server.GetNextEntityId();

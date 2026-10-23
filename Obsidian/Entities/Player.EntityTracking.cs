@@ -45,11 +45,17 @@ public partial class Player
                     { Amplifier = effect.EffectData.Amplifier, Flags = PotionEffectFlags(effect.EffectData) });
             TrackedEntities[entity.EntityId] = entity.Uuid;
         }
-        var removed = TrackedEntities.Keys.Where(id => !visible.Contains(id)).ToArray();
-        if (removed.Length == 0)
+        // Read in place: copying the keys takes all the dictionary's locks.
+        List<int>? removed = null;
+        foreach (var (id, _) in TrackedEntities)
+        {
+            if (!visible.Contains(id))
+                (removed ??= []).Add(id);
+        }
+        if (removed is null)
             return;
         foreach (var id in removed)
             TrackedEntities.TryRemove(id, out _);
-        await Client.QueuePacketAsync(new RemoveEntitiesPacket(removed));
+        await Client.QueuePacketAsync(new RemoveEntitiesPacket([.. removed]));
     }
 }

@@ -933,6 +933,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
     private readonly ILogger tickStatsLogger;
     private readonly TimingWindow worldTickTimes = new();
     private readonly TimingWindow chunkLoopTimes = new();
+    private GcSnapshot lastGc = GcSnapshot.Take();
 
     private void ReportTickFailure(Exception exception)
     {
@@ -1104,15 +1105,34 @@ public sealed partial class Server : IServer, IPluginScopedServer
             .ToArray();
         var worldTicks = this.worldTickTimes.Take();
         var chunkLoop = this.chunkLoopTimes.Take();
+        var gc = GcSnapshot.Take();
+        var gcSince = gc.Since(this.lastGc);
+        this.lastGc = gc;
 
         if (!this.tickStatsLogger.IsEnabled(LogLevel.Debug))
             return;
 
         var levelLines = levels
             .Where(entry => entry.Times.Count > 0)
-            .Select(entry => $"\n  {entry.Level.Name} ({entry.Level.Players.Count} players): {entry.Times.Describe(6)}");
+            .Select(entry => $"\n  {entry.Level.Name} ({entry.Level.Players.Count} players): {entry.Times.Describe(10)}");
         Log.TickStats(this.tickStatsLogger, this.OnlinePlayers.Count, this.Tps, worldTicks.Describe(),
-            chunkLoop.Describe(), string.Concat(levelLines));
+            chunkLoop.Describe(), gcSince, string.Concat(levelLines));
+    }
+
+    /// <summary>The process's garbage collections so far: time paused, collections by generation, bytes allocated.</summary>
+    private readonly record struct GcSnapshot(TimeSpan Paused, int Gen0, int Gen1, int Gen2, long Allocated, long Timestamp)
+    {
+        public static GcSnapshot Take() => new(GC.GetTotalPauseDuration(), GC.CollectionCount(0), GC.CollectionCount(1),
+            GC.CollectionCount(2), GC.GetTotalAllocatedBytes(), Stopwatch.GetTimestamp());
+
+        /// <summary>For example "paused 120 ms in 30/4/0 collections, allocating 410 MB/s".</summary>
+        public string Since(GcSnapshot earlier)
+        {
+            var seconds = Math.Max(Stopwatch.GetElapsedTime(earlier.Timestamp, this.Timestamp).TotalSeconds, 0.001);
+            return $"paused {(this.Paused - earlier.Paused).TotalMilliseconds:0} ms in {this.Gen0 - earlier.Gen0}/"
+                + $"{this.Gen1 - earlier.Gen1}/{this.Gen2 - earlier.Gen2} collections, allocating "
+                + $"{(this.Allocated - earlier.Allocated) / seconds / 1024 / 1024:0} MB/s";
+        }
     }
 
     // Each level's tick stage, e.g. "overworld: ticking entities, the_nether: waiting for simulation gate".
@@ -1159,6 +1179,8 @@ public sealed partial class Server : IServer, IPluginScopedServer
         Volatile.Write(ref this.tickStarted, tickStart);
         try
         {
+            // Connections are flushed once the tick is done, rather than for each packet it sends.
+            using var output = OutputBatch.Begin();
             await this.WorldManager.TickWorldsAsync();
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancelTokenSource.IsCancellationRequested)
@@ -1284,8 +1306,8 @@ public sealed partial class Server : IServer, IPluginScopedServer
         [LoggerMessage(Level = LogLevel.Warning, Message = "The world tick has been running for {Seconds} s; levels: {Levels}")]
         public static partial void TickStuck(ILogger logger, int seconds, string levels);
 
-        [LoggerMessage(Level = LogLevel.Debug, Message = "{Players} players, {Tps} TPS. World ticks: {WorldTicks}. Chunk loop: {ChunkLoop}.{Levels}")]
-        public static partial void TickStats(ILogger logger, int players, int tps, string worldTicks, string chunkLoop, string levels);
+        [LoggerMessage(Level = LogLevel.Debug, Message = "{Players} players, {Tps} TPS. World ticks: {WorldTicks}. Chunk loop: {ChunkLoop}. GC: {Gc}.{Levels}")]
+        public static partial void TickStats(ILogger logger, int players, int tps, string worldTicks, string chunkLoop, string gc, string levels);
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Sending keep-alives or chunks failed ({Suppressed} more failures weren't logged since the last one)")]
         public static partial void ConnectionTickFailed(ILogger logger, Exception exception, int suppressed);

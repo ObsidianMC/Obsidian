@@ -188,8 +188,12 @@ public abstract partial class AbstractLevel
             if (!chunk.HasBlockEntities || !this.IsMobTicking(new VectorD(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8)))
                 continue;
 
-            foreach (var blockEntity in chunk.BlockEntities.Values.OfType<BlockEntity>())
+            // Read in place: copying the values takes all the dictionary's locks, which chunk loading contends for.
+            foreach (var (_, value) in chunk.BlockEntities)
             {
+                if (value is not BlockEntity blockEntity)
+                    continue;
+
                 var position = blockEntity.BlockPosition;
                 var type = chunk.GetBlock(position.X, position.Y, position.Z).BlockEntityType();
 

@@ -16,6 +16,7 @@ using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Lighting;
 using Obsidian.WorldData.Portals;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 
@@ -178,6 +179,9 @@ public abstract partial class AbstractLevel : ILevel
     /// <summary>The level's tick times by stage, for the server's tick statistics.</summary>
     internal TimingWindow TickTimes { get; } = new();
 
+    // The last tick's time per entity type, for the slow-tick warning (see TickTimings); ticks of a level don't overlap.
+    private readonly Dictionary<Type, (double Ms, int Count)> entityTypeTimes = [];
+
     internal void QueueChunkPopulation(IChunk chunk) => EnqueueEntityAction(() =>
     {
         if (ReferenceEquals(GetLoadedChunk(chunk.X, chunk.Z), chunk))
@@ -197,6 +201,10 @@ public abstract partial class AbstractLevel : ILevel
         if (this.IsTicketTicking(x, z))
             return true;
 
+        // During the level's tick, from its simulation area, which this is asked for every mob and loaded chunk.
+        if (Volatile.Read(ref this.simulationCurrent))
+            return this.simulation.Contains(x, z);
+
         var simulationDistance = Configuration.SimulationDistance;
         foreach (var (_, player) in Players)
         {
@@ -206,6 +214,59 @@ public abstract partial class AbstractLevel : ILevel
                 return true;
         }
         return false;
+    }
+
+    // The chunks within simulation distance of the level's non-spectator players, as of the start of its tick, and
+    // whether a tick is under way to read them. Like vanilla's chunk map, which works out the ticking chunks once a
+    // tick, players moving mid-tick count from the next; outside the tick, IsMobTicking goes over the players.
+    private readonly SimulationArea simulation = new();
+    private bool simulationCurrent;
+
+    // A number for the tick under way, new each tick, and 0 outside one: what lets mobs keep what they looked up for
+    // the rest of a tick (see MobTerrain.GetBlock).
+    private long currentTickId;
+    private long lastTickId;
+
+    /// <summary>The tick under way's number, different for each tick, or 0 outside a tick.</summary>
+    internal long CurrentTickId => Volatile.Read(ref this.currentTickId);
+
+    // The level's players as of the start of its tick, and null outside one (see GetPlayersInRange).
+    private IPlayer[]? tickPlayers;
+
+    // Called at the start of the level's tick, under the simulation gate.
+    private void SnapshotPlayers()
+    {
+        var players = this.Players.Values.ToArray();
+        this.simulation.Update(players.Where(player => player.GameMode != GameMode.Spectator), Configuration.SimulationDistance);
+
+        Volatile.Write(ref this.tickPlayers, players);
+        Volatile.Write(ref this.simulationCurrent, true);
+        Volatile.Write(ref this.currentTickId, ++this.lastTickId);
+    }
+
+    /// <summary>
+    /// The squared distance from <paramref name="position"/> to the nearest non-spectator player in the level, or
+    /// <see cref="double.MaxValue"/> without one: what mobs' despawning checks every tick.
+    /// </summary>
+    internal double NearestPlayerDistanceSquared(VectorD position)
+    {
+        var nearest = double.MaxValue;
+        if (Volatile.Read(ref this.tickPlayers) is IPlayer[] players)
+        {
+            foreach (var player in players)
+            {
+                if (player.GameMode != GameMode.Spectator && this.Players.ContainsKey(player.Uuid))
+                    nearest = Math.Min(nearest, (player.Position - position).MagnitudeSquared());
+            }
+            return nearest;
+        }
+
+        foreach (var (_, player) in this.Players)
+        {
+            if (player.GameMode != GameMode.Spectator)
+                nearest = Math.Min(nearest, (player.Position - position).MagnitudeSquared());
+        }
+        return nearest;
     }
 
     /// <summary>
@@ -509,6 +570,23 @@ public abstract partial class AbstractLevel : ILevel
         return true;
     }
 
+    /// <summary>
+    /// The entities within <paramref name="distance"/> of <paramref name="location"/> that <paramref name="filter"/>
+    /// accepts, players first, then the others by entity id, as <see cref="GetEntitiesInRange(VectorD, float)"/>
+    /// filtered: the others are filtered before they're sorted, which costs mobs' target and threat searches less.
+    /// </summary>
+    internal IEnumerable<IEntity> GetEntitiesInRange(VectorD location, float distance, Func<IEntity, bool> filter)
+    {
+        foreach (IPlayer player in GetPlayersInRange(location, distance))
+        {
+            if (filter(player))
+                yield return player;
+        }
+
+        foreach (IEntity entity in GetNonPlayerEntitiesInRange(location, distance, filter))
+            yield return entity;
+    }
+
     public IEnumerable<IEntity> GetEntitiesInRange(VectorD location, float distance = 10f)
     {
         foreach (IPlayer player in GetPlayersInRange(location, distance))
@@ -522,7 +600,10 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
-    public IEnumerable<IEntity> GetNonPlayerEntitiesInRange(VectorD location, float distance)
+    public IEnumerable<IEntity> GetNonPlayerEntitiesInRange(VectorD location, float distance) =>
+        this.GetNonPlayerEntitiesInRange(location, distance, filter: null);
+
+    private IEnumerable<IEntity> GetNonPlayerEntitiesInRange(VectorD location, float distance, Func<IEntity, bool>? filter)
     {
         if (!float.IsFinite(distance) || distance < 0f)
         {
@@ -538,7 +619,8 @@ public abstract partial class AbstractLevel : ILevel
             {
                 foreach (var (_, entity) in region.Entities)
                 {
-                    if (entity.Type != EntityType.Player && (entity.Position - location).MagnitudeSquared() <= distanceSquared)
+                    if (entity.Type != EntityType.Player && (entity.Position - location).MagnitudeSquared() <= distanceSquared
+                        && (filter is null || filter(entity)))
                         yield return entity;
                 }
             }
@@ -546,12 +628,9 @@ public abstract partial class AbstractLevel : ILevel
             yield break;
         }
 
-        // The entities in the chunks in range, by entity id (see EntityGrid).
-        foreach (var entity in this.EntityGrid.InChunksAround(location - new VectorD(distance), location + new VectorD(distance)))
-        {
-            if (entity.Type != EntityType.Player && (entity.Position - location).MagnitudeSquared() <= distanceSquared)
-                yield return entity;
-        }
+        // The entities in range, by entity id (see EntityGrid).
+        foreach (var entity in this.EntityGrid.NonPlayersInRange(location, distance, filter))
+            yield return entity;
     }
 
     public IEnumerable<IPlayer> GetPlayersInRange(VectorD location, float distance)
@@ -574,6 +653,22 @@ public abstract partial class AbstractLevel : ILevel
         }
 
         distance *= distance;
+
+        // During the tick, from its snapshot of the players: mobs ask this many times a tick, and going over the
+        // players' dictionary each time cost more than the checks. A player who left since isn't returned.
+        if (Volatile.Read(ref this.tickPlayers) is IPlayer[] players)
+        {
+            foreach (var player in players)
+            {
+                var difference = player.Position - location;
+                if (difference.X * difference.X + difference.Z * difference.Z <= distance
+                    && this.Players.TryGetValue(player.Uuid, out var current) && ReferenceEquals(current, player))
+                {
+                    yield return player;
+                }
+            }
+            yield break;
+        }
 
         foreach (var (_, player) in Players)
         {
@@ -598,10 +693,14 @@ public abstract partial class AbstractLevel : ILevel
         await simulationGate.WaitAsync();
         try
         {
+            this.SnapshotPlayers();
             await TickLevelAsync();
         }
         finally
         {
+            Volatile.Write(ref this.simulationCurrent, false);
+            Volatile.Write(ref this.tickPlayers, null);
+            Volatile.Write(ref this.currentTickId, 0);
             simulationGate.Release();
         }
     }
@@ -631,7 +730,7 @@ public abstract partial class AbstractLevel : ILevel
         TickStage = "starting";
         if (LevelData is null)
             return;
-        var timings = new TickTimings();
+        var timings = new TickTimings(this.entityTypeTimes);
 
         LevelData.Time += this.Configuration.TimeTickSpeedMultiplier;
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
@@ -679,7 +778,7 @@ public abstract partial class AbstractLevel : ILevel
                 await this.TouchPluginBlocksAsync(entity);
                 if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
                     await concrete.TickEntityPortalAsync();
-                timings.LapEntity(entity.GetType().Name);
+                timings.LapEntity(entity.GetType());
             }
         }
         timings.Lap("entities");
@@ -708,12 +807,13 @@ public abstract partial class AbstractLevel : ILevel
             this.PacketBroadcaster.BroadcastTo(packet, this.PlayersInRange(location));
         }
 
-        foreach (var player in Players.Values)
-        {
-            TickStage = $"tracking for {player.Username}";
-            await player.SynchronizeTrackedEntitiesAsync();
+        // A player's tracking reads the level and writes only their own tracking and connection, so players are tracked
+        // in parallel: one after another, with many players, it took a good part of the tick.
+        TickStage = "tracking";
+        var trackedPlayers = this.Players.Values.ToArray();
+        await Parallel.ForEachAsync(trackedPlayers, static async (player, _) => await player.SynchronizeTrackedEntitiesAsync());
+        foreach (var player in trackedPlayers)
             player.SynchronizeOwnState();
-        }
         timings.Lap("light and tracking");
         TickStage = "idle";
         timings.RecordTo(this.TickTimes);
@@ -731,7 +831,16 @@ public abstract partial class AbstractLevel : ILevel
         private long lap = Stopwatch.GetTimestamp();
         private long entityLap;
         private readonly List<(string Stage, double Ms)> stages = [];
-        private Dictionary<string, (double Ms, int Count)>? entityTypes;
+        private readonly Dictionary<Type, (double Ms, int Count)> entityTypes;
+
+        /// <param name="entityTypes">
+        /// The level's per-type entity times, reused tick after tick so timing every entity doesn't allocate.
+        /// </param>
+        public TickTimings(Dictionary<Type, (double Ms, int Count)> entityTypes)
+        {
+            this.entityTypes = entityTypes;
+            entityTypes.Clear();
+        }
 
         public void Lap(string stage)
         {
@@ -740,13 +849,12 @@ public abstract partial class AbstractLevel : ILevel
             lap = entityLap = now;
         }
 
-        public void LapEntity(string type)
+        public void LapEntity(Type type)
         {
             var now = Stopwatch.GetTimestamp();
             if (entityLap == 0) entityLap = lap;
-            entityTypes ??= [];
-            var (ms, count) = entityTypes.GetValueOrDefault(type);
-            entityTypes[type] = (ms + Stopwatch.GetElapsedTime(entityLap, now).TotalMilliseconds, count + 1);
+            ref var times = ref CollectionsMarshal.GetValueRefOrAddDefault(entityTypes, type, out _);
+            times = (times.Ms + Stopwatch.GetElapsedTime(entityLap, now).TotalMilliseconds, times.Count + 1);
             entityLap = now;
         }
 
@@ -758,8 +866,8 @@ public abstract partial class AbstractLevel : ILevel
             if (total <= BudgetMs || !logger.IsEnabled(LogLevel.Warning)) return;
             var slowest = string.Join(", ", stages.Where(item => item.Ms >= 1).OrderByDescending(item => item.Ms)
                 .Select(item => $"{item.Stage} {item.Ms:0.#}ms"));
-            var types = entityTypes == null ? "" : string.Join(", ", entityTypes.OrderByDescending(item => item.Value.Ms).Take(5)
-                .Select(item => $"{item.Key} x{item.Value.Count} {item.Value.Ms:0.#}ms"));
+            var types = string.Join(", ", entityTypes.OrderByDescending(item => item.Value.Ms).Take(5)
+                .Select(item => $"{item.Key.Name} x{item.Value.Count} {item.Value.Ms:0.#}ms"));
             logger.LogWarning("Slow tick in {Level}: {Total:0.#}ms ({Stages}). Top entity types: {Types}",
                 level, total, slowest, types.Length == 0 ? "none" : types);
         }

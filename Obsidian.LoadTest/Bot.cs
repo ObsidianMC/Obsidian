@@ -259,9 +259,17 @@ internal sealed class Bot(int index, BotOptions options, LoadStats stats)
             first = !this.positioned;
             if (first)
             {
-                // The point the bot roams around: where it was put after joining or changing dimension.
+                // The point the bot roams around: where it was put after joining or changing dimension, or for a spread
+                // bot, its home somewhere within the radius of it, which it moves to once it moves (see Step).
                 this.positioned = true;
                 (this.homeX, this.homeZ) = (this.x, this.z);
+                if (options.Mode == BotMode.Spread)
+                {
+                    var angle = this.random.NextDouble() * Math.Tau;
+                    var distance = options.Radius * Math.Sqrt(this.random.NextDouble());
+                    this.homeX += Math.Cos(angle) * distance;
+                    this.homeZ += Math.Sin(angle) * distance;
+                }
                 this.cruiseY = this.y + options.Altitude;
                 this.heading = this.random.NextDouble() * Math.Tau;
             }
@@ -349,7 +357,20 @@ internal sealed class Bot(int index, BotOptions options, LoadStats stats)
         }
 
         var (dx, dz) = (this.x - this.homeX, this.z - this.homeZ);
-        if (dx * dx + dz * dz > options.Radius * options.Radius)
+        var radius = options.Mode == BotMode.Spread ? options.WanderRadius : options.Radius;
+
+        // A spread bot away from home (it starts at the spawn) flies there at 100 blocks a second: the server doesn't
+        // follow a jump of thousands of blocks in one move.
+        if (options.Mode == BotMode.Spread && dx * dx + dz * dz > (radius + 8) * (radius + 8))
+        {
+            var distance = Math.Sqrt(dx * dx + dz * dz);
+            var travel = Math.Min(5, distance);
+            this.x -= dx / distance * travel;
+            this.z -= dz / distance * travel;
+            return true;
+        }
+
+        if (dx * dx + dz * dz > radius * radius)
             this.heading = Math.Atan2(-dz, -dx) + (this.random.NextDouble() - 0.5);
         else
             this.heading += (this.random.NextDouble() - 0.5) * 0.1;

@@ -107,7 +107,27 @@ internal sealed class PathFinder(PathfinderMob mob)
 {
     private readonly WalkNodeEvaluator evaluator = new(mob);
 
+    // The search's open set and nodes, reused by every search on the thread: a search runs to its end without yielding,
+    // and mobs search many times a tick, which allocated and grew new ones each time.
+    [ThreadStatic] private static PriorityQueue<Node, (double Cost, int Order)>? searchOpen;
+    [ThreadStatic] private static Dictionary<Vector, Node>? searchNodes;
+
     public MobPath? FindPath(VectorD target)
+    {
+        var open = searchOpen ??= new();
+        var nodes = searchNodes ??= [];
+        try
+        {
+            return this.FindPath(target, open, nodes);
+        }
+        finally
+        {
+            open.Clear();
+            nodes.Clear();
+        }
+    }
+
+    private MobPath? FindPath(VectorD target, PriorityQueue<Node, (double Cost, int Order)> open, Dictionary<Vector, Node> nodes)
     {
         evaluator.Reset();
         var volume = VolumeMovement.UsesVolume(mob);
@@ -116,8 +136,6 @@ internal sealed class PathFinder(PathfinderMob mob)
             return null;
 
         var range = Math.Max(16, mob.FollowRange);
-        var open = new PriorityQueue<Node, (double Cost, int Order)>();
-        var nodes = new Dictionary<Vector, Node>();
         var first = new Node(startPosition, null, 0);
         nodes.Add(Key(startPosition), first);
         open.Enqueue(first, (Distance(startPosition, target), 0));

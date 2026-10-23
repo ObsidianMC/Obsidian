@@ -13,8 +13,23 @@ public partial class Mob
     internal Random Random { get; } = new();
     internal MobTerrain Terrain { get; private set; } = null!;
     internal long AiTick { get; private set; }
-    internal bool InWater => Terrain.ContainsFluid(Dimension.CreateBBFromPosition(Position), water: true);
-    internal bool InLava => Terrain.ContainsFluid(Dimension.CreateBBFromPosition(Position), water: false);
+    internal bool InWater => this.TouchesFluid(water: true, ref this.waterContact);
+    internal bool InLava => this.TouchesFluid(water: false, ref this.lavaContact);
+
+    // Whether the mob's box touches water and lava, worked out once per position and tick, as vanilla works it out
+    // once a tick: its environment, travel, navigation and goals each ask, and each asked the terrain again.
+    private (VectorD Position, long Tick, bool Touches)? waterContact;
+    private (VectorD Position, long Tick, bool Touches)? lavaContact;
+
+    private bool TouchesFluid(bool water, ref (VectorD Position, long Tick, bool Touches)? contact)
+    {
+        if (contact is { } known && known.Position == Position && known.Tick == AiTick)
+            return known.Touches;
+
+        var touches = Terrain.ContainsFluid(Dimension.CreateBBFromPosition(Position), water);
+        contact = (Position, AiTick, touches);
+        return touches;
+    }
     internal bool IsRemoved { get; private set; }
     internal IEntity? LastAttacker { get; private set; }
     internal long LastHurtTick { get; private set; } = -100;
@@ -65,7 +80,13 @@ public partial class Mob
     private Angle lastSentPitch;
     private VectorD lastSentPosition;
     private bool hasSentPosition;
+    private int movementSyncTicks;
     private int despawnAge;
+
+    // Like vanilla's ServerEntity, a mob's movement goes out every third tick (its type's default update interval), and
+    // clients interpolate between updates: sending it every tick to every player in range cost the tick more than the
+    // mobs' AI did.
+    private const int MovementUpdateInterval = 3;
 
     public Mob()
     {
@@ -268,12 +289,9 @@ public partial class Mob
         }
         if (Alive && CanDespawn && !PersistenceRequired && CustomName == null)
         {
-            var nearest = (double)float.MaxValue;
-            foreach (var (_, player) in Level.Players)
-            {
-                if (player.GameMode == GameMode.Spectator) continue;
-                nearest = Math.Min(nearest, (player.Position - Position).MagnitudeSquared());
-            }
+            var nearest = Level is AbstractLevel despawnLevel
+                ? Math.Min(despawnLevel.NearestPlayerDistanceSquared(Position), float.MaxValue)
+                : (double)float.MaxValue;
             if (nearest > 16384 && nearest < float.MaxValue || ++despawnAge > 600 && nearest > 1024 && nearest < float.MaxValue && Random.Next(800) == 0)
             {
                 await RemoveAsync();
@@ -366,6 +384,9 @@ public partial class Mob
             lastSentPosition = oldPosition;
             hasSentPosition = true;
         }
+
+        if (++movementSyncTicks % MovementUpdateInterval != 0)
+            return;
 
         var delta = MoveDelta(lastSentPosition, Position);
         var moved = delta.X != 0 || delta.Y != 0 || delta.Z != 0;

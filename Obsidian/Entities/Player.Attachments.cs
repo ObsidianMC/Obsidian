@@ -48,7 +48,9 @@ public partial class Player
 
         var visible = new HashSet<AttachmentTarget>();
         this.SendAttachments(new AttachmentTarget(AttachmentTargetKind.Player), this, visible);
-        foreach (var entity in level.Regions.Values.SelectMany(region => region.Entities.Values))
+        // The entities the player tracks are within their tracking range, which the level's grid finds without going
+        // over every entity in the level.
+        foreach (var entity in level.GetNonPlayerEntitiesInRange(this.Position, this.Server.Configuration.EntityBroadcastRangePercentage))
         {
             if (this.TrackedEntities.TryGetValue(entity.EntityId, out var uuid) && uuid == entity.Uuid)
             {

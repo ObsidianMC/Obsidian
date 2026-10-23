@@ -54,11 +54,12 @@ public abstract partial class AbstractLevel
         { foreach (var raid in raids) ClearRaidBar(raid); raids.Clear(); pendingRaids.Clear(); return; }
         foreach (var player in Players.Values)
         {
-            var village = GetEntitiesInRange(player.Position, 64).OfType<Villager>().Where(villager => villager.Alive && villager.Home != null)
-                .MinBy(villager => (villager.Position - player.Position).MagnitudeSquared());
+            // The village is looked for only for a player with Bad Omen where raids can start: searching 64 blocks
+            // around every player every tick cost more than the rest of the raids' tick.
             if (CanStartRaidAt(player)
-                && village != null
-                && player.ActivePotionEffects.TryGetValue((int)PotionEffect.BadOmen - 1, out var omen))
+                && player.ActivePotionEffects.TryGetValue((int)PotionEffect.BadOmen - 1, out var omen)
+                && GetEntitiesInRange(player.Position, 64).OfType<Villager>().Where(villager => villager.Alive && villager.Home != null)
+                    .MinBy(villager => (villager.Position - player.Position).MagnitudeSquared()) is Villager village)
             {
                 player.RemovePotionEffect((int)PotionEffect.BadOmen - 1);
                 player.AddPotionEffect((int)PotionEffect.RaidOmen - 1, 600, omen.EffectData.Amplifier);

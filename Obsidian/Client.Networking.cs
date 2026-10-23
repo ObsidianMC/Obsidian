@@ -30,8 +30,8 @@ public partial class Client
     private List<OutgoingFrame> pendingFrames = [];
     private List<OutgoingFrame> framingFrames = [];
 
-    // Whether a flush of pendingFrames is posted to the network threads or running; guarded by sendLock. There's one
-    // at a time, so frames are framed in order.
+    // Whether a flush of pendingFrames is posted to the network threads, held back until the world tick ends (see
+    // OutputBatch), or running; guarded by sendLock. There's one at a time, so frames are framed in order.
     private bool flushScheduled;
 
     // The flush's: frames are framed and encrypted into it, then appended to sendBufferMain under sendLock.
@@ -111,7 +111,8 @@ public partial class Client
             return;
 
         this.flushScheduled = true;
-        WorkerThreads.Network.Post(this.flushOutput);
+        if (!OutputBatch.TryDefer(this.flushOutput))
+            WorkerThreads.Network.Post(this.flushOutput);
     }
 
     // Runs on a network thread: frames what waits, appends it to the socket's buffer and starts sending it. What's sent
