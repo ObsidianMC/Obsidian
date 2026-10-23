@@ -103,6 +103,8 @@ internal static class ShapeUpdateBehaviors
     internal static IShapeUpdateBehavior BambooStalkBlock { get; } = new BambooStalkBlockBehavior();
 
     internal static IShapeUpdateBehavior BambooSaplingBlock { get; } = new BambooSaplingBlockBehavior();
+
+    internal static IShapeUpdateBehavior IronBarsBlock { get; } = new IronBarsShapeUpdateBehavior();
 }
 
 /// <summary>

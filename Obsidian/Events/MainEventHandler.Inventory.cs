@@ -190,10 +190,16 @@ public partial class MainEventHandler
     internal static ValueTask SelectBundleItemAsync(IPlayer player, int slotId, int selectedItemIndex)
     {
         var window = player.OpenedContainer ?? player.Inventory;
-        if (slotId < 0 || slotId >= window.Size)
+        if (slotId < 0 || slotId > short.MaxValue)
             return ValueTask.CompletedTask;
 
-        if (window.GetItem(slotId) is { } bundle && !bundle.IsAir)
+        // The window's slot numbering, as ContainerClick maps it: the player's section of an open window is the inventory.
+        var (slot, forPlayer) = window.GetSlot((short)slotId);
+        var container = forPlayer ? player.Inventory : window;
+        if (slot < 0 || slot >= container.Size || forPlayer && window != player.Inventory && slot >= 45)
+            return ValueTask.CompletedTask;
+
+        if (container.GetItem(slot) is { } bundle && !bundle.IsAir)
             Bundles.ToggleSelection(bundle, selectedItemIndex);
 
         return ValueTask.CompletedTask;

@@ -6,6 +6,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Redstone;
+using Obsidian.Entities.AI;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -459,6 +460,14 @@ public partial class UseItemOnPacket
             return;
         }
 
+        // Vanilla's BlockItem.canPlace also requires Level.isUnobstructed: the block's collision shape can't overlap a
+        // mob or player (say, the placing player's own feet when they look down and place under themselves).
+        if (!pouring && !IsUnobstructed(placeLevel, position, block))
+        {
+            await this.RejectPlacementAsync(player, handSlot);
+            return;
+        }
+
         if (block.Is(BlockIds.EndPortalFrame))
         {
             string[] facings = ["north", "east", "south", "west"];
@@ -597,6 +606,30 @@ public partial class UseItemOnPacket
         {
             SequenceID = Sequence
         });
+    }
+
+    // Vanilla's Level.isUnobstructed for living entities: spectators don't block, and neither do items or projectiles here.
+    private static bool IsUnobstructed(AbstractLevel level, Vector position, IBlock block)
+    {
+        var shapes = BlockCollisionShapes.Get(level, position, block);
+        if (shapes.Count == 0)
+            return true;
+
+        var offset = (VectorD)position;
+        foreach (var entity in level.GetEntitiesInRange(offset + new VectorD(0.5, 0.5, 0.5), 4))
+        {
+            if (entity is not (Entities.Mob or IPlayer { GameMode: not GameMode.Spectator }))
+                continue;
+
+            var bounds = entity.Dimension.CreateBBFromPosition(entity.Position);
+            foreach (var shape in shapes)
+            {
+                if (MobTerrain.Overlaps(shape.OffsetBy(offset), bounds))
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     // A placement that didn't happen: the player's client, which predicted it, gets the block and the item back.
