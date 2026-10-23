@@ -631,27 +631,27 @@ public abstract partial class AbstractLevel : ILevel
 
     /// <summary>
     /// The level's entity with <paramref name="uuid"/>, a player first, as
-    /// <c>GetEntitiesInRange(location, float.MaxValue)</c> would find it, for projectiles resolving their owners.
+    /// <c>GetEntitiesInRange(location, float.MaxValue)</c> would find it: players by the level's players, the others by
+    /// the grid's index (see <see cref="EntityGrid"/>).
     /// </summary>
-    /// <remarks>
-    /// Players are looked up by UUID; other entities still take a walk over every region, as the level keeps no index
-    /// of them by UUID (which plugins may change), but without the range query's distance checks and iterators.
-    /// </remarks>
-    internal IEntity? FindEntity(Guid uuid)
+    internal IEntity? FindEntity(Guid uuid) =>
+        this.Players.TryGetValue(uuid, out var player) ? player : this.EntityGrid.WithUuid(uuid);
+
+    /// <summary>
+    /// The level's entity with <paramref name="uuid"/> within <paramref name="distance"/> of
+    /// <paramref name="location"/>, by <see cref="GetEntitiesInRange(VectorD, float)"/>'s measure: across for players,
+    /// in every direction for the others.
+    /// </summary>
+    internal IEntity? FindEntityInRange(Guid uuid, VectorD location, float distance)
     {
-        if (this.Players.TryGetValue(uuid, out var player))
-            return player;
+        if (this.FindEntity(uuid) is not IEntity entity || float.IsNaN(distance) || distance < 0)
+            return null;
 
-        foreach (var (_, region) in this.Regions)
-        {
-            foreach (var (_, entity) in region.Entities)
-            {
-                if (entity.Uuid == uuid && entity.Type != EntityType.Player)
-                    return entity;
-            }
-        }
-
-        return null;
+        var difference = entity.Position - location;
+        var squared = entity is IPlayer
+            ? difference.X * difference.X + difference.Z * difference.Z
+            : difference.MagnitudeSquared();
+        return squared <= (double)distance * distance ? entity : null;
     }
 
     public IEnumerable<IEntity> GetNonPlayerEntitiesInRange(VectorD location, float distance) =>
@@ -1029,7 +1029,7 @@ public abstract partial class AbstractLevel : ILevel
                     if (EntityNbt.Load(tag, this) is not Entity entity)
                         chunk.UnspawnableEntities.Add(tag);
                     else if ((entity is not Mob { HasAi: true, Alive: false } || entity is EnderDragon) &&
-                        !this.Regions.Values.Any(region => region.Entities.Values.Any(existing => existing.Uuid == entity.Uuid)))
+                        this.FindEntity(entity.Uuid) is null)
                     {
                         // One whose plugin type started unloading since it was loaded stays as saved.
                         if (!this.TrySpawnEntity(entity, hostOwned: true))
@@ -1978,8 +1978,9 @@ public abstract partial class AbstractLevel : ILevel
     /// removes it (see <see cref="PluginEntities"/>).
     /// </summary>
     /// <returns>
-    /// Whether the entity was added: not when its region isn't loaded, an entity with its id is in it, or it's of a
-    /// plugin's entity type whose plugin is unloaded or unloading.
+    /// Whether the entity was added: not when its region isn't loaded, an entity with its id is in it, another entity
+    /// in the level has its UUID (like vanilla's, a level holds one entity per UUID), or it's of a plugin's entity type
+    /// whose plugin is unloaded or unloading.
     /// </returns>
     /// <exception cref="InvalidOperationException">The plugin adding the entity is unloading.</exception>
     public bool TryAddEntity(IEntity entity) => this.TryAddEntity(entity, hostOwned: false);
@@ -1995,12 +1996,19 @@ public abstract partial class AbstractLevel : ILevel
         if (!PluginEntities.HasLoadedType(entity))
             return false;
 
+        if (entity is not IPlayer && this.Players.ContainsKey(entity.Uuid))
+            return false;
+
         var (chunkX, chunkZ) = Region.ChunkOf(entity.Position);
 
         if (GetRegionForChunk(chunkX, chunkZ) is not Region region || !region.TryAddEntity(entity))
             return false;
 
-        this.EntityGrid.Add(entity);
+        if (!this.EntityGrid.Add(entity))
+        {
+            region.TryRemoveEntity(entity);
+            return false;
+        }
 
         // Unloading closes a plugin before removing its entities, so one added meanwhile is removed there or here.
         if (spawner is { IsClosing: true } || !PluginEntities.HasLoadedType(entity))

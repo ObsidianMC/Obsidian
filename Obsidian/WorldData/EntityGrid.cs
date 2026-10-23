@@ -5,7 +5,8 @@ namespace Obsidian.WorldData;
 
 /// <summary>
 /// A level's non-player entities by the chunk they're in, so a range query looks at the chunks around it rather than
-/// at every entity of the regions it touches. Players are left out: range queries find them through the level's
+/// at every entity of the regions it touches, and by UUID, like vanilla's entity lookup, so finding one (a projectile's
+/// owner, a duplicate being loaded) doesn't go over them all. Players are left out: the level finds them through its
 /// players.
 /// </summary>
 /// <remarks>
@@ -23,6 +24,7 @@ internal sealed class EntityGrid
 {
     private readonly Lock gate = new();
     private readonly Dictionary<long, List<Entity>> chunks = [];
+    private readonly Dictionary<Guid, Entity> byUuid = [];
 
     internal static long ChunkKey(VectorD position) =>
         NumericsHelper.IntsToLong((int)Math.Floor(position.X) >> 4, (int)Math.Floor(position.Z) >> 4);
@@ -30,10 +32,11 @@ internal sealed class EntityGrid
     /// <summary>
     /// Adds the entity at its position, taking it out of another level's grid first.
     /// </summary>
-    public void Add(IEntity entity)
+    /// <returns>Whether it's in the grid now: not when another entity in it has its UUID.</returns>
+    public bool Add(IEntity entity)
     {
         if (entity is not Entity concrete || entity is IPlayer)
-            return;
+            return true;
 
         if (concrete.Grid is EntityGrid previous && previous != this)
             previous.Remove(concrete);
@@ -41,13 +44,24 @@ internal sealed class EntityGrid
         lock (this.gate)
         {
             if (concrete.Grid == this)
-                return;
+                return true;
+
+            if (!this.byUuid.TryAdd(concrete.Uuid, concrete))
+                return false;
 
             var key = ChunkKey(concrete.Position);
             this.Bucket(key).Add(concrete);
             concrete.Grid = this;
             concrete.GridChunk = key;
+            return true;
         }
+    }
+
+    /// <summary>The entity in the grid with <paramref name="uuid"/>, if any.</summary>
+    public Entity? WithUuid(Guid uuid)
+    {
+        lock (this.gate)
+            return this.byUuid.GetValueOrDefault(uuid);
     }
 
     /// <summary>
@@ -67,6 +81,7 @@ internal sealed class EntityGrid
                 return;
 
             this.Unlink(entity, entity.GridChunk);
+            this.byUuid.Remove(entity.Uuid);
             entity.Grid = null;
         }
     }

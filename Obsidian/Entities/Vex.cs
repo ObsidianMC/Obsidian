@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -54,7 +55,7 @@ public sealed partial class Vex : PathfinderMob
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
             return;
         if (OwnerUuid != Guid.Empty && AiTick % 20 == 0 &&
-            Level.GetEntitiesInRange(Position, 64).OfType<Mob>().FirstOrDefault(entity => entity.Uuid == OwnerUuid) is { AttackTarget: { } target } && IsValidTarget(target))
+            Level.FindEntityInRange(OwnerUuid, Position, 64) is Mob { AttackTarget: { } target } && IsValidTarget(target))
             AttackTarget = target;
     }
 

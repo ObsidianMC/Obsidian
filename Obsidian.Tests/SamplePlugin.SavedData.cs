@@ -88,8 +88,7 @@ public sealed partial class SamplePlugin
         await world.SaveAsync();
         Assert.Equal(before, File.ReadAllBytes(levelPath));
         await player.SaveAsync();
-        var loadedPlayer = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Loaded");
-        loadedPlayer.Uuid = player.Uuid;
+        var loadedPlayer = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Loaded", uuid: player.Uuid);
         await loadedPlayer.LoadAsync(loadFromPersistentWorld: false);
         var loadedEntity = EntityNbt.Load(entityNbt, world)!;
         var region = world.GetRegionForChunk(0, 0)!;

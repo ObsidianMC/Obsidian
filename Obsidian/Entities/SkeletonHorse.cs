@@ -1,3 +1,5 @@
+using Obsidian.WorldData;
+
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:skeleton_horse")]
@@ -45,7 +47,7 @@ public sealed partial class SkeletonHorse : AbstractHorse
             return;
         if (skeletonRider == null && skeletonRiderUuid != Guid.Empty && AiTick % 20 == 0)
         {
-            var rider = Level.GetEntitiesInRange(Position, 64).OfType<Skeleton>().FirstOrDefault(entity => entity.Uuid == skeletonRiderUuid);
+            var rider = Level.FindEntityInRange(skeletonRiderUuid, Position, 64) as Skeleton;
             if (rider != null)
                 AttachSkeleton(rider);
         }

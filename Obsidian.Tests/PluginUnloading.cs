@@ -187,8 +187,10 @@ public sealed class PluginUnloading : IDisposable
         credited.Health = 13;
         credited.CustomName = "credited";
         var saved = EntityNbt.Save(credited)!;
+
+        // A copy of it: without the saved UUID, which another entity in the level has, it gets one of its own.
+        saved.Remove("UUID");
         var restored = EntityNbt.Load(saved, context.World)!;
-        restored.Uuid = Guid.NewGuid();
         restored.CustomName = "restored";
         Assert.True(context.World.TrySpawnEntity(restored, hostOwned: true));
         Assert.Null(restored.SpawnedBy);

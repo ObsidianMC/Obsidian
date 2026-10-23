@@ -70,7 +70,7 @@ internal sealed class MobStorage(AbstractLevel level) : IAsyncDisposable
                     var mob = EntitySpawner.CreateMob(level, type)!;
                     mob.EntityId = Server.GetNextEntityId();
                     mob.ReadSave(tag);
-                    if (!mob.Alive && mob is not EnderDragon || level.Regions.Values.Any(region => region.Entities.Values.Any(entity => entity.Uuid == mob.Uuid)))
+                    if (!mob.Alive && mob is not EnderDragon || level.FindEntity(mob.Uuid) is not null)
                         continue;
                     level.SpawnEntity(mob);
                 }

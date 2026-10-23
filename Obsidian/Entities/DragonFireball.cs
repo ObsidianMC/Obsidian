@@ -144,7 +144,7 @@ internal sealed class DragonBreathCloud : Entity
         BoundingBox = Dimension.CreateBBFromPosition(Position);
         if (age % 5 != 0)
             return;
-        var owner = Level.GetEntitiesInRange(Position, 256).FirstOrDefault(entity => entity.Uuid == OwnerUuid);
+        var owner = Level.FindEntityInRange(OwnerUuid, Position, 256);
         foreach (var target in Level.GetEntitiesInRange(Position, Radius + 1).OfType<Living>().ToArray())
         {
             if (target.Uuid == OwnerUuid || target is EnderDragon || !target.Alive || target is IPlayer { GameMode: GameMode.Creative or GameMode.Spectator } ||

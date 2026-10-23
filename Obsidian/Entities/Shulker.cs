@@ -213,7 +213,7 @@ public sealed partial class ShulkerBullet : Arrow
             await RemoveAsync();
             return;
         }
-        var target = Level.GetEntitiesInRange(Position, 64).FirstOrDefault(entity => entity.Uuid == TargetUuid && entity.Health > 0);
+        var target = Level.FindEntityInRange(TargetUuid, Position, 64) is { Health: > 0 } found ? found : null;
         if (target != null && target is not IPlayer { GameMode: GameMode.Spectator })
         {
             var delta = target.Position + new VectorD(0, target.Dimension.Height / 2, 0) - Position;

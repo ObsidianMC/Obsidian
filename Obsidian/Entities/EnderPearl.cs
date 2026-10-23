@@ -280,7 +280,7 @@ public sealed partial class EnderPearl : Throwable
             }
         }
 
-        return level.GetEntitiesInRange(this.Position, float.MaxValue).FirstOrDefault(entity => entity.Uuid == uuid);
+        return level.FindEntity(uuid);
     }
 
     public override void Write(INetStreamWriter writer)

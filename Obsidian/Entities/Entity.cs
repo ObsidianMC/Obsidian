@@ -54,7 +54,33 @@ public partial class Entity : IEquatable<Entity>, IEntity
 
     public int EntityId { get; internal set; }
 
-    public Guid Uuid { get; set; } = Guid.NewGuid();
+    /// <summary>
+    /// The entity's UUID: a random one, unless it's given one (by its constructor, an initializer or its save) before
+    /// it joins a level. It's given at most one: a level finds its entities by it (see <see cref="EntityGrid"/>), and
+    /// a second, different one throws.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The entity was given another UUID already, or is in a level.</exception>
+    public Guid Uuid
+    {
+        get => this.uuid;
+        internal set
+        {
+            if (value == this.uuid)
+                return;
+
+            if (this.uuidAssigned || this.Grid is not null)
+                throw new InvalidOperationException($"Entity {this.EntityId} already has UUID {this.uuid}; an entity's UUID is set once.");
+
+            this.uuid = value;
+            this.uuidAssigned = true;
+        }
+    }
+
+    private Guid uuid = Guid.NewGuid();
+    private bool uuidAssigned;
+
+    // Whether ReadNbt takes the UUID a save holds; a player keeps their profile's.
+    private protected virtual bool ReadsSavedUuid => true;
 
     public Pose Pose { get; set; } = Pose.Standing;
 
@@ -233,7 +259,7 @@ public partial class Entity : IEquatable<Entity>, IEntity
         if (tag.TryGetBool("OnGround", out var onGround) && onGround)
             this.MovementFlags |= MovementFlags.OnGround;
         if (tag.TryGetTagValue<int>("TicksFrozen", out var frozen)) PowderedSnowTicks = Math.Clamp(frozen, 0, 140);
-        if (tag.TryGetTag<NbtArray<int>>("UUID", out var uuid) && uuid.Count == 4)
+        if (this.ReadsSavedUuid && tag.TryGetTag<NbtArray<int>>("UUID", out var uuid) && uuid.Count == 4)
             this.Uuid = EntityNbt.UuidFromInts(uuid.GetArray());
         if (tag.TryGetTag("CustomName", out var customName))
             this.CustomName = customName.TextFromNbt();

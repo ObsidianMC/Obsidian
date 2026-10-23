@@ -44,7 +44,7 @@ internal sealed class BreezeWindCharge : Entity
             return;
         }
         if (owner == null && ownerUuid != Guid.Empty && (age == 1 || age % 20 == 0))
-            owner = Level.GetEntitiesInRange(Position, float.MaxValue).FirstOrDefault(entity => entity.Uuid == ownerUuid);
+            owner = Level.FindEntity(ownerUuid);
         var terrain = new MobTerrain(Level);
         var end = Position + Motion;
         var swept = new BoundingBox(VectorD.Min(Position, end) - new VectorD(0.15f), VectorD.Max(Position, end) + new VectorD(0.15f));

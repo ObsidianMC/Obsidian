@@ -11,4 +11,22 @@ internal static class LevelQueries
         level is AbstractLevel concrete
             ? concrete.GetEntitiesInRange(location, distance, filter)
             : level.GetEntitiesInRange(location, distance).Where(filter);
+
+    /// <summary>
+    /// The level's entity with <paramref name="uuid"/>, which a server level looks up by its index (see
+    /// <see cref="AbstractLevel.FindEntity"/>).
+    /// </summary>
+    public static IEntity? FindEntity(this ILevel level, Guid uuid) =>
+        level is AbstractLevel concrete
+            ? concrete.FindEntity(uuid)
+            : level.GetEntitiesInRange(VectorD.Zero, float.MaxValue).FirstOrDefault(entity => entity.Uuid == uuid);
+
+    /// <summary>
+    /// The level's entity with <paramref name="uuid"/> within <paramref name="distance"/> of <paramref name="location"/>,
+    /// as <see cref="ILevel.GetEntitiesInRange"/> measures it (see <see cref="AbstractLevel.FindEntityInRange"/>).
+    /// </summary>
+    public static IEntity? FindEntityInRange(this ILevel level, Guid uuid, VectorD location, float distance) =>
+        level is AbstractLevel concrete
+            ? concrete.FindEntityInRange(uuid, location, distance)
+            : level.GetEntitiesInRange(location, distance).FirstOrDefault(entity => entity.Uuid == uuid);
 }
