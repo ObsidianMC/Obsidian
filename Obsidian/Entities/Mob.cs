@@ -28,8 +28,7 @@ public partial class Mob : Living
             using var writer = new RawNbtWriter(string.Empty);
             WriteSave(writer, writeCompound: false);
             writer.EndCompound();
-            using var stream = new ReadOnlyStream(writer.AsSpan().ToArray());
-            var saved = (NbtCompound)new NbtReader(stream).ReadNextTag()!;
+            var saved = (NbtCompound)NbtReader.ReadTag(writer.Data, true, out _)!;
             foreach (var (name, child) in saved)
             {
                 if (name != "id")

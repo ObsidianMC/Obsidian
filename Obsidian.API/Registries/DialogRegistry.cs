@@ -204,10 +204,7 @@ internal sealed class SerializedDialog(DialogRegistration registration, byte[] e
         // The compound's tags, in the order the dialog wrote them.
         public void WriteElement(INbtWriter writer)
         {
-            var compound = (NbtCompound)NbtReader.ReadTag(element, readName: false, out _)!;
-
-            foreach (var (_, tag) in compound)
-                writer.WriteTag(tag);
+            writer.WriteEntries((NbtCompound)NbtReader.ReadTag(element, readName: false, out _)!);
         }
     }
 }

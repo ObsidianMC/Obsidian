@@ -213,10 +213,8 @@ public partial class Mob
         using var additionalWriter = new RawNbtWriter(string.Empty);
         WriteAdditionalSave(additionalWriter);
         additionalWriter.EndCompound();
-        using var additionalStream = new ReadOnlyStream(additionalWriter.AsSpan().ToArray());
-        var additionalTags = (NbtCompound)new NbtReader(additionalStream).ReadNextTag()!;
-        foreach (var (_, child) in additionalTags)
-            writer.WriteTag(child);
+        var additionalTags = (NbtCompound)NbtReader.ReadTag(additionalWriter.Data, true, out _)!;
+        writer.WriteEntries(additionalTags);
 
         // The live attachments, not those it was loaded or spawned with, which the copy below would bring back.
         writer.WriteTag(API.Data.AttachmentStorage.For(this).Snapshot());
