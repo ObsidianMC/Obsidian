@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System.Collections.Immutable;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
@@ -114,7 +115,8 @@ public partial class PlayerBase
             return;
         }
         var spear = CombatItems.Component(item, "kinetic_weapon").ValueKind == JsonValueKind.Object;
-        if (item.Holder.Id is not (ItemIds.Bow or ItemIds.Crossbow or ItemIds.Trident or ItemIds.Shield) && !spear)
+        var bundle = ItemOwners.IsBundle(item);
+        if (item.Holder.Id is not (ItemIds.Bow or ItemIds.Crossbow or ItemIds.Trident or ItemIds.Shield) && !spear && !bundle)
         { StartEating(hand); return; }
         if (item.Holder.Id is ItemIds.Bow or ItemIds.Crossbow
             && FindAmmunition(item.Is(ItemsRegistry.Crossbow)) < 0
@@ -312,6 +314,16 @@ public partial class PlayerBase
         if (usingWeapon is not { } item) return;
         if (!Alive || Respawning || GameMode == GameMode.Spectator || !ReferenceEquals(Inventory.GetItem(weaponSlot), item) || item.Count <= 0 || weaponSlot != 45 && weaponSlot != CurrentHeldItemSlot)
         { CancelWeaponUse(); return; }
+        if (ItemOwners.IsBundle(item))
+        {
+            // Vanilla's BundleItem.onUseTick: the remaining use time decides the drops; the use ends with the duration.
+            if (Bundles.DropsOnTick(Bundles.UseDurationTicks - weaponTicks))
+                await DropBundleContentsAsync(item);
+            weaponTicks++;
+            if (weaponTicks >= Bundles.UseDurationTicks)
+                CancelWeaponUse();
+            return;
+        }
         weaponTicks++;
         if (item.Is(ItemsRegistry.Crossbow) && weaponTicks >= CrossbowChargeTicks(item))
         {
@@ -327,6 +339,42 @@ public partial class PlayerBase
         }
         else if (CombatItems.Component(item, "kinetic_weapon") is { ValueKind: JsonValueKind.Object } kinetic)
             await TickSpearAsync(item, kinetic);
+    }
+
+    /// <summary>
+    /// Vanilla's <c>BundleItem.dropContent</c>: takes the selected stack (or the first) out of the bundle and drops it
+    /// from the player, with the remove sound; a drop from the bundle counts as use and plays the drop sound.
+    /// </summary>
+    private async ValueTask DropBundleContentsAsync(ItemStack bundle)
+    {
+        // The stack leaves the bundle only once the drop is in the world, so a refused drop loses nothing.
+        if (Bundles.Selected(bundle) is not { } selected)
+            return;
+
+        if (!ItemEntity.Drop(this, selected))
+        {
+            Log.BundleDropRefused(this.Logger, this.Username, selected.Holder.UnlocalizedName, selected.Count);
+            return;
+        }
+
+        Bundles.RemoveOne(bundle);
+        PlayBundleSound("minecraft:item.bundle.remove_one", 0.8f);
+        PlayBundleSound("minecraft:item.bundle.drop_contents", 1f);
+        this.Statistics.Increment(bundle.Holder.UnlocalizedName, type: "minecraft:used");
+        await SyncInventorySlotAsync(weaponSlot);
+    }
+
+    private void PlayBundleSound(string sound, float volume)
+    {
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SoundPacket
+        {
+            SoundLocation = sound,
+            SoundPosition = new SoundPosition(Position.X, Position.Y, Position.Z),
+            Category = SoundCategory.Players,
+            Volume = volume,
+            Pitch = 1,
+            Seed = Globals.Random.NextInt64()
+        });
     }
 
     private IEnumerable<Living> SpearTargets(ItemStack item)
@@ -425,6 +473,17 @@ public partial class PlayerBase
             await this.QueuePacketAsync(new EntityEventPacket { EntityId = EntityId, Event = 30 });
         }
         else await this.QueuePacketAsync(new EntityEventPacket { EntityId = EntityId, Event = 29 });
+        // Vanilla LivingEntity.hurtServer -> BlocksAttacks.onBlocked: the shield's block_sound (item.shield.block)
+        // plays at the blocker's position for nearby players, with pitch 0.8 + random * 0.4.
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SoundPacket
+        {
+            SoundLocation = "minecraft:item.shield.block",
+            SoundPosition = new SoundPosition(Position.X, Position.Y, Position.Z),
+            Category = SoundCategory.Players,
+            Volume = 1,
+            Pitch = 0.8f + Globals.Random.NextSingle() * 0.4f,
+            Seed = Globals.Random.NextInt64()
+        });
         return true;
     }
 
@@ -479,5 +538,11 @@ public partial class PlayerBase
         await WindowSnapshots.SendChangeAsync(this, state, [update]);
 
         return true;
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Warning, Message = "{Username} couldn't drop {Count} {Item} from a bundle; they stay in it")]
+        public static partial void BundleDropRefused(ILogger logger, string username, string item, int count);
     }
 }

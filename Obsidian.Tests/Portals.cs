@@ -61,6 +61,34 @@ public partial class Portals
         }
     }
 
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task FlintAndSteelUseOnFrameIgnitesNetherPortal()
+    {
+        await using var context = TestServerFactory.CreateServer($"portal-ignition-{Guid.NewGuid():N}");
+        var world = context.World;
+        AddChunks(world);
+        AddDimension(context, "minecraft:the_nether");
+        foreach (var (position, block) in Frame("x", 2, 3))
+            await world.SetBlockAsync(position, block);
+
+        var player = TestServerFactory.CreateConnectedPlayer(
+            context.Server, world, "PortalIgniter", new VectorD(0.5, 64, -2.5));
+        player.GameMode = GameMode.Creative;
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.FlintAndSteel));
+        Assert.True(world.TryAddPlayer(player));
+        Assert.True(world.TryAddEntity(player));
+
+        await BlockUpdates.UseOn(new Vector(0, 63, 0), BlockFace.Up).HandleAsync(context.Server, player);
+
+        var frame = await PortalFrame.FindAsync(world.GetBlockAsync, new Vector(0, 64, 0), "x", world.MinY);
+        Assert.True(frame!.Value.IsComplete);
+        Assert.Contains(((TestClient)player.Client).SentPackets, packet => packet is BlockChangedAckPacket);
+        Assert.Contains(((TestClient)player.Client).SentPackets, packet => packet is SoundPacket
+        {
+            SoundLocation: "minecraft:item.flintandsteel.use"
+        });
+    }
+
     [Fact]
     public async Task EndRingRequiresAllEyesAndInwardFacingFrames()
     {

@@ -27,6 +27,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case 0:
                 await HandleFromPoolAsync<AcceptTeleportationPacket>(data);
                 break;
+            case 2:
+                await HandleFromPoolAsync<BundleItemSelectedPacket>(data);
+                break;
             case 6:
                 await HandleFromPoolAsync<ChatCommandPacket>(data);
                 break;

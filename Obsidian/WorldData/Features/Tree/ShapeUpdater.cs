@@ -275,7 +275,7 @@ internal static class ShapeUpdater
     /// <summary>
     /// Vanilla <c>IronBarsBlock.attachsTo</c>: sturdy faces (except odd blocks), other bars and panes, and walls.
     /// </summary>
-    private static bool BarsAttachTo(IBlock neighbor, bool sturdy) =>
+    internal static bool BarsAttachTo(IBlock neighbor, bool sturdy) =>
         !IsExceptionForConnection(neighbor) && sturdy
         || neighbor.BlockClass() is "IronBarsBlock" or "StainedGlassPaneBlock" or "WeatheringCopperBarsBlock"
         || walls.Contains(neighbor);

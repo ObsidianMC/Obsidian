@@ -28,6 +28,8 @@ internal static class OnPlaceBehaviors
     internal static IOnPlaceBehavior SoulSandBlock { get; } = new SoulSandBlockBehavior();
 
     internal static IOnPlaceBehavior MagmaBlock { get; } = new MagmaBlockBehavior();
+
+    internal static IOnPlaceBehavior ComposterBlock { get; } = new ComposterBlockBehavior();
 }
 
 /// <summary>
@@ -72,6 +74,8 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior CactusBlock { get; } = new CactusBlockBehavior();
 
     internal static IScheduledTickBehavior BambooStalkBlock { get; } = new BambooStalkBlockBehavior();
+
+    internal static IScheduledTickBehavior ComposterBlock { get; } = new ComposterBlockBehavior();
 }
 
 /// <summary>
@@ -99,6 +103,8 @@ internal static class ShapeUpdateBehaviors
     internal static IShapeUpdateBehavior BambooStalkBlock { get; } = new BambooStalkBlockBehavior();
 
     internal static IShapeUpdateBehavior BambooSaplingBlock { get; } = new BambooSaplingBlockBehavior();
+
+    internal static IShapeUpdateBehavior IronBarsBlock { get; } = new IronBarsShapeUpdateBehavior();
 }
 
 /// <summary>
