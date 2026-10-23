@@ -87,6 +87,10 @@ internal static class EntityMovement
         float stepHeight,
         bool grounded)
     {
+        // Not moving, nothing clips it and it doesn't step: idle minecarts and mobs standing still ask every tick.
+        if (velocity == VectorD.Zero)
+            return VectorD.Zero;
+
         var swept = new BoundingBox(VectorD.Min(bounds.Min, bounds.Min + velocity),
             VectorD.Max(bounds.Max, bounds.Max + velocity) + new VectorD(0, stepHeight, 0));
         var shapes = collisionShapes ??= [];
