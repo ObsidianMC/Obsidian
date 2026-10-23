@@ -180,8 +180,20 @@ public partial class Arrow : Entity
             }
             if (!damaged && Type is EntityType.Arrow or EntityType.SpectralArrow)
             {
-                Motion *= -0.1;
+                // Vanilla AbstractArrow.onHitEntity: Projectile.deflect(ProjectileDeflection.REVERSE) reverses the
+                // motion (x -0.5) and turns the arrow 170-190 degrees, then the motion is scaled by 0.2 (net -0.1).
+                // A player's arrow left with no speed is dropped for pickup and discarded.
+                Motion *= -0.5;
+                var turn = 170f + Globals.Random.NextSingle() * 20f;
+                Yaw += turn;
+                Motion *= 0.2;
                 Crit = false;
+                if (Owner is IPlayer && Motion.Magnitude * Motion.Magnitude < 1e-7)
+                {
+                    if (Pickup == ArrowPickup.Allowed && PickupItem is { Count: > 0 })
+                        DropBlockedArrowItem();
+                    await RemoveAsync();
+                }
                 return;
             }
             await OnImpactAsync(target, damaged);
@@ -209,6 +221,16 @@ public partial class Arrow : Entity
 
     protected virtual ValueTask OnImpactAsync(IEntity? target, bool damaged) => RemoveAsync();
     protected virtual double GetDrag(bool water) => water ? 0.6 : 0.99;
+
+    private void DropBlockedArrowItem()
+    {
+        var entity = new ItemEntity
+        {
+            Level = Level, EntityId = Server.GetNextEntityId(), Position = Position, Item = PickupItem!
+        };
+        if (Level.TryAddEntity(entity))
+            entity.SpawnEntity(new Velocity(0, 0, 0));
+    }
 
     protected async ValueTask PickupAsync()
     {

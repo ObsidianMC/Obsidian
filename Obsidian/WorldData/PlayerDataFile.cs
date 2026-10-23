@@ -32,8 +32,7 @@ internal static partial class PlayerDataFile
             {
                 await using var writer = new NbtWriterStream(stream, NbtCompression.GZip, "");
 
-                foreach (var (_, tag) in data)
-                    writer.WriteTag(tag);
+                writer.WriteEntries(data);
 
                 writer.EndCompound();
                 await writer.TryFinishAsync();

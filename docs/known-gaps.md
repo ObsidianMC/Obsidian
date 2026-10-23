@@ -248,8 +248,11 @@ hoppers, droppers and dispensers; the rest of vanilla's item movers aren't model
   other projectiles, pouring and filling buckets, bone meal, placing shulker boxes and other blocks, equipping
   armour, igniting TNT, shearing, ...) aren't modelled, and a dispenser with nothing to fire doesn't emit vanilla's
   `block_activate` game event.
-- **Composters** (vanilla's `WorldlyContainerHolder`) give no item access, and **minecarts with chests or hoppers**
-  are neither containers hoppers reach (vanilla's `getEntityContainer`) nor hoppers themselves.
+- **Composters** take items put in by hand and by a hopper above, and give bone meal out by hand and to a hopper
+  below, with vanilla's chance table. Items thrown into one (item entities) aren't taken yet, and the ready tick
+  is checked by scheduling and running it directly, not over a 20-tick world run.
+- **Minecarts with chests or hoppers** are neither containers hoppers reach (vanilla's `getEntityContainer`) nor
+  hoppers themselves.
 - **Hopper timing.** A hopper takes in item entities on its own tick, not also as they move into it (vanilla's
   `entityInside`), and takes them in entity id order rather than vanilla's entity section order. Hoppers tick in
   their chunk's block entity order, not vanilla's level-wide list; the cooldown rules make chains independent of
@@ -263,7 +266,8 @@ hoppers, droppers and dispensers; the rest of vanilla's item movers aren't model
 
 **Where to start:** dispenser behaviours go in `DispenserComponent.Fire`, in
 `Obsidian/WorldData/Redstone/ItemMovers.cs`, keyed by item like vanilla's `DispenserBlock.DISPENSER_REGISTRY`; a
-composter is an `IItemAccess` that `AbstractLevel.GetItemAccess` returns before it looks for a block entity.
+composter's access is `ComposterItemAccess` (`Obsidian/WorldData/AbstractLevel.Composters.cs`), which
+`AbstractLevel.GetItemAccess` returns before it looks for a block entity.
 
 ## Sleeping and spawn points
 

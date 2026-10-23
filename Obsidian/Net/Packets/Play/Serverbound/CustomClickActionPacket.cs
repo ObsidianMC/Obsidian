@@ -19,9 +19,8 @@ public partial class CustomClickActionPacket
         ActionId = reader.ReadString(32767);
         var bytes = reader.ReadByteArray(MaximumPayloadBytes);
         ValidatePayload(bytes);
-        using var stream = new MemoryStream(bytes, writable: false);
-        Payload = new NbtReader(stream).ReadNextTag(false);
-        if (stream.Position != stream.Length)
+        Payload = NbtReader.ReadTag(bytes, false, out var bytesRead);
+        if (bytesRead != bytes.Length)
             throw new InvalidDataException("Unread custom action payload data.");
     }
 

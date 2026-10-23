@@ -11,16 +11,12 @@ internal static class ComponentCopies
         if (value is null)
             return null;
 
-        using var stream = new MemoryStream();
-        using var writer = new NbtWriterStream(stream);
-        writer.WriteTag(value);
-        writer.TryFinish();
-        stream.Position = 0;
-        var reader = new NbtReader(stream);
-        if (!reader.TryReadNextTag<NbtCompound>(true, out var copy))
-            throw new InvalidDataException("Invalid component NBT.");
+        using var writer = new RawNbtWriter(value.Name ?? string.Empty);
+        writer.WriteEntries(value);
+        writer.EndCompound();
 
-        return copy;
+        return NbtReader.ReadTag(writer.Data, true, out _) as NbtCompound
+            ?? throw new InvalidDataException("Invalid component NBT.");
     }
 
     public static ChatMessage? Chat(ChatMessage? value) => value?.CopyForComponent();

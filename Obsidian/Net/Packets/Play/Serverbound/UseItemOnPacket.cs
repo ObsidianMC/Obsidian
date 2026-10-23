@@ -6,6 +6,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Redstone;
+using Obsidian.Entities.AI;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -151,6 +152,15 @@ public partial class UseItemOnPacket
                 player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
                 return;
             }
+        }
+
+        // Vanilla's composter: a compostable item goes in from the held hand, and bone meal comes out when it's ready.
+        if (!player.Sneaking
+            && player.Level is AbstractLevel composterLevel
+            && await composterLevel.UseComposterAsync(player, position, b, handSlot))
+        {
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            return;
         }
 
         // Vanilla's redstone components react to being used with the main hand: levers, buttons, repeaters,
@@ -438,12 +448,15 @@ public partial class UseItemOnPacket
         // a block of its own kind), and otherwise next to it on the clicked face, where there must be room. Buckets
         // pour next to the clicked block.
         var pouring = block.Is(BlockIds.Water) || block.Is(BlockIds.Lava);
-        var replacesClicked = !pouring && b.CanBeReplaced() && b.RegistryId != block.RegistryId;
+        var upperHit = this.Cursor.Y > 0.5;
+        var replacesClicked = !pouring && (b.CanBeReplaced() && b.RegistryId != block.RegistryId
+            || VanillaPlacement.SlabCanBeReplaced(b, block, true, this.Face, upperHit));
         if (!replacesClicked)
             position += this.Face.ToVector();
 
         var target = await placeLevel.GetBlockAsync(position);
-        if (placeLevel.IsOutsideBuildHeight(position.Y) || !pouring && target?.CanBeReplaced() != true)
+        if (placeLevel.IsOutsideBuildHeight(position.Y) || !pouring && target?.CanBeReplaced() != true
+            && (target is null || !VanillaPlacement.SlabCanBeReplaced(target, block, replacesClicked, this.Face, upperHit)))
         {
             await this.RejectPlacementAsync(player, handSlot);
             return;
@@ -451,6 +464,14 @@ public partial class UseItemOnPacket
 
         // Vanilla's BlockItem.canPlace: a block that can't survive where it would go isn't placed (a crop goes only on farmland).
         if (!pouring && !PlacementSurvival.CanPlace(placeLevel.Fluids, block, position))
+        {
+            await this.RejectPlacementAsync(player, handSlot);
+            return;
+        }
+
+        // Vanilla's BlockItem.canPlace also requires Level.isUnobstructed: the block's collision shape can't overlap a
+        // mob or player (say, the placing player's own feet when they look down and place under themselves).
+        if (!pouring && !IsUnobstructed(placeLevel, position, block))
         {
             await this.RejectPlacementAsync(player, handSlot);
             return;
@@ -561,7 +582,8 @@ public partial class UseItemOnPacket
             position,
             block,
             BlockUpdateFlags.All,
-            current => (pouring || current.CanBeReplaced())
+            current => (pouring || current.CanBeReplaced()
+                    || VanillaPlacement.SlabCanBeReplaced(current, block, replacesClicked, this.Face, upperHit))
                 && ReferenceEquals(player.Inventory.GetItem(handSlot), currentItem)
                 && currentItem.Count > 0,
             placement);
@@ -593,6 +615,30 @@ public partial class UseItemOnPacket
         {
             SequenceID = Sequence
         });
+    }
+
+    // Vanilla's Level.isUnobstructed for living entities: spectators don't block, and neither do items or projectiles here.
+    private static bool IsUnobstructed(AbstractLevel level, Vector position, IBlock block)
+    {
+        var shapes = BlockCollisionShapes.Get(level, position, block);
+        if (shapes.Count == 0)
+            return true;
+
+        var offset = (VectorD)position;
+        foreach (var entity in level.GetEntitiesInRange(offset + new VectorD(0.5, 0.5, 0.5), 4))
+        {
+            if (entity is not (Entities.Mob or IPlayer { GameMode: not GameMode.Spectator }))
+                continue;
+
+            var bounds = entity.Dimension.CreateBBFromPosition(entity.Position);
+            foreach (var shape in shapes)
+            {
+                if (MobTerrain.Overlaps(shape.OffsetBy(offset), bounds))
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     // A placement that didn't happen: the player's client, which predicted it, gets the block and the item back.

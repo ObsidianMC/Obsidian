@@ -1131,10 +1131,7 @@ public class Region : IRegion
             writer.WriteCompoundStart("structures");
             writer.WriteCompoundStart("starts");
             if (structureStarts is not null)
-            {
-                foreach (var (_, start) in structureStarts)
-                    writer.WriteTag(start);
-            }
+                writer.WriteEntries(structureStarts);
 
             writer.EndCompound();
 

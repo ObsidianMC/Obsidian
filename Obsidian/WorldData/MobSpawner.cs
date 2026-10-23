@@ -350,7 +350,8 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             }
             if (level.GetLoadedChunk(x >> 4, z >> 4) is not { } candidateChunk)
                 continue;
-            if (generation)
+            // Vanilla finds each jittered column's surface, so a creature doesn't try a height from the origin column.
+            if (generation || category == "creature")
                 y = GetSpawnHeight(candidateChunk, x, z);
             var position = new VectorD(x + 0.5f, y, z + 0.5f);
             if (!generation && !this.IsRightDistance(players, position))

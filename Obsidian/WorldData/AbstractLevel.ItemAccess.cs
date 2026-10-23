@@ -60,6 +60,9 @@ public abstract partial class AbstractLevel
             if (this.PluginBlockAccess(updates, position, state, side) is IItemAccess pluginAccess)
                 return pluginAccess;
 
+            if (state.Is(BlockIds.Composter))
+                return new ComposterItemAccess(this, position, side);
+
             var access = this.BlockEntityAccess(updates.GetBlockEntity(position), side);
             if (access is null || !IsChest(state) || ChestPartner(updates, position, state) is not Vector partner)
                 return access;

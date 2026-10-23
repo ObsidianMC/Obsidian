@@ -107,8 +107,7 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
         }
 
         using var nbtWriter = new RawNbtWriter(true);
-        foreach (var (_, tag) in compound)
-            nbtWriter.WriteTag(tag);
+        nbtWriter.WriteEntries(compound);
 
         nbtWriter.EndCompound();
         nbtWriter.TryFinish();

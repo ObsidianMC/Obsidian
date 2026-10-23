@@ -35,6 +35,7 @@ internal static class PlacementBehaviors
     internal static IBlockBehavior DriedGhastBlock => HorizontalOpposite;
     internal static IBlockBehavior EnderChestBlock => HorizontalOpposite;
     internal static IBlockBehavior HopperBlock => ClickedFaceOpposite;
+    internal static IBlockBehavior IronBarsBlock { get; } = new IronBarsPlacementBehavior();
     internal static IBlockBehavior LecternBlock => HorizontalOpposite;
     internal static IBlockBehavior LeavesBlock => Leaves;
     internal static IBlockBehavior ShulkerBoxBlock => ClickedFace;

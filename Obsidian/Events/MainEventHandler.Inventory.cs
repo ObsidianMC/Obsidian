@@ -184,6 +184,28 @@ public partial class MainEventHandler
     }
 
     /// <summary>
+    /// Vanilla's <c>handleBundleItemSelectedPacket</c>: the player picked an item in a bundle in the open window (or their
+    /// inventory); toggles the selection. Nothing is broadcast, as vanilla's selection isn't saved or sent.
+    /// </summary>
+    internal static ValueTask SelectBundleItemAsync(IPlayer player, int slotId, int selectedItemIndex)
+    {
+        var window = player.OpenedContainer ?? player.Inventory;
+        if (slotId < 0 || slotId > short.MaxValue)
+            return ValueTask.CompletedTask;
+
+        // The window's slot numbering, as ContainerClick maps it: the player's section of an open window is the inventory.
+        var (slot, forPlayer) = window.GetSlot((short)slotId);
+        var container = forPlayer ? player.Inventory : window;
+        if (slot < 0 || slot >= container.Size || forPlayer && window != player.Inventory && slot >= 45)
+            return ValueTask.CompletedTask;
+
+        if (container.GetItem(slot) is { } bundle && !bundle.IsAir)
+            Bundles.ToggleSelection(bundle, selectedItemIndex);
+
+        return ValueTask.CompletedTask;
+    }
+
+    /// <summary>
     /// Shift-clicks a slot like vanilla: the window's own routing moves the stack, again while it moves something and
     /// the slot still holds the same item. A click outside the window drops the cursor like a pickup.
     /// </summary>
@@ -608,7 +630,7 @@ public partial class MainEventHandler
     /// brewing stand's slots takes (see <see cref="Brewing.SlotAccepts"/>); and what a plugin's menu says in its
     /// slots.
     /// </summary>
-    private static bool SlotAccepts(IPlayer player, BaseContainer container, int slot, ItemStack item)
+    internal static bool SlotAccepts(IPlayer player, BaseContainer container, int slot, ItemStack item)
     {
         if (container == player.Inventory)
         {
@@ -645,7 +667,7 @@ public partial class MainEventHandler
     /// vanilla's slots: one in an armour slot, in the enchanting table's first slot, in a brewing stand's bottle slots
     /// and, for a bucket, in a furnace's fuel slot; what a plugin's menu says in its slots.
     /// </summary>
-    private static int SlotLimit(IPlayer player, BaseContainer container, int slot, ItemStack item)
+    internal static int SlotLimit(IPlayer player, BaseContainer container, int slot, ItemStack item)
     {
         if (container is MenuContainer menu)
             return menu.MaxStackSize(slot, item);
@@ -667,7 +689,7 @@ public partial class MainEventHandler
     /// vanilla's armour slots, not armour cursed with binding, unless the player is in creative mode; and what a
     /// plugin's menu says in its slots.
     /// </summary>
-    private static bool SlotMayPickup(IPlayer player, BaseContainer container, int slot)
+    internal static bool SlotMayPickup(IPlayer player, BaseContainer container, int slot)
     {
         if (container is MenuContainer menu)
             return menu.MayPickup(slot, player);
@@ -776,7 +798,12 @@ public partial class MainEventHandler
         }
 
         if (args.ClickedSlot >= 0)
+        {
+            if (Bundles.TryClick(player, args.Container, args.ClickedSlot, primary: args.Button == 0))
+                return;
+
             PickupSlot(player, args.Container, args.ClickedSlot, primary: args.Button == 0);
+        }
     }
 
     /// <summary>
