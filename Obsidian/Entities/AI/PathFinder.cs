@@ -20,8 +20,18 @@ internal sealed class WalkNodeEvaluator(PathfinderMob mob)
         return ground;
     }
 
+    // The mob's step height for the search under way, read once a search; NaN until it's read.
+    private float maximumRise = float.NaN;
+
+    // The surfaces a column offers, reused by every evaluation on the thread: a search evaluates many columns.
+    [ThreadStatic] private static List<double>? surfaces;
+
     // Terrain and door permissions can change between searches, including a previously blocked column.
-    public void Reset() => groundCache.Clear();
+    public void Reset()
+    {
+        groundCache.Clear();
+        maximumRise = float.NaN;
+    }
 
     private VectorD? EvaluateGround(int x, int z, double currentY)
     {
@@ -41,8 +51,11 @@ internal sealed class WalkNodeEvaluator(PathfinderMob mob)
             }
         }
 
-        var candidates = new List<double>();
-        var maximumRise = Math.Max(1, mob.GetAttributeValue("minecraft:generic.step_height"));
+        var candidates = surfaces ??= [];
+        candidates.Clear();
+        if (float.IsNaN(this.maximumRise))
+            this.maximumRise = Math.Max(1, mob.GetAttributeValue("minecraft:generic.step_height"));
+        var maximumRise = this.maximumRise;
         for (var y = (int)Math.Floor(currentY + maximumRise); y >= (int)Math.Floor(currentY - 3) - 1; y--)
         {
             var block = mob.Terrain.GetBlock(new Vector(x, y, z));
@@ -58,8 +71,13 @@ internal sealed class WalkNodeEvaluator(PathfinderMob mob)
             }
         }
 
-        foreach (var y in candidates.Distinct().OrderByDescending(value => value))
+        // Highest first, each height once, as Distinct().OrderByDescending() gave them, without their allocations.
+        candidates.Sort(static (left, right) => right.CompareTo(left));
+        for (var index = 0; index < candidates.Count; index++)
         {
+            var y = candidates[index];
+            if (index > 0 && candidates[index - 1] == y)
+                continue;
             if (y > currentY + maximumRise + 0.00001f || y < currentY - 3)
                 continue;
 
