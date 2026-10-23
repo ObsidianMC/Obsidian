@@ -118,7 +118,8 @@ public abstract partial class AbstractLevel
         {
             if (vibration.Kind is MobGameEvent.JukeboxPlay or MobGameEvent.JukeboxStop)
             {
-                foreach (var allay in GetNonPlayerEntitiesInRange(vibration.Position, 10).OfType<Allay>())
+                // Filtered before the query sorts its matches: most entities near a jukebox aren't allays.
+                foreach (var allay in GetNonPlayerEntitiesInRange(vibration.Position, 10, static entity => entity is Allay).Cast<Allay>())
                     allay.ReceiveJukeboxEvent((Vector)vibration.Position.Floor(), vibration.Kind == MobGameEvent.JukeboxPlay);
                 continue;
             }
@@ -133,11 +134,10 @@ public abstract partial class AbstractLevel
             }
             if (!ValidVibration(vibration))
                 continue;
-            foreach (var listener in GetNonPlayerEntitiesInRange(vibration.Position, 16))
+            // Only wardens and allays listen, so the query drops the others before sorting its matches (by entity id,
+            // the order listeners are offered the vibration in).
+            foreach (var listener in GetNonPlayerEntitiesInRange(vibration.Position, 16, static entity => entity is Warden or Allay))
             {
-                // Only wardens and allays listen; the type check comes first since it's the cheapest.
-                if (listener is not Warden and not Allay)
-                    continue;
                 if (!IsMobTicking(listener.Position))
                     continue;
                 if (listener is Warden warden && !warden.AcceptsVibration(vibration))
@@ -186,7 +186,8 @@ public abstract partial class AbstractLevel
         for (var cx = (origin.X - radius) >> 4; cx <= (origin.X + radius) >> 4; cx++)
         for (var cz = (origin.Z - radius) >> 4; cz <= (origin.Z + radius) >> 4; cz++)
         {
-                if (GetLoadedChunk(cx, cz) is not Chunk chunk)
+                // Most chunks never hold a block entity, which HasBlockEntities tells without walking the dictionary.
+                if (GetLoadedChunk(cx, cz) is not Chunk chunk || !chunk.HasBlockEntities)
                     continue;
             // Read in place: each step any mob takes asks for the sculk near it.
             foreach (var (_, blockEntity) in chunk.BlockEntities)
