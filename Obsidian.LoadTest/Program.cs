@@ -9,7 +9,7 @@
 //
 // Options (defaults in brackets):
 //   --host [localhost]  --port [25565]  --bots [10]  --join-interval ms [250]  --duration s [120]  --report s [10]
-//   --mode idle|roam|spread [roam]  --radius blocks [512]  --wander-radius blocks [16] (spread)
+//   --mode idle|roam|spread|shuttle [roam]  --radius blocks [512]  --wander-radius blocks [16] (spread)
 //   --speed blocks/s [5.6]  --altitude blocks [10]
 //   --view-distance [10]  --nether-fraction 0..1 [0]  --creative true|false [true]  --name-prefix [Bot]
 
@@ -80,10 +80,11 @@ async Task ReportAsync(CancellationToken cancellationToken)
 namespace Obsidian.LoadTest
 {
     /// <summary>
-    /// How bots move: idle at the spawn; roam around it, flying over new terrain; or spread, each settling at its own
-    /// home within the radius and wandering slowly around it, like players at their bases.
+    /// How bots move: idle at the spawn; roam around it, flying over new terrain; spread, each settling at its own
+    /// home within the radius and wandering slowly around it, like players at their bases; or shuttle, each flying
+    /// out to the radius and back along its own line, over terrain the server saved and unloaded since it last passed.
     /// </summary>
-    internal enum BotMode { Idle, Roam, Spread }
+    internal enum BotMode { Idle, Roam, Spread, Shuttle }
 
     /// <summary>The load test's settings, from the command line (see Program.cs).</summary>
     internal sealed record BotOptions

@@ -26,6 +26,7 @@ internal sealed class Bot(int index, BotOptions options, LoadStats stats)
     private double x, y, z;
     private double homeX, homeZ, cruiseY;
     private double heading;
+    private bool outbound = true;
     private bool positioned;
 
     private string dimension = "overworld";
@@ -358,6 +359,19 @@ internal sealed class Bot(int index, BotOptions options, LoadStats stats)
 
         var (dx, dz) = (this.x - this.homeX, this.z - this.homeZ);
         var radius = options.Mode == BotMode.Spread ? options.WanderRadius : options.Radius;
+
+        // A shuttling bot keeps its heading, turning round at home and at the radius.
+        if (options.Mode == BotMode.Shuttle)
+        {
+            var along = dx * Math.Cos(this.heading) + dz * Math.Sin(this.heading);
+            if (this.outbound && along >= radius || !this.outbound && along <= 0)
+                this.outbound = !this.outbound;
+
+            var shuttleStep = (this.outbound ? 1 : -1) * options.Speed / 20;
+            this.x += Math.Cos(this.heading) * shuttleStep;
+            this.z += Math.Sin(this.heading) * shuttleStep;
+            return true;
+        }
 
         // A spread bot away from home (it starts at the spawn) flies there at 100 blocks a second: the server doesn't
         // follow a jump of thousands of blocks in one move.
