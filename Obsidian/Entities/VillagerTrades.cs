@@ -75,10 +75,16 @@ internal static class VillagerTrades
             (14, 5) => [Sell(ItemsRegistry.DiamondSword, 13)],
             _ => Array.Empty<TradeEntry>()
         };
-        foreach (var trade in trades) { trade.XP = level == 1 ? 2 : level == 2 ? 10 : level == 3 ? 20 : 30; yield return trade; }
+        foreach (var trade in trades)
+        {
+            trade.XP = level == 1 ? 2 : level == 2 ? 10 : level == 3 ? 20 : 30;
+            yield return trade;
     }
+    }
+
     private static TradeEntry Buy(Item item, int count) =>
         MerchantOffers.Trade(item, count, ItemsRegistry.Emerald, maxUses: 16);
+
     private static TradeEntry Sell(Item item, int cost, int count = 1) =>
         MerchantOffers.Trade(ItemsRegistry.Emerald, cost, item, count);
 }

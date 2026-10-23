@@ -25,6 +25,7 @@ public abstract class Fish : PathfinderMob
     }
 
     protected override VectorD Travel() => VolumeMovement.Travel(this, InWater);
+
     protected override ValueTask TickMobAsync()
     {
         if (!MobBitMask.HasFlag(MobBitmask.NoAi) && !InWater && MovementFlags.HasFlag(MovementFlags.OnGround))
@@ -38,8 +39,13 @@ public abstract class Fish : PathfinderMob
 
     protected override async ValueTask TickAirSupplyAsync()
     {
-        if (InWater) Air = 300;
-        else if (--Air <= -20) { Air = 0; await DamageEnvironmentAsync(2); }
+        if (InWater)
+            Air = 300;
+        else if (--Air <= -20)
+        {
+            Air = 0;
+            await DamageEnvironmentAsync(2);
+        }
     }
 
     internal override ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand) =>
@@ -54,7 +60,8 @@ public abstract class Fish : PathfinderMob
             _ => FishItem
         };
         DropItem(Burning ? cooked : FishItem);
-        if (Random.NextSingle() < 0.05f) DropItem(ItemsRegistry.BoneMeal);
+        if (Random.NextSingle() < 0.05f)
+            DropItem(ItemsRegistry.BoneMeal);
         return default;
     }
 
@@ -64,6 +71,7 @@ public abstract class Fish : PathfinderMob
         writer.WriteEntityMetadataType(16, EntityMetadataType.Boolean);
         writer.WriteBoolean(FromBucket);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer) => writer.WriteBool("FromBucket", FromBucket);
     protected override void ReadAdditionalSave(NbtCompound tag) => FromBucket = tag.TryGetBool("FromBucket", out var bucket) && bucket;
 }
@@ -90,11 +98,13 @@ public abstract class SchoolingFish : Fish
 
     internal bool TryJoinSchool()
     {
-        if (Leader != null || HasFollowers) return Leader != null;
+        if (Leader != null || HasFollowers)
+            return Leader != null;
         var leader = GetEntitiesNear(8).OfType<SchoolingFish>().Where(fish => fish.Alive && !fish.IsRemoved && fish.InWater &&
             fish.Leader == null && fish.EntityId < EntityId && CanJoinSchool(fish) && fish.followers.Count < fish.MaximumSchoolSize - 1)
             .MinBy(fish => (fish.Position - Position).MagnitudeSquared());
-        if (leader == null) return false;
+        if (leader == null)
+            return false;
         Leader = leader;
         leader.followers.Add(this);
         return true;
@@ -103,13 +113,16 @@ public abstract class SchoolingFish : Fish
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
-        if (Leader != null && (!Leader.Alive || Leader.IsRemoved || Leader.Level != Level || !IsInRange(Leader, 11))) LeaveSchool();
+        if (Leader != null && (!Leader.Alive || Leader.IsRemoved || Leader.Level != Level || !IsInRange(Leader, 11)))
+            LeaveSchool();
         followers.RemoveWhere(fish => fish.Leader != this || !fish.Alive || fish.IsRemoved || fish.Level != Level);
     }
+
     public override async ValueTask RemoveAsync()
     {
         LeaveSchool();
-        foreach (var fish in followers.ToArray()) fish.LeaveSchool();
+        foreach (var fish in followers.ToArray())
+            fish.LeaveSchool();
         await base.RemoveAsync();
     }
 }
@@ -117,13 +130,17 @@ public abstract class SchoolingFish : Fish
 internal sealed class FishSwimGoal(Fish fish) : NavigationGoal(fish, 1)
 {
     private VectorD destination;
+
     public override bool CanUse()
     {
-        if (!fish.InWater || fish is SchoolingFish { Leader: not null } || fish.Random.Next(40) != 0) return false;
-        if (RandomPosition.Find(fish, 10) is not VectorD point) return false;
+        if (!fish.InWater || fish is SchoolingFish { Leader: not null } || fish.Random.Next(40) != 0)
+            return false;
+        if (RandomPosition.Find(fish, 10) is not VectorD point)
+            return false;
         destination = point;
         return true;
     }
+
     public override void Start() => MoveTo(destination);
     public override bool CanContinue() => fish.InWater && Navigation.IsNavigating && fish is not SchoolingFish { Leader: not null };
 }
@@ -132,16 +149,22 @@ internal sealed class FollowSchoolGoal(SchoolingFish fish) : NavigationGoal(fish
 {
     private long nextSearch;
     private long nextPath;
+
     public override bool CanUse()
     {
-        if (!fish.InWater || fish.HasFollowers) return false;
-        if (fish.Leader != null) return true;
-        if (fish.AiTick < nextSearch) return false;
+        if (!fish.InWater || fish.HasFollowers)
+            return false;
+        if (fish.Leader != null)
+            return true;
+        if (fish.AiTick < nextSearch)
+            return false;
         nextSearch = fish.AiTick + 200 + fish.Random.Next(20);
         return fish.TryJoinSchool();
     }
+
     public override bool CanContinue() => fish.InWater && fish.Leader is { Alive: true, IsRemoved: false } leader && fish.IsInRange(leader, 11);
     public override void Start() => nextPath = 0;
+
     public override ValueTask TickAsync()
     {
         if (fish.Leader is { } leader && fish.AiTick >= nextPath)
@@ -151,7 +174,12 @@ internal sealed class FollowSchoolGoal(SchoolingFish fish) : NavigationGoal(fish
         }
         return default;
     }
-    public override void Stop() { base.Stop(); fish.LeaveSchool(); }
+
+    public override void Stop()
+    {
+        base.Stop();
+        fish.LeaveSchool();
+    }
 }
 
 [MinecraftEntity("minecraft:cod")]
@@ -176,22 +204,26 @@ public sealed partial class Salmon : SchoolingFish
     protected override Item BucketItem => ItemsRegistry.SalmonBucket;
     protected override Item FishItem => ItemsRegistry.Salmon;
     internal override int MaximumSchoolSize => 5;
+
     protected override void FinalizeSpawn()
     {
         var choice = Random.Next(95);
         Size = choice < 30 ? 0 : choice < 80 ? 1 : 2;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
         writer.WriteVarInt(Size);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         base.WriteAdditionalSave(writer);
         writer.WriteString("type", sizeNames[Size]);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         base.ReadAdditionalSave(tag);
@@ -207,29 +239,34 @@ public sealed partial class TropicalFish : SchoolingFish
     private static readonly int[] commonVariants = [117506305, 117899265, 185008129, 117441793, 118161664, 65536,
         50726144, 67764993, 234882305, 67110144, 117441025, 16778497, 101253888, 50660352, 918529, 235340288,
         918273, 67108865, 917504, 459008, 67699456, 67371009];
+
     public TropicalFish() => Type = EntityType.TropicalFish;
     public int Variant { get; set; }
     protected override string? SoundName => "tropical_fish";
     protected override Item BucketItem => ItemsRegistry.TropicalFishBucket;
     protected override Item FishItem => ItemsRegistry.TropicalFish;
     internal override bool CanJoinSchool(SchoolingFish leader) => leader is TropicalFish other && other.Variant == Variant;
+
     protected override void FinalizeSpawn()
     {
         var school = GetEntitiesNear(8).OfType<TropicalFish>().FirstOrDefault(fish => fish.Alive && !fish.IsRemoved);
         Variant = school?.Variant ?? (Random.NextSingle() < 0.9f ? commonVariants[Random.Next(commonVariants.Length)] :
             Random.Next(2) | Random.Next(6) << 8 | Random.Next(16) << 16 | Random.Next(16) << 24);
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
         writer.WriteVarInt(Variant);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         base.WriteAdditionalSave(writer);
         writer.WriteInt("Variant", Variant);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         base.ReadAdditionalSave(tag);
@@ -250,6 +287,7 @@ public sealed partial class Pufferfish : Fish
     protected override string? SoundName => "puffer_fish";
     protected override Item BucketItem => ItemsRegistry.PufferfishBucket;
     protected override Item FishItem => ItemsRegistry.Pufferfish;
+
     private bool IsThreat(IEntity target) => IsValidTarget(target) && target is Living &&
         target.Type != EntityType.Axolotl
         && !IsIn(target, TagsRegistry.EntityType.Aquatic);
@@ -257,7 +295,8 @@ public sealed partial class Pufferfish : Fish
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+            return;
         if (AiTick % 200 == 0)
             foreach (var id in nextSting.Where(entry => entry.Value <= AiTick).Select(entry => entry.Key).ToArray())
                 nextSting.Remove(id);
@@ -267,21 +306,27 @@ public sealed partial class Pufferfish : Fish
         if (threatened)
         {
             deflateTicks = 0;
-            if (PuffState == 0) SetPuffState(1);
-            else if (++inflateTicks > 40 && PuffState == 1) SetPuffState(2);
+            if (PuffState == 0)
+                SetPuffState(1);
+            else if (++inflateTicks > 40 && PuffState == 1)
+                SetPuffState(2);
         }
         else
         {
             inflateTicks = 0;
-            if (PuffState == 2 && ++deflateTicks > 60) SetPuffState(1);
-            else if (PuffState == 1 && ++deflateTicks > 100) SetPuffState(0);
+            if (PuffState == 2 && ++deflateTicks > 60)
+                SetPuffState(1);
+            else if (PuffState == 1 && ++deflateTicks > 100)
+                SetPuffState(0);
         }
-        if (PuffState == 0) return;
+        if (PuffState == 0)
+            return;
         bounds = Dimension.CreateBBFromPosition(Position);
         var contact = new BoundingBox(bounds.Min - 0.3f, bounds.Max + 0.3f);
         foreach (var target in nearby.Where(target => MobTerrain.Overlaps(contact, target.Dimension.CreateBBFromPosition(target.Position))))
         {
-            if (AiTick < nextSting.GetValueOrDefault(target.EntityId)) continue;
+            if (AiTick < nextSting.GetValueOrDefault(target.EntityId))
+                continue;
             nextSting[target.EntityId] = AiTick + 10;
             var health = target.Health;
             await target.DamageAsync(this, 1 + PuffState);
@@ -293,6 +338,7 @@ public sealed partial class Pufferfish : Fish
             }
         }
     }
+
     private void SetPuffState(int state)
     {
         PlayMobSound(state > PuffState ? "blow_up" : "blow_out");
@@ -300,17 +346,20 @@ public sealed partial class Pufferfish : Fish
         BoundingBox = Dimension.CreateBBFromPosition(Position);
         SynchronizeMetadata();
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
         writer.WriteVarInt(PuffState);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         base.WriteAdditionalSave(writer);
         writer.WriteInt("PuffState", PuffState);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         base.ReadAdditionalSave(tag);

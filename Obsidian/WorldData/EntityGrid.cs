@@ -1,11 +1,13 @@
 using Obsidian.Entities;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Obsidian.WorldData;
 
 /// <summary>
 /// A level's non-player entities by the chunk they're in, so a range query looks at the chunks around it rather than
-/// at every entity of the regions it touches. Players are left out: range queries find them through the level's
+/// at every entity of the regions it touches, and by UUID, like vanilla's entity lookup, so finding one (a projectile's
+/// owner, a duplicate being loaded) doesn't go over them all. Players are left out: the level finds them through its
 /// players.
 /// </summary>
 /// <remarks>
@@ -23,6 +25,17 @@ internal sealed class EntityGrid
 {
     private readonly Lock gate = new();
     private readonly Dictionary<long, List<Entity>> chunks = [];
+    private readonly Dictionary<Guid, IEntity> byUuid = [];
+
+    // The grid each entity of another IEntity implementation is in, and the UUID it was indexed by: those have no
+    // chunk to be filed under, but the level finds them by UUID like the others.
+    private static readonly ConditionalWeakTable<IEntity, OtherEntity> otherEntities = [];
+
+    // Moving such an entity in or out of a grid updates its grid's index and its membership together under this lock,
+    // so concurrent moves can't leave it indexed in a grid it isn't in. Taken before a grid's own lock.
+    private static readonly Lock otherEntitiesGate = new();
+
+    private sealed record OtherEntity(EntityGrid Grid, Guid Uuid);
 
     internal static long ChunkKey(VectorD position) =>
         NumericsHelper.IntsToLong((int)Math.Floor(position.X) >> 4, (int)Math.Floor(position.Z) >> 4);
@@ -30,10 +43,14 @@ internal sealed class EntityGrid
     /// <summary>
     /// Adds the entity at its position, taking it out of another level's grid first.
     /// </summary>
-    public void Add(IEntity entity)
+    /// <returns>Whether it's in the grid now: not when another entity in it has its UUID.</returns>
+    public bool Add(IEntity entity)
     {
-        if (entity is not Entity concrete || entity is IPlayer)
-            return;
+        if (entity is IPlayer)
+            return true;
+
+        if (entity is not Entity concrete)
+            return this.AddOther(entity);
 
         if (concrete.Grid is EntityGrid previous && previous != this)
             previous.Remove(concrete);
@@ -41,12 +58,64 @@ internal sealed class EntityGrid
         lock (this.gate)
         {
             if (concrete.Grid == this)
-                return;
+                return true;
+
+            if (!this.byUuid.TryAdd(concrete.Uuid, concrete))
+                return false;
 
             var key = ChunkKey(concrete.Position);
             this.Bucket(key).Add(concrete);
             concrete.Grid = this;
             concrete.GridChunk = key;
+            return true;
+        }
+    }
+
+    /// <summary>The entity in the grid with <paramref name="uuid"/>, if any.</summary>
+    public IEntity? WithUuid(Guid uuid)
+    {
+        lock (this.gate)
+            return this.byUuid.GetValueOrDefault(uuid);
+    }
+
+    private bool AddOther(IEntity entity)
+    {
+        lock (otherEntitiesGate)
+        {
+            if (otherEntities.TryGetValue(entity, out var membership))
+            {
+                if (membership.Grid == this)
+                    return true;
+
+                membership.Grid.RemoveOther(entity);
+            }
+
+            var uuid = entity.Uuid;
+            lock (this.gate)
+            {
+                if (!this.byUuid.TryAdd(uuid, entity))
+                    return false;
+            }
+
+            otherEntities.AddOrUpdate(entity, new OtherEntity(this, uuid));
+            return true;
+        }
+    }
+
+    private void RemoveOther(IEntity entity)
+    {
+        lock (otherEntitiesGate)
+        {
+            if (!otherEntities.TryGetValue(entity, out var membership) || membership.Grid != this)
+                return;
+
+            lock (this.gate)
+            {
+                if (this.byUuid.TryGetValue(membership.Uuid, out var indexed) && ReferenceEquals(indexed, entity))
+                    this.byUuid.Remove(membership.Uuid);
+            }
+
+            otherEntities.Remove(entity);
         }
     }
 
@@ -57,6 +126,8 @@ internal sealed class EntityGrid
     {
         if (entity is Entity { Grid: EntityGrid grid } concrete)
             grid.Remove(concrete);
+        else if (entity is not Entity and not IPlayer && otherEntities.TryGetValue(entity, out var membership))
+            membership.Grid.RemoveOther(entity);
     }
 
     private void Remove(Entity entity)
@@ -67,6 +138,7 @@ internal sealed class EntityGrid
                 return;
 
             this.Unlink(entity, entity.GridChunk);
+            this.byUuid.Remove(entity.Uuid);
             entity.Grid = null;
         }
     }
@@ -89,13 +161,18 @@ internal sealed class EntityGrid
     }
 
     /// <summary>
-    /// The entities in the chunks the box from <paramref name="min"/> to <paramref name="max"/> reaches into, by entity
-    /// id; the caller checks whether each is in range.
+    /// The entities other than players within <paramref name="distance"/> of <paramref name="center"/> that
+    /// <paramref name="filter"/> accepts (all without one), by entity id. The filter runs outside the grid's lock.
     /// </summary>
-    public Entity[] InChunksAround(VectorD min, VectorD max)
+    /// <remarks>
+    /// Only the entities in range are kept and sorted: mobs' AI and players' tracking ask this every tick, and copying
+    /// and sorting every entity in the chunks around cost more than the checks.
+    /// </remarks>
+    public Entity[] NonPlayersInRange(VectorD center, double distance, Func<IEntity, bool>? filter = null)
     {
-        var (minX, minZ) = ((int)Math.Floor(min.X) >> 4, (int)Math.Floor(min.Z) >> 4);
-        var (maxX, maxZ) = ((int)Math.Floor(max.X) >> 4, (int)Math.Floor(max.Z) >> 4);
+        var (minX, minZ) = ((int)Math.Floor(center.X - distance) >> 4, (int)Math.Floor(center.Z - distance) >> 4);
+        var (maxX, maxZ) = ((int)Math.Floor(center.X + distance) >> 4, (int)Math.Floor(center.Z + distance) >> 4);
+        var distanceSquared = distance * distance;
 
         List<Entity>? found = null;
         lock (this.gate)
@@ -104,13 +181,22 @@ internal sealed class EntityGrid
             {
                 for (var z = minZ; z <= maxZ; z++)
                 {
-                    if (this.chunks.TryGetValue(NumericsHelper.IntsToLong(x, z), out var bucket))
-                        (found ??= []).AddRange(bucket);
+                    if (!this.chunks.TryGetValue(NumericsHelper.IntsToLong(x, z), out var bucket))
+                        continue;
+
+                    foreach (var entity in bucket)
+                    {
+                        if (entity.Type != EntityType.Player && (entity.Position - center).MagnitudeSquared() <= distanceSquared)
+                            (found ??= []).Add(entity);
+                    }
                 }
             }
         }
 
-        if (found is null)
+        if (filter is not null)
+            found?.RemoveAll(entity => !filter(entity));
+
+        if (found is not { Count: > 0 })
             return [];
 
         // A stable order whichever chunks the entities are in, for callers that take the first match.

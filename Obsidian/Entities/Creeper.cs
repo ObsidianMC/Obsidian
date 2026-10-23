@@ -1,3 +1,4 @@
+using Obsidian.WorldData;
 using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 
@@ -118,7 +119,8 @@ internal sealed class AvoidEntityGoal(PathfinderMob mob, Func<IEntity, bool> pre
     private VectorD destination;
     public override bool CanUse()
     {
-        threat = mob.GetEntitiesNear(range).FirstOrDefault(entity => entity.Health > 0 && predicate(entity));
+        threat = mob.Level.GetEntitiesInRange(mob.Position, range,
+            entity => !ReferenceEquals(entity, mob) && entity.Health > 0 && predicate(entity)).FirstOrDefault();
         if (threat == null || RandomPosition.Find(mob, 16, threat.Position) is not VectorD point)
             return false;
         destination = point;

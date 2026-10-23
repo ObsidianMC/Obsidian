@@ -617,6 +617,15 @@ public partial class NetworkBuffer : INetStreamWriter
         return body;
     }
 
+    // Where WriteFrame compresses a body before it can write the frame's length ahead of it. Reused by every frame the
+    // thread writes: it's copied out before WriteFrame returns, and nothing WriteFrame calls frames another packet.
+    [ThreadStatic]
+    private static MemoryStream? compressionScratch;
+
+    // A scratch grown past this by a rare huge packet (registry data, say) is dropped rather than kept for the life of
+    // the thread.
+    private const int MaxRetainedCompressionScratch = 1024 * 1024;
+
     /// <summary>
     /// Writes a packet's frame around its <paramref name="body"/> (its id and fields): length-prefixed and, with
     /// compression on (a <paramref name="compressionThreshold"/> of 0 or more), with its uncompressed length, zlib
@@ -631,7 +640,10 @@ public partial class NetworkBuffer : INetStreamWriter
         }
         else if (body.Length >= compressionThreshold)
         {
-            using var compressed = new MemoryStream();
+            var compressed = compressionScratch ??= new MemoryStream();
+
+            // Also rewinds it: the position never passes the length.
+            compressed.SetLength(0);
             using (ZLibStream zlibStream = new(compressed, CompressionLevel.Optimal, true))
             {
                 zlibStream.Write(body);
@@ -642,6 +654,9 @@ public partial class NetworkBuffer : INetStreamWriter
             this.WriteVarInt(body.Length.GetVarIntLength() + compressedLength);
             this.WriteVarInt(body.Length);
             this.Write(compressed.GetBuffer().AsSpan(0, compressedLength));
+
+            if (compressed.Capacity > MaxRetainedCompressionScratch)
+                compressionScratch = null;
         }
         else
         {

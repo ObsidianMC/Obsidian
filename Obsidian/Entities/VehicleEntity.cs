@@ -535,16 +535,20 @@ public abstract class VehicleEntity : Entity, IPlayerInteractable
     /// The entities a vehicle may push or be pushed by, like vanilla's <c>EntitySelector.pushableBy</c>: living
     /// things, boats and minecarts, but not its own passengers, spectators or what rides the same vehicle.
     /// </summary>
+    /// <remarks>
+    /// Every vehicle asks this twice a tick, so the conditions filter the level's query rather than what it returns.
+    /// </remarks>
     private protected IEnumerable<Entity> PushableEntitiesIn(BoundingBox bounds) => this.Level
-        .GetEntitiesInRange(this.Position, (float)Math.Max(bounds.Width, bounds.Depth) + 4)
-        .OfType<Entity>()
-        .Where(entity => !ReferenceEquals(entity, this)
+        .GetEntitiesInRange(this.Position, (float)Math.Max(bounds.Width, bounds.Depth) + 4, candidate =>
+            candidate is Entity entity
+            && !ReferenceEquals(entity, this)
             && entity is Living or VehicleEntity
             && entity.IsActive
             && entity is not VehicleEntity { IsRemoved: true }
             && entity.Vehicle != this
             && (this.Vehicle is null || entity.Vehicle != this.Vehicle)
-            && MobTerrain.Overlaps(bounds, entity.Dimension.CreateBBFromPosition(entity.Position)));
+            && MobTerrain.Overlaps(bounds, entity.Dimension.CreateBBFromPosition(entity.Position)))
+        .Cast<Entity>();
 
     private void SetData<T>(ref T field, T value)
     {

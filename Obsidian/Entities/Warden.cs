@@ -34,7 +34,8 @@ public sealed partial class Warden : PathfinderMob
 
     internal void ReceiveVibration(MobVibration vibration)
     {
-        if (!AcceptsVibration(vibration)) return;
+        if (!AcceptsVibration(vibration))
+            return;
         vibrationCooldown = 40;
         idleTicks = 0;
         SendEntityEvent(61);
@@ -45,12 +46,15 @@ public sealed partial class Warden : PathfinderMob
             if (IsInRange(owner, 30))
             {
                 IncreaseAnger(owner, projectileMemoryTicks > 0 ? 35 : 10);
-                if (projectileMemoryTicks > 0 && CanSense(owner)) destination = owner.Position;
+                if (projectileMemoryTicks > 0 && CanSense(owner))
+                    destination = owner.Position;
             }
             projectileMemoryTicks = 100;
         }
-        else if (vibration.Source is { } source) IncreaseAnger(source, 35);
-        if (AttackTarget == null && poseTicks == 0) Navigator?.NavigateTo(destination);
+        else if (vibration.Source is { } source)
+            IncreaseAnger(source, 35);
+        if (AttackTarget == null && poseTicks == 0)
+            Navigator?.NavigateTo(destination);
     }
 
     public Warden()
@@ -67,6 +71,7 @@ public sealed partial class Warden : PathfinderMob
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
     protected override int GetExperienceReward() => 5;
     internal override float MovementSpeed => poseTicks > 0 || sonicTicks > 0 ? 0 : base.MovementSpeed;
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(8, new WardenStrollGoal(this));
@@ -76,7 +81,8 @@ public sealed partial class Warden : PathfinderMob
 
     private void IncreaseAnger(IEntity entity, int amount)
     {
-        if (!CanSense(entity)) return;
+        if (!CanSense(entity))
+            return;
         anger[entity.Uuid] = Math.Min(150, anger.GetValueOrDefault(entity.Uuid) + amount);
         idleTicks = 0;
     }
@@ -91,7 +97,11 @@ public sealed partial class Warden : PathfinderMob
         if (AttackTarget == null && CanSense(source) && (direct || IsInRange(source, 5)))
         {
             AttackTarget = source;
-            if (Pose is Pose.Sniffing or Pose.Roaring) { poseTicks = 0; SetPose(Pose.Standing); }
+            if (Pose is Pose.Sniffing or Pose.Roaring)
+            {
+                poseTicks = 0;
+                SetPose(Pose.Standing);
+            }
         }
         if (Pose is Pose.Digging or Pose.Sniffing)
         {
@@ -103,20 +113,28 @@ public sealed partial class Warden : PathfinderMob
 
     private void SetPose(Pose pose)
     {
-        if (Pose == pose) return;
+        if (Pose == pose)
+            return;
         Pose = pose;
         SynchronizeMetadata();
     }
 
     protected override async ValueTask TickMobAsync()
     {
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
-        if (meleeCooldown > 0) meleeCooldown--;
-        if (sonicCooldown > 0) sonicCooldown--;
-        if (vibrationCooldown > 0) vibrationCooldown--;
-        if (projectileMemoryTicks > 0) projectileMemoryTicks--;
-        if (touchCooldown > 0) touchCooldown--;
-        if (sniffCooldown > 0) sniffCooldown--;
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+            return;
+        if (meleeCooldown > 0)
+            meleeCooldown--;
+        if (sonicCooldown > 0)
+            sonicCooldown--;
+        if (vibrationCooldown > 0)
+            vibrationCooldown--;
+        if (projectileMemoryTicks > 0)
+            projectileMemoryTicks--;
+        if (touchCooldown > 0)
+            touchCooldown--;
+        if (sniffCooldown > 0)
+            sniffCooldown--;
         var nearby = GetEntitiesNear(32).Where(CanSense).ToArray();
         if (touchCooldown == 0 && nearby.FirstOrDefault(entity => IsInRange(entity, 1.5f)) is { } touching)
         {
@@ -126,12 +144,14 @@ public sealed partial class Warden : PathfinderMob
         if (AiTick % 20 == 0)
         {
             foreach (var id in anger.Keys.ToArray())
-                if (--anger[id] <= 0) anger.Remove(id);
+                if (--anger[id] <= 0)
+                    anger.Remove(id);
         }
         var mostAngry = nearby.Where(entity => anger.GetValueOrDefault(entity.Uuid) >= AngryThreshold)
             .OrderByDescending(entity => anger[entity.Uuid]).ThenBy(entity => entity is IPlayer ? 0 : 1)
             .ThenBy(entity => (entity.Position - Position).MagnitudeSquared()).FirstOrDefault();
-        if (AttackTarget != null && (!CanSense(AttackTarget) || !IsInRange(AttackTarget, 32))) AttackTarget = null;
+        if (AttackTarget != null && (!CanSense(AttackTarget) || !IsInRange(AttackTarget, 32)))
+            AttackTarget = null;
         if (AttackTarget == null && mostAngry != null && poseTicks == 0)
         {
             AttackTarget = mostAngry;
@@ -155,13 +175,21 @@ public sealed partial class Warden : PathfinderMob
             (Navigator as Navigator)?.Stop();
             if (--poseTicks == 0)
             {
-                if (Pose == Pose.Digging) { await RemoveAsync(); return; }
+                if (Pose == Pose.Digging)
+                {
+                    await RemoveAsync();
+                    return;
+                }
                 if (Pose == Pose.Sniffing)
                 {
                     var smelled = nearby.Where(entity => Math.Abs(entity.Position.Y - Position.Y) <= 20 &&
                         Math.Pow(entity.Position.X - Position.X, 2) + Math.Pow(entity.Position.Z - Position.Z, 2) <= 36)
                         .MinBy(entity => (entity.Position - Position).MagnitudeSquared());
-                    if (smelled != null) { IncreaseAnger(smelled, 35); Navigator?.NavigateTo(smelled.Position); }
+                    if (smelled != null)
+                    {
+                        IncreaseAnger(smelled, 35);
+                        Navigator?.NavigateTo(smelled.Position);
+                    }
                 }
                 SetPose(Pose.Standing);
             }
@@ -229,7 +257,8 @@ public sealed partial class Warden : PathfinderMob
             }
             else
             {
-                if (Navigator is Navigator navigation) navigation.SpeedModifier = 1.2f;
+                if (Navigator is Navigator navigation)
+                    navigation.SpeedModifier = 1.2f;
                 Navigator?.NavigateTo(target);
             }
             return;
@@ -326,13 +355,16 @@ public sealed partial class Warden : PathfinderMob
 internal sealed class WardenStrollGoal(Warden warden) : NavigationGoal(warden, 0.5f)
 {
     private VectorD destination;
+
     public override bool CanUse()
     {
         if (warden.Pose != Pose.Standing || warden.AttackTarget != null || warden.Random.Next(60) != 0 ||
-            RandomPosition.Find(warden, 10) is not VectorD point) return false;
+            RandomPosition.Find(warden, 10) is not VectorD point)
+            return false;
         destination = point;
         return true;
     }
+
     public override void Start() => MoveTo(destination);
     public override bool CanContinue() => warden.Pose == Pose.Standing && warden.AttackTarget == null && Navigation.IsNavigating;
 }

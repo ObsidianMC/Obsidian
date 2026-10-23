@@ -20,6 +20,7 @@ public sealed partial class Evoker : PathfinderMob
     protected override string? SoundName => "evoker";
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
     protected override int GetExperienceReward() => 10;
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(0, new FloatGoal(this));
@@ -32,21 +33,34 @@ public sealed partial class Evoker : PathfinderMob
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, target => target is IPlayer));
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, target => target.Type is EntityType.Villager or EntityType.IronGolem or EntityType.WanderingTrader));
     }
+
     internal bool Casting => spellTicks > 0;
+
     protected override ValueTask TickMobAsync()
     {
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return default;
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+            return default;
         if (spellTicks > 0)
         {
             if (warmup > 0 && --warmup == 0)
             {
-                if (spell == 1 && AttackTarget is { } target && IsValidTarget(target)) CastFangs(target);
-                else if (spell == 2) SummonVexes();
+                if (spell == 1 && AttackTarget is { } target && IsValidTarget(target))
+                    CastFangs(target);
+                else if (spell == 2)
+                    SummonVexes();
                 else if (spell == 3 && sheep is { Alive: true, IsRemoved: false, Color: 11 } && sheep.Level == Level)
-                { sheep.Color = 14; sheep.SynchronizeMetadata(); }
+                {
+                    sheep.Color = 14;
+                    sheep.SynchronizeMetadata();
+                }
                 PlayMobSound("cast_spell");
             }
-            if (--spellTicks == 0) { spell = 0; sheep = null; SynchronizeMetadata(); }
+            if (--spellTicks == 0)
+            {
+                spell = 0;
+                sheep = null;
+                SynchronizeMetadata();
+            }
             return default;
         }
         if (AttackTarget is { } enemy && IsValidTarget(enemy))
@@ -74,6 +88,7 @@ public sealed partial class Evoker : PathfinderMob
         }
         return default;
     }
+
     private void BeginSpell(byte kind, int duration, int delay, string sound)
     {
         spell = kind;
@@ -82,6 +97,7 @@ public sealed partial class Evoker : PathfinderMob
         SynchronizeMetadata();
         PlayMobSound(sound);
     }
+
     private void SummonVexes()
     {
         for (var i = 0; i < 3; i++)
@@ -94,6 +110,7 @@ public sealed partial class Evoker : PathfinderMob
             vex.AttackTarget = AttackTarget;
         }
     }
+
     private void CastFangs(IEntity target)
     {
         var angle = Math.Atan2(target.Position.Z - Position.Z, target.Position.X - Position.X);
@@ -101,33 +118,49 @@ public sealed partial class Evoker : PathfinderMob
         var maxY = Math.Max(Position.Y, target.Position.Y) + 1;
         if ((target.Position - Position).MagnitudeSquared() < 9)
         {
-            for (var i = 0; i < 5; i++) SpawnFang(Position.X + Math.Cos(angle + i * Math.PI * 0.4) * 1.5, Position.Z + Math.Sin(angle + i * Math.PI * 0.4) * 1.5, minY, maxY, angle + i * Math.PI * 0.4, 0);
-            for (var i = 0; i < 8; i++) SpawnFang(Position.X + Math.Cos(angle + i * Math.PI * 0.25 + 1.256637) * 2.5, Position.Z + Math.Sin(angle + i * Math.PI * 0.25 + 1.256637) * 2.5, minY, maxY, angle + i * Math.PI * 0.25 + 1.256637, 3);
+            for (var i = 0; i < 5; i++)
+                SpawnFang(Position.X + Math.Cos(angle + i * Math.PI * 0.4) * 1.5, Position.Z + Math.Sin(angle + i * Math.PI * 0.4) * 1.5, minY, maxY, angle + i * Math.PI * 0.4, 0);
+            for (var i = 0; i < 8; i++)
+                SpawnFang(Position.X + Math.Cos(angle + i * Math.PI * 0.25 + 1.256637) * 2.5, Position.Z + Math.Sin(angle + i * Math.PI * 0.25 + 1.256637) * 2.5, minY, maxY, angle + i * Math.PI * 0.25 + 1.256637, 3);
         }
         else
-            for (var i = 0; i < 16; i++) SpawnFang(Position.X + Math.Cos(angle) * 1.25 * (i + 1), Position.Z + Math.Sin(angle) * 1.25 * (i + 1), minY, maxY, angle, i);
+            for (var i = 0; i < 16; i++)
+                SpawnFang(Position.X + Math.Cos(angle) * 1.25 * (i + 1), Position.Z + Math.Sin(angle) * 1.25 * (i + 1), minY, maxY, angle, i);
     }
+
     private void SpawnFang(double x, double z, double minY, double maxY, double angle, int delay)
     {
         for (var y = (int)Math.Floor(maxY); y >= (int)Math.Floor(minY) - 1; y--)
         {
             var ground = Terrain.GetBlock(new Vector((int)Math.Floor(x), y - 1, (int)Math.Floor(z)));
-            if (ground == null || ground.IsLiquid || !BlockCollisionShapes.Get(ground).Any(box => box.Max.Y >= 1)) continue;
+            if (ground == null || ground.IsLiquid || !BlockCollisionShapes.Get(ground).Any(box => box.Max.Y >= 1))
+                continue;
             var block = Terrain.GetBlock(new Vector((int)Math.Floor(x), y, (int)Math.Floor(z)));
-            if (block == null) return;
+            if (block == null)
+                return;
             var shapes = BlockCollisionShapes.Get(block);
             var height = shapes.Count == 0 ? 0 : shapes.Max(box => box.Max.Y);
-            Level.SpawnEntity(new EvokerFangs { Level = Level, EntityId = Server.GetNextEntityId(), Position = new VectorD(x, y + height, z),
-                Yaw = (float)(angle * 180 / Math.PI), Warmup = delay, OwnerUuid = Uuid });
+            Level.SpawnEntity(new EvokerFangs
+            {
+                Level = Level,
+                EntityId = Server.GetNextEntityId(),
+                Position = new VectorD(x, y + height, z),
+                Yaw = (float)(angle * 180 / Math.PI),
+                Warmup = delay,
+                OwnerUuid = Uuid
+            });
             return;
         }
     }
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         DropItem(ItemsRegistry.TotemOfUndying);
-        if (source is IPlayer) DropItem(ItemsRegistry.Emerald, Random.Next(2));
+        if (source is IPlayer)
+            DropItem(ItemsRegistry.Emerald, Random.Next(2));
         return default;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -136,6 +169,7 @@ public sealed partial class Evoker : PathfinderMob
         writer.WriteEntityMetadataType(17, EntityMetadataType.Byte);
         writer.WriteByte(spell);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer) => writer.WriteInt("SpellTicks", spellTicks);
     protected override void ReadAdditionalSave(NbtCompound tag) => spellTicks = Math.Clamp(tag.TryGetTagValue<int>("SpellTicks", out var ticks) ? ticks : 0, 0, 100);
 }
@@ -145,6 +179,17 @@ internal sealed class EvokerCastingGoal(Evoker evoker) : Goal
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
     public override bool CanUse() => evoker.Casting;
-    public override void Start() { ((Navigator)evoker.Navigator!).Stop(); evoker.MoveControl.Stop(); }
-    public override ValueTask TickAsync() { if (evoker.AttackTarget is { } target) evoker.LookControl.LookAt(target); return default; }
+
+    public override void Start()
+    {
+        ((Navigator)evoker.Navigator!).Stop();
+        evoker.MoveControl.Stop();
+}
+
+    public override ValueTask TickAsync()
+    {
+        if (evoker.AttackTarget is { } target)
+            evoker.LookControl.LookAt(target);
+        return default;
+    }
 }

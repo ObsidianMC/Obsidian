@@ -1,6 +1,7 @@
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -22,7 +23,7 @@ public sealed partial class EvokerFangs : Entity
         }
         if (Warmup == -8)
         {
-            var owner = Level.GetEntitiesInRange(Position, 64).FirstOrDefault(entity => entity.Uuid == OwnerUuid);
+            var owner = Level.FindEntityInRange(OwnerUuid, Position, 64);
             var bounds = Dimension.CreateBBFromPosition(Position);
             foreach (var target in Level.GetEntitiesInRange(Position, 2).OfType<Living>().Where(target => target.Uuid != OwnerUuid &&
                 target.Health > 0 && target.Type is not (EntityType.Evoker or EntityType.Vindicator or EntityType.Pillager or EntityType.Illusioner) &&

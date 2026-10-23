@@ -167,13 +167,36 @@ public abstract partial class AbstractLevel
     /// <see cref="AddTicker"/>), takes in the changes block entities announced (see
     /// <see cref="BlockEntity.SetChanged"/>) and sends the updates they asked for.
     /// </summary>
+    // The level's generated chunks, listed once in a tick: its eggs and its block entities each go over them all.
+    private (long Tick, List<Chunk> Chunks)? generatedChunks;
+
+    /// <summary>The level's generated chunks: during its tick, as they were when the tick first asked.</summary>
+    internal List<Chunk> GeneratedChunksThisTick()
+    {
+        var tick = this.CurrentTickId;
+        if (tick != 0 && this.generatedChunks is { } listed && listed.Tick == tick)
+            return listed.Chunks;
+
+        // Read in place: the regions' Values copies them under all the dictionary's locks.
+        var chunks = new List<Chunk>();
+        foreach (var (_, region) in this.Regions)
+        {
+            foreach (var chunk in region.GeneratedChunks())
+            {
+                if (chunk is Chunk generated)
+                    chunks.Add(generated);
+            }
+        }
+
+        if (tick != 0)
+            this.generatedChunks = (tick, chunks);
+        return chunks;
+    }
+
     internal async ValueTask TickBlockEntitiesAsync()
     {
         var revision = BlockEntityTypesRegistry.Revision;
-        var chunks = this.Regions.Values
-            .SelectMany(region => region.GeneratedChunks())
-            .OfType<Chunk>()
-            .ToList();
+        var chunks = this.GeneratedChunksThisTick();
 
         foreach (var chunk in chunks)
         {
@@ -188,8 +211,12 @@ public abstract partial class AbstractLevel
             if (!chunk.HasBlockEntities || !this.IsMobTicking(new VectorD(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8)))
                 continue;
 
-            foreach (var blockEntity in chunk.BlockEntities.Values.OfType<BlockEntity>())
+            // Read in place: copying the values takes all the dictionary's locks, which chunk loading contends for.
+            foreach (var (_, value) in chunk.BlockEntities)
             {
+                if (value is not BlockEntity blockEntity)
+                    continue;
+
                 var position = blockEntity.BlockPosition;
                 var type = chunk.GetBlock(position.X, position.Y, position.Z).BlockEntityType();
 

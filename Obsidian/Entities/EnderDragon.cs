@@ -39,12 +39,15 @@ public sealed partial class EnderDragon : BossMob
         IsFireImmune = true;
         PersistenceRequired = true;
     }
+
     protected override bool UsesAi => true;
     protected override Obsidian.API.Boss.BossBarColor BarColor => Obsidian.API.Boss.BossBarColor.Pink;
     protected override Obsidian.API.Boss.BossBarFlags BarFlags => Obsidian.API.Boss.BossBarFlags.DarkenSky | Obsidian.API.Boss.BossBarFlags.DragonBar;
     protected override bool ShowBossBar => fightControlled;
+
     protected override IEnumerable<IPlayer> BarPlayers => Level.GetPlayersInRange(new VectorD(0, 128, 0), 192)
         .Where(player => player.GameMode != GameMode.Spectator);
+
     protected override bool CanTakeDamage(IEntity source) => source is IPlayer or EndCrystal;
     internal override bool Hostile => false;
     protected override bool CanDespawn => false;
@@ -70,7 +73,8 @@ public sealed partial class EnderDragon : BossMob
 
     internal void EnsureMultipartIds()
     {
-        if (parts.Length != 0) return;
+        if (parts.Length != 0)
+            return;
         EntityId = Server.ReserveEntityIds(9);
         (float Width, float Height)[] sizes = [(1, 1), (3, 3), (5, 3), (2, 2), (2, 2), (2, 2), (4, 2), (4, 2)];
         parts = sizes.Select((size, index) => new EnderDragonPart(this, index,
@@ -106,13 +110,18 @@ public sealed partial class EnderDragon : BossMob
 
     protected override VectorD Travel()
     {
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return Position;
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+            return Position;
         return Position + flightDisplacement;
     }
 
     protected override async ValueTask TickMobAsync()
     {
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) { Motion = VectorD.Zero; return; }
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+        {
+            Motion = VectorD.Zero;
+            return;
+        }
         if (!arenaKnown)
         {
             // Summoned dragons use their summon position; End dragons use the exit fountain.
@@ -121,12 +130,17 @@ public sealed partial class EnderDragon : BossMob
             {
                 var y = 64;
                 for (var scan = 255; scan >= 0; scan--)
-                    if (Terrain.GetBlock(new Vector(0, scan, 0)) is { IsAir: false }) { y = scan + 1; break; }
+                    if (Terrain.GetBlock(new Vector(0, scan, 0)) is { IsAir: false })
+                    {
+                        y = scan + 1;
+                        break;
+                    }
                 arena = new VectorD(0, y, 0);
             }
             arenaKnown = true;
         }
-        if (AiTick % 20 == 0) podium = null;
+        if (AiTick % 20 == 0)
+            podium = null;
         RecordFlight();
         UpdateParts();
         phaseTicks++;
@@ -164,22 +178,30 @@ public sealed partial class EnderDragon : BossMob
                             SetPhase(DragonPhase.Holding);
                         }
                     }
-                    else if (fireballCharge > 0) fireballCharge--;
+                    else if (fireballCharge > 0)
+                        fireballCharge--;
                 }
-                else SetPhase(DragonPhase.Holding);
+                else
+                    SetPhase(DragonPhase.Holding);
                 break;
             case DragonPhase.LandingApproach:
                 TickLandingApproach();
                 break;
             case DragonPhase.Landing:
                 destination = Podium;
-                if ((destination - Position).MagnitudeSquared() < 1) { SetPhase(DragonPhase.Scanning); flameCount = 0; sittingDamage = 0; }
+                if ((destination - Position).MagnitudeSquared() < 1)
+                {
+                    SetPhase(DragonPhase.Scanning);
+                    flameCount = 0;
+                    sittingDamage = 0;
+                }
                 break;
             case DragonPhase.Scanning:
                 Motion = VectorD.Zero;
                 AttackTarget = Level.GetPlayersInRange(Position, 20).Where(target => IsValidTarget(target) && Math.Abs(target.Position.Y - Position.Y) < 10)
                     .MinBy(target => (target.Position - Position).MagnitudeSquared());
-                if (AttackTarget != null) Face(AttackTarget.Position);
+                if (AttackTarget != null)
+                    Face(AttackTarget.Position);
                 if (phaseTicks > 25 && AttackTarget != null)
                     SetPhase(DragonPhase.Attacking);
                 else if (phaseTicks >= 100 && AttackTarget == null)
@@ -196,8 +218,10 @@ public sealed partial class EnderDragon : BossMob
                 break;
             case DragonPhase.Attacking:
                 Motion = VectorD.Zero;
-                if (phaseTicks == 1) PlayMobSound("growl");
-                if (phaseTicks >= 40) SetPhase(DragonPhase.Flaming);
+                if (phaseTicks == 1)
+                    PlayMobSound("growl");
+                if (phaseTicks >= 40)
+                    SetPhase(DragonPhase.Flaming);
                 break;
             case DragonPhase.Flaming:
                 Motion = VectorD.Zero;
@@ -205,7 +229,8 @@ public sealed partial class EnderDragon : BossMob
                 {
                     var origin = parts[0].Position + DragonForward * 2.5f;
                     var y = (int)Math.Floor(origin.Y);
-                    while (y > arena.Y - 16 && Terrain.GetBlock(new Vector((int)Math.Floor(origin.X), y - 1, (int)Math.Floor(origin.Z)))?.IsAir == true) y--;
+                    while (y > arena.Y - 16 && Terrain.GetBlock(new Vector((int)Math.Floor(origin.X), y - 1, (int)Math.Floor(origin.Z)))?.IsAir == true)
+                        y--;
                     origin.Y = y;
                     breath = new DragonBreathCloud { Level = Level, EntityId = Server.GetNextEntityId(), Position = origin, OwnerUuid = Uuid, Radius = 5, Duration = 200 };
                     Level.SpawnEntity(breath);
@@ -213,7 +238,11 @@ public sealed partial class EnderDragon : BossMob
                 }
                 if (phaseTicks >= 200)
                 {
-                    if (breath != null) { await breath.RemoveAsync(); breath = null; }
+                    if (breath != null)
+                    {
+                        await breath.RemoveAsync();
+                        breath = null;
+                    }
                     SetPhase(++flameCount >= 4 ? DragonPhase.Takeoff : DragonPhase.Scanning);
                 }
                 break;
@@ -221,7 +250,8 @@ public sealed partial class EnderDragon : BossMob
                 TickTakeoff();
                 break;
             case DragonPhase.Charging:
-                if (chargeRecoveryTicks > 0 && chargeRecoveryTicks++ >= 10) SetPhase(DragonPhase.Holding);
+                if (chargeRecoveryTicks > 0 && chargeRecoveryTicks++ >= 10)
+                    SetPhase(DragonPhase.Holding);
                 else
                 {
                     var chargeDistance = (destination - Position).MagnitudeSquared();
@@ -239,8 +269,10 @@ public sealed partial class EnderDragon : BossMob
                 }
                 break;
         }
-        if (!IsPerched) SteerFlight();
-        else flightDisplacement = VectorD.Zero;
+        if (!IsPerched)
+            SteerFlight();
+        else
+            flightDisplacement = VectorD.Zero;
         await ContactAttackAsync();
         await DestroyBlocksAsync();
     }
@@ -260,12 +292,16 @@ public sealed partial class EnderDragon : BossMob
             {
                 var position = new Vector(x, y, z);
                 if (Terrain.GetBlock(position) is not { IsAir: false } block ||
-                    TagsRegistry.Block.DragonTransparent.Entries.Contains(block.RegistryId)) continue;
-                if (!griefing || TagsRegistry.Block.DragonImmune.Entries.Contains(block.RegistryId)) blocked = true;
-                else await level.SetBlockAsync(position, BlocksRegistry.Air, true);
+                            TagsRegistry.Block.DragonTransparent.Entries.Contains(block.RegistryId))
+                            continue;
+                        if (!griefing || TagsRegistry.Block.DragonImmune.Entries.Contains(block.RegistryId))
+                            blocked = true;
+                        else
+                            await level.SetBlockAsync(position, BlocksRegistry.Air, true);
             }
         }
-        if (blocked) Motion *= 0.8f;
+        if (blocked)
+            Motion *= 0.8f;
     }
 
     // Vanilla's EndPodiumFeature location under the MOTION_BLOCKING_NO_LEAVES heightmap: the top of the
@@ -274,12 +310,17 @@ public sealed partial class EnderDragon : BossMob
     {
         get
         {
-            if (podium is { } cached) return cached;
+            if (podium is { } cached)
+                return cached;
             var x = (int)Math.Floor(arena.X);
             var z = (int)Math.Floor(arena.Z);
             var top = arena.Y;
             for (var y = (int)Math.Floor(arena.Y) + 10; y >= (int)Math.Floor(arena.Y); y--)
-                if (Terrain.GetBlock(new Vector(x, y, z)) is { IsAir: false }) { top = y + 1; break; }
+                if (Terrain.GetBlock(new Vector(x, y, z)) is { IsAir: false })
+                {
+                    top = y + 1;
+                    break;
+                }
             return (podium = new VectorD(x + 0.5, top, z + 0.5)).Value;
         }
     }
@@ -290,6 +331,7 @@ public sealed partial class EnderDragon : BossMob
         var difference = WrapDegrees(desired - Yaw.Degrees);
         Yaw = (float)(Yaw.Degrees + Math.Clamp(difference, -10, 10));
     }
+
     private void SetPhase(DragonPhase next)
     {
         phase = next;
@@ -300,18 +342,22 @@ public sealed partial class EnderDragon : BossMob
         chargeRecoveryTicks = 0;
         SynchronizeMetadata();
     }
+
     private async ValueTask ContactAttackAsync()
     {
-        if (parts.Length == 0) return;
+        if (parts.Length == 0)
+            return;
         foreach (var target in Level.GetEntitiesInRange(Position, 16).OfType<Living>().ToArray())
         {
-            if (ReferenceEquals(target, this) || !target.Alive || target is IPlayer { GameMode: GameMode.Creative or GameMode.Spectator }) continue;
+            if (ReferenceEquals(target, this) || !target.Alive || target is IPlayer { GameMode: GameMode.Creative or GameMode.Spectator })
+                continue;
             var bounds = target.Dimension.CreateBBFromPosition(target.Position);
             for (var index = 6; index < 8; index++)
             {
                 var wing = parts[index].BoundingBox;
                 var area = new BoundingBox(wing.Min - new VectorD(4, 4, 4), wing.Max + new VectorD(4, 0, 4));
-                if (!area.Intersects(bounds)) continue;
+                if (!area.Intersects(bounds))
+                    continue;
                 var offset = target.Position - parts[2].Position;
                 var divisor = Math.Max(0.1, offset.X * offset.X + offset.Z * offset.Z);
                 target.Motion += new VectorD(offset.X / divisor * 4, 0.2f, offset.Z / divisor * 4);
@@ -319,7 +365,8 @@ public sealed partial class EnderDragon : BossMob
                 {
                     var health = target.Health;
                     await target.DamageAsync(this, 5);
-                    if (target.Health < health) contactTicks[target.EntityId] = AiTick;
+                    if (target.Health < health)
+                        contactTicks[target.EntityId] = AiTick;
                 }
             }
             for (var index = 0; index < 2; index++)
@@ -330,29 +377,39 @@ public sealed partial class EnderDragon : BossMob
             }
         }
         if (AiTick % 100 == 0)
-            foreach (var id in contactTicks.Where(entry => AiTick - entry.Value > 100).Select(entry => entry.Key).ToArray()) contactTicks.Remove(id);
+            foreach (var id in contactTicks.Where(entry => AiTick - entry.Value > 100).Select(entry => entry.Key).ToArray())
+                contactTicks.Remove(id);
     }
 
     public override ValueTask DamageAsync(IEntity source, float amount = 1) => DamagePartAsync(source, amount, 2);
+
     internal async ValueTask DamagePartAsync(IEntity source, float amount, int part, bool projectile = false)
     {
         if (IsRemoved || phase == DragonPhase.Dying || source.Level != Level || !float.IsFinite(amount) || amount <= 0 ||
-            source is not IPlayer && source is not EndCrystal && IncomingDamageKind != CombatDamageKind.Explosion || IsPerched && projectile) return;
-        if (part != 0) amount = amount / 4 + Math.Min(amount, 1);
+            source is not IPlayer && source is not EndCrystal && IncomingDamageKind != CombatDamageKind.Explosion || IsPerched && projectile)
+            return;
+        if (part != 0)
+            amount = amount / 4 + Math.Min(amount, 1);
         if (AiTick - lastDamageTick < 10)
         {
-            if (amount <= lastDamage) return;
+            if (amount <= lastDamage)
+                return;
             var incoming = amount;
             amount -= lastDamage;
             lastDamage = incoming;
         }
-        else { lastDamageTick = AiTick; lastDamage = amount; }
+        else
+        {
+            lastDamageTick = AiTick;
+            lastDamage = amount;
+        }
         Health -= amount;
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new HurtAnimationPacket { EntityId = EntityId, Yaw = 0 });
         PlayMobSound("hurt");
         if (Health <= 0)
         {
-            if (IsPerched) await KillAsync(source);
+            if (IsPerched)
+                await KillAsync(source);
             else
             {
                 Health = 1;
@@ -365,18 +422,29 @@ public sealed partial class EnderDragon : BossMob
             if (sittingDamage > GetAttributeValue("minecraft:generic.max_health") * 0.25f)
             {
                 sittingDamage = 0;
-                if (breath != null) { await breath.RemoveAsync(); breath = null; }
+                if (breath != null)
+                {
+                    await breath.RemoveAsync();
+                    breath = null;
+                }
                 SetPhase(DragonPhase.Takeoff);
             }
         }
         SynchronizeMetadata();
     }
+
     protected override int DeathDuration => 200;
+
     protected override async ValueTask OnDeathAsync(IEntity source)
     {
-        if (breath != null) { await breath.RemoveAsync(); breath = null; }
+        if (breath != null)
+        {
+            await breath.RemoveAsync();
+            breath = null;
+        }
         SetPhase(DragonPhase.Dying);
     }
+
     protected override async ValueTask TickDeathAsync()
     {
         phaseTicks++;
@@ -386,7 +454,8 @@ public sealed partial class EnderDragon : BossMob
             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelParticlesPacket
             {
                 Position = Position + new VectorD((Random.NextDouble() - 0.5) * 8, 2 + (Random.NextDouble() - 0.5) * 4, (Random.NextDouble() - 0.5) * 8),
-                ParticleCount = 1, Data = new DragonDeathParticle()
+                ParticleCount = 1,
+                Data = new DragonDeathParticle()
             });
         Motion = new VectorD(0, 0.1f, 0);
         Yaw = Yaw.Degrees + 20;
@@ -402,15 +471,19 @@ public sealed partial class EnderDragon : BossMob
             Level.SpawnExperienceOrbs(Position, (short)(PreviouslyKilled ? 40 : 960));
         if (phaseTicks >= 200)
         {
-            if (Level.LevelData.GetBooleanRule("mob_drops")) Level.SpawnExperienceOrbs(Position, (short)(PreviouslyKilled ? 100 : 2400));
-            if (Level is AbstractLevel fightLevel) await fightLevel.EndFightDragonKilledAsync(this);
+            if (Level.LevelData.GetBooleanRule("mob_drops"))
+                Level.SpawnExperienceOrbs(Position, (short)(PreviouslyKilled ? 100 : 2400));
+            if (Level is AbstractLevel fightLevel)
+                await fightLevel.EndFightDragonKilledAsync(this);
             await RemoveAsync();
         }
     }
+
     private sealed class DragonDeathParticle : ParticleData
     {
         public override ParticleType ParticleType => ParticleType.ExplosionEmitter;
     }
+
     internal async ValueTask OnCrystalDestroyedAsync(EndCrystal destroyed, IEntity source)
     {
         if (ReferenceEquals(crystal, destroyed))
@@ -424,28 +497,37 @@ public sealed partial class EnderDragon : BossMob
             SetPhase(DragonPhase.Strafing);
         }
     }
+
     public override async ValueTask RemoveAsync()
     {
-        if (breath != null) { await breath.RemoveAsync(); breath = null; }
+        if (breath != null)
+        {
+            await breath.RemoveAsync();
+            breath = null;
+        }
         await base.RemoveAsync();
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(16, EntityMetadataType.VarInt);
         writer.WriteVarInt((int)phase);
     }
+
     internal override void WriteNbt(NbtCompound tag)
     {
         base.WriteNbt(tag);
         WriteDragonNbt(tag);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         var tag = new NbtCompound();
         WriteDragonNbt(tag);
         writer.WriteEntries(tag);
     }
+
     private void WriteDragonNbt(NbtCompound tag)
     {
         tag.Set(new NbtTag<int>("DragonPhase", (int)phase));
@@ -456,26 +538,36 @@ public sealed partial class EnderDragon : BossMob
         tag.Set(new NbtTag<int>("ObsidianFlightPoint", flightPoint));
         tag.Set(new NbtTag<float>("ObsidianSittingDamage", sittingDamage));
         tag.Set(EntityNbt.DoubleList("ObsidianDestination", destination));
-        if (arenaKnown) tag.Set(EntityNbt.DoubleList("ObsidianDragonArena", arena));
+        if (arenaKnown)
+            tag.Set(EntityNbt.DoubleList("ObsidianDragonArena", arena));
     }
+
     internal override void ReadNbt(NbtCompound tag)
     {
         base.ReadNbt(tag);
         ReadDragonNbt(tag);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag) => ReadDragonNbt(tag);
+
     private void ReadDragonNbt(NbtCompound tag)
     {
         phase = (DragonPhase)Math.Clamp(tag.TryGetTagValue<int>("DragonPhase", out var saved) ? saved : 10, 0, 10);
         phaseTicks = phase == DragonPhase.Dying && tag.TryGetTagValue<int>("DragonDeathTime", out var ticks) ? Math.Clamp(ticks, 0, 199) : 0;
         PreviouslyKilled = !tag.TryGetBool("ObsidianPreviouslyKilled", out var killed) || killed;
         arenaKnown = EntityNbt.TryReadVector(tag, "ObsidianDragonArena", out arena);
-        if (tag.TryGetTagValue<int>("ObsidianPhaseTicks", out var phaseTime)) phaseTicks = Math.Clamp(phaseTime, 0, 72000);
-        if (tag.TryGetTagValue<int>("ObsidianFlameCount", out var flames)) flameCount = Math.Clamp(flames, 0, 4);
-        if (tag.TryGetTagValue<int>("ObsidianFlightPoint", out var point)) flightPoint = Math.Clamp(point, 0, 11);
-        if (tag.TryGetTagValue<float>("ObsidianSittingDamage", out var sitting) && float.IsFinite(sitting)) sittingDamage = Math.Max(0, sitting);
-        if (EntityNbt.TryReadVector(tag, "ObsidianDestination", out var savedDestination)) destination = savedDestination;
-        if (phase == DragonPhase.Dying && tag.TryGetTagValue<int>("DragonDeathTime", out var deathTime) && deathTime > 0) Health = 0;
+        if (tag.TryGetTagValue<int>("ObsidianPhaseTicks", out var phaseTime))
+            phaseTicks = Math.Clamp(phaseTime, 0, 72000);
+        if (tag.TryGetTagValue<int>("ObsidianFlameCount", out var flames))
+            flameCount = Math.Clamp(flames, 0, 4);
+        if (tag.TryGetTagValue<int>("ObsidianFlightPoint", out var point))
+            flightPoint = Math.Clamp(point, 0, 11);
+        if (tag.TryGetTagValue<float>("ObsidianSittingDamage", out var sitting) && float.IsFinite(sitting))
+            sittingDamage = Math.Max(0, sitting);
+        if (EntityNbt.TryReadVector(tag, "ObsidianDestination", out var savedDestination))
+            destination = savedDestination;
+        if (phase == DragonPhase.Dying && tag.TryGetTagValue<int>("DragonDeathTime", out var deathTime) && deathTime > 0)
+            Health = 0;
     }
 }
 
@@ -483,6 +575,7 @@ internal sealed class EnderDragonPart : Entity
 {
     internal EnderDragon Parent { get; }
     internal int Index { get; }
+
     [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
     internal EnderDragonPart(EnderDragon parent, int index, EntityDimension dimension)
     {
@@ -493,7 +586,13 @@ internal sealed class EnderDragonPart : Entity
         Dimension = dimension;
         Type = EntityType.EnderDragon;
     }
-    internal void SetPosition(VectorD position) { Position = position; BoundingBox = Dimension.CreateBBFromPosition(position); }
+
+    internal void SetPosition(VectorD position)
+    {
+        Position = position;
+        BoundingBox = Dimension.CreateBBFromPosition(position);
+    }
+
     public override ValueTask DamageAsync(IEntity source, float amount = 1) => Parent.DamagePartAsync(source, amount, Index);
 }
 

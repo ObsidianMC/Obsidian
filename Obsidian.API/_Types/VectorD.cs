@@ -16,17 +16,29 @@ public struct VectorD : IEquatable<VectorD>, INetworkSerializable<VectorD>
     /// <summary>
     /// The X component of the <see cref="VectorD"/>.
     /// </summary>
-    public double X { readonly get; set; }
+    public double X
+    {
+        readonly get;
+        set;
+    }
 
     /// <summary>
     /// The Y component of the <see cref="VectorD"/>.
     /// </summary>
-    public double Y { readonly get; set; }
+    public double Y
+    {
+        readonly get;
+        set;
+    }
 
     /// <summary>
     /// The Z component of the <see cref="VectorD"/>.
     /// </summary>
-    public double Z { readonly get; set; }
+    public double Z
+    {
+        readonly get;
+        set;
+    }
 
     /// <summary>
     /// Creates new instance of <see cref="VectorD"/> with <see cref="X"/>, <see cref="Y"/> and <see cref="Z"/> set to <paramref name="value"/>.

@@ -20,6 +20,7 @@ public sealed partial class Enderman : PathfinderMob
     protected override string? SoundName => "enderman";
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
     protected override int GetExperienceReward() => 5;
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(1, new EndermanStareGoal(this));
@@ -29,6 +30,7 @@ public sealed partial class Enderman : PathfinderMob
         actions.AddGoal(9, new RandomLookAroundGoal(this));
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, target => target.Type == EntityType.Endermite));
     }
+
     internal bool IsStaring(IPlayer player)
     {
         if (player.Inventory.GetItem(5)?.Is(ItemsRegistry.CarvedPumpkin) == true || !IsValidTarget(player))
@@ -41,6 +43,7 @@ public sealed partial class Enderman : PathfinderMob
         var look = player.GetLookDirection();
         return look.X * direction.X + look.Y * direction.Y + look.Z * direction.Z > 1 - 0.025f / distance && CanSee(player);
     }
+
     protected override async ValueTask TickMobAsync()
     {
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
@@ -69,7 +72,11 @@ public sealed partial class Enderman : PathfinderMob
             }
             else
             {
-                if (staringAt != player.Uuid) { staringAt = player.Uuid; stareTicks = 0; }
+                if (staringAt != player.Uuid)
+                {
+                    staringAt = player.Uuid;
+                    stareTicks = 0;
+                }
                 LookControl.LookAt(player);
                 if (++stareTicks >= 5)
                 {
@@ -82,7 +89,11 @@ public sealed partial class Enderman : PathfinderMob
             }
         }
         var nowStaring = AttackTarget is IPlayer target && IsStaring(target);
-        if (nowStaring != staring) { staring = nowStaring; SynchronizeMetadata(); }
+        if (nowStaring != staring)
+        {
+            staring = nowStaring;
+            SynchronizeMetadata();
+        }
         if (AttackTarget is { } enemy)
         {
             if (staring && (enemy.Position - Position).MagnitudeSquared() < 16)
@@ -93,7 +104,8 @@ public sealed partial class Enderman : PathfinderMob
                 TryTeleport(enemy.Position);
             }
         }
-        if (!Level.LevelData.GetBooleanRule("mob_griefing")) return;
+        if (!Level.LevelData.GetBooleanRule("mob_griefing"))
+            return;
         if (CarriedBlock == null && Random.Next(20) == 0)
         {
             var point = (Vector)(Position + new VectorD(Random.Next(-2, 3), Random.Next(2), Random.Next(-2, 3))).Floor();
@@ -120,12 +132,15 @@ public sealed partial class Enderman : PathfinderMob
             }
         }
     }
+
     internal bool TryAvoidProjectile()
     {
         for (var attempt = 0; attempt < 64; attempt++)
-            if (TryTeleport()) return true;
+            if (TryTeleport())
+                return true;
         return false;
     }
+
     internal bool TryTeleport(VectorD? towards = null)
     {
         if (Level is not AbstractLevel level || !Alive)
@@ -151,6 +166,7 @@ public sealed partial class Enderman : PathfinderMob
         PlayMobSound("teleport");
         return true;
     }
+
     protected override ValueTask OnHurtAsync(IEntity source)
     {
         if (ReferenceEquals(source, this))
@@ -164,6 +180,7 @@ public sealed partial class Enderman : PathfinderMob
         }
         return default;
     }
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         this.DropVanillaLoot(source);
@@ -176,6 +193,7 @@ public sealed partial class Enderman : PathfinderMob
 
         return default;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -192,5 +210,10 @@ internal sealed class EndermanStareGoal(Enderman enderman) : Goal
 {
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Jump;
     public override bool CanUse() => enderman.AttackTarget is IPlayer player && enderman.IsStaring(player);
-    public override void Start() { ((Navigator)enderman.Navigator!).Stop(); enderman.MoveControl.Stop(); }
+
+    public override void Start()
+    {
+        ((Navigator)enderman.Navigator!).Stop();
+        enderman.MoveControl.Stop();
+}
 }

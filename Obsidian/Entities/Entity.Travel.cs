@@ -49,7 +49,12 @@ public partial class Entity
 
             if (source != level)
             {
-                (this as Mob)?.HoldLeashByUuid();
+                if (this is Mob mob)
+                {
+                    mob.HoldLeashByUuid();
+                    mob.ResetMovementBaseline();
+                }
+
                 this.SpawnEntity();
             }
             else

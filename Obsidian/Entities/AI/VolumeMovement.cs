@@ -4,13 +4,20 @@ internal sealed class VolumeMoveControl(Mob mob) : MoveControl(mob)
 {
     private VectorD? destination;
     private float speed;
+
     public override void MoveTo(VectorD position, float modifier)
     {
         destination = position;
         speed = modifier;
         base.MoveTo(position, modifier);
     }
-    public override void Stop() { destination = null; base.Stop(); }
+
+    public override void Stop()
+    {
+        destination = null;
+        base.Stop();
+    }
+
     internal override void Tick()
     {
         if (!mob.FlyingNavigation && !mob.InWater)

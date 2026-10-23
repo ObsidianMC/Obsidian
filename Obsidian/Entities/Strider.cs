@@ -17,6 +17,7 @@ public sealed partial class Strider : FarmAnimal, IItemSteerable
     protected override string? SoundName => "strider";
     protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.WarpedFungus };
     internal override float MovementSpeed => base.MovementSpeed * (cold ? 0.66f : 1);
+
     protected override VectorD Travel()
     {
         var gravity = NoGravity;
@@ -25,23 +26,41 @@ public sealed partial class Strider : FarmAnimal, IItemSteerable
             NoGravity = true;
             var above = Terrain.GetBlock((Vector)(Position + new VectorD(0, 0.6, 0)).Floor())?.RegistryId
                 == BlockIds.Lava;
-            if (above) Motion = new VectorD(Motion.X, Math.Max(Motion.Y, 0.1), Motion.Z);
-            else { Motion = new VectorD(Motion.X, Math.Max(0, Motion.Y), Motion.Z); MovementFlags |= MovementFlags.OnGround; }
+            if (above)
+                Motion = new VectorD(Motion.X, Math.Max(Motion.Y, 0.1), Motion.Z);
+            else
+            {
+                Motion = new VectorD(Motion.X, Math.Max(0, Motion.Y), Motion.Z);
+                MovementFlags |= MovementFlags.OnGround;
         }
-        var position = base.Travel(); NoGravity = gravity; return position;
     }
+        var position = base.Travel();
+        NoGravity = gravity;
+        return position;
+    }
+
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
         var nowCold = !InLava && !TagsRegistry.Block.StriderWarmBlocks.Entries.Contains(Terrain.GetBlock((Vector)Position.Floor())?.RegistryId ?? -1);
-        if (cold != nowCold) { cold = nowCold; SynchronizeMetadata(); }
-        if (boostDuration > 0 && ++boostTicks > boostDuration) { boostTicks = boostDuration = 0; SynchronizeMetadata(); }
+        if (cold != nowCold)
+        {
+            cold = nowCold;
+            SynchronizeMetadata();
+        }
+        if (boostDuration > 0 && ++boostTicks > boostDuration)
+        {
+            boostTicks = boostDuration = 0;
+            SynchronizeMetadata();
+        }
         if (InLava && Rider == null && !MobBitMask.HasFlag(MobBitmask.NoAi))
         {
             var player = Level.GetPlayersInRange(Position, 10).FirstOrDefault(player => CanEat(player.GetHeldItem()) || CanEat(player.GetOffHandItem()));
-            if (player != null) MoveControl.MoveTo(player.Position, 1.4f);
+            if (player != null)
+                MoveControl.MoveTo(player.Position, 1.4f);
         }
     }
+
     internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive
@@ -57,7 +76,10 @@ public sealed partial class Strider : FarmAnimal, IItemSteerable
         if (IsBaby)
             return false;
         if (item is { Count: > 0, Holder.Id: ItemIds.Saddle } && GetEquipment(EquipmentSlot.Saddle).IsAir)
-        { SetEquipment(EquipmentSlot.Saddle, new ItemStack(item)); await ConsumeInteractionItemAsync(player, hand); }
+        {
+            SetEquipment(EquipmentSlot.Saddle, new ItemStack(item));
+            await ConsumeInteractionItemAsync(player, hand);
+        }
         else if (!player.Sneaking
             && !GetEquipment(EquipmentSlot.Saddle).IsAir
             && Mount(player))
@@ -67,6 +89,7 @@ public sealed partial class Strider : FarmAnimal, IItemSteerable
 
         return true;
     }
+
     public Item SteeringItem => ItemsRegistry.WarpedFungusOnAStick;
 
     // Vanilla's wear for a boost with the item, which decides how many boosts it lasts.
@@ -74,19 +97,31 @@ public sealed partial class Strider : FarmAnimal, IItemSteerable
 
     public bool Boost(IPlayer player)
     {
-        if (!ReferenceEquals(Rider, player) || boostDuration > 0) return false;
-        boostDuration = Random.Next(140, 981); boostTicks = 0; SynchronizeMetadata(); return true;
+        if (!ReferenceEquals(Rider, player) || boostDuration > 0)
+            return false;
+        boostDuration = Random.Next(140, 981);
+        boostTicks = 0;
+        SynchronizeMetadata();
+        return true;
     }
+
     protected override void TickRidden()
     {
         base.TickRidden();
-        if (Rider == null) { if (GoalController is GoalSelector { IsPaused: true } goals) goals.Resume(); return; }
+        if (Rider == null)
+        {
+            if (GoalController is GoalSelector { IsPaused: true } goals)
+                goals.Resume();
+            return;
+        }
         if (Rider.GetHeldItem()?.Is(ItemsRegistry.WarpedFungusOnAStick) != true
-            && Rider.GetOffHandItem()?.Is(ItemsRegistry.WarpedFungusOnAStick) != true) return;
+            && Rider.GetOffHandItem()?.Is(ItemsRegistry.WarpedFungusOnAStick) != true)
+            return;
         Yaw = Rider.Yaw;
         var boost = boostDuration > 0 ? 1 + 1.15f * MathF.Sin((float)boostTicks / boostDuration * MathF.PI) : 1;
         MoveControl.Ride(MovementSpeed * 0.55f * boost);
     }
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         if (!IsBaby)
@@ -97,18 +132,23 @@ public sealed partial class Strider : FarmAnimal, IItemSteerable
 
         return default;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt); writer.WriteVarInt(boostDuration);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean); writer.WriteBoolean(cold);
+        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
+        writer.WriteVarInt(boostDuration);
+        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean);
+        writer.WriteBoolean(cold);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         writer.WriteBool("Suffocating", cold);
         writer.WriteInt("ObsidianBoostTicks", boostTicks);
         writer.WriteInt("ObsidianBoostDuration", boostDuration);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         cold = tag.TryGetBool("Suffocating", out var saved) && saved;

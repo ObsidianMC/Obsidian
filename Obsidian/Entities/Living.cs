@@ -35,9 +35,16 @@ public partial class Living : Entity, ILiving
         IncomingDamageKind = kind;
         IncomingWeapon = weapon;
         IncomingDirectSource = directSource;
-        try { await DamageAsync(source, amount); }
-        finally { IncomingDamageKind = previousKind; IncomingWeapon = previousWeapon; IncomingDirectSource = previousDirectSource; }
+        try
+        { await DamageAsync(source, amount); }
+        finally
+        {
+            IncomingDamageKind = previousKind;
+            IncomingWeapon = previousWeapon;
+            IncomingDirectSource = previousDirectSource;
     }
+    }
+
     public LivingBitMask LivingBitMask { get; set; }
 
     /// <summary>
@@ -60,9 +67,12 @@ public partial class Living : Entity, ILiving
 
     public bool Alive => this.Health > 0f;
 
-    public IReadOnlyDictionary<int, EffectWithCurrentDuration> ActivePotionEffects => activePotionEffects.AsReadOnly();
+    public IReadOnlyDictionary<int, EffectWithCurrentDuration> ActivePotionEffects => activePotionEffectsView;
 
     private readonly ConcurrentDictionary<int, EffectWithCurrentDuration> activePotionEffects;
+
+    // A live read-only view made once: mobs read their effects several times a tick, and each AsReadOnly allocated.
+    private readonly IReadOnlyDictionary<int, EffectWithCurrentDuration> activePotionEffectsView;
     private int fireTicks;
     internal int FireTicks { get => fireTicks; set => fireTicks = value; }
 
@@ -75,6 +85,7 @@ public partial class Living : Entity, ILiving
     public Living()
     {
         activePotionEffects = new ConcurrentDictionary<int, EffectWithCurrentDuration>();
+        activePotionEffectsView = activePotionEffects.AsReadOnly();
     }
 
     /// <summary>
@@ -120,7 +131,8 @@ public partial class Living : Entity, ILiving
                 else
                     await DamageCombatAsync(this, 1, CombatDamageKind.Magic);
             }
-            if (data.CurrentDuration != -1) data.CurrentDuration = Math.Max(0, data.CurrentDuration - 1);
+            if (data.CurrentDuration != -1)
+                data.CurrentDuration = Math.Max(0, data.CurrentDuration - 1);
             if (data.EffectData.HiddenEffect is { } pending)
             {
                 data = data with { EffectData = data.EffectData with { HiddenEffect = TickEffectDuration(pending) } };
@@ -129,8 +141,10 @@ public partial class Living : Entity, ILiving
             if (data.CurrentDuration == 0)
             {
                 var hidden = data.EffectData.HiddenEffect;
-                while (hidden is { Duration: 0 }) hidden = hidden.HiddenEffect;
-                if (hidden == null) RemovePotionEffect(potion);
+                while (hidden is { Duration: 0 })
+                    hidden = hidden.HiddenEffect;
+                if (hidden == null)
+                    RemovePotionEffect(potion);
                 else
                 {
                     activePotionEffects[potion] = new() { EffectData = hidden, CurrentDuration = hidden.Duration };
@@ -187,7 +201,8 @@ public partial class Living : Entity, ILiving
 
     public void AddPotionEffect(int effectId, int duration, int amplifier = 0, EntityEffectFlags effect = EntityEffectFlags.None)
     {
-        if (Type is EntityType.Wither or EntityType.EnderDragon) return;
+        if (Type is EntityType.Wither or EntityType.EnderDragon)
+            return;
         if (effectId == (int)PotionEffect.Poison - 1 && Type is EntityType.Zombie or EntityType.Husk or EntityType.Skeleton or EntityType.Stray or EntityType.Bogged or EntityType.Parched or EntityType.Spider or EntityType.CaveSpider or EntityType.WitherSkeleton or EntityType.Drowned or EntityType.ZombifiedPiglin or EntityType.Zoglin or EntityType.CamelHusk or EntityType.ZombieNautilus or EntityType.ZombieVillager or EntityType.Giant or EntityType.Phantom or EntityType.SkeletonHorse or EntityType.ZombieHorse ||
             effectId == (int)PotionEffect.Wither - 1 && Type == EntityType.WitherSkeleton ||
             effectId == (int)PotionEffect.Weakness - 1 && Type == EntityType.Parched)
@@ -244,8 +259,10 @@ public partial class Living : Entity, ILiving
     {
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, new RemoveMobEffectPacket(EntityId, effectId));
         activePotionEffects.TryRemove(effectId, out _);
-        if (this is Mob && effectId == (int)PotionEffect.Absorption - 1) AbsorptionHealth = 0;
+        if (this is Mob && effectId == (int)PotionEffect.Absorption - 1)
+            AbsorptionHealth = 0;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);

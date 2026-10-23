@@ -16,6 +16,7 @@ public sealed partial class Blaze : PathfinderMob
     protected override string? SoundName => "blaze";
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
     protected override int GetExperienceReward() => 10;
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(4, new BlazeAttackGoal(this));
@@ -25,6 +26,7 @@ public sealed partial class Blaze : PathfinderMob
         targets.AddGoal(1, new HurtByTargetGoal(this));
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, target => target is IPlayer));
     }
+
     protected override ValueTask TickMobAsync()
     {
         if (!MobBitMask.HasFlag(MobBitmask.NoAi))
@@ -39,17 +41,20 @@ public sealed partial class Blaze : PathfinderMob
         }
         return default;
     }
+
     protected override VectorD Travel()
     {
         if (Motion.Y < 0)
             Motion = new VectorD(Motion.X, Motion.Y * 0.6f, Motion.Z);
         return base.Travel();
     }
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         this.DropVanillaLoot(source);
         return default;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -66,13 +71,21 @@ internal sealed class BlazeAttackGoal(Blaze blaze) : NavigationGoal(blaze, 1)
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
     public override bool CanUse() => blaze.AttackTarget is { } target && blaze.IsValidTarget(target);
-    public override void Start() { step = 0; cooldown = 0; unseenTicks = 0; }
+
+    public override void Start()
+    {
+        step = 0;
+        cooldown = 0;
+        unseenTicks = 0;
+    }
+
     public override void Stop()
     {
         base.Stop();
         blaze.Charged = false;
         blaze.SynchronizeMetadata();
     }
+
     public override async ValueTask TickAsync()
     {
         cooldown--;

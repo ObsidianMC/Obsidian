@@ -72,6 +72,43 @@ public sealed class EntityRangeQueries
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task LevelFindsEntitiesByUuidAndRefusesDuplicates()
+    {
+        await using var context = TestServerFactory.CreateServer($"entity-uuid-{Guid.NewGuid():N}");
+        var world = context.World;
+        var uuid = Guid.NewGuid();
+        var entity = new Entity { EntityId = 1, Level = world, Position = new VectorD(8, 64, 8), Uuid = uuid };
+        Assert.True(world.TryAddEntity(entity));
+
+        Assert.Same(entity, world.FindEntity(uuid));
+        Assert.Same(entity, world.FindEntityInRange(uuid, new VectorD(8, 64, 12), 5));
+        Assert.Null(world.FindEntityInRange(uuid, new VectorD(8, 64, 20), 5));
+
+        // Like vanilla's, a level holds one entity per UUID.
+        var duplicate = new Entity { EntityId = 2, Level = world, Position = new VectorD(9, 64, 9), Uuid = uuid };
+        Assert.False(world.TryAddEntity(duplicate));
+        Assert.Same(entity, world.FindEntity(uuid));
+
+        await world.DestroyEntityAsync(entity);
+        Assert.Null(world.FindEntity(uuid));
+        Assert.True(world.TryAddEntity(duplicate));
+        Assert.Same(duplicate, world.FindEntity(uuid));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task EntityUuidIsSetOnce()
+    {
+        await using var context = TestServerFactory.CreateServer($"entity-uuid-{Guid.NewGuid():N}");
+        var uuid = Guid.NewGuid();
+        var entity = new Entity { Level = context.World, Uuid = uuid };
+
+        // Setting the same UUID again changes nothing; another one throws.
+        entity.Uuid = uuid;
+        Assert.Throws<InvalidOperationException>(() => entity.Uuid = Guid.NewGuid());
+        Assert.Equal(uuid, entity.Uuid);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task RestoredArrowWithAbsentOwnerCompletesItsTick()
     {
         await using var context = TestServerFactory.CreateServer($"arrow-owner-{Guid.NewGuid():N}");

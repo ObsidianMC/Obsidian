@@ -7,11 +7,18 @@ namespace Obsidian.Entities;
 public sealed partial class SnowGolem : PathfinderMob
 {
     public bool Pumpkin { get; set; } = true;
-    public SnowGolem() { Type = EntityType.SnowGolem; PersistenceRequired = true; }
+
+    public SnowGolem()
+    {
+        Type = EntityType.SnowGolem;
+        PersistenceRequired = true;
+    }
+
     protected override bool UsesAi => true;
     protected override bool WaterSensitive => true;
     protected override bool TakesFallDamage => false;
     protected override string? SoundName => "snow_golem";
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(1, new SnowGolemAttackGoal(this));
@@ -22,6 +29,7 @@ public sealed partial class SnowGolem : PathfinderMob
             (mob.Hostile || entity.Type is EntityType.Zombie or EntityType.Husk or EntityType.Skeleton or EntityType.Stray or
                 EntityType.Bogged or EntityType.Parched or EntityType.Creeper or EntityType.Slime), false));
     }
+
     protected override async ValueTask TickMobAsync()
     {
         var point = (Vector)Position.Floor();
@@ -39,6 +47,7 @@ public sealed partial class SnowGolem : PathfinderMob
                 await Level.SetBlockAsync(snow, BlocksRegistry.Snow, true);
         }
     }
+
     internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 3) || !CanSee(player))
@@ -56,11 +65,13 @@ public sealed partial class SnowGolem : PathfinderMob
 
         return false;
     }
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         DropItem(ItemsRegistry.Snowball, Random.Next(16));
         return default;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -76,6 +87,7 @@ internal sealed class SnowGolemAttackGoal(SnowGolem golem) : NavigationGoal(gole
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
     public override bool CanUse() => golem.AttackTarget is { } target && golem.IsValidTarget(target);
+
     public override ValueTask TickAsync()
     {
         var target = golem.AttackTarget!;
@@ -96,5 +108,10 @@ internal sealed class SnowGolemAttackGoal(SnowGolem golem) : NavigationGoal(gole
         }
         return default;
     }
-    public override void Start() { cooldown = 40; seenTicks = 0; }
+
+    public override void Start()
+    {
+        cooldown = 40;
+        seenTicks = 0;
+}
 }

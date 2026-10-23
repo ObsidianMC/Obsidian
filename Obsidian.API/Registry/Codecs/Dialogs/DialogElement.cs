@@ -34,7 +34,8 @@ public sealed record class DialogElement : INbtSerializable
         Validate();
         writer.WriteString("type", Type);
         DialogValidation.WriteText(writer, "title", Title);
-        if (ExternalTitle is not null) DialogValidation.WriteText(writer, "external_title", ExternalTitle);
+        if (ExternalTitle is not null)
+            DialogValidation.WriteText(writer, "external_title", ExternalTitle);
         writer.WriteBool("can_close_with_escape", CanCloseWithEscape);
         writer.WriteBool("pause", Pause);
         writer.WriteString("after_action", AfterAction);
@@ -42,24 +43,31 @@ public sealed record class DialogElement : INbtSerializable
         WriteList(writer, "inputs", Inputs);
         switch (Type)
         {
-            case "minecraft:notice": WriteAction(writer, "action", Action); break;
+            case "minecraft:notice":
+                WriteAction(writer, "action", Action);
+                break;
             case "minecraft:confirmation":
-                WriteAction(writer, "yes", Yes); WriteAction(writer, "no", No); break;
+                WriteAction(writer, "yes", Yes);
+                WriteAction(writer, "no", No);
+                break;
             case "minecraft:multi_action":
                 WriteList(writer, "actions", Actions);
                 goto case "minecraft:server_links";
             case "minecraft:dialog_list":
-                if (Dialogs is not null) writer.WriteString("dialogs", Dialogs);
+                if (Dialogs is not null)
+                    writer.WriteString("dialogs", Dialogs);
                 else
                 {
                     writer.WriteListStart("dialogs", Obsidian.Nbt.NbtTagType.String, DialogIds.Length);
-                    foreach (var id in DialogIds) writer.WriteString(id);
+                    foreach (var id in DialogIds)
+                        writer.WriteString(id);
                     writer.EndList();
                 }
                 goto case "minecraft:server_links";
             case "minecraft:server_links":
                 writer.WriteInt("columns", Columns == 0 ? 2 : Columns);
-                if (Type != "minecraft:multi_action") writer.WriteInt("button_width", ButtonWidth);
+                if (Type != "minecraft:multi_action")
+                    writer.WriteInt("button_width", ButtonWidth);
                 WriteAction(writer, "exit_action", ExitAction);
                 break;
         }
@@ -79,25 +87,33 @@ public sealed record class DialogElement : INbtSerializable
             throw new ArgumentException("Multi-action dialogs require at least one button.");
         if (Type == "minecraft:dialog_list" && Dialogs is null && DialogIds.IsEmpty)
             throw new ArgumentException("Dialog lists require a tag or dialog identifiers.");
-        if (Dialogs is not null) DialogValidation.Identifier(Dialogs.StartsWith('#') ? Dialogs[1..] : Dialogs);
-        foreach (var id in DialogIds) DialogValidation.Identifier(id);
+        if (Dialogs is not null)
+            DialogValidation.Identifier(Dialogs.StartsWith('#') ? Dialogs[1..] : Dialogs);
+        foreach (var id in DialogIds)
+            DialogValidation.Identifier(id);
         if (Inputs.Select(x => x.Key).Distinct(StringComparer.Ordinal).Count() != Inputs.Length)
             throw new ArgumentException("Dialog input keys must be unique.");
     }
 
     private static void WriteAction(INbtWriter writer, string name, DialogAction? action)
     {
-        if (action is null) return;
-        writer.WriteCompoundStart(name); action.Write(writer); writer.EndCompound();
+        if (action is null)
+            return;
+        writer.WriteCompoundStart(name);
+        action.Write(writer);
+        writer.EndCompound();
     }
 
     private static void WriteList<T>(INbtWriter writer, string name, ImmutableArray<T> entries) where T : INbtSerializable
     {
-        if (entries.IsEmpty) return;
+        if (entries.IsEmpty)
+            return;
         writer.WriteListStart(name, Obsidian.Nbt.NbtTagType.Compound, entries.Length);
         foreach (var entry in entries)
         {
-            writer.WriteCompoundStart(); entry.Write(writer); writer.EndCompound();
+            writer.WriteCompoundStart();
+            entry.Write(writer);
+            writer.EndCompound();
         }
         writer.EndList();
     }

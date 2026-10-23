@@ -19,11 +19,13 @@ public sealed partial class PiglinBrute : PathfinderMob
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
     protected override int GetExperienceReward() => 20;
     protected internal override float AttackDamage => base.AttackDamage + GetWeaponDamage(GetEquipment(EquipmentSlot.MainHand));
+
     protected override void FinalizeSpawn()
     {
         PersistenceRequired = true;
         SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.GoldenAxe));
     }
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         ((Navigator)Navigator!).CanOpenDoors = true;
@@ -36,11 +38,17 @@ public sealed partial class PiglinBrute : PathfinderMob
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, target => target is IPlayer && IsInRange(target, 12)));
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, target => target.Type is EntityType.WitherSkeleton or EntityType.Wither));
     }
+
     protected override async ValueTask TickMobAsync()
     {
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+            return;
         var safe = Level.PiglinsSafe((Vector)Position.Floor());
-        if (safe || IsImmuneToZombification) { TimeInOverworld = 0; return; }
+        if (safe || IsImmuneToZombification)
+        {
+            TimeInOverworld = 0;
+            return;
+        }
         if (++TimeInOverworld > 300)
         {
             PlayMobSound("converted_to_zombified");
@@ -48,23 +56,28 @@ public sealed partial class PiglinBrute : PathfinderMob
             zombie.AddPotionEffect((int)PotionEffect.Nausea - 1, 200);
         }
     }
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         foreach (var slot in Enum.GetValues<EquipmentSlot>())
-            if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot)) DropItem(GetEquipment(slot));
+            if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot))
+                DropItem(GetEquipment(slot));
         return default;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(16, EntityMetadataType.Boolean);
         writer.WriteBoolean(IsImmuneToZombification);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         writer.WriteBool("IsImmuneToZombification", IsImmuneToZombification);
         writer.WriteInt("TimeInOverworld", TimeInOverworld);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         IsImmuneToZombification = tag.TryGetBool("IsImmuneToZombification", out var immune) && immune;

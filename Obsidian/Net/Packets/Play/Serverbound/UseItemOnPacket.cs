@@ -60,7 +60,8 @@ public partial class UseItemOnPacket
     {
         var handSlot = Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var bucket = player.Inventory.GetItem(handSlot);
-        if (await TryPlaceEndCrystalAsync(player, handSlot, bucket)) return;
+        if (await TryPlaceEndCrystalAsync(player, handSlot, bucket))
+            return;
         if (bucket is
             {
                 Count: > 0,
@@ -71,10 +72,12 @@ public partial class UseItemOnPacket
             && player.GameMode != GameMode.Spectator)
         {
             var destination = Position + Face.ToVector();
-            if ((player.Position - (VectorD)destination).MagnitudeSquared() > 36 || player.Level is not Obsidian.WorldData.AbstractLevel bucketLevel || bucketLevel.IsOutsideBuildHeight(destination.Y)) return;
+            if ((player.Position - (VectorD)destination).MagnitudeSquared() > 36 || player.Level is not Obsidian.WorldData.AbstractLevel bucketLevel || bucketLevel.IsOutsideBuildHeight(destination.Y))
+                return;
             var terrain = new Obsidian.Entities.AI.MobTerrain(bucketLevel);
             var existing = terrain.GetBlock(destination);
-            if (existing == null || !existing.IsAir && !existing.Is(BlockIds.Water)) return;
+            if (existing == null || !existing.IsAir && !existing.Is(BlockIds.Water))
+                return;
             var type = bucket.Holder.Id switch
             {
                 ItemIds.AxolotlBucket => EntityType.Axolotl,
@@ -87,13 +90,18 @@ public partial class UseItemOnPacket
             var mob = Obsidian.Entities.Factories.EntitySpawner.CreateMob(bucketLevel, type)!;
             mob.EntityId = Server.GetNextEntityId();
             mob.Position = (VectorD)destination + new VectorD(0.5f, 0, 0.5f);
-            if (!terrain.IsFree(mob.Dimension.CreateBBFromPosition(mob.Position))) return;
+            if (!terrain.IsFree(mob.Dimension.CreateBBFromPosition(mob.Position)))
+                return;
             await bucketLevel.SetBlockAsync(destination, BlocksRegistry.Water, true);
             mob.InitializeAi();
             var saved = Obsidian.Entities.EntityNbt.Save(mob)!;
             if (bucket.GetComponent<Obsidian.API.Inventory.DataComponents.BucketEntityDataComponent>(DataComponentType.BucketEntityData) is { } component)
                 foreach (var (name, value) in component.Value)
-                    if (name is not ("id" or "UUID" or "Pos" or "Motion" or "Rotation")) { saved.Remove(name); saved.Add(name, value); }
+                    if (name is not ("id" or "UUID" or "Pos" or "Motion" or "Rotation"))
+                    {
+                        saved.Remove(name);
+                        saved.Add(name, value);
+                    }
             saved.Remove("FromBucket");
             saved.Add(new Obsidian.Nbt.NbtTag<bool>("FromBucket", true));
             mob.ReadSave(saved);
@@ -116,7 +124,8 @@ public partial class UseItemOnPacket
         if (b is null)
             return;
 
-        if (await TryUseMusicBlockAsync(player, handSlot, bucket, b)) return;
+        if (await TryUseMusicBlockAsync(player, handSlot, bucket, b))
+            return;
 
         if (player.Level is AbstractLevel cookingLevel
             && await cookingLevel.UseCampfireAsync(player, position, handSlot))

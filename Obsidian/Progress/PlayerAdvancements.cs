@@ -14,6 +14,10 @@ namespace Obsidian.Progress;
 internal sealed class PlayerAdvancements(IPlayer player) : IAdvancements
 {
     private readonly Lock gate = new();
+
+    // The criteria's saved dates by their text, parsed once: the tick trigger fires every tick, and asking whether an
+    // advancement is done parsed every date it has again. Guarded by gate.
+    private readonly Dictionary<string, DateTimeOffset?> parsedDates = [];
     private readonly SemaphoreSlim sending = new(1, 1);
     private JsonObject saved = new();
     private readonly HashSet<string> dirty = [];
@@ -222,8 +226,13 @@ internal sealed class PlayerAdvancements(IPlayer player) : IAdvancements
         if (value is null || !value.TryGetValue<string>(out var text) || text.Length < 5)
             return null;
 
+        if (this.parsedDates.TryGetValue(text, out var parsed))
+            return parsed;
+
         var normalized = text.Insert(text.Length - 2, ":");
-        return DateTimeOffset.TryParseExact(normalized, "yyyy-MM-dd HH:mm:ss zzz",
+        parsed = DateTimeOffset.TryParseExact(normalized, "yyyy-MM-dd HH:mm:ss zzz",
             CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) ? date : null;
+        this.parsedDates[text] = parsed;
+        return parsed;
     }
 }

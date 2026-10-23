@@ -12,6 +12,14 @@ public sealed partial class ExperienceOrb : Entity
         Globals.Random.NextSingle() * 0.4f, (Globals.Random.NextSingle() * 2 - 1) * 0.2f);
     public int Value { get; init; }
 
+    // Kept across ticks, as mobs keep theirs, rather than made (with its chunk cache) every tick; made again when the
+    // entity changes level.
+    private MobTerrain? terrain;
+    private ILevel? terrainLevel;
+
+    // The collision shapes of the tick's move, reused like EntityMovement.Collide's.
+    [ThreadStatic] private static List<BoundingBox>? collisionShapes;
+
     public ExperienceOrb() => Type = EntityType.ExperienceOrb;
 
     public static int SplitValue(int remaining) => remaining switch
@@ -47,10 +55,17 @@ public sealed partial class ExperienceOrb : Entity
                 return;
             }
         }
-        var terrain = new MobTerrain(Level);
+        if (terrain is null || !ReferenceEquals(terrainLevel, Level))
+        {
+            terrain = new MobTerrain(Level);
+            terrainLevel = Level;
+        }
         motion.Y -= 0.03f;
         var swept = new BoundingBox(VectorD.Min(bounds.Min, bounds.Min + motion), VectorD.Max(bounds.Max, bounds.Max + motion));
-        var delta = EntityMovement.Clip(bounds, motion, terrain.GetCollisions(swept).ToArray());
+        var shapes = collisionShapes ??= [];
+        shapes.Clear();
+        terrain.CollectCollisions(swept, shapes);
+        var delta = EntityMovement.Clip(bounds, motion, shapes);
         var grounded = motion.Y < 0 && delta.Y != motion.Y;
         var next = Position + delta;
         if (!level.TryMoveEntity(this, Position, next))

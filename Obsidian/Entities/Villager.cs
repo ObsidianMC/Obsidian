@@ -10,6 +10,7 @@ public sealed partial class Villager : AgeableMob
 {
     internal static readonly string[] Professions = ["none", "armorer", "butcher", "cartographer", "cleric", "farmer", "fisherman", "fletcher", "leatherworker", "librarian", "mason", "nitwit", "shepherd", "toolsmith", "weaponsmith"];
     internal static readonly string[] BiomeTypes = ["desert", "jungle", "plains", "savanna", "snow", "swamp", "taiga"];
+
     // Workstation block id to the profession it grants.
     internal static readonly Dictionary<int, int> Workstations = new()
     {
@@ -27,6 +28,7 @@ public sealed partial class Villager : AgeableMob
         [BlockIds.SmithingTable] = 13,
         [BlockIds.Grindstone] = 14
     };
+
     public int VillagerType { get; set; } = 2;
     public int VillagerProfession { get; set; }
     public int VillagerLevel { get; set; } = 1;
@@ -38,6 +40,7 @@ public sealed partial class Villager : AgeableMob
     private long restockDay = -1;
     private long lastRestock;
     private int tradingLevel;
+
     public Villager()
     {
         Type = EntityType.Villager;
@@ -102,7 +105,12 @@ public sealed partial class Villager : AgeableMob
         {
             VillagerXp += offer.XP;
             var newLevel = VillagerXp >= 250 ? 5 : VillagerXp >= 150 ? 4 : VillagerXp >= 70 ? 3 : VillagerXp >= 10 ? 2 : 1;
-            if (newLevel > VillagerLevel) { VillagerLevel = newLevel; Health = GetAttributeValue("minecraft:generic.max_health"); SynchronizeMetadata(); }
+            if (newLevel > VillagerLevel)
+            {
+                VillagerLevel = newLevel;
+                Health = GetAttributeValue("minecraft:generic.max_health");
+                SynchronizeMetadata();
+            }
         });
         return true;
     }
@@ -112,65 +120,123 @@ public sealed partial class Villager : AgeableMob
         if (AiTick % 200 == 0)
         {
             if (Home is { } home && (Terrain.GetBlock(home) is not { } bed || !TagsRegistry.Block.Beds.Entries.Contains(bed.RegistryId)))
-            { level.ReleaseVillagePoi(home, Uuid); Home = null; }
+            {
+                level.ReleaseVillagePoi(home, Uuid);
+                Home = null;
+            }
             if (JobSite is { } job
                 && (!Workstations.TryGetValue(Terrain.GetBlock(job)?.RegistryId ?? BlockIds.Air, out var profession)
                     || profession != VillagerProfession))
             {
-                level.ReleaseVillagePoi(job, Uuid); JobSite = null;
-                if (VillagerXp == 0) { VillagerProfession = 0; offers = []; tradingLevel = 0; SynchronizeMetadata(); }
-            }
-            var origin = (Vector)Position.Floor();
-            var points = new List<(Vector Position, int Profession, bool Bed)>();
-            for (var x = -16; x <= 16; x++)
-            for (var z = -16; z <= 16; z++)
-            for (var y = -4; y <= 4; y++)
-            {
-                var point = origin + new Vector(x, y, z);
-                if (Terrain.GetBlock(point) is not { } block) continue;
-                if (Home == null && TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId) && block.GetProperty("part") == "head") points.Add((point, 0, true));
-                else if (!IsBaby
-                    && JobSite == null
-                    && VillagerProfession != 11
-                    && Workstations.TryGetValue(block.RegistryId, out var candidateProfession)
-                    && (VillagerProfession == 0 || VillagerProfession == candidateProfession))
+                level.ReleaseVillagePoi(job, Uuid);
+                JobSite = null;
+                if (VillagerXp == 0)
                 {
-                    points.Add((point, candidateProfession, false));
+                    VillagerProfession = 0;
+                    offers = [];
+                    tradingLevel = 0;
+                    SynchronizeMetadata();
                 }
             }
-            foreach (var point in points.OrderBy(point => ((VectorD)point.Position - Position).MagnitudeSquared()))
-            {
-                if (point.Bed ? Home != null : JobSite != null) continue;
-                if (!level.TryClaimVillagePoi(point.Position, Uuid)) continue;
-                if (point.Bed) Home = point.Position;
-                else { JobSite = point.Position; VillagerProfession = point.Profession; EnsureTrades(); SynchronizeMetadata(); }
-            }
+            // The scan only looks for a bed while homeless and for a workstation while the villager can take a job
+            // site (an adult other than a nitwit without one), so one missing neither skips its 33x33x9 blocks.
+            var wantsJobSite = !IsBaby && JobSite == null && VillagerProfession != 11;
+            if (Home == null || wantsJobSite)
+                ClaimVillagePois(level, wantsJobSite);
         }
         var customer = Level.GetPlayersInRange(Position, 16).FirstOrDefault(player => player.OpenedContainer is MerchantContainer menu && ReferenceEquals(menu.Merchant, this));
-        if (customer != null) { (Navigator as Navigator)?.Stop(); LookControl.LookAt(customer); return; }
+        if (customer != null)
+        {
+            (Navigator as Navigator)?.Stop();
+            LookControl.LookAt(customer);
+            return;
+        }
         var nighttime = Level.DayTime is >= 12000 and < 23000;
         var target = nighttime ? Home : Level.DayTime is >= 2000 and < 9000 ? JobSite : null;
-        if (AiTick % 40 == 0 && target is { } destination) Navigator?.NavigateTo((VectorD)destination + new VectorD(0.5, 0, 0.5));
+        if (AiTick % 40 == 0 && target is { } destination)
+            Navigator?.NavigateTo((VectorD)destination + new VectorD(0.5, 0, 0.5));
         if (nighttime && Home is { } sleeping && ((VectorD)sleeping - Position).MagnitudeSquared() < 4)
         {
-            (Navigator as Navigator)?.Stop(); Motion = VectorD.Zero; BedBlockPosition = sleeping;
-            if (Pose != Pose.Sleeping) { Pose = Pose.Sleeping; SynchronizeMetadata(); }
+            (Navigator as Navigator)?.Stop();
+            Motion = VectorD.Zero;
+            BedBlockPosition = sleeping;
+            if (Pose != Pose.Sleeping)
+            {
+                Pose = Pose.Sleeping;
+                SynchronizeMetadata();
         }
-        else if (Pose == Pose.Sleeping) { Pose = Pose.Standing; BedBlockPosition = null; SynchronizeMetadata(); }
+        }
+        else if (Pose == Pose.Sleeping)
+        {
+            Pose = Pose.Standing;
+            BedBlockPosition = null;
+            SynchronizeMetadata();
+        }
         var day = Level.Time / 24000;
-        if (day != restockDay) { restockDay = day; restocks = 0; }
+        if (day != restockDay)
+        {
+            restockDay = day;
+            restocks = 0;
+        }
         if (!nighttime && Level.DayTime is >= 2000 and < 9000 && JobSite is { } work &&
             ((VectorD)work - Position).MagnitudeSquared() < 4 && restocks < 2 && Level.Time - lastRestock >= 2000 && offers.Any(offer => offer.UsedCount > 0))
         {
-            foreach (var offer in offers) { offer.Demand += offer.UsedCount - (offer.MaxCount - offer.UsedCount); offer.UsedCount = 0; offer.IsDisabled = false; }
-            restocks++; lastRestock = Level.Time;
+            foreach (var offer in offers)
+            {
+                offer.Demand += offer.UsedCount - (offer.MaxCount - offer.UsedCount);
+                offer.UsedCount = 0;
+                offer.IsDisabled = false;
+            }
+            restocks++;
+            lastRestock = Level.Time;
         }
         await ValueTask.CompletedTask;
     }
 
+    // Claims the nearest free bed (while homeless) and workstation (while wantsJobSite) within 16 blocks across and 4
+    // up or down.
+    private void ClaimVillagePois(AbstractLevel level, bool wantsJobSite)
+    {
+        var origin = (Vector)Position.Floor();
+        var points = new List<(Vector Position, int Profession, bool Bed)>();
+        for (var x = -16; x <= 16; x++)
+        for (var z = -16; z <= 16; z++)
+        for (var y = -4; y <= 4; y++)
+        {
+            var point = origin + new Vector(x, y, z);
+            if (Terrain.GetBlock(point) is not { } block)
+                continue;
+            if (Home == null && TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId) && block.GetProperty("part") == "head")
+                points.Add((point, 0, true));
+            else if (wantsJobSite
+                && Workstations.TryGetValue(block.RegistryId, out var candidateProfession)
+                && (VillagerProfession == 0 || VillagerProfession == candidateProfession))
+            {
+                points.Add((point, candidateProfession, false));
+            }
+        }
+        foreach (var point in points.OrderBy(point => ((VectorD)point.Position - Position).MagnitudeSquared()))
+        {
+            if (point.Bed ? Home != null : JobSite != null)
+                continue;
+            if (!level.TryClaimVillagePoi(point.Position, Uuid))
+                continue;
+            if (point.Bed)
+                Home = point.Position;
+            else
+            {
+                JobSite = point.Position;
+                VillagerProfession = point.Profession;
+                EnsureTrades();
+                SynchronizeMetadata();
+            }
+        }
+    }
+
     private void EnsureTrades()
     {
-        if (VillagerProfession is <= 0 or 11 or > 14) return;
+        if (VillagerProfession is <= 0 or 11 or > 14)
+            return;
         while (tradingLevel < VillagerLevel)
         {
             tradingLevel++;
@@ -182,7 +248,9 @@ public sealed partial class Villager : AgeableMob
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(18, EntityMetadataType.VillagerData);
-        writer.WriteVarInt(VillagerType); writer.WriteVarInt(VillagerProfession); writer.WriteVarInt(VillagerLevel);
+        writer.WriteVarInt(VillagerType);
+        writer.WriteVarInt(VillagerProfession);
+        writer.WriteVarInt(VillagerLevel);
     }
 
     protected override void WriteAdditionalSave(INbtWriter writer)
@@ -190,42 +258,77 @@ public sealed partial class Villager : AgeableMob
         writer.WriteCompoundStart("VillagerData");
         writer.WriteString("type", "minecraft:" + BiomeTypes[Math.Clamp(VillagerType, 0, 6)]);
         writer.WriteString("profession", "minecraft:" + Professions[Math.Clamp(VillagerProfession, 0, 14)]);
-        writer.WriteInt("level", VillagerLevel); writer.EndCompound();
-        writer.WriteInt("Xp", VillagerXp); writer.WriteInt("ObsidianTradingLevel", tradingLevel);
-        writer.WriteInt("RestocksToday", restocks); writer.WriteLong("LastRestock", lastRestock); writer.WriteLong("ObsidianRestockDay", restockDay);
-        if (Home is { } home) writer.WriteArray("ObsidianHome", [home.X, home.Y, home.Z]);
-        if (JobSite is { } job) writer.WriteArray("ObsidianJobSite", [job.X, job.Y, job.Z]);
+        writer.WriteInt("level", VillagerLevel);
+        writer.EndCompound();
+        writer.WriteInt("Xp", VillagerXp);
+        writer.WriteInt("ObsidianTradingLevel", tradingLevel);
+        writer.WriteInt("RestocksToday", restocks);
+        writer.WriteLong("LastRestock", lastRestock);
+        writer.WriteLong("ObsidianRestockDay", restockDay);
+        if (Home is { } home)
+            writer.WriteArray("ObsidianHome", [home.X, home.Y, home.Z]);
+        if (JobSite is { } job)
+            writer.WriteArray("ObsidianJobSite", [job.X, job.Y, job.Z]);
         MerchantOffers.Write(writer, offers);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         if (tag.TryGetTag<NbtCompound>("VillagerData", out var data))
         {
-            if (data.TryGetTagValue<string>("type", out var type)) VillagerType = Math.Max(0, Array.IndexOf(BiomeTypes, type.Replace("minecraft:", "")));
-            if (data.TryGetTagValue<string>("profession", out var profession)) VillagerProfession = Math.Max(0, Array.IndexOf(Professions, profession.Replace("minecraft:", "")));
-            if (data.TryGetTagValue<int>("level", out var level)) VillagerLevel = Math.Clamp(level, 1, 5);
+            if (data.TryGetTagValue<string>("type", out var type))
+                VillagerType = Math.Max(0, Array.IndexOf(BiomeTypes, type.Replace("minecraft:", "")));
+            if (data.TryGetTagValue<string>("profession", out var profession))
+                VillagerProfession = Math.Max(0, Array.IndexOf(Professions, profession.Replace("minecraft:", "")));
+            if (data.TryGetTagValue<int>("level", out var level))
+                VillagerLevel = Math.Clamp(level, 1, 5);
         }
         VillagerXp = tag.TryGetTagValue<int>("Xp", out var xp) ? Math.Max(0, xp) : 0;
         offers = MerchantOffers.Read(tag);
         tradingLevel = tag.TryGetTagValue<int>("ObsidianTradingLevel", out var unlocked) ? Math.Clamp(unlocked, 0, 5) : offers.IsEmpty ? 0 : VillagerLevel;
         restocks = tag.TryGetTagValue<int>("RestocksToday", out var stock) ? Math.Clamp(stock, 0, 2) : 0;
-        if (tag.TryGetTagValue<long>("LastRestock", out var last)) lastRestock = last;
-        if (tag.TryGetTagValue<long>("ObsidianRestockDay", out var day)) restockDay = day;
-        if (tag.TryGetTag<NbtArray<int>>("ObsidianHome", out var home) && home.Count == 3) { var values = home.GetArray(); Home = new Vector(values[0], values[1], values[2]); }
-        if (tag.TryGetTag<NbtArray<int>>("ObsidianJobSite", out var job) && job.Count == 3) { var values = job.GetArray(); JobSite = new Vector(values[0], values[1], values[2]); }
-        if (Level is AbstractLevel village) { if (Home is { } h) village.TryClaimVillagePoi(h, Uuid); if (JobSite is { } j) village.TryClaimVillagePoi(j, Uuid); }
+        if (tag.TryGetTagValue<long>("LastRestock", out var last))
+            lastRestock = last;
+        if (tag.TryGetTagValue<long>("ObsidianRestockDay", out var day))
+            restockDay = day;
+        if (tag.TryGetTag<NbtArray<int>>("ObsidianHome", out var home) && home.Count == 3)
+        {
+            var values = home.GetArray();
+            Home = new Vector(values[0], values[1], values[2]);
     }
+        if (tag.TryGetTag<NbtArray<int>>("ObsidianJobSite", out var job) && job.Count == 3)
+        {
+            var values = job.GetArray();
+            JobSite = new Vector(values[0], values[1], values[2]);
+        }
+        if (Level is AbstractLevel village)
+        {
+            if (Home is { } h)
+                village.TryClaimVillagePoi(h, Uuid);
+            if (JobSite is { } j)
+                village.TryClaimVillagePoi(j, Uuid);
+        }
+    }
+
     internal void RestoreVillagerOffers(NbtCompound tag)
     {
         offers = MerchantOffers.Read(tag);
-        if (!offers.IsEmpty) tradingLevel = VillagerLevel;
+        if (!offers.IsEmpty)
+            tradingLevel = VillagerLevel;
     }
 
     public override async ValueTask RemoveAsync()
     {
-        if (Level is AbstractLevel village) { if (Home is { } h) village.ReleaseVillagePoi(h, Uuid); if (JobSite is { } j) village.ReleaseVillagePoi(j, Uuid); }
+        if (Level is AbstractLevel village)
+        {
+            if (Home is { } h)
+                village.ReleaseVillagePoi(h, Uuid);
+            if (JobSite is { } j)
+                village.ReleaseVillagePoi(j, Uuid);
+        }
         foreach (var player in Level.GetPlayersInRange(Position, 16))
-            if (player.OpenedContainer is MerchantContainer merchant && ReferenceEquals(merchant.Merchant, this)) await merchant.CloseAsync(player);
+            if (player.OpenedContainer is MerchantContainer merchant && ReferenceEquals(merchant.Merchant, this))
+                await merchant.CloseAsync(player);
         await base.RemoveAsync();
     }
 }
@@ -234,6 +337,7 @@ internal sealed class VillagerAvoidThreatGoal(Villager villager) : NavigationGoa
 {
     private IEntity? threat;
     private VectorD destination;
+
     public override bool CanUse()
     {
         if (villager.Random.Next(5) != 0)
@@ -249,9 +353,12 @@ internal sealed class VillagerAvoidThreatGoal(Villager villager) : NavigationGoa
         destination = point;
         return true;
     }
+
     public override void Start() => MoveTo(destination);
+
     public override bool CanContinue() => threat != null && villager.IsValidTarget(threat) &&
         villager.IsInRange(threat, 16) && Navigation.IsNavigating;
+
     public override void Stop()
     {
         base.Stop();
@@ -262,6 +369,7 @@ internal sealed class VillagerAvoidThreatGoal(Villager villager) : NavigationGoa
 internal sealed class VillagerShelterGoal(Villager villager) : NavigationGoal(villager, 0.8f)
 {
     private VectorD destination;
+
     public override bool CanUse()
     {
         if (!villager.Level.HasDayCycle() ||
@@ -282,6 +390,7 @@ internal sealed class VillagerShelterGoal(Villager villager) : NavigationGoal(vi
         }
         return false;
     }
+
     public override void Start() => MoveTo(destination);
     public override bool CanContinue() => Navigation.IsNavigating;
 }

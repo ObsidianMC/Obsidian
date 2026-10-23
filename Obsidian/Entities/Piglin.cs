@@ -27,6 +27,7 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
     protected override int GetExperienceReward() => IsBaby ? 0 : 5;
     protected internal override float AttackDamage => base.AttackDamage + GetWeaponDamage(GetEquipment(EquipmentSlot.MainHand));
     internal bool CanFight => !IsBaby && admireTicks == 0;
+
     protected override void FinalizeSpawn()
     {
         IsBaby |= Random.NextSingle() < 0.2f;
@@ -44,8 +45,10 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
             (EquipmentSlot.Boots, ItemsRegistry.GoldenBoots)
         ];
         foreach (var (slot, piece) in armor)
-            if (!IsBaby && Random.NextSingle() < 0.1f) SetEquipment(slot, ItemsRegistry.GetSingleItem(piece));
+            if (!IsBaby && Random.NextSingle() < 0.1f)
+                SetEquipment(slot, ItemsRegistry.GetSingleItem(piece));
     }
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         ((Navigator)Navigator!).CanOpenDoors = true;
@@ -62,11 +65,13 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, target => CanFight && target is IPlayer player && !WearsGold(player)));
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, target => CanFight && (target.Type is EntityType.WitherSkeleton or EntityType.Wither)));
     }
+
     private static bool WearsGold(IPlayer player) => Enumerable.Range(5, 4).Any(slot =>
         player.Inventory.GetItem(slot)?.Holder.Id is ItemIds.GoldenHelmet
             or ItemIds.GoldenChestplate
             or ItemIds.GoldenLeggings
             or ItemIds.GoldenBoots);
+
     internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
@@ -85,6 +90,7 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
         BeginAdmiring();
         return true;
     }
+
     private void BeginAdmiring()
     {
         admireTicks = 120;
@@ -92,6 +98,7 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
         AttackTarget = null;
         SynchronizeMetadata();
     }
+
     protected override ValueTask OnHurtAsync(IEntity source)
     {
         if (admireTicks > 0)
@@ -101,14 +108,18 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
             SetEquipment(EquipmentSlot.OffHand, ItemStack.Air);
         }
         foreach (var ally in GetEntitiesNear(16).OfType<Mob>().Where(ally => ally is Piglin { IsBaby: false } or PiglinBrute))
-            if (ally.IsValidTarget(source)) ally.AlertedTarget = source;
+            if (ally.IsValidTarget(source))
+                ally.AlertedTarget = source;
         return default;
     }
+
     protected override async ValueTask TickMobAsync()
     {
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+            return;
         var safe = Level.PiglinsSafe((Vector)Position.Floor());
-        if (safe || IsImmuneToZombification) TimeInOverworld = 0;
+        if (safe || IsImmuneToZombification)
+            TimeInOverworld = 0;
         else if (++TimeInOverworld > 300)
         {
             PlayMobSound("converted_to_zombified");
@@ -124,7 +135,8 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
                 {
                     SetEquipment(EquipmentSlot.OffHand, ItemStack.Air);
                     var table = LootTables.All["minecraft:gameplay/piglin_bartering"];
-                    foreach (var stack in table.GetRandomItems(new LootContext { Random = table.CreateRandom(Random.NextInt64()), Origin = Position, ThisEntity = this })) DropItem(stack);
+                    foreach (var stack in table.GetRandomItems(new LootContext { Random = table.CreateRandom(Random.NextInt64()), Origin = Position, ThisEntity = this }))
+                        DropItem(stack);
                 }
                 SynchronizeMetadata();
             }
@@ -139,16 +151,20 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
             {
                 gold.Item.Count--;
                 PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new TakeItemEntityPacket { CollectedEntityId = gold.EntityId, CollectorEntityId = EntityId, PickupItemCount = 1 });
-                if (gold.Item.Count == 0) await gold.RemoveAsync();
-                else PacketBroadcaster.QueuePacketToLevelInRange(Level, gold.Position, new SetEntityDataPacket { EntityId = gold.EntityId, Entity = gold });
+                if (gold.Item.Count == 0)
+                    await gold.RemoveAsync();
+                else
+                    PacketBroadcaster.QueuePacketToLevelInRange(Level, gold.Position, new SetEntityDataPacket { EntityId = gold.EntityId, Entity = gold });
                 BeginAdmiring();
             }
         }
     }
+
     internal void LoadCrossbow(bool loaded)
     {
         var weapon = GetEquipment(EquipmentSlot.MainHand);
-        if (!weapon.Is(ItemsRegistry.Crossbow)) return;
+        if (!weapon.Is(ItemsRegistry.Crossbow))
+            return;
         var copy = new ItemStack(weapon, weapon.Count);
         copy[DataComponentType.ChargedProjectiles] = ComponentBuilder.ChargedProjectiles with
         {
@@ -156,32 +172,50 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
         };
         SetEquipment(EquipmentSlot.MainHand, copy);
     }
+
     internal void Shoot(IEntity target)
     {
         var origin = EyePosition - new VectorD(0, 0.1, 0);
         var delta = target.Position + new VectorD(0, target.Dimension.Height / 3, 0) - origin;
         delta.Y += Math.Sqrt(delta.X * delta.X + delta.Z * delta.Z) * 0.2;
-        if (delta.Magnitude < 0.0001) return;
+        if (delta.Magnitude < 0.0001)
+            return;
         var deviation = 0.0172275f * (14 - 4 * (int)Level.LevelData.Difficulty);
         var direction = delta / delta.Magnitude + new VectorD(Random.NextSingle() - Random.NextSingle(), Random.NextSingle() - Random.NextSingle(), Random.NextSingle() - Random.NextSingle()) * deviation;
         Level.SpawnEntity(new Arrow { Level = Level, EntityId = Server.GetNextEntityId(), Position = origin, Type = EntityType.Arrow, Motion = direction * 1.6, Owner = this });
-        if (!Silent) PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SoundEntityPacket { EntityId = EntityId,
-            SoundLocation = "minecraft:item.crossbow.shoot", Category = SoundCategory.Hostile, Volume = 1, Pitch = 1, Seed = Random.NextInt64() });
+        if (!Silent)
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SoundEntityPacket
+            {
+                EntityId = EntityId,
+                SoundLocation = "minecraft:item.crossbow.shoot",
+                Category = SoundCategory.Hostile,
+                Volume = 1,
+                Pitch = 1,
+                Seed = Random.NextInt64()
+            });
     }
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         foreach (var slot in Enum.GetValues<EquipmentSlot>())
-            if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot)) DropItem(GetEquipment(slot));
+            if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot))
+                DropItem(GetEquipment(slot));
         return default;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(16, EntityMetadataType.Boolean); writer.WriteBoolean(IsImmuneToZombification);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Boolean); writer.WriteBoolean(IsBaby);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean); writer.WriteBoolean(Charging);
-        writer.WriteEntityMetadataType(19, EntityMetadataType.Boolean); writer.WriteBoolean(false);
+        writer.WriteEntityMetadataType(16, EntityMetadataType.Boolean);
+        writer.WriteBoolean(IsImmuneToZombification);
+        writer.WriteEntityMetadataType(17, EntityMetadataType.Boolean);
+        writer.WriteBoolean(IsBaby);
+        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean);
+        writer.WriteBoolean(Charging);
+        writer.WriteEntityMetadataType(19, EntityMetadataType.Boolean);
+        writer.WriteBoolean(false);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         writer.WriteBool("IsBaby", IsBaby);
@@ -189,6 +223,7 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
         writer.WriteInt("TimeInOverworld", TimeInOverworld);
         writer.WriteInt("ObsidianAdmireTicks", admireTicks);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         IsBaby = tag.TryGetBool("IsBaby", out var baby) && baby;
@@ -196,6 +231,7 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
         TimeInOverworld = Math.Max(0, tag.TryGetTagValue<int>("TimeInOverworld", out var ticks) ? ticks : 0);
         admireTicks = Math.Clamp(tag.TryGetTagValue<int>("ObsidianAdmireTicks", out var admire) ? admire : 0, 0, 120);
     }
+
     internal bool Admiring => admireTicks > 0;
 }
 
@@ -203,17 +239,25 @@ internal sealed class PiglinAdmireGoal(Piglin piglin) : Goal
 {
     public override GoalFlags Flags => GoalFlags.Move;
     public override bool CanUse() => piglin.Admiring;
-    public override void Start() { ((Navigator)piglin.Navigator!).Stop(); piglin.MoveControl.Stop(); }
+
+    public override void Start()
+    {
+        ((Navigator)piglin.Navigator!).Stop();
+        piglin.MoveControl.Stop();
 }
+}
+
 internal sealed class PiglinMeleeGoal(Piglin piglin) : MeleeAttackGoal(piglin)
 {
     public override bool CanUse() =>
         piglin.CanFight && !piglin.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Crossbow) && base.CanUse();
+
     public override bool CanContinue() =>
         piglin.CanFight
         && !piglin.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Crossbow)
         && base.CanContinue();
 }
+
 internal sealed class PiglinCrossbowGoal(Piglin piglin) : NavigationGoal(piglin, 1)
 {
     private int chargeTicks;
@@ -221,36 +265,67 @@ internal sealed class PiglinCrossbowGoal(Piglin piglin) : NavigationGoal(piglin,
     private bool loaded;
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
+
     public override bool CanUse() =>
         piglin.CanFight
         && piglin.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Crossbow)
         && piglin.AttackTarget is { } target
         && piglin.IsValidTarget(target);
+
     public override void Start() => piglin.SetAggressive(true);
+
     public override ValueTask TickAsync()
     {
         var target = piglin.AttackTarget!;
         piglin.LookControl.LookAt(target);
         var visible = piglin.CanSee(target);
-        if (!visible || !piglin.IsInRange(target, 8)) MoveTo(target);
-        else Navigation.Stop();
+        if (!visible || !piglin.IsInRange(target, 8))
+            MoveTo(target);
+        else
+            Navigation.Stop();
         if (loaded)
         {
-            if (piglin.AiTick >= shootAt && visible) { piglin.Shoot(target); loaded = false; piglin.LoadCrossbow(false); }
+            if (piglin.AiTick >= shootAt && visible)
+            {
+                piglin.Shoot(target);
+                loaded = false;
+                piglin.LoadCrossbow(false);
+            }
         }
         else if (piglin.Charging)
         {
-            if (++chargeTicks >= 25) { SetCharging(false); loaded = true; piglin.LoadCrossbow(true); shootAt = piglin.AiTick + piglin.Random.Next(20, 40); }
+            if (++chargeTicks >= 25)
+            {
+                SetCharging(false);
+                loaded = true;
+                piglin.LoadCrossbow(true);
+                shootAt = piglin.AiTick + piglin.Random.Next(20, 40);
         }
-        else if (visible && piglin.IsInRange(target, 8)) { chargeTicks = 0; SetCharging(true); }
+        }
+        else if (visible && piglin.IsInRange(target, 8))
+        {
+            chargeTicks = 0;
+            SetCharging(true);
+        }
         return default;
     }
+
     private void SetCharging(bool value)
     {
         piglin.Charging = value;
-        if (value) piglin.LivingBitMask |= LivingBitMask.HandActive;
-        else piglin.LivingBitMask &= ~LivingBitMask.HandActive;
+        if (value)
+            piglin.LivingBitMask |= LivingBitMask.HandActive;
+        else
+            piglin.LivingBitMask &= ~LivingBitMask.HandActive;
         piglin.SynchronizeMetadata();
     }
-    public override void Stop() { base.Stop(); loaded = false; SetCharging(false); piglin.LoadCrossbow(false); piglin.SetAggressive(false); }
+
+    public override void Stop()
+    {
+        base.Stop();
+        loaded = false;
+        SetCharging(false);
+        piglin.LoadCrossbow(false);
+        piglin.SetAggressive(false);
+}
 }

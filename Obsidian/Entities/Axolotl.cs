@@ -22,6 +22,7 @@ public sealed partial class Axolotl : FarmAnimal
     protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.TropicalFishBucket };
     protected override void FinalizeSpawn() => Variant = Random.Next(4);
     protected override VectorD Travel() => VolumeMovement.Travel(this, InWater);
+
     internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (await TryCaptureInBucketAsync(player, hand, ItemsRegistry.AxolotlBucket))
@@ -29,6 +30,7 @@ public sealed partial class Axolotl : FarmAnimal
 
         return await base.InteractAsync(player, hand);
     }
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         base.RegisterGoals(actions, targets);
@@ -40,6 +42,7 @@ public sealed partial class Axolotl : FarmAnimal
             target.Type is EntityType.Squid or EntityType.GlowSquid or EntityType.Tadpole or EntityType.Cod or EntityType.Salmon or
                 EntityType.TropicalFish or EntityType.Pufferfish or EntityType.Drowned or EntityType.Guardian or EntityType.ElderGuardian));
     }
+
     protected override IEntity CreateOffspring(Animal mate)
     {
         var child = (Axolotl)base.CreateOffspring(mate);
@@ -47,6 +50,7 @@ public sealed partial class Axolotl : FarmAnimal
         child.SynchronizeMetadata();
         return child;
     }
+
     internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
@@ -62,6 +66,7 @@ public sealed partial class Axolotl : FarmAnimal
 
         return used;
     }
+
     protected override ValueTask OnHurtAsync(IEntity source)
     {
         if (InWater && PlayingDeadTicks == 0 && Random.Next(3) == 0 && Health < GetAttributeValue("minecraft:generic.max_health") / 2)
@@ -73,6 +78,7 @@ public sealed partial class Axolotl : FarmAnimal
         }
         return default;
     }
+
     protected internal override async ValueTask PerformMeleeAttackAsync(IEntity target)
     {
         await base.PerformMeleeAttackAsync(target);
@@ -90,19 +96,26 @@ public sealed partial class Axolotl : FarmAnimal
             }
         }
     }
+
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
         if (PlayingDeadTicks > 0)
         {
             AttackTarget = null;
-            if (PlayingDeadTicks % 50 == 0) Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 1);
-            if (--PlayingDeadTicks == 0) SynchronizeMetadata();
+            if (PlayingDeadTicks % 50 == 0)
+                Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 1);
+            if (--PlayingDeadTicks == 0)
+                SynchronizeMetadata();
         }
-        if (huntingCooldown > 0) huntingCooldown--;
-        if (InWater || Terrain.IsRainingAt((Vector)Position.Floor())) dryTicks = 0;
-        else if (++dryTicks >= 6000 && dryTicks % 20 == 0) await DamageEnvironmentAsync(2);
+        if (huntingCooldown > 0)
+            huntingCooldown--;
+        if (InWater || Terrain.IsRainingAt((Vector)Position.Floor()))
+            dryTicks = 0;
+        else if (++dryTicks >= 6000 && dryTicks % 20 == 0)
+            await DamageEnvironmentAsync(2);
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -113,6 +126,7 @@ public sealed partial class Axolotl : FarmAnimal
         writer.WriteEntityMetadataType(19, EntityMetadataType.Boolean);
         writer.WriteBoolean(FromBucket);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         writer.WriteInt("Variant", Variant);
@@ -121,6 +135,7 @@ public sealed partial class Axolotl : FarmAnimal
         writer.WriteInt("ObsidianHuntingCooldown", huntingCooldown);
         writer.WriteInt("ObsidianDryTicks", dryTicks);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         Variant = Math.Clamp((tag.TryGetTagValue<int>("Variant", out var savedVariant) ? savedVariant : 0), 0, 4);
@@ -137,5 +152,10 @@ internal sealed class AxolotlPlayDeadGoal(Axolotl axolotl) : Goal
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Jump | GoalFlags.Look;
     public override bool CanUse() => axolotl.PlayingDeadTicks > 0 && axolotl.InWater;
     public override void Start() => ((Navigator)axolotl.Navigator!).Stop();
-    public override ValueTask TickAsync() { axolotl.Motion = VectorD.Zero; return default; }
+
+    public override ValueTask TickAsync()
+    {
+        axolotl.Motion = VectorD.Zero;
+        return default;
+}
 }
