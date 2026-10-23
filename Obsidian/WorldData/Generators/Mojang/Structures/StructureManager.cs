@@ -58,6 +58,10 @@ internal sealed class StructureManager : IStructurePlacementState
     /// </summary>
     public StructureStartCache StartCache { get; }
 
+    // CreateStart as the cache's factory, made once: converting the method group made a delegate for every chunk a
+    // lookup visits, 289 of them for each FindReaching scan, cached starts or not.
+    private readonly StructureStartCache.StartFactory createStart;
+
     /// <summary>
     /// The structure sets of the dimension, in registry order.
     /// </summary>
@@ -106,6 +110,7 @@ internal sealed class StructureManager : IStructurePlacementState
         Func<WorldgenStructures>? structures = null)
     {
         this.StartCache = startCache ?? new();
+        this.createStart = this.CreateStart;
         this.randomState = randomState;
         this.biomeSource = biomeSource;
         this.terrain = terrain;
@@ -125,7 +130,7 @@ internal sealed class StructureManager : IStructurePlacementState
         // The cache gives none for a layout older than one it was pruned for: the current one is read again.
         while (true)
         {
-            var made = this.StartCache.Get(chunkX, chunkZ, this.Layout, this.CreateStart);
+            var made = this.StartCache.Get(chunkX, chunkZ, this.Layout, this.createStart);
             if (made is not null)
                 return made.Starts;
         }
@@ -197,7 +202,7 @@ internal sealed class StructureManager : IStructurePlacementState
         {
             for (var z = chunkZ - ReferenceRadius; z <= chunkZ + ReferenceRadius; z++)
             {
-                var made = this.StartCache.Get(x, z, layout, this.CreateStart);
+                var made = this.StartCache.Get(x, z, layout, this.createStart);
                 if (made is null || made.Version > layout.Version && this.Layout != layout)
                     return null;
 
