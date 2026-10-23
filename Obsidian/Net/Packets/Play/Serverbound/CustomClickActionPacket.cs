@@ -20,7 +20,8 @@ public partial class CustomClickActionPacket
         var bytes = reader.ReadByteArray(MaximumPayloadBytes);
         ValidatePayload(bytes);
         Payload = NbtReader.ReadTag(bytes, false, out var bytesRead);
-        if (bytesRead != bytes.Length) throw new InvalidDataException("Unread custom action payload data.");
+        if (bytesRead != bytes.Length)
+            throw new InvalidDataException("Unread custom action payload data.");
     }
 
     public override async ValueTask HandleAsync(IServer server, IClientPlayer player)
