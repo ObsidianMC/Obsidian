@@ -438,8 +438,7 @@ public class Region : IRegion
         if (await file.GetChunkBytesAsync(x, z) is not Memory<byte> data)
             return null;
 
-        await using var bytesStream = new ReadOnlyStream(data);
-        return new NbtReader(bytesStream).ReadNextTag() as NbtCompound;
+        return NbtReader.ReadTag(data.Span, true, out _) as NbtCompound;
     }
 
     /// <summary>
@@ -1126,10 +1125,7 @@ public class Region : IRegion
             writer.WriteCompoundStart("structures");
             writer.WriteCompoundStart("starts");
             if (structureStarts is not null)
-            {
-                foreach (var (_, start) in structureStarts)
-                    writer.WriteTag(start);
-            }
+                writer.WriteEntries(structureStarts);
 
             writer.EndCompound();
 

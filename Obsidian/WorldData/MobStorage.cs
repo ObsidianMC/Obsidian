@@ -43,9 +43,7 @@ internal sealed class MobStorage(AbstractLevel level) : IAsyncDisposable
             List<NbtCompound> unknown = [];
             if (bytes is { } data)
             {
-                using var stream = new ReadOnlyStream(data);
-                var reader = new NbtReader(stream);
-                if (reader.ReadNextTag() is not NbtCompound root)
+                if (NbtReader.ReadTag(data.Span, true, out _) is not NbtCompound root)
                     throw new InvalidDataException($"Invalid entity chunk {x}, {z}.");
                 if (root.TryGetTag<NbtList>("Entities", out var entities))
                     foreach (var tag in entities.OfType<NbtCompound>())

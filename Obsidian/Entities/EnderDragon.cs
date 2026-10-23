@@ -444,7 +444,7 @@ public sealed partial class EnderDragon : BossMob
     {
         var tag = new NbtCompound();
         WriteDragonNbt(tag);
-        foreach (var (_, child) in tag) writer.WriteTag(child);
+        writer.WriteEntries(tag);
     }
     private void WriteDragonNbt(NbtCompound tag)
     {
