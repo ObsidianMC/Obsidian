@@ -1123,7 +1123,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
     private readonly record struct GcSnapshot(TimeSpan Paused, int Gen0, int Gen1, int Gen2, long Allocated, long Timestamp)
     {
         public static GcSnapshot Take() => new(GC.GetTotalPauseDuration(), GC.CollectionCount(0), GC.CollectionCount(1),
-            GC.CollectionCount(2), GC.GetTotalAllocatedBytes(), Stopwatch.GetTimestamp());
+            GC.CollectionCount(2), GC.GetTotalAllocatedBytes(precise: true), Stopwatch.GetTimestamp());
 
         /// <summary>For example "paused 120 ms in 30/4/0 collections, allocating 410 MB/s".</summary>
         public string Since(GcSnapshot earlier)

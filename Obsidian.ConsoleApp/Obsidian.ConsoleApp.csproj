@@ -7,6 +7,9 @@
 		<Nullable>enable</Nullable>
 		<EnablePreviewFeatures>true</EnablePreviewFeatures>
 		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+		<!-- Garbage collections run in parallel on every core instead of on one thread while the server waits: with many
+		     players' chunks loaded the heap is large, and workstation collections paused the server a fifth of the time. -->
+		<ServerGarbageCollection>true</ServerGarbageCollection>
 	</PropertyGroup>
 
 	<ItemGroup>
