@@ -67,9 +67,12 @@ public partial class Living : Entity, ILiving
 
     public bool Alive => this.Health > 0f;
 
-    public IReadOnlyDictionary<int, EffectWithCurrentDuration> ActivePotionEffects => activePotionEffects.AsReadOnly();
+    public IReadOnlyDictionary<int, EffectWithCurrentDuration> ActivePotionEffects => activePotionEffectsView;
 
     private readonly ConcurrentDictionary<int, EffectWithCurrentDuration> activePotionEffects;
+
+    // A live read-only view made once: mobs read their effects several times a tick, and each AsReadOnly allocated.
+    private readonly IReadOnlyDictionary<int, EffectWithCurrentDuration> activePotionEffectsView;
     private int fireTicks;
     internal int FireTicks { get => fireTicks; set => fireTicks = value; }
 
@@ -82,6 +85,7 @@ public partial class Living : Entity, ILiving
     public Living()
     {
         activePotionEffects = new ConcurrentDictionary<int, EffectWithCurrentDuration>();
+        activePotionEffectsView = activePotionEffects.AsReadOnly();
     }
 
     /// <summary>
