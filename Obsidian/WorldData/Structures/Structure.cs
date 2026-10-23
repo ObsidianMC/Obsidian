@@ -1,6 +1,7 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Structures.Pools;
 
 namespace Obsidian.WorldData.Structures;
 
@@ -81,7 +82,8 @@ public abstract class Structure
     /// <summary>
     /// Vanilla <c>onTopOfChunkCenter</c>: starts at the middle of the chunk, on top of the given heightmap.
     /// </summary>
-    internal static StructureStub OnTopOfChunkCenter(StructureGenerationContext context, HeightmapType heightmap, Action<StructurePiecesBuilder> generator)
+    internal static StructureStub OnTopOfChunkCenter(StructureGenerationContext context, HeightmapType heightmap,
+        Action<StructurePiecesBuilder> generator)
     {
         var x = (context.ChunkX << 4) + 8;
         var z = (context.ChunkZ << 4) + 8;
@@ -179,6 +181,12 @@ internal sealed class StructureGenerationContext
     public required int MinY { get; init; }
 
     public required int Height { get; init; }
+
+    /// <summary>
+    /// Looks a template pool up by identifier, or gives <c>null</c>: vanilla's, or plugins' and data packs' (see
+    /// <see cref="Registries.PluginStructures"/>).
+    /// </summary>
+    public Func<string, StructureTemplatePool?> Pools { get; init; } = StructureTemplatePool.Get;
 
     /// <summary>
     /// Vanilla's <c>WorldGenerationContext</c> for height providers: the build range limited to the generator's noise range

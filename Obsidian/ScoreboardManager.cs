@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.Plugins;
 
 namespace Obsidian;
 
@@ -19,12 +20,42 @@ public sealed partial class ScoreboardManager : IScoreboardManager
         this.DefaultScoreboard = this.CreateScoreboard("default");
     }
 
-    public IScoreboard CreateScoreboard(string name)
+    /// <remarks>
+    /// Scoreboards created through a plugin's <see cref="IServer"/> are the plugin's: unloading it retires them (see
+    /// <see cref="Scoreboard.Retire"/>) and frees their names.
+    /// </remarks>
+    public IScoreboard CreateScoreboard(string name) => this.CreateScoreboard(name, owner: null);
+
+    /// <summary>
+    /// Creates a scoreboard for <paramref name="owner"/>, whose unloading retires it, or for the server.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The owner is unloading; the scoreboard was retired.</exception>
+    internal Scoreboard CreateScoreboard(string name, PluginContainer? owner)
     {
-        if (!this.scoreboards.Add(name))
+        bool added;
+        lock (this.scoreboards)
+            added = this.scoreboards.Add(name);
+
+        if (!added)
             Log.DuplicateScoreboard(this.logger, name);
 
-        return new Scoreboard(name, this.server.DefaultWorld.PacketBroadcaster);
+        var scoreboard = new Scoreboard(name, this.server.DefaultWorld.PacketBroadcaster);
+
+        owner?.TrackAddition(() => this.Remove(scoreboard, name, added));
+
+        return scoreboard;
+    }
+
+    // Retires a plugin's scoreboard, and frees its name unless it was taken already.
+    private void Remove(Scoreboard scoreboard, string name, bool ownsName)
+    {
+        scoreboard.Retire();
+
+        if (!ownsName)
+            return;
+
+        lock (this.scoreboards)
+            this.scoreboards.Remove(name);
     }
 
     private static partial class Log

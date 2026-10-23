@@ -1,8 +1,8 @@
 ﻿namespace Obsidian.API;
 public sealed record class BlockStateProperty : INetworkSerializable<BlockStateProperty>
 {
-    public required string Name { get; set; }
-    public required string Value { get; set; }
+    public required string Name { get; init; }
+    public required string Value { get; init; }
 
 
     public static BlockStateProperty Read(INetStreamReader reader) => new()

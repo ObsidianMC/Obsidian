@@ -20,8 +20,9 @@ public static class PaletteFactory
         return bitsPerEntry switch
         {
             0 => new SingleBiomeValuePalette(),
-            > 0 and <= 3 => new IndirectBiomePalette(bitsPerEntry),
-            _ => new GlobalBiomePalette(CodecRegistry.Biomes.GlobalBitsPerEntry)
+            // Kept indirect past 3 bits too, so a biome is never too big for its storage when plugins add biomes;
+            // BiomeContainer.WriteTo sends such a section with global ids, as vanilla's client reads it.
+            _ => new IndirectBiomePalette(bitsPerEntry)
         };
     }
 }

@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.API.World.Structures;
 using Obsidian.Nbt;
 using Obsidian.Providers.IntProviders;
 using Obsidian.WorldData.Features;
@@ -82,7 +83,8 @@ public sealed class OceanRuinPiece : TemplateStructurePiece
         var position = this.TemplatePosition;
         position = position with { Y = level.GetHeight(HeightmapType.OceanFloorWG, position.X, position.Z) };
         var size = this.Template.Size;
-        var corner = StructureTemplate.Transform(new Vector(size.X - 1, 0, size.Z - 1), StructureMirror.None, this.PlaceSettings.Rotation, Vector.Zero)
+        var corner = StructureTemplate.Transform(new Vector(size.X - 1, 0, size.Z - 1), StructureMirror.None,
+            this.PlaceSettings.Rotation, Vector.Zero)
             + position;
 
         this.PlaceTemplate(context, context.Box, position with { Y = GetHeight(level, position, corner) });
@@ -94,7 +96,7 @@ public sealed class OceanRuinPiece : TemplateStructurePiece
         if (metadata == "chest")
         {
             var waterlogged = FeatureHelpers.IsWaterFluid(level.GetBlock(position));
-            level.SetBlock(position, BlocksRegistry.Get(Material.Chest).WithProperty("waterlogged", waterlogged));
+            level.SetBlock(position, BlocksRegistry.Chest.WithProperty("waterlogged", waterlogged));
             SetChestLootTable(level, context.Random, position,
                 this.isLarge ? "minecraft:chests/underwater_ruin_big" : "minecraft:chests/underwater_ruin_small");
         }
@@ -106,7 +108,7 @@ public sealed class OceanRuinPiece : TemplateStructurePiece
                 Data = new NbtCompound { new NbtTag<bool>("PersistenceRequired", true) }
             });
 
-            level.SetBlock(position, position.Y > level.SeaLevel ? BlocksRegistry.Air : BlocksRegistry.Get(Material.Water));
+            level.SetBlock(position, position.Y > level.SeaLevel ? BlocksRegistry.Air : BlocksRegistry.Water);
         }
     }
 

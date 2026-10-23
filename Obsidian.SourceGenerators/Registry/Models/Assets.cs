@@ -26,13 +26,23 @@ internal sealed class Assets
 
     public static Assets Get(ImmutableArray<(string name, string json)> files, SourceProductionContext ctx)
     {
-        Block[] blocks = GetBlocks(files.GetJsonFromArray("blocks"));
+        Block[] blocks = GetBlocks(files.GetJsonFromArray("blocks"), files.GetJsonFromArray("block_placement_classes"),
+            files.GetJsonFromArray("sapling_growers"), files.GetJsonFromArray("fire_odds"), files.GetJsonFromArray("ignited_by_lava"), files.GetJsonFromArray("tnt_blocks"),
+            new Dictionary<string, string?>
+            {
+                ["randomTick"] = files.GetJsonFromArray("block_random_tick_classes"),
+                ["tick"] = files.GetJsonFromArray("block_tick_classes"),
+                ["updateShape"] = files.GetJsonFromArray("block_update_shape_classes"),
+                ["entityInside"] = files.GetJsonFromArray("block_entity_inside_classes"),
+                ["onPlace"] = files.GetJsonFromArray("block_on_place_classes")
+            });
         Fluid[] fluids = GetFluids(files.GetJsonFromArray("fluids"));
         Item[] items = GetItems(files.GetJsonFromArray("items"), files.GetJsonFromArray("item_components"));
         Dictionary<string, Codec[]> codecs = GetCodecs(files);
         BiomeEntry[] biomes = [.. codecs["biomes"].Select(biome => new BiomeEntry(biome.Name, biome.RegistryId))];
         EnchantmentEntry[] enchantments = GetEnchantments(files.GetJsonFromArray("enchantments"));
-        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids, biomes, enchantments);
+        EntityTypeEntry[] entityTypes = GetEntityTypes(files.GetJsonFromArray("entities"));
+        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids, biomes, enchantments, entityTypes);
 
         IDictionary<string, List<Sound>> sounds = GetSounds(files.GetJsonFromArray("sounds"));
 
@@ -120,6 +130,20 @@ internal sealed class Assets
         return splitSounds;
     }
 
+    // Vanilla's entity types by identifier, from Assets/entities.json; entries without an id are base classes.
+    public static EntityTypeEntry[] GetEntityTypes(string? json)
+    {
+        if (json is null)
+            return [];
+
+        using var document = JsonDocument.Parse(json);
+
+        return document.RootElement.EnumerateObject()
+            .Where(property => property.Value.TryGetProperty("id", out _))
+            .Select(property => new EntityTypeEntry(property.Name, property.Value.GetProperty("id").GetInt32()))
+            .ToArray();
+    }
+
     public static Fluid[] GetFluids(string? json)
     {
         if (json is null)
@@ -154,13 +178,22 @@ internal sealed class Assets
             .Select((name, id) => new EnchantmentEntry(name, id))];
     }
 
-    public static Block[] GetBlocks(string? json)
+    public static Block[] GetBlocks(string? json, string? placementClassesJson, string? saplingGrowersJson,
+        string? fireOddsJson, string? ignitedByLavaJson, string? tntBlocksJson, Dictionary<string, string?> overrideClassesJson)
     {
         if (json is null)
             return [];
 
         var blocks = new List<Block>();
         using var document = JsonDocument.Parse(json);
+        using var placementClasses = placementClassesJson is null ? null : JsonDocument.Parse(placementClassesJson);
+        using var saplingGrowers = saplingGrowersJson is null ? null : JsonDocument.Parse(saplingGrowersJson);
+        using var fireOdds = fireOddsJson is null ? null : JsonDocument.Parse(fireOddsJson);
+        using var ignitedByLava = ignitedByLavaJson is null ? null : JsonDocument.Parse(ignitedByLavaJson);
+        using var tntBlocks = tntBlocksJson is null ? null : JsonDocument.Parse(tntBlocksJson);
+        var overrideClasses = overrideClassesJson
+            .Where(entry => entry.Value is not null)
+            .ToDictionary(entry => entry.Key, entry => JsonDocument.Parse(entry.Value!));
 
         int id = 0;
 
@@ -181,9 +214,53 @@ internal sealed class Assets
         }
 
         foreach (var property in newBlocks.OrderBy(x => x.Key).Select(x => x.Value))
-            blocks.Add(Block.Get(property, id++));
+        {
+            string? placementClass = placementClasses is not null &&
+                placementClasses.RootElement.TryGetProperty(property.Name, out var classElement)
+                ? classElement.GetString()
+                : null;
+            var owners = new Dictionary<string, string>();
+            foreach (var hook in overrideClasses)
+            {
+                if (hook.Value.RootElement.TryGetProperty(property.Name, out var ownerElement) && ownerElement.GetString() is string owner)
+                    owners[hook.Key] = owner;
+            }
+
+            Dictionary<string, string>? treeGrower = saplingGrowers is not null
+                && saplingGrowers.RootElement.TryGetProperty(property.Name, out var growerElement)
+                ? GetTreeGrower(growerElement)
+                : null;
+
+            (int Ignite, int Burn)? odds = fireOdds is not null
+                && fireOdds.RootElement.TryGetProperty(property.Name, out var oddsElement)
+                ? (oddsElement.GetProperty("ignite").GetInt32(), oddsElement.GetProperty("burn").GetInt32())
+                : null;
+
+            bool lavaIgnites = ignitedByLava is not null && ignitedByLava.RootElement.TryGetProperty(property.Name, out _);
+
+            bool isTnt = tntBlocks is not null && tntBlocks.RootElement.TryGetProperty(property.Name, out _);
+
+            blocks.Add(Block.Get(property, id++, placementClass, owners, treeGrower, odds, lavaIgnites, isTnt));
+        }
+
+        foreach (var overrideDocument in overrideClasses.Values)
+            overrideDocument.Dispose();
 
         return blocks.ToArray();
+    }
+
+    // A sapling's dumped TreeGrower: its configured features by identifier, and its secondary chance as a float literal.
+    private static Dictionary<string, string> GetTreeGrower(JsonElement element)
+    {
+        var grower = new Dictionary<string, string>();
+        foreach (var property in element.EnumerateObject())
+        {
+            grower[property.Name] = property.Name == "secondaryChance"
+                ? property.Value.GetSingle().ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "f"
+                : property.Value.GetString()!;
+        }
+
+        return grower;
     }
 
     private static Item[] GetItems(string? json, string? componentsJson)
@@ -208,7 +285,7 @@ internal sealed class Assets
     }
 
     public static Tag[] GetTags(string? json, Block[] blocks, Item[] items, Fluid[] fluids, BiomeEntry[] biomes,
-        EnchantmentEntry[] enchantments)
+        EnchantmentEntry[] enchantments, EntityTypeEntry[] entityTypes)
     {
         if (json is null)
             return [];
@@ -220,6 +297,7 @@ internal sealed class Assets
         taggables.AddRange(fluids);
         taggables.AddRange(biomes);
         taggables.AddRange(enchantments);
+        taggables.AddRange(entityTypes);
 
         using var document = JsonDocument.Parse(json);
 

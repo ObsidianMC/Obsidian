@@ -1,62 +1,32 @@
-using Obsidian.Net.Packets.Play.Clientbound;
-
 namespace Obsidian.Entities;
 
 public partial class Mob
 {
-    private readonly List<Player> passengers = [];
-    protected Player? Rider => passengers.FirstOrDefault();
-    protected IReadOnlyList<Player> Passengers => passengers;
-    protected virtual int MaximumPassengers => 1;
+    /// <summary>The player in the controlling seat, or null when nobody or a non-player sits there.</summary>
+    public IPlayer? Rider => this.Passengers.Count > 0 ? this.Passengers[0] as IPlayer : null;
 
-    protected bool Mount(Player player)
+    /// <summary>Seats a player who boards the mob, if a seat is free and the player can ride.</summary>
+    internal bool Mount(IPlayer player)
     {
-        if (passengers.Count >= MaximumPassengers || player.Vehicle != null || player.Level != Level || !Alive ||
-            !player.Alive || player.GameMode == GameMode.Spectator)
+        if (player.Vehicle is not null || !this.Alive || !player.Alive || player.GameMode == GameMode.Spectator)
             return false;
-        passengers.Add(player);
-        player.Vehicle = this;
-        SynchronizePassengers();
-        return true;
+
+        // Every entity the server makes is an Entity; it's another engine's player that can't board.
+        return player is Entity rider && rider.Ride(this);
     }
 
-    internal void Dismount()
+    protected virtual void TickRidden() => this.DropInvalidPassengers();
+
+    // Passengers get off when they die, leave or change level, or the mob dies; players also by sneaking.
+    private protected void DropInvalidPassengers()
     {
-        if (passengers.Count == 0) return;
-        foreach (var passenger in passengers) passenger.Vehicle = null;
-        passengers.Clear();
-        SynchronizePassengers();
-    }
-
-    internal void Dismount(Player player)
-    {
-        if (!passengers.Remove(player)) return;
-        player.Vehicle = null;
-        SynchronizePassengers();
-    }
-
-    private void SynchronizePassengers() => PacketBroadcaster.QueuePacketToLevelInRange(Level, Position,
-        new SetPassengersPacket { EntityId = EntityId, Passengers = passengers.Select(player => player.EntityId).ToArray() }, EntityId);
-
-    protected virtual void TickRidden()
-    {
-        foreach (var passenger in passengers.ToArray())
-            if (passenger.Level != Level || !passenger.Alive || passenger.Sneaking || !Alive) Dismount(passenger);
-    }
-
-    protected virtual VectorD PassengerOffset(int index) => new(0, Dimension.Height, 0);
-
-    private void UpdateRider()
-    {
-        for (var index = 0; index < passengers.Count; index++)
+        foreach (var passenger in this.Passengers.ToArray())
         {
-            var passenger = passengers[index];
-            var position = Position + PassengerOffset(index);
-            if (Level is Obsidian.WorldData.AbstractLevel level && !level.TryMoveEntity(passenger, passenger.Position, position))
-            { Dismount(passenger); index--; continue; }
-            passenger.LastPosition = passenger.Position;
-            passenger.Position = position;
-            passenger.HeadY = position.Y + 1.62;
+            if (passenger.Level != this.Level
+                || !passenger.IsActive
+                || passenger is IPlayer && passenger.Sneaking
+                || !this.Alive)
+                passenger.LeaveVehicle();
         }
     }
 }

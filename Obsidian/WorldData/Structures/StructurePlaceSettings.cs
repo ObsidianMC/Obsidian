@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.API.World.Structures;
 
 namespace Obsidian.WorldData.Structures;
 
@@ -6,7 +7,7 @@ namespace Obsidian.WorldData.Structures;
 /// How a <see cref="StructureTemplate"/> is placed, like vanilla's <c>StructurePlaceSettings</c>.
 /// </summary>
 /// <remarks>Mutable and per placement; don't share instances between threads.</remarks>
-public sealed class StructurePlaceSettings
+public sealed class StructurePlaceSettings : TemplatePlacement
 {
     public StructureMirror Mirror { get; set; }
 
@@ -42,15 +43,16 @@ public sealed class StructurePlaceSettings
     public bool ShouldApplyWaterlogging => this.LiquidSettings == LiquidSettings.ApplyWaterlogging;
 
     /// <summary>Vanilla <c>getRandom(pos)</c>.</summary>
-    public IRandomSource GetRandom(Vector position) => this.Random ?? new LegacyRandomSource(Mth.GetSeed(position.X, position.Y, position.Z));
+    public override IRandomSource GetRandom(Vector position) =>
+        this.Random ?? new LegacyRandomSource(Mth.GetSeed(position.X, position.Y, position.Z));
 
     /// <summary>
     /// <see cref="GetRandom"/> for a moment, with a rented positional random (see <see cref="PositionalRandom"/>); give it
     /// back with <see cref="ReturnRandom"/>.
     /// </summary>
-    internal IRandomSource RentRandom(Vector position) => this.Random ?? PositionalRandom.Rent(position);
+    internal override IRandomSource RentRandom(Vector position) => this.Random ?? PositionalRandom.Rent(position);
 
-    internal void ReturnRandom(IRandomSource random)
+    internal override void ReturnRandom(IRandomSource random)
     {
         if (this.Random is null)
             PositionalRandom.Return((LegacyRandomSource)random);

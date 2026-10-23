@@ -9,7 +9,7 @@ public sealed class VinesFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:vines";
 
-    private static IBlock Vine => field ??= BlocksRegistry.Get(Material.Vine);
+    private static IBlock Vine => field ??= BlocksRegistry.Vine;
 
     public override bool Place(FeatureContext context)
     {

@@ -8,11 +8,11 @@ internal sealed partial class MobSpawner
 {
     private void TickHive(DataBlockEntity hive)
     {
-        var data = hive.SnapshotData();
-        if (!data.TryGetTag<NbtList>("bees", out var occupants)) return;
+        // Its bees alone, copied: their times change here while the hive may be saved on another thread.
+        if (hive.SnapshotTag<NbtList>("bees") is not NbtList occupants) return;
         var terrain = new MobTerrain(level);
         var block = terrain.GetBlock(hive.BlockPosition);
-        if (block?.Material is not Material.BeeNest and not Material.Beehive) return;
+        if (block?.RegistryId is not BlockIds.BeeNest and not BlockIds.Beehive) return;
         var facing = block.GetProperty("facing") switch
         {
             "north" => new Vector(0, 0, -1), "east" => new Vector(1, 0, 0), "west" => new Vector(-1, 0, 0), _ => new Vector(0, 0, 1)
@@ -45,23 +45,36 @@ internal sealed partial class MobSpawner
 
     private void TickFrogspawn(Chunk chunk)
     {
+        if (!chunk.HasFrogspawnTicks)
+            return;
+
         var terrain = new MobTerrain(level);
-        foreach (var (position, delay) in chunk.FrogspawnTicks.ToArray())
+        try
         {
-            if (terrain.GetBlock(position)?.Material != Material.Frogspawn)
-            { chunk.FrogspawnTicks.TryRemove(position, out _); continue; }
-            if (delay > 1) { chunk.FrogspawnTicks[position] = delay - 1; continue; }
-            chunk.FrogspawnTicks.TryRemove(position, out _);
-            level.EnqueueEntityAction(async () =>
+            foreach (var (position, delay) in chunk.FrogspawnTicks.ToArray())
             {
-                if (terrain.GetBlock(position)?.Material != Material.Frogspawn) return;
-                await level.SetBlockAsync(position, BlocksRegistry.Air, true);
-                if (terrain.GetBlock(new Vector(position.X, position.Y - 1, position.Z))?.Material != Material.Water) return;
-                for (var index = random.Next(2, 6); index > 0; index--)
-                    level.SpawnEntity(new Tadpole { Level = level, EntityId = Server.GetNextEntityId(),
-                        Position = new VectorD(position.X + 0.2f + random.NextSingle() * 0.6f, position.Y - 0.5f, position.Z + 0.2f + random.NextSingle() * 0.6f),
-                        PersistenceRequired = true });
-            });
+                if (terrain.GetBlock(position)?.RegistryId != BlockIds.Frogspawn)
+                { chunk.FrogspawnTicks.TryRemove(position, out _); continue; }
+                if (delay > 1) { chunk.FrogspawnTicks[position] = delay - 1; continue; }
+                chunk.FrogspawnTicks.TryRemove(position, out _);
+                level.EnqueueEntityAction(async () =>
+                {
+                    if (terrain.GetBlock(position)?.RegistryId != BlockIds.Frogspawn) return;
+                    await level.SetBlockAsync(position, BlocksRegistry.Air, true);
+                    if (terrain.GetBlock(new Vector(position.X, position.Y - 1, position.Z))?.RegistryId != BlockIds.Water)
+                        return;
+
+                    for (var index = random.Next(2, 6); index > 0; index--)
+                        level.SpawnEntity(new Tadpole { Level = level, EntityId = Server.GetNextEntityId(),
+                            Position = new VectorD(position.X + 0.2f + random.NextSingle() * 0.6f, position.Y - 0.5f, position.Z + 0.2f + random.NextSingle() * 0.6f),
+                            PersistenceRequired = true });
+                });
+            }
+        }
+        finally
+        {
+            // After the delays changed, so a save that takes the mark has them.
+            chunk.MarkUnsaved();
         }
     }
 
@@ -81,7 +94,7 @@ internal sealed partial class MobSpawner
             level.SpawnEntity(horse);
     }
 
-    private void SpawnVillageCats(Mob[] mobs)
+    private void SpawnVillageCats(List<Mob> mobs)
     {
         foreach (var villager in mobs.OfType<Villager>().Where(villager => !villager.IsBaby).OrderBy(_ => random.Next()).Take(1))
         {
@@ -107,6 +120,9 @@ public abstract partial class AbstractLevel
     internal void ScheduleFrogspawn(Vector position, int delay)
     {
         if (GetLoadedChunk(position.X >> 4, position.Z >> 4) is Chunk chunk)
+        {
             chunk.FrogspawnTicks[position] = delay;
+            chunk.MarkUnsaved();
+        }
     }
 }

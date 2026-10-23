@@ -55,6 +55,7 @@ public sealed class FakePlayer : IPlayer
 
     public PlayerAbility Abilities { get; set; }
     public bool IsDragging { get; set; }
+    public DraggingState DragStart { get; set; }
     public bool Sleeping { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public bool InHorseInventory { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public short AttackTime { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
@@ -70,6 +71,10 @@ public sealed class FakePlayer : IPlayer
     public int FoodTickTimer { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public int XpLevel { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public int XpTotal { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public float XpP { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public bool Respawning => false;
+    public IServer Server { get; set; } = null!;
+    public Microsoft.Extensions.Logging.ILogger Logger => Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
 
     public double HeadY { get; set; }
 
@@ -105,14 +110,15 @@ public sealed class FakePlayer : IPlayer
 
     public Pose Pose { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
-    public EntityType Type => throw new NotImplementedException();
+    public EntityType? Type => throw new NotImplementedException();
+    public API.Entities.EntityDefinition? Definition => null;
 
     public BoundingBox BoundingBox => throw new NotImplementedException();
 
     public EntityDimension Dimension => throw new NotImplementedException();
 
     public short Air { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-    public float Health { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public float Health { get; set; } = 20;
     public ChatMessage CustomName { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
     public string TranslationKey => throw new NotImplementedException();
@@ -141,14 +147,17 @@ public sealed class FakePlayer : IPlayer
 
     public bool IsFireImmune => throw new NotImplementedException();
 
-    public void AddPotionEffect(int effectId, int duration, int amplifier = 0, EntityEffectFlags effectFlags = EntityEffectFlags.None) => throw new NotImplementedException();
+    public void AddPotionEffect(int effectId, int duration, int amplifier = 0, EntityEffectFlags effectFlags = EntityEffectFlags.None) =>
+        throw new NotImplementedException();
     public void ClearPotionEffects() => throw new NotImplementedException();
     public ValueTask DamageAsync(IEntity source, float amount = 1) => throw new NotImplementedException();
+    public bool SendPacket(IClientboundPacket packet) => throw new NotImplementedException();
+    public ValueTask QueuePacketAsync(IClientboundPacket packet) => throw new NotImplementedException();
     public ValueTask DisconnectAsync(ChatMessage reason) => throw new NotImplementedException();
     public ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot position) => throw new NotImplementedException();
     public float GetAttributeValue(string attributeResourceName) => throw new NotImplementedException();
     public IEnumerable<IEntity> GetEntitiesNear(float distance) => throw new NotImplementedException();
-    public ItemStack GetHeldItem() => throw new NotImplementedException();
+    public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentHeldItemSlot) ?? ItemStack.Air;
     public VectorF GetLookDirection() => throw new NotImplementedException();
     public ItemStack GetOffHandItem() => throw new NotImplementedException();
     public Task<bool> GrantPermissionAsync(string permission) => throw new NotImplementedException();
@@ -167,16 +176,20 @@ public sealed class FakePlayer : IPlayer
     public ValueTask RemoveAsync() => throw new NotImplementedException();
     public void RemovePotionEffect(int effectId) => throw new NotImplementedException();
     public Task RespawnAsync(DataKept dataKept = DataKept.Metadata) => throw new NotImplementedException();
+
+    public Task<bool> TeleportToDimensionAsync(string dimension) => throw new NotImplementedException();
     public Task<bool> RevokePermissionAsync(string permission) => throw new NotImplementedException();
     public Task SaveAsync() => throw new NotImplementedException();
     public ValueTask SendActionBarAsync(string text) => throw new NotImplementedException();
     public ValueTask SendMessageAsync(ChatMessage message) => throw new NotImplementedException();
-    public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) => throw new NotImplementedException();
+    public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
+        throw new NotImplementedException();
     public ValueTask SendPlayerInfoAsync() => throw new NotImplementedException();
     public ValueTask SendSoundAsync(ISoundEffect soundEffect) => throw new NotImplementedException();
     public ValueTask SendSubtitleAsync(ChatMessage subtitle, int fadeIn, int stay, int fadeOut) => throw new NotImplementedException();
     public ValueTask SendTitleAsync(ChatMessage title, int fadeIn, int stay, int fadeOut) => throw new NotImplementedException();
-    public ValueTask SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut) => throw new NotImplementedException();
+    public ValueTask SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut) =>
+        throw new NotImplementedException();
     public ValueTask SetActionBarTextAsync(ChatMessage message) => throw new NotImplementedException();
     public ValueTask SetGamemodeAsync(GameMode gamemode) => throw new NotImplementedException();
     public void SetHeadRotation(Angle headYaw) => throw new NotImplementedException();
@@ -196,4 +209,13 @@ public sealed class FakePlayer : IPlayer
     public ValueTask UpdateDisplayNameAsync(string newDisplayName) => throw new NotImplementedException();
     public ValueTask UpdatePlayerInfoAsync() => throw new NotImplementedException();
     public void Write(INetStreamWriter writer) => throw new NotImplementedException();
+    public ValueTask<bool> AttackAsync(IEntity target, bool sneaking = false) => throw new NotImplementedException();
+    public ValueTask<bool> InteractAsync(IEntity target, InteractionHand hand = InteractionHand.MainHand, bool sneaking = false) =>
+        throw new NotImplementedException();
+    public ValueTask UseItemAsync(InteractionHand hand = InteractionHand.MainHand) => throw new NotImplementedException();
+    public ValueTask ReleaseUsingItemAsync() => throw new NotImplementedException();
+    public void StopUsingItem() => throw new NotImplementedException();
+    public ValueTask StabAsync() => throw new NotImplementedException();
+    public ValueTask GiveExperienceAsync(int points) => throw new NotImplementedException();
+    public bool TryStartGliding() => throw new NotImplementedException();
 }

@@ -19,12 +19,15 @@ public sealed partial class Axolotl : FarmAnimal
     protected override bool CanDespawn => !FromBucket;
     internal override bool PanicsWhenHurt => false;
     protected override string? SoundName => "axolotl";
-    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.TropicalFishBucket };
+    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.TropicalFishBucket };
     protected override void FinalizeSpawn() => Variant = Random.Next(4);
     protected override VectorD Travel() => VolumeMovement.Travel(this, InWater);
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!await TryCaptureInBucketAsync(player, hand, Material.AxolotlBucket)) await base.InteractAsync(player, hand);
+        if (await TryCaptureInBucketAsync(player, hand, ItemsRegistry.AxolotlBucket))
+            return true;
+
+        return await base.InteractAsync(player, hand);
     }
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
@@ -44,19 +47,20 @@ public sealed partial class Axolotl : FarmAnimal
         child.SynchronizeMetadata();
         return child;
     }
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var item = player.Inventory.GetItem(slot);
         var previousCount = item?.Count ?? 0;
         var food = CanEat(item);
-        await base.FeedAsync(player, hand);
+        var used = await base.FeedAsync(player, hand);
         if (food && player.GameMode != GameMode.Creative && (player.Inventory.GetItem(slot)?.Count ?? 0) < previousCount)
         {
-            player.Inventory.SetItem(slot, ItemsRegistry.GetSingleItem(Material.WaterBucket));
-            await player.Client.QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetSlotPacket
-            { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
+            player.Inventory.SetItem(slot, ItemsRegistry.GetSingleItem(ItemsRegistry.WaterBucket));
+            await player.SendInventorySlotAsync(slot);
         }
+
+        return used;
     }
     protected override ValueTask OnHurtAsync(IEntity source)
     {

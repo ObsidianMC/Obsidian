@@ -1,10 +1,11 @@
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:zombie")]
-public partial class Zombie : PathfinderMob
+public partial class Zombie : PathfinderMob, IAgeable
 {
     public Zombie() => Type = EntityType.Zombie;
 
@@ -30,7 +31,7 @@ public partial class Zombie : PathfinderMob
     protected override int GetExperienceReward() => (IsBaby ? 12 : 5) +
         Enum.GetValues<Obsidian.API.Inventory.EquipmentSlot>().Sum(slot => GetEquipment(slot).IsAir || GetEquipmentDropChance(slot) > 1 ? 0 : Random.Next(1, 4));
     protected internal override float AttackDamage => base.AttackDamage + GetWeaponDamage(GetEquipment(Obsidian.API.Inventory.EquipmentSlot.MainHand));
-    internal override float EyeHeight => IsBaby ? 0.93f : 1.74f;
+    internal override float EyeHeight => (IsBaby ? 0.93f : 1.74f) * this.AttributeScale;
     internal override float MovementSpeed => base.MovementSpeed * (IsBaby ? 1.5f : 1);
 
     protected override void RegisterGoals(GoalSelector actionGoals, GoalSelector targetGoals)
@@ -46,7 +47,7 @@ public partial class Zombie : PathfinderMob
         targetGoals.AddGoal(3, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.Villager, mustSee: false));
         targetGoals.AddGoal(3, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.IronGolem));
         targetGoals.AddGoal(5, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.Turtle &&
-            entity is AgeableMob { IsBaby: true } && entity.MovementFlags.HasFlag(MovementFlags.OnGround)));
+            entity is IAgeable { IsBaby: true } && entity.MovementFlags.HasFlag(MovementFlags.OnGround)));
     }
 
     protected override async ValueTask TickMobAsync()
@@ -66,7 +67,7 @@ public partial class Zombie : PathfinderMob
                     return;
                 }
             }
-            else if (Terrain.GetBlock((Vector)EyePosition.Floor())?.Material == Material.Water)
+            else if (Terrain.GetBlock((Vector)EyePosition.Floor())?.RegistryId == BlockIds.Water)
             {
                 if (++DrowningWaterTicks >= 600)
                 {
@@ -76,8 +77,7 @@ public partial class Zombie : PathfinderMob
             }
             else DrowningWaterTicks = -1;
         }
-        var dayTime = Level.DayTime;
-        if (Level.DimensionName != "minecraft:overworld" || dayTime is < 0 or >= 12000 ||
+        if (!Level.MonstersBurn((Vector)Position.Floor()) ||
             Level.LevelData.Raining || Level.LevelData.Thundering || InWater || Random.NextSingle() * 30 >= 1.2f)
             return;
         var position = (Vector)EyePosition.Floor();
@@ -116,13 +116,12 @@ public partial class Zombie : PathfinderMob
             return;
         var weapon = Random.Next(6) switch
         {
-            0 => Material.IronSword,
-            1 => Material.IronSpear,
-            _ => Material.IronShovel
+            0 => ItemsRegistry.IronSword,
+            1 => ItemsRegistry.IronSpear,
+            _ => ItemsRegistry.IronShovel
         };
         var item = ItemsRegistry.GetSingleItem(weapon);
-        var durability = Obsidian.API.Inventory.DataComponents.ComponentBuilder.MaxDamage;
-        durability.Value = 250;
+        var durability = Obsidian.API.Inventory.DataComponents.ComponentBuilder.MaxDamage with { Value = 250 };
         item[DataComponentType.MaxDamage] = durability;
         SetEquipment(Obsidian.API.Inventory.EquipmentSlot.MainHand, item);
     }
@@ -161,15 +160,14 @@ public partial class Zombie : PathfinderMob
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.RottenFlesh, Random.Next(3));
-        if (source is IPlayer && Random.NextSingle() < 0.025f)
-            DropItem(Random.Next(3) switch { 0 => Material.IronIngot, 1 => Material.Carrot, _ => Material.Potato });
+        this.DropVanillaLoot(source);
         foreach (var slot in Enum.GetValues<Obsidian.API.Inventory.EquipmentSlot>())
         {
-            var item = GetEquipment(slot);
-            if (!item.IsAir && Random.NextSingle() < GetEquipmentDropChance(slot))
-                DropItem(item);
+            var item = this.GetEquipment(slot);
+            if (!item.IsAir && this.Random.NextSingle() < this.GetEquipmentDropChance(slot))
+                this.DropItem(item);
         }
+
         return default;
     }
 

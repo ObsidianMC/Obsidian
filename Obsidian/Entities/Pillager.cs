@@ -14,7 +14,8 @@ public sealed partial class Pillager : PathfinderMob
     protected override string? SoundName => "pillager";
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
     protected override int GetExperienceReward() => 5;
-    protected override void FinalizeSpawn() => SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(Material.Crossbow));
+    protected override void FinalizeSpawn() =>
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.Crossbow));
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(0, new FloatGoal(this));
@@ -29,10 +30,10 @@ public sealed partial class Pillager : PathfinderMob
     internal void SetCrossbowLoaded(bool loaded)
     {
         var weapon = GetEquipment(EquipmentSlot.MainHand);
-        if (weapon.Type != Material.Crossbow) return;
+        if (!weapon.Is(ItemsRegistry.Crossbow)) return;
         var copy = new ItemStack(weapon, weapon.Count);
         copy[DataComponentType.ChargedProjectiles] = ComponentBuilder.ChargedProjectiles with
-        { Value = loaded ? [ItemsRegistry.GetSingleItem(Material.Arrow)] : [] };
+        { Value = loaded ? [ItemsRegistry.GetSingleItem(ItemsRegistry.Arrow)] : [] };
         SetEquipment(EquipmentSlot.MainHand, copy);
     }
     internal void Shoot(IEntity target)
@@ -75,7 +76,7 @@ internal sealed class PillagerCrossbowGoal(Pillager pillager) : NavigationGoal(p
     private bool loaded;
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
-    public override bool CanUse() => pillager.GetEquipment(EquipmentSlot.MainHand).Type == Material.Crossbow &&
+    public override bool CanUse() => pillager.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Crossbow) &&
         pillager.AttackTarget is { } target && pillager.IsValidTarget(target);
     public override bool CanContinue() => CanUse();
     public override void Start() => pillager.SetAggressive(true);

@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿using Microsoft.Extensions.Configuration;
+using System.IO;
+using System.Reflection;
 
 namespace Obsidian;
 public static class ServerConstants
@@ -13,7 +15,7 @@ public static class ServerConstants
         get
         {
             var informalVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-            if (informalVersion != null && informalVersion.InformationalVersion.Contains('+'))
+            if (informalVersion is not null && informalVersion.InformationalVersion.Contains('+'))
                 return informalVersion.InformationalVersion.Split('+')[1];
 
             return "0.1";
@@ -27,13 +29,58 @@ public static class ServerConstants
 
     public const int MaxPayloadLength = 1048576;
 
-    public const string PersistentDataPath = "persistentdata";
-    public const string PermissionPath = "permissions";
-    public const string AcceptedKeysPath = "accepted_keys";
-    public const string PluginsPath = "plugins";
+    // Overrides of the cache, log, plugin and data pack folders; null keeps them under the root.
+    private static string? cachePath;
+    private static string? logsPath;
+    private static string? pluginsPath;
+    private static string? dataPacksPath;
 
     /// <summary>
-    /// Where vanilla data extracted from Mojang's server jar is cached, per version.
+    /// The folder every server-side path resolves against: <c>Paths:Root</c>, by default the working directory.
     /// </summary>
-    public const string VanillaCachePath = "cache";
+    public static string RootPath { get; private set; } = Directory.GetCurrentDirectory();
+
+    /// <summary>
+    /// Where vanilla data extracted from Mojang's server jar is cached, per version: <c>Paths:Cache</c>, by default
+    /// <c>&lt;root&gt;/cache</c>. Several servers can share one cache.
+    /// </summary>
+    public static string VanillaCachePath => cachePath ?? Path.Combine(RootPath, "cache");
+
+    /// <summary>
+    /// Where log files are written: <c>Paths:Logs</c>, by default <c>&lt;root&gt;/logs</c>.
+    /// </summary>
+    public static string LogsPath => logsPath ?? Path.Combine(RootPath, "logs");
+
+    public static string ConfigPath => Path.Combine(RootPath, "config");
+    public static string WorldsPath => Path.Combine(RootPath, "worlds");
+    public static string PersistentDataPath => Path.Combine(RootPath, "persistentdata");
+    public static string PermissionPath => Path.Combine(RootPath, "permissions");
+
+    /// <summary>
+    /// Where plugins are loaded from: <c>Paths:Plugins</c>, by default <c>&lt;root&gt;/plugins</c>. The Obsidian
+    /// client points its integrated servers at its mods folder, so singleplayer worlds run the client's mods.
+    /// </summary>
+    public static string PluginsPath => pluginsPath ?? Path.Combine(RootPath, "plugins");
+
+    /// <summary>
+    /// Where vanilla data packs are loaded from at startup, for every world: <c>Paths:DataPacks</c>, by default
+    /// <c>&lt;root&gt;/datapacks</c>.
+    /// </summary>
+    public static string DataPacksPath => dataPacksPath ?? Path.Combine(RootPath, "datapacks");
+
+    public static string UserCacheFile => Path.Combine(RootPath, "usercache.json");
+
+    /// <summary>
+    /// Resolves the server's paths from <c>Paths:Root</c>, <c>Paths:Cache</c>, <c>Paths:Logs</c>,
+    /// <c>Paths:Plugins</c> and <c>Paths:DataPacks</c>. Relative values are relative to the working directory; missing
+    /// ones keep their defaults under the root.
+    /// </summary>
+    public static void ConfigurePaths(IConfiguration configuration)
+    {
+        RootPath = Path.GetFullPath(configuration["Paths:Root"] is { Length: > 0 } root ? root : Directory.GetCurrentDirectory());
+        cachePath = configuration["Paths:Cache"] is { Length: > 0 } cache ? Path.GetFullPath(cache) : null;
+        logsPath = configuration["Paths:Logs"] is { Length: > 0 } logs ? Path.GetFullPath(logs) : null;
+        pluginsPath = configuration["Paths:Plugins"] is { Length: > 0 } plugins ? Path.GetFullPath(plugins) : null;
+        dataPacksPath = configuration["Paths:DataPacks"] is { Length: > 0 } packs ? Path.GetFullPath(packs) : null;
+    }
 }

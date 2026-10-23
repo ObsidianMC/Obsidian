@@ -26,6 +26,10 @@ public sealed partial class BlocksGenerator : IIncrementalGenerator
     {
         var asm = output.compilation.AssemblyName;
 
+        // Only Obsidian's own projects have vanilla's assets; a plugin's JSON files are its own.
+        if (asm is not ("Obsidian" or "Obsidian.API"))
+            return;
+
         var assets = Assets.Get(output.files, context);
 
         if (asm == "Obsidian.API")
@@ -37,7 +41,7 @@ public sealed partial class BlocksGenerator : IIncrementalGenerator
         }
         else if (asm == "Obsidian")
         {
-            GenerateBlocks(assets.Blocks, context);
+            GenerateBlocks(assets.Blocks, output.compilation, context);
         }
     }
 }

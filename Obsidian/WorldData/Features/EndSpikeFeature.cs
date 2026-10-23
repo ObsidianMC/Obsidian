@@ -30,15 +30,15 @@ public sealed class EndSpikeFeature : ConfiguredFeatureBase
     /// </summary>
     public Vector? CrystalBeamTarget { get; init; }
 
-    private static IBlock Obsidian => field ??= BlocksRegistry.Get(Material.Obsidian);
+    private static IBlock Obsidian => field ??= BlocksRegistry.ObsidianBlock;
 
-    private static IBlock Air => field ??= BlocksRegistry.Get(Material.Air);
+    private static IBlock Air => field ??= BlocksRegistry.Air;
 
-    private static IBlock Bedrock => field ??= BlocksRegistry.Get(Material.Bedrock);
+    private static IBlock Bedrock => field ??= BlocksRegistry.Bedrock;
 
-    private static IBlock Fire => field ??= BlocksRegistry.Get(Material.Fire);
+    private static IBlock Fire => field ??= BlocksRegistry.Fire;
 
-    private static IBlock IronBars => field ??= BlocksRegistry.Get(Material.IronBars);
+    private static IBlock IronBars => field ??= BlocksRegistry.IronBars;
 
     public override bool Place(FeatureContext context)
     {
@@ -131,7 +131,8 @@ public sealed class EndSpikeFeature : ConfiguredFeatureBase
         var crystal = new Vector(spike.CenterX, spike.Height + 1, spike.CenterZ);
         var data = new NbtCompound();
         if (this.CrystalBeamTarget is not null)
-            data.Add(new NbtArray<int>("beam_target", [this.CrystalBeamTarget.Value.X, this.CrystalBeamTarget.Value.Y, this.CrystalBeamTarget.Value.Z]));
+            data.Add(new NbtArray<int>("beam_target",
+                [this.CrystalBeamTarget.Value.X, this.CrystalBeamTarget.Value.Y, this.CrystalBeamTarget.Value.Z]));
         if (this.CrystalInvulnerable)
             data.Add(new NbtTag<bool>("Invulnerable", true));
 

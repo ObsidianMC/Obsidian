@@ -8,6 +8,9 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
 
     public string? Translate { get; set; }
 
+    /// <summary>The key bound to this keybind, like <c>key.jump</c>, as the client shows it.</summary>
+    public string? Keybind { get; set; }
+
     public HexColor? Color { get; set; }
 
     // The style flags are inherited from the parent component (or the context, like italic custom item names) when null.
@@ -21,6 +24,10 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
     public bool? Strikethrough { get; set; }
 
     public bool? Obfuscated { get; set; }
+
+    /// <summary>Optional signed ARGB shadow color from the text component codec.</summary>
+    [System.Text.Json.Serialization.JsonPropertyName("shadow_color")]
+    public int? ShadowColor { get; set; }
 
     public string? Insertion { get; set; }
 
@@ -250,6 +257,27 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
         }
         return this;
     }
+
+    // Component values must not retain mutable chat objects supplied by their callers.
+    internal ChatMessage CopyForComponent() => this with
+    {
+        ClickEvent = this.ClickEvent is null ? null : new ClickComponent
+        {
+            Action = this.ClickEvent.Action,
+            Value = this.ClickEvent.Value
+        },
+        HoverEvent = this.HoverEvent is null ? null : this.HoverEvent with
+        {
+            Contents = this.HoverEvent.Contents switch
+            {
+                HoverChatContent chat => chat with { ChatMessage = chat.ChatMessage.CopyForComponent() },
+                HoverItemContent item => item with { Item = new(item.Item, item.Item.Count) },
+                _ => throw new NotSupportedException("This hover content cannot be stored in an item component.")
+            }
+        },
+        Extra = this.Extra?.Select(message => message.CopyForComponent()).ToList(),
+        With = this.With?.Select(message => message.CopyForComponent()).ToList()
+    };
 
     public static ChatMessage Empty => Simple(string.Empty);
 

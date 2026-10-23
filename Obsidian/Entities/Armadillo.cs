@@ -14,7 +14,8 @@ public sealed partial class Armadillo : FarmAnimal
     private int scuteTime;
     public Armadillo() => Type = EntityType.Armadillo;
     protected override string? SoundName => "armadillo";
-    protected override bool CanEat(ItemStack? item) => state == 0 && item is { Count: > 0, Type: Material.SpiderEye };
+    protected override bool CanEat(ItemStack? item) =>
+        state == 0 && item is { Count: > 0, Holder.Id: ItemIds.SpiderEye };
     protected override float DimensionScale => IsBaby ? 0.6f : 1;
     protected override void FinalizeSpawn() => scuteTime = Random.Next(6000, 12001);
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
@@ -41,13 +42,19 @@ public sealed partial class Armadillo : FarmAnimal
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
-        if (!IsBaby && --scuteTime <= 0) { DropItem(Material.ArmadilloScute); PlayMobSound("scute_drop"); scuteTime = Random.Next(6000, 12001); }
+        if (!IsBaby && --scuteTime <= 0)
+        {
+            DropItem(ItemsRegistry.ArmadilloScute);
+            PlayMobSound("scute_drop");
+            scuteTime = Random.Next(6000, 12001);
+        }
+
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
         stateTicks++;
         if (AiTick % 5 == 0 && !InWater && !InLava && Rider == null && GetEntitiesNear(11).Any(entity =>
             entity.Health > 0 && Math.Abs(entity.Position.X - Position.X) <= 7 && Math.Abs(entity.Position.Z - Position.Z) <= 7 &&
             Math.Abs(entity.Position.Y - Position.Y) <= 2 && (entity is IPlayer { GameMode: not (GameMode.Creative or GameMode.Spectator) } &&
-                (entity.Sprinting || entity is Player { Vehicle: not null }) || ReferenceEquals(entity, LastAttacker) ||
+                (entity.Sprinting || entity is IPlayer { Vehicle: not null }) || ReferenceEquals(entity, LastAttacker) ||
                 entity.Type is EntityType.Zombie or EntityType.Husk or EntityType.Drowned or EntityType.Skeleton or EntityType.Stray or
                     EntityType.WitherSkeleton or EntityType.ZombifiedPiglin or EntityType.Zoglin or EntityType.Bogged or EntityType.Parched or
                     EntityType.ZombieVillager or EntityType.Giant or EntityType.CamelHusk or EntityType.ZombieNautilus or EntityType.Phantom)))
@@ -58,13 +65,25 @@ public sealed partial class Armadillo : FarmAnimal
         else if (state == 3 && stateTicks >= 30) { SetState(0); PlayMobSound("unroll_finish"); }
         else if (state == 2 && Random.Next(400) == 0) SendEntityEvent(64);
     }
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || IsRemoved || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player)) return;
+        if (!Alive
+            || IsRemoved
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4)
+            || !CanSee(player))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (!IsBaby && item is { Count: > 0, Type: Material.Brush })
-        { DropItem(Material.ArmadilloScute); PlayMobSound("brush"); await DamageInteractionToolAsync(player, hand, 16); }
-        else await base.FeedAsync(player, hand);
+        if (!IsBaby && item is { Count: > 0, Holder.Id: ItemIds.Brush })
+        {
+            DropItem(ItemsRegistry.ArmadilloScute);
+            PlayMobSound("brush");
+            await DamageInteractionToolAsync(player, hand, 16);
+            return true;
+        }
+
+        return await base.FeedAsync(player, hand);
     }
     public override void Write(INetStreamWriter writer)
     { base.Write(writer); writer.WriteEntityMetadataType(17, EntityMetadataType.ArmadilloState); writer.WriteVarInt(state); }

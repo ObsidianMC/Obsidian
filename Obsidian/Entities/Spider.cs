@@ -48,9 +48,7 @@ public partial class Spider : PathfinderMob
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.String, Random.Next(3));
-        if (source is IPlayer && Random.Next(3) == 0)
-            DropItem(Material.SpiderEye, 1);
+        this.DropVanillaLoot(source);
         return default;
     }
     public override void Write(INetStreamWriter writer)

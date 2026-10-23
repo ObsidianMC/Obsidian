@@ -1,7 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.API.Containers;
+using Obsidian.API.Inventory;
+using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
@@ -68,7 +70,7 @@ public partial class ContainerClickPacket
         this.CarriedItem = reader.ReadHashedItemStack();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         if (this.ContainerId != (player.OpenedContainer is null ? 0 : player.CurrentContainerId))
             return;
@@ -79,55 +81,35 @@ public partial class ContainerClickPacket
             return;
         }
 
-        var baseContainer = player.OpenedContainer ?? player.Inventory;
+        var window = player.OpenedContainer ?? player.Inventory;
+        var (slot, forPlayer) = window.GetSlot(this.ClickedSlot);
 
-        var (slot, forPlayer) = baseContainer.GetSlot(ClickedSlot);
-
-        var container = (this.IsPlayerInventory || forPlayer) ? player.Inventory : baseContainer;
+        var container = (this.IsPlayerInventory || forPlayer) ? player.Inventory : window;
 
         if (this.ClickedSlot != -999 && (this.ClickedSlot < 0 || slot < 0 || slot >= container.Size ||
             (!this.IsPlayerInventory && forPlayer && slot >= 45)))
             return;
 
-        if (this.IsPlayerInventory || baseContainer is CraftingTable { Type: InventoryType.Crafting })
-        {
-            if (this.ClickType == ClickType.QuickCraft && this.ClickedSlot == -999)
-                player.IsDragging = DraggingButtons.Contains(this.Button);
-
-            await server.EventDispatcher.ExecuteEventAsync(new ContainerClickEventArgs(player, server, container)
-            {
-                ClickedSlot = slot,
-                ClickType = this.ClickType,
-                Button = this.Button,
-                StateId = this.StateId,
-                ContainerId = this.ContainerId,
-            });
-            return;
-        }
-
-        if (this.ClickType == ClickType.QuickCraft && ClickedSlot == -999)
-            player.IsDragging = DraggingButtons.Contains(Button);
-
-        await server.EventDispatcher.ExecuteEventAsync(new ContainerClickEventArgs(player, server, container)
+        var click = new ContainerClickEventArgs(player, server, container)
         {
             ClickedSlot = slot,
+            WindowSlot = this.ClickedSlot,
             ClickType = this.ClickType,
             Button = this.Button,
             StateId = this.StateId,
             ContainerId = this.ContainerId,
-        });
+        };
 
-        // Client slot hashes describe its prediction, not authoritative inventory changes.
-        var contents = baseContainer.ToList();
-        contents.AddRange(player.Inventory.Skip(9).Take(36));
-        await player.Client.QueuePacketAsync(new ContainerSetContentPacket(this.ContainerId, contents)
-        {
-            StateId = this.StateId + 1,
-            CarriedItem = player.CarriedItem
-        });
+        // What the click applies to: the server applies it only if the window, the player's inventory and the cursor
+        // are unchanged when its turn comes. Read in turn with other clicks, so it's never half of one.
+        await using (DeferredInventoryWork.Begin(player.Client.Logger))
+        using (await BaseContainer.LockWindowAsync(window, player.Inventory))
+            click.Arrive(NetworkBuffer.SnapshotItemStack);
+
+        // Plugins' handlers run without the container's lock, so that one can wait for another player's click; the
+        // server's own handler, which runs last, takes it to apply the click and sends the window to its viewers,
+        // even when the click is cancelled (see MainEventHandler.OnInventoryClick). Client slot hashes describe its
+        // prediction, not authoritative inventory changes, so they're not used.
+        await server.EventDispatcher.ExecuteEventAsync(click);
     }
-
-    private static readonly sbyte[] DraggingButtons = [0, 4, 8];
-
 }
-

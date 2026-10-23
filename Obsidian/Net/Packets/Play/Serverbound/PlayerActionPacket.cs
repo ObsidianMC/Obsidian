@@ -29,25 +29,32 @@ public partial class PlayerActionPacket
         this.Sequence = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         if (Status == PlayerActionStatus.ReleaseUseItem)
         {
-            if (player is Player concrete) await concrete.ReleaseUsingItemAsync();
+            await player.ReleaseUsingItemAsync();
             return;
         }
         if (Status == PlayerActionStatus.Stab)
         {
-            if (player is Player concrete) await concrete.StabAsync();
+            await player.StabAsync();
             return;
         }
         if (await player.Level.GetBlockAsync(Position) is not IBlock block)
             return;
 
-        if (Status == PlayerActionStatus.StartedDigging && block.Material == Material.NoteBlock && player.Level is Obsidian.WorldData.AbstractLevel notes)
+        if (Status == PlayerActionStatus.StartedDigging
+            && block.Is(BlockIds.NoteBlock)
+            && player.Level is Obsidian.WorldData.AbstractLevel notes)
+        {
             notes.PlayNoteBlock(Position, player);
+        }
 
-        if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.GameMode == GameMode.Creative))
+        // A block that breaks instantly (grass, flowers, torches) gets only a start from survival clients, never a finish.
+        var instant = Status == PlayerActionStatus.StartedDigging && player.GameMode != GameMode.Spectator &&
+            (player.GameMode == GameMode.Creative || !block.IsAir && Registries.BlockPhysics.MiningHardness(block.GetHashCode()) == 0);
+        if (Status == PlayerActionStatus.FinishedDigging || instant)
         {
             var args = new BlockBreakEventArgs(server, player, block, Position, player.Level)
             {
@@ -62,7 +69,7 @@ public partial class PlayerActionPacket
         this.BroadcastPlayerAction(player);
     }
 
-    private void BroadcastPlayerAction(IPlayer player)
+    private void BroadcastPlayerAction(IClientPlayer player)
     {
         switch (this.Status)
         {
@@ -92,11 +99,11 @@ public partial class PlayerActionPacket
         }
     }
 
-    private static void DropItem(IPlayer player, int amountToRemove)
+    private static void DropItem(IClientPlayer player, int amountToRemove)
     {
         var droppedItem = player.GetHeldItem();
 
-        if (droppedItem is null or { Type: Material.Air } or { Count: <= 0 })
+        if (droppedItem is null or { IsAir: true } or { Count: <= 0 })
             return;
 
         var count = Math.Min(amountToRemove, droppedItem.Count);

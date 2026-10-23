@@ -50,49 +50,61 @@ public partial class Mob
         }
         if (jumpDelay > 0)
             jumpDelay--;
-        if (InLava && !IsFireImmune)
+        if (!IsFireImmune && InLava)
         {
             Ignite(15);
-            if (!HasPotionEffect((int)PotionEffect.FireResistance - 1)) await DamageEnvironmentAsync(4);
+            await DamageCombatAsync(this, 4, CombatDamageKind.FireContact);
         }
         await TickAirSupplyAsync();
         if (WaterSensitive && (InWater || Terrain.IsRainingAt((Vector)Position.Floor())))
             await DamageEnvironmentAsync(1);
 
-        if (Position.Y < -128)
-            await DamageEnvironmentAsync(4);
+        var minimumY = Level is Obsidian.WorldData.AbstractLevel level ? level.MinY : -64;
+        if (Position.Y < minimumY - 64)
+            await DamageCombatAsync(this, 4, CombatDamageKind.Void);
         if (InWater || InLava || HasPotionEffect((int)PotionEffect.Levitation - 1))
             fallDistance = 0;
-        else if (MovementFlags.HasFlag(MovementFlags.OnGround))
+        else
         {
-            var damage = MathF.Ceiling(fallDistance - SafeFallDistance);
-            if (this is Creeper creeper)
-                creeper.FuseTicks = Math.Max(0, Math.Min(creeper.Fuse - 5, creeper.FuseTicks + (int)(fallDistance * 1.5f)));
-            fallDistance = 0;
-            if (damage > 0 && TakesFallDamage && this is not Chicken)
-                await DamageCombatAsync(this, damage, CombatDamageKind.Fall);
+            // Count the drop that ended in landing too, as vanilla adds it before checking the ground.
+            if (LastPosition.Y > Position.Y)
+                fallDistance += (float)(LastPosition.Y - Position.Y);
+            if (MovementFlags.HasFlag(MovementFlags.OnGround))
+            {
+                var damage = MathF.Ceiling(fallDistance - SafeFallDistance);
+                // Like vanilla's Creeper.causeFallDamage, only an actual fall swells it, and only up to 5 ticks short of its fuse.
+                if (this is Creeper creeper && fallDistance > 0)
+                    creeper.FuseTicks = Math.Max(0, Math.Min(creeper.Fuse - 5, creeper.FuseTicks + (int)(fallDistance * 1.5f)));
+                fallDistance = 0;
+                if (damage > 0 && TakesFallDamage && this is not Chicken)
+                    await DamageCombatAsync(this, damage, CombatDamageKind.Fall);
+            }
         }
-        else if (LastPosition.Y > Position.Y)
-            fallDistance += (float)(LastPosition.Y - Position.Y);
 
         var feet = Terrain.GetBlock((Vector)Position.Floor());
         var floor = Terrain.GetBlock((Vector)(Position - new VectorD(0, 0.01f, 0)).Floor());
-        if (feet?.Material is Material.Fire or Material.SoulFire && !IsFireImmune)
+        if (feet?.RegistryId is BlockIds.Fire or BlockIds.SoulFire && !IsFireImmune)
         {
             Ignite(8);
-            if (!HasPotionEffect((int)PotionEffect.FireResistance - 1)) await ApplyDamageAsync(this, 1, true);
+            await DamageCombatAsync(this, 1, CombatDamageKind.FireContact);
         }
-        if (floor?.Material == Material.MagmaBlock && !IsFireImmune && !Sneaking && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
-            await ApplyDamageAsync(this, 1, true);
-        if (this is not Fox && feet?.Material == Material.SweetBerryBush && !IsRemoved &&
+        if (floor?.RegistryId == BlockIds.MagmaBlock
+            && !IsFireImmune
+            && !Sneaking
+            && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
+            await DamageCombatAsync(this, 1, CombatDamageKind.FireContact);
+        if (this is not Fox && feet?.RegistryId == BlockIds.SweetBerryBush && !IsRemoved &&
             (LastPosition - Position).MagnitudeSquared() > 0.000025f)
             await ApplyDamageAsync(this, 1, true);
+        await TickBlockHazardsAsync(feet);
     }
 
     protected virtual async ValueTask TickAirSupplyAsync()
     {
-        if (Terrain.GetBlock((Vector)EyePosition.Floor())?.Material == Material.Water &&
-              !TagsRegistry.EntityType.CanBreatheUnderWater.Entries.Contains((int)Type) && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1) && !HasPotionEffect((int)PotionEffect.BreathOfTheNautilus - 1))
+        if (Terrain.IsInFluid(EyePosition, water: true)
+            && !TagsRegistry.EntityType.CanBreatheUnderWater.Entries.Contains(TypeId)
+            && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1)
+            && !HasPotionEffect((int)PotionEffect.BreathOfTheNautilus - 1))
         {
             Air--;
             if (Air == -20)
@@ -106,11 +118,11 @@ public partial class Mob
 
     }
 
-    protected internal void PlayMobSound(string kind)
+    protected internal virtual void PlayMobSound(string kind)
     {
         if (Silent || SoundName == null || kind == "ambient" && this is Creeper or Slime)
             return;
-        var baby = this is AgeableMob { IsBaby: true } or Zombie { IsBaby: true };
+        var baby = this is IAgeable { IsBaby: true };
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new Obsidian.Net.Packets.Play.Clientbound.SoundEntityPacket
         {
             EntityId = EntityId, SoundLocation = $"minecraft:entity.{(this is Wolf && kind == "shake" ? "wolf" : SoundName)}.{kind}{(this is Slime { Size: 1 } && (this is not MagmaCube || kind != "jump") ? "_small" : "")}", Category = MobSoundCategory,

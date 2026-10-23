@@ -23,15 +23,16 @@ public partial class PlayerCommandPacket
         this.JumpBoost = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var block = await player.Level.GetBlockAsync((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);
 
         switch (Action)
         {
             case PlayerCommand.LeaveBed:
-                player.Sleeping = false;
-                break;
+                if (player is PlayerBase sleeper)
+                    await sleeper.StopSleepingAsync();
+                return;
             case PlayerCommand.StartSprinting:
                 if (player.FoodLevel <= 6 && player.GameMode is not GameMode.Creative and not GameMode.Spectator) break;
                 if ((bool)(block?.IsLiquid))
@@ -46,10 +47,8 @@ public partial class PlayerCommandPacket
                 player.Sprinting = false;
                 break;
             case PlayerCommand.StartJumpWithHorse:
-                if (player is Player { Vehicle: Camel camel })
-                    camel.RequestDash(player, JumpBoost);
-                else if (player is Player { Vehicle: Nautilus nautilus })
-                    nautilus.RequestDash(player, JumpBoost);
+                if (player.Vehicle is IRideableJumping mount)
+                    mount.RequestJump(player, JumpBoost);
                 break;
             case PlayerCommand.StopJumpWithHorse:
                 break;
@@ -57,7 +56,7 @@ public partial class PlayerCommandPacket
                 player.InHorseInventory = true;
                 break;
             case PlayerCommand.StartFlyingWithElytra:
-                player.FlyingWithElytra = true;
+                player.TryStartGliding();
                 break;
         }
 

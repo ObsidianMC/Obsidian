@@ -10,6 +10,9 @@ on:
     paths:
       - "Obsidian.API/**/*.cs"
       - "Obsidian.API/*.csproj"
+      - "Obsidian.API.Client/**/*.cs"
+      - "Obsidian.API.Client/**/*.razor"
+      - "Obsidian.API.Client/*.csproj"
       - "Obsidian/Obsidian.csproj"
       - "Obsidian.AssetGenerator/**"
       - "Obsidian.SourceGenerators/**/*.cs"
@@ -26,6 +29,11 @@ jobs:
   nuget-publish:
     name: Package Commit
     runs-on: ubuntu-latest
+    # Trusted publishing: NuGet/login trades the job's OIDC token for a short-lived API key, so there's no key to
+    # store or rotate. It needs a nuget.org trusted publishing policy for this repository and workflow file.
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -46,9 +54,29 @@ jobs:
         with:
           distribution: temurin
           java-version: 25
-      - name: Pack n Push
+      - name: Pack
+        # Nightlies are 1.1.0-nightly.<run>: a dot-separated number sorts numerically, so mods can float on
+        # 1.1.0-nightly.*. The older 1.0.0-nightly-<run> versions compare as text, which puts nightly-100 below
+        # nightly-99. The client API depends on the API package of the same version.
+        # The projects set GeneratePackageOnBuild, under which pack skips building the project itself; turning it
+        # off makes pack build first, and stops Obsidian.Nbt, bundled in the API package, packing on its own.
+        env:
+          VERSION: 1.1.0-nightly.${{ github.run_number }}
         run: |
-          cd Obsidian.API
-          dotnet build -c Release -p:Version=1.0.0-${{ github.run_number }}-${{ github.sha }}
-          dotnet pack -c Release -o build -p:Version=1.0.0-nightly-${{ github.run_number }}
-          dotnet nuget push "build/*" --skip-duplicate -k ${{ secrets.NUGET }} -s https://api.nuget.org/v3/index.json
+          dotnet pack Obsidian.API/Obsidian.API.csproj -c Release -o build -p:Version=$VERSION \
+            -p:GeneratePackageOnBuild=false
+          dotnet pack Obsidian.API.Client/Obsidian.API.Client.csproj -c Release -o build -p:Version=$VERSION \
+            -p:GeneratePackageOnBuild=false
+      # After packing, which can take a while: the key it gives lasts an hour.
+      - name: NuGet login
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+      - name: Push
+        # Through the environment rather than expanded into the script, which the shell would parse.
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: |
+          dotnet nuget push "build/*.nupkg" --skip-duplicate -k "$NUGET_API_KEY" \
+            -s https://api.nuget.org/v3/index.json

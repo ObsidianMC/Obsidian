@@ -3,7 +3,10 @@ public readonly record struct ClimateParameter
 {
     public ImmutableArray<double> Continentalness { get; init; }
 
-    public double Depth { get; init; }
+    /// <summary>
+    /// The depth range, [min, max], which is one value for a point.
+    /// </summary>
+    public ImmutableArray<double> Depth { get; init; }
 
     public ImmutableArray<double> Erosion { get; init; }
 

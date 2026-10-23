@@ -76,7 +76,7 @@ internal sealed class DuplexPipeStream : Stream
 
     public async override Task WriteAsync(byte[]? buffer, int offset, int count, CancellationToken cancellationToken)
     {
-        if (buffer != null)
+        if (buffer is not null)
         {
             _output.Write(new ReadOnlySpan<byte>(buffer, offset, count));
         }

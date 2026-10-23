@@ -29,7 +29,7 @@ public sealed partial class Breeze : PathfinderMob
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (source is IPlayer) DropItem(Material.BreezeRod, Random.Next(1, 3));
+        this.DropVanillaLoot(source);
         return default;
     }
     internal void SetAttackPose(Pose pose)
@@ -62,13 +62,13 @@ internal sealed class BreezeAttackGoal(Breeze breeze) : NavigationGoal(breeze, 1
             if (++phaseTicks > 2 && breeze.MovementFlags.HasFlag(MovementFlags.OnGround))
             { breeze.SetAttackPose(Pose.Standing); jumpCooldown = 10; shootCooldown = 0; phaseTicks = 0; }
             return default;
-        }
+    }
         if (breeze.Pose == Pose.Inhaling)
         {
             if (++phaseTicks >= 10)
             { breeze.Motion = jumpVelocity; breeze.SetAttackPose(Pose.LongJumper); phaseTicks = 0; breeze.PlayMobSound("jump"); }
             return default;
-        }
+    }
         if (breeze.Pose == Pose.Shooting)
         {
             if (++phaseTicks == 15 && breeze.CanSee(target))
@@ -85,7 +85,7 @@ internal sealed class BreezeAttackGoal(Breeze breeze) : NavigationGoal(breeze, 1
             }
             if (phaseTicks >= 19) { breeze.SetAttackPose(Pose.Standing); phaseTicks = 0; shootCooldown = 10; }
             return default;
-        }
+    }
         var distance = (target.Position - breeze.Position).Magnitude;
         if (jumpCooldown <= 0 && breeze.MovementFlags.HasFlag(MovementFlags.OnGround) && !breeze.InWater && !breeze.InLava && distance > 4)
         {

@@ -38,7 +38,7 @@ internal static class CodecAssets
         ["biomes"] =
         [
             "effects", "depth", "temperature", "scale", "downfall", "category", "has_precipitation", "temperature_modifier",
-            "player_spawn_friendly", "features", "carvers", "spawners", "spawn_costs"
+            "player_spawn_friendly", "features", "carvers", "creature_spawn_probability", "spawners", "spawn_costs"
         ],
         ["dimensions"] =
         [
@@ -51,7 +51,8 @@ internal static class CodecAssets
 
     // The properties BiomeEffect models of a biome's effects.
     private static readonly string[] modeledBiomeEffects =
-        ["grass_color_modifier", "ambient_sound", "particle", "foliage_color", "sky_color", "water_fog_color", "fog_color", "water_color", "grass_color"];
+        ["grass_color_modifier", "ambient_sound", "particle", "foliage_color", "dry_foliage_color", "sky_color",
+            "water_fog_color", "fog_color", "water_color", "grass_color"];
 
     public static void Write(string dataDirectory, string outputDirectory)
     {

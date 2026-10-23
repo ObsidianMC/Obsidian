@@ -20,10 +20,27 @@ public partial class Client
     private bool sending;
 
     private NetworkBuffer receiveBuffer;
-    private NetworkBuffer sendBufferMain;
-    private NetworkBuffer sendBufferFlush;
+    private NetworkBuffer sendBufferMain = new();
+    private NetworkBuffer sendBufferFlush = new();
 
     private readonly Lock sendLock = new();
+
+    // Packets serialized and waiting for a network thread to frame them into sendBufferMain, in order; guarded by
+    // sendLock. The flush under way swaps it with its own list, which only it uses.
+    private List<OutgoingFrame> pendingFrames = [];
+    private List<OutgoingFrame> framingFrames = [];
+
+    // Whether a flush of pendingFrames is posted to the network threads or running; guarded by sendLock. There's one
+    // at a time, so frames are framed in order.
+    private bool flushScheduled;
+
+    // The flush's: frames are framed and encrypted into it, then appended to sendBufferMain under sendLock.
+    private readonly NetworkBuffer framedOutput = new();
+    private readonly PacketFramer framer = new();
+    private readonly Action flushOutput;
+
+    // Completed only when no frames wait and both socket buffers have emptied, or teardown abandons them.
+    private TaskCompletionSource? outputDrained;
 
     public Socket Socket { get; private set; }
 
@@ -34,8 +51,6 @@ public partial class Client
         this.Socket = socket;
 
         this.receiveBuffer = new();
-        this.sendBufferMain = new();
-        this.sendBufferFlush = new();
 
         this.receiveEvent = this.pool.Get();
         this.receiveEvent.Completed += OnAsyncCompleted;
@@ -45,30 +60,136 @@ public partial class Client
 
         this.receiveBuffer.Reserve(MaxBufferSize);
 
-        _ = this.HandlePacketQueueAsync();
-
         await this.TryReceiveAsync();
     }
 
-    private bool SendAsync(IClientboundPacket packet)
+    // Serializes the packet here, so it's sent as it is now, and leaves framing (compressing, encrypting) and writing it
+    // to the network threads (see FlushOutput). Bodies a broadcast serialized already for connections like this one (see
+    // SharedPacketBodies) are framed as they are.
+    private bool SendAsync(IClientboundPacket packet, bool terminal = false, IReadOnlyList<NetworkBuffer>? bodies = null)
     {
-        if (!this.Connected)
+        if (this.IsClosing || !this.Connected)
             return false;
+
+        if (bodies is null)
+        {
+            var serialized = new List<NetworkBuffer>(1);
+            NetworkBuffer.SerializeBodies(packet, this.ReadsPluginEntityData(packet), serialized);
+            bodies = serialized;
+        }
 
         lock (this.sendLock)
         {
-            this.sendBufferMain.WritePacket(packet);
+            if (this.IsClosing || !this.Connected || (!terminal && !this.Accepts(packet)))
+                return false;
 
-            if (this.sending)
-                return true;
-            else
-                this.sending = true;
+            // The threshold it's framed with is the one it was sent under, so the compression announcement isn't
+            // compressed and every packet after it is.
+            foreach (var body in bodies)
+                this.pendingFrames.Add(new OutgoingFrame(body, this.compressionThreshold));
 
-            TrySend();
+            this.ScheduleFlush();
         }
 
         return true;
     }
+
+    // Encrypts the output from the packets sent after this, like the login's encryption does once the client answered.
+    private void StartEncryptingOutput(byte[] key)
+    {
+        lock (this.sendLock)
+        {
+            this.pendingFrames.Add(new OutgoingFrame(Body: null, CompressionThreshold: -1, EncryptionKey: key));
+            this.ScheduleFlush();
+        }
+    }
+
+    // Called under sendLock.
+    private void ScheduleFlush()
+    {
+        if (this.flushScheduled)
+            return;
+
+        this.flushScheduled = true;
+        WorkerThreads.Network.Post(this.flushOutput);
+    }
+
+    // Runs on a network thread: frames what waits, appends it to the socket's buffer and starts sending it. What's sent
+    // meanwhile waits for another round, posted behind other connections' output so a busy one doesn't hold a thread.
+    private void FlushOutput()
+    {
+        try
+        {
+            lock (this.sendLock)
+            {
+                if (this.IsClosing)
+                {
+                    this.flushScheduled = false;
+                    return;
+                }
+
+                (this.pendingFrames, this.framingFrames) = (this.framingFrames, this.pendingFrames);
+            }
+
+            foreach (var frame in this.framingFrames)
+                this.framer.Write(this.framedOutput, frame);
+
+            this.framingFrames.Clear();
+
+            var startSending = false;
+            lock (this.sendLock)
+            {
+                if (!this.IsClosing && this.framedOutput.Offset > 0)
+                {
+                    this.sendBufferMain.Write(this.framedOutput.AsSpan(0, this.framedOutput.Offset));
+
+                    startSending = !this.sending;
+                    this.sending = true;
+                }
+
+                // Cleared before the next round can start on another thread.
+                this.framedOutput.Clear();
+
+                if (!this.IsClosing && this.pendingFrames.Count > 0)
+                {
+                    WorkerThreads.Network.Post(this.flushOutput);
+                }
+                else
+                {
+                    this.flushScheduled = false;
+                    if (!this.sending)
+                        this.outputDrained?.TrySetResult();
+                }
+            }
+
+            if (startSending)
+                this.TrySend();
+        }
+        catch (Exception exception)
+        {
+            lock (this.sendLock)
+                this.flushScheduled = false;
+
+            Log.OutputFailed(this.Logger, exception);
+
+            // Disconnecting raises Disconnected, whose handlers may fail too; that's logged rather than left to the
+            // network thread.
+            try
+            {
+                this.Disconnect();
+            }
+            catch (Exception disconnectFailure)
+            {
+                Log.DisconnectFailed(this.Logger, disconnectFailure);
+            }
+        }
+    }
+
+    // Whether the packet may hold entity data and the client reads plugins' data fields in it.
+    private bool ReadsPluginEntityData(IClientboundPacket packet) =>
+        packet is Net.Packets.Play.Clientbound.SetEntityDataPacket or Net.Packets.Play.Clientbound.BundledPacket
+        && this.Channels.HasNeoForgePlayChannel(Net.Payloads.ChannelPayloads.PluginEntityData);
+
     #region Processing 
     private async ValueTask TryReceiveAsync()
     {
@@ -99,18 +220,23 @@ public partial class Client
     }
     private void TrySend()
     {
-        if (!this.Connected)
-            return;
-
-        var empty = false;
         var process = true;
 
         while (process)
         {
-            process = false;
+            bool completedSynchronously;
 
+            // Submitted under the lock, which Disconnect returns the send event to the pool under, so a closing client
+            // never sets up an event another connection already took.
             lock (this.sendLock)
             {
+                if (this.IsClosing || !this.Connected)
+                    return;
+
+                // A client whose socket loops never started (as tests make them) has nowhere to send its output.
+                if (this.sendEvent is null)
+                    this.sendBufferMain.Clear();
+
                 if (this.sendBufferFlush.IsEmpty)
                 {
                     this.sendBufferFlush = Interlocked.Exchange(ref this.sendBufferMain, this.sendBufferFlush);
@@ -118,25 +244,30 @@ public partial class Client
 
                     if (this.sendBufferFlush.IsEmpty)
                     {
-                        empty = true;
                         this.sending = false;
+                        if (!this.flushScheduled)
+                            this.outputDrained?.TrySetResult();
+
+                        return;
                     }
                 }
-                else
+
+                try
+                {
+                    this.sendEvent.SetBuffer(
+                        this.sendBufferFlush.GetBuffer(),
+                        this.sendBufferFlushOffset,
+                        this.sendBufferFlush.Offset - this.sendBufferFlushOffset);
+
+                    completedSynchronously = !this.Socket.SendAsync(this.sendEvent);
+                }
+                catch (ObjectDisposedException)
+                {
                     return;
+                }
             }
 
-            if (empty)
-                return;
-
-            try
-            {
-                this.sendEvent.SetBuffer(this.sendBufferFlush.GetBuffer(), this.sendBufferFlushOffset, this.sendBufferFlush.Offset);
-
-                if (!this.Socket.SendAsync(this.sendEvent))
-                    process = this.ProcessSend(this.sendEvent);
-            }
-            catch (ObjectDisposedException) { }
+            process = completedSynchronously && this.ProcessSend(this.sendEvent);
         }
     }
 
@@ -147,6 +278,9 @@ public partial class Client
             var length = this.receiveBuffer.ReadVarInt();
             if (length == 0)
                 throw new UnreachableException("Packet length returned 0");
+
+            if (this.compressionThreshold >= 0)
+                return NetworkBuffer.ReadCompressedPacket(this.receiveBuffer.Read(length).GetBuffer());
 
             var packetId = this.receiveBuffer.ReadVarInt();
 
@@ -180,9 +314,14 @@ public partial class Client
                 case ClientState.Status: // Server ping/list
                     if (packetData.Id == 0x00)
                     {
-                        var status = new ServerStatus(this.Server, ServerConstants.ServerIcon);
+                        var status = new ServerStatus(this.HostServer, ServerConstants.ServerIcon)
+                        {
+                            IsModded = ((Server)this.HostServer).PayloadChannels.HasChannels
+                                || ((Server)this.HostServer).GetModdedRegistries().Count > 0
+                        };
 
-                        await this.eventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.Server, status));
+                        var request = new ServerStatusRequestEventArgs(this.HostServer, status);
+                        await this.eventDispatcher.ExecuteEventAsync(request);
 
                         SendPacket(new StatusResponsePacket(status));
                     }
@@ -207,7 +346,8 @@ public partial class Client
                 case ClientState.Configuration:
                     Debug.Assert(Player is not null);
 
-                    var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
+                    var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player,
+                        this.HostServer, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
 
                     if (result == EventResult.Cancelled)
                         return;
@@ -217,7 +357,8 @@ public partial class Client
                 case ClientState.Play:
                     Debug.Assert(Player is not null);
 
-                    result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
+                    result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player,
+                        this.HostServer, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
 
                     if (result == EventResult.Cancelled)
                         return;
@@ -234,12 +375,11 @@ public partial class Client
         if (this.loginPending)
         {
             this.receiveBuffer = new EncryptedNetworkBuffer(sharedKey);
-            var outgoingBuffer = new EncryptedNetworkBuffer(sharedKey);
-            this.sendBufferMain = outgoingBuffer;
-            this.sendBufferFlush = new EncryptedNetworkBuffer(sharedKey, outgoingBuffer);
+            this.StartEncryptingOutput(sharedKey!);
 
             this.receiveBuffer.Reserve(MaxBufferSize);
 
+            this.EnableCompression();
             this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
             {
                 SkinProperties = this.Player.SkinProperties,
@@ -297,26 +437,27 @@ public partial class Client
 
     private bool ProcessSend(SocketAsyncEventArgs e)
     {
-        if (!this.Connected)
-            return false;
-
-        var size = e.BytesTransferred;
-
-        if (size > 0)
+        lock (this.sendLock)
         {
-            this.serverMetrics.AddBytesSent(size);
+            if (this.IsClosing || !this.Connected)
+                return false;
 
-            this.sendBufferFlushOffset += size;
-
-            if (this.sendBufferFlushOffset == this.sendBufferFlush.Offset)
+            var size = e.BytesTransferred;
+            if (size > 0)
             {
-                this.sendBufferFlush.Clear();
-                this.sendBufferFlushOffset = 0;
-            }
-        }
+                this.serverMetrics.AddBytesSent(size);
 
-        if (e.SocketError == SocketError.Success)
-            return true;
+                this.sendBufferFlushOffset += size;
+                if (this.sendBufferFlushOffset == this.sendBufferFlush.Offset)
+                {
+                    this.sendBufferFlush.Clear();
+                    this.sendBufferFlushOffset = 0;
+                }
+            }
+
+            if (e.SocketError == SocketError.Success && size > 0)
+                return true;
+        }
 
         this.Disconnect();
 

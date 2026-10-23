@@ -5,7 +5,11 @@ public sealed record class TrimMaterialElement : INetworkSerializable<TrimMateri
 
     public required TrimDescription Description { get; init; }
 
-    public Dictionary<string, string>? OverrideArmorAssets { get; init; }
+    public IReadOnlyDictionary<string, string>? OverrideArmorAssets
+    {
+        get;
+        init => field = value is null ? null : new Dictionary<string, string>(value).AsReadOnly();
+    }
 
     public static TrimMaterialElement Read(INetStreamReader reader) => new()
     {
@@ -24,7 +28,7 @@ public sealed record class TrimMaterialElement : INetworkSerializable<TrimMateri
         var count = element.OverrideArmorAssets?.Count ?? 0;
         writer.WriteVarInt(count);
 
-        if (element.OverrideArmorAssets != null)
+        if (element.OverrideArmorAssets is not null)
         {
             foreach (var (rootId, name) in element.OverrideArmorAssets)
             {

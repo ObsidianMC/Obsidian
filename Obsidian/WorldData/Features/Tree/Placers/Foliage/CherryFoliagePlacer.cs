@@ -1,3 +1,4 @@
+using Obsidian.API.World.Features.Trees;
 using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.WorldData.Features.Tree.Placers.Foliage;
@@ -33,7 +34,8 @@ public sealed class CherryFoliagePlacer : FoliagePlacer
             this.PlaceLeavesRow(tree, center, radius, y, doubleTrunk);
 
         this.PlaceLeavesRowWithHangingLeavesBelow(tree, center, radius, -1, doubleTrunk, this.HangingLeavesChance, this.HangingLeavesExtensionChance);
-        this.PlaceLeavesRowWithHangingLeavesBelow(tree, center, radius - 1, -2, doubleTrunk, this.HangingLeavesChance, this.HangingLeavesExtensionChance);
+        this.PlaceLeavesRowWithHangingLeavesBelow(tree, center, radius - 1, -2, doubleTrunk, this.HangingLeavesChance,
+            this.HangingLeavesExtensionChance);
     }
 
     protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk)

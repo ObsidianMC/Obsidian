@@ -40,10 +40,6 @@ public sealed class FossilFeature : ConfiguredFeatureBase
     /// </summary>
     public required int MaxEmptyCornersAllowed { get; init; }
 
-    private StructureTemplate[] Fossils => field ??= [.. this.FossilStructures.Select(StructureRegistry.Get)];
-
-    private StructureTemplate[] Overlays => field ??= [.. this.OverlayStructures.Select(StructureRegistry.Get)];
-
     public override bool Place(FeatureContext context)
     {
         var level = context.Level;
@@ -54,8 +50,9 @@ public sealed class FossilFeature : ConfiguredFeatureBase
         var random = context.Random;
         var rotation = StructureRotationExtensions.Random(random);
         var index = random.NextInt(this.FossilStructures.Length);
-        var fossil = this.Fossils[index];
-        var overlay = this.Overlays[index];
+        // Looked up each time, as plugins and data packs may override the templates.
+        var fossil = StructureRegistry.Get(this.FossilStructures[index]);
+        var overlay = StructureRegistry.Get(this.OverlayStructures[index]);
 
         // Placement is limited to the origin's chunk and 16 blocks around it, over the full height.
         var chunkMinX = origin.X >> 4 << 4;
@@ -97,7 +94,7 @@ public sealed class FossilFeature : ConfiguredFeatureBase
         foreach (var corner in box.Corners())
         {
             var block = level.GetBlock(corner);
-            if (block.IsAir || block.Material is Material.Lava or Material.Water)
+            if (block.IsAir || block.RegistryId is BlockIds.Lava or BlockIds.Water)
                 empty++;
         }
 

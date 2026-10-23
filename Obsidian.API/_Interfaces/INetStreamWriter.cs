@@ -25,6 +25,20 @@ public interface INetStreamWriter : INetStream
     public void WriteVarInt(int value);
     public void WriteVarInt(Enum value);
 
+    /// <summary>
+    /// Writes this process's id <paramref name="id"/> of the built-in registry <paramref name="registry"/> (e.g.
+    /// <c>minecraft:block</c>), in the connection's numbering where it numbers the registry differently. The default
+    /// implementation, for streams that don't translate ids, writes it as it is.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The connection lacks the entry.</exception>
+    public void WriteRegistryId(string registry, int id) => this.WriteVarInt(id);
+
+    /// <summary>
+    /// Writes a holder like vanilla's <c>ByteBufCodecs.holder</c>: the registry id <paramref name="id"/> (see
+    /// <see cref="WriteRegistryId"/>), or, if null, the marker of a value the caller writes inline next.
+    /// </summary>
+    public void WriteRegistryHolder(string registry, int? id) => this.WriteVarInt(id is int value ? value + 1 : 0);
+
     public void WriteLongArray(long[] values);
     public void WriteVarLong(long value);
 
@@ -40,7 +54,16 @@ public interface INetStreamWriter : INetStream
     public void WriteNbtCompound(Obsidian.Nbt.NbtCompound compound);
     public void WriteOptionalNbtCompound(Obsidian.Nbt.NbtCompound? compound);
     public void WriteFixedBitSet(BitSet bits, int size);
+    public void WriteDataComponent(DataComponent component);
     public void WriteItemStack(ItemStack? itemStack);
+    public void WriteHashedItemStack(ItemStack? itemStack);
+    public void WriteHashedItemStack(IHashedItemStack? itemStack);
+    public void WriteUntrustedItemStack(ItemStack? itemStack);
+
+    /// <summary>Writes a villager trade like vanilla's <c>MerchantOffer</c> stream codec.</summary>
+    public void WriteMerchantOffer(TradeEntry value);
+    public void WriteRequiredItemStack(ItemStack itemStack);
+    public void WriteItemStackList(params ReadOnlySpan<ItemStack?> values);
     public void WriteDateTimeOffset(DateTimeOffset date);
     public void WriteSoundEvent(SoundEvent soundEvent);
     public void WriteSoundEffect(SoundEffect sound);

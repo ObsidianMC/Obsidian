@@ -3,7 +3,8 @@ using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
 
-public class ErodedBadlandsDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : BaseDecorator(biome, chunk, surfacePos, helper)
+public class ErodedBadlandsDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper)
+    : BaseDecorator(biome, chunk, surfacePos, helper)
 {
     public override void Decorate()
     {

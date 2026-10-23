@@ -1,5 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.Registries;
+using Obsidian.API.World.Generator.DensityFunctions;
+using Obsidian.API.World.Generator.Noise;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Structures;
@@ -88,6 +90,57 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
 
         Assert.Equal(expectedBlocks, Sha256(BlockNames(chunk)));
         Assert.Equal(expectedBiomes, Sha256(biomes.ToString(0, biomes.Length - 1)));
+    }
+
+    [Fact(DisplayName = "Noise settings read at runtime from vanilla's files generate vanilla's chunks")]
+    public void RuntimeNoiseSettingsGenerateLikeVanilla()
+    {
+        // Every noise settings, density function and noise read from the files the generator compiles, like a
+        // plugin's are, with no generated entry in them.
+        var noise = WorldgenNoiseReading.ReadVanillaFiles(out var logger);
+        Assert.Empty(logger.Messages);
+
+        // The golden chunks of ChunkMatchesVanilla and CarvedChunkMatchesVanilla.
+        var overworld = new ChunkBuilder(Runtime(MojangDimension.Overworld), 12345L, generateStructures: false);
+        var surface = new Chunk(-100, 57);
+
+        overworld.PopulateBiomes(surface);
+        overworld.Generate3DTerrain(surface);
+        overworld.ApplySurfaceRules(surface);
+
+        Assert.Equal("c1baf842b304ec003631790b569460e256b68a49905bd7e407ac268d042783db", Sha256(BlockNames(surface)));
+
+        var carved = new Chunk(-5, -5);
+        overworld.PopulateBiomes(carved);
+        overworld.Generate3DTerrain(carved);
+        overworld.ApplySurfaceRules(carved);
+        overworld.ApplyCarvers(carved);
+
+        Assert.Equal("d3bd9e5d5a5ff83427d92cd903f9d813c9cc7b0bb22f75f2e5a3e04c894e5a3b", Sha256(BlockNames(carved)));
+
+        // The nether's legacy settings, against the generated settings' chunk.
+        var nether = new ChunkBuilder(Runtime(MojangDimension.Nether), 12345L, generateStructures: false);
+        var generated = worldgen.Builder(MojangDimension.Nether, 12345L, structures: false);
+        var expected = new Chunk(0, 0, MojangDimension.Nether.MinY, MojangDimension.Nether.Height);
+        var actual = new Chunk(0, 0, MojangDimension.Nether.MinY, MojangDimension.Nether.Height);
+
+        foreach (var (builder, chunk) in new[] { (generated, expected), (nether, actual) })
+        {
+            builder.PopulateBiomes(chunk);
+            builder.Generate3DTerrain(chunk);
+            builder.ApplySurfaceRules(chunk);
+            builder.ApplyCarvers(chunk);
+        }
+
+        Assert.Equal(BlockNames(expected), BlockNames(actual));
+
+        MojangDimension Runtime(MojangDimension vanilla) => new(
+            vanilla.Identifier,
+            vanilla.DimensionType.Name,
+            vanilla.NoiseSettings,
+            noise.NoiseSettings[vanilla.NoiseSettings!],
+            vanilla.CreateBiomeSource,
+            () => vanilla.PossibleBiomes);
     }
 
     [Theory]
@@ -225,6 +278,71 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
             .ToArray();
 
         Assert.Equal(expectedLight, Convert.ToHexStringLower(SHA256.HashData(light)));
+
+        // Runtime edits must converge back to the captured vanilla light, including decreases in loaded neighbors.
+        var runtime = new RuntimeLightEngine(new System.Threading.Lock(), () => dimension.HasSkyLight);
+        var originals = new Dictionary<IChunk, byte[]>();
+        foreach (var chunk in lit)
+        {
+            originals[chunk] = chunk.Sections.ToArray()
+                .SelectMany(section => section.SkyLightArray.ToArray().Concat(section.BlockLightArray.ToArray()))
+                .ToArray();
+            runtime.Track(chunk);
+        }
+
+        runtime.Flush();
+        var center = area[(chunkX, chunkZ)];
+        var position = new Vector((chunkX << 4) + 15, dimension.MinY + dimension.Height / 2, (chunkZ << 4) + 8);
+        var originalBlock = center.GetBlock(position);
+        center.SetBlock(position, Obsidian.Registries.BlocksRegistry.Glowstone);
+        runtime.Flush();
+        center.SetBlock(position, originalBlock);
+        runtime.Flush();
+        foreach (var chunk in lit)
+        {
+            var restored = chunk.Sections.ToArray()
+                .SelectMany(section => section.SkyLightArray.ToArray().Concat(section.BlockLightArray.ToArray()))
+                .ToArray();
+            Assert.Equal(originals[chunk], restored);
+        }
+    }
+
+    [Fact]
+    public void Cache2DOfYDependentFunctionKeepsFirstCornerOfColumn()
+    {
+        // Vanilla's cache_2d keeps its argument's value at the first position sampled in a column, which is the lowest
+        // corner, even when the argument varies with Y. A range choice sending upper corners to the same cache first
+        // must not change which corner primes it.
+        var y = new YClampedGradientDensityFunction { FromY = -64, ToY = 320, FromValue = -64, ToValue = 320 };
+        var cache = new Cache2DDensityFunction { Argument = y };
+        var finalDensity = new InterpolatedDensityFunction
+        {
+            Argument = new RangeChoiceDensityFunction { Input = y, MinInclusive = 0, MaxExclusive = 1000, WhenInRange = cache, WhenOutOfRange = cache }
+        };
+
+        var overworld = NoiseRegistry.NoiseSettings.All["minecraft:overworld"];
+        var zero = new ConstantDensityFunction { Argument = 0 };
+        var settings = new NoiseSetting
+        {
+            DefaultBlock = overworld.DefaultBlock,
+            DefaultFluid = overworld.DefaultFluid,
+            Noise = overworld.Noise,
+            SeaLevel = overworld.SeaLevel,
+            NoiseRouter = new NoiseRouter
+            {
+                Barrier = zero, Continents = zero, Depth = zero, Erosion = zero, FinalDensity = finalDensity, FluidLevelFloodedness = zero,
+                FluidLevelSpread = zero, PreliminarySurfaceLevel = zero, Lava = zero, Ridges = zero, Temperature = zero, Vegetation = zero,
+                VeinGap = zero, VeinRidged = zero, VeinToggle = zero
+            }
+        };
+
+        var chunk = new NoiseChunk(new RandomState(settings, 0L), 0, 0);
+        var values = new double[chunk.CellSize];
+        for (var cellY = 0; cellY < chunk.CellCountY; cellY++)
+        {
+            chunk.FillFinalDensity(0, cellY, 0, values);
+            Assert.All(values, value => Assert.Equal(-64.0, value));
+        }
     }
 
     private static string BlockNames(IChunk chunk)

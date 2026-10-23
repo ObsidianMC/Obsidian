@@ -15,6 +15,9 @@ public sealed partial class Creaking : PathfinderMob
     public Creaking() { Type = EntityType.Creaking; IsFireImmune = true; }
     protected override bool UsesAi => true;
     protected override bool CanDespawn => HomePosition == null;
+
+    // Like vanilla, a creaking bound to its heart stays out of portals.
+    internal override bool CanUsePortals => HomePosition == null;
     internal override bool Hostile => true;
     internal override bool PanicsWhenHurt => false;
     protected override string? SoundName => "creaking";
@@ -36,7 +39,9 @@ public sealed partial class Creaking : PathfinderMob
     protected override async ValueTask TickMobAsync()
     {
         if (Level.LevelData.Difficulty == Difficulty.Peaceful) { await RemoveAsync(); return; }
-        if (HomePosition is { } home && Terrain.GetBlock(home)?.Material != Material.CreakingHeart) TearingDown = true;
+        if (HomePosition is { } home && Terrain.GetBlock(home)?.RegistryId != BlockIds.CreakingHeart)
+            TearingDown = true;
+
         if (TearingDown)
         {
             if (teardownTicks++ == 0) { SendEntityEvent(61); SynchronizeMetadata(); }

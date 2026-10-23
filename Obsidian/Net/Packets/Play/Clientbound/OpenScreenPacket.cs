@@ -17,7 +17,12 @@ public partial class OpenScreenPacket
     {
         Title = inventory.Title;
 
-        if (Enum.TryParse<WindowType>(inventory.Type.ToString(), true, out var type))
+        // A plugin's menu type has an id after vanilla's, which WindowType doesn't name.
+        if (inventory is MenuContainer menu)
+            Type = (WindowType)menu.Menu.Id;
+        else if (inventory.Type == InventoryType.Crafter)
+            Type = WindowType.CRAFTER3x3;
+        else if (Enum.TryParse<WindowType>(inventory.Type.ToString(), true, out var type))
             Type = type;
         else if (Enum.TryParse($"generic9x{inventory.Size / 9}", true, out type))
             Type = type;
@@ -35,7 +40,8 @@ public partial class OpenScreenPacket
     public override string ToString() => $"{this.ContainerId}:{this.Type}";
 }
 
-// Do not mess up the order this is how it's supposed to be ordered
+// The order of vanilla's menu registry (minecraft:menu), which gives the ids sent to clients; plugins' menu types
+// follow (see MenuTypesRegistry).
 public enum WindowType : int
 {
     Generic9x1,
@@ -60,7 +66,6 @@ public enum WindowType : int
     Loom,
     Merchant,
     ShulkerBox,
-    LegacySmithing,
     Smithing,
     Smoker,
     CartographyTable,

@@ -9,9 +9,9 @@ internal static class DripstoneUtils
 {
     private static readonly BlockSet dripstoneReplaceable = new("#minecraft:dripstone_replaceable_blocks");
 
-    private static IBlock DripstoneBlock => field ??= BlocksRegistry.Get(Material.DripstoneBlock);
+    private static IBlock DripstoneBlock => field ??= BlocksRegistry.DripstoneBlock;
 
-    private static IBlock PointedDripstone => field ??= BlocksRegistry.Get(Material.PointedDripstone);
+    private static IBlock PointedDripstone => field ??= BlocksRegistry.PointedDripstone;
 
     /// <summary>
     /// Vanilla <c>getDripstoneHeight</c>: the height of a large dripstone at <paramref name="radius"/> from its axis.
@@ -50,15 +50,17 @@ internal static class DripstoneUtils
         return true;
     }
 
-    public static bool IsEmptyOrWater(IBlock block) => block.IsAir || block.Material == Material.Water;
+    public static bool IsEmptyOrWater(IBlock block) => block.IsAir || block.Is(BlockIds.Water);
 
-    public static bool IsNeitherEmptyNorWater(IBlock block) => !block.IsAir && block.Material != Material.Water;
+    public static bool IsNeitherEmptyNorWater(IBlock block) => !block.IsAir && !block.Is(BlockIds.Water);
 
-    public static bool IsEmptyOrWaterOrLava(IBlock block) => block.IsAir || block.Material is Material.Water or Material.Lava;
+    public static bool IsEmptyOrWaterOrLava(IBlock block) =>
+        block.IsAir || block.RegistryId is BlockIds.Water or BlockIds.Lava;
 
-    public static bool IsDripstoneBase(IBlock block) => block.Material == Material.DripstoneBlock || dripstoneReplaceable.Contains(block);
+    public static bool IsDripstoneBase(IBlock block) =>
+        block.Is(BlockIds.DripstoneBlock) || dripstoneReplaceable.Contains(block);
 
-    public static bool IsDripstoneBaseOrLava(IBlock block) => IsDripstoneBase(block) || block.Material == Material.Lava;
+    public static bool IsDripstoneBaseOrLava(IBlock block) => IsDripstoneBase(block) || block.Is(BlockIds.Lava);
 
     /// <summary>
     /// Vanilla <c>growPointedDripstone</c>: a base-to-tip column of <paramref name="length"/> pointed dripstone growing toward

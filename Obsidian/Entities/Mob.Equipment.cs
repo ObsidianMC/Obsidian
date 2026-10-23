@@ -75,7 +75,7 @@ public partial class Mob
 
     private async ValueTask PickupEquipmentAsync()
     {
-        if (!CanPickUpLoot || !Alive)
+        if (!CanPickUpLoot || !Alive || !Level.LevelData.GetBooleanRule("mob_griefing"))
             return;
         foreach (var entity in GetEntitiesNear(1.5f).OfType<ItemEntity>().Where(item => item.CanPickup && item.Item.Count > 0).ToArray())
         {
@@ -121,8 +121,7 @@ public partial class Mob
         var maximum = GetArmorStats(item, slot).Durability;
         if (maximum > 0 && !item.ContainsKey(DataComponentType.MaxDamage))
         {
-            var durability = ComponentBuilder.MaxDamage;
-            durability.Value = maximum;
+            var durability = ComponentBuilder.MaxDamage with { Value = maximum };
             item[DataComponentType.MaxDamage] = durability;
         }
         if (initialized)
@@ -155,13 +154,13 @@ public partial class Mob
         return broke;
     }
 
-    protected void DropItem(Material material, int count = 1)
+    protected void DropItem(Item item, int count = 1)
     {
         if (count <= 0)
             return;
-        var item = ItemsRegistry.GetSingleItem(material);
-        item.Count = count;
-        DropItem(item);
+        var stack = ItemsRegistry.GetSingleItem(item);
+        stack.Count = count;
+        DropItem(stack);
     }
 
     protected void DropItem(ItemStack item)
@@ -180,7 +179,7 @@ public partial class Mob
     {
         base.SpawnEntity(velocity, additionalData);
         SynchronizeEquipment();
-        if (Rider != null)
+        if (Passengers.Count > 0)
             SynchronizePassengers();
     }
 }

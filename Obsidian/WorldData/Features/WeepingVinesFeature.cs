@@ -10,11 +10,11 @@ public sealed class WeepingVinesFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:weeping_vines";
 
-    private static IBlock NetherWartBlock => field ??= BlocksRegistry.Get(Material.NetherWartBlock);
+    private static IBlock NetherWartBlock => field ??= BlocksRegistry.NetherWartBlock;
 
-    private static IBlock WeepingVines => field ??= BlocksRegistry.Get(Material.WeepingVines);
+    private static IBlock WeepingVines => field ??= BlocksRegistry.WeepingVines;
 
-    private static IBlock WeepingVinesPlant => field ??= BlocksRegistry.Get(Material.WeepingVinesPlant);
+    private static IBlock WeepingVinesPlant => field ??= BlocksRegistry.WeepingVinesPlant;
 
     public override bool Place(FeatureContext context)
     {
@@ -98,5 +98,5 @@ public sealed class WeepingVinesFeature : ConfiguredFeatureBase
         }
     }
 
-    private static bool IsRoof(IBlock block) => block.Material is Material.Netherrack or Material.NetherWartBlock;
+    private static bool IsRoof(IBlock block) => block.RegistryId is BlockIds.Netherrack or BlockIds.NetherWartBlock;
 }

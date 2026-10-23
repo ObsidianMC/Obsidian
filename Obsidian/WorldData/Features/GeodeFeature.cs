@@ -15,7 +15,7 @@ public sealed class GeodeFeature : ConfiguredFeatureBase
     // Vanilla rebuilds this noise from the world seed on every placement; it only depends on the seed, so it is cached.
     private static readonly ConcurrentDictionary<long, NormalNoise> noiseBySeed = new();
 
-    private static IBlock Air => field ??= BlocksRegistry.Get(Material.Air);
+    private static IBlock Air => field ??= BlocksRegistry.Air;
 
     public override string Type => "minecraft:geode";
 
@@ -165,7 +165,7 @@ public sealed class GeodeFeature : ConfiguredFeatureBase
                     bud = bud.WithProperty("waterlogged", existing.IsFluidSource());
 
                 // BuddingAmethystBlock.canClusterGrowAtState: air or a full water block.
-                if (existing.IsAir || existing.Material == Material.Water && existing.FluidAmount() == 8)
+                if (existing.IsAir || existing.Is(BlockIds.Water) && existing.FluidAmount() == 8)
                 {
                     FeatureHelpers.SafeSetBlock(level, target, bud, canReplace);
                     break;

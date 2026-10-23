@@ -1,3 +1,4 @@
+using Obsidian.API.World.Features.Trees;
 using Obsidian.API.World.Generator;
 using Obsidian.Providers.BlockStateProviders;
 using System.Diagnostics.CodeAnalysis;
@@ -10,10 +11,6 @@ internal static partial class BlocksRegistry
     // array lookups.
     private static readonly IBlock[] defaultBlocks;
     private static readonly IBlock[] stateBlocks;
-    private static readonly IBlock?[] materialBlocks;
-    private static readonly Material[] registryMaterials;
-
-    public static int GlobalBitsPerBlocks { get; private set; }
 
     [SuppressMessage("Performance", "CA1810", Justification = "Reads the generated tables (Names, StateToNumeric) of other parts of this class, and the order of initializers across parts is unspecified.")]
     static BlocksRegistry()
@@ -26,16 +23,6 @@ internal static partial class BlocksRegistry
             defaultBlockCache.TryAdd(Names[i], defaultBlocks[i]);
         }
 
-        registryMaterials = [.. defaultBlocks.Select(block => block.Material)];
-
-        // Materials name items too, so only some have a block.
-        materialBlocks = new IBlock?[Enum.GetValues<Material>().Max(material => (int)material) + 1];
-        for (int i = 0; i < Names.Length; i++)
-        {
-            if (Enum.TryParse<Material>(Names[i], out var material))
-                materialBlocks[(int)material] = defaultBlocks[i];
-        }
-
         // Blocks without properties have one state, which is their default block.
         stateBlocks = new IBlock[StateToNumeric.Length];
         for (int stateId = 0; stateId < stateBlocks.Length; stateId++)
@@ -44,18 +31,43 @@ internal static partial class BlocksRegistry
             stateBlocks[stateId] = CreateState(registryId, stateId) ?? defaultBlocks[registryId];
         }
 
-        GlobalBitsPerBlocks = (int)Math.Ceiling(Math.Log2(StateToBase.Length));
+        plugins = new PluginBlockTable([], StateToNumeric.Length);
 
         SimpleBlockStateExtensions.SetConverter(GetFromSimpleState);
+        TreeBlockRules.States = new BlockStateAccess();
     }
 
-    public static IBlock Get(int stateId) => stateBlocks[stateId];
+    /// <summary>
+    /// The block state with the given id: a vanilla state, a plugin block's, or air for an id no state has.
+    /// </summary>
+    public static IBlock Get(int stateId)
+    {
+        if ((uint)stateId < (uint)stateBlocks.Length)
+            return stateBlocks[stateId];
+
+        return TryGetPluginBlock(stateId, out var type) ? type.StateOf(stateId) : Air;
+    }
 
     /// <summary>The registry id of the block a state belongs to.</summary>
-    public static int RegistryIdOf(int stateId) => StateToNumeric[stateId];
+    public static int RegistryIdOf(int stateId)
+    {
+        if ((uint)stateId < (uint)StateToNumeric.Length)
+            return StateToNumeric[stateId];
 
-    /// <summary>The material of the block a state belongs to.</summary>
-    public static Material MaterialOf(int stateId) => registryMaterials[StateToNumeric[stateId]];
+        return TryGetPluginBlock(stateId, out var type) ? type.Id : 0;
+    }
+
+    /// <summary>
+    /// The default state of the block with the given id, like <see cref="BlockIds.Stone"/>, or a plugin's block's.
+    /// </summary>
+    public static IBlock GetDefault(int blockId)
+    {
+        if ((uint)blockId < (uint)defaultBlocks.Length)
+            return defaultBlocks[blockId];
+
+        return PluginBlocks.FirstOrDefault(type => type.Id == blockId)?.DefaultState
+            ?? throw new ArgumentOutOfRangeException(nameof(blockId), blockId, "There's no block with this id.");
+    }
 
     public static string? GetBlockName(string resourceId) => resourceIdToName.GetValueOrDefault(resourceId);
 
@@ -67,22 +79,14 @@ internal static partial class BlocksRegistry
 
     public static IBlock Get(string resourceId, IBlockState? state = null)
     {
-        if (state != null)
+        if (state is not null)
             return Get(state.Id);
 
-        if (!resourceIdToName.TryGetValue(resourceId, out var blockName))
-            throw new InvalidOperationException($"{resourceId} is not a valid block.");
+        if (resourceIdToName.TryGetValue(resourceId, out var blockName))
+            return defaultBlockCache[blockName];
 
-        return defaultBlockCache[blockName];
-    }
-
-    public static IBlock Get(Material material, IBlockState? state = null)
-    {
-        if (state != null)
-            return Get(state.Id);
-
-        return (uint)material < (uint)materialBlocks.Length && materialBlocks[(int)material] is IBlock block
-            ? block
-            : throw new InvalidOperationException($"{material} is not a valid block.");
+        return TryGetPluginBlock(resourceId, out var type)
+            ? type.DefaultState
+            : throw new InvalidOperationException($"{resourceId} is not a valid block.");
     }
 }

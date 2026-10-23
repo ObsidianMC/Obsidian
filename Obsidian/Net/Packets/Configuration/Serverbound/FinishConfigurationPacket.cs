@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -8,12 +8,17 @@ namespace Obsidian.Net.Packets.Configuration.Serverbound;
 
 public sealed partial class FinishConfigurationPacket
 {
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var client = player.Client;
 
         client.SetState(ClientState.Play);
         await player.LoadAsync();
+
+        // An integrated server opened to LAN forces its game mode on players who join.
+        if (((Server)server).Integrated?.GetForcedGameMode(player.Level.LevelData) is GameMode forcedGameMode)
+            player.GameMode = forcedGameMode;
+
         if (!server.AddPlayer(player))
         {
             await player.DisconnectAsync("Unable to complete login due to a server error. Please try again or contact an administrator.");
@@ -21,20 +26,20 @@ public sealed partial class FinishConfigurationPacket
             return;
         }
 
-        if (!CodecRegistry.TryGetDimension(player.Level.DimensionName, out var codec) && !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
-            throw new UnreachableException("Failed to retrieve proper dimension for player.");
+        var codec = player.Level.DimensionType;
 
         await client.QueuePacketAsync(new LoginPacket
         {
             EntityId = player.EntityId,
+            Hardcore = player.Level.LevelData.Hardcore,
             ViewDistance = server.Configuration.ViewDistance,
             SimulationDistance = server.Configuration.SimulationDistance,
-            DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
+            DimensionNames = LevelNames(server.WorldManager),
             CommonPlayerSpawnInfo = new()
             {
                 GameMode = player.GameMode,
                 DimensionType = codec.Id,
-                DimensionName = codec.Name,
+                DimensionName = player.Level.DimensionName,
                 HashedSeed = 0,
                 Flat = false,
                 PortalCooldown = player is Entities.Player concrete ? concrete.PortalCooldown : 0
@@ -43,6 +48,9 @@ public sealed partial class FinishConfigurationPacket
             EnableRespawnScreen = true,
         });
 
+        // Like vanilla's PlayerList.placeNewPlayer, the player learns the world's difficulty right after joining.
+        await client.QueuePacketAsync(ChangeDifficultyPacket.Of(server.DefaultWorld.LevelData));
+
         var spawnLevel = player.Level is IDimension dimension ? dimension.ParentWorld : player.Level;
         await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
         {
@@ -50,16 +58,35 @@ public sealed partial class FinishConfigurationPacket
             Pos = (Vector)spawnLevel.LevelData.SpawnPosition.Floor()
         }, 0, 0));
         await client.QueuePacketAsync(new SetTimePacket(player.Level.LevelData.Time, player.Level.LevelData.DayTime, true));
-        await client.QueuePacketAsync(new GameEventPacket(player.Level.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        await client.QueuePacketAsync(new GameEventPacket(player.Level.LevelData.Raining
+            ? ChangeGameStateReason.BeginRaining
+            : ChangeGameStateReason.EndRaining));
 
         await client.QueuePacketAsync(CustomPayloadPacket.ClientboundPlay with { Channel = "minecraft:brand", PluginData = server.BrandData });
+
+        // Like vanilla's PlayerList.placeNewPlayer, the player learns their permission level before the commands.
+        var permissionLevel = ((OperatorList)server.Operators).GetPermissionLevel(player);
+        await client.QueuePacketAsync(EntityEventPacket.PermissionLevel(player.EntityId, permissionLevel));
         await client.QueuePacketAsync(CommandsRegistry.Packet);
         await client.QueuePacketAsync(new RecipeBookSettingsPacket());
-        await client.QueuePacketAsync(new RecipeBookAddPacket());
+
+        // Objectives and teams made before the player joined.
+        ((Server)server).CommandScoreboard.SendTo(player);
+        foreach (var team in server.ScoreboardManager.DefaultScoreboard.Teams.OfType<Team>())
+            await client.QueuePacketAsync(team.CreationPacket());
+
+        if (player is Entities.Player joined)
+        {
+            await joined.RecipeBookSync.SendInitialAsync(player);
+            await joined.ProgressAdvancements.FlushAsync(initial: true);
+        }
 
         await player.UpdatePlayerInfoAsync();
         await player.SendPlayerInfoAsync();
 
+        // Like a teleport (Player.TeleportAsync), the join position is where the player was last, so the movement
+        // handlers don't take the player's first movement for a meaningless one and drop every later one.
+        player.LastPosition = player.Position;
         player.TeleportId = Globals.Random.Next(0, 999);
         await client.QueuePacketAsync(new PlayerPositionPacket
         {
@@ -80,4 +107,16 @@ public sealed partial class FinishConfigurationPacket
         [LoggerMessage(Level = LogLevel.Warning, Message = "Disconnected {Username}: adding them to the online players failed")]
         public static partial void AddPlayerFailed(ILogger logger, string username);
     }
+
+    // Like vanilla's server.levelKeys(): the names of the levels players can be in, plugins' dimensions included,
+    // which vanilla clients suggest in commands.
+    private static List<string> LevelNames(IWorldManager worldManager) =>
+    [
+        .. worldManager.GetAvailableWorlds()
+            .OfType<WorldData.World>()
+            .SelectMany(world => world.dimensions.Values
+                .Select(dimension => dimension.DimensionName)
+                .Prepend(world.DimensionName))
+            .Distinct()
+    ];
 }

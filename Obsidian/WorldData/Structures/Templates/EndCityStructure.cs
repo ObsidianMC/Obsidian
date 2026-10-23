@@ -95,7 +95,8 @@ public sealed class EndCityStructure : Structure
         private bool Tower(int depth, EndCityPiece parent, Vector? offset, List<StructurePiece> pieces)
         {
             var rotation = parent.PlaceSettings.Rotation;
-            var piece = AddHelper(pieces, AddPiece(parent, new Vector(3 + random.NextInt(2), -3, 3 + random.NextInt(2)), "tower_base", rotation, true));
+            var piece = AddHelper(pieces,
+                AddPiece(parent, new Vector(3 + random.NextInt(2), -3, 3 + random.NextInt(2)), "tower_base", rotation, true));
             piece = AddHelper(pieces, AddPiece(piece, new Vector(0, 7, 0), "tower_piece", rotation, true));
             var bridgeBase = random.NextInt(3) == 0 ? piece : null;
             var height = 1 + random.NextInt(3);

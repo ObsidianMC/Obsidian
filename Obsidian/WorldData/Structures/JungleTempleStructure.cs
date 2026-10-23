@@ -21,13 +21,13 @@ public sealed class JungleTemplePiece : ScatteredFeaturePiece
     private const string ChestLoot = "minecraft:chests/jungle_temple";
 
     private static readonly IBlock air = BlocksRegistry.Air;
-    private static readonly IBlock mossyCobblestone = BlocksRegistry.Get(Material.MossyCobblestone);
-    private static readonly IBlock chiseledStoneBricks = BlocksRegistry.Get(Material.ChiseledStoneBricks);
-    private static readonly IBlock cobblestoneStairs = BlocksRegistry.Get(Material.CobblestoneStairs);
-    private static readonly IBlock tripwireHook = BlocksRegistry.Get(Material.TripwireHook);
-    private static readonly IBlock tripwire = BlocksRegistry.Get(Material.Tripwire);
-    private static readonly IBlock redstoneWire = BlocksRegistry.Get(Material.RedstoneWire);
-    private static readonly IBlock vine = BlocksRegistry.Get(Material.Vine);
+    private static readonly IBlock mossyCobblestone = BlocksRegistry.MossyCobblestone;
+    private static readonly IBlock chiseledStoneBricks = BlocksRegistry.ChiseledStoneBricks;
+    private static readonly IBlock cobblestoneStairs = BlocksRegistry.CobblestoneStairs;
+    private static readonly IBlock tripwireHook = BlocksRegistry.TripwireHook;
+    private static readonly IBlock tripwire = BlocksRegistry.Tripwire;
+    private static readonly IBlock redstoneWire = BlocksRegistry.RedstoneWire;
+    private static readonly IBlock vine = BlocksRegistry.Vine;
 
     private bool placedMainChest;
     private bool placedHiddenChest;
@@ -232,7 +232,7 @@ public sealed class JungleTemplePiece : ScatteredFeaturePiece
         Place(chiseledStoneBricks, 8, -2, 11);
         Place(chiseledStoneBricks, 9, -2, 11);
         Place(chiseledStoneBricks, 10, -2, 11);
-        var lever = BlocksRegistry.Get(Material.Lever).WithProperty("facing", "north").WithProperty("face", "wall");
+        var lever = BlocksRegistry.Lever.WithProperty("facing", "north").WithProperty("face", "wall");
         Place(lever, 8, -2, 12);
         Place(lever, 9, -2, 12);
         Place(lever, 10, -2, 12);
@@ -242,11 +242,11 @@ public sealed class JungleTemplePiece : ScatteredFeaturePiece
         Place(wireNorthSouth, 8, -2, 9);
         Place(wireNorthSouth, 8, -2, 10);
         Place(Wire(("north", "side"), ("south", "side"), ("east", "side"), ("west", "side")), 10, -1, 9);
-        var stickyPiston = BlocksRegistry.Get(Material.StickyPiston);
+        var stickyPiston = BlocksRegistry.StickyPiston;
         Place(stickyPiston.WithProperty("facing", "up"), 9, -2, 8);
         Place(stickyPiston.WithProperty("facing", "west"), 10, -2, 8);
         Place(stickyPiston.WithProperty("facing", "west"), 10, -1, 8);
-        Place(BlocksRegistry.Get(Material.Repeater).WithProperty("facing", "north"), 10, -2, 10);
+        Place(BlocksRegistry.Repeater.WithProperty("facing", "north"), 10, -2, 10);
         if (!this.placedHiddenChest)
             this.placedHiddenChest = this.CreateChest(level, box, random, 9, -3, 10, ChestLoot);
     }
@@ -270,7 +270,7 @@ public sealed class JungleTemplePiece : ScatteredFeaturePiece
     /// </summary>
     private sealed class MossStoneSelector : BlockSelector
     {
-        private static readonly IBlock cobblestone = BlocksRegistry.Get(Material.Cobblestone);
+        private static readonly IBlock cobblestone = BlocksRegistry.Cobblestone;
 
         public override void Next(IRandomSource random, int x, int y, int z, bool isEdge) =>
             this.NextBlock = random.NextFloat() < 0.4f ? cobblestone : mossyCobblestone;

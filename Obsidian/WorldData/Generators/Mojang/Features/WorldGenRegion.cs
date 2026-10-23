@@ -1,6 +1,7 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.ChunkData;
+using Obsidian.Registries;
 
 namespace Obsidian.WorldData.Generators.Mojang.Features;
 
@@ -36,6 +37,12 @@ internal sealed class WorldGenRegion : IWorldGenLevel
 
     // The writable chunks written to, a bit per AreaIndex.
     private int writtenAreas;
+
+    // The writable chunks that may hold block entities, a bit per AreaIndex, valid for the chunks in checkedBlockEntityAreas.
+    // Writes of blocks without one remove any block entity, which chunks without them can skip; asking a chunk whether it
+    // has any is slow, so each is asked once.
+    private int blockEntityAreas;
+    private int checkedBlockEntityAreas;
 
     // The sections of the writable chunks, indexed by AreaIndex * sectionCount + section index, so block reads and writes
     // skip the chunk; null for chunks of other types or build ranges, which are read through the chunk.
@@ -170,12 +177,18 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         // A state id outside the registry can only come from a block the caller passed.
         var knownState = (uint)stateId < (uint)writeInfos.Length;
         var section = this.areaSections[index * this.sectionCount + ((position.Y - this.MinY) >> 4)];
-        if (section is not null && knownState)
-            section.SetStateId(position.X & 15, position.Y & 15, position.Z & 15, stateId);
+        if (chunk.IsGenerated)
+            chunk.SetBlock(position.X, position.Y, position.Z, block ??= BlocksRegistry.Get(stateId));
+        else if (section is not null && knownState)
+            section.SetStateIdUntracked(position.X & 15, position.Y & 15, position.Z & 15, stateId);
         else if (section is not null)
-            section.SetBlock(position.X & 15, position.Y & 15, position.Z & 15, block!);
+            section.SetBlockUntracked(position.X & 15, position.Y & 15, position.Z & 15, block!);
         else
             chunk.SetBlock(position.X, position.Y, position.Z, block ??= BlocksRegistry.Get(stateId));
+
+        // Vanilla's WorldGenRegion.setBlock: a state with hasPostProcess is marked; post-processing's own writes aren't.
+        if (this.MarksPostProcessing && BlockPhysics.HasPostProcess(stateId))
+            this.MarkForPostProcessing(position);
 
         var info = knownState ? writeInfos[stateId] : WriteInfo(block!);
         heightmaps.Update(position.X, position.Y, position.Z, info & HeightmapMask);
@@ -183,9 +196,14 @@ internal sealed class WorldGenRegion : IWorldGenLevel
 
         // Like DataBlockEntity.ApplyBlockChange, which blocks without a block entity don't need.
         if ((info & BlockEntityBit) != 0)
+        {
             DataBlockEntity.ApplyBlockChange(chunk, position, block ?? BlocksRegistry.Get(stateId));
-        else
+            this.blockEntityAreas |= 1 << index;
+        }
+        else if (this.MayHaveBlockEntities(index, chunk))
+        {
             chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
+        }
 
         return true;
     }
@@ -231,7 +249,10 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     {
         var index = this.AreaIndex(position.X >> 4, position.Z >> 4);
         if (index >= 0 && !this.IsOutsideBuildHeight(position.Y))
+        {
             this.GetAreaChunk(index, position).SetBlockEntity(position.X, position.Y, position.Z, blockEntity);
+            this.blockEntityAreas |= 1 << index;
+        }
     }
 
     public IBlockEntity? GetBlockEntity(Vector position)
@@ -248,7 +269,10 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         var chunkX = (int)Math.Floor(entity.Position.X) >> 4;
         var chunkZ = (int)Math.Floor(entity.Position.Z) >> 4;
         if (this.FindChunk(chunkX, chunkZ) is Chunk generated)
+        {
             generated.PendingEntities.Add(entity);
+            generated.MarkUnsaved();
+        }
     }
 
     /// <remarks>
@@ -271,10 +295,23 @@ internal sealed class WorldGenRegion : IWorldGenLevel
             generated.FluidTicks.Schedule(position, fluid, delay);
     }
 
+    /// <summary>Whether writes mark their positions for post-processing. Off while post-processing itself writes.</summary>
+    internal bool MarksPostProcessing { get; set; } = true;
+
+    /// <summary>Schedules a block tick in the chunk holding <paramref name="position"/>, if the region holds it.</summary>
+    internal void ScheduleBlockTick(Vector position, IBlock block, int delay)
+    {
+        if (this.FindChunk(position.X >> 4, position.Z >> 4) is Chunk generated)
+            generated.BlockTicks.Schedule(position, block.UnlocalizedName, delay);
+    }
+
     public void MarkForPostProcessing(Vector position)
     {
         if (this.FindChunk(position.X >> 4, position.Z >> 4) is Chunk generated)
+        {
             generated.PostProcessing.Add(position);
+            generated.MarkUnsaved();
+        }
     }
 
     private static byte[] CreateWriteInfos()
@@ -324,6 +361,18 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         }
 
         return this.FindChunk(quartX >> 2, quartZ >> 2)?.GetBiome((quartX & 3) << 2, quartY << 2, (quartZ & 3) << 2);
+    }
+
+    private bool MayHaveBlockEntities(int index, IChunk chunk)
+    {
+        if ((this.checkedBlockEntityAreas >> index & 1) == 0)
+        {
+            this.checkedBlockEntityAreas |= 1 << index;
+            if (chunk is not Chunk generated || !generated.BlockEntities.IsEmpty)
+                this.blockEntityAreas |= 1 << index;
+        }
+
+        return (this.blockEntityAreas >> index & 1) != 0;
     }
 
     private IChunk GetAreaChunk(int index, Vector position) =>

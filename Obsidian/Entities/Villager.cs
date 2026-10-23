@@ -10,10 +10,23 @@ public sealed partial class Villager : AgeableMob
 {
     internal static readonly string[] Professions = ["none", "armorer", "butcher", "cartographer", "cleric", "farmer", "fisherman", "fletcher", "leatherworker", "librarian", "mason", "nitwit", "shepherd", "toolsmith", "weaponsmith"];
     internal static readonly string[] BiomeTypes = ["desert", "jungle", "plains", "savanna", "snow", "swamp", "taiga"];
-    internal static readonly Dictionary<Material, int> Workstations = new()
-    { [Material.BlastFurnace] = 1, [Material.Smoker] = 2, [Material.CartographyTable] = 3, [Material.BrewingStand] = 4,
-        [Material.Composter] = 5, [Material.Barrel] = 6, [Material.FletchingTable] = 7, [Material.Cauldron] = 8,
-        [Material.Lectern] = 9, [Material.Stonecutter] = 10, [Material.Loom] = 12, [Material.SmithingTable] = 13, [Material.Grindstone] = 14 };
+    // Workstation block id to the profession it grants.
+    internal static readonly Dictionary<int, int> Workstations = new()
+    {
+        [BlockIds.BlastFurnace] = 1,
+        [BlockIds.Smoker] = 2,
+        [BlockIds.CartographyTable] = 3,
+        [BlockIds.BrewingStand] = 4,
+        [BlockIds.Composter] = 5,
+        [BlockIds.Barrel] = 6,
+        [BlockIds.FletchingTable] = 7,
+        [BlockIds.Cauldron] = 8,
+        [BlockIds.Lectern] = 9,
+        [BlockIds.Stonecutter] = 10,
+        [BlockIds.Loom] = 12,
+        [BlockIds.SmithingTable] = 13,
+        [BlockIds.Grindstone] = 14
+    };
     public int VillagerType { get; set; } = 2;
     public int VillagerProfession { get; set; }
     public int VillagerLevel { get; set; } = 1;
@@ -75,9 +88,15 @@ public sealed partial class Villager : AgeableMob
         }
     }
 
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (IsBaby || VillagerProfession is 0 or 11 || !CanSee(player)) return;
+        if (!CanSee(player))
+            return false;
+
+        // Like vanilla, a baby or a villager without trades (no profession or a nitwit) still takes the interaction.
+        if (IsBaby || VillagerProfession is 0 or 11)
+            return true;
+
         EnsureTrades();
         await MerchantTrading.OpenAsync(this, player, offers, VillagerLevel, VillagerXp, true, offer =>
         {
@@ -85,6 +104,7 @@ public sealed partial class Villager : AgeableMob
             var newLevel = VillagerXp >= 250 ? 5 : VillagerXp >= 150 ? 4 : VillagerXp >= 70 ? 3 : VillagerXp >= 10 ? 2 : 1;
             if (newLevel > VillagerLevel) { VillagerLevel = newLevel; Health = GetAttributeValue("minecraft:generic.max_health"); SynchronizeMetadata(); }
         });
+        return true;
     }
 
     private async ValueTask TickVillageAsync(AbstractLevel level)
@@ -93,7 +113,9 @@ public sealed partial class Villager : AgeableMob
         {
             if (Home is { } home && (Terrain.GetBlock(home) is not { } bed || !TagsRegistry.Block.Beds.Entries.Contains(bed.RegistryId)))
             { level.ReleaseVillagePoi(home, Uuid); Home = null; }
-            if (JobSite is { } job && (!Workstations.TryGetValue(Terrain.GetBlock(job)?.Material ?? Material.Air, out var profession) || profession != VillagerProfession))
+            if (JobSite is { } job
+                && (!Workstations.TryGetValue(Terrain.GetBlock(job)?.RegistryId ?? BlockIds.Air, out var profession)
+                    || profession != VillagerProfession))
             {
                 level.ReleaseVillagePoi(job, Uuid); JobSite = null;
                 if (VillagerXp == 0) { VillagerProfession = 0; offers = []; tradingLevel = 0; SynchronizeMetadata(); }
@@ -107,8 +129,14 @@ public sealed partial class Villager : AgeableMob
                 var point = origin + new Vector(x, y, z);
                 if (Terrain.GetBlock(point) is not { } block) continue;
                 if (Home == null && TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId) && block.GetProperty("part") == "head") points.Add((point, 0, true));
-                else if (!IsBaby && JobSite == null && VillagerProfession != 11 && Workstations.TryGetValue(block.Material, out var candidateProfession) &&
-                    (VillagerProfession == 0 || VillagerProfession == candidateProfession)) points.Add((point, candidateProfession, false));
+                else if (!IsBaby
+                    && JobSite == null
+                    && VillagerProfession != 11
+                    && Workstations.TryGetValue(block.RegistryId, out var candidateProfession)
+                    && (VillagerProfession == 0 || VillagerProfession == candidateProfession))
+                {
+                    points.Add((point, candidateProfession, false));
+                }
             }
             foreach (var point in points.OrderBy(point => ((VectorD)point.Position - Position).MagnitudeSquared()))
             {
@@ -236,7 +264,7 @@ internal sealed class VillagerShelterGoal(Villager villager) : NavigationGoal(vi
     private VectorD destination;
     public override bool CanUse()
     {
-        if (villager.Level.DimensionName != "minecraft:overworld" ||
+        if (!villager.Level.HasDayCycle() ||
             !villager.Level.LevelData.Raining && villager.Level.DayTime is >= 0 and < 12000 ||
             villager.Terrain.GetSkyLight((Vector)villager.Position.Floor()) < 15 || villager.Random.Next(20) != 0)
             return false;

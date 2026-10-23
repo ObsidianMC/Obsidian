@@ -10,11 +10,19 @@ namespace Obsidian.WorldData.Generators.Mojang;
 /// </summary>
 internal sealed class BiomeManager
 {
+    private const int FocusWidth = 6;
+
     private readonly long zoomSeed;
     private readonly IBiomeSource biomeSource;
     private readonly int minQuartY;
     private readonly int maxQuartY;
     private readonly Dictionary<(int, int, int), BiomeCodec>? cache;
+
+    // While a chunk is in focus (see FocusOn), the quart biomes its block lookups reach, kept by position, which is much
+    // cheaper than hashing a key per lookup: the chunk's 4 by 4 quart columns and the ring around them, over the full height.
+    private BiomeCodec?[]? focus;
+    private int focusMinQuartX;
+    private int focusMinQuartZ;
 
     // Jitter only depends on the seed and the corner, so a thread's biome managers share one table (see GetJitter).
     [ThreadStatic]
@@ -52,14 +60,49 @@ internal sealed class BiomeManager
     /// <summary>
     /// Forgets the remembered biomes, for when the source's biomes change.
     /// </summary>
-    public void ClearCache() => this.cache?.Clear();
+    public void ClearCache()
+    {
+        this.cache?.Clear();
+        if (this.focus is not null)
+            Array.Clear(this.focus);
+    }
+
+    /// <summary>
+    /// Forgets the remembered biomes, then remembers those that block lookups in chunk (<paramref name="chunkX"/>,
+    /// <paramref name="chunkZ"/>) reach by position. The source must answer the chunk's own quart biomes cheaply, as a
+    /// chunk's stored biomes do: lookups read them even for corners they don't pick (see TryGetSharedCornerBiome).
+    /// </summary>
+    public void FocusOn(int chunkX, int chunkZ)
+    {
+        this.ClearCache();
+        this.focus ??= new BiomeCodec?[FocusWidth * FocusWidth * this.QuartHeight];
+
+        // A block's lookup starts 2 blocks lower (see GetBiome), so its corners reach one quart before the chunk and one
+        // after it.
+        this.focusMinQuartX = (chunkX << 2) - 1;
+        this.focusMinQuartZ = (chunkZ << 2) - 1;
+    }
+
+    private int QuartHeight => this.maxQuartY - this.minQuartY + 1;
+
+    /// <param name="quartY">A quart Y within the level.</param>
+    private int FocusIndex(int focusX, int quartY, int focusZ) => (focusX * FocusWidth + focusZ) * this.QuartHeight + quartY - this.minQuartY;
 
     /// <summary>
     /// Gets the stored biome for quart coordinates, clamping Y to the level like chunk biome storage does.
     /// </summary>
     public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ)
     {
-        var key = (quartX, Math.Clamp(quartY, this.minQuartY, this.maxQuartY), quartZ);
+        var clampedY = Math.Clamp(quartY, this.minQuartY, this.maxQuartY);
+        if (this.focus is not null)
+        {
+            var focusX = quartX - this.focusMinQuartX;
+            var focusZ = quartZ - this.focusMinQuartZ;
+            if ((uint)focusX < FocusWidth && (uint)focusZ < FocusWidth)
+                return this.focus[this.FocusIndex(focusX, clampedY, focusZ)] ??= this.biomeSource.GetNoiseBiome(quartX, clampedY, quartZ);
+        }
+
+        var key = (quartX, clampedY, quartZ);
         if (this.cache is null)
             return this.biomeSource.GetNoiseBiome(key.quartX, key.Item2, key.quartZ);
 
@@ -83,6 +126,10 @@ internal sealed class BiomeManager
         var quartX = offsetX >> 2;
         var quartY = offsetY >> 2;
         var quartZ = offsetZ >> 2;
+
+        if (this.TryGetSharedCornerBiome(quartX, quartY, quartZ) is BiomeCodec shared)
+            return shared;
+
         var fractionX = (offsetX & 3) / 4.0;
         var fractionY = (offsetY & 3) / 4.0;
         var fractionZ = (offsetZ & 3) / 4.0;
@@ -115,6 +162,49 @@ internal sealed class BiomeManager
             (closest & 4) == 0 ? quartX : quartX + 1,
             (closest & 2) == 0 ? quartY : quartY + 1,
             (closest & 1) == 0 ? quartZ : quartZ + 1);
+    }
+
+    /// <summary>
+    /// The biome of the 8 corners a block's lookup picks from, when they're all the same: then it's the answer whichever
+    /// corner the jitter picks. Corners in the focused chunk are read as needed; those outside it are only compared when
+    /// remembered, so the source isn't asked for corners outside the chunk that the lookup wouldn't pick.
+    /// </summary>
+    private BiomeCodec? TryGetSharedCornerBiome(int quartX, int quartY, int quartZ)
+    {
+        if (this.focus is null)
+            return null;
+
+        var focusX = quartX - this.focusMinQuartX;
+        var focusZ = quartZ - this.focusMinQuartZ;
+        if ((uint)focusX >= FocusWidth - 1 || (uint)focusZ >= FocusWidth - 1)
+            return null;
+
+        var lowY = Math.Clamp(quartY, this.minQuartY, this.maxQuartY);
+        var highY = Math.Clamp(quartY + 1, this.minQuartY, this.maxQuartY);
+        var shared = this.GetFocusedCornerBiome(focusX, lowY, focusZ);
+        if (shared is null)
+            return null;
+
+        for (var corner = 1; corner < 8; corner++)
+        {
+            var biome = this.GetFocusedCornerBiome(focusX + (corner >> 2), (corner & 2) == 0 ? lowY : highY, focusZ + (corner & 1));
+            if (!ReferenceEquals(biome, shared))
+                return null;
+        }
+
+        return shared;
+    }
+
+    /// <summary>
+    /// A corner's biome if it's remembered or in the focused chunk, otherwise <c>null</c>.
+    /// </summary>
+    private BiomeCodec? GetFocusedCornerBiome(int focusX, int quartY, int focusZ)
+    {
+        ref var biome = ref this.focus![this.FocusIndex(focusX, quartY, focusZ)];
+        if (biome is null && focusX is >= 1 and <= 4 && focusZ is >= 1 and <= 4)
+            biome = this.biomeSource.GetNoiseBiome(this.focusMinQuartX + focusX, quartY, this.focusMinQuartZ + focusZ);
+
+        return biome;
     }
 
     /// <summary>

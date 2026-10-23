@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Events;
+using Obsidian.API.Inventory;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -19,15 +20,5 @@ public partial class UseItemPacket
         reader.ReadSingle();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
-    {
-        var args = new PlayerInteractEventArgs(player, server)
-        {
-            Item = this.Hand == InteractionHand.MainHand ? player.GetHeldItem() : player.GetOffHandItem(),
-            Hand = this.Hand,
-        };
-        await server.EventDispatcher.ExecuteEventAsync(args);
-        if (!args.IsCancelled && player is Obsidian.Entities.Player concrete)
-            await concrete.StartUsingItemAsync(Hand);
-    }
+    public override ValueTask HandleAsync(IServer server, IClientPlayer player) => player.UseItemAsync(this.Hand);
 }

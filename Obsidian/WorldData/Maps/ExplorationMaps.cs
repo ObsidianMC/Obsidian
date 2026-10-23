@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot;
 using Obsidian.WorldData.Generators;
+using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 
 namespace Obsidian.WorldData.Maps;
@@ -27,13 +28,31 @@ internal sealed class ExplorationMaps(AbstractLevel level, MojangGenerator gener
 
     public ItemStack? Create(ExplorationMapRequest request)
     {
-        var structures = generator.Builder.Structures;
+        // Searching structures and drawing biomes runs the generator's plugins' code. A stopped generator makes none.
+        if (generator.Builder is not ChunkBuilder builder)
+            return null;
+
+        try
+        {
+            using var calls = builder.EnterGenerator();
+            return this.Create(request, builder);
+        }
+        catch (Exception ex) when (generator.Contain(ex))
+        {
+            return null;
+        }
+    }
+
+    private ItemStack? Create(ExplorationMapRequest request, ChunkBuilder builder)
+    {
+        var structures = builder.Structures;
         var tag = request.Destination.StartsWith('#') ? request.Destination[1..] : request.Destination;
-        if (structures is null || !StructureTags.All.TryGetValue(tag, out var targets))
+        if (structures is null)
             return null;
 
         var origin = new Vector((int)Math.Floor(request.Origin.X), (int)Math.Floor(request.Origin.Y), (int)Math.Floor(request.Origin.Z));
-        var found = new StructureLocator(structures).FindNearest(targets, origin, request.SearchRadius, request.SkipKnownStructures);
+        var found = new StructureLocator(structures)
+            .FindNearest(tag, origin, request.SearchRadius, request.SkipKnownStructures);
         if (found is null)
             return null;
 
@@ -41,13 +60,22 @@ internal sealed class ExplorationMaps(AbstractLevel level, MojangGenerator gener
         var storage = MapStorage.For(level);
         var map = storage.CreateMap(position.X, position.Z, (byte)request.Zoom, trackingPosition: true, unlimitedTracking: true, level.DimensionName);
         var data = storage.Get(MapStorage.GetMapId(map)!.Value)!;
-        MapRenderer.RenderBiomePreview(data, (x, z) => generator.Builder.GetBiome(x, 0, z));
+        MapRenderer.RenderBiomePreview(data, (x, z) => builder.GetBiome(x, 0, z));
 
         // Vanilla addTargetDecoration: the target is stored on the item, and drawn once the map is carried.
         var type = Enum.Parse<MapDecorationType>(request.Decoration.Replace("minecraft:", string.Empty).ToPascalCase(), true);
         map[DataComponentType.MapDecorations] = new MapDecorationDataComponent
         {
-            Decorations = new() { ["+"] = new MapDecoration { Type = type, X = position.X, Z = position.Z, Rotation = 180.0f } }
+            Decorations = new Dictionary<string, MapDecoration>
+            {
+                ["+"] = new MapDecoration
+                {
+                    Type = type,
+                    X = position.X,
+                    Z = position.Z,
+                    Rotation = 180.0f
+                }
+            }
         };
 
         if (decorationColors.TryGetValue(type, out var color))

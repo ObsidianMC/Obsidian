@@ -12,7 +12,7 @@ public partial class AcceptTeleportationPacket
         TeleportId = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         if (TeleportId == player.TeleportId)
             return;

@@ -3,13 +3,20 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
+/// <summary>
+/// A block entity's update data (vanilla's <c>getUpdateTag</c>), which clients load into the block entity of that
+/// type they have at the position.
+/// </summary>
 public partial class BlockEntityDataPacket
 {
     [Field(0)]
     public Vector Position { get; init; }
 
+    /// <summary>
+    /// The block entity type's network id.
+    /// </summary>
     [Field(1), VarLength]
-    private EntityType Type { get; init; }
+    public int Type { get; init; }
 
     [Field(2)]
     public NbtCompound NBTData { get; init; } = default!;

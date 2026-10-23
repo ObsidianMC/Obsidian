@@ -8,8 +8,7 @@ public partial class RecipeBookSeenRecipePacket
     [VarLength]
     public int RecipeDisplayId { get; private set; }
 
-    public string RecipeId => RecipeDisplayId >= 0 && RecipeDisplayId < RecipesRegistry.RecipeBookRecipes.Count
-        ? RecipesRegistry.RecipeBookRecipes[RecipeDisplayId].Identifier : string.Empty;
+    public string RecipeId => RecipesRegistry.BookIdentifier(RecipeDisplayId);
 
     public override void Populate(INetStreamReader reader)
     {

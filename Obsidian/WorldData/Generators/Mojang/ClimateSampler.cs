@@ -1,3 +1,4 @@
+using Obsidian.API.World.Generator;
 using Obsidian.API.World.Generator.Noise;
 
 namespace Obsidian.WorldData.Generators.Mojang;
@@ -5,7 +6,7 @@ namespace Obsidian.WorldData.Generators.Mojang;
 /// <summary>
 /// Samples the router's climate functions at quart positions, mirroring vanilla's Climate.Sampler.
 /// </summary>
-internal sealed class ClimateSampler
+internal sealed class ClimateSampler : IClimateSampler
 {
     private readonly IDensityFunction temperature;
     private readonly IDensityFunction humidity;
@@ -52,5 +53,21 @@ internal sealed class ClimateSampler
             Climate.Quantize((float)this.erosion.GetValue(x, y, z)),
             Climate.Quantize((float)this.depth.GetValue(x, y, z)),
             Climate.Quantize((float)this.weirdness.GetValue(x, y, z)));
+    }
+
+    // The values before quantizing, for plugins' biome sources.
+    ClimatePoint IClimateSampler.Sample(int quartX, int quartY, int quartZ)
+    {
+        var x = quartX << 2;
+        var y = quartY << 2;
+        var z = quartZ << 2;
+
+        return new ClimatePoint(
+            this.temperature.GetValue(x, y, z),
+            this.humidity.GetValue(x, y, z),
+            this.continentalness.GetValue(x, y, z),
+            this.erosion.GetValue(x, y, z),
+            this.depth.GetValue(x, y, z),
+            this.weirdness.GetValue(x, y, z));
     }
 }

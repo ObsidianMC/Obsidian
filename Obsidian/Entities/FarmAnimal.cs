@@ -10,7 +10,7 @@ public abstract class FarmAnimal : Animal
     protected virtual float PanicSpeed => 1.25f;
     protected virtual float TemptSpeed => 1.25f;
     protected virtual bool UsesFloatGoal => true;
-    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.Wheat };
+    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.Wheat };
     protected override int GetExperienceReward() => IsBaby ? 0 : Random.Next(1, 4);
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
@@ -25,7 +25,7 @@ public abstract class FarmAnimal : Animal
         actions.AddGoal(8, new RandomLookAroundGoal(this));
     }
 
-    protected ValueTask GiveInteractionItemAsync(IPlayer player, InteractionHand hand, Material result) =>
+    protected ValueTask GiveInteractionItemAsync(IPlayer player, InteractionHand hand, Item result) =>
         GiveInteractionItemAsync(player, hand, ItemsRegistry.GetSingleItem(result));
 
     protected async ValueTask GiveInteractionItemAsync(IPlayer player, InteractionHand hand, ItemStack item)
@@ -44,11 +44,9 @@ public abstract class FarmAnimal : Animal
             if (addedSlot < 0)
                 DropItem(item);
             else
-                await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-                { ContainerId = 0, Slot = (short)addedSlot, SlotData = player.Inventory.GetItem(addedSlot) });
+                await player.SendInventorySlotAsync(addedSlot);
         }
-        await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-        { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
+        await player.SendInventorySlotAsync(slot);
     }
 
     protected int GetFarmVariant()

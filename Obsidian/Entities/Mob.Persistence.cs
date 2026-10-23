@@ -13,7 +13,7 @@ public partial class Mob
     private NbtCompound? originalSave;
     protected virtual void WriteAdditionalSave(INbtWriter writer) { }
     protected virtual void ReadAdditionalSave(NbtCompound tag) { }
-    private static readonly HashSet<string> saveFields = ["id", "UUID", "Pos", "Motion", "Rotation", "Health", "AbsorptionAmount", "Air", "Fire", "OnGround",
+    private static readonly HashSet<string> saveFields = ["id", "UUID", "Pos", "Motion", "Rotation", "Health", "AbsorptionAmount", "Air", "Fire", "OnGround", "TicksFrozen", "FallDistance",
         "NoAI", "LeftHanded", "CanPickUpLoot", "PersistenceRequired", "Silent", "NoGravity", "Glowing", "CustomNameVisible", "CustomName",
         "attributes", "ObsidianEquipment", "Age", "InLove", "IsBaby", "ObsidianVariant", "Type", "EggLayTime", "IsChickenJockey", "Color",
         "Sheared", "sheared", "Size", "powered", "ignited", "Fuse", "ExplosionRadius", "ObsidianEffects", "InWaterTime",
@@ -34,7 +34,7 @@ public partial class Mob
     {
         if (writeCompound)
             writer.WriteCompoundStart();
-        writer.WriteString("id", EntityNbt.TypeId(Type));
+        writer.WriteString("id", EntityNbt.TypeId(this));
         var uuidBytes = Uuid.ToByteArray(true);
         var uuid = new int[4];
         for (var index = 0; index < 4; index++)
@@ -47,10 +47,12 @@ public partial class Mob
         writer.WriteFloat(Pitch.Degrees);
         writer.EndList();
         writer.WriteFloat("Health", Health);
-        writer.WriteFloat("AbsorptionAmount", AbsorbtionAmount);
+        writer.WriteFloat("AbsorptionAmount", AbsorptionHealth);
         writer.WriteShort("Air", Air);
         writer.WriteShort("Fire", (short)Math.Clamp(FireTicks, 0, short.MaxValue));
         writer.WriteBool("OnGround", MovementFlags.HasFlag(MovementFlags.OnGround));
+        writer.WriteInt("TicksFrozen", PowderedSnowTicks);
+        writer.WriteFloat("FallDistance", fallDistance);
         writer.WriteBool("NoAI", MobBitMask.HasFlag(MobBitmask.NoAi));
         writer.WriteBool("LeftHanded", MobBitMask.HasFlag(MobBitmask.LeftHanded));
         writer.WriteBool("CanPickUpLoot", CanPickUpLoot);
@@ -65,15 +67,7 @@ public partial class Mob
             writer.WriteChatMessage(CustomName);
             writer.EndCompound();
         }
-        writer.WriteListStart("attributes", NbtTagType.Compound, Attributes.Count);
-        foreach (var attribute in Attributes)
-        {
-            writer.WriteCompoundStart();
-            writer.WriteString("id", attribute.Key);
-            writer.WriteDouble("base", attribute.Value);
-            writer.EndCompound();
-        }
-        writer.EndList();
+        writer.WriteTag(this.SaveAttributes());
         writer.WriteListStart("ObsidianEquipment", NbtTagType.Compound, equipment.Count);
         foreach (var (slot, item) in equipment)
         {
@@ -92,9 +86,7 @@ public partial class Mob
         foreach (var (id, effect) in ActivePotionEffects)
         {
             writer.WriteCompoundStart();
-            writer.WriteInt("id", id);
-            writer.WriteInt("duration", effect.CurrentDuration);
-            writer.WriteInt("amplifier", effect.EffectData.Amplifier);
+            WritePotionEffect(writer, effect.EffectData with { Id = id, Duration = effect.CurrentDuration });
             writer.EndCompound();
         }
         writer.EndList();
@@ -221,14 +213,19 @@ public partial class Mob
         using var additionalWriter = new RawNbtWriter(string.Empty);
         WriteAdditionalSave(additionalWriter);
         additionalWriter.EndCompound();
-        using var additionalStream = new ReadOnlyStream(additionalWriter.AsSpan().ToArray());
-        var additionalTags = (NbtCompound)new NbtReader(additionalStream).ReadNextTag()!;
-        foreach (var (_, child) in additionalTags)
-            writer.WriteTag(child);
+        var additionalTags = (NbtCompound)NbtReader.ReadTag(additionalWriter.Data, true, out _)!;
+        writer.WriteEntries(additionalTags);
+
+        // The live attachments, not those it was loaded or spawned with, which the copy below would bring back.
+        writer.WriteTag(API.Data.AttachmentStorage.For(this).Snapshot());
         if (originalSave != null)
             foreach (var tag in originalSave)
-                if (!saveFields.Contains(tag.Key) && !additionalTags.HasTag(tag.Key))
+                if (!saveFields.Contains(tag.Key)
+                    && tag.Key != API.Data.AttachmentStorage.NbtKey
+                    && !additionalTags.HasTag(tag.Key))
+                {
                     writer.WriteTag(tag.Value);
+                }
         if (writeCompound)
             writer.EndCompound();
     }
@@ -236,6 +233,7 @@ public partial class Mob
     internal void ReadSave(NbtCompound tag)
     {
         originalSave = tag;
+        API.Data.AttachmentStorage.For(this).Load(tag);
         Position = ReadVector(tag, "Pos");
         LastPosition = Position;
         InitializeAi(false);
@@ -254,14 +252,18 @@ public partial class Mob
         }
         if (tag.TryGetTagValue<float>("Health", out var health))
             Health = health;
+        if (tag.TryGetTagValue<float>("AbsorptionAmount", out var absorption))
+            AbsorptionHealth = float.IsFinite(absorption) ? Math.Max(0, absorption) : 0;
         if (tag.TryGetTagValue<short>("Air", out var air))
             Air = air;
         if (tag.TryGetTagValue<short>("Fire", out var fire))
             FireTicks = Math.Max(0, (int)fire);
         if (tag.TryGetTag<NbtList>("ObsidianEffects", out var effects))
             foreach (var effect in effects.OfType<NbtCompound>())
-                RestorePotionEffect(effect.GetInt("id"), effect.GetInt("duration"), effect.GetInt("amplifier"));
+                RestorePotionEffect(effect);
         MovementFlags = ReadFlag(tag, "OnGround") ? MovementFlags.OnGround : MovementFlags.None;
+        PowderedSnowTicks = tag.TryGetTagValue<int>("TicksFrozen", out var frozen) ? Math.Clamp(frozen, 0, 140) : 0;
+        if (tag.TryGetTagValue<float>("FallDistance", out var fallen) && float.IsFinite(fallen)) fallDistance = Math.Max(0, fallen);
         MobBitMask = (ReadFlag(tag, "NoAI") ? MobBitmask.NoAi : MobBitmask.None) |
             (ReadFlag(tag, "LeftHanded") ? MobBitmask.LeftHanded : MobBitmask.None);
         CanPickUpLoot = ReadFlag(tag, "CanPickUpLoot");
@@ -273,10 +275,7 @@ public partial class Mob
         if (tag.TryGetTag("CustomName", out var name))
             CustomName = name is NbtTag<string> { Value: { } legacy } && legacy.TrimStart().StartsWith('{')
                 ? JsonSerializer.Deserialize<ChatMessage>(legacy) : name.TextFromNbt();
-        if (tag.TryGetTag<NbtList>("attributes", out var attributes))
-            foreach (var attribute in attributes.OfType<NbtCompound>())
-                if (attribute.TryGetTagValue<string>("id", out var id) && attribute.TryGetTagValue<double>("base", out var value))
-                    Attributes[id] = (float)value;
+        this.LoadAttributes(tag);
         if (tag.TryGetTag<NbtList>("ObsidianEquipment", out var savedEquipment))
             foreach (var entry in savedEquipment.OfType<NbtCompound>())
             {

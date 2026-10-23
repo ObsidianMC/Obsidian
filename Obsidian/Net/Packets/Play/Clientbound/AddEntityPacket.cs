@@ -10,8 +10,9 @@ public partial class AddEntityPacket
     [Field(1)]
     public Guid Uuid { get; init; }
 
-    [Field(2), ActualType(typeof(int)), VarLength]
-    public EntityType Type { get; init; }
+    // The entity type's registry id: a vanilla type's or a plugin's.
+    [Field(2), VarLength]
+    public int Type { get; init; }
 
     [Field(3), DataFormat(typeof(double))]
     public VectorD Position { get; init; }

@@ -16,3 +16,6 @@ OBSLT001 | Loot | Error | LootRegistryGenerator
 OBSLT002 | Loot | Error | LootRegistryGenerator
 OBSLT003 | Loot | Error | LootRegistryGenerator
 OBSPK001 | Packets | Warning | PacketSerializationGenerator
+OBSPL001 | PluginContent | Error | PluginContentGenerator
+OBSPL002 | PluginContent | Error | PluginContentGenerator
+OBSGEN001 | Blocks | Info | BlocksGenerator

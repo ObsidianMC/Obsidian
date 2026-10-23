@@ -13,13 +13,12 @@ public partial class PlaceRecipePacket
     [VarLength]
     public int RecipeDisplayId { get; private set; }
 
-    public string RecipeId => RecipeDisplayId >= 0 && RecipeDisplayId < RecipesRegistry.RecipeBookRecipes.Count
-        ? RecipesRegistry.RecipeBookRecipes[RecipeDisplayId].Identifier : string.Empty;
+    public string RecipeId => RecipesRegistry.BookIdentifier(RecipeDisplayId);
 
     [Field(2)]
     public bool MakeAll { get; private set; }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         await MainEventHandler.PlaceBookRecipeAsync(player, ContainerId, RecipeDisplayId, MakeAll);
     }

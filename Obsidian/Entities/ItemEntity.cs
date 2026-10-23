@@ -1,4 +1,4 @@
-using Obsidian.API.Inventory;
+﻿using Obsidian.API.Inventory;
 using Obsidian.Nbt;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -10,8 +10,12 @@ namespace Obsidian.Entities;
 public partial class ItemEntity : Entity
 {
     private int age;
+
+    // Ticks since it was spawned or loaded, like vanilla's unsaved Entity.tickCount; it paces merging.
+    private int ticksExisted;
     internal void SetExtendedLifetime() => age = -6000;
-    // Region ticks and player movement packets can transfer the same stack concurrently.
+    // Merges, pickups and removal check and set Removed under this lock, so a stack isn't transferred after its entity
+    // is removed, even when the removal comes from outside the level tick.
     internal static readonly object TransferLock = new();
     internal bool Removed { get; set; }
     private int pickupDelay = 10;
@@ -26,6 +30,10 @@ public partial class ItemEntity : Entity
 
     public DateTimeOffset TimeDropped { get; private set; } = DateTimeOffset.UtcNow;
 
+    // Like vanilla's, its box follows its position, which spawning and loading set without moving it: an item that
+    // lies still from the start must still be found by hoppers, hopper minecarts and pressure plates.
+    public override BoundingBox BoundingBox => this.Dimension.CreateBBFromPosition(this.Position);
+
     public ItemEntity() => this.Type = EntityType.Item;
 
     public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
@@ -35,22 +43,101 @@ public partial class ItemEntity : Entity
         base.SpawnEntity(velocity, additionalData);
     }
 
-    internal static bool Drop(IPlayer player, ItemStack stack)
+    internal static bool Drop(IPlayer player, ItemStack stack) => Drop(player, stack, hostOwned: false);
+
+    // Finished menu clicks drop the player's items, regardless of the menu's ambient plugin call.
+    internal static void DropHostOwned(IPlayer player, ItemStack stack) => Drop(player, stack, hostOwned: true);
+
+    /// <summary>
+    /// Drops a stack around the player, like vanilla's <c>Player.drop(stack, dropAround: true)</c> as a death drops
+    /// their items: pushed up to half a block a tick in a random direction, and 0.2 up. It counts no statistics.
+    /// </summary>
+    internal static void DropAround(IPlayer player, ItemStack stack)
+        => DropAround(player.Level, player.Position, player.HeadY - 0.3, stack);
+
+    // A death can be deferred past a teleport: its drop belongs to the captured level and position.
+    internal static void DropAround(ILevel level, VectorD position, double dropY, ItemStack stack)
+    {
+        var power = Globals.Random.NextSingle() * 0.5f;
+        var angle = Globals.Random.NextSingle() * MathF.Tau;
+
+        var item = new ItemEntity
+        {
+            EntityId = Server.GetNextEntityId(),
+            Item = new ItemStack(stack, stack.Count),
+            Level = level,
+            Position = new VectorD(position.X, dropY, position.Z),
+            Motion = new VectorD(-MathF.Sin(angle) * power, 0.2, MathF.Cos(angle) * power),
+            pickupDelay = 40
+        };
+        PublishDrop(item);
+    }
+
+    private static void PublishDrop(ItemEntity item)
+    {
+        var added = item.Level is AbstractLevel level
+            ? level.TryAddEntity(item, hostOwned: true)
+            : item.Level.TryAddEntity(item);
+
+        if (added)
+            item.SpawnEntity(new Velocity(item.Motion.X, item.Motion.Y, item.Motion.Z));
+        else if (item.Level is AbstractLevel pending)
+            pending.EnqueueEntityAction(() =>
+            {
+                PublishDrop(item);
+                return ValueTask.CompletedTask;
+            });
+    }
+
+    // Thrown where the player looks, or with the given motion for a drop around them.
+    private static bool Drop(IPlayer player, ItemStack stack, bool hostOwned, VectorD? around = null)
     {
         var direction = player.GetLookDirection();
-        var motion = new VectorD(direction.X * 0.3, direction.Y * 0.3 + 0.1, direction.Z * 0.3);
+        var motion = around ?? new VectorD(direction.X * 0.3, direction.Y * 0.3 + 0.1, direction.Z * 0.3);
         var item = new ItemEntity
         {
             EntityId = Server.GetNextEntityId(),
             Item = new ItemStack(stack, stack.Count),
             Level = player.Level,
             Position = new VectorD(player.Position.X, player.HeadY - 0.3, player.Position.Z),
-            Motion = motion
+            Motion = motion,
+            // Vanilla gives an item a player drops 40 ticks before anyone can pick it up, so the thrower doesn't
+            // collect it again straight away.
+            pickupDelay = 40
         };
-        if (!player.Level.TryAddEntity(item))
+        var added = player.Level is AbstractLevel level
+            ? level.TryAddEntity(item, hostOwned)
+            : player.Level.TryAddEntity(item);
+
+        if (!added)
+        {
+            if (hostOwned && player.Level is AbstractLevel pending)
+                pending.EnqueueEntityAction(RetryDrop);
+
             return false;
+        }
+
+        if (around is null)
+        {
+            player.Statistics.Increment(stack.Holder.UnlocalizedName, stack.Count, "minecraft:dropped");
+            player.Statistics.Increment("minecraft:drop");
+        }
+
         item.SpawnEntity(new Velocity(motion.X, motion.Y, motion.Z));
         return true;
+
+        ValueTask RetryDrop()
+        {
+            if (item.Level is AbstractLevel retry)
+            {
+                if (retry.TryAddEntity(item, hostOwned: true))
+                    item.SpawnEntity(new Velocity(item.Motion.X, item.Motion.Y, item.Motion.Z));
+                else
+                    retry.EnqueueEntityAction(RetryDrop);
+            }
+
+            return ValueTask.CompletedTask;
+        }
     }
 
     public override void Write(INetStreamWriter writer)
@@ -85,6 +172,7 @@ public partial class ItemEntity : Entity
     public async override ValueTask TickAsync()
     {
         await base.TickAsync();
+        this.ticksExisted++;
         lock (TransferLock)
         {
             if (this.Removed)
@@ -98,11 +186,18 @@ public partial class ItemEntity : Entity
             return;
         }
         var terrain = new MobTerrain(Level);
+        var from = Position;
         var next = EntityMovement.Move(this, terrain, VectorD.Zero, 0.04f, 0.98f);
         if (Level is AbstractLevel level && !level.TryMoveEntity(this, Position, next))
             return;
         if (next != Position)
             await UpdateAsync(next, MovementFlags);
+
+        // Like vanilla's ItemEntity.tick, it looks for items to merge with every 2 ticks after moving into another
+        // block and every 40 otherwise, which decides how soon dropped items stack up.
+        var movedBlock = (Vector)from.Floor() != (Vector)Position.Floor();
+        if (this.ticksExisted % (movedBlock ? 2 : 40) != 0)
+            return;
 
         foreach (var ent in this.Level.GetNonPlayerEntitiesInRange(this.Position, 0.5f))
         {
@@ -136,6 +231,27 @@ public partial class ItemEntity : Entity
 
     internal void SendItemUpdate() => this.PacketBroadcaster.QueuePacketToLevel(this.Level,
         new SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
+
+    // Vanilla's ItemEntity health: what's left of it before damage destroys it.
+    private float itemHealth = 5;
+
+    /// <summary>
+    /// Hurts it by <paramref name="damage"/> from an explosion, as vanilla's <c>ItemEntity.hurtServer</c> does: a nether
+    /// star withstands it, and anything else is gone once its five health is.
+    /// </summary>
+    /// <returns>Whether it was destroyed.</returns>
+    internal async ValueTask<bool> HurtByExplosionAsync(float damage)
+    {
+        if (this.Item.Holder.Id == ItemIds.NetherStar)
+            return false;
+
+        this.itemHealth -= damage;
+        if (this.itemHealth > 0)
+            return false;
+
+        await this.RemoveAsync();
+        return true;
+    }
 
     public override async ValueTask RemoveAsync()
     {

@@ -21,13 +21,18 @@ public sealed class RequirePermissionAttribute : BaseExecutionCheckAttribute
     {
         if (context.Sender.Issuer is CommandIssuers.Console or CommandIssuers.RemoteConsole)
             return Task.FromResult(true);
-        if (context.Player == null)
+
+        // The permissions are the sender's, even for a command /execute runs as another player.
+        var player = context.Sender.Player ?? context.Player;
+        if (player is null)
             return Task.FromResult(false);
-        if(_op && context.Server.Operators.IsOperator(context.Player))
+        if(_op && context.Server.Operators.IsOperator(player))
             return Task.FromResult(true);
 
         if (_permissions.Length > 0)
-            return Task.FromResult(_checkType == PermissionCheckType.All ? context.Player.HasAllPermissions(_permissions) : context.Player.HasAnyPermission(_permissions));
+            return Task.FromResult(_checkType == PermissionCheckType.All
+                ? player.HasAllPermissions(_permissions)
+                : player.HasAnyPermission(_permissions));
 
         return Task.FromResult(false);
     }

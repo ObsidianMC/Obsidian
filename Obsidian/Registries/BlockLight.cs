@@ -53,7 +53,12 @@ internal static class BlockLight
     {
         var light = data.Value.Light;
         var id = block.GetHashCode();
-        return (uint)id < (uint)light.Length ? light[id] : 0;
+
+        if ((uint)id < (uint)light.Length)
+            return light[id];
+
+        // A plugin block blocks light like its template state.
+        return BlocksRegistry.TryGetPluginBlock(id, out var type) ? light[BlocksRegistry.TemplateStateOf(type)] : 0;
     }
 
     private static (int[] Light, ulong[] Faces) Load()

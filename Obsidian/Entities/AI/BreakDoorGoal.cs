@@ -58,7 +58,7 @@ public sealed class BreakDoorGoal(Zombie mob) : Goal
         var block = mob.Terrain.GetBlock(door);
         await mob.Level.SetBlockAsync(door, BlocksRegistry.Air, true);
         var upper = door + new Vector(0, 1, 0);
-        if (mob.Terrain.GetBlock(upper)?.Material == block?.Material)
+        if (mob.Terrain.GetBlock(upper)?.RegistryId == block?.RegistryId)
             await mob.Level.SetBlockAsync(upper, BlocksRegistry.Air, true);
     }
 

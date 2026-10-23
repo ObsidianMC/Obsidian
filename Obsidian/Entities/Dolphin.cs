@@ -47,28 +47,35 @@ public sealed partial class Dolphin : AgeableMob
     }
     protected override async ValueTask TickAirSupplyAsync()
     {
-        if (Terrain.GetBlock((Vector)EyePosition.Floor())?.Material != Material.Water) Air = 4800;
+        if (Terrain.GetBlock((Vector)EyePosition.Floor())?.RegistryId != BlockIds.Water) Air = 4800;
         else if (--Air <= -20) { Air = 0; await DamageEnvironmentAsync(2); }
     }
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4)) return;
+        if (!Alive
+            || player.Health <= 0
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (item is not { Count: > 0, Type: Material.Cod or Material.Salmon }) return;
+        if (item is not { Count: > 0, Holder.Id: ItemIds.Cod or ItemIds.Salmon })
+            return false;
         await ConsumeInteractionItemAsync(player, hand);
         if (IsBaby) Age += -Age / 10;
         else
         {
             GotFish = true;
             TreasurePosition = Level is Obsidian.WorldData.AbstractLevel level && level.Generator is Obsidian.WorldData.Generators.MojangGenerator generator
-                ? generator.FindDolphinTreasure((Vector)Position.Floor()) : null;
+                ? await generator.FindDolphinTreasureAsync((Vector)Position.Floor()) : null;
             SendEntityEvent(38);
         }
         SynchronizeMetadata();
+        return true;
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (!IsBaby) DropItem(Material.Cod, Random.Next(0, 2));
+        if (!IsBaby) DropItem(ItemsRegistry.Cod, Random.Next(0, 2));
         return default;
     }
     public override void Write(INetStreamWriter writer)

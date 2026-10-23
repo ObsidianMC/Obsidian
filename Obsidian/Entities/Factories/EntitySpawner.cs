@@ -1,4 +1,4 @@
-using Obsidian.API.Entities;
+﻿using Obsidian.API.Entities;
 using Obsidian.API.World;
 using Obsidian.WorldData;
 
@@ -86,7 +86,7 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         entity.EntityId = Server.GetNextEntityId();
         entity.Position = position;
 
-        if (entity is Living living && customName != null)
+        if (entity is Living living && customName is not null)
         {
             living.CustomName = customName;
             living.CustomNameVisible = customNameVisible;
@@ -95,17 +95,8 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
             living.AbsorbedStingers = absorbedStingers;
         }
 
-        if (entity is AgeableMob ageable && isBaby)
-        {
-            ageable.IsBaby = isBaby;
-        }
-
-        if (entity is Zombie zombie && isBaby)
-            zombie.IsBaby = true;
-        if (entity is Zoglin zoglin && isBaby)
-            zoglin.IsBaby = true;
-        if (entity is Piglin piglin && isBaby)
-            piglin.IsBaby = true;
+        if (entity is IAgeable ageable && isBaby)
+            ageable.IsBaby = true;
 
         entity.Burning = burning;
         entity.Glowing = glowing;
@@ -124,12 +115,28 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         EntityType.BreezeWindCharge => new BreezeWindCharge(level),
         EntityType.WitherSkull => new WitherSkull { Level = level },
         EntityType.EndCrystal => new EndCrystal { Level = level },
+        EntityType.EyeOfEnder => new EyeOfEnder { Level = level },
+        EntityType.EnderPearl => new EnderPearl { Level = level },
+        EntityType.Tnt => new PrimedTnt { Level = level },
+        EntityType.ItemFrame => new ItemFrame { Level = level },
+        EntityType.GlowItemFrame => new GlowItemFrame { Level = level },
+        EntityType.Painting => new Painting { Level = level },
+        EntityType.LeashKnot => new LeashKnot { Level = level },
+        EntityType.ExperienceBottle => new ThrownExperienceBottle { Level = level },
         EntityType.DragonFireball => new DragonFireball(level),
         EntityType.Horse => new Horse { Level = level },
         EntityType.Llama => new Llama { Level = level },
         EntityType.Donkey => new Donkey { Level = level },
         EntityType.SkeletonHorse => new SkeletonHorse { Level = level },
         EntityType.ZombieHorse => new ZombieHorse { Level = level },
+        EntityType.Minecart => new Minecart { Level = level },
+        EntityType.ChestMinecart => new ChestMinecart { Level = level },
+        EntityType.FurnaceMinecart => new FurnaceMinecart { Level = level },
+        EntityType.HopperMinecart => new HopperMinecart { Level = level },
+        EntityType.TntMinecart => new TntMinecart { Level = level },
+        EntityType.SpawnerMinecart => new SpawnerMinecart { Level = level },
+        EntityType.CommandBlockMinecart => new CommandBlockMinecart { Level = level },
+        _ when Boat.IsBoat(type) => Boat.Create(type, level),
         _ => type.IsNonLiving() ? new Entity { Level = level } : new Living { Level = level }
     });
 

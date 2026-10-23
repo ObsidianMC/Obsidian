@@ -1,5 +1,6 @@
 using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -16,17 +17,6 @@ public partial class Skeleton : PathfinderMob
     internal virtual int AttackInterval => Level.LevelData.Difficulty == Difficulty.Hard ? 20 : 40;
     protected virtual bool BurnsInSun => true;
     internal int PowderSnowTicks { get; set; } = -1;
-    internal SkeletonHorse? HorseVehicle { get; set; }
-    protected override VectorD Travel()
-    {
-        if (HorseVehicle is { Alive: true, IsRemoved: false } horse && horse.Level == Level)
-        {
-            Motion = VectorD.Zero;
-            return horse.Position + new VectorD(0, horse.Dimension.Height * 0.75f, 0);
-        }
-        HorseVehicle = null;
-        return base.Travel();
-    }
     internal int StrayConversionTicks { get; set; } = -1;
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
@@ -42,14 +32,14 @@ public partial class Skeleton : PathfinderMob
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, entity => entity is IPlayer));
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.IronGolem));
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.Turtle &&
-            entity is AgeableMob { IsBaby: true } && entity.MovementFlags.HasFlag(MovementFlags.OnGround)));
+            entity is IAgeable { IsBaby: true } && entity.MovementFlags.HasFlag(MovementFlags.OnGround)));
     }
 
     protected override void FinalizeSpawn()
     {
         CanPickUpLoot = Random.NextSingle() < 0.55f * SpecialDifficulty;
         PopulateDefaultArmor();
-        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(Material.Bow));
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.Bow));
     }
 
     protected override async ValueTask TickMobAsync()
@@ -61,7 +51,7 @@ public partial class Skeleton : PathfinderMob
         }
         if (Type == EntityType.Skeleton)
         {
-            if (Terrain.GetBlock((Vector)Position.Floor())?.Material == Material.PowderSnow)
+            if (Terrain.GetBlock((Vector)Position.Floor())?.RegistryId == BlockIds.PowderSnow)
             {
                 if (StrayConversionTicks >= 0)
                 {
@@ -85,7 +75,7 @@ public partial class Skeleton : PathfinderMob
                     SynchronizeMetadata();
             }
         }
-        if (BurnsInSun && Level.DimensionName == "minecraft:overworld" && Level.DayTime is >= 0 and < 12000 &&
+        if (BurnsInSun && Level.MonstersBurn((Vector)Position.Floor()) &&
             !Level.LevelData.Raining && !InWater && Random.NextSingle() * 30 < 1.2f && Terrain.GetSkyLight((Vector)EyePosition.Floor()) == 15)
         {
             if (GetEquipment(EquipmentSlot.Helmet).IsAir)
@@ -124,11 +114,14 @@ public partial class Skeleton : PathfinderMob
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.Bone, Random.Next(3));
-        DropItem(Material.Arrow, Random.Next(3));
-        foreach (var slot in Enum.GetValues<EquipmentSlot>())
-            if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot))
-                DropItem(GetEquipment(slot));
+        this.DropVanillaLoot(source);
+        foreach (var slot in Enum.GetValues<Obsidian.API.Inventory.EquipmentSlot>())
+        {
+            var item = this.GetEquipment(slot);
+            if (!item.IsAir && this.Random.NextSingle() < this.GetEquipmentDropChance(slot))
+                this.DropItem(item);
+        }
+
         return default;
     }
 
@@ -145,8 +138,10 @@ public partial class Skeleton : PathfinderMob
 
 internal sealed class SkeletonMeleeGoal(Skeleton skeleton) : MeleeAttackGoal(skeleton, 1.2f)
 {
-    public override bool CanUse() => skeleton.GetEquipment(EquipmentSlot.MainHand).Type != Material.Bow && base.CanUse();
-    public override bool CanContinue() => skeleton.GetEquipment(EquipmentSlot.MainHand).Type != Material.Bow && base.CanContinue();
+    public override bool CanUse() =>
+        !skeleton.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Bow) && base.CanUse();
+    public override bool CanContinue() =>
+        !skeleton.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Bow) && base.CanContinue();
 }
 
 internal sealed class BowAttackGoal(Skeleton skeleton) : NavigationGoal(skeleton, 1)
@@ -160,7 +155,7 @@ internal sealed class BowAttackGoal(Skeleton skeleton) : NavigationGoal(skeleton
     private bool drawing;
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
-    public override bool CanUse() => skeleton.GetEquipment(EquipmentSlot.MainHand).Type == Material.Bow &&
+    public override bool CanUse() => skeleton.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Bow) &&
         skeleton.AttackTarget is { } target && skeleton.IsValidTarget(target);
     public override bool CanContinue() => CanUse();
     public override void Start() => skeleton.SetAggressive(true);
@@ -227,6 +222,8 @@ internal sealed class BowAttackGoal(Skeleton skeleton) : NavigationGoal(skeleton
         drawTicks = sightTicks = 0;
         drawing = false;
         skeleton.LivingBitMask &= ~LivingBitMask.HandActive;
+        // Lower the bow on clients too, or it stays drawn after the skeleton gives up its target.
+        skeleton.SynchronizeMetadata();
         skeleton.SetAggressive(false);
     }
 }
@@ -253,19 +250,20 @@ public sealed class Bogged : Skeleton
     internal override int ArrowEffect => 18;
     internal override int ArrowEffectDuration => 100;
     internal override int AttackInterval => Level.LevelData.Difficulty == Difficulty.Hard ? 50 : 70;
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (Sheared || !Alive || IsRemoved || player.Level != Level || player.Health <= 0 || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
-            return;
+            return false;
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (held is not { Count: > 0, Type: Material.Shears })
-            return;
+        if (held is not { Count: > 0, Holder.Id: ItemIds.Shears })
+            return false;
         Sheared = true;
         for (var index = 0; index < 2; index++)
-            DropItem(Random.Next(2) == 0 ? Material.RedMushroom : Material.BrownMushroom);
+            DropItem(Random.Next(2) == 0 ? ItemsRegistry.RedMushroom : ItemsRegistry.BrownMushroom);
         await DamageInteractionToolAsync(player, hand);
         SynchronizeMetadata();
+        return true;
     }
     public override void Write(INetStreamWriter writer)
     {

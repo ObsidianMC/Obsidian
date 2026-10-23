@@ -11,6 +11,11 @@ public sealed class LegacyPositionalRandomFactory : IPositionalRandomFactory
 
     public IRandomSource At(int x, int y, int z) => new LegacyRandomSource(Mth.GetSeed(x, y, z) ^ this.seed);
 
+    /// <summary>
+    /// The state of the random <see cref="At"/> creates, without the allocation.
+    /// </summary>
+    internal JavaLcg StateAt(int x, int y, int z) => new(Mth.GetSeed(x, y, z) ^ this.seed);
+
     public IRandomSource FromHashOf(string name) => new LegacyRandomSource(JavaHashCode(name) ^ this.seed);
 
     /// <remarks>Vanilla ignores the factory seed here.</remarks>

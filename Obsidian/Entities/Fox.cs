@@ -16,15 +16,21 @@ public sealed partial class Fox : FarmAnimal
     public Guid TrustedPlayer { get; internal set; }
     public Guid SecondTrustedPlayer { get; internal set; }
     protected override string? SoundName => "fox";
-    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.SweetBerries or Material.GlowBerries };
-    protected internal override float GetPathCost(IBlock feet, IBlock floor) => feet.Material == Material.SweetBerryBush ? 0 : base.GetPathCost(feet, floor);
+    protected override bool CanEat(ItemStack? item) =>
+        item is { Count: > 0, Holder.Id: ItemIds.SweetBerries or ItemIds.GlowBerries };
+    protected internal override float GetPathCost(IBlock feet, IBlock floor) =>
+        feet.RegistryId == BlockIds.SweetBerryBush ? 0 : base.GetPathCost(feet, floor);
     protected override void FinalizeSpawn()
     {
         Variant = Terrain.GetTemperature((Vector)Position.Floor()) < 0.15f ? 1 : 0;
         CanPickUpLoot = true;
         if (Random.NextSingle() < 0.2f)
         {
-            ReadOnlySpan<Material> items = [Material.Emerald, Material.Egg, Material.RabbitFoot, Material.RabbitHide, Material.Wheat, Material.Leather, Material.Feather];
+            ReadOnlySpan<Item> items =
+            [
+                ItemsRegistry.Emerald, ItemsRegistry.Egg, ItemsRegistry.RabbitFoot, ItemsRegistry.RabbitHide,
+                ItemsRegistry.Wheat, ItemsRegistry.Leather, ItemsRegistry.Feather
+            ];
             SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(items[Random.Next(items.Length)]));
         }
     }
@@ -40,11 +46,12 @@ public sealed partial class Fox : FarmAnimal
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, entity => entity.Type is EntityType.Chicken or EntityType.Rabbit ||
             entity.Type is EntityType.Cod or EntityType.Salmon));
     }
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         var love = LoveTicks;
-        await base.FeedAsync(player, hand);
+        var used = await base.FeedAsync(player, hand);
         if (LoveTicks > love) breedingPlayer = player.Uuid;
+        return used;
     }
     protected override IEntity CreateOffspring(Animal mate)
     {
@@ -68,17 +75,19 @@ public sealed partial class Fox : FarmAnimal
         await base.TickMobAsync();
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
         if (sleepDelay > 0) sleepDelay--;
-        if (!Sleeping && AttackTarget == null && AiTick % 100 == 0)
+        if (!Sleeping && AttackTarget == null && AiTick % 100 == 0 && Level.LevelData.GetBooleanRule("mob_griefing"))
         {
             var origin = (Vector)Position.Floor();
             for (var x = -2; x <= 2; x++)
             for (var z = -2; z <= 2; z++)
             {
                 var point = new Vector(origin.X + x, origin.Y, origin.Z + z);
-                if (Terrain.GetBlock(point) is { Material: Material.SweetBerryBush } berries && int.TryParse(berries.GetProperty("age"), out var age) && age >= 2)
+                if (Terrain.GetBlock(point) is { RegistryId: BlockIds.SweetBerryBush } berries
+                    && int.TryParse(berries.GetProperty("age"), out var age)
+                    && age >= 2)
                 {
                     await Level.SetBlockAsync(point, berries.WithProperty("age", 1), true);
-                    DropItem(Material.SweetBerries, Random.Next(1, 3) + (age == 3 ? 1 : 0));
+                    DropItem(ItemsRegistry.SweetBerries, Random.Next(1, 3) + (age == 3 ? 1 : 0));
                     PlayMobSound("eat");
                     return;
                 }

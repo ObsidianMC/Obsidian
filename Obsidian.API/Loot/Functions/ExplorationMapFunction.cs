@@ -1,4 +1,5 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.Registries;
 
 namespace Obsidian.API.Loot.Functions;
 
@@ -36,7 +37,7 @@ public sealed class ExplorationMapFunction : LootFunction
 
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
-        if (stack.Type != Material.Map || context.Origin is null || context.ExplorationMaps is null)
+        if (!stack.Is(ItemsRegistry.Map) || context.Origin is null || context.ExplorationMaps is null)
             return stack;
 
         return context.ExplorationMaps.Create(new ExplorationMapRequest(this.Destination, context.Origin.Value, this.SearchRadius,

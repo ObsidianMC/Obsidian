@@ -132,14 +132,14 @@ public abstract class MineshaftPiece : StructurePiece
 {
     private static readonly BiomeSet blockingBiomes = new("#minecraft:mineshaft_blocking");
 
-    protected static readonly IBlock caveAir = BlocksRegistry.Get(Material.CaveAir);
+    protected static readonly IBlock caveAir = BlocksRegistry.CaveAir;
 
     protected MineshaftPiece(int genDepth, MineshaftType type, BlockBox boundingBox) : base(genDepth, boundingBox)
     {
         this.Type = type;
         (this.Wood, this.Planks, this.Fence) = type == MineshaftType.Mesa
-            ? (BlocksRegistry.Get(Material.DarkOakLog), BlocksRegistry.Get(Material.DarkOakPlanks), BlocksRegistry.Get(Material.DarkOakFence))
-            : (BlocksRegistry.Get(Material.OakLog), BlocksRegistry.Get(Material.OakPlanks), BlocksRegistry.Get(Material.OakFence));
+            ? (BlocksRegistry.DarkOakLog, BlocksRegistry.DarkOakPlanks, BlocksRegistry.DarkOakFence)
+            : (BlocksRegistry.OakLog, BlocksRegistry.OakPlanks, BlocksRegistry.OakFence);
     }
 
     public MineshaftType Type { get; }
@@ -153,9 +153,9 @@ public abstract class MineshaftPiece : StructurePiece
     // Pieces don't carve through the supports of the pieces placed before them.
     protected override bool CanBeReplaced(IWorldGenLevel level, int x, int y, int z, BlockBox box)
     {
-        var material = this.GetBlock(level, x, y, z, box).Material;
-        return material != this.Planks.Material && material != this.Wood.Material && material != this.Fence.Material
-            && material != Material.IronChain;
+        var blockId = this.GetBlock(level, x, y, z, box).RegistryId;
+        return blockId != this.Planks.RegistryId && blockId != this.Wood.RegistryId && blockId != this.Fence.RegistryId
+            && blockId != BlockIds.IronChain;
     }
 
     /// <summary>
@@ -242,7 +242,8 @@ public sealed class MineshaftRoom : MineshaftPiece
     private readonly List<BlockBox> entrances = [];
 
     public MineshaftRoom(int genDepth, IRandomSource random, int x, int z, MineshaftType type)
-        : base(genDepth, type, BlockBox.Create(x, MineshaftPieces.StartY, z, x + 7 + random.NextInt(6), 54 + random.NextInt(6), z + 7 + random.NextInt(6)))
+        : base(genDepth, type,
+            BlockBox.Create(x, MineshaftPieces.StartY, z, x + 7 + random.NextInt(6), 54 + random.NextInt(6), z + 7 + random.NextInt(6)))
     {
     }
 
@@ -485,7 +486,8 @@ public sealed class MineshaftCorridor : MineshaftPiece
         this.GenerateBox(level, box, 0, 0, 0, 2, 1, length, caveAir, caveAir, false);
         this.GenerateMaybeBox(level, box, random, 0.8f, 0, 2, 0, 2, 2, length, caveAir, caveAir, false, false);
         if (this.spiderCorridor)
-            this.GenerateMaybeBox(level, box, random, 0.6f, 0, 0, 0, 2, 1, length, BlocksRegistry.Get(Material.Cobweb), caveAir, false, true);
+            this.GenerateMaybeBox(
+                level, box, random, 0.6f, 0, 0, 0, 2, 1, length, BlocksRegistry.Cobweb, caveAir, false, true);
 
         for (var section = 0; section < this.numSections; section++)
         {
@@ -512,7 +514,7 @@ public sealed class MineshaftCorridor : MineshaftPiece
                 if (box.IsInside(position) && this.IsInterior(level, 1, 0, spawnerZ, box))
                 {
                     this.hasPlacedSpider = true;
-                    level.SetBlock(position, BlocksRegistry.Get(Material.Spawner));
+                    level.SetBlock(position, BlocksRegistry.Spawner);
                     FeatureHelpers.SetSpawnerEntity(level, position, () => "minecraft:cave_spider");
                 }
             }
@@ -531,7 +533,7 @@ public sealed class MineshaftCorridor : MineshaftPiece
         if (!this.hasRails)
             return;
 
-        var rail = BlocksRegistry.Get(Material.Rail).WithProperty("shape", "north_south");
+        var rail = BlocksRegistry.Rail.WithProperty("shape", "north_south");
         for (var z = 0; z <= length; z++)
         {
             var floor = this.GetBlock(level, 1, -1, z, box);
@@ -550,7 +552,7 @@ public sealed class MineshaftCorridor : MineshaftPiece
             return;
 
         var shape = random.NextBoolean() ? "north_south" : "east_west";
-        this.PlaceBlock(level, BlocksRegistry.Get(Material.Rail).WithProperty("shape", shape), x, y, z, box);
+        this.PlaceBlock(level, BlocksRegistry.Rail.WithProperty("shape", shape), x, y, z, box);
 
         var minecart = new GeneratedEntity("minecraft:chest_minecart", new VectorD(position.X + 0.5, position.Y + 0.5, position.Z + 0.5))
         {
@@ -567,10 +569,10 @@ public sealed class MineshaftCorridor : MineshaftPiece
 
     private void PlaceDoubleLowerOrUpperSupport(IWorldGenLevel level, BlockBox box, int x, int y, int z)
     {
-        if (this.GetBlock(level, x, y, z, box).Material == this.Planks.Material)
+        if (this.GetBlock(level, x, y, z, box).RegistryId == this.Planks.RegistryId)
             this.FillPillarDownOrChainUp(level, x, y, z, box);
 
-        if (this.GetBlock(level, x + 2, y, z, box).Material == this.Planks.Material)
+        if (this.GetBlock(level, x + 2, y, z, box).RegistryId == this.Planks.RegistryId)
             this.FillPillarDownOrChainUp(level, x + 2, y, z, box);
     }
 
@@ -592,7 +594,7 @@ public sealed class MineshaftCorridor : MineshaftPiece
             if (checkBelow)
             {
                 var below = level.GetBlock(position with { Y = worldY - distance });
-                var emptyBelow = IsReplaceableByStructures(below) && below.Material != Material.Lava;
+                var emptyBelow = IsReplaceableByStructures(below) && !below.Is(BlockIds.Lava);
                 if (!emptyBelow && below.IsFaceSturdy(BlockFace.Up))
                 {
                     FillColumnBetween(level, this.Wood, position, worldY - distance + 1, worldY);
@@ -609,7 +611,7 @@ public sealed class MineshaftCorridor : MineshaftPiece
                 if (!emptyAbove && above.IsBottomCenterSturdy() && !above.IsFallingBlock())
                 {
                     level.SetBlock(position with { Y = worldY + 1 }, this.Fence);
-                    FillColumnBetween(level, BlocksRegistry.Get(Material.IronChain), position, worldY + 2, worldY + distance);
+                    FillColumnBetween(level, BlocksRegistry.IronChain, position, worldY + 2, worldY + distance);
                     return;
                 }
 
@@ -643,7 +645,7 @@ public sealed class MineshaftCorridor : MineshaftPiece
         }
 
         this.GenerateBox(level, box, minX, maxY, z, maxX, maxY, z, this.Planks, caveAir, false);
-        var torch = BlocksRegistry.Get(Material.WallTorch);
+        var torch = BlocksRegistry.WallTorch;
         this.MaybeGenerateBlock(level, box, random, 0.05f, minX + 1, maxY, z - 1, torch.WithProperty("facing", "south"));
         this.MaybeGenerateBlock(level, box, random, 0.05f, minX + 1, maxY, z + 1, torch.WithProperty("facing", "north"));
     }
@@ -651,7 +653,7 @@ public sealed class MineshaftCorridor : MineshaftPiece
     private void MaybePlaceCobweb(IWorldGenLevel level, BlockBox box, IRandomSource random, float probability, int x, int y, int z)
     {
         if (this.IsInterior(level, x, y, z, box) && random.NextFloat() < probability && this.HasSturdyNeighbours(level, box, x, y, z, 2))
-            this.PlaceBlock(level, BlocksRegistry.Get(Material.Cobweb), x, y, z, box);
+            this.PlaceBlock(level, BlocksRegistry.Cobweb, x, y, z, box);
     }
 
     private bool HasSturdyNeighbours(IWorldGenLevel level, BlockBox box, int x, int y, int z, int count)

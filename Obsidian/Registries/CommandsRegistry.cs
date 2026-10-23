@@ -3,6 +3,7 @@ using Obsidian.API.Commands.ArgumentParsers;
 using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Commands;
 using Obsidian.Net.Packets.Play.Clientbound;
+using System.Reflection;
 
 namespace Obsidian.Registries;
 public static class CommandsRegistry
@@ -25,7 +26,7 @@ public static class CommandsRegistry
         {
             //Don't register commands alone that have parents 
             //This is very inconvenient and should be changed
-            if (cmd.Parent != null)
+            if (cmd.Parent is not null)
                 continue;
 
             Register(server, cmd, commands, rootNode, ref index);
@@ -36,7 +37,9 @@ public static class CommandsRegistry
 
     private static void Register(Server server, Command command, IEnumerable<Command> commands, CommandNode node, ref int index)
     {
-        var nodeType = command.Overloads.Any(x => x.GetParameters().Length == 0) ? CommandNodeType.IsExecutable | CommandNodeType.Literal : CommandNodeType.Literal;
+        var nodeType = command.Overloads.Any(overload => overload.GetParameters().Length == 0)
+            ? CommandNodeType.IsExecutable | CommandNodeType.Literal
+            : CommandNodeType.Literal;
         var parentNode = new CommandNode()
         {
             Index = ++index,
@@ -72,19 +75,28 @@ public static class CommandsRegistry
 
             var type = arg.ParameterType;
 
-            var (id, mctype) = server.CommandHandler.FindMinecraftType(type);
+            var parser = server.CommandHandler.GetArgumentParser(type);
 
-            //TODO make this better 
-            argNode.Parser = mctype switch
+            // Strings are read as one word, a quoted phrase, or the rest of the line, depending on the parameter.
+            argNode.Parser = parser.Identifier == "brigadier:string"
+                ? new StringArgumentParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute))
+                    ? StringType.GreedyPhrase
+                    : parser is StringArgumentParser { Type: var stringType } ? stringType : StringType.SingleWord)
+                : parser;
+
+            // The client sends a CommandSuggestionPacket for nodes with vanilla's ask_server provider, and fills in
+            // nodes with one of its own providers, like available_sounds, by itself.
+            if (arg.GetCustomAttribute<ClientSuggestionsAttribute>() is { } clientSuggestions)
             {
-                "brigadier:string" => new StringArgumentParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase),
-                "brigadier:double" => new DoubleArgumentParser(),
-                "brigadier:float" => new FloatArgumentParser(),
-                "brigadier:integer" => new UnsignedIntArgumentParser(),
-                "brigadier:long" => new UnsignedLongArgumentParser(),
-                "minecraft:time" => new MinecraftTimeArgumentParser(),
-                _ => new EmptyArgumentParser(id, mctype),
-            };
+                argNode.Type |= CommandNodeType.HasSuggestions;
+                argNode.SuggestionType = clientSuggestions.Provider;
+            }
+            else if (arg.GetCustomAttribute<BaseSuggestionProviderAttribute>() is not null
+                || parser is ISuggestionProvider)
+            {
+                argNode.Type |= CommandNodeType.HasSuggestions;
+                argNode.SuggestionType = "minecraft:ask_server";
+            }
 
             prev.AddChild(argNode);
 

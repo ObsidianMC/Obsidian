@@ -4,6 +4,27 @@ namespace Obsidian.SourceGenerators.Registry;
 
 public partial class RegistryAssetsGenerator
 {
+    // Vanilla's block ids as constants, for switches and patterns over blocks in the server's vanilla code.
+    private static void GenerateBlockIdConstants(Assets assets, SourceProductionContext context)
+    {
+        var builder = new CodeBuilder();
+        builder.Namespace("Obsidian.API.Registries");
+        builder.Line();
+        builder.Line("/// <summary>");
+        builder.Line("/// Vanilla's block ids (<see cref=\"Obsidian.API.IBlock.RegistryId\"/>), as constants");
+        builder.Line("/// to match blocks by in switches and patterns. Plugins' blocks have no constant: compare");
+        builder.Line("/// them by their block type.");
+        builder.Line("/// </summary>");
+        builder.Type("public static class BlockIds");
+
+        foreach (Block block in assets.Blocks.OrderBy(block => block.RegistryId))
+            builder.Line($"public const int {block.Name} = {block.RegistryId};");
+
+        builder.EndScope();
+
+        context.AddSource("BlockIds.g.cs", builder.ToString());
+    }
+
     private static void GenerateBlockIds(Assets assets, SourceProductionContext context)
     {
         var builder = new CodeBuilder();

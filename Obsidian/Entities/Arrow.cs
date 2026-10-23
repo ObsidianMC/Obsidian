@@ -90,7 +90,7 @@ public partial class Arrow : Entity
         IEntity? target = null;
         foreach (var candidate in Level.GetEntitiesInRange(Position, (float)Motion.Magnitude + 20))
         {
-            if (candidate is not Living and not EndCrystal and not MobProjectile { Type: EntityType.Fireball } || ReferenceEquals(candidate, Owner) || candidate.Health <= 0 || piercedEntities.Contains(candidate.EntityId) ||
+            if (candidate is not Living and not EndCrystal and not MobProjectile { Type: EntityType.Fireball } and not VehicleEntity { IsRemoved: false } || ReferenceEquals(candidate, Owner) || candidate.Health <= 0 || piercedEntities.Contains(candidate.EntityId) ||
                 candidate is IPlayer player && player.GameMode is GameMode.Creative or GameMode.Spectator)
                 continue;
             if (candidate is EnderDragon dragon)
@@ -125,6 +125,7 @@ public partial class Arrow : Entity
             level.EmitGameEvent(MobGameEvent.ProjectileLand, Position, this, Owner);
             var health = target.Health;
             var accepted = (target as Living)?.AcceptedDamageCount;
+            var vehicleHit = false;
             if (target is MobProjectile fireball)
                 fireball.Deflect(Owner ?? this, Motion);
             else if ((target is not Shulker { Closed: true } || Type != EntityType.Arrow) &&
@@ -136,17 +137,25 @@ public partial class Arrow : Entity
                 else if (Crit && Type is EntityType.Arrow or EntityType.SpectralArrow)
                     damage += Globals.Random.Next((int)(damage / 2) + 2);
                 if (target is EnderDragonPart part) await part.Parent.DamagePartAsync(Owner ?? this, damage, part.Index, projectile: true);
-                else if (target is Living victim) await victim.DamageCombatAsync(Owner ?? this, damage, CombatDamageKind.Projectile, Weapon);
+                else if (target is Living victim) await victim.DamageCombatAsync(Owner ?? this, damage, CombatDamageKind.Projectile, Weapon, this);
+                // Like vanilla's VehicleEntity.hurtServer, a boat or minecart always takes the hit, and a burning
+                // arrow sets off a TNT minecart.
+                else if (target is VehicleEntity vehicle)
+                {
+                    var kind = FireSeconds > 0 || Burning ? VehicleDamage.BurningProjectile : VehicleDamage.Projectile;
+                    await vehicle.HurtAsync(Owner ?? this, damage, kind, Motion);
+                    vehicleHit = true;
+                }
                 else await target.DamageAsync(Owner ?? this, damage);
             }
-            var damaged = target.Health < health || target is Living hitLiving && hitLiving.AcceptedDamageCount != accepted;
+            var damaged = vehicleHit || target.Health < health || target is Living hitLiving && hitLiving.AcceptedDamageCount != accepted;
             if (damaged && Effect >= 0 && target is Living living)
                 living.AddPotionEffect(Effect, EffectDuration, 0);
             if (damaged && FireSeconds > 0 && target is Living burningTarget)
                 burningTarget.Ignite(FireSeconds);
             if (damaged && target is Living knocked && KnockbackLevel > 0)
                 CombatEffects.Knockback(knocked, Motion, KnockbackLevel * 0.6f);
-            if (damaged && target is Living potionTarget && PickupItem?.Type == Material.TippedArrow)
+            if (damaged && target is Living potionTarget && PickupItem?.Is(ItemsRegistry.TippedArrow) == true)
                 await ApplyTippedEffectsAsync(potionTarget);
             if (damaged && target is Living thornTarget && Owner is Living attacker)
                 await CombatEffects.PostAttackAsync(attacker, thornTarget, Type == EntityType.Trident ? Weapon : null);
@@ -157,8 +166,20 @@ public partial class Arrow : Entity
             }
             if (!damaged && Type is EntityType.Arrow or EntityType.SpectralArrow)
             {
-                Motion *= -0.1;
+                // Vanilla AbstractArrow.onHitEntity: Projectile.deflect(ProjectileDeflection.REVERSE) reverses the
+                // motion (x -0.5) and turns the arrow 170-190 degrees, then the motion is scaled by 0.2 (net -0.1).
+                // A player's arrow left with no speed is dropped for pickup and discarded.
+                Motion *= -0.5;
+                var turn = 170f + Globals.Random.NextSingle() * 20f;
+                Yaw += turn;
+                Motion *= 0.2;
                 Crit = false;
+                if (Owner is IPlayer && Motion.Magnitude * Motion.Magnitude < 1e-7)
+                {
+                    if (Pickup == ArrowPickup.Allowed && PickupItem is { Count: > 0 })
+                        DropBlockedArrowItem();
+                    await RemoveAsync();
+                }
                 return;
             }
             await OnImpactAsync(target, damaged);
@@ -174,7 +195,7 @@ public partial class Arrow : Entity
             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SetEntityDataPacket { EntityId = EntityId, Entity = this });
             return;
         }
-        var water = terrain.GetBlock((Vector)Position.Floor())?.Material == Material.Water;
+        var water = terrain.GetBlock((Vector)Position.Floor())?.RegistryId == BlockIds.Water;
         Motion *= GetDrag(water);
         if (!NoGravity)
             Motion -= new VectorD(0, 0.05f, 0);
@@ -183,11 +204,21 @@ public partial class Arrow : Entity
     protected virtual ValueTask OnImpactAsync(IEntity? target, bool damaged) => RemoveAsync();
     protected virtual double GetDrag(bool water) => water ? 0.6 : 0.99;
 
+    private void DropBlockedArrowItem()
+    {
+        var entity = new ItemEntity
+        {
+            Level = Level, EntityId = Server.GetNextEntityId(), Position = Position, Item = PickupItem!
+        };
+        if (Level.TryAddEntity(entity))
+            entity.SpawnEntity(new Velocity(0, 0, 0));
+    }
+
     protected async ValueTask PickupAsync()
     {
         if (Pickup == ArrowPickup.Disallowed || PickupItem is not { Count: > 0 }) return;
-        foreach (var player in Level.GetPlayersInRange(Position, 1.5f).OfType<Player>())
-            if ((Owner is not Player || this is not Trident { LoyaltyLevel: > 0 } || Owner.Uuid == player.Uuid) &&
+        foreach (var player in Level.GetPlayersInRange(Position, 1.5f))
+            if ((Owner is not IPlayer || this is not Trident { LoyaltyLevel: > 0 } || Owner.Uuid == player.Uuid) &&
                 await player.ReceiveProjectileAsync(PickupItem, Pickup == ArrowPickup.CreativeOnly))
             {
                 PacketBroadcaster.QueuePacketToLevel(Level, new TakeItemEntityPacket

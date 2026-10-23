@@ -35,7 +35,15 @@ public sealed class EnchantmentDefinition
 
     public required int MaxLevel { get; init; }
 
+    /// <summary>
+    /// The levels an anvil charges for each level of the enchantment it adds (vanilla's <c>anvil_cost</c>).
+    /// </summary>
+    public int AnvilCost { get; init; } = 1;
+
     public int MinLevel => 1;
+
+    // Vanilla's applicable equipment slot groups, used when resolving an attacking entity's enchantment level.
+    internal ImmutableArray<string> Slots { get; init; } = [];
 
     /// <summary>
     /// The lowest enchanting power that gives each level.

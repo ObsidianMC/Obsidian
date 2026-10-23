@@ -175,7 +175,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task ForceChunkReloadAsync()
     {
-        if (this.Player is Player player)
+        if (this.Player is IPlayer player)
         {
             await player.UpdateChunksAsync(true);
         }
@@ -206,67 +206,29 @@ public sealed class MainCommandModule : CommandModuleBase
         }
     }
 
-    [Command("give")]
-    [CommandInfo("Gives you a block or item", "/get <item> <amount>")]
-    [IssuerScope(CommandIssuers.Client)]
-    [RequirePermission(op: true, permissions: "obsidian.give")]
-    public Task GiveAsync(string item) => GiveAsync(item, 64);
-
-    [CommandOverload]
-    public async Task GiveAsync(string item, int amount = 64)
-    {
-        if (this.Player is not Player player)
-            return;
-
-        // convert snake_case to PascalCase
-        if (item.Contains('_'))
-        {
-            var parts = item.Split('_');
-            item = string.Join("", parts.Select(x => $"{x[0].ToString().ToUpperInvariant()}{x.Substring(1)}"));
-        }
-        // find material from string (enum Material)
-        if (Enum.TryParse(item, out Material material))
-        {
-            var slot = player.Inventory.AddItem(new ItemStack(ItemsRegistry.Get(material), count: amount));
-            await player.SendMessageAsync($"Given you {ChatColor.Gold}{amount} {item}(s)");
-            player.Client.SendPacket(new ContainerSetSlotPacket
-            {
-                Slot = (short)slot,
-                ContainerId = 0,
-                SlotData = player.Inventory.GetItem(slot)!,
-                StateId = player.Inventory.StateId++
-            });
-        }
-        else
-        {
-            await player.SendMessageAsync($"{ChatColor.Red}Invalid item: {item}");
-        }
-    }
-
     [Command("clearinventory")]
     [CommandInfo("Clears your inventory, armor, offhand, and cursor.", "/clearinventory")]
     [IssuerScope(CommandIssuers.Client)]
     [RequirePermission(op: true, permissions: "obsidian.clearinventory")]
     public async Task ClearInventoryAsync()
     {
-        if (this.Player is not Player player)
+        if (this.Player is not IPlayer player)
             return;
 
-        player.CancelEating();
-        player.CancelWeaponUse();
+        player.StopUsingItem();
         for (var slot = 0; slot < player.Inventory.Size; slot++)
             player.Inventory.SetItem(slot, null);
         player.CarriedItem = null;
         player.DraggedSlots.Clear();
 
-        await player.Client.QueuePacketAsync(new ContainerSetContentPacket(0, player.Inventory.ToList())
+        await player.QueuePacketAsync(new ContainerSetContentPacket(0, player.Inventory.ToList())
         {
             StateId = player.Inventory.StateId++,
             CarriedItem = null
         });
         if (player.OpenedContainer is { } container)
         {
-            await player.Client.QueuePacketAsync(new ContainerSetContentPacket(player.CurrentContainerId,
+            await player.QueuePacketAsync(new ContainerSetContentPacket(player.CurrentContainerId,
                 container.Concat(player.Inventory.Skip(9).Take(36)).ToList())
             {
                 StateId = player.Inventory.StateId++,
@@ -276,50 +238,12 @@ public sealed class MainCommandModule : CommandModuleBase
         await player.SendMessageAsync("Inventory cleared.");
     }
 
-    [Command("gamemode")]
-    [CommandInfo("Change your gamemode.", "/gamemode <survival/creative/adventure/spectator>")]
-    [IssuerScope(CommandIssuers.Client)]
-    [RequirePermission(op: true, permissions: "obsidian.gamemode")]
-    public async Task GamemodeAsync(string gamemode)
-    {
-        if (this.Player is not Player player)
-            return;
-
-        // TryParse accepts any number, so "/gamemode 4" needs the defined check.
-        if (!Enum.TryParse<GameMode>(gamemode, true, out var result) || !Enum.IsDefined(result))
-        {
-            await player.SendMessageAsync(SendCommandUsage("/gamemode <survival/creative/adventure/spectator>"));
-            return;
-        }
-
-        if (player.GameMode != result)
-        {
-            await player.SetGamemodeAsync(result);
-            await player.SendMessageAsync($"{ChatColor.Reset}Gamemode set to {ChatColor.Red}{gamemode}{ChatColor.Reset}.");
-            return;
-        }
-
-        await player.SendMessageAsync($"{ChatColor.Reset}You're already in {ChatColor.Red}{gamemode}{ChatColor.Reset}.");
-    }
-
-    [Command("tp")]
-    [CommandInfo("teleports you to a location", "/tp <x> <y> <z>")]
-    [IssuerScope(CommandIssuers.Client)]
-    public async Task TeleportAsync([Remaining] VectorD location)
-    {
-        if (this.Player is not IPlayer player)
-            return;
-
-        await player.SendMessageAsync($"Teleporting to {location.X} {location.Y} {location.Z}");
-        await player.TeleportAsync(location);
-    }
-
     [Command("op")]
     [CommandInfo("Give operator rights to a specific player.", "/op <player>")]
     [RequirePermission]
     public async Task GiveOpAsync(IPlayer player)
     {
-        if (player == null)
+        if (player is null)
             return;
 
         this.Server.Operators.AddOperator(player);
@@ -333,7 +257,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [RequirePermission]
     public async Task UnclaimOpAsync(IPlayer player)
     {
-        if (player == null)
+        if (player is null)
             return;
 
         this.Server.Operators.RemoveOperator(player);
@@ -370,17 +294,6 @@ public sealed class MainCommandModule : CommandModuleBase
         }
 
         await player.SendMessageAsync("§cYou have already sent a request");
-    }
-
-    [Command("title")]
-    [CommandInfo("Sends a title", "/title")]
-    [IssuerScope(CommandIssuers.Client)]
-    public async Task SendTitleAsync()
-    {
-        if (this.Player is IPlayer player)
-        {
-            await player.SendTitleAsync("Test Title", "Test subtitle", 20, 40, 20);
-        }
     }
 
     [Command("spawnentity")]
@@ -487,17 +400,6 @@ public sealed class MainCommandModule : CommandModuleBase
         await server.StopAsync();
     }
 
-    [Command("toggleweather", "weather")]
-    [RequirePermission(permissions: "obsidian.weather")]
-    public async Task WeatherAsync()
-    {
-        if (this.Player is Player player)
-        {
-            player.Level.LevelData.RainTime = 0;
-            await this.Sender.SendMessageAsync("Toggled weather for this world.");
-        }
-    }
-
     [Command("world")]
     public async Task WorldAsync(string worldname)
     {
@@ -537,7 +439,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task HungerAsync(int hunger)
     {
-        if (Player is not Player player) return;
+        if (Player is not IPlayer player) return;
         if (hunger is < 0 or > 20)
         {
             await player.SendMessageAsync(SendCommandUsage("/hunger <0-20>"));
@@ -547,7 +449,7 @@ public sealed class MainCommandModule : CommandModuleBase
         player.FoodSaturationLevel = Math.Min(player.FoodSaturationLevel, hunger);
         player.FoodExhaustionLevel = 0;
         player.FoodTickTimer = 0;
-        await player.Client.QueuePacketAsync(new SetHealthPacket(player.Health, hunger, player.FoodSaturationLevel));
+        await player.QueuePacketAsync(new SetHealthPacket(player.Health, hunger, player.FoodSaturationLevel));
         await player.SendMessageAsync($"Hunger set to {hunger}.");
     }
 
@@ -556,7 +458,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task HealthAsync(float health)
     {
-        if (Player is not Player player) return;
+        if (Player is not IPlayer player) return;
         if (!float.IsFinite(health) || health is < 0 or > 20)
         {
             await player.SendMessageAsync(SendCommandUsage("/health <0-20>"));
@@ -571,43 +473,40 @@ public sealed class MainCommandModule : CommandModuleBase
         else
         {
             player.Health = health;
-            await player.Client.QueuePacketAsync(new SetHealthPacket(health, player.FoodLevel, player.FoodSaturationLevel));
+            await player.QueuePacketAsync(new SetHealthPacket(health, player.FoodLevel, player.FoodSaturationLevel));
             player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level, new SetEntityDataPacket { EntityId = player.EntityId, Entity = player });
         }
         await player.SendMessageAsync($"Health set to {health}.");
     }
 
     [Command("dimension")]
-    [CommandInfo("Transfers you to another dimension.", "/dimension <overworld|nether|end>")]
+    [CommandInfo("Transfers you to another dimension.", "/dimension <overworld|nether|end|<dimension id>>")]
     [IssuerScope(CommandIssuers.Client)]
     public async Task DimensionAsync(string dimension)
     {
-        if (Player is not Player player) return;
+        if (Player is not IPlayer player) return;
+
+        // A dimension's identifier, like a plugin's ruby:crystal_world, or a short name for vanilla's.
         var name = dimension.ToLowerInvariant() switch
         {
             "overworld" => "minecraft:overworld",
             "nether" => "minecraft:the_nether",
             "end" => "minecraft:the_end",
-            _ => null
+            var other => other.Contains(':') ? other : $"minecraft:{other}"
         };
-        if (name == null)
-        {
-            await player.SendMessageAsync(SendCommandUsage("/dimension <overworld|nether|end>"));
-            return;
-        }
-        var world = player.Level is IDimension child ? child.ParentWorld as World : player.Level as World;
-        ILevel? destination = world?.DimensionName == name ? world : world?.dimensions.GetValueOrDefault(name);
-        if (destination == null)
-        {
-            await player.SendMessageAsync("That dimension is not available in this world.");
-            return;
-        }
+
         if (!player.Alive || player.Respawning)
         {
             await player.SendMessageAsync("Respawn before changing dimensions.");
             return;
         }
-        await player.TransferDimensionAsync(destination);
+
+        if (!await player.TeleportToDimensionAsync(name))
+        {
+            await player.SendMessageAsync("That dimension is not available in this world.");
+            return;
+        }
+
         await player.SendMessageAsync($"Transferred to {dimension.ToLowerInvariant()}.");
     }
 
@@ -616,7 +515,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task SpawnAsync()
     {
-        if (Player is not Player player || !player.Alive) return;
+        if (Player is not IPlayer player || !player.Alive) return;
         await player.TeleportAsync(player.Level.LevelData.SpawnPosition);
         await player.SendMessageAsync("Teleported to spawn.");
     }
@@ -626,7 +525,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [IssuerScope(CommandIssuers.Client)]
     public async Task SetSpawnAsync()
     {
-        if (Player is not Player player || !player.Alive) return;
+        if (Player is not IPlayer player || !player.Alive) return;
         var block = (Vector)player.Position.Floor();
         player.Level.LevelData.SpawnPosition = (VectorD)block + new VectorD(0.5, 0, 0.5);
         await player.Level.SaveAsync();

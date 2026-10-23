@@ -22,7 +22,7 @@ public sealed partial class WitherSkeleton : Skeleton
     {
         CanPickUpLoot = Random.NextSingle() < 0.55f * SpecialDifficulty;
         TryUpdateAttribute("minecraft:generic.attack_damage", 4);
-        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(Material.StoneSword));
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.StoneSword));
     }
 
     protected internal override async ValueTask PerformMeleeAttackAsync(IEntity target)
@@ -35,13 +35,14 @@ public sealed partial class WitherSkeleton : Skeleton
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.Bone, Random.Next(3));
-        DropItem(Material.Coal, Math.Max(0, Random.Next(3) - 1));
-        if (source is IPlayer && Random.NextSingle() < 0.025f)
-            DropItem(Material.WitherSkeletonSkull);
-        foreach (var slot in Enum.GetValues<EquipmentSlot>())
-            if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot))
-                DropItem(GetEquipment(slot));
+        this.DropVanillaLoot(source);
+        foreach (var slot in Enum.GetValues<Obsidian.API.Inventory.EquipmentSlot>())
+        {
+            var item = this.GetEquipment(slot);
+            if (!item.IsAir && this.Random.NextSingle() < this.GetEquipmentDropChance(slot))
+                this.DropItem(item);
+        }
+
         return default;
     }
 }

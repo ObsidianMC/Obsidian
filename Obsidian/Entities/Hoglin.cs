@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -17,9 +18,9 @@ public sealed partial class Hoglin : FarmAnimal
     protected override string? SoundName => "hoglin";
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
     protected override int GetExperienceReward() => IsBaby ? 0 : 5;
-    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.CrimsonFungus };
+    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.CrimsonFungus };
     private bool IsConverting => !IsImmuneToZombification &&
-        (CodecRegistry.TryGetDimension(Level.DimensionName, out var dimension) ? !dimension.Element.PiglinSafe : Level.DimensionName != "minecraft:the_nether");
+        !Level.PiglinsSafe((Vector)Position.Floor());
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
@@ -46,11 +47,7 @@ public sealed partial class Hoglin : FarmAnimal
     protected internal override ValueTask PerformMeleeAttackAsync(IEntity target) => HoglinAttack.PerformAsync(this, target, IsBaby);
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (!IsBaby)
-        {
-            DropItem(Burning ? Material.CookedPorkchop : Material.Porkchop, Random.Next(2, 5));
-            DropItem(Material.Leather, Random.Next(2));
-        }
+        this.DropVanillaLoot(source);
         return default;
     }
     public override void Write(INetStreamWriter writer)
@@ -92,7 +89,7 @@ internal sealed class HoglinAvoidFungusGoal(Hoglin hoglin) : NavigationGoal(hogl
         for (var z = -8; z <= 8; z++)
         {
             var point = origin + new Vector(x, y, z);
-            if (hoglin.Terrain.GetBlock(point)?.Material != Material.WarpedFungus ||
+            if (hoglin.Terrain.GetBlock(point)?.RegistryId != BlockIds.WarpedFungus ||
                 RandomPosition.Find(hoglin, 8, (VectorD)point) is not VectorD away ||
                 (away - (VectorD)point).MagnitudeSquared() <= (hoglin.Position - (VectorD)point).MagnitudeSquared()) continue;
             destination = away;
@@ -105,7 +102,7 @@ internal sealed class HoglinAvoidFungusGoal(Hoglin hoglin) : NavigationGoal(hogl
 }
 
 [MinecraftEntity("minecraft:zoglin")]
-public sealed partial class Zoglin : PathfinderMob
+public sealed partial class Zoglin : PathfinderMob, IAgeable
 {
     public Zoglin() => Type = EntityType.Zoglin;
     public bool IsBaby { get; set; }
@@ -126,7 +123,11 @@ public sealed partial class Zoglin : PathfinderMob
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, target => target is Living && target.Type is not (EntityType.Zoglin or EntityType.Creeper)));
     }
     protected internal override ValueTask PerformMeleeAttackAsync(IEntity target) => HoglinAttack.PerformAsync(this, target, IsBaby);
-    protected override ValueTask OnDeathAsync(IEntity source) { DropItem(Material.RottenFlesh, Random.Next(1, 4)); return default; }
+    protected override ValueTask OnDeathAsync(IEntity source)
+    {
+        this.DropVanillaLoot(source);
+        return default;
+    }
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);

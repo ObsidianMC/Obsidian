@@ -6,7 +6,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Entities;
 
-public class AbstractHorse : Animal
+public class AbstractHorse : Animal, IRideable
 {
     public HorseMask HorseMask { get; set; }
 
@@ -16,7 +16,8 @@ public class AbstractHorse : Animal
     protected virtual bool CanBreedHorse => false;
     protected virtual int MaximumTemper => 100;
     protected virtual bool SupportsSaddle => true;
-    protected virtual bool IsBreedingFood(Material food) => food is Material.GoldenCarrot or Material.GoldenApple;
+    protected virtual bool IsBreedingFood(Item food) =>
+        food.Id is ItemIds.GoldenCarrot or ItemIds.GoldenApple;
     internal override bool CanMateWith(Animal mate) => HorseMask.HasFlag(HorseMask.Tamed) &&
         Health >= GetAttributeValue("minecraft:generic.max_health") && mate is AbstractHorse other &&
         other.HorseMask.HasFlag(HorseMask.Tamed) && other.Health >= other.GetAttributeValue("minecraft:generic.max_health") &&
@@ -25,7 +26,7 @@ public class AbstractHorse : Animal
 
     protected override IEntity CreateOffspring(Animal mate)
     {
-        var type = Type != mate.Type && (Type is EntityType.Horse or EntityType.Donkey) ? EntityType.Mule : Type;
+        var type = Type != mate.Type && (Type is EntityType.Horse or EntityType.Donkey) ? EntityType.Mule : Type!.Value;
         var child = (AbstractHorse)Level.GetNewEntitySpawner().WithEntityType(type).AtPosition(Position).AsBaby().Spawn();
         HorseMask |= HorseMask.HasBred;
         ((AbstractHorse)mate).HorseMask |= HorseMask.HasBred;
@@ -52,28 +53,40 @@ public class AbstractHorse : Animal
     }
 
     protected override bool CanEat(ItemStack? item) => CanBreedHorse && item is { Count: > 0 } &&
-        item.Type is Material.Wheat or Material.Sugar or Material.Apple or Material.HayBlock or Material.GoldenCarrot or Material.GoldenApple;
+        item.Holder.Id is ItemIds.Wheat
+            or ItemIds.Sugar
+            or ItemIds.Apple
+            or ItemIds.HayBlock
+            or ItemIds.GoldenCarrot
+            or ItemIds.GoldenApple;
 
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!HasAi || !Alive || IsRemoved || player.Health <= 0 || player.Level != Level ||
             player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player))
-            return;
+            return false;
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var item = player.Inventory.GetItem(slot);
         var tamed = HorseMask.HasFlag(HorseMask.Tamed);
         if (CanEat(item))
         {
-            var food = item!.Type;
-            var heal = food switch { Material.HayBlock => 20, Material.Apple => 3, Material.GoldenCarrot => 4, Material.GoldenApple => 10, _ => 2 };
+            var food = item!.Holder;
+            var heal = food.Id switch
+            {
+                ItemIds.HayBlock => 20,
+                ItemIds.Apple => 3,
+                ItemIds.GoldenCarrot => 4,
+                ItemIds.GoldenApple => 10,
+                _ => 2
+            };
             var breedingFood = IsBreedingFood(food);
             if (Health >= GetAttributeValue("minecraft:generic.max_health") && !IsBaby &&
                 (tamed || Temper >= MaximumTemper) && !(tamed && breedingFood && Age == 0 && LoveTicks == 0))
-                return;
+                return false;
             Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + heal);
             Temper = Math.Min(MaximumTemper, Temper + (breedingFood ? 5 : 3));
             if (IsBaby)
-                Age = Math.Min(0, Age + (food == Material.HayBlock ? 3600 : 1200));
+                Age = Math.Min(0, Age + (food == ItemsRegistry.HayBlock ? 3600 : 1200));
             else if (tamed && breedingFood && Age == 0)
             {
                 LoveTicks = 600;
@@ -81,18 +94,28 @@ public class AbstractHorse : Animal
             }
             await ConsumeItemAsync(player, slot);
             SynchronizeMetadata();
-            return;
+            return true;
         }
         if (IsBaby)
-            return;
-        if (SupportsSaddle && tamed && !HasSaddle && item is { Count: > 0, Type: Material.Saddle })
+            return false;
+        if (SupportsSaddle && tamed && !HasSaddle && item is { Count: > 0, Holder.Id: ItemIds.Saddle })
         {
             HasSaddle = true;
             await ConsumeItemAsync(player, slot);
-            return;
+            return true;
         }
-        if (!player.Sneaking && player is Player rider && Mount(rider))
+
+        // Like vanilla's horses, a tamed one gives the held item its use before the player mounts.
+        if (tamed && await Obsidian.Plugins.ItemBehaviors.UseOnEntityAsync(player, hand, this))
+            return true;
+
+        if (!player.Sneaking && Mount(player))
+        {
             GoalController?.Pause();
+            return true;
+        }
+
+        return false;
     }
 
     private static async ValueTask ConsumeItemAsync(IPlayer player, int slot)
@@ -100,20 +123,21 @@ public class AbstractHorse : Animal
         if (player.GameMode == GameMode.Creative)
             return;
         player.Inventory.RemoveItem(slot, 1);
-        await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-        { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
+        await player.SendInventorySlotAsync(slot);
     }
 
     public bool HasSaddle
     {
         get => !GetEquipment(EquipmentSlot.Saddle).IsAir;
-        set => SetEquipment(EquipmentSlot.Saddle, value ? ItemsRegistry.GetSingleItem(Material.Saddle) : ItemStack.Air);
+        set => SetEquipment(
+            EquipmentSlot.Saddle,
+            value ? ItemsRegistry.GetSingleItem(ItemsRegistry.Saddle) : ItemStack.Air);
     }
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         if (HasSaddle)
-            DropItem(Material.Saddle);
+            DropItem(ItemsRegistry.Saddle);
         return default;
     }
 
@@ -141,7 +165,7 @@ public class AbstractHorse : Animal
             else
             {
                 Temper = Math.Min(MaximumTemper, Temper + 5);
-                Dismount();
+                EjectPassengers();
                 SendEntityEvent(6);
             }
             return;
@@ -173,7 +197,8 @@ internal sealed class HorseGrazeGoal(AbstractHorse horse) : Goal
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
     public override bool CanUse() => !horse.HasRider && !horse.IsBaby && horse.Random.Next(300) == 0 &&
-        horse.Terrain.GetBlock((Vector)(horse.Position - new VectorD(0, 0.01f, 0)).Floor())?.Material == Material.GrassBlock;
+        horse.Terrain.GetBlock((Vector)(horse.Position - new VectorD(0, 0.01f, 0)).Floor())?.RegistryId
+            == BlockIds.GrassBlock;
     public override bool CanContinue() => ticks > 0 && !horse.HasRider;
     public override void Start()
     {

@@ -1,33 +1,148 @@
 ﻿using Obsidian.Nbt;
 
 namespace Obsidian.API.Inventory.DataComponents;
+
 public abstract record class BlockPredicatesDataComponent : DataComponent
 {
     public override DataComponentType Type { get; }
 
     public override string Identifier { get; }
 
-    public List<BlockPredicate> Predicates { get; init; }
+    private ImmutableArray<BlockPredicate> predicates = [];
+
+    public ImmutableArray<BlockPredicate> Predicates
+    {
+        get => this.predicates;
+        init => this.predicates = value;
+    }
 
     public bool ShowInTooltip { get; init; }
 
-    public void WriteHashed(INetStreamWriter writer) => throw new NotImplementedException();
+    protected override void ReadCore(INetStreamReader reader)
+    {
+        this.predicates = reader.ReadLengthPrefixedArray(() => new BlockPredicate
+        {
+            Blocks = reader.ReadBoolean() ? reader.ReadIdSet(ComponentValueCodecs.Blocks) : null,
+            Properties = reader.ReadBoolean() ? reader.ReadLengthPrefixedArray(() =>
+            {
+                var name = reader.ReadString();
+                var exact = reader.ReadBoolean();
+                return exact
+                    ? new BlockProperty { Name = name, IsExactMatch = true, ExactValue = reader.ReadString() }
+                    : new BlockProperty
+                    {
+                        Name = name,
+                        IsExactMatch = false,
+                        MinValue = reader.ReadOptionalString(),
+                        MaxValue = reader.ReadOptionalString()
+                    };
+            }).ToImmutableArray() : null,
+            Nbt = reader.ReadBoolean() ? reader.ReadNbtCompound() : null,
+            ExactComponents = reader.ReadLengthPrefixedArray(() =>
+            {
+                var type = (DataComponentType)reader.ReadRegistryId(ComponentValueCodecs.DataComponentTypes);
+                return reader.ReadDataComponent(type);
+            }).ToImmutableArray(),
+            PartialComponents = reader.ReadLengthPrefixedArray(() =>
+            {
+                var isPredicateType = reader.ReadBoolean();
+                return new ComponentPredicate
+                {
+                    IsPredicateType = isPredicateType,
+                    TypeId = isPredicateType
+                        ? reader.ReadVarInt()
+                        : reader.ReadRegistryId(ComponentValueCodecs.DataComponentTypes),
+                    Value = reader.ReadNbtCompound()
+                };
+            }).ToImmutableArray()
+        }).ToImmutableArray();
+    }
+
+    public override void Write(INetStreamWriter writer)
+    {
+        writer.WriteLengthPrefixedArray(predicate =>
+        {
+            writer.WriteBoolean(predicate.Blocks.HasValue);
+            if (predicate.Blocks.HasValue)
+                IdSet.Write(predicate.Blocks.Value, writer, ComponentValueCodecs.Blocks);
+
+            writer.WriteBoolean(predicate.Properties is not null);
+            if (predicate.Properties is not null)
+            {
+                writer.WriteLengthPrefixedArray(property =>
+                {
+                    writer.WriteString(property.Name);
+                    writer.WriteBoolean(property.IsExactMatch);
+                    if (property.IsExactMatch)
+                        writer.WriteString(property.ExactValue!);
+                    else
+                    {
+                        writer.WriteOptional(property.MinValue);
+                        writer.WriteOptional(property.MaxValue);
+                    }
+                }, predicate.Properties.Value.AsSpan());
+            }
+
+            writer.WriteBoolean(predicate.Nbt is not null);
+            if (predicate.Nbt is not null)
+                writer.WriteNbtCompound(predicate.Nbt);
+
+            writer.WriteLengthPrefixedArray(component =>
+            {
+                writer.WriteRegistryId(ComponentValueCodecs.DataComponentTypes, (int)component.Type);
+                writer.WriteDataComponent(component);
+            }, predicate.ExactComponents.AsSpan());
+            writer.WriteLengthPrefixedArray(component =>
+            {
+                writer.WriteBoolean(component.IsPredicateType);
+                if (component.IsPredicateType)
+                    writer.WriteVarInt(component.TypeId);
+                else
+                    writer.WriteRegistryId(ComponentValueCodecs.DataComponentTypes, component.TypeId);
+
+                writer.WriteNbtCompound(component.Value);
+            }, predicate.PartialComponents.AsSpan());
+        }, this.Predicates.ToArray());
+    }
 }
 
 
+/// <summary>
+/// A partial component predicate: a <c>minecraft:data_component_predicate_type</c> id if
+/// <see cref="IsPredicateType"/>, otherwise the id of the data component type that must be present.
+/// </summary>
+public readonly record struct ComponentPredicate
+{
+    public required bool IsPredicateType { get; init; }
+    public required int TypeId { get; init; }
+    public required NbtCompound Value
+    {
+        get => ComponentCopies.Nbt(field)!;
+        init => field = ComponentCopies.Nbt(value)!;
+    }
+}
+
 public readonly record struct BlockPredicate
 {
-    public bool HasBlocks => this.BlockIds.Count > 0;
+    public BlockPredicate() { }
+    public IdSet? Blocks { get; init; }
+    public ImmutableArray<DataComponent> ExactComponents { get; init; } = [];
+    public ImmutableArray<ComponentPredicate> PartialComponents { get; init; } = [];
+    public bool HasBlocks => this.Blocks.HasValue || this.BlockIds.Length > 0;
 
-    public List<string> BlockIds { get; init; }
+    public ImmutableArray<string> BlockIds { get; init; } = [];
 
-    public bool HasProperties => this.Properties.Count > 0;
+    public bool HasProperties => this.Properties?.Length > 0;
 
-    public List<BlockProperty> Properties { get; init; }
+    public ImmutableArray<BlockProperty>? Properties { get; init; }
 
-    public bool HasNbt => this.Nbt != null;
+    public bool HasNbt => this.Nbt is not null;
 
-    public NbtCompound? Nbt { get; init; }
+    public NbtCompound? Nbt
+    {
+        get => ComponentCopies.Nbt(field);
+        init => field = ComponentCopies.Nbt(value);
+    }
 }
 
 public readonly record struct BlockProperty

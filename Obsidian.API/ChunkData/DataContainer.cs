@@ -25,7 +25,27 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
 
     internal DataArray? DataArray { get; private protected set; }
 
-    public DataContainer(byte initialBitsPerEntry, byte minBitsPerEntry, byte maxBitsPerEntry, int maxEntryCount, Func<byte, IPalette<T>> paletteFactory)
+    // 1 while the container changed since its chunk's last save took the mark (see TakeUnsaved). A new one is unsaved.
+    private int unsaved = 1;
+
+    /// <summary>
+    /// Whether the container changed since <see cref="TakeUnsaved"/> last cleared the mark: every write marks it.
+    /// </summary>
+    internal bool IsUnsaved => Volatile.Read(ref this.unsaved) != 0;
+
+    /// <summary>
+    /// Records a write, which its chunk's next save has to write. Subclasses' own writes call it.
+    /// </summary>
+    internal void MarkUnsaved() => Volatile.Write(ref this.unsaved, 1);
+
+    /// <summary>
+    /// Clears the mark, for a save about to snapshot the container.
+    /// </summary>
+    /// <returns>Whether it was marked. A write after this marks it again, so the next save has it.</returns>
+    internal bool TakeUnsaved() => Interlocked.Exchange(ref this.unsaved, 0) != 0;
+
+    public DataContainer(byte initialBitsPerEntry, byte minBitsPerEntry, byte maxBitsPerEntry, int maxEntryCount,
+        Func<byte, IPalette<T>> paletteFactory)
         : this(minBitsPerEntry, maxBitsPerEntry, maxEntryCount, paletteFactory)
     {
         this.Palette = this.PaletteFactory(initialBitsPerEntry);
@@ -45,6 +65,20 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
     /// Holds the container's lock, so its palette and data can be read together while nothing writes them (saving).
     /// </summary>
     internal Lock.Scope EnterScope() => this.dataLock.EnterScope();
+
+    /// <summary>
+    /// Empties the container, as it was created: a single value palette without a value.
+    /// </summary>
+    internal void Reset()
+    {
+        lock (this.dataLock)
+        {
+            this.Palette = this.PaletteFactory(0);
+            this.DataArray = null;
+        }
+
+        this.MarkUnsaved();
+    }
 
     public bool TryGrow()
     {
@@ -87,6 +121,8 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
             if (!this.IsSingleValued)
                 this.DataArray[index] = paletteId;
         }
+
+        this.MarkUnsaved();
     }
 
     public virtual void Add(T value)
@@ -98,6 +134,8 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
             if (this.TryGrow())
                 this.Palette.GetOrAddId(value);
         }
+
+        this.MarkUnsaved();
     }
 
     public virtual T Get(int x, int y, int z)

@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -31,7 +32,7 @@ public sealed partial class ZombieNautilus : Nautilus
         if (Owner != Guid.Empty) AttackTarget = null;
         if (Level.LevelData.Difficulty == Difficulty.Peaceful && Owner == Guid.Empty)
         { await RemoveAsync(); return; }
-        if (!InWater && Level.DimensionName == "minecraft:overworld" && Level.DayTime is >= 0 and < 12000 &&
+        if (!InWater && Level.MonstersBurn((Vector)Position.Floor()) &&
             !Level.LevelData.Raining && Terrain.GetSkyLight((Vector)EyePosition.Floor()) == 15 && GetEquipment(EquipmentSlot.Body).IsAir)
             Ignite(8);
     }

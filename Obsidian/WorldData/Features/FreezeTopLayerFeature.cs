@@ -15,9 +15,9 @@ public sealed class FreezeTopLayerFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:freeze_top_layer";
 
-    private static IBlock Ice => field ??= BlocksRegistry.Get(Material.Ice);
+    private static IBlock Ice => field ??= BlocksRegistry.Ice;
 
-    private static IBlock Snow => field ??= BlocksRegistry.Get(Material.Snow);
+    private static IBlock Snow => field ??= BlocksRegistry.Snow;
 
     public override bool Place(FeatureContext context)
     {
@@ -97,6 +97,6 @@ public sealed class FreezeTopLayerFeature : ConfiguredFeatureBase
         if (block.LightEmission() >= 10)
             return false;
 
-        return (block.IsAir || block.Material == Material.Snow) && Snow.CanSurvive(level, position);
+        return (block.IsAir || block.Is(BlockIds.Snow)) && Snow.CanSurvive(level, position);
     }
 }

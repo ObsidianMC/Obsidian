@@ -21,7 +21,7 @@ public sealed class EnchantRandomlyFunction : LootFunction
 
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
-        var isBook = LootItems.Is(stack, Material.Book);
+        var isBook = LootItems.Is(stack, ItemsRegistry.Book);
         var onlyCompatible = !isBook && this.OnlyCompatible;
         IReadOnlyList<EnchantmentDefinition> options = this.Options.HasValue ? this.Options.Value : EnchantmentsRegistry.All;
         var candidates = options

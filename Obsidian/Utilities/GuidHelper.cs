@@ -7,17 +7,14 @@ namespace Obsidian.Utilities;
 
 public static class GuidHelper
 {
-    private static HashAlgorithm hashAlgorithm;
-
     public static Guid FromStringHash(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
         var i128 = new Int128();
 
-        hashAlgorithm ??= MD5.Create();
-
-        hashAlgorithm.TryComputeHash(Encoding.UTF8.GetBytes(text), i128.AsSpan(), out _);
+        // The static one-shot hash is thread-safe; a shared HashAlgorithm instance isn't, and callers race.
+        MD5.HashData(Encoding.UTF8.GetBytes(text), i128.AsSpan());
 
         i128.version = (byte)((i128.version & 0x0f) | 0x30);
         i128.variant = (byte)((i128.variant & 0x3f) | 0x80);

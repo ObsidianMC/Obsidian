@@ -1,6 +1,6 @@
-﻿using System.Runtime.InteropServices;
-
+﻿
 namespace Obsidian.API.Inventory.DataComponents;
+
 public sealed record class PotionContentsDataComponent : DataComponent
 {
     public override DataComponentType Type => DataComponentType.PotionContents;
@@ -10,26 +10,51 @@ public sealed record class PotionContentsDataComponent : DataComponent
     /// <summary>
     /// The potion whose effects the item has, if any.
     /// </summary>
-    public Potion? Potion { get; set; }
+    private Potion? potion;
 
-    public int? CustomColor { get; set; }
+    public Potion? Potion
+    {
+        get => this.potion;
+        init => this.potion = value;
+    }
+
+    private int? customColor;
+
+    public int? CustomColor
+    {
+        get => this.customColor;
+        init => this.customColor = value;
+    }
 
     /// <summary>
     /// Effects on top of the potion's own.
     /// </summary>
-    public ImmutableArray<PotionEffectData> CustomEffects { get; set; } = [];
+    private ImmutableArray<PotionEffectData> customEffects = [];
+
+    public ImmutableArray<PotionEffectData> CustomEffects
+    {
+        get => this.customEffects;
+        init => this.customEffects = value;
+    }
 
     /// <summary>
     /// Replaces the potion's name in the item name, e.g. <c>water</c> for "Water Bottle".
     /// </summary>
-    public string? CustomName { get; set; }
+    private string? customName;
 
-    public override void Read(INetStreamReader reader)
+    public string? CustomName
     {
-        this.Potion = reader.ReadBoolean() ? (Potion)reader.ReadVarInt() : null;
-        this.CustomColor = reader.ReadOptionalInt();
-        this.CustomEffects = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(() => PotionEffectData.Read(reader)));
-        this.CustomName = reader.ReadOptionalString();
+        get => this.customName;
+        init => this.customName = value;
+    }
+
+    protected override void ReadCore(INetStreamReader reader)
+    {
+        this.potion = reader.ReadBoolean() ? (Potion)reader.ReadVarInt() : null;
+        this.customColor = reader.ReadOptionalInt();
+        this.customEffects = reader.ReadLengthPrefixedArray(() => ComponentValueCodecs.ReadEffect(reader))
+            .ToImmutableArray();
+        this.customName = reader.ReadOptionalString();
     }
 
     public override void Write(INetStreamWriter writer)
@@ -39,7 +64,7 @@ public sealed record class PotionContentsDataComponent : DataComponent
             writer.WriteVarInt((int)this.Potion.Value);
 
         writer.WriteOptional(this.CustomColor);
-        writer.WriteLengthPrefixedArray((effect) => PotionEffectData.Write(effect, writer), this.CustomEffects.AsSpan());
+        writer.WriteLengthPrefixedArray((effect) => ComponentValueCodecs.WriteEffect(effect, writer), this.CustomEffects.AsSpan());
         writer.WriteOptional(this.CustomName);
     }
 }

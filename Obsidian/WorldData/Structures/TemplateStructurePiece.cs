@@ -26,7 +26,8 @@ public abstract class TemplateStructurePiece : StructurePiece
     {
     }
 
-    private TemplateStructurePiece(int genDepth, StructureTemplate template, string templateName, StructurePlaceSettings settings, Vector templatePosition)
+    private TemplateStructurePiece(int genDepth, StructureTemplate template, string templateName,
+        StructurePlaceSettings settings, Vector templatePosition)
         : base(genDepth, template.GetBoundingBox(settings, templatePosition))
     {
         this.Orientation = BlockFace.North;
@@ -69,7 +70,7 @@ public abstract class TemplateStructurePiece : StructurePiece
         if (!this.Template.PlaceInWorld(level, templatePosition, context.Pivot, settings, context.Random))
             return;
 
-        foreach (var marker in this.Template.FilterBlocks(templatePosition, settings, Material.StructureBlock))
+        foreach (var marker in this.Template.FilterBlocks(templatePosition, settings, BlockIds.StructureBlock))
         {
             if (marker.Nbt is not null && marker.Nbt.TryGetTag<NbtTag<string>>("mode", out var mode) && mode.Value == "DATA")
             {
@@ -78,7 +79,7 @@ public abstract class TemplateStructurePiece : StructurePiece
             }
         }
 
-        foreach (var jigsaw in this.Template.FilterBlocks(templatePosition, settings, Material.Jigsaw))
+        foreach (var jigsaw in this.Template.FilterBlocks(templatePosition, settings, BlockIds.Jigsaw))
         {
             if (jigsaw.Nbt is null)
                 continue;
@@ -101,15 +102,10 @@ public abstract class TemplateStructurePiece : StructurePiece
     /// </summary>
     protected static void SetChestLootTable(IWorldGenLevel level, IRandomSource random, Vector position, string lootTable)
     {
-        var chest = level.GetBlockEntity(position) as DataBlockEntity;
+        var chest = level.GetBlockEntity(position);
         if (chest?.Id is not ("minecraft:chest" or "minecraft:trapped_chest"))
             return;
 
-        chest.Set("LootTable", lootTable);
-        var seed = random.NextLong();
-        if (seed != 0L)
-            chest.Set("LootTableSeed", seed);
-        else
-            chest.Data.Remove("LootTableSeed");
+        BlockEntityNbt.SetLootTable(chest, lootTable, random.NextLong());
     }
 }

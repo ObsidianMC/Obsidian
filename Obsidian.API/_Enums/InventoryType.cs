@@ -39,4 +39,6 @@ public enum InventoryType
     Smoker,
 
     Stonecutter,
+
+    Smithing,
 }

@@ -1,3 +1,4 @@
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
@@ -41,7 +42,7 @@ public sealed partial class CopperGolem : PathfinderMob
         {
             if (!GetEquipment(EquipmentSlot.MainHand).IsAir) DropItem(GetEquipment(EquipmentSlot.MainHand));
             var facing = new[] { "south", "west", "north", "east" }[((int)Math.Floor(Yaw.Degrees / 90 + 0.5) % 4 + 4) % 4];
-            var statue = BlocksRegistry.Get(Material.OxidizedCopperGolemStatue).WithProperty("facing", facing);
+            var statue = BlocksRegistry.OxidizedCopperGolemStatue.WithProperty("facing", facing);
             await Level.SetBlockAsync((Vector)Position.Floor(), statue, true);
             await RemoveAsync(); return;
         }
@@ -99,39 +100,40 @@ public sealed partial class CopperGolem : PathfinderMob
                 }
                 SetEquipment(EquipmentSlot.MainHand, held.Count == 0 ? ItemStack.Air : new ItemStack(held, held.Count));
             }
-            if (destination is DataBlockEntity data)
-            {
-                var items = new NbtList(NbtTagType.Compound, "Items");
-                for (var i = 0; i < container.Size; i++)
-                    if (container[i] is { Count: > 0 } item && !item.IsAir)
-                    { var saved = item.ToNbt(); saved.Set(new NbtTag<byte>("Slot", (byte)i)); items.Add(saved); }
-                data.Set(items);
-            }
         }
         destination = null; interactionState = 0; searchAt = AiTick + 40; SynchronizeMetadata();
     }
-    private BaseContainer? ReadContainer(IBlockEntity entity)
-    {
-        if (entity is BaseContainer container) return container.Viewers.Count == 0 ? container : null;
-        if (entity is not DataBlockEntity data || data.Data.HasTag("LootTable")) return null;
-        var inventory = new Container(27); BlockEntityNbt.LoadContents(data.Data, inventory); return inventory;
-    }
+    // A chest's items, unless players have it open or it's still waiting for its loot table.
+    private static BaseContainer? ReadContainer(IBlockEntity entity) =>
+        entity is ContainerBlockEntity { LootTable: null, Inventory.Viewers.Count: 0 } container
+            ? container.Inventory
+            : null;
     private bool Suitable(IBlockEntity entity, ItemStack held)
     {
         var block = Terrain.GetBlock(entity.BlockPosition);
         var copper = block?.UnlocalizedName.Contains("copper_chest", StringComparison.Ordinal) == true;
-        if (held.IsAir ? !copper : block?.Material != Material.Chest && block?.Material != Material.TrappedChest) return false;
+        if (held.IsAir
+            ? !copper
+            : block?.RegistryId != BlockIds.Chest && block?.RegistryId != BlockIds.TrappedChest)
+            return false;
+
         var container = ReadContainer(entity);
         if (container == null) return false;
         if (held.IsAir) return container.Any(item => item is { Count: > 0 } && !item.IsAir);
         var nonempty = container.Where(item => item != null && !item.IsAir && item.Count > 0).ToArray();
         return (nonempty.Length == 0 || nonempty.Any(item => item == held)) && Enumerable.Range(0, container.Size).Any(i => container[i] == null || container[i]!.IsAir || container[i] == held && container[i]!.Count < held.MaxStackSize);
     }
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || IsRemoved || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player)) return;
+        if (!Alive
+            || IsRemoved
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4)
+            || !CanSee(player))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (item is { Count: > 0, Type: Material.Honeycomb } && nextWeather != -2)
+        if (item is { Count: > 0, Holder.Id: ItemIds.Honeycomb } && nextWeather != -2)
         { nextWeather = -2; await ConsumeInteractionItemAsync(player, hand); }
         else if (item is { Count: > 0 } && item.Holder.UnlocalizedName.EndsWith("_axe", StringComparison.Ordinal) && (weather > 0 || nextWeather == -2))
         {
@@ -139,9 +141,19 @@ public sealed partial class CopperGolem : PathfinderMob
             nextWeather = Level.LevelData.Time + Random.Next(504000, 552001);
             await DamageInteractionToolAsync(player, hand, 1); SynchronizeMetadata();
         }
+        else
+            return false;
+
+        return true;
     }
     protected override ValueTask OnDeathAsync(IEntity source)
-    { DropItem(Material.CopperIngot, Random.Next(1, 4)); if (!GetEquipment(EquipmentSlot.MainHand).IsAir) DropItem(GetEquipment(EquipmentSlot.MainHand)); return default; }
+    {
+        DropItem(ItemsRegistry.CopperIngot, Random.Next(1, 4));
+        if (!GetEquipment(EquipmentSlot.MainHand).IsAir)
+            DropItem(GetEquipment(EquipmentSlot.MainHand));
+
+        return default;
+    }
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);

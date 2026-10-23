@@ -6,9 +6,11 @@ namespace Obsidian.WorldData.Decorators;
 
 public class ForestDecorator : BaseDecorator
 {
-    private static IBlock sweetBerryBush = BlocksRegistry.Get(Material.SweetBerryBush, new SweetBerryBushStateBuilder().WithAge(3).Build());
-    private static IBlock roseBushUpperState = BlocksRegistry.Get(Material.RoseBush, new RoseBushStateBuilder().WithHalf(BlockHalf.Upper).Build());
-    private static IBlock peonyUpperState = BlocksRegistry.Get(Material.RoseBush, new RoseBushStateBuilder().WithHalf(BlockHalf.Upper).Build());
+    private static IBlock sweetBerryBush = BlocksRegistry.Get(new SweetBerryBushStateBuilder().WithAge(3).Build().Id);
+    private static IBlock roseBushUpperState =
+        BlocksRegistry.Get(new RoseBushStateBuilder().WithHalf(BlockHalf.Upper).Build().Id);
+    private static IBlock peonyUpperState =
+        BlocksRegistry.Get(new RoseBushStateBuilder().WithHalf(BlockHalf.Upper).Build().Id);
 
     public ForestDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {

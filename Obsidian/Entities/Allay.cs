@@ -50,14 +50,20 @@ public sealed partial class Allay : PathfinderMob
         actions.AddGoal(3, new LookAtPlayerGoal(this, 6));
     }
     public override ValueTask DamageAsync(IEntity source, float amount = 1) => source.Uuid == likedPlayer ? default : base.DamageAsync(source, amount);
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || IsRemoved || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player)) return;
+        if (!Alive
+            || IsRemoved
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4)
+            || !CanSee(player))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (dancing && duplicationCooldown == 0 && item is { Count: > 0, Type: Material.AmethystShard })
+        if (dancing && duplicationCooldown == 0 && item is { Count: > 0, Holder.Id: ItemIds.AmethystShard })
         {
             await ConsumeInteractionItemAsync(player, hand);
-            var child = (Allay)Level.GetNewEntitySpawner().WithEntityType(Type).AtPosition(Position).Spawn();
+            var child = (Allay)Level.GetNewEntitySpawner().WithEntityType(Type!.Value).AtPosition(Position).Spawn();
             duplicationCooldown = child.duplicationCooldown = 6000;
             SendEntityEvent(18);
             SynchronizeMetadata();
@@ -79,6 +85,10 @@ public sealed partial class Allay : PathfinderMob
             likedPlayer = Guid.Empty;
             throwCooldown = 60;
         }
+        else
+            return false;
+
+        return true;
     }
     protected override async ValueTask TickMobAsync()
     {
@@ -89,7 +99,8 @@ public sealed partial class Allay : PathfinderMob
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
         if (AiTick % 20 == 0 && jukebox is { } musicPosition)
         {
-            if (((VectorD)musicPosition + new VectorD(0.5, 0.5, 0.5) - Position).MagnitudeSquared() > 100 || Terrain.GetBlock(musicPosition)?.Material != Material.Jukebox)
+            if (((VectorD)musicPosition + new VectorD(0.5, 0.5, 0.5) - Position).MagnitudeSquared() > 100
+                || Terrain.GetBlock(musicPosition)?.RegistryId != BlockIds.Jukebox)
                 ReceiveJukeboxEvent(musicPosition, false);
         }
         var held = GetEquipment(EquipmentSlot.MainHand);

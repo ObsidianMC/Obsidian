@@ -120,15 +120,13 @@ internal sealed class DragonBreathCloud : Entity
             var difference = target.Position - Position;
             if (difference.X * difference.X + difference.Z * difference.Z > Radius * Radius) continue;
             nextHit[target.EntityId] = age + 20;
-            if (target.Type is EntityType.Zombie or EntityType.Husk or EntityType.Drowned or EntityType.ZombifiedPiglin or
-                EntityType.Zoglin or EntityType.Skeleton or EntityType.Stray or EntityType.Bogged or EntityType.Parched or
-                EntityType.WitherSkeleton or EntityType.Wither or EntityType.Phantom or EntityType.SkeletonHorse or EntityType.ZombieHorse)
+            if (CombatEffects.IsUndead(target.Type))
             {
                 target.Health = Math.Min(target.GetAttributeValue("minecraft:generic.max_health"), target.Health + 4);
                 continue;
             }
             if (target is Mob mob) await mob.DamageMagicAsync(owner ?? this, target is Witch ? 0.9f : 6);
-            else await target.DamageAsync(owner ?? this, 6);
+            else await target.DamageCombatAsync(owner ?? this, 6, CombatDamageKind.Magic);
         }
         foreach (var id in nextHit.Where(entry => age >= entry.Value).Select(entry => entry.Key).ToArray()) nextHit.Remove(id);
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SetEntityDataPacket { EntityId = EntityId, Entity = this });

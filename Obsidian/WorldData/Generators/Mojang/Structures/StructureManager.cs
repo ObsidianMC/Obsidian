@@ -1,5 +1,6 @@
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
+using Obsidian.Registries;
 using Obsidian.WorldData.Structures;
 using Obsidian.WorldData.Structures.Placement;
 using System.Threading;
@@ -22,6 +23,11 @@ namespace Obsidian.WorldData.Generators.Mojang.Structures;
 /// before it's placed again (see <see cref="StructureStart.RestoreState"/>), so a restart places the rest of a structure
 /// the same way.
 /// </para>
+/// <para>
+/// The structures and sets are the current <see cref="WorldgenStructures"/>' (see <see cref="Layout"/>): when plugins
+/// change them, chunks whose starts weren't made yet get the new sets' starts (see <see cref="StructureStartCache"/>).
+/// Starting and placing a structure made of plugins' types is a call into those plugins.
+/// </para>
 /// </remarks>
 internal sealed class StructureManager : IStructurePlacementState
 {
@@ -33,30 +39,73 @@ internal sealed class StructureManager : IStructurePlacementState
     private readonly IStructureTerrain terrain;
     private readonly int minY;
     private readonly int height;
-    private readonly IReadOnlyList<StructureSet> structureSets;
-    private readonly ConcurrentDictionary<(int X, int Z), StructureStart[]> starts = new();
     private readonly ConcurrentDictionary<ConcentricRingsStructurePlacement, Lazy<IReadOnlySet<(int X, int Z)>>> ringPositions = new();
 
-    // The structures the beardifier reshapes terrain for, in the order it goes through them.
-    private readonly Structure[] terrainAdaptingStructures;
+    // The layout of the current structures, rebuilt when plugins change them (see Layout).
+    private readonly Func<WorldgenStructures> structures;
+    private readonly Lock layoutLock = new();
+    private StructureLayout layout;
 
-    // See GetReachingStarts. Per manager, and its values don't reference the manager, so idle threads don't keep it alive.
-    private readonly ThreadLocal<ReachingStarts?> lastReachingStarts = new();
+    // See FindReaching. Per manager, and its values don't reference the manager, so idle threads don't keep it alive.
+    // Replaced when structures change, so idle threads don't keep the starts of plugins that are gone either: the
+    // previous one lets go of its values once it's collected.
+    private ThreadLocal<ReachingStarts?> lastReachingStarts = new();
 
     public long Seed { get; }
 
     /// <summary>
+    /// The starts created so far, which keep the state their pieces were placed with until it's saved.
+    /// </summary>
+    public StructureStartCache StartCache { get; }
+
+    /// <summary>
     /// The structure sets of the dimension, in registry order.
     /// </summary>
-    public IReadOnlyList<StructureSet> Sets => this.structureSets;
+    public IReadOnlyList<StructureSet> Sets => this.Layout.Sets;
 
     /// <summary>
     /// The structures of each decoration step in registry order, which decides their feature seed index.
     /// </summary>
-    public IReadOnlyList<IReadOnlyList<Structure>> StructuresPerStep { get; }
+    public IReadOnlyList<IReadOnlyList<Structure>> StructuresPerStep => this.Layout.StructuresPerStep;
 
-    public StructureManager(RandomState randomState, IClimateBiomeSource biomeSource, IStructureTerrain terrain, int minY, int height)
+    /// <summary>
+    /// The current structures' layout for the dimension, rebuilt when plugins changed them. Code going through
+    /// several structures reads it once, so they're all of the same layout.
+    /// </summary>
+    public StructureLayout Layout
     {
+        get
+        {
+            var source = this.structures();
+            var current = Volatile.Read(ref this.layout);
+            if (current.Version >= source.Version)
+                return current;
+
+            lock (this.layoutLock)
+            {
+                // A slower thread mustn't put back structures older than another's.
+                if (this.layout.Version < source.Version)
+                    Volatile.Write(ref this.layout, new StructureLayout(source, this.biomeSource.PossibleBiomes));
+
+                return this.layout;
+            }
+        }
+    }
+
+    /// <param name="startCache">Starts created before with the same seed and terrain, to keep; new ones by
+    /// default.</param>
+    /// <param name="structures">The structures and sets, read as structures start;
+    /// <see cref="PluginStructures.Current"/> by default.</param>
+    public StructureManager(
+        RandomState randomState,
+        IClimateBiomeSource biomeSource,
+        IStructureTerrain terrain,
+        int minY,
+        int height,
+        StructureStartCache? startCache = null,
+        Func<WorldgenStructures>? structures = null)
+    {
+        this.StartCache = startCache ?? new();
         this.randomState = randomState;
         this.biomeSource = biomeSource;
         this.terrain = terrain;
@@ -64,59 +113,82 @@ internal sealed class StructureManager : IStructurePlacementState
         this.height = height;
         this.Seed = randomState.Seed;
 
-        // Vanilla's registries are loaded from the data pack, so they're in id order.
-        this.structureSets = [.. StructureSets.All.Values
-            .Where(this.HasBiomesFor)
-            .OrderBy(set => set.Identifier, StringComparer.Ordinal)];
-
-        var structures = Obsidian.Registries.Structures.All.Values.OrderBy(structure => structure.Identifier, StringComparer.Ordinal).ToList();
-        this.StructuresPerStep = [.. Enum.GetValues<DecorationStep>()
-            .Select(step => (IReadOnlyList<Structure>)[.. structures.Where(structure => structure.Step == step)])];
-        this.terrainAdaptingStructures = [.. this.StructuresPerStep.SelectMany(step => step)
-            .OrderBy(structure => structure.Identifier, StringComparer.Ordinal)
-            .Where(structure => structure.TerrainAdaptation != TerrainAdjustment.None)];
+        this.structures = structures ?? (static () => PluginStructures.Current);
+        this.layout = new StructureLayout(this.structures(), biomeSource.PossibleBiomes);
     }
 
     /// <summary>
     /// The structures that start in a chunk (vanilla's structure starts status), at most one per structure set.
     /// </summary>
-    public StructureStart[] GetStarts(int chunkX, int chunkZ) =>
-        this.starts.GetOrAdd((chunkX, chunkZ), static (key, manager) => manager.CreateStarts(key.X, key.Z), this);
+    public StructureStart[] GetStarts(int chunkX, int chunkZ)
+    {
+        // The cache gives none for a layout older than one it was pruned for: the current one is read again.
+        while (true)
+        {
+            var made = this.StartCache.Get(chunkX, chunkZ, this.Layout, this.CreateStart);
+            if (made is not null)
+                return made.Starts;
+        }
+    }
+
+    /// <summary>
+    /// Moves to the current structures, if plugins changed them, and drops the starts of structure sets that are
+    /// gone, and those of plugins that are unloading, so that the plugins aren't kept.
+    /// </summary>
+    public void Refresh()
+    {
+        var layout = this.Layout;
+        this.StartCache.Prune(layout.Source);
+        Volatile.Write(ref this.lastReachingStarts, new ThreadLocal<ReachingStarts?>());
+
+        foreach (var placement in this.ringPositions.Keys)
+        {
+            if (!layout.Sets.Any(set => set.Placement == placement))
+                this.ringPositions.TryRemove(placement, out _);
+        }
+    }
 
     /// <summary>
     /// The starts of <paramref name="structure"/> whose box reaches the chunk, in the order vanilla places them.
     /// </summary>
-    public List<StructureStart> GetReferencingStarts(int chunkX, int chunkZ, Structure structure)
-    {
-        // Vanilla adds the reference chunks to a LongOpenHashSet in this order and places the starts in the set's order.
-        List<long>? references = null;
-        Dictionary<long, StructureStart>? byChunk = null;
-
-        foreach (var (key, start) in this.GetReachingStarts(chunkX, chunkZ))
-        {
-            if (start.Structure != structure)
-                continue;
-
-            (references ??= []).Add(key);
-            (byChunk ??= [])[key] = start;
-        }
-
-        return references is null ? [] : [.. LongHashSetOrder.Order(references).Select(key => byChunk![key])];
-    }
+    public List<StructureStart> GetReferencingStarts(int chunkX, int chunkZ, Structure structure) =>
+        this.FindReaching(chunkX, chunkZ).Of(structure);
 
     /// <summary>
-    /// The starts whose box reaches the chunk with their start chunk's key, start chunk by start chunk (X, then Z).
+    /// The starts whose box reaches the chunk, all made for the current layout: what decorating the chunk places.
     /// </summary>
     /// <remarks>
     /// Decorating a chunk asks for the starts of every structure in turn, so each thread keeps the last chunk's starts.
     /// Starts don't change once created.
     /// </remarks>
-    private List<(long Key, StructureStart Start)> GetReachingStarts(int chunkX, int chunkZ)
+    public ReachingStarts FindReaching(int chunkX, int chunkZ)
     {
-        var last = this.lastReachingStarts.Value;
-        if (last is not null && last.ChunkX == chunkX && last.ChunkZ == chunkZ)
-            return last.Starts;
+        while (true)
+        {
+            var layout = this.Layout;
+            var cache = Volatile.Read(ref this.lastReachingStarts);
+            var last = cache.Value;
+            if (last is not null && last.Layout == layout && last.ChunkX == chunkX && last.ChunkZ == chunkZ)
+                return last;
 
+            if (this.TryFindReaching(layout, chunkX, chunkZ) is ReachingStarts found)
+            {
+                cache.Value = found;
+                return found;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Every start whose box reaches the chunk, of any structure: the starts placed when the chunk is decorated.
+    /// </summary>
+    public IEnumerable<StructureStart> GetStartsReaching(int chunkX, int chunkZ) =>
+        this.FindReaching(chunkX, chunkZ).Starts;
+
+    // The starts reaching the chunk, made for the layout, or null once a later layout replaced it: start chunks with
+    // starts of different layouts would place structures of both, or leave some out.
+    private ReachingStarts? TryFindReaching(StructureLayout layout, int chunkX, int chunkZ)
+    {
         var minX = chunkX << 4;
         var minZ = chunkZ << 4;
         var reaching = new List<(long, StructureStart)>();
@@ -125,7 +197,11 @@ internal sealed class StructureManager : IStructurePlacementState
         {
             for (var z = chunkZ - ReferenceRadius; z <= chunkZ + ReferenceRadius; z++)
             {
-                foreach (var start in this.GetStarts(x, z))
+                var made = this.StartCache.Get(x, z, layout, this.CreateStart);
+                if (made is null || made.Version > layout.Version && this.Layout != layout)
+                    return null;
+
+                foreach (var start in made.Starts)
                 {
                     if (start.BoundingBox.Intersects(minX, minZ, minX + 15, minZ + 15))
                         reaching.Add((ChunkKey(x, z), start));
@@ -133,29 +209,7 @@ internal sealed class StructureManager : IStructurePlacementState
             }
         }
 
-        this.lastReachingStarts.Value = new ReachingStarts(chunkX, chunkZ, reaching);
-        return reaching;
-    }
-
-    /// <summary>
-    /// Every start whose box reaches the chunk, of any structure: the starts placed when the chunk is decorated.
-    /// </summary>
-    public IEnumerable<StructureStart> GetStartsReaching(int chunkX, int chunkZ)
-    {
-        var minX = chunkX << 4;
-        var minZ = chunkZ << 4;
-
-        for (var x = chunkX - ReferenceRadius; x <= chunkX + ReferenceRadius; x++)
-        {
-            for (var z = chunkZ - ReferenceRadius; z <= chunkZ + ReferenceRadius; z++)
-            {
-                foreach (var start in this.GetStarts(x, z))
-                {
-                    if (start.BoundingBox.Intersects(minX, minZ, minX + 15, minZ + 15))
-                        yield return start;
-                }
-            }
-        }
+        return new ReachingStarts(layout, chunkX, chunkZ, reaching);
     }
 
     /// <summary>
@@ -163,6 +217,12 @@ internal sealed class StructureManager : IStructurePlacementState
     /// generator. Without it, starts are restored without saved state.
     /// </summary>
     internal Func<int, int, NbtCompound?>? LoadStartChunk { get; set; }
+
+    /// <summary>
+    /// Called with a start's start chunk once code outside of chunk decoration changed the start (see
+    /// <see cref="LoadStart"/>), so the chunk saves its new state; set by the generator.
+    /// </summary>
+    internal Action<int, int>? StartChanged { get; set; }
 
     /// <summary>
     /// Loads a start's start chunk, restoring the start's saved state the first time, for code that changes the start
@@ -185,35 +245,10 @@ internal sealed class StructureManager : IStructurePlacementState
         start.RestoreState(savedStarts is not null && savedStarts.TryGetTag<NbtCompound>(start.Structure.Identifier, out var saved) ? saved : null);
 
     /// <summary>
-    /// The structure starts to save in their start chunk (vanilla's <c>structures.starts</c>, keyed by structure id): those
-    /// the chunk was loaded with, where starts restored in this session replace theirs with their pieces' current state.
+    /// The structure starts to save in their start chunk (see <see cref="StructureStartCache.Save"/>).
     /// </summary>
-    /// <remarks>
-    /// A start that wasn't restored hasn't been placed in this session, so what the chunk was loaded with is still current.
-    /// </remarks>
-    public NbtCompound? SaveStarts(int chunkX, int chunkZ, NbtCompound? loaded)
-    {
-        if (!this.starts.TryGetValue((chunkX, chunkZ), out var cached) || !cached.Any(start => start.IsStateRestored))
-            return loaded;
-
-        var result = new NbtCompound("starts");
-        if (loaded is not null)
-        {
-            foreach (var (name, start) in loaded)
-                result.Add(name, start);
-        }
-
-        foreach (var start in cached)
-        {
-            if (!start.IsStateRestored)
-                continue;
-
-            result.Remove(start.Structure.Identifier);
-            result.Add(start.SaveState());
-        }
-
-        return result;
-    }
+    public NbtCompound? SaveStarts(int chunkX, int chunkZ, NbtCompound? loaded) =>
+        this.StartCache.Save(chunkX, chunkZ, loaded);
 
     /// <summary>
     /// Every start of a structure with terrain adaptation whose box reaches the chunk, for the beardifier.
@@ -223,9 +258,10 @@ internal sealed class StructureManager : IStructurePlacementState
     /// </remarks>
     public IEnumerable<StructureStart> GetTerrainAdaptingStarts(int chunkX, int chunkZ)
     {
-        foreach (var structure in this.terrainAdaptingStructures)
+        var reaching = this.FindReaching(chunkX, chunkZ);
+        foreach (var structure in reaching.Layout.TerrainAdapting)
         {
-            foreach (var start in this.GetReferencingStarts(chunkX, chunkZ, structure))
+            foreach (var start in reaching.Of(structure))
                 yield return start;
         }
     }
@@ -248,33 +284,37 @@ internal sealed class StructureManager : IStructurePlacementState
     }
 
     /// <summary>
-    /// Vanilla <c>ChunkGenerator.createStructures</c> for one chunk.
+    /// Vanilla <c>ChunkGenerator.createStructures</c> for one structure set in one chunk.
     /// </summary>
-    private StructureStart[] CreateStarts(int chunkX, int chunkZ)
+    /// <param name="refused">Set when a structure the set picked can't start since a plugin it runs is unloading:
+    /// the set's start isn't known then.</param>
+    private StructureStart? CreateStart(
+        StructureLayout layout,
+        StructureSet set,
+        int chunkX,
+        int chunkZ,
+        out bool refused)
     {
-        List<StructureStart>? result = null;
+        refused = false;
+        if (!set.Placement.IsStructureChunk(this, chunkX, chunkZ))
+            return null;
 
-        foreach (var set in this.structureSets)
-        {
-            if (!set.Placement.IsStructureChunk(this, chunkX, chunkZ))
-                continue;
-
-            var start = set.Structures.Length == 1
-                ? this.TryGenerate(set.Structures[0].Structure, chunkX, chunkZ)
-                : this.TryGenerateWeighted(set.Structures, chunkX, chunkZ);
-
-            if (start is not null)
-                (result ??= []).Add(start);
-        }
-
-        return result is null ? [] : [.. result];
+        return set.Structures.Length == 1
+            ? this.TryGenerate(layout, set.Structures[0].Structure, chunkX, chunkZ, out refused)
+            : this.TryGenerateWeighted(layout, set.Structures, chunkX, chunkZ, out refused);
     }
 
     /// <summary>
     /// Picks the set's structures by weight until one starts, dropping each that doesn't.
     /// </summary>
-    private StructureStart? TryGenerateWeighted(ImmutableArray<StructureSetEntry> entries, int chunkX, int chunkZ)
+    private StructureStart? TryGenerateWeighted(
+        StructureLayout layout,
+        ImmutableArray<StructureSetEntry> entries,
+        int chunkX,
+        int chunkZ,
+        out bool refused)
     {
+        refused = false;
         var candidates = entries.ToList();
         var random = new WorldgenRandom(new LegacyRandomSource(0L));
         random.SetLargeFeatureSeed(this.Seed, chunkX, chunkZ);
@@ -294,8 +334,8 @@ internal sealed class StructureManager : IStructurePlacementState
             }
 
             var chosen = candidates[index];
-            var start = this.TryGenerate(chosen.Structure, chunkX, chunkZ);
-            if (start is not null)
+            var start = this.TryGenerate(layout, chosen.Structure, chunkX, chunkZ, out refused);
+            if (start is not null || refused)
                 return start;
 
             candidates.RemoveAt(index);
@@ -305,10 +345,48 @@ internal sealed class StructureManager : IStructurePlacementState
         return null;
     }
 
-    private StructureStart? TryGenerate(Structure structure, int chunkX, int chunkZ)
+    // A structure made of plugins' types runs their code as it starts, so it's a call into them; one whose plugins
+    // are unloading is refused, and its failing is theirs. The start keeps its plugins, whose code its pieces run.
+    private StructureStart? TryGenerate(
+        StructureLayout layout,
+        Structure structure,
+        int chunkX,
+        int chunkZ,
+        out bool refused)
+    {
+        var owners = layout.OwnersOf(structure);
+        refused = !GeneratorCalls.TryEnter(owners, out var calls);
+        if (refused)
+            return null;
+
+        using (calls)
+        {
+            try
+            {
+                var start = this.Generate(layout, structure, chunkX, chunkZ);
+                if (start is not null)
+                    start.Owners = owners;
+
+                return start;
+            }
+            catch (Exception ex) when (!owners.IsEmpty && ex is not (GeneratorStoppedException or OutOfMemoryException))
+            {
+                throw new PluginGenerationException(
+                    owners,
+                    $"Failed to start structure '{structure.Identifier}' in chunk ({chunkX}, {chunkZ}).",
+                    ex);
+            }
+        }
+    }
+
+    private StructureStart? Generate(StructureLayout layout, Structure structure, int chunkX, int chunkZ)
     {
         var random = new WorldgenRandom(new LegacyRandomSource(0L));
         random.SetLargeFeatureSeed(this.Seed, chunkX, chunkZ);
+
+        var generation = new WorldGenerationContext(
+            Math.Max(this.minY, this.randomState.Settings.Noise.MinY),
+            Math.Min(this.height, this.randomState.Settings.Noise.Height));
 
         return structure.Generate(new StructureGenerationContext
         {
@@ -322,16 +400,10 @@ internal sealed class StructureManager : IStructurePlacementState
             ValidBiome = structure.Biomes.Contains,
             MinY = this.minY,
             Height = this.height,
-            Generation = new WorldGenerationContext(Math.Max(this.minY, this.randomState.Settings.Noise.MinY),
-                Math.Min(this.height, this.randomState.Settings.Noise.Height))
+            Generation = generation,
+            Pools = layout.Source.Pool
         });
     }
-
-    /// <summary>
-    /// Vanilla <c>hasBiomesForStructureSet</c>: whether any structure of the set can start in a biome the source produces.
-    /// </summary>
-    private bool HasBiomesFor(StructureSet set) =>
-        set.Structures.Any(entry => this.biomeSource.PossibleBiomes.Any(entry.Structure.Biomes.Contains));
 
     /// <summary>
     /// Vanilla <c>ChunkGeneratorStructureState.generateRingPositions</c>: starts spread over rings, each moved to a preferred
@@ -415,6 +487,4 @@ internal sealed class StructureManager : IStructurePlacementState
 
     /// <summary>Vanilla <c>ChunkPos.asLong</c>.</summary>
     private static long ChunkKey(int chunkX, int chunkZ) => (chunkX & 0xFFFFFFFFL) | (chunkZ & 0xFFFFFFFFL) << 32;
-
-    private sealed record ReachingStarts(int ChunkX, int ChunkZ, List<(long Key, StructureStart Start)> Starts);
 }

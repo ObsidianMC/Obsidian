@@ -16,8 +16,9 @@ internal static class DatagenAssets
     private static readonly string[] enumRegistries =
         ["minecraft:data_component_type", "minecraft:map_decoration_type", "minecraft:mob_effect", "minecraft:potion"];
 
-    // The loot table categories the server fills containers from (see LootRegistryGenerator).
-    private static readonly string[] lootTableCategories = ["archaeology", "chests", "dispensers", "pots", "spawners"];
+    // Container, block and supported entity tables evaluated by the server (see LootRegistryGenerator).
+    private static readonly string[] lootTableCategories =
+        ["archaeology", "blocks", "chests", "dispensers", "pots", "spawners", "entities"];
 
     /// <param name="generatedDirectory">The data generators' output (<c>data</c> and <c>reports</c>).</param>
     /// <param name="worldgenGroupsPath">The Java dumper's vanilla classes declaring each feature (see <see cref="WorldgenAssets"/>).</param>
@@ -39,11 +40,20 @@ internal static class DatagenAssets
         WriteJson(Path.Combine(outputDirectory, "recipes.json"), Combine(Path.Combine(data, "recipe"), path => path));
         WriteJson(Path.Combine(outputDirectory, "advancements.json"), Combine(Path.Combine(data, "advancement"), ToId));
         WriteJson(Path.Combine(outputDirectory, "enchantments.json"), Combine(Path.Combine(data, "enchantment"), ToId));
+        WriteJson(Path.Combine(outputDirectory, "dialogs.json"), Combine(Path.Combine(data, "dialog"), ToId));
         WriteJson(Path.Combine(outputDirectory, "instruments.json"), Combine(Path.Combine(data, "instrument"), ToId));
 
         foreach (var category in lootTableCategories)
         {
             var tables = Combine(Path.Combine(data, "loot_table", category), path => ToId($"{category}/{path}"));
+            if (category == "entities")
+            {
+                // These need entity predicates that the evaluator does not model yet. Keep their old drops until
+                // their behaviour can be checked against vanilla; do not weaken predicates to include them.
+                foreach (var id in new[] { "ghast", "magma_cube", "slime", "turtle", "sheep", "pillager" })
+                    tables.Remove($"minecraft:entities/{id}");
+            }
+
             WriteJson(Path.Combine(outputDirectory, "loot_table", $"{category}.json"), tables);
         }
 
@@ -67,6 +77,20 @@ internal static class DatagenAssets
         WriteJson(Path.Combine(outputDirectory, "sounds.json"), Entries("minecraft:sound_event"));
         WriteJson(Path.Combine(outputDirectory, "fluids.json"), ProtocolIds("minecraft:fluid"));
         WriteJson(Path.Combine(outputDirectory, "command_parsers.json"), ProtocolIds("minecraft:command_argument_type"));
+
+        // Every built-in registry's entries in protocol id order, which the Obsidian client checks a NeoForge server's
+        // registry sync against.
+        var registryIds = new JsonObject();
+        foreach (var (registry, _) in registries)
+        {
+            var names = Entries(registry)
+                .OrderBy(entry => entry.Value!["protocol_id"]!.GetValue<int>())
+                .Select(entry => (JsonNode?)entry.Key);
+
+            registryIds[registry] = new JsonArray([.. names]);
+        }
+
+        WriteJson(Path.Combine(outputDirectory, "registry_ids.json"), registryIds);
 
         var enums = new JsonObject();
         foreach (var registry in enumRegistries)
@@ -97,7 +121,8 @@ internal static class DatagenAssets
                         ["state"] = ToPascalCase(state),
                         ["packet_id"] = packet!["protocol_id"]!.DeepClone(),
                         ["usable_interface"] = $"I{ToPascalCase(direction)}Packet",
-                        ["fields"] = (fields[direction]?[id] ?? throw new InvalidDataException($"The Java dumper has no fields for {direction} {id}.")).DeepClone()
+                        ["fields"] = (fields[direction]?[id]
+                            ?? throw new InvalidDataException($"The Java dumper has no fields for {direction} {id}.")).DeepClone()
                     });
                 }
             }

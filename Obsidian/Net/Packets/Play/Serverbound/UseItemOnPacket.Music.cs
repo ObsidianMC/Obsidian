@@ -8,11 +8,17 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 
 public partial class UseItemOnPacket
 {
-    private async ValueTask<bool> TryUseMusicBlockAsync(IPlayer player, int slot, ItemStack? held, IBlock block)
+    private async ValueTask<bool> TryUseMusicBlockAsync(IClientPlayer player, int slot, ItemStack? held, IBlock block)
     {
-        if (block.Material is not Material.NoteBlock and not Material.Jukebox || player.Sneaking || player.Level is not AbstractLevel level) return false;
+        if (block.RegistryId is not BlockIds.NoteBlock and not BlockIds.Jukebox
+            || player.Sneaking
+            || player.Level is not AbstractLevel level)
+        {
+            return false;
+        }
+
         if (player.Health <= 0 || player.GameMode is GameMode.Spectator or GameMode.Adventure || (player.Position - (VectorD)Position).MagnitudeSquared() > 36) return true;
-        if (block.Material == Material.NoteBlock)
+        if (block.Is(BlockIds.NoteBlock))
         {
             var note = int.TryParse(block.GetProperty("note"), out var number) ? number : 0;
             await level.SetBlockAsync(Position, block.WithProperty("note", (note + 1) % 25), true);

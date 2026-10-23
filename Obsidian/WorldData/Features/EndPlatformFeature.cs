@@ -8,9 +8,9 @@ public sealed class EndPlatformFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:end_platform";
 
-    private static IBlock Obsidian => field ??= BlocksRegistry.Get(Material.Obsidian);
+    private static IBlock Obsidian => field ??= BlocksRegistry.ObsidianBlock;
 
-    private static IBlock Air => field ??= BlocksRegistry.Get(Material.Air);
+    private static IBlock Air => field ??= BlocksRegistry.Air;
 
     public override bool Place(FeatureContext context)
     {

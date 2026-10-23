@@ -174,7 +174,8 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
                 {
                     source.Type($"public static {packetClassName} {value.Namespace}{state} => new()");
 
-                    source.Line($"Id = {value.PacketId}");
+                    source.Line($"Id = {value.PacketId},");
+                    source.Line($"State = global::Obsidian.API.ClientState.{state}");
 
                     source.EndScope(true);
 

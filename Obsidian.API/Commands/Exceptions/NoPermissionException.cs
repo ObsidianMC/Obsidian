@@ -9,7 +9,8 @@ internal class NoPermissionException : CommandExecutionCheckException
     public string[] RequiredPermissions { get; }
 
 
-    public NoPermissionException(string[] requiredPermsissions, PermissionCheckType checkType) : base("CommandSender does not have the required permissions.")
+    public NoPermissionException(string[] requiredPermsissions, PermissionCheckType checkType)
+        : base("CommandSender does not have the required permissions.")
     {
         RequiredPermissions = requiredPermsissions;
         CheckType = checkType;

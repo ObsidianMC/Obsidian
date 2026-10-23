@@ -42,20 +42,23 @@ public partial class Guardian : PathfinderMob
     }
     protected override async ValueTask OnHurtAsync(IEntity source)
     {
-        if (!moving && !ReferenceEquals(source, this) && source is Living && IsValidTarget(source))
-            await source.DamageAsync(this, 2);
+        if (!moving && !ReferenceEquals(source, this) && (IncomingDirectSource ?? source) is Living attacker && IsValidTarget(attacker) &&
+            IncomingDamageKind is not (CombatDamageKind.Magic or CombatDamageKind.Explosion or CombatDamageKind.Thorns))
+            await attacker.DamageCombatAsync(this, 2, CombatDamageKind.Thorns);
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.PrismarineShard, Random.Next(3));
+        DropItem(ItemsRegistry.PrismarineShard, Random.Next(3));
         var bonus = Random.Next(5);
-        if (bonus < 2) DropItem(Burning ? Material.CookedCod : Material.Cod);
-        else if (bonus < 4) DropItem(Material.PrismarineCrystals);
+        if (bonus < 2) DropItem(Burning ? ItemsRegistry.CookedCod : ItemsRegistry.Cod);
+        else if (bonus < 4) DropItem(ItemsRegistry.PrismarineCrystals);
         if (source is IPlayer && Random.NextSingle() < 0.025f)
         {
             var fish = Random.Next(100);
-            DropItem(fish < 60 ? Burning ? Material.CookedCod : Material.Cod : fish < 85 ? Burning ? Material.CookedSalmon : Material.Salmon :
-                fish < 87 ? Material.TropicalFish : Material.Pufferfish);
+            DropItem(fish < 60 ? Burning ? ItemsRegistry.CookedCod : ItemsRegistry.Cod
+                : fish < 85 ? Burning ? ItemsRegistry.CookedSalmon : ItemsRegistry.Salmon
+                : fish < 87 ? ItemsRegistry.TropicalFish
+                : ItemsRegistry.Pufferfish);
         }
         return default;
     }
@@ -96,6 +99,11 @@ internal sealed class GuardianAttackGoal(Guardian guardian) : Goal
             guardian.SendEntityEvent(21);
         }
         if (chargeTicks < guardian.AttackDuration) return;
+        if (target is Living living)
+        {
+            var magicDamage = 1 + (guardian.Level.LevelData.Difficulty == Difficulty.Hard ? 2 : 0) + (guardian is ElderGuardian ? 2 : 0);
+            await living.DamageCombatAsync(guardian, magicDamage, CombatDamageKind.Magic);
+        }
         var damage = guardian.AttackDamage;
         if (target is IPlayer)
             damage = guardian.Level.LevelData.Difficulty switch
@@ -127,19 +135,19 @@ public sealed partial class ElderGuardian : Guardian
     {
         await base.TickMobAsync();
         if (MobBitMask.HasFlag(MobBitmask.NoAi) || (AiTick + EntityId) % 1200 != 0) return;
-        foreach (var player in Level.GetPlayersInRange(Position, 50).OfType<Player>().Where(player =>
+        foreach (var player in Level.GetPlayersInRange(Position, 50).Where(player =>
             player.GameMode is GameMode.Survival or GameMode.Adventure))
         {
             if (player.ActivePotionEffects.TryGetValue((int)PotionEffect.MiningFatigue - 1, out var effect) &&
                 effect.EffectData.Amplifier >= 2 && effect.CurrentDuration >= 1200) continue;
             player.AddPotionEffect((int)PotionEffect.MiningFatigue - 1, 6000, 2, EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
-            await player.Client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.PlayElderGuardianMobAppearance, Silent ? 0 : 1));
+            await player.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.PlayElderGuardianMobAppearance, Silent ? 0 : 1));
         }
     }
     protected override async ValueTask OnDeathAsync(IEntity source)
     {
         await base.OnDeathAsync(source);
-        if (source is IPlayer) DropItem(Material.WetSponge);
-        if (Random.Next(5) == 0) DropItem(Material.TideArmorTrimSmithingTemplate);
+        if (source is IPlayer) DropItem(ItemsRegistry.WetSponge);
+        if (Random.Next(5) == 0) DropItem(ItemsRegistry.TideArmorTrimSmithingTemplate);
     }
 }

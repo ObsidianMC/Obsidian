@@ -38,15 +38,18 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
 
         var symbol = ctx.SemanticModel.GetDeclaredSymbol(ctx.Node);
 
-        if (symbol == null)
+        if (symbol is null)
             return null;
 
         return symbol.GetAttributes().Any(x => x.AttributeClass?.Name == AttributeName) ? syntax : null;
     }
 
-    private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<ClassDeclarationSyntax> typeList, string? entitiesJson)
+    private void Generate(SourceProductionContext context, Compilation compilation,
+        ImmutableArray<ClassDeclarationSyntax> typeList, string? entitiesJson)
     {
-        if (entitiesJson == null) return;
+        if (entitiesJson is null)
+            return;
+
 
         using var document = JsonDocument.Parse(entitiesJson);
 
@@ -74,7 +77,8 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
 
             if (!@class.Modifiers.Any(x => x.IsKind(SyntaxKind.PartialKeyword)))
             {
-                context.ReportDiagnostic(DiagnosticSeverity.Error, $"Type {symbol.Name} must be marked as partial in order to generate required properties.", @class);
+                context.ReportDiagnostic(DiagnosticSeverity.Error,
+                    $"Type {symbol.Name} must be marked as partial in order to generate required properties.", @class);
                 continue;
             }
 
@@ -124,19 +128,25 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
                 .Line()
                 .Line();
 
-            builder.Line("public override EntityDimension Dimension { get => new() { Width = baseDimension.Width * DimensionScale, Height = baseDimension.Height * DimensionScale }; protected set => baseDimension = value; }")
+            builder.Line("public override EntityDimension Dimension")
+                .Line("{")
+                .Line("    get => ScaleDimensions(baseDimension.Width, baseDimension.Height);")
+                .Line("    protected set => baseDimension = value;")
+                .Line("}")
                 .Line();
 
             if (entityElement.TryGetProperty("is_fire_immune", out var fireImmuneElement))
             {
-                builder.Indent().Append($"public override bool IsFireImmune {{ get; set; }} = {fireImmuneElement.GetBoolean().ToString().ToLowerInvariant()};")
+                builder.Indent()
+                    .Append($"public override bool IsFireImmune {{ get; set; }} = {fireImmuneElement.GetBoolean().ToString().ToLowerInvariant()};")
                     .Line()
                     .Line();
             }
 
             if (entityElement.TryGetProperty("summonable", out var summonableElement))
             {
-                builder.Indent().Append($"public override bool Summonable {{ get; set; }} = {summonableElement.GetBoolean().ToString().ToLowerInvariant()};")
+                builder.Indent()
+                    .Append($"public override bool Summonable {{ get; set; }} = {summonableElement.GetBoolean().ToString().ToLowerInvariant()};")
                     .Line()
                     .Line();
             }

@@ -16,12 +16,15 @@ public sealed partial class ZombieVillager : Zombie
     public ZombieVillager() => Type = EntityType.ZombieVillager;
     protected override string? SoundName => "zombie_villager";
     protected override bool CanDespawn => ConversionTime < 0 && VillagerXp == 0;
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
-            !IsInRange(player, 4) || !CanSee(player) || ConversionTime >= 0 || !HasPotionEffect((int)PotionEffect.Weakness - 1)) return;
+            !IsInRange(player, 4) || !CanSee(player) || ConversionTime >= 0 ||
+            !HasPotionEffect((int)PotionEffect.Weakness - 1))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (item is not { Count: > 0, Type: Material.GoldenApple }) return;
+        if (item is not { Count: > 0, Holder.Id: ItemIds.GoldenApple })
+            return false;
         await ConsumeInteractionItemAsync(player, hand);
         ConversionTime = Random.Next(3600, 6001);
         ConversionStarter = player.Uuid;
@@ -29,6 +32,7 @@ public sealed partial class ZombieVillager : Zombie
         AddPotionEffect((int)PotionEffect.Strength - 1, ConversionTime, Math.Max(0, (int)Level.LevelData.Difficulty - 1));
         SendEntityEvent(16);
         SynchronizeMetadata();
+        return true;
     }
     protected override async ValueTask TickMobAsync()
     {
@@ -44,7 +48,11 @@ public sealed partial class ZombieVillager : Zombie
             for (var z = -4; z < 4 && specialBlocks < 14; z++)
             {
                 var block = Terrain.GetBlock(position + new Vector(x, y, z));
-                if (block == null || block.Material != Material.IronBars && !TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId)) continue;
+                if (block == null
+                    || block.RegistryId != BlockIds.IronBars
+                        && !TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId))
+                    continue;
+
                 specialBlocks++;
                 if (Random.NextSingle() < 0.3f) progress++;
             }

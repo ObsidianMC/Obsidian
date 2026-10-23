@@ -1,10 +1,14 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.CommandLine;
+using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Configuration;
 using Obsidian.Commands.Framework;
 using Obsidian.Console;
+using Obsidian.Integrated;
+using Obsidian.Plugins;
 using Obsidian.Services;
 using Obsidian.WorldData;
 using OpenTelemetry.Logs;
@@ -16,10 +20,21 @@ using System.Net.Http;
 namespace Obsidian.Hosting;
 public static class DependencyInjection
 {
+    /// <summary>
+    /// Adds Obsidian's configuration: <c>config/server.json</c> and <c>config/whitelist.json</c> under <c>Paths:Root</c>
+    /// when they exist, then environment variables, with command-line arguments overriding them all.
+    /// </summary>
+    /// <remarks>
+    /// The server's paths (see <see cref="ServerConstants.ConfigurePaths"/>) are resolved here, from the configuration the
+    /// builder already has (command line and environment), since the configuration files are under them. An integrated
+    /// server (<c>Integrated:Enabled</c>) also gets its own defaults, which any configuration overrides.
+    /// </remarks>
     public static IHostApplicationBuilder ConfigureObsidian(this IHostApplicationBuilder builder)
     {
-        builder.Configuration.AddJsonFile(Path.Combine("config", "server.json"), optional: false, reloadOnChange: true);
-        builder.Configuration.AddJsonFile(Path.Combine("config", "whitelist.json"), optional: false, reloadOnChange: true);
+        ServerConstants.ConfigurePaths(builder.Configuration);
+
+        builder.Configuration.AddJsonFile(Path.Combine(ServerConstants.ConfigPath, "server.json"), optional: true, reloadOnChange: true);
+        builder.Configuration.AddJsonFile(Path.Combine(ServerConstants.ConfigPath, "whitelist.json"), optional: true, reloadOnChange: true);
         builder.Configuration.AddEnvironmentVariables();
 
         if (Environment.GetEnvironmentVariable("FEEDBACK_WEBHOOK_URL") is { } feedbackWebhookUrl)
@@ -30,14 +45,47 @@ public static class DependencyInjection
             });
         }
 
+        // Command-line arguments come last, so they override the files.
+        foreach (var commandLine in builder.Configuration.Sources.OfType<CommandLineConfigurationSource>().ToList())
+        {
+            builder.Configuration.Sources.Remove(commandLine);
+            builder.Configuration.Sources.Add(commandLine);
+        }
+
+        if (builder.Configuration.GetValue<bool>("Integrated:Enabled"))
+        {
+            // Like vanilla's integrated server: up to 8 players, no connection throttling, and local connections only until
+            // the world is opened to LAN, which advertises it itself. The client drives the console, and its going away
+            // stops the server.
+            builder.Configuration.Sources.Insert(0, new MemoryConfigurationSource
+            {
+                InitialData = new Dictionary<string, string?>
+                {
+                    ["MaxPlayers"] = "8",
+                    ["BindAddress"] = "127.0.0.1",
+                    ["AllowLan"] = "false",
+                    ["Network:ConnectionThrottle"] = "0",
+                    ["Console:Interactive"] = "false",
+                    ["Console:EchoCommands"] = "false",
+                    ["Console:StopOnEndOfInput"] = "true"
+                }
+            });
+        }
+
         return builder;
     }
 
+    /// <summary>
+    /// Adds the server, its logging and its services. With <c>Integrated:Enabled</c>, the server runs as a game client's
+    /// integrated server instead (see <c>docs/integrated-server.md</c>): standard output carries control events, logs go to
+    /// standard error, and standard input also takes control commands.
+    /// </summary>
     public static IHostApplicationBuilder AddObsidian(this IHostApplicationBuilder builder)
     {
-        // filename with date,time
-        var logFile = $"logs/{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.log";
-        var logFileStream = new FileStream(logFile, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+        var integrated = builder.Configuration.GetValue<bool>("Integrated:Enabled");
+
+        Directory.CreateDirectory(ServerConstants.LogsPath);
+        var logFileStream = OpenLogFile(DateTime.Now);
 
         // Clear the host's default providers first; clearing later would also remove OpenTelemetry.
         builder.Logging.ClearProviders();
@@ -48,21 +96,42 @@ public static class DependencyInjection
             x.IncludeFormattedMessage = true;
         });
 
+        // An integrated server's standard output is its control channel, so its log goes to standard error as plain lines.
         //Console logger can be edited through server.config https://learn.microsoft.com/en-us/dotnet/core/extensions/console-log-formatter
-        builder.Logging.AddServerConsoleLogging();
+        if (integrated)
+            builder.Logging.AddProvider(new StreamLoggerProvider(System.Console.OpenStandardError()));
+        else
+            builder.Logging.AddServerConsoleLogging();
 
         builder.Logging.AddProvider(new StreamLoggerProvider(logFileStream));
 
         builder.Services.Configure<ServerConfiguration>(builder.Configuration);
         builder.Services.Configure<WhitelistConfiguration>(builder.Configuration);
+        builder.Services.Configure<IntegratedConfiguration>(builder.Configuration.GetSection("Integrated"));
+        builder.Services.Configure<NewWorldConfiguration>(builder.Configuration.GetSection("NewWorld"));
 
-        builder.Services.AddSingleton<IServerEnvironment, DefaultServerEnvironment>();
+        if (integrated)
+        {
+            builder.Services.AddSingleton<IntegratedSession>();
+            builder.Services.AddSingleton(_ => IntegratedEventWriter.ForStandardOutput());
+            builder.Services.AddSingleton<IntegratedServerService>();
+            builder.Services.AddSingleton<IServerEnvironment, IntegratedServerEnvironment>();
+
+            // Ahead of the other console handlers, which would take control lines for unknown commands.
+            builder.Services.AddSingleton<IConsoleCommandHandler>(sp => sp.GetRequiredService<IntegratedServerService>());
+            builder.Services.AddHostedService(sp => sp.GetRequiredService<IntegratedServerService>());
+        }
+        else
+        {
+            builder.Services.AddSingleton<IServerEnvironment, DefaultServerEnvironment>();
+        }
         builder.Services.AddSingleton<CommandHandler>();
         builder.Services.AddSingleton<WorldManager>();
         builder.Services.AddSingleton<PacketBroadcaster>();
         builder.Services.AddSingleton<IServer, Server>();
         builder.Services.AddSingleton<IUserCache, UserCache>();
         builder.Services.AddSingleton<EventDispatcher>();
+        builder.Services.AddSingleton<PluginStartup>();
         builder.Services.AddSingleton<ILevelFactory, LevelFactory>();
 
         builder.Services.AddSingleton<IConsoleCommandHandler, RegistryConsoleCommandHandler>();
@@ -106,6 +175,25 @@ public static class DependencyInjection
         builder.Services.AddSingleton<ServerMetrics>();
 
         return builder;
+    }
+
+    // A new log for each start, named for its time. A second start within the same second, like a world opened again
+    // right after it was closed, gets a numbered name rather than the first one's file, which may still be open.
+    private static FileStream OpenLogFile(DateTime started)
+    {
+        var name = $"{started:yyyy-MM-dd_HH-mm-ss}";
+        for (var attempt = 1; ; attempt++)
+        {
+            var file = attempt == 1 ? $"{name}.log" : $"{name}_{attempt}.log";
+            var path = Path.Combine(ServerConstants.LogsPath, file);
+            try
+            {
+                return new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+            }
+            catch (IOException) when (File.Exists(path))
+            {
+            }
+        }
     }
 
     private static IHostApplicationBuilder AddOpenTelemetryExporters(this IHostApplicationBuilder builder)

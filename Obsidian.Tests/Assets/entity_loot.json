@@ -1,0 +1,52 @@
+[
+  {
+    "type": "pig",
+    "seed": 42,
+    "player": false,
+    "drops": [
+      "minecraft:porkchop*3"
+    ],
+    "nextInt": 234785527
+  },
+  {
+    "type": "cow",
+    "seed": 1,
+    "player": false,
+    "drops": [
+      "minecraft:beef*2"
+    ],
+    "nextInt": 1761283695
+  },
+  {
+    "type": "skeleton",
+    "seed": 42,
+    "player": false,
+    "drops": [
+      "minecraft:arrow*2"
+    ],
+    "nextInt": -1360544799
+  },
+  {
+    "type": "spider",
+    "seed": 1,
+    "player": true,
+    "drops": [],
+    "nextInt": 1761283695
+  },
+  {
+    "type": "blaze",
+    "seed": 42,
+    "player": false,
+    "drops": [],
+    "nextInt": -1170105035
+  },
+  {
+    "type": "blaze",
+    "seed": 42,
+    "player": true,
+    "drops": [
+      "minecraft:blaze_rod*1"
+    ],
+    "nextInt": 234785527
+  }
+]

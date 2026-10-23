@@ -6,7 +6,9 @@ using Obsidian.WorldData.Features.Tree;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Fluids;
+using Obsidian.Plugins;
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -23,7 +25,12 @@ internal sealed class ChunkBuilder
     private readonly SurfaceBuilder surfaceBuilder;
     private readonly IClimateBiomeSource biomeSource;
     private readonly CarverStep carverStep;
-    private readonly FeatureDecorator featureDecorator;
+
+    // The decorator of the current biome features, rebuilt when plugins change them (see CurrentDecoration).
+    private readonly Func<WorldgenFeatureSet> features;
+    private readonly Lock decorationLock = new();
+    private Decoration decoration;
+    private WeakReference<WorldgenFeatureSet>? rejected;
 
     // Vanilla's WorldGenRegion random factory (RandomState.getOrCreateRandomFactory("worldgen_region_random")).
     private readonly IPositionalRandomFactory regionRandom;
@@ -44,7 +51,8 @@ internal sealed class ChunkBuilder
     // Vanilla's level biome lookup (BiomeManager with the obfuscated seed) over the noise biomes. It caches, so it's used
     // under its lock: explorer maps can be made on several threads at once.
     private readonly Lock biomeLock = new();
-    private BiomeManager BiomeManager => field ??= new BiomeManager(this.biomeSource, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height);
+    private BiomeManager BiomeManager =>
+        field ??= new BiomeManager(this.biomeSource, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height);
 
     /// <summary>
     /// The world's structures, or <c>null</c> when structures aren't generated.
@@ -63,23 +71,54 @@ internal sealed class ChunkBuilder
     /// <param name="dimension">The dimension to generate. Chunks passed in must use its build range.</param>
     /// <param name="seed">World seed; see <see cref="RandomState.ParseSeed"/> for level seed strings.</param>
     /// <param name="generateStructures">Whether structures generate, like vanilla's <c>generate-structures</c> option.</param>
-    public ChunkBuilder(MojangDimension dimension, long seed, bool generateStructures = true)
+    /// <param name="features">The biomes' features, read before each chunk is decorated;
+    /// <see cref="PluginFeatures.Current"/> by default.</param>
+    /// <param name="startCache">The structure starts of the builder this one replaces, generated with the same seed
+    /// and dimension, so the state of their placed pieces carries over; new ones by default.</param>
+    /// <param name="structures">The structures and structure sets, read as structures start;
+    /// <see cref="PluginStructures.Current"/> by default.</param>
+    public ChunkBuilder(MojangDimension dimension, long seed, bool generateStructures = true,
+        Func<WorldgenFeatureSet>? features = null, StructureStartCache? startCache = null,
+        Func<WorldgenStructures>? structures = null)
     {
         this.dimension = dimension;
-        this.settings = NoiseRegistry.NoiseSettings.All[dimension.NoiseSettings];
-        this.RandomState = new RandomState(this.settings, seed);
+        this.settings = dimension.Settings;
+
+        // Binding the noise router runs plugins' density functions' code.
+        using var calls = this.EnterGenerator();
+
+        this.RandomState = new RandomState(this.settings, seed, dimension.Noises);
 
         this.terrainGenerator = new TerrainGenerator(this.RandomState);
         this.biomeSource = dimension.CreateBiomeSource(this.RandomState);
         this.surfaceBuilder = new SurfaceBuilder(this.RandomState, this.biomeSource);
-        this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource, dimension.Carvers);
-        this.featureDecorator = new FeatureDecorator(this.biomeSource.PossibleBiomes, BiomeFeatures.All, this.settings.Noise.Height);
+        this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource);
+        this.features = features ?? (static () => PluginFeatures.Current);
+        this.decoration = this.CreateDecoration(this.features());
         this.regionRandom = this.RandomState.Random.FromHashOf("minecraft:worldgen_region_random").ForkPositional();
         this.rentNoiseChunk = this.RentNoiseChunk;
 
         if (generateStructures)
-            this.Structures = new StructureManager(this.RandomState, this.biomeSource, this.terrainGenerator, dimension.MinY, dimension.Height);
+        {
+            this.Structures = new StructureManager(
+                this.RandomState,
+                this.biomeSource,
+                this.terrainGenerator,
+                dimension.MinY,
+                dimension.Height,
+                startCache,
+                structures);
+        }
     }
+
+    /// <summary>
+    /// Enters the plugins whose types the dimension's noise settings and biome source are made of, whose code every
+    /// step runs. Each public step of the builder does; other code using its parts, like structure searches, does it
+    /// around them. Steps are a chunk each, so plugins are entered once per chunk rather than per sample, and without
+    /// plugin types there's nothing to enter.
+    /// </summary>
+    /// <exception cref="GeneratorStoppedException">A plugin is unloading: don't generate.</exception>
+    public GeneratorCalls EnterGenerator() => GeneratorCalls.Enter(this.dimension);
 
     /// <summary>
     /// Fills the chunk from the noise, reshaped around nearby structures. Fluids that need an update are added to the chunk's
@@ -87,6 +126,8 @@ internal sealed class ChunkBuilder
     /// </summary>
     public void Generate3DTerrain(IChunk chunk)
     {
+        using var calls = this.EnterGenerator();
+
         var beardifier = this.Structures is null
             ? Beardifier.Empty
             : Beardifier.ForStructuresInChunk(this.Structures.GetTerrainAdaptingStarts(chunk.X, chunk.Z), chunk.X, chunk.Z);
@@ -99,6 +140,8 @@ internal sealed class ChunkBuilder
     /// </summary>
     public void PopulateBiomes(IChunk chunk)
     {
+        using var calls = this.EnterGenerator();
+
         var sampler = this.GetNoiseChunk(chunk).ClimateSampler;
         var minQuartY = this.dimension.MinY >> 2;
         var maxQuartY = minQuartY + (this.dimension.Height >> 2);
@@ -118,17 +161,22 @@ internal sealed class ChunkBuilder
 
     public void ApplySurfaceRules(IChunk chunk)
     {
+        using var calls = this.EnterGenerator();
+
         this.surfaceBuilder.BuildSurface(chunk, this.GetNoiseChunk(chunk));
         WorldgenHeightmaps.Update(chunk, this.dimension.MinY, ChunkColumns.NonAirHeight(chunk, this.dimension.MinY, this.dimension.Height));
     }
 
     /// <summary>
-    /// Carves caves and canyons. Fluids that need an update are added to the chunk's post-processing.
+    /// Carves caves and canyons with the current biome carvers (see <see cref="WorldgenFeatureSet.BiomeCarvers"/>).
+    /// Fluids that need an update are added to the chunk's post-processing.
     /// </summary>
     public void ApplyCarvers(IChunk chunk)
     {
+        using var calls = this.EnterGenerator();
+
         var noiseChunk = this.GetNoiseChunk(chunk);
-        this.carverStep.Apply(chunk, (chunk as Chunk)?.PostProcessing, noiseChunk);
+        this.carverStep.Apply(chunk, this.features().BiomeCarvers, (chunk as Chunk)?.PostProcessing, noiseChunk);
         this.noiseChunks.Remove(chunk);
         this.ReturnNoiseChunk(noiseChunk);
         WorldgenHeightmaps.Update(chunk, this.dimension.MinY, ChunkColumns.NonAirHeight(chunk, this.dimension.MinY, this.dimension.Height));
@@ -159,9 +207,17 @@ internal sealed class ChunkBuilder
     /// </summary>
     /// <param name="area">The chunk and its 8 neighbors, all past the carvers step. Features may write into any of them.</param>
     /// <param name="onPlaced">Optional callback for each placed feature (step, global index, feature, placed anything).</param>
+    /// <param name="structures">The structure starts to place, found before (see
+    /// <see cref="StructureManager.FindReaching"/>), as when their state was restored meanwhile; found now by
+    /// default.</param>
     public void Decorate(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ,
-        Action<int, int, PlacedFeature, bool>? onPlaced = null)
+        Action<int, int, PlacedFeature, bool>? onPlaced = null, ReachingStarts? structures = null)
     {
+        // Features look biomes and structures up, which runs the generator's plugins' code too.
+        using var generatorCalls = this.EnterGenerator();
+
+        structures ??= this.Structures?.FindReaching(chunkX, chunkZ);
+
         var region = this.CreateRegion(area, chunkX, chunkZ, trackHeightmaps: true);
 
         // Like vanilla, only the 3x3 chunks around the decorated chunk contribute biomes.
@@ -169,8 +225,138 @@ internal sealed class ChunkBuilder
             .Select(entry => entry.Value)
             .ToArray();
 
-        this.featureDecorator.Decorate(region, neighbors, chunkX, chunkZ, this.Structures, this.terrainGenerator, onPlaced);
+        var decoration = this.CurrentDecoration();
+        var calls = EnterPlugins(decoration, out var skip);
+
+        try
+        {
+            decoration.Decorator.Decorate(
+                region,
+                neighbors,
+                chunkX,
+                chunkZ,
+                structures,
+                this.terrainGenerator,
+                onPlaced,
+                skip);
+        }
+        catch (FeaturePlacementException ex) when (decoration.Owners.TryGetValue(ex.Feature, out var owners))
+        {
+            // A feature made of plugins' types ran their code: the failure is theirs.
+            throw new PluginGenerationException(owners, ex.Message, ex);
+        }
+        catch (FeaturePlacementException ex) when (ex.InnerException is PluginGenerationException inner)
+        {
+            // A feature placed one by identifier made of plugins' types (see WorldgenFeatureSet.PlaceConfigured).
+            throw new PluginGenerationException(inner.Plugins, ex.Message, ex);
+        }
+        finally
+        {
+            for (var i = calls.Length - 1; i >= 0; i--)
+                calls[i].Dispose();
+        }
     }
+
+    /// <summary>
+    /// Moves decoration to the current biome features, if they changed, so the previous ones aren't kept.
+    /// </summary>
+    /// <returns>
+    /// Whether decoration uses the current features: false when they can't be ordered for this dimension, and the
+    /// previous ones are kept.
+    /// </returns>
+    public bool RefreshFeatures() =>
+        ReferenceEquals(this.CurrentDecoration().BiomeFeatures, this.features().BiomeFeatures);
+
+    /// <summary>
+    /// Moves structures to the current ones, if plugins changed them, dropping the starts of structure sets that are
+    /// gone (see <see cref="StructureManager.Refresh"/>).
+    /// </summary>
+    public void RefreshStructures() => this.Structures?.Refresh();
+
+    // Plugins' feature types run plugin code, so decorating is a call into every plugin whose features it may place,
+    // which keeps the plugin from being released (its services disposed, its load context unloaded) until it ends.
+    // A plugin that's unloading refuses, and its features are left out, as they are once generators move on.
+    // Without plugin types, as with vanilla's features, there's nothing to enter.
+    private static PluginCall[] EnterPlugins(Decoration decoration, out Func<PlacedFeature, bool>? skip)
+    {
+        skip = null;
+
+        if (decoration.Plugins.IsEmpty)
+            return [];
+
+        var calls = new List<PluginCall>(decoration.Plugins.Length);
+        HashSet<PluginContainer>? refused = null;
+
+        foreach (var plugin in decoration.Plugins)
+        {
+            if (plugin.TryEnter() is PluginCall call)
+                calls.Add(call);
+            else
+                (refused ??= []).Add(plugin);
+        }
+
+        if (refused is not null)
+            skip = feature => decoration.Owners.TryGetValue(feature, out var owners) && owners.Any(refused.Contains);
+
+        return [.. calls];
+    }
+
+    // The decoration of the current biome features. A chunk is decorated with one decorator throughout; ones being
+    // decorated when plugins change finish with the previous features. Like vanilla with the same data pack, the
+    // new decorator sorts the features again, which can change the seeds of vanilla's features in a step plugins
+    // added to.
+    // Features can't be ordered for this dimension when its biomes' features are in a cycle. PluginFeatures doesn't
+    // publish such features for a generating dimension, but if any come, decoration keeps the previous ones rather
+    // than failing every chunk and, with it, chunk management. Weak, so the plugins they came from aren't kept.
+    private Decoration CurrentDecoration()
+    {
+        var features = this.features();
+        var decoration = Volatile.Read(ref this.decoration);
+        if (ReferenceEquals(decoration.BiomeFeatures, features.BiomeFeatures) || this.IsRejected(features))
+            return decoration;
+
+        lock (this.decorationLock)
+        {
+            // Read again under the lock, so a slower thread can't put back features older than another's.
+            features = this.features();
+            if (ReferenceEquals(this.decoration.BiomeFeatures, features.BiomeFeatures) || this.IsRejected(features))
+                return this.decoration;
+
+            try
+            {
+                Volatile.Write(ref this.decoration, this.CreateDecoration(features));
+            }
+            catch (InvalidOperationException)
+            {
+                Volatile.Write(ref this.rejected, new WeakReference<WorldgenFeatureSet>(features));
+            }
+
+            return this.decoration;
+        }
+    }
+
+    private bool IsRejected(WorldgenFeatureSet features) =>
+        Volatile.Read(ref this.rejected) is { } rejected
+        && rejected.TryGetTarget(out var target)
+        && ReferenceEquals(target, features);
+
+    // Keeps only what decorating needs of the feature set, so that a plugin's features not in any biome aren't
+    // kept after the plugin unloads.
+    private Decoration CreateDecoration(WorldgenFeatureSet features)
+    {
+        var decorator = new FeatureDecorator(
+            this.biomeSource.PossibleBiomes,
+            features.BiomeFeatures,
+            this.settings.Noise.Height);
+
+        return new Decoration(features.BiomeFeatures, features.Owners, features.Plugins, decorator);
+    }
+
+    private sealed record Decoration(
+        IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> BiomeFeatures,
+        FrozenDictionary<PlacedFeature, ImmutableArray<PluginContainer>> Owners,
+        ImmutableArray<PluginContainer> Plugins,
+        FeatureDecorator Decorator);
 
     /// <summary>
     /// The block (with Y 0) whose climate best fits the noise settings' spawn target, like vanilla's
@@ -181,18 +367,22 @@ internal sealed class ChunkBuilder
     /// </summary>
     public BiomeCodec GetBiome(int x, int y, int z)
     {
+        using var calls = this.EnterGenerator();
+
         lock (this.biomeLock)
             return this.BiomeManager.GetBiome(x, y, z);
     }
 
     public (int X, int Z) FindClimateSpawn()
     {
+        using var calls = this.EnterGenerator();
+
         var targets = this.settings.SpawnTarget.Select(target => new ParameterPoint(
             Quantize(target.Temperature),
             Quantize(target.Humidity),
             Quantize(target.Continentalness),
             Quantize(target.Erosion),
-            new ClimateParameter(Climate.Quantize((float)target.Depth), Climate.Quantize((float)target.Depth)),
+            Quantize(target.Depth),
             Quantize(target.Weirdness),
             Climate.Quantize((float)target.Offset))).ToArray();
 
@@ -213,11 +403,14 @@ internal sealed class ChunkBuilder
         if (area[(chunkX, chunkZ)] is not Chunk chunk || chunk.PostProcessing.Count == 0)
             return;
 
+        using var calls = this.EnterGenerator();
+
         var region = this.CreateRegion(area, chunkX, chunkZ, trackHeightmaps: false);
+        region.MarksPostProcessing = false;
         var minY = this.dimension.MinY;
 
         // Vanilla post-processes on the live level, whose random only varies lava's spread delay; any seed will do.
-        var rules = fluidRules ?? FluidRules.ForDimension(this.dimension.DimensionType.Name, this.dimension.DimensionType.Element.Ultrawarm);
+        var rules = fluidRules ?? FluidRules.ForDimension(this.dimension.DimensionType);
         var fluids = new FluidLevel(new WorldGenFluidAccess(region, rules, new Random(chunkX * 31 + chunkZ)));
 
         // Vanilla walks the marks section by section, in the order they were added.
@@ -237,6 +430,10 @@ internal sealed class ChunkBuilder
             var updated = ShapeUpdater.UpdateFromNeighbourShapes(fluids.ShapeView, block, position);
             if (!updated.IsSameState(block))
                 region.SetBlock(position, updated);
+
+            // The block's own updateShape override, if vanilla has one, runs after the neighbor shapes.
+            if (BlocksRegistry.GetShapeUpdateBehavior(block.RegistryId) is IPostProcessBehavior owner)
+                owner.PostProcess(region, position, block);
         }
 
         // Fluids may have spread into finished neighbors, whose heightmaps are already stored.
@@ -247,7 +444,7 @@ internal sealed class ChunkBuilder
     /// Whether the chunks written keep their final heightmaps (see <see cref="Chunk.FinalHeightmaps"/>). Decorations only
     /// write into chunks that are still generating, but post-processing may spread fluids into complete ones.
     /// </param>
-    private WorldGenRegion CreateRegion(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ, bool trackHeightmaps) =>
+    internal WorldGenRegion CreateRegion(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ, bool trackHeightmaps) =>
         new(area, chunkX, chunkZ, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height, this.settings.SeaLevel, this.biomeSource,
             this.regionRandom.At(chunkX << 4, 0, chunkZ << 4), trackHeightmaps);
 

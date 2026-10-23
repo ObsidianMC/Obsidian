@@ -36,13 +36,17 @@ public class PacketDebugStream : Stream
     }
 
     #region Unchanged
-    public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => BaseStream.WriteAsync(buffer, cancellationToken);
+    public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) =>
+        BaseStream.WriteAsync(buffer, cancellationToken);
     public override void Close() => BaseStream.Close();
-    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => BaseStream.ReadAsync(buffer, offset, count, cancellationToken);
-    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => BaseStream.ReadAsync(buffer, cancellationToken);
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+        BaseStream.ReadAsync(buffer, offset, count, cancellationToken);
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+        BaseStream.ReadAsync(buffer, cancellationToken);
     public override Task FlushAsync(CancellationToken cancellationToken) => BaseStream.FlushAsync(cancellationToken);
     public override int ReadByte() => BaseStream.ReadByte();
-    public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => BaseStream.CopyToAsync(destination, bufferSize, cancellationToken);
+    public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) =>
+        BaseStream.CopyToAsync(destination, bufferSize, cancellationToken);
     public override bool CanRead => BaseStream.CanRead;
     public override bool CanSeek => BaseStream.CanSeek;
     public override bool CanWrite => BaseStream.CanWrite;

@@ -27,8 +27,15 @@ public interface ILevelFactory
     public void Initialize();
 
     /// <summary>
-    /// Registers a new level generator of the specified type. 
+    /// Registers a new level generator of the specified type, by its <see cref="ILevelGenerator.Id"/>.
     /// </summary>
     /// <typeparam name="T">The type of the level generator to register.</typeparam>
+    /// <remarks>
+    /// A generator registered through the level factory a plugin is given (injected, or from its services) is the
+    /// plugin's, removed when the plugin unloads, like one registered with
+    /// <see cref="Plugins.IPluginRegistry.RegisterGenerator{TGenerator}"/>, which plugins should prefer: it names the
+    /// generator in the plugin's namespace and creates it with the plugin's services. The first registered with an id
+    /// keeps it.
+    /// </remarks>
     public void RegisterGenerator<T>() where T : ILevelGenerator, new();
 }

@@ -2,7 +2,12 @@
 
 public sealed class Advancement
 {
-    public Advancement(string identifier, string parent, AdvancementDisplay? display, AdvancementReward? reward, List<Criteria> criteria)
+    public Advancement(
+        string identifier,
+        string parent,
+        AdvancementDisplay? display,
+        AdvancementReward? reward,
+        List<Criteria> criteria)
     {
         Identifier = identifier;
         Parent = parent;
@@ -24,4 +29,9 @@ public sealed class Advancement
     public AdvancementReward? Reward { get; init; }
 
     public List<Criteria> Criteria { get; init; }
+
+    /// <summary>Every row must have at least one achieved criterion (AND of ORs), like vanilla.</summary>
+    public List<List<string>> Requirements { get; init; } = [];
+
+    public bool SendsTelemetryEvent { get; init; }
 }

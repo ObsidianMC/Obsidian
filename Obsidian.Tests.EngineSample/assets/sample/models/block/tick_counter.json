@@ -1,0 +1,23 @@
+{
+  "parent": "sample:block/base",
+  "textures": {
+    "particle": "minecraft:block/smooth_stone_slab_side",
+    "side": "minecraft:block/smooth_stone_slab_side",
+    "bottom": "minecraft:block/smooth_stone",
+    "top": "minecraft:block/redstone_lamp"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [16, 12, 16],
+      "faces": {
+        "down": { "texture": "#bottom", "cullface": "down" },
+        "up": { "texture": "#top" },
+        "north": { "uv": [0, 4, 16, 16], "texture": "#side", "cullface": "north" },
+        "south": { "uv": [0, 4, 16, 16], "texture": "#side", "cullface": "south" },
+        "west": { "uv": [0, 4, 16, 16], "texture": "#side", "cullface": "west" },
+        "east": { "uv": [0, 4, 16, 16], "texture": "#side", "cullface": "east" }
+      }
+    }
+  ]
+}

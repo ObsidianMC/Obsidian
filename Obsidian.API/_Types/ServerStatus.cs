@@ -20,6 +20,12 @@ public sealed class ServerStatus
     public string Favicon { get; set; }
 
     /// <summary>
+    /// Whether plugins registered payload channels, so connecting may need client mods. NeoForge clients read this
+    /// field of the status response to mark the server as modded.
+    /// </summary>
+    public bool IsModded { get; set; }
+
+    /// <summary>
     /// Generates a server status from the specified <paramref name="server"/>.
     /// </summary>
     public ServerStatus(IServer server, string serverIcon, bool anonymous = false)

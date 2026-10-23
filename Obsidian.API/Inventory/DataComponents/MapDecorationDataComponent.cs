@@ -3,35 +3,42 @@ using Obsidian.Nbt;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
+
 public sealed record class MapDecorationDataComponent : DataComponent
 {
     public override DataComponentType Type => DataComponentType.MapDecorations;
 
     public override string Identifier => "minecraft:map_decorations";
 
-    public required Dictionary<string, MapDecoration> Decorations { get; set; }
+    private IReadOnlyDictionary<string, MapDecoration> decorations =
+        new Dictionary<string, MapDecoration>().AsReadOnly();
+
+    public required IReadOnlyDictionary<string, MapDecoration> Decorations
+    {
+        get => this.decorations;
+        init => this.decorations = new Dictionary<string, MapDecoration>(value).AsReadOnly();
+    }
 
     [SetsRequiredMembers]
     internal MapDecorationDataComponent() { }
 
-    public override void Read(INetStreamReader reader)
+    protected override void ReadCore(INetStreamReader reader)
     {
-        var count = reader.ReadVarInt();
-
-        var decorations = new Dictionary<string, MapDecoration>(count);
-
-        for (int i = 0; i < count; i++)
+        var compound = reader.ReadNbtCompound();
+        var decorations = new Dictionary<string, MapDecoration>();
+        foreach (var (key, tag) in compound)
         {
-            var key = reader.ReadString();
-
+            var value = (NbtCompound)tag;
             decorations[key] = new()
             {
-                Type = Enum.Parse<MapDecorationType>(reader.ReadString().TrimResourceTag().ToPascalCase(), true),
-                X = reader.ReadDouble(),
-                Z = reader.ReadDouble(),
-                Rotation = reader.ReadSingle()
+                Type = Enum.Parse<MapDecorationType>(value.GetString("type")!.TrimResourceTag().ToPascalCase(), true),
+                X = value.GetDouble("x"),
+                Z = value.GetDouble("z"),
+                Rotation = value.GetFloat("rotation")
             };
         }
+
+        this.decorations = decorations.AsReadOnly();
     }
 
     // Vanilla doesn't sync this component with a codec of its own, so it goes over the network as NBT: a compound of the

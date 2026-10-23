@@ -1,4 +1,6 @@
+using Obsidian.API.Blocks;
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 
@@ -10,7 +12,7 @@ namespace Obsidian.Registries;
 /// </summary>
 /// <remarks>
 /// World generation reads and changes properties by name like vanilla does; the typed state builders are
-/// better suited for hand-written code.
+/// better suited for hand-written code. Plugins' blocks are covered too, through their <see cref="BlockType"/>.
 /// </remarks>
 internal static class BlockStateProperties
 {
@@ -24,18 +26,34 @@ internal static class BlockStateProperties
     /// Gets a property value, or <c>null</c> if the block doesn't have the property.
     /// </summary>
     public static string? GetProperty(this IBlock block, string property) =>
-        table.Value.Properties.TryGetValue(block.GetHashCode(), out var properties) ? properties.GetValueOrDefault(property) : null;
-
-    internal static IReadOnlyDictionary<string, string> GetProperties(IBlock block) =>
-        table.Value.Properties.GetValueOrDefault(block.GetHashCode()) ?? FrozenDictionary<string, string>.Empty;
+        block.GetProperties().GetValueOrDefault(property);
 
     public static bool HasProperty(this IBlock block, string property) => block.GetProperty(property) is not null;
+
+    /// <summary>
+    /// Gets every property of the block's state by name, empty for blocks without properties.
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> GetProperties(this IBlock block)
+    {
+        var stateId = block.GetHashCode();
+
+        if (BlocksRegistry.TryGetPluginBlock(stateId, out var type))
+            return type.ValuesOf(stateId);
+
+        return table.Value.Properties.GetValueOrDefault(stateId) ?? FrozenDictionary<string, string>.Empty;
+    }
 
     /// <summary>
     /// Returns the same block with <paramref name="property"/> set, or the block unchanged if it doesn't have it.
     /// </summary>
     public static IBlock WithProperty(this IBlock block, string property, string value)
     {
+        if (BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out var type))
+        {
+            var stateId = type.TryWith(block.GetHashCode(), new Dictionary<string, string> { [property] = value });
+            return stateId < 0 ? block : type.StateOf(stateId);
+        }
+
         var id = withPropertyIds.GetOrAdd((block.GetHashCode(), property, value),
             static (key, block) => FindWithProperty(block, key.Property, key.Value), block);
 
@@ -49,12 +67,43 @@ internal static class BlockStateProperties
     /// <summary>
     /// Gets a block state from its name and properties; unspecified properties keep their default values.
     /// </summary>
-    public static IBlock GetState(string name, IReadOnlyDictionary<string, string>? properties = null)
+    public static IBlock GetState(string name, IReadOnlyDictionary<string, string>? properties = null) =>
+        TryGetState(name, properties, out var state) ? state : throw new InvalidOperationException($"{name} is not a valid block.");
+
+    /// <summary>
+    /// Gets a block state like <see cref="GetState"/>, or returns <c>false</c> when <paramref name="name"/> isn't a block.
+    /// </summary>
+    public static bool TryGetState(string name, IReadOnlyDictionary<string, string>? properties, [NotNullWhen(true)] out IBlock? state)
     {
+        state = null;
+
         var data = table.Value;
         if (!data.DefaultIds.TryGetValue(name, out var defaultId))
-            throw new InvalidOperationException($"{name} is not a valid block.");
+            return TryGetPluginState(name, properties, out state);
 
+        state = FindState(defaultId, properties);
+        return true;
+    }
+
+    // Like vanilla's, a property the block doesn't have or an invalid value gives the default state.
+    private static bool TryGetPluginState(
+        string name,
+        IReadOnlyDictionary<string, string>? properties,
+        [NotNullWhen(true)] out IBlock? state)
+    {
+        state = null;
+
+        if (!BlocksRegistry.TryGetPluginBlock(name, out var type))
+            return false;
+
+        var stateId = properties is null ? -1 : type.TryWith(type.DefaultStateId, properties);
+        state = type.StateOf(stateId < 0 ? type.DefaultStateId : stateId);
+
+        return true;
+    }
+
+    private static IBlock FindState(int defaultId, IReadOnlyDictionary<string, string>? properties)
+    {
         if (properties is null || properties.Count == 0)
             return BlocksRegistry.Get(defaultId);
 
@@ -86,7 +135,9 @@ internal static class BlockStateProperties
     }
 
     private static string Key(string name, IReadOnlyDictionary<string, string> properties) =>
-        properties.Count == 0 ? name : $"{name}[{string.Join(',', properties.OrderBy(entry => entry.Key, StringComparer.Ordinal).Select(entry => $"{entry.Key}={entry.Value}"))}]";
+        properties.Count == 0
+            ? name
+            : $"{name}[{string.Join(',', properties.OrderBy(entry => entry.Key, StringComparer.Ordinal).Select(entry => $"{entry.Key}={entry.Value}"))}]";
 
     private static Table Load()
     {

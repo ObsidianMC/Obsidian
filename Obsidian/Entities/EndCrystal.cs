@@ -34,7 +34,8 @@ public sealed partial class EndCrystal : Entity
         if (Level is AbstractLevel level)
         {
             await level.AbortDragonResurrectionAsync(this);
-            await level.ExplodeAsync(this, 6, source);
+            // Like vanilla's, a block explosion: it breaks blocks without mob_griefing.
+            await level.ExplodeAsync(this, 6, source, AbstractLevel.ExplosionInteraction.Block);
         }
     }
 
@@ -44,7 +45,7 @@ public sealed partial class EndCrystal : Entity
             Level is not AbstractLevel level || !level.IsMobTicking(Position)) return;
         var position = (Vector)Position.Floor();
         if (new MobTerrain(Level).GetBlock(position)?.IsAir == true)
-            await level.SetBlockAsync(position, BlocksRegistry.Get(Material.Fire), true);
+            await level.SetBlockAsync(position, BlocksRegistry.Fire, true);
     }
 
     public override void Write(INetStreamWriter writer)

@@ -6,7 +6,7 @@ namespace Obsidian.WorldData.Features;
 /// <remarks>
 /// Rules are keyed by the vanilla block class (<see cref="BlockPhysics.BlockClass"/>); blocks whose class doesn't override
 /// <c>canSurvive</c> always survive. Light is evaluated like vanilla during feature placement, where chunks are not lit yet:
-/// sky light reads 15 everywhere and block light comes from the block's own emission, so raw brightness is always at least 15.
+/// sky light reads 15 everywhere. Live shape updates supply the actual raw brightness instead.
 /// A few vanilla checks use shapes Obsidian doesn't have (collision face shapes, center support); those use the closest
 /// sturdy-face data and are called out below.
 /// </remarks>
@@ -19,7 +19,7 @@ internal static class BlockSurvival
     private static readonly BlockSet smallDripleafPlaceable = new("#minecraft:small_dripleaf_placeable");
     private static readonly BlockSet bigDripleafPlaceable = new("#minecraft:big_dripleaf_placeable");
     private static readonly BlockSet bambooPlantableOn = new("#minecraft:bamboo_plantable_on");
-    private static readonly BlockSet jungleLogs = new("#minecraft:jungle_logs");
+    internal static readonly BlockSet JungleLogs = new("#minecraft:jungle_logs");
     private static readonly BlockSet snowLayerCannotSurviveOn = new("#minecraft:snow_layer_cannot_survive_on");
     private static readonly BlockSet snowLayerCanSurviveOn = new("#minecraft:snow_layer_can_survive_on");
     private static readonly BlockSet nylium = new("#minecraft:nylium");
@@ -27,12 +27,13 @@ internal static class BlockSurvival
     /// <summary>
     /// Whether <paramref name="block"/> could stay at <paramref name="position"/>, like vanilla <c>BlockState.canSurvive</c>.
     /// </summary>
-    public static bool CanSurvive(this IBlock block, IWorldGenLevel level, Vector position) => block.BlockClass() switch
+    public static bool CanSurvive(
+        this IBlock block, IWorldGenLevel level, Vector position, int rawBrightness = 15) => block.BlockClass() switch
     {
         "FlowerBlock" or "TallGrassBlock" or "SweetBerryBushBlock" or "BushBlock" or "FireflyBushBlock" or "FlowerBedBlock"
             or "EyeblossomBlock" or "SaplingBlock" or "VegetationBlock" => MayPlaceOnVegetation(Below(level, position)),
         "WitherRoseBlock" => WitherRoseMayPlaceOn(Below(level, position)),
-        "AzaleaBlock" => Below(level, position).Material == Material.Clay || MayPlaceOnVegetation(Below(level, position)),
+        "AzaleaBlock" => Below(level, position).Is(BlockIds.Clay) || MayPlaceOnVegetation(Below(level, position)),
         "MangrovePropaguleBlock" => MangrovePropaguleCanSurvive(block, level, position),
         "FungusBlock" => FungusMayPlaceOn(Below(level, position)),
         "RootsBlock" or "NetherSproutsBlock" => NetherPlantMayPlaceOn(Below(level, position)),
@@ -41,21 +42,21 @@ internal static class BlockSurvival
         "SeagrassBlock" => SeagrassMayPlaceOn(Below(level, position)),
         "SmallDripleafBlock" => SmallDripleafCanSurvive(block, level, position),
         "DryVegetationBlock" or "ShortDryGrassBlock" or "TallDryGrassBlock" => dryVegetationMayPlaceOn.Contains(Below(level, position)),
-        "MushroomBlock" => MushroomCanSurvive(block, level, position),
-        "CactusBlock" => CactusCanSurvive(level, position),
+        "MushroomBlock" => MushroomCanSurvive(level, position, rawBrightness),
+        "CactusBlock" => CactusMayStay(level.GetBlock, position),
         "CactusFlowerBlock" => CactusFlowerMayPlaceOn(Below(level, position)),
-        "SugarCaneBlock" => SugarCaneCanSurvive(level, position),
+        "SugarCaneBlock" => SugarCaneMayStay(level.GetBlock, position),
         "BaseCoralPlantBlock" or "CoralPlantBlock" or "BaseCoralFanBlock" or "CoralFanBlock" =>
             Below(level, position).IsFaceSturdy(BlockFace.Up),
         "BaseCoralWallFanBlock" or "CoralWallFanBlock" or "AmethystClusterBlock" => AttachedBehindCanSurvive(block, level, position, "facing"),
-        "KelpBlock" or "KelpPlantBlock" => GrowingPlantCanSurvive(level, position, BlockFace.Up, Material.Kelp, Material.KelpPlant,
-            attachTo => attachTo.Material != Material.MagmaBlock),
-        "CaveVinesBlock" or "CaveVinesPlantBlock" => GrowingPlantCanSurvive(level, position, BlockFace.Down, Material.CaveVines,
-            Material.CaveVinesPlant, _ => true),
-        "WeepingVinesBlock" or "WeepingVinesPlantBlock" => GrowingPlantCanSurvive(level, position, BlockFace.Down, Material.WeepingVines,
-            Material.WeepingVinesPlant, _ => true),
-        "TwistingVinesBlock" or "TwistingVinesPlantBlock" => GrowingPlantCanSurvive(level, position, BlockFace.Up, Material.TwistingVines,
-            Material.TwistingVinesPlant, _ => true),
+        "KelpBlock" or "KelpPlantBlock" => GrowingPlantCanSurvive(level, position, BlockFace.Up,
+            BlockIds.Kelp, BlockIds.KelpPlant, attachTo => !attachTo.Is(BlockIds.MagmaBlock)),
+        "CaveVinesBlock" or "CaveVinesPlantBlock" => GrowingPlantCanSurvive(level, position, BlockFace.Down,
+            BlockIds.CaveVines, BlockIds.CaveVinesPlant, _ => true),
+        "WeepingVinesBlock" or "WeepingVinesPlantBlock" => GrowingPlantCanSurvive(level, position, BlockFace.Down,
+            BlockIds.WeepingVines, BlockIds.WeepingVinesPlant, _ => true),
+        "TwistingVinesBlock" or "TwistingVinesPlantBlock" => GrowingPlantCanSurvive(level, position, BlockFace.Up,
+            BlockIds.TwistingVines, BlockIds.TwistingVinesPlant, _ => true),
         "SeaPickleBlock" => SeaPickleMayPlaceOn(Below(level, position)),
         "BambooStalkBlock" or "BambooSaplingBlock" => bambooPlantableOn.Contains(Below(level, position)),
         "CocoaBlock" => CocoaCanSurvive(block, level, position),
@@ -74,7 +75,7 @@ internal static class BlockSurvival
         "LeafLitterBlock" => Below(level, position).IsFaceSturdy(BlockFace.Up),
         "TorchBlock" or "RedstoneTorchBlock" => Below(level, position).IsTopCenterSturdy(),
         "StemBlock" or "AttachedStemBlock" or "CropBlock" or "CarrotBlock" or "PotatoBlock" or "BeetrootBlock" =>
-            Below(level, position).Material == Material.Farmland,
+            Below(level, position).RegistryId == BlockIds.Farmland,
         _ => true
     };
 
@@ -94,24 +95,27 @@ internal static class BlockSurvival
     private static bool IsWater(IBlock block) => block.GetFluid() is FluidKind.Water or FluidKind.FlowingWater;
 
     // VegetationBlock.mayPlaceOn: dirt-tagged blocks and farmland.
-    private static bool MayPlaceOnVegetation(IBlock below) => dirt.Contains(below) || below.Material == Material.Farmland;
+    private static bool MayPlaceOnVegetation(IBlock below) => dirt.Contains(below) || below.Is(BlockIds.Farmland);
 
     private static bool WitherRoseMayPlaceOn(IBlock below) =>
-        MayPlaceOnVegetation(below) || below.Material is Material.Netherrack or Material.SoulSand or Material.SoulSoil;
+        MayPlaceOnVegetation(below)
+            || below.RegistryId is BlockIds.Netherrack or BlockIds.SoulSand or BlockIds.SoulSoil;
 
     private static bool FungusMayPlaceOn(IBlock below) =>
-        nylium.Contains(below) || below.Material is Material.Mycelium or Material.SoulSoil || MayPlaceOnVegetation(below);
+        nylium.Contains(below)
+            || below.RegistryId is BlockIds.Mycelium or BlockIds.SoulSoil
+            || MayPlaceOnVegetation(below);
 
     private static bool NetherPlantMayPlaceOn(IBlock below) =>
-        nylium.Contains(below) || below.Material == Material.SoulSoil || MayPlaceOnVegetation(below);
+        nylium.Contains(below) || below.Is(BlockIds.SoulSoil) || MayPlaceOnVegetation(below);
 
     private static bool MangrovePropaguleCanSurvive(IBlock block, IWorldGenLevel level, Vector position)
     {
         if (block.GetProperty("hanging") == "true")
-            return level.GetBlock(position + Vector.Up).Material == Material.MangroveLeaves;
+            return level.GetBlock(position + Vector.Up).RegistryId == BlockIds.MangroveLeaves;
 
         var below = Below(level, position);
-        return MayPlaceOnVegetation(below) || below.Material == Material.Clay;
+        return MayPlaceOnVegetation(below) || below.Is(BlockIds.Clay);
     }
 
     // DoublePlantBlock: the upper half needs the matching lower half below it.
@@ -126,7 +130,8 @@ internal static class BlockSurvival
     private static bool IsLowerHalfOf(IBlock below, IBlock block) =>
         below.RegistryId == block.RegistryId && below.GetProperty("half") == "lower";
 
-    private static bool SeagrassMayPlaceOn(IBlock below) => below.IsFaceSturdy(BlockFace.Up) && below.Material != Material.MagmaBlock;
+    private static bool SeagrassMayPlaceOn(IBlock below) =>
+        below.IsFaceSturdy(BlockFace.Up) && !below.Is(BlockIds.MagmaBlock);
 
     private static bool TallSeagrassCanSurvive(IBlock block, IWorldGenLevel level, Vector position)
     {
@@ -148,37 +153,42 @@ internal static class BlockSurvival
             || level.GetBlock(position).GetFluid() == FluidKind.Water && MayPlaceOnVegetation(below);
     }
 
-    private static bool MushroomCanSurvive(IBlock block, IWorldGenLevel level, Vector position)
+    private static bool MushroomCanSurvive(IWorldGenLevel level, Vector position, int rawBrightness)
     {
         var below = Below(level, position);
         if (mushroomGrowBlock.Contains(below))
             return true;
 
-        // Unlit chunks: raw brightness is max(sky 15, block emission), never below 13, so only the tag above passes.
-        var rawBrightness = Math.Max(15, block.LightEmission());
+        // Vanilla MushroomBlock.canSurvive uses raw light with zero sky darkening, even at night.
         return rawBrightness < 13 && below.IsSolid() && below.IsCollisionShapeFullBlock();
     }
 
-    private static bool CactusCanSurvive(IWorldGenLevel level, Vector position)
+    /// <summary>Vanilla <c>CactusBlock.canSurvive</c>, reading blocks through <paramref name="blockAt"/> (worldgen or a live level).</summary>
+    internal static bool CactusMayStay(Func<Vector, IBlock> blockAt, Vector position)
     {
         foreach (var face in FeatureHelpers.Horizontal)
         {
-            var neighbor = level.GetBlock(position.Offset(face));
+            var neighbor = blockAt(position.Offset(face));
             if (neighbor.IsSolid() || neighbor.GetFluid() is FluidKind.Lava or FluidKind.FlowingLava)
                 return false;
         }
 
-        var below = Below(level, position);
-        return (below.Material == Material.Cactus || sand.Contains(below)) && !level.GetBlock(position + Vector.Up).IsLiquid;
+        var below = blockAt(position + Vector.Down);
+        return (below.Is(BlockIds.Cactus) || sand.Contains(below)) && !blockAt(position + Vector.Up).IsLiquid;
     }
 
-    private static bool CactusFlowerMayPlaceOn(IBlock below) =>
-        below.Material is Material.Cactus or Material.Farmland || below.IsTopCenterSturdy();
+    /// <summary>Vanilla <c>BambooStalkBlock.canSurvive</c>: the block beneath is on the bamboo-plantable tag.</summary>
+    internal static bool BambooMayStay(Func<Vector, IBlock> blockAt, Vector position) =>
+        bambooPlantableOn.Contains(blockAt(position + Vector.Down));
 
-    private static bool SugarCaneCanSurvive(IWorldGenLevel level, Vector position)
+    private static bool CactusFlowerMayPlaceOn(IBlock below) =>
+        below.RegistryId is BlockIds.Cactus or BlockIds.Farmland || below.IsTopCenterSturdy();
+
+    /// <summary>Vanilla <c>SugarCaneBlock.canSurvive</c>, reading blocks through <paramref name="blockAt"/> (worldgen or a live level).</summary>
+    internal static bool SugarCaneMayStay(Func<Vector, IBlock> blockAt, Vector position)
     {
-        var below = Below(level, position);
-        if (below.Material == Material.SugarCane)
+        var below = blockAt(position + Vector.Down);
+        if (below.Is(BlockIds.SugarCane))
             return true;
 
         if (!dirt.Contains(below) && !sand.Contains(below))
@@ -187,8 +197,8 @@ internal static class BlockSurvival
         var belowPosition = position + Vector.Down;
         foreach (var face in FeatureHelpers.Horizontal)
         {
-            var neighbor = level.GetBlock(belowPosition.Offset(face));
-            if (IsWater(neighbor) || neighbor.Material == Material.FrostedIce)
+            var neighbor = blockAt(belowPosition.Offset(face));
+            if (IsWater(neighbor) || neighbor.Is(BlockIds.FrostedIce))
                 return true;
         }
 
@@ -203,14 +213,14 @@ internal static class BlockSurvival
     }
 
     // GrowingPlantBlock: attached to the block opposite its growth direction.
-    private static bool GrowingPlantCanSurvive(IWorldGenLevel level, Vector position, BlockFace growth, Material head, Material body,
-        Func<IBlock, bool> canAttachTo)
+    private static bool GrowingPlantCanSurvive(IWorldGenLevel level, Vector position, BlockFace growth, int head,
+        int body, Func<IBlock, bool> canAttachTo)
     {
         var attached = level.GetBlock(position.Offset(growth.Opposite()));
         if (!canAttachTo(attached))
             return false;
 
-        return attached.Material == head || attached.Material == body || attached.IsFaceSturdy(growth);
+        return attached.RegistryId == head || attached.RegistryId == body || attached.IsFaceSturdy(growth);
     }
 
     /// <remarks>
@@ -222,7 +232,7 @@ internal static class BlockSurvival
     private static bool CocoaCanSurvive(IBlock block, IWorldGenLevel level, Vector position)
     {
         var facing = FeatureHelpers.ParseFace(block.GetProperty("facing"));
-        return jungleLogs.Contains(level.GetBlock(position.Offset(facing)));
+        return JungleLogs.Contains(level.GetBlock(position.Offset(facing)));
     }
 
     private static bool MossyCarpetCanSurvive(IBlock block, IWorldGenLevel level, Vector position)
@@ -237,15 +247,16 @@ internal static class BlockSurvival
     private static bool BigDripleafCanSurvive(IWorldGenLevel level, Vector position)
     {
         var below = Below(level, position);
-        return below.Material is Material.BigDripleaf or Material.BigDripleafStem || bigDripleafPlaceable.Contains(below);
+        return below.RegistryId is BlockIds.BigDripleaf or BlockIds.BigDripleafStem
+            || bigDripleafPlaceable.Contains(below);
     }
 
     private static bool BigDripleafStemCanSurvive(IWorldGenLevel level, Vector position)
     {
         var below = Below(level, position);
         var above = level.GetBlock(position + Vector.Up);
-        return (below.Material == Material.BigDripleafStem || bigDripleafPlaceable.Contains(below))
-            && above.Material is Material.BigDripleafStem or Material.BigDripleaf;
+        return (below.Is(BlockIds.BigDripleafStem) || bigDripleafPlaceable.Contains(below))
+            && above.RegistryId is BlockIds.BigDripleafStem or BlockIds.BigDripleaf;
     }
 
     /// <remarks>
@@ -257,7 +268,7 @@ internal static class BlockSurvival
     private static bool HangingMossCanSurvive(IWorldGenLevel level, Vector position)
     {
         var above = level.GetBlock(position + Vector.Up);
-        return CanAttachTo(above, BlockFace.Up) || above.Material == Material.PaleHangingMoss;
+        return CanAttachTo(above, BlockFace.Up) || above.Is(BlockIds.PaleHangingMoss);
     }
 
     /// <remarks>
@@ -272,7 +283,7 @@ internal static class BlockSurvival
         if (snowLayerCanSurviveOn.Contains(below))
             return true;
 
-        return below.IsFaceSturdy(BlockFace.Up) || below.Material == Material.Snow && below.GetProperty("layers") == "8";
+        return below.IsFaceSturdy(BlockFace.Up) || below.Is(BlockIds.Snow) && below.GetProperty("layers") == "8";
     }
 
     private static bool PointedDripstoneCanSurvive(IBlock block, IWorldGenLevel level, Vector position)
@@ -280,7 +291,8 @@ internal static class BlockSurvival
         var tip = FeatureHelpers.ParseFace(block.GetProperty("vertical_direction"));
         var behind = level.GetBlock(position.Offset(tip.Opposite()));
         return behind.IsFaceSturdy(tip)
-            || behind.Material == Material.PointedDripstone && behind.GetProperty("vertical_direction") == block.GetProperty("vertical_direction");
+            || behind.Is(BlockIds.PointedDripstone)
+                && behind.GetProperty("vertical_direction") == block.GetProperty("vertical_direction");
     }
 
     private static bool MultifaceCanSurvive(IBlock block, IWorldGenLevel level, Vector position)

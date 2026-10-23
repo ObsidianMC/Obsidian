@@ -27,6 +27,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case 0:
                 await HandleFromPoolAsync<AcceptTeleportationPacket>(data);
                 break;
+            case 2:
+                await HandleFromPoolAsync<BundleItemSelectedPacket>(data);
+                break;
             case 6:
                 await HandleFromPoolAsync<ChatCommandPacket>(data);
                 break;
@@ -45,8 +48,11 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case 13:
                 await HandleFromPoolAsync<ClientInformationPacket>(data);
                 break;
+            case 14:
+                await HandleFromPoolAsync<CommandSuggestionPacket>(data);
+                break;
             case 15:
-                await HandleFromPoolAsync<ConfigurationAcknowledgedPacket>(data);
+                await this.Client.AcknowledgeReconfigurationAsync();
                 break;
             case 16:
                 await HandleFromPoolAsync<ContainerButtonClickPacket>(data);
@@ -58,13 +64,21 @@ internal sealed partial class PlayClientHandler : ClientHandler
                 await HandleFromPoolAsync<ContainerClosePacket>(data);
                 break;
             case 21:
-                await HandleFromPoolAsync<CustomPayloadPacket>(data);
-                break;
+                {
+                    var payload = new CustomPayloadPacket();
+                    payload.Populate(data);
+
+                    await this.Client.Channels.HandlePayloadAsync(payload.Channel, payload.PluginData);
+                    break;
+                }
             case 25:
                 await HandleFromPoolAsync<InteractPacket>(data);
                 break;
             case 27:
                 await HandleFromPoolAsync<KeepAlivePacket>(data);
+                break;
+            case 33:
+                await HandleFromPoolAsync<MoveVehiclePacket>(data);
                 break;
             case 35:
                 await HandleFromPoolAsync<PickItemFromBlockPacket>(data);
@@ -96,6 +110,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case 47:
                 await HandleFromPoolAsync<RenameItemPacket>(data);
                 break;
+            case 59:
+                await HandleFromPoolAsync<SignUpdatePacket>(data);
+                break;
             case 52:
                 await HandleFromPoolAsync<SetCarriedItemPacket>(data);
                 break;
@@ -121,7 +138,7 @@ internal sealed partial class PlayClientHandler : ClientHandler
                 try
                 {
                     packet.Populate(data);
-                    await packet.HandleAsync(this.Server, this.Client.Player!);
+                    await packet.HandleAsync(this.Server, this.Player!);
                 }
                 catch (Exception e)
                 {

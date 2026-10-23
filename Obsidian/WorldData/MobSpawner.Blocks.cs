@@ -1,12 +1,21 @@
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.Entities.Factories;
 using Obsidian.Nbt;
+using Obsidian.WorldData.Fluids;
 
 namespace Obsidian.WorldData;
 
 internal sealed partial class MobSpawner
 {
+    /// <summary>
+    /// A spawner minecart's spawner (vanilla's <c>BaseSpawner.serverTick</c>), from the block the cart is in.
+    /// </summary>
+    internal void TickSpawnerMinecart(DataBlockEntity spawner) => this.TickSpawner(
+        spawner,
+        level.Players.Values.Where(player => player.GameMode != GameMode.Spectator).ToArray());
+
     private void TickSpawner(DataBlockEntity spawner, IPlayer[] players)
     {
         var position = (VectorD)spawner.BlockPosition + 0.5f;
@@ -18,8 +27,16 @@ internal sealed partial class MobSpawner
         if (delay < 0) { ResetSpawner(spawner); return; }
         if (delay > 0) { spawner.Set("Delay", (short)(delay - 1)); return; }
         if (!data.TryGetTag<NbtCompound>("SpawnData", out var spawnData) || !spawnData.TryGetTag<NbtCompound>("entity", out var entityData) ||
-            !entityData.TryGetTagValue<string>("id", out var id) || !EntityNbt.TryParseType(id, out var type))
+            !entityData.TryGetTagValue<string>("id", out var id))
             return;
+        var plugin = EntityDefinitionsRegistry.TryGet(id, out var definition) ? definition : null;
+        if (plugin is null && !EntityNbt.TryParseType(id, out _)
+            || plugin is not null && (plugin.Kind != API.Entities.EntityKind.Mob || plugin.Binding is null))
+        {
+            return;
+        }
+
+        EntityNbt.TryParseType(id, out var type);
         var range = ReadShort(data, "SpawnRange", 4, 1, 16);
         var count = ReadShort(data, "SpawnCount", 4, 1, 32);
         var maximum = ReadShort(data, "MaxNearbyEntities", 6, 1, 128);
@@ -27,7 +44,9 @@ internal sealed partial class MobSpawner
         var terrain = new MobTerrain(level);
         for (var attempt = 0; attempt < count; attempt++)
         {
-            if (level.GetEntitiesInRange(position, range * 2 + 2).Count(entity => entity.Type == type) >= maximum)
+            if (level.GetEntitiesInRange(position, range * 2 + 2).Count(entity => plugin is null
+                ? entity.Type == type
+                : ReferenceEquals(entity.Definition, plugin)) >= maximum)
             { ResetSpawner(spawner); return; }
             var point = position + new VectorD((random.NextSingle() - random.NextSingle()) * range,
                 random.Next(-1, 2) - 0.5f, (random.NextSingle() - random.NextSingle()) * range);
@@ -36,19 +55,21 @@ internal sealed partial class MobSpawner
                 continue;
             if (level.GetLoadedChunk(blockPoint.X >> 4, blockPoint.Z >> 4) is not { } chunk)
                 continue;
-            var mob = EntitySpawner.CreateMob(level, type);
+            var mob = plugin is null
+                ? EntitySpawner.CreateMob(level, type)
+                : (Mob)PluginEntity.Create(plugin, level);
             if (mob == null || level.LevelData.Difficulty == Difficulty.Peaceful &&
                 (mob.Hostile || mob is Zombie or Skeleton or Creeper))
                 continue;
-            if (terrain.GetBlock(blockPoint) is not { } feet || (IsAquatic(type) ? feet.Material != Material.Water : feet.IsLiquid) ||
-                !terrain.IsFree(mob.Dimension.CreateBBFromPosition(point)))
+            if (terrain.GetBlock(blockPoint) is not { } feet
+                || plugin is null && !FitsVanillaPlacement(type, feet, terrain.GetBlock(blockPoint + Vector.Down), chunk.GetBiome(blockPoint.X, blockPoint.Y, blockPoint.Z))
+                || !terrain.IsFree(mob.Dimension.CreateBBFromPosition(point)))
                 continue;
             var blockLight = chunk.GetLightLevel(blockPoint.X, blockPoint.Y, blockPoint.Z, LightType.Block);
             var sky = chunk.GetLightLevel(blockPoint.X, blockPoint.Y, blockPoint.Z, LightType.Sky);
-            var maxBlockLight = type == EntityType.Blaze || level.DimensionName == "minecraft:the_nether" ? 11 : 0;
-            if ((mob.Hostile || mob is Zombie or Skeleton or Creeper) && type is not EntityType.MagmaCube and not EntityType.Silverfish && (blockLight > maxBlockLight ||
-                type != EntityType.Blaze && level.DimensionName != "minecraft:the_nether" &&
-                Math.Max(blockLight, Math.Max(0, sky - (level.DayTime is >= 12000 and < 23000 ? 11 : 0))) > random.Next(8)))
+            if ((mob.Hostile || mob is Zombie or Skeleton or Creeper)
+                && !IgnoresDarkness(type)
+                && !this.IsDarkEnoughToSpawn(blockLight, sky))
                 continue;
             mob.EntityId = Server.GetNextEntityId();
             mob.Position = point;
@@ -96,4 +117,20 @@ internal sealed partial class MobSpawner
     }
     private static int ReadShort(NbtCompound tag, string name, int fallback, int minimum, int maximum) =>
         Math.Clamp(tag.TryGetTagValue<short>(name, out var value) ? value : fallback, minimum, maximum);
+
+    // Vanilla's placement predicate for a spawner's mob (BaseSpawner.serverTick: SpawnPlacements.isSpawnPositionOk):
+    // aquatic mobs need water at their feet; the rest need no fluid at their feet, a solid floor that is not liquid,
+    // and a creature's own floor rule. Ghasts and bats fly, so they skip the floor.
+    internal static bool FitsVanillaPlacement(EntityType type, IBlock feet, IBlock? floor, BiomeCodec biome)
+    {
+        if (IsAquatic(type))
+            return feet.Is(BlockIds.Water);
+        if (!FluidState.Of(feet).IsEmpty)
+            return false;
+        if (type is EntityType.Ghast or EntityType.Bat)
+            return true;
+        if (floor is null || floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0)
+            return false;
+        return SpawnCategory(type) != "creature" || !RejectsCreatureFloor(type, floor, biome);
+    }
 }

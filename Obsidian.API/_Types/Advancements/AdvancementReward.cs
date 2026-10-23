@@ -14,4 +14,6 @@ public sealed class AdvancementReward
     public List<string> Loot { get; init; }
 
     public List<string> Recipes { get; init; }
+
+    public string? Function { get; init; }
 }

@@ -13,7 +13,9 @@ public static partial class Extensions
     internal static string CompileName(this Tag tag, bool last = false)
     {
         if(last)
-            return tag.Type == tag.Parent ? $"{tag.Type.ToPascalCase()}.{tag.PropertyName}" : $"{tag.Parent.ToPascalCase()}.{tag.Type.GetActualType(1).ToPascalCase()}.{tag.PropertyName}";
+            return tag.Type == tag.Parent
+                ? $"{tag.Type.ToPascalCase()}.{tag.PropertyName}"
+                : $"{tag.Parent.ToPascalCase()}.{tag.Type.GetActualType(1).ToPascalCase()}.{tag.PropertyName}";
 
         return tag.Type == tag.Parent ? tag.PropertyName : $"{tag.Type.GetActualType(1).ToPascalCase()}.{tag.PropertyName}";
     }

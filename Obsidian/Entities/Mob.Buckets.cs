@@ -7,12 +7,13 @@ namespace Obsidian.Entities;
 
 public partial class Mob
 {
-    protected async ValueTask<bool> TryCaptureInBucketAsync(IPlayer player, InteractionHand hand, Material bucketType)
+    protected async ValueTask<bool> TryCaptureInBucketAsync(IPlayer player, InteractionHand hand, Item bucketType)
     {
         if (!Alive || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player)) return false;
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var item = player.Inventory.GetItem(slot);
-        if (item is not { Count: > 0, Type: Material.WaterBucket }) return false;
+        if (item is not { Count: > 0, Holder.Id: ItemIds.WaterBucket }) return false;
+        API.Data.AttachmentStorage.For(this).Retire();
         var data = EntityNbt.Save(this)!;
         foreach (var name in new[] { "id", "UUID", "Pos", "Motion", "Rotation" }) data.Remove(name);
         data.Set(new NbtTag<bool>("FromBucket", true));
@@ -25,11 +26,9 @@ public partial class Mob
             if (player.GameMode != GameMode.Creative) player.Inventory.RemoveItem(slot, 1);
             var added = player.Inventory.AddItem(bucket);
             if (added < 0) DropItem(bucket);
-            else await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-            { ContainerId = 0, Slot = (short)added, SlotData = player.Inventory.GetItem(added) });
+            else await player.SendInventorySlotAsync(added);
         }
-        await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-        { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
+        await player.SendInventorySlotAsync(slot);
         await RemoveAsync();
         return true;
     }

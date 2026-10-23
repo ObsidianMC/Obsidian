@@ -12,18 +12,20 @@ public sealed class ChorusPlantFeature : ConfiguredFeatureBase
 
     public override string Type => "minecraft:chorus_plant";
 
-    private static IBlock ChorusPlant => field ??= BlocksRegistry.Get(Material.ChorusPlant);
+    private static IBlock ChorusPlant => field ??= BlocksRegistry.ChorusPlant;
 
-    private static IBlock GrownFlower => field ??= BlocksRegistry.Get(Material.ChorusFlower).WithProperty("age", 5);
+    private static IBlock GrownFlower => field ??= BlocksRegistry.ChorusFlower.WithProperty("age", 5);
 
     public override bool Place(FeatureContext context)
     {
         var level = context.Level;
         var origin = context.Origin;
-        if (!level.EnsureCanWrite(origin) || !level.GetBlock(origin).IsAir || level.GetBlock(origin + Vector.Down).Material != Material.EndStone)
+        if (!level.EnsureCanWrite(origin)
+            || !level.GetBlock(origin).IsAir
+            || !level.GetBlock(origin + Vector.Down).Is(BlockIds.EndStone))
             return false;
 
-        level.SetBlock(origin, WithConnections(level, origin));
+        level.SetBlock(origin, WithConnections(level.GetBlock, origin));
         GrowTreeRecursive(level, origin, context.Random, origin, 0);
         return true;
     }
@@ -40,8 +42,8 @@ public sealed class ChorusPlantFeature : ConfiguredFeatureBase
             if (!AllNeighborsEmpty(level, above, null))
                 return;
 
-            level.SetBlock(above, WithConnections(level, above));
-            level.SetBlock(above + Vector.Down, WithConnections(level, above + Vector.Down));
+            level.SetBlock(above, WithConnections(level.GetBlock, above));
+            level.SetBlock(above + Vector.Down, WithConnections(level.GetBlock, above + Vector.Down));
         }
 
         var branched = false;
@@ -60,10 +62,10 @@ public sealed class ChorusPlantFeature : ConfiguredFeatureBase
                     && AllNeighborsEmpty(level, branch, direction.Opposite()))
                 {
                     branched = true;
-                    level.SetBlock(branch, WithConnections(level, branch));
+                    level.SetBlock(branch, WithConnections(level.GetBlock, branch));
 
                     var back = branch.Offset(direction.Opposite());
-                    level.SetBlock(back, WithConnections(level, back));
+                    level.SetBlock(back, WithConnections(level.GetBlock, back));
                     GrowTreeRecursive(level, branch, random, root, depth + 1);
                 }
             }
@@ -88,14 +90,14 @@ public sealed class ChorusPlantFeature : ConfiguredFeatureBase
     /// Vanilla <c>ChorusPlantBlock.getStateWithConnections</c>: connects to neighboring chorus plants and flowers, and down to end
     /// stone.
     /// </summary>
-    private static IBlock WithConnections(IWorldGenLevel level, Vector position)
+    internal static IBlock WithConnections(Func<Vector, IBlock> blockAt, Vector position)
     {
         var state = ChorusPlant;
         foreach (var face in FeatureHelpers.Directions)
         {
-            var neighbor = level.GetBlock(position.Offset(face));
-            var connects = neighbor.Material is Material.ChorusPlant or Material.ChorusFlower
-                || face == BlockFace.Down && neighbor.Material == Material.EndStone;
+            var neighbor = blockAt(position.Offset(face));
+            var connects = neighbor.RegistryId is BlockIds.ChorusPlant or BlockIds.ChorusFlower
+                || face == BlockFace.Down && neighbor.Is(BlockIds.EndStone);
             state = state.WithProperty(FeatureHelpers.FaceName(face), connects);
         }
 

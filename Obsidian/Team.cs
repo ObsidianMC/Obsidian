@@ -1,11 +1,19 @@
 ﻿using Obsidian.Net.Packets.Play.Clientbound;
+using System.Threading;
 
 namespace Obsidian;
 
+/// <remarks>
+/// A team of a retired <see cref="Scoreboard"/> is deleted with it, and changing it throws
+/// <see cref="InvalidOperationException"/>.
+/// </remarks>
 public sealed class Team(IScoreboard scoreboard, IPacketBroadcaster packetBroadcaster) : ITeam
 {
     private readonly IScoreboard scoreboard = scoreboard;
     private readonly IPacketBroadcaster packetBroadcaster = packetBroadcaster;
+
+    // The scoreboard's lock, so the team changes in step with the scoreboard's retirement, or its own otherwise.
+    private readonly Lock gate = (scoreboard as Scoreboard)?.Gate ?? new();
 
     private SetPlayerTeamPacket packet;
     public string Name { get; set; }
@@ -21,90 +29,150 @@ public sealed class Team(IScoreboard scoreboard, IPacketBroadcaster packetBroadc
 
     public void Create()
     {
-        this.packet = new()
+        lock (this.gate)
         {
-            TeamName = this.Name,
-            TeamDisplayName = this.DisplayName,
-            NameTagVisibility = this.NameTagVisibility,
-            CollisionRule = this.CollisionRule,
-            TeamColor = this.Color,
-            TeamPrefix = this.Prefix,
-            TeamSuffix = this.Suffix,
-            Entities = this.Entities
-        };
+            this.ThrowIfRetired();
 
-        this.packetBroadcaster.Broadcast(this.packet);
+            this.packet = new()
+            {
+                TeamName = this.Name,
+                TeamDisplayName = this.DisplayName,
+                NameTagVisibility = this.NameTagVisibility,
+                CollisionRule = this.CollisionRule,
+                TeamColor = this.Color,
+                TeamPrefix = this.Prefix,
+                TeamSuffix = this.Suffix,
+                Entities = this.Entities
+            };
+
+            this.packetBroadcaster.Broadcast(this.packet);
+        }
     }
 
     public int AddEntities(params string[] entities)
     {
-        this.SetPacketMode(TeamModeOption.AddEntities);
-
-        var added = 0;
-
-        foreach (var entity in entities)
+        lock (this.gate)
         {
-            if (this.Entities.Add(entity))
+            this.ThrowIfRetired();
+            this.SetPacketMode(TeamModeOption.AddEntities);
+
+            var added = 0;
+
+            foreach (var entity in entities)
             {
-                this.packet.Entities.Add(entity);
-                added++;
+                if (this.Entities.Add(entity))
+                {
+                    this.packet.Entities.Add(entity);
+                    added++;
+                }
             }
+
+            this.packetBroadcaster.Broadcast(this.packet);
+
+            this.packet.Entities.Clear();
+
+            return added;
         }
-
-        this.packetBroadcaster.Broadcast(this.packet);
-
-        this.packet.Entities.Clear();
-
-        return added;
     }
 
+    /// <remarks>
+    /// Does nothing once the scoreboard is retired.
+    /// </remarks>
     public int RemoveEntities(params string[] entities)
     {
-        this.SetPacketMode(TeamModeOption.RemoveEntities);
-
-        var removed = 0;
-        foreach (var entity in entities)
+        lock (this.gate)
         {
-            if (this.Entities.Remove(entity))
+            if (this.IsRetired)
+                return 0;
+
+            this.SetPacketMode(TeamModeOption.RemoveEntities);
+
+            var removed = 0;
+            foreach (var entity in entities)
             {
-                this.packet.Entities.Add(entity);
-                removed++;
+                if (this.Entities.Remove(entity))
+                {
+                    this.packet.Entities.Add(entity);
+                    removed++;
+                }
             }
+
+            this.packetBroadcaster.Broadcast(this.packet);
+
+            this.packet.Entities.Clear();
+
+            return removed;
         }
-
-        this.packetBroadcaster.Broadcast(this.packet);
-
-        this.packet.Entities.Clear();
-
-        return removed;
     }
 
+    /// <remarks>
+    /// Does nothing once the scoreboard is retired, which deleted the team.
+    /// </remarks>
     public void Delete()
     {
-        this.SetPacketMode(TeamModeOption.RemoveTeam);
+        lock (this.gate)
+        {
+            if (this.IsRetired)
+                return;
 
-        this.packetBroadcaster.Broadcast(this.packet);
+            this.SetPacketMode(TeamModeOption.RemoveTeam);
 
-        this.scoreboard.Teams.Remove(this);
+            this.packetBroadcaster.Broadcast(this.packet);
+
+            this.scoreboard.Teams.Remove(this);
+        }
     }
 
     public void Update()
     {
-        this.packet = new()
+        lock (this.gate)
         {
-            TeamName = this.Name,
-            Mode = TeamModeOption.UpdateTeam,
-            TeamDisplayName = this.DisplayName,
-            NameTagVisibility = this.NameTagVisibility,
-            CollisionRule = this.CollisionRule,
-            TeamColor = this.Color,
-            TeamPrefix = this.Prefix,
-            TeamSuffix = this.Suffix,
-            Entities = this.Entities
-        };
+            this.ThrowIfRetired();
 
-        this.packetBroadcaster.Broadcast(this.packet);
+            this.packet = new()
+            {
+                TeamName = this.Name,
+                Mode = TeamModeOption.UpdateTeam,
+                TeamDisplayName = this.DisplayName,
+                NameTagVisibility = this.NameTagVisibility,
+                CollisionRule = this.CollisionRule,
+                TeamColor = this.Color,
+                TeamPrefix = this.Prefix,
+                TeamSuffix = this.Suffix,
+                Entities = this.Entities
+            };
+
+            this.packetBroadcaster.Broadcast(this.packet);
+        }
+    }
+
+    private bool IsRetired => this.scoreboard is Scoreboard { IsRetired: true };
+
+    private void ThrowIfRetired()
+    {
+        if (this.IsRetired)
+            throw new InvalidOperationException("The team's scoreboard's plugin unloaded.");
     }
 
     private void SetPacketMode(TeamModeOption mode) => this.packet.Mode = mode;
+
+    /// <summary>A packet creating the team as it is now, for players who join after it was created.</summary>
+    internal SetPlayerTeamPacket CreationPacket()
+    {
+        lock (this.gate)
+        {
+            return new()
+            {
+                TeamName = this.Name,
+                Mode = TeamModeOption.CreateTeam,
+                TeamDisplayName = this.DisplayName,
+                NameTagVisibility = this.NameTagVisibility,
+                CollisionRule = this.CollisionRule,
+                TeamColor = this.Color,
+                TeamPrefix = this.Prefix,
+                TeamSuffix = this.Suffix,
+                Entities = [.. this.Entities]
+            };
+        }
+    }
 }

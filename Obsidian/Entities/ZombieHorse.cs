@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Entities;
+﻿using Obsidian.WorldData;
+
+namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:zombie_horse")]
 public sealed partial class ZombieHorse : AbstractHorse
@@ -9,7 +11,7 @@ public sealed partial class ZombieHorse : AbstractHorse
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
-        if (Level.DimensionName == "minecraft:overworld" && Level.DayTime is >= 0 and < 12000 &&
+        if (Level.MonstersBurn((Vector)Position.Floor()) &&
             !Level.LevelData.Raining && !Level.LevelData.Thundering && !InWater &&
             Random.NextSingle() * 30 < 1.2f && Terrain.GetSkyLight((Vector)EyePosition.Floor()) == 15 &&
             GetEquipment(Obsidian.API.Inventory.EquipmentSlot.Body).IsAir)

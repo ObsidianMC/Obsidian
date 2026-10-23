@@ -12,7 +12,12 @@ public interface IRegion : IAsyncDisposable
 
     public string RegionFolder { get; }
 
-    public ConcurrentDictionary<int, IEntity> Entities { get; }
+    /// <summary>
+    /// The entities in the region's chunks, by entity id. Read-only: the level adds and removes entities (see
+    /// <see cref="World.ILevel.TryAddEntity"/> and <see cref="World.ILevel.DestroyEntityAsync"/>), keeping its other
+    /// records of them in step.
+    /// </summary>
+    public IReadOnlyDictionary<int, IEntity> Entities { get; }
 
     public void SetChunk(IChunk chunk);
 
@@ -27,8 +32,6 @@ public interface IRegion : IAsyncDisposable
     public Task UnloadChunk(int x, int z);
 
     public Task<bool> InitAsync();
-
-    public void AddBlockUpdate(IBlockUpdate bu);
 
     public Task BeginTickAsync(CancellationToken cts = default);
     public Task FlushAsync(CancellationToken cts = default);

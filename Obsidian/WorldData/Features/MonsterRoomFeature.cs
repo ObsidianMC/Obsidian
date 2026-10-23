@@ -14,15 +14,15 @@ public sealed class MonsterRoomFeature : ConfiguredFeatureBase
 
     public override string Type => "minecraft:monster_room";
 
-    private static IBlock CaveAir => field ??= BlocksRegistry.Get(Material.CaveAir);
+    private static IBlock CaveAir => field ??= BlocksRegistry.CaveAir;
 
-    private static IBlock Cobblestone => field ??= BlocksRegistry.Get(Material.Cobblestone);
+    private static IBlock Cobblestone => field ??= BlocksRegistry.Cobblestone;
 
-    private static IBlock MossyCobblestone => field ??= BlocksRegistry.Get(Material.MossyCobblestone);
+    private static IBlock MossyCobblestone => field ??= BlocksRegistry.MossyCobblestone;
 
-    private static IBlock Chest => field ??= BlocksRegistry.Get(Material.Chest);
+    private static IBlock Chest => field ??= BlocksRegistry.Chest;
 
-    private static IBlock Spawner => field ??= BlocksRegistry.Get(Material.Spawner);
+    private static IBlock Spawner => field ??= BlocksRegistry.Spawner;
 
     public override bool Place(FeatureContext context)
     {
@@ -77,10 +77,13 @@ public sealed class MonsterRoomFeature : ConfiguredFeatureBase
                     {
                         if (position.Y >= level.MinY && !level.GetBlock(position + Vector.Down).IsSolid())
                             level.SetBlock(position, CaveAir);
-                        else if (existing.IsSolid() && existing.Material != Material.Chest)
-                            FeatureHelpers.SafeSetBlock(level, position, y == -1 && random.NextInt(4) != 0 ? MossyCobblestone : Cobblestone, canReplace);
+                        else if (existing.IsSolid() && !existing.Is(BlockIds.Chest))
+                        {
+                            FeatureHelpers.SafeSetBlock(level, position, y == -1 && random.NextInt(4) != 0 ? MossyCobblestone : Cobblestone,
+                                canReplace);
+                        }
                     }
-                    else if (existing.Material is not (Material.Chest or Material.Spawner))
+                    else if (existing.RegistryId is not (BlockIds.Chest or BlockIds.Spawner))
                     {
                         FeatureHelpers.SafeSetBlock(level, position, CaveAir, canReplace);
                     }

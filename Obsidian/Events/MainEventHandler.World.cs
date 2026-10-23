@@ -1,40 +1,118 @@
+using Obsidian.API.Blocks;
+using Obsidian.API.Inventory;
 using Obsidian.API.Events;
+using Obsidian.API.BlockEntities;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.API.Loot;
+using Obsidian.WorldData;
+using Obsidian.WorldData.Structures;
 
 namespace Obsidian.Events;
 
 public partial class MainEventHandler
 {
     [EventPriority(Priority = Priority.Internal)]
-    public async ValueTask OnBlockBreak(BlockBreakEventArgs args)
+    public ValueTask OnBlockBreak(BlockBreakEventArgs args)
+    {
+        if (args.Level is AbstractLevel level && BlocksRegistry.TryGetPluginBlock(args.Block.GetHashCode(), out _))
+        {
+            // The entire transaction shares the tick with block entity callbacks and plugin unloading.
+            level.EnqueueEntityAction(() => this.BreakBlockAsync(args, onLevelTick: true));
+            return ValueTask.CompletedTask;
+        }
+
+        return this.BreakBlockAsync(args);
+    }
+
+    private async ValueTask BreakBlockAsync(BlockBreakEventArgs args, bool onLevelTick = false)
     {
         var player = args.Player;
         var sequence = args.Sequence;
         var block = args.Block;
-        var world = player.Level;
+        var world = args.Level;
         var location = args.Location;
 
-        player.Client.SendPacket(new BlockChangedAckPacket
+        player.SendPacket(new BlockChangedAckPacket
         {
             SequenceID = sequence
         });
 
-        if (args.IsCancelled)
+        if (player.Level != world)
+            return;
+
+        var current = await world.GetBlockAsync(location) ?? BlocksRegistry.Air;
+        if (args.IsCancelled || current.GetHashCode() != block.GetHashCode())
         {
-            player.Client.SendPacket(new BlockUpdatePacket(location, block.GetHashCode()));
+            await RestoreBreakAsync(player, world, location, current);
             return;
         }
 
-        await world.SetBlockAsync(location, BlocksRegistry.Air, true);
-        if (world is Obsidian.WorldData.AbstractLevel gameEvents)
+        var hook = await Plugins.BlockBehaviors.EvaluatePlayerBreakAsync(player, location, block);
+        SpawnExtraDrops(world, player, location, hook.ExtraDrops);
+        if (hook.IsCancelled)
         {
-            if (block.Material == Material.Jukebox) gameEvents.StopJukebox(location);
-            gameEvents.EmitGameEvent(Obsidian.WorldData.MobGameEvent.BlockDestroy, (VectorD)location + new VectorD(0.5, 0.5, 0.5), player, affectedBlock: block);
+            current = await world.GetBlockAsync(location) ?? BlocksRegistry.Air;
+            await RestoreBreakAsync(player, world, location, current);
+            return;
         }
-        if (player is Player concrete) concrete.AddExhaustion(0.005f);
 
-        player.Client.SendPacket(new BlockUpdatePacket(location, BlocksRegistry.Air.GetHashCode()));
+        int toolSlot;
+        int wear;
+        ItemStack? tool;
+        using (await player.Inventory.LockAsync())
+        {
+            toolSlot = player.CurrentHeldItemSlot;
+            tool = player.Inventory.GetItem(toolSlot);
+            wear = CombatItems.ToolDamage(tool, block);
+        }
+
+        var parts = await TwoPartBlockBreak.PrepareAsync(world, location, block);
+
+        // What the block entity gives the loot (a shulker box's items, say), taken before the block goes.
+        await using var blockEntity = await BlockEntityComponents.CaptureAsync(
+            world, parts.DropPosition, player, onLevelTick);
+        if (!blockEntity.CanBreak)
+            return;
+
+        var drops = await BlockLoot.GetDropsAsync(
+            world,
+            parts.DropPosition,
+            parts.DropState,
+            tool,
+            breaker: player,
+            blockEntityComponents: blockEntity.Components,
+            dynamicDrops: blockEntity.DynamicDrops);
+
+        if (world is AbstractLevel concreteWorld)
+        {
+            var changed = await concreteWorld.TrySetBlockAsync(location, BlocksRegistry.Air, BlockUpdateFlags.All,
+                state => state.GetHashCode() == block.GetHashCode()
+                    && (blockEntity.Source is null || parts.DropPosition != location
+                        || ReferenceEquals(concreteWorld.GetResidentBlockEntity(location), blockEntity.Source)));
+            if (!changed)
+                return;
+        }
+        else
+        {
+            await world.SetBlockAsync(location, BlocksRegistry.Air, true);
+        }
+
+        await parts.RemovePartnerAsync(world);
+        BlockSoundPlayback.Play(world, block, location, breaking: true, player.EntityId);
+
+        if (world is AbstractLevel gameEvents)
+        {
+            if (block.Is(BlockIds.Jukebox))
+                gameEvents.StopJukebox(location);
+
+            gameEvents.EmitGameEvent(MobGameEvent.BlockDestroy, (VectorD)location + 0.5, player,
+                affectedBlock: block);
+        }
+
+        player.AddExhaustion(0.005f);
+
+        player.SendPacket(new BlockUpdatePacket(location, BlocksRegistry.Air.GetHashCode()));
 
         world.PacketBroadcaster.QueuePacketToLevel(world, 0, new BlockDestructionPacket
         {
@@ -43,35 +121,80 @@ public partial class MainEventHandler
             DestroyStage = -1
         }, player.EntityId);
 
-        var droppedMaterial = block.Material;
+        if (player.GameMode is GameMode.Creative or GameMode.Spectator)
+        {
+            // Vanilla's ShulkerBoxBlock.playerWillDestroy: a creative player's filled box still drops, holding its
+            // items, which would be lost otherwise.
+            if (player.GameMode == GameMode.Creative
+                && blockEntity.HoldsItems
+                && BlocksRegistry.TryGetItem(parts.DropState, out var box))
+            {
+                SpawnBlockDrop(player, parts.DropPosition, new ItemStack(box, 1, [.. blockEntity.Components]));
+            }
+
+            return;
+        }
+
+        player.Statistics.Increment(block.UnlocalizedName, type: "minecraft:mined");
+
+        // Like vanilla's Item.mineBlock, the tool wears once the drops were decided with it as it was.
+        if (tool is not null && wear > 0)
+            await player.DamageInventoryItemAsync(toolSlot, wear, expected: tool);
+
         if (block.UnlocalizedName.StartsWith("minecraft:infested_", StringComparison.Ordinal))
         {
-            if (player.GameMode == GameMode.Creative)
-                return;
-            var silkTouch = player.GetHeldItem() is { } tool && Obsidian.API.Loot.EnchantmentHelper.GetEnchantments(tool).Any(enchantment =>
-                enchantment.Id == Obsidian.API.Registries.EnchantmentsRegistry.SilkTouch.Id && enchantment.Level > 0);
+            var silkTouch = tool is not null && EnchantmentHelper.GetEnchantments(tool).Any(enchantment =>
+                enchantment.Id == EnchantmentsRegistry.SilkTouch.Id && enchantment.Level > 0);
             if (!silkTouch)
             {
-                if (world is Obsidian.WorldData.AbstractLevel level)
-                    level.EnqueueEntityAction(() => { Silverfish.SpawnFromBlock(world, location); return default; });
+                if (world is AbstractLevel level)
+                {
+                    level.EnqueueEntityAction(() =>
+                    {
+                        Silverfish.SpawnFromBlock(world, location);
+                        return default;
+                    });
+                }
                 else
+                {
                     Silverfish.SpawnFromBlock(world, location);
-                return;
+                }
             }
-            if (Obsidian.WorldData.Structures.BlockStateParser.TryParse(block.UnlocalizedName.Replace("infested_", "", StringComparison.Ordinal)) is { } normal)
-                droppedMaterial = normal.Material;
         }
-        var droppedItem = ItemsRegistry.GetSingleItem(droppedMaterial);
 
-        if (droppedItem.Type == Material.Air)
+        foreach (var droppedItem in drops)
+            SpawnBlockDrop(player, parts.DropPosition, droppedItem);
+    }
+
+    private static async ValueTask RestoreBreakAsync(IPlayer player, ILevel world, Vector location, IBlock block)
+    {
+        player.SendPacket(new BlockUpdatePacket(location, block.GetHashCode()));
+
+        // Prediction discarded the client's block entity. Restore its retained data after recreating the block.
+        if (await world.GetBlockEntityAsync(location) is not BlockEntity entity || entity.IsRemoved)
             return;
 
+        var data = entity.SavesOnAnyThread ? entity.GetUpdateData() : entity.ClientData;
+        var type = BlockEntityTypesRegistry.NetworkId(entity.Id);
+        if (data is not null && type >= 0)
+        {
+            player.SendPacket(new BlockEntityDataPacket
+            {
+                Position = location,
+                Type = type,
+                NBTData = DataBlockEntity.Copy(data)
+            });
+        }
+    }
+
+    private static void SpawnBlockDrop(IPlayer player, Vector position, ItemStack droppedItem)
+    {
         var item = new ItemEntity
         {
             EntityId = Server.GetNextEntityId(),
             Item = droppedItem,
             Level = player.Level,
-            Position = (VectorD)location + 0.5,
+            Position = (VectorD)position + 0.5
         };
 
         player.Level.TryAddEntity(item);
@@ -86,6 +209,17 @@ public partial class MainEventHandler
     {
         var f = Globals.Random.NextSingle();
 
-        return f * 0.5f;
+        return f * 0.1f;
+    }
+
+    private static void SpawnExtraDrops(
+        ILevel world, IPlayer player, Vector position, IReadOnlyList<ItemStack> drops)
+    {
+        if (player.GameMode is GameMode.Creative or GameMode.Spectator
+            || !world.LevelData.GetBooleanRule("block_drops", true))
+            return;
+
+        foreach (var stack in drops)
+            world.SpawnItem((VectorD)position + 0.5, stack);
     }
 }

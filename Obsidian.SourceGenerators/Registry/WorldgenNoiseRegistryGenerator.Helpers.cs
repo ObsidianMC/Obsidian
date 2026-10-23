@@ -31,7 +31,7 @@ public partial class WorldgenNoiseRegistryGenerator
 
                         var member = members.FirstOrDefault(x => x.Name == elementName.ToPascalCase());
 
-                        if (member != null)
+                        if (member is not null)
                         {
                             var property = (IPropertySymbol)member;
 
@@ -44,6 +44,13 @@ public partial class WorldgenNoiseRegistryGenerator
                     }
 
                     builder.Line($"{elementName.ToPascalCase()} = new ConstantDensityFunction {{ Argument = {element} }}, ");
+                    break;
+                }
+
+                // A spawn target's depth is a range, which vanilla's files give as one value.
+                if (elementName == "depth")
+                {
+                    builder.Line($"Depth = [{element}, {element}],");
                     break;
                 }
 
@@ -134,8 +141,9 @@ public partial class WorldgenNoiseRegistryGenerator
     private static bool TryAppendSplineProperty(CleanedNoises cleanedNoises, string? elementName, JsonElement element,
         CodeBuilder builder, bool appendName = true)
     {
+        // A spline function's spline is an ISpline, which vanilla's files always give as a multipoint one.
         if (appendName)
-            builder.Type($"{elementName!.ToPascalCase()} = new()");
+            builder.Type($"{elementName!.ToPascalCase()} = new Spline()");
 
         var passed = true;
         foreach (var childProperty in element.EnumerateObject())
@@ -213,14 +221,14 @@ public partial class WorldgenNoiseRegistryGenerator
 
         if (TryGetCallableName(cleanedNoises, typeName, elementName, out var callableName))
         {
-            var name = elementName != null ? $"{elementName.ToPascalCase()} = {callableName}," :
+            var name = elementName is not null ? $"{elementName.ToPascalCase()} = {callableName}," :
                 string.Empty;
 
             builder.Line(name);
         }
         else if (element.ValueKind == JsonValueKind.Object && cleanedNoises.WorldgenProperties.TryGetValue(typeName, out var featureType))
         {
-            var name = elementName != null ? $"{elementName.ToPascalCase()} = new {featureType.Symbol.Name}()" :
+            var name = elementName is not null ? $"{elementName.ToPascalCase()} = new {featureType.Symbol.Name}()" :
                 $"new {featureType.Symbol.Name}()";
 
             builder.Type(name);
@@ -248,7 +256,9 @@ public partial class WorldgenNoiseRegistryGenerator
         {
             var symbolName = typeInfo.Symbol.Name;
 
-            return surfacePropNames.Contains(symbolName) || symbolName.EndsWith(Vocabulary.SurfaceCondition) || symbolName.EndsWith(Vocabulary.SurfaceRule);
+            return surfacePropNames.Contains(symbolName)
+                || symbolName.EndsWith(Vocabulary.SurfaceCondition)
+                || symbolName.EndsWith(Vocabulary.SurfaceRule);
         }
 
         return false;
@@ -262,7 +272,8 @@ public partial class WorldgenNoiseRegistryGenerator
             return false;
         }
 
-        return cleanedNoises.StaticDensityFunctions.TryGetValue(typeName, out callableName) || cleanedNoises.NoiseTypes.TryGetValue(typeName, out callableName);
+        return cleanedNoises.StaticDensityFunctions.TryGetValue(typeName, out callableName)
+            || cleanedNoises.NoiseTypes.TryGetValue(typeName, out callableName);
     }
 
 

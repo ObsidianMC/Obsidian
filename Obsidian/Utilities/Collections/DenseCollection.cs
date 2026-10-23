@@ -50,9 +50,9 @@ public sealed class DenseCollection<T> : IEnumerable<T> where T : class
 
                 int index = x + z * Width;
 
-                if (value != null && source[index] == null)
+                if (value is not null && source[index] is null)
                     Count++;
-                else if (value == null && source[index] != null)
+                else if (value is null && source[index] is not null)
                     Count--;
 
                 source[index] = value;
@@ -66,7 +66,7 @@ public sealed class DenseCollection<T> : IEnumerable<T> where T : class
     {
         for (int i = 0; i < source.Length; i++)
         {
-            if (source[i] != null)
+            if (source[i] is not null)
                 yield return source[i];
         }
     }

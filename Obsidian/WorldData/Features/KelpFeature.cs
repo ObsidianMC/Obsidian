@@ -8,9 +8,9 @@ public sealed class KelpFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:kelp";
 
-    private static IBlock Kelp => field ??= BlocksRegistry.Get(Material.Kelp);
+    private static IBlock Kelp => field ??= BlocksRegistry.Kelp;
 
-    private static IBlock KelpPlant => field ??= BlocksRegistry.Get(Material.KelpPlant);
+    private static IBlock KelpPlant => field ??= BlocksRegistry.KelpPlant;
 
     public override bool Place(FeatureContext context)
     {
@@ -22,14 +22,14 @@ public sealed class KelpFeature : ConfiguredFeatureBase
 
         var placed = 0;
         var position = origin.AtY(level.GetHeight(HeightmapType.OceanFloor, origin.X, origin.Z));
-        if (level.GetBlock(position).Material != Material.Water)
+        if (level.GetBlock(position).RegistryId != BlockIds.Water)
             return false;
 
         var height = 1 + random.NextInt(10);
         for (var i = 0; i <= height; i++)
         {
-            if (level.GetBlock(position).Material == Material.Water
-                && level.GetBlock(position + Vector.Up).Material == Material.Water
+            if (level.GetBlock(position).RegistryId == BlockIds.Water
+                && level.GetBlock(position + Vector.Up).RegistryId == BlockIds.Water
                 && KelpPlant.CanSurvive(level, position))
             {
                 if (i == height)
@@ -46,7 +46,7 @@ public sealed class KelpFeature : ConfiguredFeatureBase
             {
                 // Cap the column with a kelp head one block lower. A failed first block just moves up and retries.
                 var below = position + Vector.Down;
-                if (Kelp.CanSurvive(level, below) && level.GetBlock(below + Vector.Down).Material != Material.Kelp)
+                if (Kelp.CanSurvive(level, below) && level.GetBlock(below + Vector.Down).RegistryId != BlockIds.Kelp)
                 {
                     level.SetBlock(below, Kelp.WithProperty("age", random.NextInt(4) + 20));
                     placed++;

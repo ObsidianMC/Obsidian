@@ -133,7 +133,7 @@ internal sealed class ObjectMethodExecutor
 
     public object? GetDefaultValueForParameter(int index)
     {
-        if (_parameterDefaultValues == null)
+        if (_parameterDefaultValues is null)
         {
             throw new InvalidOperationException($"Cannot call {nameof(GetDefaultValueForParameter)}, because no parameter default values were supplied.");
         }

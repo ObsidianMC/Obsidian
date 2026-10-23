@@ -1,872 +1,247 @@
-// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
-// https://wiki.vg/Map_Format
 using Microsoft.Extensions.Logging;
-using Obsidian.API.Events;
-using Obsidian.API.Containers;
-using Obsidian.API.Inventory;
-using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Net.Scoreboard;
-using Obsidian.WorldData;
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Threading;
 
 namespace Obsidian.Entities;
 
-[MinecraftEntity("minecraft:player")]
-public sealed partial class Player : Avatar, IPlayer
+/// <summary>
+/// A player connected through a Minecraft client. Their gameplay is <see cref="PlayerBase"/>'s; this adds the
+/// connection: the packets they're sent, the chunks and entities their client is shown, and leaving.
+/// </summary>
+public sealed partial class Player : PlayerBase, IClientPlayer
 {
-    public byte CurrentContainerId { get; set; }
-
     public IClient Client { get; internal set; }
 
-    public ILogger Logger => this.Client.Logger;
+    public override ILogger Logger => this.Client.Logger;
 
+    public override bool SendPacket(IClientboundPacket packet) => this.Client.SendPacket(packet);
+
+    public override ValueTask QueuePacketAsync(IClientboundPacket packet) => this.Client.QueuePacketAsync(packet);
+
+    internal override IClient? Connection => this.Client;
+
+    internal override bool Connected => this.Client.Connected;
+
+    public override int Ping => this.Client.Ping;
+
+    public override string? ClientIP => this.Client.Ip;
+
+    // The other players the client has been shown.
     internal HashSet<IPlayer> visiblePlayers = [];
 
-    public bool IsDragging { get; set; }
-    public List<short> DraggedSlots { get; set; } = [];
-    public int TeleportId { get; set; }
-
-    // <summary>
-    /// Which chunks the player should have loaded around them.
-    /// </summary>
-    public ConcurrentHashSet<long> LoadedChunks { get; internal set; } = [];
-
-    // Unsent chunks, the current nearest-first loading pass, and the client's view. Guarded by chunkUpdates so packet
-    // handlers and the level tick can't update the client's chunks at the same time.
+    // Unsent chunks, nearest first, and the client's view. Guarded by chunkUpdates so packet handlers and the level tick
+    // can't update the client's chunks at the same time.
     private readonly HashSet<long> pendingChunks = [];
-    private readonly Queue<long> pendingChunkLoads = [];
-    private const int MaximumChunkLoadsPerPass = 16;
+    private long[] pendingOrder = [];
+    private bool pendingOrderStale = true;
+    private int passesSinceRequest;
     private static readonly TimeSpan ChunkLoadTimeBudget = TimeSpan.FromMilliseconds(5);
-    private readonly SemaphoreSlim chunkUpdates = new(1, 1);
+
+    // How many sending passes (ticks) go by before the unsent chunks are asked for again (see RequestPendingChunks).
+    private const int PassesPerRequest = 20;
+
+    // Set once the player left for reconfiguration, after which the client's next player sends its chunks.
+    private bool chunksStopped;
+
+    // Vanilla's chunk batch flow control (PlayerChunkSender): chunks go out in batches the client acknowledges with how
+    // many chunks a tick it can take, so a slow connection isn't flooded and later packets (keep-alives) don't wait
+    // behind megabytes of chunks. The client's rate tops up a quota every tick. One batch may be unacknowledged at first,
+    // ten once the client has answered. Guarded by chunkBatchLock, since acknowledgements arrive on the network thread.
+    private readonly Lock chunkBatchLock = new();
+    private float desiredChunksPerTick = 9;
+    private float chunkBatchQuota;
+    private int unacknowledgedChunkBatches;
+    private int maxUnacknowledgedChunkBatches = 1;
     private (int X, int Z)? chunkCacheCenter;
     private int chunkViewDistance;
 
-    public string Username { get; }
-
-    public required IServer Server { get; init; }
-
-    public PlayerInput Input { get; set; }
-    internal Mob? Vehicle { get; set; }
-    internal long LastExperiencePickupTick { get; set; } = -2;
-
-    public override bool Sneaking
-    {
-        get => this.Input.HasFlag(PlayerInput.Sneak);
-        set
-        {
-            if (value)
-                this.Input |= PlayerInput.Sneak;
-            else
-                this.Input &= ~PlayerInput.Sneak;
-        }
-    }
-
-
-    /// <summary>
-    /// The players inventory.
-    /// </summary>
-    public Container Inventory { get; }
-    public Container EnderInventory { get; }
-
-    public BaseContainer? OpenedContainer { get; set; }
-
-    public List<SkinProperty> SkinProperties { get; set; } = [];
-
-    public Vector? LastDeathLocation { get; set; }
-
-    public ItemStack? CarriedItem { get; set; }
-
-    public IBlock? LastClickedBlock { get; internal set; }
-
-    public GameMode GameMode
-    {
-        get => field;
-        set
-        {
-            // Validated before it's stored, so an unknown mode throws without changing the player.
-            Abilities = value switch
-            {
-                GameMode.Creative => PlayerAbility.CreativeMode | PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
-                GameMode.Spectator => PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
-                GameMode.Survival or GameMode.Adventure => PlayerAbility.None,
-                _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown gamemode.")
-            };
-            field = value;
-        }
-    }
-
-    public PlayerAbility Abilities { get; set; }
-
-    public IScoreboard? CurrentScoreboard
-    {
-        get;
-
-        set
-        {
-            if (field == value)
-                return;
-
-            field?.RemovePlayer(this.EntityId);
-
-            value?.AddPlayer(this.EntityId);
-
-            field = value;
-        }
-    }
-
-    public bool Sleeping { get; set; }
-    public bool InHorseInventory { get; set; }
-    public bool Respawning { get; internal set; }
-    private bool pendingRespawnChunks;
-    private int respawnChunkRetryTicks;
-
-    public short AttackTime { get; set; }
-    public short DeathTime { get; set; }
-    public short HurtTime { get; set; }
-    public short SleepTimer { get; set; }
-    internal int TimeSinceRest { get; private set; }
-
-    public short CurrentHeldItemSlot
-    {
-        get
-        {
-            if (field < 36 || field > 44)
-                field = 36;
-
-            return field;
-        }
-        set
-        {
-            if (value is < 0 or > 8)
-                throw new IndexOutOfRangeException("Value must be >= 0 or <= 8");
-
-            field = (short)(value + 36);
-        }
-    }
-
-    public int Ping => Client.Ping;
-    public int FoodLevel { get; set; } = 20;
-    public int FoodTickTimer { get; set; }
-    public int XpLevel { get; set; }
-    public int XpTotal { get; set; }
-    public float XpP { get; set; }
-
-    public double HeadY { get; internal set; }
-
-    public float Absorption { get; set; }
-    public float FallDistance { get; set; }
-    public float FoodExhaustionLevel { get; set; }
-    public float FoodSaturationLevel { get; set; } = 5;
-
-    public Entity? LeftShoulder { get; set; }
-    public Entity? RightShoulder { get; set; }
-
-    // Properties set by Obsidian (unofficial)
-    // Not sure whether these should be saved to the NBT file.
-    // These could be saved under nbt tags prefixed with "obsidian_"
-    // As minecraft might just ignore them.
-    public Permission PlayerPermissions { get; private set; } = new Permission("root");
-
-    public string PersistentDataFile { get; }
-    public string PersistentDataBackupFile { get; }
-
-    public string? ClientIP => Client.Ip;
-
     [SetsRequiredMembers]
-    internal Player(Guid uuid, string username, IClient client, IWorld world)
+    internal Player(Guid uuid, string username, IClient client, IWorld world) : base(uuid, username, client.Id, world)
     {
-        Uuid = uuid;
-        Username = username;
-        EntityId = client.Id;
-
-        Inventory = new Container(9 * 5 + 1, InventoryType.Generic)
-        {
-            Owner = uuid,
-            IsPlayerInventory = true
-        };
-        EnderInventory = new Container
-        {
-            Title = "Ender Chest"
-        };
-
-        Level = world;
-        Type = EntityType.Player;
-
-        PersistentDataFile = Path.Combine(ServerConstants.PersistentDataPath, $"{Uuid}.dat");
-        PersistentDataBackupFile = Path.Combine(ServerConstants.PersistentDataPath, $"{Uuid}.dat.old");
-
-        Health = 20f;
-
         this.Client = client;
     }
 
-    public ItemStack? GetHeldItem() => Inventory.GetItem(CurrentHeldItemSlot);
-    public ItemStack? GetOffHandItem() => Inventory.GetItem(45);
+    // The client's pipeline, which runs the window snapshots' checks in turn with its other packets (see
+    // Client.QueueInTurn). A connection that isn't a server's (a test's, say) has no pipeline and runs no handlers.
+    private protected override ValueTask<bool> RunQueueHandlersAsync(IClientboundPacket packet) =>
+        this.Client is Client client
+            ? client.RunQueueHandlersAsync(packet)
+            : ValueTask.FromResult(true);
 
-    public async ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot slot)//TODO implement new features
+    private protected override void SendInTurn(IClientboundPacket packet)
     {
-        var actualBoard = (Scoreboard)scoreboard;
-
-        if (actualBoard.Objective is null)
-            throw new InvalidOperationException("You must create an objective for the scoreboard before displaying it.");
-
-        CurrentScoreboard = actualBoard;
-
-        await Client.QueuePacketAsync(new SetObjectivePacket
-        {
-            ObjectiveName = actualBoard.name,
-            Mode = ScoreboardMode.Create,
-            Value = actualBoard.Objective.Value,
-            Type = actualBoard.Objective.DisplayType
-        });
-
-        foreach (var (_, score) in actualBoard.scores)
-        {
-            await Client.QueuePacketAsync(new SetScorePacket
-            {
-                EntityName = score.DisplayText,
-                ObjectiveName = actualBoard.name,
-                Value = score.Value,
-            });
-        }
-
-        await Client.QueuePacketAsync(new SetDisplayObjectivePacket
-        {
-            ObjectiveName = actualBoard.name,
-            DisplaySlot = slot
-        });
+        if (this.Client is Client client)
+            client.SendInTurn(packet);
+        else
+            this.Client.SendPacket(packet);
     }
 
-    public async ValueTask OpenInventoryAsync(BaseContainer container)
+    private protected override ValueTask RunInTurnAsync(Func<ValueTask> work)
     {
-        if (OpenedContainer is EnchantmentTable previousTable)
-            await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, previousTable);
-        if (container is EnchantmentTable table)
-            container = new EnchantmentTable { BlockPosition = table.BlockPosition, Title = table.Title, CustomName = table.CustomName };
-        OpenedContainer = container;
+        if (this.Client is not Client client)
+            return work();
 
-        var nextId = GetNextContainerId();
-
-        await Client.QueuePacketAsync(new OpenScreenPacket(container, nextId));
-
-        if (container is CraftingTable { Type: InventoryType.Crafting })
-            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId,
-                container.Concat(this.Inventory.Skip(9).Take(36)).ToList()));
-        else if (container.HasItems())
-            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList()));
-        if (container is EnchantmentTable)
-        {
-            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.Concat(Inventory.Skip(9).Take(36)).ToList()));
-            await RefreshEnchantingAsync();
-        }
+        client.QueueInTurn(work);
+        return ValueTask.CompletedTask;
     }
 
-    public async override ValueTask TeleportAsync(VectorD pos)
+    public override async ValueTask KickAsync(string reason) => await this.Client.DisconnectAsync(reason);
+    public override async ValueTask KickAsync(ChatMessage reason) => await this.Client.DisconnectAsync(reason);
+    public override async ValueTask DisconnectAsync(ChatMessage reason) => await this.Client.DisconnectAsync(reason);
+
+    private protected override void ResetClientView()
     {
-        FallDistance = 0;
-        combatPosition = null;
-        CancelWeaponUse();
-        Vehicle?.Dismount(this);
-        LastPosition = Position;
-        Position = pos;
-        await UpdateChunksAsync();
-
-        var tid = Globals.Random.Next(0, 999);
-
-        await EventDispatcher.ExecuteEventAsync(
-            new PlayerTeleportEventArgs
-            (
-                this,
-                this.Server,
-                Position,
-                pos
-            ));
-
-        await Client.QueuePacketAsync(new PlayerPositionPacket
-        {
-            Position = pos,
-            TeleportId = tid
-        });
-        TeleportId = tid;
+        this.ResetAttachmentSync();
+        this.visiblePlayers.Clear();
     }
 
-    public async override ValueTask TeleportAsync(IEntity to)
+    internal ValueTask UnloadChunkAsync(int x, int z) => LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z))
+        ? this.QueuePacketAsync(new ForgetLevelChunkPacket(x, z))
+        : default;
+
+    private protected override async ValueTask TrySpawnPlayerAsync(VectorD position)
     {
-        FallDistance = 0;
-        combatPosition = null;
-        CancelWeaponUse();
-        LastPosition = Position;
-        Position = to.Position;
+        var entityBroadcastDistance = this.Server.Configuration.EntityBroadcastRangePercentage;
 
-        await UpdateChunksAsync();
-
-        TeleportId = Globals.Random.Next(0, 999);
-
-        await Client.QueuePacketAsync(new PlayerPositionPacket
+        foreach (var player in Level.GetPlayersInRange(position, entityBroadcastDistance))
         {
-            Position = to.Position,
-            TeleportId = TeleportId
-        });
-    }
-
-    public async override ValueTask TeleportAsync(IWorld world)
-    {
-        if (world is not World w)
-        {
-            await base.TeleportAsync(world);
-            return;
-        }
-
-        // save current world/persistent data 
-        await SaveAsync();
-
-        Level.TryRemovePlayer(this);
-        w.TryAddPlayer(this);
-
-        Level = w;
-
-        // resync player data
-        await LoadAsync(false);
-
-        // reload world stuff and send rest of the info
-        await UpdateChunksAsync(true);
-
-        await SendPlayerInfoAsync();
-    }
-
-    public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
-        throw new NotImplementedException();
-
-    public ValueTask SendMessageAsync(ChatMessage message) =>
-        Client.QueuePacketAsync(new SystemChatPacket(message, false));
-
-    public ValueTask SetActionBarTextAsync(ChatMessage message) =>
-        Client.QueuePacketAsync(new SystemChatPacket(message, true));
-
-    public async ValueTask SendSoundAsync(ISoundEffect soundEffect)
-    {
-        ClientboundPacket packet = soundEffect.SoundPosition is SoundPosition soundPosition ?
-            new SoundPacket
-            {
-                SoundLocation = soundEffect.SoundId,
-                SoundPosition = soundPosition,
-                Category = soundEffect.SoundCategory,
-                Volume = soundEffect.Volume,
-                Pitch = soundEffect.Pitch,
-                Seed = soundEffect.Seed,
-                FixedRange = soundEffect.FixedRange
-            }
-            :
-            new SoundEntityPacket
-            {
-                SoundLocation = soundEffect.SoundId,
-                EntityId = soundEffect.EntityId!.Value,
-                Category = soundEffect.SoundCategory,
-                Volume = soundEffect.Volume,
-                Pitch = soundEffect.Pitch,
-                Seed = soundEffect.Seed,
-                FixedRange = soundEffect.FixedRange
-            };
-
-        await Client.QueuePacketAsync(packet);
-    }
-
-    public async ValueTask KickAsync(string reason) => await this.Client.DisconnectAsync(reason);
-    public async ValueTask KickAsync(ChatMessage reason) => await Client.DisconnectAsync(reason);
-
-    internal async Task TransferDimensionAsync(ILevel destination)
-    {
-        CancelEating();
-        CancelWeaponUse();
-        combatPosition = null;
-        Vehicle?.Dismount(this);
-        var origin = Level;
-        var spawn = destination.LevelData.SpawnPosition;
-        await destination.GetChunkAsync((Vector)spawn.Floor());
-        await origin.DestroyEntityAsync(this);
-        origin.TryRemovePlayer(this);
-        foreach (var observer in origin.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
-            observer.visiblePlayers.Remove(this);
-        Level = destination;
-        Position = spawn;
-        LastPosition = spawn;
-        BoundingBox = Dimension.CreateBBFromPosition(spawn);
-        HeadY = spawn.Y + 1.62;
-        Motion = VectorD.Zero;
-        FallDistance = 0;
-        foodPosition = null;
-        destination.TryAddPlayer(this);
-        destination.TryAddEntity(this);
-        await RespawnAsync();
-        await Client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
-        { Dimension = destination.DimensionName, Pos = (Vector)spawn.Floor() }, 0, 0));
-        await Client.QueuePacketAsync(new SetTimePacket(destination.LevelData.Time, destination.LevelData.DayTime, true));
-        await Client.QueuePacketAsync(new GameEventPacket(destination.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
-        foreach (var (id, effect) in ActivePotionEffects)
-            await Client.QueuePacketAsync(new UpdateMobEffectPacket(EntityId, id, effect.CurrentDuration)
-            { Amplifier = effect.EffectData.Amplifier, Flags = EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon });
-        await SaveAsync();
-    }
-
-    public async Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
-    {
-        if (Respawning) return;
-        Respawning = true;
-        try
-        {
-            if (!Alive)
-            {
-                // Death respawns must create fresh client state rather than retain the dead player's metadata.
-                dataKept = DataKept.None;
-                CancelEating();
-                CancelWeaponUse();
-                combatPosition = null;
-                attackTicks = 0;
-                Vehicle?.Dismount(this);
-                ClearPotionEffects();
-                damageCooldown = 0;
-                lastIncomingDamage = 0;
-                HurtTime = 0;
-                DeathTime = 0;
-                FireTicks = 0;
-                Burning = false;
-                Motion = VectorD.Zero;
-                FallDistance = 0;
-                Absorption = 0;
-                AbsorbtionAmount = 0;
-                FoodLevel = 20;
-                FoodSaturationLevel = 5;
-                FoodExhaustionLevel = 0;
-                FoodTickTimer = 0;
-                foodPosition = null;
-                Sprinting = false;
-                Swimming = false;
-                Sleeping = false;
-                Pose = Pose.Standing;
-                Yaw = 0;
-                Pitch = 0;
-                MovementFlags = MovementFlags.None;
-                Health = 20f;
-                await Level.DestroyEntityAsync(this);
-                Position = Level.LevelData.SpawnPosition;
-                LastPosition = Position;
-                BoundingBox = Dimension.CreateBBFromPosition(Position);
-                HeadY = Position.Y + 1.62;
-                Level.TryAddEntity(this);
-            }
-
-            CodecRegistry.TryGetDimension(Level.DimensionName, out var codec);
-            Debug.Assert(codec is not null); // TODO Handle missing codec
-
-            Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
-
-            await Client.QueuePacketAsync(new RespawnPacket
-            {
-                CommonPlayerSpawnInfo = new()
-                {
-                    DimensionType = codec.Id,
-                    DimensionName = Level.DimensionName,
-                    GameMode = GameMode,
-                    PreviousGamemode = GameMode,
-                    HashedSeed = 0,
-                    Flat = false,
-                    Debug = false,
-                    PortalCooldown = this.portalCooldown,
-                },
-                DataKept = dataKept,
-            });
-
-            visiblePlayers.Clear();
-
-            TeleportId = 0;
-
-            await Client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
-            await Client.QueuePacketAsync(new PlayerPositionPacket
-            {
-                Position = Position,
-                Yaw = Yaw,
-                Pitch = Pitch,
-                Delta = this.preservePortalMotion ? VectorD.Zero : Motion,
-                Flags = 0,
-                RelativeFlags = this.preservePortalMotion ? NetherPortalRelativeFlags : 0,
-                TeleportId = 0
-            });
-
-            pendingRespawnChunks = !await UpdateChunksAsync(true);
-            respawnChunkRetryTicks = 20;
-            Level.TryAddEntity(this);
-            await Client.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
-            await SendPlayerInfoAsync();
-            await TrySpawnPlayerAsync(Position);
-            await SynchronizeTrackedEntitiesAsync();
-        }
-        finally
-        {
-            Respawning = false;
-        }
-
-    }
-
-    //TODO make IDamageSource 
-    public async override ValueTask KillAsync(IEntity source, ChatMessage deathMessage)
-    {
-        Health = 0;
-        CancelEating();
-        CancelWeaponUse();
-        if (OpenedContainer is EnchantmentTable table)
-        {
-            await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, table);
-            OpenedContainer = null;
-        }
-        Vehicle?.Dismount(this);
-        await Client.QueuePacketAsync(new SetHealthPacket(0, FoodLevel, FoodSaturationLevel));
-        await Client.QueuePacketAsync(new PlayerCombatKillPacket { PlayerID = EntityId, Message = deathMessage });
-        PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket { EntityId = EntityId, Event = 3 }, EntityId);
-        foreach (var observer in Level.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
-            observer.visiblePlayers.Remove(this);
-    }
-
-    public override void Write(INetStreamWriter writer)
-    {
-        base.Write(writer);
-
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Float);
-        writer.WriteSingle(Absorption);
-
-        writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
-        writer.WriteVarInt(XpTotal);
-
-        this.MetadataIndex = 19;
-
-        //TODO fix possibly an extension method?
-        if (this.LeftShoulder is not null)
-        {
-            writer.WriteEntityMetadataType(19, EntityMetadataType.OptionalLivingEntityReference);
-            writer.WriteNbtCompound([]);
-            this.MetadataIndex = 20;
-        }
-
-        if (this.RightShoulder is not null)
-        {
-            writer.WriteEntityMetadataType(20, EntityMetadataType.OptionalLivingEntityReference);
-            writer.WriteNbtCompound([]);
-            this.MetadataIndex = 21;
-        }
-    }
-
-    public async ValueTask SetGamemodeAsync(GameMode gamemode)
-    {
-        // Set first: the setter rejects unknown modes, and they must not reach clients.
-        GameMode = gamemode;
-
-        this.PacketBroadcaster.QueuePacketToLevel(this.Level, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateGamemodeInfoAction(gamemode))));
-
-        await Client.QueuePacketAsync(new GameEventPacket(gamemode));
-    }
-
-    public ValueTask UpdateDisplayNameAsync(string newDisplayName)
-    {
-        this.PacketBroadcaster.QueuePacketToLevel(this.Level, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateDisplayNameInfoAction(newDisplayName))));
-
-        CustomName = newDisplayName;
-
-        return default;
-    }
-
-    public async ValueTask SendTitleAsync(ChatMessage title, int fadeIn, int stay, int fadeOut)
-    {
-        var titlePacket = new SetTitleTextPacket
-        {
-            Text = title
-        };
-
-        var titleTimesPacket = new SetTitlesAnimationPacket
-        {
-            FadeIn = fadeIn,
-            FadeOut = fadeOut,
-            Stay = stay,
-        };
-
-        await Client.QueuePacketAsync(titlePacket);
-        await Client.QueuePacketAsync(titleTimesPacket);
-    }
-
-    public async ValueTask SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut)
-    {
-        var titlePacket = new SetSubtitleTextPacket
-        {
-            Text = subtitle
-        };
-
-        await Client.QueuePacketAsync(titlePacket);
-
-        await SendTitleAsync(title, fadeIn, stay, fadeOut);
-    }
-
-    public async ValueTask SendSubtitleAsync(ChatMessage subtitle, int fadeIn, int stay, int fadeOut)
-    {
-        var titlePacket = new SetSubtitleTextPacket
-        {
-            Text = subtitle
-        };
-
-        var titleTimesPacket = new SetTitlesAnimationPacket
-        {
-            FadeIn = fadeIn,
-            FadeOut = fadeOut,
-            Stay = stay,
-        };
-
-        await Client.QueuePacketAsync(titlePacket);
-        await Client.QueuePacketAsync(titleTimesPacket);
-    }
-
-    public async ValueTask SendActionBarAsync(string text)
-    {
-        var actionBarPacket = new SetActionBarTextPacket
-        {
-            Text = text
-        };
-
-        await Client.QueuePacketAsync(actionBarPacket);
-    }
-
-    //TODO 
-    public ValueTask SpawnParticleAsync(ParticleData data) => throw new NotImplementedException();
-
-    public async Task<bool> GrantPermissionAsync(string permissionNode)
-    {
-        var permissions = permissionNode.ToLower().Trim().Split('.');
-
-        var parent = PlayerPermissions;
-        var result = false;
-
-        foreach (var permission in permissions)
-        {
-            // no such child, this permission is new!
-            if (!parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
-            {
-                // create the new child, add it to its parent and set parent to the next value to continue the loop
-                var child = new Permission(permission);
-                parent.Children.Add(child);
-                parent = child;
-                // yes, new permission!
-                result = true;
+            if (player.EntityId == this.EntityId)
                 continue;
-            }
 
-            // child already exists, set parent to existing child to continue loop
-            parent = parent.Children.First(x => x.Name.EqualsIgnoreCase(permission));
-        }
-
-        await SavePermsAsync();
-
-        if (result)
-            await this.EventDispatcher.ExecuteEventAsync(new PermissionGrantedEventArgs(this, this.Server, permissionNode));
-
-        return result;
-    }
-
-    public async Task<bool> RevokePermissionAsync(string permissionNode)
-    {
-        var permissions = permissionNode.ToLower().Trim().Split('.');
-
-        // Set root node and whether we created a new permission (still false)
-        var parent = PlayerPermissions;
-
-        foreach (var permission in permissions)
-        {
-            if (parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
+            if (player.Alive && !visiblePlayers.Contains(player))
             {
-                // child exists remove them
-                var childToRemove = parent.Children.First(x => x.Name.EqualsIgnoreCase(permission));
+                visiblePlayers.Add(player);
 
-                parent.Children.Remove(childToRemove);
-
-                await this.SavePermsAsync();
-                await this.Server.EventDispatcher.ExecuteEventAsync(new PermissionRevokedEventArgs(this, this.Server, permissionNode));
-
-                return true;
+                player.SpawnEntity();
+                this.ResetVisiblePlayerAttachments(player.EntityId);
             }
         }
 
-        return false;
-    }
+        if (visiblePlayers.Count == 0)
+            return;
 
-    public bool HasPermission(string permissionNode)
-    {
-        var parent = PlayerPermissions;
-        if (parent.Children.Count == 0)
-            return false;
+        var removed = ArrayPool<int>.Shared.Rent(visiblePlayers.Count);
 
-        var permissions = permissionNode.ToLower().Trim().Split('.');
-
-        foreach (var permission in permissions)
+        var index = 0;
+        visiblePlayers.RemoveWhere(visiblePlayer =>
         {
-            if (parent.Children.Any(x => x.Name == Permission.Wildcard) || parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
+            // A player who left or changed level isn't in this level anymore, wherever they were last.
+            if (!visiblePlayer.IsInRange(this, entityBroadcastDistance) || !Level.Players.ContainsKey(visiblePlayer.Uuid))
+            {
+                removed[index++] = visiblePlayer.EntityId;
                 return true;
+            }
+            return false;
+        });
 
-            parent = parent.Children.First(x => x.Name.EqualsIgnoreCase(permission));
-        }
+        if (index > 0)
+            await this.QueuePacketAsync(new RemoveEntitiesPacket(removed.AsSpan(0, index).ToArray()));
 
-        return false;
+        ArrayPool<int>.Shared.Return(removed);
     }
-
-    public bool HasAnyPermission(IEnumerable<string> permissions) => permissions.Any(x => HasPermission(x));
-
-    public bool HasAllPermissions(IEnumerable<string> permissions) => permissions.All(x => HasPermission(x));
-
-    public byte GetNextContainerId()
-    {
-        CurrentContainerId = (byte)(CurrentContainerId % 255 + 1);
-
-        return CurrentContainerId;
-    }
-
-    public override string ToString() => Username;
-
-    public async override ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags)
-    {
-        if (!Alive || Respawning) return;
-        if (!double.IsFinite(position.X) || !double.IsFinite(position.Y) || !double.IsFinite(position.Z)) return;
-        if (Vehicle != null)
-            position = Position;
-        var oldPosition = Position;
-        var oldMovementFlags = MovementFlags;
-        await base.UpdateAsync(position, movementFlags);
-        await UpdateFallAsync(oldPosition, movementFlags);
-        if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
-
-        HeadY = position.Y + 1.62f;
-
-        await TrySpawnPlayerAsync(position);
-
-        await PickupNearbyItemsAsync();
-    }
-
-    public async override ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
-    {
-        if (!Alive || Respawning) return;
-        if (!double.IsFinite(position.X) || !double.IsFinite(position.Y) || !double.IsFinite(position.Z)) return;
-        if (Vehicle != null)
-            position = Position;
-        var oldPosition = Position;
-        var oldMovementFlags = MovementFlags;
-        await base.UpdateAsync(position, yaw, pitch, movementFlags);
-        await UpdateFallAsync(oldPosition, movementFlags);
-        if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
-
-        HeadY = position.Y + 1.62f;
-
-        await TrySpawnPlayerAsync(position);
-
-        await PickupNearbyItemsAsync();
-    }
-
-    public async override ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
-    {
-        if (!Alive || Respawning) return;
-        await base.UpdateAsync(yaw, pitch, movementFlags);
-        MovementFlags = movementFlags;
-        await UpdateFallAsync(Position, movementFlags);
-
-        await PickupNearbyItemsAsync();
-    }
-
-    public async ValueTask DisconnectAsync(ChatMessage reason) => await this.Client.DisconnectAsync(reason);
 
     /// <summary>
     /// Updates the chunks the client has to its view around the player, like vanilla's chunk tracking: the client learns
     /// the new center, chunks out of view are forgotten, and chunks in view are sent nearest first. Chunks that aren't
-    /// generated yet are queued for generation and sent once they are (see <see cref="SendPendingChunksAsync"/>).
+    /// generated yet are queued for generation and sent once they are (see <see cref="SendPendingChunksAsync"/>). Called
+    /// with chunkUpdates held.
     /// </summary>
-    /// <param name="unloadAll">Whether the client starts over without chunks (it changed level or respawned).</param>
-    /// <param name="distance">The view distance, instead of the client's.</param>
-    /// <returns>Whether every chunk in view has been sent.</returns>
-    public async Task<bool> UpdateChunksAsync(bool unloadAll = false, int distance = 0)
+    private protected override async Task<bool> UpdateChunksUnderLockAsync(bool unloadAll, int distance = 0)
     {
-        await this.chunkUpdates.WaitAsync();
-        try
+        if (unloadAll)
         {
-            if (unloadAll)
+            var tracked = TrackedEntities.Keys.ToArray();
+            TrackedEntities.Clear();
+            if (!Respawning && tracked.Length > 0)
+                await this.Client.QueuePacketAsync(new RemoveEntitiesPacket(tracked));
+            if (!Respawning)
             {
-                var tracked = TrackedEntities.Keys.ToArray();
-                TrackedEntities.Clear();
-                if (!Respawning && tracked.Length > 0)
-                    await Client.QueuePacketAsync(new RemoveEntitiesPacket(tracked));
-                if (!Respawning)
+                foreach (var value in LoadedChunks)
                 {
-                    foreach (var value in LoadedChunks)
-                    {
-                        NumericsHelper.LongToInts(value, out var x, out var z);
-                        await UnloadChunkAsync(x, z);
-                    }
-                }
-
-                LoadedChunks.Clear();
-                this.pendingChunks.Clear();
-                this.pendingChunkLoads.Clear();
-                this.chunkCacheCenter = null;
-            }
-
-            var (centerX, centerZ) = Position.ToChunkCoord();
-
-            // The client drops chunks outside the range around its center, so the center goes first.
-            if (this.chunkCacheCenter != (centerX, centerZ))
-            {
-                this.chunkCacheCenter = (centerX, centerZ);
-                this.pendingChunkLoads.Clear();
-                await Client.QueuePacketAsync(new SetChunkCacheCenterPacket(centerX, centerZ));
-            }
-
-            // Like vanilla, at least 2.
-            var viewDistance = Math.Max(2, distance < 1 ? ClientInformation.ViewDistance : distance);
-            if (this.chunkViewDistance != viewDistance)
-                this.pendingChunkLoads.Clear();
-            this.chunkViewDistance = viewDistance;
-
-            foreach (var value in LoadedChunks)
-            {
-                NumericsHelper.LongToInts(value, out var x, out var z);
-                if (!this.IsInView(x, z) && LoadedChunks.TryRemove(value))
-                    await Client.QueuePacketAsync(new ForgetLevelChunkPacket(x, z));
-            }
-
-            this.pendingChunks.RemoveWhere(value =>
-            {
-                NumericsHelper.LongToInts(value, out var x, out var z);
-                return !this.IsInView(x, z);
-            });
-
-            for (var x = centerX - this.chunkViewDistance - 1; x <= centerX + this.chunkViewDistance + 1; x++)
-            {
-                for (var z = centerZ - this.chunkViewDistance - 1; z <= centerZ + this.chunkViewDistance + 1; z++)
-                {
-                    var value = NumericsHelper.IntsToLong(x, z);
-                    if (this.IsInView(x, z) && !LoadedChunks.Contains(value))
-                        this.pendingChunks.Add(value);
+                    NumericsHelper.LongToInts(value, out var x, out var z);
+                    await UnloadChunkAsync(x, z);
                 }
             }
 
-            return await this.SendReadyChunksAsync();
+            LoadedChunks.Clear();
+            this.pendingChunks.Clear();
+            this.pendingOrderStale = true;
+            this.chunkCacheCenter = null;
         }
-        finally
+
+        var (centerX, centerZ) = Position.ToChunkCoord();
+
+        // The client drops chunks outside the range around its center, so the center goes first.
+        if (this.chunkCacheCenter != (centerX, centerZ))
         {
-            this.chunkUpdates.Release();
+            this.chunkCacheCenter = (centerX, centerZ);
+            this.pendingOrderStale = true;
+            await this.Client.QueuePacketAsync(new SetChunkCacheCenterPacket(centerX, centerZ));
         }
+
+        // Like vanilla, at least 2.
+        var viewDistance = Math.Max(2, distance < 1 ? ClientInformation.ViewDistance : distance);
+        if (this.chunkViewDistance != viewDistance)
+            this.pendingOrderStale = true;
+        this.chunkViewDistance = viewDistance;
+
+        foreach (var value in LoadedChunks)
+        {
+            NumericsHelper.LongToInts(value, out var x, out var z);
+            if (!this.IsInView(x, z) && LoadedChunks.TryRemove(value))
+                await this.Client.QueuePacketAsync(new ForgetLevelChunkPacket(x, z));
+        }
+
+        this.pendingChunks.RemoveWhere(value =>
+        {
+            NumericsHelper.LongToInts(value, out var x, out var z);
+            return !this.IsInView(x, z);
+        });
+
+        for (var x = centerX - this.chunkViewDistance - 1; x <= centerX + this.chunkViewDistance + 1; x++)
+        {
+            for (var z = centerZ - this.chunkViewDistance - 1; z <= centerZ + this.chunkViewDistance + 1; z++)
+            {
+                var value = NumericsHelper.IntsToLong(x, z);
+                if (this.IsInView(x, z) && !LoadedChunks.Contains(value) && this.pendingChunks.Add(value))
+                    this.pendingOrderStale = true;
+            }
+        }
+
+        this.RequestPendingChunks();
+        return await this.SendReadyChunksAsync();
     }
 
     /// <summary>
-    /// Sends the chunks in view that weren't generated when they were last asked for and are now. The level calls it every
-    /// tick; it skips the tick while the chunks are being updated.
+    /// Waits for a chunk send under way and stops sending this player chunks: they left to go back through
+    /// configuration, and the client's next player gets its chunks.
+    /// </summary>
+    internal async Task StopSendingChunksAsync()
+    {
+        await this.chunkUpdates.WaitAsync();
+        this.chunksStopped = true;
+        this.chunkUpdates.Release();
+    }
+
+    /// <summary>
+    /// Sends the chunks in view that weren't generated when they were last asked for and are now. The server's chunk
+    /// loop calls it every tick, independently of the world tick; it skips the tick while the chunks are being updated.
     /// </summary>
     internal async Task SendPendingChunksAsync()
     {
+        lock (this.chunkBatchLock)
+        {
+            if (this.unacknowledgedChunkBatches < this.maxUnacknowledgedChunkBatches)
+            {
+                var cap = Math.Max(1, this.desiredChunksPerTick);
+                this.chunkBatchQuota = Math.Min(this.chunkBatchQuota + this.desiredChunksPerTick, cap);
+            }
+        }
+
         if (this.pendingChunks.Count == 0 || !await this.chunkUpdates.WaitAsync(0))
             return;
 
@@ -885,14 +260,43 @@ public sealed partial class Player : Avatar, IPlayer
         }
     }
 
-    // Bound disk reads and packet queuing so login and movement don't wait for the entire view. Finish a pass before
-    // retrying ungenerated chunks, so they can't prevent the rest of the view from being requested. Called under chunkUpdates.
+    /// <summary>
+    /// Asks the level for every chunk in view the client doesn't have, like vanilla's player tickets: the level loads or
+    /// generates them, nearest to a player first, however fast the client takes them, and drops the requests once no
+    /// player's view has the chunk. Asked again every few passes, for chunks the level unloaded before they were sent.
+    /// Called under chunkUpdates.
+    /// </summary>
+    private void RequestPendingChunks()
+    {
+        this.passesSinceRequest = 0;
+        if (this.pendingChunks.Count > 0 && this.Level is WorldData.AbstractLevel level)
+            level.RequestChunks(this.pendingChunks);
+    }
+
+    /// <summary>
+    /// Whether the chunk is in the client's view, so the level keeps generating it for the player.
+    /// </summary>
+    /// <remarks>
+    /// Read from the level's generation dispatch without chunkUpdates: a stale answer only drops a request the next
+    /// <see cref="RequestPendingChunks"/> makes again, or keeps one a little longer.
+    /// </remarks>
+    internal bool WantsChunk(int chunkX, int chunkZ) => this.IsInView(chunkX, chunkZ);
+
+    // Sends the nearest chunks in view the level has complete, as many as the client takes (see the chunk batch flow
+    // control above), within a time budget so login and movement don't wait for packets. Asking the level for chunks is
+    // separate (see RequestPendingChunks), so sending them never holds up generating them. Called under chunkUpdates.
     private async Task<bool> SendReadyChunksAsync()
     {
+        if (this.chunksStopped)
+            return true;
+
         if (this.pendingChunks.Count == 0 || this.chunkCacheCenter is not var (centerX, centerZ))
             return this.pendingChunks.Count == 0;
 
-        if (this.pendingChunkLoads.Count == 0)
+        if (++this.passesSinceRequest >= PassesPerRequest)
+            this.RequestPendingChunks();
+
+        if (this.pendingOrderStale)
         {
             var chunks = this.pendingChunks.ToArray();
             var distances = new int[chunks.Length];
@@ -903,29 +307,77 @@ public sealed partial class Player : Avatar, IPlayer
             }
 
             Array.Sort(distances, chunks);
-            foreach (var value in chunks)
-                this.pendingChunkLoads.Enqueue(value);
+            this.pendingOrder = chunks;
+            this.pendingOrderStale = false;
         }
 
-        var started = Stopwatch.GetTimestamp();
-        for (var count = 0; count < MaximumChunkLoadsPerPass && this.pendingChunkLoads.TryDequeue(out var value); count++)
+        int allowed;
+        lock (this.chunkBatchLock)
         {
-            if (this.pendingChunks.Contains(value))
+            allowed = this.unacknowledgedChunkBatches < this.maxUnacknowledgedChunkBatches
+                ? (int)Math.Floor(this.chunkBatchQuota)
+                : 0;
+        }
+
+        if (allowed <= 0)
+            return false;
+
+        var batch = new List<IChunk>();
+        var started = Stopwatch.GetTimestamp();
+        var level = this.Level as WorldData.AbstractLevel;
+        foreach (var value in this.pendingOrder)
+        {
+            if (batch.Count >= allowed || Stopwatch.GetElapsedTime(started) >= ChunkLoadTimeBudget)
+                break;
+
+            if (!this.pendingChunks.Contains(value))
+                continue;
+
+            NumericsHelper.LongToInts(value, out var x, out var z);
+            var chunk = level is not null
+                ? level.GetReadyChunk(x, z)
+                : await Level.GetChunkAsync(x, z) is IChunk { IsGenerated: true } complete ? complete : null;
+            if (chunk is not null)
             {
-                NumericsHelper.LongToInts(value, out var x, out var z);
-                if (await Level.GetChunkAsync(x, z) is IChunk { IsGenerated: true } chunk)
-                {
-                    await Client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
-                    LoadedChunks.Add(value);
-                    this.pendingChunks.Remove(value);
-                }
+                batch.Add(chunk);
+                LoadedChunks.Add(value);
+                this.pendingChunks.Remove(value);
+            }
+        }
+
+        if (batch.Count > 0)
+        {
+            lock (this.chunkBatchLock)
+            {
+                this.unacknowledgedChunkBatches++;
+                this.chunkBatchQuota -= batch.Count;
             }
 
-            if (Stopwatch.GetElapsedTime(started) >= ChunkLoadTimeBudget)
-                break;
+            await this.Client.QueuePacketAsync(new ChunkBatchStartPacket());
+            foreach (var chunk in batch)
+                await this.Client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
+
+            await this.Client.QueuePacketAsync(new ChunkBatchFinishedPacket { BatchSize = batch.Count });
         }
 
         return this.pendingChunks.Count == 0;
+    }
+
+    /// <summary>
+    /// Takes the client's acknowledgement of a chunk batch and the chunks a tick it asks for (vanilla's
+    /// <c>onChunkBatchReceivedByClient</c>).
+    /// </summary>
+    internal void OnChunkBatchReceived(float chunksPerTick)
+    {
+        lock (this.chunkBatchLock)
+        {
+            this.unacknowledgedChunkBatches = Math.Max(0, this.unacknowledgedChunkBatches - 1);
+            this.desiredChunksPerTick = float.IsNaN(chunksPerTick) ? .01f : Math.Clamp(chunksPerTick, .01f, 64);
+            if (this.unacknowledgedChunkBatches == 0)
+                this.chunkBatchQuota = 1;
+
+            this.maxUnacknowledgedChunkBatches = 10;
+        }
     }
 
     // Vanilla's ChunkTrackingView.contains, which counts the neighbors the client needs to render the edge: a cylinder
@@ -938,14 +390,5 @@ public sealed partial class Player : Avatar, IPlayer
         long dx = Math.Max(0, Math.Abs(chunkX - centerX) - 2);
         long dz = Math.Max(0, Math.Abs(chunkZ - centerZ) - 2);
         return dx * dx + dz * dz < (long)this.chunkViewDistance * this.chunkViewDistance;
-    }
-
-    private static partial class Log
-    {
-        [LoggerMessage(Level = LogLevel.Debug, Message = "Moving {Username} to {LevelName}")]
-        public static partial void ChangingLevel(ILogger logger, string username, string levelName);
-
-        [LoggerMessage(Level = LogLevel.Warning, Message = "{Username} has invalid saved data; spawning them at the world spawn")]
-        public static partial void InvalidSavedData(ILogger logger, Exception exception, string username);
     }
 }

@@ -1,3 +1,5 @@
+using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
@@ -10,6 +12,11 @@ internal sealed class MobProjectile : Entity
     internal int SplashEffect { get; set; } = -1;
     internal int SplashDuration { get; set; }
     internal int SplashAmplifier { get; set; }
+    /// <summary>The effects a splash shatters into, when a player threw it; the mob's single effect otherwise.</summary>
+    internal IReadOnlyList<PotionEffectData>? SplashEffects { get; set; }
+
+    /// <summary>The potion item a player threw, shown to clients; a mob's splash shows its own potion.</summary>
+    internal ItemStack? SplashItem { get; set; }
     internal IEntity? Owner { get; private set; }
     private Guid ownerUuid;
     private VectorD acceleration;
@@ -24,7 +31,7 @@ internal sealed class MobProjectile : Entity
         NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
     }
     [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
-    internal MobProjectile(Mob owner, EntityType type, VectorD position, VectorD direction) : this(owner.Level, type)
+    internal MobProjectile(IEntity owner, EntityType type, VectorD position, VectorD direction, float? speed = null) : this(owner.Level, type)
     {
         Owner = owner;
         ownerUuid = owner.Uuid;
@@ -33,7 +40,7 @@ internal sealed class MobProjectile : Entity
         BoundingBox = Dimension.CreateBBFromPosition(Position);
         if (direction.Magnitude > 0.0001f)
             direction /= direction.Magnitude;
-        Motion = direction * (type == EntityType.SplashPotion ? 0.75f : type == EntityType.Snowball ? 1.6f : type == EntityType.LlamaSpit ? 1.5f : 0.2f);
+        Motion = direction * (speed ?? (type == EntityType.SplashPotion ? 0.75f : type == EntityType.Snowball ? 1.6f : type == EntityType.LlamaSpit ? 1.5f : 0.2f));
         acceleration = type is EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion ? VectorD.Zero : direction * 0.1f;
         NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
     }
@@ -133,8 +140,12 @@ internal sealed class MobProjectile : Entity
                 var fire = (Vector)(Position - Motion * 0.05f).Floor();
                 if (terrain.GetBlock(fire)?.IsAir == true && terrain.GetBlock(new Vector(fire.X, fire.Y - 1, fire.Z)) is { } floor &&
                     BlockCollisionShapes.Get(floor).Count > 0)
-                    await level.SetBlockAsync(fire, BlocksRegistry.Get(Material.Fire), true);
+                    await level.SetBlockAsync(fire, BlocksRegistry.Fire, true);
             }
+            // Vanilla's Snowball.onHit: entity event 3, the client's snowball crack particles.
+            if (Type == EntityType.Snowball)
+                PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new EntityEventPacket { EntityId = EntityId, Event = 3 });
+
             await RemoveAsync();
             return;
         }
@@ -174,11 +185,16 @@ internal sealed class MobProjectile : Entity
         base.Write(writer);
         if (Type != EntityType.SplashPotion) return;
         writer.WriteEntityMetadataType(8, EntityMetadataType.Slot);
-        writer.WriteItemStack(Witch.MakePotion(Material.SplashPotion, SplashEffect, SplashDuration, SplashAmplifier));
+        var potion = SplashItem ?? Witch.MakePotion(ItemsRegistry.SplashPotion, SplashEffect, SplashDuration, SplashAmplifier);
+        writer.WriteItemStack(potion);
     }
 
     private async ValueTask SplashAsync(IEntity? directHit)
     {
+        // Vanilla's ThrownPotion.applySplash: every effect of the potion, each scaled by how near the target is.
+        var effects = this.SplashEffects ?? (SplashEffect >= 0
+            ? [new PotionEffectData { Id = SplashEffect, Duration = SplashDuration, Amplifier = SplashAmplifier, ShowParticles = true, ShowIcon = true }]
+            : []);
         foreach (var living in Level.GetEntitiesInRange(Position, 4).OfType<Living>())
         {
             if (!living.Alive || Math.Abs(living.Position.Y - Position.Y) > 2 || living is IPlayer { GameMode: GameMode.Creative or GameMode.Spectator }) continue;
@@ -186,20 +202,23 @@ internal sealed class MobProjectile : Entity
             if (distance >= 4) continue;
             var strength = ReferenceEquals(living, directHit) ? 1 : 1 - distance / 4;
             var undead = living.Type is EntityType.Zombie or EntityType.Husk or EntityType.Drowned or EntityType.ZombifiedPiglin or EntityType.Zoglin or EntityType.Skeleton or EntityType.Stray or EntityType.Bogged or EntityType.Parched or EntityType.WitherSkeleton or EntityType.Wither or EntityType.Phantom or EntityType.SkeletonHorse or EntityType.ZombieHorse or EntityType.CamelHusk or EntityType.ZombieNautilus or EntityType.ZombieVillager or EntityType.Giant;
-            if (SplashEffect == (int)PotionEffect.InstantDamage - 1 || SplashEffect == (int)PotionEffect.InstantHealth - 1)
+            foreach (var effect in effects)
             {
-                var harms = (SplashEffect == (int)PotionEffect.InstantDamage - 1) != undead;
-                var amount = (float)Math.Floor(strength * ((harms ? 6 : 4) << SplashAmplifier) + 0.5);
-                if (harms && living is Witch && ReferenceEquals(living, Owner)) continue;
-                if (harms)
-                    await living.DamageAsync(Owner ?? this, living is Witch ? amount * 0.15f : amount);
-                else living.Health = Math.Min(living is IPlayer ? 20 : living.GetAttributeValue("minecraft:generic.max_health"), living.Health + amount);
-            }
-            else
-            {
-                var duration = (int)(SplashDuration * strength + 0.5);
-                if (duration > 20) living.AddPotionEffect(SplashEffect, duration, SplashAmplifier,
-                    EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
+                if (effect.Id == (int)PotionEffect.InstantDamage - 1 || effect.Id == (int)PotionEffect.InstantHealth - 1)
+                {
+                    var harms = (effect.Id == (int)PotionEffect.InstantDamage - 1) != undead;
+                    var amount = (float)Math.Floor(strength * ((harms ? 6 : 4) << effect.Amplifier) + 0.5);
+                    if (harms && living is Witch && ReferenceEquals(living, Owner)) continue;
+                    if (harms)
+                        await living.DamageAsync(Owner ?? this, living is Witch ? amount * 0.15f : amount);
+                    else living.Health = Math.Min(living.GetAttributeValue("minecraft:max_health"), living.Health + amount);
+                }
+                else
+                {
+                    var duration = (int)(effect.Duration * strength + 0.5);
+                    if (duration > 20) living.AddPotionEffect(effect.Id, duration, effect.Amplifier,
+                        EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
+                }
             }
         }
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelEventPacket(2002, (Vector)Position.Floor(), 0x385dc6));

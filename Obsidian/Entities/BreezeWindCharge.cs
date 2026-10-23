@@ -51,7 +51,8 @@ internal sealed class BreezeWindCharge : Entity
         Position = next; BoundingBox = Dimension.CreateBBFromPosition(next);
         if (fraction < 1 || target != null)
         {
-            if (target != null) await target.DamageAsync(owner ?? this, 1);
+            if (target is Living victim && target is not Wither { Armored: true })
+                await victim.DamageCombatAsync(owner ?? this, 1, CombatDamageKind.Projectile, directSource: this);
             await BurstAsync(terrain);
             await RemoveAsync(); return;
         }
@@ -81,15 +82,16 @@ internal sealed class BreezeWindCharge : Entity
                 if (((VectorD)point - Position).MagnitudeSquared() > 9) continue;
                 var block = terrain.GetBlock(point);
                 if (block == null) continue;
-                if (block.Material is Material.Fire or Material.SoulFire)
-                { await Level.SetBlockAsync(point, BlocksRegistry.Get(Material.Air), true); continue; }
+                if (block.RegistryId is BlockIds.Fire or BlockIds.SoulFire)
+                { await Level.SetBlockAsync(point, BlocksRegistry.Air, true); continue; }
                 var open = block.GetProperty("open");
-                if (open != null && block.Material is not Material.IronDoor and not Material.IronTrapdoor)
+                if (open != null && block.RegistryId is not BlockIds.IronDoor and not BlockIds.IronTrapdoor)
                     await Level.SetBlockAsync(point, block.WithProperty("open", open != "true"), true);
-                else if (block.Material == Material.Lever)
-                    await Level.SetBlockAsync(point, block.WithProperty("powered", block.GetProperty("powered") != "true"), true);
-                else if (block.GetProperty("lit") == "true" && (block.Material is Material.Campfire or Material.SoulCampfire ||
-                    TagsRegistry.Block.Candles.Entries.Contains(block.RegistryId)))
+                else if (Level is AbstractLevel redstoneLevel && redstoneLevel.BlockUpdates.TriggerRedstone(point))
+                    continue;
+                else if (block.GetProperty("lit") == "true"
+                    && (block.RegistryId is BlockIds.Campfire or BlockIds.SoulCampfire
+                        || TagsRegistry.Block.Candles.Entries.Contains(block.RegistryId)))
                     await Level.SetBlockAsync(point, block.WithProperty("lit", false), true);
             }
         }

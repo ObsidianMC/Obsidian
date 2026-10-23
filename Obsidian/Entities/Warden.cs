@@ -86,6 +86,13 @@ public sealed partial class Warden : PathfinderMob
     protected override ValueTask OnHurtAsync(IEntity source)
     {
         IncreaseAnger(source, 100);
+        // Vanilla's hurtServer: a direct or close attacker becomes the target at once, skipping the roar.
+        var direct = IncomingDirectSource == null || ReferenceEquals(IncomingDirectSource, source);
+        if (AttackTarget == null && CanSense(source) && (direct || IsInRange(source, 5)))
+        {
+            AttackTarget = source;
+            if (Pose is Pose.Sniffing or Pose.Roaring) { poseTicks = 0; SetPose(Pose.Standing); }
+        }
         if (Pose is Pose.Digging or Pose.Sniffing)
         {
             poseTicks = 0;
@@ -140,7 +147,7 @@ public sealed partial class Warden : PathfinderMob
             SynchronizeMetadata();
         }
         if (AiTick % 120 == 0)
-            foreach (var player in Level.GetPlayersInRange(Position, 20).Where(player => player.GameMode != GameMode.Spectator))
+            foreach (var player in Level.GetPlayersInRange(Position, 20).Where(player => player.GameMode is GameMode.Survival or GameMode.Adventure))
                 player.AddPotionEffect((int)PotionEffect.Darkness - 1, 260);
 
         if (poseTicks > 0)
@@ -180,15 +187,16 @@ public sealed partial class Warden : PathfinderMob
                     {
                         var damage = target is IPlayer ? Level.LevelData.Difficulty switch
                         { Difficulty.Easy => 6, Difficulty.Hard => 15, Difficulty.Peaceful => 0, _ => 10 } : 10;
-                        if (target is Mob mob) await mob.DamageMagicAsync(this, damage, ignoreHurtCooldown: true);
-                        else await target.DamageAsync(this, damage);
-                        if (target is Entity entity)
+                        if (target is Living living)
                         {
-                            var delta = target.Position - Position;
-                            var length = Math.Sqrt(delta.MagnitudeSquared());
-                            var resistance = 1 - Math.Clamp(entity.GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1);
-                            if (length > 0) entity.Motion += new VectorD(delta.X / length * 2.5 * resistance,
-                                delta.Y / length * 0.5 * resistance, delta.Z / length * 2.5 * resistance);
+                            var accepted = living.AcceptedDamageCount;
+                            await living.DamageCombatAsync(this, damage, CombatDamageKind.SonicBoom);
+                            if (living.AcceptedDamageCount != accepted && beamLength > 0)
+                            {
+                                var resistance = 1 - Math.Clamp(living.GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1);
+                                living.Motion += new VectorD(beam.X / beamLength * 2.5 * resistance,
+                                    beam.Y / beamLength * 0.5 * resistance, beam.Z / beamLength * 2.5 * resistance);
+                            }
                         }
                     }
                 }
@@ -236,7 +244,7 @@ public sealed partial class Warden : PathfinderMob
         else if (sniffCooldown == 0)
         {
             sniffCooldown = 100 + Random.Next(100);
-            poseTicks = 83;
+            poseTicks = 84;
             SetPose(Pose.Sniffing);
             PlayMobSound("sniff");
         }
@@ -253,7 +261,11 @@ public sealed partial class Warden : PathfinderMob
         return delta.X * delta.X + delta.Z * delta.Z <= 225 && Math.Abs(delta.Y) <= 20;
     }
 
-    protected override ValueTask OnDeathAsync(IEntity source) { DropItem(Material.SculkCatalyst); return default; }
+    protected override ValueTask OnDeathAsync(IEntity source)
+    {
+        DropItem(ItemsRegistry.SculkCatalyst);
+        return default;
+    }
 
     public override void Write(INetStreamWriter writer)
     {

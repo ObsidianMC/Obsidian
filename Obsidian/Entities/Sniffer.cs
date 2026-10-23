@@ -28,7 +28,7 @@ public sealed partial class Sniffer : FarmAnimal
         if (Random.Next(1000) == 0) { ChangeState(2); idleStateTicks = Random.Next(40, 81); PlayMobSound("scenting"); }
     }
     private int idleStateTicks;
-    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.TorchflowerSeeds };
+    protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.TorchflowerSeeds };
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         base.RegisterGoals(actions, targets);
@@ -37,7 +37,7 @@ public sealed partial class Sniffer : FarmAnimal
     protected override IEntity CreateOffspring(Animal mate)
     {
         var egg = new ItemEntity { Level = Level, EntityId = Server.GetNextEntityId(), Position = Position,
-            Item = ItemsRegistry.GetSingleItem(Material.SnifferEgg), CanPickup = false };
+            Item = ItemsRegistry.GetSingleItem(ItemsRegistry.SnifferEgg), CanPickup = false };
         Level.SpawnEntity(egg);
         return egg;
     }

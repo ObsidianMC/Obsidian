@@ -24,15 +24,19 @@ public sealed partial class Wither : BossMob
     protected override string? SoundName => "wither";
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
     protected override int GetExperienceReward() => 50;
+    protected override bool CanUpdateTargetGoals => invulnerableTicks == 0;
     internal bool Armored => Health <= GetAttributeValue("minecraft:generic.max_health") / 2;
-    protected override float BarProgress => invulnerableTicks > 0 ? 1 - (float)invulnerableTicks / SpawnCharge : base.BarProgress;
-    protected override VectorD Travel() => VolumeMovement.Travel(this, true);
+    protected override VectorD Travel() => EntityMovement.Move(this);
     protected override ValueTask TickAirSupplyAsync() { Air = 300; return default; }
 
     internal void BeginSpawnCharge()
     {
         invulnerableTicks = SpawnCharge;
         Health = GetAttributeValue("minecraft:generic.max_health") / 3;
+        AttackTarget = null;
+        TargetGoals.Cancel();
+        (Navigator as Navigator)?.Stop();
+        for (var head = 0; head < headTargets.Length; head++) SetHeadTarget(head, 0);
     }
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
@@ -44,11 +48,12 @@ public sealed partial class Wither : BossMob
     }
 
     private bool CanAttack(IEntity target) => target is Living && IsValidTarget(target) &&
-        !TagsRegistry.EntityType.WitherFriends.Entries.Contains((int)target.Type);
+        !IsIn(target, TagsRegistry.EntityType.WitherFriends);
 
     protected override async ValueTask TickMobAsync()
     {
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
+        Motion = new VectorD(Motion.X, Motion.Y * 0.6, Motion.Z);
         if (invulnerableTicks > 0)
         {
             if (--invulnerableTicks == 0 && Level is AbstractLevel level)
@@ -62,8 +67,9 @@ public sealed partial class Wither : BossMob
         }
         if (AiTick % 20 == 0) Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 1);
         if (AttackTarget != null && (!CanAttack(AttackTarget) || !CanSee(AttackTarget))) AttackTarget = null;
+        if (headTargets[0] != (AttackTarget?.EntityId ?? 0)) nextShot[0] = AiTick + 40;
         SetHeadTarget(0, AttackTarget?.EntityId ?? 0);
-        if (AttackTarget is { } main && AiTick >= nextShot[0])
+        if (AttackTarget is { } main && AiTick >= nextShot[0] && IsInRange(main, 20))
         {
             Shoot(0, main.Position + new VectorD(0, main.Dimension.Height / 2, 0), Random.NextSingle() < 0.001f);
             nextShot[0] = AiTick + 40;
@@ -90,7 +96,7 @@ public sealed partial class Wither : BossMob
                 SetHeadTarget(head, choices.Length == 0 ? 0 : choices[Random.Next(choices.Length)].EntityId);
             }
         }
-        if (breakBlocksTicks > 0 && --breakBlocksTicks == 0) await BreakBlocksAsync();
+        if (breakBlocksTicks > 0 && --breakBlocksTicks == 0) BreakBlocks();
     }
 
     private void SetHeadTarget(int head, int id)
@@ -109,7 +115,7 @@ public sealed partial class Wither : BossMob
         PlayMobSound("shoot");
     }
 
-    private async ValueTask BreakBlocksAsync()
+    private void BreakBlocks()
     {
         if (!Level.LevelData.GetBooleanRule("mob_griefing")) return;
         var position = (Vector)Position.Floor();
@@ -121,14 +127,16 @@ public sealed partial class Wither : BossMob
             var point = position + new Vector(x, y, z);
             var block = Terrain.GetBlock(point);
             if (block == null || block.IsAir || TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId)) continue;
-            await Level.SetBlockAsync(point, BlocksRegistry.Air);
+            // Vanilla destroyBlock(pos, true, this): the block's loot drops.
+            Level.DestroyBlock(point, dropItems: true, this);
             broken = true;
         }
         if (broken) PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelEventPacket(1022, position, 0));
     }
 
     protected override bool CanTakeDamage(IEntity source) => invulnerableTicks == 0 && source.Type != EntityType.Wither &&
-        !TagsRegistry.EntityType.WitherFriends.Entries.Contains((int)source.Type);
+        !IsIn(source, TagsRegistry.EntityType.WitherFriends) &&
+        (!Armored || (IncomingDirectSource ?? source).Type is not (EntityType.Arrow or EntityType.SpectralArrow or EntityType.Trident or EntityType.WindCharge or EntityType.BreezeWindCharge));
 
     protected override ValueTask OnHurtAsync(IEntity source)
     {
@@ -142,7 +150,7 @@ public sealed partial class Wither : BossMob
         if (Level.LevelData.GetBooleanRule("mob_drops"))
         {
             var star = new ItemEntity { Level = Level, EntityId = Server.GetNextEntityId(), Position = Position,
-                Item = ItemsRegistry.GetSingleItem(Material.NetherStar) };
+                Item = ItemsRegistry.GetSingleItem(ItemsRegistry.NetherStar) };
             star.SetExtendedLifetime();
             Level.SpawnEntity(star);
         }
@@ -179,17 +187,28 @@ public sealed partial class Wither : BossMob
         public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
         public override bool CanUse() => mob.invulnerableTicks > 0 || mob.AttackTarget != null;
         public override bool RequiresUpdateEveryTick => true;
+        public override void Start() => ((Navigator)mob.Navigator!).Stop();
+        public override void Stop() => mob.MoveControl.Stop();
         public override ValueTask TickAsync()
         {
             if (mob.invulnerableTicks > 0) { mob.MoveControl.Stop(); return default; }
             if (mob.AttackTarget is { } target)
             {
                 var delta = target.Position - mob.Position;
-                var height = target.Position.Y + (mob.Armored ? 0.5 : 5);
                 var horizontal = Math.Sqrt(delta.X * delta.X + delta.Z * delta.Z);
-                var destination = horizontal > 9 ? new VectorD(target.Position.X, height, target.Position.Z) :
-                    new VectorD(mob.Position.X, height, mob.Position.Z);
-                mob.MoveControl.MoveTo(destination, 2);
+                var motion = mob.Motion;
+                if (mob.Position.Y < target.Position.Y || !mob.Armored && mob.Position.Y < target.Position.Y + 5)
+                {
+                    motion.Y = Math.Max(0, motion.Y);
+                    motion.Y += 0.3 - motion.Y * 0.6;
+                }
+                if (horizontal > 3)
+                {
+                    motion.X += delta.X / horizontal * 0.3 - motion.X * 0.6;
+                    motion.Z += delta.Z / horizontal * 0.3 - motion.Z * 0.6;
+                }
+                mob.Motion = motion;
+                mob.MoveControl.Stop();
                 mob.LookControl.LookAt(target);
             }
             return default;

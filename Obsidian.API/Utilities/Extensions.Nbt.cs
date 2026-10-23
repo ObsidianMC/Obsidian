@@ -9,10 +9,12 @@ public partial class Extensions
 {
     public static void WriteChatMessage(this INbtWriter writer, ChatMessage chatMessage)
     {
-        if (!chatMessage.Text.IsNullOrEmpty())
-            writer.WriteString("text", chatMessage.Text);
+        if (!chatMessage.Text.IsNullOrEmpty() || chatMessage.Translate is null && chatMessage.Keybind is null)
+            writer.WriteString("text", chatMessage.Text ?? string.Empty);
         if (!chatMessage.Translate.IsNullOrEmpty())
             writer.WriteString("translate", chatMessage.Translate);
+        if (!chatMessage.Keybind.IsNullOrEmpty())
+            writer.WriteString("keybind", chatMessage.Keybind);
         if (chatMessage.Color.HasValue)
             writer.WriteString("color", chatMessage.Color.Value.ToString());
         if (!chatMessage.Insertion.IsNullOrEmpty())
@@ -29,10 +31,12 @@ public partial class Extensions
             writer.WriteBool("strikethrough", chatMessage.Strikethrough.Value);
         if (chatMessage.Obfuscated is not null)
             writer.WriteBool("obfuscated", chatMessage.Obfuscated.Value);
+        if (chatMessage.ShadowColor is int shadowColor)
+            writer.WriteInt("shadow_color", shadowColor);
 
-        if (chatMessage.ClickEvent != null)
+        if (chatMessage.ClickEvent is not null)
             writer.WriteTag(chatMessage.ClickEvent.ToNbt());
-        if (chatMessage.HoverEvent != null)
+        if (chatMessage.HoverEvent is not null)
             writer.WriteTag(chatMessage.HoverEvent.ToNbt());
 
         if (chatMessage.Extra is List<ChatMessage> extras)
@@ -76,9 +80,11 @@ public partial class Extensions
             compound.Add(new NbtTag<bool>("strikethrough", chatMessage.Strikethrough.Value));
         if (chatMessage.Obfuscated is not null)
             compound.Add(new NbtTag<bool>("obfuscated", chatMessage.Obfuscated.Value));
+        if (chatMessage.ShadowColor is int shadowColor)
+            compound.Add(new NbtTag<int>("shadow_color", shadowColor));
 
-        if (!chatMessage.Text.IsNullOrEmpty())
-            compound.Add(new NbtTag<string>("text", chatMessage.Text!));
+        if (!chatMessage.Text.IsNullOrEmpty() || chatMessage.Translate is null)
+            compound.Add(new NbtTag<string>("text", chatMessage.Text ?? string.Empty));
         if (!chatMessage.Translate.IsNullOrEmpty())
             compound.Add(new NbtTag<string>("translate", chatMessage.Translate!));
         if (chatMessage.Color.HasValue)
@@ -86,21 +92,24 @@ public partial class Extensions
         if (!chatMessage.Insertion.IsNullOrEmpty())
             compound.Add(new NbtTag<string>("insertion", chatMessage.Insertion!));
 
-        if (chatMessage.ClickEvent != null)
+        if (chatMessage.ClickEvent is not null)
             compound.Add(chatMessage.ClickEvent.ToNbt());
-        if (chatMessage.HoverEvent != null)
+        if (chatMessage.HoverEvent is not null)
             compound.Add(chatMessage.HoverEvent.ToNbt());
+
+        if (chatMessage.Extra is not null)
+            compound.Add(SavedList("extra", chatMessage.Extra.Select(value => value.ToNbt())));
+
+        if (chatMessage.With is not null)
+            compound.Add(SavedList("with", chatMessage.With.Select(value => value.ToNbt())));
 
         return compound;
     }
 
     public static ChatMessage FromNbt(this ChatMessage chatMessage, NbtCompound root)
     {
-        if (root.TryGetTagValue<string>("text", out var text))
-            chatMessage.Text = text;
-
-        if (root.TryGetTagValue<string>("translate", out var translate))
-            chatMessage.Translate = translate;
+        chatMessage.Text = root.TryGetTagValue<string>("text", out var text) ? text : null;
+        chatMessage.Translate = root.TryGetTagValue<string>("translate", out var translate) ? translate : null;
 
         if (root.TryGetTagValue<string>("color", out var color))
             chatMessage.Color = new HexColor(color);
@@ -108,11 +117,12 @@ public partial class Extensions
         if (root.TryGetTagValue<string>("insertion", out var insertion))
             chatMessage.Insertion = insertion;
 
-        chatMessage.Bold = root.TryGetTag("bold", out _) ? root.GetBool("bold") : null;
-        chatMessage.Italic = root.TryGetTag("italic", out _) ? root.GetBool("italic") : null;
-        chatMessage.Underlined = root.TryGetTag("underlined", out _) ? root.GetBool("underlined") : null;
-        chatMessage.Strikethrough = root.TryGetTag("strikethrough", out _) ? root.GetBool("strikethrough") : null;
-        chatMessage.Obfuscated = root.TryGetTag("obfuscated", out _) ? root.GetBool("obfuscated") : null;
+        chatMessage.Bold = root.TryGetBool("bold", out var bold) ? bold : null;
+        chatMessage.Italic = root.TryGetBool("italic", out var italic) ? italic : null;
+        chatMessage.Underlined = root.TryGetBool("underlined", out var underlined) ? underlined : null;
+        chatMessage.Strikethrough = root.TryGetBool("strikethrough", out var strikethrough) ? strikethrough : null;
+        chatMessage.Obfuscated = root.TryGetBool("obfuscated", out var obfuscated) ? obfuscated : null;
+        chatMessage.ShadowColor = root.TryGetTagValue<int>("shadow_color", out var shadowColor) ? shadowColor : null;
 
         if (root.TryGetTag<NbtCompound>("click_event", out var clickEventCompound))
             chatMessage.ClickEvent = clickEventCompound.ToClickComponent();
@@ -131,16 +141,41 @@ public partial class Extensions
 
     public static ClickComponent ToClickComponent(this NbtCompound compound)
     {
+        var action = SavedEnum<ClickAction>(compound.GetString("action")!);
+        var field = ClickField(action);
         return new ClickComponent
         {
-            Action = Enum.Parse<ClickAction>(compound.GetString("action")!.ToPascalCase()),
-            Value = compound.GetString("value")!
+            Action = action,
+            Value = action == ClickAction.ChangePage
+                ? compound.GetInt(field).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : compound.SavedString(field) ?? compound.SavedString("value")!
         };
     }
 
-    //TODO: CHat message stuff need to be updated.
     public static HoverComponent? ToHoverComponent(this NbtCompound compound)
     {
+        var action = compound.SavedString("action");
+        if (action == "show_text" && compound.TryGetTag("value", out var text))
+        {
+            return new HoverComponent
+            {
+                Action = HoverAction.ShowText,
+                Contents = new HoverChatContent { ChatMessage = text.TextFromNbt()! }
+            };
+        }
+
+        if (action == "show_item" && compound.ItemFromNbt() is ItemStack item)
+        {
+            return new HoverComponent
+            {
+                Action = HoverAction.ShowItem,
+                Contents = new HoverItemContent { Item = item }
+            };
+        }
+
+        if (action == "show_entity")
+            throw new NotSupportedException("Entity hover text cannot be represented without a live entity.");
+
         if (!compound.TryGetTag<NbtCompound>("contents", out var contentsCompound))
             return null;
 
@@ -169,27 +204,46 @@ public partial class Extensions
 
         if (hoverComponent.Contents is HoverChatContent chatContent)
             compound.Add(chatContent.ChatMessage.ToNbt("value"));
-        else if (hoverComponent.Contents is HoverItemContent)
-            throw new NotImplementedException("Missing properties from ItemStack can't implement.");
+        else if (hoverComponent.Contents is HoverItemContent itemContent)
+        {
+            foreach (var (name, tag) in itemContent.Item.ToNbt())
+                compound.Add(name, tag);
+        }
         else if (hoverComponent.Contents is HoverEntityComponent)
-            throw new NotImplementedException("Re-implement");
+            throw new NotSupportedException("Entity hover text cannot be represented without a live entity.");
 
         return compound;
     }
 
-    public static NbtCompound ToNbt(this ClickComponent clickComponent) => new("click_event")
+    private static string ClickField(ClickAction action) => action switch
     {
-         new NbtTag<string>("action", JsonNamingPolicy.SnakeCaseLower.ConvertName(clickComponent.Action.ToString())),
-         new NbtTag<string>("command", clickComponent.Value)
+        ClickAction.OpenUrl => "url",
+        ClickAction.ChangePage => "page",
+        ClickAction.CopyToClipboard => "value",
+        _ => "command"
     };
+
+    public static NbtCompound ToNbt(this ClickComponent clickComponent)
+    {
+        var compound = new NbtCompound("click_event")
+        {
+            new NbtTag<string>("action", clickComponent.Action.ToString().ToSnakeCase())
+        };
+        var field = ClickField(clickComponent.Action);
+        compound.Add(clickComponent.Action == ClickAction.ChangePage
+            ? new NbtTag<int>(
+                field, int.Parse(clickComponent.Value, System.Globalization.CultureInfo.InvariantCulture))
+            : (INbtTag)new NbtTag<string>(field, clickComponent.Value));
+        return compound;
+    }
 
     public static void WriteNbtCompound(this INetStreamWriter writer, NbtCompound compound)
     {
         using var nbtWriter = new RawNbtWriter(true);
 
-        foreach (var (_, tag) in compound)
-            nbtWriter.WriteTag(tag);
+        nbtWriter.WriteEntries(compound);
 
+        nbtWriter.EndCompound();
         nbtWriter.TryFinish();
 
         writer.WriteByteArray(nbtWriter.Data);

@@ -15,8 +15,8 @@ namespace Obsidian.WorldData.Lighting;
 /// can't leave those chunks. Unlit neighbors are left alone; lighting them later pulls this chunk's light in.
 /// </para>
 /// <para>
-/// Light only ever rises here, which is all generation needs. Runtime block updates would also need vanilla's decrease
-/// pass, which takes light away before spreading it again.
+/// Generation uses an increase pass. <see cref="RuntimeLightEngine"/> removes dependent light before spreading it
+/// again when complete chunks' blocks change.
 /// </para>
 /// <para>
 /// Light is stored and spread within the build range. Vanilla also keeps light for one section below and one above it;
@@ -129,9 +129,12 @@ internal sealed class LightEngine
     /// or later.
     /// </summary>
     /// <remarks>
-    /// This takes no locks; like <see cref="LightChunk"/>, it relies on the caller to keep the chunks from changing meanwhile.
+    /// Callers holding generation locks over the entire 3 by 3 area may opt into parallel propagation. Other callers
+    /// on live levels serialize propagation under the tick lock, which also excludes save snapshots. Completion checks
+    /// their borders, since neighbors may have been collected before another lighting pass reached its light status.
     /// </remarks>
-    public static async ValueTask LightChunkAsync(IChunk chunk, ILevel level, bool hasSkyLight = true)
+    public static async ValueTask LightChunkAsync(
+        IChunk chunk, ILevel level, bool hasSkyLight = true, bool hasGenerationLocks = false)
     {
         var litNeighbors = new List<IChunk>();
         for (var dz = -1; dz <= 1; dz++)
@@ -147,7 +150,15 @@ internal sealed class LightEngine
             }
         }
 
-        LightChunk(chunk, litNeighbors, hasSkyLight);
+        if (level is AbstractLevel live)
+        {
+            live.Lighting.RunGenerationLighting(
+                chunk,
+                () => LightChunk(chunk, litNeighbors, hasSkyLight),
+                hasGenerationLocks);
+        }
+        else
+            LightChunk(chunk, litNeighbors, hasSkyLight);
     }
 
     /// <summary>
@@ -160,7 +171,11 @@ internal sealed class LightEngine
         {
             var section = sections[sectionIndex];
             if (this.storageSections is not null)
-                Array.Clear(this.storageSections[4 * this.sectionCount + sectionIndex]!.GetLightStorage(LightType.Block));
+            {
+                var storage = this.storageSections[4 * this.sectionCount + sectionIndex]!;
+                Array.Clear(storage.GetLightStorage(LightType.Block));
+                storage.MarkUnsaved();
+            }
             else
                 section.SetLight(new byte[2048], LightType.Block);
 

@@ -1,52 +1,95 @@
-﻿using Obsidian.API.Registries;
-using System.Diagnostics.CodeAnalysis;
+using Obsidian.API.Blocks;
+using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Plugins;
+using Obsidian.API.Registries;
 
 namespace Obsidian.API.Inventory;
-public readonly record struct Item : INetworkSerializable<Item>
+
+/// <summary>
+/// A kind of item, like a diamond or a bow, which item stacks hold. Vanilla's items are the static properties of
+/// <see cref="ItemsRegistry"/>; plugins register more with <see cref="IPluginRegistry.RegisterItem"/>.
+/// </summary>
+/// <remarks>
+/// There is one instance per item, so items compare by reference. An item is plain data owned by the server: a plugin's
+/// item keeps its instance, identifier and id when the plugin reloads, and only its <see cref="Behavior"/> is replaced.
+/// </remarks>
+public sealed class Item : INetworkSerializable<Item>
 {
-    public required string UnlocalizedName { get; init; }
+    internal Item(int id, string unlocalizedName)
+    {
+        this.Id = (short)id;
+        this.UnlocalizedName = unlocalizedName;
+    }
 
-    public required Material Type { get; init; }
+    /// <summary>
+    /// The item's identifier, like <c>minecraft:diamond</c>.
+    /// </summary>
+    public string UnlocalizedName { get; }
 
-    public required short Id { get; init; }
+    /// <summary>
+    /// The item's network id. Vanilla's come first, in vanilla's order; plugins' follow, in the order they were first
+    /// registered.
+    /// </summary>
+    public short Id { get; }
 
     /// <summary>
     /// The item's default <c>minecraft:max_stack_size</c>.
     /// </summary>
-    public int MaxStackSize { get; init; } = 64;
+    public int MaxStackSize { get; internal set; } = 64;
 
     /// <summary>
     /// The item's default <c>minecraft:max_damage</c>, or 0 when the item can't be damaged.
     /// </summary>
-    public int MaxDamage { get; init; }
+    public int MaxDamage { get; internal set; }
 
     /// <summary>
     /// The item's default <c>minecraft:enchantable</c> value (higher values give better enchantments), or 0 when the
     /// item can't be enchanted.
     /// </summary>
-    public int Enchantable { get; init; }
+    public int Enchantable { get; internal set; }
 
-    [SetsRequiredMembers]
-    public Item(int id, string unlocalizedName, Material type)
-    {
-        Id = (short)id;
-        UnlocalizedName = unlocalizedName;
-        Type = type;
-    }
+    /// <summary>
+    /// A plugin item's default components besides its stack size, durability and enchantability (see
+    /// <see cref="ItemProperties"/>): every new stack of the item has them unless it sets or removes its own. They
+    /// aren't sent or saved with stacks, as clients and saves know them from the item, like vanilla's. Empty for
+    /// vanilla items, whose defaults Obsidian reads from vanilla's data.
+    /// </summary>
+    /// <remarks>
+    /// Stacks take them as they're made, so a reload that changes them reaches stacks made, loaded or received
+    /// afterwards. They stay when the plugin unloads, with the item.
+    /// </remarks>
+    public ImmutableArray<DataComponent> DefaultComponents { get; internal set; } = [];
 
-    [SetsRequiredMembers]
-    public Item(Item item)
-    {
-        Id = item.Id;
-        UnlocalizedName = item.UnlocalizedName;
-        Type = item.Type;
-        MaxStackSize = item.MaxStackSize;
-        MaxDamage = item.MaxDamage;
-        Enchantable = item.Enchantable;
-    }
+    /// <summary>
+    /// The plugin block the item places, or null. Vanilla's items place the block with their identifier.
+    /// </summary>
+    public BlockType? Block { get; internal set; }
 
-    public static void Write(Item value, INetStreamWriter writer) => writer.WriteVarInt(value.Id);
-    public static Item Read(INetStreamReader reader) => ItemsRegistry.Get(reader);
+    // What the item does when used, run by the server as a call into its plugin (so not handed out: a caller holding it
+    // could run it while the plugin unloads).
+    internal IItemBehavior? Behavior => this.Binding?.Behavior;
+
+    /// <summary>
+    /// The plugin that registered the item and provides its behaviour, or null for vanilla items and while the plugin
+    /// is unloaded.
+    /// </summary>
+    public IPluginContainer? Owner => this.Binding?.Owner;
+
+    // The plugin and its behaviour, replaced together so that a use never pairs one plugin's behaviour with another.
+    internal ItemBinding? Binding { get; set; }
+
+    public static void Write(Item value, INetStreamWriter writer) =>
+        writer.WriteRegistryId(ComponentValueCodecs.Items, value.Id);
+
+    public static Item Read(INetStreamReader reader) =>
+        ItemsRegistry.Get(reader.ReadRegistryId(ComponentValueCodecs.Items));
 
     public override string ToString() => $"{{{this.UnlocalizedName}}}";
 }
+
+/// <summary>
+/// The plugin that registered an item, and what the item does. <c>TicksInInventory</c> is whether the behaviour
+/// implements <see cref="IItemBehavior.InventoryTickAsync"/>, so that players' inventories are only scanned for items
+/// that do something there.
+/// </summary>
+internal sealed record ItemBinding(IPluginContainer Owner, IItemBehavior? Behavior, bool TicksInInventory);

@@ -9,9 +9,9 @@ public sealed class BonusChestFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:bonus_chest";
 
-    private static IBlock Chest => field ??= BlocksRegistry.Get(Material.Chest);
+    private static IBlock Chest => field ??= BlocksRegistry.Chest;
 
-    private static IBlock Torch => field ??= BlocksRegistry.Get(Material.Torch);
+    private static IBlock Torch => field ??= BlocksRegistry.Torch;
 
     public override bool Place(FeatureContext context)
     {

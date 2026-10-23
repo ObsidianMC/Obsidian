@@ -2,55 +2,75 @@
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
+
 public sealed record class ConsumableDataComponent : DataComponent
 {
     public override DataComponentType Type => DataComponentType.Consumable;
 
     public override string Identifier => "minecraft:consumable";
 
-    public required float ConsumeSeconds { get; set; }
+    private float consumeSeconds;
 
-    public required ItemAnimation Animation { get; set; }
+    public required float ConsumeSeconds
+    {
+        get => this.consumeSeconds;
+        init => this.consumeSeconds = value;
+    }
 
-    public required SoundEvent Sound { get; set; }
+    private ItemAnimation animation;
 
-    public bool HasConsumeParticles { get; set; }
+    public required ItemAnimation Animation
+    {
+        get => this.animation;
+        init => this.animation = value;
+    }
 
-    public List<ConsumeEffect> Effects { get; set; } = [];
+    private SoundEvent sound;
+
+    public required SoundEvent Sound
+    {
+        get => this.sound;
+        init => this.sound = value;
+    }
+
+    private bool hasConsumeParticles;
+
+    public bool HasConsumeParticles
+    {
+        get => this.hasConsumeParticles;
+        init => this.hasConsumeParticles = value;
+    }
+
+    private ImmutableArray<ConsumeEffect> effects = [];
+
+    public ImmutableArray<ConsumeEffect> Effects
+    {
+        get => this.effects;
+        init => this.effects = value;
+    }
 
     [SetsRequiredMembers]
     internal ConsumableDataComponent() { }
 
-    public override void Read(INetStreamReader reader)
+    protected override void ReadCore(INetStreamReader reader)
     {
-        this.ConsumeSeconds = reader.ReadSingle();
-        this.Animation = reader.ReadVarInt<ItemAnimation>();
-        this.Sound = reader.ReadSoundEvent();
-
-        var count = reader.ReadVarInt();
-        var effects = new List<ConsumeEffect>(count);
-
-        for (int i = 0; i < count; i++)
+        this.consumeSeconds = reader.ReadSingle();
+        this.animation = reader.ReadVarInt<ItemAnimation>();
+        this.sound = ComponentValueCodecs.ReadSoundHolder(reader);
+        this.hasConsumeParticles = reader.ReadBoolean();
+        this.effects = reader.ReadLengthPrefixedArray(() =>
         {
-            var type = reader.ReadString();
-
-            var effect = ConsumeEffects.Compile(type);
-
-            effects[i] = new() { Effect = effect, Type = type };
-        }
+            var effect = ComponentConsumeEffect.ReadValue(reader);
+            return new ConsumeEffect { Type = effect.Type, Effect = effect };
+        }).ToImmutableArray();
     }
 
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteSingle(this.ConsumeSeconds);
         writer.WriteVarInt(this.Animation);
-        writer.WriteSoundEvent(this.Sound);
+        ComponentValueCodecs.WriteSoundHolder(this.Sound, writer);
         writer.WriteBoolean(this.HasConsumeParticles);
-
-        foreach (var consumeEffect in this.Effects)
-        {
-            writer.WriteString(consumeEffect.Type);
-            consumeEffect.Effect.Write(writer);
-        }
+        writer.WriteLengthPrefixedArray(effect => ComponentConsumeEffect.WriteValue(effect.Effect, writer), this.Effects.ToArray());
     }
 }

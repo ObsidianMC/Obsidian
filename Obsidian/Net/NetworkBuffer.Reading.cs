@@ -1,10 +1,11 @@
-﻿using Obsidian.API.BlockStates;
+using Obsidian.API.BlockStates;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
 using System.IO;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -88,7 +89,8 @@ public partial class NetworkBuffer : INetStreamReader
         var secondByte = this.ReadByte();
         var remainingBytes = this.ReadInt();
 
-        long packedData = remainingBytes << 16 | (secondByte << 8) | firstByte;
+        // LpVec3 carries 48 bits: widen the unsigned high word before shifting.
+        long packedData = (long)(uint)remainingBytes << 16 | ((long)secondByte << 8) | firstByte;
 
         long scaleFactor = firstByte & ScaleBits;
 
@@ -114,64 +116,89 @@ public partial class NetworkBuffer : INetStreamReader
     };
 
     [ReadMethod]
-    public ItemStack? ReadItemStack()
+    public ItemStack? ReadItemStack() => this.ReadItemStack(false);
+
+    /// <summary>Reads the creative-slot codec when delimitedComponents is true.</summary>
+    public ItemStack? ReadItemStack(bool delimitedComponents)
     {
-        var count = this.ReadVarInt();
+        if (++this.componentDepth > 64)
+            throw new InvalidDataException("Item nesting exceeds 64.");
 
-        if (count == 0)
-            return null;
-
-        var item = ItemsRegistry.Get(ReadVarInt());
-
-        var itemStack = new ItemStack(item, count);
-
-        if (itemStack.Type == Material.Air)
-            return itemStack;
-
-        var componentsToAdd = this.ReadVarInt();
-        var componentsToRemove = this.ReadVarInt();
-
-        for (int i = 0; i < componentsToAdd; i++)
+        try
         {
-            var type = this.ReadVarInt<DataComponentType>();
+            var count = this.ReadVarInt();
+            if (count <= 0)
+                return null;
 
-            var component = ComponentBuilder.ComponentsMap[type]();
-            component.Read(this);
-            itemStack.Add(component);
+            var itemStack = new ItemStack(ItemsRegistry.Get(this.ReadItemId()), count);
+            var added = this.ReadComponentCount();
+            var removed = this.ReadComponentCount();
+            for (var i = 0; i < added; i++)
+            {
+                var type = this.ReadComponentType();
+                var end = delimitedComponents ? checked(this.ReadComponentLength() + this.offset) : -1;
+                itemStack[type] = this.ReadDataComponent(type);
+                if (delimitedComponents && this.offset != end)
+                    throw new InvalidDataException("Component length does not match its value.");
+            }
+
+            for (var i = 0; i < removed; i++)
+            {
+                var type = this.ReadComponentType();
+                if (!Enum.IsDefined(type))
+                    throw new InvalidDataException("Unknown removed component.");
+
+                itemStack.Remove(type);
+            }
+
+            return itemStack;
         }
-
-        for (int i = 0; i < componentsToRemove; i++)
-            itemStack.Remove(this.ReadVarInt<DataComponentType>());
-
-        return itemStack;
+        finally
+        {
+            this.componentDepth--;
+        }
     }
+
+    // An item's and a data component type's id, in this process's numbering (see IdMaps).
+    private int ReadItemId() => this.IdMaps is RegistryIdMaps maps
+        ? maps.Item.ToLocal(this.ReadVarInt())
+        : this.ReadVarInt();
+
+    private DataComponentType ReadComponentType() => this.IdMaps is RegistryIdMaps maps
+        ? (DataComponentType)maps.DataComponentType.ToLocal(this.ReadVarInt())
+        : (DataComponentType)this.ReadVarInt();
+
+    public ItemStack? ReadUntrustedItemStack() => this.ReadItemStack(true);
+    public ItemStack ReadRequiredItemStack() => this.ReadItemStack() ?? throw new InvalidDataException("Expected a nonempty item stack.");
+    public ItemStack?[] ReadItemStackList() => this.ReadLengthPrefixedArray(this.ReadItemStack);
 
     public IHashedItemStack? ReadHashedItemStack()
     {
         if (!this.ReadBoolean())
             return null;
 
-        var item = ItemsRegistry.Get(ReadVarInt());
+        var item = ItemsRegistry.Get(this.ReadItemId());
         var count = this.ReadVarInt();
 
-        var itemStack = new HashedItemStack(item, count);
+        var itemStack = new ReceivedHashedStack(item, count, this.ComponentRegistryName);
 
-        //Might be best to change this
-        if (itemStack.Type == Material.Air)
-            return itemStack;
+        var componentsToAdd = this.ReadComponentCount();
+        if (componentsToAdd > 256)
+            throw new InvalidDataException("Too many hashed components.");
 
-        var componentsToAdd = this.ReadVarInt();
         for (int i = 0; i < componentsToAdd; i++)
         {
-            var type = this.ReadVarInt<DataComponentType>();
+            var type = this.ReadComponentType();
 
             itemStack.HashedComponents.Add(type, this.ReadInt());
         }
 
-        var componentsToRemove = this.ReadVarInt();
+        var componentsToRemove = this.ReadComponentCount();
+        if (componentsToRemove > 256)
+            throw new InvalidDataException("Too many removed hashed components.");
 
         for (int i = 0; i < componentsToRemove; i++)
-            itemStack.ComponentsToRemove.Add(this.ReadVarInt<DataComponentType>());
+            itemStack.ComponentsToRemove.Add(this.ReadComponentType());
 
         return itemStack;
     }
@@ -259,14 +286,11 @@ public partial class NetworkBuffer : INetStreamReader
     [ReadMethod]
     public ChatMessage ReadChat()
     {
-        //TODO this can be sped up or done better
-        using var ms = new MemoryStream(this.AsSpan((int)(this.size - this.offset)).ToArray());
+        // Check the tag against vanilla's network NBT limits before projecting any nested collections. The projection
+        // then reads it again, since it also accepts shapes the NBT model doesn't (see ReadChatNbt).
+        NbtReader.ReadNetworkTag(this.AsSpan(this.size - this.offset), out _);
 
-        var found = new NbtReader(ms).TryReadNextTag(false, out INbtTag? tag);
-        this.offset += (int)ms.Position;
-        this.BytesPending -= (int)ms.Position;
-
-        return found ? tag!.TextFromNbt() ?? ChatMessage.Empty : ChatMessage.Empty;
+        return ProjectChat(this.ReadChatNbt(this.ReadByte()));
     }
 
     #region Generic Read Methods
@@ -283,6 +307,11 @@ public partial class NetworkBuffer : INetStreamReader
     public string ReadString(int maxLength = 32767)
     {
         var length = ReadVarInt();
+
+        // An empty string can end a packet, including on encrypted buffers: there is no payload to read.
+        if (length == 0)
+            return string.Empty;
+
         var buffer = this.ReadUntil(length);
 
         var value = Encoding.UTF8.GetString(buffer);
@@ -348,6 +377,37 @@ public partial class NetworkBuffer : INetStreamReader
         var buffer = this.ReadUntil(ShortSize);
 
         return BinaryPrimitives.ReadUInt16BigEndian(buffer);
+    }
+
+    // Vanilla's limit on a packet's uncompressed size.
+    private const int MaxUncompressedPacketLength = 8 * 1024 * 1024;
+
+    /// <summary>
+    /// Reads a packet from a frame (without its length prefix) in the compressed format: the packet's uncompressed
+    /// length, or 0 when it's sent uncompressed, then its id and data, zlib-compressed unless the length is 0.
+    /// </summary>
+    internal static PacketData ReadCompressedPacket(byte[] frame)
+    {
+        var header = new NetworkBuffer(frame);
+        var dataLength = header.ReadVarInt();
+        var start = header.Offset;
+
+        byte[] body;
+        if (dataLength == 0)
+            body = frame[start..];
+        else
+        {
+            if (dataLength is < 0 or > MaxUncompressedPacketLength)
+                throw new InvalidDataException($"Invalid uncompressed packet length {dataLength}.");
+
+            body = new byte[dataLength];
+            using var zlib = new ZLibStream(new MemoryStream(frame, start, frame.Length - start), CompressionMode.Decompress);
+            zlib.ReadExactly(body);
+        }
+
+        var packet = new NetworkBuffer(body);
+        var id = packet.ReadVarInt();
+        return new PacketData { Id = id, NetworkBuffer = new NetworkBuffer(body[packet.Offset..]) };
     }
 
     protected virtual byte[] ReadUntil(int size)
@@ -443,14 +503,25 @@ public partial class NetworkBuffer : INetStreamReader
         this.ReadOptionalNbtCompound() ?? throw new InvalidDataException("Expected an NBT compound, but found an end tag.");
 
     /// <summary>Reads a network NBT compound (no root name), or null for an empty (end) tag.</summary>
-    public NbtCompound? ReadOptionalNbtCompound()
+    /// <exception cref="InvalidDataException">The tag is not a compound, or is invalid or too big.</exception>
+    public NbtCompound? ReadOptionalNbtCompound() => this.ReadNetworkTag() switch
     {
-        using var stream = new MemoryStream(this.AsSpan((int)(this.size - this.offset)).ToArray());
-        var found = new NbtReader(stream).TryReadNextTag<NbtCompound>(false, out var compound);
+        null => null,
+        NbtCompound compound => compound,
+        INbtTag tag => throw new InvalidDataException($"Expected an NBT compound, but found {tag.Type}.")
+    };
 
-        this.offset += (int)stream.Position;
-        this.BytesPending -= (int)stream.Position;
-        return found ? compound : null;
+    /// <summary>
+    /// Reads a network NBT tag in place, as vanilla's FriendlyByteBuf.readNbt does: no root name, and at most its
+    /// 2 MiB quota. Returns null for an empty (end) tag.
+    /// </summary>
+    private INbtTag? ReadNetworkTag()
+    {
+        var tag = NbtReader.ReadNetworkTag(this.AsSpan(this.size - this.offset), out var bytesRead);
+
+        this.offset += bytesRead;
+        this.BytesPending -= bytesRead;
+        return tag;
     }
 
     [ReadMethod]
@@ -464,14 +535,31 @@ public partial class NetworkBuffer : INetStreamReader
         return result;
     }
 
-    public IdSet ReadIdSet()
-    {
-        var type = this.ReadVarInt();
-        string? tagName = type == 0 ? tagName = this.ReadString() : null;
-        ImmutableArray<int>? ids = type != 0 ? ImmutableCollectionsMarshal.AsImmutableArray(this.ReadLengthPrefixedArray(this.ReadVarInt)) : null;
+    public int ReadRegistryId(string registry) => this.ToLocalId(registry, this.ReadVarInt());
 
-        return new() { Type = type, Ids = ids, TagName = tagName };
+    public int? ReadRegistryHolder(string registry)
+    {
+        var id = this.ReadVarInt();
+        return id == 0 ? null : this.ToLocalId(registry, id - 1);
     }
+
+    public IdSet ReadIdSet(string registry) => IdSet.Read(this, registry);
+
+    /// <inheritdoc cref="INetStreamReader.ReadIdSet()"/>
+    [Obsolete("Name the set's registry with ReadIdSet(string), so its ids are translated across a connection.")]
+    public IdSet ReadIdSet() => IdSet.Read(this);
+
+    // The local id of the connection's id of the registry (see IdMaps). An entry this process lacks throws, so a
+    // component naming it keeps its bytes (ReadDataComponent).
+    private int ToLocalId(string registry, int id)
+    {
+        if (this.IdMaps is not RegistryIdMaps maps)
+            return id;
+
+        var local = maps.Get(registry).ToLocal(id);
+        return local >= 0 ? local : throw new MissingRegistryEntryException(registry, id);
+    }
+
     public SoundEvent ReadSoundEvent() => new()
     {
         ResourceLocation = this.ReadString(),

@@ -36,16 +36,29 @@ public abstract partial class AbstractLevel
 
     internal async ValueTask TickRaidsAsync()
     {
-        if (DimensionName != "minecraft:overworld" || Generator is Obsidian.WorldData.Generators.MobTestGenerator) return;
-        TickWanderingTraderSpawner();
-        TickPatrolSpawner();
+        if (Generator is Obsidian.WorldData.Generators.MobTestGenerator)
+            return;
+
+        // Like vanilla, wandering traders and patrols only spawn in the overworld, where can_pillager_patrol_spawn
+        // allows, while raids run in every level and start where can_start_raid allows.
+        if (DimensionName == "minecraft:overworld")
+        {
+            TickWanderingTraderSpawner();
+            TickPatrolSpawner();
+        }
+
+        if (raids.Count == 0 && !Players.Values.Any(CanStartRaidAt))
+            return;
+
         if (LevelData.Difficulty == Difficulty.Peaceful || !LevelData.GetBooleanRule("raids"))
         { foreach (var raid in raids) ClearRaidBar(raid); raids.Clear(); pendingRaids.Clear(); return; }
-        foreach (var player in Players.Values.OfType<Player>())
+        foreach (var player in Players.Values)
         {
             var village = GetEntitiesInRange(player.Position, 64).OfType<Villager>().Where(villager => villager.Alive && villager.Home != null)
                 .MinBy(villager => (villager.Position - player.Position).MagnitudeSquared());
-            if (village != null && player.ActivePotionEffects.TryGetValue((int)PotionEffect.BadOmen - 1, out var omen))
+            if (CanStartRaidAt(player)
+                && village != null
+                && player.ActivePotionEffects.TryGetValue((int)PotionEffect.BadOmen - 1, out var omen))
             {
                 player.RemovePotionEffect((int)PotionEffect.BadOmen - 1);
                 player.AddPotionEffect((int)PotionEffect.RaidOmen - 1, 600, omen.EffectData.Amplifier);
@@ -80,7 +93,7 @@ public abstract partial class AbstractLevel
             {
                 raid.Bar.UpdateTitle(ChatMessage.Simple("Raid - Victory"));
                 if (++raid.VictoryTicks == 40)
-                    foreach (var hero in Players.Values.OfType<Player>().Where(player => raid.Heroes.Contains(player.Uuid)))
+                    foreach (var hero in Players.Values.Where(player => raid.Heroes.Contains(player.Uuid)))
                         hero.AddPotionEffect((int)PotionEffect.HeroOfTheVillage - 1, 48000, raid.Omen - 1);
                 if (raid.VictoryTicks > 600) { ClearRaidBar(raid); raids.Remove(raid); }
                 continue;
@@ -110,6 +123,10 @@ public abstract partial class AbstractLevel
         await ValueTask.CompletedTask;
     }
 
+    // Vanilla's can_start_raid where the player with a bad omen is.
+    private bool CanStartRaidAt(IPlayer player) =>
+        this.Gameplay(LevelEnvironment.CanStartRaid, (Vector)player.Position.Floor());
+
     private void TickPatrolSpawner()
     {
         if (LevelData.Difficulty == Difficulty.Peaceful || !LevelData.GetBooleanRule("spawn_patrols") || !LevelData.GetBooleanRule("spawn_mobs") || --patrolCountdown > 0) return;
@@ -120,7 +137,9 @@ public abstract partial class AbstractLevel
         var target = candidates[Random.Shared.Next(candidates.Length)];
         if (GetEntitiesInRange(target.Position, 48).OfType<Villager>().Any(villager => villager.Home != null)) return;
         var origin = FindRaidSpawn((Vector)target.Position.Floor(), 24 + Random.Shared.Next(24));
-        if (origin == null) return;
+        if (origin == null || !this.Gameplay(LevelEnvironment.CanPillagerPatrolSpawn, (Vector)origin.Value.Floor()))
+            return;
+
         for (var i = 0; i < 2 + (int)LevelData.Difficulty; i++)
         {
             var mob = EntitySpawner.CreateMob(this, EntityType.Pillager)!;
@@ -163,8 +182,11 @@ public abstract partial class AbstractLevel
             var angle = Random.Shared.NextDouble() * Math.PI * 2;
             var x = center.X + (int)(Math.Cos(angle) * radius); var z = center.Z + (int)(Math.Sin(angle) * radius);
             for (var y = Math.Min(MinY + Height - 2, center.Y + 32); y >= Math.Max(MinY, center.Y - 32); y--)
-                if (terrain.GetBlock(new Vector(x, y, z)) is { IsAir: false } ground && ground.Material != Material.Water && ground.Material != Material.Lava &&
-                    terrain.GetBlock(new Vector(x, y + 1, z))?.IsAir == true && terrain.GetBlock(new Vector(x, y + 2, z))?.IsAir == true)
+                if (terrain.GetBlock(new Vector(x, y, z)) is { IsAir: false } ground
+                    && !ground.Is(BlockIds.Water)
+                    && !ground.Is(BlockIds.Lava)
+                    && terrain.GetBlock(new Vector(x, y + 1, z))?.IsAir == true
+                    && terrain.GetBlock(new Vector(x, y + 2, z))?.IsAir == true)
                     return new VectorD(x + 0.5, y + 1, z + 0.5);
         }
         return null;
@@ -173,7 +195,7 @@ public abstract partial class AbstractLevel
     private static void SetPatrolCaptain(Mob mob)
     {
         mob.UnmodeledData.Set(new NbtTag<bool>("PatrolLeader", true));
-        mob.SetEquipment(EquipmentSlot.Helmet, ItemsRegistry.GetSingleItem(Material.WhiteBanner));
+        mob.SetEquipment(EquipmentSlot.Helmet, ItemsRegistry.GetSingleItem(ItemsRegistry.WhiteBanner));
     }
     internal void NotifyRaiderKilled(Mob raider, IEntity source)
     {
@@ -181,7 +203,7 @@ public abstract partial class AbstractLevel
         if (raid != null) { if (source is IPlayer) raid.Heroes.Add(source.Uuid); return; }
         if (LevelData.GetBooleanRule("mob_drops") && source is IPlayer && raider.UnmodeledData.TryGetBool("PatrolLeader", out var captain) && captain)
             SpawnEntity(new ItemEntity { Level = this, EntityId = Server.GetNextEntityId(), Position = raider.Position,
-                Item = ItemsRegistry.GetSingleItem(Material.OminousBottle) });
+                Item = ItemsRegistry.GetSingleItem(ItemsRegistry.OminousBottle) });
     }
     private static void ClearRaidBar(VillageRaid raid)
     { if (raid.Bar != null) foreach (var id in raid.Bar.Players.ToArray()) raid.Bar.RemovePlayer(id); }

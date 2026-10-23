@@ -25,8 +25,25 @@ internal sealed class WalkNodeEvaluator(PathfinderMob mob)
 
     private VectorD? EvaluateGround(int x, int z, double currentY)
     {
+        // Ground navigation follows the surface, including while the mob bobs above it.
+        var waterY = (int)Math.Floor(currentY - 0.5f);
+        if (!mob.SwimmingNavigation && mob.Terrain.GetBlock(new Vector(x, waterY, z))?.RegistryId == BlockIds.Water)
+        {
+            for (var depth = 0; depth < 16; depth++)
+            {
+                waterY++;
+                if (mob.Terrain.GetBlock(new Vector(x, waterY, z))?.RegistryId == BlockIds.Water)
+                    continue;
+                var surface = new VectorD(x + 0.5f, waterY, z + 0.5f);
+                if (mob.Terrain.IsFree(mob.Dimension.CreateBBFromPosition(surface), CanOpenDoors) && GetCost(surface) >= 0)
+                    return surface;
+                break;
+            }
+        }
+
         var candidates = new List<double>();
-        for (var y = (int)Math.Floor(currentY + 1); y >= (int)Math.Floor(currentY - 3) - 1; y--)
+        var maximumRise = Math.Max(1, mob.GetAttributeValue("minecraft:generic.step_height"));
+        for (var y = (int)Math.Floor(currentY + maximumRise); y >= (int)Math.Floor(currentY - 3) - 1; y--)
         {
             var block = mob.Terrain.GetBlock(new Vector(x, y, z));
             if (block == null)
@@ -34,7 +51,7 @@ internal sealed class WalkNodeEvaluator(PathfinderMob mob)
             if (CanOpenDoors && TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId))
                 continue;
 
-            foreach (var shape in BlockCollisionShapes.Get(block))
+            foreach (var shape in BlockCollisionShapes.Get(mob.Level, new Vector(x, y, z), block))
             {
                 if (shape.Min.X <= 0.5f && shape.Max.X >= 0.5f && shape.Min.Z <= 0.5f && shape.Max.Z >= 0.5f)
                     candidates.Add(y + shape.Max.Y);
@@ -43,7 +60,7 @@ internal sealed class WalkNodeEvaluator(PathfinderMob mob)
 
         foreach (var y in candidates.Distinct().OrderByDescending(value => value))
         {
-            if (y > currentY + 1.00001f || y < currentY - 3)
+            if (y > currentY + maximumRise + 0.00001f || y < currentY - 3)
                 continue;
 
             var position = new VectorD(x + 0.5f, y, z + 0.5f);

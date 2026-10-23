@@ -1,4 +1,4 @@
-﻿using Obsidian.Serialization.Attributes;
+using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
@@ -7,13 +7,18 @@ public partial class ClientCommandPacket
     [Field(0), ActualType(typeof(int)), VarLength]
     public ClientAction Action { get; private set; }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
-        if (Action == ClientAction.PerformRespawn && player.Health <= 0)
+        if (this.Action == ClientAction.RequestStats && player is Entities.Player statisticsPlayer)
+            await player.QueuePacketAsync(statisticsPlayer.ProgressStatistics.CreatePacket());
+
+        if (Action == ClientAction.PerformRespawn)
         {
             if (player is Entities.Player concrete && await concrete.FinishEndCreditsAsync())
                 return;
-            await player.RespawnAsync();
+
+            if (player.Health <= 0)
+                await player.RespawnAsync();
         }
     }
 

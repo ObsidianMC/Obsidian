@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Obsidian.API;
 using Obsidian.API.Effects;
 using Obsidian.API.Inventory;
@@ -11,6 +12,13 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using Xunit;
+using Obsidian.Entities;
+using Obsidian.Entities.Factories;
+using Obsidian.Tests.Fakes;
+using Obsidian.Registries;
+using Obsidian.API.World.Generator.RandomSources;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace Obsidian.Tests;
 
@@ -18,6 +26,7 @@ namespace Obsidian.Tests;
 /// Parity checks for container loot. Expected slots come from vanilla 1.21.11's <c>LootTable.fill</c> into an empty
 /// 27-slot container with the context of a player opening a chest at (0, 64, 0) in a world with seed 12345.
 /// </summary>
+[Collection(nameof(PluginTagFiles))]
 public class VanillaLoot
 {
     private const long WorldSeed = 12345L;
@@ -44,6 +53,72 @@ public class VanillaLoot
     [InlineData("minecraft:chests/pillager_outpost", 1L, "36cd0ccc8c253b03e5291b7c48c1eb4ab8508e0f262f2d68d5ee9dd4baef3d6d")]
     public void FillHashMatchesVanilla(string table, long seed, string expectedHash) =>
         Assert.Equal(expectedHash, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(Fill(table, seed)))));
+
+    [Fact]
+    public async Task EntityTablesMatchVanillaDrawsAndSmeltThroughCookingRecipes()
+    {
+        await using var server = TestServerFactory.CreateServer($"entity-loot-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(server.World);
+        server.World.RecipeSource = () => server.Server.RecipeRegistry.Current;
+        var player = TestServerFactory.CreateConnectedPlayer(server.Server, server.World, "Loot");
+        using var stream = typeof(VanillaLoot).Assembly.GetManifestResourceStream(
+            "Obsidian.Tests.Assets.entity_loot.json")!;
+        using var captures = JsonDocument.Parse(stream);
+        foreach (var row in captures.RootElement.EnumerateArray())
+        {
+            var type = Enum.Parse<EntityType>(row.GetProperty("type").GetString()!, true);
+            var mob = EntitySpawner.CreateMob(server.World, type)!;
+            mob.InitializeAi(false);
+            var byPlayer = row.GetProperty("player").GetBoolean();
+            if (byPlayer)
+                await mob.DamageCombatAsync(player, 1, CombatDamageKind.Melee);
+
+            var table = LootTables.All[$"minecraft:entities/{row.GetProperty("type").GetString()}"];
+            var random = table.CreateRandom(row.GetProperty("seed").GetInt64());
+            var context = mob.CreateEntityLootContext(table, byPlayer ? player : null, null, random: random);
+            var drops = table.GetRandomItems(context);
+            Assert.Equal(row.GetProperty("drops").EnumerateArray().Select(value => value.GetString()),
+                drops.Where(stack => stack.Count > 0)
+                    .Select(stack => $"{stack.Holder.UnlocalizedName}*{stack.Count}"));
+            Assert.Equal(row.GetProperty("nextInt").GetInt32(), random.NextInt());
+        }
+
+        var pig = new Pig { Level = server.World };
+        pig.InitializeAi(false);
+        var pigTable = LootTables.All["minecraft:entities/pig"];
+        pig.Ignite(5);
+        var cooked = Assert.Single(pigTable.GetRandomItems(pig.CreateEntityLootContext(
+            pigTable, null, null, random: pigTable.CreateRandom(42))));
+        Assert.Equal(ItemsRegistry.CookedPorkchop, cooked.Holder);
+        Assert.Equal(3, cooked.Count);
+
+        // The same furnace function also honours the direct attacker's smelts_loot enchantment tag.
+        var sword = ItemsRegistry.GetSingleItem(ItemsRegistry.IronSword);
+        EnchantmentHelper.Enchant(sword, EnchantmentsRegistry.FireAspect, 1);
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, sword);
+        pig.FireTicks = 0;
+        cooked = Assert.Single(pigTable.GetRandomItems(pig.CreateEntityLootContext(
+            pigTable, player, player, random: pigTable.CreateRandom(42))));
+        Assert.Equal(ItemsRegistry.CookedPorkchop, cooked.Holder);
+        Assert.Equal(3, cooked.Count);
+
+        // A vanilla mob uses a data pack override through the same path as a plugin mob.
+        PluginLootTables.Apply([LootTableJson.Parse("""
+            { "pools": [{ "rolls": 1, "entries": [
+              { "type": "minecraft:item", "name": "minecraft:diamond" }
+            ] }] }
+            """, "minecraft:entities/pig")]);
+        try
+        {
+            await pig.KillAsync(player);
+            var drop = Assert.Single(server.World.GetEntitiesInRange(pig.Position, 3).OfType<ItemEntity>());
+            Assert.Equal(ItemsRegistry.Diamond, drop.Item.Holder);
+        }
+        finally
+        {
+            PluginLootTables.Apply([]);
+        }
+    }
 
     private static string Fill(string tableId, long seed)
     {
@@ -72,21 +147,25 @@ public class VanillaLoot
         if (stack.Damage != 0)
             builder.Append($",damage={stack.Damage}");
 
-        var enchantments = stack.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value;
-        if (enchantments is not null && enchantments.Length > 0)
-            builder.Append($",enchantments={DescribeEnchantments(enchantments)}");
+        var enchantments = stack.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+            DataComponentType.Enchantments)?.Value;
+        if (enchantments is not null && enchantments.Value.Length > 0)
+            builder.Append($",enchantments={DescribeEnchantments(enchantments.Value.ToArray())}");
 
-        var stored = stack.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.StoredEnchantments)?.Value;
-        if (stored is not null && stored.Length > 0)
-            builder.Append($",stored={DescribeEnchantments(stored)}");
+        var stored = stack.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+            DataComponentType.StoredEnchantments)?.Value;
+        if (stored is not null && stored.Value.Length > 0)
+            builder.Append($",stored={DescribeEnchantments(stored.Value.ToArray())}");
 
         var potion = stack.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents)?.Potion;
         if (potion is not null)
             builder.Append($",potion={potion.Value.ToString().ToSnakeCase()}");
 
-        var stew = stack.GetComponent<SimpleDataComponent<SuspiciousStewEffect[]>>(DataComponentType.SuspiciousStewEffects)?.Value;
+        var stew = stack.GetComponent<SimpleDataComponent<ImmutableArray<SuspiciousStewEffect>>>(
+            DataComponentType.SuspiciousStewEffects)?.Value;
         if (stew is not null)
-            builder.Append($",stew={string.Join("/", stew.Select(effect => $"{effect.EffectId}:{effect.Duration}"))}");
+            builder.Append(
+                $",stew={string.Join("/", stew.Value.Select(effect => $"{effect.EffectId}:{effect.Duration}"))}");
 
         if (stack.ItemName is not null)
             builder.Append($",item_name={stack.ItemName.Translate}");

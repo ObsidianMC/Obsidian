@@ -40,7 +40,7 @@ public sealed class Command
         var c = this;
         string name = c.Name;
 
-        while (c.Parent != null)
+        while (c.Parent is not null)
         {
             name = $"{c.Parent.Name} {name}";
             c = c.Parent;
@@ -56,18 +56,18 @@ public sealed class Command
     /// <param name="args">The arguments the command was issued with.</param>
     public async Task ExecuteAsync(CommandContext context, string[] args)
     {
-        // Check whether the issuer can execute this command
-        if (!AllowedIssuers.HasFlag(context.Sender.Issuer))
+        // Check whether the issuer can execute this command and the groups it belongs to
+        if (SelfAndGroups().FirstOrDefault(command => !command.AllowedIssuers.HasFlag(context.Sender.Issuer)) is Command restricted)
         {
             throw new DisallowedCommandIssuerException(
-                $"Command {GetQualifiedName()} cannot be executed as {context.Sender.Issuer}", AllowedIssuers);
+                $"Command {GetQualifiedName()} cannot be executed as {context.Sender.Issuer}", restricted.AllowedIssuers);
         }
 
-        var executors = Overloads.Where(x => x.MatchParams(args)
-            || x.GetParameters().LastOrDefault()?.GetCustomAttribute<RemainingAttribute>() != null);
+        // Overloads whose parameters can't take as many words are skipped as the words are bound.
+        var executors = Overloads;
 
         // Find matching overload
-        if (executors == null)
+        if (executors is null)
         {
             //TODO since commands can have multiple usages, if this is empty we should print out all of the args for usage
             //throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");
@@ -128,22 +128,43 @@ public sealed class Command
     }
 
     /// <summary>
-    /// Pairs the words of a command with <paramref name="parameters"/>. A trailing parameter marked with
+    /// Pairs the words of a command with <paramref name="parameters"/>, each taking as many words as its parser reads
+    /// (see <see cref="BaseArgumentParser.WordCount"/>). A trailing parameter marked with
     /// <see cref="RemainingAttribute"/> receives the rest of the words joined by spaces.
     /// </summary>
     /// <returns>One argument per parameter, or <see langword="null"/> if the word count does not fit.</returns>
-    private static string[]? BindArguments(ParameterInfo[] parameters, string[] args)
+    private string[]? BindArguments(ParameterInfo[] parameters, string[] args) =>
+        BindArguments(parameters, args, type => this.CommandHandler.IsValidArgumentType(type)
+            ? this.CommandHandler.GetArgumentParser(type).WordCount
+            : 1);
+
+    /// <inheritdoc cref="BindArguments(ParameterInfo[], string[])"/>
+    /// <param name="wordCount">How many words an argument of a type takes.</param>
+    internal static string[]? BindArguments(ParameterInfo[] parameters, IReadOnlyList<string> args, Func<Type, int> wordCount)
     {
-        if (args.Length == parameters.Length)
-            return args;
+        var bound = new string[parameters.Length];
+        var used = 0;
 
-        if (args.Length < parameters.Length || parameters.Length == 0
-            || parameters[^1].GetCustomAttribute<RemainingAttribute>() is null)
-            return null;
+        for (var i = 0; i < parameters.Length; i++)
+        {
+            if (i == parameters.Length - 1 && parameters[i].GetCustomAttribute<RemainingAttribute>() is not null)
+            {
+                if (used >= args.Count)
+                    return null;
 
-        var last = parameters.Length - 1;
+                bound[i] = string.Join(' ', args.Skip(used));
+                return bound;
+            }
 
-        return [.. args[..last], string.Join(' ', args[last..])];
+            var count = Math.Max(1, wordCount(parameters[i].ParameterType));
+            if (used + count > args.Count)
+                return null;
+
+            bound[i] = string.Join(' ', args.Skip(used).Take(count));
+            used += count;
+        }
+
+        return used == args.Count ? bound : null;
     }
 
     private async Task ExecuteAsync(IExecutor<CommandContext> commandExecutor, CommandContext context, string[] args)
@@ -185,25 +206,43 @@ public sealed class Command
             }
         }
 
-        // do execution checks
-        var checks = commandExecutor.GetCustomAttributes<BaseExecutionCheckAttribute>();
-
-        foreach (var c in checks)
+        if (await this.FindFailedCheckAsync(commandExecutor, context) is BaseExecutionCheckAttribute failed)
         {
-            if (!await c.RunChecksAsync(context))
+            // TODO: Tell user what arg failed?
+            throw failed switch
             {
-                // A check failed.
-                // TODO: Tell user what arg failed?
-                throw c switch
-                {
-                    RequirePermissionAttribute r => new NoPermissionException(r.RequiredPermissions, r.CheckType),
-                    _ => new CommandExecutionCheckException($"One or more execution checks failed."),
-                };
-            }
+                RequirePermissionAttribute r => new NoPermissionException(r.RequiredPermissions, r.CheckType),
+                _ => new CommandExecutionCheckException($"One or more execution checks failed."),
+            };
         }
 
         // await the command with it's args
         await commandExecutor.Execute(serviceScope.ServiceProvider, context, parsedargs);
+    }
+
+    /// <summary>
+    /// Runs the checks of this command, of the groups it belongs to and of <paramref name="overload"/>, so that a
+    /// group's or command's restrictions also cover its subcommands and overloads.
+    /// </summary>
+    /// <returns>The first check that fails, or <see langword="null"/> if every check passes.</returns>
+    internal async Task<BaseExecutionCheckAttribute?> FindFailedCheckAsync(IExecutor<CommandContext> overload, CommandContext context)
+    {
+        var checks = SelfAndGroups().SelectMany(command => command.ExecutionChecks)
+            .Concat(overload.GetCustomAttributes<BaseExecutionCheckAttribute>());
+
+        foreach (var check in checks)
+        {
+            if (!await check.RunChecksAsync(context))
+                return check;
+        }
+
+        return null;
+    }
+
+    private IEnumerable<Command> SelfAndGroups()
+    {
+        for (var command = this; command is not null; command = command.Parent)
+            yield return command;
     }
 
     public override string ToString() => $"{CommandHelpers.DefaultPrefix}{GetQualifiedName()}";

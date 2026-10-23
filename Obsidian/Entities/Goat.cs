@@ -33,13 +33,22 @@ public sealed partial class Goat : FarmAnimal
         child.SynchronizeMetadata();
         return child;
     }
-    internal override async ValueTask InteractAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
-        if (!Alive || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4)) return;
+        if (!Alive
+            || player.Health <= 0
+            || player.Level != Level
+            || player.GameMode == GameMode.Spectator
+            || !IsInRange(player, 4))
+            return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (!IsBaby && item is { Count: > 0, Type: Material.Bucket })
-            await GiveInteractionItemAsync(player, hand, Material.MilkBucket);
-        else await base.InteractAsync(player, hand);
+        if (!IsBaby && item is { Count: > 0, Holder.Id: ItemIds.Bucket })
+        {
+            await GiveInteractionItemAsync(player, hand, ItemsRegistry.MilkBucket);
+            return true;
+        }
+
+        return await base.InteractAsync(player, hand);
     }
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
@@ -84,7 +93,7 @@ public sealed partial class Goat : FarmAnimal
             if ((HasLeftHorn || HasRightHorn) && hit != null && TagsRegistry.Block.SnapsGoatHorn.Entries.Contains(hit.RegistryId))
             {
                 if (HasLeftHorn) HasLeftHorn = false; else HasRightHorn = false;
-                var horn = ItemsRegistry.GetSingleItem(Material.GoatHorn);
+                var horn = ItemsRegistry.GetSingleItem(ItemsRegistry.GoatHorn);
                 string[] instruments = ["ponder", "sing", "seek", "feel", "admire", "call", "yearn", "dream"];
                 var instrumentName = $"minecraft:{instruments[Random.Next(4) + (Screaming ? 4 : 0)]}";
                 var instrument = InstrumentsRegistry.All.FirstOrDefault(entry => entry.Identifier == instrumentName);

@@ -1,36 +1,76 @@
 ﻿namespace Obsidian.API.Inventory.DataComponents;
+
 public sealed record class JukeboxPlayableDataComponent : DataComponent
 {
     public override DataComponentType Type => DataComponentType.JukeboxPlayable;
 
     public override string Identifier => "minecraft:jukebox_playable";
 
-    public EitherHolder<string, JukeboxSong> Song { get; set; }
+    private EitherHolder<string, JukeboxSong> song;
 
-    public bool ShowInTooltip { get; set; }
-
-    public override void Read(INetStreamReader reader)
+    public EitherHolder<string, JukeboxSong> Song
     {
-        var resourceLocation = reader.ReadOptionalString();
+        get => this.song;
+        init => this.song = value;
+    }
 
-        if (!string.IsNullOrEmpty(resourceLocation))
+    private int? registryId;
+
+    public int? RegistryId
+    {
+        get => this.registryId;
+        init => this.registryId = value;
+    }
+
+    private bool showInTooltip;
+
+    public bool ShowInTooltip
+    {
+        get => this.showInTooltip;
+        init => this.showInTooltip = value;
+    }
+
+    protected override void ReadCore(INetStreamReader reader)
+    {
+        this.song = default;
+        this.registryId = null;
+        if (!reader.ReadBoolean())
         {
-            this.Song = new(resourceLocation);
+            this.song = new(reader.ReadString());
             return;
         }
 
-        this.Song = new(JukeboxSong.Read(reader));
+        var holder = reader.ReadVarInt();
+        this.registryId = holder == 0 ? null : holder - 1;
+        if (holder == 0)
+        {
+            this.song = new(new JukeboxSong
+            {
+                SoundEvent = ComponentValueCodecs.ReadSoundHolder(reader),
+                Description = reader.ReadChat(),
+                LengthInSeconds = reader.ReadSingle(),
+                ComparatorOutput = reader.ReadVarInt()
+            });
+        }
     }
 
     public override void Write(INetStreamWriter writer)
     {
-        var isLeft = this.Song.Left != null;
+        writer.WriteBoolean(this.Song.Left is null);
+        if (this.Song.Left is string key)
+        {
+            writer.WriteString(key);
+            return;
+        }
 
-        writer.WriteOptional(this.Song.Left);
-
-        if (isLeft)
+        writer.WriteVarInt(this.RegistryId is int id ? id + 1 : 0);
+        if (this.RegistryId is not null)
             return;
 
-        JukeboxSong.Write(this.Song.Right, writer);
+        var value = this.Song.Right!;
+        ComponentValueCodecs.WriteSoundHolder(value.SoundEvent, writer);
+        writer.WriteChat(value.Description);
+        writer.WriteSingle(value.LengthInSeconds);
+        writer.WriteVarInt(value.ComparatorOutput);
     }
 }

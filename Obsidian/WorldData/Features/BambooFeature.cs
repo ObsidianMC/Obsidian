@@ -13,9 +13,9 @@ public sealed class BambooFeature : ConfiguredFeatureBase
     /// </summary>
     public required float Probability { get; init; }
 
-    private static IBlock Bamboo => field ??= BlocksRegistry.Get(Material.Bamboo);
+    private static IBlock Bamboo => field ??= BlocksRegistry.Bamboo;
 
-    private static IBlock Podzol => field ??= BlocksRegistry.Get(Material.Podzol);
+    private static IBlock Podzol => field ??= BlocksRegistry.Podzol;
 
     private static IBlock Trunk => field ??= Bamboo.WithProperty("age", 1).WithProperty("leaves", "none").WithProperty("stage", 0);
 

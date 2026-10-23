@@ -4,15 +4,15 @@ namespace Obsidian.API;
 
 public sealed record class FireworkExplosion : INetworkSerializable<FireworkExplosion>
 {
-    public required int Shape { get; set; }
+    public required int Shape { get; init; }
 
-    public required ImmutableArray<int> Colors { get; set; }
+    public required ImmutableArray<int> Colors { get; init; }
 
-    public required ImmutableArray<int> FadeColors { get; set; }
+    public required ImmutableArray<int> FadeColors { get; init; }
 
-    public bool HasTrail { get; set; }
+    public bool HasTrail { get; init; }
 
-    public bool HasTwinkle { get; set; }
+    public bool HasTwinkle { get; init; }
 
     public static FireworkExplosion Read(INetStreamReader reader) => new()
     {

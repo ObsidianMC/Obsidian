@@ -1,3 +1,5 @@
+using Obsidian.API.World.Features.Trees;
+
 namespace Obsidian.WorldData.Features.Tree;
 
 /// <summary>
@@ -37,7 +39,7 @@ public sealed class TreeFeature : ConfiguredFeatureBase
         if (!context.Level.EnsureCanWrite(context.Origin))
             return false;
 
-        var tree = new TreeContext(this, context.Level, context.Random, context.Generation);
+        var tree = new TreeState(this, context.Level, context.Random, context.Generation);
         try
         {
             return this.Place(tree, context.Origin);
@@ -48,14 +50,14 @@ public sealed class TreeFeature : ConfiguredFeatureBase
         }
     }
 
-    private bool Place(TreeContext tree, Vector origin)
+    private bool Place(TreeState tree, Vector origin)
     {
         if (!this.DoPlace(tree, origin) || (tree.Logs.Count == 0 && tree.Foliage.Count == 0))
             return false;
 
         if (this.Decorators.Length > 0)
         {
-            var decoratorContext = new TreeDecoratorContext(tree);
+            var decoratorContext = tree.ForDecorators();
             foreach (var decorator in this.Decorators)
                 decorator.Place(decoratorContext);
         }
@@ -66,7 +68,7 @@ public sealed class TreeFeature : ConfiguredFeatureBase
         return true;
     }
 
-    private bool DoPlace(TreeContext tree, Vector origin)
+    private bool DoPlace(TreeState tree, Vector origin)
     {
         var level = tree.Level;
         var random = tree.Random;
@@ -84,8 +86,11 @@ public sealed class TreeFeature : ConfiguredFeatureBase
 
         var freeHeight = this.GetMaxFreeTreeHeight(level, height, trunkOrigin);
         var minClippedHeight = this.MinimumSize.MinClippedHeight;
-        if (freeHeight < height && (minClippedHeight == FeatureSize.NoMinClippedHeight || freeHeight < minClippedHeight))
+        if (freeHeight < height
+            && (minClippedHeight == FeatureSize.NoMinClippedHeight || freeHeight < minClippedHeight))
+        {
             return false;
+        }
 
         if (this.RootPlacer is not null && !this.RootPlacer.PlaceRoots(tree, origin, trunkOrigin))
             return false;
@@ -107,8 +112,11 @@ public sealed class TreeFeature : ConfiguredFeatureBase
                 for (var z = -radius; z <= radius; z++)
                 {
                     var position = trunkOrigin + (x, y, z);
-                    if (!this.TrunkPlacer.IsFree(level, position) || (!this.IgnoreVines && TreeBlocks.IsVine(level, position)))
+                    if (!this.TrunkPlacer.IsFree(level, position)
+                        || (!this.IgnoreVines && TreeBlocks.IsVine(level, position)))
+                    {
                         return y - 2;
+                    }
                 }
             }
         }

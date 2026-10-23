@@ -20,7 +20,7 @@ public sealed class SetEnchantmentsFunction : LootFunction
 
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
-        if (LootItems.Is(stack, Material.Book))
+        if (LootItems.Is(stack, ItemsRegistry.Book))
             stack = stack.TransmuteCopy(ItemsRegistry.EnchantedBook);
 
         var enchantments = EnchantmentHelper.GetEnchantments(stack).ToList();

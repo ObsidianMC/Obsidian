@@ -14,10 +14,10 @@ internal sealed partial class MobSpawner
         var time = ((level.DayTime % 24000) + 24000) % 24000;
         if (time is < 13000 or > 23000) return;
         var terrain = new MobTerrain(level);
-        foreach (var player in players.OfType<Player>())
+        foreach (var player in players)
         {
             if (!player.Alive || player.Position.Y < 63 || terrain.GetSkyLight((Vector)player.Position.Floor()) < 15 ||
-                random.Next(Math.Max(1, player.TimeSinceRest)) < 72000) continue;
+                random.Next(Math.Max(1, player.Statistics.Get("minecraft:time_since_rest"))) < 72000) continue;
             var point = player.Position + new VectorD(random.Next(-10, 11), 20 + random.Next(15), random.Next(-10, 11));
             if (terrain.GetBlock((Vector)point.Floor()) is not { IsAir: true }) continue;
             var count = 1 + random.Next((int)level.LevelData.Difficulty + 1);

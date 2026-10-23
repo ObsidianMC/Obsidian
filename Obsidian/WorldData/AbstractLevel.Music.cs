@@ -54,7 +54,12 @@ public abstract partial class AbstractLevel
         {
             var chunk = GetLoadedChunk(point.X >> 4, point.Z >> 4);
             if (chunk == null) { playingJukeboxes.TryRemove(point, out _); continue; }
-            if (GameEventBlock(point)?.Material != Material.Jukebox || remaining <= 1) { StopJukebox(point); continue; }
+            if (GameEventBlock(point)?.RegistryId != BlockIds.Jukebox || remaining <= 1)
+            {
+                StopJukebox(point);
+                continue;
+            }
+
             if (!IsMobTicking((VectorD)point)) continue;
             playingJukeboxes[point] = remaining - 1;
             if (chunk.GetBlockEntity(point.X, point.Y, point.Z) is DataBlockEntity jukebox)
@@ -69,7 +74,9 @@ public abstract partial class AbstractLevel
     internal void PlayNoteBlock(Vector point, IEntity? source = null)
     {
         var block = GameEventBlock(point);
-        if (block?.Material != Material.NoteBlock || GameEventBlock(point + new Vector(0, 1, 0))?.IsAir != true) return;
+        if (block?.RegistryId != BlockIds.NoteBlock || GameEventBlock(point + new Vector(0, 1, 0))?.IsAir != true)
+            return;
+
         var note = int.TryParse(block.GetProperty("note"), out var number) ? number : 0;
         var instrument = block.GetProperty("instrument") ?? "harp";
         PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new SoundPacket { SoundLocation = "minecraft:block.note_block." + instrument,

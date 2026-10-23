@@ -25,9 +25,9 @@ public sealed class SculkPatchFeature : ConfiguredFeatureBase
 
     public required float CatalystChance { get; init; }
 
-    private static IBlock SculkCatalyst => field ??= BlocksRegistry.Get(Material.SculkCatalyst);
+    private static IBlock SculkCatalyst => field ??= BlocksRegistry.SculkCatalyst;
 
-    private static IBlock SculkShrieker => field ??= BlocksRegistry.Get(Material.SculkShrieker).WithProperty("can_summon", true);
+    private static IBlock SculkShrieker => field ??= BlocksRegistry.SculkShrieker.WithProperty("can_summon", true);
 
     public override bool Place(FeatureContext context)
     {
@@ -71,7 +71,7 @@ public sealed class SculkPatchFeature : ConfiguredFeatureBase
         if (SculkSpreader.IsSculkBehaviour(state))
             return true;
 
-        if (!state.IsAir && (state.Material != Material.Water || !state.IsFluidSource()))
+        if (!state.IsAir && (!state.Is(BlockIds.Water) || !state.IsFluidSource()))
             return false;
 
         foreach (var face in FeatureHelpers.Directions)
@@ -106,31 +106,32 @@ internal sealed class SculkSpreader
     private static readonly BlockSet sculkReplaceable = new("#minecraft:sculk_replaceable");
 
     // Registry ids of the blocks the cursors check by state id.
-    private static readonly int sculkId = BlocksRegistry.Get(Material.Sculk).RegistryId;
-    private static readonly int sculkVeinId = BlocksRegistry.Get(Material.SculkVein).RegistryId;
-    private static readonly int sculkSensorId = BlocksRegistry.Get(Material.SculkSensor).RegistryId;
-    private static readonly int sculkShriekerId = BlocksRegistry.Get(Material.SculkShrieker).RegistryId;
+    private static readonly int sculkId = BlocksRegistry.Sculk.RegistryId;
+    private static readonly int sculkVeinId = BlocksRegistry.SculkVein.RegistryId;
+    private static readonly int sculkSensorId = BlocksRegistry.SculkSensor.RegistryId;
+    private static readonly int sculkShriekerId = BlocksRegistry.SculkShrieker.RegistryId;
 
     // BlockPos.betweenClosed(-1..1) without corners and the center, in iteration order.
     private static readonly Vector[] nonCornerNeighbours = [.. FeatureHelpers.BetweenClosed(new Vector(-1), new Vector(1))
         .Where(offset => (offset.X == 0 || offset.Y == 0 || offset.Z == 0) && offset != Vector.Zero)];
 
-    private static IBlock Sculk => field ??= BlocksRegistry.Get(Material.Sculk);
+    private static IBlock Sculk => field ??= BlocksRegistry.Sculk;
 
-    private static IBlock SculkVein => field ??= BlocksRegistry.Get(Material.SculkVein);
+    private static IBlock SculkVein => field ??= BlocksRegistry.SculkVein;
 
-    private static IBlock SculkSensor => field ??= BlocksRegistry.Get(Material.SculkSensor);
+    private static IBlock SculkSensor => field ??= BlocksRegistry.SculkSensor;
 
-    private static IBlock SculkShriekerGrowth => field ??= BlocksRegistry.Get(Material.SculkShrieker).WithProperty("can_summon", true);
+    private static IBlock SculkShriekerGrowth =>
+        field ??= BlocksRegistry.SculkShrieker.WithProperty("can_summon", true);
 
-    private static IBlock Air => field ??= BlocksRegistry.Get(Material.Air);
+    private static IBlock Air => field ??= BlocksRegistry.Air;
 
-    private static IBlock Water => field ??= BlocksRegistry.Get(Material.Water);
+    private static IBlock Water => field ??= BlocksRegistry.Water;
 
     private readonly ChargeCursor[] cursors = new ChargeCursor[MaxCursors];
     private int cursorCount;
 
-    public static bool IsSculkBehaviour(IBlock block) => block.Material is Material.Sculk or Material.SculkVein;
+    public static bool IsSculkBehaviour(IBlock block) => block.RegistryId is BlockIds.Sculk or BlockIds.SculkVein;
 
     private static bool IsSculkBehaviourRegistryId(int registryId) => registryId == sculkId || registryId == sculkVeinId;
 
@@ -179,7 +180,8 @@ internal sealed class SculkSpreader
         public int Charge { get; private set; } = charge;
 
         public readonly bool IsPosUnreasonable(Vector origin) =>
-            Math.Max(Math.Max(Math.Abs(this.Position.X - origin.X), Math.Abs(this.Position.Y - origin.Y)), Math.Abs(this.Position.Z - origin.Z)) > 1024;
+            Math.Max(Math.Max(Math.Abs(this.Position.X - origin.X), Math.Abs(this.Position.Y - origin.Y)),
+                Math.Abs(this.Position.Z - origin.Z)) > 1024;
 
         public void Update(IWorldGenLevel level, Vector origin, IRandomSource random, bool spreadVeins)
         {
@@ -286,7 +288,7 @@ internal sealed class SculkSpreader
         private static bool CanPlaceGrowth(IWorldGenLevel level, Vector position)
         {
             var above = level.GetBlock(position + Vector.Up);
-            if (!above.IsAir && !(above.Material == Material.Water && above.GetFluid() == FluidKind.Water))
+            if (!above.IsAir && !(above.Is(BlockIds.Water) && above.GetFluid() == FluidKind.Water))
                 return false;
 
             var growths = 0;
@@ -360,10 +362,10 @@ internal sealed class SculkSpreader
         Vein
     }
 
-    private static Behaviour GetBehaviour(IBlock state) => state.Material switch
+    private static Behaviour GetBehaviour(IBlock state) => state.RegistryId switch
     {
-        Material.Sculk => Behaviour.Sculk,
-        Material.SculkVein => Behaviour.Vein,
+        BlockIds.Sculk => Behaviour.Sculk,
+        BlockIds.SculkVein => Behaviour.Vein,
         _ => Behaviour.Default
     };
 
@@ -448,7 +450,7 @@ internal sealed class SculkSpreader
     // SculkVeinBlock.onDischarged: drop faces now covered by sculk; an empty vein becomes air or water.
     private static void OnDischarged(Behaviour behaviour, IWorldGenLevel level, IBlock state, Vector position)
     {
-        if (behaviour != Behaviour.Vein || state.Material != Material.SculkVein)
+        if (behaviour != Behaviour.Vein || !state.Is(BlockIds.SculkVein))
             return;
 
         foreach (var face in FeatureHelpers.Directions)

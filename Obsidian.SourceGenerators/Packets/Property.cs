@@ -38,7 +38,8 @@ internal sealed class Property : AttributeOwner
         Read = property.Read;
     }
 
-    private Property(string name, MemberDeclarationSyntax declaration, INamedTypeSymbol containingType, TypeSyntax type, AttributeBehaviorBase[] attributes)
+    private Property(string name, MemberDeclarationSyntax declaration, INamedTypeSymbol containingType, TypeSyntax type,
+        AttributeBehaviorBase[] attributes)
         : base(AggregateFlags(attributes), attributes)
     {
         Name = name;

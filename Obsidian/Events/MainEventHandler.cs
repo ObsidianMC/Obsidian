@@ -1,3 +1,4 @@
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
@@ -34,15 +35,26 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         var entity = e.Entity;
         var attacker = e.Attacker;
 
+        // Item frames, paintings and leash knots react to hits themselves.
+        if (entity is IPlayerInteractable hit && attacker is PlayerBase hitter)
+        {
+            ValueTask Hit() => entity.Level == hitter.Level && hitter.CanAttack(entity) ? hit.AttackedAsync(hitter) : default;
+
+            if (entity.Level is Obsidian.WorldData.AbstractLevel hitLevel)
+                hitLevel.EnqueueEntityAction(Hit);
+            else
+                await Hit();
+            return;
+        }
+
         if (entity is IPlayer || entity is Mob { HasAi: true } || entity is EndCrystal or EnderDragonPart || entity is MobProjectile { Type: EntityType.Fireball })
         {
             async ValueTask Damage()
             {
-                if (entity.Level == attacker.Level && (attacker is Player rangePlayer ? rangePlayer.CanAttack(entity, e.Weapon) : entity.IsInRange(attacker, 4)) &&
+                if (entity.Level == attacker.Level && attacker.CanAttack(entity, e.Weapon) &&
                     (entity is not Mob mob || mob.CanSee(attacker)))
                 {
-                    if (attacker is Player attackingPlayer) await attackingPlayer.AttackAsync(e);
-                    else await entity.DamageAsync(attacker, e.Damage > 0 ? e.Damage : 1);
+                    await attacker.ResolveAttackAsync(e);
                     if (entity is Living && attacker is IPlayer owner)
                         Wolf.AlertOwnedWolves(owner, entity);
                 }
@@ -58,14 +70,37 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
     [EventPriority(Priority = Priority.Internal)]
     public async Task OnEntityInteract(EntityInteractEventArgs e)
     {
-        if (e.IsCancelled || e.TargetPosition != null || e.Entity is not Mob { HasAi: true } mob)
+        if (e.IsCancelled || e.TargetPosition != null)
             return;
 
-        ValueTask Feed() => mob.InteractAsync(e.Player, e.Hand ?? InteractionHand.MainHand);
-        if (mob.Level is Obsidian.WorldData.AbstractLevel level)
-            level.EnqueueEntityAction(Feed);
+        // The entity's interaction and the item's use run on the entity's level tick, like the entity's own tick.
+        ValueTask Interact() => InteractWithEntityAsync(e.Player, e.Entity, e.Hand ?? InteractionHand.MainHand);
+        if (e.Entity.Level is Obsidian.WorldData.AbstractLevel level)
+            level.EnqueueEntityAction(Interact);
         else
-            await Feed();
+            await Interact();
+    }
+
+    /// <summary>
+    /// A player's use of an entity (right-clicking it) with the item in <paramref name="hand"/>.
+    /// </summary>
+    internal static async ValueTask InteractWithEntityAsync(IPlayer player, IEntity entity, InteractionHand hand)
+    {
+        // Like vanilla's Player.interactOn, the entity's own interaction goes first, and the held item is used on a
+        // living entity only when the entity didn't use the interaction. A plugin's projectile or object does what
+        // its type's behaviour does, like a mob.
+        var used = entity switch
+        {
+            PluginEntity pluginEntity => await pluginEntity.InteractAsync(player, hand),
+            IPlayerInteractable interactable when player is PlayerBase user => await interactable.InteractAsync(user, hand),
+            // Like vanilla's Mob.interact, leads come before the mob's own interaction.
+            Mob { HasAi: true } mob => player is PlayerBase leader && await mob.UseLeashAsync(leader, hand)
+                || await mob.InteractAsync(player, hand),
+            _ => false
+        };
+
+        if (!used && entity is ILiving living)
+            await Plugins.ItemBehaviors.UseOnEntityAsync(player, hand, living);
     }
 
     //TODO fix sounds
@@ -75,31 +110,45 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         if (e.IsCancelled)
             return;
 
-        var player = (e.Player as Player)!;
+        var player = e.Player;
 
-        if (e.Container is CraftingTable { Type: InventoryType.Crafting })
+        if (player.Alive && e.Container is CraftingTable { Type: InventoryType.Crafting })
             await ReturnCraftingItemsAsync(player, e.Container, 3);
-        if (e.Container is EnchantmentTable enchantingTable)
+        if (player.Alive && e.Container is EnchantmentTable enchantingTable)
             await ReturnEnchantingItemsAsync(player, enchantingTable);
+        if (player.Alive && HoldsItemsWhileOpen(e.Container))
+            await ReturnWorkstationItemsAsync(player, e.Container);
 
-        //Player successfully exited container
-        player.OpenedContainer = null;
+        // Only the window that is closing: a plugin's handler may have opened another one in its place.
+        if (ReferenceEquals(player.OpenedContainer, e.Container) && player.CurrentContainerId == e.WindowId)
+            player.OpenedContainer = null;
 
-        if (e.Container is not IBlockEntity blockEntity)
-            return;
+        player.RunMenusClosed();
 
-        var position = blockEntity.BlockPosition;
-        var block = await e.Player.Level.GetBlockAsync(position);
+        // A double chest's halves both close.
+        BaseContainer[] parts = e.Container is DoubleChestContainer chest
+            ? [chest.First, chest.Second]
+            : [e.Container];
+
+        // Vanilla's ContainerOpenersCounter: the lid sound plays when the last opener leaves.
+        var lastOpener = !HasViewers(e.Container);
+        foreach (var part in parts.OfType<Container>())
+            await AnimateCloseAsync(player, part.BlockPosition, lastOpener);
+    }
+
+    private static async ValueTask AnimateCloseAsync(IPlayer player, Vector position, bool lastOpener)
+    {
+        var block = await player.Level.GetBlockAsync(position);
 
         if (block is null)
             return;
 
-        switch (block.Material)
+        switch (block.RegistryId)
         {
-            case Material.Chest:
-            case Material.TrappedChest:
+            case BlockIds.Chest:
+            case BlockIds.TrappedChest:
                 {
-                    await player.Client.QueuePacketAsync(new BlockEventPacket
+                    await player.QueuePacketAsync(new BlockEventPacket
                     {
                         Position = position,
                         ActionId = 1,
@@ -110,12 +159,14 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestClose)
                     //    .WithSoundPosition(position.SoundPosition)
                     //    .Build());
+                    if (lastOpener && player.Level is AbstractLevel level)
+                        PlayChestLidSound(level, position, "minecraft:block.chest.close");
 
                     break;
                 }
-            case Material.EnderChest:
+            case BlockIds.EnderChest:
                 {
-                    await player.Client.QueuePacketAsync(new BlockEventPacket
+                    await player.QueuePacketAsync(new BlockEventPacket
                     {
                         Position = position,
                         ActionId = 1,
@@ -128,17 +179,19 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     //    .Build());
                     break;
                 }
-            case Material.Barrel://Barrels don't have a block action
+            case BlockIds.Barrel://Barrels don't have a block action
                 {
                     //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelClose)
                     //    .WithSoundPosition(position.SoundPosition)
                     //    .Build());
+                    if (lastOpener && player.Level is AbstractLevel barrelLevel)
+                        PlayChestLidSound(barrelLevel, position, "minecraft:block.barrel.close");
 
                     break;
                 }
-            case Material.ShulkerBox:
+            case var shulker when TagsRegistry.Block.ShulkerBoxes.Entries.Contains(shulker):
                 {
-                    await player.Client.QueuePacketAsync(new BlockEventPacket
+                    await player.QueuePacketAsync(new BlockEventPacket
                     {
                         Position = position,
                         ActionId = 1,
@@ -149,6 +202,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxClose)
                     //    .WithSoundPosition(position.SoundPosition)
                     //    .Build());
+
+                    if (lastOpener && player.Level is AbstractLevel shulkerLevel)
+                        PlayChestLidSound(shulkerLevel, position, "minecraft:block.shulker_box.close");
 
                     break;
                 }
@@ -165,23 +221,24 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         var block = e.Block;
         var server = e.Server as Server;
-        var player = e.Player as Player;
+        var player = e.Player;
 
         if (block == null && player != null && item is { Count: > 0 } &&
-            (player.Vehicle is Pig && item.Type == Material.CarrotOnAStick || player.Vehicle is Strider && item.Type == Material.WarpedFungusOnAStick))
+            player.Vehicle is IItemSteerable steered && item.Is(steered.SteeringItem))
         {
             async ValueTask Boost()
             {
-                var boosted = player.Vehicle switch { Pig pig => pig.Boost(player), Strider strider => strider.Boost(player), _ => false };
-                if (!boosted || player.GameMode == GameMode.Creative)
+                if (!steered.Boost(player) || player.GameMode == GameMode.Creative)
                     return;
-                var component = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage;
-                component.Value = item.Damage + (player.Vehicle is Strider ? 1 : 7);
+                var component = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage with
+                {
+                    Value = item.Damage + steered.BoostItemDamage
+                };
                 item[DataComponentType.Damage] = component;
                 var slot = e.Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
-                if (component.Value >= (player.Vehicle is Strider ? 100 : 25))
-                    player.Inventory.SetItem(slot, ItemsRegistry.GetSingleItem(Material.FishingRod));
-                await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+                if (component.Value >= steered.SteeringItem.MaxDamage)
+                    player.Inventory.SetItem(slot, ItemsRegistry.GetSingleItem(ItemsRegistry.FishingRod));
+                await player.QueuePacketAsync(new ContainerSetSlotPacket
                 {
                     ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot)
                 });
@@ -201,56 +258,56 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             if (e.BlockLocation is not Vector blockPosition)
                 return;
 
-            player.LastClickedBlock = block;
-
-            var type = block.Material;
+            var type = block.RegistryId;
 
             BaseContainer? container = type switch
             {
-                Material.Anvil or Material.SmithingTable => new AnvilContainer(type.ToString().ToSnakeCase())
-                {
-                    Title = type == Material.Anvil ? "Anvil" : "Smithing Table"
-                },
-                Material.EnchantingTable => new EnchantmentTable
+                BlockIds.Anvil or BlockIds.ChippedAnvil or BlockIds.DamagedAnvil => new AnvilContainer
                 {
                     BlockPosition = blockPosition
                 },
-                Material.Dropper or Material.Dispenser => new Container(9)
+                BlockIds.SmithingTable => new SmithingTable
+                {
+                    BlockPosition = blockPosition
+                },
+                BlockIds.EnchantingTable => new EnchantmentTable
+                {
+                    BlockPosition = blockPosition
+                },
+                BlockIds.Dropper or BlockIds.Dispenser => new Container(9)
                 {
                     Owner = player.Uuid,
-                    Title = type.ToString(),
+                    Title = type == BlockIds.Dropper ? "Dropper" : "Dispenser",
                     BlockPosition = blockPosition,
-                    Id = type is Material.Dropper ? "dropper" : "dispenser"
+                    Id = type is BlockIds.Dropper ? "dropper" : "dispenser"
                 },
-                Material.BrewingStand => new BrewingStand
+                BlockIds.BrewingStand => new BrewingStand
                 {
                     BlockPosition = blockPosition
                 },
-                Material.Hopper => new Container(5)
+                BlockIds.Hopper => new Container(5)
                 {
                     BlockPosition = blockPosition
                 },
-                Material.CraftingTable => new CraftingTable(),
-                Material.Loom => new Loom(),
-                Material.CartographyTable => new CartographyTable(),
-                Material.Stonecutter => new Stonecutter(),
-                Material.Grindstone => new Grindstone(),
+                BlockIds.CraftingTable => new CraftingTable(),
+                BlockIds.Loom => new Loom { BlockPosition = blockPosition },
+                BlockIds.CartographyTable => new CartographyTable { BlockPosition = blockPosition },
+                BlockIds.Stonecutter => new Stonecutter { BlockPosition = blockPosition },
+                BlockIds.Grindstone => new Grindstone { BlockPosition = blockPosition },
+                BlockIds.Beacon => new BeaconContainer { BlockPosition = blockPosition },
+                // The crafter's and lectern's block entities hold their own (see StoredContainerAsync).
+                BlockIds.Crafter => new CrafterContainer { BlockPosition = blockPosition },
+                BlockIds.Lectern => await LecternUseAsync(player, e.Item, e.Hand, blockPosition),
 
                 _ => null
             };
             //TODO check if container is cached if so get that container
-            if (type is Material.Chest or Material.TrappedChest) // TODO check if chest its next to another single chest
+            if (type is BlockIds.Chest or BlockIds.TrappedChest)
             {
-                container = new Container
-                {
-                    Owner = player.Uuid,
-                    Title = "Chest",
-                    BlockPosition = blockPosition,
-                    Id = "chest"
-                };
+                container = NewChest(player, blockPosition);
 
                 // The inventory opens below, once the chest's contents (and loot) are in place.
-                await player.Client.QueuePacketAsync(new BlockEventPacket
+                await player.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,
@@ -261,17 +318,17 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 //    .WithSoundPosition(blockPosition.SoundPosition)
                 //    .Build());
             }
-            else if (type == Material.EnderChest)
+            else if (type == BlockIds.EnderChest)
             {
                 container = new Container
                 {
                     Owner = player.Uuid,
                     Title = "Ender Chest",
-                    Id = type.ToString().ToSnakeCase()
+                    Id = "ender_chest"
                 };
 
                 await player.OpenInventoryAsync(container);
-                await player.Client.QueuePacketAsync(new BlockEventPacket
+                await player.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,
@@ -282,13 +339,13 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 //    .WithSoundPosition(blockPosition.SoundPosition)
                 //    .Build());
             }
-            else if (type is Material.Furnace or Material.BlastFurnace or Material.Smoker)
+            else if (type is BlockIds.Furnace or BlockIds.BlastFurnace or BlockIds.Smoker)
             {
                 InventoryType actualType = type switch
                 {
-                    Material.Furnace => InventoryType.Furnace,
-                    Material.BlastFurnace => InventoryType.BlastFurnace,
-                    Material.Smoker => InventoryType.Smoker,
+                    BlockIds.Furnace => InventoryType.Furnace,
+                    BlockIds.BlastFurnace => InventoryType.BlastFurnace,
+                    BlockIds.Smoker => InventoryType.Smoker,
                     _ => InventoryType.Furnace
                 };
 
@@ -298,7 +355,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     Title = actualType.ToString()
                 };
             }
-            else if (type is Material.ShulkerBox) //TODO colored shulker boxes as well
+            else if (TagsRegistry.Block.ShulkerBoxes.Entries.Contains(type))
             {
                 container = new Container // TODO shulker box functionality
                 {
@@ -308,7 +365,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     Id = "shulker_box"
                 };
 
-                await player.Client.QueuePacketAsync(new BlockEventPacket
+                await player.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,
@@ -319,7 +376,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 //    .WithSoundPosition(blockPosition.SoundPosition)
                 //    .Build());
             }
-            else if (type == Material.Barrel)
+            else if (type == BlockIds.Barrel)
             {
                 container = new Container
                 {
@@ -332,53 +389,137 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 //    .WithSoundPosition(blockPosition.SoundPosition)
                 //    .Build());
             }
-            else if (type == Material.Lectern)
+
+            if (container is not null && player.Level is AbstractLevel level)
             {
-                //TODO open lectern??
+                container = await StoredContainerAsync(player, level, blockPosition, container);
+
+                if (type is BlockIds.Chest or BlockIds.TrappedChest)
+                    container = await DoubleChestAsync(player, level, block, blockPosition, container);
             }
 
-            if (container is IBlockEntity containerTileEntity)
+            if (container is not null)
             {
-                var tileEntity = await player.Level.GetBlockEntityAsync(blockPosition);
-
-                if (tileEntity == null)
-                {
-                    tileEntity = containerTileEntity.Clone();
-
-                    await player.Level.SetBlockEntity(blockPosition, tileEntity);
-                }
-                else if (tileEntity is BaseContainer tileEntityContainer)
-                {
-                    // The stored container itself is opened, so changes reach the block entity that's saved with the chunk.
-                    container = tileEntityContainer;
-                }
-                else if (tileEntity is DataBlockEntity dataBlockEntity)
-                {
-                    // A container from world generation: fill it once, then keep it as the block entity. Players opening it
-                    // before it's stored get the first one's container, so its loot isn't generated twice.
-                    lock (generatedContainers)
-                    {
-                        if (generatedContainers.TryGetValue(dataBlockEntity, out var generated))
-                        {
-                            container = generated;
-                        }
-                        else
-                        {
-                            FillGeneratedContainer(dataBlockEntity, container, player);
-                            generatedContainers.Add(dataBlockEntity, container);
-                        }
-                    }
-
-                    await player.Level.SetBlockEntity(blockPosition, (IBlockEntity)container);
-                }
+                var lidSound = LidOpenSound(type);
+                var lidOpening = lidSound is not null && !HasViewers(container);
+                await player.OpenInventoryAsync(container);
+                // Vanilla's ContainerOpenersCounter: the lid sound plays when the first opener arrives.
+                if (lidOpening && lidSound is not null && player.Level is AbstractLevel openLevel)
+                    PlayChestLidSound(openLevel, blockPosition, lidSound);
             }
-
-            await player.OpenInventoryAsync(container);
         }
         else
         {
             //TODO check for other
         }
+    }
+
+    private static string? LidOpenSound(int type) => type switch
+    {
+        BlockIds.Chest or BlockIds.TrappedChest => "minecraft:block.chest.open",
+        BlockIds.Barrel => "minecraft:block.barrel.open",
+        _ when TagsRegistry.Block.ShulkerBoxes.Entries.Contains(type) => "minecraft:block.shulker_box.open",
+        _ => null
+    };
+
+    private static bool HasViewers(BaseContainer container) => container.GetViewers().Length > 0;
+
+    private static void PlayChestLidSound(AbstractLevel level, Vector position, string sound) =>
+        level.BlockUpdates.PlaySound(position, sound, 0.5f, Globals.Random.NextSingle() * 0.1f + 0.9f);
+
+    private static Container NewChest(IPlayer player, Vector position) => new()
+    {
+        Owner = player.Uuid,
+        Title = "Chest",
+        BlockPosition = position,
+        Id = "chest"
+    };
+
+    /// <summary>
+    /// The inventory of the container block entity at <paramref name="position"/>, filled from the loot table it was
+    /// waiting for, if any; or <paramref name="fresh"/> for blocks without one, whose menus each player gets their
+    /// own of (anvils, enchanting tables).
+    /// </summary>
+    private static async ValueTask<BaseContainer> StoredContainerAsync(
+        IPlayer player,
+        AbstractLevel level,
+        Vector position,
+        BaseContainer fresh)
+    {
+        if (await level.GetOrCreateBlockEntityAsync(position) is not ContainerBlockEntity stored)
+            return fresh;
+
+        level.UnpackLootTable(stored, player);
+
+        // The stored inventory itself is opened, so changes reach the block entity that's saved with the chunk.
+        return stored.Inventory;
+    }
+
+    /// <summary>
+    /// Joins a chest's container with its other half's, when the chest is half of a double chest, like vanilla: the
+    /// neighbour its type and facing point to must be the same block, facing the same way, with the other type. The
+    /// half whose type is <c>right</c> comes first.
+    /// </summary>
+    /// <returns>The double chest's container, or <paramref name="container"/> for a single chest.</returns>
+    private static async ValueTask<BaseContainer> DoubleChestAsync(
+        IPlayer player,
+        AbstractLevel level,
+        IBlock block,
+        Vector position,
+        BaseContainer container)
+    {
+        var chestType = block.GetProperty("type");
+        var facing = block.GetProperty("facing");
+        if (chestType is not ("left" or "right") || ConnectedOffset(chestType, facing) is not Vector offset)
+            return container;
+
+        var neighbourPosition = position + offset;
+        var neighbour = await level.GetBlockAsync(neighbourPosition);
+        var neighbourType = neighbour?.GetProperty("type");
+
+        if (neighbour is null
+            || neighbour.RegistryId != block.RegistryId
+            || neighbour.GetProperty("facing") != facing
+            || neighbourType is not ("left" or "right")
+            || neighbourType == chestType)
+        {
+            return container;
+        }
+
+        var other = await StoredContainerAsync(player, level, neighbourPosition, NewChest(player, neighbourPosition));
+
+        await player.QueuePacketAsync(new BlockEventPacket
+        {
+            Position = neighbourPosition,
+            ActionId = 1,
+            ActionParam = 1,
+            BlockType = neighbour.RegistryId
+        });
+
+        var (first, second) = chestType == "right" ? (container, other) : (other, container);
+        var title = first.CustomName ?? second.CustomName ?? "Large Chest";
+
+        return new DoubleChestContainer(first, second, title);
+    }
+
+    // Where a half of a double chest finds its other half: a left half clockwise of its facing, a right half
+    // counter-clockwise, seen from above, like vanilla's ChestBlock.getConnectedDirection.
+    private static Vector? ConnectedOffset(string chestType, string? facing)
+    {
+        string[] clockwise = ["north", "east", "south", "west"];
+        var index = Array.IndexOf(clockwise, facing);
+        if (index < 0)
+            return null;
+
+        var turn = chestType == "left" ? 1 : 3;
+
+        return clockwise[(index + turn) % 4] switch
+        {
+            "north" => new Vector(0, 0, -1),
+            "east" => new Vector(1, 0, 0),
+            "south" => new Vector(0, 0, 1),
+            _ => new Vector(-1, 0, 0)
+        };
     }
 
     [EventPriority(Priority = Priority.Internal)]
@@ -387,25 +528,54 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         var player = e.Player;
         var server = e.Server;
 
-        var packetBroadcaster = player.Level.PacketBroadcaster;
-
         if (player.OpenedContainer is CraftingTable { Type: InventoryType.Crafting } table)
             await ReturnCraftingItemsAsync(player, table, 3);
         if (player.OpenedContainer is EnchantmentTable enchantingTable)
             await ReturnEnchantingItemsAsync(player, enchantingTable);
+        if (HoldsItemsWhileOpen(player.OpenedContainer))
+            await ReturnWorkstationItemsAsync(player, player.OpenedContainer!);
         await ReturnCraftingItemsAsync(player, player.Inventory, 2);
 
-        if (player is Player portalPlayer)
-            await portalPlayer.CancelPortalTravelAsync();
+        await player.CancelPortalTravelAsync();
 
+        API.Data.AttachmentStorage.For(player).Retire();
         await player.SaveAsync();
 
-        packetBroadcaster.Broadcast(new PlayerInfoRemovePacket
+        await RemoveRiddenVehicleAsync(player);
+        await DespawnPlayerAsync(player);
+
+        server.BroadcastMessage(string.Format(server.Configuration.Messages.Leave, e.Player.Username));
+    }
+
+    /// <summary>
+    /// Takes a leaving player out of every client's view: the tab list entry and the spawned entity.
+    /// Also used to undo a join that failed part-way, so it must tolerate a player who was never fully shown.
+    /// </summary>
+    internal static async ValueTask DespawnPlayerAsync(IPlayer player)
+    {
+        player.Level.PacketBroadcaster.Broadcast(new PlayerInfoRemovePacket
         {
             UUIDs = [player.Uuid]
         }, player.EntityId);
 
-        server.BroadcastMessage(string.Format(server.Configuration.Messages.Leave, e.Player.Username));
+        // Like changing level or dying, leaving removes the player's entity for everyone who could see it.
+        await player.Level.DestroyEntityAsync(player);
+        foreach (var observer in player.Level.GetPlayersInRange(player.Position, float.MaxValue))
+            observer.ForgetVisiblePlayer(player);
+    }
+
+    // Like vanilla's PlayerList.remove, the vehicle or mount a leaving player rides alone goes with them: it was saved
+    // with them (see PlayerBase.WriteNbt), so it's removed rather than left empty in the world.
+    private static async ValueTask RemoveRiddenVehicleAsync(IPlayer player)
+    {
+        if (player is not Entities.PlayerBase concrete
+            || concrete.RootVehicle is not { Passengers: [var rider] } root
+            || !ReferenceEquals(rider, concrete)
+            || ReferenceEquals(root, concrete))
+            return;
+
+        concrete.StopRiding();
+        await player.Level.DestroyEntityAsync(root);
     }
 
     [EventPriority(Priority = Priority.Internal)]
@@ -416,10 +586,26 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         var packetBroadcaster = joined.Level.PacketBroadcaster;
 
-        joined!.Level.TryAddPlayer(joined);
-        joined!.Level.TryAddEntity(joined);
+        if (!joined.Level.TryAddPlayer(joined))
+            throw new InvalidOperationException($"Player '{joined.Username}' is already registered in level '{joined.Level.Name}'.");
+        // The saved position may lie in a region that isn't loaded yet (a join doesn't load it), and an entity can only be
+        // added to a loaded region, so load the region first, as the chunk loading does.
+        if (joined.Level is AbstractLevel level)
+        {
+            var (chunkX, chunkZ) = Region.ChunkOf(joined.Position);
+            level.LoadRegionByChunk(chunkX, chunkZ);
+        }
 
-        server!.BroadcastMessage(new ChatMessage
+        if (!joined.Level.TryAddEntity(joined))
+        {
+            joined.Level.TryRemovePlayer(joined);
+            throw new InvalidOperationException($"Player '{joined.Username}' could not be registered as a level entity.");
+        }
+
+        if (joined is Entities.PlayerBase concreteJoined)
+            concreteJoined.RestoreSavedVehicle();
+
+        server.BroadcastMessage(new ChatMessage
         {
             Text = string.Format(server.Configuration.Messages.Join, e.Player.Username),
             Color = HexColor.Yellow
@@ -444,6 +630,10 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         {
             { joined.Uuid, list }
         }));
+
+        // Show the new player to everyone already nearby. A joining client sees the players around it through its own
+        // visibility updates, which run whenever it moves.
+        joined.SpawnEntity();
 
         return default;
     }

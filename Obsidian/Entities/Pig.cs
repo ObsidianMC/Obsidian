@@ -1,7 +1,9 @@
+using Obsidian.API.Inventory;
+
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:pig")]
-public sealed partial class Pig : Animal
+public sealed partial class Pig : Animal, IItemSteerable
 {
     private int boostTicks;
     public Pig() => Type = EntityType.Pig;
@@ -9,7 +11,7 @@ public sealed partial class Pig : Animal
     protected override bool UsesAi => true;
     protected override string? SoundName => "pig";
     protected override int GetExperienceReward() => IsBaby ? 0 : Random.Next(1, 4);
-    internal override float EyeHeight => IsBaby ? 0.425f : 0.85f;
+    internal override float EyeHeight => (IsBaby ? 0.425f : 0.85f) * this.AttributeScale;
     public int Variant { get; set; } = 1;
 
     protected override void FinalizeSpawn()
@@ -33,10 +35,10 @@ public sealed partial class Pig : Animal
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (!IsBaby)
-            DropItem(Burning ? Material.CookedPorkchop : Material.Porkchop, Random.Next(1, 4));
-        if (HasSaddle)
-            DropItem(Material.Saddle);
+        this.DropVanillaLoot(source);
+        if (this.HasSaddle)
+            this.DropItem(ItemsRegistry.Saddle);
+
         return default;
     }
     protected override void RegisterGoals(AI.GoalSelector actionGoals, AI.GoalSelector targetGoals)
@@ -44,7 +46,9 @@ public sealed partial class Pig : Animal
         actionGoals.AddGoal(0, new AI.FloatGoal(this));
         actionGoals.AddGoal(1, new AI.PanicGoal(this, 1.25f));
         actionGoals.AddGoal(3, new AI.BreedGoal(this));
-        actionGoals.AddGoal(4, new AI.TemptGoal(this, item => item is { Count: > 0, Type: Material.CarrotOnAStick }));
+        actionGoals.AddGoal(
+            4,
+            new AI.TemptGoal(this, item => item is { Count: > 0, Holder.Id: ItemIds.CarrotOnAStick }));
         actionGoals.AddGoal(4, new AI.TemptGoal(this, IsFood));
         actionGoals.AddGoal(5, new AI.FollowParentGoal(this));
         actionGoals.AddGoal(6, new AI.RandomStrollGoal(this, 1));
@@ -53,41 +57,42 @@ public sealed partial class Pig : Animal
     }
 
     internal static bool IsFood(Obsidian.API.Inventory.ItemStack? item) => item is { Count: > 0 } &&
-        item.Type is Material.Carrot or Material.Potato or Material.Beetroot;
+        item.Holder.Id is ItemIds.Carrot or ItemIds.Potato or ItemIds.Beetroot;
 
     protected override bool CanEat(Obsidian.API.Inventory.ItemStack? item) => IsFood(item);
 
-    internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
+    internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
-            return;
+            return false;
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var item = player.Inventory.GetItem(slot);
         if (IsFood(item))
+            return await base.FeedAsync(player, hand);
+        if (HasSaddle && !player.Sneaking)
         {
-            await base.FeedAsync(player, hand);
-            return;
+            Mount(player);
+            return true;
         }
-        if (HasSaddle && !player.Sneaking && player is Player rider)
-        {
-            Mount(rider);
-            return;
-        }
-        if (IsBaby || HasSaddle || item is not { Count: > 0, Type: Material.Saddle })
-            return;
+        if (IsBaby || HasSaddle || item is not { Count: > 0, Holder.Id: ItemIds.Saddle })
+            return false;
         HasSaddle = true;
         if (player.GameMode != GameMode.Creative)
         {
             player.Inventory.RemoveItem(slot, 1);
-            await player.Client.QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetSlotPacket
-            {
-                ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot)
-            });
+            await player.SendInventorySlotAsync(slot);
         }
+
+        return true;
     }
 
-    internal bool Boost(IPlayer player)
+    public Item SteeringItem => ItemsRegistry.CarrotOnAStick;
+
+    // Vanilla's wear for a boost with the item, which decides how many boosts it lasts.
+    public int BoostItemDamage => 7;
+
+    public bool Boost(IPlayer player)
     {
         if (!ReferenceEquals(Rider, player) || !HasSaddle || TotalTimeBoost > 0)
             return false;
@@ -101,8 +106,8 @@ public sealed partial class Pig : Animal
     {
         base.TickRidden();
         if (Rider == null || !HasSaddle ||
-            !(Rider.GetHeldItem() is { Count: > 0, Type: Material.CarrotOnAStick } ||
-              Rider.GetOffHandItem() is { Count: > 0, Type: Material.CarrotOnAStick }))
+            !(Rider.GetHeldItem() is { Count: > 0, Holder.Id: ItemIds.CarrotOnAStick } ||
+              Rider.GetOffHandItem() is { Count: > 0, Holder.Id: ItemIds.CarrotOnAStick }))
             return;
         Yaw = Rider.Yaw;
         Pitch = Rider.Pitch.Degrees * 0.5f;
@@ -124,7 +129,7 @@ public sealed partial class Pig : Animal
     {
         get => !GetEquipment(Obsidian.API.Inventory.EquipmentSlot.Saddle).IsAir;
         set => SetEquipment(Obsidian.API.Inventory.EquipmentSlot.Saddle,
-            value ? ItemsRegistry.GetSingleItem(Material.Saddle) : Obsidian.API.Inventory.ItemStack.Air);
+            value ? ItemsRegistry.GetSingleItem(ItemsRegistry.Saddle) : Obsidian.API.Inventory.ItemStack.Air);
     }
 
     public int TotalTimeBoost { get; set; }

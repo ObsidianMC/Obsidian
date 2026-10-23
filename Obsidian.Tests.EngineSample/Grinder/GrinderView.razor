@@ -1,0 +1,101 @@
+@*
+    Phase 3's screen in Razor, the client's side of GrinderMenu, which the sample registers: the same screen as
+    GrinderScreen, its code form. The grinder's input and output slots with a progress arrow between them, a button
+    toggling its mode, and the recipes it grinds, which a search field filters and a scroll bar or the mouse wheel
+    scrolls. It's drawn with vanilla's GUI textures, so the sample ships none.
+
+    The client renders it in the menu's container screen each time the server opens the menu, and again every client
+    tick, since it takes the screen's ScreenContext: its markup reads the menu's data slots as last sent.
+*@
+
+@* The slots' frames, then the slots: the input and the output. The player's inventory is placed by default. *@
+<Image X="24" Y="34" Width="18" Height="18" Source="Frames" />
+<Image X="76" Y="34" Width="18" Height="18" Source="Frames" />
+<Image X="7" Y="83" Width="162" Height="54" Source="Frames" />
+<Image X="7" Y="141" Width="162" Height="18" Source="Frames" />
+<SlotGrid X="25" Y="35" FirstSlot="GrinderBlockEntity.InputSlot" />
+<SlotGrid X="77" Y="35" FirstSlot="GrinderBlockEntity.OutputSlot" />
+
+@* The furnace's empty arrow under the progress that fills it, and the mode button. *@
+<Image X="47" Y="34" Width="24" Height="16" Source="EmptyArrow" />
+<ProgressBar X="47" Y="34" Width="24" Height="16" Source="Arrow" Progress="this.Progress" />
+<Button X="8"
+        Y="54"
+        Width="104"
+        Height="16"
+        Text="@this.ModeText"
+        OnClick="() => this.Menu.ClickButton(GrinderMenu.TogglePulls)" />
+
+@* The search over the recipe list, and the stonecutter's scroll bar track beside it. *@
+<TextField X="117"
+           Y="4"
+           Width="52"
+           Height="12"
+           Hint="@this.Screen.Translate("sample.grinder.search")"
+           Value="@this.search"
+           ValueChanged="this.Search" />
+<Image X="117" Y="17" Width="36" Height="54" Source="Frames" />
+<ItemGrid X="118" Y="18" Columns="2" Rows="3" Items="this.shown" @bind-FirstRow="this.row" />
+<Image X="155" Y="17" Width="14" Height="56" Source="Track" />
+<ScrollBar X="156"
+           Y="18"
+           Height="54"
+           Handle="minecraft:container/stonecutter/scroller"
+           MaxRow="this.MaxRow"
+           @bind-Row="this.row" />
+
+@code {
+    // Vanilla's chest texture, whose rows of slot frames, 18 pixels apart, frame the slots and the recipe list.
+    private static readonly GuiImage Frames = GuiImage.Texture("minecraft:gui/container/generic_54", 7, 17);
+
+    private static readonly GuiImage EmptyArrow = GuiImage.Texture("minecraft:gui/container/furnace", 79, 34);
+
+    private static readonly GuiImage Arrow = GuiImage.Sprite("minecraft:container/furnace/burn_progress");
+
+    private static readonly GuiImage Track = GuiImage.Texture("minecraft:gui/container/stonecutter", 118, 14);
+
+    // The recipes the menu opened with, each as its ingredient and its result, and those the search shows.
+    private ItemStack[][] recipes = [];
+    private ItemStack[] shown = [];
+    private string search = string.Empty;
+    private int row;
+
+    /// <summary>
+    /// The screen, with the menu: the client's cascading value.
+    /// </summary>
+    [CascadingParameter]
+    public ScreenContext Screen { get; set; } = null!;
+
+    private IScreenMenu Menu => this.Screen.Menu!;
+
+    // The data slots, as the server last sent them: the progress and the mode.
+    private float Progress => this.Menu.GetData(GrinderMenu.TimeData) is > 0 and var time
+        ? this.Menu.GetData(GrinderMenu.ProgressData) / (float)time
+        : 0;
+
+    private string ModeText => this.Screen.Translate(
+        this.Menu.GetData(GrinderMenu.PullsData) != 0 ? "sample.grinder.pulls.on" : "sample.grinder.pulls.off");
+
+    private int MaxRow => (this.shown.Length + 1) / 2 - 3;
+
+    protected override void OnInitialized()
+    {
+        this.Screen.Background = GuiImage.Sprite("minecraft:recipe_book/overlay_recipe");
+        this.recipes = GrinderScreen.ReadRecipes(this.Menu.ReadOpenData());
+        this.Search(string.Empty);
+    }
+
+    // Shows the recipes whose ingredient or result has the text in its identifier ("raw iron" finds
+    // minecraft:raw_iron), from the top.
+    private void Search(string text)
+    {
+        this.search = text;
+        var name = text.Trim().Replace(' ', '_');
+
+        bool Matches(ItemStack stack) =>
+            stack.Holder.UnlocalizedName.Contains(name, StringComparison.OrdinalIgnoreCase);
+
+        this.shown = [.. this.recipes.Where(recipe => recipe.Any(Matches)).SelectMany(recipe => recipe)];
+        this.row = 0;
+    }
+}

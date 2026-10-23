@@ -1,5 +1,6 @@
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
+using Obsidian.Plugins;
 using System.Threading;
 
 namespace Obsidian.WorldData.Structures;
@@ -14,6 +15,14 @@ public sealed class StructureStart
     private readonly Lock stateLock = new();
 
     private bool stateRestored;
+
+    // See Retire; set without the lock, read under it.
+    private volatile bool retired;
+
+    // The state captured once retired, which every reader of it gets (see RetiredState).
+    private NbtCompound? retiredState;
+
+    private bool retiredStateTaken;
 
     internal StructureStart(Structure structure, int chunkX, int chunkZ, IReadOnlyList<StructurePiece> pieces)
     {
@@ -37,6 +46,12 @@ public sealed class StructureStart
     public int ChunkZ { get; }
 
     public IReadOnlyList<StructurePiece> Pieces { get; }
+
+    /// <summary>
+    /// The plugins whose code the start's pieces run, those its structure was made of when it started; none for
+    /// most. Placing and saving the start is a call into them.
+    /// </summary>
+    internal ImmutableArray<PluginContainer> Owners { get; set; } = [];
 
     /// <summary>
     /// How many times a search for unknown structures found this start (vanilla's <c>references</c>).
@@ -94,6 +109,8 @@ public sealed class StructureStart
             return;
 
         using var scope = this.stateLock.EnterScope();
+        if (this.retired)
+            return;
 
         // Pieces may orient themselves around the start piece's bottom center.
         var startBox = this.Pieces[0].BoundingBox;
@@ -128,16 +145,49 @@ public sealed class StructureStart
     /// </summary>
     internal NbtCompound SaveState()
     {
+        using var scope = this.stateLock.EnterScope();
+        return this.SaveStateLocked();
+    }
+
+    /// <summary>
+    /// Stops the start from being placed, once the structure cache dropped it (its structure set is gone, or a plugin
+    /// it runs is unloading). A placement in progress still ends; <see cref="RetiredState"/> waits for it. This
+    /// doesn't wait, so that it can be called under locks that placements may wait for.
+    /// </summary>
+    internal void Retire() => this.retired = true;
+
+    /// <summary>
+    /// The state to keep of a retired start, when it was restored, or null. Taking the lock placing takes, it waits
+    /// for a placement in progress, so the state has every piece placed; the first call captures it, and later ones
+    /// give the same state, so that whoever saves the start keeps what its retirement keeps.
+    /// </summary>
+    /// <remarks>
+    /// Saving the state of pieces made of plugins' types is a call into them: hold the plugins meanwhile.
+    /// </remarks>
+    internal NbtCompound? RetiredState()
+    {
+        using var scope = this.stateLock.EnterScope();
+        if (!this.retired)
+            throw new InvalidOperationException("The start isn't retired.");
+
+        if (!this.retiredStateTaken)
+        {
+            this.retiredState = this.stateRestored ? this.SaveStateLocked() : null;
+            this.retiredStateTaken = true;
+        }
+
+        return this.retiredState;
+    }
+
+    private NbtCompound SaveStateLocked()
+    {
         var children = new NbtList(NbtTagType.Compound, "Children");
 
-        using (this.stateLock.EnterScope())
+        foreach (var piece in this.Pieces)
         {
-            foreach (var piece in this.Pieces)
-            {
-                var child = new NbtCompound();
-                piece.SaveState(child);
-                children.Add(child);
-            }
+            var child = new NbtCompound();
+            piece.SaveState(child);
+            children.Add(child);
         }
 
         return new NbtCompound(this.Structure.Identifier)

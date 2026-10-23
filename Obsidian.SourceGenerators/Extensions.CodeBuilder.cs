@@ -189,7 +189,8 @@ public partial class Extensions
         }
     }
 
-    internal static void GenerateSimpleCodec(this CodeBuilder builder, Codec[] codecs, string registryName, string codecKey, string codecType, SourceProductionContext ctx)
+    internal static void GenerateSimpleCodec(this CodeBuilder builder, Codec[] codecs, string registryName,
+        string codecKey, string codecType, SourceProductionContext ctx)
     {
         builder.Type($"public static class {registryName}");
 
@@ -226,13 +227,30 @@ public partial class Extensions
         builder.EndScope();
     }
 
-    internal static void GenerateSimpleCodec(this CodeBuilder builder, Codec[] codecs, string registryName, string codecKey, string codecType,
-        Action<string, JsonElement> parseProperty, SourceProductionContext ctx)
+    /// <param name="extensible">
+    /// Whether plugins add entries at runtime: the class is then partial and holds its vanilla entries in a
+    /// <c>CodecTable</c> named <c>table</c>, and the hand-written part exposes <c>All</c>, <c>ById</c> and
+    /// <c>GlobalBitsPerEntry</c> from it.
+    /// </param>
+    internal static void GenerateSimpleCodec(
+        this CodeBuilder builder,
+        Codec[] codecs,
+        string registryName,
+        string codecKey,
+        string codecType,
+        Action<string, JsonElement> parseProperty,
+        SourceProductionContext ctx,
+        bool extensible = false)
     {
-        builder.Type($"public static class {registryName}");
+        builder.Type($"public static {(extensible ? "partial " : string.Empty)}class {registryName}");
 
         builder.Indent().Append($"public const string CodecKey = \"{codecKey}\";").Line().Line();
-        builder.Indent().Append($"public const int GlobalBitsPerEntry = {(int)Math.Ceiling(Math.Log(codecs.Length, 2))};").Line().Line();
+
+        if (!extensible)
+        {
+            var bits = (int)Math.Ceiling(Math.Log(codecs.Length, 2));
+            builder.Indent().Append($"public const int GlobalBitsPerEntry = {bits};").Line().Line();
+        }
 
         foreach (var codec in codecs)
         {
@@ -251,7 +269,21 @@ public partial class Extensions
             builder.Append("} };").Line();
         }
 
-        GenerateCodecDictionaries(builder, codecs, codecType);
+        if (extensible)
+        {
+            // After the entries' properties in the same part, so that they're initialized first.
+            builder.Line().Line($"private static readonly CodecTable<{codecType}> table = new(");
+            builder.Line("[");
+
+            foreach (var codec in codecs.OrderBy(x => x.RegistryId))
+                builder.Line($"    {codec.Name.RemoveNamespace().ToPascalCase()},");
+
+            builder.Line("]);");
+        }
+        else
+        {
+            GenerateCodecDictionaries(builder, codecs, codecType);
+        }
 
         builder.EndScope();
     }
@@ -285,7 +317,8 @@ public partial class Extensions
     /// </summary>
     internal static bool TryAppendStateProperty(this CodeBuilder builder, string? elementName, JsonElement element, bool isDictionary = false)
     {
-        var isState = elementName is Constants.DefaultBlock or Constants.DefaultFluid or Constants.BlockResult or "state" || element.TryGetProperty("Properties", out _);
+        var isState = elementName is Constants.DefaultBlock or Constants.DefaultFluid or Constants.BlockResult or "state"
+            || element.TryGetProperty("Properties", out _);
 
         if (isState || isDictionary)
         {

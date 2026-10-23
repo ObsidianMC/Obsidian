@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.API.World.Structures;
 using Obsidian.Nbt;
 
 namespace Obsidian.WorldData.Structures.Processors;
@@ -15,8 +16,13 @@ public sealed class RuleProcessor : StructureProcessor
 {
     public required ImmutableArray<ProcessorRule> Rules { get; init; }
 
-    public override StructureBlockInfo? ProcessBlock(IWorldGenLevel level, Vector origin, Vector pivot, StructureBlockInfo original,
-        StructureBlockInfo current, StructurePlaceSettings settings)
+    public override StructureBlockInfo? ProcessBlock(
+        IWorldGenLevel level,
+        Vector origin,
+        Vector pivot,
+        StructureBlockInfo original,
+        StructureBlockInfo current,
+        TemplatePlacement placement)
     {
         var position = current.Position;
         var random = PositionalRandom.Rent(position);

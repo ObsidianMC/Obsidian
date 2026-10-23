@@ -1,6 +1,7 @@
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -33,14 +34,14 @@ public sealed partial class Phantom : PathfinderMob
     }
     protected override ValueTask TickMobAsync()
     {
-        if (Level.DimensionName == "minecraft:overworld" && Level.DayTime is >= 0 and < 12000 &&
+        if (Level.MonstersBurn((Vector)Position.Floor()) &&
             !Level.LevelData.Raining && !InWater && Terrain.GetSkyLight((Vector)EyePosition.Floor()) == 15)
             Ignite(8);
         return default;
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (source is IPlayer) DropItem(Material.PhantomMembrane, Random.Next(2));
+        if (source is IPlayer) DropItem(ItemsRegistry.PhantomMembrane, Random.Next(2));
         return default;
     }
     public override void Write(INetStreamWriter writer)

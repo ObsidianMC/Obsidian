@@ -154,7 +154,10 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
             this.numberProvider = compilation.GetTypeByMetadataName("Obsidian.API.Loot.Numbers.INumberProvider")!;
 
             // Vanilla's enchantment registry is sorted by id; the index is the network id.
-            foreach (var enchantment in enchantments.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal))
+            var enchantmentNames = enchantments.EnumerateObject()
+                .Select(property => property.Name)
+                .OrderBy(name => name, StringComparer.Ordinal);
+            foreach (var enchantment in enchantmentNames)
                 this.enchantmentIds[enchantment] = this.enchantmentIds.Count;
         }
 
@@ -182,15 +185,21 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
                 if (json.TryGetProperty("primary_items", out var primaryItems))
                     parts.Add($"PrimaryItems = {this.EmitItemSet(primaryItems)}");
 
+                var slots = json.GetProperty("slots").EnumerateArray().Select(slot => Literal(slot.GetString()!));
+                parts.Add($"Slots = [{string.Join(", ", slots)}]");
+
                 parts.Add($"Weight = {json.GetProperty("weight").GetInt32()}");
                 parts.Add($"MaxLevel = {json.GetProperty("max_level").GetInt32()}");
+                parts.Add($"AnvilCost = {json.GetProperty("anvil_cost").GetInt32()}");
                 parts.Add($"MinCost = {EmitCost(json.GetProperty("min_cost"))}");
                 parts.Add($"MaxCost = {EmitCost(json.GetProperty("max_cost"))}");
 
                 if (json.TryGetProperty("exclusive_set", out var exclusiveSet))
                 {
                     var ids = this.ExpandReferences("enchantment", exclusiveSet)
-                        .Select(id => this.enchantmentIds.TryGetValue(id, out var value) ? value.ToString(CultureInfo.InvariantCulture) : this.Missing("enchantment", id, "0"));
+                        .Select(id => this.enchantmentIds.TryGetValue(id, out var value)
+                            ? value.ToString(CultureInfo.InvariantCulture)
+                            : this.Missing("enchantment", id, "0"));
                     parts.Add($"ExclusiveSet = [{string.Join(", ", ids)}]");
                 }
 
@@ -268,8 +277,13 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
                 {
                     this.currentOwner = table.Name;
                     var prefix = $"minecraft:{category}/";
-                    var memberName = MemberName(table.Name.StartsWith(prefix, StringComparison.Ordinal) ? table.Name.Substring(prefix.Length) : table.Name);
-                    var expression = this.EmitObject(lootTable, table.Value, null, $"Identifier = {Literal(table.Name)}");
+                    var memberName = MemberName(table.Name.StartsWith(prefix, StringComparison.Ordinal)
+                        ? table.Name.Substring(prefix.Length)
+                        : table.Name);
+                    var expression = category is "blocks" or "entities"
+                        ? $"global::Obsidian.API.Loot.LootTableJson.Parse({Literal(table.Value.GetRawText())}, "
+                            + $"{Literal(table.Name)})"
+                        : this.EmitObject(lootTable, table.Value, null, $"Identifier = {Literal(table.Name)}");
 
                     builder.AppendLine($"        public static global::Obsidian.API.Loot.LootTable {memberName} {{ get; }} = {expression};");
                     builder.AppendLine();

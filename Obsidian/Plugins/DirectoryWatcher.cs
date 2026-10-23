@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Threading;
 
 namespace Obsidian.Plugins;
 
@@ -12,9 +13,11 @@ public sealed class DirectoryWatcher : IDisposable
     public event Action<string> FileDeleted = default!;
 
     private readonly Dictionary<string, FileSystemWatcher> watchers = new();
-    private readonly Dictionary<string, DateTime> updateTimestamps = new();
 
-    private const double minUpdateInterval = 3.0;
+    // A file being written raises several events; FileChanged fires once it has been quiet this long, so that the
+    // listener sees the finished file.
+    private static readonly TimeSpan settleDelay = TimeSpan.FromMilliseconds(500);
+    private readonly ConcurrentDictionary<string, CancellationTokenSource> pendingUpdates = new();
 
     public void Watch(string path)
     {
@@ -65,27 +68,25 @@ public sealed class DirectoryWatcher : IDisposable
 
     private void OnFileUpdated(object sender, FileSystemEventArgs e)
     {
-        if (!TestFilter(e.FullPath) || !(e.ChangeType == WatcherChangeTypes.Created || e.ChangeType == WatcherChangeTypes.Changed))
+        if (!TestFilter(e.FullPath) || e.ChangeType == WatcherChangeTypes.Deleted)
             return;
 
-        if (updateTimestamps.TryGetValue(e.FullPath, out DateTime timestamp))
-        {
-            var now = DateTime.Now;
-            if ((now - timestamp).TotalSeconds >= minUpdateInterval)
-            {
-                updateTimestamps[e.FullPath] = now;
-            }
-            else
-            {
-                return;
-            }
-        }
-        else
-        {
-            updateTimestamps.Add(e.FullPath, DateTime.Now);
-        }
+        var pending = new CancellationTokenSource();
+        var path = e.FullPath;
 
-        FileChanged?.Invoke(e.FullPath);
+        this.pendingUpdates.AddOrUpdate(path, pending, (_, previous) =>
+        {
+            previous.Cancel();
+            return pending;
+        });
+
+        _ = Task.Delay(settleDelay, pending.Token).ContinueWith(task =>
+        {
+            if (task.IsCanceled || !this.pendingUpdates.TryRemove(new(path, pending)))
+                return;
+
+            FileChanged?.Invoke(path);
+        }, TaskScheduler.Default);
     }
 
     private void OnFileRenamed(object sender, RenamedEventArgs e)
@@ -102,7 +103,8 @@ public sealed class DirectoryWatcher : IDisposable
         // Renamed from filtrable to non-filtrable
         else if (oldFilterTest && !newFilterTest)
         {
-            OnFileDeleted(sender, e);
+            OnFileDeleted(sender, new FileSystemEventArgs(WatcherChangeTypes.Deleted,
+                Path.GetDirectoryName(e.OldFullPath)!, Path.GetFileName(e.OldFullPath)));
             return;
         }
         // Renamed from non-filtrable to non-filtrable
@@ -111,18 +113,14 @@ public sealed class DirectoryWatcher : IDisposable
             return;
         }
 
-        if (updateTimestamps.TryGetValue(e.OldFullPath, out DateTime timestamp))
-        {
-            updateTimestamps.Remove(e.OldFullPath);
-            updateTimestamps.Add(e.FullPath, timestamp);
-        }
-
         FileRenamed?.Invoke(e.OldFullPath, e.FullPath);
     }
 
     private void OnFileDeleted(object sender, FileSystemEventArgs e)
     {
-        updateTimestamps.Remove(e.FullPath);
+        if (this.pendingUpdates.TryRemove(e.FullPath, out var pending))
+            pending.Cancel();
+
         FileDeleted?.Invoke(e.FullPath);
     }
 
@@ -133,14 +131,24 @@ public sealed class DirectoryWatcher : IDisposable
 
     public void Dispose()
     {
-        foreach (var (path, watcher) in watchers)
+        lock (watchers)
         {
-            watcher.Created -= OnFileUpdated;
-            watcher.Changed -= OnFileUpdated;
-            watcher.Renamed -= OnFileRenamed;
-            watcher.Deleted -= OnFileDeleted;
-            watcher.Dispose();
+            foreach (var (path, watcher) in watchers)
+            {
+                watcher.Created -= OnFileUpdated;
+                watcher.Changed -= OnFileUpdated;
+                watcher.Renamed -= OnFileRenamed;
+                watcher.Deleted -= OnFileDeleted;
+                watcher.Dispose();
+            }
+            watchers.Clear();
         }
-        watchers.Clear();
+
+        // Changes still settling are dropped, so nothing fires after disposal.
+        foreach (var path in this.pendingUpdates.Keys)
+        {
+            if (this.pendingUpdates.TryRemove(path, out var pending))
+                pending.Cancel();
+        }
     }
 }

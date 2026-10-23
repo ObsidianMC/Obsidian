@@ -66,7 +66,7 @@ public sealed class DialogClickAction : INbtSerializable
         {
             case NbtCompound compound:
                 writer.WriteCompoundStart(name);
-                foreach (var (_, tag) in compound) writer.WriteTag(tag);
+                writer.WriteEntries(compound);
                 writer.EndCompound();
                 break;
             case NbtList list:
