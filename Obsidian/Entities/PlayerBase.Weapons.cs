@@ -473,6 +473,17 @@ public partial class PlayerBase
             await this.QueuePacketAsync(new EntityEventPacket { EntityId = EntityId, Event = 30 });
         }
         else await this.QueuePacketAsync(new EntityEventPacket { EntityId = EntityId, Event = 29 });
+        // Vanilla LivingEntity.hurtServer -> BlocksAttacks.onBlocked: the shield's block_sound (item.shield.block)
+        // plays at the blocker's position for nearby players, with pitch 0.8 + random * 0.4.
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SoundPacket
+        {
+            SoundLocation = "minecraft:item.shield.block",
+            SoundPosition = new SoundPosition(Position.X, Position.Y, Position.Z),
+            Category = SoundCategory.Players,
+            Volume = 1,
+            Pitch = 0.8f + Globals.Random.NextSingle() * 0.4f,
+            Seed = Globals.Random.NextInt64()
+        });
         return true;
     }
 

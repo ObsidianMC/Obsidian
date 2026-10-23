@@ -284,13 +284,15 @@ internal sealed class MobTerrain(ILevel level)
     private static bool IntersectsSegment(BoundingBox box, VectorD start, VectorD direction) =>
         RayIntersection(box, start, direction) != null;
 
+    // Like vanilla AABB.clip, only an entry strictly after the start counts: a ray that starts inside or on the
+    // box (e.g. a projectile that was just deflected off it) does not hit it again.
     internal static double? RayIntersection(BoundingBox box, VectorD start, VectorD direction)
     {
-        var min = 0d;
+        var min = double.NegativeInfinity;
         var max = 1d;
         return ClipRay(start.X, direction.X, box.Min.X, box.Max.X, ref min, ref max) &&
             ClipRay(start.Y, direction.Y, box.Min.Y, box.Max.Y, ref min, ref max) &&
-            ClipRay(start.Z, direction.Z, box.Min.Z, box.Max.Z, ref min, ref max) ? min : null;
+            ClipRay(start.Z, direction.Z, box.Min.Z, box.Max.Z, ref min, ref max) && min > 0 ? min : null;
     }
 
     private static bool ClipRay(double start, double direction, double lower, double upper, ref double min, ref double max)
