@@ -175,6 +175,9 @@ public abstract partial class AbstractLevel : ILevel
 
     internal void EnqueueEntityAction(Func<ValueTask> action) => entityActions.Enqueue(action);
 
+    /// <summary>The level's tick times by stage, for the server's tick statistics.</summary>
+    internal TimingWindow TickTimes { get; } = new();
+
     internal void QueueChunkPopulation(IChunk chunk) => EnqueueEntityAction(() =>
     {
         if (ReferenceEquals(GetLoadedChunk(chunk.X, chunk.Z), chunk))
@@ -713,6 +716,7 @@ public abstract partial class AbstractLevel : ILevel
         }
         timings.Lap("light and tracking");
         TickStage = "idle";
+        timings.RecordTo(this.TickTimes);
         timings.ReportIfSlow(this.Logger, DimensionName);
     }
 
@@ -745,6 +749,8 @@ public abstract partial class AbstractLevel : ILevel
             entityTypes[type] = (ms + Stopwatch.GetElapsedTime(entityLap, now).TotalMilliseconds, count + 1);
             entityLap = now;
         }
+
+        public void RecordTo(TimingWindow window) => window.Record(Stopwatch.GetElapsedTime(start).TotalMilliseconds, stages);
 
         public void ReportIfSlow(ILogger logger, string level)
         {

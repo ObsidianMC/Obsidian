@@ -235,6 +235,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
         IWorldManager worldManager)
     {
         this.logger = loggerFactory.CreateLogger<Server>();
+        this.tickStatsLogger = loggerFactory.CreateLogger(TickStatsCategory);
         this.cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
 
         this.serviceProvider = serviceProvider;
@@ -926,6 +927,13 @@ public sealed partial class Server : IServer, IPluginScopedServer
     private static readonly TimeSpan StuckTickWarningAfter = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan StuckTickWarningInterval = TimeSpan.FromMinutes(1);
 
+    // Tick statistics are logged at Debug level under their own category, so a load test can turn them on alone.
+    private static readonly TimeSpan TickStatsInterval = TimeSpan.FromSeconds(10);
+    private const string TickStatsCategory = "Obsidian.TickStats";
+    private readonly ILogger tickStatsLogger;
+    private readonly TimingWindow worldTickTimes = new();
+    private readonly TimingWindow chunkLoopTimes = new();
+
     private void ReportTickFailure(Exception exception)
     {
         if (this.tickFailures.ShouldLog(out var suppressed))
@@ -943,6 +951,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
         var keepAliveTicks = 0;
         var nextStuckWarning = StuckTickWarningAfter;
         var observedTick = 0L;
+        var lastTickStats = Stopwatch.GetTimestamp();
 
         try
         {
@@ -952,6 +961,12 @@ public sealed partial class Server : IServer, IPluginScopedServer
                 {
                     keepAliveTicks = 0;
                     await this.ForEachConnectionAsync(SendKeepAliveAsync, this.keepAliveFailures);
+                }
+
+                if (Stopwatch.GetElapsedTime(lastTickStats) >= TickStatsInterval)
+                {
+                    lastTickStats = Stopwatch.GetTimestamp();
+                    this.ReportTickStats();
                 }
 
                 // Each tick gets its own warnings. Comparing start times also catches a tick that began right after
@@ -1003,8 +1018,10 @@ public sealed partial class Server : IServer, IPluginScopedServer
         {
             while (await timer.WaitForNextTickAsync())
             {
+                var passStart = Stopwatch.GetTimestamp();
                 await this.ForEachConnectionAsync(SendPendingChunksAsync, this.chunkFailures);
                 await this.ForEachServerPlayerAsync(player => new(player.LoadChunksAsync()), this.chunkFailures);
+                this.chunkLoopTimes.Record(Stopwatch.GetElapsedTime(passStart).TotalMilliseconds);
             }
         }
         catch (OperationCanceledException) when (cancelTokenSource.IsCancellationRequested)
@@ -1073,6 +1090,31 @@ public sealed partial class Server : IServer, IPluginScopedServer
         }
     }
 
+    /// <summary>
+    /// Logs, at Debug level under <c>Obsidian.TickStats</c>, how long world ticks, each level's tick and its slowest
+    /// stages, and the chunk loop's passes took since the last report. The windows are emptied either way, so turning
+    /// the category on mid-run starts with a fresh window.
+    /// </summary>
+    private void ReportTickStats()
+    {
+        var levels = this.WorldManager.GetAvailableWorlds()
+            .OfType<World>()
+            .SelectMany(world => world.dimensions.Values.OfType<AbstractLevel>().Prepend(world))
+            .Select(level => (Level: level, Times: level.TickTimes.Take()))
+            .ToArray();
+        var worldTicks = this.worldTickTimes.Take();
+        var chunkLoop = this.chunkLoopTimes.Take();
+
+        if (!this.tickStatsLogger.IsEnabled(LogLevel.Debug))
+            return;
+
+        var levelLines = levels
+            .Where(entry => entry.Times.Count > 0)
+            .Select(entry => $"\n  {entry.Level.Name} ({entry.Level.Players.Count} players): {entry.Times.Describe(6)}");
+        Log.TickStats(this.tickStatsLogger, this.OnlinePlayers.Count, this.Tps, worldTicks.Describe(),
+            chunkLoop.Describe(), string.Concat(levelLines));
+    }
+
     // Each level's tick stage, e.g. "overworld: ticking entities, the_nether: waiting for simulation gate".
     private string DescribeLevelTicks() => string.Join(", ", this.WorldManager.GetAvailableWorlds()
         .OfType<World>()
@@ -1128,7 +1170,9 @@ public sealed partial class Server : IServer, IPluginScopedServer
         finally
         {
             Volatile.Write(ref this.tickStarted, 0);
-            this.RecordTickTime(Stopwatch.GetElapsedTime(tickStart));
+            var elapsed = Stopwatch.GetElapsedTime(tickStart);
+            this.RecordTickTime(elapsed);
+            this.worldTickTimes.Record(elapsed.TotalMilliseconds);
         }
     }
 
@@ -1239,6 +1283,9 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
         [LoggerMessage(Level = LogLevel.Warning, Message = "The world tick has been running for {Seconds} s; levels: {Levels}")]
         public static partial void TickStuck(ILogger logger, int seconds, string levels);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "{Players} players, {Tps} TPS. World ticks: {WorldTicks}. Chunk loop: {ChunkLoop}.{Levels}")]
+        public static partial void TickStats(ILogger logger, int players, int tps, string worldTicks, string chunkLoop, string levels);
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Sending keep-alives or chunks failed ({Suppressed} more failures weren't logged since the last one)")]
         public static partial void ConnectionTickFailed(ILogger logger, Exception exception, int suppressed);
