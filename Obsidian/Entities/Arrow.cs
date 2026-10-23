@@ -77,7 +77,7 @@ public partial class Arrow : Entity
             return;
         }
         if (Owner == null && ownerUuid != Guid.Empty && age % 20 == 1)
-            Owner = Level.GetEntitiesInRange(Position, float.MaxValue).FirstOrDefault(entity => entity.Uuid == ownerUuid);
+            Owner = level.FindEntity(ownerUuid);
         if (embedded)
         {
             await PickupAsync();

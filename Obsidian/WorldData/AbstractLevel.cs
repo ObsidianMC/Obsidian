@@ -629,6 +629,31 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
+    /// <summary>
+    /// The level's entity with <paramref name="uuid"/>, a player first, as
+    /// <c>GetEntitiesInRange(location, float.MaxValue)</c> would find it, for projectiles resolving their owners.
+    /// </summary>
+    /// <remarks>
+    /// Players are looked up by UUID; other entities still take a walk over every region, as the level keeps no index
+    /// of them by UUID (which plugins may change), but without the range query's distance checks and iterators.
+    /// </remarks>
+    internal IEntity? FindEntity(Guid uuid)
+    {
+        if (this.Players.TryGetValue(uuid, out var player))
+            return player;
+
+        foreach (var (_, region) in this.Regions)
+        {
+            foreach (var (_, entity) in region.Entities)
+            {
+                if (entity.Uuid == uuid && entity.Type != EntityType.Player)
+                    return entity;
+            }
+        }
+
+        return null;
+    }
+
     public IEnumerable<IEntity> GetNonPlayerEntitiesInRange(VectorD location, float distance) =>
         this.GetNonPlayerEntitiesInRange(location, distance, filter: null);
 

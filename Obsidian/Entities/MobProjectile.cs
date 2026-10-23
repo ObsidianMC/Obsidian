@@ -77,7 +77,7 @@ internal sealed class MobProjectile : Entity
             return;
         }
         if (Owner == null && ownerUuid != Guid.Empty && (resolveOwner || age % 20 == 0))
-            Owner = Level.GetEntitiesInRange(Position, float.MaxValue).FirstOrDefault(entity => entity.Uuid == ownerUuid);
+            Owner = level.FindEntity(ownerUuid);
         resolveOwner = false;
         var terrain = new MobTerrain(Level);
         var end = Position + Motion;
