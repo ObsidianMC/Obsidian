@@ -138,42 +138,11 @@ public sealed partial class Villager : AgeableMob
                     SynchronizeMetadata();
                 }
             }
-            var origin = (Vector)Position.Floor();
-            var points = new List<(Vector Position, int Profession, bool Bed)>();
-            for (var x = -16; x <= 16; x++)
-            for (var z = -16; z <= 16; z++)
-            for (var y = -4; y <= 4; y++)
-            {
-                var point = origin + new Vector(x, y, z);
-                        if (Terrain.GetBlock(point) is not { } block)
-                            continue;
-                        if (Home == null && TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId) && block.GetProperty("part") == "head")
-                            points.Add((point, 0, true));
-                else if (!IsBaby
-                    && JobSite == null
-                    && VillagerProfession != 11
-                    && Workstations.TryGetValue(block.RegistryId, out var candidateProfession)
-                    && (VillagerProfession == 0 || VillagerProfession == candidateProfession))
-                {
-                    points.Add((point, candidateProfession, false));
-                }
-            }
-            foreach (var point in points.OrderBy(point => ((VectorD)point.Position - Position).MagnitudeSquared()))
-            {
-                if (point.Bed ? Home != null : JobSite != null)
-                    continue;
-                if (!level.TryClaimVillagePoi(point.Position, Uuid))
-                    continue;
-                if (point.Bed)
-                    Home = point.Position;
-                else
-                {
-                    JobSite = point.Position;
-                    VillagerProfession = point.Profession;
-                    EnsureTrades();
-                    SynchronizeMetadata();
-                }
-            }
+            // The scan only looks for a bed while homeless and for a workstation while the villager can take a job
+            // site (an adult other than a nitwit without one), so one missing neither skips its 33x33x9 blocks.
+            var wantsJobSite = !IsBaby && JobSite == null && VillagerProfession != 11;
+            if (Home == null || wantsJobSite)
+                ClaimVillagePois(level, wantsJobSite);
         }
         var customer = Level.GetPlayersInRange(Position, 16).FirstOrDefault(player => player.OpenedContainer is MerchantContainer menu && ReferenceEquals(menu.Merchant, this));
         if (customer != null)
@@ -222,6 +191,46 @@ public sealed partial class Villager : AgeableMob
             lastRestock = Level.Time;
         }
         await ValueTask.CompletedTask;
+    }
+
+    // Claims the nearest free bed (while homeless) and workstation (while wantsJobSite) within 16 blocks across and 4
+    // up or down.
+    private void ClaimVillagePois(AbstractLevel level, bool wantsJobSite)
+    {
+        var origin = (Vector)Position.Floor();
+        var points = new List<(Vector Position, int Profession, bool Bed)>();
+        for (var x = -16; x <= 16; x++)
+        for (var z = -16; z <= 16; z++)
+        for (var y = -4; y <= 4; y++)
+        {
+            var point = origin + new Vector(x, y, z);
+            if (Terrain.GetBlock(point) is not { } block)
+                continue;
+            if (Home == null && TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId) && block.GetProperty("part") == "head")
+                points.Add((point, 0, true));
+            else if (wantsJobSite
+                && Workstations.TryGetValue(block.RegistryId, out var candidateProfession)
+                && (VillagerProfession == 0 || VillagerProfession == candidateProfession))
+            {
+                points.Add((point, candidateProfession, false));
+            }
+        }
+        foreach (var point in points.OrderBy(point => ((VectorD)point.Position - Position).MagnitudeSquared()))
+        {
+            if (point.Bed ? Home != null : JobSite != null)
+                continue;
+            if (!level.TryClaimVillagePoi(point.Position, Uuid))
+                continue;
+            if (point.Bed)
+                Home = point.Position;
+            else
+            {
+                JobSite = point.Position;
+                VillagerProfession = point.Profession;
+                EnsureTrades();
+                SynchronizeMetadata();
+            }
+        }
     }
 
     private void EnsureTrades()
