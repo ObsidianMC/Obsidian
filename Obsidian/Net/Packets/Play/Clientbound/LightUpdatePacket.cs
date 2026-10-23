@@ -55,6 +55,24 @@ public partial class LightUpdatePacket
         WriteArrays(writer, this.block);
     }
 
+    /// <summary>The most bytes <see cref="WriteLight"/> writes, for sizing a buffer ahead.</summary>
+    internal int MaxLightSize()
+    {
+        // Each mask is a VarInt count of longs, then the longs; each list of arrays a VarInt count, then each array's
+        // VarInt length and its bytes. A VarInt takes at most 5 bytes.
+        var size = 6 * 5;
+        size += sizeof(long) * (this.skyMask.DataStorage.Length + this.blockMask.DataStorage.Length
+            + this.emptySkyMask.DataStorage.Length + this.emptyBlockMask.DataStorage.Length);
+
+        foreach (var array in this.sky)
+            size += 5 + array.Length;
+
+        foreach (var array in this.block)
+            size += 5 + array.Length;
+
+        return size;
+    }
+
     private void CaptureSection(int index, bool sky, bool block)
     {
         var section = this.Chunk.Sections[index];

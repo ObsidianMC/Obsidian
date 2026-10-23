@@ -106,6 +106,20 @@ public partial class NetworkBuffer
 
         size = Math.Max(size, required);
     }
+
+    /// <summary>
+    /// Grows the underlying array, if it must, to exactly the room for <paramref name="count"/> more bytes from the
+    /// offset, for a writer that knows about how much it will write. Unlike <see cref="Reserve"/> it leaves
+    /// <see cref="Size"/> as it is.
+    /// </summary>
+    internal void EnsureWritable(int count)
+    {
+        Debug.Assert(count >= 0);
+        var required = offset + count;
+
+        if (required > data.Length)
+            Array.Resize(ref data, required);
+    }
     #endregion
 
     #region Buffer I/O methods
