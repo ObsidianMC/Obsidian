@@ -38,14 +38,17 @@ internal sealed class MobStorage(AbstractLevel level) : IAsyncDisposable
             if (loadedChunks.Contains(key))
                 return;
             var file = await GetFileAsync(x, z);
-            var bytes = await file.GetChunkBytesAsync(NumericsHelper.Modulo(x, 32), NumericsHelper.Modulo(z, 32));
+            var bytes = await file.RentChunkBytesAsync(NumericsHelper.Modulo(x, 32), NumericsHelper.Modulo(z, 32));
             List<NbtCompound> known = [];
             List<NbtCompound> unknown = [];
-            if (bytes is { } data)
+            if (bytes is RentedArray<byte> data)
             {
-                using var stream = new ReadOnlyStream(data);
-                var reader = new NbtReader(stream);
-                if (reader.ReadNextTag() is not NbtCompound root)
+                // Parsed in place; the tags copy what they keep, so the rented bytes go back once it's read.
+                NbtCompound? root;
+                using (data)
+                    root = NbtReader.ReadTag(data.Span, readName: true, out _) as NbtCompound;
+
+                if (root is null)
                     throw new InvalidDataException($"Invalid entity chunk {x}, {z}.");
                 if (root.TryGetTag<NbtList>("Entities", out var entities))
                     foreach (var tag in entities.OfType<NbtCompound>())
@@ -125,8 +128,8 @@ internal sealed class MobStorage(AbstractLevel level) : IAsyncDisposable
                     writer.EndCompound();
                     await writer.TryFinishAsync();
                 }
-                // Finish the compression trailer before copying the bytes into the region file.
-                await file.SetChunkAsync(NumericsHelper.Modulo(x, 32), NumericsHelper.Modulo(z, 32), stream.ToArray());
+                // Finish the compression trailer before the bytes are written into the region file.
+                await file.SetChunkAsync(NumericsHelper.Modulo(x, 32), NumericsHelper.Modulo(z, 32), stream);
             }
             foreach (var file in files.Values)
                 await file.FlushAsync();

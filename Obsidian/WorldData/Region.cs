@@ -435,11 +435,12 @@ public class Region : IRegion
     {
         await this.initialization.Value;
 
-        if (await file.GetChunkBytesAsync(x, z) is not Memory<byte> data)
+        if (await file.RentChunkBytesAsync(x, z) is not RentedArray<byte> data)
             return null;
 
-        await using var bytesStream = new ReadOnlyStream(data);
-        return new NbtReader(bytesStream).ReadNextTag() as NbtCompound;
+        // Parsed in place: tags copy what they keep (arrays, strings), so the rented bytes go back once it's read.
+        using (data)
+            return NbtReader.ReadTag(data.Span, readName: true, out _) as NbtCompound;
     }
 
     /// <summary>
@@ -661,9 +662,9 @@ public class Region : IRegion
                 await writer.TryFinishAsync();
             }
 
-            // Disposing the writer finishes the compression trailer before copying the bytes.
+            // Disposing the writer finishes the compression trailer before the bytes are written.
             if (write)
-                await regionFile.SetChunkAsync(x, z, strm.ToArray());
+                await regionFile.SetChunkAsync(x, z, strm);
         }
         catch
         {
@@ -785,7 +786,7 @@ public class Region : IRegion
             await writer.TryFinishAsync();
         }
 
-        await this.entityRegionFile.SetChunkAsync(x, z, strm.ToArray());
+        await this.entityRegionFile.SetChunkAsync(x, z, strm);
 
         if (chunk is Chunk saved)
             saved.SavedEntityCount = entities.Count;

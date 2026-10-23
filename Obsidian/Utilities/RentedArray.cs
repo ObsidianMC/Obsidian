@@ -34,6 +34,17 @@ public readonly struct RentedArray<T> : IDisposable, IEquatable<RentedArray<T>>
     }
 
     /// <summary>
+    /// Takes over <paramref name="array"/>, already rented from <paramref name="pool"/>, of which the first
+    /// <paramref name="length"/> elements are in use.
+    /// </summary>
+    internal RentedArray(T[] array, int length, ArrayPool<T> pool)
+    {
+        this.pool = pool;
+        this.array = array;
+        Length = length;
+    }
+
+    /// <summary>
     /// Returns the rented array to the pool
     /// </summary>
     public void Dispose() => pool.Return(array);
