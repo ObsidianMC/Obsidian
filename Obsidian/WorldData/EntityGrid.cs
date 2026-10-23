@@ -31,6 +31,10 @@ internal sealed class EntityGrid
     // chunk to be filed under, but the level finds them by UUID like the others.
     private static readonly ConditionalWeakTable<IEntity, OtherEntity> otherEntities = [];
 
+    // Moving such an entity in or out of a grid updates its grid's index and its membership together under this lock,
+    // so concurrent moves can't leave it indexed in a grid it isn't in. Taken before a grid's own lock.
+    private static readonly Lock otherEntitiesGate = new();
+
     private sealed record OtherEntity(EntityGrid Grid, Guid Uuid);
 
     internal static long ChunkKey(VectorD position) =>
@@ -76,37 +80,43 @@ internal sealed class EntityGrid
 
     private bool AddOther(IEntity entity)
     {
-        if (otherEntities.TryGetValue(entity, out var membership))
+        lock (otherEntitiesGate)
         {
-            if (membership.Grid == this)
-                return true;
+            if (otherEntities.TryGetValue(entity, out var membership))
+            {
+                if (membership.Grid == this)
+                    return true;
 
-            membership.Grid.RemoveOther(entity);
+                membership.Grid.RemoveOther(entity);
+            }
+
+            var uuid = entity.Uuid;
+            lock (this.gate)
+            {
+                if (!this.byUuid.TryAdd(uuid, entity))
+                    return false;
+            }
+
+            otherEntities.AddOrUpdate(entity, new OtherEntity(this, uuid));
+            return true;
         }
-
-        var uuid = entity.Uuid;
-        lock (this.gate)
-        {
-            if (!this.byUuid.TryAdd(uuid, entity))
-                return false;
-        }
-
-        otherEntities.AddOrUpdate(entity, new OtherEntity(this, uuid));
-        return true;
     }
 
     private void RemoveOther(IEntity entity)
     {
-        if (!otherEntities.TryGetValue(entity, out var membership) || membership.Grid != this)
-            return;
-
-        lock (this.gate)
+        lock (otherEntitiesGate)
         {
-            if (this.byUuid.TryGetValue(membership.Uuid, out var indexed) && ReferenceEquals(indexed, entity))
-                this.byUuid.Remove(membership.Uuid);
-        }
+            if (!otherEntities.TryGetValue(entity, out var membership) || membership.Grid != this)
+                return;
 
-        otherEntities.Remove(entity);
+            lock (this.gate)
+            {
+                if (this.byUuid.TryGetValue(membership.Uuid, out var indexed) && ReferenceEquals(indexed, entity))
+                    this.byUuid.Remove(membership.Uuid);
+            }
+
+            otherEntities.Remove(entity);
+        }
     }
 
     /// <summary>
