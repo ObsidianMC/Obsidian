@@ -651,12 +651,12 @@ public sealed class Chunk : IChunk
             if (lt == LightType.Sky && this.sections[a].HasSkyLight)
             {
                 writer.WriteVarInt(this.sections[a].SkyLightArray.Length);
-                writer.WriteByteArray(this.sections[a].SkyLightArray.ToArray());
+                writer.WriteByteArray(this.sections[a].SkyLightArray.Span);
             }
             else if (lt == LightType.Block && this.sections[a].HasBlockLight)
             {
                 writer.WriteVarInt(this.sections[a].BlockLightArray.Length);
-                writer.WriteByteArray(this.sections[a].BlockLightArray.ToArray());
+                writer.WriteByteArray(this.sections[a].BlockLightArray.Span);
             }
         }
     }
