@@ -302,7 +302,9 @@ public partial class Entity
 
         if (VanillaName(name) == "minecraft:scale")
         {
-            this.attributeScale = float.NaN;
+            lock (this.attributeLock)
+                this.attributeScaleRevision++;
+
             this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
         }
 

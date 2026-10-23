@@ -222,6 +222,7 @@ public sealed partial class Client : IClient
         this.pool = pool;
         this.Logger = loggerFactory.CreateLogger("ConnectionHandler");
         this.flushOutput = this.FlushOutput;
+        this.deferredFlush = this.RunDeferredFlush;
 
         packetCryptography = new();
         this.handlers = new Dictionary<ClientState, ClientHandler>()

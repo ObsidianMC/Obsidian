@@ -97,8 +97,10 @@ public partial class Mob
     private const int MovementUpdateInterval = 3;
 
     // Like vanilla's pairing, which spawns an entity for a new observer at the base of its position codec: the
-    // relative moves that follow are from the position last sent, which lags behind between updates.
-    private protected override VectorD PairingPosition => hasSentPosition ? lastSentPosition : Position;
+    // relative moves that follow are from the position last sent, which lags behind between updates. A mob that moved
+    // to another level since (its AI starts over there; see InitializeAi) pairs where it is now.
+    private protected override VectorD PairingPosition =>
+        hasSentPosition && ReferenceEquals(aiLevel, Level) ? lastSentPosition : Position;
 
     public Mob()
     {

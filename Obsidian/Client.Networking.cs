@@ -34,10 +34,14 @@ public partial class Client
     // OutputBatch), or running; guarded by sendLock. There's one at a time, so frames are framed in order.
     private bool flushScheduled;
 
+    // Whether the scheduled flush is the one a world tick held back, which hasn't run yet; guarded by sendLock.
+    private bool flushDeferred;
+
     // The flush's: frames are framed and encrypted into it, then appended to sendBufferMain under sendLock.
     private readonly NetworkBuffer framedOutput = new();
     private readonly PacketFramer framer = new();
     private readonly Action flushOutput;
+    private readonly Action deferredFlush;
 
     // Completed only when no frames wait and both socket buffers have emptied, or teardown abandons them.
     private TaskCompletionSource? outputDrained;
@@ -108,11 +112,38 @@ public partial class Client
     private void ScheduleFlush()
     {
         if (this.flushScheduled)
+        {
+            // Output sent outside the tick (keep-alives, chunks, packet handlers) doesn't wait for a flush the tick held
+            // back, which a stalled tick would hold forever: it posts the flush now, and the tick's batch finds it taken.
+            if (this.flushDeferred && !OutputBatch.InBatch)
+            {
+                this.flushDeferred = false;
+                WorkerThreads.Network.Post(this.flushOutput);
+            }
+
             return;
+        }
 
         this.flushScheduled = true;
-        if (!OutputBatch.TryDefer(this.flushOutput))
+        if (OutputBatch.TryDefer(this.deferredFlush))
+            this.flushDeferred = true;
+        else
             WorkerThreads.Network.Post(this.flushOutput);
+    }
+
+    // The flush a world tick held back (see OutputBatch), posted when the tick ends. It runs only if output sent
+    // outside the tick didn't run it meanwhile, so the connection never has two flushes framing at once.
+    private void RunDeferredFlush()
+    {
+        lock (this.sendLock)
+        {
+            if (!this.flushDeferred)
+                return;
+
+            this.flushDeferred = false;
+        }
+
+        this.FlushOutput();
     }
 
     // Runs on a network thread: frames what waits, appends it to the socket's buffer and starts sending it. What's sent

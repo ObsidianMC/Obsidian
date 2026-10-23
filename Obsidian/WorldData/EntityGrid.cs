@@ -1,4 +1,5 @@
 using Obsidian.Entities;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -24,7 +25,13 @@ internal sealed class EntityGrid
 {
     private readonly Lock gate = new();
     private readonly Dictionary<long, List<Entity>> chunks = [];
-    private readonly Dictionary<Guid, Entity> byUuid = [];
+    private readonly Dictionary<Guid, IEntity> byUuid = [];
+
+    // The grid each entity of another IEntity implementation is in, and the UUID it was indexed by: those have no
+    // chunk to be filed under, but the level finds them by UUID like the others.
+    private static readonly ConditionalWeakTable<IEntity, OtherEntity> otherEntities = [];
+
+    private sealed record OtherEntity(EntityGrid Grid, Guid Uuid);
 
     internal static long ChunkKey(VectorD position) =>
         NumericsHelper.IntsToLong((int)Math.Floor(position.X) >> 4, (int)Math.Floor(position.Z) >> 4);
@@ -35,8 +42,11 @@ internal sealed class EntityGrid
     /// <returns>Whether it's in the grid now: not when another entity in it has its UUID.</returns>
     public bool Add(IEntity entity)
     {
-        if (entity is not Entity concrete || entity is IPlayer)
+        if (entity is IPlayer)
             return true;
+
+        if (entity is not Entity concrete)
+            return this.AddOther(entity);
 
         if (concrete.Grid is EntityGrid previous && previous != this)
             previous.Remove(concrete);
@@ -58,10 +68,45 @@ internal sealed class EntityGrid
     }
 
     /// <summary>The entity in the grid with <paramref name="uuid"/>, if any.</summary>
-    public Entity? WithUuid(Guid uuid)
+    public IEntity? WithUuid(Guid uuid)
     {
         lock (this.gate)
             return this.byUuid.GetValueOrDefault(uuid);
+    }
+
+    private bool AddOther(IEntity entity)
+    {
+        if (otherEntities.TryGetValue(entity, out var membership))
+        {
+            if (membership.Grid == this)
+                return true;
+
+            membership.Grid.RemoveOther(entity);
+        }
+
+        var uuid = entity.Uuid;
+        lock (this.gate)
+        {
+            if (!this.byUuid.TryAdd(uuid, entity))
+                return false;
+        }
+
+        otherEntities.AddOrUpdate(entity, new OtherEntity(this, uuid));
+        return true;
+    }
+
+    private void RemoveOther(IEntity entity)
+    {
+        if (!otherEntities.TryGetValue(entity, out var membership) || membership.Grid != this)
+            return;
+
+        lock (this.gate)
+        {
+            if (this.byUuid.TryGetValue(membership.Uuid, out var indexed) && ReferenceEquals(indexed, entity))
+                this.byUuid.Remove(membership.Uuid);
+        }
+
+        otherEntities.Remove(entity);
     }
 
     /// <summary>
@@ -71,6 +116,8 @@ internal sealed class EntityGrid
     {
         if (entity is Entity { Grid: EntityGrid grid } concrete)
             grid.Remove(concrete);
+        else if (entity is not Entity and not IPlayer && otherEntities.TryGetValue(entity, out var membership))
+            membership.Grid.RemoveOther(entity);
     }
 
     private void Remove(Entity entity)

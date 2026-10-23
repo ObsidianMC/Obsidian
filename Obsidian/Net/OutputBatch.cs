@@ -29,6 +29,9 @@ internal sealed class OutputBatch : IDisposable
     /// </summary>
     public static OutputBatch Begin() => current.Value = new OutputBatch();
 
+    /// <summary>Whether a batch holds back flushes in this flow.</summary>
+    public static bool InBatch => current.Value is OutputBatch { flushes: not null };
+
     /// <summary>
     /// Has the running batch post <paramref name="flush"/> once it ends.
     /// </summary>

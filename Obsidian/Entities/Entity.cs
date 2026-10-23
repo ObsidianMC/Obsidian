@@ -4,6 +4,7 @@ using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace Obsidian.Entities;
 
@@ -90,25 +91,36 @@ public partial class Entity : IEquatable<Entity>, IEntity
 
     // LivingEntity.getScale clamps the attribute; age/type scaling remains independent. It's worked out again only
     // once the scale attribute changes (see OnAttributeChanged), since dimensions are read many times a tick by
-    // collisions and pathfinding; NaN until then.
+    // collisions and pathfinding.
     internal float AttributeScale
     {
         get
         {
-            var scale = this.attributeScale;
-            if (float.IsNaN(scale))
+            var revision = Volatile.Read(ref this.attributeScaleRevision);
+            if (Volatile.Read(ref this.attributeScale) is ScaleReading reading && reading.Revision == revision)
+                return reading.Scale;
+
+            var scale = this.HasAttribute("minecraft:scale")
+                ? Math.Clamp(this.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
+                : 1;
+
+            // Kept only if the attribute didn't change while it was read, so an older reading can't replace a newer.
+            lock (this.attributeLock)
             {
-                scale = this.HasAttribute("minecraft:scale")
-                    ? Math.Clamp(this.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
-                    : 1;
-                this.attributeScale = scale;
+                if (this.attributeScaleRevision == revision)
+                    this.attributeScale = new ScaleReading(scale, revision);
             }
 
             return scale;
         }
     }
 
-    private float attributeScale = float.NaN;
+    private ScaleReading? attributeScale;
+
+    // Counts the scale attribute's changes; a reading of another count is out of date.
+    private int attributeScaleRevision;
+
+    private sealed record ScaleReading(float Scale, int Revision);
 
     // Each scale is read once, and multiplied in the same order as before, so the dimensions round the same.
     protected EntityDimension ScaleDimensions(float width, float height)
