@@ -17,6 +17,14 @@ internal sealed class TickScheduler<T>(TickClock clock) where T : notnull
 
     private readonly Dictionary<long, ChunkTicks<T>> containers = [];
     private readonly Dictionary<long, long> nextTickForContainer = [];
+
+    // The containers with suspended ticks (see ChunkTicks.Suspend), so restoring them visits only these.
+    private readonly HashSet<ChunkTicks<T>> containersWithHeld = [];
+
+    // Reusable scratch storage, so a game tick doesn't allocate snapshots of the sets it changes while walking them.
+    private readonly List<ChunkTicks<T>> heldScratch = [];
+    private readonly List<long> dueScratch = [];
+
     private readonly PriorityQueue<ChunkTicks<T>, ScheduledTick<T>> containersToTick =
         new(ScheduledTick<T>.IntraTickDrainOrder);
     private readonly Queue<(ChunkTicks<T> Container, ScheduledTick<T> Tick)> toRunThisTick = new();
@@ -94,10 +102,7 @@ internal sealed class TickScheduler<T>(TickClock clock) where T : notnull
         Func<T, bool>? canRunType = null)
     {
         if (canRunType is not null)
-        {
-            foreach (var container in this.containers.Values)
-                container.RestoreHeld(canRunType);
-        }
+            this.RestoreHeld(canRunType);
 
         this.SortContainersToTick(isTicking);
         this.DrainContainers(maxTicks, canRunType);
@@ -138,7 +143,13 @@ internal sealed class TickScheduler<T>(TickClock clock) where T : notnull
             this.containers.Remove(container.Key);
             this.nextTickForContainer.Remove(container.Key);
         }
+
+        // A stopped container drops its suspended ticks back into its saved ones.
+        this.containersWithHeld.Remove(container);
     }
+
+    // A container started suspending ticks, which RestoreHeld puts back once their type can run.
+    internal void OnTicksHeld(ChunkTicks<T> container) => this.containersWithHeld.Add(container);
 
     // Vanilla's chunkScheduleUpdater: a new earliest tick moves the container's next tick.
     internal void OnTickAdded(ChunkTicks<T> container, ScheduledTick<T> tick)
@@ -147,13 +158,33 @@ internal sealed class TickScheduler<T>(TickClock clock) where T : notnull
             this.nextTickForContainer[container.Key] = tick.TriggerTick;
     }
 
+    private void RestoreHeld(Func<T, bool> canRunType)
+    {
+        if (this.containersWithHeld.Count == 0)
+            return;
+
+        this.heldScratch.AddRange(this.containersWithHeld);
+        foreach (var container in this.heldScratch)
+        {
+            if (!container.RestoreHeld(canRunType))
+                this.containersWithHeld.Remove(container);
+        }
+
+        this.heldScratch.Clear();
+    }
+
     private void SortContainersToTick(Func<long, bool> isTicking)
     {
-        foreach (var (key, next) in this.nextTickForContainer.ToArray())
+        // The due containers in the dictionary's order, which decides the order containers whose first ticks tie
+        // (saved ticks of different chunks can share scheduling orders) are queued in.
+        foreach (var (key, next) in this.nextTickForContainer)
         {
-            if (next > this.GameTime)
-                continue;
+            if (next <= this.GameTime)
+                this.dueScratch.Add(key);
+        }
 
+        foreach (var key in this.dueScratch)
+        {
             var container = this.containers.GetValueOrDefault(key);
             if (container is null || !container.TryPeek(out var first))
             {
@@ -169,6 +200,8 @@ internal sealed class TickScheduler<T>(TickClock clock) where T : notnull
                 this.containersToTick.Enqueue(container, first);
             }
         }
+
+        this.dueScratch.Clear();
     }
 
     private void DrainContainers(int maxTicks, Func<T, bool>? canRunType)

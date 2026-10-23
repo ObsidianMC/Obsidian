@@ -328,16 +328,18 @@ internal sealed class ChunkTicks<T> where T : notnull
                 this.held[tick.Type] = ticks = [];
 
             ticks.Add(tick);
+            this.scheduler.OnTicksHeld(this);
         }
     }
 
     /// <summary>Checks availability once per held type and restores its ticks to their original heap order.</summary>
-    internal void RestoreHeld(Func<T, bool> canRunType)
+    /// <returns>Whether ticks are still held.</returns>
+    internal bool RestoreHeld(Func<T, bool> canRunType)
     {
         lock (this.sync)
         {
             if (this.held.Count == 0)
-                return;
+                return false;
 
             foreach (var type in this.held.Keys.ToArray())
             {
@@ -352,6 +354,8 @@ internal sealed class ChunkTicks<T> where T : notnull
 
             if (this.queue.TryPeek(out var first, out _) && this.scheduler is not null)
                 this.scheduler.OnTickAdded(this, first);
+
+            return this.held.Count > 0;
         }
     }
 
