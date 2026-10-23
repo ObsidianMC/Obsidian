@@ -24,8 +24,16 @@ internal sealed partial class MobSpawner
         if (!players.Any(player => player.Health > 0 && (player.Position - position).MagnitudeSquared() < playerRange * playerRange))
             return;
         var delay = ReadShort(data, "Delay", 20, -1, short.MaxValue);
-        if (delay < 0) { ResetSpawner(spawner); return; }
-        if (delay > 0) { spawner.Set("Delay", (short)(delay - 1)); return; }
+        if (delay < 0)
+        {
+            ResetSpawner(spawner);
+            return;
+        }
+        if (delay > 0)
+        {
+            spawner.Set("Delay", (short)(delay - 1));
+            return;
+        }
         if (!data.TryGetTag<NbtCompound>("SpawnData", out var spawnData) || !spawnData.TryGetTag<NbtCompound>("entity", out var entityData) ||
             !entityData.TryGetTagValue<string>("id", out var id))
             return;
@@ -47,7 +55,10 @@ internal sealed partial class MobSpawner
             if (level.GetEntitiesInRange(position, range * 2 + 2).Count(entity => plugin is null
                 ? entity.Type == type
                 : ReferenceEquals(entity.Definition, plugin)) >= maximum)
-            { ResetSpawner(spawner); return; }
+            {
+                ResetSpawner(spawner);
+                return;
+            }
             var point = position + new VectorD((random.NextSingle() - random.NextSingle()) * range,
                 random.Next(-1, 2) - 0.5f, (random.NextSingle() - random.NextSingle()) * range);
             var blockPoint = (Vector)point.Floor();
@@ -79,7 +90,11 @@ internal sealed partial class MobSpawner
             {
                 var saved = EntityNbt.Save(mob)!;
                 foreach (var (name, value) in entityData)
-                    if (name is not ("id" or "Pos" or "UUID")) { saved.Remove(name); saved.Add(name, value); }
+                    if (name is not ("id" or "Pos" or "UUID"))
+                    {
+                        saved.Remove(name);
+                        saved.Add(name, value);
+                    }
                 mob.ReadSave(saved);
             }
             if (!terrain.IsFree(mob.Dimension.CreateBBFromPosition(point)) || level.GetEntitiesInRange(point, 2)
@@ -89,18 +104,22 @@ internal sealed partial class MobSpawner
             level.BroadcastLevelEvent(2004, spawner.BlockPosition, 0);
             spawned = true;
         }
-        if (spawned) ResetSpawner(spawner);
+        if (spawned)
+            ResetSpawner(spawner);
     }
+
     private void ResetSpawner(DataBlockEntity spawner)
     {
         var minimum = ReadShort(spawner.Data, "MinSpawnDelay", 200, 1, short.MaxValue);
         var maximum = ReadShort(spawner.Data, "MaxSpawnDelay", 800, minimum, short.MaxValue);
         spawner.Set("Delay", (short)(maximum <= minimum ? minimum : random.Next(minimum, maximum)));
-        if (!spawner.Data.TryGetTag<NbtList>("SpawnPotentials", out var potentials)) return;
+        if (!spawner.Data.TryGetTag<NbtList>("SpawnPotentials", out var potentials))
+            return;
         var entries = potentials.OfType<NbtCompound>().Where(entry => entry.TryGetTagValue<int>("weight", out var weight) && weight > 0 &&
             entry.TryGetTag<NbtCompound>("data", out _)).ToArray();
         var total = entries.Sum(entry => (long)entry.GetInt("weight"));
-        if (total <= 0) return;
+        if (total <= 0)
+            return;
         var selected = random.NextInt64(total);
         foreach (var entry in entries)
         {
@@ -109,12 +128,14 @@ internal sealed partial class MobSpawner
             {
                 var spawnData = new NbtCompound("SpawnData");
                 entry.TryGetTag<NbtCompound>("data", out var selectedData);
-                foreach (var (name, value) in selectedData!) spawnData.Add(name, value);
+                foreach (var (name, value) in selectedData!)
+                    spawnData.Add(name, value);
                 spawner.Set(spawnData);
                 break;
             }
         }
     }
+
     private static int ReadShort(NbtCompound tag, string name, int fallback, int minimum, int maximum) =>
         Math.Clamp(tag.TryGetTagValue<short>(name, out var value) ? value : fallback, minimum, maximum);
 

@@ -22,12 +22,14 @@ public sealed partial class Vex : PathfinderMob
     protected override int GetExperienceReward() => 3;
     internal override float MovementSpeed => 0.3f;
     protected internal override float AttackDamage => base.AttackDamage + GetWeaponDamage(GetEquipment(EquipmentSlot.MainHand));
+
     protected override void FinalizeSpawn()
     {
         SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.IronSword));
         SetEquipmentDropChance(EquipmentSlot.MainHand, 0);
         BoundPosition ??= (Vector)Position.Floor();
     }
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(4, new VexChargeGoal(this));
@@ -37,18 +39,25 @@ public sealed partial class Vex : PathfinderMob
         targets.AddGoal(1, new HurtByTargetGoal(this));
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, target => target is IPlayer));
     }
+
     protected override async ValueTask TickMobAsync()
     {
         if (LifeTicks is int life)
         {
             LifeTicks = life - 1;
-            if (LifeTicks <= 0) { LifeTicks = 20; await DamageEnvironmentAsync(1); }
+            if (LifeTicks <= 0)
+            {
+                LifeTicks = 20;
+                await DamageEnvironmentAsync(1);
         }
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
+        }
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+            return;
         if (OwnerUuid != Guid.Empty && AiTick % 20 == 0 &&
             Level.GetEntitiesInRange(Position, 64).OfType<Mob>().FirstOrDefault(entity => entity.Uuid == OwnerUuid) is { AttackTarget: { } target } && IsValidTarget(target))
             AttackTarget = target;
     }
+
     protected override VectorD Travel()
     {
         MovementFlags &= ~MovementFlags.OnGround;
@@ -57,18 +66,24 @@ public sealed partial class Vex : PathfinderMob
         Motion *= 0.91;
         return position;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(16, EntityMetadataType.Byte);
         writer.WriteByte((byte)(Charging ? 1 : 0));
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
-        if (LifeTicks is int life) writer.WriteInt("life_ticks", life);
-        if (BoundPosition is Vector bound) writer.WriteArray("bound_pos", new[] { bound.X, bound.Y, bound.Z });
-        if (OwnerUuid != Guid.Empty) writer.WriteArray("owner", EntityNbt.UuidToInts(OwnerUuid));
+        if (LifeTicks is int life)
+            writer.WriteInt("life_ticks", life);
+        if (BoundPosition is Vector bound)
+            writer.WriteArray("bound_pos", new[] { bound.X, bound.Y, bound.Z });
+        if (OwnerUuid != Guid.Empty)
+            writer.WriteArray("owner", EntityNbt.UuidToInts(OwnerUuid));
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         LifeTicks = tag.TryGetTagValue<int>("life_ticks", out var life) ? Math.Max(0, life) : null;
@@ -77,7 +92,8 @@ public sealed partial class Vex : PathfinderMob
             var coordinates = bound.GetArray();
             BoundPosition = new Vector(coordinates[0], coordinates[1], coordinates[2]);
         }
-        if (tag.TryGetTag<NbtArray<int>>("owner", out var owner) && owner.Count == 4) OwnerUuid = EntityNbt.UuidFromInts(owner.GetArray());
+        if (tag.TryGetTag<NbtArray<int>>("owner", out var owner) && owner.Count == 4)
+            OwnerUuid = EntityNbt.UuidFromInts(owner.GetArray());
     }
 }
 
@@ -88,6 +104,7 @@ internal sealed class VexChargeGoal(Vex vex) : Goal
     public override bool RequiresUpdateEveryTick => true;
     public override bool CanUse() => vex.AttackTarget is { } target && vex.IsValidTarget(target) && vex.Random.Next(7) == 0;
     public override bool CanContinue() => ticks > 0 && vex.AttackTarget is { } target && vex.IsValidTarget(target);
+
     public override void Start()
     {
         ticks = 60;
@@ -95,6 +112,7 @@ internal sealed class VexChargeGoal(Vex vex) : Goal
         vex.SynchronizeMetadata();
         vex.PlayMobSound("charge");
     }
+
     public override async ValueTask TickAsync()
     {
         ticks--;
@@ -107,6 +125,7 @@ internal sealed class VexChargeGoal(Vex vex) : Goal
             ticks = 0;
         }
     }
+
     public override void Stop()
     {
         vex.MoveControl.Stop();
@@ -121,16 +140,26 @@ internal sealed class VexWanderGoal(Vex vex) : Goal
     private int ticks;
     public override GoalFlags Flags => GoalFlags.Move;
     public override bool RequiresUpdateEveryTick => true;
+
     public override bool CanUse()
     {
-        if (vex.Random.Next(7) != 0) return false;
+        if (vex.Random.Next(7) != 0)
+            return false;
         var origin = vex.BoundPosition ?? (Vector)vex.Position.Floor();
         destination = new VectorD(origin.X + vex.Random.Next(-7, 8) + 0.5, origin.Y + vex.Random.Next(-5, 6) + 0.5,
             origin.Z + vex.Random.Next(-7, 8) + 0.5);
         return vex.Terrain.IsFree(vex.Dimension.CreateBBFromPosition(destination));
     }
+
     public override void Start() => ticks = 60;
     public override bool CanContinue() => ticks > 0 && (destination - vex.Position).MagnitudeSquared() > 1;
-    public override ValueTask TickAsync() { ticks--; vex.MoveControl.MoveTo(destination, 0.25f); return default; }
+
+    public override ValueTask TickAsync()
+    {
+        ticks--;
+        vex.MoveControl.MoveTo(destination, 0.25f);
+        return default;
+    }
+
     public override void Stop() => vex.MoveControl.Stop();
 }

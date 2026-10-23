@@ -73,8 +73,10 @@ public partial class PlayerBase
         VectorD? sourcePosition = null)
     {
         if (!float.IsFinite(amount) || amount <= 0 || !Alive || Respawning || source.Level != Level ||
-            GameMode is GameMode.Creative or GameMode.Spectator || Abilities.HasFlag(PlayerAbility.Invulnerable)) return;
-        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact && HasPotionEffect((int)PotionEffect.FireResistance - 1)) return;
+            GameMode is GameMode.Creative or GameMode.Spectator || Abilities.HasFlag(PlayerAbility.Invulnerable))
+            return;
+        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact && HasPotionEffect((int)PotionEffect.FireResistance - 1))
+            return;
 
         var incomingFrom = sourcePosition ?? (directSource ?? source).Position;
         if (await TryBlockDamageAsync(source, amount, kind, weapon, incomingFrom))
@@ -83,7 +85,8 @@ public partial class PlayerBase
         var incoming = amount;
         if (damageCooldown > 0)
         {
-            if (incoming <= lastIncomingDamage) return;
+            if (incoming <= lastIncomingDamage)
+                return;
             amount -= lastIncomingDamage;
         }
         else
@@ -108,7 +111,8 @@ public partial class PlayerBase
         var absorbed = Math.Min(Absorption, amount);
         Absorption -= absorbed;
         amount -= absorbed;
-        if (absorbed > 0) SyncFoodMetadata();
+        if (absorbed > 0)
+            SyncFoodMetadata();
         if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile && !ReferenceEquals(source, this))
             CombatEffects.Knockback(this, Position - source.Position, 0.4f);
         this.RecordProgressDamage(source, amount);
@@ -188,7 +192,8 @@ public partial class PlayerBase
 
     internal bool CanAttack(IEntity target, ItemStack? item = null)
     {
-        if (!Alive || Respawning || GameMode == GameMode.Spectator || target.Level != Level || ReferenceEquals(target, this)) return false;
+        if (!Alive || Respawning || GameMode == GameMode.Spectator || target.Level != Level || ReferenceEquals(target, this))
+            return false;
         var eye = Position + new VectorD(0, 1.62, 0);
         var range = CombatItems.Component(item ?? GetHeldItem(), "attack_range");
         var reach = range.ValueKind == System.Text.Json.JsonValueKind.Object
@@ -213,13 +218,16 @@ public partial class PlayerBase
         var charge = AttackCharge;
         UpdateEquipmentAttributes();
         var damage = GetAttributeValue("minecraft:attack_damage");
-        if (ActivePotionEffects.TryGetValue((int)PotionEffect.Strength - 1, out var strength)) damage += 3 * (strength.EffectData.Amplifier + 1);
-        if (ActivePotionEffects.TryGetValue((int)PotionEffect.Weakness - 1, out var weakness)) damage -= 4 * (weakness.EffectData.Amplifier + 1);
+        if (ActivePotionEffects.TryGetValue((int)PotionEffect.Strength - 1, out var strength))
+            damage += 3 * (strength.EffectData.Amplifier + 1);
+        if (ActivePotionEffects.TryGetValue((int)PotionEffect.Weakness - 1, out var weakness))
+            damage -= 4 * (weakness.EffectData.Amplifier + 1);
         damage = Math.Max(0, damage) * (0.2f + charge * charge * 0.8f);
         var critical = charge > 0.9f && FallDistance > 0 && !MovementFlags.HasFlag(MovementFlags.OnGround) &&
             !Sprinting && !Swimming && Vehicle == null && !HasPotionEffect((int)PotionEffect.Blindness - 1) &&
             new MobTerrain(Level).GetBlock((Vector)Position.Floor()) is { } feet && !TagsRegistry.Block.Climbable.Entries.Contains(feet.RegistryId);
-        if (critical) damage *= 1.5f;
+        if (critical)
+            damage *= 1.5f;
         damage += CombatEffects.DamageBonus(item, target) * charge;
         if (item?.Is(ItemsRegistry.Mace) == true && FallDistance > 1.5f && !FlyingWithElytra)
             damage += CombatItems.SmashBonus(FallDistance) + 0.5f * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Density) * FallDistance;
@@ -228,7 +236,8 @@ public partial class PlayerBase
 
     public async ValueTask<bool> AttackAsync(IEntity target, bool sneaking = false)
     {
-        if (!CanAttack(target)) return false;
+        if (!CanAttack(target))
+            return false;
         var attack = new PlayerAttackEntityEventArgs(this, target, Server, sneaking);
         (attack.Damage, attack.IsCrit) = GetAttackDamage(target);
         await Server.EventDispatcher.ExecuteEventAsync(attack);
@@ -253,33 +262,43 @@ public partial class PlayerBase
         var damage = attack.Damage;
         var critical = attack.IsCrit;
         var item = attack.Weapon ?? GetHeldItem();
-        if (!attack.ChargeAttack && !attack.PiercingAttack) (damage, critical) = GetAttackDamage(target);
+        if (!attack.ChargeAttack && !attack.PiercingAttack)
+            (damage, critical) = GetAttackDamage(target);
         var slot = attack.WeaponSlot >= 0 ? attack.WeaponSlot : CurrentHeldItemSlot;
         if (!CanAttack(target, item) || !ReferenceEquals(Inventory.GetItem(slot), item) ||
-            !attack.ChargeAttack && (damage <= 0 || !attack.PiercingAttack && item?.Holder.UnlocalizedName.EndsWith("_spear", StringComparison.Ordinal) == true && AttackCharge < 1)) return;
+            !attack.ChargeAttack && (damage <= 0 || !attack.PiercingAttack && item?.Holder.UnlocalizedName.EndsWith("_spear", StringComparison.Ordinal) == true && AttackCharge < 1))
+            return;
         if (attack.ChargeAttack && target is Living chargedTarget)
         {
-            if (attack.ChargeKnockback) CombatEffects.Knockback(chargedTarget, chargedTarget.Position - Position, 0.4f);
-            if (attack.ChargeDismount && chargedTarget is IPlayer) chargedTarget.LeaveVehicle();
-            if (attack.ChargeDismount && chargedTarget is Mob mob) mob.EjectPassengers();
+            if (attack.ChargeKnockback)
+                CombatEffects.Knockback(chargedTarget, chargedTarget.Position - Position, 0.4f);
+            if (attack.ChargeDismount && chargedTarget is IPlayer)
+                chargedTarget.LeaveVehicle();
+            if (attack.ChargeDismount && chargedTarget is Mob mob)
+                mob.EjectPassengers();
         }
-        if (damage <= 0) return;
+        if (damage <= 0)
+            return;
         var charged = AttackCharge > 0.9f;
         var smashDistance = item?.Is(ItemsRegistry.Mace) == true && FallDistance > 1.5f && !FlyingWithElytra
             ? FallDistance
             : 0;
-        if (!attack.PiercingAttack && !attack.ChargeAttack) attackTicks = 0;
+        if (!attack.PiercingAttack && !attack.ChargeAttack)
+            attackTicks = 0;
         var health = target.Health;
         var accepted = (target as Living)?.AcceptedDamageCount;
         if (target is Living living)
             await living.DamageCombatAsync(this, damage, CombatDamageKind.Melee, item);
-        else await target.DamageAsync(this, damage);
-        if (target.Health >= health && (target is not Living hit || hit.AcceptedDamageCount == accepted)) return;
+        else
+            await target.DamageAsync(this, damage);
+        if (target.Health >= health && (target is not Living hit || hit.AcceptedDamageCount == accepted))
+            return;
         AddExhaustion(0.1f);
         if (target is Living victim)
         {
             var knockback = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Knockback) + (charged && Sprinting ? 1 : 0);
-            if (knockback > 0) CombatEffects.Knockback(victim, target.Position - Position, knockback * 0.5f);
+            if (knockback > 0)
+                CombatEffects.Knockback(victim, target.Position - Position, knockback * 0.5f);
             await CombatEffects.PostAttackAsync(this, victim, item);
             Wolf.AlertOwnedWolves(this, target);
             if (smashDistance > 0)
@@ -290,7 +309,8 @@ public partial class PlayerBase
                         CombatEffects.Knockback(neighbor, neighbor.Position - target.Position,
                             (float)(3.5 - (neighbor.Position - target.Position).Magnitude) * (smashDistance > 5 ? 5 : 1));
                 var wind = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.WindBurst);
-                if (wind > 0) ApplyImpulse(new VectorD(0, wind switch { 1 => 1.2, 2 => 1.75, _ => 2.2 }, 0));
+                if (wind > 0)
+                    ApplyImpulse(new VectorD(0, wind switch { 1 => 1.2, 2 => 1.75, _ => 2.2 }, 0));
             }
             else if (charged && !critical && !Sprinting && MovementFlags.HasFlag(MovementFlags.OnGround) &&
                 CombatMotion.Magnitude < GetAttributeValue("minecraft:movement_speed") && item?.Holder.UnlocalizedName.EndsWith("_sword", StringComparison.Ordinal) == true)
@@ -335,28 +355,42 @@ public partial class PlayerBase
             HasPotionEffect((int)PotionEffect.Levitation - 1) || HasPotionEffect((int)PotionEffect.SlowFalling - 1) ||
             feet?.RegistryId is BlockIds.Water or BlockIds.Lava or BlockIds.Cobweb or BlockIds.PowderSnow ||
             feet != null && TagsRegistry.Block.Climbable.Entries.Contains(feet.RegistryId))
-        { FallDistance = 0; return; }
-        if (previous.Y > Position.Y) FallDistance += (float)(previous.Y - Position.Y);
-        if (!supported) return;
+        {
+            FallDistance = 0;
+            return;
+        }
+        if (previous.Y > Position.Y)
+            FallDistance += (float)(previous.Y - Position.Y);
+        if (!supported)
+            return;
         var floor = terrain.GetBlock((Vector)(Position - new VectorD(0, 0.2, 0)).Floor());
         var distance = FallDistance;
         if (distance >= 2)
             this.Statistics.Increment("minecraft:fall_one_cm", Centimetres(distance));
 
         FallDistance = 0;
-        if (floor?.RegistryId == BlockIds.SlimeBlock && !Sneaking) return;
+        if (floor?.RegistryId == BlockIds.SlimeBlock && !Sneaking)
+            return;
         var jump = ActivePotionEffects.TryGetValue((int)PotionEffect.JumpBoost - 1, out var effect) ? effect.EffectData.Amplifier + 1 : 0;
         var damage = Math.Max(0, MathF.Ceiling((distance - GetAttributeValue("minecraft:safe_fall_distance") - jump) * GetAttributeValue("minecraft:fall_damage_multiplier")));
-        if (floor?.RegistryId is BlockIds.HayBlock or BlockIds.HoneyBlock) damage *= 0.2f;
-        else if (floor != null && TagsRegistry.Block.Beds.Entries.Contains(floor.RegistryId)) damage *= 0.5f;
+        if (floor?.RegistryId is BlockIds.HayBlock or BlockIds.HoneyBlock)
+            damage *= 0.2f;
+        else if (floor != null && TagsRegistry.Block.Beds.Entries.Contains(floor.RegistryId))
+            damage *= 0.5f;
         await DamageCombatAsync(this, damage, CombatDamageKind.Fall);
     }
 
     private async ValueTask TickCombatAsync()
     {
-        if (attackTicks < 1000) attackTicks++;
-        if (lastAttackItem != GetHeldItem()?.Holder) { attackTicks = 0; lastAttackItem = GetHeldItem()?.Holder; }
-        if (shieldCooldown > 0) shieldCooldown--;
+        if (attackTicks < 1000)
+            attackTicks++;
+        if (lastAttackItem != GetHeldItem()?.Holder)
+        {
+            attackTicks = 0;
+            lastAttackItem = GetHeldItem()?.Holder;
+        }
+        if (shieldCooldown > 0)
+            shieldCooldown--;
         if (this.itemCooldowns.Count > 0)
         {
             foreach (var group in this.itemCooldowns.Keys.ToArray())
@@ -373,7 +407,8 @@ public partial class PlayerBase
         for (var index = 0; index < slots.Length; index++)
         {
             var item = Inventory.GetItem(slots[index]) ?? ItemStack.Air;
-            if (sentEquipment[index] == item && sentEquipment[index]?.Count == item.Count) continue;
+            if (sentEquipment[index] == item && sentEquipment[index]?.Count == item.Count)
+                continue;
             sentEquipment[index] = new ItemStack(item, item.Count);
             equipment.Add(new() { Slot = (EquipmentSlot)index, Item = item });
         }
@@ -398,7 +433,8 @@ public partial class PlayerBase
         {
             var slots = new[] { (int)CurrentHeldItemSlot, 45, 5, 6, 7, 8 }.Where(slot =>
                 Inventory.GetItem(slot) is { Damage: > 0 } item && CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Mending) > 0).ToArray();
-            if (slots.Length == 0) break;
+            if (slots.Length == 0)
+                break;
             var slot = slots[Globals.Random.Next(slots.Length)];
             var item = Inventory.GetItem(slot)!;
             var repaired = Math.Min(item.Damage, experience * 2);

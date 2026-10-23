@@ -39,6 +39,7 @@ public sealed class FloatGoal(PathfinderMob mob) : Goal
     public override GoalFlags Flags => GoalFlags.Jump;
     public override bool RequiresUpdateEveryTick => true;
     public override bool CanUse() => mob.InWater || mob.InLava;
+
     public override ValueTask TickAsync()
     {
         if (mob.Random.NextSingle() < 0.8f)
@@ -71,6 +72,7 @@ public abstract class NavigationGoal(PathfinderMob mob, float speed) : Goal
 public sealed class PanicGoal(PathfinderMob mob, float speed) : NavigationGoal(mob, speed)
 {
     private VectorD destination;
+
     public override bool CanUse()
     {
         if (!Mob.Burning && (!Mob.PanicsWhenHurt || Mob.LastAttacker == null || Mob.AiTick - Mob.LastHurtTick > 100))
@@ -96,6 +98,7 @@ public sealed class PanicGoal(PathfinderMob mob, float speed) : NavigationGoal(m
         destination = point;
         return true;
     }
+
     public override void Start() => MoveTo(destination);
     public override bool CanContinue() => Navigation.IsNavigating;
 }
@@ -103,6 +106,7 @@ public sealed class PanicGoal(PathfinderMob mob, float speed) : NavigationGoal(m
 public sealed class RandomStrollGoal(PathfinderMob mob, float speed) : NavigationGoal(mob, speed)
 {
     private VectorD destination;
+
     public override bool CanUse()
     {
         if (Mob.AttackTarget != null || Mob.Random.Next(60) != 0)
@@ -113,6 +117,7 @@ public sealed class RandomStrollGoal(PathfinderMob mob, float speed) : Navigatio
         destination = point;
         return true;
     }
+
     public override void Start() => MoveTo(destination);
     public override bool CanContinue() => Navigation.IsNavigating;
 }
@@ -121,6 +126,7 @@ public sealed class LookAtPlayerGoal(Mob mob, float range) : Goal
 {
     private IPlayer? player;
     private long endTick;
+
     internal override bool ForgetEvictedEntities(HashSet<IEntity> removed)
     {
         if (player is null || !removed.Contains(player))
@@ -131,6 +137,7 @@ public sealed class LookAtPlayerGoal(Mob mob, float range) : Goal
     }
 
     public override GoalFlags Flags => GoalFlags.Look;
+
     public override bool CanUse()
     {
         if (mob.Random.NextSingle() >= 0.02f)
@@ -140,15 +147,19 @@ public sealed class LookAtPlayerGoal(Mob mob, float range) : Goal
             .MinBy(target => (target.Position - mob.Position).MagnitudeSquared());
         return player != null;
     }
+
     public override void Start() => endTick = mob.AiTick + 40 + mob.Random.Next(40);
+
     public override bool CanContinue() => player != null && player.Level == mob.Level && player.Health > 0 &&
         player.GameMode != GameMode.Spectator && mob.AiTick < endTick &&
         (player.Position - mob.Position).MagnitudeSquared() <= range * range;
+
     public override ValueTask TickAsync()
     {
         mob.LookControl.LookAt(player!.Position + new VectorD(0, (float)(player.HeadY - player.Position.Y), 0));
         return default;
     }
+
     public override void Stop() => player = null;
 }
 
@@ -158,13 +169,16 @@ public sealed class RandomLookAroundGoal(Mob mob) : Goal
     private long endTick;
     public override GoalFlags Flags => GoalFlags.Look;
     public override bool CanUse() => mob.Random.NextSingle() < 0.02f;
+
     public override void Start()
     {
         var angle = mob.Random.NextSingle() * MathF.Tau;
         direction = new VectorD(MathF.Cos(angle), 0, MathF.Sin(angle));
         endTick = mob.AiTick + 20 + mob.Random.Next(20);
     }
+
     public override bool CanContinue() => mob.AiTick < endTick;
+
     public override ValueTask TickAsync()
     {
         mob.LookControl.LookAt(mob.EyePosition + direction);
@@ -176,6 +190,7 @@ public sealed class TemptGoal(Animal pig, Func<Obsidian.API.Inventory.ItemStack?
 {
     private IPlayer? player;
     private long cooldownEnd;
+
     internal override bool ForgetEvictedEntities(HashSet<IEntity> removed)
     {
         if (player is null || !removed.Contains(player))
@@ -186,6 +201,7 @@ public sealed class TemptGoal(Animal pig, Func<Obsidian.API.Inventory.ItemStack?
     }
 
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
+
     public override bool CanUse()
     {
         if (pig.AiTick < cooldownEnd)
@@ -194,10 +210,13 @@ public sealed class TemptGoal(Animal pig, Func<Obsidian.API.Inventory.ItemStack?
             .Where(IsTempting).MinBy(target => (target.Position - pig.Position).MagnitudeSquared());
         return player != null;
     }
+
     private bool IsTempting(IPlayer target) => target.Health > 0 && target.GameMode != GameMode.Spectator &&
         (food(target.GetHeldItem()) || food(target.GetOffHandItem()));
+
     public override bool CanContinue() => player != null && player.Level == pig.Level && IsTempting(player) &&
         (player.Position - pig.Position).MagnitudeSquared() <= 100;
+
     public override ValueTask TickAsync()
     {
         pig.LookControl.LookAt(player!);
@@ -207,6 +226,7 @@ public sealed class TemptGoal(Animal pig, Func<Obsidian.API.Inventory.ItemStack?
             MoveTo(player);
         return default;
     }
+
     public override void Stop()
     {
         base.Stop();
@@ -219,6 +239,7 @@ public sealed class FollowParentGoal(Animal pig) : NavigationGoal(pig, 1.1f)
 {
     private Animal? parent;
     private long nextPathTick;
+
     internal override bool ForgetEvictedEntities(HashSet<IEntity> removed)
     {
         if (parent is null || !removed.Contains(parent))
@@ -229,6 +250,7 @@ public sealed class FollowParentGoal(Animal pig) : NavigationGoal(pig, 1.1f)
     }
 
     public override GoalFlags Flags => GoalFlags.None;
+
     public override bool CanUse()
     {
         if (!pig.IsBaby)
@@ -240,6 +262,7 @@ public sealed class FollowParentGoal(Animal pig) : NavigationGoal(pig, 1.1f)
             .MinBy(target => (target.Position - pig.Position).MagnitudeSquared());
         return parent != null && (parent.Position - pig.Position).MagnitudeSquared() >= 9;
     }
+
     public override bool CanContinue()
     {
         if (!pig.IsBaby || parent == null || !parent.Alive || parent.IsRemoved || parent.Level != pig.Level)
@@ -247,6 +270,7 @@ public sealed class FollowParentGoal(Animal pig) : NavigationGoal(pig, 1.1f)
         var distance = (parent.Position - pig.Position).MagnitudeSquared();
         return distance is >= 9 and <= 256;
     }
+
     public override ValueTask TickAsync()
     {
         if (pig.AiTick >= nextPathTick)
@@ -256,6 +280,7 @@ public sealed class FollowParentGoal(Animal pig) : NavigationGoal(pig, 1.1f)
         }
         return default;
     }
+
     public override void Stop()
     {
         parent = null;
@@ -266,6 +291,7 @@ public sealed class BreedGoal(Animal pig) : NavigationGoal(pig, 1)
 {
     private Animal? mate;
     private long startTick;
+
     internal override bool ForgetEvictedEntities(HashSet<IEntity> removed)
     {
         if (mate is null || !removed.Contains(mate))
@@ -277,6 +303,7 @@ public sealed class BreedGoal(Animal pig) : NavigationGoal(pig, 1)
 
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
+
     public override bool CanUse()
     {
         if (!pig.CanBreed)
@@ -285,8 +312,10 @@ public sealed class BreedGoal(Animal pig) : NavigationGoal(pig, 1)
             .MinBy(target => (target.Position - pig.Position).MagnitudeSquared());
         return mate != null;
     }
+
     public override void Start() => startTick = pig.AiTick;
     public override bool CanContinue() => pig.CanBreed && mate != null && mate.CanBreed && mate.Level == pig.Level && pig.AiTick - startTick < 60;
+
     public override ValueTask TickAsync()
     {
         pig.LookControl.LookAt(mate!);
@@ -295,6 +324,7 @@ public sealed class BreedGoal(Animal pig) : NavigationGoal(pig, 1)
             pig.BreedWith(mate);
         return default;
     }
+
     public override void Stop()
     {
         base.Stop();
@@ -306,6 +336,7 @@ public sealed class NearestAttackableTargetGoal(PathfinderMob zombie, Func<IEnti
 {
     private IEntity? candidate;
     private int unseenTicks;
+
     internal override bool ForgetEvictedEntities(HashSet<IEntity> removed)
     {
         if (candidate is null || !removed.Contains(candidate))
@@ -316,6 +347,7 @@ public sealed class NearestAttackableTargetGoal(PathfinderMob zombie, Func<IEnti
     }
 
     public override GoalFlags Flags => GoalFlags.Target;
+
     public override bool CanUse()
     {
         if (zombie.Random.Next(5) != 0)
@@ -325,11 +357,13 @@ public sealed class NearestAttackableTargetGoal(PathfinderMob zombie, Func<IEnti
             .MinBy(target => (target.Position - zombie.Position).MagnitudeSquared());
         return candidate != null;
     }
+
     public override void Start()
     {
         zombie.AttackTarget = candidate;
         unseenTicks = 0;
     }
+
     public override bool CanContinue()
     {
         var target = zombie.AttackTarget;
@@ -339,6 +373,7 @@ public sealed class NearestAttackableTargetGoal(PathfinderMob zombie, Func<IEnti
         unseenTicks = !mustSee || zombie.CanSee(target) ? 0 : unseenTicks + 2;
         return unseenTicks <= 60;
     }
+
     public override void Stop()
     {
         zombie.AttackTarget = null;
@@ -350,6 +385,7 @@ public sealed class HurtByTargetGoal(PathfinderMob zombie) : Goal
 {
     private long handledHurtTick = -100;
     private IEntity? candidate;
+
     internal override bool ForgetEvictedEntities(HashSet<IEntity> removed)
     {
         if (candidate is null || !removed.Contains(candidate))
@@ -360,11 +396,13 @@ public sealed class HurtByTargetGoal(PathfinderMob zombie) : Goal
     }
 
     public override GoalFlags Flags => GoalFlags.Target;
+
     public override bool CanUse()
     {
         candidate = zombie.LastHurtTick != handledHurtTick ? zombie.LastAttacker : zombie.AlertedTarget;
         return candidate != null && zombie.IsValidTarget(candidate);
     }
+
     public override void Start()
     {
         handledHurtTick = zombie.LastHurtTick;
@@ -376,8 +414,10 @@ public sealed class HurtByTargetGoal(PathfinderMob zombie) : Goal
                 ally.AlertedTarget = candidate;
         }
     }
+
     public override bool CanContinue() => zombie.AttackTarget is IEntity target && zombie.IsValidTarget(target) &&
         (target.Position - zombie.Position).MagnitudeSquared() <= zombie.FollowRange * zombie.FollowRange;
+
     public override void Stop() => zombie.AttackTarget = null;
 }
 
@@ -446,6 +486,7 @@ public class MeleeAttackGoal(PathfinderMob mob, float speed = 1) : NavigationGoa
 public sealed class ZombieAttackGoal(Zombie zombie) : MeleeAttackGoal(zombie)
 {
     private int raiseArmTicks;
+
     public override void Start()
     {
         base.Start();

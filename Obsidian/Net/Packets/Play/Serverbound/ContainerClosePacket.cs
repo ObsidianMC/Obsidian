@@ -23,7 +23,10 @@ public partial class ContainerClosePacket
             return;
 
         if (player.OpenedContainer is Obsidian.Entities.MerchantContainer merchant)
-        { await merchant.CloseAsync(player); return; }
+        {
+            await merchant.CloseAsync(player);
+            return;
+        }
 
         var closed = new ContainerClosedEventArgs(player, server, player.OpenedContainer, this.ContainerId);
 

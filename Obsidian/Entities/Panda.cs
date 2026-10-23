@@ -21,6 +21,7 @@ public sealed partial class Panda : FarmAnimal
     internal override bool PanicsWhenHurt => IsBaby;
     protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.Bamboo };
     internal override bool CanBreed => base.CanBreed && HasBreedingBamboo();
+
     private bool HasBreedingBamboo()
     {
         var origin = (Vector)Position.Floor();
@@ -33,23 +34,27 @@ public sealed partial class Panda : FarmAnimal
                 return true;
         return false;
     }
+
     private byte RandomGene()
     {
         var value = Random.Next(16);
         return value switch { 0 => 1, 1 => 2, 2 => 3, 3 => 4, 4 => 5, 5 => 6, _ => 0 };
     }
+
     protected override void FinalizeSpawn()
     {
         MainGene = RandomGene();
         HiddenGene = RandomGene();
         ApplyGenes();
     }
+
     private void ApplyGenes()
     {
         TryUpdateAttribute("minecraft:generic.max_health", ExpressedGene == 5 ? 10 : 20);
         TryUpdateAttribute("minecraft:generic.movement_speed", ExpressedGene == 1 ? 0.07f : 0.15f);
         Health = Math.Min(Health, GetAttributeValue("minecraft:generic.max_health"));
     }
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         base.RegisterGoals(actions, targets);
@@ -57,18 +62,22 @@ public sealed partial class Panda : FarmAnimal
         actions.AddGoal(2, new MeleeAttackGoal(this, 1.2f));
         targets.AddGoal(1, new HurtByTargetGoal(this));
     }
+
     protected override IEntity CreateOffspring(Animal mate)
     {
         var child = (Panda)base.CreateOffspring(mate);
         var parent = (Panda)mate;
         child.MainGene = Random.Next(2) == 0 ? MainGene : HiddenGene;
         child.HiddenGene = Random.Next(2) == 0 ? parent.MainGene : parent.HiddenGene;
-        if (Random.Next(32) == 0) child.MainGene = RandomGene();
-        if (Random.Next(32) == 0) child.HiddenGene = RandomGene();
+        if (Random.Next(32) == 0)
+            child.MainGene = RandomGene();
+        if (Random.Next(32) == 0)
+            child.HiddenGene = RandomGene();
         child.ApplyGenes();
         child.SynchronizeMetadata();
         return child;
     }
+
     internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive
@@ -85,7 +94,8 @@ public sealed partial class Panda : FarmAnimal
             used = await base.FeedAsync(player, hand);
         else
         {
-            if (item.Is(ItemsRegistry.Bamboo) && Age == 0) UnhappyTicks = 32;
+            if (item.Is(ItemsRegistry.Bamboo) && Age == 0)
+                UnhappyTicks = 32;
             EatingTicks = 80;
             SetEquipment(EquipmentSlot.MainHand, new ItemStack(item, 1));
             await ConsumeInteractionItemAsync(player, hand);
@@ -93,16 +103,21 @@ public sealed partial class Panda : FarmAnimal
         SynchronizeMetadata();
         return used;
     }
+
     protected internal override async ValueTask PerformMeleeAttackAsync(IEntity target)
     {
         await base.PerformMeleeAttackAsync(target);
-        if (ExpressedGene != 6) AttackTarget = null;
+        if (ExpressedGene != 6)
+            AttackTarget = null;
     }
+
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
-        if (UnhappyTicks > 0 && --UnhappyTicks == 0) SynchronizeMetadata();
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+            return;
+        if (UnhappyTicks > 0 && --UnhappyTicks == 0)
+            SynchronizeMetadata();
         if (EatingTicks > 0)
         {
             if (--EatingTicks == 0)
@@ -111,7 +126,8 @@ public sealed partial class Panda : FarmAnimal
                 SetEquipment(EquipmentSlot.MainHand, ItemStack.Air);
                 SynchronizeMetadata();
             }
-            else if (EatingTicks % 10 == 0) PlayMobSound("eat");
+            else if (EatingTicks % 10 == 0)
+                PlayMobSound("eat");
         }
         else if (!IsBaby && AttackTarget == null && Random.Next(600) == 0)
         {
@@ -121,7 +137,8 @@ public sealed partial class Panda : FarmAnimal
             {
                 EatingTicks = 80;
                 SetEquipment(EquipmentSlot.MainHand, new ItemStack(item.Item, 1));
-                if (--item.Item.Count == 0) await item.RemoveAsync();
+                if (--item.Item.Count == 0)
+                    await item.RemoveAsync();
                 SynchronizeMetadata();
             }
         }
@@ -131,8 +148,10 @@ public sealed partial class Panda : FarmAnimal
             {
                 SneezeTicks = 0;
                 PlayMobSound("sneeze");
-                if (Random.Next(700) == 0) DropItem(ItemsRegistry.SlimeBall);
-                foreach (var panda in GetEntitiesNear(10).OfType<Panda>().Where(panda => !panda.IsBaby)) panda.JumpControl.Jump();
+                if (Random.Next(700) == 0)
+                    DropItem(ItemsRegistry.SlimeBall);
+                foreach (var panda in GetEntitiesNear(10).OfType<Panda>().Where(panda => !panda.IsBaby))
+                    panda.JumpControl.Jump();
                 SynchronizeMetadata();
             }
         }
@@ -147,25 +166,39 @@ public sealed partial class Panda : FarmAnimal
             Motion = GetLookDirection() * 0.3f + new VectorD(0, 0.4f, 0);
             SynchronizeMetadata();
         }
-        else if (Rolling && MovementFlags.HasFlag(MovementFlags.OnGround)) { Rolling = false; SynchronizeMetadata(); }
+        else if (Rolling && MovementFlags.HasFlag(MovementFlags.OnGround))
+        {
+            Rolling = false;
+            SynchronizeMetadata();
     }
+    }
+
     internal bool Resting => EatingTicks > 0 || ExpressedGene == 2 && Level.LevelData.Thundering;
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt); writer.WriteVarInt(UnhappyTicks);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt); writer.WriteVarInt(SneezeTicks);
-        writer.WriteEntityMetadataType(19, EntityMetadataType.VarInt); writer.WriteVarInt(EatingTicks);
-        writer.WriteEntityMetadataType(20, EntityMetadataType.Byte); writer.WriteByte(MainGene);
-        writer.WriteEntityMetadataType(21, EntityMetadataType.Byte); writer.WriteByte(HiddenGene);
-        writer.WriteEntityMetadataType(22, EntityMetadataType.Byte); writer.WriteByte((byte)((EatingTicks > 0 ? 8 : 0) | (SneezeTicks > 0 ? 2 : 0) | (Rolling ? 4 : 0)));
+        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
+        writer.WriteVarInt(UnhappyTicks);
+        writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
+        writer.WriteVarInt(SneezeTicks);
+        writer.WriteEntityMetadataType(19, EntityMetadataType.VarInt);
+        writer.WriteVarInt(EatingTicks);
+        writer.WriteEntityMetadataType(20, EntityMetadataType.Byte);
+        writer.WriteByte(MainGene);
+        writer.WriteEntityMetadataType(21, EntityMetadataType.Byte);
+        writer.WriteByte(HiddenGene);
+        writer.WriteEntityMetadataType(22, EntityMetadataType.Byte);
+        writer.WriteByte((byte)((EatingTicks > 0 ? 8 : 0) | (SneezeTicks > 0 ? 2 : 0) | (Rolling ? 4 : 0)));
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         writer.WriteString("MainGene", genes[MainGene]);
         writer.WriteString("HiddenGene", genes[HiddenGene]);
         writer.WriteInt("ObsidianEatingTicks", EatingTicks);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         MainGene = (byte)Math.Max(0, Array.IndexOf(genes, (tag.TryGetTagValue<string>("MainGene", out var savedMainGene) ? savedMainGene : null)));

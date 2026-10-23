@@ -19,6 +19,7 @@ public sealed partial class Hoglin : FarmAnimal
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
     protected override int GetExperienceReward() => IsBaby ? 0 : 5;
     protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Holder.Id: ItemIds.CrimsonFungus };
+
     private bool IsConverting => !IsImmuneToZombification &&
         !Level.PiglinsSafe((Vector)Position.Floor());
 
@@ -32,11 +33,17 @@ public sealed partial class Hoglin : FarmAnimal
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, target => !IsBaby && LoveTicks == 0 &&
             Level.LevelData.Difficulty != Difficulty.Peaceful && target is IPlayer));
     }
+
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
-        if (!IsConverting) { TimeInOverworld = 0; return; }
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+            return;
+        if (!IsConverting)
+        {
+            TimeInOverworld = 0;
+            return;
+        }
         if (++TimeInOverworld > 300)
         {
             PlayMobSound("converted_to_zombified");
@@ -44,24 +51,29 @@ public sealed partial class Hoglin : FarmAnimal
             zoglin.AddPotionEffect((int)PotionEffect.Nausea - 1, 200);
         }
     }
+
     protected internal override ValueTask PerformMeleeAttackAsync(IEntity target) => HoglinAttack.PerformAsync(this, target, IsBaby);
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         this.DropVanillaLoot(source);
         return default;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(17, EntityMetadataType.Boolean);
         writer.WriteBoolean(IsConverting && !MobBitMask.HasFlag(MobBitmask.NoAi));
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         writer.WriteBool("IsImmuneToZombification", IsImmuneToZombification);
         writer.WriteBool("CannotBeHunted", CannotBeHunted);
         writer.WriteInt("TimeInOverworld", TimeInOverworld);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         IsImmuneToZombification = tag.TryGetBool("IsImmuneToZombification", out var immune) && immune;
@@ -80,9 +92,11 @@ internal sealed class HoglinMeleeGoal(Hoglin hoglin) : MeleeAttackGoal(hoglin)
 internal sealed class HoglinAvoidFungusGoal(Hoglin hoglin) : NavigationGoal(hoglin, 1.3f)
 {
     private VectorD destination;
+
     public override bool CanUse()
     {
-        if (hoglin.Random.Next(20) != 0) return false;
+        if (hoglin.Random.Next(20) != 0)
+            return false;
         var origin = (Vector)hoglin.Position.Floor();
         for (var x = -8; x <= 8; x++)
         for (var y = -4; y <= 4; y++)
@@ -91,13 +105,20 @@ internal sealed class HoglinAvoidFungusGoal(Hoglin hoglin) : NavigationGoal(hogl
             var point = origin + new Vector(x, y, z);
             if (hoglin.Terrain.GetBlock(point)?.RegistryId != BlockIds.WarpedFungus ||
                 RandomPosition.Find(hoglin, 8, (VectorD)point) is not VectorD away ||
-                (away - (VectorD)point).MagnitudeSquared() <= (hoglin.Position - (VectorD)point).MagnitudeSquared()) continue;
+                        (away - (VectorD)point).MagnitudeSquared() <= (hoglin.Position - (VectorD)point).MagnitudeSquared())
+                        continue;
             destination = away;
             return true;
         }
         return false;
     }
-    public override void Start() { hoglin.AttackTarget = null; MoveTo(destination); }
+
+    public override void Start()
+    {
+        hoglin.AttackTarget = null;
+        MoveTo(destination);
+    }
+
     public override bool CanContinue() => Navigation.IsNavigating;
 }
 
@@ -112,6 +133,7 @@ public sealed partial class Zoglin : PathfinderMob, IAgeable
     protected override string? SoundName => "zoglin";
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
     protected override int GetExperienceReward() => 5;
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(1, new FloatGoal(this));
@@ -122,18 +144,22 @@ public sealed partial class Zoglin : PathfinderMob, IAgeable
         targets.AddGoal(1, new HurtByTargetGoal(this));
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, target => target is Living && target.Type is not (EntityType.Zoglin or EntityType.Creeper)));
     }
+
     protected internal override ValueTask PerformMeleeAttackAsync(IEntity target) => HoglinAttack.PerformAsync(this, target, IsBaby);
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         this.DropVanillaLoot(source);
         return default;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(16, EntityMetadataType.Boolean);
         writer.WriteBoolean(IsBaby);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer) => writer.WriteBool("IsBaby", IsBaby);
     protected override void ReadAdditionalSave(NbtCompound tag) => IsBaby = tag.TryGetBool("IsBaby", out var baby) && baby;
 }
@@ -156,12 +182,14 @@ internal static class HoglinAttack
             };
         var health = target.Health;
         await target.DamageAsync(mob, damage);
-        if (baby || target.Health >= health || target is not Entity entity) return;
+        if (baby || target.Health >= health || target is not Entity entity)
+            return;
         var resistance = entity.GetAttributeValue("minecraft:generic.knockback_resistance");
         var knockback = mob.GetAttributeValue("minecraft:generic.attack_knockback") - resistance;
         var delta = target.Position - mob.Position;
         var distance = Math.Sqrt(delta.X * delta.X + delta.Z * delta.Z);
-        if (knockback <= 0 || distance < 0.0001f) return;
+        if (knockback <= 0 || distance < 0.0001f)
+            return;
         var angle = mob.Random.Next(-10, 11) * Math.PI / 180;
         var force = knockback * (mob.Random.NextSingle() * 0.5f + 0.2f);
         entity.Motion += new VectorD((delta.X * Math.Cos(angle) - delta.Z * Math.Sin(angle)) / distance * force,

@@ -16,8 +16,10 @@ public class AbstractHorse : Animal, IRideable
     protected virtual bool CanBreedHorse => false;
     protected virtual int MaximumTemper => 100;
     protected virtual bool SupportsSaddle => true;
+
     protected virtual bool IsBreedingFood(Item food) =>
         food.Id is ItemIds.GoldenCarrot or ItemIds.GoldenApple;
+
     internal override bool CanMateWith(Animal mate) => HorseMask.HasFlag(HorseMask.Tamed) &&
         Health >= GetAttributeValue("minecraft:generic.max_health") && mate is AbstractHorse other &&
         other.HorseMask.HasFlag(HorseMask.Tamed) && other.Health >= other.GetAttributeValue("minecraft:generic.max_health") &&
@@ -34,6 +36,7 @@ public class AbstractHorse : Animal, IRideable
         ((AbstractHorse)mate).SynchronizeMetadata();
         return child;
     }
+
     protected override string? SoundName => Type == EntityType.ZombieHorse ? "zombie_horse" : "horse";
     internal override float JumpPower => GetAttributeValue("minecraft:horse.jump_strength");
 
@@ -196,10 +199,13 @@ internal sealed class HorseGrazeGoal(AbstractHorse horse) : Goal
     private int ticks;
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
+
     public override bool CanUse() => !horse.HasRider && !horse.IsBaby && horse.Random.Next(300) == 0 &&
         horse.Terrain.GetBlock((Vector)(horse.Position - new VectorD(0, 0.01f, 0)).Floor())?.RegistryId
             == BlockIds.GrassBlock;
+
     public override bool CanContinue() => ticks > 0 && !horse.HasRider;
+
     public override void Start()
     {
         ticks = 50;
@@ -207,7 +213,13 @@ internal sealed class HorseGrazeGoal(AbstractHorse horse) : Goal
         horse.HorseMask |= HorseMask.Eating;
         horse.SynchronizeMetadata();
     }
-    public override ValueTask TickAsync() { ticks--; return default; }
+
+    public override ValueTask TickAsync()
+    {
+        ticks--;
+        return default;
+    }
+
     public override void Stop()
     {
         horse.HorseMask &= ~HorseMask.Eating;

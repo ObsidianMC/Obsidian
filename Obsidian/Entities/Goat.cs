@@ -19,20 +19,24 @@ public sealed partial class Goat : FarmAnimal
     public bool HasRightHorn { get; internal set; } = true;
     protected override string? SoundName => Screaming ? "goat.screaming" : "goat";
     protected override float SafeFallDistance => 10;
+
     protected override void FinalizeSpawn()
     {
         Screaming = Random.NextSingle() < 0.02f;
         ramCooldown = Screaming ? Random.Next(100, 301) : Random.Next(600, 6001);
         longJumpCooldown = Random.Next(600, 1201);
     }
+
     protected override IEntity CreateOffspring(Animal mate)
     {
         var child = (Goat)base.CreateOffspring(mate);
         child.Screaming = Random.Next(2) == 0 ? Screaming : ((Goat)mate).Screaming;
-        if (Random.NextSingle() < 0.02f) child.Screaming = true;
+        if (Random.NextSingle() < 0.02f)
+            child.Screaming = true;
         child.SynchronizeMetadata();
         return child;
     }
+
     internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive
@@ -50,29 +54,40 @@ public sealed partial class Goat : FarmAnimal
 
         return await base.InteractAsync(player, hand);
     }
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         base.RegisterGoals(actions, targets);
         actions.AddGoal(1, new GoatRamGoal(this));
     }
+
     internal bool StartRam()
     {
-        if (ramCooldown > 0 || InWater || IsBaby || !MovementFlags.HasFlag(MovementFlags.OnGround)) return false;
+        if (ramCooldown > 0 || InWater || IsBaby || !MovementFlags.HasFlag(MovementFlags.OnGround))
+            return false;
         ramTarget = GetEntitiesNear(8).FirstOrDefault(entity => entity.Type != Type && IsValidTarget(entity) && CanSee(entity));
-        if (ramTarget == null) return false;
+        if (ramTarget == null)
+            return false;
         ramDestination = ramTarget.Position;
         ramTicks = 40;
         SendEntityEvent(58);
         return true;
     }
+
     internal bool IsRamming => ramTicks > 0 && ramTarget is { Health: > 0 } && ramTarget.Level == Level;
+
     internal async ValueTask RamAsync()
     {
         ((Navigator)Navigator!).Stop();
-        if (--ramTicks > 20) { LookControl.LookAt(ramDestination); return; }
+        if (--ramTicks > 20)
+        {
+            LookControl.LookAt(ramDestination);
+            return;
+        }
         var delta = ramDestination - Position;
         delta.Y = 0;
-        if (delta.Magnitude > 0.01f) Motion = delta / delta.Magnitude * 0.6f + new VectorD(0, Motion.Y, 0);
+        if (delta.Magnitude > 0.01f)
+            Motion = delta / delta.Magnitude * 0.6f + new VectorD(0, Motion.Y, 0);
         if (ramTarget != null && IsWithinMeleeRange(ramTarget))
         {
             await ramTarget.DamageAsync(this, 2);
@@ -92,12 +107,16 @@ public sealed partial class Goat : FarmAnimal
             var hit = Terrain.GetBlock((Vector)(Position + (delta.Magnitude > 0.01f ? delta / delta.Magnitude : VectorD.Zero)).Floor());
             if ((HasLeftHorn || HasRightHorn) && hit != null && TagsRegistry.Block.SnapsGoatHorn.Entries.Contains(hit.RegistryId))
             {
-                if (HasLeftHorn) HasLeftHorn = false; else HasRightHorn = false;
+                if (HasLeftHorn)
+                    HasLeftHorn = false;
+                else
+                    HasRightHorn = false;
                 var horn = ItemsRegistry.GetSingleItem(ItemsRegistry.GoatHorn);
                 string[] instruments = ["ponder", "sing", "seek", "feel", "admire", "call", "yearn", "dream"];
                 var instrumentName = $"minecraft:{instruments[Random.Next(4) + (Screaming ? 4 : 0)]}";
                 var instrument = InstrumentsRegistry.All.FirstOrDefault(entry => entry.Identifier == instrumentName);
-                if (instrument != null) horn[DataComponentType.Instrument] = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Instrument with { Value = instrument.ToInstrumentData() };
+                if (instrument != null)
+                    horn[DataComponentType.Instrument] = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Instrument with { Value = instrument.ToInstrumentData() };
                 DropItem(horn);
                 SynchronizeMetadata();
                 PlayMobSound("horn_break");
@@ -105,6 +124,7 @@ public sealed partial class Goat : FarmAnimal
             ramTicks = 0;
         }
     }
+
     internal void FinishRam()
     {
         ramTicks = 0;
@@ -112,11 +132,14 @@ public sealed partial class Goat : FarmAnimal
         ramCooldown = Screaming ? Random.Next(100, 301) : Random.Next(600, 6001);
         SendEntityEvent(59);
     }
+
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
-        if (ramCooldown > 0) ramCooldown--;
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+            return;
+        if (ramCooldown > 0)
+            ramCooldown--;
         if (--longJumpCooldown <= 0 && !IsRamming && !InWater && MovementFlags.HasFlag(MovementFlags.OnGround))
         {
             var landing = RandomPosition.Find(this, 5);
@@ -129,13 +152,18 @@ public sealed partial class Goat : FarmAnimal
             longJumpCooldown = Random.Next(600, 1201);
         }
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Boolean); writer.WriteBoolean(Screaming);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean); writer.WriteBoolean(!IsBaby && HasLeftHorn);
-        writer.WriteEntityMetadataType(19, EntityMetadataType.Boolean); writer.WriteBoolean(!IsBaby && HasRightHorn);
+        writer.WriteEntityMetadataType(17, EntityMetadataType.Boolean);
+        writer.WriteBoolean(Screaming);
+        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean);
+        writer.WriteBoolean(!IsBaby && HasLeftHorn);
+        writer.WriteEntityMetadataType(19, EntityMetadataType.Boolean);
+        writer.WriteBoolean(!IsBaby && HasRightHorn);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         writer.WriteBool("IsScreamingGoat", Screaming);
@@ -144,6 +172,7 @@ public sealed partial class Goat : FarmAnimal
         writer.WriteInt("ObsidianRamCooldown", ramCooldown);
         writer.WriteInt("ObsidianLongJumpCooldown", longJumpCooldown);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         Screaming = tag.TryGetBool("IsScreamingGoat", out var screaming) && screaming;

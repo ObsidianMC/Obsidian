@@ -9,13 +9,20 @@ public sealed partial class Ghast : Mob
     private int flightTicks;
     private int attackTicks;
     internal bool Charging { get; private set; }
-    public Ghast() { Type = EntityType.Ghast; NoGravity = true; }
+
+    public Ghast()
+    {
+        Type = EntityType.Ghast;
+        NoGravity = true;
+    }
+
     protected override bool UsesAi => true;
     internal override bool Hostile => true;
     protected override bool TakesFallDamage => false;
     protected override string? SoundName => "ghast";
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
     protected override int GetExperienceReward() => 5;
+
     protected override ValueTask TickMobAsync()
     {
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
@@ -36,7 +43,11 @@ public sealed partial class Ghast : Mob
                 var bounds = Dimension.CreateBBFromPosition(Position);
                 var clear = true;
                 for (var distance = 1f; distance < delta.Magnitude; distance++)
-                    if (!Terrain.IsFree(bounds.OffsetBy(direction * distance))) { clear = false; break; }
+                    if (!Terrain.IsFree(bounds.OffsetBy(direction * distance)))
+                    {
+                        clear = false;
+                        break;
+                    }
                 if (clear)
                     Motion += direction * 0.1f;
                 else
@@ -61,21 +72,29 @@ public sealed partial class Ghast : Mob
         }
         else
         {
-            if (attackTicks > 0) attackTicks--;
+            if (attackTicks > 0)
+                attackTicks--;
             if (AttackTarget == null && Motion.MagnitudeSquared() > 0.001f)
                 Yaw = (float)(Math.Atan2(-Motion.X, Motion.Z) * 180 / Math.PI);
         }
         var charging = attackTicks > 10;
-        if (Charging != charging) { Charging = charging; SynchronizeMetadata(); }
+        if (Charging != charging)
+        {
+            Charging = charging;
+            SynchronizeMetadata();
+        }
         return default;
     }
+
     protected override VectorD Travel() => EntityMovement.Move(this, Terrain, VectorD.Zero, 0, 0.91f);
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         DropItem(ItemsRegistry.Gunpowder, Random.Next(3));
         DropItem(ItemsRegistry.GhastTear, Random.Next(2));
         return default;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);

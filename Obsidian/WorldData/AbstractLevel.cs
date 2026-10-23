@@ -172,6 +172,7 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal void TickSpawnerMinecart(DataBlockEntity spawner) =>
         (mobSpawner ??= new MobSpawner(this)).TickSpawnerMinecart(spawner);
+
     private readonly SemaphoreSlim simulationGate = new(1, 1);
 
     internal void EnqueueEntityAction(Func<ValueTask> action) => entityActions.Enqueue(action);
@@ -186,7 +187,8 @@ public abstract partial class AbstractLevel : ILevel
     {
         if (ReferenceEquals(GetLoadedChunk(chunk.X, chunk.Z), chunk))
         {
-            if (chunk is Chunk concrete) RegisterChunkMusic(concrete);
+            if (chunk is Chunk concrete)
+                RegisterChunkMusic(concrete);
             (mobSpawner ??= new MobSpawner(this)).PopulateChunk(chunk);
         }
         return default;
@@ -208,7 +210,8 @@ public abstract partial class AbstractLevel : ILevel
         var simulationDistance = Configuration.SimulationDistance;
         foreach (var (_, player) in Players)
         {
-            if (player.GameMode == GameMode.Spectator) continue;
+            if (player.GameMode == GameMode.Spectator)
+                continue;
             var playerChunk = Region.ChunkOf(player.Position);
             if (Math.Abs(playerChunk.X - x) <= simulationDistance && Math.Abs(playerChunk.Z - z) <= simulationDistance)
                 return true;
@@ -878,7 +881,8 @@ public abstract partial class AbstractLevel : ILevel
         public void LapEntity(Type type)
         {
             var now = Stopwatch.GetTimestamp();
-            if (entityLap == 0) entityLap = lap;
+            if (entityLap == 0)
+                entityLap = lap;
             ref var times = ref CollectionsMarshal.GetValueRefOrAddDefault(entityTypes, type, out _);
             times = (times.Ms + Stopwatch.GetElapsedTime(entityLap, now).TotalMilliseconds, times.Count + 1);
             entityLap = now;
@@ -889,7 +893,8 @@ public abstract partial class AbstractLevel : ILevel
         public void ReportIfSlow(ILogger logger, string level)
         {
             var total = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
-            if (total <= BudgetMs || !logger.IsEnabled(LogLevel.Warning)) return;
+            if (total <= BudgetMs || !logger.IsEnabled(LogLevel.Warning))
+                return;
             var slowest = string.Join(", ", stages.Where(item => item.Ms >= 1).OrderByDescending(item => item.Ms)
                 .Select(item => $"{item.Stage} {item.Ms:0.#}ms"));
             var types = string.Join(", ", entityTypes.OrderByDescending(item => item.Value.Ms).Take(5)
@@ -1521,12 +1526,14 @@ public abstract partial class AbstractLevel : ILevel
     /// <exception cref="InvalidOperationException">The plugin spawning the entity is unloading.</exception>
     internal bool TrySpawnEntity(IEntity entity, bool hostOwned = false)
     {
-        if (entity is EnderDragon dragon) dragon.EnsureMultipartIds();
+        if (entity is EnderDragon dragon)
+            dragon.EnsureMultipartIds();
         if (entity is Mob mob)
         {
             mob.InitializeAi();
             // Summoned vexes, offspring and slime splits inherit the enclosure they spawn in.
-            if (Generator is MobTestGenerator testWorld) testWorld.AssignPen(mob);
+            if (Generator is MobTestGenerator testWorld)
+                testWorld.AssignPen(mob);
         }
         if (!TryAddEntity(entity, hostOwned))
             return false;
@@ -1913,7 +1920,8 @@ public abstract partial class AbstractLevel : ILevel
                 var y = dimensionChunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(x, z);
                 var ground = dimensionChunk.GetBlock(x, y, z);
                 if (ground.IsAir || ground.IsLiquid || IsOutsideBuildHeight(y + 2) ||
-                    !dimensionChunk.GetBlock(x, y + 1, z).IsAir || !dimensionChunk.GetBlock(x, y + 2, z).IsAir) continue;
+                        !dimensionChunk.GetBlock(x, y + 1, z).IsAir || !dimensionChunk.GetBlock(x, y + 2, z).IsAir)
+                        continue;
                 LevelData.SpawnPosition = new VectorD(x + 0.5f, y + 1, z + 0.5f);
                 Log.SpawnSet(this.Logger, this.Name, LevelData.SpawnPosition);
                 return;
@@ -2033,11 +2041,13 @@ public abstract partial class AbstractLevel : ILevel
     }
 
     public IEntitySpawner GetNewEntitySpawner() => new EntitySpawner(this);
+
     public ValueTask<IChunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) =>
         this.GetChunkAsync(worldLocation.X, worldLocation.Z, scheduleGeneration);
 
     public ValueTask<IBlock?> GetBlockAsync(Vector location) => this.GetBlockAsync(location.X, location.Y, location.Z);
     public ValueTask SetBlockAsync(Vector location, IBlock block) => this.SetBlockAsync(location.X, location.Y, location.Z, block);
+
     public ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate) =>
         this.SetBlockAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 

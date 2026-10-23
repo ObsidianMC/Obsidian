@@ -12,17 +12,29 @@ public struct Vector : IEquatable<Vector>, INetworkSerializable<Vector>
     /// <summary>
     /// The X component of the <see cref="Vector"/>.
     /// </summary>
-    public int X { readonly get; set; }
+    public int X
+    {
+        readonly get;
+        set;
+    }
 
     /// <summary>
     /// The Y component of the <see cref="Vector"/>.
     /// </summary>
-    public int Y { readonly get; set; }
+    public int Y
+    {
+        readonly get;
+        set;
+    }
 
     /// <summary>
     /// The Z component of the <see cref="Vector"/>.
     /// </summary>
-    public int Z { readonly get; set; }
+    public int Z
+    {
+        readonly get;
+        set;
+    }
 
     /// <summary>
     /// Creates new instance of <see cref="Vector"/> with <see cref="X"/>, <see cref="Y"/> and <see cref="Z"/> set to <paramref name="value"/>.

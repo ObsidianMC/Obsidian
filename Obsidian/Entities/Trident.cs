@@ -8,14 +8,23 @@ public sealed partial class Trident : Arrow
 
     public override async ValueTask TickAsync()
     {
-        if (Owner == null) { await base.TickAsync(); return; }
-        if (LoyaltyLevel <= 0 || !dealtDamage && !embedded) { await base.TickAsync(); return; }
+        if (Owner == null)
+        {
+            await base.TickAsync();
+            return;
+        }
+        if (LoyaltyLevel <= 0 || !dealtDamage && !embedded)
+        {
+            await base.TickAsync();
+            return;
+        }
         if (Owner is not IPlayer owner || !owner.Connected || !owner.Alive || owner.GameMode == GameMode.Spectator || owner.Level != Level)
         {
             if (Pickup == ArrowPickup.Allowed && PickupItem != null)
             {
                 var dropped = new ItemEntity { Level = Level, EntityId = Server.GetNextEntityId(), Position = Position, Item = PickupItem };
-                if (!Level.TryAddEntity(dropped)) return;
+                if (!Level.TryAddEntity(dropped))
+                    return;
                 dropped.SpawnEntity();
             }
             await RemoveAsync();
@@ -25,11 +34,16 @@ public sealed partial class Trident : Arrow
         var difference = owner.Position + new VectorD(0, 1.62, 0) - Position;
         var distance = difference.Magnitude;
         if (distance < 1.5 && PickupItem != null && await owner.ReceiveProjectileAsync(PickupItem, Pickup == ArrowPickup.CreativeOnly))
-        { await RemoveAsync(); return; }
-        if (distance <= 0.0001) return;
+        {
+            await RemoveAsync();
+            return;
+        }
+        if (distance <= 0.0001)
+            return;
         Motion = Motion * 0.95 + difference / distance * (0.05 * LoyaltyLevel);
         var next = Position + Motion;
-        if (Level is Obsidian.WorldData.AbstractLevel level && !level.TryMoveEntity(this, Position, next)) return;
+        if (Level is Obsidian.WorldData.AbstractLevel level && !level.TryMoveEntity(this, Position, next))
+            return;
         Position = next;
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new Obsidian.Net.Packets.Play.Clientbound.TeleportEntityPacket
         { EntityId = EntityId, Position = Position, Delta = Motion, Yaw = Yaw, Pitch = Pitch, OnGround = false });
@@ -63,6 +77,7 @@ public sealed partial class Trident : Arrow
         LoyaltyLevel = Weapon != null ? CombatItems.EnchantmentLevel(Weapon, EnchantmentsRegistry.Loyalty) :
             tag.TryGetTagValue<int>("ObsidianLoyalty", out var loyalty) ? Math.Clamp(loyalty, 0, 127) : 0;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);

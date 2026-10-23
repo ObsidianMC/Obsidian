@@ -10,11 +10,13 @@ namespace Obsidian.Entities;
 public sealed partial class Rabbit : FarmAnimal
 {
     private int variant;
+
     public Rabbit()
     {
         Type = EntityType.Rabbit;
         MoveControl = new RabbitMoveControl(this);
     }
+
     public int Variant
     {
         get => variant;
@@ -30,13 +32,17 @@ public sealed partial class Rabbit : FarmAnimal
             SynchronizeMetadata();
         }
     }
+
     internal override float JumpPower => MoveControl is RabbitMoveControl { Climbing: true } ? 0.5f : 0.3f;
     protected override string? SoundName => "rabbit";
     protected override float PanicSpeed => 2.2f;
     protected override float TemptSpeed => 1;
+
     protected override bool CanEat(ItemStack? item) =>
         item is { Count: > 0, Holder.Id: ItemIds.Carrot or ItemIds.GoldenCarrot or ItemIds.Dandelion };
+
     protected override void FinalizeSpawn() => Variant = GetNaturalVariant();
+
     private int GetNaturalVariant()
     {
         var point = (Vector)Position.Floor();
@@ -48,12 +54,14 @@ public sealed partial class Rabbit : FarmAnimal
             return 4;
         return roll < 50 ? 0 : roll < 90 ? 5 : 2;
     }
+
     protected override IEntity CreateOffspring(Animal mate)
     {
         var child = (Rabbit)base.CreateOffspring(mate);
         child.Variant = Random.Next(20) == 0 ? GetNaturalVariant() : Random.Next(2) == 0 ? Variant : ((Rabbit)mate).Variant;
         return child;
     }
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         base.RegisterGoals(actions, targets);
@@ -64,18 +72,22 @@ public sealed partial class Rabbit : FarmAnimal
         targets.AddGoal(1, new NearestAttackableTargetGoal(this, entity => Variant == 99 && entity.Uuid == LastAttacker?.Uuid));
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, entity => Variant == 99 && (entity is IPlayer || entity.Type == EntityType.Wolf)));
     }
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         this.DropVanillaLoot(source);
         return default;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
         writer.WriteVarInt(Variant);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer) => writer.WriteInt("RabbitType", Variant);
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         var saved = tag.TryGetTagValue<int>("RabbitType", out var value) ? value : 0;
@@ -89,9 +101,11 @@ internal sealed class RabbitRaidGardenGoal(Rabbit rabbit) : NavigationGoal(rabbi
     private long nextSearch;
     private long timeout;
     private bool ate;
+
     public override bool CanUse()
     {
-        if (rabbit.AiTick < nextSearch || rabbit.AttackTarget != null) return false;
+        if (rabbit.AiTick < nextSearch || rabbit.AttackTarget != null)
+            return false;
         nextSearch = rabbit.AiTick + 200 + rabbit.Random.Next(200);
         var origin = (Vector)rabbit.Position.Floor();
         Vector? closest = null;
@@ -106,26 +120,39 @@ internal sealed class RabbitRaidGardenGoal(Rabbit rabbit) : NavigationGoal(rabbi
                 continue;
 
             var squared = x * x + y * y + z * z;
-            if (squared < distance) { closest = point; distance = squared; }
+                    if (squared < distance)
+                    {
+                        closest = point;
+                        distance = squared;
         }
-        if (closest == null) return false;
+                }
+        if (closest == null)
+            return false;
         carrot = closest.Value;
         return true;
     }
+
     private bool IsMature(Vector point) =>
         rabbit.Terrain.GetBlock(point) is { RegistryId: BlockIds.Carrots } block && block.GetProperty("age") == "7";
+
     public override void Start()
     {
         ate = false;
         timeout = rabbit.AiTick + 200;
         MoveTo(new VectorD(carrot.X + 0.5, carrot.Y, carrot.Z + 0.5));
     }
+
     public override bool CanContinue() => !ate && rabbit.AiTick < timeout && IsMature(carrot);
+
     public override async ValueTask TickAsync()
     {
         var destination = new VectorD(carrot.X + 0.5, carrot.Y, carrot.Z + 0.5);
         rabbit.LookControl.LookAt(destination);
-        if ((destination - rabbit.Position).MagnitudeSquared() > 1) { MoveTo(destination); return; }
+        if ((destination - rabbit.Position).MagnitudeSquared() > 1)
+        {
+            MoveTo(destination);
+            return;
+        }
         if (rabbit.Terrain.GetBlock(carrot) is { RegistryId: BlockIds.Carrots } block
             && block.GetProperty("age") == "7")
         {
@@ -146,11 +173,13 @@ internal sealed class RabbitMoveControl(Rabbit rabbit) : MoveControl(rabbit)
 {
     private int jumpDelay;
     internal bool Climbing { get; private set; }
+
     public override void MoveTo(VectorD position, float speed)
     {
         Climbing = position.Y > rabbit.Position.Y + 0.5;
         base.MoveTo(position, speed);
     }
+
     internal override void Tick()
     {
         base.Tick();

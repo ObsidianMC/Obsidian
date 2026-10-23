@@ -14,6 +14,7 @@ public sealed partial class Dolphin : AgeableMob
     protected override float DimensionScale => IsBaby ? 0.65f : 1;
     protected override VectorD Travel() => AI.VolumeMovement.Travel(this, InWater);
     protected override void FinalizeSpawn() => Air = 4800;
+
     protected override void RegisterGoals(AI.GoalSelector actions, AI.GoalSelector targets)
     {
         actions.AddGoal(0, new DolphinBreatheGoal(this));
@@ -24,14 +25,18 @@ public sealed partial class Dolphin : AgeableMob
         actions.AddGoal(7, new AI.LookAtPlayerGoal(this, 6));
         targets.AddGoal(1, new AI.HurtByTargetGoal(this));
     }
+
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
-        if (InWater || Terrain.IsRainingAt((Vector)Position.Floor())) Moistness = 2400;
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+            return;
+        if (InWater || Terrain.IsRainingAt((Vector)Position.Floor()))
+            Moistness = 2400;
         else
         {
-            if (--Moistness <= 0) await DamageEnvironmentAsync(1);
+            if (--Moistness <= 0)
+                await DamageEnvironmentAsync(1);
             if (MovementFlags.HasFlag(MovementFlags.OnGround))
                 Motion += new VectorD((Random.NextSingle() - 0.5f) * 0.4f, 0.5f, (Random.NextSingle() - 0.5f) * 0.4f);
         }
@@ -45,11 +50,18 @@ public sealed partial class Dolphin : AgeableMob
             }
         }
     }
+
     protected override async ValueTask TickAirSupplyAsync()
     {
-        if (Terrain.GetBlock((Vector)EyePosition.Floor())?.RegistryId != BlockIds.Water) Air = 4800;
-        else if (--Air <= -20) { Air = 0; await DamageEnvironmentAsync(2); }
+        if (Terrain.GetBlock((Vector)EyePosition.Floor())?.RegistryId != BlockIds.Water)
+            Air = 4800;
+        else if (--Air <= -20)
+        {
+            Air = 0;
+            await DamageEnvironmentAsync(2);
     }
+    }
+
     internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive
@@ -62,7 +74,8 @@ public sealed partial class Dolphin : AgeableMob
         if (item is not { Count: > 0, Holder.Id: ItemIds.Cod or ItemIds.Salmon })
             return false;
         await ConsumeInteractionItemAsync(player, hand);
-        if (IsBaby) Age += -Age / 10;
+        if (IsBaby)
+            Age += -Age / 10;
         else
         {
             GotFish = true;
@@ -73,11 +86,14 @@ public sealed partial class Dolphin : AgeableMob
         SynchronizeMetadata();
         return true;
     }
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        if (!IsBaby) DropItem(ItemsRegistry.Cod, Random.Next(0, 2));
+        if (!IsBaby)
+            DropItem(ItemsRegistry.Cod, Random.Next(0, 2));
         return default;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -86,12 +102,15 @@ public sealed partial class Dolphin : AgeableMob
         writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
         writer.WriteVarInt(Moistness);
     }
+
     protected override void WriteAdditionalSave(Obsidian.Nbt.Interfaces.INbtWriter writer)
     {
         writer.WriteBool("GotFish", GotFish);
         writer.WriteInt("Moistness", Moistness);
-        if (TreasurePosition is Vector point) writer.WriteArray("ObsidianTreasurePos", new[] { point.X, point.Y, point.Z });
+        if (TreasurePosition is Vector point)
+            writer.WriteArray("ObsidianTreasurePos", new[] { point.X, point.Y, point.Z });
     }
+
     protected override void ReadAdditionalSave(Obsidian.Nbt.NbtCompound tag)
     {
         GotFish = tag.TryGetBool("GotFish", out var fish) && fish;
@@ -106,6 +125,7 @@ internal sealed class DolphinBreatheGoal(Dolphin dolphin) : AI.NavigationGoal(do
     public override bool RequiresUpdateEveryTick => true;
     public override bool CanUse() => dolphin.InWater && dolphin.Air < 140;
     public override bool CanContinue() => dolphin.InWater && dolphin.Air < 4800;
+
     public override ValueTask TickAsync()
     {
         var origin = (Vector)dolphin.Position.Floor();
@@ -127,14 +147,18 @@ internal sealed class DolphinSwimGoal(Dolphin dolphin) : AI.NavigationGoal(dolph
 {
     private IPlayer? swimmer;
     public override bool RequiresUpdateEveryTick => true;
+
     public override bool CanUse()
     {
-        if (!dolphin.InWater) return false;
-        if (dolphin.GotFish && dolphin.TreasurePosition != null) return true;
+        if (!dolphin.InWater)
+            return false;
+        if (dolphin.GotFish && dolphin.TreasurePosition != null)
+            return true;
         swimmer = dolphin.Level.GetPlayersInRange(dolphin.Position, 10).FirstOrDefault(player => player.Swimming &&
             player.Health > 0 && player.GameMode != GameMode.Spectator);
         return swimmer != null;
     }
+
     public override ValueTask TickAsync()
     {
         if (dolphin.GotFish && dolphin.TreasurePosition is Vector treasure)
@@ -152,7 +176,8 @@ internal sealed class DolphinSwimGoal(Dolphin dolphin) : AI.NavigationGoal(dolph
         else if (swimmer != null && swimmer.Level == dolphin.Level && swimmer.Swimming)
         {
             MoveTo(swimmer.Position);
-            if (swimmer is Living living) living.AddPotionEffect((int)PotionEffect.DolphinsGrace - 1, 100);
+            if (swimmer is Living living)
+                living.AddPotionEffect((int)PotionEffect.DolphinsGrace - 1, 100);
         }
         return default;
     }

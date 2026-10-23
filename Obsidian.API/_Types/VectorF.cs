@@ -12,17 +12,29 @@ public struct VectorF : IEquatable<VectorF>
     /// <summary>
     /// The X component of the <see cref="VectorF"/>.
     /// </summary>
-    public float X { readonly get; set; }
+    public float X
+    {
+        readonly get;
+        set;
+    }
 
     /// <summary>
     /// The Y component of the <see cref="VectorF"/>.
     /// </summary>
-    public float Y { readonly get; set; }
+    public float Y
+    {
+        readonly get;
+        set;
+    }
 
     /// <summary>
     /// The Z component of the <see cref="VectorF"/>.
     /// </summary>
-    public float Z { readonly get; set; }
+    public float Z
+    {
+        readonly get;
+        set;
+    }
 
     /// <summary>
     /// Creates new instance of <see cref="VectorF"/> with <see cref="X"/>, <see cref="Y"/> and <see cref="Z"/> set to <paramref name="value"/>.
