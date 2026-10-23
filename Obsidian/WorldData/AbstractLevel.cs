@@ -230,16 +230,28 @@ public abstract partial class AbstractLevel : ILevel
     /// <summary>The tick under way's number, different for each tick, or 0 outside a tick.</summary>
     internal long CurrentTickId => Volatile.Read(ref this.currentTickId);
 
-    // The level's players as of the start of its tick, and null outside one (see GetPlayersInRange).
-    private IPlayer[]? tickPlayers;
+    // The level's players as of the start of its tick, and null outside one (see GetPlayersInRange), with the
+    // count of joins and leaves it was taken at: once a player joins or leaves, queries go over the players again,
+    // so that one who joined mid-tick is seen.
+    private TickPlayerSnapshot? tickPlayers;
+    private int playerChanges;
+
+    private sealed record TickPlayerSnapshot(IPlayer[] Players, int Changes);
+
+    // The snapshot, while no player joined or left since it was taken.
+    private IPlayer[]? CurrentTickPlayers =>
+        Volatile.Read(ref this.tickPlayers) is TickPlayerSnapshot snapshot && snapshot.Changes == Volatile.Read(ref this.playerChanges)
+            ? snapshot.Players
+            : null;
 
     // Called at the start of the level's tick, under the simulation gate.
     private void SnapshotPlayers()
     {
+        var changes = Volatile.Read(ref this.playerChanges);
         var players = this.Players.Values.ToArray();
         this.simulation.Update(players.Where(player => player.GameMode != GameMode.Spectator), Configuration.SimulationDistance);
 
-        Volatile.Write(ref this.tickPlayers, players);
+        Volatile.Write(ref this.tickPlayers, new TickPlayerSnapshot(players, changes));
         Volatile.Write(ref this.simulationCurrent, true);
         Volatile.Write(ref this.currentTickId, ++this.lastTickId);
     }
@@ -251,7 +263,7 @@ public abstract partial class AbstractLevel : ILevel
     internal double NearestPlayerDistanceSquared(VectorD position)
     {
         var nearest = double.MaxValue;
-        if (Volatile.Read(ref this.tickPlayers) is IPlayer[] players)
+        if (this.CurrentTickPlayers is IPlayer[] players)
         {
             foreach (var player in players)
             {
@@ -656,7 +668,7 @@ public abstract partial class AbstractLevel : ILevel
 
         // During the tick, from its snapshot of the players: mobs ask this many times a tick, and going over the
         // players' dictionary each time cost more than the checks. A player who left since isn't returned.
-        if (Volatile.Read(ref this.tickPlayers) is IPlayer[] players)
+        if (this.CurrentTickPlayers is IPlayer[] players)
         {
             foreach (var player in players)
             {
@@ -682,10 +694,24 @@ public abstract partial class AbstractLevel : ILevel
 
     public IEnumerable<IPlayer> GetPlayersInChunkRange(Vector worldPosition) => this.PlayersWithChunk(worldPosition);
 
-    public bool TryAddPlayer(IPlayer player) => Players.TryAdd(player.Uuid, player);
+    public bool TryAddPlayer(IPlayer player)
+    {
+        if (!Players.TryAdd(player.Uuid, player))
+            return false;
+
+        Interlocked.Increment(ref this.playerChanges);
+        return true;
+    }
 
     // Matches the instance, not just the UUID, so a stale reference can't remove a newer player with the same UUID.
-    public bool TryRemovePlayer(IPlayer player) => Players.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player));
+    public bool TryRemovePlayer(IPlayer player)
+    {
+        if (!Players.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
+            return false;
+
+        Interlocked.Increment(ref this.playerChanges);
+        return true;
+    }
 
     public async virtual Task DoWorldTickAsync()
     {

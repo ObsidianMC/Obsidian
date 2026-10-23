@@ -6,17 +6,28 @@ namespace Obsidian.WorldData;
 /// of each tick, and only the squares of players who changed chunk, joined or left are counted again, since the level's
 /// tick asks whether a chunk is simulated for every mob and loaded chunk.
 /// </summary>
-/// <remarks>Not thread-safe: the level updates and reads it in its tick.</remarks>
+/// <remarks>
+/// The level updates it at the start of its tick, under its simulation gate. Reads are safe from any thread, as the
+/// counts are a concurrent dictionary: one made while the tick updates them sees some players' new squares.
+/// </remarks>
 internal sealed class SimulationArea
 {
     // How many players simulate each chunk, and the chunk each player was counted around.
-    private readonly Dictionary<long, int> chunks = [];
+    private readonly ConcurrentDictionary<long, int> chunks = [];
     private readonly Dictionary<IPlayer, (int X, int Z)> centers = new(ReferenceEqualityComparer.Instance);
     private readonly HashSet<IPlayer> current = new(ReferenceEqualityComparer.Instance);
     private int distance = -1;
 
     /// <summary>The simulated chunks, packed with <see cref="NumericsHelper.IntsToLong"/>, in no particular order.</summary>
-    public Dictionary<long, int>.KeyCollection Chunks => this.chunks.Keys;
+    public IEnumerable<long> Chunks
+    {
+        get
+        {
+            // Read in place: the dictionary's Keys copies them under all its locks.
+            foreach (var (key, _) in this.chunks)
+                yield return key;
+        }
+    }
 
     public bool Contains(int chunkX, int chunkZ) => this.chunks.ContainsKey(NumericsHelper.IntsToLong(chunkX, chunkZ));
 
@@ -75,7 +86,7 @@ internal sealed class SimulationArea
                 if (count > 0)
                     this.chunks[key] = count;
                 else
-                    this.chunks.Remove(key);
+                    this.chunks.TryRemove(key, out _);
             }
         }
     }

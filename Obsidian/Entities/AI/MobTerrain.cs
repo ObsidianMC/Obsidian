@@ -1,4 +1,5 @@
 using Obsidian.WorldData;
+using System.Threading;
 using Obsidian.WorldData.Fluids;
 
 namespace Obsidian.Entities.AI;
@@ -88,8 +89,11 @@ internal sealed class MobTerrain(ILevel level)
         _ => 0.6f
     };
     // The chunk the last block was read from, kept for the rest of the level's tick: a mob reads a few dozen blocks
-    // around it a tick, nearly all from one chunk, and each read looked the chunk up in the level's regions.
-    private (long Tick, int X, int Z, IChunk? Chunk) lastChunk;
+    // around it a tick, nearly all from one chunk, and each read looked the chunk up in the level's regions. It's
+    // replaced whole, as a packet's handler may read the mob's terrain while its tick does.
+    private LastChunk? lastChunk;
+
+    private sealed record LastChunk(long Tick, int X, int Z, IChunk? Chunk);
 
     public IBlock? GetBlock(Vector position)
     {
@@ -98,12 +102,12 @@ internal sealed class MobTerrain(ILevel level)
 
         var (chunkX, chunkZ) = (position.X >> 4, position.Z >> 4);
         var tick = concrete.CurrentTickId;
-        if (tick != 0 && lastChunk.Tick == tick && lastChunk.X == chunkX && lastChunk.Z == chunkZ)
-            return lastChunk.Chunk?.GetBlock(position);
+        if (tick != 0 && Volatile.Read(ref lastChunk) is LastChunk last && last.Tick == tick && last.X == chunkX && last.Z == chunkZ)
+            return last.Chunk?.GetBlock(position);
 
         var chunk = concrete.GetLoadedChunk(chunkX, chunkZ);
         if (tick != 0)
-            lastChunk = (tick, chunkX, chunkZ, chunk);
+            Volatile.Write(ref lastChunk, new LastChunk(tick, chunkX, chunkZ, chunk));
         return chunk?.GetBlock(position);
     }
 

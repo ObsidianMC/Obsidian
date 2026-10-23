@@ -3,6 +3,7 @@ using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 using System.Runtime.Loader;
+using System.Threading;
 
 namespace Obsidian.Entities;
 
@@ -16,18 +17,25 @@ public partial class Mob
     internal bool InWater => this.TouchesFluid(water: true, ref this.waterContact);
     internal bool InLava => this.TouchesFluid(water: false, ref this.lavaContact);
 
-    // Whether the mob's box touches water and lava, worked out once per position and tick, as vanilla works it out
-    // once a tick: its environment, travel, navigation and goals each ask, and each asked the terrain again.
-    private (VectorD Position, long Tick, bool Touches)? waterContact;
-    private (VectorD Position, long Tick, bool Touches)? lavaContact;
+    // Whether the mob's box touches water and lava, worked out once per position during the level's tick, as vanilla
+    // works it out once a tick: its environment, travel, navigation and goals each ask, and each asked the terrain
+    // again. Asked outside the tick (a packet's handler), it's worked out again. Each is replaced whole, as packet
+    // handlers may ask while the tick does.
+    private FluidContact? waterContact;
+    private FluidContact? lavaContact;
 
-    private bool TouchesFluid(bool water, ref (VectorD Position, long Tick, bool Touches)? contact)
+    private sealed record FluidContact(VectorD Position, long Tick, bool Touches);
+
+    private bool TouchesFluid(bool water, ref FluidContact? contact)
     {
-        if (contact is { } known && known.Position == Position && known.Tick == AiTick)
+        var tick = Level is AbstractLevel level ? level.CurrentTickId : 0;
+        if (tick != 0 && Volatile.Read(ref contact) is FluidContact known && known.Tick == tick && known.Position == Position)
             return known.Touches;
 
-        var touches = Terrain.ContainsFluid(Dimension.CreateBBFromPosition(Position), water);
-        contact = (Position, AiTick, touches);
+        var position = Position;
+        var touches = Terrain.ContainsFluid(Dimension.CreateBBFromPosition(position), water);
+        if (tick != 0)
+            Volatile.Write(ref contact, new FluidContact(position, tick, touches));
         return touches;
     }
     internal bool IsRemoved { get; private set; }
@@ -87,6 +95,10 @@ public partial class Mob
     // clients interpolate between updates: sending it every tick to every player in range cost the tick more than the
     // mobs' AI did.
     private const int MovementUpdateInterval = 3;
+
+    // Like vanilla's pairing, which spawns an entity for a new observer at the base of its position codec: the
+    // relative moves that follow are from the position last sent, which lags behind between updates.
+    private protected override VectorD PairingPosition => hasSentPosition ? lastSentPosition : Position;
 
     public Mob()
     {

@@ -605,6 +605,12 @@ public partial class Entity : IEquatable<Entity>, IEntity
         }
     }
 
+    /// <summary>
+    /// Where a client that starts seeing the entity is told it is: the base its relative moves are sent from, which
+    /// for a mob is the position it last sent (see <see cref="Mob.PairingPosition"/>).
+    /// </summary>
+    private protected virtual VectorD PairingPosition => this.Position;
+
     internal virtual IClientboundPacket CreateSpawnPacket(Velocity? velocity = null, int additionalData = 0)
     {
         List<Net.Packets.ClientboundPacket> packets =
@@ -614,7 +620,7 @@ public partial class Entity : IEquatable<Entity>, IEntity
                 EntityId = this.EntityId,
                 Uuid = this.Uuid,
                 Type = this.TypeId,
-                Position = this.Position,
+                Position = this.PairingPosition,
                 Pitch = this.Pitch,
                 Yaw = this.Yaw,
                 Data = additionalData,

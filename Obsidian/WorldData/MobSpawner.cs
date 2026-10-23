@@ -293,10 +293,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             return 0;
         }
 
-        // Like vanilla's isInNetherFortressBounds, only a position above nether bricks looks for a fortress, which
-        // otherwise searched the structures for every group of monsters.
         if (category == "monster" && level.Generator is MojangGenerator structureGenerator &&
-            terrain.GetBlock(new Vector(x, y - 1, z))?.Is(BlockIds.NetherBricks) == true &&
             structureGenerator.IsInsideFortress(new Vector(x, y, z)))
             choices = fortressSpawns;
 
