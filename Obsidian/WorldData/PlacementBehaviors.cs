@@ -1,6 +1,7 @@
 using Obsidian.API.Blocks;
 using Obsidian.Registries;
 using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.WorldData;
 
@@ -17,6 +18,7 @@ internal static class PlacementBehaviors
     private static readonly IBlockBehavior ClickedFaceOpposite = new ClickedFaceFacing(opposite: true);
     private static readonly IBlockBehavior Leaves = new LeavesBlockBehavior.Placement();
     private static readonly IBlockBehavior BambooStalk = new BambooStalkPlacement();
+    private static readonly IBlockBehavior Crafter = new CrafterPlacement();
 
     // One member per Mojang class that owns an implemented placement override. Classes may share an implementation
     // object when their current vanilla algorithms are equivalent; block membership comes only from vanilla's class.
@@ -26,6 +28,7 @@ internal static class PlacementBehaviors
     internal static IBlockBehavior BedBlock => Horizontal;
     internal static IBlockBehavior BeehiveBlock => HorizontalOpposite;
     internal static IBlockBehavior CampfireBlock => Horizontal;
+    internal static IBlockBehavior CrafterBlock => Crafter;
     internal static IBlockBehavior ChestBlock => HorizontalOpposite;
     internal static IBlockBehavior ChiseledBookShelfBlock => HorizontalOpposite;
     internal static IBlockBehavior CommandBlock => NearestOpposite;

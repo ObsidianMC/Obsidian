@@ -101,6 +101,30 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
 
     void IRedstoneLevel.EnqueueSimulation(Func<ValueTask> action) => this.EnqueueSimulationAction(action);
 
+    bool IRedstoneLevel.TntExplodes => this.LevelData.GetBooleanRule("tnt_explodes");
+
+    void IRedstoneLevel.SetCrafterTriggered(Vector position, bool triggered)
+    {
+        if (this.BlockUpdates.GetBlockEntity(position) is CrafterBlockEntity crafter)
+        {
+            crafter.Crafter.Triggered = triggered;
+            crafter.SetChanged();
+        }
+    }
+
+    void IRedstoneLevel.FireDispenser(Vector position, IBlock state, bool dropper) =>
+        this.EnqueueEntityAction(() => RedstoneDispenser.Fire(this, position, state, dropper));
+
+    void IRedstoneLevel.CraftCrafter(Vector position) =>
+        this.EnqueueEntityAction(() => RedstoneCrafter.CraftAsync(this, position));
+
+    void IRedstoneLevel.PrimeTnt(Vector position) =>
+        this.EnqueueEntityAction(() =>
+        {
+            Entities.PrimedTnt.Prime(this, position, owner: null);
+            return ValueTask.CompletedTask;
+        });
+
     ValueTask IRedstoneLevel.WriteAsync(Vector position, IBlock block, bool notifyNeighbors) =>
         this.WriteAsync(position, block, notifyNeighbors ? BlockUpdateFlags.All : ClientsOnly);
 

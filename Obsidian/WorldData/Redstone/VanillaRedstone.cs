@@ -39,12 +39,6 @@ internal static class VanillaRedstone
     private static RedstoneComponent?[] Build()
     {
         var table = new RedstoneComponent?[BlocksRegistry.Names.Length];
-        var hopper = new HopperComponent();
-        var dispenser = new DispenserComponent(dropper: false);
-        var dropper = new DispenserComponent(dropper: true);
-        var tnt = new TntComponent();
-        var lectern = new LecternComponent();
-        var crafter = new CrafterComponent();
         var rail = new RailComponent();
         var poweredRail = new PoweredRailComponent();
         var detectorRail = new DetectorRailComponent();
@@ -52,16 +46,11 @@ internal static class VanillaRedstone
         for (var id = 0; id < table.Length; id++)
         {
             var block = BlocksRegistry.GetDefault(id);
-            // Wire, torches, repeaters, comparators, switches, plates, lamps and the redstone block are the engine's
-            // (see RedstoneRegistration); what's left here are the components not yet ported to it.
+            // Everything else is the engine's (see RedstoneRegistration). What's left here are the three rails, which
+            // still need the synchronous LevelBlockUpdates path: entity-inside checks, signal-source checks, and the
+            // unsupported-rail drop in BlockUpdates.NeighborChanged, none of which the block-notification pipeline has yet.
             table[id] = block.BlockClass() switch
             {
-                "HopperBlock" => hopper,
-                "DispenserBlock" => dispenser,
-                "DropperBlock" => dropper,
-                "TntBlock" => tnt,
-                "LecternBlock" => lectern,
-                "CrafterBlock" => crafter,
                 "RailBlock" => rail,
                 "PoweredRailBlock" => poweredRail,
                 "DetectorRailBlock" => detectorRail,

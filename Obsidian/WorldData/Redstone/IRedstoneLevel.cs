@@ -30,7 +30,22 @@ internal interface IRedstoneLevel : IBlockChangeWorld
     /// </summary>
     ValueTask WriteAsync(Vector position, IBlock block, bool notifyNeighbors);
 
+    /// <summary>Whether the <c>tnt_explodes</c> rule lets TNT be primed.</summary>
+    bool TntExplodes { get; }
+
+    /// <summary>Spawns lit TNT at <paramref name="position"/> on the level's entity path, after the block has been removed.</summary>
+    void PrimeTnt(Vector position);
+
     /// <summary>Vanilla's <c>hasAnalogOutputSignal</c> for a block state (containers, cauldrons, ...).</summary>
+    /// <summary>Sets a crafter's triggered flag on its block entity (vanilla <c>CrafterBlockEntity.setTriggered</c>).</summary>
+    void SetCrafterTriggered(Vector position, bool triggered);
+
+    /// <summary>Fires a dispenser or dropper on the entity path (vanilla <c>DispenserBlock.dispenseFrom</c>).</summary>
+    void FireDispenser(Vector position, IBlock state, bool dropper);
+
+    /// <summary>Crafts a crafter's grid on the entity path (vanilla <c>CrafterBlock.dispenseFrom</c>).</summary>
+    void CraftCrafter(Vector position);
+
     bool HasAnalogOutput(IBlock block);
 
     /// <summary>Vanilla's <c>getAnalogOutputSignal</c> of the block at <paramref name="position"/>, read as the neighbour in <paramref name="direction"/>.</summary>

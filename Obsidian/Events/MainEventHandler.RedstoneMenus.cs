@@ -170,10 +170,10 @@ public partial class MainEventHandler
         switch (button)
         {
             case 1:
-                entity.SetPage(lectern.Page - 1);
+                await entity.SetPageAsync(lectern.Page - 1);
                 break;
             case 2:
-                entity.SetPage(lectern.Page + 1);
+                await entity.SetPageAsync(lectern.Page + 1);
                 break;
             case 3:
                 // Like vanilla's mayBuild: adventure and spectator players can't take it.
@@ -194,7 +194,7 @@ public partial class MainEventHandler
                 await player.CloseContainerAsync(null);
                 return;
             case >= 100:
-                entity.SetPage(button - 100);
+                await entity.SetPageAsync(button - 100);
                 break;
             default:
                 return;

@@ -23,6 +23,11 @@ internal static class RedstoneRegistration
         RedstoneRepeater.Register(world, ticks, redstone, neighbors, engine);
         RedstoneObserver.Register(world, ticks, redstone, neighbors);
         RedstoneComparator.Register(world, ticks, redstone, neighbors, engine);
+        TntIgnition.Register(world, neighbors, engine);
+        RedstoneLectern.Register(world, ticks, redstone);
+        RedstoneCrafter.Register(world, ticks, neighbors, engine);
+        RedstoneDispenser.Register(world, engine, ticks, neighbors);
+        RedstoneHopper.Register(world, neighbors, engine);
         var tripwires = TripWire.Register(world, ticks, redstone, neighbors);
         var targets = TargetBlock.Register(world, ticks, redstone);
         return new RedstoneInstall(engine, tripwires, targets);

@@ -2,44 +2,11 @@ using Obsidian.API.BlockEntities;
 using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
+using Obsidian.WorldData.BlockNotifications;
+using Obsidian.WorldData.BlockTicks;
 using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData.Redstone;
-
-/// <summary>
-/// The hopper's block, like vanilla's <c>HopperBlock</c>: it faces away from the face clicked (down when clicked on
-/// a top or bottom face), and is disabled while powered (see <see cref="Hoppers"/> for how it moves items).
-/// </summary>
-internal sealed class HopperComponent : RedstoneComponent
-{
-    public override IBlock? GetStateForPlacement(RedstonePlacement placement)
-    {
-        var facing = placement.ClickedFace.Opposite();
-        if (facing.IsVertical())
-            facing = BlockFace.Down;
-
-        return placement.Block
-            .WithProperty("facing", FeatureHelpers.FaceName(facing))
-            .WithProperty("enabled", true);
-    }
-
-    public override void OnPlaced(LevelBlockUpdates level, Vector position, IBlock state, IBlock oldState)
-    {
-        if (oldState.RegistryId != state.RegistryId)
-            CheckPower(level, position, state);
-    }
-
-    public override void NeighborChanged(LevelBlockUpdates level, Vector position, IBlock state) =>
-        CheckPower(level, position, state);
-
-    // Vanilla's checkPoweredState: enabled exactly while no neighbour powers it, shown to clients only.
-    private static void CheckPower(LevelBlockUpdates level, Vector position, IBlock state)
-    {
-        var enabled = !level.HasNeighborSignal(position);
-        if ((state.GetProperty("enabled") == "true") != enabled)
-            level.Set(position, state.WithProperty("enabled", enabled), BlockUpdateFlags.Clients);
-    }
-}
 
 /// <summary>
 /// The dispenser's and dropper's block, like vanilla's <c>DispenserBlock</c> and <c>DropperBlock</c>: it faces the
@@ -51,7 +18,7 @@ internal sealed class HopperComponent : RedstoneComponent
 /// Vanilla's dispensers use many items (shoot arrows, place water, ...); here they place boats and minecarts (see
 /// <see cref="VehicleItems.Dispense"/>), and drop every other item, like vanilla's default behaviour.
 /// </remarks>
-internal sealed class DispenserComponent(bool dropper) : RedstoneComponent
+internal sealed class RedstoneDispenser(IRedstoneLevel level, RedstoneEngine engine, bool dropper) : INeighborChangedBehavior
 {
     // Vanilla's delay between a dispenser being triggered and firing.
     private const int FireDelay = 4;
@@ -64,38 +31,38 @@ internal sealed class DispenserComponent(bool dropper) : RedstoneComponent
     // Vanilla DefaultDispenseItemBehavior: an item's speed (6) times its spread per unit of speed.
     private const double DropSpread = 6 * 0.0172275;
 
-    public override IBlock? GetStateForPlacement(RedstonePlacement placement) => placement.Block
-        .WithProperty("facing", FeatureHelpers.FaceName(placement.NearestLookDirection.Opposite()))
-        .WithProperty("triggered", false);
+    public const int DispenserId = BlockIds.Dispenser;
+    public const int DropperId = BlockIds.Dropper;
 
-    public override void NeighborChanged(LevelBlockUpdates level, Vector position, IBlock state)
+    public static void Register(IRedstoneLevel level, RedstoneEngine engine, LevelBlockTicks ticks, NeighborBehaviors neighbors)
     {
-        var powered = level.HasNeighborSignal(position) || level.HasNeighborSignal(position + Vector.Up);
-        var triggered = state.GetProperty("triggered") == "true";
+        foreach (var (id, dropper) in new[] { (DispenserId, false), (DropperId, true) })
+        {
+            var behavior = new RedstoneDispenser(level, engine, dropper);
+            neighbors.Register(id, behavior);
+            ticks.Register(id, (position, state) => level.FireDispenser(position, state, dropper));
+        }
+    }
+
+    public async ValueTask OnNeighborChangedAsync(NeighborChange change, IBlockChangeWorld world)
+    {
+        var position = change.Position;
+        var powered = engine.HasNeighborSignal(position) || engine.HasNeighborSignal(position + Vector.Up);
+        var triggered = change.State.GetProperty("triggered") == "true";
 
         if (powered && !triggered)
         {
-            level.ScheduleTick(position, state, FireDelay);
-            level.Set(position, state.WithProperty("triggered", true), BlockUpdateFlags.Clients);
+            level.ScheduleBlockTick(position, change.State, FireDelay);
+            await level.WriteAsync(position, change.State.WithProperty("triggered", true), notifyNeighbors: false);
         }
         else if (!powered && triggered)
         {
-            level.Set(position, state.WithProperty("triggered", false), BlockUpdateFlags.Clients);
+            await level.WriteAsync(position, change.State.WithProperty("triggered", false), notifyNeighbors: false);
         }
     }
 
-    /// <remarks>
-    /// Fires later in the same game tick, with the level's entity actions: firing takes its container's lock and
-    /// may roll its loot table, which mustn't happen under the tick lock block ticks run under.
-    /// </remarks>
-    public override void Tick(LevelBlockUpdates level, Vector position, IBlock state)
-    {
-        if (level.Level is AbstractLevel owner)
-            owner.EnqueueEntityAction(() => this.Fire(owner, position, state));
-    }
-
     // Vanilla's dispenseFrom.
-    private ValueTask Fire(AbstractLevel level, Vector position, IBlock state)
+    internal static ValueTask Fire(AbstractLevel level, Vector position, IBlock state, bool dropper)
     {
         var updates = level.BlockUpdates;
         if (!updates.GetBlock(position).IsSameState(state)

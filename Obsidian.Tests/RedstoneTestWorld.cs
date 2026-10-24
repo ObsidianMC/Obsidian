@@ -43,6 +43,10 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
 
     public int SkyLight { get; set; } = 15;
 
+    public bool TntExplodes { get; set; } = true;
+
+    public List<Vector> PrimedTnt { get; } = [];
+
     /// <summary>Every block tick scheduled through the world, as (position, block, delay), in scheduling order.</summary>
     public List<(Vector Position, string Block, int Delay)> ScheduledBlockTicks { get; } = [];
 
@@ -186,6 +190,20 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
 
     int IRedstoneLevel.GetSkyLight(Vector position) => this.GetLoadedBlock(position) is null ? 0 : this.SkyLight;
 
+    /// <summary>Crafts requested by crafters, in order (the real level crafts on its entity path).</summary>
+    public List<Vector> CraftRequests { get; } = [];
+
+    void IRedstoneLevel.SetCrafterTriggered(Vector position, bool triggered)
+    {
+    }
+
+    void IRedstoneLevel.CraftCrafter(Vector position) => this.CraftRequests.Add(position);
+
+    /// <summary>Dispenser and dropper fires requested, in order (the real level fires on its entity path).</summary>
+    public List<(Vector Position, bool Dropper)> DispenserFires { get; } = [];
+
+    void IRedstoneLevel.FireDispenser(Vector position, IBlock state, bool dropper) => this.DispenserFires.Add((position, dropper));
+
     bool IRedstoneLevel.HasAnalogOutput(IBlock block) => false;
 
     int IRedstoneLevel.GetAnalogOutput(Vector position, IBlock block, BlockFace direction) => 0;
@@ -199,6 +217,10 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
     bool IRedstoneLevel.IsBlockTickScheduled(Vector position, string block) => this.BlockTicks.IsScheduled(position, block);
 
     void IRedstoneLevel.EnqueueSimulation(Func<ValueTask> action) => this.simulation.Enqueue(action);
+
+    bool IRedstoneLevel.TntExplodes => this.TntExplodes;
+
+    void IRedstoneLevel.PrimeTnt(Vector position) => this.PrimedTnt.Add(position);
 
     async ValueTask IRedstoneLevel.WriteAsync(Vector position, IBlock block, bool notifyNeighbors)
     {
