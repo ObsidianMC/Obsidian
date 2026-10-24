@@ -197,18 +197,36 @@ internal static class VanillaPlacement
 
         level.Set(position, state.WithProperty("open", open), BlockUpdateFlags.All);
 
-        var name = state.UnlocalizedName;
-        // Vanilla's block set sounds: copper, bamboo, cherry and nether wood have their own, other wood shares one.
-        var material = name.Contains("copper") ? "copper" : name.Contains("bamboo") ? "bamboo_wood"
-            : name.Contains("cherry") ? "cherry_wood" : name.Contains("crimson") || name.Contains("warped") ? "nether_wood"
-            : "wooden";
-        var sound = kind switch
+        return OpenSound(state, open);
+    }
+
+    /// <summary>The sound a door, trapdoor or fence gate makes as it opens or closes (vanilla's block set sounds).</summary>
+    public static string OpenSound(IBlock state, bool open)
+    {
+        var material = SoundMaterial(state);
+        var sound = state.BlockClass() switch
         {
             "DoorBlock" => $"{material}_door",
             "TrapDoorBlock" => $"{material}_trapdoor",
             _ => material is "wooden" or "copper" ? "fence_gate" : $"{material}_fence_gate"
         };
         return $"minecraft:block.{sound}.{(open ? "open" : "close")}";
+    }
+
+    /// <summary>
+    /// The sound material of a block, named as vanilla's block sets name it: iron, copper, stone, copper and
+    /// bamboo, cherry and nether wood have their own; other wood shares one.
+    /// </summary>
+    public static string SoundMaterial(IBlock state)
+    {
+        var name = state.UnlocalizedName;
+        return name.Contains("iron") ? "iron"
+            : name.Contains("copper") ? "copper"
+            : name.Contains("stone") ? "stone"
+            : name.Contains("bamboo") ? "bamboo_wood"
+            : name.Contains("cherry") ? "cherry_wood"
+            : name.Contains("crimson") || name.Contains("warped") ? "nether_wood"
+            : "wooden";
     }
 
     private static IBlock? DoorState(LevelBlockUpdates level, IBlock block, Vector position, BlockFace looking,

@@ -95,7 +95,10 @@ internal static class BasicRedstoneComponents
             ticks.Register(id, (position, state) => level.EnqueueSimulation(async () =>
             {
                 if (state.GetProperty("powered") == "true")
+                {
                     await SetMountedStateAsync(level, position, state.WithProperty("powered", false));
+                    level.PlaySound(position, ButtonSound(state, on: false));
+                }
             }));
         }
 
@@ -121,11 +124,13 @@ internal static class BasicRedstoneComponents
     /// <summary>
     /// Uses a lever or button before generic item placement. Returns false for all other blocks.
     /// </summary>
-    public static async ValueTask<bool> TryUseAsync(IRedstoneLevel level, Vector position, IBlock state)
+    public static async ValueTask<bool> TryUseAsync(IRedstoneLevel level, Vector position, IBlock state, IPlayer player)
     {
         if (state.BlockClass() == "LeverBlock")
         {
-            await SetMountedStateAsync(level, position, state.WithProperty("powered", state.GetProperty("powered") != "true"));
+            var on = state.GetProperty("powered") != "true";
+            await SetMountedStateAsync(level, position, state.WithProperty("powered", on));
+            level.PlaySound(position, "minecraft:block.lever.click", 0.3f, on ? 0.6f : 0.5f, player);
             return true;
         }
 
@@ -143,7 +148,7 @@ internal static class BasicRedstoneComponents
 
         if (RedstoneComparator.IsComparator(state))
         {
-            await RedstoneComparator.ToggleModeAsync(level, position, state);
+            await RedstoneComparator.ToggleModeAsync(level, position, state, player);
             return true;
         }
 
@@ -151,6 +156,7 @@ internal static class BasicRedstoneComponents
         {
             var powered = state.WithProperty("powered", true);
             await SetMountedStateAsync(level, position, powered);
+            level.PlaySound(position, ButtonSound(state, on: true), except: player);
             if (ButtonDelay(state.RegistryId) is { } delay)
                 level.ScheduleBlockTick(position, powered, delay);
             return true;
@@ -178,49 +184,6 @@ internal static class BasicRedstoneComponents
     {
         await world.SetBlockAsync(position, state);
         await world.NotifyNeighborsAsync(position.Offset(AttachedDirection(state)));
-    }
-
-    /// <summary>
-    /// Derives the placement state that vanilla's mounted-component placement computes from the clicked support face and player yaw.
-    /// The caller still commits it through the ordinary live placement pipeline.
-    /// </summary>
-    public static IBlock DerivePlacementState(IBlock state, BlockFace clickedFace, float yaw)
-    {
-        // Torches clicked on a side become their wall variant, facing away from the clicked block (vanilla getStateForPlacement).
-        if (clickedFace is BlockFace.North or BlockFace.South or BlockFace.West or BlockFace.East)
-        {
-            var wall = state.BlockClass() switch
-            {
-                "TorchBlock" when state.Is(BlockIds.Torch) => BlockIds.WallTorch,
-                "RedstoneTorchBlock" => BlockIds.RedstoneWallTorch,
-                _ => (int?)null
-            };
-            if (wall is { } wallId)
-                return BlocksRegistry.GetDefault(wallId).WithProperty("facing", clickedFace.ToString().ToLowerInvariant());
-        }
-
-        if (state.Is(RedstoneRepeater.BlockId))
-            return RedstoneRepeater.DerivePlacement(state, yaw);
-
-        if (RedstoneObserver.IsObserver(state))
-            return RedstoneObserver.DerivePlacement(state, clickedFace);
-
-        if (RedstoneComparator.IsComparator(state))
-            return RedstoneComparator.DerivePlacement(state, yaw);
-
-        if (state.BlockClass() is not ("LeverBlock" or "ButtonBlock"))
-            return state;
-
-        var face = clickedFace switch
-        {
-            BlockFace.Up => "floor",
-            BlockFace.Down => "ceiling",
-            _ => "wall"
-        };
-        var facing = clickedFace is BlockFace.North or BlockFace.South or BlockFace.West or BlockFace.East
-            ? clickedFace.ToString().ToLowerInvariant()
-            : PlacementFacing.FromYaw(yaw).ToString().ToLowerInvariant();
-        return state.WithProperty("face", face).WithProperty("facing", facing);
     }
 
     // A redstone block gives weak power only: oracle-checked, a stone beside it doesn't pass the power on to a lamp above.
@@ -296,32 +259,46 @@ internal static class BasicRedstoneComponents
             state.GetProperty("lit") == "true" ? RedstoneEngine.MaxSignal : 0;
     }
 
+    /// <summary>A button's click sound, from its block set (vanilla <c>ButtonBlock.playSound</c>).</summary>
+    internal static string ButtonSound(IBlock state, bool on) =>
+        $"minecraft:block.{VanillaPlacement.SoundMaterial(state)}_button.{(on ? "click_on" : "click_off")}";
+
     private sealed class OpenConsumer(RedstoneEngine engine) : INeighborChangedBehavior
     {
         public ValueTask OnNeighborChangedAsync(NeighborChange change, IBlockChangeWorld world) => this.UpdateAsync(change.Position, change.State, world);
 
+        // Vanilla DoorBlock.setOpen: a door, trapdoor or gate that changes plays its open or close sound once, at its lower half.
         private async ValueTask UpdateAsync(Vector position, IBlock state, IBlockChangeWorld world)
         {
             var powered = engine.HasNeighborSignal(position);
             if (state.GetProperty("half") is "lower" or "upper")
             {
-                var otherPosition = position.Offset(state.GetProperty("half") == "lower" ? BlockFace.Up : BlockFace.Down);
+                var lower = state.GetProperty("half") == "lower";
+                var otherPosition = position.Offset(lower ? BlockFace.Up : BlockFace.Down);
                 var other = world.GetLoadedBlock(otherPosition);
                 powered |= other is not null && engine.HasNeighborSignal(otherPosition);
-                await UpdateAsync(position, state, powered, world);
+                var changed = await UpdateAsync(position, state, powered, world);
                 if (other is not null && other.BlockClass() == state.BlockClass())
-                    await UpdateAsync(otherPosition, other, powered, world);
+                    changed |= await UpdateAsync(otherPosition, other, powered, world);
+
+                if (changed)
+                    world.PlaySound(lower ? position : otherPosition, VanillaPlacement.OpenSound(state, powered));
                 return;
             }
 
-            await UpdateAsync(position, state, powered, world);
+            if (await UpdateAsync(position, state, powered, world))
+                world.PlaySound(position, VanillaPlacement.OpenSound(state, powered));
         }
 
-        private static async ValueTask UpdateAsync(Vector position, IBlock state, bool powered, IBlockChangeWorld world)
+        // Returns whether the open state changed: only that plays the sound, like vanilla's setOpen.
+        private static async ValueTask<bool> UpdateAsync(Vector position, IBlock state, bool powered, IBlockChangeWorld world)
         {
-            if ((state.GetProperty("powered") == "true") == powered && (state.GetProperty("open") == "true") == powered)
-                return;
+            var open = state.GetProperty("open") == "true";
+            if (open == powered && (state.GetProperty("powered") == "true") == powered)
+                return false;
+
             await world.SetBlockAsync(position, state.WithProperty("powered", powered).WithProperty("open", powered));
+            return open != powered;
         }
     }
 

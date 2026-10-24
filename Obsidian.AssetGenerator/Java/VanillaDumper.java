@@ -428,6 +428,14 @@ public final class VanillaDumper {
         var destroySpeed = mojang.method(STATE_BASE, "getDestroySpeed", BLOCK_GETTER, BLOCK_POS);
         var correctTool = mojang.method(STATE_BASE, "requiresCorrectToolForDrops");
         var isRandomlyTicking = mojang.method(STATE_BASE, "isRandomlyTicking");
+        // BlockStateBase.getPistonPushReaction: the PushReaction enum, dumped by constant name in ordinal order.
+        var pistonPushReaction = mojang.method(STATE_BASE, "getPistonPushReaction");
+        var pushReactionNames = new ArrayList<String>();
+        var pushReactions = new int[states.size()];
+        // PistonBaseBlock.isSticky is set by its constructor; the sticky piston and normal piston share one class.
+        var stickyPistonStates = new ArrayList<Integer>();
+        var pistonBase = mojang.field("net.minecraft.world.level.block.piston.PistonBaseBlock", "isSticky");
+        var pistonBaseType = mojang.type("net.minecraft.world.level.block.piston.PistonBaseBlock");
         var isFluidRandomlyTicking = mojang.method(FLUID_STATE, "isRandomlyTicking");
         var shapeBoxes = new Indexer<List<double[]>>(shape -> shape.stream().map(Arrays::toString).toList());
         var collisionShapes = new int[states.size()];
@@ -470,6 +478,13 @@ public final class VanillaDumper {
                     (double) Mojang.get(offsetZ, offset), (float) Mojang.call(maxHorizontalOffset, block), (float) Mojang.call(maxVerticalOffset, block) };
             }
             hardness[id] = (float) Mojang.call(destroySpeed, state, emptyLevel, origin);
+            var reaction = (Enum<?>) Mojang.call(pistonPushReaction, state);
+            if (!pushReactionNames.contains(reaction.name()))
+                pushReactionNames.add(reaction.name());
+            pushReactions[id] = pushReactionNames.indexOf(reaction.name());
+            var block = Mojang.call(getBlock, state);
+            if (pistonBaseType.isInstance(block) && (boolean) Mojang.get(pistonBase, block))
+                stickyPistonStates.add(id);
             requiresTool.add((boolean) Mojang.call(correctTool, state));
             // What a chunk section counts to decide whether random ticks sample it: the block or its fluid ticks.
             var blockTicks = (boolean) Mojang.call(isRandomlyTicking, state);
@@ -550,6 +565,9 @@ public final class VanillaDumper {
         json.put("hardness", hardness);
         json.put("requiresTool", requiresTool);
         json.put("randomTicking", randomTicking);
+        json.put("pushReactionNames", pushReactionNames);
+        json.put("pushReactions", pushReactions);
+        json.put("stickyPistonStates", stickyPistonStates);
         Json.write(output.resolve("block_physics.json"), json, false);
     }
 
@@ -1008,6 +1026,7 @@ public final class VanillaDumper {
         var entityBlock = mojang.type("net.minecraft.world.level.block.EntityBlock");
         var newBlockEntity = mojang.method("net.minecraft.world.level.block.EntityBlock", "newBlockEntity", BLOCK_POS, BLOCK_STATE);
         var getType = mojang.method("net.minecraft.world.level.block.entity.BlockEntity", "getType");
+        var isValidBlock = mojang.method("net.minecraft.world.level.block.entity.BlockEntityType", "isValid", BLOCK_STATE);
         var defaultState = mojang.method(BLOCK, "defaultBlockState");
         var types = mojang.get(REGISTRIES, "BLOCK_ENTITY_TYPE");
 
@@ -1018,6 +1037,16 @@ public final class VanillaDumper {
             var blockEntity = Mojang.call(newBlockEntity, block, origin, Mojang.call(defaultState, block));
             if (blockEntity != null)
                 result.put(key(blockRegistry, block), key(types, Mojang.call(getType, blockEntity)));
+            else
+            {
+                // A block whose newBlockEntity is null (MovingPistonBlock) gets its entity from elsewhere; vanilla's
+                // BlockEntityType.isValid says which type that entity belongs to. Its ticks need the same type id.
+                for (var type : (Iterable<?>) types)
+                {
+                    if ((boolean) Mojang.call(isValidBlock, type, Mojang.call(defaultState, block)))
+                        result.put(key(blockRegistry, block), key(types, type));
+                }
+            }
         }
 
         return result;

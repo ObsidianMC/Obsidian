@@ -22,6 +22,7 @@ internal static class RedstoneRegistration
         BasicRedstoneComponents.Register(world, ticks, redstone, neighbors, engine, playNote);
         RedstoneRepeater.Register(world, ticks, redstone, neighbors, engine);
         RedstoneObserver.Register(world, ticks, redstone, neighbors);
+        Pistons.PistonBehaviors.Register(world, engine, neighbors);
         RedstoneComparator.Register(world, ticks, redstone, neighbors, engine);
         TntIgnition.Register(world, neighbors, engine);
         RedstoneLectern.Register(world, ticks, redstone);

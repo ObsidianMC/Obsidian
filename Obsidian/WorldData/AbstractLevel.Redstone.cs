@@ -68,7 +68,7 @@ public abstract partial class AbstractLevel
         if (!mayBuild && (state.Is(RedstoneRepeater.BlockId) || RedstoneComparator.IsComparator(state)))
             return false;
 
-        return await BasicRedstoneComponents.TryUseAsync(this, position, state);
+        return await BasicRedstoneComponents.TryUseAsync(this, position, state, player);
     }
 
     /// <summary>

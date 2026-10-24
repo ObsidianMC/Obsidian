@@ -1,3 +1,4 @@
+using Obsidian.WorldData;
 using Obsidian.Entities;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.BlockTicks;
@@ -49,6 +50,10 @@ internal sealed class PressurePlates
     public static bool IsPlate(IBlock state) => plates.Contains(state.RegistryId);
 
     private static bool IsWeighted(IBlock state) => state.BlockClass() == "WeightedPressurePlateBlock";
+
+    // Vanilla's plate clicks: weighted plates use the metal sounds, the others their block set's.
+    private static string PlateSound(IBlock state, bool on) =>
+        $"minecraft:block.{(IsWeighted(state) ? "metal" : VanillaPlacement.SoundMaterial(state))}_pressure_plate.{(on ? "click_on" : "click_off")}";
 
     private enum Sensing
     {
@@ -159,12 +164,16 @@ internal sealed class PressurePlates
                 var wasReleased = state.GetProperty("power") == "0";
                 await this.WriteAsync(position, state.WithProperty("power", strength.ToString()));
                 if (wasReleased)
+                {
                     this.world.SchedulePlateTick(position, state, WeightedDelay);
+                    this.world.PlaySound(position, PlateSound(state, on: true));
+                }
             }
             else if (state.GetProperty("powered") != "true")
             {
                 await this.WriteAsync(position, state.WithProperty("powered", true));
                 this.world.SchedulePlateTick(position, state, PlateDelay);
+                this.world.PlaySound(position, PlateSound(state, on: true));
             }
         }
     }
@@ -188,11 +197,15 @@ internal sealed class PressurePlates
         if (IsWeighted(state))
         {
             if (state.GetProperty("power") != "0")
+            {
                 await this.WriteAsync(position, state.WithProperty("power", "0"));
+                this.world.PlaySound(position, PlateSound(state, on: false));
+            }
         }
         else if (state.GetProperty("powered") == "true")
         {
             await this.WriteAsync(position, state.WithProperty("powered", false));
+            this.world.PlaySound(position, PlateSound(state, on: false));
         }
     }
 

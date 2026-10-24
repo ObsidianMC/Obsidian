@@ -155,6 +155,19 @@ public class VanillaRedstone
     public static IEnumerable<object[]> ComparatorScenarioNames() =>
         new[] { "comparator_compare_and_subtract" }.Select(name => new object[] { name });
 
+    /// <summary>The scenarios implemented in the piston pass of R8: extension, retraction, sticky pulls, and immovable blocks.</summary>
+    public static IEnumerable<object[]> PistonScenarioNames() =>
+        new[] { "piston_extend_retract", "piston_sticky_pull", "piston_obsidian_blocked" }.Select(name => new object[] { name });
+
+    [Theory]
+    [MemberData(nameof(PistonScenarioNames))]
+    public void PistonScenarioMatchesVanilla(string name)
+    {
+        var scenario = Fixture.Shared.Scenarios[name];
+        var diffs = RedstoneReplay.Compare(CreateWorld(scenario), scenario);
+        Assert.True(diffs.Count == 0, $"{diffs.Count} blocks differ from vanilla:\n{string.Join("\n", diffs.Take(20))}");
+    }
+
     [Theory]
     [MemberData(nameof(R4ScenarioNames))]
     public void ScenarioMatchesVanilla(string name)
@@ -247,8 +260,15 @@ public class VanillaRedstone
         var reloadTicks = reloads.Sum(action => action.GetProperty("ticks").GetInt32());
         Assert.Equal(scenario.GetProperty("checkpoints").GetArrayLength() - 1 + reloadTicks, world.Ticks);
         Assert.Equal(reloads.Length, world.Reloads);
-        Assert.NotEmpty(diffs);
+
+        // Obsidian holds the piston in place, so vanilla's box matches a world with no redstone at all.
+        if (UnchangedWithoutRedstone.Contains(name))
+            Assert.Empty(diffs);
+        else
+            Assert.NotEmpty(diffs);
     }
+
+    private static readonly HashSet<string> UnchangedWithoutRedstone = ["piston_obsidian_blocked"];
 
     private static IRedstoneScenarioWorld CreateWorld(JsonElement scenario) => new EngineScenarioWorld(scenario);
 

@@ -17,8 +17,9 @@ internal sealed class RedstoneObserver(IRedstoneLevel level) : IRedstoneBehavior
 
     public static bool IsObserver(IBlock block) => block.Is(BlockId);
 
-    public static IBlock DerivePlacement(IBlock state, BlockFace clickedFace) =>
-        state.WithProperty("facing", clickedFace.ToString().ToLowerInvariant()).WithProperty("powered", "false");
+    // Vanilla ObserverBlock.getStateForPlacement: faces the nearest looking direction, unpowered.
+    public static IBlock DerivePlacement(IBlock state, BlockFace nearestLook) =>
+        state.WithProperty("facing", nearestLook.ToString().ToLowerInvariant()).WithProperty("powered", "false");
 
     public static void Register(IRedstoneLevel level, LevelBlockTicks ticks, RedstoneBehaviors redstone, NeighborBehaviors neighbors)
     {

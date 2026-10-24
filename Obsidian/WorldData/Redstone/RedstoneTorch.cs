@@ -16,6 +16,9 @@ internal sealed class RedstoneTorch(IRedstoneLevel level, RedstoneEngine engine)
     public const int BurnoutToggles = 8;
     public const int BurnoutWindow = 60;
 
+    // Vanilla's level event for a torch burning out: a fizz and smoke.
+    private const int BurnOutEvent = 1502;
+
     public const int StandingId = BlockIds.RedstoneTorch;
     public const int WallId = BlockIds.RedstoneWallTorch;
 
@@ -74,7 +77,10 @@ internal sealed class RedstoneTorch(IRedstoneLevel level, RedstoneEngine engine)
             var unlit = block.WithProperty("lit", "false");
             await level.SetBlockAsync(position, unlit);
             if (RecordToggle(position, now))
+            {
+                level.BroadcastLevelEvent(BurnOutEvent, position, 0);
                 level.ScheduleBlockTick(position, unlit, BurnoutDelay);
+            }
             return;
         }
 

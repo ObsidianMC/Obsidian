@@ -1,3 +1,4 @@
+using Obsidian.WorldData.Redstone;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
@@ -34,6 +35,22 @@ public abstract partial class AbstractLevel
         LazyInitializer.EnsureInitialized(ref this.blockEntityHost, () => new LevelBlockEntityHost(this));
 
     /// <summary>Reads the resident entity for identity checks under the block mutation lock.</summary>
+    IBlockEntity? IRedstoneLevel.GetBlockEntityAt(Vector position) => this.GetResidentBlockEntity(position);
+
+    void IRedstoneLevel.SetBlockEntityAt(Vector position, IBlockEntity entity)
+    {
+        if (entity is not BlockEntity placed || this.GetLoadedChunk(position.X.ToChunkCoord(), position.Z.ToChunkCoord()) is not Chunk chunk)
+            return;
+
+        var previous = chunk.GetBlockEntity(position.X, position.Y, position.Z) as BlockEntity;
+        placed.BlockPosition = position;
+        chunk.SetBlockEntity(position.X, position.Y, position.Z, placed);
+        if (previous is not null && !ReferenceEquals(previous, placed))
+            this.QueueBlockEntityRemoval(previous);
+
+        this.AttachBlockEntity(placed);
+    }
+
     internal IBlockEntity? GetResidentBlockEntity(Vector position) =>
         this.GetLoadedChunk(position.X.ToChunkCoord(), position.Z.ToChunkCoord())
             ?.GetBlockEntity(position.X, position.Y, position.Z);

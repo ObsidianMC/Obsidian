@@ -29,10 +29,11 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
         state.WithProperty("facing", PlacementFacing.FromYaw(yaw).Opposite().ToString().ToLowerInvariant());
 
     /// <summary>Toggles compare and subtract mode (vanilla use). The output is refreshed by a tick two ticks later.</summary>
-    public static async ValueTask ToggleModeAsync(IRedstoneLevel level, Vector position, IBlock state)
+    public static async ValueTask ToggleModeAsync(IRedstoneLevel level, Vector position, IBlock state, IPlayer player)
     {
         var mode = state.GetProperty("mode") == "subtract" ? "compare" : "subtract";
         await level.WriteAsync(position, state.WithProperty("mode", mode), notifyNeighbors: false);
+        level.PlaySound(position, "minecraft:block.comparator.click", 0.3f, mode == "subtract" ? 0.55f : 0.5f, player);
         level.ScheduleBlockTick(position, state, DelayTicks);
     }
 

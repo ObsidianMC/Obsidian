@@ -72,6 +72,11 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
         await this.BlockNotifications.DrainAsync();
     }
 
+    void IRedstoneLevel.BroadcastLevelEvent(int type, Vector position, int data) => this.BroadcastLevelEvent(type, position, data);
+
+    void IBlockChangeWorld.PlaySound(Vector position, string sound, float volume, float pitch, IPlayer? except) =>
+        this.BlockUpdates.PlaySound(position, sound, volume, pitch, except);
+
     void IPressurePlateWorld.SchedulePlateTick(Vector position, IBlock block, int delay) => this.ScheduleBlockTick(position, block, delay);
 
     long IRedstoneLevel.GameTime => this.Fluids.Clock.GameTime;

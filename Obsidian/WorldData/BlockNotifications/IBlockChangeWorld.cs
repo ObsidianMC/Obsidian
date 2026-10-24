@@ -38,4 +38,10 @@ internal interface IBlockChangeWorld
     /// <c>updateNeighborsAt</c>: a mounted source uses it on its support, so the blocks next to the support react to its power.
     /// </summary>
     ValueTask NotifyNeighborsAsync(Vector position);
+
+    /// <summary>
+    /// Plays a block sound at the centre of <paramref name="position"/> to the players near it, but <paramref name="except"/>,
+    /// whose client plays it itself (vanilla's <c>playSound</c> with a player).
+    /// </summary>
+    void PlaySound(Vector position, string sound, float volume = 1, float pitch = 1, IPlayer? except = null);
 }

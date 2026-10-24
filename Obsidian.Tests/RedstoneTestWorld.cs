@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Obsidian.API;
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Registries;
 using Obsidian.Registries;
 using Obsidian.Utilities;
@@ -87,6 +88,13 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
         while (this.simulation.Count > 0)
             await this.simulation.Dequeue()();
 
+        // Vanilla ticks block entities after the block ticks; moving pistons advance here.
+        foreach (var chunk in this.chunks.Values.ToList())
+        {
+            foreach (var moving in chunk.BlockEntities.Values.OfType<Obsidian.WorldData.Pistons.MovingPistonBlockEntity>().ToList())
+                await moving.TickAsync();
+        }
+
         await this.Pipeline.DrainAsync();
     }
 
@@ -147,7 +155,16 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
     public BlockChange Commit(Vector position, IBlock block)
     {
         var old = this.GetLoadedBlock(position) ?? throw new InvalidOperationException($"{position} isn't loaded.");
-        this.chunks[NumericsHelper.IntsToLong(position.X >> 4, position.Z >> 4)].SetBlock(position.X, position.Y, position.Z, block);
+        var chunk = this.chunks[NumericsHelper.IntsToLong(position.X >> 4, position.Z >> 4)];
+        chunk.SetBlock(position.X, position.Y, position.Z, block);
+
+        // Like AbstractLevel.UpdateBlockEntity: a block entity stays only while the block still has its type.
+        if (chunk.GetBlockEntity(position.X, position.Y, position.Z) is BlockEntity existing
+            && !string.Equals(existing.Id, block.BlockEntityType(), StringComparison.OrdinalIgnoreCase))
+        {
+            chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
+        }
+
         return new BlockChange(position, old, block);
     }
 
@@ -207,6 +224,17 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
 
     void IRedstoneLevel.FireDispenser(Vector position, IBlock state, bool dropper) => this.DispenserFires.Add((position, dropper));
 
+    /// <summary>The level events broadcast, by type and position.</summary>
+    public List<(int Type, Vector Position)> LevelEvents { get; } = [];
+
+    void IRedstoneLevel.BroadcastLevelEvent(int type, Vector position, int data) => this.LevelEvents.Add((type, position));
+
+    /// <summary>The sounds played, with the player each one excludes.</summary>
+    public List<(Vector Position, string Sound, IPlayer? Except)> Sounds { get; } = [];
+
+    void IBlockChangeWorld.PlaySound(Vector position, string sound, float volume, float pitch, IPlayer? except) =>
+        this.Sounds.Add((position, sound, except));
+
     /// <summary>The entities in the test level; <see cref="IRedstoneLevel.EntitiesIn"/> returns those whose boxes overlap.</summary>
     public List<IEntity> Entities { get; } = [];
 
@@ -231,6 +259,20 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
         }
 
         return this.Pipeline.DrainAsync();
+    }
+
+    IBlockEntity? IRedstoneLevel.GetBlockEntityAt(Vector position) =>
+        this.chunks.TryGetValue(NumericsHelper.IntsToLong(position.X >> 4, position.Z >> 4), out var chunk)
+            ? chunk.GetBlockEntity(position.X, position.Y, position.Z)
+            : null;
+
+    void IRedstoneLevel.SetBlockEntityAt(Vector position, IBlockEntity entity)
+    {
+        if (this.chunks.TryGetValue(NumericsHelper.IntsToLong(position.X >> 4, position.Z >> 4), out var chunk) && entity is BlockEntity placed)
+        {
+            placed.BlockPosition = position;
+            chunk.SetBlockEntity(position.X, position.Y, position.Z, placed);
+        }
     }
 
     IEnumerable<IEntity> IRedstoneLevel.EntitiesIn(VectorD min, VectorD max) => this.Entities.Where(entity =>

@@ -174,17 +174,6 @@ public class RedstoneEngineTests
         Assert.Equal(15, world.Engine.GetSignal(wire, BlockFace.West));
     }
 
-    [Theory]
-    [InlineData(BlockFace.Up, "floor", "south")]
-    [InlineData(BlockFace.Down, "ceiling", "south")]
-    [InlineData(BlockFace.North, "wall", "north")]
-    public void MountedComponentPlacementDerivesFaceAndFacing(BlockFace clickedFace, string expectedFace, string expectedFacing)
-    {
-        var placed = BasicRedstoneComponents.DerivePlacementState(BlocksRegistry.Get("minecraft:lever"), clickedFace, 0);
-        Assert.Equal(expectedFace, placed.GetProperty("face"));
-        Assert.Equal(expectedFacing, placed.GetProperty("facing"));
-    }
-
     [Fact]
     public async Task PoweredFloorLeverGivesWeakPowerEverywhereAndDirectPowerToItsSupport()
     {
@@ -265,7 +254,8 @@ public class RedstoneEngineTests
         var support = new Vector(8, 64, 8);
         var torch = new Vector(9, 64, 8);
         await world.Place(support, BlocksRegistry.Get("minecraft:stone"));
-        var placed = BasicRedstoneComponents.DerivePlacementState(BlocksRegistry.Get("minecraft:redstone_torch"), BlockFace.East, 0);
+        // The live StandingAndWallItems placement of a redstone torch on the east face.
+        var placed = BlocksRegistry.Get("minecraft:redstone_wall_torch").WithProperty("facing", "east");
         Assert.Equal("east", placed.GetProperty("facing"));
 
         await world.Place(torch, placed);
@@ -465,7 +455,7 @@ public class RedstoneEngineTests
         // Wall lever on the east side of the door, mounted on a stone wall at x=10, pointing west (away from the wall).
         var leverPosition = new Vector(9, 64, 8);
         await world.Place(new Vector(10, 64, 8), BlocksRegistry.Get("minecraft:stone"));
-        var lever = BasicRedstoneComponents.DerivePlacementState(BlocksRegistry.Get("minecraft:lever"), BlockFace.West, 0);
+        var lever = BlocksRegistry.Get("minecraft:lever").WithProperty("face", "wall").WithProperty("facing", "west");
         Assert.Equal("wall", lever.GetProperty("face"));
         await world.Place(leverPosition, lever);
         Assert.Equal("false", world.GetLoadedBlock(lower)!.GetProperty("open"));
@@ -495,7 +485,7 @@ public class RedstoneEngineTests
         var leverPosition = new Vector(10, 64, 8);
         await world.Place(wall, BlocksRegistry.Get("minecraft:stone"));
         await world.Place(new Vector(11, 64, 8), BlocksRegistry.Get("minecraft:stone"));
-        var lever = BasicRedstoneComponents.DerivePlacementState(BlocksRegistry.Get("minecraft:lever"), BlockFace.East, 0);
+        var lever = BlocksRegistry.Get("minecraft:lever").WithProperty("face", "wall").WithProperty("facing", "east");
         await world.Place(leverPosition, lever);
         Assert.Equal("false", world.GetLoadedBlock(lower)!.GetProperty("open"));
 

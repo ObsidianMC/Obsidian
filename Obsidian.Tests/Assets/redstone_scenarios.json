@@ -15088,6 +15088,3482 @@
      ]
     }
    ]
+  },
+  {
+   "name": "piston_extend_retract",
+   "description": "A normal piston faces east with a stone block in front. Power from a redstone block behind it extends it at tick 2 and removes the power at tick 12; the head retracts and the stone stays.",
+   "coverage": [
+    "piston_extend",
+    "piston_retract"
+   ],
+   "min": [
+    392,
+    63,
+    8
+   ],
+   "max": [
+    398,
+    65,
+    10
+   ],
+   "setup": [
+    {
+     "pos": [
+      392,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      393,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      394,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      395,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      396,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      397,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      398,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      392,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      393,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      394,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      395,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      396,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      397,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      398,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      392,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      393,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      394,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      395,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      396,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      397,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      398,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      392,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      393,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      394,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      395,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      396,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      397,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      398,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      392,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      393,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      394,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      395,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      396,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      397,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      398,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      392,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      393,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      394,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      395,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      396,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      397,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      398,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      392,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      393,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      394,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      395,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      396,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      397,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      398,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      392,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      393,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      394,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      395,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      396,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      397,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      398,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      392,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      393,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      394,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      395,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      396,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      397,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      398,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      392,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      392,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      392,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      393,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      393,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      393,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      394,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      394,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      394,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      395,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      395,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      395,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      396,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      396,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      396,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      397,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      397,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      397,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      398,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      398,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      398,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      394,
+      64,
+      9
+     ],
+     "state": "minecraft:piston[extended=false,facing=east]"
+    },
+    {
+     "pos": [
+      395,
+      64,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      393,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 2,
+     "pos": [
+      393,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_block"
+    },
+    {
+     "tick": 12,
+     "pos": [
+      393,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234411",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234411",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1121011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1121011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1121011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1121011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1121011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 17,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1121011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 18,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1121011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 19,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1121011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 20,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1121011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 21,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1121011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 22,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1121011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 23,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1121011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 24,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1121011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "piston_sticky_pull",
+   "description": "A sticky piston faces east with a stone block in front. Power on at tick 2 and off at tick 12; on retraction the stone is pulled back to the piston.",
+   "coverage": [
+    "piston_extend",
+    "piston_retract",
+    "sticky_pull"
+   ],
+   "min": [
+    424,
+    63,
+    8
+   ],
+   "max": [
+    430,
+    65,
+    10
+   ],
+   "setup": [
+    {
+     "pos": [
+      424,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      425,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      426,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      427,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      428,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      429,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      430,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      424,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      425,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      426,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      427,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      428,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      429,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      430,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      424,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      425,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      426,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      427,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      428,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      429,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      430,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      424,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      425,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      426,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      427,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      428,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      429,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      430,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      424,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      425,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      426,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      427,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      428,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      429,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      430,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      424,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      425,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      426,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      427,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      428,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      429,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      430,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      424,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      425,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      426,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      427,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      428,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      429,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      430,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      424,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      425,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      426,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      427,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      428,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      429,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      430,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      424,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      425,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      426,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      427,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      428,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      429,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      430,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      424,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      424,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      424,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      425,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      425,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      425,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      426,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      426,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      426,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      427,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      427,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      427,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      428,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      428,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      428,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      429,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      429,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      429,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      430,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      430,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      430,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      426,
+      64,
+      9
+     ],
+     "state": "minecraft:sticky_piston[extended=false,facing=east]"
+    },
+    {
+     "pos": [
+      427,
+      64,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      425,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 2,
+     "pos": [
+      425,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_block"
+    },
+    {
+     "tick": 12,
+     "pos": [
+      425,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=sticky]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=sticky]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234011",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:moving_piston[facing=east,type=sticky]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:moving_piston[facing=east,type=sticky]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 17,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 18,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 19,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 20,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 21,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 22,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 23,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 24,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1120111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "piston_obsidian_blocked",
+   "description": "A powered piston faces east toward obsidian. The obsidian can't move, so the piston stays retracted.",
+   "coverage": [
+    "piston_immovable"
+   ],
+   "min": [
+    456,
+    63,
+    8
+   ],
+   "max": [
+    462,
+    65,
+    10
+   ],
+   "setup": [
+    {
+     "pos": [
+      456,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      457,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      458,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      459,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      460,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      461,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      462,
+      63,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      456,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      457,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      458,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      459,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      460,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      461,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      462,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      456,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      457,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      458,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      459,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      460,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      461,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      462,
+      63,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      456,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      457,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      458,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      459,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      460,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      461,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      462,
+      64,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      456,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      457,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      458,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      459,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      460,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      461,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      462,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      456,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      457,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      458,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      459,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      460,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      461,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      462,
+      64,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      456,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      457,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      458,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      459,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      460,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      461,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      462,
+      65,
+      8
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      456,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      457,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      458,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      459,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      460,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      461,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      462,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      456,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      457,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      458,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      459,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      460,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      461,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      462,
+      65,
+      10
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "pos": [
+      456,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      456,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      456,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      457,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      457,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      457,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      458,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      458,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      458,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      459,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      459,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      459,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      460,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      460,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      460,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      461,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      461,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      461,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      462,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      462,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      462,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      458,
+      64,
+      9
+     ],
+     "state": "minecraft:piston[extended=false,facing=east]"
+    },
+    {
+     "pos": [
+      459,
+      64,
+      9
+     ],
+     "state": "minecraft:obsidian"
+    },
+    {
+     "pos": [
+      457,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 2,
+     "pos": [
+      457,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_block"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:obsidian"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:obsidian"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:obsidian"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:obsidian"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:obsidian"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:obsidian"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:obsidian"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:obsidian"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:obsidian"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:obsidian"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:obsidian"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:obsidian"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:obsidian"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111"
+     ]
+    }
+   ]
   }
  ]
 }
