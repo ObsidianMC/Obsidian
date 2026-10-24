@@ -80,6 +80,37 @@ public class ComposterBlocks
         Assert.Equal(4, Inventory(world, hopper)[0]?.Count);
     }
 
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task SeedHopperUsesTheHopperMenuAndTransfersOnCooldown()
+    {
+        await using var context = TestServerFactory.CreateServer($"composter-seeds-{Guid.NewGuid():N}");
+        var world = context.World;
+        for (var chunkX = -1; chunkX <= 1; chunkX++)
+        {
+            for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
+                WorldBlockEntities.AddEmptyChunk(world, chunkX, chunkZ);
+        }
+        await WorldBlockEntities.JoinAsync(context);
+        Assert.True(BlocksRegistry.TryGetDefault("minecraft:composter", out var composter));
+        var target = new Vector(8, 65, 8);
+        var hopper = target + Vector.Up;
+        await world.SetBlockAsync(target, composter, true);
+        await world.SetBlockAsync(hopper, BlocksRegistry.Hopper.WithProperty("facing", "down"), true);
+        var inventory = Inventory(world, hopper);
+        var screen = new Obsidian.Net.Packets.Play.Clientbound.OpenScreenPacket(inventory, 1);
+        Assert.Equal(Obsidian.Net.Packets.Play.Clientbound.WindowType.Hopper, screen.Type);
+        inventory.SetItem(0, new ItemStack(ItemsRegistry.Get(ItemIds.WheatSeeds), 64));
+
+        await world.DoWorldTickAsync();
+        Assert.Equal(63, inventory[0]?.Count);
+        Assert.Equal("1", world.BlockUpdates.GetBlock(target).GetProperty("level"));
+        for (var tick = 0; tick < HopperBlockEntity.MoveItemSpeed - 1; tick++)
+            await world.DoWorldTickAsync();
+        Assert.Equal(63, inventory[0]?.Count);
+        await world.DoWorldTickAsync();
+        Assert.Equal(62, inventory[0]?.Count);
+    }
+
     // Vanilla's ComposterBlock.onPlace and tick: a composter that fills to 7 schedules the tick that makes it ready.
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task AFullComposterIsScheduledToBecomeReady()
