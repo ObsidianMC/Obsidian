@@ -65,6 +65,16 @@ internal sealed class BlockNotificationPipeline
     }
 
     /// <summary>
+    /// Queues one neighbor reaction: <paramref name="target"/> hears that <paramref name="source"/> changed. Neighbor reactions
+    /// read both blocks when they run, so the reaction sees what is committed then.
+    /// </summary>
+    public void EnqueueNeighbor(Vector target, Vector source)
+    {
+        lock (this.sync)
+            this.Add(new NotificationWork(WorkKind.Neighbor, target, source, BlockFace.Down));
+    }
+
+    /// <summary>
     /// Queues the six neighbor reactions of <paramref name="position"/>, without a block change.
     /// </summary>
     public void EnqueueNeighbors(Vector position)
@@ -194,6 +204,6 @@ internal sealed class BlockNotificationPipeline
         Neighbor
     }
 
-    // Face is the direction from Position toward Source.
+    // Face is the direction from Position toward Source, for shape reactions; neighbor reactions don't use it.
     private readonly record struct NotificationWork(WorkKind Kind, Vector Position, Vector Source, BlockFace Face, IBlock? OldState = null);
 }

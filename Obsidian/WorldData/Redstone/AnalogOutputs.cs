@@ -68,9 +68,16 @@ internal static class AnalogOutputs
             ChestSignal(level, state, position),
         "LecternBlock" => level.GetBlockEntity(position) is LecternBlockEntity lectern ? lectern.AnalogSignal() : 0,
         "CrafterBlock" => level.GetBlockEntity(position) is CrafterBlockEntity crafter ? crafter.AnalogSignal() : 0,
-        "DetectorRailBlock" => DetectorRailComponent.AnalogOutput(level, state, position),
+        "DetectorRailBlock" => DetectorSignal(level, state, position),
         _ => ContainerSignal(level, level.GetBlockEntity(position))
     };
+
+    // A detector rail's signal, from the minecarts in its box.
+    private static int DetectorSignal(LevelBlockUpdates level, IBlock state, Vector position)
+    {
+        var (min, max) = RedstoneDetectorRail.MinecartBox(position);
+        return RedstoneDetectorRail.AnalogOutput(state, level.EntitiesIn(min, max));
+    }
 
     /// <summary>
     /// Vanilla <c>getRedstoneSignalFromContainer</c>: 0 when empty, else 1 to 15 by how full the slots are on

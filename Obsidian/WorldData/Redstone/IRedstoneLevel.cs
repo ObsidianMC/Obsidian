@@ -36,7 +36,15 @@ internal interface IRedstoneLevel : IBlockChangeWorld
     /// <summary>Spawns lit TNT at <paramref name="position"/> on the level's entity path, after the block has been removed.</summary>
     void PrimeTnt(Vector position);
 
-    /// <summary>Vanilla's <c>hasAnalogOutputSignal</c> for a block state (containers, cauldrons, ...).</summary>
+    /// <summary>Notifies the block at <paramref name="target"/> that <paramref name="source"/> changed (vanilla <c>neighborChanged</c>), on the notification queue.</summary>
+    ValueTask NotifyNeighborAsync(Vector target, Vector source);
+
+    /// <summary>Vanilla <c>updateNeighbourForOutputSignal</c>: the comparators reading the block at <paramref name="position"/> hear of it.</summary>
+    ValueTask NotifyComparatorsAroundAsync(Vector position);
+
+    /// <summary>The entities whose boxes overlap the box from <paramref name="min"/> to <paramref name="max"/>.</summary>
+    IEnumerable<Obsidian.API.IEntity> EntitiesIn(VectorD min, VectorD max);
+
     /// <summary>Sets a crafter's triggered flag on its block entity (vanilla <c>CrafterBlockEntity.setTriggered</c>).</summary>
     void SetCrafterTriggered(Vector position, bool triggered);
 

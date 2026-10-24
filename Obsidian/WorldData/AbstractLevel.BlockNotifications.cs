@@ -1,6 +1,7 @@
 using Obsidian.API.Blocks;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.BlockTicks;
+using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.WorldData;
@@ -55,9 +56,12 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
             playEffect = false;
 
         this.QueueBlockDestruction(position, true, null, replacement: null, playEffect,
-            stillUnsupported: current => current.BlockClass() is "RedstoneTorchBlock"
-                ? this.BlockUpdates.GetBlock(position + Vector.Down).IsTopCenterSturdy() == false
-                : this.BlockUpdates.IsUnsupported(position, current));
+            stillUnsupported: current => current.BlockClass() switch
+            {
+                "RedstoneTorchBlock" => this.BlockUpdates.GetBlock(position + Vector.Down).IsTopCenterSturdy() == false,
+                _ when Rails.IsRail(current) => RedstoneRail.IsUnsupported(position, current, position => ((IBlockChangeWorld)this).GetLoadedBlock(position)),
+                _ => this.BlockUpdates.IsUnsupported(position, current)
+            });
     }
 
     void IBlockChangeWorld.ScheduleFluidTick(Vector position) => this.Fluids.ScheduleShapeFluidTick(position);
@@ -109,6 +113,58 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
         {
             crafter.Crafter.Triggered = triggered;
             crafter.SetChanged();
+        }
+    }
+
+    async ValueTask IRedstoneLevel.NotifyNeighborAsync(Vector target, Vector source)
+    {
+        this.BlockNotifications.EnqueueNeighbor(target, source);
+        await this.BlockNotifications.DrainAsync();
+    }
+
+    async ValueTask IRedstoneLevel.NotifyComparatorsAroundAsync(Vector position)
+    {
+        // Vanilla updateNeighbourForOutputSignal: a comparator beside the block hears of it, or one behind a conductor beside it.
+        IBlockChangeWorld world = this;
+        foreach (var direction in new[] { BlockFace.North, BlockFace.South, BlockFace.West, BlockFace.East })
+        {
+            var beside = position.Offset(direction);
+            var state = world.GetLoadedBlock(beside);
+            if (state is null)
+                continue;
+
+            if (state.Is(BlockIds.Comparator))
+            {
+                this.BlockNotifications.EnqueueNeighbor(beside, position);
+            }
+            else if (state.IsRedstoneConductor())
+            {
+                var behind = beside.Offset(direction);
+                if (world.GetLoadedBlock(behind) is IBlock comparator && comparator.Is(BlockIds.Comparator))
+                    this.BlockNotifications.EnqueueNeighbor(behind, position);
+            }
+        }
+
+        await this.BlockNotifications.DrainAsync();
+    }
+
+    IEnumerable<Obsidian.API.IEntity> IRedstoneLevel.EntitiesIn(VectorD min, VectorD max) => this.EntitiesIn(min, max);
+
+    /// <summary>
+    /// The entities whose boxes overlap the box from <paramref name="min"/> to <paramref name="max"/>, among those near it.
+    /// </summary>
+    internal IEnumerable<IEntity> EntitiesIn(VectorD min, VectorD max)
+    {
+        var center = (min + max) / 2;
+        foreach (var entity in this.GetEntitiesInRange(center, 4))
+        {
+            var box = entity.BoundingBox;
+            if (box.Min.X < max.X && box.Max.X > min.X
+                && box.Min.Y < max.Y && box.Max.Y > min.Y
+                && box.Min.Z < max.Z && box.Max.Z > min.Z)
+            {
+                yield return entity;
+            }
         }
     }
 

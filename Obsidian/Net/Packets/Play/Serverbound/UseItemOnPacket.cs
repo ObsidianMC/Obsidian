@@ -476,18 +476,8 @@ public partial class UseItemOnPacket
             block = block.WithProperty("facing", facings[(int)Math.Floor((player.Yaw.Degrees + 45) / 90) % 4]);
         }
 
-        // Vanilla's redstone components face and attach as the player clicks and looks, where they can stay.
-        if (placeLevel.BlockUpdates.GetRedstonePlacement(block, position, player, this.Face, replacesClicked)
-            is not IBlock redstoneState)
-        {
-            await this.RejectPlacementAsync(player, handSlot);
-            return;
-        }
-
-        block = redstoneState;
-
         // Other vanilla blocks face, turn and pair up as the player places them.
-        if (currentItem.Holder.Block is not BlockType && !pouring && VanillaRedstone.For(block) is null)
+        if (currentItem.Holder.Block is not BlockType && !pouring)
         {
             IBlock? placedState = block;
             var onWall = false;
@@ -602,7 +592,6 @@ public partial class UseItemOnPacket
         await player.FireProgressAsync("item_used_on_block",
             item: progressItem, block: b, position: this.Position);
 
-        placeLevel.BlockUpdates.OnPlacedByPlayer(position, block);
         lock (placeLevel.Fluids.TickLock)
             VanillaPlacement.OnPlacedByPlayer(placeLevel.BlockUpdates, position, block);
 

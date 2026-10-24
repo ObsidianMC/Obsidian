@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Obsidian.API;
+using Obsidian.API.Registries;
 using Obsidian.Registries;
 using Obsidian.Utilities;
 using Obsidian.WorldData;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.BlockTicks;
+using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.Tests;
@@ -203,6 +206,40 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
     public List<(Vector Position, bool Dropper)> DispenserFires { get; } = [];
 
     void IRedstoneLevel.FireDispenser(Vector position, IBlock state, bool dropper) => this.DispenserFires.Add((position, dropper));
+
+    /// <summary>The entities in the test level; <see cref="IRedstoneLevel.EntitiesIn"/> returns those whose boxes overlap.</summary>
+    public List<IEntity> Entities { get; } = [];
+
+    ValueTask IRedstoneLevel.NotifyNeighborAsync(Vector target, Vector source)
+    {
+        this.Pipeline.EnqueueNeighbor(target, source);
+        return this.Pipeline.DrainAsync();
+    }
+
+    ValueTask IRedstoneLevel.NotifyComparatorsAroundAsync(Vector position)
+    {
+        foreach (var direction in new[] { BlockFace.North, BlockFace.South, BlockFace.West, BlockFace.East })
+        {
+            var beside = position.Offset(direction);
+            if (this.GetLoadedBlock(beside) is not IBlock state)
+                continue;
+
+            if (state.Is(BlockIds.Comparator))
+                this.Pipeline.EnqueueNeighbor(beside, position);
+            else if (state.IsRedstoneConductor() && this.GetLoadedBlock(beside.Offset(direction)) is IBlock behind && behind.Is(BlockIds.Comparator))
+                this.Pipeline.EnqueueNeighbor(beside.Offset(direction), position);
+        }
+
+        return this.Pipeline.DrainAsync();
+    }
+
+    IEnumerable<IEntity> IRedstoneLevel.EntitiesIn(VectorD min, VectorD max) => this.Entities.Where(entity =>
+    {
+        var box = entity.BoundingBox;
+        return box.Min.X < max.X && box.Max.X > min.X
+            && box.Min.Y < max.Y && box.Max.Y > min.Y
+            && box.Min.Z < max.Z && box.Max.Z > min.Z;
+    });
 
     bool IRedstoneLevel.HasAnalogOutput(IBlock block) => false;
 

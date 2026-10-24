@@ -23,12 +23,30 @@ internal interface IRedstoneBehavior
 }
 
 /// <summary>
+/// What a block does to an entity whose box overlaps it, like vanilla's <c>entityInside</c> for redstone blocks (a detector rail).
+/// </summary>
+internal interface IRedstoneContact
+{
+    /// <summary>Runs the contact of an entity with the block at <paramref name="position"/>.</summary>
+    ValueTask EntityInsideAsync(IRedstoneLevel level, Vector position, IBlock state);
+}
+
+/// <summary>
 /// Redstone behaviors keyed by vanilla block class (for example <c>RedStoneWireBlock</c>), so every state of a class shares one
 /// rule. Registrations are made once when the level is created.
 /// </summary>
 internal sealed class RedstoneBehaviors
 {
     private readonly Dictionary<string, IRedstoneBehavior> behaviors = [];
+    private readonly Dictionary<string, IRedstoneContact> contacts = [];
+
+    public void RegisterContact(string blockClass, IRedstoneContact contact)
+    {
+        if (!this.contacts.TryAdd(blockClass, contact))
+            throw new InvalidOperationException($"A redstone contact is already registered for {blockClass}.");
+    }
+
+    public IRedstoneContact? ContactFor(IBlock state) => this.contacts.GetValueOrDefault(state.BlockClass());
 
     public void Register(string blockClass, IRedstoneBehavior behavior)
     {

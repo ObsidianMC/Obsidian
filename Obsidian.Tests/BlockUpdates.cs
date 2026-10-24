@@ -564,7 +564,7 @@ public sealed class BlockUpdates : IDisposable
         var listener = lever + Vector.East;
         await world.SetBlockAsync(lever, BlocksRegistry.GetDefault(BlockIds.Lever), BlockUpdateFlags.All);
         await world.SetBlockAsync(listener, relay.DefaultState, BlockUpdateFlags.All);
-        Assert.True(world.BlockUpdates.UseRedstone(lever, new FakePlayer(), mayBuild: true));
+        Assert.True(await world.UseRedstoneAsync(lever, new FakePlayer(), mayBuild: true));
 
         await world.DoWorldTickAsync();
         await world.DoWorldTickAsync();
@@ -680,11 +680,11 @@ public sealed class BlockUpdates : IDisposable
         var build = new List<(Vector Position, IBlock State)>();
         var steps = new List<(int Tick, Func<ValueTask> Run)>();
         var checks = new List<(int Tick, Vector Position, string Property, string Value)>();
-        void Use(int tick, Vector position) => steps.Add((tick, () =>
+        void Use(int tick, Vector position)
         {
-            Assert.True(world.BlockUpdates.UseRedstone(position, player, mayBuild: true));
-            return ValueTask.CompletedTask;
-        }));
+            Func<ValueTask> run = async () => Assert.True(await world.UseRedstoneAsync(position, player, mayBuild: true));
+            steps.Add((tick, run));
+        }
 
         // Dust carries a lever's power 15 blocks, into the lamp at its end; the lamp goes out four ticks after.
         build.Add((At(0, 0), lever));

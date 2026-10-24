@@ -19,11 +19,13 @@ internal static class PlacementBehaviors
     private static readonly IBlockBehavior Leaves = new LeavesBlockBehavior.Placement();
     private static readonly IBlockBehavior BambooStalk = new BambooStalkPlacement();
     private static readonly IBlockBehavior Crafter = new CrafterPlacement();
+    private static readonly IBlockBehavior Rail = new RailPlacement();
 
     // One member per Mojang class that owns an implemented placement override. Classes may share an implementation
     // object when their current vanilla algorithms are equivalent; block membership comes only from vanilla's class.
     internal static IBlockBehavior AbstractFurnaceBlock => HorizontalOpposite;
     internal static IBlockBehavior BarrelBlock => NearestOpposite;
+    internal static IBlockBehavior BaseRailBlock => Rail;
     internal static IBlockBehavior BambooStalkBlock => BambooStalk;
     internal static IBlockBehavior BedBlock => Horizontal;
     internal static IBlockBehavior BeehiveBlock => HorizontalOpposite;

@@ -2,6 +2,7 @@ using Obsidian.API.Blocks;
 using Obsidian.Plugins;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Fluids;
+using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.WorldData;
 
@@ -104,6 +105,10 @@ public abstract partial class AbstractLevel
         if (inside && entity is Entities.Entity concrete
             && BlocksRegistry.GetEntityInsideBehavior(state.RegistryId) is IEntityInsideBehavior owner)
             owner.EntityInside(this.BlockUpdates, position, state, concrete);
+
+        // A redstone block's entity contact, like a detector rail's minecart press.
+        if (inside && this.RedstoneRules.ContactFor(state) is IRedstoneContact contact)
+            await contact.EntityInsideAsync(this, position, state);
 
         if (!BlockBehaviors.HasBehavior(state))
             return;
