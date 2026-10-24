@@ -749,15 +749,15 @@ public sealed class BlockUpdates : IDisposable
         Use(0, At(1, 8));
         checks.AddRange([(8, At(3, 8), "power", "12"), (8, At(4, 8), "power", "11")]);
 
-        // Of two comparators in line due on the same tick, the one feeding the other ticks first, so the second reads
-        // its new output: the first's hopper (3) becomes a block of redstone (15) as the second's side goes off.
+        // These aligned comparators become due together. Vanilla only prioritizes a front diode when it faces a
+        // different direction, so the downstream comparator runs with its prior input and refreshes two ticks later.
         build.AddRange([(At(6, 10), hopper), (At(7, 10), Comparator("west", "compare"))]);
         build.AddRange([(At(8, 10), Comparator("west", "subtract")), (At(9, 10), dust)]);
         build.Add((At(8, 11), Block("redstone_block")));
         steps.Add((0, () => Fill(world, At(6, 10))));
         steps.Add((10, () => world.SetBlockAsync(At(8, 11), BlocksRegistry.Air, BlockUpdateFlags.All)));
         steps.Add((10, () => world.SetBlockAsync(At(6, 10), Block("redstone_block"), BlockUpdateFlags.All)));
-        checks.AddRange([(9, At(9, 10), "power", "0"), (12, At(9, 10), "power", "15")]);
+        checks.AddRange([(9, At(9, 10), "power", "0"), (12, At(9, 10), "power", "3"), (14, At(9, 10), "power", "15")]);
 
         // A repeater a powered repeater points into from the side holds its output until it's unlocked.
         build.AddRange([(At(0, 12), lever), (At(1, 12), Repeater("west", 1)), (At(2, 12), lamp)]);
@@ -800,7 +800,8 @@ public sealed class BlockUpdates : IDisposable
 
         // The dropped dust slides a little on the motion it popped out with.
         var drops = world.GetNonPlayerEntitiesInRange((VectorD)At(14, 14, up: 2), 8).OfType<ItemEntity>();
-        Assert.Contains(drops, drop => drop.Item.Is(ItemsRegistry.Get("minecraft:redstone")));
+        Assert.True(drops.Any(drop => drop.Item.Is(ItemsRegistry.Get("minecraft:redstone"))),
+            $"Drops: {string.Join(", ", drops.Select(drop => drop.Item.ToString()))}");
 
         await AssertSupportLossAsync(world, player);
         world.TryRemovePlayer(player);
@@ -904,7 +905,8 @@ public sealed class BlockUpdates : IDisposable
 
             await world.DoWorldTickAsync();
             var remaining = chunk.GetBlock(relightPosition);
-            Assert.True(remaining.Is(restoreSupport ? BlockIds.RedstoneTorch : BlockIds.Stone));
+            Assert.True(remaining.Is(restoreSupport ? BlockIds.RedstoneTorch : BlockIds.Stone),
+                $"restoreSupport={restoreSupport}, actual={remaining.UnlocalizedName}");
             if (restoreSupport)
                 Assert.Equal("true", remaining.GetProperty("lit"));
 

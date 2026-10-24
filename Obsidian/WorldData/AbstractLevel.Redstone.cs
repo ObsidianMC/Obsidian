@@ -1,97 +1,105 @@
 using Obsidian.API.BlockEntities;
-using Obsidian.API.Blocks;
+using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Redstone;
-using System.Runtime.CompilerServices;
 
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// The level's redstone: its signals, read like the blocks are, waiting for the block updates running at the time
-/// (see <see cref="LevelBlockUpdates"/>), and what drives vanilla's components from outside block updates: entities on
-/// pressure plates and arrows in wooden buttons, and containers' items for comparators.
+/// The level's redstone signal reads, answered by the redstone engine, and the neighbor updates plugins request.
 /// </summary>
 public abstract partial class AbstractLevel
 {
-    // The inventory revision each container's comparators last heard of.
-    private readonly ConditionalWeakTable<ContainerBlockEntity, StrongBox<long>> analogRevisions = [];
-
     /// <inheritdoc/>
     public int GetSignal(Vector position, BlockFace direction)
     {
         lock (this.Fluids.TickLock)
-            return this.BlockUpdates.GetSignal(position, direction);
+            return this.RedstoneEngine.GetSignal(position, direction);
     }
 
     /// <inheritdoc/>
     public int GetDirectSignal(Vector position, BlockFace direction)
     {
         lock (this.Fluids.TickLock)
-            return this.BlockUpdates.GetDirectSignal(position, direction);
+            return this.RedstoneEngine.GetDirectSignal(position, direction);
     }
 
     /// <inheritdoc/>
     public int GetDirectSignalTo(Vector position)
     {
         lock (this.Fluids.TickLock)
-            return this.BlockUpdates.GetDirectSignalTo(position);
+            return this.RedstoneEngine.GetDirectSignalTo(position);
     }
 
     /// <inheritdoc/>
     public bool HasSignal(Vector position, BlockFace direction)
     {
         lock (this.Fluids.TickLock)
-            return this.BlockUpdates.HasSignal(position, direction);
+            return this.RedstoneEngine.HasSignal(position, direction);
     }
 
     /// <inheritdoc/>
     public bool HasNeighborSignal(Vector position)
     {
         lock (this.Fluids.TickLock)
-            return this.BlockUpdates.HasNeighborSignal(position);
+            return this.RedstoneEngine.HasNeighborSignal(position);
     }
 
     /// <inheritdoc/>
     public int GetBestNeighborSignal(Vector position)
     {
         lock (this.Fluids.TickLock)
-            return this.BlockUpdates.GetBestNeighborSignal(position);
+            return this.RedstoneEngine.GetBestNeighborSignal(position);
     }
 
-    /// <inheritdoc/>
-    public void UpdateNeighbors(Vector position, IBlock source) => this.BlockUpdates.UpdateNeighbors(position, source);
+    /// <summary>
+    /// Uses a redstone block the way a player's right click does (levers, buttons, repeaters, comparators, daylight
+    /// detectors). Adventure players can't change repeaters or comparators.
+    /// </summary>
+    /// <returns>Whether the block reacted to the use.</returns>
+    internal async ValueTask<bool> UseRedstoneAsync(Vector position, IPlayer player, bool mayBuild)
+    {
+        IBlock? state;
+        lock (this.Fluids.TickLock)
+            state = ((IBlockChangeWorld)this).GetLoadedBlock(position);
+
+        if (state is null)
+            return false;
+
+        if (!mayBuild && (state.Is(RedstoneRepeater.BlockId) || RedstoneComparator.IsComparator(state)))
+            return false;
+
+        return await BasicRedstoneComponents.TryUseAsync(this, position, state);
+    }
 
     /// <summary>
-    /// Vanilla <c>entityInside</c> for the pressure plates and wooden buttons <paramref name="entity"/>'s box
-    /// overlaps after it ticked, like vanilla's entity movement.
+    /// The block an arrow hit reacts with: a target block takes power for a while (see <see cref="TargetBlock"/>).
     /// </summary>
-    private void PressRedstone(IEntity entity, Vector min, Vector max)
+    internal ValueTask OnProjectileHitBlockAsync(Vector block, VectorD location, BlockFace face) =>
+        this.RedstoneInstall.Targets.HitAsync(block, location, face, TargetBlock.ArrowPulseTicks);
+
+    /// <summary>
+    /// Tells the neighbors of a container whose items changed. Comparators don't read containers in the redstone engine yet,
+    /// so this only queues the neighbor reactions.
+    /// </summary>
+    internal void UpdateComparatorsOf(ContainerBlockEntity container)
     {
-        for (var x = min.X; x <= max.X; x++)
+        lock (this.Fluids.TickLock)
         {
-            for (var y = min.Y; y <= max.Y; y++)
-            {
-                for (var z = min.Z; z <= max.Z; z++)
-                {
-                    var position = new Vector(x, y, z);
-                    if (this.GameEventBlock(position) is IBlock state && VanillaRedstone.IsPressedByEntities(state))
-                        this.BlockUpdates.EntityInsideRedstone(position, entity);
-                }
-            }
+            this.BlockNotifications.EnqueueNeighbors(container.BlockPosition);
+            this.BlockNotifications.DrainAsync().GetAwaiter().GetResult();
         }
     }
 
-    /// <summary>
-    /// Tells the comparators reading a container whose items changed since they last heard, like vanilla's
-    /// <c>setChanged</c> does when the items move.
-    /// </summary>
-    private void UpdateComparatorsOf(ContainerBlockEntity container)
+    /// <inheritdoc/>
+    public void UpdateNeighbors(Vector position, IBlock source)
     {
-        var revision = this.analogRevisions.GetOrCreateValue(container);
-        var current = container.Inventory.Revision;
-        if (revision.Value == current)
-            return;
+        this.BlockUpdates.UpdateNeighbors(position, source);
 
-        revision.Value = current;
-        this.BlockUpdates.OnContainerChanged(container.BlockPosition);
+        // The redstone engine's reactions to the neighbors of this position.
+        lock (this.Fluids.TickLock)
+        {
+            this.BlockNotifications.EnqueueNeighbors(position);
+            this.BlockNotifications.DrainAsync().GetAwaiter().GetResult();
+        }
     }
 }

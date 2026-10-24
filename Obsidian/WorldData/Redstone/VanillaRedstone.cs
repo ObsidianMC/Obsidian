@@ -1,5 +1,4 @@
-﻿using Obsidian.API.Blocks;
-using Obsidian.API.Inventory;
+﻿using Obsidian.API.Inventory;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.WorldData.Redstone;
@@ -11,8 +10,6 @@ namespace Obsidian.WorldData.Redstone;
 internal static class VanillaRedstone
 {
     private static readonly Lazy<RedstoneComponent?[]> components = new(Build);
-
-    private static readonly RedstoneComponent wire = new RedstoneWire();
 
     /// <summary>
     /// The component of a vanilla block, or null for other blocks (plugins' blocks included).
@@ -35,20 +32,13 @@ internal static class VanillaRedstone
     }
 
     /// <summary>
-    /// Whether entities inside the block press it: pressure plates, and wooden buttons, which arrows press.
+    /// Whether entities inside the block press it: the detector rail.
     /// </summary>
-    public static bool IsPressedByEntities(IBlock state) =>
-        For(state) is PressurePlate or Switch { PressedByArrows: true } or DetectorRailComponent;
+    public static bool IsPressedByEntities(IBlock state) => For(state) is DetectorRailComponent;
 
     private static RedstoneComponent?[] Build()
     {
         var table = new RedstoneComponent?[BlocksRegistry.Names.Length];
-        var torch = new RedstoneTorch(wall: false);
-        var wallTorch = new RedstoneTorch(wall: true);
-        var repeater = new Diode(DiodeKind.Repeater);
-        var comparator = new Diode(DiodeKind.Comparator);
-        var lamp = new RedstoneLamp();
-        var redstoneBlock = new RedstoneBlock();
         var hopper = new HopperComponent();
         var dispenser = new DispenserComponent(dropper: false);
         var dropper = new DispenserComponent(dropper: true);
@@ -62,21 +52,10 @@ internal static class VanillaRedstone
         for (var id = 0; id < table.Length; id++)
         {
             var block = BlocksRegistry.GetDefault(id);
-            var name = block.UnlocalizedName;
-
+            // Wire, torches, repeaters, comparators, switches, plates, lamps and the redstone block are the engine's
+            // (see RedstoneRegistration); what's left here are the components not yet ported to it.
             table[id] = block.BlockClass() switch
             {
-                "RedStoneWireBlock" => wire,
-                "RedstoneTorchBlock" => torch,
-                "RedstoneWallTorchBlock" => wallTorch,
-                "RepeaterBlock" => repeater,
-                "ComparatorBlock" => comparator,
-                "LeverBlock" => Switch.Lever,
-                "ButtonBlock" => Switch.Button(name),
-                "PressurePlateBlock" => PressurePlate.For(name),
-                "WeightedPressurePlateBlock" => PressurePlate.Weighted(name),
-                "RedstoneLampBlock" => lamp,
-                "PoweredBlock" => redstoneBlock,
                 "HopperBlock" => hopper,
                 "DispenserBlock" => dispenser,
                 "DropperBlock" => dropper,

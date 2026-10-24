@@ -1,5 +1,6 @@
 using Obsidian.API.Blocks;
 using Obsidian.Plugins;
+using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Fluids;
 
 namespace Obsidian.WorldData;
@@ -50,8 +51,6 @@ public abstract partial class AbstractLevel
             (int)Math.Floor(position.Y + dimension.Height - inset),
             (int)Math.Floor(position.Z + halfWidth - inset));
 
-        this.PressRedstone(entity, min, max);
-
         for (var x = min.X; x <= max.X; x++)
         {
             for (var y = min.Y; y <= max.Y; y++)
@@ -83,8 +82,18 @@ public abstract partial class AbstractLevel
     /// Runs under the tick lock the block was stored under, so that the updates of block changes don't interleave: a
     /// change made meanwhile on another thread waits for them, and its updates follow these.
     /// </remarks>
-    private void AfterBlockSet(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags) =>
+    private void AfterBlockSet(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
+    {
         this.Fluids.OnBlockChanged(position, old, block, flags);
+
+        // The redstone engine's neighbor reactions for the change, drained now: its writes go to loaded chunks only, so
+        // they complete synchronously under the tick lock.
+        if ((flags & BlockUpdateFlags.Neighbors) == 0 || old.GetHashCode() == block.GetHashCode())
+            return;
+
+        this.BlockNotifications.Enqueue(new BlockChange(position, old, block));
+        this.BlockNotifications.DrainAsync().GetAwaiter().GetResult();
+    }
 
     private async ValueTask TouchAsync(IEntity entity, Vector position, bool inside)
     {

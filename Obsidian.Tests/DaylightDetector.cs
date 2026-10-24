@@ -41,7 +41,7 @@ public class DaylightDetectorTests
         var world = new RedstoneTestWorld { DayTime = 6000 };
         world.Load(0, 15, 62, 68, 0, 15);
         var detector = new Vector(8, 64, 8);
-        await world.Place(detector, BlocksRegistry.Get(DaylightDetector.BlockName));
+        await world.Place(detector, BlocksRegistry.GetDefault(DaylightDetector.BlockId));
         await DaylightDetector.RefreshAsync(world, detector);
         Assert.Equal("15", world.GetLoadedBlock(detector)!.GetProperty("power"));
 
@@ -60,7 +60,7 @@ public class DaylightDetectorTests
         var world = new RedstoneTestWorld { DayTime = 6000 };
         world.Load(0, 15, 62, 68, 0, 15, ringChunks: 1);
         var detector = new Vector(8, 64, 8);
-        await world.Place(detector, BlocksRegistry.Get(DaylightDetector.BlockName));
+        await world.Place(detector, BlocksRegistry.GetDefault(DaylightDetector.BlockId));
 
         for (var tick = 0; tick < 45; tick++)
             await world.Advance();
@@ -69,7 +69,7 @@ public class DaylightDetectorTests
 
         Assert.Equal("15", world.GetLoadedBlock(detector)!.GetProperty("power"));
         // Game time 45 is 5 ticks past a boundary, so the next update is 15 ticks away.
-        Assert.Equal((detector, DaylightDetector.BlockName, 15), world.ScheduledBlockTicks[^1]);
+        Assert.Equal((detector, BlocksRegistry.GetDefault(DaylightDetector.BlockId).UnlocalizedName, 15), world.ScheduledBlockTicks[^1]);
 
         for (var tick = 0; tick < 15; tick++)
             await world.Advance();
@@ -83,7 +83,7 @@ public class DaylightDetectorTests
         var world = new RedstoneTestWorld { DayTime = 18000 };
         world.Load(0, 15, 62, 68, 0, 15);
         var detector = new Vector(8, 64, 8);
-        await world.Place(detector, BlocksRegistry.Get(DaylightDetector.BlockName));
+        await world.Place(detector, BlocksRegistry.GetDefault(DaylightDetector.BlockId));
 
         // Midnight: the plain detector reads 0, so the inverted one reads its full darkness of 11.
         await DaylightDetector.ToggleAsync(world, detector, world.GetLoadedBlock(detector)!);

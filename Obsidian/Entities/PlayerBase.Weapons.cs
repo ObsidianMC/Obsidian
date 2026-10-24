@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using System.Collections.Immutable;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
@@ -347,17 +346,22 @@ public partial class PlayerBase
     /// </summary>
     private async ValueTask DropBundleContentsAsync(ItemStack bundle)
     {
-        // The stack leaves the bundle only once the drop is in the world, so a refused drop loses nothing.
-        if (Bundles.Selected(bundle) is not { } selected)
-            return;
-
-        if (!ItemEntity.Drop(this, selected))
+        // The stack leaves the bundle only once the drop is in the world, so a refused drop loses nothing. The inventory
+        // lock covers selection, drop and removal, so a click can't change the bundle between them.
+        using (await Inventory.LockAsync())
         {
-            Log.BundleDropRefused(this.Logger, this.Username, selected.Holder.UnlocalizedName, selected.Count);
-            return;
+            if (Bundles.Selected(bundle) is not { } selected)
+                return;
+
+            if (!ItemEntity.Drop(this, selected))
+            {
+                Log.BundleDropRefused(this.Logger, this.Username, selected.Holder.UnlocalizedName, selected.Count);
+                return;
+            }
+
+            Bundles.RemoveOne(bundle);
         }
 
-        Bundles.RemoveOne(bundle);
         PlayBundleSound("minecraft:item.bundle.remove_one", 0.8f);
         PlayBundleSound("minecraft:item.bundle.drop_contents", 1f);
         this.Statistics.Increment(bundle.Holder.UnlocalizedName, type: "minecraft:used");
@@ -388,8 +392,8 @@ public partial class PlayerBase
         var ray = direction * (reach - minimum);
         var margin = new VectorD(CombatItems.Number(range, "hitbox_margin", 0.125f));
         return Level.GetEntitiesInRange(Position, reach + 2).OfType<Living>().Where(target => !ReferenceEquals(target, this) && target.Alive &&
-            MobTerrain.RayIntersection(new BoundingBox(target.Dimension.CreateBBFromPosition(target.Position).Min - margin,
-                target.Dimension.CreateBBFromPosition(target.Position).Max + margin), start, ray) != null && CanAttack(target, item));
+            MobTerrain.SegmentIntersects(new BoundingBox(target.Dimension.CreateBBFromPosition(target.Position).Min - margin,
+                target.Dimension.CreateBBFromPosition(target.Position).Max + margin), start, ray) && CanAttack(target, item));
     }
 
     public async ValueTask StabAsync()

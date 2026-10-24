@@ -1,9 +1,8 @@
-using Obsidian.API;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
-using Obsidian.WorldData.Fluids;
+using Obsidian.WorldData.BlockTicks;
 using Obsidian.WorldData.Lighting;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using Obsidian.WorldData.Ticks;
@@ -335,7 +334,7 @@ public sealed class Chunk : IChunk
     /// The chunk's scheduled block ticks, like vanilla's <c>block_ticks</c>, by block identifier. Ticks of a plugin's
     /// block are kept while the plugin is unloaded, and run once it's back.
     /// </summary>
-    internal ChunkTicks<string> BlockTicks { get; } = new();
+    internal ChunkBlockTicks BlockTicks { get; } = new();
 
     /// <summary>
     /// The final heightmaps world generation keeps in step with its block changes, from the chunk's first decoration until

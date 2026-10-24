@@ -14,7 +14,7 @@ public class RepeaterTests
         var world = new RedstoneTestWorld();
         world.Load(0, 15, 62, 66, 0, 15);
         var repeater = new Vector(8, 64, 8);
-        await world.Place(repeater, BlocksRegistry.Get(RedstoneRepeater.Name)
+        await world.Place(repeater, BlocksRegistry.GetDefault(RedstoneRepeater.BlockId)
             .WithProperty("facing", "west")
             .WithProperty("delay", "1")
             .WithProperty("locked", "false")
@@ -32,7 +32,7 @@ public class RepeaterTests
         var world = new RedstoneTestWorld();
         world.Load(0, 15, 62, 66, 0, 15);
         var repeater = new Vector(8, 64, 8);
-        await world.Place(repeater, BlocksRegistry.Get(RedstoneRepeater.Name)
+        await world.Place(repeater, BlocksRegistry.GetDefault(RedstoneRepeater.BlockId)
             .WithProperty("facing", "west")
             .WithProperty("delay", "1")
             .WithProperty("locked", "false")

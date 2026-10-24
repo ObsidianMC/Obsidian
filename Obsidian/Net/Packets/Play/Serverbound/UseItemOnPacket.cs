@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using Obsidian.API.Blocks;
+﻿using Obsidian.API.Blocks;
 using Obsidian.API.Events;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.API.Inventory;
@@ -13,6 +12,13 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 
 public partial class UseItemOnPacket
 {
+    /// <summary>
+    /// Whether sneaking with an item in either hand skips using the block there: the item is placed instead, as in
+    /// vanilla. Sneaking with empty hands still uses the block.
+    /// </summary>
+    internal static bool BypassesBlockUse(bool sneaking, ItemStack? mainHand, ItemStack? offHand) =>
+        sneaking && (mainHand is { Count: > 0 } || offHand is { Count: > 0 });
+
     // Blocks whose screen opens through the interact event when used without sneaking. Vanilla has no tag for these.
     private static readonly HashSet<int> interactableBlocks =
     [
@@ -155,12 +161,16 @@ public partial class UseItemOnPacket
         }
 
         // Vanilla's redstone components react to being used with the main hand: levers, buttons, repeaters,
-        // comparators and dust. Adventure mode can't change repeaters, comparators or dust.
-        if (!player.Sneaking
+        // comparators and daylight detectors. Sneaking with an item in either hand places the item instead.
+        var bypassesUse = BypassesBlockUse(
+            player.Sneaking,
+            player.Inventory.GetItem(player.CurrentHeldItemSlot),
+            player.Inventory.GetItem(45));
+        if (!bypassesUse
             && this.Hand == InteractionHand.MainHand
             && player.GameMode != GameMode.Spectator
             && player.Level is AbstractLevel redstoneLevel
-            && redstoneLevel.BlockUpdates.UseRedstone(position, player, player.GameMode != GameMode.Adventure))
+            && await redstoneLevel.UseRedstoneAsync(position, player, player.GameMode != GameMode.Adventure))
         {
             player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
             return;
@@ -460,14 +470,6 @@ public partial class UseItemOnPacket
             return;
         }
 
-        // Vanilla's BlockItem.canPlace also requires Level.isUnobstructed: the block's collision shape can't overlap a
-        // mob or player (say, the placing player's own feet when they look down and place under themselves).
-        if (!pouring && !IsUnobstructed(placeLevel, position, block))
-        {
-            await this.RejectPlacementAsync(player, handSlot);
-            return;
-        }
-
         if (block.Is(BlockIds.EndPortalFrame))
         {
             string[] facings = ["north", "east", "south", "west"];
@@ -514,6 +516,15 @@ public partial class UseItemOnPacket
             }
 
             block = placedState;
+        }
+
+        // Vanilla's BlockItem.canPlace also requires Level.isUnobstructed for the final state, so a slab that merges into
+        // a double slab is checked as the double: the block's collision shape can't overlap a mob or player (say, the
+        // placing player's own feet when they look down and place under themselves).
+        if (!pouring && !IsUnobstructed(placeLevel, position, block))
+        {
+            await this.RejectPlacementAsync(player, handSlot);
+            return;
         }
 
         var context = new BlockPlaceContext

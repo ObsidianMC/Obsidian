@@ -1,3 +1,4 @@
+using Obsidian.API.Registries;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -243,7 +244,7 @@ public class RedstoneEngineTests
         for (var x = 2; x <= 12; x++)
             await world.Place(new Vector(x, 63, 8), stone);
 
-        var wire = BlocksRegistry.Get(Material.RedstoneWire);
+        var wire = BlocksRegistry.GetDefault(BlockIds.RedstoneWire);
         var wires = new[] { new Vector(3, 64, 8), new Vector(4, 64, 8), new Vector(5, 64, 8) };
         foreach (var p in wires)
             await world.Place(p, wire);

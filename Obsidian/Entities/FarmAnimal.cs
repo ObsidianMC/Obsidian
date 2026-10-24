@@ -1,6 +1,5 @@
 using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
-using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Entities;
 
@@ -55,6 +54,10 @@ public abstract class FarmAnimal : Animal
         if (Level is not Obsidian.WorldData.AbstractLevel level || level.GetLoadedChunk(x, z) is not { } chunk)
             return 1;
         var biome = chunk.GetBiome((int)Position.X, (int)Position.Y, (int)Position.Z);
+        // A chunk without loaded biome data has no cold or warm biome, so it gets the temperate variant.
+        if (biome is null)
+            return 1;
+
         return TagsRegistry.Worldgen.Biome.SpawnsColdVariantFarmAnimals.Entries.Contains(biome.Id) ? 0 :
             TagsRegistry.Worldgen.Biome.SpawnsWarmVariantFarmAnimals.Entries.Contains(biome.Id) ? 2 : 1;
     }

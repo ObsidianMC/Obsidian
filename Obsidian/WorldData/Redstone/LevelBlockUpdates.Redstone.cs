@@ -44,65 +44,25 @@ internal sealed partial class LevelBlockUpdates
     /// <summary>
     /// The game time block ticks are scheduled against.
     /// </summary>
-    internal long GameTime => this.Scheduler.GameTime;
+    internal long GameTime => this.Ticks.GameTime;
 
     /// <inheritdoc/>
-    public int GetSignal(Vector position, BlockFace direction)
-    {
-        var state = this.GetBlock(position);
-        var signal = this.SignalOf(state, position, direction);
-
-        return state.IsRedstoneConductor() ? Math.Max(signal, this.GetDirectSignalTo(position)) : signal;
-    }
+    public int GetSignal(Vector position, BlockFace direction) => level.GetSignal(position, direction);
 
     /// <inheritdoc/>
-    public int GetDirectSignal(Vector position, BlockFace direction) =>
-        this.DirectSignalOf(this.GetBlock(position), position, direction);
+    public int GetDirectSignal(Vector position, BlockFace direction) => level.GetDirectSignal(position, direction);
 
     /// <inheritdoc/>
-    public int GetDirectSignalTo(Vector position)
-    {
-        var best = 0;
-        foreach (var direction in signalOrder)
-        {
-            best = Math.Max(best, this.GetDirectSignal(position.Offset(direction), direction));
-            if (best >= 15)
-                return best;
-        }
-
-        return best;
-    }
+    public int GetDirectSignalTo(Vector position) => level.GetDirectSignalTo(position);
 
     /// <inheritdoc/>
-    public bool HasSignal(Vector position, BlockFace direction) => this.GetSignal(position, direction) > 0;
+    public bool HasSignal(Vector position, BlockFace direction) => level.HasSignal(position, direction);
 
     /// <inheritdoc/>
-    public bool HasNeighborSignal(Vector position)
-    {
-        foreach (var direction in signalOrder)
-        {
-            if (this.GetSignal(position.Offset(direction), direction) > 0)
-                return true;
-        }
-
-        return false;
-    }
+    public bool HasNeighborSignal(Vector position) => level.HasNeighborSignal(position);
 
     /// <inheritdoc/>
-    public int GetBestNeighborSignal(Vector position)
-    {
-        var best = 0;
-        foreach (var direction in signalOrder)
-        {
-            var signal = this.GetSignal(position.Offset(direction), direction);
-            if (signal >= 15)
-                return 15;
-
-            best = Math.Max(best, signal);
-        }
-
-        return best;
-    }
+    public int GetBestNeighborSignal(Vector position) => level.GetBestNeighborSignal(position);
 
     /// <inheritdoc/>
     public void UpdateAnalogOutput(Vector position)
@@ -183,6 +143,10 @@ internal sealed partial class LevelBlockUpdates
     {
         lock (fluids.TickLock)
         {
+            // The engine's components (levers, buttons, repeaters, ...) first; their writes are synchronous under the lock.
+            if (level.UseRedstoneAsync(position, player, mayBuild).GetAwaiter().GetResult())
+                return true;
+
             var state = this.GetBlock(position);
             return VanillaRedstone.For(state)?.Use(this, position, state, player, mayBuild) == true;
         }
@@ -367,7 +331,7 @@ internal sealed partial class LevelBlockUpdates
     /// Vanilla <c>willTickThisTick</c> for the block at <paramref name="position"/>.
     /// </summary>
     internal bool WillTickThisTick(Vector position, IBlock state) =>
-        this.Scheduler.WillTickThisTick(position, state.UnlocalizedName);
+        this.Ticks.WillTickThisTick(position, state.UnlocalizedName);
 
     /// <summary>
     /// Vanilla <c>dropResources</c> and <c>removeBlock</c>: the block drops its loot, like a player breaking it by
@@ -375,8 +339,7 @@ internal sealed partial class LevelBlockUpdates
     /// </summary>
     internal void DropAndRemove(Vector position, IBlock state) =>
         level.QueueBlockDestruction(position, true, null, FluidState.Of(state).CreateLegacyBlock(), playEffect: false,
-            stillUnsupported: current => current.BlockClass() is
-                "RailBlock" or "PoweredRailBlock" or "DetectorRailBlock"
+            stillUnsupported: current => Rails.IsRail(current)
                 ? this.IsUnsupportedRail(position, current)
                 : updates.IsUnsupported(position, current));
 

@@ -30,7 +30,7 @@ internal sealed class FluidLevel
     // Vanilla LiquidBlock.POSSIBLE_FLOW_DIRECTIONS; lava checks the block each of them flows from.
     private static readonly BlockFace[] possibleFlowDirections = [BlockFace.Down, BlockFace.South, BlockFace.North, BlockFace.East, BlockFace.West];
 
-    private static readonly IBlock basalt = BlockStateProperties.GetState("minecraft:basalt");
+    private static readonly IBlock basalt = BlocksRegistry.GetDefault(BlockIds.Basalt);
 
     private readonly IFluidLevelAccess access;
     private readonly NeighborUpdater neighborUpdater;
@@ -345,8 +345,12 @@ internal sealed class FluidLevel
         if (this.GetBlock(position).IsAir)
             return false;
 
+        var state = this.GetBlock(position);
         var fluid = this.GetFluid(position).CreateLegacyBlock();
-        if (this.access.TryQueueDestruction(position, fluid, dropItems, playEffect: true,
+        // RedStoneWireBlock and BaseRailBlock use dropResources/removeBlock rather than Level.destroyBlock,
+        // so their support-loss removal does not emit level event 2001.
+        var playEffect = state.BlockClass() != "RedStoneWireBlock" && !Rails.IsRail(state);
+        if (this.access.TryQueueDestruction(position, fluid, dropItems, playEffect,
             stillUnsupported: current => this.IsUnsupported(position, current)))
             return true;
 

@@ -25,6 +25,53 @@ public partial class Arrow : Entity
     private readonly HashSet<int> piercedEntities = [];
     private Guid ownerUuid;
     protected int age;
+    /// <summary>
+    /// The block an arrow entered when it stopped at <paramref name="stop"/> (on a block boundary, moving by
+    /// <paramref name="motion"/>), and the face it came through.
+    /// </summary>
+    internal static (Vector Block, BlockFace Face) EnteredBlockFace(VectorD stop, VectorD motion)
+    {
+        double[] coordinates = [stop.X, stop.Y, stop.Z];
+        double[] moves = [motion.X, motion.Y, motion.Z];
+
+        // The stopping axis is the one moving whose coordinate sits on a block boundary.
+        var axis = -1;
+        var nearest = double.MaxValue;
+        for (var i = 0; i < 3; i++)
+        {
+            if (moves[i] == 0)
+                continue;
+
+            var distance = Math.Abs(coordinates[i] - Math.Round(coordinates[i]));
+            if (distance < nearest)
+            {
+                nearest = distance;
+                axis = i;
+            }
+        }
+
+        var block = new int[3];
+        for (var i = 0; i < 3; i++)
+            block[i] = (int)Math.Floor(coordinates[i]);
+
+        if (axis < 0)
+            return (new Vector(block[0], block[1], block[2]), BlockFace.Up);
+
+        // Moving positive, the arrow entered the block starting at the boundary, through its negative face; moving
+        // negative, the block ending at it, through its positive face.
+        var boundary = (int)Math.Round(coordinates[axis]);
+        var positive = moves[axis] > 0;
+        block[axis] = positive ? boundary : boundary - 1;
+        var face = axis switch
+        {
+            0 => positive ? BlockFace.West : BlockFace.East,
+            1 => positive ? BlockFace.Down : BlockFace.Up,
+            _ => positive ? BlockFace.North : BlockFace.South,
+        };
+
+        return (new Vector(block[0], block[1], block[2]), face);
+    }
+
     protected bool embedded;
 
     public override void Write(INetStreamWriter writer)
@@ -189,6 +236,14 @@ public partial class Arrow : Entity
         {
             level.EmitGameEvent(MobGameEvent.ProjectileLand, Position, this, Owner);
             if (Type is EntityType.ShulkerBullet or EntityType.WitherSkull) { await OnImpactAsync(null, false); return; }
+
+            // Like vanilla's onHitBlock, a block the arrow hits reacts before the arrow embeds.
+            if (Level is AbstractLevel hitLevel)
+            {
+                var (hitBlock, hitFace) = EnteredBlockFace(Position, Motion);
+                await hitLevel.OnProjectileHitBlockAsync(hitBlock, Position, hitFace);
+            }
+
             embedded = true;
             Crit = false;
             Motion = VectorD.Zero;

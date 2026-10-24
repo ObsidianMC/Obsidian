@@ -1,8 +1,4 @@
-using Obsidian.API.Blocks;
-using Obsidian.API.Inventory;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Registries;
-using Obsidian.Utilities;
 using System.Collections.Frozen;
 
 namespace Obsidian.WorldData;
@@ -153,13 +149,14 @@ internal static class Composters
         block.Is(BlockIds.Composter) && int.TryParse(block.GetProperty("level"), out var level) ? level : -1;
 
     /// <summary>
-    /// Vanilla's <c>ComposterBlock.addItem</c>: the item is consumed whether or not it raises the level, and the level
-    /// rises only by its chance. The fill event reports whether it rose.
+    /// Vanilla's <c>ComposterBlock.addItem</c>: the item is consumed whether or not it raises the level. An empty
+    /// composter always rises for a compostable item; otherwise the level rises only if the roll passes its chance.
+    /// The fill event reports whether it rose.
     /// </summary>
     internal static IBlock Filled(IBlock block, float chance, float roll, out bool rose)
     {
         var level = LevelOf(block);
-        rose = roll < chance;
+        rose = (level == 0 && chance > 0) || roll < chance;
         return rose ? block.WithProperty("level", (level + 1).ToString()) : block;
     }
 

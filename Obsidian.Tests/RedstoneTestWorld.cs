@@ -153,7 +153,16 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
         await this.Pipeline.DrainAsync();
     }
 
+    int IBlockChangeWorld.GetRawBrightness(Vector position) => this.SkyLight;
+
     ValueTask IBlockChangeWorld.SetBlockAsync(Vector position, IBlock block) => this.Place(position, block);
+
+    // Signal tests place pressure plates without terrain fixtures; integration tests cover their support removal.
+    void IBlockChangeWorld.DropAndRemove(Vector position, IBlock block, bool playEffect)
+    {
+        if (block.BlockClass() is not ("PressurePlateBlock" or "WeightedPressurePlateBlock"))
+            this.Commit(position, BlocksRegistry.Air);
+    }
 
     public void ScheduleFluidTick(Vector position) => this.FluidTicks.Add(position);
 
@@ -177,10 +186,14 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
 
     int IRedstoneLevel.GetSkyLight(Vector position) => this.GetLoadedBlock(position) is null ? 0 : this.SkyLight;
 
-    void IRedstoneLevel.ScheduleBlockTick(Vector position, IBlock block, int delay)
+    bool IRedstoneLevel.HasAnalogOutput(IBlock block) => false;
+
+    int IRedstoneLevel.GetAnalogOutput(Vector position, IBlock block, BlockFace direction) => 0;
+
+    void IRedstoneLevel.ScheduleBlockTick(Vector position, IBlock block, int delay, Obsidian.API.Blocks.TickPriority priority)
     {
         this.ScheduledBlockTicks.Add((position, block.UnlocalizedName, delay));
-        this.BlockTicks.Schedule(position, block.UnlocalizedName, delay);
+        this.BlockTicks.Schedule(position, block.UnlocalizedName, delay, (int)priority);
     }
 
     bool IRedstoneLevel.IsBlockTickScheduled(Vector position, string block) => this.BlockTicks.IsScheduled(position, block);

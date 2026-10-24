@@ -2,9 +2,9 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API.Blocks;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Plugins;
+using Obsidian.WorldData.BlockTicks;
 using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Redstone;
-using Obsidian.WorldData.Ticks;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.WorldData;
@@ -28,15 +28,18 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     private const int FallDelay = 2;
 
     /// <summary>
-    /// The level's block tick scheduler, which the chunks' <see cref="Chunk.BlockTicks"/> are ticked by.
+    /// The level's block ticks, run each level tick before fluid ticks. Ticks of blocks with no registration run
+    /// <see cref="RunScheduledTick"/>.
     /// </summary>
-    public TickScheduler<string> Scheduler { get; } = new(fluids.Clock);
+    public LevelBlockTicks Ticks => this.ticks ??= new(
+        (IBlockTickLevel)level,
+        fluids.TickLock,
+        (position, block) => this.RunScheduledTick(position, block.UnlocalizedName));
+
+    private LevelBlockTicks? ticks;
 
     /// <inheritdoc/>
     public ILevel Level => level;
-
-    /// <inheritdoc/>
-    public IRandomSource Random => level.GrowthRandom;
 
     /// <summary>
     /// Reads a saved block tick's block, by identifier. Ticks of blocks the server doesn't know are read too: like any
@@ -47,6 +50,9 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         type = name;
         return name.Length > 0;
     }
+
+    /// <inheritdoc/>
+    public IRandomSource Random => level.GrowthRandom;
 
     /// <inheritdoc/>
     public IBlock GetBlock(Vector position) => fluids.GetBlock(position);
@@ -75,23 +81,17 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     /// <remarks>
     /// Like vanilla, ignored where the chunk isn't loaded and complete.
     /// </remarks>
-    public void ScheduleTick(Vector position, IBlock block, int delay, TickPriority priority = TickPriority.Normal)
+    public void ScheduleTick(Vector position, IBlock block, int delay, Obsidian.API.Blocks.TickPriority priority = Obsidian.API.Blocks.TickPriority.Normal)
     {
         lock (fluids.TickLock)
-        {
-            if (fluids.TryGetChunk(position, out var chunk))
-                chunk.BlockTicks.Schedule(position, block.UnlocalizedName, delay, (int)priority);
-        }
+            this.Ticks.Schedule(position, block.UnlocalizedName, delay, (int)priority);
     }
 
     /// <inheritdoc/>
     public bool HasScheduledTick(Vector position, IBlock block)
     {
         lock (fluids.TickLock)
-        {
-            return fluids.TryGetChunk(position, out var chunk)
-                && chunk.BlockTicks.Contains(position, block.UnlocalizedName);
-        }
+            return this.Ticks.IsScheduled(position, block.UnlocalizedName);
     }
 
     /// <inheritdoc/>
@@ -140,10 +140,6 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         return true;
     }
 
-    /// <summary>Unavailable plugin types wait outside the runnable tick budget until their binding returns.</summary>
-    internal static bool CanRunTickType(string type) =>
-        !BlocksRegistry.TryGetPluginBlock(type, out var block)
-        || (block.Binding is BlockBinding binding && binding.Owner is not PluginContainer { IsClosing: true });
 
     /// <summary>
     /// Runs a random tick of a plugin block that gets them (see <see cref="BlockProperties.RandomlyTicks"/>); other
@@ -290,8 +286,7 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
 
     private void ScheduleFall(Vector position, IBlock state)
     {
-        if (fluids.TryGetChunk(position, out var chunk))
-            chunk.BlockTicks.Schedule(position, state.UnlocalizedName, FallDelay);
+        this.Ticks.Schedule(position, state.UnlocalizedName, FallDelay);
     }
 
     // Vanilla FallingBlock.tick and FallingBlockEntity.fall: with room below, the block leaves its fluid behind, with
