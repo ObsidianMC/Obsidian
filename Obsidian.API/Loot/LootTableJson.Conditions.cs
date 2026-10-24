@@ -125,6 +125,16 @@ public static partial class LootTableJson
     private static ILootCondition LocationPredicate(JsonElement json)
     {
         var predicate = json.GetProperty("predicate");
+        if (predicate.TryGetProperty("biomes", out var biomes))
+        {
+            if (predicate.EnumerateObject().Any(value => value.Name != "biomes"))
+                throw new InvalidDataException("Biome location checks support only biomes.");
+
+            var ids = biomes.EnumerateArray().Select(biome => Qualify(biome.GetString()!)).ToHashSet();
+            return new PredicateCondition(context => context.Origin is { } origin
+                && context.OriginBiome?.Invoke(origin) is { } name && ids.Contains(name));
+        }
+
         if (predicate.EnumerateObject().Any(value => value.Name != "block"))
             throw new InvalidDataException("Only block predicates are supported by block loot location checks.");
 
@@ -187,6 +197,9 @@ public static partial class LootTableJson
                     }
 
                     break;
+                case "type_specific":
+                    ValidateTypeSpecific(property.Value);
+                    break;
                 default:
                     throw new InvalidDataException($"Unsupported entity predicate {property.Name}.");
             }
@@ -206,6 +219,11 @@ public static partial class LootTableJson
                     var id = entity.Definition?.Id ?? (int)(entity.Type ?? (EntityType)(-1));
                     var name = entity.Definition?.Identifier ?? "minecraft:" + entity.Type?.ToString().ToSnakeCase();
                     if (!MatchesRegistrySet(property.Value, "entity_type", name, id))
+                        return false;
+
+                    break;
+                case "type_specific":
+                    if (!MatchesTypeSpecific(entity, property.Value, context))
                         return false;
 
                     break;
@@ -244,6 +262,28 @@ public static partial class LootTableJson
         }
 
         return true;
+    }
+
+    // Vanilla's fishing_hook type-specific predicate: only the hook's open-water state is modelled.
+    private static void ValidateTypeSpecific(JsonElement predicate)
+    {
+        if (Text(predicate, "type") != "minecraft:fishing_hook")
+            throw new InvalidDataException("Unsupported type_specific predicate.");
+
+        foreach (var property in predicate.EnumerateObject())
+        {
+            if (property.Name is not ("type" or "in_open_water"))
+                throw new InvalidDataException($"Unsupported fishing_hook predicate {property.Name}.");
+        }
+    }
+
+    private static bool MatchesTypeSpecific(IEntity? entity, JsonElement predicate, LootContext context)
+    {
+        var open = entity is null ? null : context.EntityFishingOpenWater?.Invoke(entity);
+        if (open is null)
+            return false;
+
+        return !predicate.TryGetProperty("in_open_water", out var expected) || open == expected.GetBoolean();
     }
 
     private sealed class PredicateCondition(Func<LootContext, bool> test) : ILootCondition

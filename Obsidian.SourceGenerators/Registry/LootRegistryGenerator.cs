@@ -280,8 +280,8 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
                     var memberName = MemberName(table.Name.StartsWith(prefix, StringComparison.Ordinal)
                         ? table.Name.Substring(prefix.Length)
                         : table.Name);
-                    var expression = category is "blocks" or "entities"
-                        ? $"global::Obsidian.API.Loot.LootTableJson.Parse({Literal(table.Value.GetRawText())}, "
+                    var expression = category is "blocks" or "entities" or "gameplay"
+                        ? $"global::Obsidian.API.Loot.LootTableJson.Parse({Literal(category == "gameplay" ? this.ExpandEnchantmentOptions(table.Value) : table.Value.GetRawText())}, "
                             + $"{Literal(table.Name)})"
                         : this.EmitObject(lootTable, table.Value, null, $"Identifier = {Literal(table.Name)}");
 
@@ -547,6 +547,47 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
                 this.Expand(registry, entry.GetString()!, result, resolving);
 
             resolving.Remove(key);
+        }
+
+        /// <summary>
+        /// The table's JSON with each <c>#tag</c> enchantment <c>options</c> expanded to its ids, which the runtime
+        /// reader (LootTableJson) reads without tags.
+        /// </summary>
+        private string ExpandEnchantmentOptions(JsonElement table)
+        {
+            var root = System.Text.Json.Nodes.JsonNode.Parse(table.GetRawText())!;
+            var pending = new Stack<System.Text.Json.Nodes.JsonNode?>();
+            pending.Push(root);
+            while (pending.Count > 0)
+            {
+                switch (pending.Pop())
+                {
+                    case System.Text.Json.Nodes.JsonArray array:
+                        foreach (var item in array)
+                            pending.Push(item);
+                        break;
+                    case System.Text.Json.Nodes.JsonObject obj:
+                        foreach (var property in obj.ToList())
+                        {
+                            if (property.Key == "options" && property.Value is System.Text.Json.Nodes.JsonValue value
+                                && value.TryGetValue<string>(out var reference) && reference.StartsWith("#", StringComparison.Ordinal))
+                            {
+                                var ids = this.ExpandReferences("enchantment", reference)
+                                    .Select(id => (System.Text.Json.Nodes.JsonNode)System.Text.Json.Nodes.JsonValue.Create(id)!)
+                                    .ToArray();
+                                obj[property.Key] = new System.Text.Json.Nodes.JsonArray(ids);
+                            }
+                            else
+                            {
+                                pending.Push(property.Value);
+                            }
+                        }
+
+                        break;
+                }
+            }
+
+            return root.ToJsonString();
         }
 
         private static string EmitCost(JsonElement json) =>

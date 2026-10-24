@@ -1,6 +1,7 @@
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot.Functions;
+using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using System.IO;
 using System.Text.Json;
@@ -11,6 +12,20 @@ public static partial class LootTableJson
 {
     private static ImmutableArray<LootFunction> ReadFunctions(JsonElement json) =>
         ReadArray(json, "functions", ReadFunction);
+
+    // The enchantments an enchant_with_levels function picks from. The generator expands tags before the runtime
+    // reads a gameplay table, so options are ids; every enchantment when absent.
+    private static ImmutableArray<EnchantmentDefinition>? ReadEnchantmentOptions(JsonElement json)
+    {
+        if (!json.TryGetProperty("options", out var options))
+            return null;
+
+        var ids = options.ValueKind == JsonValueKind.Array
+            ? options.EnumerateArray().Select(id => id.GetString()!)
+            : [options.GetString()!];
+        return ids.Select(id => EnchantmentsRegistry.All.FirstOrDefault(definition => definition.Identifier == Qualify(id))
+            ?? throw new InvalidDataException($"Unknown enchantment option {id}.")).ToImmutableArray();
+    }
 
     private static LootFunction ReadFunction(JsonElement json)
     {
@@ -34,6 +49,20 @@ public static partial class LootTableJson
 
                     return new ItemStack(result, stack.Count);
                 }) { Conditions = conditions };
+            case "minecraft:set_damage":
+                return new SetDamageFunction
+                {
+                    Conditions = conditions,
+                    Damage = ReadNumber(json.GetProperty("damage")),
+                    Add = json.TryGetProperty("add", out var addDamage) && addDamage.GetBoolean()
+                };
+            case "minecraft:enchant_with_levels":
+                return new EnchantWithLevelsFunction
+                {
+                    Conditions = conditions,
+                    Levels = ReadNumber(json.GetProperty("levels")),
+                    Options = ReadEnchantmentOptions(json)
+                };
             case "minecraft:set_potion":
                 return new SetPotionFunction
                 {

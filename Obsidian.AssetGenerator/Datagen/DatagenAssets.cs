@@ -18,7 +18,7 @@ internal static class DatagenAssets
 
     // Container, block and supported entity tables evaluated by the server (see LootRegistryGenerator).
     private static readonly string[] lootTableCategories =
-        ["archaeology", "blocks", "chests", "dispensers", "pots", "spawners", "entities"];
+        ["archaeology", "blocks", "chests", "dispensers", "pots", "spawners", "entities", "gameplay"];
 
     /// <param name="generatedDirectory">The data generators' output (<c>data</c> and <c>reports</c>).</param>
     /// <param name="worldgenGroupsPath">The Java dumper's vanilla classes declaring each feature (see <see cref="WorldgenAssets"/>).</param>
@@ -52,6 +52,13 @@ internal static class DatagenAssets
                 // their behaviour can be checked against vanilla; do not weaken predicates to include them.
                 foreach (var id in new[] { "ghast", "magma_cube", "slime", "turtle", "sheep", "pillager" })
                     tables.Remove($"minecraft:entities/{id}");
+            }
+
+            if (category == "gameplay")
+            {
+                // Only fishing is evaluated so far (see FishingHook); the other gameplay tables need their own owners.
+                foreach (var id in tables.Where(table => !table.Key.StartsWith("minecraft:gameplay/fishing", StringComparison.Ordinal)).Select(table => table.Key).ToList())
+                    tables.Remove(id);
             }
 
             WriteJson(Path.Combine(outputDirectory, "loot_table", $"{category}.json"), tables);
