@@ -1,6 +1,7 @@
 using Obsidian.API.Blocks;
 using Obsidian.Plugins;
 using Obsidian.WorldData.BlockNotifications;
+using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Redstone;
 
@@ -105,6 +106,20 @@ public abstract partial class AbstractLevel
 
         // The redstone engine's reactions for the change, drained now: its writes go to loaded chunks only, so they
         // complete synchronously under the tick lock. A drain already running picks this work up.
+        this.BlockNotifications.DrainAsync().GetAwaiter().GetResult();
+    }
+
+    /// <summary>
+    /// Vanilla <c>updateNeighborsAt</c> for the redstone components around <paramref name="position"/>, and for those one block
+    /// further out: their power, connections or analog output changed without a change of the block's state. Drained now,
+    /// under the tick lock, as <see cref="NotifyBlockChange"/> does.
+    /// </summary>
+    internal void NotifyNeighborReactionsAround(Vector position)
+    {
+        this.BlockNotifications.EnqueueNeighbors(position);
+        foreach (var face in Obsidian.WorldData.Redstone.RedstoneEngine.Directions)
+            this.BlockNotifications.EnqueueNeighbors(position.Offset(face));
+
         this.BlockNotifications.DrainAsync().GetAwaiter().GetResult();
     }
 

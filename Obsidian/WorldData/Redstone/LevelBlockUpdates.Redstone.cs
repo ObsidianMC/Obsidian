@@ -131,6 +131,7 @@ internal sealed partial class LevelBlockUpdates
             this.ShapeUpdateAt(position.Offset(direction), direction.Opposite(), RefreshShapeFlags, ShapeLimit);
 
         this.UpdateComparatorsAround(position, state);
+        level.NotifyNeighborReactionsAround(position);
     }
 
     /// <summary>

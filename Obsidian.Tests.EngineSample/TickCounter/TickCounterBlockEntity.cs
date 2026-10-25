@@ -73,6 +73,11 @@ public sealed class TickCounterBlockEntity : BlockEntity
         this.SetChanged();
 
         if (this.ticks % TicksPerSecond == 0)
+        {
             this.SendUpdate();
+
+            // Its analog output (the seconds, up to 15) changes only now: the comparators beside it hear of that.
+            level.UpdateNeighbors(this.BlockPosition, block);
+        }
     }
 }

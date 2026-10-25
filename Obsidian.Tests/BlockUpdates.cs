@@ -255,7 +255,8 @@ public sealed class BlockUpdates : IDisposable
             packet => packet.Position == filled && packet.BlockId == BlocksRegistry.Stone.GetHashCode());
 
         // Vanilla's redstone components go down as vanilla places them: a lever on the floor facing the way the
-        // player does, a torch clicked onto a block's side on that side, and redstone dust as a cross.
+        // player does, a torch clicked onto a block's side on that side, and isolated redstone dust as a dot (vanilla's
+        // getStateForPlacement keeps a dot that connects nowhere).
         meanwhile = null;
         async Task<IBlock> PlaceVanillaAsync(string item, Vector clicked, BlockFace face)
         {
@@ -272,7 +273,7 @@ public sealed class BlockUpdates : IDisposable
         var torch = await PlaceVanillaAsync("minecraft:redstone_torch", wall, BlockFace.East);
         Assert.Equal(("minecraft:redstone_wall_torch", "east"), (torch.UnlocalizedName, torch.GetProperty("facing")));
         var dust = await PlaceVanillaAsync("minecraft:redstone", new Vector(14, Ground, 8), BlockFace.Up);
-        Assert.All(["north", "east", "south", "west"], side => Assert.Equal("side", dust.GetProperty(side)));
+        Assert.All(["north", "east", "south", "west"], side => Assert.Equal("none", dust.GetProperty(side)));
 
         await manager.UnloadPluginAsync(container);
     }
