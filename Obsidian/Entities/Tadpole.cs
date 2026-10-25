@@ -15,13 +15,16 @@ public sealed partial class Tadpole : PathfinderMob
     internal override bool SwimmingNavigation => true;
     protected override bool TakesFallDamage => false;
     protected override string? SoundName => "tadpole";
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(1, new PanicGoal(this, 1.25f));
         actions.AddGoal(2, new SeekWaterGoal(this));
         actions.AddGoal(6, new RandomStrollGoal(this, 1));
     }
+
     protected override VectorD Travel() => VolumeMovement.Travel(this, InWater);
+
     protected override async ValueTask TickMobAsync()
     {
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
@@ -36,11 +39,18 @@ public sealed partial class Tadpole : PathfinderMob
         else if (!InWater && MovementFlags.HasFlag(MovementFlags.OnGround))
             Motion += new VectorD((Random.NextSingle() - 0.5f) * 0.2f, 0.4f, (Random.NextSingle() - 0.5f) * 0.2f);
     }
+
     protected override async ValueTask TickAirSupplyAsync()
     {
-        if (InWater) Air = 300;
-        else if (--Air <= -20) { Air = 0; await DamageEnvironmentAsync(2); }
+        if (InWater)
+            Air = 300;
+        else if (--Air <= -20)
+        {
+            Air = 0;
+            await DamageEnvironmentAsync(2);
     }
+    }
+
     internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (await TryCaptureInBucketAsync(player, hand, ItemsRegistry.TadpoleBucket))
@@ -58,17 +68,20 @@ public sealed partial class Tadpole : PathfinderMob
 
         return false;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(16, EntityMetadataType.Boolean);
         writer.WriteBoolean(FromBucket);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         writer.WriteInt("Age", Age);
         writer.WriteBool("FromBucket", FromBucket);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         Age = Math.Clamp((tag.TryGetTagValue<int>("Age", out var savedAge) ? savedAge : 0), 0, MaturationTicks);
@@ -80,6 +93,7 @@ public sealed partial class Tadpole : PathfinderMob
 internal sealed class SeekWaterGoal(PathfinderMob mob, bool onlyDuringDay = false) : NavigationGoal(mob, 1)
 {
     private VectorD destination;
+
     public override bool CanUse()
     {
         if (mob.InWater || onlyDuringDay && (mob.Level.DayTime is < 0 or >= 12000) || mob.Random.Next(20) != 0)
@@ -99,6 +113,7 @@ internal sealed class SeekWaterGoal(PathfinderMob mob, bool onlyDuringDay = fals
         }
         return false;
     }
+
     public override void Start() => MoveTo(destination);
     public override bool CanContinue() => !mob.InWater && Navigation.IsNavigating;
 }

@@ -18,6 +18,7 @@ public sealed partial class Wolf : Animal
     private bool wet;
     private int shakeTicks;
     public Wolf() => Type = EntityType.Wolf;
+
     public Guid Owner
     {
         get => owner;
@@ -28,30 +29,38 @@ public sealed partial class Wolf : Animal
             TryUpdateAttribute("minecraft:generic.attack_damage", 4);
         }
     }
+
     public bool Tamed => Owner != Guid.Empty;
     public bool OrderedToSit { get; set; }
     internal bool IsSitting { get; set; }
     internal long AngerTicks { get; set; }
+
     public byte CollarColor
     {
         get => collarColor;
         set => collarColor = value < 16 ? value : throw new ArgumentOutOfRangeException(nameof(value));
     }
+
     public int Variant
     {
         get => variant;
         set => variant = (uint)value < 9 ? value : throw new ArgumentOutOfRangeException(nameof(value));
     }
+
     public int SoundVariant
     {
         get => soundVariant;
         set => soundVariant = (uint)value < 7 ? value : throw new ArgumentOutOfRangeException(nameof(value));
     }
+
     protected override bool UsesAi => true;
     protected override string? SoundName => SoundVariant == 2 ? "wolf" : $"wolf_{SoundVariantNames[SoundVariant]}";
+
     protected override bool CanEat(ItemStack? item) => Tamed && item is { Count: > 0 } &&
         TagsRegistry.Item.WolfFood.Entries.Contains(item.Holder.Id);
+
     protected override int GetExperienceReward() => IsBaby ? 0 : Random.Next(1, 4);
+
     protected override void FinalizeSpawn()
     {
         var point = (Vector)Position.Floor();
@@ -70,6 +79,7 @@ public sealed partial class Wolf : Animal
         };
         SoundVariant = Random.Next(7);
     }
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(1, new FloatGoal(this));
@@ -87,11 +97,13 @@ public sealed partial class Wolf : Animal
         targets.AddGoal(5, new NearestAttackableTargetGoal(this, entity => !OrderedToSit &&
             entity.Type is EntityType.Skeleton or EntityType.Stray or EntityType.Bogged or EntityType.Parched));
     }
+
     internal bool CanAttack(IEntity target) => IsValidTarget(target) && target.Type is not EntityType.Creeper and not EntityType.Ghast &&
         (target is not IPlayer player || player.Uuid != Owner) &&
         (target is not Wolf wolf || !wolf.Tamed || wolf.Owner != Owner) &&
         (target is not AbstractHorse horse || !horse.HorseMask.HasFlag(HorseMask.Tamed)) &&
         target is not Cat { Tamed: true };
+
     internal static void AlertOwnedWolves(IPlayer player, IEntity target)
     {
         foreach (var wolf in player.Level.GetEntitiesInRange(player.Position, 16).OfType<Wolf>())
@@ -101,6 +113,7 @@ public sealed partial class Wolf : Animal
                 wolf.AlertedTarget = target;
             }
     }
+
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
@@ -113,8 +126,13 @@ public sealed partial class Wolf : Animal
                     !Tamed
                     && (player.GetHeldItem()?.Is(ItemsRegistry.Bone) == true
                         || player.GetOffHandItem()?.Is(ItemsRegistry.Bone) == true)));
-            if (interested != null && AttackTarget == null) LookControl.LookAt(interested);
-            if (begging != (interested != null)) { begging = interested != null; SynchronizeMetadata(); }
+            if (interested != null && AttackTarget == null)
+                LookControl.LookAt(interested);
+            if (begging != (interested != null))
+            {
+                begging = interested != null;
+                SynchronizeMetadata();
+            }
             if (!Tamed && AngerTicks > 0 && AttackTarget == null && Level.LevelData.Difficulty != Difficulty.Peaceful)
                 AlertedTarget = Level.GetPlayersInRange(Position, FollowRange).FirstOrDefault(player => player.Uuid == AngryAt && CanAttack(player));
         }
@@ -138,10 +156,19 @@ public sealed partial class Wolf : Animal
         }
         else if (wet && MovementFlags.HasFlag(MovementFlags.OnGround))
         {
-            if (shakeTicks++ == 0) { SendEntityEvent(8); PlayMobSound("shake"); }
-            if (shakeTicks >= 40) { wet = false; shakeTicks = 0; }
+            if (shakeTicks++ == 0)
+            {
+                SendEntityEvent(8);
+                PlayMobSound("shake");
+            }
+            if (shakeTicks >= 40)
+            {
+                wet = false;
+                shakeTicks = 0;
         }
     }
+    }
+
     protected override ValueTask OnHurtAsync(IEntity source)
     {
         OrderedToSit = false;
@@ -153,6 +180,7 @@ public sealed partial class Wolf : Animal
         }
         return default;
     }
+
     internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
@@ -241,6 +269,7 @@ public sealed partial class Wolf : Animal
         SynchronizeMetadata();
         return true;
     }
+
     protected override IEntity CreateOffspring(Animal mate)
     {
         var child = (Wolf)base.CreateOffspring(mate);
@@ -258,11 +287,13 @@ public sealed partial class Wolf : Animal
     {
         if (GetEquipment(EquipmentSlot.Body) is not { Count: > 0, Holder.Id: ItemIds.WolfArmor } ||
             kind is not (CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion or
-                CombatDamageKind.Fire or CombatDamageKind.FireContact or CombatDamageKind.Fall or CombatDamageKind.SonicBoom)) return false;
+                CombatDamageKind.Fire or CombatDamageKind.FireContact or CombatDamageKind.Fall or CombatDamageKind.SonicBoom))
+            return false;
         DamageEquipment(EquipmentSlot.Body, (int)Math.Ceiling(amount));
         PlayMobSound("armor.damage");
         return true;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -287,17 +318,23 @@ internal sealed class WolfSitGoal(Wolf wolf) : Goal
 {
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Jump;
     public override bool CanUse() => wolf.Tamed && wolf.OrderedToSit && !wolf.InWater && wolf.MovementFlags.HasFlag(MovementFlags.OnGround);
+
     public override void Start()
     {
         var navigation = (Navigator)wolf.Navigator!;
-        navigation.Stop(); navigation.IsPaused = true;
-        wolf.IsSitting = true; wolf.SynchronizeMetadata();
+        navigation.Stop();
+        navigation.IsPaused = true;
+        wolf.IsSitting = true;
+        wolf.SynchronizeMetadata();
     }
+
     public override void Stop()
     {
         var navigation = (Navigator)wolf.Navigator!;
-        navigation.Stop(); navigation.IsPaused = false;
-        wolf.IsSitting = false; wolf.SynchronizeMetadata();
+        navigation.Stop();
+        navigation.IsPaused = false;
+        wolf.IsSitting = false;
+        wolf.SynchronizeMetadata();
     }
 }
 
@@ -306,17 +343,21 @@ internal sealed class WolfFollowOwnerGoal(Wolf wolf) : NavigationGoal(wolf, 1)
     private IPlayer? owner;
     private long nextPath;
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
+
     public override bool CanUse()
     {
         owner = wolf.Level.Players.Values.FirstOrDefault(player => player.Uuid == wolf.Owner && player.Health > 0 && player.GameMode != GameMode.Spectator);
         return wolf.Tamed && !wolf.OrderedToSit && wolf.AttackTarget == null && owner != null && (owner.Position - wolf.Position).MagnitudeSquared() > 100;
     }
+
     public override bool CanContinue() => owner != null && owner.Level == wolf.Level && owner.Health > 0 && owner.GameMode != GameMode.Spectator &&
         !wolf.OrderedToSit && wolf.AttackTarget == null && (owner.Position - wolf.Position).MagnitudeSquared() > 4;
+
     public override ValueTask TickAsync()
     {
         wolf.LookControl.LookAt(owner!);
-        if (wolf.AiTick < nextPath) return default;
+        if (wolf.AiTick < nextPath)
+            return default;
         nextPath = wolf.AiTick + 10;
         if ((owner!.Position - wolf.Position).MagnitudeSquared() > 144 && wolf.Level is AbstractLevel level)
         {
@@ -327,7 +368,8 @@ internal sealed class WolfFollowOwnerGoal(Wolf wolf) : NavigationGoal(wolf, 1)
                 var destination = new VectorD(point.X + 0.5f, point.Y, point.Z + 0.5f);
                 if ((destination - owner.Position).MagnitudeSquared() < 4 || floor == null || floor.IsLiquid ||
                     BlockCollisionShapes.Get(floor).Count == 0 || !wolf.Terrain.IsFree(wolf.Dimension.CreateBBFromPosition(destination)) ||
-                    !level.TryMoveEntity(wolf, wolf.Position, destination)) continue;
+                    !level.TryMoveEntity(wolf, wolf.Position, destination))
+                    continue;
                 wolf.CompleteTeleport(destination);
                 return default;
             }
@@ -342,11 +384,13 @@ internal sealed class WolfRetaliateGoal(Wolf wolf) : Goal
     private long handledTick = -100;
     private IEntity? candidate;
     public override GoalFlags Flags => GoalFlags.Target;
+
     public override bool CanUse()
     {
         candidate = wolf.AlertedTarget ?? (handledTick != wolf.LastHurtTick ? wolf.LastAttacker : null);
         return candidate != null && wolf.CanAttack(candidate);
     }
+
     public override void Start()
     {
         handledTick = wolf.LastHurtTick;
@@ -354,16 +398,23 @@ internal sealed class WolfRetaliateGoal(Wolf wolf) : Goal
         if (!wolf.Tamed)
         {
             wolf.AngryAt = candidate!.Uuid;
-            if (wolf.AngerTicks == 0) wolf.AngerTicks = wolf.Random.Next(400, 800);
+            if (wolf.AngerTicks == 0)
+                wolf.AngerTicks = wolf.Random.Next(400, 800);
             wolf.SynchronizeMetadata();
         }
         wolf.AlertedTarget = null;
         wolf.OrderedToSit = false;
         if (!wolf.Tamed)
             foreach (var ally in wolf.GetEntitiesNear(16).OfType<Wolf>().Where(ally => !ally.Tamed && ally.CanAttack(candidate!)))
-            { ally.AlertedTarget = candidate; ally.AngerTicks = wolf.AngerTicks; ally.AngryAt = candidate!.Uuid; }
+            {
+                ally.AlertedTarget = candidate;
+                ally.AngerTicks = wolf.AngerTicks;
+                ally.AngryAt = candidate!.Uuid;
     }
+    }
+
     public override bool CanContinue() => wolf.AttackTarget is { } target && wolf.CanAttack(target) &&
         (wolf.Tamed || wolf.AngerTicks > 0) && (target.Position - wolf.Position).MagnitudeSquared() < wolf.FollowRange * wolf.FollowRange;
+
     public override void Stop() => wolf.AttackTarget = null;
 }

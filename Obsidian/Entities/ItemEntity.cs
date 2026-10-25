@@ -20,6 +20,11 @@ public partial class ItemEntity : Entity
     internal bool Removed { get; set; }
     private int pickupDelay = 10;
 
+    // Kept across ticks, as mobs keep theirs, rather than made (with its chunk cache) every tick; made again when the
+    // entity changes level.
+    private MobTerrain? terrain;
+    private ILevel? terrainLevel;
+
     public ItemStack Item { get; set; }
 
     public bool CanPickup
@@ -185,9 +190,14 @@ public partial class ItemEntity : Entity
             await RemoveAsync();
             return;
         }
-        var terrain = new MobTerrain(Level);
+        if (this.terrain is null || !ReferenceEquals(this.terrainLevel, this.Level))
+        {
+            this.terrain = new MobTerrain(this.Level);
+            this.terrainLevel = this.Level;
+        }
+
         var from = Position;
-        var next = EntityMovement.Move(this, terrain, VectorD.Zero, 0.04f, 0.98f);
+        var next = EntityMovement.Move(this, this.terrain, VectorD.Zero, 0.04f, 0.98f);
         if (Level is AbstractLevel level && !level.TryMoveEntity(this, Position, next))
             return;
         if (next != Position)

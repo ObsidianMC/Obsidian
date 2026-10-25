@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- Connects headless bot clients to a running server to load-test it; see Program.cs for usage. -->
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<RootNamespace>Obsidian.LoadTest</RootNamespace>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<EnablePreviewFeatures>true</EnablePreviewFeatures>
+		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- For the packet ids Obsidian generates from vanilla's protocol, and its offline UUIDs. -->
+		<ProjectReference Include="..\Obsidian\Obsidian.csproj" />
+	</ItemGroup>
+</Project>

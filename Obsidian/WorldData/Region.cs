@@ -435,10 +435,12 @@ public class Region : IRegion
     {
         await this.initialization.Value;
 
-        if (await file.GetChunkBytesAsync(x, z) is not Memory<byte> data)
+        if (await file.RentChunkBytesAsync(x, z) is not RentedArray<byte> data)
             return null;
 
-        return NbtReader.ReadTag(data.Span, true, out _) as NbtCompound;
+        // Parsed in place: tags copy what they keep (arrays, strings), so the rented bytes go back once it's read.
+        using (data)
+            return NbtReader.ReadTag(data.Span, readName: true, out _) as NbtCompound;
     }
 
     /// <summary>
@@ -660,9 +662,9 @@ public class Region : IRegion
                 await writer.TryFinishAsync();
             }
 
-            // Disposing the writer finishes the compression trailer before copying the bytes.
+            // Disposing the writer finishes the compression trailer before the bytes are written.
             if (write)
-                await regionFile.SetChunkAsync(x, z, strm.ToArray());
+                await regionFile.SetChunkAsync(x, z, strm);
         }
         catch
         {
@@ -784,7 +786,7 @@ public class Region : IRegion
             await writer.TryFinishAsync();
         }
 
-        await this.entityRegionFile.SetChunkAsync(x, z, strm.ToArray());
+        await this.entityRegionFile.SetChunkAsync(x, z, strm);
 
         if (chunk is Chunk saved)
             saved.SavedEntityCount = entities.Count;
@@ -904,18 +906,10 @@ public class Region : IRegion
                 ChunkSectionNbt.ReadBiomes(biomes, section.BiomeContainer);
 
             if (sectionCompound.TryGetTag("SkyLight", out var skyLightTag))
-            {
-                var array = (NbtArray<byte>)skyLightTag;
-
-                section.SetLight(array.GetArray(), LightType.Sky);
-            }
+                LoadLight(section, ((NbtArray<byte>)skyLightTag).GetArray(), LightType.Sky);
 
             if (sectionCompound.TryGetTag("BlockLight", out var blockLightTag))
-            {
-                var array = (NbtArray<byte>)blockLightTag;
-
-                section.SetLight(array.GetArray(), LightType.Block);
-            }
+                LoadLight(section, ((NbtArray<byte>)blockLightTag).GetArray(), LightType.Block);
         }
 
         // Stored heights are relative to the stored min Y and packed for the stored height, so they're only kept when both
@@ -999,6 +993,16 @@ public class Region : IRegion
         chunk.SetChunkStatus(ParseStatus(chunkCompound.TryGetTag<NbtTag<string>>("Status", out var status) ? status.Value : null));
 
         return chunk;
+    }
+
+    // The chunk isn't published yet, so its sections take the light into the storage they have rather than through
+    // SetLight's defensive copy; sections of another kind, or light of an unexpected length, still go through SetLight.
+    private static void LoadLight(IChunkSection section, byte[] light, LightType type)
+    {
+        if (section is ChunkSection loading && loading.TryLoadLight(light, type))
+            return;
+
+        section.SetLight(light, type);
     }
 
     /// <summary>
@@ -1092,8 +1096,10 @@ public class Region : IRegion
             ChunkSectionNbt.WriteBiomes(writer, section.BiomeContainer);
 
             writer.WriteByte("Y", (byte)section.YBase);
-            writer.WriteArray("SkyLight", section.SkyLightArray.ToArray());
-            writer.WriteArray("BlockLight", section.BlockLightArray.ToArray());
+            // Written straight from the section's storage: the writer copies a span before returning, still under the
+            // save's locks.
+            writer.WriteArray("SkyLight", section.SkyLightArray.Span);
+            writer.WriteArray("BlockLight", section.BlockLightArray.Span);
 
             writer.EndCompound();
 
@@ -1146,7 +1152,7 @@ public class Region : IRegion
             // Scheduled block and fluid ticks, like vanilla's "block_ticks" and "fluid_ticks".
             generated.BlockTicks.Write(writer);
             generated.FluidTicks.Write(writer, "fluid_ticks", FluidNames.Name);
-            var mobEggTicks = generated.MobEggTicks.ToArray();
+            var mobEggTicks = generated.HasMobEggTicks ? generated.MobEggTicks.ToArray() : [];
             writer.WriteListStart("ObsidianMobEggTicks", NbtTagType.Compound, mobEggTicks.Length);
             foreach (var (position, delay) in mobEggTicks)
             {
@@ -1158,7 +1164,7 @@ public class Region : IRegion
                 writer.EndCompound();
             }
             writer.EndList();
-            var frogspawnTicks = generated.FrogspawnTicks.ToArray();
+            var frogspawnTicks = generated.HasFrogspawnTicks ? generated.FrogspawnTicks.ToArray() : [];
             writer.WriteListStart("ObsidianFrogspawnTicks", NbtTagType.Compound, frogspawnTicks.Length);
             foreach (var (position, delay) in frogspawnTicks)
             {

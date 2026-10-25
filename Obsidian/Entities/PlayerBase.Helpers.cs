@@ -597,12 +597,12 @@ public partial class PlayerBase
     /// Obsidian's previous player files are read too: their selected slot and their inventory's slots were window slots,
     /// and their items had a byte <c>Count</c>.
     /// </remarks>
+    // Like vanilla, a player keeps their profile's UUID whatever their data says.
+    private protected override bool ReadsSavedUuid => false;
+
     internal override void ReadNbt(NbtCompound tag)
     {
-        // Like vanilla, a player keeps their profile's UUID whatever their data says.
-        var uuid = this.Uuid;
         base.ReadNbt(tag);
-        this.Uuid = uuid;
 
         T Read<T>(string name, T fallback) => tag.TryGetTagValue<T>(name, out var value) ? value : fallback;
 

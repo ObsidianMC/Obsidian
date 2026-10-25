@@ -18,9 +18,12 @@ public sealed partial class Frog : FarmAnimal
     protected override bool TakesFallDamage => false;
     protected override float DimensionScale => 1;
     protected override string? SoundName => "frog";
+
     protected override bool CanEat(ItemStack? item) =>
         !Pregnant && item is { Count: > 0, Holder.Id: ItemIds.SlimeBall };
+
     protected override void FinalizeSpawn() => SelectVariant();
+
     internal void SelectVariant()
     {
         var (x, z) = Position.ToChunkCoord();
@@ -31,6 +34,7 @@ public sealed partial class Frog : FarmAnimal
                 TagsRegistry.Worldgen.Biome.SpawnsWarmVariantFrogs.Entries.Contains(biome.Id) ? 2 : 1;
         }
     }
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         base.RegisterGoals(actions, targets);
@@ -38,11 +42,13 @@ public sealed partial class Frog : FarmAnimal
         actions.AddGoal(5, new SeekWaterGoal(this));
         targets.AddGoal(1, new NearestAttackableTargetGoal(this, target => target is Slime { Size: 1 }));
     }
+
     protected override IEntity CreateOffspring(Animal mate)
     {
         Pregnant = true;
         return this;
     }
+
     protected internal override async ValueTask PerformMeleeAttackAsync(IEntity target)
     {
         if (target is not Slime { Size: 1 } prey)
@@ -57,15 +63,22 @@ public sealed partial class Frog : FarmAnimal
                 2 => ItemsRegistry.PearlescentFroglight,
                 _ => ItemsRegistry.OchreFroglight
             });
-        else DropItem(ItemsRegistry.SlimeBall);
+        else
+            DropItem(ItemsRegistry.SlimeBall);
     }
+
     protected override VectorD Travel() => VolumeMovement.Travel(this, InWater);
+
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
             return;
-        if (Pose == Pose.UsingTongue && AiTick % 10 == 0) { Pose = Pose.Standing; SynchronizeMetadata(); }
+        if (Pose == Pose.UsingTongue && AiTick % 10 == 0)
+        {
+            Pose = Pose.Standing;
+            SynchronizeMetadata();
+        }
         if (--jumpCooldown <= 0 && !InWater && Navigator is Navigator { IsNavigating: true })
         {
             JumpControl.Jump();
@@ -90,6 +103,7 @@ public sealed partial class Frog : FarmAnimal
             }
         }
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -98,11 +112,13 @@ public sealed partial class Frog : FarmAnimal
         writer.WriteEntityMetadataType(18, EntityMetadataType.OptionalUnsignedVarInt);
         writer.WriteVarInt(AttackTarget == null ? 0 : AttackTarget.EntityId + 1);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         writer.WriteString("variant", Variant switch { 0 => "minecraft:cold", 2 => "minecraft:warm", _ => "minecraft:temperate" });
         writer.WriteBool("ObsidianPregnant", Pregnant);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         Variant = (tag.TryGetTagValue<string>("variant", out var savedvariant) ? savedvariant : null) switch { "minecraft:cold" => 0, "minecraft:warm" => 2, _ => 1 };

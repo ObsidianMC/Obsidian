@@ -16,6 +16,7 @@ public sealed partial class ZombieVillager : Zombie
     public ZombieVillager() => Type = EntityType.ZombieVillager;
     protected override string? SoundName => "zombie_villager";
     protected override bool CanDespawn => ConversionTime < 0 && VillagerXp == 0;
+
     internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
@@ -34,10 +35,12 @@ public sealed partial class ZombieVillager : Zombie
         SynchronizeMetadata();
         return true;
     }
+
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
-        if (IsRemoved || ConversionTime < 0 || MobBitMask.HasFlag(MobBitmask.NoAi)) return;
+        if (IsRemoved || ConversionTime < 0 || MobBitMask.HasFlag(MobBitmask.NoAi))
+            return;
         var progress = 1;
         if (Random.NextSingle() < 0.01f)
         {
@@ -54,11 +57,13 @@ public sealed partial class ZombieVillager : Zombie
                     continue;
 
                 specialBlocks++;
-                if (Random.NextSingle() < 0.3f) progress++;
+                        if (Random.NextSingle() < 0.3f)
+                            progress++;
             }
         }
         ConversionTime -= progress;
-        if (ConversionTime > 0) return;
+        if (ConversionTime > 0)
+            return;
         var villager = (Villager)await ConvertToAsync(EntityType.Villager);
         villager.VillagerType = VillagerType;
         villager.VillagerProfession = VillagerProfession;
@@ -73,17 +78,23 @@ public sealed partial class ZombieVillager : Zombie
         villager.Health = villager.GetAttributeValue("minecraft:generic.max_health");
         villager.SynchronizeMetadata();
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(19, EntityMetadataType.Boolean); writer.WriteBoolean(ConversionTime >= 0);
+        writer.WriteEntityMetadataType(19, EntityMetadataType.Boolean);
+        writer.WriteBoolean(ConversionTime >= 0);
         writer.WriteEntityMetadataType(20, EntityMetadataType.VillagerData);
-        writer.WriteVarInt(VillagerType); writer.WriteVarInt(VillagerProfession); writer.WriteVarInt(VillagerLevel);
+        writer.WriteVarInt(VillagerType);
+        writer.WriteVarInt(VillagerProfession);
+        writer.WriteVarInt(VillagerLevel);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         writer.WriteInt("ConversionTime", ConversionTime);
-        if (ConversionStarter != Guid.Empty) writer.WriteArray("ConversionPlayer", EntityNbt.UuidToInts(ConversionStarter));
+        if (ConversionStarter != Guid.Empty)
+            writer.WriteArray("ConversionPlayer", EntityNbt.UuidToInts(ConversionStarter));
         writer.WriteInt("Xp", VillagerXp);
         writer.WriteCompoundStart("VillagerData");
         writer.WriteString("type", $"minecraft:{Villager.BiomeTypes[Math.Clamp(VillagerType, 0, Villager.BiomeTypes.Length - 1)]}");
@@ -91,16 +102,21 @@ public sealed partial class ZombieVillager : Zombie
         writer.WriteInt("level", VillagerLevel);
         writer.EndCompound();
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         ConversionTime = tag.TryGetTagValue<int>("ConversionTime", out var ticks) ? ticks : -1;
         VillagerXp = tag.TryGetTagValue<int>("Xp", out var xp) ? xp : 0;
-        if (tag.TryGetTag<NbtArray<int>>("ConversionPlayer", out var starter) && starter.Count == 4) ConversionStarter = EntityNbt.UuidFromInts(starter.GetArray());
+        if (tag.TryGetTag<NbtArray<int>>("ConversionPlayer", out var starter) && starter.Count == 4)
+            ConversionStarter = EntityNbt.UuidFromInts(starter.GetArray());
         if (tag.TryGetTag<NbtCompound>("VillagerData", out var data))
         {
-            if (data.TryGetTagValue<int>("level", out var level)) VillagerLevel = Math.Clamp(level, 1, 5);
-            if (data.TryGetTagValue<string>("type", out var type)) VillagerType = Math.Max(0, Array.IndexOf(Villager.BiomeTypes, type.Replace("minecraft:", "")));
-            if (data.TryGetTagValue<string>("profession", out var profession)) VillagerProfession = Math.Max(0, Array.IndexOf(Villager.Professions, profession.Replace("minecraft:", "")));
+            if (data.TryGetTagValue<int>("level", out var level))
+                VillagerLevel = Math.Clamp(level, 1, 5);
+            if (data.TryGetTagValue<string>("type", out var type))
+                VillagerType = Math.Max(0, Array.IndexOf(Villager.BiomeTypes, type.Replace("minecraft:", "")));
+            if (data.TryGetTagValue<string>("profession", out var profession))
+                VillagerProfession = Math.Max(0, Array.IndexOf(Villager.Professions, profession.Replace("minecraft:", "")));
         }
     }
 }

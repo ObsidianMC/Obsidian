@@ -4,6 +4,7 @@ using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace Obsidian.Entities;
 
@@ -54,7 +55,33 @@ public partial class Entity : IEquatable<Entity>, IEntity
 
     public int EntityId { get; internal set; }
 
-    public Guid Uuid { get; set; } = Guid.NewGuid();
+    /// <summary>
+    /// The entity's UUID: a random one, unless it's given one (by its constructor, an initializer or its save) before
+    /// it joins a level. It's given at most one: a level finds its entities by it (see <see cref="EntityGrid"/>), and
+    /// a second, different one throws.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The entity was given another UUID already, or is in a level.</exception>
+    public Guid Uuid
+    {
+        get => this.uuid;
+        internal set
+        {
+            if (value == this.uuid)
+                return;
+
+            if (this.uuidAssigned || this.Grid is not null)
+                throw new InvalidOperationException($"Entity {this.EntityId} already has UUID {this.uuid}; an entity's UUID is set once.");
+
+            this.uuid = value;
+            this.uuidAssigned = true;
+        }
+    }
+
+    private Guid uuid = Guid.NewGuid();
+    private bool uuidAssigned;
+
+    // Whether ReadNbt takes the UUID a save holds; a player keeps their profile's.
+    private protected virtual bool ReadsSavedUuid => true;
 
     public Pose Pose { get; set; } = Pose.Standing;
 
@@ -62,16 +89,50 @@ public partial class Entity : IEquatable<Entity>, IEntity
     public virtual EntityDimension Dimension { get; protected set; } = EntityDimension.Zero;
     protected virtual float DimensionScale => 1;
 
-    // LivingEntity.getScale clamps the attribute; age/type scaling remains independent.
-    internal float AttributeScale => this.HasAttribute("minecraft:scale")
-        ? Math.Clamp(this.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
-        : 1;
-
-    protected EntityDimension ScaleDimensions(float width, float height) => new()
+    // LivingEntity.getScale clamps the attribute; age/type scaling remains independent. It's worked out again only
+    // once the scale attribute changes (see OnAttributeChanged), since dimensions are read many times a tick by
+    // collisions and pathfinding.
+    internal float AttributeScale
     {
-        Width = width * this.DimensionScale * this.AttributeScale,
-        Height = height * this.DimensionScale * this.AttributeScale
-    };
+        get
+        {
+            var revision = Volatile.Read(ref this.attributeScaleRevision);
+            if (Volatile.Read(ref this.attributeScale) is ScaleReading reading && reading.Revision == revision)
+                return reading.Scale;
+
+            var scale = this.HasAttribute("minecraft:scale")
+                ? Math.Clamp(this.GetAttributeValue("minecraft:scale"), 0.0625f, 16f)
+                : 1;
+
+            // Kept only if the attribute didn't change while it was read, so an older reading can't replace a newer.
+            lock (this.attributeLock)
+            {
+                if (this.attributeScaleRevision == revision)
+                    this.attributeScale = new ScaleReading(scale, revision);
+            }
+
+            return scale;
+        }
+    }
+
+    private ScaleReading? attributeScale;
+
+    // Counts the scale attribute's changes; a reading of another count is out of date.
+    private int attributeScaleRevision;
+
+    private sealed record ScaleReading(float Scale, int Revision);
+
+    // Each scale is read once, and multiplied in the same order as before, so the dimensions round the same.
+    protected EntityDimension ScaleDimensions(float width, float height)
+    {
+        var dimensionScale = this.DimensionScale;
+        var attributeScale = this.AttributeScale;
+        return new()
+        {
+            Width = width * dimensionScale * attributeScale,
+            Height = height * dimensionScale * attributeScale
+        };
+    }
 
     public int PowderedSnowTicks { get; set; }
 
@@ -210,7 +271,7 @@ public partial class Entity : IEquatable<Entity>, IEntity
         if (tag.TryGetBool("OnGround", out var onGround) && onGround)
             this.MovementFlags |= MovementFlags.OnGround;
         if (tag.TryGetTagValue<int>("TicksFrozen", out var frozen)) PowderedSnowTicks = Math.Clamp(frozen, 0, 140);
-        if (tag.TryGetTag<NbtArray<int>>("UUID", out var uuid) && uuid.Count == 4)
+        if (this.ReadsSavedUuid && tag.TryGetTag<NbtArray<int>>("UUID", out var uuid) && uuid.Count == 4)
             this.Uuid = EntityNbt.UuidFromInts(uuid.GetArray());
         if (tag.TryGetTag("CustomName", out var customName))
             this.CustomName = customName.TextFromNbt();
@@ -605,6 +666,12 @@ public partial class Entity : IEquatable<Entity>, IEntity
         }
     }
 
+    /// <summary>
+    /// Where a client that starts seeing the entity is told it is: the base its relative moves are sent from, which
+    /// for a mob is the position it last sent (see <see cref="Mob.PairingPosition"/>).
+    /// </summary>
+    private protected virtual VectorD PairingPosition => this.Position;
+
     internal virtual IClientboundPacket CreateSpawnPacket(Velocity? velocity = null, int additionalData = 0)
     {
         List<Net.Packets.ClientboundPacket> packets =
@@ -614,7 +681,7 @@ public partial class Entity : IEquatable<Entity>, IEntity
                 EntityId = this.EntityId,
                 Uuid = this.Uuid,
                 Type = this.TypeId,
-                Position = this.Position,
+                Position = this.PairingPosition,
                 Pitch = this.Pitch,
                 Yaw = this.Yaw,
                 Data = additionalData,

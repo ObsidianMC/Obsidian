@@ -27,7 +27,12 @@ public sealed partial class Wither : BossMob
     protected override bool CanUpdateTargetGoals => invulnerableTicks == 0;
     internal bool Armored => Health <= GetAttributeValue("minecraft:generic.max_health") / 2;
     protected override VectorD Travel() => EntityMovement.Move(this);
-    protected override ValueTask TickAirSupplyAsync() { Air = 300; return default; }
+
+    protected override ValueTask TickAirSupplyAsync()
+    {
+        Air = 300;
+        return default;
+    }
 
     internal void BeginSpawnCharge()
     {
@@ -36,7 +41,8 @@ public sealed partial class Wither : BossMob
         AttackTarget = null;
         TargetGoals.Cancel();
         (Navigator as Navigator)?.Stop();
-        for (var head = 0; head < headTargets.Length; head++) SetHeadTarget(head, 0);
+        for (var head = 0; head < headTargets.Length; head++)
+            SetHeadTarget(head, 0);
     }
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
@@ -52,7 +58,8 @@ public sealed partial class Wither : BossMob
 
     protected override async ValueTask TickMobAsync()
     {
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+            return;
         Motion = new VectorD(Motion.X, Motion.Y * 0.6, Motion.Z);
         if (invulnerableTicks > 0)
         {
@@ -61,13 +68,17 @@ public sealed partial class Wither : BossMob
                 await level.ExplodeAsync(this, 7);
                 PacketBroadcaster.QueuePacketToLevel(Level, new LevelEventPacket(1023, (Vector)Position.Floor(), 0, true));
             }
-            if (AiTick % 10 == 0) Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 10);
+            if (AiTick % 10 == 0)
+                Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 10);
             SynchronizeMetadata();
             return;
         }
-        if (AiTick % 20 == 0) Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 1);
-        if (AttackTarget != null && (!CanAttack(AttackTarget) || !CanSee(AttackTarget))) AttackTarget = null;
-        if (headTargets[0] != (AttackTarget?.EntityId ?? 0)) nextShot[0] = AiTick + 40;
+        if (AiTick % 20 == 0)
+            Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 1);
+        if (AttackTarget != null && (!CanAttack(AttackTarget) || !CanSee(AttackTarget)))
+            AttackTarget = null;
+        if (headTargets[0] != (AttackTarget?.EntityId ?? 0))
+            nextShot[0] = AiTick + 40;
         SetHeadTarget(0, AttackTarget?.EntityId ?? 0);
         if (AttackTarget is { } main && AiTick >= nextShot[0] && IsInRange(main, 20))
         {
@@ -76,7 +87,8 @@ public sealed partial class Wither : BossMob
         }
         for (var head = 1; head < 3; head++)
         {
-            if (AiTick < nextShot[head]) continue;
+            if (AiTick < nextShot[head])
+                continue;
             nextShot[head] = AiTick + Random.Next(10, 20);
             if (Level.LevelData.Difficulty is Difficulty.Normal or Difficulty.Hard && ++idleShots[head - 1] > 15)
             {
@@ -96,12 +108,14 @@ public sealed partial class Wither : BossMob
                 SetHeadTarget(head, choices.Length == 0 ? 0 : choices[Random.Next(choices.Length)].EntityId);
             }
         }
-        if (breakBlocksTicks > 0 && --breakBlocksTicks == 0) BreakBlocks();
+        if (breakBlocksTicks > 0 && --breakBlocksTicks == 0)
+            BreakBlocks();
     }
 
     private void SetHeadTarget(int head, int id)
     {
-        if (headTargets[head] == id) return;
+        if (headTargets[head] == id)
+            return;
         headTargets[head] = id;
         SynchronizeMetadata();
     }
@@ -117,7 +131,8 @@ public sealed partial class Wither : BossMob
 
     private void BreakBlocks()
     {
-        if (!Level.LevelData.GetBooleanRule("mob_griefing")) return;
+        if (!Level.LevelData.GetBooleanRule("mob_griefing"))
+            return;
         var position = (Vector)Position.Floor();
         var broken = false;
         for (var x = -1; x <= 1; x++)
@@ -126,12 +141,14 @@ public sealed partial class Wither : BossMob
         {
             var point = position + new Vector(x, y, z);
             var block = Terrain.GetBlock(point);
-            if (block == null || block.IsAir || TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId)) continue;
+                    if (block == null || block.IsAir || TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId))
+                        continue;
             // Vanilla destroyBlock(pos, true, this): the block's loot drops.
             Level.DestroyBlock(point, dropItems: true, this);
             broken = true;
         }
-        if (broken) PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelEventPacket(1022, position, 0));
+        if (broken)
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelEventPacket(1022, position, 0));
     }
 
     protected override bool CanTakeDamage(IEntity source) => invulnerableTicks == 0 && source.Type != EntityType.Wither &&
@@ -140,8 +157,10 @@ public sealed partial class Wither : BossMob
 
     protected override ValueTask OnHurtAsync(IEntity source)
     {
-        if (breakBlocksTicks == 0) breakBlocksTicks = 20;
-        for (var head = 0; head < 2; head++) idleShots[head] += 3;
+        if (breakBlocksTicks == 0)
+            breakBlocksTicks = 20;
+        for (var head = 0; head < 2; head++)
+            idleShots[head] += 3;
         return default;
     }
 
@@ -149,8 +168,13 @@ public sealed partial class Wither : BossMob
     {
         if (Level.LevelData.GetBooleanRule("mob_drops"))
         {
-            var star = new ItemEntity { Level = Level, EntityId = Server.GetNextEntityId(), Position = Position,
-                Item = ItemsRegistry.GetSingleItem(ItemsRegistry.NetherStar) };
+            var star = new ItemEntity
+            {
+                Level = Level,
+                EntityId = Server.GetNextEntityId(),
+                Position = Position,
+                Item = ItemsRegistry.GetSingleItem(ItemsRegistry.NetherStar)
+            };
             star.SetExtendedLifetime();
             Level.SpawnEntity(star);
         }
@@ -161,8 +185,12 @@ public sealed partial class Wither : BossMob
     {
         base.Write(writer);
         for (byte head = 0; head < 3; head++)
-        { writer.WriteEntityMetadataType((byte)(16 + head), EntityMetadataType.VarInt); writer.WriteVarInt(headTargets[head]); }
-        writer.WriteEntityMetadataType(19, EntityMetadataType.VarInt); writer.WriteVarInt(invulnerableTicks);
+        {
+            writer.WriteEntityMetadataType((byte)(16 + head), EntityMetadataType.VarInt);
+            writer.WriteVarInt(headTargets[head]);
+        }
+        writer.WriteEntityMetadataType(19, EntityMetadataType.VarInt);
+        writer.WriteVarInt(invulnerableTicks);
     }
 
     protected override void WriteAdditionalSave(INbtWriter writer)
@@ -172,14 +200,17 @@ public sealed partial class Wither : BossMob
         writer.WriteArray("ObsidianWitherHeadTimers", nextShot.Select(tick => (int)Math.Clamp(tick - AiTick, 0, int.MaxValue)).ToArray());
         writer.WriteArray("ObsidianWitherIdleShots", idleShots);
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         invulnerableTicks = Math.Clamp(tag.TryGetTagValue<int>("Invul", out var ticks) ? ticks : 0, 0, SpawnCharge);
         breakBlocksTicks = Math.Clamp(tag.GetInt("ObsidianWitherBreakTicks"), 0, 20);
         if (tag.TryGetTag<NbtArray<int>>("ObsidianWitherHeadTimers", out var timers))
-            for (var index = 0; index < Math.Min(nextShot.Length, timers.Count); index++) nextShot[index] = Math.Max(0, timers[index]);
+            for (var index = 0; index < Math.Min(nextShot.Length, timers.Count); index++)
+                nextShot[index] = Math.Max(0, timers[index]);
         if (tag.TryGetTag<NbtArray<int>>("ObsidianWitherIdleShots", out var shots))
-            for (var index = 0; index < Math.Min(idleShots.Length, shots.Count); index++) idleShots[index] = Math.Max(0, shots[index]);
+            for (var index = 0; index < Math.Min(idleShots.Length, shots.Count); index++)
+                idleShots[index] = Math.Max(0, shots[index]);
     }
 
     private sealed class WitherFlightGoal(Wither mob) : Goal
@@ -189,9 +220,14 @@ public sealed partial class Wither : BossMob
         public override bool RequiresUpdateEveryTick => true;
         public override void Start() => ((Navigator)mob.Navigator!).Stop();
         public override void Stop() => mob.MoveControl.Stop();
+
         public override ValueTask TickAsync()
         {
-            if (mob.invulnerableTicks > 0) { mob.MoveControl.Stop(); return default; }
+            if (mob.invulnerableTicks > 0)
+            {
+                mob.MoveControl.Stop();
+                return default;
+            }
             if (mob.AttackTarget is { } target)
             {
                 var delta = target.Position - mob.Position;

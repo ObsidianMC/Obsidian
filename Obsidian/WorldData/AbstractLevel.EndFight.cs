@@ -42,26 +42,34 @@ public abstract partial class AbstractLevel
                 gatewayCooldowns.Remove(gateway);
         }
 
-        if (!HasEndFight) return;
+        if (!HasEndFight)
+            return;
         await TickEndPortalsAsync();
         if (!Players.Values.Any(player => player.GameMode != GameMode.Spectator &&
-            (player.Position - new VectorD(0, 128, 0)).MagnitudeSquared() < 192 * 192)) return;
+            (player.Position - new VectorD(0, 128, 0)).MagnitudeSquared() < 192 * 192))
+            return;
         var ready = true;
         for (var x = -8; x <= 8; x++)
         for (var z = -8; z <= 8; z++)
-            if (GetLoadedChunk(x, z) is not { IsGenerated: true } && await GetChunkAsync(x, z) is not { IsGenerated: true }) ready = false;
-        if (!ready) return;
+                if (GetLoadedChunk(x, z) is not { IsGenerated: true } && await GetChunkAsync(x, z) is not { IsGenerated: true })
+                    ready = false;
+        if (!ready)
+            return;
         var entities = GetEntitiesInRange(new VectorD(0, 128, 0), 256).ToArray();
         if (!endFightInitialized)
         {
             var terrain = new MobTerrain(this);
             for (var y = 127; y >= MinY; y--)
                 if (terrain.GetBlock(new Vector(0, y, 0)) is { IsAir: false } center)
-                { exitPortal = new Vector(0, center.Is(BlockIds.Bedrock) ? y - 3 : y + 1, 0); break; }
+                {
+                    exitPortal = new Vector(0, center.Is(BlockIds.Bedrock) ? y - 3 : y + 1, 0);
+                    break;
+                }
             dragonKilled = terrain.GetBlock(exitPortal + new Vector(1, 0, 0))?.RegistryId == BlockIds.EndPortal;
             dragonPreviouslyKilled = dragonKilled;
             var existing = entities.OfType<EnderDragon>().FirstOrDefault();
-            if (existing != null) fightDragon = existing.Uuid;
+            if (existing != null)
+                fightDragon = existing.Uuid;
             if (!dragonKilled && existing == null)
             {
                 foreach (var spike in EndSpikeFeature.GetSpikesForLevel(RandomState.ParseSeed(Seed)))
@@ -73,8 +81,13 @@ public abstract partial class AbstractLevel
         if (!dragonKilled)
         {
             var dragon = entities.OfType<EnderDragon>().FirstOrDefault(item => item.Uuid == fightDragon);
-            if (dragon == null && (fightDragon == Guid.Empty || ++ticksWithoutDragon >= 1200)) CreateFightDragon();
-            else if (dragon != null) { ticksWithoutDragon = 0; dragon.AttachFight(exitPortal, dragonPreviouslyKilled); }
+            if (dragon == null && (fightDragon == Guid.Empty || ++ticksWithoutDragon >= 1200))
+                CreateFightDragon();
+            else if (dragon != null)
+            {
+                ticksWithoutDragon = 0;
+                dragon.AttachFight(exitPortal, dragonPreviouslyKilled);
+            }
             return;
         }
         if (resurrectionTicks < 0)
@@ -85,7 +98,8 @@ public abstract partial class AbstractLevel
                 var position = exitPortal + offset;
                 var found = entities.OfType<EndCrystal>().Where(item => item.Health > 0 &&
                     Math.Floor(item.Position.X) == position.X && Math.Floor(item.Position.Y) == position.Y && Math.Floor(item.Position.Z) == position.Z).ToArray();
-                if (found.Length == 0) return;
+                if (found.Length == 0)
+                    return;
                 crystals.AddRange(found.Select(item => item.Uuid));
             }
             resurrectionCrystals = crystals.ToArray();
@@ -102,18 +116,26 @@ public abstract partial class AbstractLevel
         if (tick is 1 or 50 or 51 or 52 or 95 or 96 or 97 or 98 or 99 or 100 || tick >= 581 && tick <= 600)
             PacketBroadcaster.QueuePacketToLevel(this, new LevelEventPacket(3001, new Vector(0, 128, 0), 0));
         if (tick == 0 || tick == 501)
-            foreach (var crystal in ritual) crystal.SetBeam(new Vector(0, 128, 0));
+            foreach (var crystal in ritual)
+                crystal.SetBeam(new Vector(0, 128, 0));
         if (tick >= 101 && tick < 501)
         {
             var spike = EndSpikeFeature.GetSpikesForLevel(RandomState.ParseSeed(Seed))[(tick - 101) / 40];
             if ((tick - 101) % 40 == 0)
-                foreach (var crystal in ritual) crystal.SetBeam(new Vector(spike.CenterX, spike.Height + 1, spike.CenterZ));
-            if ((tick - 101) % 40 == 39) await RebuildEndSpikeAsync(spike, true);
+                foreach (var crystal in ritual)
+                    crystal.SetBeam(new Vector(spike.CenterX, spike.Height + 1, spike.CenterZ));
+            if ((tick - 101) % 40 == 39)
+                await RebuildEndSpikeAsync(spike, true);
         }
-        if (tick < 601) return;
+        if (tick < 601)
+            return;
         resurrectionTicks = -1;
         resurrectionCrystals = [];
-        foreach (var crystal in entities.OfType<EndCrystal>()) { crystal.Invulnerable = false; crystal.SetBeam(null); }
+        foreach (var crystal in entities.OfType<EndCrystal>())
+        {
+            crystal.Invulnerable = false;
+            crystal.SetBeam(null);
+        }
         // Like vanilla's DragonRespawnAnimation, the ritual's crystals explode without breaking blocks.
         foreach (var crystal in ritual)
         {
@@ -128,15 +150,18 @@ public abstract partial class AbstractLevel
     private async ValueTask TickEndPortalsAsync()
     {
         foreach (var id in endPortalCooldowns.Keys.ToArray())
-            if (--endPortalCooldowns[id] <= 0) endPortalCooldowns.Remove(id);
+            if (--endPortalCooldowns[id] <= 0)
+                endPortalCooldowns.Remove(id);
         foreach (var player in Players.Values.ToArray())
         {
-            if (player.GameMode == GameMode.Spectator || endPortalCooldowns.ContainsKey(player.Uuid)) continue;
+            if (player.GameMode == GameMode.Spectator || endPortalCooldowns.ContainsKey(player.Uuid))
+                continue;
             var position = (Vector)player.Position.Floor();
             var block = await GetBlockAsync(position);
             if (block?.RegistryId == BlockIds.EndGateway)
             {
-                if (await FindEndGatewayExitAsync(position) is not Vector destination) continue;
+                if (await FindEndGatewayExitAsync(position) is not Vector destination)
+                    continue;
                 endPortalCooldowns[player.Uuid] = 100;
                 await player.TeleportAsync(new VectorD(destination.X + 0.5, destination.Y, destination.Z + 0.5));
             }
@@ -161,16 +186,21 @@ public abstract partial class AbstractLevel
         else
         {
             var length = Math.Sqrt(gateway.X * (double)gateway.X + gateway.Z * (double)gateway.Z);
-            if (length < 1) return null;
+            if (length < 1)
+                return null;
             destination = new Vector(
                 (int)Math.Floor(gateway.X / length * 1024),
                 75,
                 (int)Math.Floor(gateway.Z / length * 1024));
-            if (await GetChunkAsync(destination.X >> 4, destination.Z >> 4) is not { IsGenerated: true }) return null;
+            if (await GetChunkAsync(destination.X >> 4, destination.Z >> 4) is not { IsGenerated: true })
+                return null;
             var terrain = new MobTerrain(this);
             for (var y = MinY + Height - 1; y >= MinY; y--)
                 if (terrain.GetBlock(new Vector(destination.X, y, destination.Z)) is { IsAir: false })
-                { destination = new Vector(destination.X, y + 3, destination.Z); break; }
+                {
+                    destination = new Vector(destination.X, y + 3, destination.Z);
+                    break;
+                }
             // Gateways always have a safe arrival platform, including gateways aimed into the void.
             for (var x = -2; x <= 2; x++)
             for (var z = -2; z <= 2; z++)
@@ -181,7 +211,8 @@ public abstract partial class AbstractLevel
             await StoreGatewayExitAsync(gateway, destination + new Vector(2, -1, 0));
             destination += new Vector(2, -1, 0);
         }
-        if (await GetChunkAsync(destination.X >> 4, destination.Z >> 4) is not { IsGenerated: true }) return null;
+        if (await GetChunkAsync(destination.X >> 4, destination.Z >> 4) is not { IsGenerated: true })
+            return null;
         return destination;
     }
 
@@ -196,8 +227,13 @@ public abstract partial class AbstractLevel
 
     private void CreateFightDragon()
     {
-        var dragon = new EnderDragon { Level = this, EntityId = Server.GetNextEntityId(),
-            Position = new VectorD(0, 128, 0), PreviouslyKilled = dragonPreviouslyKilled };
+        var dragon = new EnderDragon
+        {
+            Level = this,
+            EntityId = Server.GetNextEntityId(),
+            Position = new VectorD(0, 128, 0),
+            PreviouslyKilled = dragonPreviouslyKilled
+        };
         dragon.BeginFight(exitPortal);
         SpawnEntity(dragon);
         fightDragon = dragon.Uuid;
@@ -205,14 +241,16 @@ public abstract partial class AbstractLevel
 
     internal async ValueTask EndFightDragonKilledAsync(EnderDragon dragon)
     {
-        if (!HasEndFight || dragon.Uuid != fightDragon || dragonKilled) return;
+        if (!HasEndFight || dragon.Uuid != fightDragon || dragonKilled)
+            return;
         dragonKilled = true;
         fightDragon = Guid.Empty;
         await CreateExitPortalAsync(true);
         if (!dragonPreviouslyKilled)
             await SetBlockAsync(exitPortal + new Vector(0, 4, 0), BlocksRegistry.DragonEgg, true);
         dragonPreviouslyKilled = true;
-        if (gatewaysCreated >= 20) return;
+        if (gatewaysCreated >= 20)
+            return;
         var gatewayOrder = FeatureHelpers.ShuffledCopy(Enumerable.Range(0, 20), new LegacyRandomSource(RandomState.ParseSeed(Seed)));
         var index = gatewayOrder[19 - gatewaysCreated++];
         var angle = 2 * Math.PI * index / 20;
@@ -240,12 +278,17 @@ public abstract partial class AbstractLevel
 
     internal async ValueTask AbortDragonResurrectionAsync(EndCrystal? destroyed = null)
     {
-        if (!HasEndFight || resurrectionTicks < 0) return;
-        if (destroyed != null && !resurrectionCrystals.Contains(destroyed.Uuid)) return;
+        if (!HasEndFight || resurrectionTicks < 0)
+            return;
+        if (destroyed != null && !resurrectionCrystals.Contains(destroyed.Uuid))
+            return;
         resurrectionTicks = -1;
         resurrectionCrystals = [];
         foreach (var crystal in GetEntitiesInRange(new VectorD(0, 128, 0), 256).OfType<EndCrystal>())
-        { crystal.Invulnerable = false; crystal.SetBeam(null); }
+        {
+            crystal.Invulnerable = false;
+            crystal.SetBeam(null);
+        }
         await CreateExitPortalAsync(true);
     }
 
@@ -255,7 +298,8 @@ public abstract partial class AbstractLevel
         for (var z = -4; z <= 4; z++)
         {
             var distance = x * x + z * z;
-            if (distance > 12) continue;
+                if (distance > 12)
+                    continue;
             for (var y = -1; y <= 3; y++)
             {
                 var block = BlocksRegistry.Air;
@@ -266,7 +310,8 @@ public abstract partial class AbstractLevel
                 else if (y == 0 && active)
                     block = BlocksRegistry.EndPortal;
 
-                if (x == 0 && z == 0 && y >= 0) block = BlocksRegistry.Bedrock;
+                    if (x == 0 && z == 0 && y >= 0)
+                        block = BlocksRegistry.Bedrock;
                 await SetBlockAsync(exitPortal + new Vector(x, y, z), block, true);
             }
         }
@@ -285,8 +330,12 @@ public abstract partial class AbstractLevel
             for (var y = -10; y <= 10; y++)
             for (var z = -10; z <= 10; z++)
                 await SetBlockAsync(new Vector(spike.CenterX + x, spike.Height + y, spike.CenterZ + z), BlocksRegistry.Air, true);
-            var blast = new EndCrystal { Level = this, EntityId = Server.GetNextEntityId(),
-                Position = new VectorD(spike.CenterX + 0.5, spike.Height, spike.CenterZ + 0.5) };
+            var blast = new EndCrystal
+            {
+                Level = this,
+                EntityId = Server.GetNextEntityId(),
+                Position = new VectorD(spike.CenterX + 0.5, spike.Height, spike.CenterZ + 0.5)
+            };
             await ExplodeAsync(blast, 5, blast, ExplosionInteraction.Block);
         }
         var radius = spike.Radius;
@@ -297,7 +346,8 @@ public abstract partial class AbstractLevel
             var block = x * x + z * z <= radius * radius + 1 && y < spike.Height
                 ? BlocksRegistry.ObsidianBlock
                 : BlocksRegistry.Air;
-            if (block.IsAir && y <= 65) continue;
+                    if (block.IsAir && y <= 65)
+                        continue;
             await SetBlockAsync(new Vector(spike.CenterX + x, y, spike.CenterZ + z), block, true);
         }
         if (spike.Guarded)
@@ -311,15 +361,22 @@ public abstract partial class AbstractLevel
                         .WithProperty("west", (Math.Abs(z) == 2 || y == 3) && x != -2)
                         .WithProperty("east", (Math.Abs(z) == 2 || y == 3) && x != 2), true);
         await SetBlockAsync(new Vector(spike.CenterX, spike.Height, spike.CenterZ), BlocksRegistry.Bedrock, true);
-        var crystalEntity = new EndCrystal { Level = this, EntityId = Server.GetNextEntityId(),
-            Position = new VectorD(spike.CenterX + 0.5, spike.Height + 1, spike.CenterZ + 0.5), Invulnerable = resurrecting };
-        if (resurrecting) crystalEntity.SetBeam(new Vector(0, 128, 0));
+        var crystalEntity = new EndCrystal
+        {
+            Level = this,
+            EntityId = Server.GetNextEntityId(),
+            Position = new VectorD(spike.CenterX + 0.5, spike.Height + 1, spike.CenterZ + 0.5),
+            Invulnerable = resurrecting
+        };
+        if (resurrecting)
+            crystalEntity.SetBeam(new Vector(0, 128, 0));
         SpawnEntity(crystalEntity);
     }
 
     internal void WriteEndFightNbt(INbtWriter writer)
     {
-        if (!HasEndFight) return;
+        if (!HasEndFight)
+            return;
         writer.WriteCompoundStart("ObsidianEndFight");
         writer.WriteBool("Initialized", endFightInitialized);
         writer.WriteBool("DragonKilled", dragonKilled);
@@ -334,14 +391,19 @@ public abstract partial class AbstractLevel
 
     internal void ReadEndFightNbt(NbtCompound tag)
     {
-        if (!tag.TryGetTag<NbtCompound>("ObsidianEndFight", out var fight)) return;
+        if (!tag.TryGetTag<NbtCompound>("ObsidianEndFight", out var fight))
+            return;
         endFightInitialized = fight.TryGetBool("Initialized", out var initialized) && initialized;
         dragonKilled = fight.TryGetBool("DragonKilled", out var killed) && killed;
         dragonPreviouslyKilled = fight.TryGetBool("PreviouslyKilled", out var previous) && previous;
-        if (fight.TryGetTagValue<string>("Dragon", out var dragon)) Guid.TryParse(dragon, out fightDragon);
-        if (fight.TryGetTagValue<int>("PortalY", out var y)) exitPortal = new Vector(0, Math.Clamp(y, MinY + 1, MinY + Height - 5), 0);
-        if (fight.TryGetTagValue<int>("Gateways", out var gateways)) gatewaysCreated = Math.Clamp(gateways, 0, 20);
-        if (fight.TryGetTagValue<int>("RespawnTicks", out var ticks)) resurrectionTicks = Math.Clamp(ticks, -1, 601);
+        if (fight.TryGetTagValue<string>("Dragon", out var dragon))
+            Guid.TryParse(dragon, out fightDragon);
+        if (fight.TryGetTagValue<int>("PortalY", out var y))
+            exitPortal = new Vector(0, Math.Clamp(y, MinY + 1, MinY + Height - 5), 0);
+        if (fight.TryGetTagValue<int>("Gateways", out var gateways))
+            gatewaysCreated = Math.Clamp(gateways, 0, 20);
+        if (fight.TryGetTagValue<int>("RespawnTicks", out var ticks))
+            resurrectionTicks = Math.Clamp(ticks, -1, 601);
         if (fight.TryGetTagValue<string>("Crystals", out var crystals))
             resurrectionCrystals = crystals.Split(',').Select(value => Guid.TryParse(value, out var id) ? id : Guid.Empty).Where(id => id != Guid.Empty).ToArray();
     }

@@ -17,7 +17,12 @@ public partial class Guardian : PathfinderMob
     internal int BeamTarget { get; set; }
     private bool moving;
     protected override VectorD Travel() => VolumeMovement.Travel(this, InWater);
-    protected override ValueTask TickAirSupplyAsync() { Air = 300; return default; }
+
+    protected override ValueTask TickAirSupplyAsync()
+    {
+        Air = 300;
+        return default;
+    }
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
@@ -28,10 +33,15 @@ public partial class Guardian : PathfinderMob
         targets.AddGoal(1, new NearestAttackableTargetGoal(this, target => (target.Type is EntityType.Player or EntityType.Squid or EntityType.GlowSquid or EntityType.Axolotl) &&
             (target.Position - Position).MagnitudeSquared() > 9));
     }
+
     protected override ValueTask TickMobAsync()
     {
         var swimming = InWater && BeamTarget == 0 && Navigator is Navigator { IsNavigating: true };
-        if (moving != swimming) { moving = swimming; SynchronizeMetadata(); }
+        if (moving != swimming)
+        {
+            moving = swimming;
+            SynchronizeMetadata();
+        }
         if (!MobBitMask.HasFlag(MobBitmask.NoAi) && !InWater && MovementFlags.HasFlag(MovementFlags.OnGround))
         {
             Motion += new VectorD((Random.NextSingle() - 0.5f) * 0.8f, 0.5f, (Random.NextSingle() - 0.5f) * 0.8f);
@@ -40,18 +50,22 @@ public partial class Guardian : PathfinderMob
         }
         return default;
     }
+
     protected override async ValueTask OnHurtAsync(IEntity source)
     {
         if (!moving && !ReferenceEquals(source, this) && (IncomingDirectSource ?? source) is Living attacker && IsValidTarget(attacker) &&
             IncomingDamageKind is not (CombatDamageKind.Magic or CombatDamageKind.Explosion or CombatDamageKind.Thorns))
             await attacker.DamageCombatAsync(this, 2, CombatDamageKind.Thorns);
     }
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         DropItem(ItemsRegistry.PrismarineShard, Random.Next(3));
         var bonus = Random.Next(5);
-        if (bonus < 2) DropItem(Burning ? ItemsRegistry.CookedCod : ItemsRegistry.Cod);
-        else if (bonus < 4) DropItem(ItemsRegistry.PrismarineCrystals);
+        if (bonus < 2)
+            DropItem(Burning ? ItemsRegistry.CookedCod : ItemsRegistry.Cod);
+        else if (bonus < 4)
+            DropItem(ItemsRegistry.PrismarineCrystals);
         if (source is IPlayer && Random.NextSingle() < 0.025f)
         {
             var fish = Random.Next(100);
@@ -62,6 +76,7 @@ public partial class Guardian : PathfinderMob
         }
         return default;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -78,27 +93,35 @@ internal sealed class GuardianAttackGoal(Guardian guardian) : Goal
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
     public override bool CanUse() => guardian.AttackTarget is { } target && guardian.IsValidTarget(target);
+
     public override bool CanContinue() => CanUse() && (guardian is ElderGuardian ||
         (guardian.AttackTarget!.Position - guardian.Position).MagnitudeSquared() > 9);
+
     public override void Start()
     {
         chargeTicks = -10;
         ((Navigator)guardian.Navigator!).Stop();
         guardian.MoveControl.Stop();
     }
+
     public override async ValueTask TickAsync()
     {
         var target = guardian.AttackTarget!;
         guardian.LookControl.LookAt(target);
         guardian.MoveControl.Stop();
-        if (!guardian.CanSee(target)) { guardian.AttackTarget = null; return; }
+        if (!guardian.CanSee(target))
+        {
+            guardian.AttackTarget = null;
+            return;
+        }
         if (++chargeTicks == 0)
         {
             guardian.BeamTarget = target.EntityId;
             guardian.SynchronizeMetadata();
             guardian.SendEntityEvent(21);
         }
-        if (chargeTicks < guardian.AttackDuration) return;
+        if (chargeTicks < guardian.AttackDuration)
+            return;
         if (target is Living living)
         {
             var magicDamage = 1 + (guardian.Level.LevelData.Difficulty == Difficulty.Hard ? 2 : 0) + (guardian is ElderGuardian ? 2 : 0);
@@ -116,6 +139,7 @@ internal sealed class GuardianAttackGoal(Guardian guardian) : Goal
         await target.DamageAsync(guardian, damage);
         guardian.AttackTarget = null;
     }
+
     public override void Stop()
     {
         guardian.BeamTarget = 0;
@@ -131,23 +155,29 @@ public sealed partial class ElderGuardian : Guardian
     protected override bool CanDespawn => false;
     internal override int AttackDuration => 60;
     protected override void FinalizeSpawn() => PersistenceRequired = true;
+
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
-        if (MobBitMask.HasFlag(MobBitmask.NoAi) || (AiTick + EntityId) % 1200 != 0) return;
+        if (MobBitMask.HasFlag(MobBitmask.NoAi) || (AiTick + EntityId) % 1200 != 0)
+            return;
         foreach (var player in Level.GetPlayersInRange(Position, 50).Where(player =>
             player.GameMode is GameMode.Survival or GameMode.Adventure))
         {
             if (player.ActivePotionEffects.TryGetValue((int)PotionEffect.MiningFatigue - 1, out var effect) &&
-                effect.EffectData.Amplifier >= 2 && effect.CurrentDuration >= 1200) continue;
+                effect.EffectData.Amplifier >= 2 && effect.CurrentDuration >= 1200)
+                continue;
             player.AddPotionEffect((int)PotionEffect.MiningFatigue - 1, 6000, 2, EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
             await player.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.PlayElderGuardianMobAppearance, Silent ? 0 : 1));
         }
     }
+
     protected override async ValueTask OnDeathAsync(IEntity source)
     {
         await base.OnDeathAsync(source);
-        if (source is IPlayer) DropItem(ItemsRegistry.WetSponge);
-        if (Random.Next(5) == 0) DropItem(ItemsRegistry.TideArmorTrimSmithingTemplate);
+        if (source is IPlayer)
+            DropItem(ItemsRegistry.WetSponge);
+        if (Random.Next(5) == 0)
+            DropItem(ItemsRegistry.TideArmorTrimSmithingTemplate);
     }
 }

@@ -335,6 +335,31 @@ public sealed class ChunkSection : IChunkSection
         this.MarkUnsaved();
     }
 
+    /// <summary>
+    /// Copies light read from a save into the section's own storage, like <see cref="SetLight"/> but without allocating
+    /// a copy. Only for a section no other thread can see yet (a chunk being loaded), since the storage is overwritten
+    /// in place.
+    /// </summary>
+    /// <returns>False, with nothing changed, when <paramref name="data"/> isn't a section's worth of light.</returns>
+    internal bool TryLoadLight(ReadOnlySpan<byte> data, LightType lt)
+    {
+        var storage = lt == LightType.Sky ? skyLight : blockLight;
+        if (data.Length != storage.Length)
+            return false;
+
+        data.CopyTo(storage);
+        if (data.ContainsAnyExcept((byte)0))
+        {
+            if (lt == LightType.Sky)
+                HasSkyLight = true;
+            else
+                HasBlockLight = true;
+        }
+
+        this.MarkUnsaved();
+        return true;
+    }
+
     public void FillSkyLight()
     {
         Array.Copy(FullSkyLight, skyLight, 2048);
@@ -352,8 +377,9 @@ public sealed class ChunkSection : IChunkSection
     public IChunkSection Clone()
     {
         var clone = new ChunkSection(BlockStateContainer.Clone(), BiomeContainer.Clone(), YBase, IsEmpty);
-        clone.SetLight((byte[])skyLight.Clone(), LightType.Sky);
-        clone.SetLight((byte[])blockLight.Clone(), LightType.Block);
+        // SetLight copies arrays that aren't the clone's own.
+        clone.SetLight(skyLight, LightType.Sky);
+        clone.SetLight(blockLight, LightType.Block);
         return clone;
     }
 }

@@ -16,10 +16,13 @@ public sealed partial class Fox : FarmAnimal
     public Guid TrustedPlayer { get; internal set; }
     public Guid SecondTrustedPlayer { get; internal set; }
     protected override string? SoundName => "fox";
+
     protected override bool CanEat(ItemStack? item) =>
         item is { Count: > 0, Holder.Id: ItemIds.SweetBerries or ItemIds.GlowBerries };
+
     protected internal override float GetPathCost(IBlock feet, IBlock floor) =>
         feet.RegistryId == BlockIds.SweetBerryBush ? 0 : base.GetPathCost(feet, floor);
+
     protected override void FinalizeSpawn()
     {
         Variant = Terrain.GetTemperature((Vector)Position.Floor()) < 0.15f ? 1 : 0;
@@ -34,6 +37,7 @@ public sealed partial class Fox : FarmAnimal
             SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(items[Random.Next(items.Length)]));
         }
     }
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         base.RegisterGoals(actions, targets);
@@ -46,13 +50,16 @@ public sealed partial class Fox : FarmAnimal
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, entity => entity.Type is EntityType.Chicken or EntityType.Rabbit ||
             entity.Type is EntityType.Cod or EntityType.Salmon));
     }
+
     internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {
         var love = LoveTicks;
         var used = await base.FeedAsync(player, hand);
-        if (LoveTicks > love) breedingPlayer = player.Uuid;
+        if (LoveTicks > love)
+            breedingPlayer = player.Uuid;
         return used;
     }
+
     protected override IEntity CreateOffspring(Animal mate)
     {
         var child = (Fox)base.CreateOffspring(mate);
@@ -63,6 +70,7 @@ public sealed partial class Fox : FarmAnimal
         child.SynchronizeMetadata();
         return child;
     }
+
     protected override ValueTask OnHurtAsync(IEntity source)
     {
         Sleeping = false;
@@ -70,11 +78,14 @@ public sealed partial class Fox : FarmAnimal
         SynchronizeMetadata();
         return default;
     }
+
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
-        if (sleepDelay > 0) sleepDelay--;
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+            return;
+        if (sleepDelay > 0)
+            sleepDelay--;
         if (!Sleeping && AttackTarget == null && AiTick % 100 == 0 && Level.LevelData.GetBooleanRule("mob_griefing"))
         {
             var origin = (Vector)Position.Floor();
@@ -94,10 +105,12 @@ public sealed partial class Fox : FarmAnimal
             }
         }
     }
+
     internal bool CanSleep => sleepDelay == 0 && AttackTarget == null && !InWater && !Burning &&
         Level.DayTime is >= 0 and < 12000 && Terrain.GetSkyLight((Vector)EyePosition.Floor()) < 15 &&
         !GetEntitiesNear(12).Any(entity => entity is IPlayer player && player.GameMode != GameMode.Spectator &&
             !player.Sneaking && player.Uuid != TrustedPlayer && player.Uuid != SecondTrustedPlayer || entity.Type is EntityType.Wolf or EntityType.PolarBear);
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -110,6 +123,7 @@ public sealed partial class Fox : FarmAnimal
         writer.WriteEntityMetadataType(20, EntityMetadataType.OptionalLivingEntityReference);
         writer.WriteOptional(SecondTrustedPlayer == Guid.Empty ? (Guid?)null : SecondTrustedPlayer);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         writer.WriteString("Type", Variant == 1 ? "snow" : "red");
@@ -118,13 +132,17 @@ public sealed partial class Fox : FarmAnimal
         writer.WriteArray("ObsidianSecondTrusted", EntityNbt.UuidToInts(SecondTrustedPlayer));
         writer.WriteArray("ObsidianBreedingPlayer", EntityNbt.UuidToInts(breedingPlayer));
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         Variant = (tag.TryGetTagValue<string>("Type", out var savedType) ? savedType : null) == "snow" ? 1 : 0;
         Sleeping = tag.TryGetBool("Sleeping", out var sleeping) && sleeping;
-        if (tag.TryGetTag<NbtArray<int>>("ObsidianTrusted", out var trusted) && trusted.Count == 4) TrustedPlayer = EntityNbt.UuidFromInts(trusted.GetArray());
-        if (tag.TryGetTag<NbtArray<int>>("ObsidianSecondTrusted", out var second) && second.Count == 4) SecondTrustedPlayer = EntityNbt.UuidFromInts(second.GetArray());
-        if (tag.TryGetTag<NbtArray<int>>("ObsidianBreedingPlayer", out var feeder) && feeder.Count == 4) breedingPlayer = EntityNbt.UuidFromInts(feeder.GetArray());
+        if (tag.TryGetTag<NbtArray<int>>("ObsidianTrusted", out var trusted) && trusted.Count == 4)
+            TrustedPlayer = EntityNbt.UuidFromInts(trusted.GetArray());
+        if (tag.TryGetTag<NbtArray<int>>("ObsidianSecondTrusted", out var second) && second.Count == 4)
+            SecondTrustedPlayer = EntityNbt.UuidFromInts(second.GetArray());
+        if (tag.TryGetTag<NbtArray<int>>("ObsidianBreedingPlayer", out var feeder) && feeder.Count == 4)
+            breedingPlayer = EntityNbt.UuidFromInts(feeder.GetArray());
     }
 }
 
@@ -132,8 +150,19 @@ internal sealed class FoxSleepGoal(Fox fox) : Goal
 {
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look | GoalFlags.Jump;
     public override bool CanUse() => fox.CanSleep;
-    public override void Start() { ((Navigator)fox.Navigator!).Stop(); fox.Sleeping = true; fox.SynchronizeMetadata(); }
-    public override void Stop() { fox.Sleeping = false; fox.SynchronizeMetadata(); }
+
+    public override void Start()
+    {
+        ((Navigator)fox.Navigator!).Stop();
+        fox.Sleeping = true;
+        fox.SynchronizeMetadata();
+    }
+
+    public override void Stop()
+    {
+        fox.Sleeping = false;
+        fox.SynchronizeMetadata();
+    }
 }
 
 internal sealed class FoxPounceGoal(Fox fox) : MeleeAttackGoal(fox, 1.2f)

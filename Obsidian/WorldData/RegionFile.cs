@@ -15,6 +15,9 @@ public sealed class RegionFile : IAsyncDisposable
     private const int SectorSize = 4096;
     private const int MaxSectorSize = byte.MaxValue;
 
+    // The least a chunk's NBT is decompressed into at first; it grows from there.
+    private const int MinDecompressedCapacity = 64 * 1024;
+
     private readonly string filePath;
 
     private readonly int cubicRegionSize;
@@ -151,12 +154,39 @@ public sealed class RegionFile : IAsyncDisposable
     }
 
     /// <summary>
+    /// Writes the bytes written to <paramref name="written"/> to the region file, like
+    /// <see cref="SetChunkAsync(int, int, Memory{byte})"/> but without copying them out of the stream first. The stream
+    /// may be closed already (an NBT writer closes the stream it compressed into); don't touch it until this completes.
+    /// </summary>
+    internal Task SetChunkAsync(int chunkX, int chunkZ, MemoryStream written)
+    {
+        // TryGetBuffer still works on a closed stream, unlike Length.
+        if (!written.TryGetBuffer(out var bytes))
+            throw new ArgumentException("The stream's buffer isn't exposed.", nameof(written));
+
+        return this.SetChunkAsync(chunkX, chunkZ, bytes.AsMemory());
+    }
+
+    /// <summary>
     /// Reads through the region file to try and retrieve the compressed nbt chunk data from the region file.
     /// </summary>
     /// <param name="chunkX">The chunks local x coordinate.</param>
     /// <param name="chunkZ">The chunks local z coordinate</param>
     /// <returns>The uncompressed nbt chunk data, or null if no chunk was found at the specified coordinate.</returns>
     public async Task<Memory<byte>?> GetChunkBytesAsync(int chunkX, int chunkZ)
+    {
+        if (await this.RentChunkBytesAsync(chunkX, chunkZ) is not RentedArray<byte> rented)
+            return null;
+
+        using (rented)
+            return rented.Span.ToArray();
+    }
+
+    /// <summary>
+    /// Like <see cref="GetChunkBytesAsync"/>, but the uncompressed NBT is left in an array rented from the shared pool
+    /// instead of copied into one of its own. Dispose it once the bytes are parsed; nothing may hold on to them after.
+    /// </summary>
+    internal async Task<RentedArray<byte>?> RentChunkBytesAsync(int chunkX, int chunkZ)
     {
         var tableIndex = this.GetChunkTableIndex(chunkX, chunkZ);
         var sectors = await this.ReadChunkSectorsAsync(tableIndex);
@@ -171,30 +201,51 @@ public sealed class RegionFile : IAsyncDisposable
         if (length <= 1 || length > size - sizeof(int))
             throw new InvalidDataException($"Region file '{this.filePath}', chunk ({chunkX}, {chunkZ}) has invalid length {length} for {size} allocated bytes.");
 
-        await using var compressedDataStream = new ReadOnlyStream(chunk.Memory.Slice(5, length - 1));
-        await using var uncompressedData = new MemoryStream();
+        return this.Decompress(chunk.Memory.Slice(5, length - 1));
+    }
 
-        switch (this.Compression)
+    // Decompresses into a pooled array grown as needed, rather than a growing stream copied out at the end. Payloads
+    // in other compressions read as no data.
+    private RentedArray<byte> Decompress(ReadOnlyMemory<byte> compressed)
+    {
+        using var compressedStream = new ReadOnlyStream(compressed);
+        using Stream? decompressor = this.Compression switch
         {
-            case NbtCompression.GZip:
-            {
-                await using var gzipStream = new GZipStream(compressedDataStream, CompressionMode.Decompress);
+            NbtCompression.GZip => new GZipStream(compressedStream, CompressionMode.Decompress),
+            NbtCompression.ZLib => new ZLibStream(compressedStream, CompressionMode.Decompress),
+            _ => null
+        };
 
-                await gzipStream.CopyToAsync(uncompressedData);
-                break;
-            }
-            case NbtCompression.ZLib:
-            {
-                await using var zlibStream = new ZLibStream(compressedDataStream, CompressionMode.Decompress);
+        var pool = ArrayPool<byte>.Shared;
 
-                await zlibStream.CopyToAsync(uncompressedData);
-                break;
+        // Chunk NBT compresses several times over (light is mostly all 0 or all 15), so the first guess is generous.
+        var buffer = pool.Rent(Math.Max(compressed.Length * 8, MinDecompressedCapacity));
+        var length = 0;
+        try
+        {
+            if (decompressor is not null)
+            {
+                int read;
+                while ((read = decompressor.Read(buffer, length, buffer.Length - length)) > 0)
+                {
+                    length += read;
+                    if (length < buffer.Length)
+                        continue;
+
+                    var larger = pool.Rent(buffer.Length * 2);
+                    buffer.AsSpan(0, length).CopyTo(larger);
+                    pool.Return(buffer);
+                    buffer = larger;
+                }
             }
-            default:
-                break;
+
+            return new RentedArray<byte>(buffer, length, pool);
         }
-
-        return uncompressedData.ToArray();
+        catch
+        {
+            pool.Return(buffer);
+            throw;
+        }
     }
 
     /// <summary>

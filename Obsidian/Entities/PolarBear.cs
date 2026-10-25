@@ -65,7 +65,11 @@ public sealed partial class PolarBear : Animal
 
     internal void SetStanding(bool value)
     {
-        if (standing != value) { standing = value; SynchronizeMetadata(); }
+        if (standing != value)
+        {
+            standing = value;
+            SynchronizeMetadata();
+        }
         if (value && AiTick >= nextWarning)
         {
             nextWarning = AiTick + 40;
@@ -79,7 +83,8 @@ public sealed partial class PolarBear : Animal
         {
             var cod = Random.Next(4) != 0;
             var fish = cod ? ItemsRegistry.Cod : ItemsRegistry.Salmon;
-            if (Burning) fish = cod ? ItemsRegistry.CookedCod : ItemsRegistry.CookedSalmon;
+            if (Burning)
+                fish = cod ? ItemsRegistry.CookedCod : ItemsRegistry.CookedSalmon;
             DropItem(fish, Random.Next(3));
         }
         return default;
@@ -97,11 +102,17 @@ internal sealed class PolarBearMeleeGoal(PolarBear bear) : MeleeAttackGoal(bear,
 {
     public override bool CanUse() => !bear.IsBaby && base.CanUse();
     public override bool CanContinue() => !bear.IsBaby && base.CanContinue();
+
     public override async ValueTask TickAsync()
     {
         await base.TickAsync();
         bear.SetStanding(bear.AttackTarget is { } target && !bear.IsWithinMeleeRange(target) &&
             (target.Position - bear.Position).MagnitudeSquared() < Math.Pow(target.Dimension.Width + 3, 2) && AttackCooldown <= 10);
     }
-    public override void Stop() { bear.SetStanding(false); base.Stop(); }
+
+    public override void Stop()
+    {
+        bear.SetStanding(false);
+        base.Stop();
+}
 }

@@ -10,7 +10,7 @@ public interface IEntity : Data.IAttachmentHolder
 
     public IGoalController? GoalController { get; set; }
 
-    public Guid Uuid { get; set; }
+    public Guid Uuid { get; }
 
     public VectorD LastPosition { get; set; }
     public VectorD Position { get; set; }

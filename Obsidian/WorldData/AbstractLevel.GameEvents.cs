@@ -31,14 +31,18 @@ public abstract partial class AbstractLevel
         }
         var delta = entity.Position - oldPosition;
         var distance = Math.Sqrt(delta.X * delta.X + delta.Z * delta.Z);
-        if (distance <= 0.00001 || distance > 8 || entity is Warden or Allay) return;
+        if (distance <= 0.00001 || distance > 8 || entity is Warden or Allay)
+            return;
         var water = GameEventBlock((Vector)entity.Position.Floor())?.RegistryId == BlockIds.Water;
-        if (!grounded && !water) return;
+        if (!grounded && !water)
+            return;
         var total = entity.GameEventStepDistance + distance;
         entity.GameEventStepDistance = total < 0.6 ? total : total % 0.6;
-        if (total < 0.6) return;
+        if (total < 0.6)
+            return;
         EmitGameEvent(water ? MobGameEvent.Swim : MobGameEvent.Step, entity.Position, entity);
-        if (!water) await TrampleTurtleEggAsync(entity);
+        if (!water)
+            await TrampleTurtleEggAsync(entity);
     }
 
     private sealed record PendingMobVibration(MobVibration Event, long SelectedAt, long ArrivalAt, double Distance);
@@ -53,20 +57,25 @@ public abstract partial class AbstractLevel
         TickJukeboxes();
         foreach (var (id, pending) in mobVibrations.ToArray())
         {
-            if (pending.ArrivalAt > gameEventTick) continue;
+            if (pending.ArrivalAt > gameEventTick)
+                continue;
             mobVibrations.Remove(id);
             var listener = GetNonPlayerEntitiesInRange(pending.Event.Position, 32).FirstOrDefault(entity => entity.EntityId == id);
-            if (listener is Warden warden && warden.Alive && IsMobTicking(warden.Position)) warden.ReceiveVibration(pending.Event);
-            else if (listener is Allay allay && allay.Alive && IsMobTicking(allay.Position)) allay.ReceiveVibration(pending.Event);
+            if (listener is Warden warden && warden.Alive && IsMobTicking(warden.Position))
+                warden.ReceiveVibration(pending.Event);
+            else if (listener is Allay allay && allay.Alive && IsMobTicking(allay.Position))
+                allay.ReceiveVibration(pending.Event);
         }
         foreach (var (point, pending) in blockVibrations.ToArray())
         {
-            if (pending.ArrivalAt > gameEventTick) continue;
+            if (pending.ArrivalAt > gameEventTick)
+                continue;
             blockVibrations.Remove(point);
             var block = GameEventBlock(point);
             if (block?.RegistryId is BlockIds.SculkSensor or BlockIds.CalibratedSculkSensor)
             {
-                if (block.GetProperty("sculk_sensor_phase") != "inactive") continue;
+                if (block.GetProperty("sculk_sensor_phase") != "inactive")
+                    continue;
                 var sensorRange = block.Is(BlockIds.CalibratedSculkSensor) ? 16 : 8;
                 var sensorPower = Math.Max(1, 15 - (int)(pending.Distance / sensorRange * 15));
                 var activeSensor = block.WithProperty("sculk_sensor_phase", "active")
@@ -82,27 +91,35 @@ public abstract partial class AbstractLevel
         }
         foreach (var (point, ticks) in activeSculk.ToArray())
         {
-            if (!IsMobTicking((VectorD)point)) continue;
-            if (ticks > 1) { activeSculk[point] = ticks - 1; continue; }
+            if (!IsMobTicking((VectorD)point))
+                continue;
+            if (ticks > 1)
+            {
+                activeSculk[point] = ticks - 1;
+                continue;
+            }
             activeSculk.Remove(point);
             var block = GameEventBlock(point);
             if (block?.RegistryId == BlockIds.SculkShrieker)
             {
                 await SetBlockAsync(point, block.WithProperty("shrieking", false), true);
-                if (shriekerSummons.Remove(point)) TrySummonWarden(point);
+                if (shriekerSummons.Remove(point))
+                    TrySummonWarden(point);
             }
             else if (block?.RegistryId is BlockIds.SculkSensor or BlockIds.CalibratedSculkSensor)
             {
                 var cooling = block.GetProperty("sculk_sensor_phase") == "active";
                 await SetBlockAsync(point, block.WithProperty("sculk_sensor_phase", cooling ? "cooldown" : "inactive").WithProperty("power", 0), true);
-                if (cooling) activeSculk[point] = 10;
+                if (cooling)
+                    activeSculk[point] = 10;
             }
         }
         while (mobGameEvents.TryDequeue(out var vibration))
         {
             if (vibration.Kind is MobGameEvent.JukeboxPlay or MobGameEvent.JukeboxStop)
             {
-                foreach (var allay in GetNonPlayerEntitiesInRange(vibration.Position, 10).OfType<Allay>())
+                // Filtered before the query sorts its matches: most entities near a jukebox aren't allays.
+                foreach (var allay in GetNonPlayerEntitiesInRange(vibration.Position, 10, static entity => entity is Allay).Cast<Allay>())
                     allay.ReceiveJukeboxEvent((Vector)vibration.Position.Floor(), vibration.Kind == MobGameEvent.JukeboxPlay);
                 continue;
             }
@@ -115,17 +132,22 @@ public abstract partial class AbstractLevel
                 if (GameEventBlock(feet - new Vector(0, 1, 0))?.RegistryId == BlockIds.SculkShrieker)
                     await ShriekAsync(feet - new Vector(0, 1, 0), vibration.Source);
             }
-            if (!ValidVibration(vibration)) continue;
-            foreach (var listener in GetNonPlayerEntitiesInRange(vibration.Position, 16))
+            if (!ValidVibration(vibration))
+                continue;
+            // Only wardens and allays listen, so the query drops the others before sorting its matches (by entity id,
+            // the order listeners are offered the vibration in).
+            foreach (var listener in GetNonPlayerEntitiesInRange(vibration.Position, 16, static entity => entity is Warden or Allay))
             {
-                // Only wardens and allays listen; the type check comes first since it's the cheapest.
-                if (listener is not Warden and not Allay) continue;
-                if (!IsMobTicking(listener.Position)) continue;
-                if (listener is Warden warden && !warden.AcceptsVibration(vibration)) continue;
-                if (listener is Allay allay && !allay.AcceptsVibration(vibration)) continue;
+                if (!IsMobTicking(listener.Position))
+                    continue;
+                if (listener is Warden warden && !warden.AcceptsVibration(vibration))
+                    continue;
+                if (listener is Allay allay && !allay.AcceptsVibration(vibration))
+                    continue;
                 var receiver = listener.Position + new VectorD(0, listener.Dimension.Height * 0.85, 0);
                 var distance = (receiver - vibration.Position).Magnitude;
-                if (distance > 16 || WoolOccludes(vibration.Position, receiver)) continue;
+                if (distance > 16 || WoolOccludes(vibration.Position, receiver))
+                    continue;
                 SelectVibration(mobVibrations, listener.EntityId, vibration, distance);
             }
             var origin = (Vector)vibration.Position.Floor();
@@ -134,12 +156,16 @@ public abstract partial class AbstractLevel
                 var block = GameEventBlock(point)!;
                 var shrieker = block.Is(BlockIds.SculkShrieker);
                 var radius = block.Is(BlockIds.CalibratedSculkSensor) ? 16 : 8;
-                if (shrieker && vibration.Kind != MobGameEvent.SculkSensorClick || !shrieker && vibration.Kind == MobGameEvent.SculkSensorClick) continue;
-                if (shrieker && vibration.Source is not IPlayer && vibration.Owner is not IPlayer) continue;
-                if (activeSculk.ContainsKey(point) || (shrieker ? block.GetProperty("shrieking") == "true" : block.GetProperty("sculk_sensor_phase") != "inactive")) continue;
+                if (shrieker && vibration.Kind != MobGameEvent.SculkSensorClick || !shrieker && vibration.Kind == MobGameEvent.SculkSensorClick)
+                    continue;
+                if (shrieker && vibration.Source is not IPlayer && vibration.Owner is not IPlayer)
+                    continue;
+                if (activeSculk.ContainsKey(point) || (shrieker ? block.GetProperty("shrieking") == "true" : block.GetProperty("sculk_sensor_phase") != "inactive"))
+                    continue;
                 var receiver = (VectorD)point + new VectorD(0.5, 0.5, 0.5);
                 var distance = (receiver - vibration.Position).Magnitude;
-                if (distance > radius || WoolOccludes(vibration.Position, receiver)) continue;
+                if (distance > radius || WoolOccludes(vibration.Position, receiver))
+                    continue;
                 SelectVibration(blockVibrations, point, vibration, distance);
             }
         }
@@ -148,7 +174,8 @@ public abstract partial class AbstractLevel
     private void SelectVibration<TKey>(Dictionary<TKey, PendingMobVibration> pending, TKey key, MobVibration vibration, double distance) where TKey : notnull
     {
         if (pending.TryGetValue(key, out var previous) && (previous.SelectedAt != gameEventTick ||
-            previous.Distance < distance || previous.Distance == distance && GameEventFrequency(previous.Event.Kind) >= GameEventFrequency(vibration.Kind))) return;
+            previous.Distance < distance || previous.Distance == distance && GameEventFrequency(previous.Event.Kind) >= GameEventFrequency(vibration.Kind)))
+            return;
         pending[key] = new(vibration, gameEventTick, gameEventTick + Math.Max(1, (int)Math.Floor(distance)), distance);
     }
 
@@ -159,7 +186,9 @@ public abstract partial class AbstractLevel
         for (var cx = (origin.X - radius) >> 4; cx <= (origin.X + radius) >> 4; cx++)
         for (var cz = (origin.Z - radius) >> 4; cz <= (origin.Z + radius) >> 4; cz++)
         {
-            if (GetLoadedChunk(cx, cz) is not Chunk chunk) continue;
+                // Most chunks never hold a block entity, which HasBlockEntities tells without walking the dictionary.
+                if (GetLoadedChunk(cx, cz) is not Chunk chunk || !chunk.HasBlockEntities)
+                    continue;
             // Read in place: each step any mob takes asks for the sculk near it.
             foreach (var (_, blockEntity) in chunk.BlockEntities)
                 if (blockEntity is DataBlockEntity entity &&
@@ -171,11 +200,14 @@ public abstract partial class AbstractLevel
 
     private bool ValidVibration(MobVibration vibration)
     {
-        if (vibration.Source is IPlayer { GameMode: GameMode.Spectator }) return false;
-        if (vibration.Source?.Sneaking == true && vibration.Kind is MobGameEvent.Step or MobGameEvent.Swim or MobGameEvent.ProjectileShoot or MobGameEvent.Land) return false;
+        if (vibration.Source is IPlayer { GameMode: GameMode.Spectator })
+            return false;
+        if (vibration.Source?.Sneaking == true && vibration.Kind is MobGameEvent.Step or MobGameEvent.Swim or MobGameEvent.ProjectileShoot or MobGameEvent.Land)
+            return false;
         var point = (Vector)vibration.Position.Floor();
         if (vibration.Kind is MobGameEvent.Step or MobGameEvent.Land &&
-            (DampensVibrations(GameEventBlock(point)) || DampensVibrations(GameEventBlock(point - new Vector(0, 1, 0))))) return false;
+            (DampensVibrations(GameEventBlock(point)) || DampensVibrations(GameEventBlock(point - new Vector(0, 1, 0)))))
+            return false;
         return vibration.Kind is not (MobGameEvent.BlockPlace or MobGameEvent.BlockDestroy or MobGameEvent.BlockChange) || !DampensVibrations(vibration.AffectedBlock ?? GameEventBlock(point));
     }
 
@@ -194,7 +226,9 @@ public abstract partial class AbstractLevel
         var cell = (Vector)start.Floor();
         var target = (Vector)end.Floor();
         var delta = end - start;
-        var sx = Math.Sign(delta.X); var sy = Math.Sign(delta.Y); var sz = Math.Sign(delta.Z);
+        var sx = Math.Sign(delta.X);
+        var sy = Math.Sign(delta.Y);
+        var sz = Math.Sign(delta.Z);
         var dx = sx == 0 ? double.PositiveInfinity : Math.Abs(1 / delta.X);
         var dy = sy == 0 ? double.PositiveInfinity : Math.Abs(1 / delta.Y);
         var dz = sz == 0 ? double.PositiveInfinity : Math.Abs(1 / delta.Z);
@@ -204,11 +238,25 @@ public abstract partial class AbstractLevel
         var remaining = Math.Abs(target.X - cell.X) + Math.Abs(target.Y - cell.Y) + Math.Abs(target.Z - cell.Z) + 4;
         while (remaining-- > 0)
         {
-            if (IsWool(GameEventBlock(cell))) return true;
-            if (cell == target) return false;
-            if (tx <= ty && tx <= tz) { cell += new Vector(sx, 0, 0); tx += dx; }
-            else if (ty <= tz) { cell += new Vector(0, sy, 0); ty += dy; }
-            else { cell += new Vector(0, 0, sz); tz += dz; }
+            if (IsWool(GameEventBlock(cell)))
+                return true;
+            if (cell == target)
+                return false;
+            if (tx <= ty && tx <= tz)
+            {
+                cell += new Vector(sx, 0, 0);
+                tx += dx;
+            }
+            else if (ty <= tz)
+            {
+                cell += new Vector(0, sy, 0);
+                ty += dy;
+            }
+            else
+            {
+                cell += new Vector(0, 0, sz);
+                tz += dz;
+            }
         }
         return false;
     }
@@ -233,35 +281,43 @@ public abstract partial class AbstractLevel
 
     private async ValueTask ShriekAsync(Vector point, IEntity? source)
     {
-        if (source is not IPlayer player || player.GameMode == GameMode.Spectator || activeSculk.ContainsKey(point)) return;
+        if (source is not IPlayer player || player.GameMode == GameMode.Spectator || activeSculk.ContainsKey(point))
+            return;
         var block = GameEventBlock(point);
-        if (block?.RegistryId != BlockIds.SculkShrieker || block.GetProperty("shrieking") == "true") return;
+        if (block?.RegistryId != BlockIds.SculkShrieker || block.GetProperty("shrieking") == "true")
+            return;
         await SetBlockAsync(point, block.WithProperty("shrieking", true), true);
         activeSculk[point] = 90;
         PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new LevelEventPacket(3007, point, 0));
         foreach (var nearby in GetPlayersInRange((VectorD)point, 40).Where(nearby => nearby.GameMode != GameMode.Spectator))
             nearby.AddPotionEffect((int)PotionEffect.Darkness - 1, 260);
         if (block.GetProperty("can_summon") != "true" || LevelData.Difficulty == Difficulty.Peaceful || !LevelData.GetBooleanRule("spawn_wardens") ||
-            GetNonPlayerEntitiesInRange((VectorD)point, 48).Any(entity => entity is Warden)) return;
+            GetNonPlayerEntitiesInRange((VectorD)point, 48).Any(entity => entity is Warden))
+            return;
         var players = GetPlayersInRange((VectorD)point, 16).Where(nearby => nearby.GameMode != GameMode.Spectator).Append(player).DistinctBy(nearby => nearby.Uuid).ToArray();
         var warning = players.Select(nearby => wardenWarnings.GetValueOrDefault(nearby.Uuid, new(0, -200))).MaxBy(warning => warning.Level)!;
-        if (players.Any(nearby => wardenWarnings.TryGetValue(nearby.Uuid, out var previous) && gameEventTick - previous.LastWarning < 200)) return;
+        if (players.Any(nearby => wardenWarnings.TryGetValue(nearby.Uuid, out var previous) && gameEventTick - previous.LastWarning < 200))
+            return;
         var decayed = Math.Max(0, warning.Level - (int)((gameEventTick - warning.LastWarning) / 12000));
         var next = new WardenWarning(Math.Min(4, decayed + 1), gameEventTick);
-        foreach (var nearby in players) wardenWarnings[nearby.Uuid] = next;
-        if (next.Level == 4) shriekerSummons.Add(point);
+        foreach (var nearby in players)
+            wardenWarnings[nearby.Uuid] = next;
+        if (next.Level == 4)
+            shriekerSummons.Add(point);
     }
 
     private void TrySummonWarden(Vector point)
     {
-        if (!LevelData.GetBooleanRule("spawn_wardens") || LevelData.Difficulty == Difficulty.Peaceful || GetNonPlayerEntitiesInRange((VectorD)point, 48).Any(entity => entity is Warden)) return;
+        if (!LevelData.GetBooleanRule("spawn_wardens") || LevelData.Difficulty == Difficulty.Peaceful || GetNonPlayerEntitiesInRange((VectorD)point, 48).Any(entity => entity is Warden))
+            return;
         var terrain = new MobTerrain(this);
         for (var attempt = 0; attempt < 20; attempt++)
         {
             var spawn = point + new Vector(Random.Shared.Next(-5, 6), Random.Shared.Next(-6, 7), Random.Shared.Next(-5, 6));
             var position = (VectorD)spawn + new VectorD(0.5, 0, 0.5);
             if (terrain.GetBlock(spawn - new Vector(0, 1, 0)) is not { IsAir: false, IsLiquid: false } ||
-                !terrain.IsFree(new EntityDimension { Width = 0.9f, Height = 2.9f }.CreateBBFromPosition(position))) continue;
+                !terrain.IsFree(new EntityDimension { Width = 0.9f, Height = 2.9f }.CreateBBFromPosition(position)))
+                continue;
             var warden = new Warden { Level = this, EntityId = Server.GetNextEntityId(), Position = position };
             warden.BeginEmerging();
             SpawnEntity(warden);

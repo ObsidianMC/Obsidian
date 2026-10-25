@@ -3,6 +3,7 @@ using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 using System.Runtime.Loader;
+using System.Threading;
 
 namespace Obsidian.Entities;
 
@@ -13,8 +14,30 @@ public partial class Mob
     internal Random Random { get; } = new();
     internal MobTerrain Terrain { get; private set; } = null!;
     internal long AiTick { get; private set; }
-    internal bool InWater => Terrain.ContainsFluid(Dimension.CreateBBFromPosition(Position), water: true);
-    internal bool InLava => Terrain.ContainsFluid(Dimension.CreateBBFromPosition(Position), water: false);
+    internal bool InWater => this.TouchesFluid(water: true, ref this.waterContact);
+    internal bool InLava => this.TouchesFluid(water: false, ref this.lavaContact);
+
+    // Whether the mob's box touches water and lava, worked out once per position during the level's tick, as vanilla
+    // works it out once a tick: its environment, travel, navigation and goals each ask, and each asked the terrain
+    // again. Asked outside the tick (a packet's handler), it's worked out again. Each is replaced whole, as packet
+    // handlers may ask while the tick does.
+    private FluidContact? waterContact;
+    private FluidContact? lavaContact;
+
+    private sealed record FluidContact(VectorD Position, long Tick, bool Touches);
+
+    private bool TouchesFluid(bool water, ref FluidContact? contact)
+    {
+        var tick = Level is AbstractLevel level ? level.CurrentTickId : 0;
+        if (tick != 0 && Volatile.Read(ref contact) is FluidContact known && known.Tick == tick && known.Position == Position)
+            return known.Touches;
+
+        var position = Position;
+        var touches = Terrain.ContainsFluid(Dimension.CreateBBFromPosition(position), water);
+        if (tick != 0)
+            Volatile.Write(ref contact, new FluidContact(position, tick, touches));
+        return touches;
+    }
     internal bool IsRemoved { get; private set; }
     internal IEntity? LastAttacker { get; private set; }
     internal long LastHurtTick { get; private set; } = -100;
@@ -65,7 +88,29 @@ public partial class Mob
     private Angle lastSentPitch;
     private VectorD lastSentPosition;
     private bool hasSentPosition;
+    private int movementSyncTicks;
     private int despawnAge;
+
+    // Like vanilla's ServerEntity, a mob's movement goes out every third tick (its type's default update interval), and
+    // clients interpolate between updates: sending it every tick to every player in range cost the tick more than the
+    // mobs' AI did.
+    private const int MovementUpdateInterval = 3;
+
+    // Like vanilla's pairing, which spawns an entity for a new observer at the base of its position codec: the
+    // relative moves that follow are from the position last sent, which lags behind between updates.
+    private protected override VectorD PairingPosition => hasSentPosition ? lastSentPosition : Position;
+
+    /// <summary>
+    /// Starts the movement sent to clients over from where the mob is now, as it arrives in another level: the
+    /// observers there pair with it here (see <see cref="PairingPosition"/>), and its next moves are sent from here.
+    /// </summary>
+    internal void ResetMovementBaseline()
+    {
+        lastSentPosition = Position;
+        hasSentPosition = true;
+        lastSentYaw = Yaw;
+        lastSentPitch = Pitch;
+    }
 
     public Mob()
     {
@@ -268,12 +313,9 @@ public partial class Mob
         }
         if (Alive && CanDespawn && !PersistenceRequired && CustomName == null)
         {
-            var nearest = (double)float.MaxValue;
-            foreach (var (_, player) in Level.Players)
-            {
-                if (player.GameMode == GameMode.Spectator) continue;
-                nearest = Math.Min(nearest, (player.Position - Position).MagnitudeSquared());
-            }
+            var nearest = Level is AbstractLevel despawnLevel
+                ? Math.Min(despawnLevel.NearestPlayerDistanceSquared(Position), float.MaxValue)
+                : (double)float.MaxValue;
             if (nearest > 16384 && nearest < float.MaxValue || ++despawnAge > 600 && nearest > 1024 && nearest < float.MaxValue && Random.Next(800) == 0)
             {
                 await RemoveAsync();
@@ -366,6 +408,9 @@ public partial class Mob
             lastSentPosition = oldPosition;
             hasSentPosition = true;
         }
+
+        if (++movementSyncTicks % MovementUpdateInterval != 0)
+            return;
 
         var delta = MoveDelta(lastSentPosition, Position);
         var moved = delta.X != 0 || delta.Y != 0 || delta.Z != 0;

@@ -13,42 +13,36 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
         ? engine.SnapshotLight(chunk)
         : new LightUpdatePacket(chunk);
 
+    // The sections are written here first, since their size goes ahead of them. Reused by the thread's chunk packets:
+    // Serialize copies it into the packet before returning, and nothing it calls serializes another chunk packet.
+    [ThreadStatic]
+    private static NetworkBuffer? sectionScratch;
+
+    // A scratch grown past this by an unusually varied chunk is dropped rather than kept for the life of the thread.
+    private const int MaxRetainedSectionScratch = 1024 * 1024;
+
+    // Room for the packet's fixed fields and a block entity's update data on top of what's known exactly, so that
+    // the body rarely has to grow (and copy itself) after it's sized.
+    private const int FixedFieldsSize = 64;
+    private const int BlockEntitySize = 256;
+
     public override void Serialize(INetStreamWriter writer)
     {
-        writer.WriteInt(Chunk.X);
-        writer.WriteInt(Chunk.Z);
-
-        //Chunk.CalculateHeightmap();
-
-        writer.WriteVarInt(1);
-        foreach (var (type, heightmap) in Chunk.Heightmaps)
-            if (type == HeightmapType.MotionBlocking)
-            {
-                var dataArray = heightmap.GetDataArray();
-
-                writer.WriteVarInt(type.GetHashCode());
-                writer.WriteVarInt(dataArray.Length);
-
-                foreach(var height in dataArray)
-                    writer.WriteLong(height);
-
-                break;
-            }
-
-        var sectionBuffer = new NetworkBuffer();
+        var sections = sectionScratch ??= new NetworkBuffer();
+        sections.Clear();
 
         foreach (var section in Chunk.Sections)
         {
             if (!section.BlockStateContainer.IsEmpty)
             {
-                section.BlockStateContainer.WriteTo(sectionBuffer);
-                section.BiomeContainer.WriteTo(sectionBuffer);
+                section.BlockStateContainer.WriteTo(sections);
+                section.BiomeContainer.WriteTo(sections);
             }
         }
 
-        writer.WriteVarInt((int)sectionBuffer.Size);
-        writer.Write(sectionBuffer);
-
+        var heights = Chunk.Heightmaps.TryGetValue(HeightmapType.MotionBlocking, out var motionBlocking)
+            ? motionBlocking.GetDataArray()
+            : null;
 
         // Like vanilla's, every block entity of a type clients know, with its update data. A plugin's block entity
         // sends what it gave last (see BlockEntity.ClientData), so that its code doesn't run on this thread.
@@ -57,6 +51,35 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
             .Select(blockEntity => (BlockEntity: blockEntity, Type: BlockEntityTypesRegistry.NetworkId(blockEntity.Id)))
             .Where(entry => entry.Type >= 0)
             .ToList();
+
+        // Sized once for the whole packet, rather than doubling its way there from a few bytes.
+        if (writer is NetworkBuffer body)
+        {
+            body.EnsureWritable(FixedFieldsSize
+                + sizeof(long) * (heights?.Length ?? 0)
+                + sections.Size
+                + BlockEntitySize * blockEntities.Count
+                + this.light.MaxLightSize());
+        }
+
+        writer.WriteInt(Chunk.X);
+        writer.WriteInt(Chunk.Z);
+
+        writer.WriteVarInt(1);
+        if (heights is not null)
+        {
+            writer.WriteVarInt(HeightmapType.MotionBlocking.GetHashCode());
+            writer.WriteVarInt(heights.Length);
+
+            foreach (var height in heights)
+                writer.WriteLong(height);
+        }
+
+        writer.WriteVarInt(sections.Size);
+        writer.Write(sections);
+
+        if (sections.Capacity > MaxRetainedSectionScratch)
+            sectionScratch = null;
 
         writer.WriteVarInt(blockEntities.Count);
         foreach (var (blockEntity, type) in blockEntities)
@@ -89,6 +112,6 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
         nbtWriter.EndCompound();
         nbtWriter.TryFinish();
 
-        writer.WriteByteArray(nbtWriter.Data.ToArray());
+        writer.WriteByteArray(nbtWriter.Data);
     }
 }

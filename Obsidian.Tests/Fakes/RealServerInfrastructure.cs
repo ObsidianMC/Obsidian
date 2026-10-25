@@ -279,11 +279,12 @@ internal static class TestServerFactory
         };
     }
 
-    public static Obsidian.Entities.Player CreateConnectedPlayer(Server server, IWorld world, string username, VectorD? position = null)
+    public static Obsidian.Entities.Player CreateConnectedPlayer(
+        Server server, IWorld world, string username, VectorD? position = null, Guid? uuid = null)
     {
         var client = new TestClient(server);
         var spawn = position ?? world.LevelData.SpawnPosition;
-        var player = new Obsidian.Entities.Player(Guid.NewGuid(), username, client, world)
+        var player = new Obsidian.Entities.Player(uuid ?? Guid.NewGuid(), username, client, world)
         {
             Server = server,
             Position = spawn,

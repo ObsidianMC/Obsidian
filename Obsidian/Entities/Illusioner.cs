@@ -18,8 +18,10 @@ public sealed partial class Illusioner : Skeleton
     protected override bool BurnsInSun => false;
     protected override string? SoundName => "illusioner";
     internal override int AttackInterval => 20;
+
     protected override void FinalizeSpawn() =>
         SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.Bow));
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(0, new FloatGoal(this));
@@ -32,15 +34,19 @@ public sealed partial class Illusioner : Skeleton
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, target => target is IPlayer));
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, target => target.Type is EntityType.Villager or EntityType.IronGolem or EntityType.WanderingTrader));
     }
+
     internal bool Casting => spellTicks > 0;
+
     protected override ValueTask TickMobAsync()
     {
-        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return default;
+        if (MobBitMask.HasFlag(MobBitmask.NoAi))
+            return default;
         if (spellTicks > 0)
         {
             if (--spellTicks == 0)
             {
-                if (spell == 4) AddPotionEffect((int)PotionEffect.Invisibility - 1, 1200);
+                if (spell == 4)
+                    AddPotionEffect((int)PotionEffect.Invisibility - 1, 1200);
                 else if (spell == 5 && AttackTarget is Living target && IsValidTarget(target))
                     target.AddPotionEffect((int)PotionEffect.Blindness - 1, 400);
                 PlayMobSound("cast_spell");
@@ -64,6 +70,7 @@ public sealed partial class Illusioner : Skeleton
         }
         return default;
     }
+
     private void BeginSpell(byte kind, string sound)
     {
         spell = kind;
@@ -71,12 +78,15 @@ public sealed partial class Illusioner : Skeleton
         PlayMobSound(sound);
         SynchronizeMetadata();
     }
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         foreach (var slot in Enum.GetValues<EquipmentSlot>())
-            if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot)) DropItem(GetEquipment(slot));
+            if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot))
+                DropItem(GetEquipment(slot));
         return default;
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -85,6 +95,7 @@ public sealed partial class Illusioner : Skeleton
         writer.WriteEntityMetadataType(17, EntityMetadataType.Byte);
         writer.WriteByte(spell);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer) => writer.WriteInt("SpellTicks", spellTicks);
     protected override void ReadAdditionalSave(NbtCompound tag) => spellTicks = Math.Clamp(tag.TryGetTagValue<int>("SpellTicks", out var ticks) ? ticks : 0, 0, 20);
 }
@@ -94,6 +105,17 @@ internal sealed class IllusionerCastingGoal(Illusioner illusioner) : Goal
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
     public override bool CanUse() => illusioner.Casting;
-    public override void Start() { ((Navigator)illusioner.Navigator!).Stop(); illusioner.MoveControl.Stop(); }
-    public override ValueTask TickAsync() { if (illusioner.AttackTarget is { } target) illusioner.LookControl.LookAt(target); return default; }
+
+    public override void Start()
+    {
+        ((Navigator)illusioner.Navigator!).Stop();
+        illusioner.MoveControl.Stop();
+}
+
+    public override ValueTask TickAsync()
+    {
+        if (illusioner.AttackTarget is { } target)
+            illusioner.LookControl.LookAt(target);
+        return default;
+    }
 }

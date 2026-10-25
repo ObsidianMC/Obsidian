@@ -1,4 +1,5 @@
 using Obsidian.WorldData;
+using System.Threading;
 using Obsidian.WorldData.Fluids;
 
 namespace Obsidian.Entities.AI;
@@ -87,12 +88,27 @@ internal sealed class MobTerrain(ILevel level)
         BlockIds.SlimeBlock => 0.8f,
         _ => 0.6f
     };
+    // The chunk the last block was read from, kept for the rest of the level's tick: a mob reads a few dozen blocks
+    // around it a tick, nearly all from one chunk, and each read looked the chunk up in the level's regions. It's
+    // replaced whole, as a packet's handler may read the mob's terrain while its tick does.
+    private LastChunk? lastChunk;
+
+    private sealed record LastChunk(long Tick, int X, int Z, IChunk? Chunk);
+
     public IBlock? GetBlock(Vector position)
     {
         if (level is not AbstractLevel concrete || concrete.IsOutsideBuildHeight(position.Y))
             return null;
 
-        return concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetBlock(position);
+        var (chunkX, chunkZ) = (position.X >> 4, position.Z >> 4);
+        var tick = concrete.CurrentTickId;
+        if (tick != 0 && Volatile.Read(ref lastChunk) is LastChunk last && last.Tick == tick && last.X == chunkX && last.Z == chunkZ)
+            return last.Chunk?.GetBlock(position);
+
+        var chunk = concrete.GetLoadedChunk(chunkX, chunkZ);
+        if (tick != 0)
+            Volatile.Write(ref lastChunk, new LastChunk(tick, chunkX, chunkZ, chunk));
+        return chunk?.GetBlock(position);
     }
 
     public IEnumerable<BoundingBox> GetCollisions(BoundingBox bounds, bool ignoreWoodenDoors = false) =>
@@ -126,8 +142,53 @@ internal sealed class MobTerrain(ILevel level)
         }
     }
 
-    public bool IsFree(BoundingBox bounds, bool ignoreWoodenDoors = false) =>
-        !GetCollisions(bounds, ignoreWoodenDoors).Any(shape => Overlaps(bounds, shape));
+    /// <summary>
+    /// Adds the collision shapes near <paramref name="bounds"/> to <paramref name="shapes"/>, as
+    /// <see cref="GetCollisions"/> returns them, for callers that reuse a list.
+    /// </summary>
+    public void CollectCollisions(BoundingBox bounds, List<BoundingBox> shapes)
+    {
+        for (var x = (int)Math.Floor(bounds.Min.X); x <= (int)Math.Floor(bounds.Max.X); x++)
+        for (var y = (int)Math.Floor(bounds.Min.Y) - 1; y <= (int)Math.Floor(bounds.Max.Y); y++)
+        for (var z = (int)Math.Floor(bounds.Min.Z); z <= (int)Math.Floor(bounds.Max.Z); z++)
+        {
+            var position = new Vector(x, y, z);
+            if (GetBlock(position) is not { } block)
+            {
+                shapes.Add(new BoundingBox(new VectorD(x, y, z), new VectorD(x + 1, y + 1, z + 1)));
+                continue;
+            }
+
+            foreach (var shape in BlockCollisionShapes.Get(level, position, block))
+                shapes.Add(shape.OffsetBy(new VectorD(x, y, z)));
+        }
+    }
+
+    // GetCollisions(bounds).Any(overlapping), without its iterators: mobs' pathfinding asks this many times a tick.
+    public bool IsFree(BoundingBox bounds, bool ignoreWoodenDoors = false)
+    {
+        for (var x = (int)Math.Floor(bounds.Min.X); x <= (int)Math.Floor(bounds.Max.X); x++)
+        for (var y = (int)Math.Floor(bounds.Min.Y) - 1; y <= (int)Math.Floor(bounds.Max.Y); y++)
+        for (var z = (int)Math.Floor(bounds.Min.Z); z <= (int)Math.Floor(bounds.Max.Z); z++)
+        {
+            var position = new Vector(x, y, z);
+            if (GetBlock(position) is not { } block)
+            {
+                if (Overlaps(bounds, new BoundingBox(new VectorD(x, y, z), new VectorD(x + 1, y + 1, z + 1))))
+                    return false;
+                continue;
+            }
+            if (ignoreWoodenDoors && TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId))
+                continue;
+
+            foreach (var shape in BlockCollisionShapes.Get(level, position, block))
+            {
+                if (Overlaps(bounds, shape.OffsetBy(new VectorD(x, y, z))))
+                    return false;
+            }
+        }
+        return true;
+    }
 
     public bool ContainsSuffocatingBlock(BoundingBox bounds)
     {

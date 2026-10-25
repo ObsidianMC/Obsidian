@@ -39,10 +39,18 @@ public abstract partial class AbstractLevel
             return;
 
         var players = this.SimulatingPlayerPositions();
-        foreach (var chunk in this.RandomTickingChunks(players))
+        var chunks = this.RandomTickingChunks(players);
+
+        // The lock players' block writes take is taken for a batch of chunks rather than each one: taking it tens of
+        // thousands of times a tick cost more than the ticks, while a batch holds it only briefly.
+        const int BatchSize = 64;
+        for (var start = 0; start < chunks.Count; start += BatchSize)
         {
             lock (this.Fluids.TickLock)
-                this.TickChunkBlocks(chunk, speed, players);
+            {
+                for (var index = start; index < Math.Min(start + BatchSize, chunks.Count); index++)
+                    this.TickChunkBlocks(chunks[index], speed, players);
+            }
         }
     }
 
@@ -157,6 +165,37 @@ public abstract partial class AbstractLevel
         var seen = new HashSet<long>();
         var chunks = new List<Chunk>();
 
+        // In the tick, the simulation area has the squares around the players already. Each chunk is looked up once:
+        // checking the neighbours of each looked most of them up eight more times.
+        if (Volatile.Read(ref this.simulationCurrent))
+        {
+            var loaded = this.randomTickLoaded;
+            loaded.Clear();
+            var candidates = new List<(long Key, Chunk Chunk)>();
+            foreach (var key in this.simulation.Chunks)
+            {
+                if (this.IsLoaded(key, loaded) is Chunk chunk)
+                    candidates.Add((key, chunk));
+            }
+
+            foreach (var key in Volatile.Read(ref this.ticketChunks).Ticking)
+            {
+                NumericsHelper.LongToInts(key, out var x, out var z);
+                if (!this.simulation.Contains(x, z) && this.IsLoaded(key, loaded) is Chunk chunk)
+                    candidates.Add((key, chunk));
+            }
+
+            foreach (var (key, chunk) in candidates)
+            {
+                if (this.HasLoadedNeighbours(key, loaded))
+                    chunks.Add(chunk);
+            }
+
+            // So it doesn't keep chunks unloaded meanwhile.
+            loaded.Clear();
+            return chunks;
+        }
+
         foreach (var player in players)
         {
             var (centerX, centerZ) = Region.ChunkOf(player);
@@ -184,6 +223,35 @@ public abstract partial class AbstractLevel
         }
 
         return chunks;
+    }
+
+    // The loaded chunks a tick's random ticks looked up, and null for those that aren't (see RandomTickingChunks).
+    private readonly Dictionary<long, IChunk?> randomTickLoaded = [];
+
+    private IChunk? IsLoaded(long key, Dictionary<long, IChunk?> loaded)
+    {
+        if (!loaded.TryGetValue(key, out var chunk))
+        {
+            NumericsHelper.LongToInts(key, out var x, out var z);
+            loaded[key] = chunk = this.GetLoadedChunk(x, z);
+        }
+
+        return chunk;
+    }
+
+    private bool HasLoadedNeighbours(long key, Dictionary<long, IChunk?> loaded)
+    {
+        NumericsHelper.LongToInts(key, out var chunkX, out var chunkZ);
+        for (var x = chunkX - 1; x <= chunkX + 1; x++)
+        {
+            for (var z = chunkZ - 1; z <= chunkZ + 1; z++)
+            {
+                if (this.IsLoaded(NumericsHelper.IntsToLong(x, z), loaded) is null)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     private bool HasLoadedNeighbours(int chunkX, int chunkZ)

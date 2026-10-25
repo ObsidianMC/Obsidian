@@ -11,18 +11,21 @@ public partial class LightUpdatePacket
     private readonly BitSet blockMask = new();
     private readonly BitSet emptySkyMask = new();
     private readonly BitSet emptyBlockMask = new();
-    private readonly List<byte[]> sky = [];
-    private readonly List<byte[]> block = [];
+    private readonly List<ReadOnlyMemory<byte>> sky = [];
+    private readonly List<ReadOnlyMemory<byte>> block = [];
+
+    // Sections lit to 15 throughout (all the sky light above the terrain) share this snapshot rather than copying their
+    // own; it's never written.
+    private static readonly ReadOnlyMemory<byte> FullLight = CreateFullLight();
 
     /// <summary>
     /// Snapshots all build-range sections. Call under the propagation gate, or on immutable storage.
     /// </summary>
     public LightUpdatePacket(IChunk chunk)
-        : this(
-            chunk,
-            Enumerable.Range(0, chunk.Sections.Length).ToHashSet(),
-            Enumerable.Range(0, chunk.Sections.Length).ToHashSet())
     {
+        this.Chunk = chunk;
+        for (var index = 0; index < chunk.Sections.Length; index++)
+            this.CaptureSection(index, sky: true, block: true);
     }
 
     /// <summary>Snapshots only changed sections; zero arrays use vanilla's empty section masks.</summary>
@@ -30,14 +33,7 @@ public partial class LightUpdatePacket
     {
         this.Chunk = chunk;
         for (var index = 0; index < chunk.Sections.Length; index++)
-        {
-            var section = chunk.Sections[index];
-            if (skySections.Contains(index))
-                Capture(index, section.SkyLightArray, this.skyMask, this.emptySkyMask, this.sky);
-
-            if (blockSections.Contains(index))
-                Capture(index, section.BlockLightArray, this.blockMask, this.emptyBlockMask, this.block);
-        }
+            this.CaptureSection(index, skySections.Contains(index), blockSections.Contains(index));
     }
 
     public override void Serialize(INetStreamWriter writer)
@@ -59,19 +55,60 @@ public partial class LightUpdatePacket
         WriteArrays(writer, this.block);
     }
 
+    /// <summary>The most bytes <see cref="WriteLight"/> writes, for sizing a buffer ahead.</summary>
+    internal int MaxLightSize()
+    {
+        // Each mask is a VarInt count of longs, then the longs; each list of arrays a VarInt count, then each array's
+        // VarInt length and its bytes. A VarInt takes at most 5 bytes.
+        var size = 6 * 5;
+        size += sizeof(long) * (this.skyMask.DataStorage.Length + this.blockMask.DataStorage.Length
+            + this.emptySkyMask.DataStorage.Length + this.emptyBlockMask.DataStorage.Length);
+
+        foreach (var array in this.sky)
+            size += 5 + array.Length;
+
+        foreach (var array in this.block)
+            size += 5 + array.Length;
+
+        return size;
+    }
+
+    private void CaptureSection(int index, bool sky, bool block)
+    {
+        var section = this.Chunk.Sections[index];
+        if (sky)
+            Capture(index, section.SkyLightArray, this.skyMask, this.emptySkyMask, this.sky);
+
+        if (block)
+            Capture(index, section.BlockLightArray, this.blockMask, this.emptyBlockMask, this.block);
+    }
+
     private static void Capture(
-        int index, ReadOnlyMemory<byte> data, BitSet mask, BitSet emptyMask, List<byte[]> arrays)
+        int index, ReadOnlyMemory<byte> data, BitSet mask, BitSet emptyMask, List<ReadOnlyMemory<byte>> arrays)
     {
         // Protocol bit zero is the section below the build range.
-        if (data.Span.IndexOfAnyExcept((byte)0) < 0)
+        if (!data.Span.ContainsAnyExcept((byte)0))
         {
             emptyMask.SetBit(index + 1, true);
         }
         else
         {
             mask.SetBit(index + 1, true);
-            arrays.Add(data.ToArray());
+
+            // Other light is copied: the section's storage changes after the snapshot is taken.
+            arrays.Add(data.Length == FullLight.Length && !data.Span.ContainsAnyExcept((byte)0xFF)
+                ? FullLight
+                : data.ToArray());
         }
+    }
+
+    private static ReadOnlyMemory<byte> CreateFullLight()
+    {
+        var light = new byte[2048];
+
+        // Two levels of 15 a byte.
+        Array.Fill(light, (byte)0xFF);
+        return light;
     }
 
     private static void WriteMask(INetStreamWriter writer, BitSet mask)
@@ -81,13 +118,13 @@ public partial class LightUpdatePacket
             writer.WriteLongArray(mask.DataStorage.ToArray());
     }
 
-    private static void WriteArrays(INetStreamWriter writer, List<byte[]> arrays)
+    private static void WriteArrays(INetStreamWriter writer, List<ReadOnlyMemory<byte>> arrays)
     {
         writer.WriteVarInt(arrays.Count);
         foreach (var array in arrays)
         {
             writer.WriteVarInt(array.Length);
-            writer.WriteByteArray(array);
+            writer.WriteByteArray(array.Span);
         }
     }
 }

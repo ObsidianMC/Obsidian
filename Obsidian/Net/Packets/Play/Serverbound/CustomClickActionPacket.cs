@@ -28,7 +28,8 @@ public partial class CustomClickActionPacket
     {
         var args = new DialogActionEventArgs(player, server, ActionId, Payload);
         await server.EventDispatcher.ExecuteEventAsync(args);
-        if (args.Handled) return;
+        if (args.Handled)
+            return;
 
         if (ActionId == Entities.Player.WelcomeContinueActionId)
             await player.ClearDialogAsync();
@@ -43,12 +44,14 @@ public partial class CustomClickActionPacket
         var tagsRemaining = MaximumPayloadTags;
         byte Byte()
         {
-            if (offset >= bytes.Length) throw new InvalidDataException("Truncated custom action payload.");
+            if (offset >= bytes.Length)
+                throw new InvalidDataException("Truncated custom action payload.");
             return bytes[offset++];
         }
         void Skip(int count)
         {
-            if (count < 0 || count > bytes.Length - offset) throw new InvalidDataException("Invalid NBT length.");
+            if (count < 0 || count > bytes.Length - offset)
+                throw new InvalidDataException("Invalid NBT length.");
             offset += count;
         }
         int Count()
@@ -56,7 +59,8 @@ public partial class CustomClickActionPacket
             var start = offset;
             Skip(4);
             var count = BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(start, 4));
-            if (count < 0 || count > MaximumPayloadBytes) throw new InvalidDataException("Invalid NBT count.");
+            if (count < 0 || count > MaximumPayloadBytes)
+                throw new InvalidDataException("Invalid NBT count.");
             return count;
         }
         void String()
@@ -67,32 +71,60 @@ public partial class CustomClickActionPacket
         }
         void Tag(byte type, int depth)
         {
-            if (depth > MaximumPayloadDepth || --tagsRemaining < 0) throw new InvalidDataException("Custom action payload is too complex.");
+            if (depth > MaximumPayloadDepth || --tagsRemaining < 0)
+                throw new InvalidDataException("Custom action payload is too complex.");
             switch (type)
             {
-                case 0: break;
-                case 1: Skip(1); break;
-                case 2: Skip(2); break;
-                case 3: case 5: Skip(4); break;
-                case 4: case 6: Skip(8); break;
-                case 7: Skip(Count()); break;
-                case 8: String(); break;
+                case 0:
+                    break;
+                case 1:
+                    Skip(1);
+                    break;
+                case 2:
+                    Skip(2);
+                    break;
+                case 3:
+                case 5:
+                    Skip(4);
+                    break;
+                case 4:
+                case 6:
+                    Skip(8);
+                    break;
+                case 7:
+                    Skip(Count());
+                    break;
+                case 8:
+                    String();
+                    break;
                 case 9:
                     var element = Byte();
                     var count = Count();
-                    if (element > 12 || (element == 0 && count != 0)) throw new InvalidDataException("Invalid NBT list type.");
-                    for (var i = 0; i < count; i++) Tag(element, depth + 1);
+                    if (element > 12 || (element == 0 && count != 0))
+                        throw new InvalidDataException("Invalid NBT list type.");
+                    for (var i = 0; i < count; i++)
+                        Tag(element, depth + 1);
                     break;
                 case 10:
                     byte child;
-                    while ((child = Byte()) != 0) { String(); Tag(child, depth + 1); }
+                    while ((child = Byte()) != 0)
+                    {
+                        String();
+                        Tag(child, depth + 1);
+                    }
                     break;
-                case 11: Skip(checked(Count() * 4)); break;
-                case 12: Skip(checked(Count() * 8)); break;
-                default: throw new InvalidDataException("Invalid NBT tag type.");
+                case 11:
+                    Skip(checked(Count() * 4));
+                    break;
+                case 12:
+                    Skip(checked(Count() * 8));
+                    break;
+                default:
+                    throw new InvalidDataException("Invalid NBT tag type.");
             }
         }
         Tag(Byte(), 0);
-        if (offset != bytes.Length) throw new InvalidDataException("Trailing custom action payload data.");
+        if (offset != bytes.Length)
+            throw new InvalidDataException("Trailing custom action payload data.");
     }
 }

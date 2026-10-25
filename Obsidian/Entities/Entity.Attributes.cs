@@ -301,7 +301,12 @@ public partial class Entity
         this.MarkAttributeChanged(name);
 
         if (VanillaName(name) == "minecraft:scale")
+        {
+            lock (this.attributeLock)
+                this.attributeScaleRevision++;
+
             this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
+        }
 
         if (VanillaName(name) == "minecraft:max_health")
         {

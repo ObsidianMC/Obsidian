@@ -210,17 +210,25 @@ public sealed class Chunk : IChunk
     /// plugins' at (see AbstractLevel.RestoreKeptBlockEntities); -1 until it first did.
     /// </summary>
     internal int RestoredBlockEntityRevision { get; set; } = -1;
-    internal ConcurrentDictionary<Vector, int> MobEggTicks { get; } = new();
-    internal ConcurrentDictionary<Vector, int> FrogspawnTicks { get; } = new();
+    // Made when first used: few chunks hold eggs or frogspawn, and the level asks every chunk whether it does each tick.
+    private ConcurrentDictionary<Vector, int>? mobEggTicks;
+    private ConcurrentDictionary<Vector, int>? frogspawnTicks;
+
+    internal ConcurrentDictionary<Vector, int> MobEggTicks => LazyInitializer.EnsureInitialized(ref this.mobEggTicks);
+    internal ConcurrentDictionary<Vector, int> FrogspawnTicks => LazyInitializer.EnsureInitialized(ref this.frogspawnTicks);
 
     /// <summary>Whether <see cref="MobEggTicks"/> holds any, read without locking (see <see cref="HasAny"/>).</summary>
-    internal bool HasMobEggTicks => HasAny(this.MobEggTicks);
+    internal bool HasMobEggTicks => Volatile.Read(ref this.mobEggTicks) is { } ticks && HasAny(ticks);
 
     /// <summary>Whether <see cref="FrogspawnTicks"/> holds any, read without locking (see <see cref="HasAny"/>).</summary>
-    internal bool HasFrogspawnTicks => HasAny(this.FrogspawnTicks);
+    internal bool HasFrogspawnTicks => Volatile.Read(ref this.frogspawnTicks) is { } ticks && HasAny(ticks);
 
     /// <summary>Whether <see cref="BlockEntities"/> holds any, read without locking (see <see cref="HasAny"/>).</summary>
-    internal bool HasBlockEntities => HasAny(this.BlockEntities);
+    internal bool HasBlockEntities => Volatile.Read(ref this.mayHoldBlockEntities) && HasAny(this.BlockEntities);
+
+    // Set before a block entity is first stored: most chunks never hold one, and telling an empty dictionary apart
+    // means walking it, which the level and its spawner did for every chunk each tick.
+    private bool mayHoldBlockEntities;
 
     // Whether a dictionary holds anything. The level asks this of every chunk each tick, and most are empty, when
     // ConcurrentDictionary.IsEmpty (and Count) takes all of the dictionary's locks; enumerating takes none.
@@ -425,6 +433,7 @@ public sealed class Chunk : IChunk
 
     public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData)
     {
+        Volatile.Write(ref this.mayHoldBlockEntities, true);
         this.BlockEntities[this.BlockEntityKey(x, y, z)] = tileEntityData;
         this.MarkUnsaved();
     }
@@ -438,6 +447,7 @@ public sealed class Chunk : IChunk
     /// </returns>
     internal IBlockEntity GetOrAddBlockEntity(int x, int y, int z, IBlockEntity blockEntity)
     {
+        Volatile.Write(ref this.mayHoldBlockEntities, true);
         var stored = this.BlockEntities.GetOrAdd(this.BlockEntityKey(x, y, z), blockEntity);
         if (ReferenceEquals(stored, blockEntity))
             this.MarkUnsaved();
@@ -640,12 +650,12 @@ public sealed class Chunk : IChunk
             if (lt == LightType.Sky && this.sections[a].HasSkyLight)
             {
                 writer.WriteVarInt(this.sections[a].SkyLightArray.Length);
-                writer.WriteByteArray(this.sections[a].SkyLightArray.ToArray());
+                writer.WriteByteArray(this.sections[a].SkyLightArray.Span);
             }
             else if (lt == LightType.Block && this.sections[a].HasBlockLight)
             {
                 writer.WriteVarInt(this.sections[a].BlockLightArray.Length);
-                writer.WriteByteArray(this.sections[a].BlockLightArray.ToArray());
+                writer.WriteByteArray(this.sections[a].BlockLightArray.Span);
             }
         }
     }

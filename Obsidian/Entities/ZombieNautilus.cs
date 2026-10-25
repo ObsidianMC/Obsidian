@@ -16,6 +16,7 @@ public sealed partial class ZombieNautilus : Nautilus
     internal override bool Hostile => true;
     internal override bool PanicsWhenHurt => false;
     protected override string? SoundName => "zombie_nautilus";
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(1, new MeleeAttackGoal(this, 1.2f));
@@ -26,27 +27,35 @@ public sealed partial class ZombieNautilus : Nautilus
         targets.AddGoal(1, new HurtByTargetGoal(this));
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, entity => Owner == Guid.Empty && entity is IPlayer && IsInRange(entity, 16)));
     }
+
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
-        if (Owner != Guid.Empty) AttackTarget = null;
+        if (Owner != Guid.Empty)
+            AttackTarget = null;
         if (Level.LevelData.Difficulty == Difficulty.Peaceful && Owner == Guid.Empty)
-        { await RemoveAsync(); return; }
+        {
+            await RemoveAsync();
+            return;
+        }
         if (!InWater && Level.MonstersBurn((Vector)Position.Floor()) &&
             !Level.LevelData.Raining && Terrain.GetSkyLight((Vector)EyePosition.Floor()) == 15 && GetEquipment(EquipmentSlot.Body).IsAir)
             Ignite(8);
     }
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(20, EntityMetadataType.ZombieNautilusVariant);
         writer.WriteVarInt(Variant);
     }
+
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         base.WriteAdditionalSave(writer);
         writer.WriteString("variant", Variant == 1 ? "minecraft:warm" : "minecraft:temperate");
     }
+
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         base.ReadAdditionalSave(tag);

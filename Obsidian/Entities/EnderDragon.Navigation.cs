@@ -9,6 +9,7 @@ public sealed partial class EnderDragon
     private static readonly int[] flightConnections = [6146, 8197, 8202, 16404, 32808, 32848, 65696, 131392,
         131712, 263424, 526848, 525313, 1581057, 3166214, 2138120, 6373424, 4358208, 12910976,
         9044480, 9706496, 15216640, 13688832, 11763712, 8257536];
+
     private VectorD[]? flightNodes;
     private readonly Queue<VectorD> flightPath = [];
     private bool clockwise;
@@ -18,7 +19,8 @@ public sealed partial class EnderDragon
 
     private void EnsureFlightNodes()
     {
-        if (flightNodes != null) return;
+        if (flightNodes != null)
+            return;
         flightNodes = new VectorD[24];
         for (var index = 0; index < flightNodes.Length; index++)
         {
@@ -42,7 +44,8 @@ public sealed partial class EnderDragon
         for (var index = first; index < flightNodes!.Length; index++)
         {
             var candidate = (flightNodes[index] - position).MagnitudeSquared();
-            if (candidate >= distance) continue;
+            if (candidate >= distance)
+                continue;
             nearest = index;
             distance = candidate;
         }
@@ -66,22 +69,28 @@ public sealed partial class EnderDragon
         var closest = start;
         while (open.TryDequeue(out var current, out _))
         {
-            if (closed[current]) continue;
+            if (closed[current])
+                continue;
             closed[current] = true;
-            if ((flightNodes![current] - flightNodes[end]).MagnitudeSquared() < (flightNodes[closest] - flightNodes[end]).MagnitudeSquared()) closest = current;
-            if (current == end) break;
+            if ((flightNodes![current] - flightNodes[end]).MagnitudeSquared() < (flightNodes[closest] - flightNodes[end]).MagnitudeSquared())
+                closest = current;
+            if (current == end)
+                break;
             for (var next = first; next < 24; next++)
             {
-                if (closed[next] || (flightConnections[current] & 1 << next) == 0) continue;
+                if (closed[next] || (flightConnections[current] & 1 << next) == 0)
+                    continue;
                 var score = scores[current] + (flightNodes[current] - flightNodes[next]).Magnitude;
-                if (score >= scores[next]) continue;
+                if (score >= scores[next])
+                    continue;
                 scores[next] = score;
                 parents[next] = current;
                 open.Enqueue(next, score + (flightNodes[next] - flightNodes[end]).Magnitude);
             }
         }
         List<VectorD> path = [];
-        for (var node = closest; node >= 0; node = parents[node]) path.Add(flightNodes![node]);
+        for (var node = closest; node >= 0; node = parents[node])
+            path.Add(flightNodes![node]);
         path.Reverse();
         return path;
     }
@@ -91,14 +100,17 @@ public sealed partial class EnderDragon
         flightPath.Clear();
         var path = FindFlightPath(NearestFlightNode(Position), end);
         // A one-node path still has to be flown, or the phase waits forever for a destination.
-        foreach (var point in path.Count > 1 ? path.Skip(1) : path) flightPath.Enqueue(point);
-        if (finalDestination is { } final) flightPath.Enqueue(final);
+        foreach (var point in path.Count > 1 ? path.Skip(1) : path)
+            flightPath.Enqueue(point);
+        if (finalDestination is { } final)
+            flightPath.Enqueue(final);
         AdvanceFlightPath();
     }
 
     private void AdvanceFlightPath()
     {
-        if (!flightPath.TryDequeue(out var next)) return;
+        if (!flightPath.TryDequeue(out var next))
+            return;
         destination = next + new VectorD(0, Random.NextSingle() * 20, 0);
         hasFlightDestination = true;
     }
@@ -106,13 +118,18 @@ public sealed partial class EnderDragon
     private void TickHolding()
     {
         var distance = (destination - Position).MagnitudeSquared();
-        if (hasFlightDestination && distance >= 100 && distance <= 22500 && !MovementFlags.HasFlag(MovementFlags.HorizontalCollision)) return;
+        if (hasFlightDestination && distance >= 100 && distance <= 22500 && !MovementFlags.HasFlag(MovementFlags.HorizontalCollision))
+            return;
         if (flightPath.Count == 0)
         {
             if (hasFlightDestination)
             {
                 var crystals = CrystalCount;
-                if (Random.Next(crystals + 3) == 0) { SetPhase(DragonPhase.LandingApproach); return; }
+                if (Random.Next(crystals + 3) == 0)
+                {
+                    SetPhase(DragonPhase.LandingApproach);
+                    return;
+                }
                 var target = Level.GetPlayersInRange(arena, 192).Where(IsValidTarget).MinBy(player => (player.Position - arena).MagnitudeSquared());
                 if (target != null && (Random.Next((int)((target.Position - arena).MagnitudeSquared() / 512 + 2)) == 0 || Random.Next(crystals + 2) == 0))
                 {
@@ -123,14 +140,19 @@ public sealed partial class EnderDragon
             }
             var node = NearestFlightNode(Position);
             var next = node;
-            if (Random.Next(8) == 0) { clockwise = !clockwise; next += 6; }
+            if (Random.Next(8) == 0)
+            {
+                clockwise = !clockwise;
+                next += 6;
+            }
             next += clockwise ? 1 : -1;
             // An unbound dragon uses the middle ring; a fight dragon uses the outer ring.
             next = fightControlled ? (next % 12 + 12) % 12 : ((next - 12) & 7) + 12;
             flightPoint = next;
             SetFlightPath(next);
         }
-        else AdvanceFlightPath();
+        else
+            AdvanceFlightPath();
     }
 
     private void TickLandingApproach()
@@ -142,7 +164,8 @@ public sealed partial class EnderDragon
             if (player != null)
             {
                 var direction = new VectorD(player.Position.X, 0, player.Position.Z);
-                if (direction.Magnitude > 0) direction /= direction.Magnitude;
+                if (direction.Magnitude > 0)
+                    direction /= direction.Magnitude;
                 approach = direction * -40;
                 approach.Y = 105;
             }
@@ -151,7 +174,8 @@ public sealed partial class EnderDragon
         else if ((destination - Position).MagnitudeSquared() < 100 || (destination - Position).MagnitudeSquared() > 22500 || MovementFlags.HasFlag(MovementFlags.HorizontalCollision))
             AdvanceFlightPath();
         // Like vanilla, landing starts once the podium is the last node left, not after reaching it.
-        if (phase == DragonPhase.LandingApproach && hasFlightDestination && flightPath.Count == 0) SetPhase(DragonPhase.Landing);
+        if (phase == DragonPhase.LandingApproach && hasFlightDestination && flightPath.Count == 0)
+            SetPhase(DragonPhase.Landing);
     }
 
     private void TickTakeoff()
@@ -164,7 +188,8 @@ public sealed partial class EnderDragon
             node = fightControlled && CrystalCount > 0 ? (node % 12 + 12) % 12 : ((node - 12) & 7) + 12;
             SetFlightPath(node);
         }
-        else if ((Position - arena).MagnitudeSquared() > 100) SetPhase(DragonPhase.Holding);
+        else if ((Position - arena).MagnitudeSquared() > 100)
+            SetPhase(DragonPhase.Holding);
     }
 
     private void TickStrafingPath(IEntity target)
@@ -176,14 +201,21 @@ public sealed partial class EnderDragon
             SetFlightPath(NearestFlightNode(target.Position), targetPoint.Floor());
             return;
         }
-        if (flightPath.Count == 0) destination = targetPoint;
+        if (flightPath.Count == 0)
+            destination = targetPoint;
         var distance = (destination - Position).MagnitudeSquared();
-        if (distance >= 100 && distance <= 22500) return;
-        if (flightPath.Count > 0) AdvanceFlightPath();
+        if (distance >= 100 && distance <= 22500)
+            return;
+        if (flightPath.Count > 0)
+            AdvanceFlightPath();
         else
         {
             var next = NearestFlightNode(Position);
-            if (Random.Next(8) == 0) { clockwise = !clockwise; next += 6; }
+            if (Random.Next(8) == 0)
+            {
+                clockwise = !clockwise;
+                next += 6;
+            }
             next += clockwise ? 1 : -1;
             next = fightControlled && CrystalCount > 0 ? (next % 12 + 12) % 12 : ((next - 12) & 7) + 12;
             SetFlightPath(next);

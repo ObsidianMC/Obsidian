@@ -11,8 +11,10 @@ public sealed partial class Drowned : Zombie
     internal override bool SwimmingNavigation => true;
     protected override string? SoundName => "drowned";
     protected override VectorD Travel() => VolumeMovement.Travel(this, InWater);
+
     protected internal override float GetPathCost(IBlock feet, IBlock floor) =>
         feet.RegistryId == BlockIds.Water ? 0 : base.GetPathCost(feet, floor);
+
     internal bool CanAttackNow(IEntity target) => Level.DayTime is < 0 or >= 12000 ||
         Terrain.GetBlock((Vector)(target.Position + new VectorD(0, 0.1f, 0)).Floor())?.RegistryId == BlockIds.Water;
 
@@ -48,8 +50,14 @@ public sealed partial class Drowned : Zombie
         }
     }
 
-    protected override ValueTask TickAirSupplyAsync() { Air = 300; return default; }
+    protected override ValueTask TickAirSupplyAsync()
+    {
+        Air = 300;
+        return default;
+    }
+
     protected override ValueTask OnHurtAsync(IEntity source) => default;
+
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         this.DropVanillaLoot(source);
@@ -68,6 +76,7 @@ internal sealed class DrownedMeleeGoal(Drowned drowned) : MeleeAttackGoal(drowne
 {
     public override bool CanUse() => !drowned.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Trident) &&
         drowned.AttackTarget is { } target && drowned.CanAttackNow(target) && base.CanUse();
+
     public override bool CanContinue() => !drowned.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Trident) &&
         drowned.AttackTarget is { } target && drowned.CanAttackNow(target) && base.CanContinue();
 }
@@ -78,9 +87,12 @@ internal sealed class DrownedTridentGoal(Drowned drowned) : NavigationGoal(drown
     private long nextThrow;
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool RequiresUpdateEveryTick => true;
+
     public override bool CanUse() => drowned.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.Trident) &&
         drowned.AttackTarget is { } target && drowned.IsValidTarget(target) && drowned.CanAttackNow(target);
+
     public override bool CanContinue() => CanUse();
+
     public override void Start()
     {
         sightTicks = 0;
@@ -89,28 +101,41 @@ internal sealed class DrownedTridentGoal(Drowned drowned) : NavigationGoal(drown
         drowned.SetAggressive(true);
         drowned.SynchronizeMetadata();
     }
+
     public override ValueTask TickAsync()
     {
         var target = drowned.AttackTarget!;
         var visible = drowned.CanSee(target);
         sightTicks = visible ? sightTicks + 1 : 0;
         drowned.LookControl.LookAt(target);
-        if (!drowned.IsInRange(target, 10) || sightTicks < 5) MoveTo(target);
-        else Navigation.Stop();
-        if (drowned.AiTick < nextThrow || !visible || !drowned.IsInRange(target, 10)) return default;
+        if (!drowned.IsInRange(target, 10) || sightTicks < 5)
+            MoveTo(target);
+        else
+            Navigation.Stop();
+        if (drowned.AiTick < nextThrow || !visible || !drowned.IsInRange(target, 10))
+            return default;
         nextThrow = drowned.AiTick + 40;
         var origin = drowned.EyePosition - new VectorD(0, 0.1f, 0);
         var delta = target.Position + new VectorD(0, target.Dimension.Height / 3, 0) - origin;
         delta.Y += Math.Sqrt(delta.X * delta.X + delta.Z * delta.Z) * 0.2f;
-        if (delta.Magnitude < 0.0001f) return default;
+        if (delta.Magnitude < 0.0001f)
+            return default;
         var deviation = 0.0172275f * (14 - 4 * (int)drowned.Level.LevelData.Difficulty);
         var direction = delta / delta.Magnitude + new VectorD(drowned.Random.NextSingle() - drowned.Random.NextSingle(),
             drowned.Random.NextSingle() - drowned.Random.NextSingle(), drowned.Random.NextSingle() - drowned.Random.NextSingle()) * deviation;
-        drowned.Level.SpawnEntity(new Trident { Level = drowned.Level, Type = EntityType.Trident, EntityId = Server.GetNextEntityId(),
-            Position = origin, Motion = direction * 1.6f, Owner = drowned });
+        drowned.Level.SpawnEntity(new Trident
+        {
+            Level = drowned.Level,
+            Type = EntityType.Trident,
+            EntityId = Server.GetNextEntityId(),
+            Position = origin,
+            Motion = direction * 1.6f,
+            Owner = drowned
+        });
         drowned.PlayMobSound("shoot");
         return default;
     }
+
     public override void Stop()
     {
         base.Stop();

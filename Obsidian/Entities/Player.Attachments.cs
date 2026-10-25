@@ -48,12 +48,33 @@ public partial class Player
 
         var visible = new HashSet<AttachmentTarget>();
         this.SendAttachments(new AttachmentTarget(AttachmentTargetKind.Player), this, visible);
-        foreach (var entity in level.Regions.Values.SelectMany(region => region.Entities.Values))
+        // The entities the player tracks are within their tracking range, which the level's grid finds without going
+        // over every entity in the level; only one tracked from elsewhere is looked for among them all.
+        var found = 0;
+        foreach (var entity in level.GetNonPlayerEntitiesInRange(this.Position, this.Server.Configuration.EntityBroadcastRangePercentage))
         {
             if (this.TrackedEntities.TryGetValue(entity.EntityId, out var uuid) && uuid == entity.Uuid)
             {
                 this.SendAttachments(
                     new AttachmentTarget(AttachmentTargetKind.Entity, entity.EntityId), entity, visible);
+                found++;
+            }
+        }
+
+        var tracked = 0;
+        foreach (var _ in this.TrackedEntities)
+            tracked++;
+
+        if (found < tracked)
+        {
+            foreach (var entity in level.Regions.Values.SelectMany(region => region.Entities.Values))
+            {
+                var target = new AttachmentTarget(AttachmentTargetKind.Entity, entity.EntityId);
+                if (!visible.Contains(target)
+                    && this.TrackedEntities.TryGetValue(entity.EntityId, out var uuid) && uuid == entity.Uuid)
+                {
+                    this.SendAttachments(target, entity, visible);
+                }
             }
         }
 
