@@ -25,6 +25,7 @@ public partial class BlocksGenerator
         var ignitedByLava = new CodeBuilder();
         var tntBlocks = new CodeBuilder();
         var placementBehaviors = compilation.GetTypeByMetadataName("Obsidian.WorldData.PlacementBehaviors");
+        var unmatchedPlacementOwners = new HashSet<string>(StringComparer.Ordinal);
         // Each virtual hook is bound from the vanilla class that declares its override to a same-named member of the
         // hook's counterpart type.
         var hooks = OwnedHooks
@@ -104,6 +105,8 @@ public partial class BlocksGenerator
             string? placementMember = OwnerMember(block.PlacementClass);
             if (placementMember is not null && placementBehaviors?.GetMembers(placementMember).Length > 0)
                 placementBehavior.Indent().Append($"{block.RegistryId} => PlacementBehaviors.{placementMember},").Line();
+            else if (placementMember is not null && unmatchedPlacementOwners.Add(block.PlacementClass!))
+                ctx.ReportDiagnostic(Diagnostic.Create(UnmatchedOwner, Location.None, "getStateForPlacement", block.PlacementClass, "PlacementBehaviors"));
 
             // An owner without a counterpart keeps the existing path (Growth, BlockBehaviors); the info diagnostic
             // lists the owners still to migrate, without a warning.

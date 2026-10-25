@@ -248,6 +248,14 @@ internal sealed class LevelFluids : IFluidLevelAccess
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// Runs the block notifications the change asks for (see <see cref="AbstractLevel.NotifyBlockChange"/>), under the tick lock
+    /// the fluid level's writes hold.
+    /// </remarks>
+    public void OnBlockSet(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags) =>
+        this.level.NotifyBlockChange(position, old, block, flags);
+
+    /// <inheritdoc/>
     public void LevelEvent(int type, Vector position, int data) => this.level.BroadcastLevelEvent(type, position, data);
 
     /// <inheritdoc/>

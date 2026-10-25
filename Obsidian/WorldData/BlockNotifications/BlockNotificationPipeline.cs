@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Features.Tree;
 
@@ -44,23 +45,31 @@ internal sealed class BlockNotificationPipeline
     }
 
     /// <summary>
-    /// Queues the notifications for a change that is already committed. Doesn't drain and doesn't touch the world, so it's safe under
-    /// the fluid lock.
+    /// Queues the notifications for a change that is already committed, as <paramref name="flags"/> ask: placement (unless
+    /// <see cref="BlockUpdateFlags.SkipOnPlace"/>), shape updates (unless <see cref="BlockUpdateFlags.KnownShape"/>), and the six
+    /// neighbor reactions (with <see cref="BlockUpdateFlags.Neighbors"/>). Doesn't drain and doesn't touch the world, so it's safe
+    /// under the fluid lock.
     /// </summary>
-    public void Enqueue(BlockChange change)
+    public void Enqueue(BlockChange change, BlockUpdateFlags flags = BlockUpdateFlags.All)
     {
         lock (this.sync)
         {
             // Vanilla invokes onPlace only for a block-type replacement, not for a property-only state change.
             // Preserve the old state so placement behaviors can make that distinction too.
-            if (change.Old.RegistryId != change.New.RegistryId)
+            if (change.Old.RegistryId != change.New.RegistryId && (flags & BlockUpdateFlags.SkipOnPlace) == 0)
                 this.Add(new NotificationWork(WorkKind.Placed, change.Position, change.Position, BlockFace.Down, change.Old));
 
-            foreach (var face in order)
-                this.Add(new NotificationWork(WorkKind.Shape, change.Position.Offset(face), change.Position, face.Opposite()));
+            if ((flags & BlockUpdateFlags.KnownShape) == 0)
+            {
+                foreach (var face in order)
+                    this.Add(new NotificationWork(WorkKind.Shape, change.Position.Offset(face), change.Position, face.Opposite()));
+            }
 
-            foreach (var face in order)
-                this.Add(new NotificationWork(WorkKind.Neighbor, change.Position.Offset(face), change.Position, face.Opposite()));
+            if ((flags & BlockUpdateFlags.Neighbors) != 0)
+            {
+                foreach (var face in order)
+                    this.Add(new NotificationWork(WorkKind.Neighbor, change.Position.Offset(face), change.Position, face.Opposite()));
+            }
         }
     }
 

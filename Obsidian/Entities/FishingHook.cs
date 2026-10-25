@@ -26,8 +26,8 @@ public sealed partial class FishingHook : Entity
     // The owner must stay within 32 blocks, as vanilla's shouldStopFishing allows.
     private const double MaxOwnerDistanceSquared = 1024;
 
-    // Vanilla discards a bobber that has been in water this long.
-    private const int MaxWaterLife = 1200;
+    // Vanilla discards a bobber that has rested on the ground this long; bobbing in water never times out.
+    private const int MaxGroundedLife = 1200;
     private const int MaxOutOfWaterTime = 10;
 
     private static readonly ParticleDefinition BubbleParticle = new((int)ParticleType.Bubble, "minecraft:bubble");
@@ -128,13 +128,16 @@ public sealed partial class FishingHook : Entity
 
         var terrain = new MobTerrain(level);
         var inWater = terrain.IsInFluid(this.Position, water: true);
-        if (inWater && ++this.life >= MaxWaterLife)
+
+        // Vanilla: the lifetime counts only while the bobber is on the ground (from the previous tick's movement).
+        var grounded = !inWater && this.MovementFlags.HasFlag(MovementFlags.OnGround);
+        if (grounded && ++this.life >= MaxGroundedLife)
         {
             await this.RemoveAsync();
             return;
         }
 
-        if (!inWater)
+        if (!grounded)
             this.life = 0;
 
         if (this.state == State.Flying && this.hookedIn is not null)
@@ -142,6 +145,7 @@ public sealed partial class FishingHook : Entity
 
         if (this.state == State.HookedIn)
         {
+            this.MovementFlags = MovementFlags.None;
             this.FollowHookedEntity();
             this.Broadcast(level);
             return;
@@ -154,6 +158,7 @@ public sealed partial class FishingHook : Entity
                 // Landing on water damps the flight and starts the bobbing.
                 this.Motion = new VectorD(this.Motion.X * 0.3, this.Motion.Y * 0.2, this.Motion.Z * 0.3);
                 this.state = State.Bobbing;
+                this.MovementFlags = MovementFlags.None;
                 this.Broadcast(level);
                 return;
             }
@@ -175,15 +180,19 @@ public sealed partial class FishingHook : Entity
         if (this.state == State.Flying && !inWater)
             this.Motion -= new VectorD(0, Gravity, 0);
 
+        // A downward move blocked by terrain leaves the bobber on the ground, as vanilla's move() does.
+        var landed = !inWater && this.Motion.Y < 0;
         var next = this.Position + this.Motion;
         if (level.TryMoveEntity(this, this.Position, next))
         {
             this.Position = next;
             this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
+            this.MovementFlags = MovementFlags.None;
         }
         else
         {
             this.Motion = VectorD.Zero;
+            this.MovementFlags = landed ? MovementFlags.OnGround : MovementFlags.None;
         }
 
         this.Motion *= Drag;
@@ -403,7 +412,7 @@ public sealed partial class FishingHook : Entity
 
     /// <summary>
     /// Vanilla's <c>retrieve</c>: reels the bobber in. Returns the rod's damage: hooked entities and items cost more,
-    /// a caught fish costs one, and any use in water costs two.
+    /// a caught fish costs one, and a grounded bobber costs two.
     /// </summary>
     internal async ValueTask<int> RetrieveAsync(ItemStack rod)
     {
@@ -422,8 +431,8 @@ public sealed partial class FishingHook : Entity
             }
         }
 
-        // Vanilla: a bobber reeled in from water costs two damage whatever it hooked.
-        if (this.Level is AbstractLevel water && new MobTerrain(water).IsInFluid(this.Position, water: true))
+        // Vanilla's retrieve: a bobber reeled in while on the ground costs two damage. Water never sets OnGround.
+        if (this.MovementFlags.HasFlag(MovementFlags.OnGround))
             damage = 2;
 
         await this.RemoveAsync();
@@ -578,9 +587,9 @@ public sealed partial class FishingHook : Entity
         if (block.IsAir || block.RegistryId == BlockIds.LilyPad)
             return OpenWaterType.AboveWater;
 
-        // A water source has no collision shape, so only source water counts as open.
+        // Only source water with an empty collision shape counts as open; a waterlogged obstruction does not.
         var fluid = FluidState.Of(block);
-        return fluid.IsWater && fluid.IsSource
+        return fluid.IsWater && fluid.IsSource && BlockCollisionShapes.Get(block).Count == 0
             ? OpenWaterType.InsideWater
             : OpenWaterType.Invalid;
     }

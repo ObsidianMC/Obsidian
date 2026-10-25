@@ -105,7 +105,7 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
 
     /// <summary>
     /// Vanilla <c>ServerLevel.tickBlock</c>: runs a scheduled tick if the block is still the one it was scheduled
-    /// for. Plugin blocks run their <see cref="IBlockBehavior.Tick"/>, redstone components their own, and vanilla's
+    /// for. Plugin blocks run their <see cref="IBlockBehavior.Tick"/>, vanilla blocks their overrides, and vanilla's
     /// falling blocks fall; other vanilla blocks' ticks (an observer's, from a vanilla save) do nothing yet.
     /// </summary>
     /// <returns>

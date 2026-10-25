@@ -50,7 +50,7 @@ public class RedstoneEngineTests
         {
             // The receiver on `face` of the source sees the signal from the side facing it.
             var expected = face == emit;
-            Assert.Equal(expected, world.Engine.HasSignal(source.Offset(face), face.Opposite()));
+            Assert.Equal(expected, world.Engine.ReceiverHasSignal(source.Offset(face), face.Opposite()));
         }
     }
 
@@ -70,7 +70,7 @@ public class RedstoneEngineTests
         await world.Place(middlePos, BlocksRegistry.Get(middle));
 
         Assert.Equal(middle == Floor, BlocksRegistry.Get(middle).IsRedstoneConductor());
-        Assert.Equal(expected, world.Engine.HasSignal(receiver, BlockFace.Down));
+        Assert.Equal(expected, world.Engine.ReceiverHasSignal(receiver, BlockFace.Down));
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class RedstoneEngineTests
         await world.Place(source, BlocksRegistry.Get(Source));
         await world.Place(new Vector(8, 64, 8), BlocksRegistry.Get(Floor));
 
-        Assert.False(world.Engine.HasSignal(new Vector(8, 65, 8), BlockFace.Down));
+        Assert.False(world.Engine.ReceiverHasSignal(new Vector(8, 65, 8), BlockFace.Down));
     }
 
     [Theory]
@@ -594,8 +594,8 @@ public class RedstoneEngineTests
         Assert.Equal(0, world.Engine.GetSignal(end, BlockFace.South));
         Assert.True(world.Engine.GetSignal(new Vector(6, 64, 8), BlockFace.East) > 0);
         // Nothing above the wire; the block beneath it is powered (a wire powers the block it sits on).
-        Assert.False(world.Engine.HasSignal(end.Offset(BlockFace.Up), BlockFace.Down));
-        Assert.True(world.Engine.HasSignal(new Vector(7, 63, 8), BlockFace.Up));
+        Assert.False(world.Engine.ReceiverHasSignal(end.Offset(BlockFace.Up), BlockFace.Down));
+        Assert.True(world.Engine.ReceiverHasSignal(new Vector(7, 63, 8), BlockFace.Up));
     }
 
     [Theory]

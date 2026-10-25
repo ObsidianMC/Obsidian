@@ -264,7 +264,7 @@ public abstract partial class AbstractLevel : ILevel
         this.Seed = seed;
         this.Fluids = new LevelFluids(this);
         this.Neighbors = new NeighborBehaviors();
-        this.RedstoneRules = new RedstoneBehaviors();
+        this.RedstoneRules = new RedstoneBehaviors(new PluginRedstoneBehavior(this));
         this.BlockNotifications = new BlockNotificationPipeline(this, this.Neighbors);
         this.RedstoneInstall = RedstoneRegistration.Install(this, this.BlockUpdates.Ticks, this.Neighbors, this.RedstoneRules, position => this.PlayNoteBlock(position));
         this.Plates = new PressurePlates(this);
@@ -432,6 +432,17 @@ public abstract partial class AbstractLevel : ILevel
     internal void BroadcastLevelEvent(int type, Vector location, int data)
     {
         this.PacketBroadcaster.BroadcastTo(new LevelEventPacket(type, location, data), PlayersInRange(location));
+    }
+
+    internal void BroadcastBlockEvent(Vector location, int blockId, int type, int data)
+    {
+        this.PacketBroadcaster.BroadcastTo(new BlockEventPacket
+        {
+            Position = location,
+            ActionId = (byte)type,
+            ActionParam = (byte)data,
+            BlockType = blockId
+        }, PlayersInRange(location));
     }
 
     public IEnumerable<IPlayer> PlayersInRange(Vector location) => this.PlayersWithChunk(location);

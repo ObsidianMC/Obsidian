@@ -35,7 +35,7 @@ internal interface IRedstoneContact
 /// Redstone behaviors keyed by vanilla block class (for example <c>RedStoneWireBlock</c>), so every state of a class shares one
 /// rule. Registrations are made once when the level is created.
 /// </summary>
-internal sealed class RedstoneBehaviors
+internal sealed class RedstoneBehaviors(IRedstoneBehavior? pluginBehaviors = null)
 {
     private readonly Dictionary<string, IRedstoneBehavior> behaviors = [];
     private readonly Dictionary<string, IRedstoneContact> contacts = [];
@@ -54,7 +54,11 @@ internal sealed class RedstoneBehaviors
             throw new InvalidOperationException($"A redstone behavior is already registered for {blockClass}.");
     }
 
-    public IRedstoneBehavior For(IBlock state) => this.behaviors.GetValueOrDefault(state.BlockClass()) ?? Inert;
+    /// <summary>
+    /// The behavior of a block: its vanilla class's registration, else the plugin behaviors' (which answer for plugin blocks only),
+    /// else none.
+    /// </summary>
+    public IRedstoneBehavior For(IBlock state) => this.behaviors.GetValueOrDefault(state.BlockClass()) ?? pluginBehaviors ?? Inert;
 
     private sealed class InertBehavior : IRedstoneBehavior { }
 

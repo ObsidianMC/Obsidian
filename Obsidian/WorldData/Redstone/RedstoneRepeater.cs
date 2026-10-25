@@ -14,8 +14,6 @@ internal sealed class RedstoneRepeater(IRedstoneLevel level, RedstoneEngine engi
 {
     public const int BlockId = BlockIds.Repeater;
 
-    private readonly Dictionary<Vector, bool> pending = [];
-
     public static bool IsRepeater(IBlock block) => block.Is(BlockId);
 
     public static IBlock DerivePlacement(IBlock state, float yaw) =>
@@ -50,10 +48,7 @@ internal sealed class RedstoneRepeater(IRedstoneLevel level, RedstoneEngine engi
     {
         var state = level.GetLoadedBlock(position);
         if (state is null || !IsRepeater(state))
-        {
-            this.pending.Remove(position);
             return;
-        }
 
         var locked = IsLocked(position, state);
         if ((state.GetProperty("locked") == "true") != locked)
@@ -63,23 +58,31 @@ internal sealed class RedstoneRepeater(IRedstoneLevel level, RedstoneEngine engi
         }
 
         if (locked)
-        {
-            this.pending.Remove(position);
             return;
-        }
 
-        var nextPowered = this.pending.TryGetValue(position, out var pendingPowered) ? pendingPowered : IsInputPowered(position, state);
-        this.pending.Remove(position);
-        if ((state.GetProperty("powered") == "true") != nextPowered)
+        // Vanilla RepeaterBlock.tick: the live input decides whether a powered repeater turns off. An unpowered one turns on whatever
+        // its input is now, and schedules its turn-off when the input has already gone (a short pulse).
+        var inputPowered = IsInputPowered(position, state);
+        var powered = state.GetProperty("powered") == "true";
+        if (powered && !inputPowered)
         {
-            var next = state.WithProperty("powered", nextPowered.ToString().ToLowerInvariant());
-            await level.SetBlockAsync(position, next);
-            if (nextPowered && !IsInputPowered(position, state))
-            {
-                this.pending[position] = false;
-                level.ScheduleBlockTick(position, next, ParseDelay(state) * 2);
-            }
+            await this.SetOutputAsync(position, state, false);
         }
+        else if (!powered)
+        {
+            var next = await this.SetOutputAsync(position, state, true);
+            if (!inputPowered)
+                level.ScheduleBlockTick(position, next, ParseDelay(state) * 2);
+        }
+    }
+
+    // Commits the output and tells the block in front of it (vanilla updateNeighborsInFront).
+    private async ValueTask<IBlock> SetOutputAsync(Vector position, IBlock state, bool powered)
+    {
+        var next = state.WithProperty("powered", powered.ToString().ToLowerInvariant());
+        await level.SetBlockAsync(position, next);
+        await BasicRedstoneComponents.NotifyOutputFrontAsync(level, position, InputFace(state).Opposite());
+        return next;
     }
 
     private async ValueTask UpdateAsync(Vector position, IBlock state)
@@ -96,13 +99,10 @@ internal sealed class RedstoneRepeater(IRedstoneLevel level, RedstoneEngine engi
 
         var powered = IsInputPowered(position, state);
         if ((state.GetProperty("powered") == "true") != powered)
-        {
-            this.pending[position] = powered;
             level.ScheduleBlockTick(position, state, ParseDelay(state) * 2);
-        }
     }
 
-    private bool IsInputPowered(Vector position, IBlock state) => engine.HasSignal(position, InputFace(state));
+    private bool IsInputPowered(Vector position, IBlock state) => engine.ReceiverHasSignal(position, InputFace(state));
 
     private bool IsLocked(Vector position, IBlock state)
     {

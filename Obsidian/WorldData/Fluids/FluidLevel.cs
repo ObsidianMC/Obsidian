@@ -250,6 +250,7 @@ internal sealed class FluidLevel
 
         this.access.OnBlockStored(position, block, flags);
         this.OnChanged(position, old, block, flags, updateLimit, shapes);
+        this.access.OnBlockSet(position, old, block, flags);
         return true;
     }
 

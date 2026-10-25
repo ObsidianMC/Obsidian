@@ -25,8 +25,9 @@ internal sealed class FishingRodUse : IItemUseBehavior
         if (player.Fishing is { } hook)
         {
             var damage = await hook.RetrieveAsync(stack);
-            if (damage > 0)
-                CombatItems.HurtItem(stack, damage);
+            // Vanilla's hurtAndBreak: a Creative player's rod never wears, and a worn-out rod is used up.
+            if (damage > 0 && player.GameMode != GameMode.Creative && CombatItems.HurtItem(stack, damage) && stack.Count == 0)
+                player.Inventory.RemoveItem(player.CurrentHeldItemSlot);
 
             var slot = hand == InteractionHand.MainHand ? player.CurrentHeldItemSlot : OffHandSlot;
             await player.SendInventorySlotAsync(slot);

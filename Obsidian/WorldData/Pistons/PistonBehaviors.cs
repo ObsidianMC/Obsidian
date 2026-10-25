@@ -107,10 +107,12 @@ internal static class PistonBehaviors
 
                 await level.WriteAsync(position, state.WithProperty("extended", "true"), notifyNeighbors: true);
                 level.PlaySound(position, "minecraft:block.piston.extend");
+                level.BroadcastBlockEvent(position, state.RegistryId, EventExtend, (int)facing);
                 return;
             }
 
             await this.RetractAsync(position, state, type, facing);
+            level.BroadcastBlockEvent(position, state.RegistryId, type, (int)facing);
         }
 
         private async ValueTask RetractAsync(Vector position, IBlock state, int type, BlockFace facing)
@@ -246,7 +248,7 @@ internal static class PistonBehaviors
             foreach (var position in resolver.ToDestroy.Reverse())
             {
                 var state = level.GetLoadedBlock(position) ?? BlocksRegistry.VoidAir;
-                level.DropAndRemove(position, state, playEffect: true);
+                await level.DestroyBlockNowAsync(position, state, playEffect: true);
             }
 
             var pieceType = sticky ? "sticky" : "normal";

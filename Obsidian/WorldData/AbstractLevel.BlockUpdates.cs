@@ -86,13 +86,25 @@ public abstract partial class AbstractLevel
     private void AfterBlockSet(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
     {
         this.Fluids.OnBlockChanged(position, old, block, flags);
+        this.NotifyBlockChange(position, old, block, flags);
+    }
 
-        // The redstone engine's neighbor reactions for the change, drained now: its writes go to loaded chunks only, so
-        // they complete synchronously under the tick lock.
-        if ((flags & BlockUpdateFlags.Neighbors) == 0 || old.GetHashCode() == block.GetHashCode())
+    /// <summary>
+    /// Queues the block notification pipeline's work for a committed change, as <paramref name="flags"/> ask, and drains it now.
+    /// Neighbor reactions need <see cref="BlockUpdateFlags.Neighbors"/>; shape updates run unless <see cref="BlockUpdateFlags.KnownShape"/>
+    /// is set, so clients-only writes still reach observers and other shape-reacting blocks. Call under the tick lock.
+    /// </summary>
+    internal void NotifyBlockChange(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
+    {
+        var neighbors = (flags & BlockUpdateFlags.Neighbors) != 0;
+        var shapes = (flags & BlockUpdateFlags.KnownShape) == 0;
+        if (old.GetHashCode() == block.GetHashCode() || (!neighbors && !shapes))
             return;
 
-        this.BlockNotifications.Enqueue(new BlockChange(position, old, block));
+        this.BlockNotifications.Enqueue(new BlockChange(position, old, block), flags);
+
+        // The redstone engine's reactions for the change, drained now: its writes go to loaded chunks only, so they
+        // complete synchronously under the tick lock. A drain already running picks this work up.
         this.BlockNotifications.DrainAsync().GetAwaiter().GetResult();
     }
 

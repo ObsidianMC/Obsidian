@@ -34,7 +34,7 @@ public abstract partial class AbstractLevel
     public bool HasSignal(Vector position, BlockFace direction)
     {
         lock (this.Fluids.TickLock)
-            return this.RedstoneEngine.HasSignal(position, direction);
+            return this.RedstoneEngine.GetSignal(position, direction) > 0;
     }
 
     /// <inheritdoc/>
@@ -69,6 +69,19 @@ public abstract partial class AbstractLevel
             return false;
 
         return await BasicRedstoneComponents.TryUseAsync(this, position, state, player);
+    }
+
+    /// <summary>
+    /// A projectile burst's contact with the block at <paramref name="position"/>: a lever flips and a button presses (see
+    /// <see cref="BasicRedstoneComponents.TriggerAsync"/>). Returns whether the block reacted.
+    /// </summary>
+    internal async ValueTask<bool> TriggerRedstoneAsync(Vector position)
+    {
+        IBlock? state;
+        lock (this.Fluids.TickLock)
+            state = ((IBlockChangeWorld)this).GetLoadedBlock(position);
+
+        return state is not null && await BasicRedstoneComponents.TriggerAsync(this, position, state);
     }
 
     /// <summary>

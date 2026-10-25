@@ -40,6 +40,12 @@ internal interface IRedstoneLevel : IBlockChangeWorld
     /// <summary>Vanilla <c>levelEvent</c>: a sound or particles players near <paramref name="position"/> see.</summary>
     void BroadcastLevelEvent(int type, Vector position, int data);
 
+    /// <summary>Vanilla <c>ClientboundBlockEventPacket</c>: players near <paramref name="position"/> get a block event, which their clients run.</summary>
+    void BroadcastBlockEvent(Vector position, int blockId, int type, int data);
+
+    /// <summary>Destroys the block at <paramref name="position"/> with its drops, now, so the caller can overwrite the cell (vanilla <c>dropResources</c> and <c>removeBlock</c>).</summary>
+    ValueTask DestroyBlockNowAsync(Vector position, IBlock block, bool playEffect);
+
     /// <summary>Notifies the block at <paramref name="target"/> that <paramref name="source"/> changed (vanilla <c>neighborChanged</c>), on the notification queue.</summary>
     ValueTask NotifyNeighborAsync(Vector target, Vector source);
 

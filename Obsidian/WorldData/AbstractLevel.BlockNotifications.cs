@@ -12,8 +12,9 @@ namespace Obsidian.WorldData;
 /// </summary>
 public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateWorld, IRedstoneLevel, IBlockTickLevel
 {
-    // Vanilla's flag 2 (clients only), as the redstone writes use it.
-    private const BlockUpdateFlags ClientsOnly = BlockUpdateFlags.Clients | BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace;
+    // Vanilla's flag 2 (clients only), as the redstone writes use it: no neighbor updates, but shape updates still run
+    // (vanilla setBlock only skips them with flag 16), so an observer watching the block sees the change.
+    private const BlockUpdateFlags ClientsOnly = BlockUpdateFlags.Clients | BlockUpdateFlags.SkipOnPlace;
 
     /// <summary>The neighbor reactions of the redstone engine, keyed by block.</summary>
     internal NeighborBehaviors Neighbors { get; }
@@ -73,6 +74,30 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
     }
 
     void IRedstoneLevel.BroadcastLevelEvent(int type, Vector position, int data) => this.BroadcastLevelEvent(type, position, data);
+
+    void IRedstoneLevel.BroadcastBlockEvent(Vector position, int blockId, int type, int data) =>
+        this.BroadcastBlockEvent(position, blockId, type, data);
+
+    // Vanilla dropResources/removeBlock for a piston-destroyed block. The drops are captured here, on the simulation path,
+    // so the caller can overwrite the cell afterwards; the queued path would run after the move had replaced the block.
+    async ValueTask IRedstoneLevel.DestroyBlockNowAsync(Vector position, IBlock block, bool playEffect)
+    {
+        if (block.IsAir)
+            return;
+
+        if (block.BlockClass() == "RedStoneWireBlock" || Rails.IsRail(block))
+            playEffect = false;
+
+        try
+        {
+            await this.DestroyCapturedBlockAsync(position, block, this.GetResidentBlockEntity(position), true, null, null,
+                playEffect, false, null);
+        }
+        catch (Exception exception)
+        {
+            BlockDestructionFailed(this.Logger, exception, block.UnlocalizedName, position);
+        }
+    }
 
     void IBlockChangeWorld.PlaySound(Vector position, string sound, float volume, float pitch, IPlayer? except) =>
         this.BlockUpdates.PlaySound(position, sound, volume, pitch, except);
@@ -195,6 +220,12 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
     {
         NumericsHelper.LongToInts(key, out var chunkX, out var chunkZ);
         return this.GetLoadedChunk(chunkX, chunkZ) is not null;
+    }
+
+    bool IBlockTickLevel.IsChunkSimulated(long key)
+    {
+        NumericsHelper.LongToInts(key, out var chunkX, out var chunkZ);
+        return this.IsMobTicking(new VectorD(chunkX * 16 + 8, 0, chunkZ * 16 + 8));
     }
 
     // A write into an unloaded chunk is dropped: the engine never loads chunks.

@@ -336,23 +336,20 @@ internal sealed partial class LevelBlockUpdates
         return found;
     }
 
-    // A block's weak signal: a plugin block's behaviour's, and none for other blocks.
-    private int SignalOf(IBlock state, Vector position, BlockFace direction)
+    /// <summary>
+    /// A plugin block's weak (<paramref name="direct"/> false) or direct power toward the block asking from
+    /// <paramref name="direction"/>, from its behaviour's <see cref="IBlockBehavior.GetSignal"/> or
+    /// <see cref="IBlockBehavior.GetDirectSignal"/>. Vanilla blocks have none here: their rules are registered by class.
+    /// </summary>
+    internal int PluginSignalOf(IBlock state, Vector position, BlockFace direction, bool direct)
     {
         if (!BlocksRegistry.TryGetPluginBlock(state.GetHashCode(), out _))
             return 0;
 
         var context = this.SignalContext(state, position, direction);
-        return Math.Clamp(this.AskPlugin(state, nameof(IBlockBehavior.GetSignal), 0, b => b.GetSignal(context)), 0, 15);
-    }
-
-    private int DirectSignalOf(IBlock state, Vector position, BlockFace direction)
-    {
-        if (!BlocksRegistry.TryGetPluginBlock(state.GetHashCode(), out _))
-            return 0;
-
-        var context = this.SignalContext(state, position, direction);
-        var signal = this.AskPlugin(state, nameof(IBlockBehavior.GetDirectSignal), 0, b => b.GetDirectSignal(context));
+        var signal = direct
+            ? this.AskPlugin(state, nameof(IBlockBehavior.GetDirectSignal), 0, b => b.GetDirectSignal(context))
+            : this.AskPlugin(state, nameof(IBlockBehavior.GetSignal), 0, b => b.GetSignal(context));
 
         return Math.Clamp(signal, 0, 15);
     }

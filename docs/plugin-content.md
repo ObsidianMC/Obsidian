@@ -275,7 +275,7 @@ Vanilla's components work at runtime through the same updates and ticks, in vani
 delays and tick priorities: redstone dust (vanilla's default wire evaluator, its connections, and dots and crosses
 players switch between), redstone torches (two game ticks, burning out after 8 toggles within 60 game ticks for 160),
 repeaters (delays of 1 to 4 redstone ticks, and locking), comparators (comparing and subtracting, reading stored
-container contents without rolling pending loot, cakes, cauldrons, beehives, end portal frames,
+container contents without rolling pending loot, cakes, composters, cauldrons, beehives, end portal frames,
 respawn anchors and item frames, behind a conductor too),
 levers, buttons (pressed by players and wind charges, and wooden ones by arrows), pressure plates (entities on them;
 wooden ones feel any entity, stone ones mobs and players, weighted ones count them), the block of redstone and the

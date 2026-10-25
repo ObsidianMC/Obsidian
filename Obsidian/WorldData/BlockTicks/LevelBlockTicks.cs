@@ -16,6 +16,12 @@ internal interface IBlockTickLevel
     /// Whether the chunk with <paramref name="key"/> is loaded.
     /// </summary>
     bool IsChunkLoaded(long key);
+
+    /// <summary>
+    /// Whether the chunk with <paramref name="key"/> is simulated, like vanilla's position ticking: a player or ticket keeps it
+    /// within simulation distance. Block ticks run only in simulated chunks.
+    /// </summary>
+    bool IsChunkSimulated(long key);
 }
 
 /// <summary>
@@ -36,12 +42,15 @@ internal sealed class LevelBlockTicks
     private readonly Dictionary<long, Chunk> chunks = [];
     private readonly Dictionary<string, Action<Vector, IBlock>> behaviors = new(StringComparer.Ordinal);
     private readonly Lock sync;
-    private readonly Action<Vector, IBlock>? unregistered;
+    private readonly Func<Vector, IBlock, bool>? unregistered;
 
     /// <param name="level">The level's block reads.</param>
     /// <param name="sync">The lock ticks and their block changes run under (the level's shared tick lock).</param>
-    /// <param name="unregistered">Runs a due tick of a block with no registration, while its block is still there.</param>
-    public LevelBlockTicks(IBlockTickLevel level, Lock sync, Action<Vector, IBlock>? unregistered = null)
+    /// <param name="unregistered">
+    /// Runs a due tick of a block with no registration, while its block is still there. Returns false to hold the tick: it's
+    /// scheduled again for the next game tick, until it can run.
+    /// </param>
+    public LevelBlockTicks(IBlockTickLevel level, Lock sync, Func<Vector, IBlock, bool>? unregistered = null)
     {
         this.level = level;
         this.sync = sync;
@@ -74,7 +83,7 @@ internal sealed class LevelBlockTicks
 
     /// <summary>
     /// Registers what runs when a tick of <paramref name="block"/> (its unlocalized name) comes due and its block is still
-    /// there. Blocks without a registration have no scheduled behavior yet; their due ticks are consumed.
+    /// there. Blocks without a registration are run by the <c>unregistered</c> callback instead.
     /// </summary>
     public void Register(int blockId, Action<Vector, IBlock> behavior) => this.Register(BlocksRegistry.GetDefault(blockId).UnlocalizedName, behavior);
 
@@ -170,14 +179,29 @@ internal sealed class LevelBlockTicks
             return;
 
         if (this.behaviors.TryGetValue(tick.Block, out var behavior))
+        {
             behavior(tick.Position, block);
-        else
-            this.unregistered?.Invoke(tick.Position, block);
+            return;
+        }
+
+        if (this.unregistered is not null && !this.unregistered(tick.Position, block))
+            this.Hold(tick);
     }
 
-    // Vanilla's tick check: the chunk ticks once it and its neighbors are loaded and complete.
+    // A tick its block can't run yet (a plugin's while unloaded) waits for the next game tick: the scheduler already took it
+    // out of the chunk, so it's scheduled again there, where it's saved with the chunk.
+    private void Hold(ScheduledBlockTick tick)
+    {
+        if (this.chunks.TryGetValue(BlockTickScheduler.ChunkKey(tick.Position), out var chunk))
+            chunk.BlockTicks.Schedule(tick.Position, tick.Block, 1, tick.Priority);
+    }
+
+    // Vanilla's tick check: the chunk ticks once it is simulated and its neighbors are loaded and complete.
     private bool IsTicking(long key)
     {
+        if (!this.level.IsChunkSimulated(key))
+            return false;
+
         NumericsHelper.LongToInts(key, out var chunkX, out var chunkZ);
         for (var dx = -1; dx <= 1; dx++)
         {

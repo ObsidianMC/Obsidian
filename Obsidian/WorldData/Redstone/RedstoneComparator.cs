@@ -1,3 +1,4 @@
+using Obsidian.Entities;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.BlockTicks;
 using Obsidian.WorldData.Features;
@@ -11,17 +12,14 @@ namespace Obsidian.WorldData.Redstone;
 /// value, and subtract mode outputs the rear value minus the side value. A change in the output takes effect two game ticks later.
 /// </summary>
 /// <remarks>
-/// The analog output (0–15) is kept in memory per comparator, where vanilla keeps it in the block entity. It is recomputed from the
-/// inputs whenever it is refreshed, so the only thing lost on a restart is the value between a change and its scheduled refresh.
-/// Until a refresh runs after a restart, an output reads as 15 when powered and 0 otherwise.
+/// The analog output (0–15) is kept in the comparator's <see cref="ComparatorBlockEntity"/>, as vanilla does, so it is saved and
+/// restored with the chunk and is never inferred from the powered property.
 /// </remarks>
 internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine engine) : IRedstoneBehavior, INeighborChangedBehavior, IPlacementBehavior
 {
     public const int BlockId = BlockIds.Comparator;
 
     private const int DelayTicks = 2;
-
-    private readonly Dictionary<Vector, int> outputs = [];
 
     public static bool IsComparator(IBlock block) => block.Is(BlockId);
 
@@ -47,7 +45,7 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
     }
 
     public int GetSignal(IBlock state, Vector position, BlockFace direction, bool wiresGiveSignal) =>
-        direction == Facing(state) ? this.Output(position, state) : 0;
+        direction == Facing(state) ? this.Output(position) : 0;
 
     public int GetDirectSignal(IBlock state, Vector position, BlockFace direction, bool wiresGiveSignal) => this.GetSignal(state, position, direction, wiresGiveSignal);
 
@@ -59,27 +57,26 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
     public async ValueTask TickAsync(Vector position)
     {
         var state = level.GetLoadedBlock(position);
-        if (state is null || !IsComparator(state))
-        {
-            this.outputs.Remove(position);
+        if (state is null || !IsComparator(state) || level.GetBlockEntityAt(position) is not ComparatorBlockEntity entity)
             return;
-        }
 
         var target = this.Calculate(position, state);
-        if (target == this.Output(position, state))
+        if (target == entity.OutputSignal)
             return;
 
-        this.outputs[position] = target;
+        entity.OutputSignal = target;
+        entity.SetChanged();
         var powered = (target > 0).ToString().ToLowerInvariant();
         if (state.GetProperty("powered") != powered)
             await level.SetBlockAsync(position, state.WithProperty("powered", powered));
-        else
-            await level.NotifyNeighborsAsync(position);
+
+        // Vanilla ComparatorBlock.tick: an output change goes to the block in front of the comparator.
+        await BasicRedstoneComponents.NotifyOutputFrontAsync(level, position, Facing(state).Opposite());
     }
 
     private ValueTask ScheduleIfChanged(Vector position, IBlock state)
     {
-        if (this.Calculate(position, state) != this.Output(position, state))
+        if (this.Calculate(position, state) != this.Output(position))
             level.ScheduleBlockTick(position, state, DelayTicks, ShouldPrioritize(position, state)
                 ? Obsidian.API.Blocks.TickPriority.High
                 : Obsidian.API.Blocks.TickPriority.Normal);
@@ -99,24 +96,60 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
             && Facing(front) != facing;
     }
 
-    /// <summary>Vanilla's <c>getInputSignal</c>: a container's analog output when it has one, else the signal the neighbour gives.</summary>
-    private int InputSignal(Vector position, BlockFace direction)
+    /// <summary>
+    /// Vanilla <c>ComparatorBlock.getInputSignal</c> for the rear: the block behind's analog output when it has one. Otherwise, when
+    /// that block is a conductor short of full power, the block beyond it or an item frame on its face gives the analog output.
+    /// </summary>
+    private int RearInput(Vector position, BlockFace facing)
     {
-        var block = level.GetLoadedBlock(position);
-        if (block is not null && level.HasAnalogOutput(block))
-            return level.GetAnalogOutput(position, block, direction);
+        var signal = engine.GetSignal(position, facing);
+        var input = level.GetLoadedBlock(position);
+        if (input is null)
+            return signal;
 
-        return engine.GetSignal(position, direction);
+        if (level.HasAnalogOutput(input))
+            return level.GetAnalogOutput(position, input, facing.Opposite());
+
+        if (signal >= RedstoneEngine.MaxSignal || !input.IsRedstoneConductor())
+            return signal;
+
+        var further = position.Offset(facing);
+        var analog = int.MinValue;
+        if (ItemFrameAt(further, facing) is { } frame)
+            analog = frame.Item is { IsAir: false } ? frame.Rotation % 8 + 1 : 0;
+
+        if (level.GetLoadedBlock(further) is { } beyond && level.HasAnalogOutput(beyond))
+            analog = Math.Max(analog, level.GetAnalogOutput(further, beyond, facing.Opposite()));
+
+        return analog != int.MinValue ? analog : signal;
+    }
+
+    /// <summary>
+    /// Vanilla <c>ComparatorBlock.getAlternateSignal</c> for a side: the redstone signal the neighbour gives, with no analog
+    /// output and no look-through.
+    /// </summary>
+    private int SideInput(Vector position, BlockFace direction) => engine.GetSignal(position, direction);
+
+    // The one item frame on the face toward the comparator's input, like vanilla's: none when there are two.
+    private ItemFrame? ItemFrameAt(Vector position, BlockFace facing)
+    {
+        var frames = level.EntitiesIn((VectorD)position, (VectorD)(position + new Vector(1, 1, 1)))
+            .OfType<ItemFrame>()
+            .Where(frame => frame.Facing == facing)
+            .Take(2)
+            .ToList();
+
+        return frames.Count == 1 ? frames[0] : null;
     }
 
     private int Calculate(Vector position, IBlock state)
     {
         var facing = Facing(state);
-        var rear = this.InputSignal(position.Offset(facing), facing);
+        var rear = this.RearInput(position.Offset(facing), facing);
 
         var side = 0;
         foreach (var sideFace in new[] { facing.ClockWise(), facing.CounterClockWise() })
-            side = Math.Max(side, this.InputSignal(position.Offset(sideFace), sideFace));
+            side = Math.Max(side, this.SideInput(position.Offset(sideFace), sideFace));
 
         if (state.GetProperty("mode") == "subtract")
             return Math.Max(rear - side, 0);
@@ -124,8 +157,9 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
         return rear < side ? 0 : rear;
     }
 
-    private int Output(Vector position, IBlock state) =>
-        this.outputs.TryGetValue(position, out var output) ? output : state.GetProperty("powered") == "true" ? RedstoneEngine.MaxSignal : 0;
+    /// <summary>The comparator's stored output (vanilla <c>OutputSignal</c>); 0 when its block entity isn't resident.</summary>
+    private int Output(Vector position) =>
+        level.GetBlockEntityAt(position) is ComparatorBlockEntity entity ? entity.OutputSignal : 0;
 
     private static BlockFace Facing(IBlock state) => FeatureHelpers.ParseFace(state.GetProperty("facing"));
 }

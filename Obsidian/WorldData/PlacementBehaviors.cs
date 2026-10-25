@@ -25,6 +25,9 @@ internal static class PlacementBehaviors
     private static readonly IBlockBehavior Repeater = new DerivedPlacement(context => RedstoneRepeater.DerivePlacement(context.Block, context.Player.Yaw.Degrees));
     private static readonly IBlockBehavior Observer = new DerivedPlacement(context => RedstoneObserver.DerivePlacement(context.Block, context.NearestLookDirection));
     private static readonly IBlockBehavior Piston = new DerivedPlacement(context => Pistons.PistonBehaviors.DerivePlacement(context.Block, context.NearestLookDirection));
+    // Vanilla RedstoneLampBlock.getStateForPlacement: lit when the level has a neighbour signal at the clicked position.
+    private static readonly IBlockBehavior Lamp = new DerivedPlacement(context =>
+        BasicRedstoneComponents.DeriveLampPlacement(context.Block, context.Level.HasNeighborSignal(context.ClickedPosition)));
 
     // One member per Mojang class that owns an implemented placement override. Classes may share an implementation
     // object when their current vanilla algorithms are equivalent; block membership comes only from vanilla's class.
@@ -51,6 +54,7 @@ internal static class PlacementBehaviors
     internal static IBlockBehavior LecternBlock => HorizontalOpposite;
     internal static IBlockBehavior ObserverBlock => Observer;
     internal static IBlockBehavior PistonBaseBlock => Piston;
+    internal static IBlockBehavior RedstoneLampBlock => Lamp;
     internal static IBlockBehavior RepeaterBlock => Repeater;
     internal static IBlockBehavior LeavesBlock => Leaves;
     internal static IBlockBehavior ShulkerBoxBlock => ClickedFace;

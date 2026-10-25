@@ -66,9 +66,10 @@ internal sealed class RedstoneEngine(IBlockChangeWorld world, RedstoneBehaviors 
     }
 
     /// <summary>
-    /// Whether the neighbor on <paramref name="direction"/> of <paramref name="receiver"/> gives it a signal.
+    /// Whether the neighbor on <paramref name="direction"/> of <paramref name="receiver"/> gives it a signal. Takes the receiver,
+    /// not the source: the public <c>HasSignal(position, direction)</c> is <c>GetSignal(position, direction) &gt; 0</c>.
     /// </summary>
-    public bool HasSignal(Vector receiver, BlockFace direction) => this.GetSignal(receiver.Offset(direction), direction) > 0;
+    public bool ReceiverHasSignal(Vector receiver, BlockFace direction) => this.GetSignal(receiver.Offset(direction), direction) > 0;
 
     /// <summary>
     /// Whether any of the six neighbors gives <paramref name="position"/> a signal (vanilla <c>hasNeighborSignal</c>).

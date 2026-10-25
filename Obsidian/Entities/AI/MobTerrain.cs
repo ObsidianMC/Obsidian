@@ -295,7 +295,8 @@ internal sealed class MobTerrain(ILevel level)
 
     private static bool ClipSegment(BoundingBox box, VectorD start, VectorD direction, out double min)
     {
-        min = double.NegativeInfinity;
+        // The segment is [0, 1]: an entry before the start clamps to it, and a box wholly behind the start misses.
+        min = 0d;
         var max = 1d;
         return ClipRay(start.X, direction.X, box.Min.X, box.Max.X, ref min, ref max) &&
             ClipRay(start.Y, direction.Y, box.Min.Y, box.Max.Y, ref min, ref max) &&

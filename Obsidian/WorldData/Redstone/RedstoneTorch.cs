@@ -56,7 +56,7 @@ internal sealed class RedstoneTorch(IRedstoneLevel level, RedstoneEngine engine)
     private void CheckConsistency(Vector position, IBlock state)
     {
         var lit = state.GetProperty("lit") == "true";
-        if (lit == engine.HasSignal(position, SupportFace(state)))
+        if (lit == engine.ReceiverHasSignal(position, SupportFace(state)))
             level.ScheduleBlockTick(position, state, InversionDelay);
     }
 
@@ -68,7 +68,7 @@ internal sealed class RedstoneTorch(IRedstoneLevel level, RedstoneEngine engine)
             return;
 
         var now = level.GameTime;
-        var powered = engine.HasSignal(position, SupportFace(block));
+        var powered = engine.ReceiverHasSignal(position, SupportFace(block));
         if (block.GetProperty("lit") == "true")
         {
             if (!powered)

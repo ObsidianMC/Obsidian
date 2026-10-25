@@ -46,7 +46,7 @@ public class DaylightDetectorTests
         Assert.Equal("15", world.GetLoadedBlock(detector)!.GetProperty("power"));
 
         foreach (var face in new[] { BlockFace.Up, BlockFace.Down, BlockFace.North, BlockFace.South, BlockFace.East, BlockFace.West })
-            Assert.True(world.Engine.HasSignal(detector.Offset(face), face.Opposite()), $"no weak signal toward {face}");
+            Assert.True(world.Engine.ReceiverHasSignal(detector.Offset(face), face.Opposite()), $"no weak signal toward {face}");
 
         // A conductor beside the detector takes no direct power from it.
         var stone = detector.Offset(BlockFace.Up);

@@ -333,6 +333,8 @@ public class BlockTicks
 
         public bool IsChunkLoaded(long key) => this.Loaded.Contains(key);
 
+        public bool IsChunkSimulated(long key) => this.Loaded.Contains(key);
+
         // The constructor's status argument isn't applied, so completion is set explicitly.
         private static Chunk NewCompleteChunk(int x, int z)
         {

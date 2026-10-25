@@ -158,12 +158,17 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
         var chunk = this.chunks[NumericsHelper.IntsToLong(position.X >> 4, position.Z >> 4)];
         chunk.SetBlock(position.X, position.Y, position.Z, block);
 
-        // Like AbstractLevel.UpdateBlockEntity: a block entity stays only while the block still has its type.
+        // Like AbstractLevel.UpdateBlockEntity: a block entity stays only while the block still has its type, and the block's
+        // own type is created when it has none.
+        var type = block.HasBlockEntity() ? block.BlockEntityType() : null;
         if (chunk.GetBlockEntity(position.X, position.Y, position.Z) is BlockEntity existing
-            && !string.Equals(existing.Id, block.BlockEntityType(), StringComparison.OrdinalIgnoreCase))
+            && !string.Equals(existing.Id, type, StringComparison.OrdinalIgnoreCase))
         {
             chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
         }
+
+        if (type is not null && chunk.GetBlockEntity(position.X, position.Y, position.Z) is null)
+            chunk.SetBlockEntity(position.X, position.Y, position.Z, BlockEntityNbt.Create(type, position));
 
         return new BlockChange(position, old, block);
     }
@@ -186,6 +191,16 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
     {
         if (block.BlockClass() is not ("PressurePlateBlock" or "WeightedPressurePlateBlock"))
             this.Commit(position, BlocksRegistry.Air);
+    }
+
+    ValueTask IRedstoneLevel.DestroyBlockNowAsync(Vector position, IBlock block, bool playEffect)
+    {
+        ((IBlockChangeWorld)this).DropAndRemove(position, block, playEffect);
+        return ValueTask.CompletedTask;
+    }
+
+    void IRedstoneLevel.BroadcastBlockEvent(Vector position, int blockId, int type, int data)
+    {
     }
 
     public void ScheduleFluidTick(Vector position) => this.FluidTicks.Add(position);
@@ -310,4 +325,6 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
     }
 
     bool IBlockTickLevel.IsChunkLoaded(long key) => this.chunks.ContainsKey(key);
+
+    bool IBlockTickLevel.IsChunkSimulated(long key) => this.chunks.ContainsKey(key);
 }
