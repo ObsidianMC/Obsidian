@@ -219,9 +219,8 @@ different one. Obsidian deliberately doesn't emulate Java's heap layout for this
 **Status:** open. Dust, torches, repeaters, comparators, levers, buttons, pressure plates, the block of redstone and
 the redstone lamp work (see [plugin content](plugin-content.md#redstone)); the rest of vanilla's redstone doesn't.
 
-- **Consumers.** Doors, trapdoors and fence gates, note blocks, powered, activator and detector rails, TNT,
-  bells and copper bulbs don't react to power. Pistons extend, retract and pull sticky blocks, checked against the vanilla oracle
-  for a single block line (see [devices and pistons](redstone/03-devices-and-pistons.md#r8--pistons-and-moving-blocks)); their gaps are listed there. Hoppers lock, droppers and dispensers fire, and crafters craft (see
+- **Consumers.** Doors, trapdoors and fence gates, pistons, note blocks, powered, activator and detector rails, TNT,
+  bells and copper bulbs don't react to power. Hoppers lock, droppers and dispensers fire, and crafters craft (see
   [item access](#item-access-beyond-containers)).
 - **Sources.** Observers, daylight detectors, target blocks, trapped chests, tripwire hooks, detector rails,
   lightning rods and sculk sensors give no power (a lectern pulses as its page turns), though dust connects to them as to any signal source.
@@ -236,11 +235,9 @@ the redstone lamp work (see [plugin content](plugin-content.md#redstone)); the r
   vibrations.
 - **Experiments.** The `redstone_experiments` feature's wire evaluator and update orientations aren't modelled.
 
-**Where to start:** each vanilla redstone block is a registration in `Obsidian/WorldData/Redstone/RedstoneRegistration.cs`:
-neighbour reactions through `NeighborBehaviors` (placed and removed hooks too), ticks through `LevelBlockTicks`, power
-through `RedstoneBehaviors` (`GetSignal` and `GetDirectSignal`, like the lever), and entity contact through
-`RedstoneBehaviors.RegisterContact`, like the detector rail. Analog outputs go in `AnalogOutputs`. The rails
-(`RedstoneRails.cs`) are the model for a block that does all of these.
+**Where to start:** each consumer is another `RedstoneComponent` in `Obsidian/WorldData/Redstone`, listed in
+`VanillaRedstone`, reacting in `NeighborChanged` through `LevelBlockUpdates`' signal methods, like the lamp; sources
+give their power from `GetSignal` and `GetDirectSignal`, like the lever. Analog outputs go in `AnalogOutputs`.
 
 ## Item access beyond containers
 
