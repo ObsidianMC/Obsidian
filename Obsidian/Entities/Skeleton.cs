@@ -296,7 +296,7 @@ internal sealed class SkeletonShelterGoal(Skeleton skeleton) : NavigationGoal(sk
         if (skeleton.Type == EntityType.Parched || !skeleton.Burning || skeleton.Level.DayTime is < 0 or >= 12000 ||
             !skeleton.GetEquipment(EquipmentSlot.Helmet).IsAir || skeleton.Terrain.GetSkyLight((Vector)skeleton.Position.Floor()) < 15)
             return false;
-        var evaluator = new WalkNodeEvaluator(skeleton);
+        var evaluator = new WalkNodeEvaluator(skeleton.PathBody);
         for (var attempt = 0; attempt < 10; attempt++)
         {
             var x = (int)Math.Floor(skeleton.Position.X) + skeleton.Random.Next(-10, 10);

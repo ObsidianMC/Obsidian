@@ -1,3 +1,4 @@
+using Obsidian.API.AI;
 namespace Obsidian.Entities.AI;
 
 internal sealed class VolumeMoveControl(Mob mob) : MoveControl(mob)
@@ -46,19 +47,21 @@ internal static class VolumeMovement
     private static readonly VectorD[] directions = [new(1, 0, 0), new(-1, 0, 0), new(0, 1, 0), new(0, -1, 0), new(0, 0, 1), new(0, 0, -1)];
     internal static bool UsesVolume(Mob mob) => mob.FlyingNavigation || mob.SwimmingNavigation && mob.InWater;
 
-    internal static bool CanOccupy(Mob mob, VectorD point) =>
-        mob.Terrain.IsFree(mob.Dimension.CreateBBFromPosition(point)) &&
-        (mob.FlyingNavigation ? mob.Terrain.GetBlock((Vector)point.Floor()) is { IsLiquid: false } :
-            mob.Terrain.IsInFluid(point, water: true));
+    internal static bool UsesVolume(IPathBody body) => body.FlyingNavigation || body.SwimmingNavigation && body.InWater;
 
-    internal static IEnumerable<VectorD> Neighbors(Mob mob, VectorD point)
+    internal static bool CanOccupy(IPathBody body, VectorD point) =>
+        body.Terrain.IsFree(body.Dimension.CreateBBFromPosition(point)) &&
+        (body.FlyingNavigation ? body.Terrain.GetBlock((Vector)point.Floor()) is { IsLiquid: false } :
+            body.Terrain.IsInFluid(point, water: true));
+
+    internal static IEnumerable<VectorD> Neighbors(IPathBody body, VectorD point)
     {
-        var bounds = mob.Dimension.CreateBBFromPosition(point);
+        var bounds = body.Dimension.CreateBBFromPosition(point);
         foreach (var offset in directions)
         {
             var next = point + offset;
-            var nextBounds = mob.Dimension.CreateBBFromPosition(next);
-            if (CanOccupy(mob, next) && mob.Terrain.IsFree(new BoundingBox(VectorD.Min(bounds.Min, nextBounds.Min), VectorD.Max(bounds.Max, nextBounds.Max))))
+            var nextBounds = body.Dimension.CreateBBFromPosition(next);
+            if (CanOccupy(body, next) && body.Terrain.IsFree(new BoundingBox(VectorD.Min(bounds.Min, nextBounds.Min), VectorD.Max(bounds.Max, nextBounds.Max))))
                 yield return next;
         }
     }

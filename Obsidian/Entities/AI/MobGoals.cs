@@ -5,7 +5,7 @@ internal static class RandomPosition
 {
     public static VectorD? Find(PathfinderMob mob, int horizontalRange, VectorD? awayFrom = null)
     {
-        var evaluator = new WalkNodeEvaluator(mob);
+        var evaluator = new WalkNodeEvaluator(mob.PathBody);
         VectorD? best = null;
         var bestScore = double.NegativeInfinity;
         for (var attempt = 0; attempt < 10; attempt++)
@@ -16,7 +16,7 @@ internal static class RandomPosition
             if (VolumeMovement.UsesVolume(mob))
             {
                 var point = new VectorD(x + 0.5f, mob.Position.Y + mob.Random.Next(-3, 4), z + 0.5f);
-                position = VolumeMovement.CanOccupy(mob, point) ? point : null;
+                position = VolumeMovement.CanOccupy(mob.PathBody, point) ? point : null;
             }
             else
                 position = evaluator.FindGround(x, z, mob.Position.Y + mob.Random.Next(-3, 4));
@@ -34,8 +34,18 @@ internal static class RandomPosition
     }
 }
 
-public sealed class FloatGoal(PathfinderMob mob) : Goal
+public sealed class FloatGoal : Goal
 {
+    private readonly PathfinderMob mob;
+
+    public FloatGoal(PathfinderMob mob)
+    {
+        this.mob = mob;
+        // Vanilla's FloatGoal constructor sets canFloat on the navigator, letting ground paths start from water.
+        if (mob.Navigator is Navigator navigator)
+            navigator.CanFloat = true;
+    }
+
     public override GoalFlags Flags => GoalFlags.Jump;
     public override bool RequiresUpdateEveryTick => true;
     public override bool CanUse() => mob.InWater || mob.InLava;
@@ -443,7 +453,7 @@ public class MeleeAttackGoal(PathfinderMob mob, float speed = 1) : NavigationGoa
     // Through the navigator, which then doesn't look for the same path again when the goal starts.
     private MobPath? FindPath(VectorD to) => Mob.Navigator is Navigator navigator && navigator.TryFindPath(to, out var path)
         ? path
-        : new PathFinder(Mob).FindPath(to);
+        : new PathFinder(Mob.PathBody).FindPath(to);
 
     public override bool CanContinue() => Mob.AttackTarget is IEntity target && Mob.IsValidTarget(target) &&
         (Navigation.IsNavigating || Mob.IsWithinMeleeRange(target));

@@ -12,8 +12,8 @@ public sealed partial class Drowned : Zombie
     protected override string? SoundName => "drowned";
     protected override VectorD Travel() => VolumeMovement.Travel(this, InWater);
 
-    protected internal override float GetPathCost(IBlock feet, IBlock floor) =>
-        feet.RegistryId == BlockIds.Water ? 0 : base.GetPathCost(feet, floor);
+    protected internal override float GetPathCost(Vector feetPosition, IBlock feet, IBlock floor) =>
+        feet.RegistryId == BlockIds.Water ? 0 : base.GetPathCost(feetPosition, feet, floor);
 
     internal bool CanAttackNow(IEntity target) => Level.DayTime is < 0 or >= 12000 ||
         Terrain.GetBlock((Vector)(target.Position + new VectorD(0, 0.1f, 0)).Floor())?.RegistryId == BlockIds.Water;

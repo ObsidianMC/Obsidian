@@ -2,15 +2,20 @@ using Obsidian.API.AI;
 
 namespace Obsidian.Entities.AI;
 
-public class Navigator : INavigator
+public class Navigator : INavigator, IPathfinder
 {
     private readonly PathfinderMob? mob;
     private PathFinder? pathFinder;
     private MobPath? path;
     private int nextNode;
     private int repathDelay;
-    private int stuckTicks;
-    private VectorD lastProgressPosition;
+    // Vanilla's PathNavigation bookkeeping: a tick counter, the last displacement check, and the time spent on the current node.
+    private long navigationTick;
+    private long stuckCheckTick;
+    private VectorD stuckCheckPosition;
+    private int nextNodeAtStart = -1;
+    private long nodeStartTick;
+    private double nodeExpectedTicks;
     private VectorD lastPathTarget;
     private bool requested;
     private bool pathUsesVolume;
@@ -20,6 +25,9 @@ public class Navigator : INavigator
 
     public float SpeedModifier { get; set; } = 1;
     public bool CanOpenDoors { get; set; }
+
+    // Vanilla's canFloat: set by FloatGoal (and a few mobs' constructors); lets a ground path start from a water surface.
+    internal bool CanFloat { get; set; }
     public bool ReachedTarget { get; private set; }
 
     public Navigator() { }
@@ -69,7 +77,6 @@ public class Navigator : INavigator
         IsNavigating = false;
         path = null;
         nextNode = 0;
-        stuckTicks = 0;
         mob?.MoveControl.Stop();
     }
 
@@ -81,7 +88,6 @@ public class Navigator : INavigator
         IsNavigating = false;
         path = null;
         nextNode = 0;
-        stuckTicks = 0;
         mob?.MoveControl.ClearForUnload();
     }
 
@@ -91,13 +97,27 @@ public class Navigator : INavigator
     /// than finding it again.
     /// </summary>
     /// <returns>Whether the navigator could look: false for one that isn't a mob's.</returns>
+    /// <summary>
+    /// Computes a path without changing navigation: unlike a goal's path, it is not kept for this tick's movement.
+    /// </summary>
+    public NavigationPath? FindPath(VectorD to)
+    {
+        if (!double.IsFinite(to.X) || !double.IsFinite(to.Y) || !double.IsFinite(to.Z))
+            throw new ArgumentOutOfRangeException(nameof(to));
+        if (mob == null)
+            throw new InvalidOperationException("This navigator is not attached to a mob, so it cannot compute paths.");
+
+        pathFinder ??= new PathFinder(mob.PathBody);
+        return pathFinder.FindPath(to) is { } found ? new NavigationPath(found.Nodes, found.ReachedTarget) : null;
+    }
+
     internal bool TryFindPath(VectorD to, out MobPath? found)
     {
         found = null;
         if (mob == null)
             return false;
 
-        pathFinder ??= new PathFinder(mob);
+        pathFinder ??= new PathFinder(mob.PathBody);
         found = pathFinder.FindPath(to);
         preparedPath = new PreparedPath(found, mob.Position, to, VolumeMovement.UsesVolume(mob));
         return true;
@@ -146,7 +166,7 @@ public class Navigator : INavigator
 
         if (repathDelay == 0 && (path == null || (lastPathTarget - TargetLocation).MagnitudeSquared() > 1))
         {
-            pathFinder ??= new PathFinder(mob);
+            pathFinder ??= new PathFinder(mob.PathBody);
             path = prepared is { } reused && reused.From == mob.Position && reused.To == TargetLocation
                 && reused.UsesVolume == usesVolume
                 ? reused.Path
@@ -155,8 +175,9 @@ public class Navigator : INavigator
             ReachedTarget = path?.ReachedTarget == true;
             nextNode = 0;
             lastPathTarget = TargetLocation;
-            lastProgressPosition = mob.Position;
-            stuckTicks = 0;
+            stuckCheckTick = navigationTick;
+            stuckCheckPosition = mob.Position;
+            nextNodeAtStart = -1;
             repathDelay = 10 + mob.Random.Next(10);
         }
 
@@ -167,13 +188,16 @@ public class Navigator : INavigator
             return;
         }
 
-        // Vanilla's maxDistanceToWaypoint: narrow mobs count a node as reached from further away, so they don't circle it.
+        navigationTick++;
+
+        // Vanilla's maxDistanceToWaypoint (per axis) and its one-block vertical reach. Obsidian doesn't simulate the
+        // buoyancy that brings a mob in water up to a surface node, so in water the vertical check is skipped, as before.
         var tolerance = mob.Dimension.Width > 0.75f ? mob.Dimension.Width / 2 : 0.75f - mob.Dimension.Width / 2;
         while (nextNode < path.Nodes.Count)
         {
             var difference = path.Nodes[nextNode] - mob.Position;
-            if (difference.X * difference.X + difference.Z * difference.Z > tolerance * tolerance ||
-                (usesVolume || !mob.InWater) && Math.Abs(difference.Y) > 0.5f)
+            if (Math.Abs(difference.X) >= tolerance || Math.Abs(difference.Z) >= tolerance ||
+                (usesVolume || !mob.InWater) && Math.Abs(difference.Y) >= 1f)
                 break;
             nextNode++;
         }
@@ -187,12 +211,29 @@ public class Navigator : INavigator
             return;
         }
 
-        if ((mob.Position - lastProgressPosition).MagnitudeSquared() > 0.01f)
+        // Vanilla's stuck checks: every 100 ticks the mob must have moved a speed-scaled distance, and it must not spend
+        // more than three times the expected travel time on one node.
+        var speed = mob.GetAttributeValue("minecraft:generic.movement_speed");
+        if (navigationTick - stuckCheckTick > 100)
         {
-            lastProgressPosition = mob.Position;
-            stuckTicks = 0;
+            var factor = speed >= 1 ? speed : speed * speed;
+            var required = factor * 25;
+            if ((mob.Position - stuckCheckPosition).MagnitudeSquared() < required * required)
+            {
+                Stop();
+                return;
+            }
+            stuckCheckTick = navigationTick;
+            stuckCheckPosition = mob.Position;
         }
-        else if (++stuckTicks >= 100)
+
+        if (nextNode != nextNodeAtStart)
+        {
+            nextNodeAtStart = nextNode;
+            nodeStartTick = navigationTick;
+            nodeExpectedTicks = speed > 0 ? (path.Nodes[nextNode] - mob.Position).Magnitude / speed * 20 : 0;
+        }
+        if (nodeExpectedTicks > 0 && navigationTick - nodeStartTick > nodeExpectedTicks * 3)
         {
             Stop();
             return;

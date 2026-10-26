@@ -122,7 +122,7 @@ public sealed class MobParity
         var destination = EntityMovement.Move(mob);
 
         Assert.Equal(canStep, destination.Y >= 71.5);
-        Assert.Equal(canStep, new WalkNodeEvaluator(mob).FindGround(8, 8, 70) != null);
+        Assert.Equal(canStep, new WalkNodeEvaluator(mob.PathBody).FindGround(8, 8, 70) != null);
         Assert.Equal(!canStep, mob.MovementFlags.HasFlag(MovementFlags.HorizontalCollision));
     }
 

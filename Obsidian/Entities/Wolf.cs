@@ -17,7 +17,13 @@ public sealed partial class Wolf : Animal
     private bool begging;
     private bool wet;
     private int shakeTicks;
-    public Wolf() => Type = EntityType.Wolf;
+    public Wolf()
+    {
+        Type = EntityType.Wolf;
+        // Vanilla Wolf: powder snow is impassable, including when it would danger the mob.
+        SetPathfindingMalus(PathType.POWDER_SNOW, -1f);
+        SetPathfindingMalus(PathType.DANGER_POWDER_SNOW, -1f);
+    }
 
     public Guid Owner
     {

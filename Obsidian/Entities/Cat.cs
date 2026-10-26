@@ -213,7 +213,7 @@ internal sealed class CatFollowOwnerGoal(Cat cat) : NavigationGoal(cat, 1)
     {
         if (cat.Level is not AbstractLevel level) return;
         var origin = (Vector)owner!.Position.Floor();
-        var evaluator = new WalkNodeEvaluator(cat);
+        var evaluator = new WalkNodeEvaluator(cat.PathBody);
         for (var attempt = 0; attempt < 10; attempt++)
         {
             var x = cat.Random.Next(-3, 4);

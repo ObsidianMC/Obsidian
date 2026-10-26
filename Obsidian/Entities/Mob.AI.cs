@@ -167,7 +167,11 @@ public partial class Mob
             GoalController = goals;
 
         if (IsFrom(Navigator, context))
-            Navigator = this is PathfinderMob pathfinder ? new Navigator(pathfinder) : null;
+        {
+            // The built-in goals set canFloat on the navigator they were built for; keep that setting on the replacement.
+            var canFloat = (Navigator as Navigator)?.CanFloat ?? false;
+            Navigator = this is PathfinderMob pathfinder ? new Navigator(pathfinder) { CanFloat = canFloat } : null;
+        }
     }
 
     protected virtual void RegisterGoals(GoalSelector actionGoals, GoalSelector targetGoals) { }

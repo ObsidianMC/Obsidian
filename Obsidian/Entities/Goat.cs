@@ -58,6 +58,8 @@ public sealed partial class Goat : FarmAnimal
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         base.RegisterGoals(actions, targets);
+        // Vanilla's Goat constructor sets canFloat.
+        ((Navigator)Navigator!).CanFloat = true;
         actions.AddGoal(1, new GoatRamGoal(this));
     }
 

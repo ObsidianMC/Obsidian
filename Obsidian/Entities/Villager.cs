@@ -376,7 +376,7 @@ internal sealed class VillagerShelterGoal(Villager villager) : NavigationGoal(vi
             !villager.Level.LevelData.Raining && villager.Level.DayTime is >= 0 and < 12000 ||
             villager.Terrain.GetSkyLight((Vector)villager.Position.Floor()) < 15 || villager.Random.Next(20) != 0)
             return false;
-        var evaluator = new WalkNodeEvaluator(villager);
+        var evaluator = new WalkNodeEvaluator(villager.PathBody);
         for (var attempt = 0; attempt < 10; attempt++)
         {
             var x = (int)Math.Floor(villager.Position.X) + villager.Random.Next(-16, 17);

@@ -74,6 +74,8 @@ public sealed partial class Warden : PathfinderMob
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
+        // Vanilla's Warden constructor sets canFloat directly.
+        ((Navigator)Navigator!).CanFloat = true;
         actions.AddGoal(8, new WardenStrollGoal(this));
     }
 
