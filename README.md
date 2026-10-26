@@ -24,7 +24,7 @@ Feel free to join our [Discord](https://discord.gg/gQBtqyXChu) if you're curious
 - [x] World generation
 - [x] Liquid physics
 - [x] Mobs AI & pathfinding (basic)
-- [ ] Redstone circuits
+- [x] Redstone circuits
 
 ## 💻 Contribute
 Contributions are always welcome!
