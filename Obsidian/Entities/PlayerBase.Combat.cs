@@ -1,7 +1,6 @@
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Events;
-using Obsidian.API.Loot;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -342,6 +341,8 @@ public partial class PlayerBase
     {
         var terrain = new MobTerrain(Level);
         var bounds = Dimension.CreateBBFromPosition(Position);
+        // Read before TrackMovementAbilities may end the glide on this landing, as vanilla's updateFallFlying runs first.
+        var gliding = FlyingWithElytra;
         var supported = flags.HasFlag(MovementFlags.OnGround)
             && terrain.GetCollisions(new BoundingBox(bounds.Min - new VectorD(0, 0.05, 0), bounds.Max))
                 .Any(shape => shape.Max.Y <= Position.Y + 0.001 && shape.Max.Y >= Position.Y - 0.05
@@ -355,14 +356,12 @@ public partial class PlayerBase
             HasPotionEffect((int)PotionEffect.Levitation - 1) || HasPotionEffect((int)PotionEffect.SlowFalling - 1) ||
             feet?.RegistryId is BlockIds.Water or BlockIds.Lava or BlockIds.Cobweb or BlockIds.PowderSnow ||
             feet != null && TagsRegistry.Block.Climbable.Entries.Contains(feet.RegistryId))
-        {
-            FallDistance = 0;
-            return;
-        }
-        if (previous.Y > Position.Y)
-            FallDistance += (float)(previous.Y - Position.Y);
-        if (!supported)
-            return;
+        { FallDistance = 0; return; }
+        // Like vanilla's LivingEntity.updateFallFlying calling Entity.cQ, a glide that isn't descending fast
+        // (vertical movement above -0.5 a tick) keeps the fall distance at most 1, so only a real dive counts.
+        if (gliding && Position.Y - previous.Y > -0.5 && FallDistance > 1) FallDistance = 1;
+        if (previous.Y > Position.Y) FallDistance += (float)(previous.Y - Position.Y);
+        if (!supported) return;
         var floor = terrain.GetBlock((Vector)(Position - new VectorD(0, 0.2, 0)).Floor());
         var distance = FallDistance;
         if (distance >= 2)

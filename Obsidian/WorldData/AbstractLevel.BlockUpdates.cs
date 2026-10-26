@@ -1,6 +1,9 @@
 using Obsidian.API.Blocks;
 using Obsidian.Plugins;
+using Obsidian.WorldData.BlockNotifications;
+using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Fluids;
+using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.WorldData;
 
@@ -50,8 +53,6 @@ public abstract partial class AbstractLevel
             (int)Math.Floor(position.Y + dimension.Height - inset),
             (int)Math.Floor(position.Z + halfWidth - inset));
 
-        this.PressRedstone(entity, min, max);
-
         for (var x = min.X; x <= max.X; x++)
         {
             for (var y = min.Y; y <= max.Y; y++)
@@ -83,8 +84,44 @@ public abstract partial class AbstractLevel
     /// Runs under the tick lock the block was stored under, so that the updates of block changes don't interleave: a
     /// change made meanwhile on another thread waits for them, and its updates follow these.
     /// </remarks>
-    private void AfterBlockSet(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags) =>
+    private void AfterBlockSet(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
+    {
         this.Fluids.OnBlockChanged(position, old, block, flags);
+        this.NotifyBlockChange(position, old, block, flags);
+    }
+
+    /// <summary>
+    /// Queues the block notification pipeline's work for a committed change, as <paramref name="flags"/> ask, and drains it now.
+    /// Neighbor reactions need <see cref="BlockUpdateFlags.Neighbors"/>; shape updates run unless <see cref="BlockUpdateFlags.KnownShape"/>
+    /// is set, so clients-only writes still reach observers and other shape-reacting blocks. Call under the tick lock.
+    /// </summary>
+    internal void NotifyBlockChange(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
+    {
+        var neighbors = (flags & BlockUpdateFlags.Neighbors) != 0;
+        var shapes = (flags & BlockUpdateFlags.KnownShape) == 0;
+        if (old.GetHashCode() == block.GetHashCode() || (!neighbors && !shapes))
+            return;
+
+        this.BlockNotifications.Enqueue(new BlockChange(position, old, block), flags);
+
+        // The redstone engine's reactions for the change, drained now: its writes go to loaded chunks only, so they
+        // complete synchronously under the tick lock. A drain already running picks this work up.
+        this.BlockNotifications.DrainAsync().GetAwaiter().GetResult();
+    }
+
+    /// <summary>
+    /// Vanilla <c>updateNeighborsAt</c> for the redstone components around <paramref name="position"/>, and for those one block
+    /// further out: their power, connections or analog output changed without a change of the block's state. Drained now,
+    /// under the tick lock, as <see cref="NotifyBlockChange"/> does.
+    /// </summary>
+    internal void NotifyNeighborReactionsAround(Vector position)
+    {
+        this.BlockNotifications.EnqueueNeighbors(position);
+        foreach (var face in Obsidian.WorldData.Redstone.RedstoneEngine.Directions)
+            this.BlockNotifications.EnqueueNeighbors(position.Offset(face));
+
+        this.BlockNotifications.DrainAsync().GetAwaiter().GetResult();
+    }
 
     private async ValueTask TouchAsync(IEntity entity, Vector position, bool inside)
     {
@@ -95,6 +132,10 @@ public abstract partial class AbstractLevel
         if (inside && entity is Entities.Entity concrete
             && BlocksRegistry.GetEntityInsideBehavior(state.RegistryId) is IEntityInsideBehavior owner)
             owner.EntityInside(this.BlockUpdates, position, state, concrete);
+
+        // A redstone block's entity contact, like a detector rail's minecart press.
+        if (inside && this.RedstoneRules.ContactFor(state) is IRedstoneContact contact)
+            await contact.EntityInsideAsync(this, position, state);
 
         if (!BlockBehaviors.HasBehavior(state))
             return;

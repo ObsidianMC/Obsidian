@@ -253,6 +253,42 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     }
 
     /// <summary>
+    /// Takes the container's locks like <see cref="Lock"/>, without waiting. Returns false, taking nothing, if any
+    /// of them is held elsewhere.
+    /// </summary>
+    internal bool TryLock([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out IDisposable? handle)
+    {
+        var parts = Ordered(this.LockParts);
+        var taken = new List<IDisposable>(parts.Length);
+        var release = new LockSet(taken);
+
+        try
+        {
+            foreach (var part in parts)
+            {
+                var partHandle = new PartRelease(part);
+                if (!part.TransactionLock.Wait(0))
+                {
+                    release.Dispose();
+                    handle = null;
+                    return false;
+                }
+
+                taken.Add(partHandle);
+                partHandle.CaptureRevision();
+            }
+        }
+        catch
+        {
+            release.Dispose();
+            throw;
+        }
+
+        handle = release;
+        return true;
+    }
+
+    /// <summary>
     /// Takes the locks a click in a player's open <paramref name="window"/> needs: the window's and the player's
     /// <paramref name="inventory"/>'s, which the window shows too, until the returned handle is disposed.
     /// </summary>

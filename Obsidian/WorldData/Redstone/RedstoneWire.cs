@@ -1,230 +1,141 @@
-using Obsidian.API.Blocks;
 using Obsidian.API.World.Features.Trees;
+using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Features.Tree;
 
 namespace Obsidian.WorldData.Redstone;
 
 /// <summary>
-/// Redstone dust, with vanilla's default wire evaluator: its power is the most power other blocks give it, or one less
-/// than the dust it connects to (see <see cref="WireConnections"/>), and it powers the block below and the blocks it
-/// connects to.
+/// Redstone wire (vanilla <c>RedStoneWireBlock</c>): the output it gives its neighbors, and its own power, which it recalculates
+/// whenever a neighbor changes. Its shape is kept by <see cref="ShapeUpdater"/>.
 /// </summary>
-internal sealed class RedstoneWire : RedstoneComponent
+/// <remarks>
+/// Power is the steady state of vanilla's power rule, reached through the block notification queue, so the queue's order and
+/// budget also apply to wires. A wire's power change notifies its neighbors, which recalculate in turn, the same chain vanilla
+/// follows.
+/// </remarks>
+internal sealed class RedstoneWire(RedstoneEngine engine) : IRedstoneBehavior, INeighborChangedBehavior, IPlacementBehavior
 {
-    // Vanilla's Direction.Plane.HORIZONTAL.
+    public const string BlockClass = "RedStoneWireBlock";
+
     private static readonly BlockFace[] horizontal = [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West];
 
-    // Vanilla's Direction.values().
-    private static readonly BlockFace[] all =
-        [BlockFace.Down, BlockFace.Up, BlockFace.North, BlockFace.South, BlockFace.West, BlockFace.East];
-
-    private static IBlock Dot => WireConnections.Dot;
+    /// <summary>
+    /// Registers the wire's output and its neighbor reaction.
+    /// </summary>
+    public static void Register(RedstoneBehaviors redstone, NeighborBehaviors neighbors, RedstoneEngine engine)
+    {
+        var wire = new RedstoneWire(engine);
+        redstone.Register(BlockClass, wire);
+        neighbors.Register(BlockIds.RedstoneWire, wire);
+        neighbors.RegisterPlaced(BlockIds.RedstoneWire, wire);
+    }
 
     /// <summary>
-    /// The dust's power, from 0 to 15.
+    /// Vanilla <c>RedStoneWireBlock.getSignal</c>: nothing below, nothing while the wire works out its power, full power above it, and
+    /// horizontally only toward a side it is connected to.
     /// </summary>
-    public static int Power(IBlock wire) => WireConnections.Power(wire);
-
-    // While dust works out its own power, no dust gives any, so that it counts only other blocks' power.
-    public override bool IsSignalSource(LevelBlockUpdates level) => level.WiresGiveSignal;
-
-    // Dust powers the block below it and the blocks it connects to.
-    public override int GetSignal(LevelBlockUpdates level, Vector position, IBlock state, BlockFace direction)
+    public int GetSignal(IBlock state, Vector position, BlockFace direction, bool wiresGiveSignal)
     {
-        if (!level.WiresGiveSignal || direction == BlockFace.Down)
+        if (!wiresGiveSignal || direction == BlockFace.Down)
             return 0;
 
         var power = Power(state);
-        if (power == 0 || direction == BlockFace.Up)
+        if (power == 0)
+            return 0;
+
+        if (direction == BlockFace.Up)
             return power;
 
-        var connections = WireConnections.Connect(View(level), state, position);
-        return WireConnections.IsConnected(connections, direction.Opposite()) ? power : 0;
-    }
-
-    public override int GetDirectSignal(LevelBlockUpdates level, Vector position, IBlock state, BlockFace direction) =>
-        level.WiresGiveSignal ? this.GetSignal(level, position, state, direction) : 0;
-
-    public override IBlock? GetStateForPlacement(RedstonePlacement placement)
-    {
-        var level = placement.Level;
-        if (!WireConnections.CanStandOn(level.GetBlock(placement.Position + Vector.Down)))
-            return null;
-
-        return WireConnections.Connect(View(level), WireConnections.Cross, placement.Position);
-    }
-
-    // New dust takes its power, then the blocks above and below it hear of it, then the dust around.
-    public override void OnPlaced(LevelBlockUpdates level, Vector position, IBlock state, IBlock oldState)
-    {
-        if (oldState.Is(BlockIds.RedstoneWire))
-            return;
-
-        Settle(level, position, state);
-
-        // Vanilla's Direction.Plane.VERTICAL: up, then down.
-        level.UpdateNeighbors(position + Vector.Up, Dot);
-        level.UpdateNeighbors(position + Vector.Down, Dot);
-        UpdateNearbyWires(level, position);
-    }
-
-    public override void OnRemoved(LevelBlockUpdates level, Vector position, IBlock state)
-    {
-        foreach (var direction in all)
-            level.UpdateNeighbors(position.Offset(direction), Dot);
-
-        Settle(level, position, state);
-        UpdateNearbyWires(level, position);
-    }
-
-    public override void NeighborChanged(LevelBlockUpdates level, Vector position, IBlock state)
-    {
-        if (WireConnections.CanStandOn(level.GetBlock(position + Vector.Down)))
-            Settle(level, position, state);
-        else
-            level.DropAndRemove(position, state);
-    }
-
-    public override IBlock UpdateShape(
-        LevelBlockUpdates level,
-        Vector position,
-        IBlock state,
-        BlockFace direction,
-        IBlock neighbor) =>
-        WireConnections.Reconnect(View(level), state, position, direction, neighbor);
-
-    // Dust connected toward a side that isn't dust updates the dust below and above that side, whose connections
-    // climb to it, as vanilla's dust does.
-    public override void UpdateIndirectNeighborShapes(
-        LevelBlockUpdates level,
-        Vector position,
-        IBlock state,
-        BlockUpdateFlags flags,
-        int updateLimit)
-    {
-        foreach (var direction in horizontal)
-        {
-            var side = position.Offset(direction);
-            if (!WireConnections.IsConnected(state, direction) || level.GetBlock(side).Is(BlockIds.RedstoneWire))
-                continue;
-
-            var below = side + Vector.Down;
-            if (level.GetBlock(below).Is(BlockIds.RedstoneWire))
-                level.ShapeUpdateAt(below, direction.Opposite(), flags, updateLimit);
-
-            var above = side + Vector.Up;
-            if (level.GetBlock(above).Is(BlockIds.RedstoneWire))
-                level.ShapeUpdateAt(above, direction.Opposite(), flags, updateLimit);
-        }
-    }
-
-    // A dot becomes a cross and a cross a dot, unless its connections keep it as it is.
-    public override bool Use(LevelBlockUpdates level, Vector position, IBlock state, IPlayer player, bool mayBuild)
-    {
-        var isCross = WireConnections.IsCross(state);
-        if (!mayBuild || !isCross && !WireConnections.IsDot(state))
-            return false;
-
-        var toggled = (isCross ? Dot : WireConnections.Cross).WithProperty("power", state.GetProperty("power")!);
-        toggled = WireConnections.Connect(View(level), toggled, position);
-        if (toggled.IsSameState(state))
-            return false;
-
-        level.Set(position, toggled, BlockUpdateFlags.All);
-
-        // A conductor the dust stopped or started pointing into hears of it, as vanilla's dust updates.
-        foreach (var direction in horizontal)
-        {
-            var side = position.Offset(direction);
-            var wasConnected = WireConnections.IsConnected(state, direction);
-            var changed = wasConnected != WireConnections.IsConnected(toggled, direction);
-            if (changed && level.GetBlock(side).IsRedstoneConductor())
-                level.UpdateNeighborsExcept(side, Dot, direction.Opposite());
-        }
-
-        return true;
+        // The receiver is on `direction`, so the wire's face toward it is the opposite one.
+        return state.GetProperty(direction.Opposite().PropertyName()) != "none" ? power : 0;
     }
 
     /// <summary>
-    /// Gives dust the power it gets, if that changed: then the dust and its neighbours hear of it, in the order a
-    /// Java hash set of their positions iterates (the dust, then down, up, north, south, west and east, as added).
-    /// The order the blocks around changed dust hear of it in decides contraptions, so it's vanilla's.
+    /// Vanilla: a wire's direct signal is its signal.
     /// </summary>
-    private static void Settle(LevelBlockUpdates level, Vector position, IBlock state)
+    public int GetDirectSignal(IBlock state, Vector position, BlockFace direction, bool wiresGiveSignal) =>
+        this.GetSignal(state, position, direction, wiresGiveSignal);
+
+    /// <summary>
+    /// Recalculates the wire's power after a neighbor changed, and writes it if it changed.
+    /// </summary>
+    public ValueTask OnNeighborChangedAsync(NeighborChange change, IBlockChangeWorld world) =>
+        this.UpdatePowerAsync(change.Position, change.State, world);
+
+    /// <summary>
+    /// Vanilla's placement path first derives the wire's connection state from all six committed neighbors, then works out its
+    /// power. This deliberately uses <see cref="ShapeUpdater.UpdateFromNeighbourShapes"/> rather than maintaining a second set of
+    /// wire connection rules here.
+    /// </summary>
+    public async ValueTask OnPlacedAsync(BlockChange change, IBlockChangeWorld world)
     {
-        var power = PowerAt(level, position);
-        if (Power(state) == power)
+        var state = change.New;
+        var shaped = ShapeUpdater.UpdateFromNeighbourShapes(new LiveShapeView(world), state, change.Position);
+        if (!shaped.IsSameState(state))
+        {
+            // Commit shape before evaluating power so connected-side output and all reads see the same state.
+            await world.SetBlockAsync(change.Position, shaped);
+            state = shaped;
+        }
+
+        await this.UpdatePowerAsync(change.Position, state, world);
+    }
+
+    /// <summary>
+    /// Writes a changed power, then notifies the neighbors of the wire and of each of its six neighbors (vanilla
+    /// <c>updateNeighborsOfNeighbors</c>). The second ring matters: a torch on a support beside a wire is only re-checked this way.
+    /// </summary>
+    private async ValueTask UpdatePowerAsync(Vector position, IBlock state, IBlockChangeWorld world)
+    {
+        var target = this.CalculateTargetPower(position, world);
+        if (target == Power(state))
             return;
 
-        if (level.GetBlock(position).IsSameState(state))
-            level.Set(position, state.WithProperty("power", power), BlockUpdateFlags.Clients);
-
-        List<Vector> updated = [position, .. all.Select(direction => position.Offset(direction))];
-        foreach (var neighbor in FeatureHelpers.JavaHashSetOrder(updated))
-            level.UpdateNeighbors(neighbor, Dot);
+        await world.SetBlockAsync(position, state.WithProperty("power", target));
+        await world.NotifyNeighborsAsync(position);
+        foreach (var face in RedstoneEngine.Directions)
+            await world.NotifyNeighborsAsync(position.Offset(face));
     }
 
-    // The most power other blocks give the dust, or one less than the most of the dust beside it, and above or below
-    // those sides where dust climbs: vanilla's formula.
-    private static int PowerAt(LevelBlockUpdates level, Vector position)
+    /// <summary>
+    /// Vanilla <c>calculateTargetStrength</c>: the best neighbor signal, or the strongest wire reached through the wires beside it minus
+    /// one, whichever is higher. Wires beside the position don't feed back into the calculation. Unloaded positions count as air.
+    /// </summary>
+    private int CalculateTargetPower(Vector position, IBlockChangeWorld world)
     {
-        int fromBlocks;
-        level.WiresGiveSignal = false;
-        try
+        var best = engine.GetBestNeighborSignal(position, wiresGiveSignal: false);
+        var strength = 0;
+        if (best < RedstoneEngine.MaxSignal)
         {
-            fromBlocks = level.GetBestNeighborSignal(position);
+            var aboveIsConductor = world.GetLoadedBlock(position.Offset(BlockFace.Up))?.IsRedstoneConductor() ?? false;
+            foreach (var face in horizontal)
+            {
+                var neighbor = position.Offset(face);
+                var neighborState = world.GetLoadedBlock(neighbor);
+                if (neighborState is null)
+                    continue;
+
+                strength = Math.Max(strength, WirePower(world, neighbor));
+
+                // A conductor beside the wire lets the wire climb onto it, unless a conductor sits above the wire.
+                if (neighborState.IsRedstoneConductor())
+                {
+                    if (!aboveIsConductor)
+                        strength = Math.Max(strength, WirePower(world, neighbor.Offset(BlockFace.Up)));
+                }
+                else
+                {
+                    strength = Math.Max(strength, WirePower(world, neighbor.Offset(BlockFace.Down)));
+                }
+            }
         }
-        finally
-        {
-            level.WiresGiveSignal = true;
-        }
 
-        if (fromBlocks == 15)
-            return 15;
-
-        var fromWires = 0;
-        var aboveIsConductor = level.GetBlock(position + Vector.Up).IsRedstoneConductor();
-        foreach (var direction in horizontal)
-        {
-            var side = position.Offset(direction);
-            var state = level.GetBlock(side);
-            fromWires = Math.Max(fromWires, WirePower(state));
-
-            if (!state.IsRedstoneConductor())
-                fromWires = Math.Max(fromWires, WirePower(level.GetBlock(side + Vector.Down)));
-            else if (!aboveIsConductor)
-                fromWires = Math.Max(fromWires, WirePower(level.GetBlock(side + Vector.Up)));
-        }
-
-        return Math.Max(fromBlocks, fromWires - 1);
+        return Math.Max(best, strength - 1);
     }
 
-    private static int WirePower(IBlock state) => state.Is(BlockIds.RedstoneWire) ? Power(state) : 0;
+    private static int WirePower(IBlockChangeWorld world, Vector position) =>
+        world.GetLoadedBlock(position) is IBlock state && state.BlockClass() == BlockClass ? Power(state) : 0;
 
-    // The dust beside it, then the dust above or below those sides, each with its neighbours, hear of a change to
-    // the dust, as vanilla's dust updates.
-    private static void UpdateNearbyWires(LevelBlockUpdates level, Vector position)
-    {
-        foreach (var direction in horizontal)
-            UpdateWireAndAround(level, position.Offset(direction));
-
-        foreach (var direction in horizontal)
-        {
-            var side = position.Offset(direction);
-            var corner = level.GetBlock(side).IsRedstoneConductor() ? side + Vector.Up : side + Vector.Down;
-            UpdateWireAndAround(level, corner);
-        }
-    }
-
-    private static void UpdateWireAndAround(LevelBlockUpdates level, Vector position)
-    {
-        if (!level.GetBlock(position).Is(BlockIds.RedstoneWire))
-            return;
-
-        level.UpdateNeighbors(position, Dot);
-        foreach (var direction in all)
-            level.UpdateNeighbors(position.Offset(direction), Dot);
-    }
-
-    private static WireView View(LevelBlockUpdates level) => new(level.GetBlock, level.IsSignalSource);
+    private static int Power(IBlock state) => int.Parse(state.GetProperty("power"));
 }

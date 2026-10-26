@@ -57,6 +57,15 @@ public sealed class LootContext
     internal Func<IEntity, bool>? EntityIsBaby { get; init; }
 
     /// <summary>
+    /// Whether the entity is a fishing hook in open water (vanilla's <c>type_specific</c> <c>in_open_water</c>), or null
+    /// when it is not a fishing hook.
+    /// </summary>
+    internal Func<IEntity, bool?>? EntityFishingOpenWater { get; init; }
+
+    /// <summary>The identifier of the biome at a position, for biome location checks, or null when it is not loaded.</summary>
+    internal Func<VectorD, string?>? OriginBiome { get; init; }
+
+    /// <summary>
     /// The player who hurt the entity whose loot this is lately (vanilla's <c>last_damage_player</c>), which
     /// <c>killed_by_player</c> conditions require.
     /// </summary>

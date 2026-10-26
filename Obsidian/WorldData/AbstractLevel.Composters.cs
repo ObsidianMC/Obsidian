@@ -1,6 +1,4 @@
 using Obsidian.API.Inventory;
-using Obsidian.API.Registries;
-using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.WorldData;
@@ -34,7 +32,12 @@ public abstract partial class AbstractLevel
                 return true;
             }
 
-            using (player.Inventory.Lock())
+            // Waiting here would hold the level's tick lock while a click holds the inventory, so a busy inventory
+            // leaves the item in hand.
+            if (!player.Inventory.TryLock(out var inventoryLock))
+                return false;
+
+            using (inventoryLock)
             {
                 var stack = player.Inventory[handSlot];
                 if (level >= Composters.Full

@@ -55,6 +55,14 @@ internal interface IFluidLevelAccess
     }
 
     /// <summary>
+    /// A block the fluid level changed, after its own reactions ran (vanilla <c>setBlock</c> from outside a fluid's own
+    /// rules): the live level's block notifications (redstone) follow it, as the flags ask.
+    /// </summary>
+    public void OnBlockSet(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
+    {
+    }
+
+    /// <summary>
     /// Schedules a tick of <paramref name="fluid"/> at <paramref name="position"/> in <paramref name="delay"/> ticks, in the
     /// tick list of the position's chunk (ignored when one is already scheduled there for that fluid).
     /// </summary>

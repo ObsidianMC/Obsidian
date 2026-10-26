@@ -236,13 +236,17 @@ public abstract partial class AbstractLevel
             _ => LevelData.GetBooleanRule("mob_explosion_drop_decay")
         };
 
+        // The blocks as the explosion found them. Removing one updates its neighbours, which can remove another destroyed
+        // block (a flower losing its ground) before the loop reaches it; vanilla still drops that block's item, so the loop
+        // breaks the state captured here.
+        var found = destroyed.ToDictionary(position => position, position => terrain.GetBlock(position)!);
         var removed = new HashSet<Vector>();
         foreach (var position in destroyed)
         {
             if (!removed.Add(position))
                 continue;
 
-            var block = terrain.GetBlock(position)!;
+            var block = found[position];
 
             // Like vanilla's TntBlock.wasExploded, TNT caught in an explosion is lit with a short fuse instead of dropping.
             if (block.RegistryId == BlockIds.Tnt)

@@ -1,4 +1,5 @@
 using Obsidian.API.Blocks;
+using Obsidian.WorldData.BlockNotifications;
 
 namespace Obsidian.WorldData.Redstone;
 
@@ -8,20 +9,17 @@ namespace Obsidian.WorldData.Redstone;
 /// </summary>
 internal sealed class RailConnections
 {
-    // Vanilla's flag 3: neighbours and clients hear of the change.
-    private const BlockUpdateFlags Update = BlockUpdateFlags.Neighbors | BlockUpdateFlags.Clients;
-
     private static readonly Vector North = new(0, 0, -1);
     private static readonly Vector South = new(0, 0, 1);
     private static readonly Vector West = new(-1, 0, 0);
     private static readonly Vector East = new(1, 0, 0);
 
-    private readonly LevelBlockUpdates level;
+    private readonly IRedstoneLevel level;
     private readonly Vector position;
     private readonly bool straight;
     private readonly List<Vector> connections = [];
 
-    public RailConnections(LevelBlockUpdates level, Vector position, IBlock state)
+    public RailConnections(IRedstoneLevel level, Vector position, IBlock state)
     {
         this.level = level;
         this.position = position;
@@ -70,7 +68,10 @@ internal sealed class RailConnections
         }
     }
 
-    private bool IsRail(Vector at) => Rails.IsRail(this.level.GetBlock(at));
+    // Vanilla's getBlockState: an unloaded position reads as air, so no rail is there.
+    private IBlock GetBlock(Vector at) => this.level.GetLoadedBlock(at) ?? BlocksRegistry.Air;
+
+    private bool IsRail(Vector at) => Rails.IsRail(this.GetBlock(at));
 
     private bool HasRail(Vector at) => this.IsRail(at) || this.IsRail(at + Vector.Up) || this.IsRail(at + Vector.Down);
 
@@ -79,7 +80,7 @@ internal sealed class RailConnections
     {
         foreach (var candidate in new[] { at, at + Vector.Up, at + Vector.Down })
         {
-            var state = this.level.GetBlock(candidate);
+            var state = this.GetBlock(candidate);
             if (Rails.IsRail(state))
                 return new RailConnections(this.level, candidate, state);
         }
@@ -101,7 +102,7 @@ internal sealed class RailConnections
     private bool CanConnectTo(RailConnections other) => this.ConnectsTo(other) || this.connections.Count != 2;
 
     // Vanilla's connectTo: a neighbour turns towards a newly placed rail.
-    private void ConnectTo(RailConnections other)
+    private async ValueTask ConnectToAsync(RailConnections other)
     {
         this.connections.Add(other.position);
         var north = this.HasConnection(this.position + North);
@@ -129,7 +130,7 @@ internal sealed class RailConnections
 
         shape = this.Raised(shape) ?? RailShape.NorthSouth;
         this.State = Rails.WithShape(this.State, shape.Value);
-        this.level.Set(this.position, this.State, Update);
+        await this.level.SetBlockAsync(this.position, this.State);
     }
 
     // A straight rail runs up towards a rail one block higher.
@@ -167,7 +168,7 @@ internal sealed class RailConnections
     /// Vanilla's <c>place</c>: the rail turns towards the neighbours that can take it, curving the way power picks
     /// at a junction, and when it changed (or always, as it's placed) the neighbours turn towards it.
     /// </summary>
-    public RailConnections Place(bool powered, bool alwaysPlace, RailShape current)
+    public async ValueTask<RailConnections> PlaceAsync(bool powered, bool alwaysPlace, RailShape current)
     {
         var north = this.HasNeighborRail(this.position + North);
         var south = this.HasNeighborRail(this.position + South);
@@ -238,9 +239,9 @@ internal sealed class RailConnections
         this.UpdateConnections(placed);
         this.State = Rails.WithShape(this.State, placed);
 
-        if (alwaysPlace || !this.level.GetBlock(this.position).IsSameState(this.State))
+        if (alwaysPlace || !this.GetBlock(this.position).IsSameState(this.State))
         {
-            this.level.Set(this.position, this.State, Update);
+            await this.level.SetBlockAsync(this.position, this.State);
             foreach (var connection in this.connections.ToArray())
             {
                 if (this.GetRail(connection) is not RailConnections rail)
@@ -248,7 +249,7 @@ internal sealed class RailConnections
 
                 rail.RemoveSoftConnections();
                 if (rail.CanConnectTo(this))
-                    rail.ConnectTo(this);
+                    await rail.ConnectToAsync(this);
             }
         }
 

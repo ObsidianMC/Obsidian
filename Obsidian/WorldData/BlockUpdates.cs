@@ -2,9 +2,9 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API.Blocks;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Plugins;
+using Obsidian.WorldData.BlockTicks;
 using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Redstone;
-using Obsidian.WorldData.Ticks;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.WorldData;
@@ -12,7 +12,7 @@ namespace Obsidian.WorldData;
 /// <summary>
 /// A live level's block ticks, and how plugin blocks, vanilla's redstone components and vanilla's falling blocks
 /// react to block updates: plugin blocks run their behaviour's hooks (see <see cref="IBlockBehavior"/>), redstone
-/// components their rules (see <see cref="VanillaRedstone"/>), and falling blocks schedule the tick they fall on.
+/// components their rules (see <see cref="Redstone.RedstoneRegistration"/>), and falling blocks schedule the tick they fall on.
 /// It's the <see cref="IBlockLevel"/> those hooks get.
 /// </summary>
 /// <remarks>
@@ -28,15 +28,18 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     private const int FallDelay = 2;
 
     /// <summary>
-    /// The level's block tick scheduler, which the chunks' <see cref="Chunk.BlockTicks"/> are ticked by.
+    /// The level's block ticks, run each level tick before fluid ticks. Ticks of blocks with no registration run
+    /// <see cref="RunScheduledTick"/>.
     /// </summary>
-    public TickScheduler<string> Scheduler { get; } = new(fluids.Clock);
+    public LevelBlockTicks Ticks => this.ticks ??= new(
+        (IBlockTickLevel)level,
+        fluids.TickLock,
+        (position, block) => this.RunScheduledTick(position, block.UnlocalizedName));
+
+    private LevelBlockTicks? ticks;
 
     /// <inheritdoc/>
     public ILevel Level => level;
-
-    /// <inheritdoc/>
-    public IRandomSource Random => level.GrowthRandom;
 
     /// <summary>
     /// Reads a saved block tick's block, by identifier. Ticks of blocks the server doesn't know are read too: like any
@@ -47,6 +50,9 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         type = name;
         return name.Length > 0;
     }
+
+    /// <inheritdoc/>
+    public IRandomSource Random => level.GrowthRandom;
 
     /// <inheritdoc/>
     public IBlock GetBlock(Vector position) => fluids.GetBlock(position);
@@ -75,23 +81,17 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     /// <remarks>
     /// Like vanilla, ignored where the chunk isn't loaded and complete.
     /// </remarks>
-    public void ScheduleTick(Vector position, IBlock block, int delay, TickPriority priority = TickPriority.Normal)
+    public void ScheduleTick(Vector position, IBlock block, int delay, Obsidian.API.Blocks.TickPriority priority = Obsidian.API.Blocks.TickPriority.Normal)
     {
         lock (fluids.TickLock)
-        {
-            if (fluids.TryGetChunk(position, out var chunk))
-                chunk.BlockTicks.Schedule(position, block.UnlocalizedName, delay, (int)priority);
-        }
+            this.Ticks.Schedule(position, block.UnlocalizedName, delay, (int)priority);
     }
 
     /// <inheritdoc/>
     public bool HasScheduledTick(Vector position, IBlock block)
     {
         lock (fluids.TickLock)
-        {
-            return fluids.TryGetChunk(position, out var chunk)
-                && chunk.BlockTicks.Contains(position, block.UnlocalizedName);
-        }
+            return this.Ticks.IsScheduled(position, block.UnlocalizedName);
     }
 
     /// <inheritdoc/>
@@ -105,7 +105,7 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
 
     /// <summary>
     /// Vanilla <c>ServerLevel.tickBlock</c>: runs a scheduled tick if the block is still the one it was scheduled
-    /// for. Plugin blocks run their <see cref="IBlockBehavior.Tick"/>, redstone components their own, and vanilla's
+    /// for. Plugin blocks run their <see cref="IBlockBehavior.Tick"/>, vanilla blocks their overrides, and vanilla's
     /// falling blocks fall; other vanilla blocks' ticks (an observer's, from a vanilla save) do nothing yet.
     /// </summary>
     /// <returns>
@@ -121,12 +121,6 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         if (BlocksRegistry.TryGetPluginBlock(state.GetHashCode(), out var pluginBlock))
             return this.RunPluginTick(position, state, pluginBlock);
 
-        if (VanillaRedstone.For(state) is RedstoneComponent component)
-        {
-            component.Tick(this, position, state);
-            return true;
-        }
-
         // A vanilla class's tick override, found from the class that declares it.
         if (BlocksRegistry.GetTickBehavior(state.RegistryId) is IScheduledTickBehavior owner)
         {
@@ -140,10 +134,6 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         return true;
     }
 
-    /// <summary>Unavailable plugin types wait outside the runnable tick budget until their binding returns.</summary>
-    internal static bool CanRunTickType(string type) =>
-        !BlocksRegistry.TryGetPluginBlock(type, out var block)
-        || (block.Binding is BlockBinding binding && binding.Owner is not PluginContainer { IsClosing: true });
 
     /// <summary>
     /// Runs a random tick of a plugin block that gets them (see <see cref="BlockProperties.RandomlyTicks"/>); other
@@ -163,7 +153,6 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     /// <inheritdoc/>
     public void OnRemoved(Vector position, IBlock state, IBlock newState)
     {
-        VanillaRedstone.For(state)?.OnRemoved(this, position, state);
 
         this.RunHook(state, nameof(IBlockBehavior.OnRemoved), behavior => behavior.OnRemoved(new BlockRemovedContext
         {
@@ -186,7 +175,6 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
             return;
         }
 
-        VanillaRedstone.For(state)?.OnPlaced(this, position, state, oldState);
 
         this.RunHook(state, nameof(IBlockBehavior.OnPlaced), behavior => behavior.OnPlaced(new BlockPlacedContext
         {
@@ -200,8 +188,6 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     /// <inheritdoc/>
     public void NeighborChanged(Vector position, IBlock state, IBlock source, Vector sourcePosition)
     {
-        VanillaRedstone.For(state)?.NeighborChanged(this, position, state, source);
-        this.RemoveUnsupportedRail(position, state);
 
         this.RunHook(
             state,
@@ -230,9 +216,6 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
             this.ScheduleFall(position, state);
             return null;
         }
-
-        if (VanillaRedstone.For(state) is RedstoneComponent component)
-            return component.UpdateShape(this, position, state, direction, neighbor);
 
         // A sign comes off when what holds it goes.
         if (Signs.IsSign(state))
@@ -281,8 +264,10 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         Vector position,
         IBlock state,
         BlockUpdateFlags flags,
-        int updateLimit) =>
-        VanillaRedstone.For(state)?.UpdateIndirectNeighborShapes(this, position, state, flags, updateLimit);
+        int updateLimit)
+    {
+        // No block in the notification pipeline has an indirect shape reaction: vanilla's rails and redstone blocks don't.
+    }
 
     // Vanilla's falling blocks and suspicious sand and gravel; plugins' blocks never fall on their own.
     private static bool IsVanillaFalling(IBlock state) =>
@@ -290,8 +275,7 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
 
     private void ScheduleFall(Vector position, IBlock state)
     {
-        if (fluids.TryGetChunk(position, out var chunk))
-            chunk.BlockTicks.Schedule(position, state.UnlocalizedName, FallDelay);
+        this.Ticks.Schedule(position, state.UnlocalizedName, FallDelay);
     }
 
     // Vanilla FallingBlock.tick and FallingBlockEntity.fall: with room below, the block leaves its fluid behind, with

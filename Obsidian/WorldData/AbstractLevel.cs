@@ -1,17 +1,16 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Obsidian.API;
 using Obsidian.API.Blocks;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
-using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Entities;
 using Obsidian.Entities.Factories;
-using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
+using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Fluids;
+using Obsidian.WorldData.Redstone;
 using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Lighting;
 using Obsidian.WorldData.Portals;
@@ -165,6 +164,8 @@ public abstract partial class AbstractLevel : ILevel
     private readonly IDisposable optionsMonitor;
     private readonly Lock regionLock = new();
     private readonly ConcurrentQueue<Func<ValueTask>> entityActions = new();
+    // Due block ticks run before ordinary deferred mutations in the same level tick.
+    private readonly ConcurrentQueue<Func<ValueTask>> simulationActions = new();
     private MobSpawner? mobSpawner;
 
     /// <summary>
@@ -176,6 +177,8 @@ public abstract partial class AbstractLevel : ILevel
     private readonly SemaphoreSlim simulationGate = new(1, 1);
 
     internal void EnqueueEntityAction(Func<ValueTask> action) => entityActions.Enqueue(action);
+
+    internal void EnqueueSimulationAction(Func<ValueTask> action) => simulationActions.Enqueue(action);
 
     /// <summary>The level's tick times by stage, for the server's tick statistics.</summary>
     internal TimingWindow TickTimes { get; } = new();
@@ -339,6 +342,12 @@ public abstract partial class AbstractLevel : ILevel
         this.Name = name;
         this.Seed = seed;
         this.Fluids = new LevelFluids(this);
+        this.Neighbors = new NeighborBehaviors();
+        this.RedstoneRules = new RedstoneBehaviors(new PluginRedstoneBehavior(this));
+        this.BlockNotifications = new BlockNotificationPipeline(this, this.Neighbors);
+        this.RedstoneInstall = RedstoneRegistration.Install(this, this.BlockUpdates.Ticks, this.Neighbors, this.RedstoneRules, position => this.PlayNoteBlock(position));
+        this.Plates = new PressurePlates(this);
+        this.Plates.RegisterTicks(this.BlockUpdates.Ticks, this);
         this.Lighting = new RuntimeLightEngine(
             this.Fluids.TickLock, () => this.DimensionType?.Element.HasSkylight ?? true);
         this.Portals = new LevelPortals(this);
@@ -516,6 +525,17 @@ public abstract partial class AbstractLevel : ILevel
     internal void BroadcastLevelEvent(int type, Vector location, int data)
     {
         this.PacketBroadcaster.BroadcastTo(new LevelEventPacket(type, location, data), PlayersInRange(location));
+    }
+
+    internal void BroadcastBlockEvent(Vector location, int blockId, int type, int data)
+    {
+        this.PacketBroadcaster.BroadcastTo(new BlockEventPacket
+        {
+            Position = location,
+            ActionId = (byte)type,
+            ActionParam = (byte)data,
+            BlockType = blockId
+        }, PlayersInRange(location));
     }
 
     public IEnumerable<IPlayer> PlayersInRange(Vector location) => this.PlayersWithChunk(location);
@@ -781,6 +801,10 @@ public abstract partial class AbstractLevel : ILevel
     /// <param name="timings">The tick's timings, which time the actions apart from the spawns; none outside a tick.</param>
     private async Task RunEntityActionsAsync(TickTimings? timings = null)
     {
+        var simulationCount = simulationActions.Count;
+        for (var index = 0; index < simulationCount && simulationActions.TryDequeue(out var simulation); index++)
+            await simulation();
+
         var actionCount = entityActions.Count;
         for (var index = 0; index < actionCount && entityActions.TryDequeue(out var action); index++)
         {
@@ -849,6 +873,11 @@ public abstract partial class AbstractLevel : ILevel
                 timings.LapEntity(entity.GetType());
             }
         }
+        // Like vanilla's entity movement, the redstone that entities touch reacts once they've all ticked: pressure plates,
+        // then tripwires, on the entities' current positions.
+        var movers = this.SnapshotEntities().ToList();
+        await this.Plates.UpdateAsync(movers);
+        await this.RedstoneInstall.Tripwires.UpdateAsync(movers);
         timings.Lap("entities");
 
         TickStage = "sleeping";

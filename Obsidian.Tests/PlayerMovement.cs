@@ -1,6 +1,4 @@
 using Obsidian.API;
-using Obsidian.API.Networking;
-using Obsidian.Entities;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -103,6 +101,18 @@ public sealed class PlayerMovement : IDisposable
 
         await player.UpdateAsync(ground, MovementFlags.OnGround);
         Assert.False(player.FlyingWithElytra);
+
+        // A slow glide down keeps the fall distance at 1, as vanilla's updateFallFlying does, so landing from it hurts nothing.
+        player.TryStartGliding();
+        await player.UpdateAsync(ground + new VectorD(0, 3, 0), MovementFlags.None);
+        player.TryStartGliding();
+        Assert.True(player.FlyingWithElytra);
+        for (var y = 2.9; y >= 1; y -= 0.1)
+            await player.UpdateAsync(ground + new VectorD(0, y, 0), MovementFlags.None);
+        Assert.InRange(player.FallDistance, 1, 1.2);
+        await player.UpdateAsync(ground, MovementFlags.OnGround);
+        Assert.False(player.FlyingWithElytra);
+        Assert.Equal(0, player.FallDistance);
 
         // A supported landing gives back the jump.
         await player.UpdateAsync(ground + new VectorD(0, 3, 0), MovementFlags.None);

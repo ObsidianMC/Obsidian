@@ -407,6 +407,14 @@ internal static class BlockPhysics
     /// <summary>Vanilla's <c>hasPostProcess</c>: worldgen marks the position of such a state for post-processing.</summary>
     public static bool HasPostProcess(int state) => (uint)state < (uint)data.Value.PostProcess.Length && data.Value.PostProcess[state];
 
+    /// <summary>
+    /// Vanilla's <c>getPistonPushReaction</c> for a state: how a piston treats it (NORMAL, DESTROY, BLOCK, IGNORE, PUSH_ONLY).
+    /// </summary>
+    public static string PistonPushReaction(int state) => data.Value.PushReactionNames[data.Value.PushReactions[state]];
+
+    /// <summary>Whether the state is a sticky piston base (vanilla <c>PistonBaseBlock.isSticky</c>).</summary>
+    public static bool IsStickyPiston(int state) => data.Value.StickyPistons[state];
+
     /// <summary>Moves shapes captured at the origin to a state's position-dependent offset (flowers, bamboo, etc.).</summary>
     public static (double X, double Y, double Z) ShapeOffset(int state, int x, int z)
     {
@@ -488,7 +496,19 @@ internal static class BlockPhysics
             root.GetProperty("hardness").EnumerateArray().Select(value => value.GetSingle()).ToArray(),
             root.GetProperty("requiresTool").EnumerateArray().Select(value => value.GetBoolean()).ToArray(),
             RandomTickingStates(root),
-            root.GetProperty("postProcess").EnumerateArray().Select(value => value.GetBoolean()).ToArray());
+            root.GetProperty("postProcess").EnumerateArray().Select(value => value.GetBoolean()).ToArray(),
+            root.GetProperty("pushReactionNames").EnumerateArray().Select(value => value.GetString()!).ToArray(),
+            root.GetProperty("pushReactions").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+            StickyPistonStates(root));
+    }
+
+    private static bool[] StickyPistonStates(JsonElement root)
+    {
+        var sticky = new bool[root.GetProperty("flags").GetArrayLength()];
+        foreach (var state in root.GetProperty("stickyPistonStates").EnumerateArray())
+            sticky[state.GetInt32()] = true;
+
+        return sticky;
     }
 
     private static bool[] RandomTickingStates(JsonElement root)
@@ -504,7 +524,8 @@ internal static class BlockPhysics
         Dictionary<string, string> BlockClasses, Dictionary<string, string> BlockEntityTypes,
         Dictionary<string, int> BlockEntityTypeIds, HashSet<string> SignalSources, int[] FluidFlags, int[][] CollisionFaceSets,
         double[][][] CollisionFaces, double[][][] ShapeBoxes, int[] CollisionShapes, int[] VisualShapes, int[] OutlineShapes, bool[] Suffocating,
-        double[][] ShapeOffsets, float[] Hardness, bool[] RequiresTool, bool[] RandomTicking, bool[] PostProcess)
+        double[][] ShapeOffsets, float[] Hardness, bool[] RequiresTool, bool[] RandomTicking, bool[] PostProcess,
+        string[] PushReactionNames, int[] PushReactions, bool[] StickyPistons)
     {
         // Like vanilla's occlusion cache in FlowingFluid: the same pairs of partial blocks come up again and again.
         public ConcurrentDictionary<(int From, int To, BlockFace Direction), bool> FaceOcclusion { get; } = new();

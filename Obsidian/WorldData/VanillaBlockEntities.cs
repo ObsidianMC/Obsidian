@@ -19,6 +19,7 @@ internal static class VanillaBlockEntities
     public static BlockEntity? Create(string type, Vector position) => type switch
     {
         "minecraft:chest" or "minecraft:trapped_chest" => Chest(new Container { Title = "Chest" }, position),
+        "minecraft:piston" => new Pistons.MovingPistonBlockEntity { BlockPosition = position },
         "minecraft:barrel" => Chest(new Container { Title = "Barrel" }, position),
         "minecraft:shulker_box" => new ShulkerBoxBlockEntity(new Container
         {

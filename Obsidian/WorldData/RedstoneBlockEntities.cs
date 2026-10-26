@@ -204,9 +204,6 @@ internal sealed class BeaconBlockEntity : BlockEntity
 /// </summary>
 internal sealed class LecternBlockEntity : VanillaContainerBlockEntity
 {
-    // How long a page turn powers the lectern (vanilla's LecternBlock.signalPageChange).
-    private const int PageTurnPulse = 2;
-
     // Vanilla's LevelEvent.SOUND_BOOK_PAGE_TURN... played by the client for the reader; others hear it.
     private const int PageTurnEvent = 1043;
 
@@ -273,7 +270,7 @@ internal sealed class LecternBlockEntity : VanillaContainerBlockEntity
     /// redstone pulse.
     /// </summary>
     /// <returns>Whether the page changed.</returns>
-    public bool SetPage(int page)
+    public async ValueTask<bool> SetPageAsync(int page)
     {
         var pages = PageCount(this.Lectern.Book);
         var clamped = Math.Clamp(page, 0, Math.Max(0, pages - 1));
@@ -285,14 +282,8 @@ internal sealed class LecternBlockEntity : VanillaContainerBlockEntity
 
         if (this.Level is AbstractLevel level)
         {
-            lock (level.Fluids.TickLock)
-            {
-                var updates = level.BlockUpdates;
-                var position = this.BlockPosition;
-                Redstone.LecternComponent.SetPowered(updates, position, updates.GetBlock(position), true);
-                updates.ScheduleTick(position, updates.GetBlock(position), PageTurnPulse);
-                updates.UpdateAnalogOutput(position);
-            }
+            await Redstone.RedstoneLectern.TurnPageAsync(level, this.BlockPosition);
+            level.BlockUpdates.UpdateAnalogOutput(this.BlockPosition);
 
             level.BroadcastLevelEvent(PageTurnEvent, this.BlockPosition, 0);
         }

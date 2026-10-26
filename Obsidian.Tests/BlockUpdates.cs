@@ -255,7 +255,8 @@ public sealed class BlockUpdates : IDisposable
             packet => packet.Position == filled && packet.BlockId == BlocksRegistry.Stone.GetHashCode());
 
         // Vanilla's redstone components go down as vanilla places them: a lever on the floor facing the way the
-        // player does, a torch clicked onto a block's side on that side, and redstone dust as a cross.
+        // player does, a torch clicked onto a block's side on that side, and isolated redstone dust as a dot (vanilla's
+        // getStateForPlacement keeps a dot that connects nowhere).
         meanwhile = null;
         async Task<IBlock> PlaceVanillaAsync(string item, Vector clicked, BlockFace face)
         {
@@ -272,7 +273,7 @@ public sealed class BlockUpdates : IDisposable
         var torch = await PlaceVanillaAsync("minecraft:redstone_torch", wall, BlockFace.East);
         Assert.Equal(("minecraft:redstone_wall_torch", "east"), (torch.UnlocalizedName, torch.GetProperty("facing")));
         var dust = await PlaceVanillaAsync("minecraft:redstone", new Vector(14, Ground, 8), BlockFace.Up);
-        Assert.All(["north", "east", "south", "west"], side => Assert.Equal("side", dust.GetProperty(side)));
+        Assert.All(["north", "east", "south", "west"], side => Assert.Equal("none", dust.GetProperty(side)));
 
         await manager.UnloadPluginAsync(container);
     }
@@ -564,7 +565,7 @@ public sealed class BlockUpdates : IDisposable
         var listener = lever + Vector.East;
         await world.SetBlockAsync(lever, BlocksRegistry.GetDefault(BlockIds.Lever), BlockUpdateFlags.All);
         await world.SetBlockAsync(listener, relay.DefaultState, BlockUpdateFlags.All);
-        Assert.True(world.BlockUpdates.UseRedstone(lever, new FakePlayer(), mayBuild: true));
+        Assert.True(await world.UseRedstoneAsync(lever, new FakePlayer(), mayBuild: true));
 
         await world.DoWorldTickAsync();
         await world.DoWorldTickAsync();
@@ -680,11 +681,11 @@ public sealed class BlockUpdates : IDisposable
         var build = new List<(Vector Position, IBlock State)>();
         var steps = new List<(int Tick, Func<ValueTask> Run)>();
         var checks = new List<(int Tick, Vector Position, string Property, string Value)>();
-        void Use(int tick, Vector position) => steps.Add((tick, () =>
+        void Use(int tick, Vector position)
         {
-            Assert.True(world.BlockUpdates.UseRedstone(position, player, mayBuild: true));
-            return ValueTask.CompletedTask;
-        }));
+            Func<ValueTask> run = async () => Assert.True(await world.UseRedstoneAsync(position, player, mayBuild: true));
+            steps.Add((tick, run));
+        }
 
         // Dust carries a lever's power 15 blocks, into the lamp at its end; the lamp goes out four ticks after.
         build.Add((At(0, 0), lever));
@@ -749,15 +750,15 @@ public sealed class BlockUpdates : IDisposable
         Use(0, At(1, 8));
         checks.AddRange([(8, At(3, 8), "power", "12"), (8, At(4, 8), "power", "11")]);
 
-        // Of two comparators in line due on the same tick, the one feeding the other ticks first, so the second reads
-        // its new output: the first's hopper (3) becomes a block of redstone (15) as the second's side goes off.
+        // These aligned comparators become due together. Vanilla only prioritizes a front diode when it faces a
+        // different direction, so the downstream comparator runs with its prior input and refreshes two ticks later.
         build.AddRange([(At(6, 10), hopper), (At(7, 10), Comparator("west", "compare"))]);
         build.AddRange([(At(8, 10), Comparator("west", "subtract")), (At(9, 10), dust)]);
         build.Add((At(8, 11), Block("redstone_block")));
         steps.Add((0, () => Fill(world, At(6, 10))));
         steps.Add((10, () => world.SetBlockAsync(At(8, 11), BlocksRegistry.Air, BlockUpdateFlags.All)));
         steps.Add((10, () => world.SetBlockAsync(At(6, 10), Block("redstone_block"), BlockUpdateFlags.All)));
-        checks.AddRange([(9, At(9, 10), "power", "0"), (12, At(9, 10), "power", "15")]);
+        checks.AddRange([(9, At(9, 10), "power", "0"), (12, At(9, 10), "power", "3"), (14, At(9, 10), "power", "15")]);
 
         // A repeater a powered repeater points into from the side holds its output until it's unlocked.
         build.AddRange([(At(0, 12), lever), (At(1, 12), Repeater("west", 1)), (At(2, 12), lamp)]);
@@ -800,7 +801,8 @@ public sealed class BlockUpdates : IDisposable
 
         // The dropped dust slides a little on the motion it popped out with.
         var drops = world.GetNonPlayerEntitiesInRange((VectorD)At(14, 14, up: 2), 8).OfType<ItemEntity>();
-        Assert.Contains(drops, drop => drop.Item.Is(ItemsRegistry.Get("minecraft:redstone")));
+        Assert.True(drops.Any(drop => drop.Item.Is(ItemsRegistry.Get("minecraft:redstone"))),
+            $"Drops: {string.Join(", ", drops.Select(drop => drop.Item.ToString()))}");
 
         await AssertSupportLossAsync(world, player);
         world.TryRemovePlayer(player);
@@ -904,7 +906,8 @@ public sealed class BlockUpdates : IDisposable
 
             await world.DoWorldTickAsync();
             var remaining = chunk.GetBlock(relightPosition);
-            Assert.True(remaining.Is(restoreSupport ? BlockIds.RedstoneTorch : BlockIds.Stone));
+            Assert.True(remaining.Is(restoreSupport ? BlockIds.RedstoneTorch : BlockIds.Stone),
+                $"restoreSupport={restoreSupport}, actual={remaining.UnlocalizedName}");
             if (restoreSupport)
                 Assert.Equal("true", remaining.GetProperty("lit"));
 

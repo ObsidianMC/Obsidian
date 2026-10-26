@@ -35,6 +35,7 @@ internal static class ItemUseBehaviors
         ["net.minecraft.world.item.FireworkRocketItem"] = new FireworkRocketUse(),
         ["net.minecraft.world.item.EnderEyeItem"] = new EnderEyeUse(),
         ["net.minecraft.world.item.ExperienceBottleItem"] = new ExperienceBottleUse(),
+        ["net.minecraft.world.item.FishingRodItem"] = new FishingRodUse(),
     }.ToFrozenDictionary();
 
     /// <summary>The Mojang class declaring each item's <c>use</c>, by item identifier.</summary>

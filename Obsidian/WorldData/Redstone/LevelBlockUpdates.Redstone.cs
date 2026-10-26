@@ -44,65 +44,25 @@ internal sealed partial class LevelBlockUpdates
     /// <summary>
     /// The game time block ticks are scheduled against.
     /// </summary>
-    internal long GameTime => this.Scheduler.GameTime;
+    internal long GameTime => this.Ticks.GameTime;
 
     /// <inheritdoc/>
-    public int GetSignal(Vector position, BlockFace direction)
-    {
-        var state = this.GetBlock(position);
-        var signal = this.SignalOf(state, position, direction);
-
-        return state.IsRedstoneConductor() ? Math.Max(signal, this.GetDirectSignalTo(position)) : signal;
-    }
+    public int GetSignal(Vector position, BlockFace direction) => level.GetSignal(position, direction);
 
     /// <inheritdoc/>
-    public int GetDirectSignal(Vector position, BlockFace direction) =>
-        this.DirectSignalOf(this.GetBlock(position), position, direction);
+    public int GetDirectSignal(Vector position, BlockFace direction) => level.GetDirectSignal(position, direction);
 
     /// <inheritdoc/>
-    public int GetDirectSignalTo(Vector position)
-    {
-        var best = 0;
-        foreach (var direction in signalOrder)
-        {
-            best = Math.Max(best, this.GetDirectSignal(position.Offset(direction), direction));
-            if (best >= 15)
-                return best;
-        }
-
-        return best;
-    }
+    public int GetDirectSignalTo(Vector position) => level.GetDirectSignalTo(position);
 
     /// <inheritdoc/>
-    public bool HasSignal(Vector position, BlockFace direction) => this.GetSignal(position, direction) > 0;
+    public bool HasSignal(Vector position, BlockFace direction) => level.HasSignal(position, direction);
 
     /// <inheritdoc/>
-    public bool HasNeighborSignal(Vector position)
-    {
-        foreach (var direction in signalOrder)
-        {
-            if (this.GetSignal(position.Offset(direction), direction) > 0)
-                return true;
-        }
-
-        return false;
-    }
+    public bool HasNeighborSignal(Vector position) => level.HasNeighborSignal(position);
 
     /// <inheritdoc/>
-    public int GetBestNeighborSignal(Vector position)
-    {
-        var best = 0;
-        foreach (var direction in signalOrder)
-        {
-            var signal = this.GetSignal(position.Offset(direction), direction);
-            if (signal >= 15)
-                return 15;
-
-            best = Math.Max(best, signal);
-        }
-
-        return best;
-    }
+    public int GetBestNeighborSignal(Vector position) => level.GetBestNeighborSignal(position);
 
     /// <inheritdoc/>
     public void UpdateAnalogOutput(Vector position)
@@ -171,88 +131,7 @@ internal sealed partial class LevelBlockUpdates
             this.ShapeUpdateAt(position.Offset(direction), direction.Opposite(), RefreshShapeFlags, ShapeLimit);
 
         this.UpdateComparatorsAround(position, state);
-    }
-
-    /// <summary>
-    /// A player uses the vanilla redstone component at <paramref name="position"/>: flips a lever, presses a button,
-    /// cycles a repeater's delay or a comparator's mode, or turns dust between a dot and a cross.
-    /// </summary>
-    /// <param name="mayBuild">Whether the player may change blocks, which repeaters, comparators and dust need.</param>
-    /// <returns>Whether the block reacted.</returns>
-    public bool UseRedstone(Vector position, IPlayer player, bool mayBuild)
-    {
-        lock (fluids.TickLock)
-        {
-            var state = this.GetBlock(position);
-            return VanillaRedstone.For(state)?.Use(this, position, state, player, mayBuild) == true;
-        }
-    }
-
-    /// <summary>
-    /// The state a player places a vanilla redstone component in (see
-    /// <see cref="RedstoneComponent.GetStateForPlacement"/>), or the block as it is for other blocks.
-    /// </summary>
-    /// <returns>The state to place, or null when it can't go there.</returns>
-    public IBlock? GetRedstonePlacement(IBlock block, Vector position, IPlayer player, BlockFace face, bool replaces)
-    {
-        if (VanillaRedstone.For(block) is not RedstoneComponent component)
-            return block;
-
-        var placement = new RedstonePlacement
-        {
-            Level = this,
-            Block = block,
-            Position = position,
-            HorizontalDirection = PlacementDirections.Horizontal(player.Yaw.Degrees),
-            NearestLookingDirections =
-                PlacementDirections.NearestLooking(player.Yaw.Degrees, player.Pitch.Degrees, face, replaces),
-            ClickedFace = face,
-            NearestLookDirection = PlacementDirections.Nearest(player.Yaw.Degrees, player.Pitch.Degrees)
-        };
-
-        lock (fluids.TickLock)
-            return component.GetStateForPlacement(placement);
-    }
-
-    /// <summary>
-    /// Vanilla <c>setPlacedBy</c> for a vanilla redstone component a player placed: a repeater or comparator
-    /// powered as it's placed ticks at once.
-    /// </summary>
-    public void OnPlacedByPlayer(Vector position, IBlock state)
-    {
-        lock (fluids.TickLock)
-        {
-            if (this.GetBlock(position).IsSameState(state))
-                VanillaRedstone.For(state)?.OnPlacedByPlayer(this, position, state);
-        }
-    }
-
-    /// <summary>
-    /// An explosion that triggers blocks (a wind charge) reaches <paramref name="position"/>: a lever there flips
-    /// and a button is pressed, like vanilla's <c>onExplosionHit</c>.
-    /// </summary>
-    /// <returns>Whether a block reacted.</returns>
-    public bool TriggerRedstone(Vector position)
-    {
-        lock (fluids.TickLock)
-        {
-            var state = this.GetBlock(position);
-            return VanillaRedstone.For(state)?.Trigger(this, position, state) == true;
-        }
-    }
-
-    /// <summary>
-    /// Vanilla <c>entityInside</c> for the pressure plate or wooden button at <paramref name="position"/>, whose
-    /// cube <paramref name="entity"/>'s box overlaps.
-    /// </summary>
-    public void EntityInsideRedstone(Vector position, IEntity entity)
-    {
-        lock (fluids.TickLock)
-        {
-            var state = this.GetBlock(position);
-            if (VanillaRedstone.IsPressedByEntities(state))
-                VanillaRedstone.For(state)!.EntityInside(this, position, state, entity);
-        }
+        level.NotifyNeighborReactionsAround(position);
     }
 
     /// <summary>
@@ -274,9 +153,6 @@ internal sealed partial class LevelBlockUpdates
     /// </summary>
     internal bool IsSignalSource(IBlock state)
     {
-        if (VanillaRedstone.For(state) is RedstoneComponent component)
-            return component.IsSignalSource(this);
-
         if (!BlocksRegistry.TryGetPluginBlock(state.GetHashCode(), out _))
             return state.IsSignalSource();
 
@@ -367,7 +243,7 @@ internal sealed partial class LevelBlockUpdates
     /// Vanilla <c>willTickThisTick</c> for the block at <paramref name="position"/>.
     /// </summary>
     internal bool WillTickThisTick(Vector position, IBlock state) =>
-        this.Scheduler.WillTickThisTick(position, state.UnlocalizedName);
+        this.Ticks.WillTickThisTick(position, state.UnlocalizedName);
 
     /// <summary>
     /// Vanilla <c>dropResources</c> and <c>removeBlock</c>: the block drops its loot, like a player breaking it by
@@ -375,9 +251,8 @@ internal sealed partial class LevelBlockUpdates
     /// </summary>
     internal void DropAndRemove(Vector position, IBlock state) =>
         level.QueueBlockDestruction(position, true, null, FluidState.Of(state).CreateLegacyBlock(), playEffect: false,
-            stillUnsupported: current => current.BlockClass() is
-                "RailBlock" or "PoweredRailBlock" or "DetectorRailBlock"
-                ? this.IsUnsupportedRail(position, current)
+            stillUnsupported: current => Rails.IsRail(current)
+                ? RedstoneRail.IsUnsupported(position, current, this.GetBlock)
                 : updates.IsUnsupported(position, current));
 
     /// <summary>
@@ -429,20 +304,7 @@ internal sealed partial class LevelBlockUpdates
     /// The entities whose boxes overlap the box from <paramref name="min"/> to <paramref name="max"/>, like
     /// vanilla's <c>getEntitiesOfClass</c>.
     /// </summary>
-    internal IEnumerable<IEntity> EntitiesIn(VectorD min, VectorD max)
-    {
-        var center = (min + max) / 2;
-        foreach (var entity in level.GetEntitiesInRange(center, 4))
-        {
-            var box = entity.BoundingBox;
-            if (box.Min.X < max.X && box.Max.X > min.X
-                && box.Min.Y < max.Y && box.Max.Y > min.Y
-                && box.Min.Z < max.Z && box.Max.Z > min.Z)
-            {
-                yield return entity;
-            }
-        }
-    }
+    internal IEnumerable<IEntity> EntitiesIn(VectorD min, VectorD max) => level.EntitiesIn(min, max);
 
     // Where blocks of the types are in the complete chunks, found before any changes, which the updates make.
     private List<Vector> FindBlocksOf(IReadOnlyCollection<BlockType> types, IEnumerable<Chunk>? chunks = null)
@@ -475,29 +337,20 @@ internal sealed partial class LevelBlockUpdates
         return found;
     }
 
-    // A block's weak signal: a vanilla component's, a plugin block's behaviour's, and none for other blocks.
-    private int SignalOf(IBlock state, Vector position, BlockFace direction)
+    /// <summary>
+    /// A plugin block's weak (<paramref name="direct"/> false) or direct power toward the block asking from
+    /// <paramref name="direction"/>, from its behaviour's <see cref="IBlockBehavior.GetSignal"/> or
+    /// <see cref="IBlockBehavior.GetDirectSignal"/>. Vanilla blocks have none here: their rules are registered by class.
+    /// </summary>
+    internal int PluginSignalOf(IBlock state, Vector position, BlockFace direction, bool direct)
     {
-        if (VanillaRedstone.For(state) is RedstoneComponent component)
-            return component.GetSignal(this, position, state, direction);
-
         if (!BlocksRegistry.TryGetPluginBlock(state.GetHashCode(), out _))
             return 0;
 
         var context = this.SignalContext(state, position, direction);
-        return Math.Clamp(this.AskPlugin(state, nameof(IBlockBehavior.GetSignal), 0, b => b.GetSignal(context)), 0, 15);
-    }
-
-    private int DirectSignalOf(IBlock state, Vector position, BlockFace direction)
-    {
-        if (VanillaRedstone.For(state) is RedstoneComponent component)
-            return component.GetDirectSignal(this, position, state, direction);
-
-        if (!BlocksRegistry.TryGetPluginBlock(state.GetHashCode(), out _))
-            return 0;
-
-        var context = this.SignalContext(state, position, direction);
-        var signal = this.AskPlugin(state, nameof(IBlockBehavior.GetDirectSignal), 0, b => b.GetDirectSignal(context));
+        var signal = direct
+            ? this.AskPlugin(state, nameof(IBlockBehavior.GetDirectSignal), 0, b => b.GetDirectSignal(context))
+            : this.AskPlugin(state, nameof(IBlockBehavior.GetSignal), 0, b => b.GetSignal(context));
 
         return Math.Clamp(signal, 0, 15);
     }

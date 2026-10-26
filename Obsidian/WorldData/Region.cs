@@ -960,7 +960,7 @@ public class Region : IRegion
             chunk.FluidTicks.Read(fluidTicks, x, z, FluidNames.TryParse);
 
         if (chunkCompound.TryGetTag<NbtList>("block_ticks", out var blockTicks))
-            chunk.BlockTicks.Read(blockTicks, x, z, LevelBlockUpdates.TryParseTickType);
+            chunk.BlockTicks.Read(blockTicks, x, z);
 
         // Entities of a chunk that isn't complete yet, like a vanilla proto chunk's "entities".
         if (chunkCompound.TryGetTag<NbtList>("entities", out var entities))
@@ -1150,7 +1150,7 @@ public class Region : IRegion
                 WritePostProcessing(writer, generated);
 
             // Scheduled block and fluid ticks, like vanilla's "block_ticks" and "fluid_ticks".
-            generated.BlockTicks.Write(writer, "block_ticks", name => name);
+            generated.BlockTicks.Write(writer);
             generated.FluidTicks.Write(writer, "fluid_ticks", FluidNames.Name);
             var mobEggTicks = generated.HasMobEggTicks ? generated.MobEggTicks.ToArray() : [];
             writer.WriteListStart("ObsidianMobEggTicks", NbtTagType.Compound, mobEggTicks.Length);

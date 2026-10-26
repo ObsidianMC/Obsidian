@@ -120,7 +120,7 @@ internal sealed class BreezeWindCharge : Entity
                 var open = block.GetProperty("open");
                 if (open != null && block.RegistryId is not BlockIds.IronDoor and not BlockIds.IronTrapdoor)
                     await Level.SetBlockAsync(point, block.WithProperty("open", open != "true"), true);
-                else if (Level is AbstractLevel redstoneLevel && redstoneLevel.BlockUpdates.TriggerRedstone(point))
+                else if (Level is AbstractLevel redstoneLevel && await redstoneLevel.TriggerRedstoneAsync(point))
                     continue;
                 else if (block.GetProperty("lit") == "true"
                     && (block.RegistryId is BlockIds.Campfire or BlockIds.SoulCampfire

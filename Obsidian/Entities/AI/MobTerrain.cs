@@ -342,18 +342,26 @@ internal sealed class MobTerrain(ILevel level)
         }
     }
 
+    /// <summary>Whether the segment from <paramref name="start"/> along <paramref name="direction"/> touches the box, starting inside counting.</summary>
+    internal static bool SegmentIntersects(BoundingBox box, VectorD start, VectorD direction) =>
+        ClipSegment(box, start, direction, out _);
+
     private static bool IntersectsSegment(BoundingBox box, VectorD start, VectorD direction) =>
-        RayIntersection(box, start, direction) != null;
+        SegmentIntersects(box, start, direction);
 
     // Like vanilla AABB.clip, only an entry strictly after the start counts: a ray that starts inside or on the
     // box (e.g. a projectile that was just deflected off it) does not hit it again.
-    internal static double? RayIntersection(BoundingBox box, VectorD start, VectorD direction)
+    internal static double? RayIntersection(BoundingBox box, VectorD start, VectorD direction) =>
+        ClipSegment(box, start, direction, out var entry) && entry > 0 ? entry : null;
+
+    private static bool ClipSegment(BoundingBox box, VectorD start, VectorD direction, out double min)
     {
-        var min = double.NegativeInfinity;
+        // The segment is [0, 1]: an entry before the start clamps to it, and a box wholly behind the start misses.
+        min = 0d;
         var max = 1d;
         return ClipRay(start.X, direction.X, box.Min.X, box.Max.X, ref min, ref max) &&
             ClipRay(start.Y, direction.Y, box.Min.Y, box.Max.Y, ref min, ref max) &&
-            ClipRay(start.Z, direction.Z, box.Min.Z, box.Max.Z, ref min, ref max) && min > 0 ? min : null;
+            ClipRay(start.Z, direction.Z, box.Min.Z, box.Max.Z, ref min, ref max);
     }
 
     private static bool ClipRay(double start, double direction, double lower, double upper, ref double min, ref double max)

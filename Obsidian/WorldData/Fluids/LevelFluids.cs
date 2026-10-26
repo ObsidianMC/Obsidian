@@ -91,14 +91,11 @@ internal sealed class LevelFluids : IFluidLevelAccess
 
             var key = NumericsHelper.IntsToLong(complete.X, complete.Z);
             if (this.chunks.TryGetValue(key, out var previous) && previous != complete)
-            {
                 previous.FluidTicks.StopTicking();
-                previous.BlockTicks.StopTicking();
-            }
 
             this.chunks[key] = complete;
             complete.FluidTicks.StartTicking(this.scheduler, key);
-            complete.BlockTicks.StartTicking(this.Blocks.Scheduler, key);
+            this.Blocks.Ticks.Track(complete);
             this.Blocks.RefreshPluginBlocksIn(complete);
         }
     }
@@ -113,7 +110,7 @@ internal sealed class LevelFluids : IFluidLevelAccess
                 return;
 
             stored.FluidTicks.StopTicking();
-            stored.BlockTicks.StopTicking();
+            this.Blocks.Ticks.Untrack(stored);
             this.chunks.Remove(key);
         }
     }
@@ -134,8 +131,7 @@ internal sealed class LevelFluids : IFluidLevelAccess
         lock (this.sync)
         {
             this.Clock.Advance();
-            this.Blocks.Scheduler.Tick(
-                this.IsTicking, this.Blocks.RunScheduledTick, canRunType: LevelBlockUpdates.CanRunTickType);
+            this.Blocks.Ticks.Tick();
             this.scheduler.Tick(this.IsTicking, this.fluidLevel.RunScheduledTick);
             if (this.Clock.GameTime % PruneInterval == 0)
                 this.PruneUnloaded();
@@ -252,6 +248,14 @@ internal sealed class LevelFluids : IFluidLevelAccess
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// Runs the block notifications the change asks for (see <see cref="AbstractLevel.NotifyBlockChange"/>), under the tick lock
+    /// the fluid level's writes hold.
+    /// </remarks>
+    public void OnBlockSet(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags) =>
+        this.level.NotifyBlockChange(position, old, block, flags);
+
+    /// <inheritdoc/>
     public void LevelEvent(int type, Vector position, int data) => this.level.BroadcastLevelEvent(type, position, data);
 
     /// <inheritdoc/>
@@ -276,6 +280,20 @@ internal sealed class LevelFluids : IFluidLevelAccess
     {
         if (this.TryGetChunk(position, out var chunk))
             chunk.FluidTicks.Schedule(position, fluid, delay);
+    }
+
+    /// <summary>
+    /// Schedules the tick vanilla's <c>updateShape</c> asks for at <paramref name="position"/>: the fluid there, after its delay.
+    /// Call it under <see cref="TickLock"/>.
+    /// </summary>
+    public void ScheduleShapeFluidTick(Vector position)
+    {
+        lock (this.sync)
+        {
+            var fluid = this.fluidLevel.GetFluid(position);
+            if (!fluid.IsEmpty)
+                this.fluidLevel.ScheduleTick(position, fluid.Kind, fluid.Type!.GetTickDelay(this.fluidLevel));
+        }
     }
 
     // A player or ticket must simulate the chunk, and every neighbour must be loaded and complete.
@@ -307,7 +325,7 @@ internal sealed class LevelFluids : IFluidLevelAccess
                 continue;
 
             chunk.FluidTicks.StopTicking();
-            chunk.BlockTicks.StopTicking();
+            this.Blocks.Ticks.Untrack(chunk);
             this.chunks.Remove(key);
         }
     }
