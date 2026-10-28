@@ -1,9 +1,17 @@
-﻿namespace Obsidian.Entities;
+using Obsidian.Entities.AI;
+
+namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:horse")]
 public partial class Horse : AbstractHorse
 {
-    public Horse() => Type = EntityType.Horse;
+    public Horse()
+    {
+        Type = EntityType.Horse;
+        // Vanilla Horse: other damaging and dangerous blocks are impassable.
+        SetPathfindingMalus(PathType.DANGER_OTHER, -1f);
+        SetPathfindingMalus(PathType.DAMAGE_OTHER, -1f);
+    }
     protected override bool UsesAi => true;
     protected override bool CanBreedHorse => true;
     public int Variant { get; set; }

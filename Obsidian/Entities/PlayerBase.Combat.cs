@@ -115,7 +115,40 @@ public partial class PlayerBase
         if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile && !ReferenceEquals(source, this))
             CombatEffects.Knockback(this, Position - source.Position, 0.4f);
         this.RecordProgressDamage(source, amount);
+        var previousHealth = Health;
+        var previousAbsorption = Absorption;
         await base.DamageAsync(source, amount);
+        // Vanilla broadcasts the damage event for an accepted hit even when absorption takes all of it.
+        if (Health < previousHealth || Absorption < previousAbsorption)
+            this.QueueDamageEvent(source, directSource, kind, sourcePosition);
+    }
+
+    // Vanilla's damage types for each kind, so clients play the hurt sound of the damage the player took.
+    private static readonly IReadOnlyDictionary<CombatDamageKind, string> DamageTypeNames = new Dictionary<CombatDamageKind, string>
+    {
+        [CombatDamageKind.Melee] = "minecraft:player_attack",
+        [CombatDamageKind.Projectile] = "minecraft:arrow",
+        [CombatDamageKind.Fall] = "minecraft:fall",
+        [CombatDamageKind.Fire] = "minecraft:on_fire",
+        [CombatDamageKind.FireContact] = "minecraft:in_fire",
+        [CombatDamageKind.Explosion] = "minecraft:explosion",
+        [CombatDamageKind.Magic] = "minecraft:magic",
+        [CombatDamageKind.Starvation] = "minecraft:starve",
+        [CombatDamageKind.Void] = "minecraft:out_of_world",
+        [CombatDamageKind.SonicBoom] = "minecraft:sonic_boom",
+        [CombatDamageKind.Suffocation] = "minecraft:in_wall",
+        [CombatDamageKind.Freezing] = "minecraft:freeze",
+        [CombatDamageKind.Thorns] = "minecraft:thorns",
+        [CombatDamageKind.Drowning] = "minecraft:drown",
+    };
+
+    private void QueueDamageEvent(IEntity source, IEntity? directSource, CombatDamageKind kind, VectorD? sourcePosition)
+    {
+        // Like vanilla's sources without an entity (falls), a player hurting themselves names no cause.
+        var cause = ReferenceEquals(source, this) ? (int?)null : source.EntityId;
+        var direct = directSource is null || ReferenceEquals(directSource, this) ? (int?)null : directSource.EntityId;
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new DamageEventPacket(
+            EntityId, DamageTypeNames[kind], cause, direct, sourcePosition));
     }
 
     /// <summary>
@@ -371,12 +404,13 @@ public partial class PlayerBase
         if (floor?.RegistryId == BlockIds.SlimeBlock && !Sneaking)
             return;
         var jump = ActivePotionEffects.TryGetValue((int)PotionEffect.JumpBoost - 1, out var effect) ? effect.EffectData.Amplifier + 1 : 0;
-        var damage = Math.Max(0, MathF.Ceiling((distance - GetAttributeValue("minecraft:safe_fall_distance") - jump) * GetAttributeValue("minecraft:fall_damage_multiplier")));
-        if (floor?.RegistryId is BlockIds.HayBlock or BlockIds.HoneyBlock)
-            damage *= 0.2f;
-        else if (floor != null && TagsRegistry.Block.Beds.Entries.Contains(floor.RegistryId))
-            damage *= 0.5f;
-        await DamageCombatAsync(this, damage, CombatDamageKind.Fall);
+        // Vanilla's LivingEntity.calculateFallDamage: the landed-on block's multiplier (hay and honey 0.2, beds 0.5)
+        // scales the distance before it's rounded up; the jump boost is part of the safe fall distance.
+        var blockMultiplier = floor?.RegistryId is BlockIds.HayBlock or BlockIds.HoneyBlock ? 0.2
+            : floor != null && TagsRegistry.Block.Beds.Entries.Contains(floor.RegistryId) ? 0.5 : 1.0;
+        var damage = Math.Max(0, Math.Ceiling((distance - GetAttributeValue("minecraft:safe_fall_distance") - jump)
+            * blockMultiplier * GetAttributeValue("minecraft:fall_damage_multiplier")));
+        await DamageCombatAsync(this, (float)damage, CombatDamageKind.Fall);
     }
 
     private async ValueTask TickCombatAsync()

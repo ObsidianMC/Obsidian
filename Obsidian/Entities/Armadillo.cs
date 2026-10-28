@@ -24,6 +24,8 @@ public sealed partial class Armadillo : FarmAnimal
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         base.RegisterGoals(actions, targets);
+        // Vanilla's Armadillo constructor sets canFloat.
+        ((Navigator)Navigator!).CanFloat = true;
         actions.AddGoal(0, new ArmadilloShellGoal(this));
     }
 

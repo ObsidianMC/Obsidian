@@ -961,13 +961,13 @@ public abstract partial class AbstractLevel : ILevel
         public void ReportIfSlow(ILogger logger, string level)
         {
             var total = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
-            if (total <= BudgetMs || !logger.IsEnabled(LogLevel.Warning))
+            if (total <= BudgetMs || !logger.IsEnabled(LogLevel.Debug))
                 return;
             var slowest = string.Join(", ", stages.Where(item => item.Ms >= 1).OrderByDescending(item => item.Ms)
                 .Select(item => $"{item.Stage} {item.Ms:0.#}ms"));
             var types = string.Join(", ", entityTypes.OrderByDescending(item => item.Value.Ms).Take(5)
                 .Select(item => $"{item.Key.Name} x{item.Value.Count} {item.Value.Ms:0.#}ms"));
-            logger.LogWarning("Slow tick in {Level}: {Total:0.#}ms ({Stages}). Top entity types: {Types}",
+            logger.LogDebug("Slow tick in {Level}: {Total:0.#}ms ({Stages}). Top entity types: {Types}",
                 level, total, slowest, types.Length == 0 ? "none" : types);
         }
     }

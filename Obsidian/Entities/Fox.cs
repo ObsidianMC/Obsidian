@@ -20,8 +20,8 @@ public sealed partial class Fox : FarmAnimal
     protected override bool CanEat(ItemStack? item) =>
         item is { Count: > 0, Holder.Id: ItemIds.SweetBerries or ItemIds.GlowBerries };
 
-    protected internal override float GetPathCost(IBlock feet, IBlock floor) =>
-        feet.RegistryId == BlockIds.SweetBerryBush ? 0 : base.GetPathCost(feet, floor);
+    protected internal override float GetPathCost(Vector feetPosition, IBlock feet, IBlock floor) =>
+        feet.RegistryId == BlockIds.SweetBerryBush ? 0 : base.GetPathCost(feetPosition, feet, floor);
 
     protected override void FinalizeSpawn()
     {

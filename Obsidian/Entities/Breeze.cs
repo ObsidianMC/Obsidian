@@ -126,7 +126,7 @@ internal sealed class BreezeAttackGoal(Breeze breeze) : NavigationGoal(breeze, 1
         {
             var angle = breeze.Random.NextSingle() * MathF.Tau;
             var desired = target.Position + new VectorD(MathF.Cos(angle) * 6, 0, MathF.Sin(angle) * 6);
-            var evaluator = new WalkNodeEvaluator(breeze);
+            var evaluator = new WalkNodeEvaluator(breeze.PathBody);
             if (evaluator.FindGround((int)Math.Floor(desired.X), (int)Math.Floor(desired.Z), desired.Y + 3) is VectorD destination &&
                 breeze.Terrain.IsFree(breeze.Dimension.CreateBBFromPosition(destination)) &&
                 breeze.Terrain.HasLineOfSight(breeze.EyePosition, destination + new VectorD(0, breeze.EyeHeight, 0)))

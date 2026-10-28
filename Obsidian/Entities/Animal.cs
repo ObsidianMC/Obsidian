@@ -1,9 +1,18 @@
 
 
+using Obsidian.Entities.AI;
+
 namespace Obsidian.Entities;
 
 public class Animal : AgeableMob
 {
+    // Vanilla Animal: fire is a danger to walk near (16) and damages when stood in (-1).
+    public Animal()
+    {
+        SetPathfindingMalus(PathType.DANGER_FIRE, 16f);
+        SetPathfindingMalus(PathType.DAMAGE_FIRE, -1f);
+    }
+
     public int LoveTicks { get; internal set; }
     internal virtual bool CanBreed => Alive && !IsRemoved && Age == 0 && LoveTicks > 0;
     internal virtual bool CanMateWith(Animal mate) => !ReferenceEquals(this, mate) && mate.Type == Type && mate.CanBreed;

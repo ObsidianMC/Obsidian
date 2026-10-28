@@ -12,12 +12,13 @@ internal static class EntityNbt
 {
     /// <summary>
     /// Saves <paramref name="entity"/> with its <c>id</c>, or returns <c>null</c> for entities that aren't saved: players
-    /// (they have their own files) and types Obsidian can't restore.
+    /// (they have their own files), types Obsidian can't restore, and transient text displays.
     /// </summary>
     public static NbtCompound? Save(Entity entity)
     {
         if (entity.Type is EntityType type && !IsSaved(type)
-            || entity is Mob { HasAi: true } mob && (!mob.Alive && mob is not EnderDragon || mob.IsRemoved))
+            || entity is Mob { HasAi: true } mob && (!mob.Alive && mob is not EnderDragon || mob.IsRemoved)
+            || entity is TextDisplay { Transient: true })
             return null;
 
         var tag = new NbtCompound { new NbtTag<string>("id", TypeId(entity)) };

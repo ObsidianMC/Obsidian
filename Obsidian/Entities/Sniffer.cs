@@ -46,6 +46,8 @@ public sealed partial class Sniffer : FarmAnimal
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         base.RegisterGoals(actions, targets);
+        // Vanilla's Sniffer constructor sets canFloat.
+        ((Navigator)Navigator!).CanFloat = true;
         actions.AddGoal(5, new SnifferDigGoal(this));
     }
 

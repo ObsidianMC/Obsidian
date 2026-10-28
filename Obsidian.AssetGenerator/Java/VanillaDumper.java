@@ -66,6 +66,8 @@ public final class VanillaDumper {
     private static final String ENTITY_TYPE = "net.minecraft.world.entity.EntityType";
     private static final String TAG_KEY = "net.minecraft.tags.TagKey";
     private static final String PACKET_TYPE = "net.minecraft.network.protocol.PacketType";
+    private static final String PATH_TYPE = "net.minecraft.world.level.pathfinder.PathType";
+    private static final String WALK_NODE = "net.minecraft.world.level.pathfinder.WalkNodeEvaluator";
 
     private final Mojang mojang;
     private final Path output;
@@ -118,6 +120,8 @@ public final class VanillaDumper {
         dumper.dumpSaplingGrowers();
         dumper.dumpFireOdds();
         dumper.dumpIgnitedByLava();
+        dumper.dumpPathTypeMalus();
+        dumper.dumpPathTypeStates();
         dumper.dumpTntBlocks();
         dumper.dumpItemUseOnClasses();
         dumper.dumpItemUseClasses();
@@ -685,6 +689,67 @@ public final class VanillaDumper {
         }
 
         Json.write(output.resolve("ignited_by_lava.json"), blocks, false);
+    }
+
+    /**
+     * Dumps vanilla's {@code PathType} constants with their default malus, in declaration order. Entries are keyed by
+     * the enum constant's mapped name, which is what the pathfinder's classification refers to.
+     */
+    private void dumpPathTypeMalus() throws IOException {
+        var names = List.of("BLOCKED", "OPEN", "WALKABLE", "WALKABLE_DOOR", "TRAPDOOR", "POWDER_SNOW", "DANGER_POWDER_SNOW",
+            "FENCE", "LAVA", "WATER", "WATER_BORDER", "RAIL", "UNPASSABLE_RAIL", "DANGER_FIRE", "DAMAGE_FIRE", "DANGER_OTHER",
+            "DAMAGE_OTHER", "DOOR_OPEN", "DOOR_WOOD_CLOSED", "DOOR_IRON_CLOSED", "BREACH", "LEAVES", "STICKY_HONEY", "COCOA",
+            "DAMAGE_CAUTIOUS", "DANGER_TRAPDOOR");
+        var values = (Object[]) Mojang.call(mojang.method(PATH_TYPE, "values"), null);
+        if (values.length != names.size())
+            throw new IllegalStateException("PathType has " + values.length + " constants; expected " + names.size());
+        var getMalus = mojang.method(PATH_TYPE, "getMalus");
+        var malus = new LinkedHashMap<String, Double>();
+
+        for (var index = 0; index < names.size(); index++) {
+            var name = names.get(index);
+            if (Mojang.getStatic(mojang.field(PATH_TYPE, name)) != values[index])
+                throw new IllegalStateException("PathType." + name + " is not declaration index " + index);
+            malus.put(name, ((Number) Mojang.call(getMalus, values[index])).doubleValue());
+        }
+
+        Json.write(output.resolve("path_type_malus.json"), malus, false);
+    }
+
+    /**
+     * Dumps vanilla's own-state pathfinding classification ({@code WalkNodeEvaluator.getPathTypeFromState}) for every
+     * block state, as the ordinal of its {@code PathType} (same order as {@code path_type_malus.json}). The classifier
+     * only reads the state at the queried position, so a block getter that answers with one state everywhere reproduces
+     * it exactly; neighbour and above-block rules are applied by the consumer, which reads these same states.
+     */
+    private void dumpPathTypeStates() throws IOException {
+        var classify = mojang.method(WALK_NODE, "getPathTypeFromState", BLOCK_GETTER, BLOCK_POS);
+        var getBlockState = mojang.method(BLOCK_GETTER, "getBlockState", BLOCK_POS);
+        var current = new Object[1];
+        var getter = java.lang.reflect.Proxy.newProxyInstance(getClass().getClassLoader(),
+            new Class<?>[] { mojang.type(BLOCK_GETTER) }, (proxy, method, args) -> {
+                if (method.getDeclaringClass() == Object.class)
+                    return switch (method.getName()) {
+                        case "hashCode" -> System.identityHashCode(proxy);
+                        case "equals" -> proxy == args[0];
+                        default -> "BlockGetter";
+                    };
+                if (method.getName().equals(getBlockState.getName()) && method.getParameterCount() == 1)
+                    return current[0];
+                throw new UnsupportedOperationException("Path type classification read " + method);
+            });
+        var types = (Object[]) Mojang.call(mojang.method(PATH_TYPE, "values"), null);
+        var result = new ArrayList<Integer>(states.size());
+        for (var state : states) {
+            current[0] = state;
+            var type = Mojang.call(classify, null, getter, origin);
+            var ordinal = Arrays.asList(types).indexOf(type);
+            if (ordinal < 0)
+                throw new IllegalStateException("Unknown path type for state " + state);
+            result.add(ordinal);
+        }
+
+        Json.write(output.resolve("path_type_states.json"), result, false);
     }
 
     /**

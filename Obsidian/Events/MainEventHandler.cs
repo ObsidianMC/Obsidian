@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
@@ -568,14 +569,53 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
     // with them (see PlayerBase.WriteNbt), so it's removed rather than left empty in the world.
     private static async ValueTask RemoveRiddenVehicleAsync(IPlayer player)
     {
-        if (player is not Entities.PlayerBase concrete
-            || concrete.RootVehicle is not { Passengers: [var rider] } root
-            || !ReferenceEquals(rider, concrete)
-            || ReferenceEquals(root, concrete))
+        if (player is not Entities.PlayerBase concrete || player.Level is not Obsidian.WorldData.AbstractLevel level)
+            return;
+        if (concrete.RootVehicle is not { Passengers: [var soleRider] } || !ReferenceEquals(soleRider, concrete)
+            || ReferenceEquals(concrete.RootVehicle, concrete))
             return;
 
-        concrete.StopRiding();
-        await player.Level.DestroyEntityAsync(root);
+        // The vehicle's tick reads its passengers, so the removal runs between level ticks. The leave waits for it a
+        // while; a level that isn't ticking leaves it queued, and it still runs with the guards checked again.
+        var removed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        level.EnqueueEntityAction(async () =>
+        {
+            try
+            {
+                if (concrete.RootVehicle is not { Passengers: [var rider] } root
+                    || !ReferenceEquals(rider, concrete)
+                    || ReferenceEquals(root, concrete))
+                {
+                    removed.TrySetResult();
+                    return;
+                }
+
+                concrete.StopRiding();
+                await level.DestroyEntityAsync(root);
+                removed.TrySetResult();
+            }
+            catch (Exception ex)
+            {
+                removed.TrySetException(ex);
+            }
+        });
+
+        try
+        {
+            await removed.Task.WaitAsync(RiddenVehicleRemovalTimeout);
+        }
+        catch (TimeoutException)
+        {
+            Log.RiddenVehicleRemovalPending(player.Logger, player.Username);
+        }
+    }
+
+    private static readonly TimeSpan RiddenVehicleRemovalTimeout = TimeSpan.FromSeconds(5);
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Warning, Message = "{Username}'s vehicle was not removed before they left; it will be removed on the next level tick")]
+        public static partial void RiddenVehicleRemovalPending(ILogger logger, string username);
     }
 
     [EventPriority(Priority = Priority.Internal)]

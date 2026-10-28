@@ -45,6 +45,7 @@
 			<AdditionalFiles Include="..\Obsidian\Assets\command_parsers.json" Link="Assets\command_parsers.json" />
 			<AdditionalFiles Include="..\Obsidian\Assets\sounds.json" Link="Assets\sounds.json" />
 			<AdditionalFiles Include="..\Obsidian\Assets\tags.json" Link="Assets\tags.json" />
+			<AdditionalFiles Include="..\Obsidian\Assets\path_type_malus.json" Link="Assets\path_type_malus.json" />
 
 			<AdditionalFiles Include="..\Obsidian\Assets\Codecs\**\*.json" LinkBase="Assets\Codecs\" />
 

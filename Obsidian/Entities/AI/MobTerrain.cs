@@ -1,10 +1,11 @@
+using Obsidian.API.AI;
 using Obsidian.WorldData;
 using System.Threading;
 using Obsidian.WorldData.Fluids;
 
 namespace Obsidian.Entities.AI;
 
-internal sealed class MobTerrain(ILevel level)
+internal sealed class MobTerrain(ILevel level) : IPathTerrain
 {
     public bool IsInFluid(VectorD point, bool water)
     {

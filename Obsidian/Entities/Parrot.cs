@@ -266,7 +266,7 @@ internal sealed class ParrotFollowGoal(Parrot parrot) : NavigationGoal(parrot, 1
             var destination = new VectorD(point.X + 0.5f, point.Y, point.Z + 0.5f);
             var floor = parrot.Terrain.GetBlock(point - new Vector(0, 1, 0));
             if (floor == null || floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0 ||
-                new WalkNodeEvaluator(parrot).GetCost(destination) != 0 ||
+                new WalkNodeEvaluator(parrot.PathBody).GetCost(destination) != 0 ||
                 !parrot.Terrain.IsFree(parrot.Dimension.CreateBBFromPosition(destination)) ||
                 !level.TryMoveEntity(parrot, parrot.Position, destination))
                 continue;
