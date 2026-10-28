@@ -15,12 +15,10 @@ using System.Diagnostics;
 var timer = Stopwatch.StartNew();
 using var httpClient = new HttpClient();
 
-if (args is ["capture-worldgen", var captureVersion, var captureWorkDirectory, var fixture])
+if (args is ["capture-worldgen", _, _, _])
 {
-    var vanilla = await VanillaServer.PrepareAsync(httpClient, captureVersion, Path.Combine(Path.GetFullPath(captureWorkDirectory), captureVersion));
-    await WorldgenCaptures.RunAsync(vanilla, Path.GetFullPath(fixture));
-    Console.WriteLine($"Captured the {captureVersion} worldgen references into {fixture} in {timer.Elapsed.TotalSeconds:0.0}s.");
-    return 0;
+    Console.Error.WriteLine(WorldgenCaptures.UnavailableMessage);
+    return 1;
 }
 
 if (args.Length != 4)

@@ -1,6 +1,6 @@
-# Item components (Java 1.21.11)
+# Item components (Java 26.3 port)
 
-`NetworkBuffer` consumes all 104 vanilla component wire shapes. The component enum is generated from the vanilla registry, and the golden test verifies every ID and identifier. A small wire walker handles framing independently of the public models. Existing modeled components retain typed values; remaining types use `OpaqueDataComponent(Type, Data)` with their complete encoded payload.
+The 1.21.11 `NetworkBuffer` implementation covers its 104 component wire shapes. Minecraft 26.3 has 122 types; adapting their codecs and hashes is Phase 2 of `docs/porting-26.3-plan.md`. The coverage lists below describe the existing implementation. The component enum is generated from the vanilla registry, and the golden test verifies every ID and identifier. A small wire walker handles framing independently of the public models. Existing modeled components retain typed values; remaining types use `OpaqueDataComponent(Type, Data)` with their complete encoded payload.
 
 Decoded typed components also retain their original encoding. Writing an unchanged value emits those bytes; editing a typed value emits its current serialization. This preserves rich chat/NBT details and registry holder IDs that the display models cannot fully express. If a valid value cannot be projected into a public model, it is retained as an opaque component. Unknown future-version IDs are rejected: undelimited patches cannot safely skip unknown wire formats.
 
@@ -50,17 +50,17 @@ Unsupported hashes are omitted from the click prediction. Vanilla detects the pa
 
 ## Golden fixtures and integration boundaries
 
-`Obsidian.AssetGenerator/Java/ComponentFixtures.java` runs the actual cached 1.21.11 codecs and HashOps without starting a server. It reaches vanilla through the dumpers' reflection helper (`Java/Vanilla.java`). Inputs beside it cover 13 composite stacks, one sample of every component, and two merchant offers. The small committed fixture is `Obsidian.Tests/Assets/item-components-1.21.11.json`. Tests assert exact consumption with a following sentinel, byte-identical optional/untrusted output, component registry IDs, hashes, merchant framing, typed edits and malformed input handling.
+`Obsidian.AssetGenerator/Java/ComponentFixtures.java` runs the actual cached 26.3 codecs and HashOps without starting a server. It reaches vanilla through the dumpers' reflection helper (`Java/Vanilla.java`). Inputs beside it cover 13 composite stacks, one sample of every component, and two merchant offers. The existing committed reference is `Obsidian.Tests/Assets/item-components-1.21.11.json`; the asset build writes the new reference to `Obsidian/Assets/item-components-26.3.json`. Reconcile the samples and test coverage in Phase 2 before replacing the committed fixture. Tests assert exact consumption with a following sentinel, byte-identical optional/untrusted output, component registry IDs, hashes, merchant framing, typed edits and malformed input handling.
 
-To regenerate from PowerShell in the repository root:
+To recapture 26.3 from PowerShell in the repository root (build the asset generator first to populate the cache; 26.3 uses unobfuscated names and needs no mappings):
 
 ```powershell
 $root = (Get-Location).Path
-$cache = Join-Path $root 'Obsidian.AssetGenerator/obj/vanilla/1.21.11'
+$cache = Join-Path $root 'Obsidian.AssetGenerator/obj/vanilla/26.3'
 $cp = ((Get-ChildItem "$cache/versions", "$cache/libraries" -Filter *.jar -Recurse).FullName -join ';')
 Push-Location $cache
 try {
-    java -cp $cp "$root/Obsidian.AssetGenerator/Java/ComponentFixtures.java" "$root/Obsidian.AssetGenerator/Java/component-fixtures-input.json" "$root/Obsidian.Tests/Assets/item-components-1.21.11.json"
+    java -cp $cp "$root/Obsidian.AssetGenerator/Java/ComponentFixtures.java" "$root/Obsidian.AssetGenerator/Java/component-fixtures-input.json" "$root/Obsidian/Assets/item-components-26.3.json"
 } finally { Pop-Location }
 ```
 

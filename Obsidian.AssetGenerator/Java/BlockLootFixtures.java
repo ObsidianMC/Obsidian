@@ -26,7 +26,7 @@ public final class BlockLootFixtures {
     @SuppressWarnings("unchecked")
     public static void main(String[] arguments) throws Exception {
         VanillaDumper.bootstrap();
-        access = call("net.minecraft.data.registries.VanillaRegistries", "createLookup", null, new String[]{});
+        access = VanillaDumper.vanillaRegistries();
         ops = (DynamicOps<JsonElement>) call("net.minecraft.resources.RegistryOps", "create", null,
             new String[]{"com.mojang.serialization.DynamicOps", "net.minecraft.core.HolderLookup$Provider"},
             JsonOps.INSTANCE, access);
@@ -57,8 +57,8 @@ public final class BlockLootFixtures {
     private static void capture(JsonArray rows, String data, String block, String item, String enchantment,
         int level, long seed, Float radius, boolean checkTool, Map<String, String> properties) throws Exception {
         var stateJson = new JsonObject();
-        stateJson.addProperty("Name", "minecraft:" + block);
-        stateJson.add("Properties", new Gson().toJsonTree(properties));
+        stateJson.addProperty("id", "minecraft:" + block);
+        stateJson.add("properties", new Gson().toJsonTree(properties));
         var state = decode("net.minecraft.world.level.block.state.BlockState", "CODEC", stateJson);
         var toolJson = new JsonObject();
         toolJson.addProperty("id", "minecraft:" + item);

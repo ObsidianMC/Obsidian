@@ -25,7 +25,7 @@ public final class EntityLootFixtures {
     @SuppressWarnings("unchecked")
     public static void main(String[] arguments) throws Exception {
         VanillaDumper.bootstrap();
-        access = call("net.minecraft.data.registries.VanillaRegistries", "createLookup", null, new String[]{});
+        access = VanillaDumper.vanillaRegistries();
         ops = (DynamicOps<JsonElement>) call("net.minecraft.resources.RegistryOps", "create", null,
             new String[]{"com.mojang.serialization.DynamicOps", "net.minecraft.core.HolderLookup$Provider"},
             JsonOps.INSTANCE, access);

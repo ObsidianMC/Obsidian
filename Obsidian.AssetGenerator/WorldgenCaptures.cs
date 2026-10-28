@@ -14,13 +14,18 @@ namespace Obsidian.AssetGenerator;
 /// </remarks>
 internal static class WorldgenCaptures
 {
+    internal const string UnavailableMessage = "The worldgen capture probe hasn't been adapted to 26.3 yet; see Phase 5 of docs/porting-26.3-plan.md.";
+
     // A world's server can hang rather than exit when it fails (the probe waits for it to become ready and for chunks to
     // load), so each run is killed after this long. A whole capture takes about a minute.
     private static readonly TimeSpan WorldTimeout = TimeSpan.FromMinutes(15);
 
     private static string Source(string name) => Path.Combine(AppContext.BaseDirectory, name);
 
-    public static async Task RunAsync(VanillaServer server, string fixturePath)
+    public static Task RunAsync(VanillaServer server, string fixturePath) => throw new NotSupportedException(UnavailableMessage);
+
+    // Kept for Phase 5, when the probe's chunk statuses and density-function APIs are adapted to 26.3.
+    private static async Task CaptureAsync(VanillaServer server, string fixturePath)
     {
         // Each world rewrites its own cases, so they're captured into a copy that replaces the fixture only once every
         // world succeeded. A failed capture never leaves a fixture mixing versions.

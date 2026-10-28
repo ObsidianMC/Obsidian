@@ -8,6 +8,12 @@ test case.
 
 ## Re-recording
 
+**Unavailable on 26.3:** the build target and direct `capture-worldgen` command fail immediately, before downloading
+or changing fixtures. The worldgen capture probe hasn't been adapted to 26.3 yet; see Phase 5 of
+`docs/porting-26.3-plan.md`. Its old `SURFACE`/`CARVERS` statuses and density-function APIs need adapting to the new
+terrain pipeline. The instructions below describe the capture workflow to restore in Phase 5; the existing fixtures
+remain 1.21.11 references.
+
 ```sh
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen
 ```
