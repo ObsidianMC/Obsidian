@@ -42,7 +42,8 @@ jobs:
     - name: Build
       run: dotnet build --no-restore --configuration Release /p:DebugType=None
     - name: Test
-      run: dotnet test --no-build --configuration Release
+      # Chunk generation tests are slow and use up build minutes; run them locally (see TestCategory.Worldgen).
+      run: dotnet test --no-build --configuration Release --filter "Category!=Worldgen"
     - name: Rename executables
       working-directory: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net10.0/
       run: |

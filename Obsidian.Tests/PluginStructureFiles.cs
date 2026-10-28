@@ -93,6 +93,7 @@ public class PluginStructureFiles
         }
         """;
 
+    [Trait("Category", TestCategory.Worldgen)]
     [Fact(DisplayName = "A plugin's jigsaw structure places its template in a chunk, and goes with it")]
     public void PlacesPluginJigsawStructures()
     {
@@ -131,6 +132,7 @@ public class PluginStructureFiles
         }
     }
 
+    [Trait("Category", TestCategory.Worldgen)]
     [Fact(DisplayName = "A vanilla structure set override moves vanilla's structures, and reads vanilla's sets again")]
     public void OverridesVanillaStructureSets()
     {
@@ -177,6 +179,7 @@ public class PluginStructureFiles
             start.Structure.Identifier.StartsWith("minecraft:village_", StringComparison.Ordinal);
     }
 
+    [Trait("Category", TestCategory.Worldgen)]
     [Fact(DisplayName = "A start whose structure is gone is kept as saved, and its state comes back with it")]
     public void KeepsStartsOfStructuresThatAreGone()
     {
@@ -213,6 +216,7 @@ public class PluginStructureFiles
         Assert.True(again.IsStateRestored);
     }
 
+    [Trait("Category", TestCategory.Worldgen)]
     [Fact(DisplayName = "A start keeps its plugins: once they unload, it isn't placed, and is made again without them")]
     public void DropsStartsOfUnloadingPlugins()
     {

@@ -17,6 +17,7 @@ namespace Obsidian.Tests;
 /// Pregeneration stages the Mojang generator's area a tile at a time, saving each tile and unloading the chunks no
 /// tile left needs.
 /// </summary>
+[Trait("Category", TestCategory.Worldgen)]
 public sealed class Pregeneration
 {
     [Fact(Timeout = TestServerFactory.TestTimeout)]

@@ -22,6 +22,7 @@ namespace Obsidian.Tests;
 /// The types are registered from the test's own load context, as <see cref="PluginFeatureFiles"/> does. These tests
 /// run with the other tests applying plugins' tags and structures.
 /// </remarks>
+[Trait("Category", TestCategory.Worldgen)]
 [Collection(nameof(PluginTagFiles))]
 public class PluginStructureTypes
 {

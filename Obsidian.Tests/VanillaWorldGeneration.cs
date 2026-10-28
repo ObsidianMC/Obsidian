@@ -20,6 +20,7 @@ namespace Obsidian.Tests;
 /// (<see cref="VanillaWorldgenCaptures"/>). Vanilla's own world generation recorded them with the same seeds; re-record
 /// them with <c>dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen</c> (<c>docs/vanilla-captures.md</c>).
 /// </summary>
+[Trait("Category", TestCategory.Worldgen)]
 [Collection(WorldgenCollection.Name)]
 public class VanillaWorldGeneration(WorldgenFixture worldgen)
 {

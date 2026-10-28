@@ -125,6 +125,7 @@ public sealed class IntegratedServerHosting : IDisposable
     /// A stop while a new world generates ends the generation promptly and stops gracefully, without writing level.dat,
     /// so the unfinished world isn't taken for a complete one.
     /// </summary>
+    [Trait("Category", TestCategory.Worldgen)]
     [Fact]
     public async Task StopWhileGeneratingLeavesNoLevelData()
     {
