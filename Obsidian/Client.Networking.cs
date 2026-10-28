@@ -344,7 +344,7 @@ public partial class Client
             switch (State)
             {
                 case ClientState.Status: // Server ping/list
-                    if (packetData.Id == 0x00)
+                    if (packetData.Id == Net.Packets.Status.Serverbound.StatusRequestPacket.PacketId)
                     {
                         var status = new ServerStatus(this.HostServer, ServerConstants.ServerIcon)
                         {
@@ -357,7 +357,7 @@ public partial class Client
 
                         SendPacket(new StatusResponsePacket(status));
                     }
-                    else if (packetData.Id == 0x01)
+                    else if (packetData.Id == Net.Packets.Status.Serverbound.PingRequestPacket.PacketId)
                     {
                         var pong = Net.Packets.Status.Serverbound.PingRequestPacket.Deserialize(packetData.NetworkBuffer.GetBuffer());
 
@@ -366,7 +366,7 @@ public partial class Client
                     break;
 
                 case ClientState.Handshaking:
-                    if (packetData.Id != 0x00)
+                    if (packetData.Id != IntentionPacket.PacketId)
                         return;
 
                     await IntentionPacket.Deserialize(packetData.NetworkBuffer.GetBuffer()).HandleAsync(this);

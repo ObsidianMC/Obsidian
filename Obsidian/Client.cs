@@ -10,6 +10,7 @@ using Obsidian.Net;
 using Obsidian.Net.ClientHandlers;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Login.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Payloads;
 using Obsidian.Services;
 using Obsidian.Utilities.Mojang;
@@ -825,7 +826,7 @@ public sealed partial class Client : IClient
         }
 
         // Until it acknowledges going back to configuration, the client's play packets are for a player who left.
-        if (this.AwaitingReconfiguration && packetData.Id != ConfigurationAcknowledgedId)
+        if (this.AwaitingReconfiguration && packetData.Id != ConfigurationAcknowledgedPacket.PacketId)
             return true;
 
         try
@@ -857,9 +858,6 @@ public sealed partial class Client : IClient
             this.Logger = this.loggerFactory.CreateLogger($"Client({this.Id})");
         }
     }
-
-    // The play packet that acknowledges going back to configuration.
-    private const int ConfigurationAcknowledgedId = 15;
 
     /// <summary>
     /// Has the player go back through configuration, like vanilla's reconfiguration, so that the client learns the
