@@ -14,7 +14,8 @@ public partial class RegistryAssetsGenerator
         builder.Line();
         builder.Type("public static partial class TagsRegistry");
 
-        var tags = assets.Tags.GroupBy(tag => tag.Type.GetActualType()).ToDictionary(x => x.Key, x => x.ToImmutableList());
+        var syncedTags = assets.Tags.Where(tag => !tag.ServerOnly).ToArray();
+        var tags = syncedTags.GroupBy(tag => tag.Type.GetActualType()).ToDictionary(x => x.Key, x => x.ToImmutableList());
         var skip = new List<string>();
         foreach (var childTags in tags)
         {
@@ -81,11 +82,32 @@ public partial class RegistryAssetsGenerator
         }
         builder.Line().EndScope(true);
 
-        builder.Line($"public static Tag[] All {{ get; }} = new[] {{ {string.Join(", ", assets.Tags.Select(tag => tag.CompileName(true)))} }};");
+        // Temporary legacy worldgen tags are discoverable by BlockSet/BiomeSet through TryGet, but never enter
+        // Categories or Worldgen.Biome.All, which GetCategories uses for the client sync.
+        var serverTags = assets.Tags.Where(tag => tag.ServerOnly).Select(tag =>
+            $"new Tag {{ Namespace = {SymbolDisplay.FormatLiteral(tag.Namespace, true)}, Name = {SymbolDisplay.FormatLiteral(tag.Identifier, true)}, " +
+            $"Type = {SymbolDisplay.FormatLiteral(tag.Type, true)}, Entries = [{string.Join(", ", tag.Values.Select(value => value.GetTagValue()))}] }}");
+        builder.Line($"public static Tag[] All {{ get; }} = new Tag[] {{ {string.Join(", ", syncedTags.Select(tag => tag.CompileName(true)).Concat(serverTags))} }};");
 
         builder.EndScope();
 
         context.AddSource("TagsRegistry.g.cs", builder.ToString());
+
+        // One bridge for hard-coded worldgen tags. Remove with Datagen.LegacyTags in Phases 4/5; callers can then
+        // select minecraft again here while the old worldgen helpers are replaced.
+        context.AddSource("LegacyWorldgenTags.g.cs", """
+            namespace Obsidian.API.Registries;
+
+            public static class LegacyWorldgenTags
+            {
+                private const string Namespace = "obsidian_legacy";
+
+                public static global::Obsidian.API.World.Features.BlockSet Blocks(string path) => new($"#{Namespace}:{path}");
+                public static global::Obsidian.API.World.Features.BiomeSet Biomes(string path) => new($"#{Namespace}:{path}");
+                public static Tag Block(string path) => TagsRegistry.TryGet("block", $"{Namespace}:{path}", out var tag)
+                    ? tag : throw new global::System.InvalidOperationException($"Missing legacy worldgen block tag {path}.");
+            }
+            """);
     }
 
   

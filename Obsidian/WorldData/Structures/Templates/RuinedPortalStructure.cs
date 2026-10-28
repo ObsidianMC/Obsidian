@@ -200,7 +200,7 @@ public sealed class RuinedPortalProperties
 /// </summary>
 public sealed class RuinedPortalPiece : TemplateStructurePiece
 {
-    private static readonly BlockSet featuresCannotReplace = new("#minecraft:features_cannot_replace");
+    private static readonly BlockSet featuresCannotReplace = LegacyWorldgenTags.Blocks("features_cannot_replace");
 
     private static readonly float[] spreadChances = [1f, 1f, 1f, 1f, 1f, 1f, 1f, 0.9f, 0.9f, 0.8f, 0.7f, 0.6f, 0.4f, 0.2f];
 

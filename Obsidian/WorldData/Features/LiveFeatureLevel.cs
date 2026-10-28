@@ -254,6 +254,6 @@ internal sealed class LiveFeatureLevel(AbstractLevel level) : IWorldGenLevel
         HeightmapType.WorldSurface or HeightmapType.WorldSurfaceWG => !block.IsAir,
         HeightmapType.OceanFloor or HeightmapType.OceanFloorWG => block.BlocksMotion(),
         HeightmapType.MotionBlocking => block.BlocksMotion() || block.HasFluid(),
-        _ => (block.BlocksMotion() || block.HasFluid()) && !TagsRegistry.Block.Leaves.Entries.Contains(block.RegistryId)
+        _ => (block.BlocksMotion() || block.HasFluid()) && !LegacyWorldgenTags.Block("leaves").Entries.Contains(block.RegistryId)
     };
 }

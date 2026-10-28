@@ -127,8 +127,8 @@ internal static class ConfiguredCarvers
         };
     }
 
-    // A block holder set's blocks as flags by block id: a #tag, which vanilla's carvers name, or a list of blocks, which
-    // the legacy carvers have where the implemented version dropped their tag (see DatagenAssets.WriteLegacy).
+    // A block holder set's blocks as flags by current block id: a #tag or an explicit list. Legacy vanilla carvers
+    // use server-only obsidian_legacy tags, like the other legacy worldgen assets (DatagenAssets.WriteLegacy).
     private static bool[] ResolveBlocks(JsonElement blocks)
     {
         int[] ids;

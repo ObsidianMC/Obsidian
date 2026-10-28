@@ -9,7 +9,7 @@ namespace Obsidian.WorldData.Features;
 [ConfiguredFeatureClass("minecraft:large_dripstone")]
 public sealed class LargeDripstoneFeature : ConfiguredFeatureBase
 {
-    private static readonly BlockSet baseStoneOverworld = new("#minecraft:base_stone_overworld");
+    private static readonly BlockSet baseStoneOverworld = LegacyWorldgenTags.Blocks("base_stone_overworld");
 
     public override string Type => "minecraft:large_dripstone";
 

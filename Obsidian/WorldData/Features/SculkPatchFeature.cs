@@ -102,8 +102,8 @@ internal sealed class SculkSpreader
     // A cursor's facings before it first lands on sculk (vanilla's null facings).
     private const int NoFacings = -1;
 
-    private static readonly BlockSet replaceableWorldGen = new("#minecraft:sculk_replaceable_world_gen");
-    private static readonly BlockSet sculkReplaceable = new("#minecraft:sculk_replaceable");
+    private static readonly BlockSet replaceableWorldGen = LegacyWorldgenTags.Blocks("sculk_replaceable_world_gen");
+    private static readonly BlockSet sculkReplaceable = LegacyWorldgenTags.Blocks("sculk_replaceable");
 
     // Registry ids of the blocks the cursors check by state id.
     private static readonly int sculkId = BlocksRegistry.Sculk.RegistryId;

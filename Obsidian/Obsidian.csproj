@@ -15,7 +15,8 @@
 		     don't read the current version's yet. Obsidian.AssetGenerator writes them to Assets\legacy-<version>, which
 		     is embedded under the names of the assets they stand in for, and the server extracts this version's
 		     structure templates (ServerConstants.LegacyVersion). Phases 4 (loot) and 5 (worldgen) of
-		     docs/porting-26.3-plan.md remove it. -->
+		     docs/porting-26.3-plan.md remove it, together with Datagen.LegacyTags and the generated LegacyWorldgenTags
+		     bridge: legacy tag references use obsidian_legacy with legacy contents/current ids and never sync to clients. -->
 		<LegacyMinecraftVersion>1.21.11</LegacyMinecraftVersion>
 	</PropertyGroup>
 

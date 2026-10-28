@@ -7,6 +7,8 @@ internal sealed class Tag
     public string PropertyName { get; }
     public string Identifier { get; }
     public string Type { get; }
+    public string Namespace { get; private set; } = "minecraft";
+    public bool ServerOnly { get; private set; }
     public string Parent => this.Type.Contains('/') ? this.Type.Split('/')[0] : this.Type;
     public List<ITaggable> Values { get; }
 
@@ -43,6 +45,10 @@ internal sealed class Tag
         var name = definition.GetProperty("name").GetString()!;
 
         var tag = new Tag(name, type, []);
+        if (definition.TryGetProperty("namespace", out var tagNamespace))
+            tag.Namespace = tagNamespace.GetString()!;
+        if (definition.TryGetProperty("server_only", out var serverOnly))
+            tag.ServerOnly = serverOnly.GetBoolean();
         var registry = RegistryOf(type);
 
         foreach (var value in definition.GetProperty("values").EnumerateArray())

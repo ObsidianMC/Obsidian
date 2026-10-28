@@ -46,7 +46,7 @@ await JavaDumper.RunAsync(server, staging);
 
 Console.WriteLine("Writing data generator assets...");
 DatagenAssets.Write(server.GeneratedDirectory, JavaDumper.PacketFieldsPath(server), staging);
-DatagenAssets.WriteLegacy(legacy.GeneratedDirectory, server.GeneratedDirectory, JavaDumper.WorldgenGroupsPath(server),
+DatagenAssets.WriteLegacy(legacy.GeneratedDirectory, JavaDumper.WorldgenGroupsPath(server),
     Path.Combine(staging, $"legacy-{legacyVersion}"));
 server.CopyVersionInfo(Path.Combine(staging, "version.json"));
 

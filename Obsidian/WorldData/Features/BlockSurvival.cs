@@ -12,17 +12,17 @@ namespace Obsidian.WorldData.Features;
 /// </remarks>
 internal static class BlockSurvival
 {
-    private static readonly BlockSet dirt = new("#minecraft:dirt");
-    private static readonly BlockSet sand = new("#minecraft:sand");
-    private static readonly BlockSet mushroomGrowBlock = new("#minecraft:mushroom_grow_block");
-    private static readonly BlockSet dryVegetationMayPlaceOn = new("#minecraft:dry_vegetation_may_place_on");
-    private static readonly BlockSet smallDripleafPlaceable = new("#minecraft:small_dripleaf_placeable");
-    private static readonly BlockSet bigDripleafPlaceable = new("#minecraft:big_dripleaf_placeable");
-    private static readonly BlockSet bambooPlantableOn = new("#minecraft:bamboo_plantable_on");
-    internal static readonly BlockSet JungleLogs = new("#minecraft:jungle_logs");
-    private static readonly BlockSet snowLayerCannotSurviveOn = new("#minecraft:snow_layer_cannot_survive_on");
-    private static readonly BlockSet snowLayerCanSurviveOn = new("#minecraft:snow_layer_can_survive_on");
-    private static readonly BlockSet nylium = new("#minecraft:nylium");
+    private static readonly BlockSet dirt = LegacyWorldgenTags.Blocks("dirt");
+    private static readonly BlockSet sand = LegacyWorldgenTags.Blocks("sand");
+    private static readonly BlockSet mushroomGrowBlock = LegacyWorldgenTags.Blocks("mushroom_grow_block");
+    private static readonly BlockSet dryVegetationMayPlaceOn = LegacyWorldgenTags.Blocks("dry_vegetation_may_place_on");
+    private static readonly BlockSet smallDripleafPlaceable = LegacyWorldgenTags.Blocks("small_dripleaf_placeable");
+    private static readonly BlockSet bigDripleafPlaceable = LegacyWorldgenTags.Blocks("big_dripleaf_placeable");
+    private static readonly BlockSet bambooPlantableOn = LegacyWorldgenTags.Blocks("bamboo_plantable_on");
+    internal static readonly BlockSet JungleLogs = LegacyWorldgenTags.Blocks("jungle_logs");
+    private static readonly BlockSet snowLayerCannotSurviveOn = LegacyWorldgenTags.Blocks("snow_layer_cannot_survive_on");
+    private static readonly BlockSet snowLayerCanSurviveOn = LegacyWorldgenTags.Blocks("snow_layer_can_survive_on");
+    private static readonly BlockSet nylium = LegacyWorldgenTags.Blocks("nylium");
 
     /// <summary>
     /// Whether <paramref name="block"/> could stay at <paramref name="position"/>, like vanilla <c>BlockState.canSurvive</c>.

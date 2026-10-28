@@ -9,7 +9,7 @@ namespace Obsidian.WorldData.Features;
 [ConfiguredFeatureClass("minecraft:fallen_tree")]
 public sealed class FallenTreeFeature : ConfiguredFeatureBase
 {
-    private static readonly BlockSet replaceableByTrees = new("#minecraft:replaceable_by_trees");
+    private static readonly BlockSet replaceableByTrees = LegacyWorldgenTags.Blocks("replaceable_by_trees");
 
     public override string Type => "minecraft:fallen_tree";
 

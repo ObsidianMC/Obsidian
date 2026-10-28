@@ -56,7 +56,7 @@ public sealed class OceanRuinPiece : TemplateStructurePiece
     private static readonly string[] bigCrackedRuins = Names("big_cracked_", 1, 2, 3, 8);
     private static readonly string[] bigWarmRuins = Names("big_warm_", 4, 5, 6, 7);
 
-    private static readonly BlockSet ice = new("#minecraft:ice");
+    private static readonly BlockSet ice = LegacyWorldgenTags.Blocks("ice");
 
     private readonly bool isLarge;
 
