@@ -101,7 +101,9 @@
 			<EmbeddedResource Include="Assets\**\*.*" Exclude="Assets\.generated-*;Assets\legacy-*\**" />
 			<!-- The legacy loot and worldgen assets, under the names of the current version's assets they stand in for
 			     (Obsidian.Assets.worldgen.structures.nether.json). -->
-			<EmbeddedResource Include="Assets\legacy-$(LegacyMinecraftVersion)\**\*.*" LinkBase="Assets" />
+			<_LegacyVanillaAsset Include="Assets\legacy-$(LegacyMinecraftVersion)\**\*.*" />
+			<EmbeddedResource Include="@(_LegacyVanillaAsset)"
+			                  LogicalName="Obsidian.Assets.$([System.String]::Copy('%(_LegacyVanillaAsset.RecursiveDir)').Replace('\', '.').Replace('/', '.'))%(_LegacyVanillaAsset.Filename)%(_LegacyVanillaAsset.Extension)" />
 		</ItemGroup>
 	</Target>
 
