@@ -16,8 +16,9 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Parity checks for the Mojang (vanilla) overworld generator.
-/// Expected values come from running vanilla 1.21.11 world generation with the same seeds.
+/// Parity checks for the Mojang (vanilla) generator, replaying the references in <c>Assets/vanilla_worldgen.json</c>
+/// (<see cref="VanillaWorldgenCaptures"/>). Vanilla's own world generation recorded them with the same seeds; re-record
+/// them with <c>dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen</c> (<c>docs/vanilla-captures.md</c>).
 /// </summary>
 [Collection(WorldgenCollection.Name)]
 public class VanillaWorldGeneration(WorldgenFixture worldgen)
@@ -39,15 +40,27 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
         Assert.Equal(seedZero.MaxValue, unbound.MaxValue);
     }
 
+    // Vanilla: RandomState.create(overworld, seed).router().<field>().compute(new SinglePointContext(x, y, z)).
+    public static TheoryData<long, int, int, int, double, double, double, double, double> RouterCases()
+    {
+        var cases = new TheoryData<long, int, int, int, double, double, double, double, double>();
+        foreach (var entry in VanillaWorldgenCaptures.Cases("router"))
+        {
+            cases.Add(entry.GetProperty("seed").GetInt64(), entry.GetProperty("x").GetInt32(), entry.GetProperty("y").GetInt32(),
+                entry.GetProperty("z").GetInt32(), entry.GetProperty("continents").GetDouble(), entry.GetProperty("erosion").GetDouble(),
+                entry.GetProperty("depth").GetDouble(), entry.GetProperty("finalDensity").GetDouble(),
+                entry.GetProperty("preliminarySurfaceLevel").GetDouble());
+        }
+
+        return cases;
+    }
+
     [Theory]
-    // Vanilla: RandomState.create(overworld, 12345).router().<field>().compute(new SinglePointContext(x, y, z)).
-    [InlineData(-1000, 40, -1000, 0.4972870927552263, -0.18318753038877283, 0.29439637809991837, 0.016238079376904718, 64.0)]
-    [InlineData(16, 100, -37, -0.34568426279260855, -0.7125518621107382, -0.4050000235438347, -0.4583333333333333, 32.0)]
-    [InlineData(2048, 40, 2048, 0.38879813422973103, -0.003034826869616222, 0.1942829890176654, 0.04138873475516909, 56.0)]
-    public void NoiseRouterMatchesVanilla(int x, int y, int z, double continents, double erosion, double depth,
+    [MemberData(nameof(RouterCases))]
+    public void NoiseRouterMatchesVanilla(long seed, int x, int y, int z, double continents, double erosion, double depth,
         double finalDensity, double preliminarySurfaceLevel)
     {
-        var router = new RandomState(NoiseRegistry.NoiseSettings.All["minecraft:overworld"], 12345L).Router;
+        var router = new RandomState(NoiseRegistry.NoiseSettings.All["minecraft:overworld"], seed).Router;
 
         Assert.Equal(continents, router.Continents.GetValue(x, y, z));
         Assert.Equal(erosion, router.Erosion.GetValue(x, y, z));
@@ -56,23 +69,44 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
         Assert.Equal(preliminarySurfaceLevel, router.PreliminarySurfaceLevel.GetValue(x, y, z));
     }
 
-    [Theory]
-    // Vanilla: MultiNoiseBiomeSource (overworld preset).getNoiseBiome(quartX, quartY, quartZ, sampler) for seed 12345.
-    [InlineData(0, -16, 0, "minecraft:lush_caves")]
-    [InlineData(0, 16, 0, "minecraft:ocean")]
-    [InlineData(83, 16, -250, "minecraft:plains")]
-    public void BiomesMatchVanilla(int quartX, int quartY, int quartZ, string expected)
+    // Vanilla: MultiNoiseBiomeSource (overworld preset).getNoiseBiome(quartX, quartY, quartZ, sampler).
+    public static TheoryData<long, int, int, int, string> BiomeCases()
     {
-        var biomeSource = MultiNoiseBiomeSource.Overworld(new RandomState(NoiseRegistry.NoiseSettings.All["minecraft:overworld"], 12345L));
+        var cases = new TheoryData<long, int, int, int, string>();
+        foreach (var entry in VanillaWorldgenCaptures.Cases("biomes"))
+        {
+            cases.Add(entry.GetProperty("seed").GetInt64(), entry.GetProperty("quartX").GetInt32(), entry.GetProperty("quartY").GetInt32(),
+                entry.GetProperty("quartZ").GetInt32(), entry.GetProperty("biome").GetString()!);
+        }
+
+        return cases;
+    }
+
+    [Theory]
+    [MemberData(nameof(BiomeCases))]
+    public void BiomesMatchVanilla(long seed, int quartX, int quartY, int quartZ, string expected)
+    {
+        var biomeSource = MultiNoiseBiomeSource.Overworld(new RandomState(NoiseRegistry.NoiseSettings.All["minecraft:overworld"], seed));
 
         Assert.Equal(expected, biomeSource.GetNoiseBiome(quartX, quartY, quartZ).Name);
     }
 
-    [Theory]
     // SHA-256 of the block names (y, z, x order) and quart biomes (y, z, x order) of the chunk after vanilla's
     // biomes, noise and surface steps. Covers aquifers (water, lava), ore veins, bedrock and deepslate gradients.
-    [InlineData(0L, -100, 57, "edaa3b78c8f0b63962e8e5850ed595106962f2433fc804af603b0fde54ad5bc4", "b47a5f72bba911f1784155abcc766f2092694f467c708e011fa46074ad02d524")]
-    [InlineData(12345L, -100, 57, "c1baf842b304ec003631790b569460e256b68a49905bd7e407ac268d042783db", "9192ce66418d5a40c7fa111038c502d8e5a1ac47201f1a853da58c376168167a")]
+    public static TheoryData<long, int, int, string, string> SurfaceChunkCases()
+    {
+        var cases = new TheoryData<long, int, int, string, string>();
+        foreach (var entry in VanillaWorldgenCaptures.Cases("chunks"))
+        {
+            cases.Add(entry.GetProperty("seed").GetInt64(), entry.GetProperty("chunkX").GetInt32(), entry.GetProperty("chunkZ").GetInt32(),
+                entry.GetProperty("blocks").GetString()!, entry.GetProperty("biomes").GetString()!);
+        }
+
+        return cases;
+    }
+
+    [Theory]
+    [MemberData(nameof(SurfaceChunkCases))]
     public void ChunkMatchesVanilla(long seed, int chunkX, int chunkZ, string expectedBlocks, string expectedBiomes)
     {
         var builder = worldgen.Builder(MojangDimension.Overworld, seed, structures: false);
@@ -108,7 +142,7 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
         overworld.Generate3DTerrain(surface);
         overworld.ApplySurfaceRules(surface);
 
-        Assert.Equal("c1baf842b304ec003631790b569460e256b68a49905bd7e407ac268d042783db", Sha256(BlockNames(surface)));
+        Assert.Equal(VanillaWorldgenCaptures.Chunk("chunks", 12345L, -100, 57).GetProperty("blocks").GetString(), Sha256(BlockNames(surface)));
 
         var carved = new Chunk(-5, -5);
         overworld.PopulateBiomes(carved);
@@ -116,7 +150,7 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
         overworld.ApplySurfaceRules(carved);
         overworld.ApplyCarvers(carved);
 
-        Assert.Equal("d3bd9e5d5a5ff83427d92cd903f9d813c9cc7b0bb22f75f2e5a3e04c894e5a3b", Sha256(BlockNames(carved)));
+        Assert.Equal(VanillaWorldgenCaptures.Chunk("carvedChunks", 12345L, -5, -5).GetProperty("blocks").GetString(), Sha256(BlockNames(carved)));
 
         // The nether's legacy settings, against the generated settings' chunk.
         var nether = new ChunkBuilder(Runtime(MojangDimension.Nether), 12345L, generateStructures: false);
@@ -143,10 +177,37 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
             () => vanilla.PossibleBiomes);
     }
 
+    // A seed's chunk and the SHA-256 a section of the fixture holds for it.
+    private static TheoryData<long, int, int, string> ChunkHashes(string section, string hash)
+    {
+        var cases = new TheoryData<long, int, int, string>();
+        foreach (var entry in VanillaWorldgenCaptures.Cases(section))
+        {
+            cases.Add(entry.GetProperty("seed").GetInt64(), entry.GetProperty("chunkX").GetInt32(), entry.GetProperty("chunkZ").GetInt32(),
+                entry.GetProperty(hash).GetString()!);
+        }
+
+        return cases;
+    }
+
+    // A dimension's chunk and the SHA-256 a section of the fixture holds for it.
+    private static TheoryData<string, long, int, int, string> DimensionChunkHashes(string section, string hash)
+    {
+        var cases = new TheoryData<string, long, int, int, string>();
+        foreach (var entry in VanillaWorldgenCaptures.Cases(section))
+        {
+            cases.Add(entry.GetProperty("dimension").GetString()!, entry.GetProperty("seed").GetInt64(), entry.GetProperty("chunkX").GetInt32(),
+                entry.GetProperty("chunkZ").GetInt32(), entry.GetProperty(hash).GetString()!);
+        }
+
+        return cases;
+    }
+
+    // SHA-256 of the block names (y, z, x order) after vanilla's carvers step.
+    public static TheoryData<long, int, int, string> CarvedChunkCases() => ChunkHashes("carvedChunks", "blocks");
+
     [Theory]
-    // SHA-256 of the block names (y, z, x order) after vanilla's carvers step. (-5, -5) starts a canyon.
-    [InlineData(12345L, -5, -5, "d3bd9e5d5a5ff83427d92cd903f9d813c9cc7b0bb22f75f2e5a3e04c894e5a3b")]
-    [InlineData(0L, -7, 12, "600b60ee8b1bb837f681e4d8a9fa817edc3b1e6cdd59ca63acd48608d4e43316")]
+    [MemberData(nameof(CarvedChunkCases))]
     public void CarvedChunkMatchesVanilla(long seed, int chunkX, int chunkZ, string expectedBlocks)
     {
         var builder = worldgen.Builder(MojangDimension.Overworld, seed, structures: false);
@@ -160,11 +221,11 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
         Assert.Equal(expectedBlocks, Sha256(BlockNames(chunk)));
     }
 
-    [Theory]
     // SHA-256 of the block names (y, z, x order) after vanilla decorates the chunk, with its neighbors at the carvers step.
-    [InlineData(0L, -80, 16, "88c252b5ad3fd77ecf0e65e40aab206b638a5464416276ac66672b2c4eeccaeb")] // swamp
-    [InlineData(12345L, -104, 104, "e5f90f049ab61f9282e771850dfdabeb5f9682e791498296ecc13d9cebea8253")] // warm ocean
-    [InlineData(12345L, -140, 28, "1c65b8e967b38f9f9eaa03190e123d43aa8e6fa8b39df9ed2e3672bc0cd46939")] // desert with a fossil
+    public static TheoryData<long, int, int, string> DecoratedChunkCases() => ChunkHashes("decoratedChunks", "blocks");
+
+    [Theory]
+    [MemberData(nameof(DecoratedChunkCases))]
     public void DecoratedChunkMatchesVanilla(long seed, int chunkX, int chunkZ, string expectedBlocks)
     {
         var builder = worldgen.Builder(MojangDimension.Overworld, seed, structures: false);
@@ -188,11 +249,12 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
         Assert.Equal(expectedBlocks, Sha256(BlockNames(area[(chunkX, chunkZ)])));
     }
 
-    [Theory]
     // SHA-256 of the block names (y, z, x order) of a full chunk in a vanilla server world with structures disabled.
     // These chunks don't depend on the order their neighbors are decorated in.
-    [InlineData("nether", 12345L, 0, 0, "0d67d2e72363035b58dae710879f79f6d01a6e3142697ac8bd88685081cb38ae")]
-    [InlineData("end", 12345L, 2, -2, "2df6a200c97c9d1a52f59344ccfdfceea0f48a5868836d9ce4f56b42f4253038")] // guarded spike
+    public static TheoryData<string, long, int, int, string> FullChunkCases() => DimensionChunkHashes("fullChunks", "blocks");
+
+    [Theory]
+    [MemberData(nameof(FullChunkCases))]
     public void FullChunkMatchesVanilla(string dimensionName, long seed, int chunkX, int chunkZ, string expectedBlocks)
     {
         var dimension = dimensionName == "nether" ? MojangDimension.Nether : MojangDimension.End;
@@ -201,9 +263,18 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
         Assert.Equal(expectedBlocks, Sha256(BlockNames(chunks.Get(chunkX, chunkZ))));
     }
 
-    [Theory]
     // Vanilla: the spawn in level.dat of a new server world with structures disabled.
-    [InlineData(12345L, 96, 136, -32)]
+    public static TheoryData<long, int, int, int> SpawnCases()
+    {
+        var cases = new TheoryData<long, int, int, int>();
+        foreach (var entry in VanillaWorldgenCaptures.Cases("spawns"))
+            cases.Add(entry.GetProperty("seed").GetInt64(), entry.GetProperty("x").GetInt32(), entry.GetProperty("y").GetInt32(), entry.GetProperty("z").GetInt32());
+
+        return cases;
+    }
+
+    [Theory]
+    [MemberData(nameof(SpawnCases))]
     public void SpawnMatchesVanilla(long seed, int x, int y, int z)
     {
         var builder = worldgen.Builder(MojangDimension.Overworld, seed, structures: false);
@@ -221,14 +292,14 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
         Assert.Equal(new Vector(x, y, z), spawn);
     }
 
-    [Theory]
     // SHA-256 of the chunk's sky light arrays, then its block light arrays (one per section, bottom up, in vanilla's nibble
     // layout), once vanilla has lit the chunk and its neighbors. The 7x7 chunks around it are carved and the 5x5 around
-    // it decorated first, z then x ascending, so the 3x3 around it has its final blocks. Overworld values come from vanilla
-    // generating and lighting the same area in that order; nether and end values from a vanilla server world with
-    // structures disabled, whose 3x3 around these chunks doesn't depend on the order chunks are decorated in.
-    [InlineData("overworld", 0L, 0, 0, "c5a236f2535dabb2bffaabe001eed61884158ae8d2a7be44968c8e9bde0f94d2")] // leaves, water, lava
-    [InlineData("nether", 12345L, 0, 0, "9e57c3150eb6c9d57c511818120f60b44f8e3c1f82f4b2c85b0cfd9071ce79c1")] // no sky light
+    // it decorated first, z then x ascending, so the 3x3 around it has its final blocks; vanilla generates and lights the
+    // same area in that order.
+    public static TheoryData<string, long, int, int, string> LitChunkCases() => DimensionChunkHashes("litChunks", "light");
+
+    [Theory]
+    [MemberData(nameof(LitChunkCases))]
     public void LitChunkMatchesVanilla(string dimensionName, long seed, int chunkX, int chunkZ, string expectedLight)
     {
         var dimension = dimensionName switch
