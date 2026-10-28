@@ -36,6 +36,7 @@ internal static class Customizations
             { GetEnumTag("save", "load", "corner", "data"), "StructureMode" },
             { GetEnumTag("compare", "subtract"), "ComparatorMode" },
             { GetEnumTag("none", "small", "large"), "LeavesType" },
+            { GetEnumTag("dry", "wet", "dormant", "erupting", "continuous"), "SulfurState" }, // vs. the PotentSulfurState block state
         };
     }
 

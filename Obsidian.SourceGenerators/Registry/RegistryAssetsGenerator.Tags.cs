@@ -20,10 +20,9 @@ public partial class RegistryAssetsGenerator
         {
             builder.Type($"public static class {childTags.Key.ToPascalCase()}");
            
-            //Workaround for flat_level_generator_preset will change this up another time
-            var tagGroups = childTags.Value
-                .GroupBy(tag => tag.Type.GetActualType(1))
-                .Where(group => group.Count() > 1 || group.Key == "flat_level_generator_preset");
+            // Each subfolder's tags (worldgen/biome) get a class of their own, even a single one (worldgen/feature), which
+            // the All and Categories lists below refer to them through.
+            var tagGroups = childTags.Value.GroupBy(tag => tag.Type.GetActualType(1));
             foreach (var groupedTags in tagGroups)
             {
                 if (childTags.Key == groupedTags.Key)

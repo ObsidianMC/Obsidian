@@ -26,10 +26,10 @@ public static class ServerConstants
     // The Minecraft version Obsidian implements. Change these together with MinecraftVersion in Obsidian.csproj; the
     // VanillaVersion test checks them against the server jar's version.json.
 
-    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_11;
+    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v26_3;
 
     /// <summary>
-    /// The implemented version's name, e.g. <c>1.21.11</c>: its id in Mojang's version manifest and the name saves
+    /// The implemented version's name, e.g. <c>26.3</c>: its id in Mojang's version manifest and the name saves
     /// record.
     /// </summary>
     public static readonly string ProtocolDescription = DefaultProtocol.GetDescription();
@@ -37,13 +37,13 @@ public static class ServerConstants
     /// <summary>
     /// The implemented version's data version (<c>world_version</c>), which every save file Obsidian writes records.
     /// </summary>
-    public const int DataVersion = 4671;
+    public const int DataVersion = 5023;
 
     /// <summary>
     /// The data pack format the implemented version runs with. It picks which overlays of a pack apply, so it must match
     /// vanilla's for a pack made for several versions to apply the same overlays.
     /// </summary>
-    public static (int Major, int Minor) DataPackFormat { get; } = (94, 1);
+    public static (int Major, int Minor) DataPackFormat { get; } = (121, 0);
 
     public const int MaxPayloadLength = 1048576;
 

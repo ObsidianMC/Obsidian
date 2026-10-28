@@ -41,6 +41,11 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
     private static readonly DiagnosticDescriptor unknownReference = new("OBSWG003", "Unknown feature reference",
         "Unknown {0} '{1}' (used by {2})", "WorldgenFeatures", DiagnosticSeverity.Error, true);
 
+    // Errors, like unknown properties: a value whose JSON doesn't fit its C# type (vanilla changed its format) is
+    // emitted as default.
+    private static readonly DiagnosticDescriptor mismatchedJson = new("OBSWG005", "Mismatched worldgen JSON",
+        "{0} can't be read from {1} JSON {2} ({3}) (used by {4})", "WorldgenFeatures", DiagnosticSeverity.Error, true);
+
     public void Initialize(IncrementalGeneratorInitializationContext ctx)
     {
         var jsonFiles = ctx.AdditionalTextsProvider
@@ -690,9 +695,25 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         }
 
         /// <summary>
-        /// Emits <paramref name="json"/> as an expression of type <paramref name="target"/>.
+        /// Emits <paramref name="json"/> as an expression of type <paramref name="target"/>, or reports it and emits
+        /// <c>default</c> when the JSON doesn't have the shape the type reads.
         /// </summary>
         private string EmitValue(ITypeSymbol target, JsonElement json)
+        {
+            try
+            {
+                return this.EmitValueOf(target, json);
+            }
+            catch (Exception exception) when (exception is InvalidOperationException or KeyNotFoundException or FormatException)
+            {
+                var text = json.GetRawText();
+                this.Report(mismatchedJson, FullName(target), json.ValueKind, text.Length > 80 ? text.Substring(0, 80) + "..." : text,
+                    exception.Message);
+                return "default!";
+            }
+        }
+
+        private string EmitValueOf(ITypeSymbol target, JsonElement json)
         {
             if (target is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
                 target = nullable.TypeArguments[0];
@@ -904,10 +925,11 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             return $"{FullName(type)}.{member.Name}";
         }
 
+        // A block state: its block's id, or { "id", "properties" }.
         private static string EmitBlockState(JsonElement json)
         {
-            var name = Literal(json.GetProperty("Name").GetString()!);
-            if (!json.TryGetProperty("Properties", out var properties) || !properties.EnumerateObject().Any())
+            var name = Literal((json.ValueKind == JsonValueKind.String ? json : json.GetProperty("id")).GetString()!);
+            if (json.ValueKind == JsonValueKind.String || !json.TryGetProperty("properties", out var properties) || !properties.EnumerateObject().Any())
                 return $"new global::Obsidian.API.SimpleBlockState {{ Name = {name} }}";
 
             var entries = properties.EnumerateObject().Select(property => $"{{ {Literal(property.Name)}, {Literal(property.Value.GetString()!)} }}");

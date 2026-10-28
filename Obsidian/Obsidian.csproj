@@ -10,7 +10,7 @@
 
 	<PropertyGroup>
 		<!-- The Minecraft version Obsidian implements. Obsidian.AssetGenerator generates Assets from its server jar. -->
-		<MinecraftVersion>1.21.11</MinecraftVersion>
+		<MinecraftVersion>26.3</MinecraftVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

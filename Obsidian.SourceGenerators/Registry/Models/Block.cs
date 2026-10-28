@@ -17,7 +17,10 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
     public IReadOnlyDictionary<string, string> OverrideClasses { get; }
     public BlockProperty[] Properties { get; }
     public Dictionary<int, List<string>> StateValues { get; }
-    /// <summary>The sapling's dumped TreeGrower by field (features by identifier, secondaryChance as a float literal), or null.</summary>
+    /// <summary>
+    /// The sapling's dumped TreeGrower as C# initializer values by property (weighted feature lists as
+    /// <c>[("minecraft:oak", 9), ...]</c>, the shortest tree as a string literal), or null.
+    /// </summary>
     public IReadOnlyDictionary<string, string>? TreeGrower { get; }
     /// <summary>The ignite and burn odds vanilla's FireBlock registers for this block, or null if it isn't flammable.</summary>
     public (int Ignite, int Burn)? FireOdds { get; }
@@ -52,7 +55,7 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
         string name = property.Name.RemoveNamespace().ToPascalCase();
 
         (int baseId, int defaultId, int statesCount, var stateValues) = GetIds(property);
-        BlockProperty[] properties = GetBlockProperties(property).ToArray();
+        BlockProperty[] properties = GetBlockProperties(property, $"{name.SanitizeBlockName()}State").ToArray();
 
         return new Block(name, property.Name, baseId, defaultId, id, statesCount, placementClass, overrideClasses, properties, stateValues, treeGrower, fireOdds, ignitedByLava, isTnt);
     }
@@ -93,13 +96,13 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
         return (baseId, defaultId, stateCount, props);
     }
 
-    private static IEnumerable<BlockProperty> GetBlockProperties(JsonProperty block)
+    private static IEnumerable<BlockProperty> GetBlockProperties(JsonProperty block, string stateName)
     {
         if (block.Value.TryGetProperty("properties", out JsonElement properties))
         {
             foreach (JsonProperty property in properties.EnumerateObject())
             {
-                yield return BlockProperty.Get(property);
+                yield return BlockProperty.Get(property, stateName);
             }
         }
     }
