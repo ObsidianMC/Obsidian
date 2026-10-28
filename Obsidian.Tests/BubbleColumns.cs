@@ -79,6 +79,7 @@ public sealed class BubbleColumns
         Assert.Equal("true", downward.GetProperty("drag"));
     }
 
+    [Trait("Category", TestCategory.Worldgen)]
     [Fact(DisplayName = "Magma that worldgen placed under water is post-processed into a scheduled column check")]
     public void GeneratedMagmaUnderWaterSchedulesColumnCheck()
     {
@@ -101,6 +102,7 @@ public sealed class BubbleColumns
         Assert.True(center.BlockTicks.Contains(source, BlocksRegistry.MagmaBlock.UnlocalizedName));
     }
 
+    [Trait("Category", TestCategory.Worldgen)]
     [Fact(DisplayName = "Worldgen writing magma marks its position for post-processing without a manual mark")]
     public void WorldGenWritesMagmaMarksPostProcessing()
     {

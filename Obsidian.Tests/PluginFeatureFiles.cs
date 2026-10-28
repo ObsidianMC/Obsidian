@@ -25,6 +25,7 @@ namespace Obsidian.Tests;
 /// Feature sets are built without becoming the current one, which tests loading plugins in parallel would replace.
 /// Tags are global, so these tests run with the other tests applying tags.
 /// </remarks>
+[Trait("Category", TestCategory.Worldgen)]
 [Collection(nameof(PluginTagFiles))]
 public class PluginFeatureFiles
 {

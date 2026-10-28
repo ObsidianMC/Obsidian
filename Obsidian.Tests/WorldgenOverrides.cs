@@ -54,6 +54,7 @@ public sealed class WorldgenOverrides : IDisposable
             Directory.Delete(this.folder, recursive: true);
     }
 
+    [Trait("Category", TestCategory.Worldgen)]
     [Fact(DisplayName = "A data pack overriding the overworld's parameter list generates the nether's biomes there")]
     public void DataPackOverridesTheOverworldsParameterList()
     {

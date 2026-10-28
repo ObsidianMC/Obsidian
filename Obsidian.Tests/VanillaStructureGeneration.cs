@@ -21,6 +21,7 @@ namespace Obsidian.Tests;
 /// worlds with the same seeds. Re-record them with <c>dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen</c>
 /// (<c>docs/vanilla-captures.md</c>).
 /// </summary>
+[Trait("Category", TestCategory.Worldgen)]
 [Collection(WorldgenCollection.Name)]
 public class VanillaStructureGeneration(WorldgenFixture worldgen)
 {

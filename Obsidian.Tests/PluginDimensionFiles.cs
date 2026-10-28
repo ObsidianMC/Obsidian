@@ -144,6 +144,7 @@ public sealed class PluginDimensionFiles : IDisposable
             Directory.Delete(this.folder, recursive: true);
     }
 
+    [Trait("Category", TestCategory.Worldgen)]
     [Fact(DisplayName = "A plugin's dimension generates its biome with its features, and is saved and reloaded")]
     public async Task GeneratesSavesAndReloads()
     {
@@ -219,6 +220,7 @@ public sealed class PluginDimensionFiles : IDisposable
         Assert.True(PluginFeatureFiles.HasDiamondBlocks(saved));
     }
 
+    [Trait("Category", TestCategory.Worldgen)]
     [Fact(DisplayName = "A dimension generates with plugins' noise settings and types, and stops when they unload")]
     public async Task GeneratesWithPluginNoiseSettingsAndTypes()
     {
