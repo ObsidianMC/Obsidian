@@ -128,21 +128,21 @@ public abstract partial class AbstractLevel
     /// Whether the caller runs on the level's tick, where a plugin's <see cref="BlockEntity.OnRemoved"/> runs at once;
     /// elsewhere it's queued to the tick, and its container stops taking clicks meanwhile.
     /// </param>
-    internal async ValueTask RunBlockEntityRemovalAsync(BlockEntity removed, bool onLevelTick = false)
+    internal async ValueTask RunBlockEntityRemovalAsync(BlockEntity removed, bool onLevelTick = false, bool dropContents = true)
     {
         await removed.WaitForLiveCallAsync();
 
         if (removed.Owner is not PluginContainer plugin)
         {
             removed.OnRemoved();
-            await this.RemoveContentsAsync(removed);
+            await this.FinishBlockEntityRemovalAsync(removed, dropContents);
             return;
         }
 
         if (onLevelTick)
         {
             this.CallPlugin(removed, plugin, static blockEntity => blockEntity.OnRemoved());
-            await this.RemoveContentsAsync(removed);
+            await this.FinishBlockEntityRemovalAsync(removed, dropContents);
             return;
         }
 
@@ -156,7 +156,7 @@ public abstract partial class AbstractLevel
         var hold = plugin.TryHold();
         if (hold is null)
         {
-            await this.RemoveContentsAsync(removed);
+            await this.FinishBlockEntityRemovalAsync(removed, dropContents);
             return;
         }
 
@@ -165,9 +165,21 @@ public abstract partial class AbstractLevel
             using (hold)
             {
                 this.CallPlugin(removed, plugin, static blockEntity => blockEntity.OnRemoved());
-                await this.RemoveContentsAsync(removed);
+                await this.FinishBlockEntityRemovalAsync(removed, dropContents);
             }
         });
+    }
+
+    private async ValueTask FinishBlockEntityRemovalAsync(BlockEntity removed, bool dropContents)
+    {
+        if (dropContents)
+            await this.RemoveContentsAsync(removed);
+        else if (removed is ContainerBlockEntity container)
+        {
+            using (await container.Inventory.LockAsync())
+                container.Inventory.TryRetire();
+            await CloseWindowsAsync(container.Inventory);
+        }
     }
 
     /// <summary>

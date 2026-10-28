@@ -5,6 +5,14 @@
   "x-abstract": true,
   "additionalProperties": false,
   "properties": {
+    "builtins": {
+      "type": "object",
+      "description": "Optional Obsidian builtins. Changes require a server restart.",
+      "additionalProperties": { "type": "boolean" },
+      "properties": {
+        "worldedit": { "type": "boolean", "default": false }
+      }
+    },
     "feedbackWebhookUrl": {
       "type": ["string", "null"],
       "description": "Discord webhook URL for player feedback; null or empty disables feedback."

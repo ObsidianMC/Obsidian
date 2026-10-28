@@ -4,6 +4,9 @@
   "allowLan": true,
   "allowOperatorRequests": true,
   "feedbackWebhookUrl": null,
+  "builtins": {
+    "worldedit": false
+  },
 
   "maxPlayers": 25,
   "motd": "§k||||§r §5Obsidian §cPre§r-§cRelease §r§k||||§r \n§r§lRunning on .NET §l§c8 §r§l<3",

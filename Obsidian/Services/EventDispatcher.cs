@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
 using Obsidian.API.Utilities.Interfaces;
+using Obsidian.Builtins;
 using Obsidian.Events;
 using Obsidian.Events.EventArgs;
 using Obsidian.Plugins;
@@ -98,7 +99,9 @@ public sealed partial class EventDispatcher : IEventDispatcher
     {
         var assembly = pluginContainer?.PluginAssembly ?? Assembly.GetExecutingAssembly();
 
-        var modules = assembly.GetTypes().Where(x => x.IsSubclassOf(minecraftEventHandlerType));
+        var modules = assembly.GetTypes().Where(x => x.IsSubclassOf(minecraftEventHandlerType))
+            .Where(type => pluginContainer?.Plugin is Builtin builtin
+                ? builtin.OwnsModule(type) : pluginContainer is not null || !Builtin.IsBuiltinModule(type));
 
         this.RegisterEventsInternal(modules, pluginContainer);
     }

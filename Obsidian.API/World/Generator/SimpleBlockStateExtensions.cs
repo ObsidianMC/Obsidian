@@ -8,15 +8,22 @@ namespace Obsidian.API.World.Generator;
 public static class SimpleBlockStateExtensions
 {
     private static Func<SimpleBlockState, IBlock>? _converter;
+    private static Func<IBlock, SimpleBlockState>? _describe;
 
     /// <summary>
     /// Sets the converter function used to transform SimpleBlockState to IBlock.
     /// This should be set during initialization by the main Obsidian project.
     /// </summary>
-    internal static void SetConverter(Func<SimpleBlockState, IBlock> converter)
+    internal static void SetConverter(Func<SimpleBlockState, IBlock> converter,
+        Func<IBlock, SimpleBlockState>? describe = null)
     {
         _converter = converter;
+        _describe = describe;
     }
+
+    /// <summary>Describes a registered block state by name and a detached dictionary of properties.</summary>
+    public static SimpleBlockState ToSimpleState(this IBlock block) =>
+        _describe?.Invoke(block) ?? throw new InvalidOperationException("Block state converter not initialized.");
 
     /// <summary>
     /// Converts a SimpleBlockState to an IBlock instance.

@@ -17,5 +17,6 @@ public enum EventType
     PlayerAttackEntity,
     PlayerInteract,
     ContainerClosed,
-    Custom
+    Custom,
+    BlockAttack
 }

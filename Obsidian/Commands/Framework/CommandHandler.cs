@@ -6,6 +6,7 @@ using Obsidian.API.Commands.ArgumentParsers;
 using Obsidian.API.Commands.Exceptions;
 using Obsidian.API.Plugins;
 using Obsidian.API.Utilities.Interfaces;
+using Obsidian.Builtins;
 using Obsidian.Commands.Builders;
 using Obsidian.Commands.Modules;
 using Obsidian.Plugins;
@@ -193,6 +194,8 @@ public sealed class CommandHandler : ICommandHandler
         // The integrated server's commands are registered by the server when it runs as one.
         var commandRoots = assembly.GetTypes()
             .Where(type => type.IsSubclassOf(typeof(CommandModuleBase)) && type != typeof(IntegratedCommandModule))
+            .Where(type => pluginContainer?.Plugin is Builtin builtin
+                ? builtin.OwnsModule(type) : pluginContainer is not null || !Builtin.IsBuiltinModule(type))
             // Nested groups are registered under the module they're declared in.
             .Where(type => !type.IsNested);
 

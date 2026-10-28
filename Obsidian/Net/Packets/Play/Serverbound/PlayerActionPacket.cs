@@ -44,6 +44,21 @@ public partial class PlayerActionPacket
         if (await player.Level.GetBlockAsync(Position) is not IBlock block)
             return;
 
+        if (Status == PlayerActionStatus.StartedDigging)
+        {
+            var attack = new BlockAttackEventArgs(server, player, block, Position, player.Level)
+            {
+                Sequence = this.Sequence
+            };
+            await server.EventDispatcher.ExecuteEventAsync(attack);
+            if (attack.IsCancelled)
+            {
+                player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+                player.Client.SendPacket(new BlockUpdatePacket(Position, block.GetHashCode()));
+                return;
+            }
+        }
+
         if (Status == PlayerActionStatus.StartedDigging
             && block.Is(BlockIds.NoteBlock)
             && player.Level is Obsidian.WorldData.AbstractLevel notes)

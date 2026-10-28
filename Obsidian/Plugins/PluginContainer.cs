@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
+using Obsidian.Builtins;
 using Obsidian.Plugins.Archives;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
@@ -12,7 +13,7 @@ using System.Threading;
 namespace Obsidian.Plugins;
 
 /// <summary>
-/// A loaded plugin: its archive, the load context its assemblies live in, and its services.
+/// Registration and lifecycle state for an external plugin or an Obsidian builtin.
 /// </summary>
 /// <remarks>
 /// Keeping a reference to a container, its plugin or anything from its assembly outside the plugin manager stops the
@@ -47,12 +48,13 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     public required PluginArchive Archive { get; init; }
 
     /// <summary>
-    /// The plugin's file.
+    /// The plugin's file path, or a builtin's identity.
     /// </summary>
     public string Source => this.Archive.Source;
 
     public PluginBase? Plugin { get; internal set; }
 
+    /// <summary>The collectible context of an external plugin; null for host-compiled builtins.</summary>
     [AllowNull]
     public PluginLoadContext LoadContext { get; internal set; } = default!;
 
@@ -169,8 +171,24 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
         container.LoadContext.Container = container;
 
         foreach (var dependency in dependencies)
-            container.LoadContext.AddDependency(dependency.LoadContext);
+        {
+            if (dependency.LoadContext is not null)
+                container.LoadContext.AddDependency(dependency.LoadContext);
+        }
 
+        return container;
+    }
+
+    internal static PluginContainer Create(Builtin builtin)
+    {
+        var container = new PluginContainer
+        {
+            Info = builtin.Metadata,
+            Archive = builtin.Resources(),
+            Plugin = builtin,
+            PluginAssembly = builtin.GetType().Assembly
+        };
+        container.Initialize();
         return container;
     }
 

@@ -33,7 +33,11 @@ internal static partial class BlocksRegistry
 
         plugins = new PluginBlockTable([], StateToNumeric.Length);
 
-        SimpleBlockStateExtensions.SetConverter(GetFromSimpleState);
+        SimpleBlockStateExtensions.SetConverter(GetFromSimpleState, block => new SimpleBlockState
+        {
+            Name = block.UnlocalizedName,
+            Properties = new Dictionary<string, string>(block.GetProperties())
+        });
         TreeBlockRules.States = new BlockStateAccess();
     }
 

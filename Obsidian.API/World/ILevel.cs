@@ -97,6 +97,20 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
         throw new NotSupportedException("This level doesn't support loaded block lookups.");
 
     /// <summary>
+    /// Captures a loaded block and detached block entity data, or null outside complete loaded chunks/build height.
+    /// Plugin block entity data is captured as of its last published change, like chunk saves.
+    /// </summary>
+    public BlockSnapshot? CaptureBlock(Vector position) =>
+        throw new NotSupportedException("This level doesn't support block snapshots.");
+
+    /// <summary>
+    /// Restores a snapshot in a complete loaded chunk, without drops, neighbor updates or placement side effects.
+    /// Returns false if the chunk is no longer available or the position is outside build height. Clients are updated.
+    /// </summary>
+    public ValueTask<bool> RestoreBlockAsync(Vector position, BlockSnapshot snapshot) =>
+        throw new NotSupportedException("This level doesn't support block snapshots.");
+
+    /// <summary>
     /// The block entity at <paramref name="position"/> if its chunk is loaded and complete, without loading or
     /// generating anything, like <see cref="Blocks.IBlockLevel.GetBlockEntity"/>: for following a cable or network
     /// across block entities from a tick. Null otherwise, or once the block entity was removed or its chunk unloaded.

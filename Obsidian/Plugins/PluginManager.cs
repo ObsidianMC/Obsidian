@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.API.Plugins;
+using Obsidian.Builtins;
 using Obsidian.Commands.Framework;
 using Obsidian.Entities;
 using Obsidian.Plugins.Archives;
@@ -146,6 +147,7 @@ public sealed partial class PluginManager : IAsyncDisposable
     {
         try
         {
+            await this.LoadBuiltinsAsync();
             await this.RunChangeAsync(async () =>
             {
                 // Obsidian's convention (c:) tags are there with no plugins too; each plugin applies the tags again.
@@ -173,6 +175,15 @@ public sealed partial class PluginManager : IAsyncDisposable
     }
 
     public Task UnloadPluginsAsync() => this.RunChangeAsync(this.UnloadAllAsync);
+
+    internal Task LoadBuiltinsAsync() => this.RunChangeAsync(async () =>
+    {
+        foreach (var builtin in Builtin.Enabled(this.configuration))
+        {
+            if (!this.plugins.Any(container => container.Info.Id == builtin.Metadata.Id))
+                await this.LoadAsync(PluginContainer.Create(builtin));
+        }
+    });
 
     /// <summary>
     /// Loads a plugin file, or reloads it if it is loaded already.
@@ -244,10 +255,16 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     /// <summary>
     /// Gets the PluginContainer either by specified assembly or by current executing assembly.
+    /// Builtins share the host assembly, so their container is resolved from the current lifecycle call.
     /// </summary>
     /// <param name="assembly">The assembly you want to use to find the plugin container.</param>
-    public PluginContainer GetPluginContainerByAssembly(Assembly? assembly = null) =>
-        this.plugins.First(x => x.PluginAssembly == (assembly ?? Assembly.GetCallingAssembly()));
+    public PluginContainer GetPluginContainerByAssembly(Assembly? assembly = null)
+    {
+        var target = assembly ?? Assembly.GetCallingAssembly();
+        if (PluginCall.CurrentPlugin is { } current && current.PluginAssembly == target)
+            return current;
+        return this.plugins.First(container => container.Plugin is not Builtin && container.PluginAssembly == target);
+    }
 
     public async ValueTask DisposeAsync()
     {
@@ -402,17 +419,23 @@ public sealed partial class PluginManager : IAsyncDisposable
         }
     }
 
-    private async Task LoadAsync(PluginArchive archive)
+    private Task LoadAsync(PluginArchive archive) =>
+        this.LoadAsync(PluginContainer.Create(archive, this.plugins, this.Side));
+
+    private async Task LoadAsync(PluginContainer container)
     {
+        var archive = container.Archive;
         var info = archive.Info;
         var stopwatch = Stopwatch.StartNew();
 
-        var container = PluginContainer.Create(archive, this.plugins, this.Side);
         var dependencies = container.Dependencies;
 
         try
         {
-            PluginAssemblyLoader.Load(container);
+            if (container.Plugin is null)
+                PluginAssemblyLoader.Load(container);
+
+            using var builtinCall = container.Plugin is Builtin ? container.TryEnter() : null;
 
             // The plugin can use the server's services while it registers its own, with its own instances of those
             // that add things on its behalf.
@@ -507,6 +530,7 @@ public sealed partial class PluginManager : IAsyncDisposable
 
     private async Task StartAsync(PluginContainer container)
     {
+        using var builtinCall = container.Plugin is Builtin ? container.TryEnter() : null;
         container.InjectServices(this.logger);
 
         await container.Plugin!.OnServerReadyAsync(container.HostServices.Server);
@@ -784,6 +808,7 @@ public sealed partial class PluginManager : IAsyncDisposable
     /// </summary>
     private async Task ReleaseAsync(PluginContainer pluginContainer)
     {
+        using var builtinCall = pluginContainer.Plugin is Builtin ? pluginContainer.EnterUnloading() : null;
         var name = pluginContainer.Info.Name;
         var stopwatch = Stopwatch.StartNew();
 
@@ -829,8 +854,13 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         stopwatch.Stop();
 
-        loadContext.Unloading += _ => Log.Unloaded(this.logger, name, stopwatch.ElapsedMilliseconds);
-        loadContext.Unload();
+        if (loadContext is not null)
+        {
+            loadContext.Unloading += _ => Log.Unloaded(this.logger, name, stopwatch.ElapsedMilliseconds);
+            loadContext.Unload();
+        }
+        else
+            Log.Unloaded(this.logger, name, stopwatch.ElapsedMilliseconds);
     }
 
     // A plugin's or data pack's tag files, from its data folder. A malformed file is left out, like vanilla leaves out

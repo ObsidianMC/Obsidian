@@ -240,7 +240,8 @@ public interface IPlayer : ILiving
 
     // Items and windows: sending a slot of the player's inventory again, the closed menus' hooks, a window button's
     // click, the enchanting table's offers, and counting a drop from the creative screen, which fails when too fast.
-    internal ValueTask SyncInventorySlotAsync(int slot) => default;
+    /// <summary>Sends the current contents of a player inventory slot after a plugin changes it.</summary>
+    public ValueTask SyncInventorySlotAsync(int slot) => default;
     internal void RunMenusClosed() { }
     internal ValueTask ClickContainerButtonAsync(int containerId, int button) => default;
     internal IEnumerable<IClientboundPacket> EnchantingProperties() => [];

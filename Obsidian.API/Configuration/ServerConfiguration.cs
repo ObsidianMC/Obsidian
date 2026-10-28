@@ -4,6 +4,9 @@ namespace Obsidian.API.Configuration;
 
 public sealed class ServerConfiguration
 {
+    /// <summary>Optional Obsidian builtins, keyed by id. Changes take effect on restart.</summary>
+    public Dictionary<string, bool> Builtins { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
     private const byte DefaultViewDistance = 10;
     private const byte DefaultSimulationDistance = 10;
     private const ushort DefaultEntityBroadcastRangePercentage = 100;
