@@ -21,6 +21,8 @@
 		<VanillaGeneratorInput Include="@(Compile)" />
 		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json;Java\**\*.template" />
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
+		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
+		<None Update="Captures\**\*.template" CopyToOutputDirectory="PreserveNewest" />
 		<UpToDateCheckOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />
 	</ItemGroup>
 
@@ -65,5 +67,22 @@
 		<!-- Java logs warnings to stderr (e.g. deprecated Unsafe use); failures still fail by exit code. -->
 		<Exec IgnoreStandardErrorWarningFormat="true" Command="$(VanillaAssetsCommand)" />
 		<Touch Files="$(VanillaAssetsStamp)" AlwaysCreate="true" />
+	</Target>
+
+	<!-- Re-records the vanilla worldgen and structure references the parity tests replay, in place, with the Minecraft
+	     version's server (docs/vanilla-captures.md). Slow, so only on request:
+	     dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen -->
+	<PropertyGroup>
+		<VanillaWorldgenFixture>$(MSBuildThisFileDirectory)..\Obsidian.Tests\Assets\vanilla_worldgen.json</VanillaWorldgenFixture>
+	</PropertyGroup>
+
+	<Target Name="CaptureVanillaWorldgen" DependsOnTargets="Build;ReadMinecraftVersion">
+		<PropertyGroup>
+			<VanillaCaptureCommand>dotnet &quot;$(TargetPath)&quot; capture-worldgen $(MinecraftVersion)</VanillaCaptureCommand>
+			<VanillaCaptureCommand>$(VanillaCaptureCommand) &quot;$(VanillaWorkDirectory).&quot;</VanillaCaptureCommand>
+			<VanillaCaptureCommand>$(VanillaCaptureCommand) &quot;$(VanillaWorldgenFixture)&quot;</VanillaCaptureCommand>
+		</PropertyGroup>
+
+		<Exec IgnoreStandardErrorWarningFormat="true" Command="$(VanillaCaptureCommand)" />
 	</Target>
 </Project>
