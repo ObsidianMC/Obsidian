@@ -312,8 +312,7 @@ load test bot is updated to match.
    inside the jar use it too.
 3. **Chunk status `terrain`, without `carving_mask`.** Update the block-entity fields: furnaces, brewing stands, pots,
    signs, and the removed `bed` block entity.
-4. **Existing worlds** follow the policy we choose under decision 1 below. The recommended policy, as a one-time
-   upgrade of Obsidian-written 1.21.11 worlds, covers:
+4. **Existing worlds** are upgraded once (decision 1 below). The upgrade of Obsidian-written 1.21.11 worlds covers:
    - moving files to the new layout;
    - splitting `level.dat`;
    - rewriting block-state NBT, in palettes, block entities and templates;
@@ -415,17 +414,13 @@ Phases 3, 4 and 5 touch mostly separate files, so they can run in parallel in se
 time (`AGENTS.md`). Worldgen (Phase 5) is the longest stream and can start its capture and JSON-reading work during
 Phase 2.
 
-## Decisions needed
+## Decisions
 
-1. **Existing worlds.** Options:
-   - Upgrade Obsidian-written 1.21.11 worlds once, on a copy, as in Phase 3 *(recommended)*.
-   - Support only new 26.3 worlds.
-   - Port general vanilla data fixers. We advise against this: the work is large and tied to vanilla's structure.
-2. **`1.21.x` after the branch point.** Options:
-   - Freeze it except for critical fixes, which we merge forward *(recommended)*.
-   - Keep developing on both branches.
-3. **26.4.** It is in snapshots and will probably ship before this port is done. Recommendation: finish 26.3, then
-   start `26.4.x` from it. Phase 0 is meant to make later version bumps mostly regeneration.
+1. **Existing worlds are upgraded.** Obsidian-written 1.21.11 worlds are upgraded once, on a copy that keeps a backup,
+   as in Phase 3. We don't port general vanilla data fixers.
+2. **`1.21.x` is frozen.** It takes only critical fixes from now on, and we merge those forward into `26.3.x`.
+3. **26.3 comes first.** 26.4 is in snapshots and probably ships in December. We finish 26.3, then start `26.4.x` from
+   it. Phase 0 is meant to make later version bumps mostly regeneration.
 
 ## Risks
 
