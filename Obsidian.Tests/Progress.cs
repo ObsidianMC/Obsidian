@@ -38,7 +38,10 @@ public sealed class Progress
         statistics.Load(reference);
         Assert.Equal(1200, statistics.Get("minecraft:play_time"));
         Assert.Equal(2, statistics.Get("minecraft:jump"));
-        Assert.True(JsonNode.DeepEquals(reference, statistics.Save()));
+        // The capture is a 1.21.11 save; a save stamps the current data version.
+        var expected = reference.DeepClone().AsObject();
+        expected["DataVersion"] = ServerConstants.DataVersion;
+        Assert.True(JsonNode.DeepEquals(expected, statistics.Save()));
         var bytes = new NetworkBuffer();
         statistics.CreatePacket().Serialize(bytes);
         Assert.Equal(Read("progress-stats.bin"), bytes.AsSpan(0, bytes.Size).ToArray());
