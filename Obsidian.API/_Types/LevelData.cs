@@ -30,7 +30,6 @@ public sealed class LevelData
         if (!GameRules.TryGetValue(legacy, out value)) return null;
         return name == "raids" && bool.TryParse(value, out var disabled) ? (!disabled).ToString() : value;
     }
-    public const int DataVersion = 3337;
 
     /// <summary>
     /// 1 or 0 (true/false) - true if cheats are enabled.

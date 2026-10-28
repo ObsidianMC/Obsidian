@@ -249,7 +249,7 @@ public sealed class Progress
             var root = Path.GetDirectoryName(context.World.PlayerDataPath)!;
             var path = Path.Join(root, "advancements", $"{player.Uuid}.json");
             var file = JsonNode.Parse(await File.ReadAllTextAsync(path))!;
-            Assert.Equal(4671, file["DataVersion"]!.GetValue<int>());
+            Assert.Equal(ServerConstants.DataVersion, file["DataVersion"]!.GetValue<int>());
             Assert.True(file["probe:inventory"]!["done"]!.GetValue<bool>());
             var reloaded = new PlayerAdvancements(player);
             reloaded.Load(file.AsObject());

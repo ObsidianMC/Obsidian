@@ -54,6 +54,19 @@ internal sealed record VanillaServer(string Version, string Directory, IReadOnly
         return new VanillaServer(version, directory, GetClassPath(jarPath, directory), mappingsPath);
     }
 
+    /// <summary>
+    /// Copies the server jar's <c>version.json</c> to <paramref name="path"/>. It holds the version's protocol, data
+    /// version and pack formats, which a test checks Obsidian's own constants against.
+    /// </summary>
+    public void CopyVersionInfo(string path)
+    {
+        // The bundler lists the server jar first, before its libraries.
+        using var serverJar = ZipFile.OpenRead(ClassPath[0]);
+        var entry = serverJar.GetEntry("version.json")
+            ?? throw new InvalidDataException($"{ClassPath[0]} has no version.json.");
+        entry.ExtractToFile(path);
+    }
+
     /// <summary>Runs <c>java</c> (from <c>JAVA_HOME</c> when set) in <paramref name="workingDirectory"/>.</summary>
     public static async Task RunJavaAsync(string workingDirectory, params string[] arguments)
     {

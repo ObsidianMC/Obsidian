@@ -115,7 +115,7 @@ internal sealed class MobStorage(AbstractLevel level) : IAsyncDisposable
                 using var stream = new MemoryStream();
                 await using (var writer = new NbtWriterStream(stream, NbtCompression.ZLib, ""))
                 {
-                    writer.WriteInt("DataVersion", 4671);
+                    writer.WriteInt("DataVersion", ServerConstants.DataVersion);
                     writer.WriteArray("Position", new[] { x, z });
                     writer.WriteListStart("Entities", NbtTagType.Compound, entities.Length + unknown.Count + waiting.Count);
                     foreach (var mob in entities)

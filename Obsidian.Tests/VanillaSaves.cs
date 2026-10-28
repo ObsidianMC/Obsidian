@@ -79,7 +79,7 @@ public sealed class VanillaSaves : IDisposable
         }
 
         var saved = await ReadChunkAsync(savedFolder);
-        Assert.Equal(4671, saved.GetInt("DataVersion"));
+        Assert.Equal(ServerConstants.DataVersion, saved.GetInt("DataVersion"));
         Assert.Equal("minecraft:full", saved.GetString("Status"));
 
         var section = ((NbtList)saved["sections"]).Cast<NbtCompound>().Single(compound => compound.GetByte("Y") == 0);

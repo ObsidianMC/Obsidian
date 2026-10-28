@@ -18,12 +18,6 @@ internal sealed partial record DataPackMetadata(
     ImmutableArray<DataPackMetadata.Pattern> Filter,
     ImmutableArray<string> Overlays)
 {
-    /// <summary>
-    /// The data pack format vanilla 1.21.11 runs with, 94.1, which picks a pack's overlays. It must match vanilla's, so
-    /// that a pack made for several versions applies the same overlays as in vanilla.
-    /// </summary>
-    public static (int Major, int Minor) CurrentFormat { get; } = (94, 1);
-
     // Vanilla's last data pack format without a minor version: overlays for it or older ones need a "formats" range.
     private const int LastPreMinorFormat = 81;
 
@@ -179,7 +173,7 @@ internal sealed partial record DataPackMetadata(
 
             var name = $"Overlay \"{directory}\"";
             var (min, max) = formats.Range(name, isPack: false, oldFormats: lowest <= LastPreMinorFormat);
-            if (Compare(min, CurrentFormat) <= 0 && Compare(CurrentFormat, max) <= 0)
+            if (Compare(min, ServerConstants.DataPackFormat) <= 0 && Compare(ServerConstants.DataPackFormat, max) <= 0)
                 applied.Add(directory);
         }
 

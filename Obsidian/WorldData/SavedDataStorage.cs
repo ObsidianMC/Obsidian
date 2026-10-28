@@ -122,7 +122,7 @@ internal sealed class SavedDataStorage(string directory)
             using (var writer = new NbtWriterStream(stream, NbtCompression.GZip, ""))
             {
                 // Vanilla SavedData's gzip envelope: DataVersion and the payload under data.
-                writer.WriteInt("DataVersion", VanillaLevelData.DataVersion);
+                writer.WriteInt("DataVersion", ServerConstants.DataVersion);
                 writer.WriteTag(entry.Snapshot);
                 writer.EndCompound();
                 writer.TryFinish();

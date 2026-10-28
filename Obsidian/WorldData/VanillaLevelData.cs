@@ -16,13 +16,6 @@ namespace Obsidian.WorldData;
 /// </remarks>
 internal static class VanillaLevelData
 {
-    /// <summary>
-    /// Vanilla 1.21.11's data version (<c>SharedConstants.WORLD_VERSION</c>).
-    /// </summary>
-    public const int DataVersion = 4671;
-
-    private const string VersionName = "1.21.11";
-
     // PrimaryLevelData's level format version, the "version" key.
     private const int StorageVersion = 19133;
 
@@ -251,11 +244,11 @@ internal static class VanillaLevelData
         // Advances the game time by as much as the clock moved since the last save (see Read).
         var gameTime = Get(data, "Time", 0L) + Math.Max(0, level.Time - Get(data, "DayTime", level.Time));
 
-        Set(data, new NbtTag<int>("DataVersion", DataVersion));
+        Set(data, new NbtTag<int>("DataVersion", ServerConstants.DataVersion));
         Set(data, new NbtCompound("Version")
         {
-            new NbtTag<int>("Id", DataVersion),
-            new NbtTag<string>("Name", VersionName),
+            new NbtTag<int>("Id", ServerConstants.DataVersion),
+            new NbtTag<string>("Name", ServerConstants.ProtocolDescription),
             new NbtTag<byte>("Snapshot", 0),
             new NbtTag<string>("Series", "main")
         });

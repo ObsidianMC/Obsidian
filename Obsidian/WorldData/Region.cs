@@ -778,7 +778,7 @@ public class Region : IRegion
         await using (NbtWriterStream writer = new(strm, ChunkCompression, ""))
         {
             // Entities are saved in 1.21.11's format too (items with components).
-            writer.WriteInt("DataVersion", VanillaLevelData.DataVersion);
+            writer.WriteInt("DataVersion", ServerConstants.DataVersion);
             writer.WriteArray("Position", [chunkX, chunkZ]);
             writer.WriteTag(entities);
             writer.EndCompound();
@@ -978,7 +978,7 @@ public class Region : IRegion
 
         // Data from another version is in that version's shape, which the current DataVersion would misrepresent.
         if (chunkCompound.TryGetTagValue<int>("DataVersion", out var dataVersion)
-            && dataVersion == VanillaLevelData.DataVersion)
+            && dataVersion == ServerConstants.DataVersion)
         {
             foreach (var (name, tag) in chunkCompound)
             {
@@ -1184,7 +1184,7 @@ public class Region : IRegion
         writer.WriteInt("yPos", chunk.MinY >> 4);
 
         // Chunks are saved in 1.21.11's format, so vanilla reads them without upgrading them.
-        writer.WriteInt("DataVersion", VanillaLevelData.DataVersion);
+        writer.WriteInt("DataVersion", ServerConstants.DataVersion);
         writer.WriteString("Status", $"minecraft:{chunk.ChunkStatus}");
 
         // Every heightmap the chunk still has. Chunks that aren't fully generated keep their world generation heightmaps,

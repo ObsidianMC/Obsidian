@@ -34,7 +34,7 @@ public class VanillaRedstone
 
     [Fact]
     public void FixtureIsForVanilla1_21_11() =>
-        Assert.Equal("1.21.11", Fixture.Shared.Document.GetProperty("version").GetString());
+        Assert.Equal(ServerConstants.ProtocolDescription, Fixture.Shared.Document.GetProperty("version").GetString());
 
     [Fact]
     public void FixtureCoversTheRequiredCategories()
