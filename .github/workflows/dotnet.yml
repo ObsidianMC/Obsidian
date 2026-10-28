@@ -3,14 +3,14 @@ name: .NET Build
 on:
   workflow_dispatch:
   push:
-    branches: [ 1.* ]
+    branches: [ "1.*", "26.*" ]
     paths:
       - "**/*.cs"
       - "**/*.csproj"
       - "**/*.java"
       - ".github/workflows/dotnet.yml"
   pull_request:
-    branches: [ 1.* ]
+    branches: [ "1.*", "26.*" ]
     paths:
       - "**/*.cs"
       - "**/*.csproj"
