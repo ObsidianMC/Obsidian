@@ -26,7 +26,7 @@ public class ItemStackNetwork
         { "map", "01cf090100090a0800097472616e736c617465001a66696c6c65645f6d61702e6275726965645f747265617375726500" }
     };
 
-    [Theory]
+    [Theory(Skip = "Phase 2: the expected encodings are 1.21.11's, with its item and component ids")]
     [MemberData(nameof(Stacks))]
     public void StacksMatchVanilla(string stack, string expected) => Assert.Equal(expected, Encode(Create(stack)));
 

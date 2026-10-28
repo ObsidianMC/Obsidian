@@ -454,3 +454,14 @@ five bubble column tests that start a column are skipped.
 **Where to start:** give water the same hooks (Obsidian's fluid ticks handle water today, so keep its spreading path)
 and replace `SoulSandBlock` and `MagmaBlock` in `BlockOwnerBehaviors` with them, then re-enable the skipped tests in
 `BubbleColumns`.
+
+## Cooking speed from fuel
+
+**Status:** open until Phase 4 of [the porting plan](porting-26.3-plan.md).
+
+26.1 gives blasting and smoking recipes the same 200 ticks as smelting; a furnace now cooks at the speed multiplier of
+the fuel it lit with, saved as `speed_multiplier`. Obsidian still reads each recipe's cooking time as is, so blast
+furnaces and smokers cook at a furnace's speed for now, and the cooking test is skipped.
+
+**Where to start:** replace `FurnaceFuels` with the fuel component's burn time and speed multiplier, as Phase 4 lists,
+then re-enable `Cooking.MachinesCookAcrossSaveAndAutomationAndAwardExperience`.
