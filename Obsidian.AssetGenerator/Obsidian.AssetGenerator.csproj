@@ -18,7 +18,8 @@
 
 	<ItemGroup>
 		<!-- Capture source inputs before the build adds generated assembly attributes under obj. -->
-		<VanillaGeneratorInput Include="@(Compile)" />
+		<!-- The capture driver only runs on request (CaptureVanillaWorldgen), so editing it doesn't regenerate the assets. -->
+		<VanillaGeneratorInput Include="@(Compile)" Exclude="WorldgenCaptures.cs" />
 		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json;Java\**\*.template" />
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
