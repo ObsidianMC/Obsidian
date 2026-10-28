@@ -11,21 +11,27 @@ public partial class RegistryAssetsGenerator
 
         var builder = new CodeBuilder();
 
-        foreach (var elements in enums)
+        foreach (var elements in enums.OrderBy(entry => entry.Key, StringComparer.Ordinal))
         {
-            var enumName = elements.Key.RemoveNamespace().ToPascalCase();
+            var isAttribute = elements.Key == "minecraft:attribute";
+            var enumName = isAttribute ? "AttributeIds" : elements.Key.RemoveNamespace().ToPascalCase();
             var components = elements.Value.Deserialize<Dictionary<string, Protocol>>();
 
-            builder.Namespace("Obsidian.API")
+            builder.Namespace(isAttribute ? "Obsidian.API.Inventory" : "Obsidian.API")
              .Line()
-             .Type($"public enum {enumName}");
+             .Type(isAttribute ? $"public static partial class {enumName}" : $"public enum {enumName}");
 
-            foreach (var component in components.OrderBy(x => x.Value.ProtocolId))
+            foreach (var component in components.OrderBy(x => x.Value.ProtocolId).ThenBy(x => x.Key, StringComparer.Ordinal))
             {
-                var name = component.Key.RemoveNamespace().ToPascalCase();
+                // Keep the API's existing British spelling of vanilla's campfire_cozy_smoke.
+                var name = (elements.Key, component.Key) switch
+                {
+                    ("minecraft:particle_type", "minecraft:campfire_cozy_smoke") => "CampfireCosySmoke",
+                    _ => component.Key.RemoveNamespace().ToPascalCase()
+                };
                 var protocolId = component.Value.ProtocolId;
 
-                builder.Line($"{name} = {protocolId},");
+                builder.Line(isAttribute ? $"public const int {name} = {protocolId};" : $"{name} = {protocolId},");
             }
 
             builder.EndScope();

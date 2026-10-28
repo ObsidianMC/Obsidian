@@ -14,7 +14,8 @@ internal static class DatagenAssets
 {
     // The registries of reports/registries.json written to enums.json, which become enums in Obsidian.API.
     private static readonly string[] enumRegistries =
-        ["minecraft:data_component_type", "minecraft:map_decoration_type", "minecraft:mob_effect", "minecraft:potion"];
+        ["minecraft:data_component_type", "minecraft:map_decoration_type", "minecraft:mob_effect", "minecraft:potion",
+         "minecraft:entity_type", "minecraft:particle_type", "minecraft:game_event"];
 
     // Container, block and supported entity tables evaluated by the server (see LootRegistryGenerator).
     private static readonly string[] lootTableCategories =
@@ -102,6 +103,13 @@ internal static class DatagenAssets
         var enums = new JsonObject();
         foreach (var registry in enumRegistries)
             enums[registry] = Entries(registry).DeepClone();
+
+        // Feed the dumper's attribute ids through the same asset as the API's other protocol-valued types.
+        enums["minecraft:attribute"] = new JsonObject(ReadObject(Path.Combine(outputDirectory, "attribute_ids.json"))
+            .Select(entry => KeyValuePair.Create(entry.Key, (JsonNode?)new JsonObject
+            {
+                ["protocol_id"] = entry.Value!.DeepClone()
+            })));
 
         WriteJson(Path.Combine(outputDirectory, "enums.json"), enums);
     }
