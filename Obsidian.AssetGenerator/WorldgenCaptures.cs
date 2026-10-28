@@ -78,7 +78,7 @@ internal static class WorldgenCaptures
     }
 
     // The seeds of the fixture's cases, each captured in a world of its own.
-    private static IEnumerable<long> Seeds(string fixturePath)
+    private static List<long> Seeds(string fixturePath)
     {
         using var fixture = JsonDocument.Parse(File.ReadAllText(fixturePath));
         return fixture.RootElement.EnumerateObject()
