@@ -232,7 +232,7 @@ public partial class NetworkBuffer
             case DataComponentType.MaxStackSize: case DataComponentType.MaxDamage: case DataComponentType.Damage:
             case DataComponentType.RepairCost: case DataComponentType.MapId: case DataComponentType.OminousBottleAmplifier:
                 return H.Int(this.ReadVarInt());
-            case DataComponentType.DyedColor: case DataComponentType.MapColor: return H.Int(this.ReadInt());
+            case DataComponentType.DyedColor: return H.Int(this.ReadInt());
             case DataComponentType.MinimumAttackCharge: case DataComponentType.PotionDurationScale: return H.Float(this.ReadSingle());
             case DataComponentType.Unbreakable: case DataComponentType.Glider: return H.Record();
             case DataComponentType.EnchantmentGlintOverride: return H.Boolean(this.ReadBoolean());
@@ -371,7 +371,7 @@ public partial class NetworkBuffer
                 }
 
                 return Record(range);
-            case DataComponentType.SwingAnimation:
+            case DataComponentType.AttackAnimation: case DataComponentType.InteractAnimation:
                 var swing = new List<(string, int)>();
                 var animation = this.ReadVarInt();
                 var ticks = this.ReadVarInt();
