@@ -267,10 +267,11 @@ internal sealed class PathFinder(IPathBody body)
                 closestDistance = distance;
             }
 
-            // Vanilla's path ends at the target's block, not at any node within a block of it. Node heights come from
-            // StandingY, so the vertical test allows one block (vanilla's reach) rather than an exact height match.
+            // Vanilla's path ends at the target's block, not at any node within a block of it. Ground nodes sit at
+            // StandingY heights, so their vertical test allows one block (vanilla's reach). Volume nodes move in
+            // three dimensions, so they must reach the target's vertical cell too rather than one block below it.
             if ((int)Math.Floor(current.Position.X) == targetCellX && (int)Math.Floor(current.Position.Z) == targetCellZ
-                && Math.Abs(current.Position.Y - target.Y) <= 1)
+                && (volume ? Math.Floor(current.Position.Y) == Math.Floor(target.Y) : Math.Abs(current.Position.Y - target.Y) <= 1))
                 return BuildPath(current, true);
 
             foreach (var next in volume ? VolumeMovement.Neighbors(body, current.Position) : evaluator.GetNeighbors(current.Position))
