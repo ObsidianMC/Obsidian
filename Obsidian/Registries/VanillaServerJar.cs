@@ -31,29 +31,60 @@ internal static partial class VanillaServerJar
             return structureDirectory;
         }
 
-        Log.Downloading(logger, version);
         Directory.CreateDirectory(versionDirectory);
-        // The jar is only needed while extracting.
-        var jarPath = Path.Combine(versionDirectory, $"server-{version}.jar.tmp");
-        try
+        // Servers and test processes can share a cache. The first to take the lock extracts; the others wait for it
+        // and then find the marker.
+        using (await LockAsync(Path.Combine(versionDirectory, "structure.lock"), cancellationToken))
         {
-            await MojangDownloads.DownloadAsync(httpClient, version, "server", jarPath, cancellationToken);
-
-            if (Directory.Exists(structureDirectory))
+            if (File.Exists(marker))
             {
-                Directory.Delete(structureDirectory, recursive: true);
+                return structureDirectory;
             }
 
-            var count = ExtractStructures(jarPath, version, structureDirectory);
-            await File.WriteAllTextAsync(marker, string.Empty, cancellationToken);
-            Log.Extracted(logger, count, version);
-        }
-        finally
-        {
-            File.Delete(jarPath);
+            Log.Downloading(logger, version);
+            // The jar is only needed while extracting.
+            var jarPath = Path.Combine(versionDirectory, $"server-{version}.jar.tmp");
+            try
+            {
+                await MojangDownloads.DownloadAsync(httpClient, version, "server", jarPath, cancellationToken);
+
+                if (Directory.Exists(structureDirectory))
+                {
+                    Directory.Delete(structureDirectory, recursive: true);
+                }
+
+                var count = ExtractStructures(jarPath, version, structureDirectory);
+                await File.WriteAllTextAsync(marker, string.Empty, cancellationToken);
+                Log.Extracted(logger, count, version);
+            }
+            finally
+            {
+                File.Delete(jarPath);
+            }
         }
 
         return structureDirectory;
+    }
+
+    /// <summary>
+    /// Opens <paramref name="path"/> exclusively, which locks it across processes, waiting while another process holds
+    /// it. Dispose the stream to release the lock. The file is left in place: deleting it on release would let a
+    /// waiting process lock a file that a newcomer then recreates and locks too.
+    /// </summary>
+    private static async Task<FileStream> LockAsync(string path, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            try
+            {
+                return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException)
+            {
+                // Held by another process.
+                await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
+            }
+        }
     }
 
     /// <summary>Extracts templates through a temporary directory and returns their count.</summary>
