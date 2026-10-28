@@ -290,17 +290,6 @@ menu with a key binding's payload or its own screen.
 **Where to start:** add the inventory button only once a mod needs one, as an `IClientRegistry` registration the
 inventory screen shows.
 
-## Concurrent downloads into the shared test cache
-
-**Status:** open. Only hits a cold cache.
-
-Tests that run an integrated server share a cache under `%TEMP%/obsidian-tests/cache`. `VanillaServerJar` downloads
-Mojang's server jar to a fixed `server-<version>.jar.tmp` path there. Two test processes starting on an empty cache
-write the same file at once, and one crashes. Once the cache holds the extracted structures, neither downloads.
-
-**Where to start:** download to a unique temporary name (or take a cross-process lock on the version directory),
-then extract and write the `structure.complete` marker as now.
-
 ## Scoreboard display waits only for queueing
 
 **Status:** decided. Documented on `IPlayer.DisplayScoreboardAsync`.
