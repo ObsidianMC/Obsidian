@@ -430,3 +430,13 @@ poplar's three trees, is left out, so that sapling doesn't grow. Saplings also g
 since worldgen runs on 1.21.11's data for now.
 
 **Where to start:** give `TreeGrower` weighted lists like vanilla's, dumped as they are by `VanillaDumper`.
+
+## Players' arm swings
+
+**Status:** disabled during the 26.3 port; Phase 2 of [the porting plan](porting-26.3-plan.md) re-enables it.
+
+26.3 removed the serverbound `swing` packet; the client now sends `punch` and a separate `attack` instead. Obsidian
+handles neither yet, so other players don't see a player's arm swing. Mobs' own swings are still sent.
+
+**Where to start:** handle `punch` (and `attack`, which also drives melee) and send `animate` to nearby players, as
+the removed `SwingPacket` did.

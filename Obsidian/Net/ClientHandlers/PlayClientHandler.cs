@@ -117,9 +117,6 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case SetCreativeModeSlotPacket.PacketId:
                 await HandleFromPoolAsync<SetCreativeModeSlotPacket>(data);
                 break;
-            case SwingPacket.PacketId:
-                await HandleFromPoolAsync<SwingPacket>(data);
-                break;
             case UseItemOnPacket.PacketId:
                 await HandleFromPoolAsync<UseItemOnPacket>(data);
                 break;
