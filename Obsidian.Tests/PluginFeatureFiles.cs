@@ -29,7 +29,8 @@ namespace Obsidian.Tests;
 [Collection(nameof(PluginTagFiles))]
 public class PluginFeatureFiles
 {
-    // Vanilla's cave carver, starting in every chunk.
+    // Vanilla's cave carver, starting in every chunk. Carvers still use 1.21.11's format until Phase 5; 26.1 removed
+    // #minecraft:overworld_carver_replaceables, so it lists the stone and dirt it carves.
     private const string EveryChunkCaves = """
         {
           "type": "minecraft:cave",
@@ -42,7 +43,7 @@ public class PluginFeatureFiles
             },
             "yScale": { "type": "minecraft:uniform", "min_inclusive": 0.1, "max_exclusive": 0.9 },
             "lava_level": { "above_bottom": 8 },
-            "replaceable": "#minecraft:overworld_carver_replaceables",
+            "replaceable": ["minecraft:stone", "minecraft:granite", "minecraft:diorite", "minecraft:andesite", "minecraft:tuff", "minecraft:deepslate", "minecraft:dirt", "minecraft:grass_block"],
             "horizontal_radius_multiplier": 1,
             "vertical_radius_multiplier": 1,
             "floor_level": -0.7
@@ -189,7 +190,7 @@ public class PluginFeatureFiles
                 },
                 "yScale": 0.5,
                 "lava_level": { "above_bottom": 8 },
-                "replaceable": "#minecraft:overworld_carver_replaceables",
+                "replaceable": ["minecraft:stone", "minecraft:deepslate", "minecraft:dirt"],
                 "horizontal_radius_multiplier": 1,
                 "vertical_radius_multiplier": 1,
                 "floor_level": -0.7
