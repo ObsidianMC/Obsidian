@@ -77,7 +77,7 @@ internal static class ConfiguredCarvers
         var y = HeightProvider.Parse(config.GetProperty("y"));
         var yScale = FloatProvider.Parse(config.GetProperty("yScale"));
         var lavaLevel = CarverAnchor.Parse(config.GetProperty("lava_level"));
-        var replaceable = ResolveBlockTag(config.GetProperty("replaceable").GetString()!);
+        var replaceable = ResolveBlocks(config.GetProperty("replaceable"));
 
         CaveCarverConfiguration CaveConfiguration() => new()
         {
@@ -127,18 +127,32 @@ internal static class ConfiguredCarvers
         };
     }
 
-    // A block tag's blocks as flags by block id; vanilla's carvers name tags only.
-    private static bool[] ResolveBlockTag(string tag)
+    // A block holder set's blocks as flags by block id: a #tag, which vanilla's carvers name, or a list of blocks, which
+    // the legacy carvers have where the implemented version dropped their tag (see DatagenAssets.WriteLegacy).
+    private static bool[] ResolveBlocks(JsonElement blocks)
     {
-        var identifier = tag.TrimStart('#');
-        if (!identifier.Contains(':'))
-            identifier = $"minecraft:{identifier}";
+        int[] ids;
+        if (blocks.ValueKind == JsonValueKind.Array)
+        {
+            ids = [.. blocks.EnumerateArray().Select(block => BlocksRegistry.TryGetDefault(block.GetString()!, out var match)
+                ? match.RegistryId
+                : throw new InvalidOperationException($"config.replaceable: {block} isn't a block"))];
+        }
+        else
+        {
+            var tag = blocks.GetString()!;
+            var identifier = tag.TrimStart('#');
+            if (!identifier.Contains(':'))
+                identifier = $"minecraft:{identifier}";
 
-        if (!tag.StartsWith('#') || !TagsRegistry.TryGet("block", identifier, out var match))
-            throw new InvalidOperationException($"config.replaceable: {tag} isn't a #block tag");
+            if (!tag.StartsWith('#') || !TagsRegistry.TryGet("block", identifier, out var match))
+                throw new InvalidOperationException($"config.replaceable: {tag} isn't a #block tag");
 
-        var flags = new bool[match.Entries.DefaultIfEmpty(-1).Max() + 1];
-        foreach (var id in match.Entries)
+            ids = [.. match.Entries];
+        }
+
+        var flags = new bool[ids.DefaultIfEmpty(-1).Max() + 1];
+        foreach (var id in ids)
             flags[id] = true;
 
         return flags;

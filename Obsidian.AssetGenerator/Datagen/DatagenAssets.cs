@@ -22,10 +22,10 @@ internal static class DatagenAssets
         ["archaeology", "blocks", "chests", "dispensers", "pots", "spawners", "entities", "gameplay"];
 
     /// <param name="generatedDirectory">The data generators' output (<c>data</c> and <c>reports</c>).</param>
-    /// <param name="worldgenGroupsPath">The Java dumper's vanilla classes declaring each feature (see <see cref="WorldgenAssets"/>).</param>
     /// <param name="packetFieldsPath">The Java dumper's fields of each packet (see <see cref="JavaDumper.PacketFieldsPath"/>).</param>
     /// <param name="outputDirectory">The assets directory to write into.</param>
-    public static void Write(string generatedDirectory, string worldgenGroupsPath, string packetFieldsPath, string outputDirectory)
+    /// <remarks>Loot tables and worldgen come from the legacy version for now (see <see cref="WriteLegacy"/>).</remarks>
+    public static void Write(string generatedDirectory, string packetFieldsPath, string outputDirectory)
     {
         var reports = Path.Combine(generatedDirectory, "reports");
         var data = Path.Combine(generatedDirectory, "data", "minecraft");
@@ -34,9 +34,6 @@ internal static class DatagenAssets
         // Each item's default components, { "minecraft:stone": { "components": { ... } } }, from one report per item.
         WriteJson(Path.Combine(outputDirectory, "item_components.json"),
             Combine(Path.Combine(reports, "minecraft", "components", "item"), ToId));
-        CopyDirectory(Path.Combine(reports, "biome_parameters", "minecraft"), Path.Combine(outputDirectory, "biome_parameters"));
-        // Configured carvers (the worldgen/carver registry in 26.3).
-        CopyDirectory(Path.Combine(data, "worldgen", "carver"), Path.Combine(outputDirectory, "configured_carver"));
 
         WriteRegistries(ReadObject(Path.Combine(reports, "registries.json")), outputDirectory);
         WritePackets(ReadObject(Path.Combine(reports, "packets.json")), ReadObject(packetFieldsPath), outputDirectory);
@@ -46,8 +43,51 @@ internal static class DatagenAssets
         WriteJson(Path.Combine(outputDirectory, "enchantments.json"), Combine(Path.Combine(data, "enchantment"), ToId));
         WriteJson(Path.Combine(outputDirectory, "dialogs.json"), Combine(Path.Combine(data, "dialog"), ToId));
         WriteJson(Path.Combine(outputDirectory, "instruments.json"), Combine(Path.Combine(data, "instrument"), ToId));
-        // What hoes, axes and shovels do to the blocks they're used on (the block_transformer item component).
-        WriteJson(Path.Combine(outputDirectory, "block_transformers.json"), Combine(Path.Combine(data, "block_transformer"), ToId));
+
+        WriteTags(Path.Combine(data, "tags"), outputDirectory);
+        CodecAssets.Write(data, outputDirectory);
+    }
+
+    /// <summary>
+    /// Writes the loot and worldgen assets from an older vanilla version's data generators into
+    /// <paramref name="outputDirectory"/> (<c>Assets/legacy-1.21.11</c>), in the layout the current version's would have:
+    /// <c>loot_table</c>, <c>worldgen</c> (see <see cref="WorldgenAssets"/>), <c>configured_carver</c> and
+    /// <c>biome_parameters</c>.
+    /// </summary>
+    /// <remarks>
+    /// Temporary: the current version's loot and worldgen data don't fit Obsidian's models yet, so those systems run on
+    /// the older version's. Phase 4 (loot) and Phase 5 (worldgen) of <c>docs/porting-26.3-plan.md</c> move them to the
+    /// current version and remove this.
+    /// </remarks>
+    /// <param name="generatedDirectory">The legacy data generators' output (<c>data</c> and <c>reports</c>).</param>
+    /// <param name="currentGeneratedDirectory">The current version's data generators' output, for its tags.</param>
+    /// <param name="worldgenGroupsPath">
+    /// The Java dumper's vanilla classes declaring each feature, of the current version: the legacy jar is obfuscated,
+    /// so the dumper can't read it (see <see cref="WorldgenAssets"/>).
+    /// </param>
+    public static void WriteLegacy(string generatedDirectory, string currentGeneratedDirectory, string worldgenGroupsPath,
+        string outputDirectory)
+    {
+        var reports = Path.Combine(generatedDirectory, "reports");
+        var data = Path.Combine(generatedDirectory, "data", "minecraft");
+
+        CopyDirectory(Path.Combine(reports, "biome_parameters", "minecraft"), Path.Combine(outputDirectory, "biome_parameters"));
+
+        // A carver names the blocks it carves through by a block tag, which the server looks up in the current version's
+        // tags. Where the current version dropped the tag (26.1 removed the carver replaceables), it's the legacy tag's
+        // blocks instead, as a list.
+        var currentBlockTags = Path.Combine(currentGeneratedDirectory, "data", "minecraft", "tags", "block");
+        foreach (var (path, carver) in ReadAll(Path.Combine(data, "worldgen", "configured_carver")))
+        {
+            var config = carver["config"]!.AsObject();
+            if (config["replaceable"]?.GetValue<string>() is ['#', .. var tag]
+                && !File.Exists(Path.Combine(currentBlockTags, RemoveNamespace(tag) + ".json")))
+            {
+                config["replaceable"] = new JsonArray([.. ResolveTag(Path.Combine(data, "tags", "block"), tag).Select(block => (JsonNode?)block)]);
+            }
+
+            WriteJson(Path.Combine(outputDirectory, "configured_carver", path + ".json"), carver);
+        }
 
         foreach (var category in lootTableCategories)
         {
@@ -70,13 +110,33 @@ internal static class DatagenAssets
             WriteJson(Path.Combine(outputDirectory, "loot_table", $"{category}.json"), tables);
         }
 
-        WriteTags(Path.Combine(data, "tags"), outputDirectory);
-        CodecAssets.Write(data, outputDirectory);
         WorldgenAssets.Write(data, reports, worldgenGroupsPath, outputDirectory);
     }
 
     /// <summary>A resource location of the <c>minecraft</c> namespace from its path.</summary>
     public static string ToId(string path) => $"minecraft:{path}";
+
+    // minecraft:logs → logs.
+    private static string RemoveNamespace(string id) => id[(id.IndexOf(':') + 1)..];
+
+    /// <summary>The entries of a tag of <paramref name="tagsDirectory"/>, with the tags it includes resolved, in order.</summary>
+    private static IEnumerable<string> ResolveTag(string tagsDirectory, string tag)
+    {
+        foreach (var value in Read(Path.Combine(tagsDirectory, RemoveNamespace(tag) + ".json"))["values"]!.AsArray())
+        {
+            // Optional entries are { "id", "required" }.
+            var id = value is JsonObject entry ? entry["id"]!.GetValue<string>() : value!.GetValue<string>();
+            if (id is ['#', .. var nested])
+            {
+                foreach (var resolved in ResolveTag(tagsDirectory, nested))
+                    yield return resolved;
+            }
+            else
+            {
+                yield return id;
+            }
+        }
+    }
 
     private static void WriteRegistries(JsonObject registries, string outputDirectory)
     {

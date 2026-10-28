@@ -2,11 +2,13 @@ using Obsidian.AssetGenerator;
 using Obsidian.AssetGenerator.Datagen;
 using System.Diagnostics;
 
-// Usage: Obsidian.AssetGenerator <minecraft version> <work directory> <assets directory>
+// Usage: Obsidian.AssetGenerator <minecraft version> <legacy version> <work directory> <assets directory>
 //        Obsidian.AssetGenerator capture-worldgen <minecraft version> <work directory> <fixture>
 //
 // Downloads the vanilla server jar of the version, runs its data generators and the Java dumper against it, and writes
-// the assets the source generators and the server read into the assets directory (replacing what's there).
+// the assets the source generators and the server read into the assets directory (replacing what's there). The loot
+// and worldgen assets come from the legacy version's data generators instead, into legacy-<legacy version> (temporary,
+// until Phases 4 and 5 of docs/porting-26.3-plan.md; see DatagenAssets.WriteLegacy).
 //
 // capture-worldgen instead re-records the vanilla worldgen and structure references in the fixture (in place) with the
 // version's server; see docs/vanilla-captures.md.
@@ -21,16 +23,17 @@ if (args is ["capture-worldgen", var captureVersion, var captureWorkDirectory, v
     return 0;
 }
 
-if (args.Length != 3)
+if (args.Length != 4)
 {
-    Console.Error.WriteLine("Usage: Obsidian.AssetGenerator <minecraft version> <work directory> <assets directory>");
+    Console.Error.WriteLine("Usage: Obsidian.AssetGenerator <minecraft version> <legacy version> <work directory> <assets directory>");
     Console.Error.WriteLine("       Obsidian.AssetGenerator capture-worldgen <minecraft version> <work directory> <fixture>");
     return 1;
 }
 
-var (version, workDirectory, assetsDirectory) = (args[0], Path.GetFullPath(args[1]), Path.GetFullPath(args[2]));
+var (version, legacyVersion, workDirectory, assetsDirectory) = (args[0], args[1], Path.GetFullPath(args[2]), Path.GetFullPath(args[3]));
 
 var server = await VanillaServer.PrepareAsync(httpClient, version, Path.Combine(workDirectory, version));
+var legacy = await VanillaServer.PrepareAsync(httpClient, legacyVersion, Path.Combine(workDirectory, legacyVersion));
 
 // Written next to the assets and moved in place once complete, so a failed run leaves the previous assets alone.
 var staging = assetsDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + ".tmp";
@@ -42,7 +45,9 @@ Console.WriteLine("Running the Java dumper...");
 await JavaDumper.RunAsync(server, staging);
 
 Console.WriteLine("Writing data generator assets...");
-DatagenAssets.Write(server.GeneratedDirectory, JavaDumper.WorldgenGroupsPath(server), JavaDumper.PacketFieldsPath(server), staging);
+DatagenAssets.Write(server.GeneratedDirectory, JavaDumper.PacketFieldsPath(server), staging);
+DatagenAssets.WriteLegacy(legacy.GeneratedDirectory, server.GeneratedDirectory, JavaDumper.WorldgenGroupsPath(server),
+    Path.Combine(staging, $"legacy-{legacyVersion}"));
 server.CopyVersionInfo(Path.Combine(staging, "version.json"));
 
 await FixtureDumper.DumpServerAsync(server, staging);

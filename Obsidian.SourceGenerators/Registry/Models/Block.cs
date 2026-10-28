@@ -17,10 +17,7 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
     public IReadOnlyDictionary<string, string> OverrideClasses { get; }
     public BlockProperty[] Properties { get; }
     public Dictionary<int, List<string>> StateValues { get; }
-    /// <summary>
-    /// The sapling's dumped TreeGrower as C# initializer values by property (weighted feature lists as
-    /// <c>[("minecraft:oak", 9), ...]</c>, the shortest tree as a string literal), or null.
-    /// </summary>
+    /// <summary>The sapling's dumped TreeGrower by field (features by identifier, secondaryChance as a float literal), or null.</summary>
     public IReadOnlyDictionary<string, string>? TreeGrower { get; }
     /// <summary>The ignite and burn odds vanilla's FireBlock registers for this block, or null if it isn't flammable.</summary>
     public (int Ignite, int Burn)? FireOdds { get; }

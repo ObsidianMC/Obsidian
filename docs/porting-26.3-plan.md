@@ -421,6 +421,11 @@ Phase 2.
 2. **`1.21.x` is frozen.** It takes only critical fixes from now on, and we merge those forward into `26.3.x`.
 3. **26.3 comes first.** 26.4 is in snapshots and probably ships in December. We finish 26.3, then start `26.4.x` from
    it. Phase 0 is meant to make later version bumps mostly regeneration.
+4. **Loot and worldgen run on 1.21.11 data until Phases 4 and 5.** 26.3's loot and worldgen data don't fit
+   Obsidian's models. The asset generator writes 1.21.11's loot tables, worldgen, structure tags, carvers and biome
+   parameters to `Assets/legacy-1.21.11`, which is embedded under the normal asset names, and the server extracts
+   1.21.11's structure templates. Everything else is 26.3. `LegacyMinecraftVersion` in `Obsidian.csproj` names the
+   version; Phases 4 and 5 remove it.
 
 ## Risks
 

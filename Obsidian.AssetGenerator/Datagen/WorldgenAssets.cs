@@ -13,6 +13,11 @@ namespace Obsidian.AssetGenerator.Datagen;
 /// Features are grouped by the vanilla bootstrap class declaring them (TreeFeatures, VegetationPlacements, ...), which
 /// the Java dumper lists since the data generators don't output it. The other registries are grouped by what
 /// references them.
+/// <para>
+/// For now this writes the legacy version's worldgen (see <see cref="DatagenAssets.WriteLegacy"/>) with the current
+/// version's classes, which the Java dumper can read; <see cref="legacyFeatureClasses"/> has the legacy features that
+/// the current version no longer declares.
+/// </para>
 /// </remarks>
 internal static class WorldgenAssets
 {
@@ -29,6 +34,41 @@ internal static class WorldgenAssets
         ["TreeFeatures"] = "trees", ["TreePlacements"] = "trees",
         ["VegetationFeatures"] = "vegetation", ["VegetationPlacements"] = "vegetation",
         ["VillagePlacements"] = "village",
+    };
+
+    // The class declaring each configured feature of 1.21.11 that 26.1 renamed or removed. Temporary, with the legacy
+    // worldgen assets (Phase 5 of docs/porting-26.3-plan.md removes it).
+    private static readonly Dictionary<string, string> legacyFeatureClasses = new()
+    {
+        ["minecraft:crimson_forest_vegetation_bonemeal"] = "NetherFeatures",
+        ["minecraft:nether_sprouts_bonemeal"] = "NetherFeatures",
+        ["minecraft:patch_crimson_roots"] = "NetherFeatures",
+        ["minecraft:twisting_vines_bonemeal"] = "NetherFeatures",
+        ["minecraft:warped_forest_vegetation_bonemeal"] = "NetherFeatures",
+        ["minecraft:pale_forest_flowers"] = "VegetationFeatures",
+        ["minecraft:patch_berry_bush"] = "VegetationFeatures",
+        ["minecraft:patch_brown_mushroom"] = "VegetationFeatures",
+        ["minecraft:patch_bush"] = "VegetationFeatures",
+        ["minecraft:patch_cactus"] = "VegetationFeatures",
+        ["minecraft:patch_dead_bush"] = "VegetationFeatures",
+        ["minecraft:patch_dry_grass"] = "VegetationFeatures",
+        ["minecraft:patch_firefly_bush"] = "VegetationFeatures",
+        ["minecraft:patch_grass"] = "VegetationFeatures",
+        ["minecraft:patch_grass_jungle"] = "VegetationFeatures",
+        ["minecraft:patch_grass_meadow"] = "VegetationFeatures",
+        ["minecraft:patch_large_fern"] = "VegetationFeatures",
+        ["minecraft:patch_leaf_litter"] = "VegetationFeatures",
+        ["minecraft:patch_melon"] = "VegetationFeatures",
+        ["minecraft:patch_pumpkin"] = "VegetationFeatures",
+        ["minecraft:patch_red_mushroom"] = "VegetationFeatures",
+        ["minecraft:patch_sugar_cane"] = "VegetationFeatures",
+        ["minecraft:patch_sunflower"] = "VegetationFeatures",
+        ["minecraft:patch_taiga_grass"] = "VegetationFeatures",
+        ["minecraft:patch_tall_grass"] = "VegetationFeatures",
+        ["minecraft:patch_waterlily"] = "VegetationFeatures",
+        ["minecraft:single_piece_of_grass"] = "VegetationFeatures",
+        ["minecraft:wildflowers_birch_forest"] = "VegetationFeatures",
+        ["minecraft:wildflowers_meadow"] = "VegetationFeatures",
     };
 
     // Entries referenced from several categories (or none) go to this category.
@@ -62,8 +102,7 @@ internal static class WorldgenAssets
         });
 
         var featureClasses = ReadObject(worldgenGroupsPath);
-        // Configured features (the worldgen/feature registry in 26.3).
-        var configuredFeatures = ReadEntries(Path.Combine(worldgen, "feature"));
+        var configuredFeatures = ReadEntries(Path.Combine(worldgen, "configured_feature"));
         var placedFeatures = ReadEntries(Path.Combine(worldgen, "placed_feature"));
 
         // Processor lists go with what uses them: the template pools of a structure (their elements' processors) or
@@ -94,6 +133,13 @@ internal static class WorldgenAssets
         WriteCategories(Path.Combine(output, "structures"), structures, structureCategories);
         WriteCategories(Path.Combine(output, "structure_sets"), structureSets, structureSetCategories);
         WriteCategories(Path.Combine(output, "template_pools"), templatePools, poolCategories);
+
+        // The structure tags, which name these structures, as { "worldgen/structure/village": { "values": [...] } }.
+        // Temporary like the legacy worldgen: the current version's tags name its own structures.
+        var structureTags = new JsonObject();
+        foreach (var (path, tag) in ReadAll(Path.Combine(dataDirectory, "tags", "worldgen", "structure")))
+            structureTags[$"worldgen/structure/{path}"] = new JsonObject { ["values"] = tag["values"]!.DeepClone() };
+        WriteJson(Path.Combine(output, "structure_tags.json"), structureTags);
     }
 
     private static List<(string Id, JsonNode Json)> ReadEntries(string directory) =>
@@ -104,7 +150,7 @@ internal static class WorldgenAssets
         string worldgenGroupsPath) =>
         features.ToDictionary(feature => feature.Id, feature =>
         {
-            var className = classes[feature.Id]?.GetValue<string>()
+            var className = classes[feature.Id]?.GetValue<string>() ?? legacyFeatureClasses.GetValueOrDefault(feature.Id)
                 ?? throw new InvalidDataException($"{worldgenGroupsPath} doesn't list the class declaring {feature.Id}.");
 
             return featureClassCategories.GetValueOrDefault(className)

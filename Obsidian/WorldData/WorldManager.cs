@@ -72,9 +72,10 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
             this.levelFactory.Initialize();
 
-            // Structure templates come from Mojang's server jar, which Obsidian can't ship.
+            // Structure templates come from Mojang's server jar, which Obsidian can't ship. They're the legacy version's,
+            // like the jigsaw pools and structures that place them.
             StructureRegistry.Initialize(await VanillaServerJar.ExtractStructuresAsync(httpClientFactory.CreateClient(),
-                ServerConstants.VanillaCachePath, ServerConstants.ProtocolDescription, this.logger, stoppingToken));
+                ServerConstants.VanillaCachePath, ServerConstants.LegacyVersion, this.logger, stoppingToken));
 
             await this.LoadWorldsAsync(stoppingToken);
 

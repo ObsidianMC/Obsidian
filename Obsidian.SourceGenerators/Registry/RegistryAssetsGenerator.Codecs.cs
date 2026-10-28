@@ -133,11 +133,11 @@ public partial class RegistryAssetsGenerator
 
             if (value.ValueKind == JsonValueKind.Object)
             {
-                builder.ParseProperty(value, ctx, name == "Assets");
+                builder.ParseProperty(value, ctx, name is "Assets" or "BabyAssets");
                 return;
             }
 
-            builder.AppendValueType(value, ctx, name == "Assets");
+            builder.AppendValueType(value, ctx, name is "Assets" or "BabyAssets");
         }, ctx);
         builder.GenerateSimpleCodec(codecs["wolf_sound_variant"].ToArray(), "WolfSoundVariant",
             "minecraft:wolf_sound_variant", "WolfSoundVariantCodec", ctx);

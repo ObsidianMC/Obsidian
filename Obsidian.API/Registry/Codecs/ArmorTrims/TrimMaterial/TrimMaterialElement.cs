@@ -1,42 +1,20 @@
 ﻿namespace Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
 public sealed record class TrimMaterialElement : INetworkSerializable<TrimMaterialElement>
 {
-    public required string AssetName { get; init; }
+    /// <summary>The palette the trim is colored with, like <c>minecraft:trim/iron</c>.</summary>
+    public required string PaletteId { get; init; }
 
     public required TrimDescription Description { get; init; }
 
-    public IReadOnlyDictionary<string, string>? OverrideArmorAssets
-    {
-        get;
-        init => field = value is null ? null : new Dictionary<string, string>(value).AsReadOnly();
-    }
-
     public static TrimMaterialElement Read(INetStreamReader reader) => new()
     {
-        AssetName = reader.ReadString(),
-        OverrideArmorAssets = reader.ReadLengthPrefixedArray(() =>
-        {
-            return (rootId: reader.ReadString(), name: reader.ReadString());
-        }).ToDictionary(x => x.rootId, x => x.name),
+        PaletteId = reader.ReadString(),
         Description = TrimDescription.Read(reader)
     };
 
     public static void Write(TrimMaterialElement element, INetStreamWriter writer)
     {
-        writer.WriteString(element.AssetName);
-
-        var count = element.OverrideArmorAssets?.Count ?? 0;
-        writer.WriteVarInt(count);
-
-        if (element.OverrideArmorAssets is not null)
-        {
-            foreach (var (rootId, name) in element.OverrideArmorAssets)
-            {
-                writer.WriteString(rootId);
-                writer.WriteString(name);
-            }
-        }
-
+        writer.WriteString(element.PaletteId);
         TrimDescription.Write(element.Description, writer);
     }
 }

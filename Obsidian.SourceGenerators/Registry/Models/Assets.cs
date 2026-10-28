@@ -249,17 +249,15 @@ internal sealed class Assets
         return blocks.ToArray();
     }
 
-    // A sapling's dumped TreeGrower as C# initializer values by property: its weighted lists of configured features
-    // (trees, megaTrees, flowerTrees) as [("minecraft:oak", 9), ...] and its shortestTree as a string literal.
+    // A sapling's dumped TreeGrower: its configured features by identifier, and its secondary chance as a float literal.
     private static Dictionary<string, string> GetTreeGrower(JsonElement element)
     {
         var grower = new Dictionary<string, string>();
         foreach (var property in element.EnumerateObject())
         {
-            grower[property.Name.ToPascalCase()] = property.Value.ValueKind == JsonValueKind.Array
-                ? "[" + string.Join(", ", property.Value.EnumerateArray().Select(entry =>
-                    $"(\"{entry.GetProperty("feature").GetString()}\", {entry.GetProperty("weight").GetInt32()})")) + "]"
-                : $"\"{property.Value.GetString()}\"";
+            grower[property.Name] = property.Name == "secondaryChance"
+                ? property.Value.GetSingle().ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "f"
+                : property.Value.GetString()!;
         }
 
         return grower;

@@ -407,3 +407,26 @@ Continue in `Obsidian/Progress`, `Player.Progress.cs`, and the three registries 
 custom statistics. Existing gameplay files only contain small calls into that runtime. The three tests in
 `Obsidian.Tests/Progress.cs` replay captured vanilla 1.21.11 packet/save fixtures and exercise reward idempotence
 and plugin unload/reload.
+
+## Tilling and other block transformers
+
+**Status:** disabled during the 26.3 port; Phase 4 of [the porting plan](porting-26.3-plan.md) re-enables it.
+
+26.1 replaced `HoeItem.TILLABLES` (and the axe's and shovel's tables) with the data-driven `minecraft:block_transformer`
+item component: rule-based block state providers with tag and offset predicates, sounds, item damage and loot
+tables. The old dump can't be made from 26.3, so hoes no longer till; `ItemUseOnBehaviors` has no counterparts and
+the hoe test is skipped.
+
+**Where to start:** read vanilla's `data/minecraft/block_transformer` files (`hoe`, `axe`, `shovel`) and run them from
+the item's `block_transformer` component in `UseItemOnPacket`, then re-enable `Farmland.HoeTills`.
+
+## Saplings that 26.3 added
+
+**Status:** open until Phase 6 of [the porting plan](porting-26.3-plan.md).
+
+Since 26.1 a `TreeGrower` picks from weighted feature lists. `sapling_growers.json` keeps the old shape (a feature,
+a secondary one and a secondary chance), which every 1.21.11 sapling fits; a grower that doesn't fit, like the
+poplar's three trees, is left out, so that sapling doesn't grow. Saplings also grow 1.21.11's configured features,
+since worldgen runs on 1.21.11's data for now.
+
+**Where to start:** give `TreeGrower` weighted lists like vanilla's, dumped as they are by `VanillaDumper`.

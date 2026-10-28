@@ -53,7 +53,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             .Where(static file => file.path is not null && (file.path.StartsWith("features/") || file.path.StartsWith("placed_features/")
                 || file.path.StartsWith("processor_lists/") || file.path.StartsWith("structures/") || file.path.StartsWith("structure_sets/")
                 || file.path.StartsWith("template_pools/")
-                || file.path == "biome_features" || file.path == "tags"))
+                || file.path == "biome_features" || file.path == "structure_tags"))
             .Select(static (file, ct) => (path: file.path!, json: file.text.GetText(ct)!.ToString()));
 
         var classDeclarations = ctx.SyntaxProvider
@@ -72,13 +72,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
     /// </summary>
     private static string? GetWorldgenPath(string path)
     {
-        var normalized = path.Replace('\\', '/');
-
-        // The tags of every registry; the structure tags are emitted here since structures only exist in this assembly.
-        if (normalized.EndsWith("/Assets/tags.json", StringComparison.Ordinal))
-            return "tags";
-
-        var relative = AssetPaths.GetWorldgenRelativePath(normalized);
+        var relative = AssetPaths.GetWorldgenRelativePath(path);
         if (relative is null || !relative.EndsWith(".json", StringComparison.Ordinal))
             return null;
 
@@ -142,7 +136,8 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         if (templatePools.Count > 0)
             context.AddSource("TemplatePools.g.cs", emitter.EmitTemplatePools());
 
-        var tagsJson = files.FirstOrDefault(file => file.path == "tags").json;
+        // The structure tags are emitted here since structures only exist in this assembly.
+        var tagsJson = files.FirstOrDefault(file => file.path == "structure_tags").json;
         if (structures.Count > 0 && tagsJson is not null)
             context.AddSource("StructureTags.g.cs", emitter.EmitStructureTags(tagsJson));
     }
@@ -257,7 +252,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         }
 
         /// <summary>
-        /// Emits the structure tags (<c>worldgen/structure</c> in <c>Assets/tags.json</c>) as lists of the structures they hold,
+        /// Emits the structure tags (<c>Assets/worldgen/structure_tags.json</c>) as lists of the structures they hold,
         /// with nested tags resolved.
         /// </summary>
         public string EmitStructureTags(string tagsJson)
@@ -289,7 +284,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
             var builder = Header();
             builder.AppendLine("/// <summary>");
-            builder.AppendLine("/// Vanilla structure tags (e.g. <c>minecraft:on_treasure_maps</c>), generated from <c>Assets/tags.json</c>.");
+            builder.AppendLine("/// Vanilla structure tags (e.g. <c>minecraft:on_treasure_maps</c>), generated from <c>Assets/worldgen/structure_tags.json</c>.");
             builder.AppendLine("/// </summary>");
             builder.AppendLine("public static partial class StructureTags");
             builder.AppendLine("{");
@@ -925,11 +920,10 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             return $"{FullName(type)}.{member.Name}";
         }
 
-        // A block state: its block's id, or { "id", "properties" }.
         private static string EmitBlockState(JsonElement json)
         {
-            var name = Literal((json.ValueKind == JsonValueKind.String ? json : json.GetProperty("id")).GetString()!);
-            if (json.ValueKind == JsonValueKind.String || !json.TryGetProperty("properties", out var properties) || !properties.EnumerateObject().Any())
+            var name = Literal(json.GetProperty("Name").GetString()!);
+            if (!json.TryGetProperty("Properties", out var properties) || !properties.EnumerateObject().Any())
                 return $"new global::Obsidian.API.SimpleBlockState {{ Name = {name} }}";
 
             var entries = properties.EnumerateObject().Select(property => $"{{ {Literal(property.Name)}, {Literal(property.Value.GetString()!)} }}");

@@ -11,7 +11,20 @@
 	<PropertyGroup>
 		<!-- The Minecraft version Obsidian implements. Obsidian.AssetGenerator generates Assets from its server jar. -->
 		<MinecraftVersion>26.3</MinecraftVersion>
+		<!-- Temporary: the older Minecraft version whose loot tables and worldgen Obsidian runs on, since its models
+		     don't read the current version's yet. Obsidian.AssetGenerator writes them to Assets\legacy-<version>, which
+		     is embedded under the names of the assets they stand in for, and the server extracts this version's
+		     structure templates (ServerConstants.LegacyVersion). Phases 4 (loot) and 5 (worldgen) of
+		     docs/porting-26.3-plan.md remove it. -->
+		<LegacyMinecraftVersion>1.21.11</LegacyMinecraftVersion>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+			<_Parameter1>LegacyMinecraftVersion</_Parameter1>
+			<_Parameter2>$(LegacyMinecraftVersion)</_Parameter2>
+		</AssemblyAttribute>
+	</ItemGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<DefineConstants>TRACE</DefineConstants>
@@ -84,8 +97,11 @@
 	<Target Name="IncludeVanillaAssets" AfterTargets="ResolveProjectReferences">
 		<ItemGroup>
 			<!-- Biome parameter lists, configured carvers, block physics, collision shapes and registry ids are only read at runtime; keep them away from the source generators. -->
-			<AdditionalFiles Include="Assets\**\*.json" Exclude="Assets\biome_parameters\**;Assets\configured_carver\**;Assets\block_physics.json;Assets\collision_shapes.json;Assets\registry_ids.json" />
-			<EmbeddedResource Include="Assets\**\*.*" Exclude="Assets\.generated-*" />
+			<AdditionalFiles Include="Assets\**\*.json" Exclude="Assets\biome_parameters\**;Assets\configured_carver\**;Assets\legacy-*\biome_parameters\**;Assets\legacy-*\configured_carver\**;Assets\block_physics.json;Assets\collision_shapes.json;Assets\registry_ids.json" />
+			<EmbeddedResource Include="Assets\**\*.*" Exclude="Assets\.generated-*;Assets\legacy-*\**" />
+			<!-- The legacy loot and worldgen assets, under the names of the current version's assets they stand in for
+			     (Obsidian.Assets.worldgen.structures.nether.json). -->
+			<EmbeddedResource Include="Assets\legacy-$(LegacyMinecraftVersion)\**\*.*" LinkBase="Assets" />
 		</ItemGroup>
 	</Target>
 
