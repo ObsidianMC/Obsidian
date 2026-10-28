@@ -16,12 +16,14 @@
 		<None Remove="Assets\bigtest.nbt" />
 		<None Remove="Assets\fluid_scenarios.json" />
 		<None Remove="Assets\redstone_scenarios.json" />
+		<None Remove="Assets\vanilla_worldgen.json" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<EmbeddedResource Include="Assets\bigtest.nbt" />
 		<EmbeddedResource Include="Assets\fluid_scenarios.json" />
 		<EmbeddedResource Include="Assets\redstone_scenarios.json" />
+		<EmbeddedResource Include="Assets\vanilla_worldgen.json" />
 		<EmbeddedResource Include="Assets\block_loot.json" />
 		<EmbeddedResource Include="Assets\entity_loot.json" />
 		<EmbeddedResource Include="Assets\update-recipes.bin" />

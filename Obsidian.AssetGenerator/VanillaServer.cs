@@ -68,10 +68,27 @@ internal sealed record VanillaServer(string Version, string Directory, IReadOnly
     }
 
     /// <summary>Runs <c>java</c> (from <c>JAVA_HOME</c> when set) in <paramref name="workingDirectory"/>.</summary>
-    public static async Task RunJavaAsync(string workingDirectory, params string[] arguments)
+    public static Task RunJavaAsync(string workingDirectory, params string[] arguments) =>
+        RunJavaAsync(workingDirectory, Timeout.InfiniteTimeSpan, arguments);
+
+    /// <summary>
+    /// Runs <c>java</c> (from <c>JAVA_HOME</c> when set) in <paramref name="workingDirectory"/>, and kills it and fails
+    /// if it hasn't exited within <paramref name="timeout"/>.
+    /// </summary>
+    public static async Task RunJavaAsync(string workingDirectory, TimeSpan timeout, params string[] arguments)
     {
         using var process = StartJava(new ProcessStartInfo(JavaPath, arguments) { WorkingDirectory = workingDirectory });
-        await process.WaitForExitAsync();
+        using var cancellation = new CancellationTokenSource(timeout);
+        try
+        {
+            await process.WaitForExitAsync(cancellation.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            process.Kill(entireProcessTree: true);
+            throw new TimeoutException($"java {string.Join(' ', arguments)} didn't exit within {timeout}.");
+        }
+
         if (process.ExitCode != 0)
             throw new InvalidOperationException($"java {string.Join(' ', arguments)} exited with code {process.ExitCode}.");
     }
