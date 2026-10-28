@@ -73,7 +73,7 @@ public sealed partial class SamplePlugin
         using (var data = File.OpenRead(levelPath))
         {
             var root = Assert.IsType<NbtCompound>(new NbtReader(data, NbtCompression.GZip).ReadNextTag());
-            Assert.Equal(VanillaLevelData.DataVersion, root.GetInt("DataVersion"));
+            Assert.Equal(ServerConstants.DataVersion, root.GetInt("DataVersion"));
             Assert.Equal([1, 3], Assert.IsType<NbtArray<int>>(root["data"]).GetArray());
         }
 

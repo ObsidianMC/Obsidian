@@ -14,9 +14,6 @@ namespace Obsidian.WorldData.Maps;
 /// </summary>
 internal sealed class MapStorage(string folderPath)
 {
-    // Obsidian's saved data version, as in its regions.
-    private const int DataVersion = 3337;
-
     private readonly ConcurrentDictionary<int, MapData?> maps = new();
     private readonly Lock idLock = new();
     private int? lastMapId;
@@ -147,7 +144,7 @@ internal sealed class MapStorage(string folderPath)
         await using var stream = File.Create(path);
         await using var writer = new NbtWriterStream(stream, NbtCompression.GZip, "");
         writer.WriteTag(data);
-        writer.WriteInt("DataVersion", DataVersion);
+        writer.WriteInt("DataVersion", ServerConstants.DataVersion);
         writer.EndCompound();
         await writer.TryFinishAsync();
     }

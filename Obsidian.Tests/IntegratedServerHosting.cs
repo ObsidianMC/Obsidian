@@ -89,11 +89,11 @@ public sealed class IntegratedServerHosting : IDisposable
 
         var levelDat = Path.Combine(world, "level.dat");
         var data = ReadData(levelDat);
-        Assert.Equal(4671, data.GetInt("DataVersion"));
+        Assert.Equal(ServerConstants.DataVersion, data.GetInt("DataVersion"));
         Assert.Equal("Test World", data.GetString("LevelName"));
         Assert.Equal(1, data.GetInt("GameType"));
         Assert.True(data.GetBool("allowCommands"));
-        Assert.True(data.TryGetTag<NbtCompound>("Version", out var version) && version.GetString("Name") == "1.21.11");
+        Assert.True(data.TryGetTag<NbtCompound>("Version", out var version) && version.GetString("Name") == ServerConstants.ProtocolDescription);
         Assert.True(data.TryGetTag<NbtCompound>("spawn", out _));
         Assert.True(data.TryGetTag<NbtCompound>("game_rules", out var gameRules) && gameRules.GetBool("minecraft:keep_inventory"));
         Assert.True(data.TryGetTag<NbtCompound>("WorldGenSettings", out var worldGen));

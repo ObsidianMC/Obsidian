@@ -66,7 +66,7 @@ internal sealed class PlayerStatistics : IStatistics
             return new JsonObject
             {
                 ["stats"] = this.values.DeepClone(),
-                ["DataVersion"] = VanillaLevelData.DataVersion
+                ["DataVersion"] = ServerConstants.DataVersion
             };
         }
     }

@@ -29,6 +29,7 @@ await JavaDumper.RunAsync(server, staging);
 
 Console.WriteLine("Writing data generator assets...");
 DatagenAssets.Write(server.GeneratedDirectory, JavaDumper.WorldgenGroupsPath(server), JavaDumper.PacketFieldsPath(server), staging);
+server.CopyVersionInfo(Path.Combine(staging, "version.json"));
 
 await FixtureDumper.DumpServerAsync(server, staging);
 await ClientModels.DumpAsync(httpClient, server, staging);

@@ -35,6 +35,7 @@
 		</PropertyGroup>
 		<ItemGroup>
 			<VanillaAssetsOutput Include="$(VanillaAssetsStamp)" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)version.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)item-components-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)client-entity-metadata-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)client-screens-$(MinecraftVersion).json" />

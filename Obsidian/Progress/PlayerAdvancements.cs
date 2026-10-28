@@ -165,7 +165,7 @@ internal sealed class PlayerAdvancements(IPlayer player) : IAdvancements
                     entry["done"] = this.Done(definition);
             }
 
-            result["DataVersion"] = VanillaLevelData.DataVersion;
+            result["DataVersion"] = ServerConstants.DataVersion;
             return result;
         }
     }

@@ -457,7 +457,7 @@ public partial class PlayerBase
         tag.Remove("FallDistance");
         tag.Remove("MovementFlags");
 
-        tag.Set(new NbtTag<int>("DataVersion", VanillaLevelData.DataVersion));
+        tag.Set(new NbtTag<int>("DataVersion", ServerConstants.DataVersion));
         tag.Set(new NbtTag<string>("Dimension", this.Level.DimensionName));
         tag.Set(new NbtTag<int>("playerGameType", (int)this.GameMode));
 
