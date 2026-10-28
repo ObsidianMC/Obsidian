@@ -278,7 +278,7 @@ public sealed class MobSwimming
     {
         // Vanilla PathType defaults (fls): negative rejects a node; water costs 8, damage fire 16, breach 4.
         Assert.Equal(8f, Obsidian.Entities.AI.PathTypeMalus.Get(Obsidian.Entities.AI.PathType.WATER));
-        Assert.Equal(16f, Obsidian.Entities.AI.PathTypeMalus.Get(Obsidian.Entities.AI.PathType.DAMAGE_FIRE));
+        Assert.Equal(16f, Obsidian.Entities.AI.PathTypeMalus.Get(Obsidian.Entities.AI.PathType.FIRE));
         Assert.Equal(4f, Obsidian.Entities.AI.PathTypeMalus.Get(Obsidian.Entities.AI.PathType.BREACH));
         Assert.Equal(-1f, Obsidian.Entities.AI.PathTypeMalus.Get(Obsidian.Entities.AI.PathType.LAVA));
         Assert.Equal(0f, Obsidian.Entities.AI.PathTypeMalus.Get(Obsidian.Entities.AI.PathType.OPEN));
@@ -302,20 +302,19 @@ public sealed class MobSwimming
     public async Task SpeciesPathfindingMalusOverridesMatchVanillaConstructors()
     {
         await using var context = TestServerFactory.CreateServer($"malus-{Guid.NewGuid():N}");
-        // Vanilla Animal sets DANGER_FIRE 16 and DAMAGE_FIRE -1; Horse sets DANGER_OTHER and DAMAGE_OTHER -1; Wolf sets
-        // POWDER_SNOW and DANGER_POWDER_SNOW -1. Other entries keep the generated defaults.
+        // Vanilla Animal sets FIRE_IN_NEIGHBOR 16 and FIRE -1; Wolf sets POWDER_SNOW and ON_TOP_OF_POWDER_SNOW -1.
+        // Other entries, including all of Horse's since 26.1, keep the generated defaults.
         var cow = Assert.IsAssignableFrom<PathfinderMob>(new Cow { Level = context.World });
-        Assert.Equal(16f, cow.GetPathfindingMalus(PathType.DANGER_FIRE));
-        Assert.Equal(-1f, cow.GetPathfindingMalus(PathType.DAMAGE_FIRE));
+        Assert.Equal(16f, cow.GetPathfindingMalus(PathType.FIRE_IN_NEIGHBOR));
+        Assert.Equal(-1f, cow.GetPathfindingMalus(PathType.FIRE));
         Assert.Equal(PathTypeMalus.Get(PathType.WATER), cow.GetPathfindingMalus(PathType.WATER));
 
         var horse = new Horse { Level = context.World };
-        Assert.Equal(-1f, horse.GetPathfindingMalus(PathType.DANGER_OTHER));
-        Assert.Equal(-1f, horse.GetPathfindingMalus(PathType.DAMAGE_OTHER));
+        Assert.Equal(PathTypeMalus.Get(PathType.DAMAGING_IN_NEIGHBOR), horse.GetPathfindingMalus(PathType.DAMAGING_IN_NEIGHBOR));
 
         var wolf = new Wolf { Level = context.World };
         Assert.Equal(-1f, wolf.GetPathfindingMalus(PathType.POWDER_SNOW));
-        Assert.Equal(-1f, wolf.GetPathfindingMalus(PathType.DANGER_POWDER_SNOW));
+        Assert.Equal(-1f, wolf.GetPathfindingMalus(PathType.ON_TOP_OF_POWDER_SNOW));
     }
 
     [Fact]

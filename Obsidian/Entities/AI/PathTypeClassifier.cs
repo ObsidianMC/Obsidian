@@ -30,12 +30,12 @@ internal static class PathTypeClassifier
         return Base(below) switch
         {
             PathType.OPEN or PathType.WATER or PathType.LAVA or PathType.WALKABLE => PathType.OPEN,
-            PathType.DAMAGE_FIRE => PathType.DAMAGE_FIRE,
-            PathType.DAMAGE_OTHER => PathType.DAMAGE_OTHER,
+            PathType.FIRE => PathType.FIRE,
+            PathType.DAMAGING => PathType.DAMAGING,
             PathType.STICKY_HONEY => PathType.STICKY_HONEY,
-            PathType.POWDER_SNOW => PathType.DANGER_POWDER_SNOW,
+            PathType.POWDER_SNOW => PathType.ON_TOP_OF_POWDER_SNOW,
             PathType.DAMAGE_CAUTIOUS => PathType.DAMAGE_CAUTIOUS,
-            PathType.TRAPDOOR => PathType.DANGER_TRAPDOOR,
+            PathType.TRAPDOOR => PathType.ON_TOP_OF_TRAPDOOR,
             _ => Scan(terrain, x, y, z),
         };
     }
@@ -55,10 +55,10 @@ internal static class PathTypeClassifier
                     var neighbour = Base(StateAt(terrain, x + dx, y + dy, z + dz) ?? AirStateId);
                     switch (neighbour)
                     {
-                        case PathType.DAMAGE_OTHER:
-                            return PathType.DANGER_OTHER;
-                        case PathType.DAMAGE_FIRE or PathType.LAVA:
-                            return PathType.DANGER_FIRE;
+                        case PathType.DAMAGING:
+                            return PathType.DAMAGING_IN_NEIGHBOR;
+                        case PathType.FIRE or PathType.LAVA:
+                            return PathType.FIRE_IN_NEIGHBOR;
                         case PathType.WATER:
                             return PathType.WATER_BORDER;
                         case PathType.DAMAGE_CAUTIOUS:
@@ -76,7 +76,9 @@ internal static class PathTypeClassifier
 
     /// <summary>
     /// Vanilla <c>getPathTypeOfMob</c>: classifies a node from every cell of the mob's bounding box at that position,
-    /// applying door and rail rules for the mob, and returns the most restrictive type (or the highest malus).
+    /// applying door and rail rules for the mob, and returns the most restrictive type (or the highest malus). Since 26.1
+    /// a mob wider than one block treats a node whose own cell is less costly than its box as
+    /// <see cref="PathType.BIG_MOBS_CLOSE_TO_DANGER"/>.
     /// </summary>
     public static PathType ForNode(IPathBody body, Vector node)
     {
@@ -106,6 +108,21 @@ internal static class PathTypeClassifier
             }
         }
 
+        // Vanilla returns a box made of a single type as it is, whatever its malus.
+        var distinct = 0;
+        var only = PathType.BLOCKED;
+        for (var index = 0; index < PathTypeCount; index++)
+        {
+            if (seen[index])
+            {
+                distinct++;
+                only = (PathType)index;
+            }
+        }
+
+        if (distinct == 1)
+            return only;
+
         if (seen[(int)PathType.FENCE])
             return PathType.FENCE;
         if (seen[(int)PathType.UNPASSABLE_RAIL])
@@ -124,8 +141,20 @@ internal static class PathTypeClassifier
                 result = type;
         }
 
+        var resultMalus = Malus(body, result);
+        var nodeType = Static(body.Terrain, node.X, node.Y, node.Z);
+
+        // Vanilla 26.1+: a wide mob whose box reaches something costlier than the node's own cell is close to danger,
+        // unless that type costs it at least as much.
+        if (sizeX > 1)
+        {
+            return Malus(body, nodeType) < resultMalus && Malus(body, PathType.BIG_MOBS_CLOSE_TO_DANGER) < resultMalus
+                ? PathType.BIG_MOBS_CLOSE_TO_DANGER
+                : result;
+        }
+
         // Vanilla keeps an open node open when the mob is no wider than one block and the node itself is open.
-        if (sizeX <= 1 && result != PathType.OPEN && Malus(body, result) == 0 && Static(body.Terrain, node.X, node.Y, node.Z) == PathType.OPEN)
+        if (nodeType == PathType.OPEN && result != PathType.OPEN && resultMalus == 0)
             return PathType.OPEN;
 
         return result;
