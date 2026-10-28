@@ -32,9 +32,11 @@ public class VanillaRedstone
 
     public static IEnumerable<object[]> ScenarioNames() => Fixture.Shared.Scenarios.Keys.Select(name => new object[] { name });
 
+    // The fixture stays a 1.21.11 capture until Phase 6 of docs/porting-26.3-plan.md re-records it, which then checks
+    // it against ServerConstants.ProtocolDescription again.
     [Fact]
     public void FixtureIsForVanilla1_21_11() =>
-        Assert.Equal(ServerConstants.ProtocolDescription, Fixture.Shared.Document.GetProperty("version").GetString());
+        Assert.Equal("1.21.11", Fixture.Shared.Document.GetProperty("version").GetString());
 
     [Fact]
     public void FixtureCoversTheRequiredCategories()

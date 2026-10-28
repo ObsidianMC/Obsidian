@@ -44,7 +44,7 @@ internal sealed class PistonStructureResolver
     /// <summary>The blocks that move, in the order vanilla's moves are applied.</summary>
     public IReadOnlyList<Vector> ToPush => this.toPush;
 
-    /// <summary>The blocks that a push breaks (their push reaction is DESTROY).</summary>
+    /// <summary>The blocks that a push breaks (their push reaction is POPPED).</summary>
     public IReadOnlyList<Vector> ToDestroy => this.toDestroy;
 
     /// <summary>Whether the plan succeeded. A plan that reads an unloaded chunk fails.</summary>
@@ -56,7 +56,7 @@ internal sealed class PistonStructureResolver
         var startState = this.Read(this.start);
         if (!PistonRules.IsPushable(startState, this.world, this.start, this.MoveDirection, false, this.facing))
         {
-            if (this.extending && PistonRules.PushReaction(startState) == "DESTROY")
+            if (this.extending && PistonRules.PushReaction(startState) == "POPPED")
             {
                 this.toDestroy.Add(this.start);
                 return !this.unloaded;
@@ -156,7 +156,7 @@ internal sealed class PistonStructureResolver
             if (!PistonRules.IsPushable(state, this.world, ahead, this.MoveDirection, true, this.MoveDirection) || ahead == this.piston)
                 return false;
 
-            if (PistonRules.PushReaction(state) == "DESTROY")
+            if (PistonRules.PushReaction(state) == "POPPED")
             {
                 this.toDestroy.Add(ahead);
                 return true;

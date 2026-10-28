@@ -32,7 +32,7 @@ internal interface IRedstoneContact
 }
 
 /// <summary>
-/// Redstone behaviors keyed by vanilla block class (for example <c>RedStoneWireBlock</c>), so every state of a class shares one
+/// Redstone behaviors keyed by vanilla block class (for example <c>RedstoneWireBlock</c>), so every state of a class shares one
 /// rule. Registrations are made once when the level is created.
 /// </summary>
 internal sealed class RedstoneBehaviors(IRedstoneBehavior? pluginBehaviors = null)

@@ -138,7 +138,7 @@ internal static class ShapeUpdater
                 return UpdateFaceAttached(level, state, position, direction);
             case "LanternBlock":
                 return UpdateLantern(level, state, position, direction);
-            case "RedStoneWireBlock":
+            case "RedstoneWireBlock":
                 return UpdateRedstoneWire(level, state, position, direction, neighbor);
             case "RedstoneTorchBlock":
                 return direction == BlockFace.Down && !level.GetBlock(position + Vector.Down).IsTopCenterSturdy() ? air : state;
@@ -147,10 +147,10 @@ internal static class ShapeUpdater
             case "CarpetBlock" or "WoolCarpetBlock" or "FlowerBlock" or "TallGrassBlock"
                 or "SweetBerryBushBlock" or "BushBlock" or "SaplingBlock" or "CropBlock"
                 or "CarrotBlock" or "PotatoBlock" or "BeetrootBlock" or "StemBlock" or "MushroomBlock"
-                or "WaterlilyBlock" or "FlowerBedBlock" or "FireflyBushBlock"
+                or "LilyPadBlock" or "FlowerBedBlock" or "FireflyBushBlock"
                 or "DryVegetationBlock" or "ShortDryGrassBlock"
                 or "TallDryGrassBlock" or "LeafLitterBlock" or "VegetationBlock" or "EyeblossomBlock"
-                or "WitherRoseBlock" or "AzaleaBlock" or "FungusBlock" or "RootsBlock" or "NetherSproutsBlock"
+                or "WitherRoseBlock" or "AzaleaBlock" or "NetherFungusBlock" or "NetherRootsBlock" or "NetherSproutsBlock"
                 or "SeagrassBlock" or "SnowLayerBlock" or "HangingRootsBlock" or "SporeBlossomBlock"
                 or "CocoaBlock" or "CactusFlowerBlock":
                 // Vegetation and carpets turn into air whenever they're updated without support.
@@ -165,7 +165,7 @@ internal static class ShapeUpdater
     }
 
     /// <summary>
-    /// Vanilla <c>RedStoneWireBlock.updateShape</c> (see <see cref="WireConnections.Reconnect"/>), with vanilla's
+    /// Vanilla <c>RedstoneWireBlock.updateShape</c> (see <see cref="WireConnections.Reconnect"/>), with vanilla's
     /// signal sources: generation has no plugin blocks to ask.
     /// </summary>
     private static IBlock UpdateRedstoneWire(
