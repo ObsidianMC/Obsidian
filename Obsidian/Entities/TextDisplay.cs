@@ -378,6 +378,16 @@ public sealed partial class TextDisplay : Entity, ITextDisplay
         this.SynchronizeMetadata();
     }
 
+    // Positions are compared exactly: VectorF.Equals treats differences under 0.01 as equal, which would drop a real move.
+    private void Update(ref VectorF field, VectorF value)
+    {
+        if (field.X == value.X && field.Y == value.Y && field.Z == value.Z)
+            return;
+
+        field = value;
+        this.SynchronizeMetadata();
+    }
+
     /// <summary>The synched data packet that carries this display's current state to tracking players.</summary>
     internal SetEntityDataPacket CreateMetadataPacket() => new() { EntityId = this.EntityId, Entity = this };
 

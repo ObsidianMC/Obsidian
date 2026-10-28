@@ -244,7 +244,8 @@ internal sealed class PathFinder(IPathBody body)
         if (start is not VectorD startPosition)
             return null;
 
-        var targetKey = Key(target);
+        var targetCellX = (int)Math.Floor(target.X);
+        var targetCellZ = (int)Math.Floor(target.Z);
         var range = Math.Max(16, body.FollowRange);
         var first = new Node(startPosition, null, 0);
         nodes.Add(Key(startPosition), first);
@@ -266,8 +267,10 @@ internal sealed class PathFinder(IPathBody body)
                 closestDistance = distance;
             }
 
-            // Vanilla's path ends at the target's block, not at any node within a block of it.
-            if (Key(current.Position) == targetKey)
+            // Vanilla's path ends at the target's block, not at any node within a block of it. Node heights come from
+            // StandingY, so the vertical test allows one block (vanilla's reach) rather than an exact height match.
+            if ((int)Math.Floor(current.Position.X) == targetCellX && (int)Math.Floor(current.Position.Z) == targetCellZ
+                && Math.Abs(current.Position.Y - target.Y) <= 1)
                 return BuildPath(current, true);
 
             foreach (var next in volume ? VolumeMovement.Neighbors(body, current.Position) : evaluator.GetNeighbors(current.Position))

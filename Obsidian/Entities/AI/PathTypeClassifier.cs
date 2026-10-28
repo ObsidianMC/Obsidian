@@ -84,7 +84,7 @@ internal static class PathTypeClassifier
         var sizeX = (int)MathF.Floor(body.Dimension.Width + 1);
         var sizeY = (int)MathF.Floor(body.Dimension.Height + 1);
 
-        var seen = new bool[PathTypeCount];
+        Span<bool> seen = stackalloc bool[PathTypeCount];
         for (var dx = 0; dx < sizeX; dx++)
         {
             for (var dy = 0; dy < sizeY; dy++)

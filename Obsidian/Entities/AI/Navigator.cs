@@ -92,12 +92,6 @@ public class Navigator : INavigator, IPathfinder
     }
 
     /// <summary>
-    /// Finds a path from the mob to <paramref name="to"/> for a goal deciding whether it can start, like vanilla's
-    /// <c>createPath</c> in <c>canUse</c>. If the goal starts navigating there, this tick's navigation uses the path rather
-    /// than finding it again.
-    /// </summary>
-    /// <returns>Whether the navigator could look: false for one that isn't a mob's.</returns>
-    /// <summary>
     /// Computes a path without changing navigation: unlike a goal's path, it is not kept for this tick's movement.
     /// </summary>
     public NavigationPath? FindPath(VectorD to)
@@ -111,6 +105,12 @@ public class Navigator : INavigator, IPathfinder
         return pathFinder.FindPath(to) is { } found ? new NavigationPath(found.Nodes, found.ReachedTarget) : null;
     }
 
+    /// <summary>
+    /// Finds a path from the mob to <paramref name="to"/> for a goal deciding whether it can start, like vanilla's
+    /// <c>createPath</c> in <c>canUse</c>. If the goal starts navigating there, this tick's navigation uses the path rather
+    /// than finding it again.
+    /// </summary>
+    /// <returns>Whether the navigator could look: false for one that isn't a mob's.</returns>
     internal bool TryFindPath(VectorD to, out MobPath? found)
     {
         found = null;

@@ -571,6 +571,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
     {
         if (player is not Entities.PlayerBase concrete || player.Level is not Obsidian.WorldData.AbstractLevel level)
             return;
+        if (concrete.RootVehicle is not { Passengers: [var soleRider] } || !ReferenceEquals(soleRider, concrete)
+            || ReferenceEquals(concrete.RootVehicle, concrete))
+            return;
 
         // The vehicle's tick reads its passengers, so the removal runs between level ticks. The leave waits for it a
         // while; a level that isn't ticking leaves it queued, and it still runs with the guards checked again.

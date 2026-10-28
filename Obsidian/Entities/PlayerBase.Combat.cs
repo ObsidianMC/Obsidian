@@ -116,8 +116,10 @@ public partial class PlayerBase
             CombatEffects.Knockback(this, Position - source.Position, 0.4f);
         this.RecordProgressDamage(source, amount);
         var previousHealth = Health;
+        var previousAbsorption = Absorption;
         await base.DamageAsync(source, amount);
-        if (Health < previousHealth)
+        // Vanilla broadcasts the damage event for an accepted hit even when absorption takes all of it.
+        if (Health < previousHealth || Absorption < previousAbsorption)
             this.QueueDamageEvent(source, directSource, kind, sourcePosition);
     }
 
@@ -403,11 +405,10 @@ public partial class PlayerBase
             return;
         var jump = ActivePotionEffects.TryGetValue((int)PotionEffect.JumpBoost - 1, out var effect) ? effect.EffectData.Amplifier + 1 : 0;
         // Vanilla's LivingEntity.calculateFallDamage: the landed-on block's multiplier (hay and honey 0.2, beds 0.5)
-        // scales the distance before it's rounded up; the jump boost is part of the safe fall distance. The 1e-6 keeps an
-        // exact safe distance from counting as a fall.
+        // scales the distance before it's rounded up; the jump boost is part of the safe fall distance.
         var blockMultiplier = floor?.RegistryId is BlockIds.HayBlock or BlockIds.HoneyBlock ? 0.2
             : floor != null && TagsRegistry.Block.Beds.Entries.Contains(floor.RegistryId) ? 0.5 : 1.0;
-        var damage = Math.Max(0, Math.Ceiling((distance + 1e-6 - GetAttributeValue("minecraft:safe_fall_distance") - jump)
+        var damage = Math.Max(0, Math.Ceiling((distance - GetAttributeValue("minecraft:safe_fall_distance") - jump)
             * blockMultiplier * GetAttributeValue("minecraft:fall_damage_multiplier")));
         await DamageCombatAsync(this, (float)damage, CombatDamageKind.Fall);
     }

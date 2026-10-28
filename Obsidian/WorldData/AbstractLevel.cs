@@ -961,7 +961,7 @@ public abstract partial class AbstractLevel : ILevel
         public void ReportIfSlow(ILogger logger, string level)
         {
             var total = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
-            if (total <= BudgetMs || !logger.IsEnabled(LogLevel.Warning))
+            if (total <= BudgetMs || !logger.IsEnabled(LogLevel.Debug))
                 return;
             var slowest = string.Join(", ", stages.Where(item => item.Ms >= 1).OrderByDescending(item => item.Ms)
                 .Select(item => $"{item.Stage} {item.Ms:0.#}ms"));
