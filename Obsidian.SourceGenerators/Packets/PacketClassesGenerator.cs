@@ -132,7 +132,10 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
 
             source.Type($"public partial class {packet.Name}Packet : {packet.UsableInterface}");
 
-            source.Line($"public override int Id => {packet.PacketId};");
+            // A constant, so that handlers can switch on it and follow the ids when they're regenerated.
+            source.Line($"public const int PacketId = {packet.PacketId};");
+            source.Line();
+            source.Line("public override int Id => PacketId;");
 
             if (packet.UsableInterface == Vocabulary.ServerboundInterface)
             {
@@ -172,9 +175,14 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
 
                 foreach (var value in packet)
                 {
+                    var idName = $"{value.Namespace}{state}Id";
+
+                    source.Line($"public const int {idName} = {value.PacketId};");
+                    source.Line();
+
                     source.Type($"public static {packetClassName} {value.Namespace}{state} => new()");
 
-                    source.Line($"Id = {value.PacketId},");
+                    source.Line($"Id = {idName},");
                     source.Line($"State = global::Obsidian.API.ClientState.{state}");
 
                     source.EndScope(true);

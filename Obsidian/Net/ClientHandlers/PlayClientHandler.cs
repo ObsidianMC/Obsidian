@@ -10,13 +10,11 @@ internal sealed partial class PlayClientHandler : ClientHandler
 {
     private FrozenDictionary<int, IServerboundPacket> Packets { get; } = new Dictionary<int, IServerboundPacket>()
     {
-        { 29, new MovePlayerPosPacket() },
-        { 30, new MovePlayerPosRotPacket() },
-        { 31, new MovePlayerRotPacket() },
-        { 39, new PlayerAbilitiesPacket() },
-        { 63, new UseItemOnPacket() },
-        { 64, new UseItemPacket() },
-        { 12, new ClientTickEndPacket() }
+        { MovePlayerPosPacket.PacketId, new MovePlayerPosPacket() },
+        { MovePlayerPosRotPacket.PacketId, new MovePlayerPosRotPacket() },
+        { MovePlayerRotPacket.PacketId, new MovePlayerRotPacket() },
+        { PlayerAbilitiesPacket.PacketId, new PlayerAbilitiesPacket() },
+        { ClientTickEndPacket.PacketId, new ClientTickEndPacket() }
     }.ToFrozenDictionary();
 
     public async override ValueTask<bool> HandleAsync(PacketData packetData)
@@ -24,46 +22,46 @@ internal sealed partial class PlayClientHandler : ClientHandler
         var (id, data) = packetData;
         switch (id)
         {
-            case 0:
+            case AcceptTeleportationPacket.PacketId:
                 await HandleFromPoolAsync<AcceptTeleportationPacket>(data);
                 break;
-            case 2:
+            case BundleItemSelectedPacket.PacketId:
                 await HandleFromPoolAsync<BundleItemSelectedPacket>(data);
                 break;
-            case 6:
+            case ChatCommandPacket.PacketId:
                 await HandleFromPoolAsync<ChatCommandPacket>(data);
                 break;
-            case 8:
+            case ChatPacket.PacketId:
                 await HandleFromPoolAsync<ChatPacket>(data);
                 break;
-            case 9:
+            case ChatSessionUpdatePacket.PacketId:
                 await HandleFromPoolAsync<ChatSessionUpdatePacket>(data);
                 break;
-            case 10:
+            case ChunkBatchReceivedPacket.PacketId:
                 await HandleFromPoolAsync<ChunkBatchReceivedPacket>(data);
                 break;
-            case 11:
+            case ClientCommandPacket.PacketId:
                 await HandleFromPoolAsync<ClientCommandPacket>(data);
                 break;
-            case 13:
+            case ClientInformationPacket.ServerboundPlayId:
                 await HandleFromPoolAsync<ClientInformationPacket>(data);
                 break;
-            case 14:
+            case CommandSuggestionPacket.PacketId:
                 await HandleFromPoolAsync<CommandSuggestionPacket>(data);
                 break;
-            case 15:
+            case ConfigurationAcknowledgedPacket.PacketId:
                 await this.Client.AcknowledgeReconfigurationAsync();
                 break;
-            case 16:
+            case ContainerButtonClickPacket.PacketId:
                 await HandleFromPoolAsync<ContainerButtonClickPacket>(data);
                 break;
-            case 17:
+            case ContainerClickPacket.PacketId:
                 await HandleFromPoolAsync<ContainerClickPacket>(data);
                 break;
-            case 18:
+            case ContainerClosePacket.PacketId:
                 await HandleFromPoolAsync<ContainerClosePacket>(data);
                 break;
-            case 21:
+            case CustomPayloadPacket.ServerboundPlayId:
                 {
                     var payload = new CustomPayloadPacket();
                     payload.Populate(data);
@@ -71,64 +69,64 @@ internal sealed partial class PlayClientHandler : ClientHandler
                     await this.Client.Channels.HandlePayloadAsync(payload.Channel, payload.PluginData);
                     break;
                 }
-            case 25:
+            case InteractPacket.PacketId:
                 await HandleFromPoolAsync<InteractPacket>(data);
                 break;
-            case 27:
+            case KeepAlivePacket.ServerboundPlayId:
                 await HandleFromPoolAsync<KeepAlivePacket>(data);
                 break;
-            case 33:
+            case MoveVehiclePacket.PacketId:
                 await HandleFromPoolAsync<MoveVehiclePacket>(data);
                 break;
-            case 35:
+            case PickItemFromBlockPacket.PacketId:
                 await HandleFromPoolAsync<PickItemFromBlockPacket>(data);
                 break;
-            case 38:
+            case PlaceRecipePacket.PacketId:
                 await HandleFromPoolAsync<PlaceRecipePacket>(data);
                 break;
-            case 40:
+            case PlayerActionPacket.PacketId:
                 await HandleFromPoolAsync<PlayerActionPacket>(data);
                 break;
-            case 41:
+            case PlayerCommandPacket.PacketId:
                 await HandleFromPoolAsync<PlayerCommandPacket>(data);
                 break;
-            case 42:
+            case PlayerInputPacket.PacketId:
                 await HandleFromPoolAsync<PlayerInputPacket>(data);
                 break;
-            case 43:
+            case PlayerLoadedPacket.PacketId:
                 await HandleFromPoolAsync<PlayerLoadedPacket>(data);
                 break;
-            case 45:
+            case RecipeBookChangeSettingsPacket.PacketId:
                 await HandleFromPoolAsync<RecipeBookChangeSettingsPacket>(data);
                 break;
-            case 46:
+            case RecipeBookSeenRecipePacket.PacketId:
                 await HandleFromPoolAsync<RecipeBookSeenRecipePacket>(data);
                 break;
-            case 50:
+            case SelectTradePacket.PacketId:
                 await HandleFromPoolAsync<SelectTradePacket>(data);
                 break;
-            case 47:
+            case RenameItemPacket.PacketId:
                 await HandleFromPoolAsync<RenameItemPacket>(data);
                 break;
-            case 59:
+            case SignUpdatePacket.PacketId:
                 await HandleFromPoolAsync<SignUpdatePacket>(data);
                 break;
-            case 52:
+            case SetCarriedItemPacket.PacketId:
                 await HandleFromPoolAsync<SetCarriedItemPacket>(data);
                 break;
-            case 55:
+            case SetCreativeModeSlotPacket.PacketId:
                 await HandleFromPoolAsync<SetCreativeModeSlotPacket>(data);
                 break;
-            case 60:
+            case SwingPacket.PacketId:
                 await HandleFromPoolAsync<SwingPacket>(data);
                 break;
-            case 63:
+            case UseItemOnPacket.PacketId:
                 await HandleFromPoolAsync<UseItemOnPacket>(data);
                 break;
-            case 64:
+            case UseItemPacket.PacketId:
                 await HandleFromPoolAsync<UseItemPacket>(data);
                 break;
-            case 65:
+            case CustomClickActionPacket.PacketId:
                 await HandleFromPoolAsync<CustomClickActionPacket>(data);
                 break;
             default:

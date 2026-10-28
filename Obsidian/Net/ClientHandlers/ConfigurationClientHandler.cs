@@ -13,9 +13,9 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
 
         switch (id)
         {
-            case 0:
+            case ClientInformationPacket.ServerboundConfigurationId:
                 return await HandleFromPoolAsync<ClientInformationPacket>(buffer);
-            case 2:
+            case CustomPayloadPacket.ServerboundConfigurationId:
                 {
                     var payload = new CustomPayloadPacket();
                     payload.Populate(buffer);
@@ -28,7 +28,7 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
 
                     return true;
                 }
-            case 3:
+            case ServerboundFinishConfigurationPacket.PacketId:
                 {
                     // Finishing before the server did would skip the channel handshake and the registries.
                     if (!this.configurationSent)
@@ -58,9 +58,9 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
 
                     return true;
                 }
-            case 4:
+            case KeepAlivePacket.ServerboundConfigurationId:
                 return await HandleFromPoolAsync<KeepAlivePacket>(buffer);
-            case 5:
+            case PongPacket.ServerboundConfigurationId:
                 {
                     var pong = new PongPacket();
                     pong.Populate(buffer);
@@ -70,7 +70,7 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
 
                     return true;
                 }
-            case 6:
+            case ResourcePackPacket.ServerboundConfigurationId:
                 return await HandleFromPoolAsync<ResourcePackPacket>(buffer);
             default:
                 Log.UnhandledPacket(this.Logger, id);

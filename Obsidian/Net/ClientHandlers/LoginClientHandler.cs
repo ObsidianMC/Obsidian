@@ -20,7 +20,7 @@ internal sealed partial class LoginClientHandler : ClientHandler
 
         switch (id)
         {
-            case 0x00:
+            case HelloPacket.PacketId:
                 {
                     if (await this.Server.ShouldThrottleAsync(this.Client))
                         return false;
@@ -36,7 +36,7 @@ internal sealed partial class LoginClientHandler : ClientHandler
 
                     return true;
                 }
-            case 0x01:
+            case KeyPacket.PacketId:
                 {
                     try
                     {
@@ -49,7 +49,7 @@ internal sealed partial class LoginClientHandler : ClientHandler
 
                     return true;
                 }
-            case 0x02:
+            case CustomQueryAnswerPacket.PacketId:
                 {
                     try
                     {
@@ -62,7 +62,7 @@ internal sealed partial class LoginClientHandler : ClientHandler
 
                     return true;
                 }
-            case 0x03:
+            case LoginAcknowledgedPacket.PacketId:
                 {
                     this.Client.SetState(ClientState.Configuration);
 
