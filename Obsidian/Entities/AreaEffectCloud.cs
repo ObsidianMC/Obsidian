@@ -21,16 +21,15 @@ public sealed partial class AreaEffectCloud : Entity
 
     public override void Write(INetStreamWriter writer)
     {
+        base.Write(writer);
+
         writer.WriteEntityMetadataType(8, EntityMetadataType.Float);
         writer.WriteSingle(this.Radius);
 
-        writer.WriteEntityMetadataType(9, EntityMetadataType.VarInt);
-        writer.WriteVarInt(this.Color);
-
-        writer.WriteEntityMetadataType(10, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(9, EntityMetadataType.Boolean);
         writer.WriteBoolean(this.SinglePoint);
 
-        //TODO write particle
+        //TODO write particle at index 10. Color is part of the particle options, not a separate accessor.
         //this.Effect.Write(effect);
     }
 }

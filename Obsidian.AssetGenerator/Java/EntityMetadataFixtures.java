@@ -2,10 +2,11 @@ import com.google.gson.*;
 import com.mojang.serialization.*;
 import io.netty.buffer.*;
 import java.nio.file.*;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.stream.*;
 
-/** Captures metadata serializer payloads with vanilla's registry-aware stream codecs. Run during asset generation for parity tests. */
+/** Captures metadata serializers and inherited entity layouts, and exports the serializer enum during asset generation. */
 class EntityMetadataFixtures {
     static VanillaDumper.Mojang m;
     static Object access;
@@ -16,6 +17,40 @@ class EntityMetadataFixtures {
         var registry = call("net.minecraft.core.RegistryAccess", "lookupOrThrow", access,
             new String[]{"net.minecraft.resources.ResourceKey"}, m.get("net.minecraft.core.registries.Registries", name));
         return ((Optional<?>)call("net.minecraft.core.Registry", "getAny", registry, new String[]{})).orElseThrow();
+    }
+    static Map<String, Object> entityLayouts() {
+        var layouts = new TreeMap<String, Object>();
+        var entityType = m.type("net.minecraft.world.entity.EntityType");
+        var entity = m.type("net.minecraft.world.entity.Entity");
+        var accessor = m.type("net.minecraft.network.syncher.EntityDataAccessor");
+        var registry = m.get("net.minecraft.core.registries.BuiltInRegistries", "ENTITY_TYPE");
+        var classes = new HashMap<Object, Class<?>>();
+        for (var field : entityType.getDeclaredFields()) {
+            if (Modifier.isStatic(field.getModifiers()) && field.getType() == entityType
+                && field.getGenericType() instanceof ParameterizedType generic
+                && generic.getActualTypeArguments()[0] instanceof Class<?> type)
+                classes.put(VanillaDumper.Mojang.getStatic(field), type);
+        }
+        for (var type : (Iterable<?>)registry) {
+            var fields = new TreeMap<Integer, Object>();
+            var typeClass = Objects.requireNonNull(classes.get(type), "Missing entity class");
+            for (var parent = typeClass; parent != null && entity.isAssignableFrom(parent); parent = parent.getSuperclass()) {
+                for (var field : parent.getDeclaredFields()) {
+                    if (!Modifier.isStatic(field.getModifiers()) || field.getType() != accessor) continue;
+                    var data = VanillaDumper.Mojang.getStatic(field);
+                    int index = (int)call("net.minecraft.network.syncher.EntityDataAccessor", "id", data, new String[]{});
+                    var serializer = call("net.minecraft.network.syncher.EntityDataAccessor", "serializer", data, new String[]{});
+                    int id = (int)call("net.minecraft.network.syncher.EntityDataSerializers", "getSerializedId", null,
+                        new String[]{"net.minecraft.network.syncher.EntityDataSerializer"}, serializer);
+                    if (id < 0) throw new IllegalStateException("Unregistered serializer for " + field);
+                    if (fields.put(index, Map.of("serializer", id, "name", m.simpleName(parent) + "." + m.fieldName(parent, field))) != null)
+                        throw new IllegalStateException("Duplicate metadata index " + index + " on " + typeClass);
+                }
+            }
+            String key = call("net.minecraft.core.Registry", "getKey", registry, new String[]{"java.lang.Object"}, type).toString();
+            layouts.put(key, fields);
+        }
+        return layouts;
     }
     public static void main(String[] args) throws Exception {
         m = VanillaDumper.Mojang.read(Path.of(args[0]));
@@ -61,12 +96,16 @@ class EntityMetadataFixtures {
             "{\"type\":\"minecraft:dragon_breath\",\"power\":0.5}"))
             particles.add(particleCodec.parse(ops, JsonParser.parseString(input)).getOrThrow());
         var output = new TreeMap<Integer, String>();
+        var names = new TreeMap<Integer, String>();
+        var serializerEnum = new LinkedHashMap<String, Object>();
         var combined = Unpooled.buffer();
         for (var f : m.type(serializers).getDeclaredFields()) {
             if (!m.type("net.minecraft.network.syncher.EntityDataSerializer").isAssignableFrom(f.getType())) continue;
             var serializer = VanillaDumper.Mojang.getStatic(f);
             int id = (int)call(serializers, "getSerializedId", null, new String[]{"net.minecraft.network.syncher.EntityDataSerializer"}, serializer);
             String name = m.fieldName(m.type(serializers), f);
+            if (names.put(id, name) != null) throw new IllegalStateException("Duplicate serializer id " + id);
+            serializerEnum.put(name.toLowerCase(Locale.ROOT), Map.of("protocol_id", id));
             Object value = switch(name) {
                 case "BYTE" -> (byte)33;
                 case "INT" -> 300;
@@ -110,7 +149,14 @@ class EntityMetadataFixtures {
         }
         combined.writeByte(255);
         var result = new LinkedHashMap<String,Object>(); result.put("serializers", output); result.put("metadata",ByteBufUtil.hexDump(combined)); combined.release();
+        result.put("serializerNames", names);
+        result.put("entities", entityLayouts());
         Files.writeString(Path.of(args[1]), new GsonBuilder().setPrettyPrinting().create().toJson(result));
+        // Reuse the API's existing generated-enum input; keep the public C# spelling in the source generator.
+        var enumPath = Path.of(args[1]).resolveSibling("enums.json");
+        var enums = JsonParser.parseString(Files.readString(enumPath)).getAsJsonObject();
+        enums.add("minecraft:entity_metadata_type", new Gson().toJsonTree(serializerEnum));
+        Files.writeString(enumPath, new GsonBuilder().setPrettyPrinting().create().toJson(enums));
         System.out.println("Captured " + output.size() + " metadata serializers.");
     }
 }
