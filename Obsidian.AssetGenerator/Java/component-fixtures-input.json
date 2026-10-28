@@ -192,13 +192,10 @@
       "components": {
         "minecraft:trim": {
           "material": {
-            "asset_name": "test",
+            "palette_id": "minecraft:test",
             "description": {
               "translate": "test.trim",
               "color": "gold"
-            },
-            "override_armor_assets": {
-              "minecraft:iron": "test_iron"
             }
           },
           "pattern": {

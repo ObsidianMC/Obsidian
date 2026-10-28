@@ -190,15 +190,10 @@
   "blocks_attacks": {},
   "piercing_weapon": {},
   "kinetic_weapon": {},
-  "swing_animation": {
-    "type": "whack",
-    "duration": 8
-  },
   "stored_enchantments": {
     "minecraft:unbreaking": 3
   },
   "dyed_color": 1193046,
-  "map_color": 1193046,
   "map_id": 7,
   "map_decorations": {
     "home": {
@@ -336,12 +331,20 @@
     }
   ],
   "base_color": "red",
-  "pot_decorations": [
-    "minecraft:brick",
-    "minecraft:angler_pottery_sherd",
-    "minecraft:brick",
-    "minecraft:brick"
-  ],
+  "pot_decorations": {
+    "back": {
+      "id": "minecraft:brick"
+    },
+    "left": {
+      "id": "minecraft:angler_pottery_sherd"
+    },
+    "right": {
+      "id": "minecraft:brick"
+    },
+    "front": {
+      "id": "minecraft:brick"
+    }
+  },
   "container": [
     {
       "slot": 1,
@@ -397,5 +400,64 @@
   "cat/variant": "minecraft:tabby",
   "cat/collar": "red",
   "sheep/color": "red",
-  "shulker/color": "red"
+  "shulker/color": "red",
+  "additional_trade_cost": 3,
+  "attack_animation": {
+    "type": "whack",
+    "duration": 8
+  },
+  "block_transformer": "minecraft:axe",
+  "brewing_fuel": {
+    "speed_multiplier": "minecraft:brewing/speed_default",
+    "uses": "minecraft:brewing/uses_default"
+  },
+  "cat/sound_variant": "minecraft:royal",
+  "chicken/sound_variant": "minecraft:picky",
+  "compostable": {
+    "layers": "minecraft:compostable/low"
+  },
+  "cooking_fuel": {
+    "burn_time": "minecraft:cooking/time_boats",
+    "speed_multiplier": "minecraft:cooking/speed_default"
+  },
+  "cow/sound_variant": "minecraft:moody",
+  "cushion/color": "black",
+  "dye": "black",
+  "interact_animation": {
+    "type": "stab",
+    "duration": 6
+  },
+  "mob_visibility": {
+    "targeting_entity_types": "minecraft:creeper",
+    "visibility": 0.5
+  },
+  "pig/sound_variant": "minecraft:big",
+  "provides_pottery_pattern": "minecraft:angler",
+  "sign_text_back": {
+    "color": "black",
+    "has_glowing_text": false,
+    "messages": [
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  "sign_text_front": {
+    "color": "blue",
+    "has_glowing_text": true,
+    "messages": [
+      "front",
+      "",
+      "",
+      ""
+    ]
+  },
+  "sulfur_cube_content": {
+    "id": "minecraft:stone"
+  },
+  "villager_food": {
+    "nutrition": 1
+  },
+  "waxed": {}
 }

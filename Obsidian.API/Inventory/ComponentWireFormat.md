@@ -50,7 +50,7 @@ Unsupported hashes are omitted from the click prediction. Vanilla detects the pa
 
 ## Golden fixtures and integration boundaries
 
-`Obsidian.AssetGenerator/Java/ComponentFixtures.java` runs the actual cached 1.21.11 codecs and HashOps without starting a server. It uses the existing dumper reflection/mapping helper. Inputs beside it cover 13 composite stacks, one sample of every component, and two merchant offers. The small committed fixture is `Obsidian.Tests/Assets/item-components-1.21.11.json`. Tests assert exact consumption with a following sentinel, byte-identical optional/untrusted output, component registry IDs, hashes, merchant framing, typed edits and malformed input handling.
+`Obsidian.AssetGenerator/Java/ComponentFixtures.java` runs the actual cached 1.21.11 codecs and HashOps without starting a server. It reaches vanilla through the dumpers' reflection helper (`Java/Vanilla.java`). Inputs beside it cover 13 composite stacks, one sample of every component, and two merchant offers. The small committed fixture is `Obsidian.Tests/Assets/item-components-1.21.11.json`. Tests assert exact consumption with a following sentinel, byte-identical optional/untrusted output, component registry IDs, hashes, merchant framing, typed edits and malformed input handling.
 
 To regenerate from PowerShell in the repository root:
 
@@ -60,7 +60,7 @@ $cache = Join-Path $root 'Obsidian.AssetGenerator/obj/vanilla/1.21.11'
 $cp = ((Get-ChildItem "$cache/versions", "$cache/libraries" -Filter *.jar -Recurse).FullName -join ';')
 Push-Location $cache
 try {
-    java -cp $cp "$root/Obsidian.AssetGenerator/Java/ComponentFixtures.java" "$cache/server.txt" "$root/Obsidian.AssetGenerator/Java/component-fixtures-input.json" "$root/Obsidian.Tests/Assets/item-components-1.21.11.json"
+    java -cp $cp "$root/Obsidian.AssetGenerator/Java/ComponentFixtures.java" "$root/Obsidian.AssetGenerator/Java/component-fixtures-input.json" "$root/Obsidian.Tests/Assets/item-components-1.21.11.json"
 } finally { Pop-Location }
 ```
 

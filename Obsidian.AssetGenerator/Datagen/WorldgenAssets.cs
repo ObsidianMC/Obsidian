@@ -35,7 +35,7 @@ internal static class WorldgenAssets
     private const string SharedCategory = "common";
 
     /// <param name="worldgenGroupsPath">
-    /// The Java dumper's <c>{ "configured_feature": { id: class }, "placed_feature": { id: class } }</c>.
+    /// The Java dumper's <c>{ "feature": { id: class }, "placed_feature": { id: class } }</c>.
     /// </param>
     public static void Write(string dataDirectory, string reportsDirectory, string worldgenGroupsPath, string outputDirectory)
     {
@@ -62,7 +62,8 @@ internal static class WorldgenAssets
         });
 
         var featureClasses = ReadObject(worldgenGroupsPath);
-        var configuredFeatures = ReadEntries(Path.Combine(worldgen, "configured_feature"));
+        // Configured features (the worldgen/feature registry in 26.3).
+        var configuredFeatures = ReadEntries(Path.Combine(worldgen, "feature"));
         var placedFeatures = ReadEntries(Path.Combine(worldgen, "placed_feature"));
 
         // Processor lists go with what uses them: the template pools of a structure (their elements' processors) or
@@ -85,7 +86,7 @@ internal static class WorldgenAssets
             set => structureCategories[set.Json["structures"]![0]!["structure"]!.GetValue<string>()]);
 
         WriteCategories(Path.Combine(output, "features"), configuredFeatures,
-            GetClassCategories(configuredFeatures, featureClasses["configured_feature"]!.AsObject(), worldgenGroupsPath));
+            GetClassCategories(configuredFeatures, featureClasses["feature"]!.AsObject(), worldgenGroupsPath));
         WriteCategories(Path.Combine(output, "placed_features"), placedFeatures,
             GetClassCategories(placedFeatures, featureClasses["placed_feature"]!.AsObject(), worldgenGroupsPath));
         WriteCategories(Path.Combine(output, "processor_lists"), processorLists,

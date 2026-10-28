@@ -31,9 +31,12 @@ internal static class DatagenAssets
         var data = Path.Combine(generatedDirectory, "data", "minecraft");
 
         File.Copy(Path.Combine(reports, "blocks.json"), Path.Combine(outputDirectory, "blocks.json"), overwrite: true);
-        File.Copy(Path.Combine(reports, "items.json"), Path.Combine(outputDirectory, "item_components.json"), overwrite: true);
+        // Each item's default components, { "minecraft:stone": { "components": { ... } } }, from one report per item.
+        WriteJson(Path.Combine(outputDirectory, "item_components.json"),
+            Combine(Path.Combine(reports, "minecraft", "components", "item"), ToId));
         CopyDirectory(Path.Combine(reports, "biome_parameters", "minecraft"), Path.Combine(outputDirectory, "biome_parameters"));
-        CopyDirectory(Path.Combine(data, "worldgen", "configured_carver"), Path.Combine(outputDirectory, "configured_carver"));
+        // Configured carvers (the worldgen/carver registry in 26.3).
+        CopyDirectory(Path.Combine(data, "worldgen", "carver"), Path.Combine(outputDirectory, "configured_carver"));
 
         WriteRegistries(ReadObject(Path.Combine(reports, "registries.json")), outputDirectory);
         WritePackets(ReadObject(Path.Combine(reports, "packets.json")), ReadObject(packetFieldsPath), outputDirectory);
@@ -43,6 +46,8 @@ internal static class DatagenAssets
         WriteJson(Path.Combine(outputDirectory, "enchantments.json"), Combine(Path.Combine(data, "enchantment"), ToId));
         WriteJson(Path.Combine(outputDirectory, "dialogs.json"), Combine(Path.Combine(data, "dialog"), ToId));
         WriteJson(Path.Combine(outputDirectory, "instruments.json"), Combine(Path.Combine(data, "instrument"), ToId));
+        // What hoes, axes and shovels do to the blocks they're used on (the block_transformer item component).
+        WriteJson(Path.Combine(outputDirectory, "block_transformers.json"), Combine(Path.Combine(data, "block_transformer"), ToId));
 
         foreach (var category in lootTableCategories)
         {

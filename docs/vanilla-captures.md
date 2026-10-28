@@ -27,9 +27,9 @@ reference needs a section, a capture in the harness and a test.
 
 ## How it captures
 
-`Obsidian.AssetGenerator/Captures/WorldgenCaptures.java.template` is a Java probe. Its vanilla symbols are resolved
-through the server's Mojang mappings by `Java/FixtureSource.java`, the same resolver the other fixture dumpers use, so
-no names are hard-coded. It is not an asset input, so editing it doesn't regenerate the assets.
+`Obsidian.AssetGenerator/Captures/WorldgenCaptures.java` is a Java probe, run from source against the server jar by
+vanilla's own names (the jars aren't obfuscated since 26.1). It is not an asset input, so editing it doesn't regenerate
+the assets.
 
 For each seed in the fixture, with structures off and then on, `WorldgenCaptures.cs`:
 

@@ -9,7 +9,7 @@ namespace Obsidian.AssetGenerator;
 /// </summary>
 /// <remarks>
 /// The dumper runs from source (java's source launcher) with the server on its class path, and finds vanilla's classes
-/// and members by their Mojang names through the server's mappings, so it needs no build step or remapping tool.
+/// and members by name through reflection (the jars aren't obfuscated since 26.1), so it needs no build step.
 /// </remarks>
 internal static class JavaDumper
 {
@@ -31,5 +31,5 @@ internal static class JavaDumper
     public static Task RunAsync(VanillaServer server, string outputDirectory) =>
         VanillaServer.RunJavaAsync(server.Directory,
             "-cp", string.Join(Path.PathSeparator, server.ClassPath),
-            SourcePath, server.MappingsPath, outputDirectory, server.Directory);
+            SourcePath, outputDirectory, server.Directory);
 }

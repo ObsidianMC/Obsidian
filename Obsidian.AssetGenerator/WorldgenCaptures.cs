@@ -4,7 +4,7 @@ namespace Obsidian.AssetGenerator;
 
 /// <summary>
 /// Re-records the vanilla worldgen and structure references the parity tests replay
-/// (<c>Obsidian.Tests/Assets/vanilla_worldgen.json</c>), by running <c>Captures/WorldgenCaptures.java.template</c> against
+/// (<c>Obsidian.Tests/Assets/vanilla_worldgen.json</c>), by running <c>Captures/WorldgenCaptures.java</c> against
 /// the vanilla server. See <c>docs/vanilla-captures.md</c>.
 /// </summary>
 /// <remarks>
@@ -40,11 +40,7 @@ internal static class WorldgenCaptures
     private static async Task CaptureWorldsAsync(VanillaServer server, string fixturePath, string capturing)
     {
         var classpath = string.Join(Path.PathSeparator, server.ClassPath);
-
-        // Our probe source is name-resolved against the server's mappings like the other fixture dumpers' sources.
-        var source = Path.Combine(server.Directory, "fixture-sources", "WorldgenCaptures.java");
-        await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source(Path.Combine("Java", "FixtureSource.java")),
-            server.MappingsPath, Source(Path.Combine("Captures", "WorldgenCaptures.java.template")), source);
+        var source = Source(Path.Combine("Captures", "WorldgenCaptures.java"));
 
         foreach (var seed in Seeds(fixturePath))
         {

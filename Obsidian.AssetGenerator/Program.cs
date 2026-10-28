@@ -46,7 +46,7 @@ DatagenAssets.Write(server.GeneratedDirectory, JavaDumper.WorldgenGroupsPath(ser
 server.CopyVersionInfo(Path.Combine(staging, "version.json"));
 
 await FixtureDumper.DumpServerAsync(server, staging);
-await ClientModels.DumpAsync(httpClient, server, staging);
+await ClientModels.DumpAsync(server, staging);
 
 if (Directory.Exists(assetsDirectory))
     Directory.Delete(assetsDirectory, recursive: true);

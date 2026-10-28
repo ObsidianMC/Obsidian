@@ -20,10 +20,10 @@
 		<!-- Capture source inputs before the build adds generated assembly attributes under obj. -->
 		<!-- The capture driver only runs on request (CaptureVanillaWorldgen), so editing it doesn't regenerate the assets. -->
 		<VanillaGeneratorInput Include="@(Compile)" Exclude="WorldgenCaptures.cs" />
-		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json;Java\**\*.template" />
+		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json" />
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
-		<None Update="Captures\**\*.template" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Captures\**\*.java" CopyToOutputDirectory="PreserveNewest" />
 		<UpToDateCheckOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />
 	</ItemGroup>
 

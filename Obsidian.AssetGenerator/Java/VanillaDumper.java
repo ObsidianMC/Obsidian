@@ -22,8 +22,6 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -31,12 +29,12 @@ import java.util.stream.Collectors;
  * transforms, map colors and wall shape covers, entity data, and the fields of each packet.
  *
  * <p>Usage, with the unbundled server jar and its libraries on the class path:
- * {@code java -cp <server + libraries> VanillaDumper.java <server mappings (server.txt)> <assets directory> <work directory>}.
+ * {@code java -cp <server + libraries> VanillaDumper.java <assets directory> <work directory>}.
  * The assets go to the assets directory; {@code worldgen_groups.json} and {@code packet_fields.json}, which only the
  * generator itself uses, go to the work directory.
  *
- * <p>The server jar is obfuscated, so everything vanilla is reached through reflection, by its Mojang name looked up in
- * Mojang's ProGuard mappings (see {@link Mojang}). The values come from calling vanilla's own methods on every block
+ * <p>Everything vanilla is reached through reflection by name (see {@link Vanilla}). The values come from calling
+ * vanilla's own methods on every block
  * state or entity type, except how packets are written, which {@link PacketFormats} reads from their bytecode; the file
  * formats are Obsidian's, documented by their readers (named on each dump method).
  *
@@ -44,7 +42,7 @@ import java.util.stream.Collectors;
  * class-file API ({@code java.lang.classfile}).
  */
 public final class VanillaDumper {
-    // Mojang names of the classes used below, as the mappings spell them (also how parameter types are given).
+    // Names of the classes used below (also how parameter types are given).
     private static final String BLOCK = "net.minecraft.world.level.block.Block";
     private static final String BLOCK_STATE = "net.minecraft.world.level.block.state.BlockState";
     private static final String STATE_BASE = "net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase";
@@ -69,7 +67,6 @@ public final class VanillaDumper {
     private static final String PATH_TYPE = "net.minecraft.world.level.pathfinder.PathType";
     private static final String WALK_NODE = "net.minecraft.world.level.pathfinder.WalkNodeEvaluator";
 
-    private final Mojang mojang;
     private final Path output;
     private final String version;
 
@@ -98,20 +95,19 @@ public final class VanillaDumper {
     private final Constructor<?> sliceShape;
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 3) {
-            System.err.println("Usage: java VanillaDumper.java <server mappings> <assets directory> <work directory>");
+        if (args.length != 2) {
+            System.err.println("Usage: java VanillaDumper.java <assets directory> <work directory>");
             System.exit(1);
         }
 
         var started = System.nanoTime();
-        var mojang = Mojang.read(Path.of(args[0]));
-        var output = Path.of(args[1]);
-        var work = Path.of(args[2]);
+        var output = Path.of(args[0]);
+        var work = Path.of(args[1]);
         Files.createDirectories(output);
         Files.createDirectories(work);
 
-        var version = bootstrap(mojang);
-        var dumper = new VanillaDumper(mojang, output, version);
+        var version = bootstrap();
+        var dumper = new VanillaDumper(output, version);
         dumper.dumpBlockLight();
         dumper.dumpBlockSounds();
         dumper.dumpBlockPhysics();
@@ -126,7 +122,6 @@ public final class VanillaDumper {
         dumper.dumpItemUseOnClasses();
         dumper.dumpItemUseClasses();
         dumper.dumpItemClickClasses();
-        dumper.dumpHoeTillables();
         dumper.dumpItemPlacedBlocks();
         dumper.dumpItemAttachments();
         dumper.dumpCollisionShapes();
@@ -145,104 +140,128 @@ public final class VanillaDumper {
 
     /**
      * Starts vanilla like its server and data generator do (version info first, then the registries), and binds the
-     * built-in registries' tags from vanilla's data pack: some block methods check tags (e.g.
-     * {@code BlockTags.SIGNS} in {@code FlowingFluid.canHoldAnyFluid}), and tags are only bound when data packs load.
+     * built-in registries' tags from vanilla's data pack and then their default components (an item's, for example):
+     * some block methods check tags (e.g. {@code BlockTags.SIGNS} in {@code FlowingFluid.canHoldAnyFluid}), some block
+     * entities create item stacks, and both are only bound when data packs load.
      */
-    private static String bootstrap(Mojang mojang) {
+    static String bootstrap() {
         var sharedConstants = "net.minecraft.SharedConstants";
-        Mojang.call(mojang.method(sharedConstants, "tryDetectVersion"), null);
-        Mojang.call(mojang.method("net.minecraft.server.Bootstrap", "bootStrap"), null);
+        Vanilla.call(Vanilla.method(sharedConstants, "tryDetectVersion"), null);
+        Vanilla.call(Vanilla.method("net.minecraft.server.Bootstrap", "bootStrap"), null);
 
         var packType = "net.minecraft.server.packs.PackType";
-        var vanillaPack = Mojang.call(mojang.method("net.minecraft.server.packs.repository.ServerPacksSource", "createVanillaPackSource"), null);
-        var resources = Mojang.create(mojang.constructor("net.minecraft.server.packs.resources.MultiPackResourceManager", packType, "java.util.List"),
-            mojang.get(packType, "SERVER_DATA"), List.of(vanillaPack));
+        var vanillaPack = Vanilla.call(Vanilla.method("net.minecraft.server.packs.VanillaPackResources", "fullResources"),
+            Vanilla.call(Vanilla.method("net.minecraft.server.packs.repository.ServerPacksSource", "createVanillaPackSource"), null));
+        var resources = Vanilla.create(Vanilla.constructor("net.minecraft.server.packs.resources.MultiPackResourceManager", packType, "java.util.List"),
+            Vanilla.get(packType, "SERVER_DATA"), List.of(vanillaPack));
 
-        var loadPendingTags = mojang.method("net.minecraft.tags.TagLoader", "loadPendingTags",
+        var loadPendingTags = Vanilla.method("net.minecraft.tags.TagLoader", "loadPendingTags",
             "net.minecraft.server.packs.resources.ResourceManager", REGISTRY);
         var pendingTags = "net.minecraft.core.Registry$PendingTags";
-        var size = mojang.method(pendingTags, "size");
-        var apply = mojang.method(pendingTags, "apply");
+        var size = Vanilla.method(pendingTags, "size");
+        var apply = Vanilla.method(pendingTags, "apply");
         var bound = 0;
-        for (var registry : (Iterable<?>) mojang.get(REGISTRIES, "REGISTRY")) {
-            var pending = (Optional<?>) Mojang.call(loadPendingTags, null, resources, registry);
+        for (var registry : (Iterable<?>) Vanilla.get(REGISTRIES, "REGISTRY")) {
+            var pending = (Optional<?>) Vanilla.call(loadPendingTags, null, resources, registry);
             if (pending.isPresent()) {
-                bound += (int) Mojang.call(size, pending.get());
-                Mojang.call(apply, pending.get());
+                bound += (int) Vanilla.call(size, pending.get());
+                Vanilla.call(apply, pending.get());
             }
         }
         if (bound == 0)
             throw new IllegalStateException("Vanilla's data pack has no tags");
+        bindComponents(vanillaRegistries());
 
-        var currentVersion = Mojang.call(mojang.method(sharedConstants, "getCurrentVersion"), null);
-        return (String) Mojang.call(mojang.method("net.minecraft.WorldVersion", "name"), currentVersion);
+        var currentVersion = Vanilla.call(Vanilla.method(sharedConstants, "getCurrentVersion"), null);
+        return (String) Vanilla.call(Vanilla.method("net.minecraft.WorldVersion", "name"), currentVersion);
+    }
+
+    /**
+     * Vanilla's data-driven registries as its data generator builds them: the world registries (biomes, enchantments,
+     * ...) and the reloadable ones (loot tables, recipes, ...) on top.
+     */
+    static Object vanillaRegistries() {
+        var registries = "net.minecraft.data.registries.VanillaRegistries";
+        var world = Vanilla.call(Vanilla.method(registries, "createWorldLookup"), null);
+        return Vanilla.call(Vanilla.method(registries, "createReloadableLookup", "net.minecraft.core.HolderLookup$Provider"), null, world);
+    }
+
+    /**
+     * Binds the built-in registries' default components ({@code BuiltInRegistries.DATA_COMPONENT_INITIALIZERS}), which
+     * may refer to entries of the given registries, as a server does once its data packs loaded.
+     */
+    static void bindComponents(Object registries) {
+        var initializers = Vanilla.get(REGISTRIES, "DATA_COMPONENT_INITIALIZERS");
+        var build = Vanilla.method("net.minecraft.core.component.DataComponentInitializers", "build", "net.minecraft.core.HolderLookup$Provider");
+        var apply = Vanilla.method("net.minecraft.core.component.DataComponentInitializers$PendingComponents", "apply");
+        for (var pending : (List<?>) Vanilla.call(build, initializers, registries))
+            Vanilla.call(apply, pending);
     }
 
     /** Records aliases such as wall torches, and blocks that deliberately have no drop table. */
     private void dumpBlockLootTables() throws IOException {
-        var tableOf = mojang.method("net.minecraft.world.level.block.state.BlockBehaviour", "getLootTable");
-        var keyId = mojang.method("net.minecraft.resources.ResourceKey", "identifier");
+        var tableOf = Vanilla.method("net.minecraft.world.level.block.state.BlockBehaviour", "getLootTable");
+        var keyId = Vanilla.method("net.minecraft.resources.ResourceKey", "identifier");
         var tables = new TreeMap<String, Object>();
         for (var block : (Iterable<?>) blockRegistry) {
-            var id = Mojang.call(registryKey, blockRegistry, block).toString();
-            var table = (Optional<?>) Mojang.call(tableOf, block);
-            tables.put(id, table.map(key -> Mojang.call(keyId, key).toString()).orElse(null));
+            var id = Vanilla.call(registryKey, blockRegistry, block).toString();
+            var table = (Optional<?>) Vanilla.call(tableOf, block);
+            tables.put(id, table.map(key -> Vanilla.call(keyId, key).toString()).orElse(null));
         }
 
         Json.write(output.resolve("block_loot_tables.json"), tables, false);
     }
 
-    private VanillaDumper(Mojang mojang, Path output, String version) {
-        this.mojang = mojang;
+    private VanillaDumper(Path output, String version) {
         this.output = output;
         this.version = version;
-        emptyLevel = mojang.get("net.minecraft.world.level.EmptyBlockGetter", "INSTANCE");
-        origin = mojang.get(BLOCK_POS, "ZERO");
-        directions = (Object[]) Mojang.call(mojang.method(DIRECTION, "values"), null);
-        getBlock = mojang.method(STATE_BASE, "getBlock");
-        getCollisionShape = mojang.method(STATE_BASE, "getCollisionShape", BLOCK_GETTER, BLOCK_POS);
-        getFluidState = mojang.method(STATE_BASE, "getFluidState");
-        registryKey = mojang.method(REGISTRY, "getKey", "java.lang.Object");
-        blockRegistry = mojang.get(REGISTRIES, "BLOCK");
-        emptyShape = Mojang.call(mojang.method(SHAPES, "empty"), null);
-        blockShape = Mojang.call(mojang.method(SHAPES, "block"), null);
+        emptyLevel = Vanilla.get("net.minecraft.world.level.EmptyBlockGetter", "INSTANCE");
+        origin = Vanilla.get(BLOCK_POS, "ZERO");
+        directions = (Object[]) Vanilla.call(Vanilla.method(DIRECTION, "values"), null);
+        getBlock = Vanilla.method(STATE_BASE, "getBlock");
+        getCollisionShape = Vanilla.method(STATE_BASE, "getCollisionShape", BLOCK_GETTER, BLOCK_POS);
+        getFluidState = Vanilla.method(STATE_BASE, "getFluidState");
+        registryKey = Vanilla.method(REGISTRY, "getKey", "java.lang.Object");
+        blockRegistry = Vanilla.get(REGISTRIES, "BLOCK");
+        emptyShape = Vanilla.call(Vanilla.method(SHAPES, "empty"), null);
+        blockShape = Vanilla.call(Vanilla.method(SHAPES, "block"), null);
 
-        getAxis = mojang.method(DIRECTION, "getAxis");
-        shapeMin = mojang.method(VOXEL_SHAPE, "min", AXIS);
-        shapeMax = mojang.method(VOXEL_SHAPE, "max", AXIS);
-        toAabbs = mojang.method(VOXEL_SHAPE, "toAabbs");
+        getAxis = Vanilla.method(DIRECTION, "getAxis");
+        shapeMin = Vanilla.method(VOXEL_SHAPE, "min", AXIS);
+        shapeMax = Vanilla.method(VOXEL_SHAPE, "max", AXIS);
+        toAabbs = Vanilla.method(VOXEL_SHAPE, "toAabbs");
         var aabb = "net.minecraft.world.phys.AABB";
-        boxBounds = new Field[] { mojang.field(aabb, "minX"), mojang.field(aabb, "minY"), mojang.field(aabb, "minZ"),
-            mojang.field(aabb, "maxX"), mojang.field(aabb, "maxY"), mojang.field(aabb, "maxZ") };
-        discreteShape = mojang.field(VOXEL_SHAPE, "shape");
-        discreteSize = mojang.method("net.minecraft.world.phys.shapes.DiscreteVoxelShape", "getSize", AXIS);
-        sliceShape = mojang.constructor("net.minecraft.world.phys.shapes.SliceShape", VOXEL_SHAPE, AXIS, "int");
+        boxBounds = new Field[] { Vanilla.field(aabb, "minX"), Vanilla.field(aabb, "minY"), Vanilla.field(aabb, "minZ"),
+            Vanilla.field(aabb, "maxX"), Vanilla.field(aabb, "maxY"), Vanilla.field(aabb, "maxZ") };
+        discreteShape = Vanilla.field(VOXEL_SHAPE, "shape");
+        discreteSize = Vanilla.method("net.minecraft.world.phys.shapes.DiscreteVoxelShape", "getSize", AXIS);
+        sliceShape = Vanilla.constructor("net.minecraft.world.phys.shapes.SliceShape", VOXEL_SHAPE, AXIS, "int");
 
         // Block.BLOCK_STATE_REGISTRY holds every state by its id, which is what Obsidian's per-state tables index by.
-        var stateIds = mojang.get(BLOCK, "BLOCK_STATE_REGISTRY");
-        var byId = mojang.method("net.minecraft.core.IdMapper", "byId", "int");
-        var size = (int) Mojang.call(mojang.method("net.minecraft.core.IdMapper", "size"), stateIds);
+        var stateIds = Vanilla.get(BLOCK, "BLOCK_STATE_REGISTRY");
+        var byId = Vanilla.method("net.minecraft.core.IdMapper", "byId", "int");
+        var size = (int) Vanilla.call(Vanilla.method("net.minecraft.core.IdMapper", "size"), stateIds);
         for (var id = 0; id < size; id++)
-            states.add(Mojang.call(byId, stateIds, id));
+            states.add(Vanilla.call(byId, stateIds, id));
     }
 
     /** State-indexed audio behavior, kept as generated data rather than hand-maintained material guesses. */
     private void dumpBlockSounds() throws IOException {
         var soundType = "net.minecraft.world.level.block.SoundType";
-        var getType = mojang.method(STATE_BASE, "getSoundType");
-        var volume = mojang.method(soundType, "getVolume");
-        var pitch = mojang.method(soundType, "getPitch");
-        var location = mojang.method("net.minecraft.sounds.SoundEvent", "location");
+        var getType = Vanilla.method(STATE_BASE, "getSoundType");
+        var volume = Vanilla.method(soundType, "getVolume");
+        var pitch = Vanilla.method(soundType, "getPitch");
+        var location = Vanilla.method("net.minecraft.sounds.SoundEvent", "location");
         var types = new Indexer<Map<String, Object>>();
         var ids = new int[states.size()];
         for (var i = 0; i < states.size(); i++) {
-            var type = Mojang.call(getType, states.get(i));
+            var type = Vanilla.call(getType, states.get(i));
             var row = new LinkedHashMap<String, Object>();
-            row.put("volume", Mojang.call(volume, type));
-            row.put("pitch", Mojang.call(pitch, type));
+            row.put("volume", Vanilla.call(volume, type));
+            row.put("pitch", Vanilla.call(pitch, type));
             for (var kind : List.of("Break", "Step", "Place", "Hit", "Fall")) {
-                var event = Mojang.call(mojang.method(soundType, "get" + kind + "Sound"), type);
-                row.put(kind.toLowerCase(java.util.Locale.ROOT), Mojang.call(location, event).toString());
+                var event = Vanilla.call(Vanilla.method(soundType, "get" + kind + "Sound"), type);
+                row.put(kind.toLowerCase(java.util.Locale.ROOT), Vanilla.call(location, event).toString());
             }
             ids[i] = types.indexOf(row);
         }
@@ -250,16 +269,16 @@ public final class VanillaDumper {
     }
 
     /**
-     * {@code block_light.json}, read by {@code Obsidian/Registries/BlockLight.cs}: per state, {@code getLightBlock()}
+     * {@code block_light.json}, read by {@code Obsidian/Registries/BlockLight.cs}: per state, {@code getLightDampening()}
      * plus a 1-based index into {@code shapes} for the states whose shape occludes light, each shape listing its six
      * face masks ({@code LightEngine.getOcclusionShape} per direction) as indexes into {@code faces}.
      */
     private void dumpBlockLight() throws IOException {
-        var getLightBlock = mojang.method(STATE_BASE, "getLightBlock");
+        var getLightDampening = Vanilla.method(STATE_BASE, "getLightDampening");
         var lightEngine = "net.minecraft.world.level.lighting.LightEngine";
         // States that don't use their shape for light occlusion have only empty occlusion shapes (isEmptyShape).
-        var isEmptyShape = mojang.method(lightEngine, "isEmptyShape", BLOCK_STATE);
-        var getOcclusionShape = mojang.method(lightEngine, "getOcclusionShape", BLOCK_STATE, DIRECTION);
+        var isEmptyShape = Vanilla.method(lightEngine, "isEmptyShape", BLOCK_STATE);
+        var getOcclusionShape = Vanilla.method(lightEngine, "getOcclusionShape", BLOCK_STATE, DIRECTION);
 
         var light = new int[states.size()];
         var faces = new Indexer<String>();
@@ -267,13 +286,13 @@ public final class VanillaDumper {
         var shapeStates = new ArrayList<Object>(); // one state per shape, to check the masks against vanilla below
         for (var id = 0; id < states.size(); id++) {
             var state = states.get(id);
-            light[id] = (int) Mojang.call(getLightBlock, state);
-            if ((boolean) Mojang.call(isEmptyShape, null, state))
+            light[id] = (int) Vanilla.call(getLightDampening, state);
+            if ((boolean) Vanilla.call(isEmptyShape, null, state))
                 continue;
 
             var shapeFaces = new ArrayList<Integer>();
             for (var direction : directions)
-                shapeFaces.add(faces.indexOf(faceMask(Mojang.call(getOcclusionShape, null, state, direction), direction)));
+                shapeFaces.add(faces.indexOf(faceMask(Vanilla.call(getOcclusionShape, null, state, direction), direction)));
 
             var shape = shapes.indexOf(shapeFaces);
             if (shape == shapeStates.size())
@@ -323,9 +342,9 @@ public final class VanillaDumper {
      * ({@code LightEngine.shapeOccludes}) is {@code Shapes.faceShapeOccludes} of the two faces' occlusion shapes.
      */
     private void checkLightMasks(List<Object> shapeStates, List<List<Integer>> shapes, List<String> faces) {
-        var getOcclusionShape = mojang.method("net.minecraft.world.level.lighting.LightEngine", "getOcclusionShape",
+        var getOcclusionShape = Vanilla.method("net.minecraft.world.level.lighting.LightEngine", "getOcclusionShape",
             BLOCK_STATE, DIRECTION);
-        var faceShapeOccludes = mojang.method(SHAPES, "faceShapeOccludes", VOXEL_SHAPE, VOXEL_SHAPE);
+        var faceShapeOccludes = Vanilla.method(SHAPES, "faceShapeOccludes", VOXEL_SHAPE, VOXEL_SHAPE);
         var masks = faces.stream().map(VanillaDumper::maskWords).toList();
         for (var from = 0; from < shapes.size(); from++) {
             for (var to = 0; to < shapes.size(); to++) {
@@ -336,9 +355,9 @@ public final class VanillaDumper {
                     for (var word = 0; word < 4; word++)
                         covered &= (fromMask[word] | toMask[word]) == -1L;
 
-                    var vanilla = (boolean) Mojang.call(faceShapeOccludes, null,
-                        Mojang.call(getOcclusionShape, null, shapeStates.get(from), directions[direction]),
-                        Mojang.call(getOcclusionShape, null, shapeStates.get(to), directions[direction ^ 1]));
+                    var vanilla = (boolean) Vanilla.call(faceShapeOccludes, null,
+                        Vanilla.call(getOcclusionShape, null, shapeStates.get(from), directions[direction]),
+                        Vanilla.call(getOcclusionShape, null, shapeStates.get(to), directions[direction ^ 1]));
                     if (covered != vanilla)
                         throw new IllegalStateException("Light face masks don't match LightEngine.shapeOccludes for shapes " + from + " and " + to);
                 }
@@ -352,7 +371,7 @@ public final class VanillaDumper {
             shape.stream().map(box -> Arrays.stream(box).boxed().toList()).toList());
         var stateShapes = new LinkedHashMap<String, Integer>();
         for (var id = 0; id < states.size(); id++) {
-            var shape = Mojang.call(getCollisionShape, states.get(id), emptyLevel, origin);
+            var shape = Vanilla.call(getCollisionShape, states.get(id), emptyLevel, origin);
             stateShapes.put(Integer.toString(id), shapes.indexOf(boxes(shape)));
         }
 
@@ -365,10 +384,10 @@ public final class VanillaDumper {
 
     /** Block blast resistance, read by Obsidian/WorldData/AbstractLevel.Explosion.cs. */
     private void dumpBlastResistance() throws IOException {
-        var getExplosionResistance = mojang.method(BLOCK, "getExplosionResistance");
+        var getExplosionResistance = Vanilla.method(BLOCK, "getExplosionResistance");
         var resistance = new LinkedHashMap<String, Float>();
         for (var block : (Iterable<?>) blockRegistry)
-            resistance.put(key(blockRegistry, block), (float) Mojang.call(getExplosionResistance, block));
+            resistance.put(key(blockRegistry, block), (float) Vanilla.call(getExplosionResistance, block));
 
         Json.write(output.resolve("blast_resistance.json"), resistance, false);
     }
@@ -386,67 +405,69 @@ public final class VanillaDumper {
      * the empty world at the origin.
      */
     private void dumpBlockPhysics() throws IOException {
-        var isAir = mojang.method(STATE_BASE, "isAir");
-        var blocksMotion = mojang.method(STATE_BASE, "blocksMotion");
-        var isSolid = mojang.method(STATE_BASE, "isSolid");
-        var canBeReplaced = mojang.method(STATE_BASE, "canBeReplaced");
-        var liquid = mojang.method(STATE_BASE, "liquid");
-        var isCollisionShapeFullBlock = mojang.method(STATE_BASE, "isCollisionShapeFullBlock", BLOCK_GETTER, BLOCK_POS);
-        var isFaceSturdy = mojang.method(STATE_BASE, "isFaceSturdy", BLOCK_GETTER, BLOCK_POS, DIRECTION, SUPPORT_TYPE);
-        var isRedstoneConductor = mojang.method(STATE_BASE, "isRedstoneConductor", BLOCK_GETTER, BLOCK_POS);
-        var hasBlockEntity = mojang.method(STATE_BASE, "hasBlockEntity");
-        var getLightEmission = mojang.method(STATE_BASE, "getLightEmission");
-        var isSolidRender = mojang.method(STATE_BASE, "isSolidRender");
-        var isSource = mojang.method(FLUID_STATE, "isSource");
-        var getAmount = mojang.method(FLUID_STATE, "getAmount");
-        var getType = mojang.method(FLUID_STATE, "getType");
-        var isEmpty = mojang.method(VOXEL_SHAPE, "isEmpty");
-        var isFaceFull = mojang.method(BLOCK, "isFaceFull", VOXEL_SHAPE, DIRECTION);
-        var is = mojang.method(STATE_BASE, "is", TAG_KEY);
-        var unstableBottomCenter = mojang.get("net.minecraft.tags.BlockTags", "UNSTABLE_BOTTOM_CENTER");
-        var full = mojang.get(SUPPORT_TYPE, "FULL");
-        var center = mojang.get(SUPPORT_TYPE, "CENTER");
-        var rigid = mojang.get(SUPPORT_TYPE, "RIGID");
-        var up = mojang.get(DIRECTION, "UP");
-        var down = mojang.get(DIRECTION, "DOWN");
+        var isAir = Vanilla.method(STATE_BASE, "isAir");
+        // BlockStateBase.blocksMotion became the blocks_motion tag in 26.1.
+        var blocksMotion = Vanilla.get("net.minecraft.tags.BlockTags", "BLOCKS_MOTION");
+        var isSolid = Vanilla.method(STATE_BASE, "isSolid");
+        var canBeReplaced = Vanilla.method(STATE_BASE, "canBeReplaced");
+        var liquid = Vanilla.method(STATE_BASE, "liquid");
+        var isCollisionShapeFullBlock = Vanilla.method(STATE_BASE, "isCollisionShapeFullBlock", BLOCK_GETTER, BLOCK_POS);
+        var isFaceSturdy = Vanilla.method(STATE_BASE, "isFaceSturdy", BLOCK_GETTER, BLOCK_POS, DIRECTION, SUPPORT_TYPE);
+        var isRedstoneConductor = Vanilla.method(STATE_BASE, "isRedstoneConductor", BLOCK_GETTER, BLOCK_POS);
+        var hasBlockEntity = Vanilla.method(STATE_BASE, "hasBlockEntity");
+        var getLightEmission = Vanilla.method(STATE_BASE, "getLightEmission");
+        var isSolidRender = Vanilla.method(STATE_BASE, "isSolidRender");
+        var isSource = Vanilla.method(FLUID_STATE, "isSource");
+        var getAmount = Vanilla.method(FLUID_STATE, "getAmount");
+        var getType = Vanilla.method(FLUID_STATE, "getType");
+        var isEmpty = Vanilla.method(VOXEL_SHAPE, "isEmpty");
+        var isFaceFull = Vanilla.method(BLOCK, "isFaceFull", VOXEL_SHAPE, DIRECTION);
+        var is = Vanilla.method("net.minecraft.core.TypedInstance", "is", TAG_KEY);
+        var unstableBottomCenter = Vanilla.get("net.minecraft.tags.BlockTags", "UNSTABLE_BOTTOM_CENTER");
+        var full = Vanilla.get(SUPPORT_TYPE, "FULL");
+        var center = Vanilla.get(SUPPORT_TYPE, "CENTER");
+        var rigid = Vanilla.get(SUPPORT_TYPE, "RIGID");
+        var up = Vanilla.get(DIRECTION, "UP");
+        var down = Vanilla.get(DIRECTION, "DOWN");
 
-        var liquidBlockContainer = mojang.type("net.minecraft.world.level.block.LiquidBlockContainer");
-        var canHoldAnyFluid = mojang.method(FLOWING_FLUID, "canHoldAnyFluid", BLOCK_STATE);
-        var canHoldSpecificFluid = mojang.method(FLOWING_FLUID, "canHoldSpecificFluid", BLOCK_GETTER, BLOCK_POS, BLOCK_STATE, FLUID);
+        var liquidBlockContainer = Vanilla.type("net.minecraft.world.level.block.LiquidBlockContainer");
+        var canHoldAnyFluid = Vanilla.method(FLOWING_FLUID, "canHoldAnyFluid", BLOCK_STATE);
+        var canHoldSpecificFluid = Vanilla.method(FLOWING_FLUID, "canHoldSpecificFluid", BLOCK_GETTER, BLOCK_POS, BLOCK_STATE, FLUID);
         // Obsidian's FluidKind: 1-4 are these fluids (0 is empty). Not vanilla's registry ids, which order flowing first.
-        var fluids = new Object[] { null, mojang.get(FLUIDS, "WATER"), mojang.get(FLUIDS, "FLOWING_WATER"),
-            mojang.get(FLUIDS, "LAVA"), mojang.get(FLUIDS, "FLOWING_LAVA") };
+        var fluids = new Object[] { null, Vanilla.get(FLUIDS, "WATER"), Vanilla.get(FLUIDS, "FLOWING_WATER"),
+            Vanilla.get(FLUIDS, "LAVA"), Vanilla.get(FLUIDS, "FLOWING_LAVA") };
 
-        var visualShape = mojang.method(STATE_BASE, "getVisualShape", BLOCK_GETTER, BLOCK_POS, "net.minecraft.world.phys.shapes.CollisionContext");
-        var outlineShape = mojang.method(STATE_BASE, "getShape", BLOCK_GETTER, BLOCK_POS, "net.minecraft.world.phys.shapes.CollisionContext");
-        var isSuffocating = mojang.method(STATE_BASE, "isSuffocating", BLOCK_GETTER, BLOCK_POS);
-        var hasPostProcess = mojang.method(STATE_BASE, "hasPostProcess", BLOCK_GETTER, BLOCK_POS);
-        var hasOffset = mojang.method(STATE_BASE, "hasOffsetFunction");
-        var getOffset = mojang.method(STATE_BASE, "getOffset", BLOCK_POS);
-        var maxHorizontalOffset = mojang.method("net.minecraft.world.level.block.state.BlockBehaviour", "getMaxHorizontalOffset");
-        var maxVerticalOffset = mojang.method("net.minecraft.world.level.block.state.BlockBehaviour", "getMaxVerticalOffset");
-        var offsetX = mojang.field("net.minecraft.world.phys.Vec3", "x");
-        var offsetY = mojang.field("net.minecraft.world.phys.Vec3", "y");
-        var offsetZ = mojang.field("net.minecraft.world.phys.Vec3", "z");
-        var emptyContext = Mojang.call(mojang.method("net.minecraft.world.phys.shapes.CollisionContext", "empty"), null);
-        var destroySpeed = mojang.method(STATE_BASE, "getDestroySpeed", BLOCK_GETTER, BLOCK_POS);
-        var correctTool = mojang.method(STATE_BASE, "requiresCorrectToolForDrops");
-        var isRandomlyTicking = mojang.method(STATE_BASE, "isRandomlyTicking");
+        var visualShape = Vanilla.method(STATE_BASE, "getVisualShape", BLOCK_GETTER, BLOCK_POS, "net.minecraft.world.phys.shapes.CollisionContext");
+        var outlineShape = Vanilla.method(STATE_BASE, "getShape", BLOCK_GETTER, BLOCK_POS, "net.minecraft.world.phys.shapes.CollisionContext");
+        var isSuffocating = Vanilla.method(STATE_BASE, "isSuffocating", BLOCK_GETTER, BLOCK_POS);
+        var getPostProcessPos = Vanilla.method(STATE_BASE, "getPostProcessPos", BLOCK_GETTER, BLOCK_POS);
+        var hasOffset = Vanilla.method(STATE_BASE, "hasOffsetFunction");
+        var getOffset = Vanilla.method(STATE_BASE, "getOffset", BLOCK_POS);
+        var maxHorizontalOffset = Vanilla.method("net.minecraft.world.level.block.state.BlockBehaviour", "getMaxHorizontalOffset");
+        var maxVerticalOffset = Vanilla.method("net.minecraft.world.level.block.state.BlockBehaviour", "getMaxVerticalOffset");
+        var offsetX = Vanilla.field("net.minecraft.world.phys.Vec3", "x");
+        var offsetY = Vanilla.field("net.minecraft.world.phys.Vec3", "y");
+        var offsetZ = Vanilla.field("net.minecraft.world.phys.Vec3", "z");
+        var emptyContext = Vanilla.call(Vanilla.method("net.minecraft.world.phys.shapes.CollisionContext", "empty"), null);
+        var destroySpeed = Vanilla.method(STATE_BASE, "getDestroySpeed", BLOCK_GETTER, BLOCK_POS);
+        var correctTool = Vanilla.method(STATE_BASE, "requiresCorrectToolForDrops");
+        var isRandomlyTicking = Vanilla.method(STATE_BASE, "isRandomlyTicking");
         // BlockStateBase.getPistonPushReaction: the PushReaction enum, dumped by constant name in ordinal order.
-        var pistonPushReaction = mojang.method(STATE_BASE, "getPistonPushReaction");
+        var pistonPushReaction = Vanilla.method(STATE_BASE, "getPistonPushReaction");
         var pushReactionNames = new ArrayList<String>();
         var pushReactions = new int[states.size()];
         // PistonBaseBlock.isSticky is set by its constructor; the sticky piston and normal piston share one class.
         var stickyPistonStates = new ArrayList<Integer>();
-        var pistonBase = mojang.field("net.minecraft.world.level.block.piston.PistonBaseBlock", "isSticky");
-        var pistonBaseType = mojang.type("net.minecraft.world.level.block.piston.PistonBaseBlock");
-        var isFluidRandomlyTicking = mojang.method(FLUID_STATE, "isRandomlyTicking");
+        var pistonBase = Vanilla.field("net.minecraft.world.level.block.piston.PistonBaseBlock", "isSticky");
+        var pistonBaseType = Vanilla.type("net.minecraft.world.level.block.piston.PistonBaseBlock");
+        var isFluidRandomlyTicking = Vanilla.method(FLUID_STATE, "isRandomlyTicking");
         var shapeBoxes = new Indexer<List<double[]>>(shape -> shape.stream().map(Arrays::toString).toList());
         var collisionShapes = new int[states.size()];
         var visualShapes = new int[states.size()];
         var outlineShapes = new int[states.size()];
         var suffocating = new ArrayList<Boolean>();
-        // BlockStateBase.hasPostProcess: ProtoChunk marks such states for post-processing when they are placed in worldgen.
+        // Whether BlockStateBase.getPostProcessPos isn't null: WorldGenRegion marks such states for post-processing when
+        // they are placed in worldgen.
         var postProcess = new ArrayList<Boolean>();
         var shapeOffsets = new double[states.size()][];
         var hardness = new double[states.size()];
@@ -467,57 +488,57 @@ public final class VanillaDumper {
         faceSets.indexOf(List.of(0, 0, 0, 0, 0, 0)); // set 0: no faces, also used for full blocks (checked first)
         for (var id = 0; id < states.size(); id++) {
             var state = states.get(id);
-            var fluidState = Mojang.call(getFluidState, state);
-            var collision = Mojang.call(getCollisionShape, state, emptyLevel, origin);
+            var fluidState = Vanilla.call(getFluidState, state);
+            var collision = Vanilla.call(getCollisionShape, state, emptyLevel, origin);
             collisionShapes[id] = shapeBoxes.indexOf(boxes(collision));
-            visualShapes[id] = shapeBoxes.indexOf(boxes(Mojang.call(visualShape, state, emptyLevel, origin, emptyContext)));
-            outlineShapes[id] = shapeBoxes.indexOf(boxes(Mojang.call(outlineShape, state, emptyLevel, origin, emptyContext)));
-            suffocating.add((boolean) Mojang.call(isSuffocating, state, emptyLevel, origin));
-            postProcess.add((boolean) Mojang.call(hasPostProcess, state, emptyLevel, origin));
+            visualShapes[id] = shapeBoxes.indexOf(boxes(Vanilla.call(visualShape, state, emptyLevel, origin, emptyContext)));
+            outlineShapes[id] = shapeBoxes.indexOf(boxes(Vanilla.call(outlineShape, state, emptyLevel, origin, emptyContext)));
+            suffocating.add((boolean) Vanilla.call(isSuffocating, state, emptyLevel, origin));
+            postProcess.add(Vanilla.call(getPostProcessPos, state, emptyLevel, origin) != null);
             shapeOffsets[id] = new double[0];
-            if ((boolean) Mojang.call(hasOffset, state)) {
-                var offset = Mojang.call(getOffset, state, origin);
-                var block = Mojang.call(getBlock, state);
-                shapeOffsets[id] = new double[] { (double) Mojang.get(offsetX, offset), (double) Mojang.get(offsetY, offset),
-                    (double) Mojang.get(offsetZ, offset), (float) Mojang.call(maxHorizontalOffset, block), (float) Mojang.call(maxVerticalOffset, block) };
+            if ((boolean) Vanilla.call(hasOffset, state)) {
+                var offset = Vanilla.call(getOffset, state, origin);
+                var block = Vanilla.call(getBlock, state);
+                shapeOffsets[id] = new double[] { (double) Vanilla.get(offsetX, offset), (double) Vanilla.get(offsetY, offset),
+                    (double) Vanilla.get(offsetZ, offset), (float) Vanilla.call(maxHorizontalOffset, block), (float) Vanilla.call(maxVerticalOffset, block) };
             }
-            hardness[id] = (float) Mojang.call(destroySpeed, state, emptyLevel, origin);
-            var reaction = (Enum<?>) Mojang.call(pistonPushReaction, state);
+            hardness[id] = (float) Vanilla.call(destroySpeed, state, emptyLevel, origin);
+            var reaction = (Enum<?>) Vanilla.call(pistonPushReaction, state);
             if (!pushReactionNames.contains(reaction.name()))
                 pushReactionNames.add(reaction.name());
             pushReactions[id] = pushReactionNames.indexOf(reaction.name());
-            var block = Mojang.call(getBlock, state);
-            if (pistonBaseType.isInstance(block) && (boolean) Mojang.get(pistonBase, block))
+            var block = Vanilla.call(getBlock, state);
+            if (pistonBaseType.isInstance(block) && (boolean) Vanilla.get(pistonBase, block))
                 stickyPistonStates.add(id);
-            requiresTool.add((boolean) Mojang.call(correctTool, state));
+            requiresTool.add((boolean) Vanilla.call(correctTool, state));
             // What a chunk section counts to decide whether random ticks sample it: the block or its fluid ticks.
-            var blockTicks = (boolean) Mojang.call(isRandomlyTicking, state);
-            if (blockTicks || (boolean) Mojang.call(isFluidRandomlyTicking, fluidState))
+            var blockTicks = (boolean) Vanilla.call(isRandomlyTicking, state);
+            if (blockTicks || (boolean) Vanilla.call(isFluidRandomlyTicking, fluidState))
                 randomTicking.add(id);
 
             var bits = 0;
-            bits |= bit(0, Mojang.call(isAir, state));
-            bits |= bit(1, Mojang.call(blocksMotion, state));
-            bits |= bit(2, Mojang.call(isSolid, state));
-            bits |= bit(3, Mojang.call(canBeReplaced, state));
-            bits |= bit(4, Mojang.call(liquid, state));
-            bits |= bit(5, Mojang.call(isSource, fluidState));
-            bits |= bit(6, Mojang.call(isCollisionShapeFullBlock, state, emptyLevel, origin));
-            bits |= bit(7, Mojang.call(isFaceSturdy, state, emptyLevel, origin, up, center));
-            bits |= bit(8, Mojang.call(isFaceSturdy, state, emptyLevel, origin, up, rigid));
-            bits |= bit(9, Mojang.call(isRedstoneConductor, state, emptyLevel, origin));
-            bits |= bit(10, Mojang.call(hasBlockEntity, state));
+            bits |= bit(0, Vanilla.call(isAir, state));
+            bits |= bit(1, Vanilla.call(is, state, blocksMotion));
+            bits |= bit(2, Vanilla.call(isSolid, state));
+            bits |= bit(3, Vanilla.call(canBeReplaced, state));
+            bits |= bit(4, Vanilla.call(liquid, state));
+            bits |= bit(5, Vanilla.call(isSource, fluidState));
+            bits |= bit(6, Vanilla.call(isCollisionShapeFullBlock, state, emptyLevel, origin));
+            bits |= bit(7, Vanilla.call(isFaceSturdy, state, emptyLevel, origin, up, center));
+            bits |= bit(8, Vanilla.call(isFaceSturdy, state, emptyLevel, origin, up, rigid));
+            bits |= bit(9, Vanilla.call(isRedstoneConductor, state, emptyLevel, origin));
+            bits |= bit(10, Vanilla.call(hasBlockEntity, state));
             for (var face = 0; face < 6; face++)
-                bits |= bit(11 + face, Mojang.call(isFaceSturdy, state, emptyLevel, origin, directions[face], full));
-            bits |= (int) Mojang.call(getLightEmission, state) << 17;
-            bits |= (int) Mojang.call(getAmount, fluidState) << 21;
-            bits |= indexOf(fluids, Mojang.call(getType, fluidState)) << 25;
-            bits |= bit(28, Mojang.call(isEmpty, collision));
-            bits |= bit(29, Mojang.call(isFaceFull, null, collision, up));
-            bits |= bit(30, Mojang.call(isSolidRender, state));
+                bits |= bit(11 + face, Vanilla.call(isFaceSturdy, state, emptyLevel, origin, directions[face], full));
+            bits |= (int) Vanilla.call(getLightEmission, state) << 17;
+            bits |= (int) Vanilla.call(getAmount, fluidState) << 21;
+            bits |= indexOf(fluids, Vanilla.call(getType, fluidState)) << 25;
+            bits |= bit(28, Vanilla.call(isEmpty, collision));
+            bits |= bit(29, Vanilla.call(isFaceFull, null, collision, up));
+            bits |= bit(30, Vanilla.call(isSolidRender, state));
             // Block.canSupportCenter(level, pos, DOWN), which needs a LevelReader; its body is this check.
-            var unstable = (boolean) Mojang.call(is, state, unstableBottomCenter);
-            bits |= bit(31, !unstable && (boolean) Mojang.call(isFaceSturdy, state, emptyLevel, origin, down, center));
+            var unstable = (boolean) Vanilla.call(is, state, unstableBottomCenter);
+            bits |= bit(31, !unstable && (boolean) Vanilla.call(isFaceSturdy, state, emptyLevel, origin, down, center));
             flags[id] = bits;
 
             for (var support = 0; support < supportTypes.length; support++)
@@ -525,17 +546,17 @@ public final class VanillaDumper {
                 for (var face = 0; face < directions.length; face++)
                 {
                     supportFlags[id] |= bit(support * 6 + face,
-                        Mojang.call(isFaceSturdy, state, emptyLevel, origin, directions[face], supportTypes[support]));
+                        Vanilla.call(isFaceSturdy, state, emptyLevel, origin, directions[face], supportTypes[support]));
                 }
             }
 
             var fluidBits = 0;
             fluidBits |= bit(0, collision == blockShape);
             fluidBits |= bit(1, collision == emptyShape);
-            fluidBits |= bit(2, liquidBlockContainer.isInstance(Mojang.call(getBlock, state)));
-            fluidBits |= bit(3, Mojang.call(canHoldAnyFluid, null, state));
+            fluidBits |= bit(2, liquidBlockContainer.isInstance(Vanilla.call(getBlock, state)));
+            fluidBits |= bit(3, Vanilla.call(canHoldAnyFluid, null, state));
             for (var fluid = 1; fluid < fluids.length; fluid++)
-                fluidBits |= bit(3 + fluid, Mojang.call(canHoldSpecificFluid, null, emptyLevel, origin, state, fluids[fluid]));
+                fluidBits |= bit(3 + fluid, Vanilla.call(canHoldSpecificFluid, null, emptyLevel, origin, state, fluids[fluid]));
 
             if (collision != blockShape) {
                 var set = new ArrayList<Integer>();
@@ -581,14 +602,14 @@ public final class VanillaDumper {
      * nothing when the shape doesn't reach the side.
      */
     private List<double[]> collisionFace(Object shape, Object direction) {
-        var axis = Mojang.call(getAxis, direction);
+        var axis = Vanilla.call(getAxis, direction);
         var positive = isPositive(direction);
-        var edge = (double) Mojang.call(positive ? shapeMax : shapeMin, shape, axis);
+        var edge = (double) Vanilla.call(positive ? shapeMax : shapeMin, shape, axis);
         if (Math.abs(edge - (positive ? 1 : 0)) > 1.0E-7)
             return List.of();
 
-        var size = (int) Mojang.call(discreteSize, Mojang.get(discreteShape, shape), axis);
-        var slice = Mojang.create(sliceShape, shape, axis, positive ? size - 1 : 0);
+        var size = (int) Vanilla.call(discreteSize, Vanilla.get(discreteShape, shape), axis);
+        var slice = Vanilla.create(sliceShape, shape, axis, positive ? size - 1 : 0);
 
         var axes = faceAxes(direction);
         var face = new ArrayList<double[]>();
@@ -598,13 +619,13 @@ public final class VanillaDumper {
     }
 
     /**
-     * {@code block_placement_classes.json}: the Mojang class that supplies each block's
+     * {@code block_placement_classes.json}: the vanilla class that supplies each block's
      * {@code getStateForPlacement} override. Blocks inheriting the base no-op implementation are omitted.
      */
     private void dumpBlockPlacementClasses() throws IOException {
         var context = "net.minecraft.world.item.context.BlockPlaceContext";
-        var baseMethod = mojang.method(BLOCK, "getStateForPlacement", context);
-        var parameter = mojang.type(context);
+        var baseMethod = Vanilla.method(BLOCK, "getStateForPlacement", context);
+        var parameter = Vanilla.type(context);
         var classes = new TreeMap<String, String>();
 
         for (var block : (Iterable<?>) blockRegistry) {
@@ -618,8 +639,8 @@ public final class VanillaDumper {
                 }
             }
 
-            if (owner != null && owner != mojang.type(BLOCK))
-                classes.put(key(blockRegistry, block), mojang.className(owner.getName()));
+            if (owner != null && owner != Vanilla.type(BLOCK))
+                classes.put(key(blockRegistry, block), owner.getName());
         }
 
         Json.write(output.resolve("block_placement_classes.json"), classes, false);
@@ -627,7 +648,7 @@ public final class VanillaDumper {
 
     /**
      * {@code block_random_tick_classes.json}, {@code block_tick_classes.json},
-     * {@code block_update_shape_classes.json} and the other hook-owner files: the Mojang class that supplies each
+     * {@code block_update_shape_classes.json} and the other hook-owner files: the vanilla class that supplies each
      * block's override. Blocks inheriting the base no-op are omitted.
      */
     private void dumpBlockOverrideClasses() throws IOException {
@@ -650,9 +671,9 @@ public final class VanillaDumper {
      * read from the fire block's {@code igniteOdds} and {@code burnOdds} maps. Blocks it never registered are omitted.
      */
     private void dumpFireOdds() throws IOException {
-        var fire = mojang.type("net.minecraft.world.level.block.FireBlock");
-        var igniteField = mojang.field("net.minecraft.world.level.block.FireBlock", "igniteOdds");
-        var burnField = mojang.field("net.minecraft.world.level.block.FireBlock", "burnOdds");
+        var fire = Vanilla.type("net.minecraft.world.level.block.FireBlock");
+        var igniteField = Vanilla.field("net.minecraft.world.level.block.FireBlock", "igniteOdds");
+        var burnField = Vanilla.field("net.minecraft.world.level.block.FireBlock", "burnOdds");
         var odds = new TreeMap<String, Map<String, Object>>();
 
         for (var block : (Iterable<?>) blockRegistry) {
@@ -660,9 +681,9 @@ public final class VanillaDumper {
                 continue;
 
             @SuppressWarnings("unchecked")
-            var ignite = (Map<Object, Object>) Mojang.get(igniteField, block);
+            var ignite = (Map<Object, Object>) Vanilla.get(igniteField, block);
             @SuppressWarnings("unchecked")
-            var burn = (Map<Object, Object>) Mojang.get(burnField, block);
+            var burn = (Map<Object, Object>) Vanilla.get(burnField, block);
             for (var entry : ignite.entrySet()) {
                 var row = new TreeMap<String, Object>();
                 row.put("ignite", entry.getValue());
@@ -679,12 +700,12 @@ public final class VanillaDumper {
      * flammable set {@code LavaFluid.randomTick} sets fire next to. Keyed by block, with the value {@code true}.
      */
     private void dumpIgnitedByLava() throws IOException {
-        var ignited = mojang.method(STATE_BASE, "ignitedByLava");
-        var defaultState = mojang.method(BLOCK, "defaultBlockState");
+        var ignited = Vanilla.method(STATE_BASE, "ignitedByLava");
+        var defaultState = Vanilla.method(BLOCK, "defaultBlockState");
         var blocks = new TreeMap<String, Boolean>();
 
         for (var block : (Iterable<?>) blockRegistry) {
-            if ((boolean) Mojang.call(ignited, Mojang.call(defaultState, block)))
+            if ((boolean) Vanilla.call(ignited, Vanilla.call(defaultState, block)))
                 blocks.put(key(blockRegistry, block), true);
         }
 
@@ -693,25 +714,13 @@ public final class VanillaDumper {
 
     /**
      * Dumps vanilla's {@code PathType} constants with their default malus, in declaration order. Entries are keyed by
-     * the enum constant's mapped name, which is what the pathfinder's classification refers to.
+     * the enum constant's name, which is what the pathfinder's classification refers to.
      */
     private void dumpPathTypeMalus() throws IOException {
-        var names = List.of("BLOCKED", "OPEN", "WALKABLE", "WALKABLE_DOOR", "TRAPDOOR", "POWDER_SNOW", "DANGER_POWDER_SNOW",
-            "FENCE", "LAVA", "WATER", "WATER_BORDER", "RAIL", "UNPASSABLE_RAIL", "DANGER_FIRE", "DAMAGE_FIRE", "DANGER_OTHER",
-            "DAMAGE_OTHER", "DOOR_OPEN", "DOOR_WOOD_CLOSED", "DOOR_IRON_CLOSED", "BREACH", "LEAVES", "STICKY_HONEY", "COCOA",
-            "DAMAGE_CAUTIOUS", "DANGER_TRAPDOOR");
-        var values = (Object[]) Mojang.call(mojang.method(PATH_TYPE, "values"), null);
-        if (values.length != names.size())
-            throw new IllegalStateException("PathType has " + values.length + " constants; expected " + names.size());
-        var getMalus = mojang.method(PATH_TYPE, "getMalus");
+        var getMalus = Vanilla.method(PATH_TYPE, "getMalus");
         var malus = new LinkedHashMap<String, Double>();
-
-        for (var index = 0; index < names.size(); index++) {
-            var name = names.get(index);
-            if (Mojang.getStatic(mojang.field(PATH_TYPE, name)) != values[index])
-                throw new IllegalStateException("PathType." + name + " is not declaration index " + index);
-            malus.put(name, ((Number) Mojang.call(getMalus, values[index])).doubleValue());
-        }
+        for (var value : (Enum<?>[]) Vanilla.call(Vanilla.method(PATH_TYPE, "values"), null))
+            malus.put(value.name(), ((Number) Vanilla.call(getMalus, value)).doubleValue());
 
         Json.write(output.resolve("path_type_malus.json"), malus, false);
     }
@@ -723,11 +732,11 @@ public final class VanillaDumper {
      * it exactly; neighbour and above-block rules are applied by the consumer, which reads these same states.
      */
     private void dumpPathTypeStates() throws IOException {
-        var classify = mojang.method(WALK_NODE, "getPathTypeFromState", BLOCK_GETTER, BLOCK_POS);
-        var getBlockState = mojang.method(BLOCK_GETTER, "getBlockState", BLOCK_POS);
+        var classify = Vanilla.method(WALK_NODE, "getPathTypeFromState", BLOCK_GETTER, BLOCK_POS);
+        var getBlockState = Vanilla.method(BLOCK_GETTER, "getBlockState", BLOCK_POS);
         var current = new Object[1];
         var getter = java.lang.reflect.Proxy.newProxyInstance(getClass().getClassLoader(),
-            new Class<?>[] { mojang.type(BLOCK_GETTER) }, (proxy, method, args) -> {
+            new Class<?>[] { Vanilla.type(BLOCK_GETTER) }, (proxy, method, args) -> {
                 if (method.getDeclaringClass() == Object.class)
                     return switch (method.getName()) {
                         case "hashCode" -> System.identityHashCode(proxy);
@@ -738,11 +747,11 @@ public final class VanillaDumper {
                     return current[0];
                 throw new UnsupportedOperationException("Path type classification read " + method);
             });
-        var types = (Object[]) Mojang.call(mojang.method(PATH_TYPE, "values"), null);
+        var types = (Object[]) Vanilla.call(Vanilla.method(PATH_TYPE, "values"), null);
         var result = new ArrayList<Integer>(states.size());
         for (var state : states) {
             current[0] = state;
-            var type = Mojang.call(classify, null, getter, origin);
+            var type = Vanilla.call(classify, null, getter, origin);
             var ordinal = Arrays.asList(types).indexOf(type);
             if (ordinal < 0)
                 throw new IllegalStateException("Unknown path type for state " + state);
@@ -757,7 +766,7 @@ public final class VanillaDumper {
      * calls on the block it replaces. Keyed by block, with the value {@code true}.
      */
     private void dumpTntBlocks() throws IOException {
-        var tnt = mojang.type("net.minecraft.world.level.block.TntBlock");
+        var tnt = Vanilla.type("net.minecraft.world.level.block.TntBlock");
         var blocks = new TreeMap<String, Boolean>();
 
         for (var block : (Iterable<?>) blockRegistry) {
@@ -770,35 +779,47 @@ public final class VanillaDumper {
 
     /**
      * {@code sapling_growers.json}: the {@code TreeGrower} each sapling block holds in its {@code treeGrower} field
-     * (declared by {@code SaplingBlock}, which the mangrove propagule extends): the configured features it names, by
-     * identifier, and its secondary chance. Which class owns each sapling's random tick is in
-     * {@code block_random_tick_classes.json}.
+     * (declared by {@code SaplingBlock}, which the mangrove propagule extends): its weighted lists of configured
+     * features ({@code trees}, {@code megaTrees} and {@code flowerTrees}, each {@code [{feature, weight}]} in vanilla's
+     * order, empty lists left out) and the tree its minimum height comes from ({@code shortestTree}, if any). Which class owns
+     * each sapling's random tick is in {@code block_random_tick_classes.json}.
      */
     private void dumpSaplingGrowers() throws IOException {
-        var sapling = mojang.type("net.minecraft.world.level.block.SaplingBlock");
-        var growerField = mojang.field("net.minecraft.world.level.block.SaplingBlock", "treeGrower");
+        var sapling = Vanilla.type("net.minecraft.world.level.block.SaplingBlock");
+        var growerField = Vanilla.field("net.minecraft.world.level.block.SaplingBlock", "treeGrower");
         var grower = "net.minecraft.world.level.block.grower.TreeGrower";
-        var identifier = mojang.method("net.minecraft.resources.ResourceKey", "identifier");
-        var chanceField = mojang.field(grower, "secondaryChance");
-        var features = new TreeMap<String, Field>();
-        for (var feature : new String[] { "megaTree", "secondaryMegaTree", "tree", "secondaryTree", "flowers", "secondaryFlowers" })
-            features.put(feature, mojang.field(grower, feature));
+        var identifier = Vanilla.method("net.minecraft.resources.ResourceKey", "identifier");
+        var unwrap = Vanilla.method("net.minecraft.util.random.WeightedList", "unwrap");
+        var value = Vanilla.method("net.minecraft.util.random.Weighted", "value");
+        var weight = Vanilla.method("net.minecraft.util.random.Weighted", "weight");
+        var shortestTree = Vanilla.field(grower, "shortestTreeType");
+        var lists = new LinkedHashMap<String, Field>();
+        for (var list : new String[] { "trees", "megaTrees", "flowerTrees" })
+            lists.put(list, Vanilla.field(grower, list));
 
-        var blockRegistry = mojang.get(REGISTRIES, "BLOCK");
+        var blockRegistry = Vanilla.get(REGISTRIES, "BLOCK");
         var growers = new TreeMap<String, Map<String, Object>>();
 
         for (var block : (Iterable<?>) blockRegistry) {
             if (!sapling.isInstance(block))
                 continue;
 
-            var holder = Mojang.get(growerField, block);
-            var row = new TreeMap<String, Object>();
-            for (var feature : features.entrySet()) {
-                if (Mojang.get(feature.getValue(), holder) instanceof Optional<?> value && value.isPresent())
-                    row.put(feature.getKey(), Mojang.call(identifier, value.get()).toString());
+            var holder = Vanilla.get(growerField, block);
+            var row = new LinkedHashMap<String, Object>();
+            for (var list : lists.entrySet()) {
+                var features = new ArrayList<Object>();
+                for (var entry : (List<?>) Vanilla.call(unwrap, Vanilla.get(list.getValue(), holder))) {
+                    var feature = new LinkedHashMap<String, Object>();
+                    feature.put("feature", Vanilla.call(identifier, Vanilla.call(value, entry)).toString());
+                    feature.put("weight", Vanilla.call(weight, entry));
+                    features.add(feature);
+                }
+                if (!features.isEmpty())
+                    row.put(list.getKey(), features);
             }
 
-            row.put("secondaryChance", Mojang.get(chanceField, holder));
+            if (Vanilla.get(shortestTree, holder) instanceof Object tree)
+                row.put("shortestTree", Vanilla.call(identifier, tree).toString());
             growers.put(key(blockRegistry, block), row);
         }
 
@@ -808,10 +829,10 @@ public final class VanillaDumper {
     private void dumpBlockOverrideClasses(String file, String name, String... parameterTypes) throws IOException {
         // The base no-op is declared by BlockBehaviour.
         var behaviour = "net.minecraft.world.level.block.state.BlockBehaviour";
-        var baseMethod = mojang.method(behaviour, name, parameterTypes);
+        var baseMethod = Vanilla.method(behaviour, name, parameterTypes);
         var parameters = new Class<?>[parameterTypes.length];
         for (var i = 0; i < parameters.length; i++)
-            parameters[i] = mojang.type(parameterTypes[i]);
+            parameters[i] = Vanilla.type(parameterTypes[i]);
         var classes = new TreeMap<String, String>();
 
         for (var block : (Iterable<?>) blockRegistry) {
@@ -825,23 +846,23 @@ public final class VanillaDumper {
                 }
             }
 
-            if (owner != null && owner != mojang.type(behaviour))
-                classes.put(key(blockRegistry, block), mojang.className(owner.getName()));
+            if (owner != null && owner != Vanilla.type(behaviour))
+                classes.put(key(blockRegistry, block), owner.getName());
         }
 
         Json.write(output.resolve(file), classes, false);
     }
 
     /**
-     * {@code item_use_on_classes.json}: the Mojang class that supplies each item's {@code useOn} override. Items
+     * {@code item_use_on_classes.json}: the vanilla class that supplies each item's {@code useOn} override. Items
      * inheriting the base implementation are omitted.
      */
     private void dumpItemUseOnClasses() throws IOException {
         var item = "net.minecraft.world.item.Item";
         var context = "net.minecraft.world.item.context.UseOnContext";
-        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
-        var baseMethod = mojang.method(item, "useOn", context);
-        var parameter = mojang.type(context);
+        var itemRegistry = Vanilla.get(REGISTRIES, "ITEM");
+        var baseMethod = Vanilla.method(item, "useOn", context);
+        var parameter = Vanilla.type(context);
         var classes = new TreeMap<String, String>();
 
         for (var entry : (Iterable<?>) itemRegistry) {
@@ -855,15 +876,15 @@ public final class VanillaDumper {
                 }
             }
 
-            if (owner != null && owner != mojang.type(item))
-                classes.put(key(itemRegistry, entry), mojang.className(owner.getName()));
+            if (owner != null && owner != Vanilla.type(item))
+                classes.put(key(itemRegistry, entry), owner.getName());
         }
 
         Json.write(output.resolve("item_use_on_classes.json"), classes, false);
     }
 
     /**
-     * {@code item_use_classes.json}: the Mojang class that supplies each item's {@code use} override (what a right
+     * {@code item_use_classes.json}: the vanilla class that supplies each item's {@code use} override (what a right
      * click does with the item in hand, like throwing an egg). Items inheriting the base implementation are omitted.
      */
     private void dumpItemUseClasses() throws IOException {
@@ -871,8 +892,8 @@ public final class VanillaDumper {
         var level = "net.minecraft.world.level.Level";
         var player = "net.minecraft.world.entity.player.Player";
         var hand = "net.minecraft.world.InteractionHand";
-        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
-        var baseMethod = mojang.method(item, "use", level, player, hand);
+        var itemRegistry = Vanilla.get(REGISTRIES, "ITEM");
+        var baseMethod = Vanilla.method(item, "use", level, player, hand);
         var parameters = baseMethod.getParameterTypes();
         var classes = new TreeMap<String, String>();
 
@@ -887,8 +908,8 @@ public final class VanillaDumper {
                 }
             }
 
-            if (owner != null && owner != mojang.type(item))
-                classes.put(key(itemRegistry, entry), mojang.className(owner.getName()));
+            if (owner != null && owner != Vanilla.type(item))
+                classes.put(key(itemRegistry, entry), owner.getName());
         }
 
         Json.write(output.resolve("item_use_classes.json"), classes, false);
@@ -896,7 +917,7 @@ public final class VanillaDumper {
 
     /**
      * {@code item_stacked_on_classes.json}, {@code item_other_stacked_on_classes.json} and
-     * {@code item_container_fit_classes.json}: the Mojang class that supplies each item's
+     * {@code item_container_fit_classes.json}: the vanilla class that supplies each item's
      * {@code overrideStackedOnOther}, {@code overrideOtherStackedOnMe} and {@code canFitInsideContainerItems}
      * overrides, which the click path and bundles consult. Items inheriting the base implementation are omitted.
      */
@@ -907,29 +928,29 @@ public final class VanillaDumper {
         var action = "net.minecraft.world.inventory.ClickAction";
         var player = "net.minecraft.world.entity.player.Player";
         var access = "net.minecraft.world.entity.SlotAccess";
-        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+        var itemRegistry = Vanilla.get(REGISTRIES, "ITEM");
 
-        writeItemOwners("item_stacked_on_classes.json", itemRegistry, mojang.method(item, "overrideStackedOnOther", stack, slot, action, player));
-        writeItemOwners("item_other_stacked_on_classes.json", itemRegistry, mojang.method(item, "overrideOtherStackedOnMe", stack, stack, slot, action, player, access));
-        writeItemOwners("item_container_fit_classes.json", itemRegistry, mojang.method(item, "canFitInsideContainerItems"));
+        writeItemOwners("item_stacked_on_classes.json", itemRegistry, Vanilla.method(item, "overrideStackedOnOther", stack, slot, action, player));
+        writeItemOwners("item_other_stacked_on_classes.json", itemRegistry, Vanilla.method(item, "overrideOtherStackedOnMe", stack, stack, slot, action, player, access));
+        writeItemOwners("item_container_fit_classes.json", itemRegistry, Vanilla.method(item, "canFitInsideContainerItems"));
         writeBlockItemBlocks(itemRegistry);
     }
 
     /**
-     * {@code item_container_fit_blocks.json}: the Mojang class of the block each {@code BlockItem} that doesn't fit
+     * {@code item_container_fit_blocks.json}: the vanilla class of the block each {@code BlockItem} that doesn't fit
      * in container items places, which decides vanilla's {@code BlockItem.canFitInsideContainerItems} override.
      */
     private void writeBlockItemBlocks(Object itemRegistry) throws IOException {
-        var blockItem = mojang.type("net.minecraft.world.item.BlockItem");
-        var getBlock = mojang.method("net.minecraft.world.item.BlockItem", "getBlock");
+        var blockItem = Vanilla.type("net.minecraft.world.item.BlockItem");
+        var getBlock = Vanilla.method("net.minecraft.world.item.BlockItem", "getBlock");
         var blocks = new TreeMap<String, String>();
 
         for (var entry : (Iterable<?>) itemRegistry) {
             if (!blockItem.isInstance(entry))
                 continue;
 
-            var block = Mojang.call(getBlock, entry);
-            blocks.put(key(itemRegistry, entry), mojang.className(block.getClass().getName()));
+            var block = Vanilla.call(getBlock, entry);
+            blocks.put(key(itemRegistry, entry), block.getClass().getName());
         }
 
         Json.write(output.resolve("item_block_classes.json"), blocks, false);
@@ -938,7 +959,7 @@ public final class VanillaDumper {
     private void writeItemOwners(String file, Object itemRegistry, java.lang.reflect.Method baseMethod) throws IOException {
         var parameters = baseMethod.getParameterTypes();
         var classes = new TreeMap<String, String>();
-        var base = mojang.type("net.minecraft.world.item.Item");
+        var base = Vanilla.type("net.minecraft.world.item.Item");
 
         for (var entry : (Iterable<?>) itemRegistry) {
             var owner = entry.getClass();
@@ -952,7 +973,7 @@ public final class VanillaDumper {
             }
 
             if (owner != null && owner != base)
-                classes.put(key(itemRegistry, entry), mojang.className(owner.getName()));
+                classes.put(key(itemRegistry, entry), owner.getName());
         }
 
         Json.write(output.resolve(file), classes, false);
@@ -963,10 +984,10 @@ public final class VanillaDumper {
      * the items that place a block named differently from themselves (wheat seeds place wheat).
      */
     private void dumpItemPlacedBlocks() throws IOException {
-        var blockItem = mojang.type("net.minecraft.world.item.BlockItem");
-        var getBlock = mojang.method("net.minecraft.world.item.BlockItem", "getBlock");
-        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
-        var blockRegistry = mojang.get(REGISTRIES, "BLOCK");
+        var blockItem = Vanilla.type("net.minecraft.world.item.BlockItem");
+        var getBlock = Vanilla.method("net.minecraft.world.item.BlockItem", "getBlock");
+        var itemRegistry = Vanilla.get(REGISTRIES, "ITEM");
+        var blockRegistry = Vanilla.get(REGISTRIES, "BLOCK");
         var placed = new TreeMap<String, String>();
 
         for (var entry : (Iterable<?>) itemRegistry) {
@@ -974,7 +995,7 @@ public final class VanillaDumper {
                 continue;
 
             var itemKey = key(itemRegistry, entry);
-            var blockKey = key(blockRegistry, Mojang.call(getBlock, entry));
+            var blockKey = key(blockRegistry, Vanilla.call(getBlock, entry));
             if (!itemKey.equals(blockKey))
                 placed.put(itemKey, blockKey);
         }
@@ -990,17 +1011,17 @@ public final class VanillaDumper {
     private void dumpItemAttachments() throws IOException {
         var standingAndWall = "net.minecraft.world.item.StandingAndWallBlockItem";
         var context = "net.minecraft.world.item.context.BlockPlaceContext";
-        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
-        var blockRegistry = mojang.get(REGISTRIES, "BLOCK");
-        var placement = mojang.method(standingAndWall, "getPlacementState", context);
-        var parameter = mojang.type(context);
-        var getBlock = mojang.method("net.minecraft.world.item.BlockItem", "getBlock");
-        var wallBlock = mojang.field(standingAndWall, "wallBlock");
-        var attachment = mojang.field(standingAndWall, "attachmentDirection");
+        var itemRegistry = Vanilla.get(REGISTRIES, "ITEM");
+        var blockRegistry = Vanilla.get(REGISTRIES, "BLOCK");
+        var placement = Vanilla.method(standingAndWall, "getPlacementState", context);
+        var parameter = Vanilla.type(context);
+        var getBlock = Vanilla.method("net.minecraft.world.item.BlockItem", "getBlock");
+        var wallBlock = Vanilla.field(standingAndWall, "wallBlock");
+        var attachment = Vanilla.field(standingAndWall, "attachmentDirection");
         var attachments = new TreeMap<String, Map<String, String>>();
 
         for (var entry : (Iterable<?>) itemRegistry) {
-            if (!mojang.type(standingAndWall).isInstance(entry))
+            if (!Vanilla.type(standingAndWall).isInstance(entry))
                 continue;
 
             var owner = entry.getClass();
@@ -1013,11 +1034,11 @@ public final class VanillaDumper {
                 }
             }
 
-            var direction = (Enum<?>) Mojang.get(attachment, entry);
+            var direction = (Enum<?>) Vanilla.get(attachment, entry);
             var row = new TreeMap<String, String>();
-            row.put("owner", mojang.className(owner.getName()));
-            row.put("standing", key(blockRegistry, Mojang.call(getBlock, entry)));
-            row.put("wall", key(blockRegistry, Mojang.get(wallBlock, entry)));
+            row.put("owner", owner.getName());
+            row.put("standing", key(blockRegistry, Vanilla.call(getBlock, entry)));
+            row.put("wall", key(blockRegistry, Vanilla.get(wallBlock, entry)));
             row.put("direction", direction.name().toLowerCase(java.util.Locale.ROOT));
             attachments.put(key(itemRegistry, entry), row);
         }
@@ -1025,61 +1046,13 @@ public final class VanillaDumper {
         Json.write(output.resolve("item_attachments.json"), attachments, false);
     }
 
-    /**
-     * {@code item_use_on_transforms.json}: what {@code HoeItem.TILLABLES} does per tillable block: the block it
-     * becomes, the item it drops (or null), and whether it needs air above. The state and item are the captured
-     * arguments of the map's lambdas; the predicate is "always" when it accepts a null context, and otherwise it is
-     * {@code HoeItem.onlyIfAirAbove}, which dereferences it.
-     */
-    private void dumpHoeTillables() throws IOException {
-        var hoe = "net.minecraft.world.item.HoeItem";
-        var tillables = (Map<?, ?>) mojang.get(hoe, "TILLABLES");
-        var blockRegistry = mojang.get(REGISTRIES, "BLOCK");
-        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
-        var getBlock = mojang.method(STATE_BASE, "getBlock");
-        var result = new TreeMap<String, Object>();
 
-        for (var entry : tillables.entrySet()) {
-            try {
-                var pair = entry.getValue();
-                var predicate = (java.util.function.Predicate<Object>) pair.getClass().getMethod("getFirst").invoke(pair);
-                var consumer = pair.getClass().getMethod("getSecond").invoke(pair);
 
-                var always = false;
-                try {
-                    always = predicate.test(null);
-                } catch (NullPointerException expected) {
-                }
-
-                Object target = null;
-                Object drop = null;
-                for (var field : consumer.getClass().getDeclaredFields()) {
-                    field.setAccessible(true);
-                    var value = field.get(consumer);
-                    if (value != null && mojang.type(STATE_BASE).isInstance(value))
-                        target = Mojang.call(getBlock, value);
-                    else if (value != null && mojang.type("net.minecraft.world.item.Item").isInstance(value))
-                        drop = value;
-                }
-
-                var transform = new LinkedHashMap<String, Object>();
-                transform.put("to", key(blockRegistry, target));
-                transform.put("drop", drop == null ? null : key(itemRegistry, drop));
-                transform.put("requiresAirAbove", !always);
-                result.put(key(blockRegistry, entry.getKey()), transform);
-            } catch (ReflectiveOperationException e) {
-                throw new IllegalStateException("Could not read HoeItem.TILLABLES", e);
-            }
-        }
-
-        Json.write(output.resolve("item_use_on_transforms.json"), Map.of(hoe, result), false);
-    }
-
-    /** The Mojang simple name of each block's class, sorted by block id. */
+    /** The simple name of each block's class, sorted by block id. */
     private Map<String, String> blockClasses() {
         var classes = new TreeMap<String, String>();
         for (var block : (Iterable<?>) blockRegistry)
-            classes.put(key(blockRegistry, block), mojang.simpleName(block.getClass()));
+            classes.put(key(blockRegistry, block), Vanilla.simpleName(block.getClass()));
         return classes;
     }
 
@@ -1088,27 +1061,27 @@ public final class VanillaDumper {
      * Moving pistons create theirs elsewhere, so they have none here.
      */
     private Map<String, String> blockEntityTypes() {
-        var entityBlock = mojang.type("net.minecraft.world.level.block.EntityBlock");
-        var newBlockEntity = mojang.method("net.minecraft.world.level.block.EntityBlock", "newBlockEntity", BLOCK_POS, BLOCK_STATE);
-        var getType = mojang.method("net.minecraft.world.level.block.entity.BlockEntity", "getType");
-        var isValidBlock = mojang.method("net.minecraft.world.level.block.entity.BlockEntityType", "isValid", BLOCK_STATE);
-        var defaultState = mojang.method(BLOCK, "defaultBlockState");
-        var types = mojang.get(REGISTRIES, "BLOCK_ENTITY_TYPE");
+        var entityBlock = Vanilla.type("net.minecraft.world.level.block.EntityBlock");
+        var newBlockEntity = Vanilla.method("net.minecraft.world.level.block.EntityBlock", "newBlockEntity", BLOCK_POS, BLOCK_STATE);
+        var getType = Vanilla.method("net.minecraft.world.level.block.entity.BlockEntity", "getType");
+        var isValidBlock = Vanilla.method("net.minecraft.world.level.block.entity.BlockEntityType", "isValid", BLOCK_STATE);
+        var defaultState = Vanilla.method(BLOCK, "defaultBlockState");
+        var types = Vanilla.get(REGISTRIES, "BLOCK_ENTITY_TYPE");
 
         var result = new LinkedHashMap<String, String>();
         for (var block : (Iterable<?>) blockRegistry) {
             if (!entityBlock.isInstance(block))
                 continue;
-            var blockEntity = Mojang.call(newBlockEntity, block, origin, Mojang.call(defaultState, block));
+            var blockEntity = Vanilla.call(newBlockEntity, block, origin, Vanilla.call(defaultState, block));
             if (blockEntity != null)
-                result.put(key(blockRegistry, block), key(types, Mojang.call(getType, blockEntity)));
+                result.put(key(blockRegistry, block), key(types, Vanilla.call(getType, blockEntity)));
             else
             {
                 // A block whose newBlockEntity is null (MovingPistonBlock) gets its entity from elsewhere; vanilla's
                 // BlockEntityType.isValid says which type that entity belongs to. Its ticks need the same type id.
                 for (var type : (Iterable<?>) types)
                 {
-                    if ((boolean) Mojang.call(isValidBlock, type, Mojang.call(defaultState, block)))
+                    if ((boolean) Vanilla.call(isValidBlock, type, Vanilla.call(defaultState, block)))
                         result.put(key(blockRegistry, block), key(types, type));
                 }
             }
@@ -1119,13 +1092,13 @@ public final class VanillaDumper {
 
     /** The network ids of the block entity types blocks create, in registry order. */
     private Map<String, Integer> blockEntityTypeIds(Map<String, String> blockEntityTypes) {
-        var types = mojang.get(REGISTRIES, "BLOCK_ENTITY_TYPE");
-        var getId = mojang.method("net.minecraft.core.IdMap", "getId", "java.lang.Object");
+        var types = Vanilla.get(REGISTRIES, "BLOCK_ENTITY_TYPE");
+        var getId = Vanilla.method("net.minecraft.core.IdMap", "getId", "java.lang.Object");
         var result = new LinkedHashMap<String, Integer>();
         for (var type : (Iterable<?>) types) {
             var key = key(types, type);
             if (blockEntityTypes.containsValue(key))
-                result.put(key, (int) Mojang.call(getId, types, type));
+                result.put(key, (int) Vanilla.call(getId, types, type));
         }
 
         return result;
@@ -1133,11 +1106,11 @@ public final class VanillaDumper {
 
     /** The blocks whose default state {@code isSignalSource()}, sorted. */
     private List<String> signalSources() {
-        var isSignalSource = mojang.method(STATE_BASE, "isSignalSource");
-        var defaultState = mojang.method(BLOCK, "defaultBlockState");
+        var isSignalSource = Vanilla.method(STATE_BASE, "isSignalSource");
+        var defaultState = Vanilla.method(BLOCK, "defaultBlockState");
         var result = new ArrayList<String>();
         for (var block : (Iterable<?>) blockRegistry) {
-            if ((boolean) Mojang.call(isSignalSource, Mojang.call(defaultState, block)))
+            if ((boolean) Vanilla.call(isSignalSource, Vanilla.call(defaultState, block)))
                 result.add(key(blockRegistry, block));
         }
 
@@ -1150,27 +1123,27 @@ public final class VanillaDumper {
      * {@code BlockState.rotate}/{@code mirror} result as a state id offset.
      */
     private void dumpBlockTransforms() throws IOException {
-        var stateIds = mojang.get(BLOCK, "BLOCK_STATE_REGISTRY");
-        var getId = mojang.method("net.minecraft.core.IdMapper", "getId", "java.lang.Object");
-        var rotate = mojang.method(STATE_BASE, "rotate", "net.minecraft.world.level.block.Rotation");
-        var mirror = mojang.method(STATE_BASE, "mirror", "net.minecraft.world.level.block.Mirror");
+        var stateIds = Vanilla.get(BLOCK, "BLOCK_STATE_REGISTRY");
+        var getId = Vanilla.method("net.minecraft.core.IdMapper", "getId", "java.lang.Object");
+        var rotate = Vanilla.method(STATE_BASE, "rotate", "net.minecraft.world.level.block.Rotation");
+        var mirror = Vanilla.method(STATE_BASE, "mirror", "net.minecraft.world.level.block.Mirror");
         var rotation = "net.minecraft.world.level.block.Rotation";
         var mirrors = "net.minecraft.world.level.block.Mirror";
 
         var json = new LinkedHashMap<String, Object>();
         json.put("_notes", "Vanilla " + version + " BlockState.rotate/mirror results per state id, stored as (result - state id).");
-        json.put("rotateClockwise90", transformed(stateIds, getId, rotate, mojang.get(rotation, "CLOCKWISE_90")));
-        json.put("rotate180", transformed(stateIds, getId, rotate, mojang.get(rotation, "CLOCKWISE_180")));
-        json.put("rotateCounterclockwise90", transformed(stateIds, getId, rotate, mojang.get(rotation, "COUNTERCLOCKWISE_90")));
-        json.put("mirrorLeftRight", transformed(stateIds, getId, mirror, mojang.get(mirrors, "LEFT_RIGHT")));
-        json.put("mirrorFrontBack", transformed(stateIds, getId, mirror, mojang.get(mirrors, "FRONT_BACK")));
+        json.put("rotateClockwise90", transformed(stateIds, getId, rotate, Vanilla.get(rotation, "CLOCKWISE_90")));
+        json.put("rotate180", transformed(stateIds, getId, rotate, Vanilla.get(rotation, "CLOCKWISE_180")));
+        json.put("rotateCounterclockwise90", transformed(stateIds, getId, rotate, Vanilla.get(rotation, "COUNTERCLOCKWISE_90")));
+        json.put("mirrorLeftRight", transformed(stateIds, getId, mirror, Vanilla.get(mirrors, "LEFT_RIGHT")));
+        json.put("mirrorFrontBack", transformed(stateIds, getId, mirror, Vanilla.get(mirrors, "FRONT_BACK")));
         Json.write(output.resolve("block_transforms.json"), json, false);
     }
 
     private int[] transformed(Object stateIds, Method getId, Method transform, Object argument) {
         var deltas = new int[states.size()];
         for (var id = 0; id < states.size(); id++)
-            deltas[id] = (int) Mojang.call(getId, stateIds, Mojang.call(transform, states.get(id), argument)) - id;
+            deltas[id] = (int) Vanilla.call(getId, stateIds, Vanilla.call(transform, states.get(id), argument)) - id;
         return deltas;
     }
 
@@ -1179,11 +1152,11 @@ public final class VanillaDumper {
      * {@code BlockState.getMapColor}.
      */
     private void dumpMapColors() throws IOException {
-        var getMapColor = mojang.method(STATE_BASE, "getMapColor", BLOCK_GETTER, BLOCK_POS);
-        var colorId = mojang.field("net.minecraft.world.level.material.MapColor", "id");
+        var getMapColor = Vanilla.method(STATE_BASE, "getMapColor", BLOCK_GETTER, BLOCK_POS);
+        var colorId = Vanilla.field("net.minecraft.world.level.material.MapColor", "id");
         var colors = new byte[states.size()];
         for (var id = 0; id < states.size(); id++)
-            colors[id] = (byte) Mojang.getInt(colorId, Mojang.call(getMapColor, states.get(id), emptyLevel, origin));
+            colors[id] = (byte) Vanilla.getInt(colorId, Vanilla.call(getMapColor, states.get(id), emptyLevel, origin));
         Files.write(output.resolve("map_colors.bin"), colors);
     }
 
@@ -1194,21 +1167,21 @@ public final class VanillaDumper {
      */
     private void dumpWallShapeCovers() throws IOException {
         var wall = "net.minecraft.world.level.block.WallBlock";
-        var isCovered = mojang.method(wall, "isCovered", VOXEL_SHAPE, VOXEL_SHAPE);
-        var getFaceShape = mojang.method(VOXEL_SHAPE, "getFaceShape", DIRECTION);
-        var post = mojang.get(wall, "TEST_SHAPE_POST");
-        var sides = (Map<?, ?>) mojang.get(wall, "TEST_SHAPES_WALL");
+        var isCovered = Vanilla.method(wall, "isCovered", VOXEL_SHAPE, VOXEL_SHAPE);
+        var getFaceShape = Vanilla.method(VOXEL_SHAPE, "getFaceShape", DIRECTION);
+        var post = Vanilla.get(wall, "TEST_SHAPE_POST");
+        var sides = (Map<?, ?>) Vanilla.get(wall, "TEST_SHAPES_WALL");
         // WallShapeCovers' bits after the post: north, east, south, west.
-        var sideTests = new Object[] { sides.get(mojang.get(DIRECTION, "NORTH")), sides.get(mojang.get(DIRECTION, "EAST")),
-            sides.get(mojang.get(DIRECTION, "SOUTH")), sides.get(mojang.get(DIRECTION, "WEST")) };
-        var down = mojang.get(DIRECTION, "DOWN");
+        var sideTests = new Object[] { sides.get(Vanilla.get(DIRECTION, "NORTH")), sides.get(Vanilla.get(DIRECTION, "EAST")),
+            sides.get(Vanilla.get(DIRECTION, "SOUTH")), sides.get(Vanilla.get(DIRECTION, "WEST")) };
+        var down = Vanilla.get(DIRECTION, "DOWN");
 
         var covers = new byte[states.size()];
         for (var id = 0; id < states.size(); id++) {
-            var bottom = Mojang.call(getFaceShape, Mojang.call(getCollisionShape, states.get(id), emptyLevel, origin), down);
-            var bits = bit(0, Mojang.call(isCovered, null, bottom, post));
+            var bottom = Vanilla.call(getFaceShape, Vanilla.call(getCollisionShape, states.get(id), emptyLevel, origin), down);
+            var bits = bit(0, Vanilla.call(isCovered, null, bottom, post));
             for (var side = 0; side < 4; side++)
-                bits |= bit(1 + side, Mojang.call(isCovered, null, bottom, sideTests[side]));
+                bits |= bit(1 + side, Vanilla.call(isCovered, null, bottom, sideTests[side]));
             covers[id] = (byte) bits;
         }
 
@@ -1221,46 +1194,48 @@ public final class VanillaDumper {
         // vanilla pack registries as a server, instead of datagen's unbound bootstrap holders.
         var provider = "net.minecraft.core.HolderLookup$Provider";
         var packType = "net.minecraft.server.packs.PackType";
-        var vanillaPack = Mojang.call(mojang.method("net.minecraft.server.packs.repository.ServerPacksSource", "createVanillaPackSource"), null);
-        var resources = Mojang.create(mojang.constructor("net.minecraft.server.packs.resources.MultiPackResourceManager", packType, "java.util.List"),
-            mojang.get(packType, "SERVER_DATA"), List.of(vanillaPack));
-        var builtins = Mojang.call(mojang.method("net.minecraft.core.RegistryAccess", "fromRegistryOfRegistries", REGISTRY),
-            null, mojang.get(REGISTRIES, "REGISTRY"));
-        var listRegistries = mojang.method(provider, "listRegistries");
-        var builtinList = ((java.util.stream.Stream<?>) Mojang.call(listRegistries, builtins)).toList();
-        var loaded = Mojang.call(mojang.method("net.minecraft.resources.RegistryDataLoader", "load",
-            "net.minecraft.server.packs.resources.ResourceManager", "java.util.List", "java.util.List"),
-            null, resources, builtinList, mojang.get("net.minecraft.resources.RegistryDataLoader", "WORLDGEN_REGISTRIES"));
-        var lookup = Mojang.call(mojang.method(provider, "create", "java.util.stream.Stream"), null,
-            java.util.stream.Stream.concat(builtinList.stream(), (java.util.stream.Stream<?>) Mojang.call(listRegistries, loaded)));
-        var flags = mojang.get("net.minecraft.world.flag.FeatureFlags", "DEFAULT_FLAGS");
-        Mojang.call(mojang.method("net.minecraft.world.item.CreativeModeTabs", "tryRebuildTabContents",
+        var vanillaPack = Vanilla.call(Vanilla.method("net.minecraft.server.packs.VanillaPackResources", "fullResources"),
+            Vanilla.call(Vanilla.method("net.minecraft.server.packs.repository.ServerPacksSource", "createVanillaPackSource"), null));
+        var resources = Vanilla.create(Vanilla.constructor("net.minecraft.server.packs.resources.MultiPackResourceManager", packType, "java.util.List"),
+            Vanilla.get(packType, "SERVER_DATA"), List.of(vanillaPack));
+        var builtins = Vanilla.call(Vanilla.method("net.minecraft.core.RegistryAccess", "fromRegistryOfRegistries", REGISTRY),
+            null, Vanilla.get(REGISTRIES, "REGISTRY"));
+        var listRegistries = Vanilla.method(provider, "listRegistries");
+        var builtinList = ((java.util.stream.Stream<?>) Vanilla.call(listRegistries, builtins)).toList();
+        var loaded = ((java.util.concurrent.CompletableFuture<?>) Vanilla.call(Vanilla.method("net.minecraft.resources.RegistryDataLoader", "load",
+            "net.minecraft.server.packs.resources.ResourceManager", "java.util.List", "java.util.List", "java.util.concurrent.Executor"),
+            null, resources, builtinList, Vanilla.get("net.minecraft.resources.RegistryDataLoader", "WORLD_REGISTRIES"),
+            (java.util.concurrent.Executor) Runnable::run)).join();
+        var lookup = Vanilla.call(Vanilla.method(provider, "create", "java.util.stream.Stream"), null,
+            java.util.stream.Stream.concat(builtinList.stream(), (java.util.stream.Stream<?>) Vanilla.call(listRegistries, loaded)));
+        var flags = Vanilla.get("net.minecraft.world.flag.FeatureFlags", "DEFAULT_FLAGS");
+        Vanilla.call(Vanilla.method("net.minecraft.world.item.CreativeModeTabs", "tryRebuildTabContents",
             "net.minecraft.world.flag.FeatureFlagSet", "boolean", "net.minecraft.core.HolderLookup$Provider"),
             null, flags, false, lookup);
         var tabType = "net.minecraft.world.item.CreativeModeTab";
         var stackType = "net.minecraft.world.item.ItemStack";
-        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
-        var tabRegistry = mojang.get(REGISTRIES, "CREATIVE_MODE_TAB");
-        var getItem = mojang.method(stackType, "getItem");
-        var getId = mojang.method(REGISTRY, "getId", "java.lang.Object");
+        var itemRegistry = Vanilla.get(REGISTRIES, "ITEM");
+        var tabRegistry = Vanilla.get(REGISTRIES, "CREATIVE_MODE_TAB");
+        var getItem = Vanilla.method(stackType, "getItem");
+        var getId = Vanilla.method(REGISTRY, "getId", "java.lang.Object");
         var tabs = new ArrayList<Object>();
         for (var tab : (Iterable<?>) tabRegistry) {
             var entry = new LinkedHashMap<String, Object>();
-            entry.put("name", Mojang.call(registryKey, tabRegistry, tab).toString());
-            entry.put("row", ((Enum<?>) Mojang.call(mojang.method(tabType, "row"), tab)).ordinal());
-            entry.put("column", Mojang.call(mojang.method(tabType, "column"), tab));
-            entry.put("alignedRight", Mojang.call(mojang.method(tabType, "isAlignedRight"), tab));
-            var title = Mojang.call(mojang.method(tabType, "getDisplayName"), tab);
-            var contents = Mojang.call(mojang.method("net.minecraft.network.chat.Component", "getContents"), title);
-            entry.put("title", Mojang.call(mojang.method("net.minecraft.network.chat.contents.TranslatableContents", "getKey"), contents));
-            var icon = Mojang.call(mojang.method(tabType, "getIconItem"), tab);
-            entry.put("icon", Mojang.call(getId, itemRegistry, Mojang.call(getItem, icon)));
-            entry.put("background", Mojang.call(mojang.method(tabType, "getBackgroundTexture"), tab).toString());
+            entry.put("name", Vanilla.call(registryKey, tabRegistry, tab).toString());
+            entry.put("row", ((Enum<?>) Vanilla.call(Vanilla.method(tabType, "row"), tab)).ordinal());
+            entry.put("column", Vanilla.call(Vanilla.method(tabType, "column"), tab));
+            entry.put("alignedRight", Vanilla.call(Vanilla.method(tabType, "isAlignedRight"), tab));
+            var title = Vanilla.call(Vanilla.method(tabType, "getDisplayName"), tab);
+            var contents = Vanilla.call(Vanilla.method("net.minecraft.network.chat.Component", "getContents"), title);
+            entry.put("title", Vanilla.call(Vanilla.method("net.minecraft.network.chat.contents.TranslatableContents", "getKey"), contents));
+            var icon = Vanilla.call(Vanilla.method(tabType, "getIconItem"), tab);
+            entry.put("icon", Vanilla.call(getId, itemRegistry, Vanilla.call(getItem, icon)));
+            entry.put("background", Vanilla.call(Vanilla.method(tabType, "getBackgroundTexture"), tab).toString());
             // Preserve vanilla ordering and duplicates: component variants occupy distinct creative entries.
             // The client currently offers plain stacks; retaining every entry lets the component codec be added later.
             var items = new ArrayList<Integer>();
-            for (var stack : (Iterable<?>) Mojang.call(mojang.method(tabType, "getDisplayItems"), tab))
-                items.add((int) Mojang.call(getId, itemRegistry, Mojang.call(getItem, stack)));
+            for (var stack : (Iterable<?>) Vanilla.call(Vanilla.method(tabType, "getDisplayItems"), tab))
+                items.add((int) Vanilla.call(getId, itemRegistry, Vanilla.call(getItem, stack)));
             entry.put("items", items);
             tabs.add(entry);
         }
@@ -1269,98 +1244,98 @@ public final class VanillaDumper {
 
     /** Statistics registry ids, value registries and custom formatters for the client statistics screen. */
     private void dumpStatistics() throws IOException {
-        var types = mojang.get(REGISTRIES, "STAT_TYPE");
-        var getRegistry = mojang.method("net.minecraft.stats.StatType", "getRegistry");
-        var getStat = mojang.method("net.minecraft.stats.StatType", "get", "java.lang.Object");
-        var formatterField = mojang.field("net.minecraft.stats.Stat", "formatter");
+        var types = Vanilla.get(REGISTRIES, "STAT_TYPE");
+        var getRegistry = Vanilla.method("net.minecraft.stats.StatType", "getRegistry");
+        var getStat = Vanilla.method("net.minecraft.stats.StatType", "get", "java.lang.Object");
+        var formatterField = Vanilla.field("net.minecraft.stats.Stat", "formatter");
         var formatterNames = List.of("DEFAULT", "DIVIDE_BY_TEN", "DISTANCE", "TIME");
-        var formatters = formatterNames.stream().map(name -> mojang.get("net.minecraft.stats.StatFormatter", name)).toList();
+        var formatters = formatterNames.stream().map(name -> Vanilla.get("net.minecraft.stats.StatFormatter", name)).toList();
         var result = new ArrayList<Object>();
         for (var type : (Iterable<?>) types) {
-            var registry = Mojang.call(getRegistry, type);
+            var registry = Vanilla.call(getRegistry, type);
             var values = new ArrayList<Object>();
             for (var value : (Iterable<?>) registry) {
                 var entry = new LinkedHashMap<String, Object>();
                 entry.put("name", key(registry, value));
                 if (key(types, type).equals("minecraft:custom")) {
-                    var formatter = Mojang.get(formatterField, Mojang.call(getStat, type, value));
+                    var formatter = Vanilla.get(formatterField, Vanilla.call(getStat, type, value));
                     entry.put("formatter", formatterNames.get(formatters.indexOf(formatter)));
                 }
                 values.add(entry);
             }
             result.add(Map.of("name", key(types, type), "values", values));
         }
-        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
-        var getId = mojang.method(REGISTRY, "getId", "java.lang.Object");
-        var asItem = mojang.method(BLOCK, "asItem");
+        var itemRegistry = Vanilla.get(REGISTRIES, "ITEM");
+        var getId = Vanilla.method(REGISTRY, "getId", "java.lang.Object");
+        var asItem = Vanilla.method(BLOCK, "asItem");
         var blockItems = new ArrayList<Integer>();
         for (var block : (Iterable<?>) blockRegistry)
-            blockItems.add((int) Mojang.call(getId, itemRegistry, Mojang.call(asItem, block)));
+            blockItems.add((int) Vanilla.call(getId, itemRegistry, Vanilla.call(asItem, block)));
         Json.write(output.resolve("statistics.json"), Map.of("types", result, "blockItems", blockItems), true);
     }
 
     /**
      * {@code entities.json}, read by {@code Obsidian.SourceGenerators/Registry/EntityGenerator.cs}: every entity type
      * by id, with its {@code EntityType} properties (its mob category included), default attributes
-     * ({@code DefaultAttributes}), Mojang class name, the synced data ids its class declares
+     * ({@code DefaultAttributes}), class name, the synced data ids its class declares
      * ({@code EntityDataAccessor} fields) and its superclass. The abstract superclasses follow by class name, with
      * their own synced data and superclass.
      */
     private void dumpEntities() throws IOException {
-        var types = mojang.get(REGISTRIES, "ENTITY_TYPE");
-        var attributes = mojang.get(REGISTRIES, "ATTRIBUTE");
+        var types = Vanilla.get(REGISTRIES, "ENTITY_TYPE");
+        var attributes = Vanilla.get(REGISTRIES, "ATTRIBUTE");
         var attributeIds = new LinkedHashMap<String, Object>();
         for (var attribute : (Iterable<?>) attributes)
-            attributeIds.put(key(attributes, attribute), Mojang.call(mojang.method("net.minecraft.core.IdMap", "getId", "java.lang.Object"), attributes, attribute));
+            attributeIds.put(key(attributes, attribute), Vanilla.call(Vanilla.method("net.minecraft.core.IdMap", "getId", "java.lang.Object"), attributes, attribute));
         Json.write(output.resolve("attribute_ids.json"), attributeIds, false);
-        var getId = mojang.method("net.minecraft.core.IdMap", "getId", "java.lang.Object");
-        var wrapAsHolder = mojang.method(REGISTRY, "wrapAsHolder", "java.lang.Object");
-        var getDescriptionId = mojang.method(ENTITY_TYPE, "getDescriptionId");
-        var canSerialize = mojang.method(ENTITY_TYPE, "canSerialize");
-        var canSummon = mojang.method(ENTITY_TYPE, "canSummon");
-        var fireImmune = mojang.method(ENTITY_TYPE, "fireImmune");
-        var getDefaultLootTable = mojang.method(ENTITY_TYPE, "getDefaultLootTable");
-        var getDimensions = mojang.method(ENTITY_TYPE, "getDimensions");
+        var getId = Vanilla.method("net.minecraft.core.IdMap", "getId", "java.lang.Object");
+        var wrapAsHolder = Vanilla.method(REGISTRY, "wrapAsHolder", "java.lang.Object");
+        var getDescriptionId = Vanilla.method(ENTITY_TYPE, "getDescriptionId");
+        var canSerialize = Vanilla.method(ENTITY_TYPE, "canSerialize");
+        var canSummon = Vanilla.method(ENTITY_TYPE, "canSummon");
+        var fireImmune = Vanilla.method(ENTITY_TYPE, "fireImmune");
+        var getDefaultLootTable = Vanilla.method(ENTITY_TYPE, "getDefaultLootTable");
+        var getDimensions = Vanilla.method(ENTITY_TYPE, "getDimensions");
         var dimensions = "net.minecraft.world.entity.EntityDimensions";
-        var width = mojang.method(dimensions, "width");
-        var height = mojang.method(dimensions, "height");
-        var fixed = mojang.method(dimensions, "fixed");
-        var getCategory = mojang.method(ENTITY_TYPE, "getCategory");
-        var categoryName = mojang.method("net.minecraft.world.entity.MobCategory", "getName");
-        var lootTableId = mojang.method("net.minecraft.resources.ResourceKey", "identifier");
+        var width = Vanilla.method(dimensions, "width");
+        var height = Vanilla.method(dimensions, "height");
+        var fixed = Vanilla.method(dimensions, "fixed");
+        var getCategory = Vanilla.method(ENTITY_TYPE, "getCategory");
+        var categoryName = Vanilla.method("net.minecraft.world.entity.MobCategory", "getName");
+        var lootTableId = Vanilla.method("net.minecraft.resources.ResourceKey", "identifier");
         var defaultAttributes = "net.minecraft.world.entity.ai.attributes.DefaultAttributes";
-        var hasSupplier = mojang.method(defaultAttributes, "hasSupplier", ENTITY_TYPE);
-        var getSupplier = mojang.method(defaultAttributes, "getSupplier", ENTITY_TYPE);
+        var hasSupplier = Vanilla.method(defaultAttributes, "hasSupplier", ENTITY_TYPE);
+        var getSupplier = Vanilla.method(defaultAttributes, "getSupplier", ENTITY_TYPE);
         var supplier = "net.minecraft.world.entity.ai.attributes.AttributeSupplier";
-        var hasAttribute = mojang.method(supplier, "hasAttribute", HOLDER);
-        var getBaseValue = mojang.method(supplier, "getBaseValue", HOLDER);
+        var hasAttribute = Vanilla.method(supplier, "hasAttribute", HOLDER);
+        var getBaseValue = Vanilla.method(supplier, "getBaseValue", HOLDER);
 
         var classes = entityClasses();
-        var entityClass = mojang.type(ENTITY);
+        var entityClass = Vanilla.type(ENTITY);
         var json = new LinkedHashMap<String, Object>();
         var parents = new ArrayList<Class<?>>();
         for (var type : (Iterable<?>) types) {
             var entity = new LinkedHashMap<String, Object>();
-            entity.put("id", Mojang.call(getId, types, type));
-            entity.put("translation_key", Mojang.call(getDescriptionId, type));
-            entity.put("serializable", Mojang.call(canSerialize, type));
-            entity.put("summonable", Mojang.call(canSummon, type));
-            entity.put("is_fire_immune", Mojang.call(fireImmune, type));
-            var lootTable = (Optional<?>) Mojang.call(getDefaultLootTable, type);
-            entity.put("loot_table", lootTable.map(key -> Mojang.call(lootTableId, key).toString()).orElse(null));
-            var size = Mojang.call(getDimensions, type);
-            entity.put("width", Mojang.call(width, size));
-            entity.put("height", Mojang.call(height, size));
-            entity.put("size_fixed", Mojang.call(fixed, size));
-            entity.put("category", Mojang.call(categoryName, Mojang.call(getCategory, type)));
+            entity.put("id", Vanilla.call(getId, types, type));
+            entity.put("translation_key", Vanilla.call(getDescriptionId, type));
+            entity.put("serializable", Vanilla.call(canSerialize, type));
+            entity.put("summonable", Vanilla.call(canSummon, type));
+            entity.put("is_fire_immune", Vanilla.call(fireImmune, type));
+            var lootTable = (Optional<?>) Vanilla.call(getDefaultLootTable, type);
+            entity.put("loot_table", lootTable.map(key -> Vanilla.call(lootTableId, key).toString()).orElse(null));
+            var size = Vanilla.call(getDimensions, type);
+            entity.put("width", Vanilla.call(width, size));
+            entity.put("height", Vanilla.call(height, size));
+            entity.put("size_fixed", Vanilla.call(fixed, size));
+            entity.put("category", Vanilla.call(categoryName, Vanilla.call(getCategory, type)));
 
-            if ((boolean) Mojang.call(hasSupplier, null, type)) {
+            if ((boolean) Vanilla.call(hasSupplier, null, type)) {
                 var values = new LinkedHashMap<String, Object>();
-                var defaults = Mojang.call(getSupplier, null, type);
+                var defaults = Vanilla.call(getSupplier, null, type);
                 for (var attribute : (Iterable<?>) attributes) {
-                    var holder = Mojang.call(wrapAsHolder, attributes, attribute);
-                    if ((boolean) Mojang.call(hasAttribute, defaults, holder))
-                        values.put(key(attributes, attribute), Mojang.call(getBaseValue, defaults, holder));
+                    var holder = Vanilla.call(wrapAsHolder, attributes, attribute);
+                    if ((boolean) Vanilla.call(hasAttribute, defaults, holder))
+                        values.put(key(attributes, attribute), Vanilla.call(getBaseValue, defaults, holder));
                 }
                 entity.put("attributes", values);
             }
@@ -1381,8 +1356,8 @@ public final class VanillaDumper {
             var entry = new LinkedHashMap<String, Object>();
             putClass(entry, parent);
             entry.remove("class");
-            if (json.put(mojang.simpleName(parent), entry) != null)
-                throw new IllegalStateException("Two entity classes are named " + mojang.simpleName(parent));
+            if (json.put(Vanilla.simpleName(parent), entry) != null)
+                throw new IllegalStateException("Two entity classes are named " + Vanilla.simpleName(parent));
         }
 
         Json.write(output.resolve("entities.json"), json, true);
@@ -1390,39 +1365,39 @@ public final class VanillaDumper {
 
     /** Adds an entity class's name, the synced data its class declares by field name and id, and its superclass. */
     private void putClass(Map<String, Object> entry, Class<?> type) {
-        var accessor = mojang.type("net.minecraft.network.syncher.EntityDataAccessor");
-        var accessorId = mojang.method("net.minecraft.network.syncher.EntityDataAccessor", "id");
+        var accessor = Vanilla.type("net.minecraft.network.syncher.EntityDataAccessor");
+        var accessorId = Vanilla.method("net.minecraft.network.syncher.EntityDataAccessor", "id");
         var data = new ArrayList<Map.Entry<String, Integer>>();
         for (var field : type.getDeclaredFields()) {
             if (Modifier.isStatic(field.getModifiers()) && field.getType() == accessor) {
                 field.setAccessible(true);
-                data.add(Map.entry(mojang.fieldName(type, field), (int) Mojang.call(accessorId, Mojang.getStatic(field))));
+                data.add(Map.entry(field.getName(), (int) Vanilla.call(accessorId, Vanilla.getStatic(field))));
             }
         }
         data.sort(Map.Entry.comparingByValue());
 
-        entry.put("class", mojang.simpleName(type));
+        entry.put("class", Vanilla.simpleName(type));
         if (!data.isEmpty()) {
             var meta = new LinkedHashMap<String, Integer>();
             data.forEach(item -> meta.put(item.getKey(), item.getValue()));
             entry.put("meta", meta);
         }
-        if (type != mojang.type(ENTITY))
-            entry.put("parent", mojang.simpleName(type.getSuperclass()));
+        if (type != Vanilla.type(ENTITY))
+            entry.put("parent", Vanilla.simpleName(type.getSuperclass()));
     }
 
     /**
-     * Each entity type's class, from the type argument of its {@code EntityType<T>} constant (the factories are lambdas
-     * that don't name the class, and creating entities would need a level).
+     * Each entity type's class, from the type argument of its {@code EntityType<T>} constant in {@code EntityTypes}
+     * (the factories are lambdas that don't name the class, and creating entities would need a level).
      */
     private Map<Object, Class<?>> entityClasses() {
-        var entityType = mojang.type(ENTITY_TYPE);
+        var entityType = Vanilla.type(ENTITY_TYPE);
         var classes = new HashMap<Object, Class<?>>();
-        for (var field : entityType.getDeclaredFields()) {
+        for (var field : Vanilla.type("net.minecraft.world.entity.EntityTypes").getDeclaredFields()) {
             if (Modifier.isStatic(field.getModifiers()) && field.getType() == entityType
                 && field.getGenericType() instanceof ParameterizedType generic && generic.getActualTypeArguments()[0] instanceof Class<?> type) {
                 field.setAccessible(true);
-                classes.put(Mojang.getStatic(field), type);
+                classes.put(Vanilla.getStatic(field), type);
             }
         }
 
@@ -1438,30 +1413,30 @@ public final class VanillaDumper {
      */
     private void dumpWorldgenGroups(Path work) throws IOException {
         var json = new LinkedHashMap<String, Object>();
-        json.put("configured_feature", featureGroups("CONFIGURED_FEATURE", "net.minecraft.data.worldgen.features"));
+        json.put("feature", featureGroups("FEATURE", "net.minecraft.data.worldgen.features"));
         json.put("placed_feature", featureGroups("PLACED_FEATURE", "net.minecraft.data.worldgen.placement"));
         Json.write(work.resolve("worldgen_groups.json"), json, true);
     }
 
     /** The keys of one registry ({@code Registries} field name) declared in a package's classes, by declaring class. */
     private Map<String, String> featureGroups(String registryName, String packageName) {
-        var registry = mojang.get("net.minecraft.core.registries.Registries", registryName);
+        var registry = Vanilla.get("net.minecraft.core.registries.Registries", registryName);
         var resourceKey = "net.minecraft.resources.ResourceKey";
-        var keyType = mojang.type(resourceKey);
-        var isFor = mojang.method(resourceKey, "isFor", resourceKey);
-        var identifier = mojang.method(resourceKey, "identifier");
+        var keyType = Vanilla.type(resourceKey);
+        var isFor = Vanilla.method(resourceKey, "isFor", resourceKey);
+        var identifier = Vanilla.method(resourceKey, "identifier");
         var groups = new TreeMap<String, String>(); // String's natural order is ordinal
-        for (var className : mojang.classesIn(packageName)) {
-            var declaring = mojang.type(className);
+        for (var className : Vanilla.classesIn(packageName)) {
+            var declaring = Vanilla.type(className);
             for (var field : declaring.getDeclaredFields()) {
                 if (!Modifier.isStatic(field.getModifiers()) || field.getType() != keyType)
                     continue;
-                var key = Mojang.getStatic(field);
-                if (!(boolean) Mojang.call(isFor, key, registry))
+                var key = Vanilla.getStatic(field);
+                if (!(boolean) Vanilla.call(isFor, key, registry))
                     continue;
 
-                var id = Mojang.call(identifier, key).toString();
-                var group = mojang.simpleName(declaring);
+                var id = Vanilla.call(identifier, key).toString();
+                var group = Vanilla.simpleName(declaring);
                 var previous = groups.put(id, group);
                 if (previous != null && !previous.equals(group))
                     throw new IllegalStateException(id + " is declared in both " + previous + " and " + group);
@@ -1483,16 +1458,16 @@ public final class VanillaDumper {
      * declaration order.
      */
     private void dumpPacketFields(Path work) throws IOException {
-        var formats = new PacketFormats(mojang);
+        var formats = new PacketFormats();
         var unread = new ArrayList<String>();
-        var packetType = mojang.type(PACKET_TYPE);
-        var flow = mojang.method(PACKET_TYPE, "flow");
-        var id = mojang.method(PACKET_TYPE, "id");
-        var flowId = mojang.method("net.minecraft.network.protocol.PacketFlow", "id");
+        var packetType = Vanilla.type(PACKET_TYPE);
+        var flow = Vanilla.method(PACKET_TYPE, "flow");
+        var id = Vanilla.method(PACKET_TYPE, "id");
+        var flowId = Vanilla.method("net.minecraft.network.protocol.PacketFlow", "id");
         var classes = new HashMap<String, Class<?>>();
         var json = new TreeMap<String, Map<String, Object>>();
-        for (var className : mojang.classes(name -> name.startsWith("net.minecraft.network.protocol.") && name.endsWith("PacketTypes"))) {
-            for (var field : mojang.type(className).getDeclaredFields()) {
+        for (var className : Vanilla.classes(name -> name.startsWith("net.minecraft.network.protocol.") && name.endsWith("PacketTypes"))) {
+            for (var field : Vanilla.type(className).getDeclaredFields()) {
                 if (!Modifier.isStatic(field.getModifiers()) || field.getType() != packetType
                     || !(field.getGenericType() instanceof ParameterizedType generic))
                     continue;
@@ -1500,17 +1475,17 @@ public final class VanillaDumper {
                 // Generic packets (BundleDelimiterPacket<T>) are listed by their class.
                 var argument = generic.getActualTypeArguments()[0];
                 var type = (Class<?>) (argument instanceof ParameterizedType parameterized ? parameterized.getRawType() : argument);
-                var packet = Mojang.getStatic(field);
-                var direction = (String) Mojang.call(flowId, Mojang.call(flow, packet));
-                var key = direction + " " + Mojang.call(id, packet);
+                var packet = Vanilla.getStatic(field);
+                var direction = (String) Vanilla.call(flowId, Vanilla.call(flow, packet));
+                var key = direction + " " + Vanilla.call(id, packet);
                 var previous = classes.put(key, type);
                 if (previous != null && previous != type)
-                    throw new IllegalStateException(key + " is both " + mojang.simpleName(previous) + " and " + mojang.simpleName(type));
+                    throw new IllegalStateException(key + " is both " + Vanilla.simpleName(previous) + " and " + Vanilla.simpleName(type));
 
                 var writes = formats.writes(type);
-                if (writes == null && !unread.contains(mojang.simpleName(type)))
-                    unread.add(mojang.simpleName(type));
-                json.computeIfAbsent(direction, name -> new TreeMap<>()).put(Mojang.call(id, packet).toString(), packetFields(type, writes));
+                if (writes == null && !unread.contains(Vanilla.simpleName(type)))
+                    unread.add(Vanilla.simpleName(type));
+                json.computeIfAbsent(direction, name -> new TreeMap<>()).put(Vanilla.call(id, packet).toString(), packetFields(type, writes));
             }
         }
         if (classes.isEmpty())
@@ -1524,7 +1499,7 @@ public final class VanillaDumper {
 
     /**
      * {@code packet_types.json}, read by {@code Obsidian.SourceGenerators/Packets}: the vanilla records and enums the
-     * packets write (their encodings refer to them as {@code {"kind": "type"}} and {@code {"kind": "enum"}}), by Mojang
+     * packets write (their encodings refer to them as {@code {"kind": "type"}} and {@code {"kind": "enum"}}), by
      * name ({@code Outer.Inner}). A record lists its fields like a packet does; an enum its wire value per constant.
      */
     private void dumpPacketTypes(PacketFormats formats) throws IOException {
@@ -1546,7 +1521,7 @@ public final class VanillaDumper {
     }
 
     /**
-     * A packet class's fields by Mojang name and type ({@link #typeName}), with how they're written when known
+     * A packet class's fields by name and type ({@link #typeName}), with how they're written when known
      * ({@code writes} isn't null): sent fields in the order they're written, then the rest.
      */
     private List<Object> packetFields(Class<?> type, Map<String, PacketFormats.Write> writes) {
@@ -1574,7 +1549,7 @@ public final class VanillaDumper {
         return new ArrayList<>(fields.stream().sorted(order).toList());
     }
 
-    /** A class's instance fields, its superclasses' first, by Mojang name and type. */
+    /** A class's instance fields, its superclasses' first, by name and type. */
     private List<Map<String, Object>> instanceFields(Class<?> type) {
         var fields = type.getSuperclass() == null ? new ArrayList<Map<String, Object>>() : instanceFields(type.getSuperclass());
         for (var field : type.getDeclaredFields()) {
@@ -1582,7 +1557,7 @@ public final class VanillaDumper {
                 continue;
 
             var entry = new LinkedHashMap<String, Object>();
-            entry.put("name", mojang.fieldName(type, field));
+            entry.put("name", field.getName());
             entry.put("type", typeName(field.getGenericType()));
             fields.add(entry);
         }
@@ -1591,13 +1566,13 @@ public final class VanillaDumper {
     }
 
     /**
-     * A Java type by Mojang's names, without packages and with nested classes after their outer class:
+     * A Java type by its names, without packages and with nested classes after their outer class:
      * {@code int}, {@code Optional<Component>}, {@code ClientboundBossEventPacket.Operation}.
      */
     private String typeName(Type type) {
         return switch (type) {
             case Class<?> array when array.isArray() -> typeName(array.getComponentType()) + "[]";
-            case Class<?> plain -> mojang.nestedName(plain);
+            case Class<?> plain -> Vanilla.nestedName(plain);
             case ParameterizedType generic -> typeName(generic.getRawType())
                 + Arrays.stream(generic.getActualTypeArguments()).map(this::typeName).collect(Collectors.joining(", ", "<", ">"));
             case GenericArrayType array -> typeName(array.getGenericComponentType()) + "[]";
@@ -1612,16 +1587,16 @@ public final class VanillaDumper {
 
     /** The id of a registry entry, like {@code minecraft:stone}. */
     private String key(Object registry, Object value) {
-        return Mojang.call(registryKey, registry, value).toString();
+        return Vanilla.call(registryKey, registry, value).toString();
     }
 
     /** The boxes of a shape ({@code VoxelShape.toAabbs}), as min x, y, z then max x, y, z. */
     private List<double[]> boxes(Object shape) {
         var result = new ArrayList<double[]>();
-        for (var box : (List<?>) Mojang.call(toAabbs, shape)) {
+        for (var box : (List<?>) Vanilla.call(toAabbs, shape)) {
             var values = new double[6];
             for (var i = 0; i < 6; i++)
-                values[i] = Mojang.getDouble(boxBounds[i], box);
+                values[i] = Vanilla.getDouble(boxBounds[i], box);
             result.add(values);
         }
 
@@ -1680,213 +1655,6 @@ public final class VanillaDumper {
 
         List<T> values() {
             return values;
-        }
-    }
-
-    /**
-     * Mojang's names for the obfuscated server, from its ProGuard mappings ({@code server.txt}): a class line
-     * {@code net.minecraft.Foo -> abc:} followed by indented member lines {@code type name(parameters) -> obf}, where
-     * method lines may carry line numbers ({@code 12:34:}). Members are found by their Mojang name (and, for methods,
-     * their parameter types as the mappings spell them) on the class the mappings list them under, which is the class
-     * that declares or overrides them.
-     */
-    static final class Mojang {
-        private static final Pattern CLASS = Pattern.compile("^(\\S+) -> (\\S+):$");
-        private static final Pattern MEMBER = Pattern.compile("^\\s+(?:\\d+:\\d+:)?\\S+ ([^\\s(]+)(\\(([^)]*)\\))?(?::\\d+:\\d+)? -> (\\S+)$");
-        private static final Map<String, Class<?>> PRIMITIVES = Map.of("int", int.class, "boolean", boolean.class,
-            "long", long.class, "double", double.class, "float", float.class, "byte", byte.class, "short", short.class,
-            "char", char.class);
-
-        private final Map<String, String> obfuscatedClasses = new HashMap<>();
-        private final Map<String, String> mojangClasses = new HashMap<>();
-        // Per Mojang class name: "name" for fields, "name(parameter types)" for methods, to obfuscated name.
-        private final Map<String, Map<String, String>> members = new HashMap<>();
-        // Per Mojang class name: obfuscated field name to Mojang name.
-        private final Map<String, Map<String, String>> fieldNames = new HashMap<>();
-        // Per Mojang class name: "obfuscated(Mojang parameter types)" to the method's Mojang name.
-        private final Map<String, Map<String, String>> methodNames = new HashMap<>();
-
-        static Mojang read(Path path) throws IOException {
-            var mojang = new Mojang();
-            Map<String, String> classMembers = null;
-            Map<String, String> classFields = null;
-            Map<String, String> classMethods = null;
-            for (var line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
-                if (line.isEmpty() || line.stripLeading().startsWith("#"))
-                    continue;
-
-                Matcher match;
-                if (!Character.isWhitespace(line.charAt(0)) && (match = CLASS.matcher(line)).matches()) {
-                    mojang.obfuscatedClasses.put(match.group(1), match.group(2));
-                    mojang.mojangClasses.put(match.group(2), match.group(1));
-                    classMembers = mojang.members.computeIfAbsent(match.group(1), name -> new HashMap<>());
-                    classFields = mojang.fieldNames.computeIfAbsent(match.group(1), name -> new HashMap<>());
-                    classMethods = mojang.methodNames.computeIfAbsent(match.group(1), name -> new HashMap<>());
-                } else if (classMembers != null && (match = MEMBER.matcher(line)).matches()) {
-                    var isMethod = match.group(2) != null;
-                    classMembers.putIfAbsent(isMethod ? match.group(1) + match.group(2) : match.group(1), match.group(4));
-                    if (isMethod)
-                        classMethods.putIfAbsent(match.group(4) + match.group(2), match.group(1));
-                    else
-                        classFields.put(match.group(4), match.group(1));
-                }
-            }
-
-            return mojang;
-        }
-
-        /** A class by Mojang name, or a Java type name ({@code int}, {@code java.lang.Object}, arrays with {@code []}). */
-        Class<?> type(String name) {
-            if (name.endsWith("[]"))
-                return type(name.substring(0, name.length() - 2)).arrayType();
-            if (PRIMITIVES.containsKey(name))
-                return PRIMITIVES.get(name);
-            try {
-                return Class.forName(obfuscatedClasses.getOrDefault(name, name), false, VanillaDumper.class.getClassLoader());
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException("Missing class " + name, e);
-            }
-        }
-
-        /** The Mojang names of the classes directly in a package (not its subpackages), sorted. */
-        List<String> classesIn(String packageName) {
-            return classes(name -> name.lastIndexOf('.') == packageName.length() && name.startsWith(packageName + ".")
-                && !name.endsWith(".package-info"));
-        }
-
-        /** The Mojang names of the classes matching a filter, sorted. */
-        List<String> classes(Predicate<String> filter) {
-            return obfuscatedClasses.keySet().stream().filter(filter).sorted().toList();
-        }
-
-        /** The Mojang simple name of a class, like {@code StairBlock} (the part after the last '.' or '$'). */
-        String simpleName(Class<?> type) {
-            var name = mojangClasses.getOrDefault(type.getName(), type.getName());
-            return name.substring(Math.max(name.lastIndexOf('.'), name.lastIndexOf('$')) + 1);
-        }
-
-        /** The Mojang name of a class without its package, like {@code BossEvent.BossBarColor} for a nested class. */
-        String nestedName(Class<?> type) {
-            var name = mojangClasses.getOrDefault(type.getName(), type.getName());
-            return name.substring(name.lastIndexOf('.') + 1).replace('$', '.');
-        }
-
-        /** The Mojang name of a class by its runtime name, or the name itself for classes the mappings don't rename. */
-        String className(String name) {
-            return mojangClasses.getOrDefault(name, name);
-        }
-
-        /**
-         * The Mojang name of a method a class declares, by its obfuscated name and parameter types as the mappings
-         * spell them ({@code int,net.minecraft.core.BlockPos}); null when the mappings don't list it.
-         */
-        String methodName(Class<?> owner, String obfuscated, String parameterTypes) {
-            var mojangOwner = mojangClasses.get(owner.getName());
-            return mojangOwner == null ? null : methodNames.getOrDefault(mojangOwner, Map.of()).get(obfuscated + "(" + parameterTypes + ")");
-        }
-
-        /** The Mojang name of a field declared by a class. */
-        String fieldName(Class<?> owner, Field field) {
-            var mojangOwner = mojangClasses.getOrDefault(owner.getName(), owner.getName());
-            return fieldNames.getOrDefault(mojangOwner, Map.of()).getOrDefault(field.getName(), field.getName());
-        }
-
-        Field field(String owner, String name) {
-            try {
-                var field = type(owner).getDeclaredField(obfuscatedMember(owner, name));
-                field.setAccessible(true);
-                return field;
-            } catch (NoSuchFieldException e) {
-                throw new IllegalStateException("Missing field " + owner + "." + name, e);
-            }
-        }
-
-        Method method(String owner, String name, String... parameterTypes) {
-            var parameters = new Class<?>[parameterTypes.length];
-            for (var i = 0; i < parameters.length; i++)
-                parameters[i] = type(parameterTypes[i]);
-            try {
-                var method = type(owner).getDeclaredMethod(obfuscatedMember(owner, name + "(" + String.join(",", parameterTypes) + ")"), parameters);
-                method.setAccessible(true);
-                return method;
-            } catch (NoSuchMethodException e) {
-                throw new IllegalStateException("Missing method " + owner + "." + name, e);
-            }
-        }
-
-        Constructor<?> constructor(String owner, String... parameterTypes) {
-            var parameters = new Class<?>[parameterTypes.length];
-            for (var i = 0; i < parameters.length; i++)
-                parameters[i] = type(parameterTypes[i]);
-            try {
-                var constructor = type(owner).getDeclaredConstructor(parameters);
-                constructor.setAccessible(true);
-                return constructor;
-            } catch (NoSuchMethodException e) {
-                throw new IllegalStateException("Missing constructor of " + owner, e);
-            }
-        }
-
-        /** A static field's value. */
-        Object get(String owner, String name) {
-            return getStatic(field(owner, name));
-        }
-
-
-        private String obfuscatedMember(String owner, String member) {
-            var name = members.getOrDefault(owner, Map.of()).get(member);
-            if (name == null)
-                throw new IllegalStateException("No mapping for " + owner + "." + member);
-            return name;
-        }
-
-        static Object call(Method method, Object target, Object... arguments) {
-            try {
-                return method.invoke(target, arguments);
-            } catch (InvocationTargetException e) {
-                throw new IllegalStateException("Vanilla's " + method + " failed", e.getCause());
-            } catch (IllegalAccessException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        static Object create(Constructor<?> constructor, Object... arguments) {
-            try {
-                return constructor.newInstance(arguments);
-            } catch (InvocationTargetException e) {
-                throw new IllegalStateException("Vanilla's " + constructor + " failed", e.getCause());
-            } catch (ReflectiveOperationException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        static Object getStatic(Field field) {
-            field.setAccessible(true);
-            return get(field, null);
-        }
-
-        static Object get(Field field, Object target) {
-            try {
-                return field.get(target);
-            } catch (IllegalAccessException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        static int getInt(Field field, Object target) {
-            try {
-                return field.getInt(target);
-            } catch (IllegalAccessException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        static double getDouble(Field field, Object target) {
-            try {
-                return field.getDouble(target);
-            } catch (IllegalAccessException e) {
-                throw new IllegalStateException(e);
-            }
         }
     }
 

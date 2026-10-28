@@ -3,16 +3,14 @@ import java.util.*;
 
 /** Captures evaluated layer geometry, not client source. Also includes block-entity layers for later renderers. */
 class ClientModelDumper {
-    static VanillaDumper.Mojang mappings;
     static final String PART = "net.minecraft.client.model.geom.ModelPart";
     static Object field(String owner, String name, Object target) {
-        return VanillaDumper.Mojang.get(mappings.field(owner, name), target);
+        return Vanilla.get(Vanilla.field(owner, name), target);
     }
     static Object call(String owner, String name, Object target) {
-        return VanillaDumper.Mojang.call(mappings.method(owner, name), target);
+        return Vanilla.call(Vanilla.method(owner, name), target);
     }
     public static void main(String[] args) throws Exception {
-        mappings = VanillaDumper.Mojang.read(Path.of(args[0]));
         call("net.minecraft.SharedConstants", "tryDetectVersion", null);
         call("net.minecraft.server.Bootstrap", "bootStrap", null);
         var roots = (Map<?, ?>) call("net.minecraft.client.model.geom.LayerDefinitions", "createRoots", null);
@@ -26,14 +24,14 @@ class ClientModelDumper {
         }
         var serializers = new TreeMap<String, Object>();
         var owner = "net.minecraft.network.syncher.EntityDataSerializers";
-        var serializerType = mappings.type("net.minecraft.network.syncher.EntityDataSerializer");
-        for (var f : mappings.type(owner).getDeclaredFields()) {
+        var serializerType = Vanilla.type("net.minecraft.network.syncher.EntityDataSerializer");
+        for (var f : Vanilla.type(owner).getDeclaredFields()) {
             if (!serializerType.isAssignableFrom(f.getType())) continue;
-            var value = VanillaDumper.Mojang.getStatic(f);
-            serializers.put(mappings.fieldName(mappings.type(owner), f), VanillaDumper.Mojang.call(
-                mappings.method(owner, "getSerializedId", "net.minecraft.network.syncher.EntityDataSerializer"), null, value));
+            var value = Vanilla.getStatic(f);
+            serializers.put(f.getName(), Vanilla.call(
+                Vanilla.method(owner, "getSerializedId", "net.minecraft.network.syncher.EntityDataSerializer"), null, value));
         }
-        VanillaDumper.Json.write(Path.of(args[1]), Map.of("version", 1, "layers", layers, "serializers", serializers,
+        VanillaDumper.Json.write(Path.of(args[0]), Map.of("version", 1, "layers", layers, "serializers", serializers,
             "animations", animations()), false);
         System.out.println("Captured " + layers.size() + " client model layers.");
     }
@@ -43,10 +41,10 @@ class ClientModelDumper {
         var definition = "net.minecraft.client.animation.AnimationDefinition";
         var channelType = "net.minecraft.client.animation.AnimationChannel";
         var keyType = "net.minecraft.client.animation.Keyframe";
-        for (var owner : mappings.classesIn("net.minecraft.client.animation.definitions")) {
-            for (var f : mappings.type(owner).getDeclaredFields()) {
-                if (f.getType() != mappings.type(definition)) continue;
-                var animation = VanillaDumper.Mojang.getStatic(f);
+        for (var owner : Vanilla.classesIn("net.minecraft.client.animation.definitions")) {
+            for (var f : Vanilla.type(owner).getDeclaredFields()) {
+                if (f.getType() != Vanilla.type(definition)) continue;
+                var animation = Vanilla.getStatic(f);
                 var channels = new ArrayList<Object>();
                 for (var bone : ((Map<?, ?>)call(definition, "boneAnimations", animation)).entrySet()) {
                     for (var channel : (List<?>)bone.getValue()) {
@@ -67,7 +65,7 @@ class ClientModelDumper {
                         channels.add(Map.of("bone", bone.getKey(), "target", targetName, "keys", keys));
                     }
                 }
-                result.put(mappings.simpleName(mappings.type(owner)) + "/" + mappings.fieldName(mappings.type(owner), f),
+                result.put(Vanilla.simpleName(Vanilla.type(owner)) + "/" + f.getName(),
                     Map.of("length", call(definition, "lengthInSeconds", animation), "loop", call(definition, "looping", animation), "channels", channels));
             }
         }

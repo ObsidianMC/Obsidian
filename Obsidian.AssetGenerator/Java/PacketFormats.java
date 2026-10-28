@@ -38,6 +38,7 @@ import java.lang.constant.DirectMethodHandleDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -46,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 /**
  * Works out how vanilla writes a packet: which of its class's fields it sends, in which order and how each is encoded.
@@ -74,7 +74,7 @@ final class PacketFormats {
     record Write(int order, Object encoding, boolean conditional, boolean repeated, boolean packed) {}
 
     /**
-     * A vanilla type that packets write: a record's fields by Mojang name (as {@link #writes} gives a packet's), or an
+     * A vanilla type that packets write: a record's fields by name (as {@link #writes} gives a packet's), or an
      * enum's wire value per constant.
      */
     record TypeDefinition(Class<?> type, Map<String, Write> fields, Map<String, Integer> values) {}
@@ -119,7 +119,6 @@ final class PacketFormats {
     private static final String ELEMENT = "\0element";
     private static final int MAX_DEPTH = 8;
 
-    private final VanillaDumper.Mojang mojang;
     private final Class<?> byteBuf;
     private final Class<?> streamEncoder;
     private final Class<?> codec;
@@ -128,16 +127,15 @@ final class PacketFormats {
     private final Map<Class<?>, Map<String, Node>> statics = new HashMap<>();
     private final Map<String, TypeDefinition> types = new TreeMap<>();
 
-    PacketFormats(VanillaDumper.Mojang mojang) {
-        this.mojang = mojang;
-        byteBuf = mojang.type("io.netty.buffer.ByteBuf");
-        streamEncoder = mojang.type("net.minecraft.network.codec.StreamEncoder");
-        codec = mojang.type("com.mojang.serialization.Codec");
-        codecOperation = mojang.type("net.minecraft.network.codec.StreamCodec$CodecOperation");
+    PacketFormats() {
+        byteBuf = Vanilla.type("io.netty.buffer.ByteBuf");
+        streamEncoder = Vanilla.type("net.minecraft.network.codec.StreamEncoder");
+        codec = Vanilla.type("com.mojang.serialization.Codec");
+        codecOperation = Vanilla.type("net.minecraft.network.codec.StreamCodec$CodecOperation");
     }
 
     /**
-     * How a packet class's fields are written, by Mojang field name; fields it doesn't send are missing. Null when the
+     * How a packet class's fields are written, by field name; fields it doesn't send are missing. Null when the
      * packet's codec isn't one this understands.
      */
     Map<String, Write> writes(Class<?> packet) {
@@ -148,7 +146,7 @@ final class PacketFormats {
         return recordWrites(packet, own.get(codecs.contains("STREAM_CODEC") ? "STREAM_CODEC" : codecs.getFirst()));
     }
 
-    /** The vanilla records and enums the packets read so far write, by Mojang name ({@code Outer.Inner}). */
+    /** The vanilla records and enums the packets read so far write, by name ({@code Outer.Inner}). */
     Map<String, TypeDefinition> types() {
         return types;
     }
@@ -280,7 +278,7 @@ final class PacketFormats {
         return result;
     }
 
-    /** The static fields a class's initializer sets, as the expressions that build them, by Mojang name. */
+    /** The static fields a class's initializer sets, as the expressions that build them, by name. */
     private Map<String, Node> staticsOf(Class<?> type) {
         var known = statics.get(type);
         if (known != null)
@@ -542,10 +540,10 @@ final class PacketFormats {
     private void field(Analysis analysis, FieldInstruction field, List<Node> stack) {
         var owner = classOf(field.owner().asSymbol());
         var type = classOf(field.typeSymbol());
-        var name = owner == null ? field.name().stringValue() : fieldName(owner, field.name().stringValue());
+        var name = field.name().stringValue();
         switch (field.opcode()) {
             case GETSTATIC -> {
-                var ownerName = owner == null ? field.owner().asInternalName() : mojang.nestedName(owner);
+                var ownerName = owner == null ? field.owner().asInternalName() : Vanilla.nestedName(owner);
                 stack.add(new Node(Kind.STATIC, ownerName + "." + name, null, List.of(), Set.of(), type, null, owner));
             }
             case PUTSTATIC -> {
@@ -574,7 +572,7 @@ final class PacketFormats {
         var receiver = isStatic ? null : pop(stack);
         var owner = classOf(invoke.owner().asSymbol());
         var returnType = classOf(type.returnType());
-        var obfuscated = invoke.name().stringValue();
+        var name = invoke.name().stringValue();
 
         var all = new ArrayList<Node>();
         if (receiver != null)
@@ -583,7 +581,7 @@ final class PacketFormats {
 
         // A constructed object stands for the values it was constructed from. Constructing the analyzed class (or
         // this(...)/super(...) in its constructor) is followed, for the fields it reads from the buffer.
-        if (obfuscated.equals("<init>")) {
+        if (name.equals("<init>")) {
             var key = owner == null ? null : owner.getName() + ".<init>" + type.descriptorString();
             var constructor = key == null ? null : method(owner, "<init>", type.descriptorString());
             if (constructor != null && constructor.code().isPresent() && (receiver.kind() == Kind.PACKET || receiver.type() == analysis.packet)
@@ -602,8 +600,8 @@ final class PacketFormats {
         }
 
         Node result;
-        var target = owner == null ? null : target(analysis, owner, obfuscated, type.descriptorString(), isStatic, receiver, invoke.opcode());
-        var key = target == null ? null : target.owner().getName() + "." + obfuscated + type.descriptorString();
+        var target = owner == null ? null : target(analysis, owner, name, type.descriptorString(), isStatic, receiver, invoke.opcode());
+        var key = target == null ? null : target.owner().getName() + "." + name + type.descriptorString();
         if (target != null && analysis.running.size() < MAX_DEPTH && analysis.running.add(key)) {
             // The packet's own code (super.write(buf), a helper): follow it with the values it's given.
             result = interpret(analysis, target.owner(), target.method(), all, flow, events);
@@ -614,16 +612,16 @@ final class PacketFormats {
                 if (node.kind() != Kind.BUFFER)
                     fields.addAll(node.fields());
             }
-            var method = methodName(owner, obfuscated, type);
+            var method = methodName(owner, name, type);
             if (!fields.isEmpty())
-                events.add(new Event(fields, encoding(analysis, owner, method, obfuscated, type.descriptorString(), receiver, arguments), flow));
+                events.add(new Event(fields, encoding(analysis, owner, method, name, type.descriptorString(), receiver, arguments), flow));
             // Buffer writes return the buffer, for chaining; some reads say how the value is read.
             var hint = receiver != null && receiver.kind() == Kind.BUFFER ? readHint(method.substring(method.lastIndexOf('.') + 1), arguments) : null;
             result = receiver != null && receiver.kind() == Kind.BUFFER && returnType != null && byteBuf.isAssignableFrom(returnType)
                 ? receiver
                 : hint != null ? new Node(Kind.VALUE, hint, null, List.of(), Set.of(), returnType, null, null) : Node.value(Set.of(), returnType);
         } else if (owner != null && (isCodec(returnType) || returnType == codecOperation)) {
-            result = new Node(Kind.CALL, methodName(owner, obfuscated, type), receiver, arguments, Set.of(), returnType, null, null);
+            result = new Node(Kind.CALL, methodName(owner, name, type), receiver, arguments, Set.of(), returnType, null, null);
         } else {
             result = derive(all, returnType);
         }
@@ -671,7 +669,7 @@ final class PacketFormats {
      * How a call that got the buffer encodes the values it was given: a buffer method, a codec's {@code encode}, or a
      * value's own {@code write} method.
      */
-    private Object encoding(Analysis analysis, Class<?> owner, String method, String obfuscated, String descriptor,
+    private Object encoding(Analysis analysis, Class<?> owner, String method, String name, String descriptor,
                             Node receiver, List<Node> arguments) {
         var simpleName = method.substring(method.lastIndexOf('.') + 1);
         var isBufferMethod = receiver != null ? receiver.kind() == Kind.BUFFER : byteBuf.isAssignableFrom(owner);
@@ -685,7 +683,7 @@ final class PacketFormats {
         // value.write(buf) or Value.write(buf, value): the value's class describes itself.
         var writesValue = receiver != null || arguments.stream().anyMatch(argument -> argument.kind() != Kind.BUFFER && argument.type() == owner);
         if (writesValue && simpleName.equals("write")) {
-            var reference = writeReference(owner, obfuscated, descriptor);
+            var reference = writeReference(owner, name, descriptor);
             if (reference != null)
                 return reference;
         }
@@ -854,11 +852,11 @@ final class PacketFormats {
     }
 
     /** A record type for a class written by its own {@code write} method, or null. */
-    private Object writeReference(Class<?> type, String obfuscated, String descriptor) {
+    private Object writeReference(Class<?> type, String name, String descriptor) {
         if (!isDescribable(type))
             return null;
         for (var owner = type; owner != null && owner != Object.class; owner = owner.getSuperclass()) {
-            var method = method(owner, obfuscated, descriptor);
+            var method = method(owner, name, descriptor);
             if (method != null) {
                 var write = new Target(owner, method);
                 return method.code().isPresent() ? typeReference(type, () -> methodWrites(type, write)) : null;
@@ -868,9 +866,9 @@ final class PacketFormats {
         return null;
     }
 
-    /** Registers a record type (once, by its Mojang name) and returns the encoding that refers to it. */
+    /** Registers a record type (once, by its name) and returns the encoding that refers to it. */
     private Object typeReference(Class<?> type, java.util.function.Supplier<Map<String, Write>> fields) {
-        var name = mojang.nestedName(type);
+        var name = Vanilla.nestedName(type);
         if (!types.containsKey(name)) {
             types.put(name, new TypeDefinition(type, Map.of(), null)); // against types that contain themselves
             var written = fields.get();
@@ -897,11 +895,11 @@ final class PacketFormats {
             if (!field.isEnumConstant())
                 continue;
             field.setAccessible(true);
-            var constant = (Enum<?>) VanillaDumper.Mojang.getStatic(field);
-            values.put(mojang.fieldName(type, field), id == null ? constant.ordinal() : ((Number) VanillaDumper.Mojang.call(id, constant)).intValue());
+            var constant = (Enum<?>) Vanilla.getStatic(field);
+            values.put(field.getName(), id == null ? constant.ordinal() : ((Number) Vanilla.call(id, constant)).intValue());
         }
 
-        var name = mojang.nestedName(type);
+        var name = Vanilla.nestedName(type);
         var known = types.get(name);
         if (known == null)
             types.put(name, new TypeDefinition(type, null, values));
@@ -942,7 +940,7 @@ final class PacketFormats {
     /** Whether a class is a vanilla class this describes as a record: concrete, and not an enum. */
     private boolean isDescribable(Class<?> type) {
         return type != null && !type.isPrimitive() && !type.isArray() && !type.isInterface() && !type.isEnum()
-            && !java.lang.reflect.Modifier.isAbstract(type.getModifiers()) && mojang.className(type.getName()).startsWith("net.minecraft.");
+            && !java.lang.reflect.Modifier.isAbstract(type.getModifiers()) && type.getName().startsWith("net.minecraft.");
     }
 
     private static boolean hasNoInstanceFields(Class<?> type) {
@@ -953,9 +951,9 @@ final class PacketFormats {
     private String registryId(Node key) {
         if (key.kind() != Kind.STATIC || key.owner() == null)
             return null;
-        var field = mojang.field(mojang.className(key.owner().getName()), key.name().substring(key.name().lastIndexOf('.') + 1));
-        var value = VanillaDumper.Mojang.getStatic(field);
-        return VanillaDumper.Mojang.call(mojang.method("net.minecraft.resources.ResourceKey", "identifier"), value).toString();
+        var field = Vanilla.field(key.owner().getName(), key.name().substring(key.name().lastIndexOf('.') + 1));
+        var value = Vanilla.getStatic(field);
+        return Vanilla.call(Vanilla.method("net.minecraft.resources.ResourceKey", "identifier"), value).toString();
     }
 
     /** The limit a custom payload packet's fallback ({@code id -> DiscardedPayload.codec(id, limit)}) passes on. */
@@ -1253,47 +1251,35 @@ final class PacketFormats {
         return model;
     }
 
-    /** A field's Mojang name, looked up on the class that declares it (the instruction may name a subclass). */
-    private String fieldName(Class<?> owner, String obfuscated) {
-        for (var type = owner; type != null; type = type.getSuperclass()) {
-            try {
-                return mojang.fieldName(type, type.getDeclaredField(obfuscated));
-            } catch (NoSuchFieldException | LinkageError e) {
-                // declared further up
-            }
-        }
-
-        return obfuscated;
-    }
-
-    /** A method's Mojang name as {@code Owner.name}, looked up on the class or interface that declares it. */
-    private String methodName(Class<?> owner, String obfuscated, MethodTypeDesc type) {
-        var parameters = type.parameterList().stream().map(this::mojangTypeName).collect(Collectors.joining(","));
+    /**
+     * A method as {@code Owner.name}, where the owner is the vanilla class or interface that declares it (the instruction
+     * may name a subclass), or the instruction's owner when no vanilla class declares it (it's a library's).
+     */
+    private String methodName(Class<?> owner, String name, MethodTypeDesc type) {
+        var parameters = type.parameterList().stream().map(ClassDesc::descriptorString).toList();
         var queue = new ArrayDeque<Class<?>>(List.of(owner));
         var seen = new HashSet<Class<?>>();
         while (!queue.isEmpty()) {
             var current = queue.removeFirst();
             if (!seen.add(current))
                 continue;
-            var name = mojang.methodName(current, obfuscated, parameters);
-            if (name != null)
-                return mojang.nestedName(current) + "." + name;
+            if (Vanilla.isVanilla(current) && declares(current, name, parameters))
+                return Vanilla.nestedName(current) + "." + name;
             if (current.getSuperclass() != null)
                 queue.add(current.getSuperclass());
             queue.addAll(List.of(current.getInterfaces()));
         }
 
-        return mojang.nestedName(owner) + "." + obfuscated;
+        return Vanilla.nestedName(owner) + "." + name;
     }
 
-    /** A type as the mappings spell parameter types: {@code int}, {@code net.minecraft.core.BlockPos}, {@code byte[]}. */
-    private String mojangTypeName(ClassDesc type) {
-        if (type.isPrimitive())
-            return type.displayName();
-        if (type.isArray())
-            return mojangTypeName(type.componentType()) + "[]";
-        var descriptor = type.descriptorString();
-        return mojang.className(descriptor.substring(1, descriptor.length() - 1).replace('/', '.'));
+    private static boolean declares(Class<?> type, String name, List<String> parameters) {
+        try {
+            return Arrays.stream(type.getDeclaredMethods()).anyMatch(method -> method.getName().equals(name)
+                && Arrays.stream(method.getParameterTypes()).map(Class::descriptorString).toList().equals(parameters));
+        } catch (LinkageError e) {
+            return false;
+        }
     }
 
     private Class<?> classOf(ClassDesc type) {
