@@ -108,22 +108,11 @@ public partial class RegistryAssetsGenerator
 
                 if (value.ValueKind == JsonValueKind.Object)
                 {
-                    if (name == "OverrideArmorAssets")
-                    {
-                        builder.Append("new Dictionary<string, string> { ");
-                        foreach (var entry in value.EnumerateObject())
-                            builder.Append(
-                                $"{{ {JsonSerializer.Serialize(entry.Name)}, {entry.Value.GetRawText()} }}, ");
-
-                        builder.Append("}, ");
-                        return;
-                    }
-
                     builder.ParseProperty(value, ctx);
                     return;
                 }
 
-                builder.AppendValueType(value, ctx, name == "OverrideArmorAssets");
+                builder.AppendValueType(value, ctx);
             }, ctx);
 
         builder.GenerateSimpleCodec(codecs["trim_pattern"].ToArray(), "TrimPattern", "minecraft:trim_pattern", "TrimPatternCodec", ctx);
