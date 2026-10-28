@@ -19,7 +19,7 @@ public class ItemComponentWire
     internal static JsonDocument Fixture()
     {
         using var stream = typeof(
-            NetworkBuffer).Assembly.GetManifestResourceStream("Obsidian.Assets.item-components-1.21.11.json")!;
+            NetworkBuffer).Assembly.GetManifestResourceStream($"Obsidian.Assets.item-components-{ServerConstants.ProtocolDescription}.json")!;
         return JsonDocument.Parse(stream);
     }
 

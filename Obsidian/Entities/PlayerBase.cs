@@ -984,22 +984,14 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
         writer.WriteVarInt(XpTotal);
 
-        this.MetadataIndex = 19;
+        // Vanilla syncs optional parrot variant ids, encoded as variant + 1 (zero clears the shoulder).
+        writer.WriteEntityMetadataType(19, EntityMetadataType.OptionalUnsignedVarInt);
+        writer.WriteVarInt(this.LeftShoulder is Parrot left ? left.Variant + 1 : 0);
 
-        //TODO fix possibly an extension method?
-        if (this.LeftShoulder is not null)
-        {
-            writer.WriteEntityMetadataType(19, EntityMetadataType.OptionalLivingEntityReference);
-            writer.WriteNbtCompound([]);
-            this.MetadataIndex = 20;
-        }
+        writer.WriteEntityMetadataType(20, EntityMetadataType.OptionalUnsignedVarInt);
+        writer.WriteVarInt(this.RightShoulder is Parrot right ? right.Variant + 1 : 0);
 
-        if (this.RightShoulder is not null)
-        {
-            writer.WriteEntityMetadataType(20, EntityMetadataType.OptionalLivingEntityReference);
-            writer.WriteNbtCompound([]);
-            this.MetadataIndex = 21;
-        }
+        this.MetadataIndex = 21;
     }
 
     public async ValueTask SetGamemodeAsync(GameMode gamemode)

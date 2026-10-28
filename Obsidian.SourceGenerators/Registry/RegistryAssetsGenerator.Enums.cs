@@ -23,11 +23,17 @@ public partial class RegistryAssetsGenerator
 
             foreach (var component in components.OrderBy(x => x.Value.ProtocolId).ThenBy(x => x.Key, StringComparer.Ordinal))
             {
-                // Keep the API's existing British spelling of vanilla's campfire_cozy_smoke.
-                var name = (elements.Key, component.Key) switch
+                // Members whose API names predate generation keep them; the ids still come from vanilla.
+                var name = (enumName, component.Key.RemoveNamespace().ToPascalCase()) switch
                 {
-                    ("minecraft:particle_type", "minecraft:campfire_cozy_smoke") => "CampfireCosySmoke",
-                    _ => component.Key.RemoveNamespace().ToPascalCase()
+                    ("ParticleType", "CampfireCozySmoke") => "CampfireCosySmoke",
+                    ("EntityMetadataType", "Int") => "VarInt",
+                    ("EntityMetadataType", "Long") => "VarLong",
+                    ("EntityMetadataType", "Component") => "TextComponent",
+                    ("EntityMetadataType", "OptionalComponent") => "OptionalTextComponent",
+                    ("EntityMetadataType", "ItemStack") => "Slot",
+                    ("EntityMetadataType", "OptionalUnsignedInt") => "OptionalUnsignedVarInt",
+                    (_, var pascalName) => pascalName
                 };
                 var protocolId = component.Value.ProtocolId;
 
