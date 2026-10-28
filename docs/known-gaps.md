@@ -440,3 +440,17 @@ handles neither yet, so other players don't see a player's arm swing. Mobs' own 
 
 **Where to start:** handle `punch` (and `attack`, which also drives melee) and send `animate` to nearby players, as
 the removed `SwingPacket` did.
+
+## Bubble columns started by water
+
+**Status:** disabled during the 26.3 port; Phase 6 of [the porting plan](porting-26.3-plan.md) re-enables it.
+
+Since 26.1 soul sand and magma no longer start bubble columns themselves. The water above them does: `LiquidBlock`'s
+`onPlace`, `neighborChanged` and `updateShape` (from below) schedule a 20-tick check when the block below is in
+`#enables_bubble_column_push_up` or `#enables_bubble_column_drag_down`, and its `tick` updates the column. Obsidian's
+soul sand and magma behaviors no longer bind to an owner, so new columns don't form; existing columns still tick. The
+five bubble column tests that start a column are skipped.
+
+**Where to start:** give water the same hooks (Obsidian's fluid ticks handle water today, so keep its spreading path)
+and replace `SoulSandBlock` and `MagmaBlock` in `BlockOwnerBehaviors` with them, then re-enable the skipped tests in
+`BubbleColumns`.

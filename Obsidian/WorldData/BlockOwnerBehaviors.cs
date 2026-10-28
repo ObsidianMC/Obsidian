@@ -57,7 +57,7 @@ internal interface IShapeUpdateBehavior
 /// </summary>
 internal static class TickBehaviors
 {
-    internal static IScheduledTickBehavior FarmBlock { get; } = new FarmBlockBehavior();
+    internal static IScheduledTickBehavior FarmlandBlock { get; } = new FarmlandBlockBehavior();
 
     internal static IScheduledTickBehavior LeavesBlock { get; } = new LeavesBlockBehavior();
 
@@ -84,7 +84,7 @@ internal static class TickBehaviors
 /// </summary>
 internal static class ShapeUpdateBehaviors
 {
-    internal static IShapeUpdateBehavior FarmBlock { get; } = new FarmBlockBehavior();
+    internal static IShapeUpdateBehavior FarmlandBlock { get; } = new FarmlandBlockBehavior();
 
     internal static IShapeUpdateBehavior LeavesBlock { get; } = new LeavesBlockBehavior();
 

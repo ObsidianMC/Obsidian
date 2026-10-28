@@ -8,7 +8,7 @@ using Obsidian.WorldData.Fluids;
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// Vanilla's <c>FarmBlock</c>: its <c>updateShape</c>, <c>tick</c> and <c>randomTick</c> overrides. Farmland dries
+/// Vanilla's <c>FarmlandBlock</c>: its <c>updateShape</c>, <c>tick</c> and <c>randomTick</c> overrides. Farmland dries
 /// out and turns back to dirt without water nearby (unless something grows on it), is soaked by water within four
 /// blocks, and turns to dirt when a solid block is above it.
 /// </summary>
@@ -16,13 +16,13 @@ namespace Obsidian.WorldData;
 /// Not ported: <c>Block.pushEntitiesUp</c> when it turns to dirt, and <c>fallOn</c> trampling, which wait on a landing
 /// hook for entities.
 /// </remarks>
-internal sealed partial class FarmBlockBehavior : IRandomTickBehavior, IScheduledTickBehavior, IShapeUpdateBehavior
+internal sealed partial class FarmlandBlockBehavior : IRandomTickBehavior, IScheduledTickBehavior, IShapeUpdateBehavior
 {
-    // Vanilla's FarmBlock.MAX_MOISTURE.
+    // Vanilla's FarmlandBlock.MAX_MOISTURE.
     private const int MaxMoisture = 7;
 
     /// <summary>
-    /// Vanilla's <c>FarmBlock.updateShape</c>: a block that can't stay (a solid one above it) is scheduled to turn to
+    /// Vanilla's <c>FarmlandBlock.updateShape</c>: a block that can't stay (a solid one above it) is scheduled to turn to
     /// dirt a tick later. The state is kept.
     /// </summary>
     public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
@@ -33,14 +33,14 @@ internal sealed partial class FarmBlockBehavior : IRandomTickBehavior, ISchedule
         return null;
     }
 
-    /// <summary>Vanilla's <c>FarmBlock.tick</c>.</summary>
+    /// <summary>Vanilla's <c>FarmlandBlock.tick</c>.</summary>
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
     {
         if (!CanSurvive(level, position))
             TurnToDirt(level, position, block);
     }
 
-    /// <summary>Vanilla's <c>FarmBlock.randomTick</c>: no draws.</summary>
+    /// <summary>Vanilla's <c>FarmlandBlock.randomTick</c>: no draws.</summary>
     public void RandomTick(AbstractLevel level, Vector position, IBlock block, IRandomSource random)
     {
         var blocks = level.BlockUpdates;
@@ -67,18 +67,18 @@ internal sealed partial class FarmBlockBehavior : IRandomTickBehavior, ISchedule
 
     private static int Moisture(IBlock block) => int.TryParse(block.GetProperty("moisture"), out var moisture) ? moisture : 0;
 
-    // Vanilla's FarmBlock.canSurvive: anything above that isn't solid, or is a fence gate or moving piston.
+    // Vanilla's FarmlandBlock.canSurvive: anything above that isn't solid, or is a fence gate or moving piston.
     private static bool CanSurvive(IBlockLevel level, Vector position)
     {
         var above = level.GetBlock(position + Vector.Up);
         return !above.IsSolid() || above.BlockClass() is "MovingPistonBlock" or "FenceGateBlock";
     }
 
-    // Vanilla's FarmBlock.shouldMaintainFarmland: the block above is in the maintains_farmland tag (crops and stems).
+    // Vanilla's FarmlandBlock.shouldMaintainFarmland: the block above is in the maintains_farmland tag (crops and stems).
     private static bool ShouldMaintainFarmland(IBlockLevel level, Vector position) =>
         TagsRegistry.Block.MaintainsFarmland.Entries.Contains(level.GetBlock(position + Vector.Up).RegistryId);
 
-    // Vanilla's FarmBlock.isNearWater: any water fluid in the box from 4 blocks away horizontally, at the farmland's
+    // Vanilla's FarmlandBlock.isNearWater: any water fluid in the box from 4 blocks away horizontally, at the farmland's
     // level and one above.
     private static bool IsNearWater(IBlockLevel level, Vector position)
     {
@@ -97,7 +97,7 @@ internal sealed partial class FarmBlockBehavior : IRandomTickBehavior, ISchedule
         return false;
     }
 
-    // Vanilla's FarmBlock.turnToDirt, without pushing entities up.
+    // Vanilla's FarmlandBlock.turnToDirt, without pushing entities up.
     private static void TurnToDirt(IBlockLevel level, Vector position, IBlock block)
     {
         level.SetBlock(position, BlocksRegistry.Dirt, BlockUpdateFlags.All);

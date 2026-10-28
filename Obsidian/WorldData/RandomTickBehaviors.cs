@@ -28,7 +28,7 @@ internal static partial class RandomTickBehaviors
     // grow; beetroots and torchflowers draw first and then run CropBlock's (see CropAfterThirdsDraw).
     internal static IRandomTickBehavior CropBlock => Crop;
 
-    internal static IRandomTickBehavior FarmBlock { get; } = new FarmBlockBehavior();
+    internal static IRandomTickBehavior FarmlandBlock { get; } = new FarmlandBlockBehavior();
 
     internal static IRandomTickBehavior LeavesBlock { get; } = new LeavesBlockBehavior();
 
@@ -128,7 +128,7 @@ internal static partial class RandomTickBehaviors
             return speed;
         }
 
-        // Vanilla's CropBlock.getGrowthSpeed's farmland term: the farmland's moisture (vanilla's FarmBlock.MOISTURE) is
+        // Vanilla's CropBlock.getGrowthSpeed's farmland term: the farmland's moisture (vanilla's FarmlandBlock.MOISTURE) is
         // above 0 for three, and 0 for one.
         private static float Farmland(IBlock block)
         {

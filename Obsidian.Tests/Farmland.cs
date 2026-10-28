@@ -14,7 +14,7 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Farmland and the hoe, reached through the vanilla classes that own their overrides: <c>FarmBlock</c>'s
+/// Farmland and the hoe, reached through the vanilla classes that own their overrides: <c>FarmlandBlock</c>'s
 /// <c>randomTick</c>, <c>tick</c> and <c>updateShape</c> (generated into <c>BlocksRegistry</c>), and <c>HoeItem.useOn</c>
 /// (<c>ItemUseOnBehaviors</c>, from <c>item_use_on_classes.json</c>).
 /// </summary>
@@ -24,12 +24,12 @@ public sealed class Farmland
 
     private static readonly Vector Farm = new(8, Ground, 8);
 
-    [Fact(DisplayName = "Farmland is owned by FarmBlock for random ticks, ticks and shape updates")]
+    [Fact(DisplayName = "Farmland is owned by FarmlandBlock for random ticks, ticks and shape updates")]
     public void OwnersAreGenerated()
     {
-        Assert.Same(RandomTickBehaviors.FarmBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.Farmland));
-        Assert.Same(TickBehaviors.FarmBlock, BlocksRegistry.GetTickBehavior(BlockIds.Farmland));
-        Assert.Same(ShapeUpdateBehaviors.FarmBlock, BlocksRegistry.GetShapeUpdateBehavior(BlockIds.Farmland));
+        Assert.Same(RandomTickBehaviors.FarmlandBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.Farmland));
+        Assert.Same(TickBehaviors.FarmlandBlock, BlocksRegistry.GetTickBehavior(BlockIds.Farmland));
+        Assert.Same(ShapeUpdateBehaviors.FarmlandBlock, BlocksRegistry.GetShapeUpdateBehavior(BlockIds.Farmland));
         Assert.Null(BlocksRegistry.GetTickBehavior(BlockIds.Dirt));
         Assert.Null(ItemUseOnBehaviors.For(ItemsRegistry.Get(ItemIds.Stick)));
     }
@@ -45,7 +45,7 @@ public sealed class Farmland
 
         // Water at the farmland's level, 4 blocks away.
         Held(world).SetBlock(Farm + new Vector(4, 0, 0), BlocksRegistry.Water);
-        RandomTickBehaviors.FarmBlock.RandomTick(world, Farm, Held(world).GetBlock(Farm), random);
+        RandomTickBehaviors.FarmlandBlock.RandomTick(world, Farm, Held(world).GetBlock(Farm), random);
         Assert.Equal("7", Held(world).GetBlock(Farm).GetProperty("moisture"));
 
         // Out of reach (5 away): it dries one step a tick.
@@ -53,7 +53,7 @@ public sealed class Farmland
         Held(world).SetBlock(Farm + new Vector(5, 0, 0), BlocksRegistry.Water);
         for (var moisture = 6; moisture >= 0; moisture--)
         {
-            RandomTickBehaviors.FarmBlock.RandomTick(world, Farm, Held(world).GetBlock(Farm), random);
+            RandomTickBehaviors.FarmlandBlock.RandomTick(world, Farm, Held(world).GetBlock(Farm), random);
             Assert.Equal(moisture.ToString(), Held(world).GetBlock(Farm).GetProperty("moisture"));
         }
     }
@@ -68,11 +68,11 @@ public sealed class Farmland
 
         Held(world).SetBlock(Farm, BlocksRegistry.GetDefault(BlockIds.Farmland));
         Held(world).SetBlock(Farm + Vector.Up, BlocksRegistry.GetDefault(BlockIds.Wheat));
-        RandomTickBehaviors.FarmBlock.RandomTick(world, Farm, Held(world).GetBlock(Farm), random);
+        RandomTickBehaviors.FarmlandBlock.RandomTick(world, Farm, Held(world).GetBlock(Farm), random);
         Assert.True(Held(world).GetBlock(Farm).Is(BlockIds.Farmland));
 
         Held(world).SetBlock(Farm + Vector.Up, BlocksRegistry.Air);
-        RandomTickBehaviors.FarmBlock.RandomTick(world, Farm, Held(world).GetBlock(Farm), random);
+        RandomTickBehaviors.FarmlandBlock.RandomTick(world, Farm, Held(world).GetBlock(Farm), random);
         Assert.True(Held(world).GetBlock(Farm).Is(BlockIds.Dirt));
     }
 
@@ -86,11 +86,11 @@ public sealed class Farmland
 
         Held(world).SetBlock(Farm, BlocksRegistry.GetDefault(BlockIds.Farmland));
         Held(world).SetBlock(Farm + Vector.Up, BlocksRegistry.GetDefault(BlockIds.OakFenceGate));
-        TickBehaviors.FarmBlock.Tick(world.BlockUpdates, Farm, Held(world).GetBlock(Farm), random);
+        TickBehaviors.FarmlandBlock.Tick(world.BlockUpdates, Farm, Held(world).GetBlock(Farm), random);
         Assert.True(Held(world).GetBlock(Farm).Is(BlockIds.Farmland));
 
         Held(world).SetBlock(Farm + Vector.Up, BlocksRegistry.GetDefault(BlockIds.Stone));
-        TickBehaviors.FarmBlock.Tick(world.BlockUpdates, Farm, Held(world).GetBlock(Farm), random);
+        TickBehaviors.FarmlandBlock.Tick(world.BlockUpdates, Farm, Held(world).GetBlock(Farm), random);
         Assert.True(Held(world).GetBlock(Farm).Is(BlockIds.Dirt));
     }
 
