@@ -155,6 +155,7 @@ public partial class PlayerBase
         if (damageCooldown > 0) damageCooldown--;
         if (HurtTime > 0) HurtTime--;
         await TickCombatAsync();
+        await TickCameraAsync();
         if (pendingRespawnChunks && !Respawning && --respawnChunkRetryTicks <= 0)
         {
             pendingRespawnChunks = !await UpdateChunksAsync();
