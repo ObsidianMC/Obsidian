@@ -67,7 +67,7 @@ public partial class UpdateRecipesPacket
 
     public override void Serialize(INetStreamWriter writer)
     {
-        // 1.21.11 ClientboundUpdateRecipesPacket: map<ResourceKey, list<item holder>>, then SingleInputSet.
+        // ClientboundUpdateRecipesPacket: map<ResourceKey, list<item holder>>, then SingleInputSet.
         // Property sets use list lengths; ingredients use direct holder-set lengths (count + 1).
         writer.WriteVarInt(this.properties.Count);
         foreach (var (name, items) in this.properties)
@@ -87,8 +87,8 @@ public partial class UpdateRecipesPacket
                 writer.WriteRegistryId("minecraft:item", id);
 
             // SelectableRecipe sends only its result SlotDisplay, never a recipe identifier.
-            writer.WriteVarInt(3);
-            writer.WriteItemStack(recipe.Result.First());
+            writer.WriteVarInt(SlotDisplayTypes.ItemStack);
+            writer.WriteItemStackTemplate(recipe.Result.First());
         }
     }
 }
