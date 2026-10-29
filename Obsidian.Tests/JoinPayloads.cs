@@ -21,6 +21,11 @@ namespace Obsidian.Tests;
 /// asset generator's <c>join-payloads</c> fixture (<c>JoinFixtures.java</c>), which runs vanilla's codecs on the
 /// inputs each row builds here.
 /// </summary>
+/// <remarks>
+/// Runs alone, like the tests that override vanilla's dimension types for a while: the registries it sends are
+/// vanilla's only when nothing overrides them.
+/// </remarks>
+[Collection(VanillaDimensionTypesCollection.Name)]
 public class JoinPayloads
 {
     private static readonly Lazy<JsonObject> fixture = new(() =>
@@ -54,7 +59,54 @@ public class JoinPayloads
         if (packet == "level_chunk")
             actual = [actual[0][..Math.Min(actual[0].Length, expected[0].Length)]];
 
+        if (packet == "registry_data")
+        {
+            AssertRegistriesMatch(expected, actual);
+            return;
+        }
+
         Assert.Equal(expected, actual);
+    }
+
+    // Plugins' entries keep their ids for the life of the process, so registries other tests added to have those after
+    // vanilla's, with their data. Vanilla's entries have to come first, in vanilla's order, and a registry nothing was
+    // added to has to match byte for byte.
+    private static void AssertRegistriesMatch(List<string> expected, List<string> actual)
+    {
+        Assert.Equal(expected.Select(packet => Decode(packet).Registry), actual.Select(packet => Decode(packet).Registry));
+
+        foreach (var (vanilla, sent) in expected.Zip(actual))
+        {
+            var (registry, vanillaEntries) = Decode(vanilla);
+            var sentEntries = Decode(sent).Entries;
+            if (sentEntries.Count == vanillaEntries.Count)
+            {
+                Assert.Equal(vanilla, sent);
+                continue;
+            }
+
+            Assert.Equal(vanillaEntries, sentEntries.Take(vanillaEntries.Count));
+            Assert.All(sentEntries.Skip(vanillaEntries.Count), entry =>
+                Assert.True(entry.Data && !entry.Id.StartsWith("minecraft:"), $"{registry} sent {entry.Id} after vanilla's"));
+        }
+    }
+
+    // A registry data packet's registry and entries, each with whether it carries data.
+    private static (string Registry, List<(string Id, bool Data)> Entries) Decode(string hex)
+    {
+        using var reader = new NetworkBuffer(Convert.FromHexString(hex));
+        var registry = reader.ReadString();
+        var entries = new List<(string, bool)>();
+        for (var count = reader.ReadVarInt(); count > 0; count--)
+        {
+            var id = reader.ReadString();
+            var data = reader.ReadBoolean();
+            if (data)
+                reader.ReadNbtCompound();
+            entries.Add((id, data));
+        }
+
+        return (registry, entries);
     }
 
     private static IEnumerable<ClientboundPacket> Build(string packet) => packet switch
