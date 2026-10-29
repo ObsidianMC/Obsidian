@@ -66,7 +66,7 @@ public partial class RecipeBookAddPacket
 
     internal static void WriteRecipeDisplay(INetStreamWriter writer, IRecipeWithResult recipe)
     {
-        // Vanilla registers shapeless/shaped displays as 0/1 and empty/item/item-stack/composite slots as 0/2/3/7.
+        // Vanilla registers shapeless/shaped displays as 0/1.
         if (recipe is ShapedRecipe shaped)
         {
             writer.WriteVarInt(1);
@@ -78,7 +78,7 @@ public partial class RecipeBookAddPacket
                 foreach (char symbol in row)
                 {
                     if (symbol == ' ')
-                        writer.WriteVarInt(0);
+                        writer.WriteVarInt(SlotDisplayTypes.Empty);
                     else
                         WriteIngredientDisplay(writer, shaped.Key[symbol]);
                 }
@@ -94,9 +94,9 @@ public partial class RecipeBookAddPacket
         else
             throw new ArgumentException("Recipe must be a crafting recipe.", nameof(recipe));
 
-        writer.WriteVarInt(3);
-        writer.WriteItemStack(recipe.Result.First());
-        writer.WriteVarInt(2);
+        writer.WriteVarInt(SlotDisplayTypes.ItemStack);
+        writer.WriteItemStackTemplate(recipe.Result.First());
+        writer.WriteVarInt(SlotDisplayTypes.Item);
         writer.WriteVarInt(ItemsRegistry.CraftingTable.Id);
     }
 
@@ -104,19 +104,19 @@ public partial class RecipeBookAddPacket
     {
         var items = ingredient.Select(item => item.Holder.Id).Distinct().ToList();
         if (items.Count == 0)
-            writer.WriteVarInt(0);
+            writer.WriteVarInt(SlotDisplayTypes.Empty);
         else if (items.Count == 1)
         {
-            writer.WriteVarInt(2);
+            writer.WriteVarInt(SlotDisplayTypes.Item);
             writer.WriteVarInt(items[0]);
         }
         else
         {
-            writer.WriteVarInt(7);
+            writer.WriteVarInt(SlotDisplayTypes.Composite);
             writer.WriteVarInt(items.Count);
             foreach (var itemId in items)
             {
-                writer.WriteVarInt(2);
+                writer.WriteVarInt(SlotDisplayTypes.Item);
                 writer.WriteVarInt(itemId);
             }
         }

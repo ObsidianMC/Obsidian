@@ -1,5 +1,6 @@
 using Obsidian.API;
 using Obsidian.API.Advancements;
+using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
@@ -44,6 +45,8 @@ public sealed class PlayPayloads
     [InlineData("pick_item_from_block")]
     [InlineData("damage_event")]
     [InlineData("disguised_chat")]
+    [InlineData("update_recipes")]
+    [InlineData("recipe_book_add")]
     public async Task PayloadsMatchVanilla(string packet)
     {
         using var fixture = ReadFixture();
@@ -226,6 +229,38 @@ public sealed class PlayPayloads
                         Message = "Hello", ChatType = 0, SenderName = "Alex",
                         TargetName = i == 0 ? null : ChatMessage.Simple("Steve")
                     });
+                break;
+            case "update_recipes":
+                var recipes = new Dictionary<string, IRecipe>();
+                foreach (var type in new[] { CraftingType.Smelting, CraftingType.Blasting })
+                    recipes.Add(type.ToString(), new SmeltingRecipe
+                    {
+                        Identifier = type.ToString(), Type = type, Experience = 0.7f, CookingTime = 200,
+                        Category = CookingBookCategory.Misc, Ingredient = [new ItemStack(ItemsRegistry.RawIron)],
+                        Result = [new ItemStack(ItemsRegistry.IronIngot)]
+                    });
+                recipes.Add("cut", new CuttingRecipe
+                {
+                    Identifier = "cut", Type = CraftingType.Stonecutting, Ingredient = [new ItemStack(ItemsRegistry.Stone)],
+                    Result = [new ItemStack(ItemsRegistry.StoneSlab, 2)], Count = 2
+                });
+                Equal(references[0], new UpdateRecipesPacket(recipes));
+                break;
+            case "recipe_book_add":
+                Ingredient stone = [new ItemStack(ItemsRegistry.Stone)];
+                Ingredient either = [new ItemStack(ItemsRegistry.Cobblestone), new ItemStack(ItemsRegistry.Andesite)];
+                var shaped = new ShapedRecipe
+                {
+                    Identifier = "shaped", Type = CraftingType.CraftingShaped, Category = CraftingBookCategory.Building,
+                    Result = [new ItemStack(ItemsRegistry.StoneBricks, 4)], Pattern = ["S ", "ES"],
+                    Key = new Dictionary<char, Ingredient> { ['S'] = stone, ['E'] = either }
+                };
+                var shapeless = new ShapelessRecipe
+                {
+                    Identifier = "shapeless", Type = CraftingType.CraftingShapeless, Category = CraftingBookCategory.Misc,
+                    Result = [new ItemStack(ItemsRegistry.Gravel)], Ingredients = [either]
+                };
+                Equal(references[0], new RecipeBookAddPacket([new(5, shaped, 3), new(6, shapeless, null)], replace: true));
                 break;
         }
     }

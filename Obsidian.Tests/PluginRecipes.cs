@@ -132,51 +132,15 @@ public sealed class PluginRecipes
             foreach (var id in ids)
                 Assert.Equal(id, reader.ReadVarInt());
 
-            Assert.Equal(3, reader.ReadVarInt());
-            var result = reader.ReadItemStack();
-            Assert.Equal(recipe.Result.First().Holder, result!.Holder);
+            Assert.Equal(SlotDisplayTypes.ItemStack, reader.ReadVarInt());
+            var result = reader.ReadItemStackTemplate();
+            Assert.Equal(recipe.Result.First().Holder, result.Holder);
             Assert.Equal(recipe.Result.First().Count, result.Count);
         }
 
         Assert.Equal(writer.Size, reader.Offset);
     }
 
-    [Fact(Skip = "Phase 4: recipe slot displays now encode ItemStackTemplate instead of ItemStack; recapture and adapt recipe formats")]
-    public void UpdateRecipesMatchesVanillaCapture()
-    {
-        // Captured from 1.21.11 ClientboundUpdateRecipesPacket.STREAM_CODEC, using a raw-iron input for
-        // furnace/blast furnace and a stone -> two slabs stonecutter choice. No recipe id goes over the wire.
-        var sample = new Dictionary<string, IRecipe>();
-        foreach (var type in new[] { CraftingType.Smelting, CraftingType.Blasting })
-        {
-            sample.Add(type.ToString(), new SmeltingRecipe
-            {
-                Identifier = type.ToString(),
-                Type = type,
-                Experience = 0.7f,
-                CookingTime = 200,
-                Category = CookingBookCategory.Misc,
-                Ingredient = IngredientOf(ItemsRegistry.RawIron),
-                Result = IngredientOf(ItemsRegistry.IronIngot)
-            });
-        }
-
-        sample.Add("cut", new CuttingRecipe
-        {
-            Identifier = "cut",
-            Type = CraftingType.Stonecutting,
-            Ingredient = IngredientOf(ItemsRegistry.Stone),
-            Result = [new ItemStack(ItemsRegistry.StoneSlab, 2)],
-            Count = 2
-        });
-        using var captured = typeof(PluginRecipes).Assembly
-            .GetManifestResourceStream("Obsidian.Tests.Assets.update-recipes.bin")!;
-        using var expected = new System.IO.MemoryStream();
-        captured.CopyTo(expected);
-        using var actual = new NetworkBuffer();
-        new UpdateRecipesPacket(sample).Serialize(actual);
-        Assert.Equal(expected.ToArray(), actual.AsSpan(0, actual.Size).ToArray());
-    }
 
     [Fact(DisplayName = "A plugin's recipe crafts in the player's grid and leaves it and their book on unload",
         Timeout = TestServerFactory.TestTimeout)]

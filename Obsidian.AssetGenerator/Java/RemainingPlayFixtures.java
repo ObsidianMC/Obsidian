@@ -126,6 +126,7 @@ class RemainingPlayFixtures extends ScreenFixtures {
         output.add("attribute_ranges", ranges);
         output.add("update_advancements", advancements());
         extraPackets(output);
+        recipePackets(output);
         Files.writeString(Path.of(args[0]), new GsonBuilder().setPrettyPrinting().create().toJson(output));
     }
 
@@ -194,6 +195,50 @@ class RemainingPlayFixtures extends ScreenFixtures {
         var id = Identifier.parse("probe:progress");
         output.addProperty("progress_advancements", encode(ClientboundUpdateAdvancementsPacket.class.getName(), "STREAM_CODEC",
             new ClientboundUpdateAdvancementsPacket(true, List.of(new ClientboundUpdateAdvancementsPacket.PositionedAdvancement(new AdvancementHolder(id, advancement), 0, 0)), Set.of(), Map.of(id, progress), false)));
+    }
+
+    // Recipe slot displays: furnace inputs and a stonecutter choice, then a shaped and a shapeless recipe book entry.
+    static void recipePackets(JsonObject output) {
+        var stone = net.minecraft.world.item.Items.STONE;
+        var rawIron = net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.RAW_IRON);
+        var sets = new LinkedHashMap<ResourceKey<net.minecraft.world.item.crafting.RecipePropertySet>, net.minecraft.world.item.crafting.RecipePropertySet>();
+        for (var name : List.of("smithing_base", "smithing_template", "smithing_addition", "furnace_input",
+                "blast_furnace_input", "smoker_input", "campfire_input")) {
+            var key = ResourceKey.create(net.minecraft.world.item.crafting.RecipePropertySet.TYPE_KEY, Identifier.withDefaultNamespace(name));
+            sets.put(key, net.minecraft.world.item.crafting.RecipePropertySet.create(
+                name.equals("furnace_input") || name.equals("blast_furnace_input") ? List.of(rawIron) : List.of()));
+        }
+        var cut = new net.minecraft.world.item.crafting.SelectableRecipe.SingleInputEntry<net.minecraft.world.item.crafting.StonecutterRecipe>(
+            net.minecraft.world.item.crafting.Ingredient.of(stone),
+            new net.minecraft.world.item.crafting.SelectableRecipe<>(new net.minecraft.world.item.crafting.display.SlotDisplay.ItemStackSlotDisplay(
+                new net.minecraft.world.item.ItemStackTemplate(net.minecraft.world.item.Items.STONE_SLAB, 2)), Optional.empty()));
+        var recipes = new JsonArray();
+        capture(recipes, new ClientboundUpdateRecipesPacket(sets, new net.minecraft.world.item.crafting.SelectableRecipe.SingleInputSet<>(List.of(cut))));
+        output.add("update_recipes", recipes);
+
+        var table = new net.minecraft.world.item.crafting.display.SlotDisplay.ItemSlotDisplay(net.minecraft.world.item.Items.CRAFTING_TABLE);
+        net.minecraft.world.item.crafting.display.SlotDisplay stoneSlot = new net.minecraft.world.item.crafting.display.SlotDisplay.ItemSlotDisplay(stone);
+        net.minecraft.world.item.crafting.display.SlotDisplay either = new net.minecraft.world.item.crafting.display.SlotDisplay.Composite(List.of(
+            new net.minecraft.world.item.crafting.display.SlotDisplay.ItemSlotDisplay(net.minecraft.world.item.Items.COBBLESTONE),
+            new net.minecraft.world.item.crafting.display.SlotDisplay.ItemSlotDisplay(net.minecraft.world.item.Items.ANDESITE)));
+        var eitherIngredient = net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.COBBLESTONE, net.minecraft.world.item.Items.ANDESITE);
+        var shaped = new net.minecraft.world.item.crafting.display.ShapedCraftingRecipeDisplay(2, 2,
+            List.of(stoneSlot, net.minecraft.world.item.crafting.display.SlotDisplay.Empty.INSTANCE, either, stoneSlot),
+            new net.minecraft.world.item.crafting.display.SlotDisplay.ItemStackSlotDisplay(new net.minecraft.world.item.ItemStackTemplate(net.minecraft.world.item.Items.STONE_BRICKS, 4)),
+            table);
+        var shapeless = new net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay(List.of(either),
+            new net.minecraft.world.item.crafting.display.SlotDisplay.ItemStackSlotDisplay(new net.minecraft.world.item.ItemStackTemplate(net.minecraft.world.item.Items.GRAVEL)),
+            table);
+        var book = new JsonArray();
+        capture(book, new ClientboundRecipeBookAddPacket(List.of(
+            new ClientboundRecipeBookAddPacket.Entry(new net.minecraft.world.item.crafting.display.RecipeDisplayEntry(
+                new net.minecraft.world.item.crafting.display.RecipeDisplayId(5), shaped, OptionalInt.of(3),
+                net.minecraft.world.item.crafting.RecipeBookCategories.CRAFTING_BUILDING_BLOCKS,
+                Optional.of(List.of(net.minecraft.world.item.crafting.Ingredient.of(stone), eitherIngredient, net.minecraft.world.item.crafting.Ingredient.of(stone)))), (byte)0),
+            new ClientboundRecipeBookAddPacket.Entry(new net.minecraft.world.item.crafting.display.RecipeDisplayEntry(
+                new net.minecraft.world.item.crafting.display.RecipeDisplayId(6), shapeless, OptionalInt.empty(),
+                net.minecraft.world.item.crafting.RecipeBookCategories.CRAFTING_MISC, Optional.of(List.of(eitherIngredient))), (byte)0)), true));
+        output.add("recipe_book_add", book);
     }
 
     static JsonArray advancements() {
