@@ -90,7 +90,7 @@ public class VanillaStructureGeneration(WorldgenFixture worldgen)
                 {
                     for (var x = pieceBox.MinX; x <= pieceBox.MaxX; x++)
                     {
-                        var id = chunks.Get(x >> 4, z >> 4).GetBlock(x, y, z).GetHashCode();
+                        var id = LegacyWorldgenBlockStates.StateId(chunks.Get(x >> 4, z >> 4).GetBlock(x, y, z));
                         ids.Add((byte)id);
                         ids.Add((byte)(id >> 8));
                     }

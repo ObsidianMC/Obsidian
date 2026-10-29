@@ -57,6 +57,7 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_loot_tables.json" />
 			<VanillaAssetsOutput Include="$(VanillaLegacyAssetsDirectory)loot_table\blocks.json" />
 			<VanillaAssetsOutput Include="$(VanillaLegacyAssetsDirectory)loot_table\entities.json" />
+			<VanillaAssetsOutput Include="$(VanillaLegacyAssetsDirectory)block_states.json" />
 		</ItemGroup>
 	</Target>
 

@@ -74,6 +74,26 @@ internal static class DatagenAssets
 
         CopyDirectory(Path.Combine(reports, "biome_parameters", "minecraft"), Path.Combine(outputDirectory, "biome_parameters"));
 
+        // Test-only ids for the 1.21.11 worldgen captures. Phase 5 re-records them on the current version and removes
+        // this table with the legacy assets. --all already includes the legacy blocks report.
+        var states = ReadObject(Path.Combine(reports, "blocks.json"))
+            .SelectMany(block => block.Value!["states"]!.AsArray().Select(state =>
+            {
+                var properties = state!["properties"]?.AsObject();
+                var key = properties is null || properties.Count == 0 ? block.Key
+                    : $"{block.Key}[{string.Join(',', properties.OrderBy(property => property.Key, StringComparer.Ordinal)
+                        .Select(property => $"{property.Key}={property.Value!.GetValue<string>()}"))}]";
+                return (Id: state["id"]!.GetValue<int>(), Key: key);
+            }))
+            .OrderBy(state => state.Id).ToArray();
+        for (var id = 0; id < states.Length; id++)
+        {
+            if (states[id].Id != id)
+                throw new InvalidDataException($"Legacy block state ids are not contiguous at {id}.");
+        }
+
+        WriteJson(Path.Combine(outputDirectory, "block_states.json"), new JsonArray([.. states.Select(state => (JsonNode?)state.Key)]));
+
         foreach (var (path, carver) in ReadAll(Path.Combine(data, "worldgen", "configured_carver")))
             WriteJson(Path.Combine(outputDirectory, "configured_carver", path + ".json"), carver);
 

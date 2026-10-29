@@ -98,11 +98,11 @@
 	<Target Name="IncludeVanillaAssets" AfterTargets="ResolveProjectReferences">
 		<ItemGroup>
 			<!-- Biome parameter lists, configured carvers, block physics, collision shapes and registry ids are only read at runtime; keep them away from the source generators. -->
-			<AdditionalFiles Include="Assets\**\*.json" Exclude="Assets\biome_parameters\**;Assets\configured_carver\**;Assets\legacy-*\biome_parameters\**;Assets\legacy-*\configured_carver\**;Assets\block_physics.json;Assets\collision_shapes.json;Assets\registry_ids.json" />
+			<AdditionalFiles Include="Assets\**\*.json" Exclude="Assets\biome_parameters\**;Assets\configured_carver\**;Assets\legacy-*\biome_parameters\**;Assets\legacy-*\configured_carver\**;Assets\legacy-*\block_states.json;Assets\block_physics.json;Assets\collision_shapes.json;Assets\registry_ids.json" />
 			<EmbeddedResource Include="Assets\**\*.*" Exclude="Assets\.generated-*;Assets\legacy-*\**" />
 			<!-- The legacy loot and worldgen assets, under the names of the current version's assets they stand in for
 			     (Obsidian.Assets.worldgen.structures.nether.json). -->
-			<_LegacyVanillaAsset Include="Assets\legacy-$(LegacyMinecraftVersion)\**\*.*" />
+			<_LegacyVanillaAsset Include="Assets\legacy-$(LegacyMinecraftVersion)\**\*.*" Exclude="Assets\legacy-$(LegacyMinecraftVersion)\block_states.json" />
 			<EmbeddedResource Include="@(_LegacyVanillaAsset)"
 			                  LogicalName="Obsidian.Assets.$([System.String]::Copy('%(_LegacyVanillaAsset.RecursiveDir)').Replace('\', '.').Replace('/', '.'))%(_LegacyVanillaAsset.Filename)%(_LegacyVanillaAsset.Extension)" />
 		</ItemGroup>
