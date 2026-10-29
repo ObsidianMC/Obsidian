@@ -78,8 +78,9 @@ public enum ChangeGameStateReason : byte
 {
     NoRespawnBlockAvailable,
 
-    EndRaining,
+    // Vanilla's START_RAINING and STOP_RAINING: the client starts or stops rain, from no rain or full rain.
     BeginRaining,
+    EndRaining,
 
     ChangeGamemode,
 

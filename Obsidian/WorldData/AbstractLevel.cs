@@ -2085,7 +2085,7 @@ public abstract partial class AbstractLevel : ILevel
     private int timeSyncTicks;
 
     protected void BroadcastTime() =>
-        this.PacketBroadcaster.QueuePacketToLevel(this, new SetTimePacket(LevelData.Time, LevelData.Time % 24000, true));
+        this.PacketBroadcaster.QueuePacketToLevel(this, SetTimePacket.Of(LevelData));
 
     public async virtual ValueTask DisposeAsync()
     {

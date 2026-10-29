@@ -26,26 +26,19 @@ public sealed partial class FinishConfigurationPacket
             return;
         }
 
-        var codec = player.Level.DimensionType;
-
+        var joined = (Entities.Player)player;
         await client.QueuePacketAsync(new LoginPacket
         {
             EntityId = player.EntityId,
             Hardcore = player.Level.LevelData.Hardcore,
+            MaxPlayers = server.Configuration.MaxPlayers,
             ViewDistance = server.Configuration.ViewDistance,
             SimulationDistance = server.Configuration.SimulationDistance,
             DimensionNames = LevelNames(server.WorldManager),
-            CommonPlayerSpawnInfo = new()
-            {
-                GameMode = player.GameMode,
-                DimensionType = codec.Id,
-                DimensionName = player.Level.DimensionName,
-                HashedSeed = 0,
-                Flat = false,
-                PortalCooldown = player is Entities.Player concrete ? concrete.PortalCooldown : 0
-            },
+            CommonPlayerSpawnInfo = joined.CreateSpawnInfo(),
             ReducedDebugInfo = false,
             EnableRespawnScreen = true,
+            OnlineMode = server.Configuration.OnlineMode,
         });
 
         // Like vanilla's PlayerList.placeNewPlayer, the player learns the world's difficulty right after joining.
@@ -58,10 +51,16 @@ public sealed partial class FinishConfigurationPacket
             Dimension = spawnLevel.DimensionName,
             Pos = (Vector)spawnLevel.LevelData.SpawnPosition.Floor()
         }, 0, 0));
-        await client.QueuePacketAsync(new SetTimePacket(player.Level.LevelData.Time, player.Level.LevelData.DayTime, true));
-        await client.QueuePacketAsync(new GameEventPacket(player.Level.LevelData.Raining
-            ? ChangeGameStateReason.BeginRaining
-            : ChangeGameStateReason.EndRaining));
+        await client.QueuePacketAsync(SetTimePacket.Of(player.Level.LevelData));
+
+        // Like vanilla's PlayerList.sendLevelInfo, a raining level's weather; a clear one sends none.
+        if (player.Level.LevelData.Raining)
+        {
+            await client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.BeginRaining));
+            await client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.RainLevelChange, 1));
+            await client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.ThunderLevelChange,
+                player.Level.LevelData.Thundering ? 1 : 0));
+        }
 
         await client.QueuePacketAsync(CustomPayloadPacket.ClientboundPlay with { Channel = "minecraft:brand", PluginData = server.BrandData });
 
@@ -76,11 +75,8 @@ public sealed partial class FinishConfigurationPacket
         foreach (var team in server.ScoreboardManager.DefaultScoreboard.Teams.OfType<Team>())
             await client.QueuePacketAsync(team.CreationPacket());
 
-        if (player is Entities.Player joined)
-        {
-            await joined.RecipeBookSync.SendInitialAsync(player);
-            await joined.ProgressAdvancements.FlushAsync(initial: true);
-        }
+        await joined.RecipeBookSync.SendInitialAsync(player);
+        await joined.ProgressAdvancements.FlushAsync(initial: true);
 
         await player.UpdatePlayerInfoAsync();
         await player.SendPlayerInfoAsync();
@@ -99,6 +95,8 @@ public sealed partial class FinishConfigurationPacket
         });
 
         await client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
+        // Obsidian has no post effects of its own; like vanilla, a joining player starts with none.
+        await client.QueuePacketAsync(new PostEffectsPacket { PostEffects = [] });
         await server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(player, server, DateTimeOffset.Now));
         await player.UpdateChunksAsync();
     }

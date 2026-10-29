@@ -180,6 +180,9 @@ public sealed partial class Client : IClient
     /// </summary>
     internal IServer HostServer { get; }
 
+    // The session Login Success names (see Server.SessionId).
+    private Guid SessionId => this.HostServer is Server server ? server.SessionId : Guid.Empty;
+
     public string? Brand { get; set; }
 
     // No socket yet: the pipeline starts with the client, before it connects.
@@ -322,6 +325,7 @@ public sealed partial class Client : IClient
         this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
         {
             SkinProperties = this.Player.SkinProperties,
+            SessionId = this.SessionId,
         });
     }
 
