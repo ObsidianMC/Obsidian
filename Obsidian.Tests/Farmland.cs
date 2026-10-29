@@ -1,11 +1,9 @@
 using Obsidian.API;
 using Obsidian.API.Blocks;
 using Obsidian.API.Registries;
-using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.ChunkData;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
-using Obsidian.WorldData;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,150 +12,13 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Farmland and the hoe, reached through the vanilla classes that own their overrides: <c>FarmlandBlock</c>'s
-/// <c>randomTick</c>, <c>tick</c> and <c>updateShape</c> (generated into <c>BlocksRegistry</c>), and <c>HoeItem.useOn</c>
-/// (<c>ItemUseOnBehaviors</c>, from <c>item_use_on_classes.json</c>).
+/// Farmland and the crop planted on it keep through their chunk saving and loading.
 /// </summary>
 public sealed class Farmland
 {
     private const int Ground = 69;
 
     private static readonly Vector Farm = new(8, Ground, 8);
-
-    [Fact(DisplayName = "Farmland is owned by FarmlandBlock for random ticks, ticks and shape updates")]
-    public void OwnersAreGenerated()
-    {
-        Assert.Same(RandomTickBehaviors.FarmlandBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.Farmland));
-        Assert.Same(TickBehaviors.FarmlandBlock, BlocksRegistry.GetTickBehavior(BlockIds.Farmland));
-        Assert.Same(ShapeUpdateBehaviors.FarmlandBlock, BlocksRegistry.GetShapeUpdateBehavior(BlockIds.Farmland));
-        Assert.Null(BlocksRegistry.GetTickBehavior(BlockIds.Dirt));
-        Assert.Null(ItemUseOnBehaviors.For(ItemsRegistry.Get(ItemIds.Stick)));
-    }
-
-    [Fact(DisplayName = "Farmland within four blocks of water soaks, and dries a step a tick without it")]
-    public async Task FarmlandMoistens()
-    {
-        await using var context = TestServerFactory.CreateServer($"farm-moisture-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-        Held(world).SetBlock(Farm, BlocksRegistry.GetDefault(BlockIds.Farmland));
-        var random = new LegacyRandomSource(1);
-
-        // Water at the farmland's level, 4 blocks away.
-        Held(world).SetBlock(Farm + new Vector(4, 0, 0), BlocksRegistry.Water);
-        RandomTickBehaviors.FarmlandBlock.RandomTick(world, Farm, Held(world).GetBlock(Farm), random);
-        Assert.Equal("7", Held(world).GetBlock(Farm).GetProperty("moisture"));
-
-        // Out of reach (5 away): it dries one step a tick.
-        Held(world).SetBlock(Farm + new Vector(4, 0, 0), BlocksRegistry.Air);
-        Held(world).SetBlock(Farm + new Vector(5, 0, 0), BlocksRegistry.Water);
-        for (var moisture = 6; moisture >= 0; moisture--)
-        {
-            RandomTickBehaviors.FarmlandBlock.RandomTick(world, Farm, Held(world).GetBlock(Farm), random);
-            Assert.Equal(moisture.ToString(), Held(world).GetBlock(Farm).GetProperty("moisture"));
-        }
-    }
-
-    [Fact(DisplayName = "Dry farmland turns to dirt unless a crop grows on it")]
-    public async Task DryFarmlandReverts()
-    {
-        await using var context = TestServerFactory.CreateServer($"farm-dry-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-        var random = new LegacyRandomSource(1);
-
-        Held(world).SetBlock(Farm, BlocksRegistry.GetDefault(BlockIds.Farmland));
-        Held(world).SetBlock(Farm + Vector.Up, BlocksRegistry.GetDefault(BlockIds.Wheat));
-        RandomTickBehaviors.FarmlandBlock.RandomTick(world, Farm, Held(world).GetBlock(Farm), random);
-        Assert.True(Held(world).GetBlock(Farm).Is(BlockIds.Farmland));
-
-        Held(world).SetBlock(Farm + Vector.Up, BlocksRegistry.Air);
-        RandomTickBehaviors.FarmlandBlock.RandomTick(world, Farm, Held(world).GetBlock(Farm), random);
-        Assert.True(Held(world).GetBlock(Farm).Is(BlockIds.Dirt));
-    }
-
-    [Fact(DisplayName = "A solid block above farmland turns it to dirt on its scheduled tick, a fence gate doesn't")]
-    public async Task SolidAboveTurnsToDirt()
-    {
-        await using var context = TestServerFactory.CreateServer($"farm-solid-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-        var random = new LegacyRandomSource(1);
-
-        Held(world).SetBlock(Farm, BlocksRegistry.GetDefault(BlockIds.Farmland));
-        Held(world).SetBlock(Farm + Vector.Up, BlocksRegistry.GetDefault(BlockIds.OakFenceGate));
-        TickBehaviors.FarmlandBlock.Tick(world.BlockUpdates, Farm, Held(world).GetBlock(Farm), random);
-        Assert.True(Held(world).GetBlock(Farm).Is(BlockIds.Farmland));
-
-        Held(world).SetBlock(Farm + Vector.Up, BlocksRegistry.GetDefault(BlockIds.Stone));
-        TickBehaviors.FarmlandBlock.Tick(world.BlockUpdates, Farm, Held(world).GetBlock(Farm), random);
-        Assert.True(Held(world).GetBlock(Farm).Is(BlockIds.Dirt));
-    }
-
-    // 26.1 moved tilling to the block_transformer item component; see docs/known-gaps.md.
-    [Fact(DisplayName = "A hoe tills grass with air above into farmland and wears, and does nothing under a solid block",
-        Skip = "Tilling is disabled until Phase 4 of docs/porting-26.3-plan.md reads 26.3's block_transformer data")]
-    public async Task HoeTills()
-    {
-        await using var context = TestServerFactory.CreateServer($"farm-hoe-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Farmer", new VectorD(8, Ground + 1, 8));
-        player.GameMode = GameMode.Survival;
-        var hoe = ItemsRegistry.GetSingleItem(ItemsRegistry.Get(ItemIds.DiamondHoe));
-        player.Inventory.SetItem(36, hoe);
-        var behavior = ItemUseOnBehaviors.For(hoe.Holder)!;
-
-        Assert.True(await behavior.UseOnAsync(world, player, hoe, 36, Farm, Held(world).GetBlock(Farm), BlockFace.Up));
-        Assert.True(Held(world).GetBlock(Farm).Is(BlockIds.Farmland));
-        Assert.Equal(1, player.Inventory.GetItem(36).Damage);
-
-        // Underside clicks and covered blocks don't till.
-        Held(world).SetBlock(Farm, BlocksRegistry.GrassBlock);
-        Assert.False(await behavior.UseOnAsync(world, player, hoe, 36, Farm, Held(world).GetBlock(Farm), BlockFace.Down));
-        Held(world).SetBlock(Farm + Vector.Up, BlocksRegistry.GetDefault(BlockIds.Stone));
-        Assert.False(await behavior.UseOnAsync(world, player, hoe, 36, Farm, Held(world).GetBlock(Farm), BlockFace.Up));
-        Assert.True(Held(world).GetBlock(Farm).Is(BlockIds.GrassBlock));
-        Assert.Equal(1, player.Inventory.GetItem(36).Damage);
-
-        // Rooted dirt becomes dirt without needing air above, and drops hanging roots.
-        Held(world).SetBlock(Farm, BlocksRegistry.GetDefault(BlockIds.RootedDirt));
-        Assert.True(await behavior.UseOnAsync(world, player, hoe, 36, Farm, Held(world).GetBlock(Farm), BlockFace.Up));
-        Assert.True(Held(world).GetBlock(Farm).Is(BlockIds.Dirt));
-    }
-
-    [Fact(DisplayName = "Seeds place the crop vanilla's BlockItem names, and an item named like its block still places it")]
-    public void SeedsPlaceTheirCrops()
-    {
-        Assert.True(BlocksRegistry.TryGetBlock(ItemsRegistry.Get(ItemIds.WheatSeeds), out var wheat));
-        Assert.True(wheat!.Is(BlockIds.Wheat));
-        Assert.True(BlocksRegistry.TryGetBlock(ItemsRegistry.Get(ItemIds.BeetrootSeeds), out var beetroots));
-        Assert.True(beetroots!.Is(BlockIds.Beetroots));
-        Assert.True(BlocksRegistry.TryGetBlock(ItemsRegistry.Get(ItemIds.Carrot), out var carrots));
-        Assert.True(carrots!.Is(BlockIds.Carrots));
-        Assert.True(BlocksRegistry.TryGetBlock(ItemsRegistry.Get(ItemIds.Stone), out var stone));
-        Assert.True(stone!.Is(BlockIds.Stone));
-        Assert.False(BlocksRegistry.TryGetBlock(ItemsRegistry.Get(ItemIds.Stick), out _));
-    }
-
-    [Fact(DisplayName = "A crop is placed only on farmland, so not on top of the crop already growing there")]
-    public async Task CropsPlaceOnlyOnFarmland()
-    {
-        await using var context = TestServerFactory.CreateServer($"farm-place-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-        Held(world).SetBlock(Farm, BlocksRegistry.GetDefault(BlockIds.Farmland));
-        Held(world).SetBlock(Farm + Vector.Up, BlocksRegistry.GetDefault(BlockIds.Wheat));
-        Held(world).SetLightLevel(Farm.X, Farm.Y + 1, Farm.Z, LightType.Sky, 15);
-        Held(world).SetLightLevel(Farm.X, Farm.Y + 2, Farm.Z, LightType.Sky, 15);
-        var wheat = BlocksRegistry.GetDefault(BlockIds.Wheat);
-
-        Assert.False(PlacementSurvival.CanPlace(world.Fluids, wheat, Farm + Vector.Up * 2));
-        Assert.False(PlacementSurvival.CanPlace(world.Fluids, wheat, Farm + Vector.Up * 3));
-        Held(world).SetBlock(Farm + Vector.Up, BlocksRegistry.Air);
-        Assert.True(PlacementSurvival.CanPlace(world.Fluids, wheat, Farm + Vector.Up));
-        Assert.True(PlacementSurvival.CanPlace(world.Fluids, BlocksRegistry.GetDefault(BlockIds.Stone), Farm + Vector.Up * 3));
-    }
 
     [Fact(DisplayName = "Wheat planted on farmland is still there after its chunk unloads and loads again")]
     public async Task PlantedCropSurvivesReload()

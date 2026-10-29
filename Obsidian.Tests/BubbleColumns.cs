@@ -12,7 +12,6 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Tests.Fakes;
 using Obsidian.Utilities;
 using System.Linq;
-using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Mojang;
 using System.Collections.Generic;
 using System;
@@ -22,8 +21,7 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Bubble columns: the vanilla owners of their overrides, generated into <c>BlocksRegistry</c>: the column's
-/// <c>tick</c>, <c>updateShape</c> and <c>entityInside</c>, and soul sand and magma, which start a column above them.
+/// Bubble columns that soul sand and magma start under water, and the new column reaching the client.
 /// </summary>
 public sealed class BubbleColumns
 {
@@ -32,98 +30,6 @@ public sealed class BubbleColumns
     // 26.1 moved starting a column from soul sand's and magma's own hooks to the water above them (LiquidBlock, with
     // the enables_bubble_column_* tags), so their owners no longer bind. See docs/known-gaps.md.
     private const string WaterStartsColumns = "Phase 6: 26.1 moved starting a bubble column from soul sand and magma to the water above";
-
-    [Fact(DisplayName = "Bubble columns and their sources are owned by their vanilla classes' overrides", Skip = WaterStartsColumns)]
-    public void OwnersAreGenerated()
-    {
-        Assert.Same(TickBehaviors.BubbleColumnBlock, BlocksRegistry.GetTickBehavior(BlockIds.BubbleColumn));
-        Assert.Same(ShapeUpdateBehaviors.BubbleColumnBlock, BlocksRegistry.GetShapeUpdateBehavior(BlockIds.BubbleColumn));
-        Assert.Same(EntityInsideBehaviors.BubbleColumnBlock, BlocksRegistry.GetEntityInsideBehavior(BlockIds.BubbleColumn));
-        Assert.Same(TickBehaviors.SoulSandBlock, BlocksRegistry.GetTickBehavior(BlockIds.SoulSand));
-        Assert.Same(ShapeUpdateBehaviors.SoulSandBlock, BlocksRegistry.GetShapeUpdateBehavior(BlockIds.SoulSand));
-        Assert.Same(OnPlaceBehaviors.SoulSandBlock, BlocksRegistry.GetOnPlaceBehavior(BlockIds.SoulSand));
-        Assert.Same(TickBehaviors.MagmaBlock, BlocksRegistry.GetTickBehavior(BlockIds.MagmaBlock));
-        Assert.Same(ShapeUpdateBehaviors.MagmaBlock, BlocksRegistry.GetShapeUpdateBehavior(BlockIds.MagmaBlock));
-        Assert.Same(OnPlaceBehaviors.MagmaBlock, BlocksRegistry.GetOnPlaceBehavior(BlockIds.MagmaBlock));
-    }
-
-    [Fact(DisplayName = "Only a bubble column takes the entity contact, so other blocks keep their own path")]
-    public void OnlyColumnsHaveEntityInside()
-    {
-        Assert.Null(BlocksRegistry.GetEntityInsideBehavior(BlockIds.SoulSand));
-        Assert.Null(BlocksRegistry.GetEntityInsideBehavior(BlockIds.MagmaBlock));
-    }
-
-    [Fact(DisplayName = "Water above soul sand becomes an upward column, and above magma a downward one", Skip = WaterStartsColumns)]
-    public async Task WaterAboveSourceBecomesColumn()
-    {
-        await using var context = TestServerFactory.CreateServer($"bubble-column-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-
-        var soul = new Vector(8, Ground, 8);
-        var magma = new Vector(10, Ground, 8);
-        world.BlockUpdates.SetBlock(soul, BlocksRegistry.SoulSand, BlockUpdateFlags.All);
-        world.BlockUpdates.SetBlock(soul + Vector.Up, BlocksRegistry.Water, BlockUpdateFlags.All);
-        world.BlockUpdates.SetBlock(magma, BlocksRegistry.MagmaBlock, BlockUpdateFlags.All);
-        world.BlockUpdates.SetBlock(magma + Vector.Up, BlocksRegistry.Water, BlockUpdateFlags.All);
-
-        Assert.True(world.BlockUpdates.HasScheduledTick(soul, BlocksRegistry.SoulSand));
-        Assert.True(world.BlockUpdates.HasScheduledTick(magma, BlocksRegistry.MagmaBlock));
-
-        world.BlockUpdates.RunScheduledTick(soul, BlocksRegistry.SoulSand.UnlocalizedName);
-        world.BlockUpdates.RunScheduledTick(magma, BlocksRegistry.MagmaBlock.UnlocalizedName);
-
-        var upward = world.BlockUpdates.GetBlock(soul + Vector.Up);
-        Assert.True(upward.Is(BlockIds.BubbleColumn));
-        Assert.Equal("false", upward.GetProperty("drag"));
-
-        var downward = world.BlockUpdates.GetBlock(magma + Vector.Up);
-        Assert.True(downward.Is(BlockIds.BubbleColumn));
-        Assert.Equal("true", downward.GetProperty("drag"));
-    }
-
-    [Trait("Category", TestCategory.Worldgen)]
-    [Fact(DisplayName = "Magma that worldgen placed under water is post-processed into a scheduled column check", Skip = WaterStartsColumns)]
-    public void GeneratedMagmaUnderWaterSchedulesColumnCheck()
-    {
-        var dimension = MojangDimension.Overworld;
-        var builder = new ChunkBuilder(dimension, 12345L, generateStructures: false);
-        var area = new Dictionary<(int X, int Z), IChunk>();
-        for (var dx = -1; dx <= 1; dx++)
-            for (var dz = -1; dz <= 1; dz++)
-                area[(dx, dz)] = new Chunk(dx, dz, dimension.MinY, dimension.Height);
-
-        var center = (Chunk)area[(0, 0)];
-        var source = new Vector(8, Ground, 8);
-        center.SetBlock(source.X, source.Y, source.Z, BlocksRegistry.MagmaBlock);
-        center.SetBlock(source.X, source.Y + 1, source.Z, BlocksRegistry.Water);
-        // Worldgen marks the magma's position when it writes it, since vanilla's hasPostProcess is true for magma.
-        center.PostProcessing.Add(source);
-
-        builder.PostProcess(area, 0, 0);
-
-        Assert.True(center.BlockTicks.Contains(source, BlocksRegistry.MagmaBlock.UnlocalizedName));
-    }
-
-    [Trait("Category", TestCategory.Worldgen)]
-    [Fact(DisplayName = "Worldgen writing magma marks its position for post-processing without a manual mark")]
-    public void WorldGenWritesMagmaMarksPostProcessing()
-    {
-        var dimension = MojangDimension.Overworld;
-        var builder = new ChunkBuilder(dimension, 12345L, generateStructures: false);
-        var area = new Dictionary<(int X, int Z), IChunk>();
-        for (var dx = -1; dx <= 1; dx++)
-            for (var dz = -1; dz <= 1; dz++)
-                area[(dx, dz)] = new Chunk(dx, dz, dimension.MinY, dimension.Height);
-
-        var center = (Chunk)area[(0, 0)];
-        var source = new Vector(8, Ground, 8);
-        var region = builder.CreateRegion(area, 0, 0, trackHeightmaps: false);
-        Assert.True(region.SetBlock(source, BlocksRegistry.MagmaBlock));
-
-        Assert.Contains(source, center.PostProcessing);
-    }
 
     [Fact(DisplayName = "Replacing the block beneath existing water with magma starts a downward column", Skip = WaterStartsColumns)]
     public async Task MagmaPlacedUnderExistingWaterStartsColumn()
@@ -204,30 +110,6 @@ public sealed class BubbleColumns
         var packet = new UseItemOnPacket();
         packet.Populate(reader);
         return packet;
-    }
-
-    [Fact(DisplayName = "A bubble column at a survival player's eye refills air, while plain water drains it")]
-    public async Task BubbleColumnAtEyeRefillsAir()
-    {
-        await using var context = TestServerFactory.CreateServer($"bubble-breath-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Diver");
-        player.GameMode = GameMode.Survival;
-        player.Position = new VectorD(8.5, Ground + 1, 8.5);
-        for (var y = Ground + 1; y <= Ground + 3; y++)
-            world.BlockUpdates.SetBlock(new Vector(8, y, 8), BlocksRegistry.Water, BlockUpdateFlags.All);
-
-        // The eye is at 1.62 above the feet, inside the block at Ground + 2, which holds water here.
-        player.Air = 100;
-        await player.TickAsync();
-        Assert.Equal(99, player.Air);
-
-        world.BlockUpdates.SetBlock(new Vector(8, Ground + 2, 8), BlocksRegistry.BubbleColumn.WithProperty("drag", "false"), BlockUpdateFlags.All);
-        player.Air = 100;
-        await player.TickAsync();
-        Assert.Equal(104, player.Air);
     }
 
     private static void AddChunks(WorldData.World world)

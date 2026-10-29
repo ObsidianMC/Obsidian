@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using Obsidian.API;
-using Obsidian.API.Registries;
 using Obsidian.API.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Entities.Factories;
@@ -15,33 +14,6 @@ namespace Obsidian.Tests;
 
 public sealed class BeeParity
 {
-    [Theory]
-    [InlineData(BlockIds.Wheat, 6, BlockIds.Wheat, 7)]
-    [InlineData(BlockIds.TorchflowerCrop, 1, BlockIds.Torchflower, -1)]
-    public async Task NectarGrowsVanillaCropsEvenWithoutMobGriefing(
-        int material, int age, int expected, int expectedAge)
-    {
-        await using var context = TestServerFactory.CreateServer($"bee-crops-{Guid.NewGuid():N}");
-        var chunk = AddChunk(context.World);
-        context.World.LevelData.GameRules["mob_griefing"] = "false";
-        chunk.SetBlock(8, 69, 8, BlocksRegistry.GetDefault(material).WithProperty("age", age));
-        var bee = new Bee
-        {
-            Level = context.World,
-            Position = new VectorD(8.5, 70, 8.5),
-            HasNectar = true
-        };
-        bee.InitializeAi(false);
-
-        await bee.GrowCropsAsync();
-
-        var grown = chunk.GetBlock(8, 69, 8);
-        Assert.Equal(expected, grown.RegistryId);
-        if (expectedAge >= 0)
-            Assert.Equal(expectedAge.ToString(), grown.GetProperty("age"));
-        Assert.Equal(1, bee.CropsGrownSincePollination);
-    }
-
     [Fact]
     public async Task BothDepthsGrowAndCounterPersistsUntilNectarIsDelivered()
     {

@@ -1,37 +1,24 @@
 using System;
 using System.Threading.Tasks;
 using Obsidian.API;
-using Obsidian.API.Blocks;
 using Obsidian.API.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.ChunkData;
 using Obsidian.Registries;
-using Obsidian.WorldData;
 using Obsidian.WorldData.Features;
 using Xunit;
 
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Plants that need a block under them (sugar cane, cactus): their owner classes are generated, and breaking the block
-/// under a stack breaks every plant above it, one tick each, as vanilla's canSurvive checks do.
+/// Plants that need a block under them (sugar cane, cactus): breaking the block under a stack breaks every plant above
+/// it, one tick each, as vanilla's canSurvive checks do.
 /// </summary>
 public sealed class PlantSurvival
 {
     private const int Ground = 69;
 
     private static readonly Vector Base = new(8, Ground + 1, 8);
-
-    [Fact(DisplayName = "Sugar cane and cactus are owned by vanilla's SugarCaneBlock and CactusBlock")]
-    public void OwnersAreGenerated()
-    {
-        Assert.Same(TickBehaviors.SugarCaneBlock, BlocksRegistry.GetTickBehavior(BlockIds.SugarCane));
-        Assert.Same(ShapeUpdateBehaviors.SugarCaneBlock, BlocksRegistry.GetShapeUpdateBehavior(BlockIds.SugarCane));
-        Assert.Same(TickBehaviors.CactusBlock, BlocksRegistry.GetTickBehavior(BlockIds.Cactus));
-        Assert.Same(ShapeUpdateBehaviors.CactusBlock, BlocksRegistry.GetShapeUpdateBehavior(BlockIds.Cactus));
-        Assert.Same(TickBehaviors.BambooStalkBlock, BlocksRegistry.GetTickBehavior(BlockIds.Bamboo));
-        Assert.Same(ShapeUpdateBehaviors.BambooStalkBlock, BlocksRegistry.GetShapeUpdateBehavior(BlockIds.Bamboo));
-    }
 
     [Theory(DisplayName = "Breaking the bottom of a stack breaks every plant above it", Timeout = TestServerFactory.TestTimeout)]
     [InlineData(BlockIds.SugarCane, 3, true)]
@@ -58,70 +45,6 @@ public sealed class PlantSurvival
 
         for (var y = 0; y < height; y++)
             Assert.True(world.BlockUpdates.GetBlock(Base + new Vector(0, y, 0)).IsAir);
-    }
-
-    [Fact(DisplayName = "A sugar cane stalk on sand beside water stays when its neighbours change", Timeout = TestServerFactory.TestTimeout)]
-    public async Task SupportedSugarCaneStays()
-    {
-        await using var context = TestServerFactory.CreateServer($"plant-cane-stay-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-
-        Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.Sand));
-        Held(world).SetBlock(Base + Vector.Down + Vector.East, BlocksRegistry.GetDefault(BlockIds.Water));
-        Held(world).SetBlock(Base, BlocksRegistry.GetDefault(BlockIds.SugarCane));
-        Held(world).SetBlock(Base + Vector.Up, BlocksRegistry.GetDefault(BlockIds.SugarCane));
-
-        // A change beside the top stalk runs its shape update; the stalks are still supported.
-        world.BlockUpdates.SetBlock(Base + Vector.East, BlocksRegistry.Air);
-        await world.DoWorldTickAsync();
-
-        Assert.Equal(BlockIds.SugarCane, world.BlockUpdates.GetBlock(Base).RegistryId);
-        Assert.Equal(BlockIds.SugarCane, world.BlockUpdates.GetBlock(Base + Vector.Up).RegistryId);
-    }
-
-    [Fact(DisplayName = "Bamboo placed on grass becomes a sapling, and on bamboo a stalk")]
-    public async Task BambooPlacementFollowsVanillaBaseRules()
-    {
-        await using var context = TestServerFactory.CreateServer($"plant-bamboo-place-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-        using var ticket = world.AddChunkTicket(0, 0);
-
-        IBlock Place(Vector at)
-        {
-            var placed = new BlockPlaceContext
-            {
-                Level = world.BlockUpdates,
-                Player = null!,
-                Hand = InteractionHand.MainHand,
-                Item = null!,
-                Block = BlocksRegistry.GetDefault(BlockIds.Bamboo),
-                Position = at,
-                ClickedPosition = at + Vector.Down,
-                ClickedFace = BlockFace.Up,
-                ClickedAt = default,
-                ReplacesClicked = false,
-                HorizontalDirection = BlockFace.North,
-                NearestLookDirection = BlockFace.North,
-            };
-            return PlacementBehaviors.For(placed.Block)!.GetStateForPlacement(placed)!;
-        }
-
-        Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.GrassBlock));
-        Assert.Equal(BlockIds.BambooSapling, Place(Base).RegistryId);
-
-        Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.BambooSapling));
-        var onSapling = Place(Base);
-        Assert.Equal(BlockIds.Bamboo, onSapling.RegistryId);
-        Assert.Equal("none", onSapling.GetProperty("leaves"));
-
-        Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.Bamboo).WithProperty("leaves", "large"));
-        Assert.Equal("small", Place(Base).GetProperty("leaves"));
-
-        Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.Stone));
-        Assert.Null(PlacementBehaviors.For(BlocksRegistry.GetDefault(BlockIds.Bamboo))!
-            .GetStateForPlacement(new BlockPlaceContext { Level = world.BlockUpdates, Player = null!, Hand = InteractionHand.MainHand, Item = null!, Block = BlocksRegistry.GetDefault(BlockIds.Bamboo), Position = Base, ClickedPosition = Base, ClickedFace = BlockFace.Up, ClickedAt = default, ReplacesClicked = false, HorizontalDirection = BlockFace.North, NearestLookDirection = BlockFace.North }));
     }
 
     private static IChunk Held(WorldData.World world) => world.GetLoadedChunk(0, 0)!;

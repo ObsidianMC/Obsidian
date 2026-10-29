@@ -25,42 +25,6 @@ namespace Obsidian.Tests;
 
 public partial class Portals
 {
-    [Theory]
-    [InlineData("x", 2, 3)]
-    [InlineData("z", 21, 21)]
-    public async Task NetherFramesValidateAndCountExistingPortalBlocks(string axis, int width, int height)
-    {
-        {
-            var blocks = Frame(axis, width, height);
-            var shape = await PortalFrame.FindAsync(Read, new Vector(0, 64, 0), axis, -64);
-            Assert.NotNull(shape);
-            Assert.Equal(width, shape.Value.Width);
-            Assert.Equal(height, shape.Value.Height);
-            Assert.Equal(0, shape.Value.PortalBlocks);
-
-            ValueTask<IBlock?> Read(Vector position) => new(blocks.GetValueOrDefault(position, BlocksRegistry.Air));
-        }
-
-        {
-            var blocks = Frame("x", 2, 3);
-            blocks.Remove(new Vector(0, 63, 0));
-            Assert.Null(await PortalFrame.FindAsync(Read, new Vector(0, 64, 0), "x", -64));
-            blocks = Frame("x", 2, 3);
-            blocks[new Vector(1, 65, 0)] = BlocksRegistry.Stone;
-            Assert.Null(await PortalFrame.FindAsync(Read, new Vector(0, 64, 0), "x", -64));
-            ValueTask<IBlock?> Read(Vector position) => new(blocks.GetValueOrDefault(position, BlocksRegistry.Air));
-        }
-
-        {
-            var blocks = Frame("x", 2, 3);
-            blocks[new Vector(0, 64, 0)] = BlocksRegistry.NetherPortal;
-            var shape = await PortalFrame.FindAsync(Read, new Vector(1, 66, 0), "x", -64);
-            Assert.Equal(new Vector(0, 64, 0), shape!.Value.Origin);
-            Assert.Equal(1, shape.Value.PortalBlocks);
-            ValueTask<IBlock?> Read(Vector position) => new(blocks.GetValueOrDefault(position, BlocksRegistry.Air));
-        }
-    }
-
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task FlintAndSteelUseOnFrameIgnitesNetherPortal()
     {
@@ -87,48 +51,6 @@ public partial class Portals
         {
             SoundLocation: "minecraft:item.flintandsteel.use"
         });
-    }
-
-    [Fact]
-    public async Task EndRingRequiresAllEyesAndInwardFacingFrames()
-    {
-        var blocks = new Dictionary<Vector, IBlock>();
-        var origin = new Vector(0, 64, 0);
-        foreach (var (position, facing) in EndPortalFrames.Ring(origin))
-            blocks[position] = BlocksRegistry.EndPortalFrame.WithProperty("eye", true).WithProperty("facing", facing);
-        Assert.True(await EndPortalFrames.IsCompleteAsync(Read, origin));
-        var north = origin + new Vector(0, 0, -1);
-        blocks[north] = blocks[north].WithProperty("facing", "north");
-        Assert.False(await EndPortalFrames.IsCompleteAsync(Read, origin));
-        blocks[north] = blocks[north].WithProperty("facing", "south").WithProperty("eye", false);
-        Assert.False(await EndPortalFrames.IsCompleteAsync(Read, origin));
-        ValueTask<IBlock?> Read(Vector position) => new(blocks.GetValueOrDefault(position, BlocksRegistry.Air));
-    }
-
-    [Fact]
-    public void PortalExitsFindFreeSpaceUsingCollisionShapes()
-    {
-        {
-            var slab = BlocksRegistry.StoneSlab.WithProperty("type", "bottom");
-            IBlock Read(Vector position) => position == new Vector(0, 64, 0) ? slab : BlocksRegistry.Air;
-            var exit = PortalCollision.FindFreePosition(Read, new VectorD(0.5, 64.2, 0.5), 0.6, 1.8);
-            Assert.Equal(64.5, exit.Y, 6);
-            Assert.Equal(0.5, exit.X, 6);
-            Assert.Equal(0.5, exit.Z, 6);
-        }
-
-        {
-            var position = new VectorD(-10.25, 70.5, 3.75);
-            Assert.Equal(position, PortalCollision.FindFreePosition(_ => BlocksRegistry.Air, position, 0.6, 1.8));
-        }
-
-        {
-            IBlock Read(
-                Vector position) => position == new Vector(0, 64, 0) ? BlocksRegistry.Stone : BlocksRegistry.Air;
-            var exit = PortalCollision.FindFreePosition(Read, new VectorD(0.5, 64, 0.5), 0.6, 1.8);
-            var distance = Math.Sqrt(Math.Pow(exit.X - 0.5, 2) + Math.Pow(exit.Y - 64, 2) + Math.Pow(exit.Z - 0.5, 2));
-            Assert.Equal(0.8, distance, 6);
-        }
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]

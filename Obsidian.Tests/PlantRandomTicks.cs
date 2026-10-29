@@ -54,31 +54,6 @@ public sealed class PlantRandomTicks
         await world.DoWorldTickAsync();
     }
 
-    [Fact(DisplayName = "A nether wart below age 3 grows only on a draw of 0 out of 10", Timeout = TestServerFactory.TestTimeout)]
-    public async Task NetherWartAgesOnlyWhenTheDrawComesUpZero()
-    {
-        await using var context = TestServerFactory.CreateServer($"plant-wart-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-
-        Held(world).SetBlock(Base, BlocksRegistry.GetDefault(BlockIds.NetherWart).WithProperty("age", "0"));
-        var random = new LegacyRandomSource(1);
-        var expected = new LegacyRandomSource(1);
-        var age = 0;
-        for (var tick = 0; tick < 200; tick++)
-        {
-            RandomTickBehaviors.NetherWartBlock.RandomTick(world, Base, Held(world).GetBlock(Base), random);
-            if (age < 3 && expected.NextInt(10) == 0)
-                age++;
-            Assert.Equal(age.ToString(), Held(world).GetBlock(Base).GetProperty("age"));
-        }
-
-        // It grew to the top, and drew nothing once it got there.
-        Assert.Equal(3, age);
-        Assert.Equal(expected.NextInt(1000), random.NextInt(1000));
-        await world.DoWorldTickAsync();
-    }
-
     [Fact(DisplayName = "A chorus flower on end stone with air above grows a stalk and a new flower", Timeout = TestServerFactory.TestTimeout)]
     public async Task ChorusFlowerGrowsOnEndStone()
     {

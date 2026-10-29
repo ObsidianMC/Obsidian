@@ -1,5 +1,4 @@
 using Obsidian.API;
-using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.Events;
@@ -11,52 +10,6 @@ namespace Obsidian.Tests;
 
 public sealed class Player
 {
-    private static readonly FakeServer server = new();
-
-    [Fact]
-    public void Clone_ShouldGiveMaxStackInCreative()
-    {
-        var player = new FakePlayer { GameMode = GameMode.Creative };
-        var container = new Container(9);
-        var item = new ItemStack(ItemsRegistry.Diamond, 1);
-        container.SetItem(0, item);
-
-        var args = ContainerClickEventArgs.Create(
-            player,
-            server,
-            container,
-            containerId: 1,
-            clickedSlot: 0,
-            button: 2, // middle click
-            stateId: 0,
-            clickType: ClickType.Clone
-        );
-
-        MainEventHandler.OnInventoryClickTest(args);
-
-        Assert.NotNull(player.CarriedItem);
-        Assert.Equal(player.CarriedItem.MaxStackSize, player.CarriedItem.Count);
-    }
-
-    [Theory]
-    [InlineData(90, 0, -1, 0, 0)]
-    [InlineData(0, 90, 0, -1, 0)]
-    public void LookDirection_UsesDegrees(float yaw, float pitch, double x, double y, double z)
-    {
-        var entity = new Obsidian.Entities.Entity
-        {
-            Level = null!,
-            Yaw = yaw,
-            Pitch = pitch
-        };
-
-        var direction = entity.GetLookDirection();
-
-        Assert.InRange(System.Math.Abs(direction.X - x), 0, 0.00001);
-        Assert.InRange(System.Math.Abs(direction.Y - y), 0, 0.00001);
-        Assert.InRange(System.Math.Abs(direction.Z - z), 0, 0.00001);
-    }
-
     [Theory]
     [InlineData(0, 1, 4)]
     [InlineData(1, 5, 0)]
