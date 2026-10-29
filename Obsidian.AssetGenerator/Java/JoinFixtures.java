@@ -151,6 +151,18 @@ class JoinFixtures {
 
         chunk(output);
 
+        // Light packets' section masks: none, one section, a whole level's 26 and one past the first long.
+        var masks = new JsonArray();
+        for (var bits : List.of(new int[0], new int[]{1}, java.util.stream.IntStream.range(0, 26).toArray(), new int[]{3, 70})) {
+            var mask = new BitSet();
+            for (var bit : bits) mask.set(bit);
+            masks.add(hex(net.minecraft.network.codec.ByteBufCodecs.BIT_SET, mask));
+        }
+        output.add("light_masks", masks);
+
+        output.addProperty("chunks_biomes", hex(ClientboundChunksBiomesPacket.STREAM_CODEC, new ClientboundChunksBiomesPacket(
+            List.of(new ClientboundChunksBiomesPacket.ChunkBiomeData(new ChunkPos(3, -2), new byte[]{1, 2, 3})))));
+
         var json = new GsonBuilder().setPrettyPrinting().create();
         Files.writeString(Path.of(args[0]), json.toJson(output));
         Files.writeString(Path.of(args[1]), json.toJson(synced) + "\n");

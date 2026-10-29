@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
 /// <summary>
@@ -58,7 +60,7 @@ public partial class LightUpdatePacket
     /// <summary>The most bytes <see cref="WriteLight"/> writes, for sizing a buffer ahead.</summary>
     internal int MaxLightSize()
     {
-        // Each mask is a VarInt count of longs, then the longs; each list of arrays a VarInt count, then each array's
+        // Each mask is a VarInt length, then at most its longs' bytes; each list of arrays a VarInt count, then each array's
         // VarInt length and its bytes. A VarInt takes at most 5 bytes.
         var size = 6 * 5;
         size += sizeof(long) * (this.skyMask.DataStorage.Length + this.blockMask.DataStorage.Length
@@ -111,11 +113,20 @@ public partial class LightUpdatePacket
         return light;
     }
 
-    private static void WriteMask(INetStreamWriter writer, BitSet mask)
+    /// <summary>
+    /// Writes a section mask like vanilla's <c>ByteBufCodecs.BIT_SET</c> (26.3): a VarInt length, then the mask's bytes,
+    /// low bits first, without the trailing zero bytes (Java's <c>BitSet.toByteArray</c>).
+    /// </summary>
+    internal static void WriteMask(INetStreamWriter writer, BitSet mask)
     {
-        writer.WriteVarInt(mask.DataStorage.Length);
-        if (mask.DataStorage.Length != 0)
-            writer.WriteLongArray(mask.DataStorage.ToArray());
+        var longs = mask.DataStorage.Span;
+        Span<byte> bytes = stackalloc byte[longs.Length * sizeof(long)];
+        for (var i = 0; i < longs.Length; i++)
+            BinaryPrimitives.WriteInt64LittleEndian(bytes[(i * sizeof(long))..], longs[i]);
+
+        var length = bytes.LastIndexOfAnyExcept((byte)0) + 1;
+        writer.WriteVarInt(length);
+        writer.WriteByteArray(bytes[..length]);
     }
 
     private static void WriteArrays(INetStreamWriter writer, List<ReadOnlyMemory<byte>> arrays)

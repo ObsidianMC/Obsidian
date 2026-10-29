@@ -39,7 +39,8 @@ public class JoinPayloads
     public static TheoryData<string> Packets =>
     [
         "login_finished", "select_known_packs", "registry_data", "login", "respawn", "change_difficulty",
-        "set_default_spawn_position", "set_time", "game_event", "player_abilities", "post_effects", "level_chunk"
+        "set_default_spawn_position", "set_time", "game_event", "player_abilities", "post_effects", "level_chunk",
+        "light_masks", "chunks_biomes"
     ];
 
     [Theory]
@@ -53,7 +54,7 @@ public class JoinPayloads
             var single => [single!.GetValue<string>()]
         };
 
-        var actual = Build(packet).Select(Encode).ToList();
+        var actual = packet == "light_masks" ? LightMasks() : Build(packet).Select(Encode).ToList();
 
         // The chunk is compared up to its light data, which the fixture doesn't have.
         if (packet == "level_chunk")
@@ -201,8 +202,29 @@ public class JoinPayloads
         ],
         "post_effects" => [new PostEffectsPacket { PostEffects = [] }],
         "level_chunk" => [new LevelChunkWithLightPacket(Chunk(fixture.Value["level_chunk"]!.AsObject()))],
+        "chunks_biomes" => [new ChunksBiomesPacket { ChunkBiomes = [new() { X = 3, Z = -2, Data = new byte[] { 1, 2, 3 } }] }],
         _ => throw new ArgumentException($"No packet for {packet}", nameof(packet))
     };
+
+    // The section masks of the chunk and light packets: none, one section, a whole level's 26 and one past the first
+    // long.
+    private static List<string> LightMasks()
+    {
+        int[][] masks = [[], [1], [.. Enumerable.Range(0, 26)], [3, 70]];
+        return
+        [
+            .. masks.Select(bits =>
+            {
+                var mask = new BitSet();
+                foreach (var bit in bits)
+                    mask.SetBit(bit, true);
+
+                using var buffer = new NetworkBuffer();
+                LightUpdatePacket.WriteMask(buffer, mask);
+                return Convert.ToHexStringLower(buffer.AsSpan(0, buffer.Size));
+            })
+        ];
+    }
 
     // The fixture's chunk: its blocks, vanilla's heights for them, and plains, vanilla's default biome, throughout.
     private static Chunk Chunk(JsonObject input)
