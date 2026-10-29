@@ -303,19 +303,19 @@ public sealed partial class Wolf : Animal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.Byte);
         writer.WriteByte((byte)((IsSitting ? 1 : 0) | (Tamed ? 4 : 0)));
-        writer.WriteEntityMetadataType(18, EntityMetadataType.OptionalLivingEntityReference);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.OptionalLivingEntityReference);
         writer.WriteOptional(Tamed ? (Guid?)Owner : null);
-        writer.WriteEntityMetadataType(19, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 2, EntityMetadataType.Boolean);
         writer.WriteBoolean(begging);
-        writer.WriteEntityMetadataType(20, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 3, EntityMetadataType.VarInt);
         writer.WriteVarInt(CollarColor);
-        writer.WriteEntityMetadataType(21, EntityMetadataType.VarLong);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 4, EntityMetadataType.VarLong);
         writer.WriteVarLong(AngerTicks == 0 ? 0 : Level.LevelData.Time + AngerTicks);
-        writer.WriteEntityMetadataType(22, EntityMetadataType.WolfVariant);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 5, EntityMetadataType.WolfVariant);
         writer.WriteVarInt(Variant);
-        writer.WriteEntityMetadataType(23, EntityMetadataType.WolfSoundVariant);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 6, EntityMetadataType.WolfSoundVariant);
         writer.WriteVarInt(SoundVariant);
     }
 }

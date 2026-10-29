@@ -82,7 +82,7 @@ public sealed partial class Rabbit : FarmAnimal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.VarInt);
         writer.WriteVarInt(Variant);
     }
 

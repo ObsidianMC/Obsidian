@@ -183,9 +183,9 @@ public partial class Camel : AbstractHorse, IRideableJumping
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(HorseMetadataCount, EntityMetadataType.Boolean);
         writer.WriteBoolean(Dashing);
-        writer.WriteEntityMetadataType(19, EntityMetadataType.VarLong);
+        writer.WriteEntityMetadataType(HorseMetadataCount + 1, EntityMetadataType.VarLong);
         writer.WriteVarLong(LastPoseChangeTick);
     }
 }

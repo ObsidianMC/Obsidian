@@ -74,9 +74,9 @@ public sealed partial class Turtle : FarmAnimal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.Boolean);
         writer.WriteBoolean(HasEgg);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.Boolean);
         writer.WriteBoolean(Laying);
     }
 

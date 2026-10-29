@@ -63,8 +63,8 @@ public sealed partial class Hoglin : FarmAnimal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Boolean);
-        writer.WriteBoolean(IsConverting && !MobBitMask.HasFlag(MobBitmask.NoAi));
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.Boolean);
+        writer.WriteBoolean(IsImmuneToZombification);
     }
 
     protected override void WriteAdditionalSave(INbtWriter writer)

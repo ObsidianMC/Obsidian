@@ -4,6 +4,8 @@ namespace Obsidian.Entities;
 
 public class ChestedHorse : AbstractHorse
 {
+    protected const byte ChestedHorseMetadataCount = HorseMetadataCount + 1;
+
     public bool HasChest { get; set; }
     internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
@@ -39,7 +41,7 @@ public class ChestedHorse : AbstractHorse
     {
         base.Write(writer);
 
-        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(HorseMetadataCount, EntityMetadataType.Boolean);
         writer.WriteBoolean(HasChest);
     }
 }
@@ -139,10 +141,10 @@ public partial class Llama : ChestedHorse
     {
         base.Write(writer);
 
-        writer.WriteEntityMetadataType(19, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(ChestedHorseMetadataCount, EntityMetadataType.VarInt);
         writer.WriteVarInt(Strength);
 
-        writer.WriteEntityMetadataType(20, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(ChestedHorseMetadataCount + 1, EntityMetadataType.VarInt);
         writer.WriteVarInt(Variant);
     }
 }

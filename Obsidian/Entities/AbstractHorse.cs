@@ -8,6 +8,8 @@ namespace Obsidian.Entities;
 
 public class AbstractHorse : Animal, IRideable
 {
+    protected const byte HorseMetadataCount = AgeableMetadataCount + 1;
+
     public HorseMask HorseMask { get; set; }
 
     public Guid Owner { get; set; }
@@ -189,7 +191,7 @@ public class AbstractHorse : Animal, IRideable
     {
         base.Write(writer);
 
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.Byte);
         writer.WriteByte((byte)HorseMask);
     }
 }

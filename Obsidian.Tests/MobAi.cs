@@ -206,51 +206,52 @@ public sealed class MobAi
     [Fact]
     public void MobMetadataUsesClientSerializers()
     {
-        AssertHorseFamilyMetadataMatches12111ClientFields(EntityType.Horse);
-        AssertHorseFamilyMetadataMatches12111ClientFields(EntityType.Camel);
-        AssertFelineMetadataMatches12111ClientFields(EntityType.Cat);
+        AssertHorseFamilyMetadataMatches263ClientFields(EntityType.Horse);
+        AssertHorseFamilyMetadataMatches263ClientFields(EntityType.Camel);
+        AssertFelineMetadataMatches263ClientFields(EntityType.Cat);
         AssertAddedMobMetadataUsesClientSerializers(EntityType.Blaze, EntityMetadataType.Byte);
         AssertAddedMobMetadataUsesClientSerializers(EntityType.Enderman, EntityMetadataType.OptionalBlockState);
         AssertWolfMetadataIncludesSoundVariantAndLongAngerTimer();
     }
 
-    private static void AssertHorseFamilyMetadataMatches12111ClientFields(EntityType type)
+    private static void AssertHorseFamilyMetadataMatches263ClientFields(EntityType type)
     {
         var entity = Obsidian.Entities.Factories.EntitySpawner.Create(type, null!);
         if (entity is Camel camel)
             camel.LastPoseChangeTick = -123;
         var fields = ReadMetadataTypes(entity);
         Assert.Equal(EntityMetadataType.Boolean, fields[16]);
-        Assert.Equal(EntityMetadataType.Byte, fields[17]);
+        Assert.Equal(EntityMetadataType.Boolean, fields[17]);
+        Assert.Equal(EntityMetadataType.Byte, fields[18]);
         Assert.DoesNotContain(EntityMetadataType.OptionalLivingEntityReference, fields.Values);
         if (type == EntityType.Horse)
         {
-            Assert.Equal(EntityMetadataType.VarInt, fields[18]);
-            Assert.Equal(19, fields.Count);
+            Assert.Equal(EntityMetadataType.VarInt, fields[19]);
+            Assert.Equal(20, fields.Count);
         }
         else if (type is EntityType.Donkey or EntityType.Llama)
         {
-            Assert.Equal(EntityMetadataType.Boolean, fields[18]);
+            Assert.Equal(EntityMetadataType.Boolean, fields[19]);
             if (type == EntityType.Llama)
             {
-                Assert.Equal(EntityMetadataType.VarInt, fields[19]);
                 Assert.Equal(EntityMetadataType.VarInt, fields[20]);
-                Assert.Equal(21, fields.Count);
+                Assert.Equal(EntityMetadataType.VarInt, fields[21]);
+                Assert.Equal(22, fields.Count);
             }
             else
-                Assert.Equal(19, fields.Count);
+                Assert.Equal(20, fields.Count);
         }
         else if (type == EntityType.Camel)
         {
-            Assert.Equal(EntityMetadataType.Boolean, fields[18]);
-            Assert.Equal(EntityMetadataType.VarLong, fields[19]);
-            Assert.Equal(20, fields.Count);
+            Assert.Equal(EntityMetadataType.Boolean, fields[19]);
+            Assert.Equal(EntityMetadataType.VarLong, fields[20]);
+            Assert.Equal(21, fields.Count);
         }
         else
-            Assert.Equal(18, fields.Count);
+            Assert.Equal(19, fields.Count);
     }
 
-    private static void AssertFelineMetadataMatches12111ClientFields(EntityType type)
+    private static void AssertFelineMetadataMatches263ClientFields(EntityType type)
     {
         var entity = Obsidian.Entities.Factories.EntitySpawner.Create(type, null!);
         if (entity is Cat cat)
@@ -261,20 +262,22 @@ public sealed class MobAi
         }
         var fields = ReadMetadataTypes(entity);
         Assert.Equal(EntityMetadataType.Boolean, fields[16]);
+        Assert.Equal(EntityMetadataType.Boolean, fields[17]);
         if (type == EntityType.Ocelot)
         {
-            Assert.Equal(EntityMetadataType.Boolean, fields[17]);
-            Assert.Equal(18, fields.Count);
+            Assert.Equal(EntityMetadataType.Boolean, fields[18]);
+            Assert.Equal(19, fields.Count);
         }
         else
         {
-            Assert.Equal(EntityMetadataType.Byte, fields[17]);
-            Assert.Equal(EntityMetadataType.OptionalLivingEntityReference, fields[18]);
-            Assert.Equal(EntityMetadataType.CatVariant, fields[19]);
-            Assert.Equal(EntityMetadataType.Boolean, fields[20]);
+            Assert.Equal(EntityMetadataType.Byte, fields[18]);
+            Assert.Equal(EntityMetadataType.OptionalLivingEntityReference, fields[19]);
+            Assert.Equal(EntityMetadataType.CatVariant, fields[20]);
             Assert.Equal(EntityMetadataType.Boolean, fields[21]);
-            Assert.Equal(EntityMetadataType.VarInt, fields[22]);
-            Assert.Equal(23, fields.Count);
+            Assert.Equal(EntityMetadataType.Boolean, fields[22]);
+            Assert.Equal(EntityMetadataType.VarInt, fields[23]);
+            Assert.Equal(EntityMetadataType.CatSoundVariant, fields[24]);
+            Assert.Equal(25, fields.Count);
         }
     }
 
@@ -300,12 +303,12 @@ public sealed class MobAi
             SoundVariant = 6
         };
         var fields = ReadMetadataTypes(wolf);
-        Assert.Equal(EntityMetadataType.Byte, fields[17]);
-        Assert.Equal(EntityMetadataType.OptionalLivingEntityReference, fields[18]);
-        Assert.Equal(EntityMetadataType.VarLong, fields[21]);
-        Assert.Equal(EntityMetadataType.WolfVariant, fields[22]);
-        Assert.Equal(EntityMetadataType.WolfSoundVariant, fields[23]);
-        Assert.Equal(24, fields.Count);
+        Assert.Equal(EntityMetadataType.Byte, fields[18]);
+        Assert.Equal(EntityMetadataType.OptionalLivingEntityReference, fields[19]);
+        Assert.Equal(EntityMetadataType.VarLong, fields[22]);
+        Assert.Equal(EntityMetadataType.WolfVariant, fields[23]);
+        Assert.Equal(EntityMetadataType.WolfSoundVariant, fields[24]);
+        Assert.Equal(25, fields.Count);
     }
 
     [Fact]
@@ -420,6 +423,9 @@ public sealed class MobAi
                     break;
                 case EntityMetadataType.CatVariant:
                     Assert.Equal(Assert.IsType<Cat>(entity).Variant, reader.ReadVarInt());
+                    break;
+                case EntityMetadataType.CatSoundVariant:
+                    Assert.Equal(Assert.IsType<Cat>(entity).SoundVariant, reader.ReadVarInt());
                     break;
                 case EntityMetadataType.CowVariant:
                     Assert.Equal(Assert.IsType<Cow>(entity).Variant, reader.ReadVarInt());

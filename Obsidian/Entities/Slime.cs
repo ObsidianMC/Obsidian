@@ -3,7 +3,7 @@ using Obsidian.Entities.AI;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:slime")]
-public partial class Slime : PathfinderMob
+public partial class Slime : CubeMob
 {
     private int size = 1;
     private long nextAttack;
@@ -12,7 +12,7 @@ public partial class Slime : PathfinderMob
         Type = EntityType.Slime;
         MoveControl = new SlimeMoveControl(this);
     }
-    public virtual int Size
+    public override int Size
     {
         get => size;
         set
@@ -86,13 +86,6 @@ public partial class Slime : PathfinderMob
     }
     protected virtual Slime CreateSplitChild() => new Slime { Level = Level };
     protected virtual void DropSmallLoot() => DropItem(ItemsRegistry.SlimeBall, Random.Next(3));
-
-    public override void Write(INetStreamWriter writer)
-    {
-        base.Write(writer);
-        writer.WriteEntityMetadataType(16, EntityMetadataType.VarInt);
-        writer.WriteVarInt(Size);
-    }
 }
 
 internal sealed class SlimeMoveControl(Slime slime) : MoveControl(slime)

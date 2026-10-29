@@ -9,6 +9,8 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:nautilus")]
 public partial class Nautilus : FarmAnimal, IRideableJumping
 {
+    protected const byte NautilusMetadataCount = AgeableMetadataCount + 3;
+
     public Guid Owner { get; private set; }
     private int dashCooldown;
     private int dashTicks;
@@ -156,11 +158,11 @@ public partial class Nautilus : FarmAnimal, IRideableJumping
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.Byte);
         writer.WriteByte((byte)(Owner != Guid.Empty ? 4 : 0));
-        writer.WriteEntityMetadataType(18, EntityMetadataType.OptionalLivingEntityReference);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.OptionalLivingEntityReference);
         writer.WriteOptional(Owner != Guid.Empty ? (Guid?)Owner : null);
-        writer.WriteEntityMetadataType(19, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 2, EntityMetadataType.Boolean);
         writer.WriteBoolean(dashTicks > 0);
     }
 

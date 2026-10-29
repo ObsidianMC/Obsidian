@@ -214,9 +214,9 @@ public sealed partial class Bee : FarmAnimal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.Byte);
         writer.WriteByte((byte)((HasNectar ? 8 : 0) | (HasStung ? 4 : 0) | (AttackTarget != null ? 2 : 0)));
-        writer.WriteEntityMetadataType(18, EntityMetadataType.VarLong);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.VarLong);
         writer.WriteVarLong(AngerTicks > 0 ? Level.LevelData.Time + AngerTicks : 0);
     }
 

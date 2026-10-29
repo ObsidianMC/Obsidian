@@ -183,11 +183,11 @@ public sealed partial class Parrot : Animal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.Byte);
         writer.WriteByte((byte)((Tamed ? 4 : 0) | (OrderedToSit ? 1 : 0)));
-        writer.WriteEntityMetadataType(18, EntityMetadataType.OptionalLivingEntityReference);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.OptionalLivingEntityReference);
         writer.WriteOptional(Tamed ? (Guid?)Owner : null);
-        writer.WriteEntityMetadataType(19, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 2, EntityMetadataType.VarInt);
         writer.WriteVarInt(Variant);
     }
 

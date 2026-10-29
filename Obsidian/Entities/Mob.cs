@@ -4,13 +4,15 @@ namespace Obsidian.Entities;
 
 public partial class Mob : Living
 {
+    protected const byte MobMetadataCount = LivingMetadataCount + 1;
+
     public MobBitmask MobBitMask { get; set; } = MobBitmask.None;
 
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
 
-        writer.WriteEntityMetadataType(15, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(LivingMetadataCount, EntityMetadataType.Byte);
         writer.WriteByte((byte)MobBitMask);
     }
 

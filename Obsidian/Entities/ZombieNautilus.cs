@@ -46,7 +46,7 @@ public sealed partial class ZombieNautilus : Nautilus
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(20, EntityMetadataType.ZombieNautilusVariant);
+        writer.WriteEntityMetadataType(NautilusMetadataCount, EntityMetadataType.ZombieNautilusVariant);
         writer.WriteVarInt(Variant);
     }
 
