@@ -276,14 +276,19 @@ public partial class PlayerBase
         return !attack.IsCancelled;
     }
 
-    public async ValueTask<bool> InteractAsync(IEntity target, InteractionHand hand = InteractionHand.MainHand,
-        bool sneaking = false)
+    public ValueTask<bool> InteractAsync(IEntity target, InteractionHand hand = InteractionHand.MainHand,
+        bool sneaking = false) => InteractAsync(target, hand, null, sneaking);
+
+    /// <param name="location">Where on <paramref name="target"/> the client clicked, relative to its position.</param>
+    internal async ValueTask<bool> InteractAsync(IEntity target, InteractionHand hand, VectorF? location, bool sneaking)
     {
         if (!Alive || Respawning || target.Level != Level || !target.IsInRange(this, GameMode == GameMode.Creative ? 8 : 6))
             return false;
         if (Level is AbstractLevel events)
             events.EmitGameEvent(MobGameEvent.EntityInteract, target.Position, this);
-        var interaction = new EntityInteractEventArgs(this, target, Server, hand, sneaking);
+        var interaction = location is { } at
+            ? new EntityInteractEventArgs(this, target, Server, hand, at, sneaking)
+            : new EntityInteractEventArgs(this, target, Server, hand, sneaking);
         await Server.EventDispatcher.ExecuteEventAsync(interaction);
         return !interaction.IsCancelled;
     }

@@ -1,22 +1,22 @@
-﻿using Obsidian.Serialization.Attributes;
+﻿namespace Obsidian.Net.Packets.Play.Clientbound;
 
-namespace Obsidian.Net.Packets.Play.Clientbound;
-
+/// <summary>
+/// Moves an entity by a small amount, in 1/4096 blocks on each axis.
+/// </summary>
 public partial class MoveEntityPosPacket
 {
-    [Field(0), VarLength]
     public int EntityId { get; init; }
 
-    [Field(1), DataFormat(typeof(short))]
+    /// <summary>
+    /// The move, in 1/4096 blocks, from the position last sent. Each axis must fit a short.
+    /// </summary>
     public Vector Delta { get; init; }
 
-    [Field(4)]
     public bool OnGround { get; init; }
 
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.EntityId);
-        writer.WriteAbsoluteShortPosition(this.Delta);
-        writer.WriteBoolean(this.OnGround);
+        EntityMoveDelta.Write(writer, this.Delta, this.OnGround);
     }
 }

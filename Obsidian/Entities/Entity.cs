@@ -308,7 +308,7 @@ public partial class Entity : IEquatable<Entity>, IEntity
 
     /// <summary>
     /// Whether a move fits a relative-move packet, whose delta is a short on each axis; vanilla sends larger moves
-    /// as a teleport to the absolute position.
+    /// as a position sync to the absolute position.
     /// </summary>
     internal static bool IsRelativeMove(Vector delta) =>
         delta.X is >= short.MinValue and <= short.MaxValue
@@ -316,7 +316,7 @@ public partial class Entity : IEquatable<Entity>, IEntity
         && delta.Z is >= short.MinValue and <= short.MaxValue;
 
     private void BroadcastTeleport(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags) =>
-        this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, position, new TeleportEntityPacket
+        this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, position, new EntityPositionSyncPacket
         {
             EntityId = EntityId,
             OnGround = movementFlags.HasFlag(MovementFlags.OnGround),

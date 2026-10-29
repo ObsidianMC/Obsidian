@@ -9,20 +9,24 @@ public partial class SignUpdatePacket
 {
     public Vector Position { get; private set; }
 
-    public bool IsFrontText { get; private set; }
-
     public string[] Lines { get; private set; } = [];
+
+    /// <summary>
+    /// The side of the sign the lines are for.
+    /// </summary>
+    public SignTextSlot Slot { get; private set; }
 
     public override void Populate(INetStreamReader reader)
     {
         this.Position = reader.ReadPosition();
-        this.IsFrontText = reader.ReadBoolean();
 
+        // Exactly four lines, with no count before them; since 26.3 the side comes after them.
         var lines = new string[4];
         for (var i = 0; i < lines.Length; i++)
             lines[i] = reader.ReadString();
 
         this.Lines = lines;
+        this.Slot = reader.ReadVarInt<SignTextSlot>();
     }
 
     public override async ValueTask HandleAsync(IServer server, IClientPlayer player)
@@ -31,7 +35,7 @@ public partial class SignUpdatePacket
             return;
 
         // On the level's tick, like other changes to its blocks.
-        var (position, front, lines) = (this.Position, this.IsFrontText, this.Lines);
+        var (position, front, lines) = (this.Position, this.Slot == SignTextSlot.Front, this.Lines);
         level.EnqueueEntityAction(() =>
         {
             Signs.Edit(level, position, player, front, lines);

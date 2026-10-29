@@ -264,7 +264,7 @@ internal static class Signs
     private static void OpenEditor(ILevel level, Vector position, IPlayer player, bool front)
     {
         editors[(level, position)] = player.Uuid;
-        player.SendPacket(new OpenSignEditorPacket { Location = new VectorF(position.X, position.Y, position.Z), IsFrontText = front });
+        player.SendPacket(new OpenSignEditorPacket { Position = position, Slot = front ? SignTextSlot.Front : SignTextSlot.Back });
     }
 
     // Vanilla SignBlockEntity.isFacingFrontText: whether the player stands on the front's side of the sign.

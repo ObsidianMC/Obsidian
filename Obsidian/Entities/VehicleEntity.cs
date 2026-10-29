@@ -456,11 +456,10 @@ public abstract class VehicleEntity : Entity, IPlayerInteractable
 
         if (moved && !IsRelativeMove(delta))
         {
-            this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, this.Position, new TeleportEntityPacket
+            this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, this.Position, new EntityPositionSyncPacket
             {
                 EntityId = this.EntityId,
                 Position = this.Position,
-                Delta = this.Motion,
                 Yaw = this.Yaw,
                 Pitch = this.Pitch,
                 OnGround = onGround

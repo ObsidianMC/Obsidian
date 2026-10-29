@@ -17,11 +17,12 @@ public partial class AnimatePacket
     }
 }
 
+/// <summary>
+/// The animations <see cref="AnimatePacket"/> plays. Since 26.3 arm swings go through <see cref="SwingAnimationPacket"/>.
+/// </summary>
 public enum EntityAnimationType : byte
 {
-    SwingMainArm,
-    LeaveBed = 2,
-    SwingOffhand,
+    WakeUp,
     CriticalEffect,
     MagicalCriticalEffect
 }

@@ -71,7 +71,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
     [EventPriority(Priority = Priority.Internal)]
     public async Task OnEntityInteract(EntityInteractEventArgs e)
     {
-        if (e.IsCancelled || e.TargetPosition != null)
+        if (e.IsCancelled)
             return;
 
         // The entity's interaction and the item's use run on the entity's level tick, like the entity's own tick.
