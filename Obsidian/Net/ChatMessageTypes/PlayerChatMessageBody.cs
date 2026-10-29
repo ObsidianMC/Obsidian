@@ -6,5 +6,7 @@ public sealed class PlayerChatMessageBody
     public required MessageSignature Signature { get; init; }
 
     public List<MessageSignature> LastSeenMessages { get; init; } = [];
+
+    public IReadOnlyList<PackedChatSignature>? PackedLastSeen { get; init; }
 }
 

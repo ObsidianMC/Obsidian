@@ -99,43 +99,19 @@ public sealed class GameRuleCommandModule : CommandModuleBase
     [CommandOverload]
     public async Task GameRuleAsync([GameRuleSuggestions] string rule, [Suggestions("true", "false")] string value)
     {
-        if (!TryFind(rule, out var name, out var defaultValue))
+        if (!TryFind(rule, out var name, out _))
         {
             await this.CommandContext.FailAsync($"Unknown game rule: {rule}");
             return;
         }
 
-        string normalized;
-        if (defaultValue is bool)
+        if (!WorldData.GameRuleSynchronization.TryNormalize(name, value, out _, out var normalized))
         {
-            if (!bool.TryParse(value, out var flag))
-            {
-                await this.CommandContext.FailAsync($"Invalid boolean, expected 'true' or 'false' but found '{value}'");
-                return;
-            }
-
-            normalized = flag ? "true" : "false";
-        }
-        else
-        {
-            if (!int.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var number))
-            {
-                await this.CommandContext.FailAsync($"Invalid integer '{value}'");
-                return;
-            }
-
-            normalized = number.ToString(CultureInfo.InvariantCulture);
+            await this.CommandContext.FailAsync($"Invalid value '{value}' for game rule {name}");
+            return;
         }
 
-        // Game rules belong to the world, so every dimension of it gets the change.
-        foreach (var world in this.Server.WorldManager.GetAvailableWorlds())
-        {
-            var rules = world.LevelData.GameRules;
-
-            // Drop the names older saves used, which would otherwise be read for rules this doesn't set.
-            rules.Remove($"minecraft:{name}");
-            rules[name] = normalized;
-        }
+        await WorldData.GameRuleSynchronization.SetAsync(this.Server, name, normalized);
 
         await this.CommandContext.SuccessAsync($"Gamerule {name} is now set to: {normalized}");
     }

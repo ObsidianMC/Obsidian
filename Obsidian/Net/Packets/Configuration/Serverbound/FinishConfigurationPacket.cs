@@ -50,6 +50,7 @@ public sealed partial class FinishConfigurationPacket
 
         // Like vanilla's PlayerList.placeNewPlayer, the player learns the world's difficulty right after joining.
         await client.QueuePacketAsync(ChangeDifficultyPacket.Of(server.DefaultWorld.LevelData));
+        await client.QueuePacketAsync(WorldData.GameRuleSynchronization.Snapshot(player.Level.LevelData));
 
         var spawnLevel = player.Level is IDimension dimension ? dimension.ParentWorld : player.Level;
         await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()

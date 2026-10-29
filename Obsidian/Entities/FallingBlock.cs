@@ -66,6 +66,11 @@ public sealed partial class FallingBlock : Entity
         {
             // Like vanilla's, with updates: the landed block checks below it again, and its neighbours hear of it.
             await Level.SetBlockAsync(loc, this.Block, doBlockUpdate: true);
+            // 26.3 keeps a transient copy visible as the falling entity is removed after landing.
+            var landed = await Level.GetBlockAsync(loc);
+            if (landed is not null)
+                PacketBroadcaster.BroadcastToLevelInRange(Level, Position,
+                    new Net.Packets.Play.Clientbound.AddTransientBlockPacket(loc, landed.State?.Id ?? landed.DefaultId));
         }
         else if (BlocksRegistry.TryGetItem(this.Block, out var item))
         {

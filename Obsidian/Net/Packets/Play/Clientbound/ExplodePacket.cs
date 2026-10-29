@@ -25,6 +25,8 @@ public partial class ExplodePacket
     [Field(6)]
     public required List<Weighted<ExplosionRecord>> ExplosionParticleInfo { get; init; }
 
+    public bool PlaySound { get; init; } = true;
+
     public override void Serialize(INetStreamWriter writer)
     {
         VectorD.Write(Center, writer);
@@ -51,6 +53,7 @@ public partial class ExplodePacket
             writer.WriteSingle(entry.Value.Speed);
             writer.WriteVarInt(entry.Weight);
         }
+        writer.WriteBoolean(PlaySound);
     }
 }
 

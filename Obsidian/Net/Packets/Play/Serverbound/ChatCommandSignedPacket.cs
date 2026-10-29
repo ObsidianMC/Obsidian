@@ -3,9 +3,9 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-//TODO finish full impl
 public partial class ChatCommandSignedPacket
 {
+    public ChatMessageTypes.ChatAcknowledgement Acknowledgement { get; private set; }
     [Field(0)]
     public string Command { get; private set; } = default!;
 
@@ -28,16 +28,14 @@ public partial class ChatCommandSignedPacket
         Salt = reader.ReadLong();
 
         var argumentSignaturesLength = reader.ReadVarInt();
+        if (argumentSignaturesLength is < 0 or > 8)
+            throw new System.IO.InvalidDataException("Invalid signed argument count.");
 
         ArgumentSignatures = new List<ArgumentSignature>(argumentSignaturesLength);
         for (int i = 0; i < argumentSignaturesLength; i++)
-            ArgumentSignatures[i] = reader.ReadArgumentSignature();
+            ArgumentSignatures.Add(reader.ReadArgumentSignature());
 
-        var lastSeenMessagesLength = reader.ReadVarInt();
-
-        //LastSeenMessages = new List<SignedMessage>(lastSeenMessagesLength);
-        //for(int i = 0;i < lastSeenMessagesLength; i++)
-        //    reader.ReadUInt8Array(256);//There's still a lot to this I don't understand so maybe someone can 😭😭
+        this.Acknowledgement = ChatMessageTypes.ChatAcknowledgement.Read(reader);
     }
 
     public async override ValueTask HandleAsync(IServer server, IClientPlayer player)

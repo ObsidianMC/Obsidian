@@ -146,7 +146,11 @@ public class PluginCodecFiles
         """
         { "attributes": { "minecraft:visual/ambient_particles": [
         { "particle": { "type": "item", "item": { "id": "diamond" } }, "probability": 0.1 },
-        { "particle": { "type": "block_crumble", "block_state": { "Name": "stone" } }, "probability": 0.1 },
+        { "particle": { "type": "block_crumble", "block_state": { "id": "stone" } }, "probability": 0.1 },
+        { "particle": { "type": "geyser", "water_blocks": 3 }, "probability": 0.1 },
+        { "particle": { "type": "geyser_plume", "water_blocks": 3 }, "probability": 0.1 },
+        { "particle": { "type": "geyser_base", "water_blocks": 4, "burst_impulse_base": 1.5 }, "probability": 0.1 },
+        { "particle": { "type": "geyser_poof", "water_blocks": 4, "burst_impulse_base": 1.5 }, "probability": 0.1 },
         { "particle": { "type": "trail", "target": [0, 64, 0], "color": [0, 1, 0], "duration": 20 },
         "probability": 0.1 }] } }
         """)]
@@ -184,7 +188,8 @@ public class PluginCodecFiles
                     { "particle": { "type": "dust", "color": [1, 0, 0], "scale": 0.5 }, "probability": 0.1 },
                     { "particle": { "type": "effect", "color": -1, "power": 1 }, "probability": 0.1 },
                     { "particle": { "type": "dragon_breath", "power": 1 }, "probability": 0.1 },
-                    { "particle": { "type": "dragon_breath" }, "probability": 0.1 }
+                    { "particle": { "type": "dragon_breath" }, "probability": 0.1 },
+                    { "particle": { "type": "item", "item": { "id": "diamond", "count": 3 } }, "probability": 0.1 }
                   ]
                 }
                 """;
@@ -206,6 +211,8 @@ public class PluginCodecFiles
 
             var defaultBreath = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[3])["particle"]);
             Assert.Equal(["type"], defaultBreath.Select(tag => tag.Key));
+            var item = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(particles[4])["particle"]);
+            Assert.Equal(3, Assert.IsType<NbtTag<int>>(Assert.IsType<NbtCompound>(item["item"])["count"]).Value);
         }
     }
 

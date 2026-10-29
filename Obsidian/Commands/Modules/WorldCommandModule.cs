@@ -536,19 +536,11 @@ public sealed class WorldCommandModule : CommandModuleBase
     /// <summary>A particle without options, which <c>/particle</c> can show.</summary>
     private sealed class SimpleParticle(ParticleType type) : ParticleData
     {
-        // Particles whose packets carry options, like a block or a color, which this doesn't write.
-        private static readonly HashSet<string> withOptions =
-        [
-            "Block", "BlockMarker", "BlockCrumble", "FallingDust", "DustPillar", "Dust", "DustColorTransition", "Item",
-            "Vibration", "EntityEffect", "Trail", "SculkCharge", "Shriek", "TintedLeaves", "DragonBreath", "Effect",
-            "InstantEffect", "Flash"
-        ];
-
         public override ParticleType ParticleType { get; } = type;
 
         public static bool TryCreate(ParticleType type, [NotNullWhen(true)] out SimpleParticle? particle)
         {
-            particle = withOptions.Contains(type.ToString()) ? null : new SimpleParticle(type);
+            particle = Registries.Codecs.RegistryIds.HasOptions($"minecraft:{type.ToString().ToSnakeCase()}") ? null : new SimpleParticle(type);
             return particle is not null;
         }
     }

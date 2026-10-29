@@ -353,6 +353,7 @@ public sealed class MobAi
             var buffer = new Obsidian.Net.NetworkBuffer();
             packet.Serialize(buffer);
             var reader = new Obsidian.Net.NetworkBuffer(buffer.AsSpan(0, buffer.Size).ToArray());
+            Assert.Equal((int)ParticleType.SquidInk, reader.ReadVarInt());
             Assert.False(reader.ReadBoolean());
             Assert.True(reader.ReadBoolean());
             Assert.Equal(packet.Position.X, reader.ReadDouble());
@@ -362,8 +363,10 @@ public sealed class MobAi
             Assert.Equal(packet.Offset.Y, reader.ReadSingle());
             Assert.Equal(packet.Offset.Z, reader.ReadSingle());
             Assert.Equal(packet.MaxSpeed, reader.ReadSingle());
-            Assert.Equal(30, reader.ReadInt());
-            Assert.Equal((int)ParticleType.SquidInk, reader.ReadVarInt());
+            Assert.Equal(packet.MaxSpeed, reader.ReadSingle());
+            Assert.Equal(packet.MaxSpeed, reader.ReadSingle());
+            Assert.Equal(30, reader.ReadVarInt());
+            Assert.Equal((int)Net.Packets.Play.Clientbound.ParticleRandomization.Default, reader.ReadVarInt());
             Assert.Equal(reader.Size, reader.Offset);
         }
     }

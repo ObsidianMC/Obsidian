@@ -3,6 +3,20 @@
 Gaps found during the mod-system work that don't limit what mods can do: vanilla parity, test plumbing and a
 contract left weaker on purpose. Each entry says what's missing, why it was left and where to start.
 
+## Low disk space notifications
+
+**Status:** the 26.3 `low_disk_space_warning` packet is available, but the server does not monitor free disk space.
+Vanilla's dedicated-server disk-space check has no corresponding Obsidian trigger. Add a rate-limited storage
+monitor before sending this warning; a normal save failure alone does not establish that the disk is nearly full.
+
+## Signed chat and block picking
+
+**Status:** 26.3 chat and signed-command packets are decoded completely, including acknowledgement bits and checksum,
+and player-chat/deletion payloads have vanilla captures. The server still delivers ordinary chat through its existing
+system-message path; signature validation, acknowledgement validation and a per-connection signature cache are not
+implemented. `pick_item_from_block` now reads its block position and include-data flag, but picking items into the
+inventory remains unimplemented, as before the protocol port.
+
 ## Saved passenger trees and leads
 
 **Status:** riding is a live relationship between any two entities and travel carries whole passenger trees; leads
@@ -370,9 +384,9 @@ The core progress API, vanilla save envelopes and packet fields are implemented.
 Progress item from being marked done:
 
 - Advancement visibility is currently reset-plus-all, including recipe and hidden definitions. Content reload
-  also resets everything. The simple server layout places displays in separate rows/parent columns rather than
-  vanilla's compact tree layout; visibility-depth rules, chat announcements and full icon component JSON parsing
-  remain. Display flags and telemetry are encoded, but telemetry is not collected.
+  also resets everything. Displays use the server's compact tree layout, replayed against vanilla 26.3 captures;
+  visibility-depth rules, chat announcements and full icon component JSON parsing remain. Display flags and telemetry
+  are encoded, but telemetry is not collected.
 - Supported triggers are listed in [Progress](plugin-content.md#progress). `bred_animals` is deferred because
   breeding currently keeps no responsible-player identity. Other trigger ids never fire.
 - Predicate support is deliberately strict. Unsupported condition fields never match, including component

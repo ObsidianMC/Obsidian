@@ -227,7 +227,7 @@ public partial class NetworkBuffer : INetStreamWriter
         }
     }
 
-    // Vanilla 1.21.11 sends requirements and telemetry here; criteria definitions remain on the server.
+    // Display positions belong to the positioned packet entry in 26.3, rather than DisplayInfo.
     public void WriteAdvancement(Advancement advancement)
     {
         var hasParent = !string.IsNullOrEmpty(advancement.Parent);
@@ -245,7 +245,7 @@ public partial class NetworkBuffer : INetStreamWriter
             this.WriteChat(advancement.Display.Title);
             this.WriteChat(advancement.Display.Description);
 
-            this.WriteItemStack(advancement.Display.IconStack ?? new ItemStack(advancement.Display.Icon, 1));
+            this.WriteAdvancementIcon(advancement.Display.IconStack ?? new ItemStack(advancement.Display.Icon, 1));
 
             this.WriteVarInt(advancement.Display.AdvancementFrameType);
 
@@ -253,9 +253,6 @@ public partial class NetworkBuffer : INetStreamWriter
 
             if (advancement.Display.Flags.HasFlag(AdvancementFlags.HasBackgroundTexture))
                 this.WriteString(advancement.Display.BackgroundTexture);
-
-            this.WriteSingle(advancement.Display.XCoord);
-            this.WriteSingle(advancement.Display.YCoord);
         }
 
         var requirements = advancement.Requirements.Count > 0
@@ -271,6 +268,19 @@ public partial class NetworkBuffer : INetStreamWriter
         }
 
         this.WriteBoolean(advancement.SendsTelemetryEvent);
+    }
+
+    private void WriteAdvancementIcon(ItemStack stack)
+    {
+        // ItemStackTemplate carries item then count in 26.3. Reuse the stack's component projection and codecs.
+        using var encoded = new NetworkBuffer { IdMaps = this.IdMaps };
+        encoded.WriteRequiredItemStack(stack);
+        encoded.Offset = 0;
+        var count = encoded.ReadVarInt();
+        var item = encoded.ReadVarInt();
+        this.WriteVarInt(item);
+        this.WriteVarInt(count);
+        this.Write(encoded.AsSpan(encoded.Offset, encoded.Size - encoded.Offset));
     }
 
     public void WriteAttributeModifier(AttributeModifier attribute) => AttributeModifier.Write(attribute, this);

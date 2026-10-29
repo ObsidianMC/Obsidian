@@ -19,6 +19,11 @@ public partial class LevelParticlesPacket
     [Field(4)]
     public float MaxSpeed { get; init; }
 
+    /// <summary>Per-axis speeds; when omitted, MaxSpeed applies to every axis.</summary>
+    public VectorF? Speed { get; init; }
+
+    public ParticleRandomization Randomization { get; init; }
+
     [Field(5)]
     public required int ParticleCount { get; init; }
 
@@ -27,14 +32,21 @@ public partial class LevelParticlesPacket
 
     public override void Serialize(INetStreamWriter writer)
     {
+        writer.WriteVarInt((int)this.Data.ParticleType);
+        this.Data.Write(writer);
         writer.WriteBoolean(this.OverrideLimiter);
         writer.WriteBoolean(this.AlwaysShow);
         VectorD.Write(this.Position, writer);
         writer.WriteAbsoluteFloatPositionF(this.Offset);
-        writer.WriteSingle(this.MaxSpeed);
-        writer.WriteInt(this.ParticleCount);
-
-        writer.WriteVarInt((int)this.Data.ParticleType);
-        this.Data.Write(writer);
+        writer.WriteAbsoluteFloatPositionF(this.Speed ?? new VectorF(this.MaxSpeed));
+        writer.WriteVarInt(this.ParticleCount);
+        writer.WriteVarInt((int)this.Randomization);
     }
+}
+
+public enum ParticleRandomization
+{
+    Default,
+    Alternative,
+    AlternativeWithSpeed
 }

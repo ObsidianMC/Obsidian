@@ -5,7 +5,7 @@ using static Obsidian.Registries.Codecs.CodecJson;
 namespace Obsidian.Registries.Codecs;
 
 /// <summary>
-/// Reads the options of vanilla 1.21.11's particle types that take them (the ParticleOptions codecs of
+/// Reads the options of vanilla 26.3's particle types that take them (the ParticleOptions codecs of
 /// ParticleTypes), for environment attributes' particles.
 /// </summary>
 /// <remarks>
@@ -23,6 +23,14 @@ internal static class ParticleOptions
     {
         switch (type)
         {
+            case "minecraft:geyser":
+            case "minecraft:geyser_plume":
+            case "minecraft:geyser_base":
+            case "minecraft:geyser_poof":
+                particle.Add(new NbtTag<int>("water_blocks", Int(Required(value, path, "water_blocks"), Field(path, "water_blocks"), 1, int.MaxValue)));
+                if (type is "minecraft:geyser_base" or "minecraft:geyser_poof")
+                    particle.Add(new NbtTag<float>("burst_impulse_base", Float(Required(value, path, "burst_impulse_base"), Field(path, "burst_impulse_base"))));
+                break;
             case "minecraft:block":
             case "minecraft:block_marker":
             case "minecraft:block_crumble":
@@ -106,7 +114,7 @@ internal static class ParticleOptions
             particle.Add(new NbtTag<float>("power", read));
     }
 
-    // BlockParticleOption's state: a block's name, or {"Name": ..., "Properties": {...}}. Like vanilla's, properties
+    // BlockParticleOption's state: a block's name, or {"id": ..., "properties": {...}}. Like vanilla's, properties
     // the block doesn't have, or invalid values, give its default state when clients decode it.
     private static NbtCompound BlockState(JsonElement value, string path)
     {
@@ -114,18 +122,18 @@ internal static class ParticleOptions
 
         if (value.ValueKind == JsonValueKind.String)
         {
-            state.Add(new NbtTag<string>("Name", VanillaBlock(value, path)));
+            state.Add(new NbtTag<string>("id", VanillaBlock(value, path)));
             return state;
         }
 
         Object(value, path);
-        state.Add(new NbtTag<string>("Name", VanillaBlock(Required(value, path, "Name"), Field(path, "Name"))));
+        state.Add(new NbtTag<string>("id", VanillaBlock(Required(value, path, "id"), Field(path, "id"))));
 
-        if (!TryGet(value, "Properties", out var properties))
+        if (!TryGet(value, "properties", out var properties))
             return state;
 
-        var propertiesPath = Field(path, "Properties");
-        var tag = new NbtCompound("Properties");
+        var propertiesPath = Field(path, "properties");
+        var tag = new NbtCompound("properties");
 
         foreach (var property in Object(properties, propertiesPath).EnumerateObject())
             tag.Add(new NbtTag<string>(property.Name, String(property.Value, Field(propertiesPath, property.Name))));
@@ -144,7 +152,7 @@ internal static class ParticleOptions
             : throw Error(path, $"{name} isn't one of vanilla's blocks");
     }
 
-    // ItemParticleOption's item: an item's name or {"id": ...}, written as {"id": ...}. It can't be air, which
+    // ItemParticleOption's template: an item's name or {"id": ..., "count": ...}. It can't be air, which
     // vanilla's particle refuses as an empty stack.
     private static NbtCompound Item(JsonElement value, string path)
     {
@@ -168,10 +176,17 @@ internal static class ParticleOptions
         if (!vanilla)
             throw Error(idPath, $"{name} isn't one of vanilla's items, other than air");
 
-        return new NbtCompound("item")
+        var result = new NbtCompound("item")
         {
             new NbtTag<string>("id", name)
         };
+        if (value.ValueKind == JsonValueKind.Object && TryGet(value, "count", out var count))
+        {
+            var amount = Int(count, Field(path, "count"), 1, 99);
+            if (amount != 1)
+                result.Add(new NbtTag<int>("count", amount));
+        }
+        return result;
     }
 
     // Vec3.CODEC: a list of 3 doubles.
